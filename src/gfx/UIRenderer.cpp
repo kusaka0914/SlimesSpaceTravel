@@ -15,7 +15,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 UIRenderer::UIRenderer(Game* game)
-    : Renderer(game)
+    : Renderer(game),
+      mIsDebugMode(false)
 {
     Initialize();
 }
@@ -79,10 +80,6 @@ void UIRenderer::RegisterUITextures()
 
 void UIRenderer::Draw()
 {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -109,12 +106,18 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
-    mDebugUIRenderer->Draw();
+    if (mIsDebugMode) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        mDebugUIRenderer->Draw();
+
+        EndImGuiFrame();
+    }
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
-
-    EndImGuiFrame();
 }
 
 void UIRenderer::EndImGuiFrame()

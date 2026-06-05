@@ -214,6 +214,12 @@ void Game::ProcessGameInput()
         FinishGame();
     }
 
+    const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
+    if (pPressed && !mPPressedPrev) {
+        mUIRenderer->FlipIsDebugMode();
+    }
+    mPPressedPrev = pPressed;
+
     // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
     // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
     // bool isBossExist = false;

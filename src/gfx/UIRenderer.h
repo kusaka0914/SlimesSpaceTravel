@@ -18,6 +18,8 @@ public:
     void Draw();
     void DrawSkyBox();
 
+    void FlipIsDebugMode() { mIsDebugMode = !mIsDebugMode; }
+
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
 
 private:
@@ -82,6 +84,8 @@ private:
     UILoadSystem* mUILoadSystem;
 
     std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
+
+    bool mIsDebugMode;
 
     int mFbWidth;
     int mFbHeight;
