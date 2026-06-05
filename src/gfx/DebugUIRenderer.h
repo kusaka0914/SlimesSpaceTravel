@@ -6,6 +6,7 @@
 
 class Game;
 class Player;
+class Enemy;
 
 class DebugUIRenderer {
 public:
@@ -16,9 +17,12 @@ public:
 private:
     void DrawPerformance();
     void DrawPlayer();
+    void DrawEnemies();
     void DrawCamera();
     // void DrawStage1();
     void DrawDebugDrawSettings();
+    void SavePlayerYaml(Player* player);
+    void SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy);
     bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
 
     template <typename T>

@@ -76,9 +76,6 @@ void ActorLoadSystem::LoadPlayers(const char* path)
             float attack = playerNode["attack"] ? playerNode["attack"].as<float>() : 0.0f;
             player->SetAttack(attack);
 
-            float cameraPitch = playerNode["cameraPitch"] ? playerNode["cameraPitch"].as<float>() : 0.0f;
-            player->SetCameraPitch(cameraPitch);
-
             float moveSpeed = playerNode["moveSpeed"] ? playerNode["moveSpeed"].as<float>() : 0.0f;
             player->SetMoveSpeed(moveSpeed);
 

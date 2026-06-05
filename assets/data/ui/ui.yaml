@@ -84,7 +84,7 @@ gameOver:
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
-    text: ["直前からリスタート: A"]
+    text: ["直前からリスタート: Y"]
 
   - id: restartTextForKeyBoard
     type: text

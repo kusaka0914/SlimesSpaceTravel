@@ -30,14 +30,30 @@ public:
     UILoadSystem();
 
     void Initialize();
-    
-    const TextureInfo* GetTextureInfo(const std::string& screenName, const std::string& id) const {
+
+    const TextureInfo* GetTextureInfo(const std::string& screenName, const std::string& id) const
+    {
         std::string mapId = screenName + "." + id;
         auto it = mTextureInfo.find(mapId);
         return (it != mTextureInfo.end()) ? &it->second : nullptr;
     }
 
-    const TextInfo* GetTextInfo(const std::string& screenName, const std::string& id) const {
+    const TextInfo* GetTextInfo(const std::string& screenName, const std::string& id) const
+    {
+        std::string mapId = screenName + "." + id;
+        auto it = mTextInfo.find(mapId);
+        return (it != mTextInfo.end()) ? &it->second : nullptr;
+    }
+
+    TextureInfo* GetEditableTextureInfo(const std::string& screenName, const std::string& id)
+    {
+        std::string mapId = screenName + "." + id;
+        auto it = mTextureInfo.find(mapId);
+        return (it != mTextureInfo.end()) ? &it->second : nullptr;
+    }
+
+    TextInfo* GetEditableTextInfo(const std::string& screenName, const std::string& id)
+    {
         std::string mapId = screenName + "." + id;
         auto it = mTextInfo.find(mapId);
         return (it != mTextInfo.end()) ? &it->second : nullptr;

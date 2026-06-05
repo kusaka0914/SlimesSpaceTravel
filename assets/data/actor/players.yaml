@@ -3,7 +3,6 @@ players:
     scale: 0.25
     attack: 10
     attackSpeed: 5.0
-    camera_pitch: 0.4
     moveSpeed: 4
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.3
