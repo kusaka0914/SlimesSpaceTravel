@@ -51,6 +51,7 @@ public:
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
     bool GetIsDead() const { return mLifeState == LifeState::Dead; }
+    bool GetIsBoss() const { return mIsBoss; }
 
     int GetBreakCount() const { return mBreakCount; }
 

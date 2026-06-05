@@ -1,21 +1,32 @@
 #include "UIRenderer.h"
+#include "DebugUIRenderer.h"
 #include "Game.h"
 #include "VertexArray.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "gfx/UIShader.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
+#include <GLFW/glfw3.h>
 #include <glm/gtc/type_ptr.hpp>
 
 UIRenderer::UIRenderer(Game* game)
-    : Renderer(game)
+    : Renderer(game),
+      mIsDebugMode(false)
 {
     Initialize();
 }
 
-UIRenderer::~UIRenderer() = default;
+UIRenderer::~UIRenderer()
+{
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+};
 
 void UIRenderer::Initialize()
 {
@@ -25,12 +36,33 @@ void UIRenderer::Initialize()
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
+    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame);
+
     if (!mUIShader->GetShaderProgram()) {
         glfwTerminate();
         return;
     }
 
+    InitImGui();
+
     RegisterUITextures();
+}
+
+void UIRenderer::InitImGui()
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    io.Fonts->AddFontFromFileTTF("../assets/fonts/NotoSansJP-Black.ttf", 18.0f, nullptr,
+                                 io.Fonts->GetGlyphRangesJapanese());
+
+    const char* glslVersion = "#version 330";
+
+    ImGui_ImplGlfw_InitForOpenGL(mGame->GetWindow(), true);
+    ImGui_ImplOpenGL3_Init(glslVersion);
 }
 
 void UIRenderer::RegisterUITextures()
@@ -74,8 +106,24 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
+    if (mIsDebugMode) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        mDebugUIRenderer->Draw();
+
+        EndImGuiFrame();
+    }
+
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::EndImGuiFrame()
+{
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void UIRenderer::DrawTitle()

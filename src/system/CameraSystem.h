@@ -17,6 +17,9 @@ public:
 
     void Update(float deltaTime);
 
+    void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
+
+    bool GetIsTargetFocus() const { return mIsTargetFocus; }
     std::vector<glm::mat4> GetViews();
     glm::vec3 GetCameraPos() const { return mCameraPos; }
 
@@ -27,8 +30,11 @@ private:
     std::vector<glm::mat4> GetBoatFocusViews(std::vector<Boat*> boats) const;
     glm::mat4 GetPlayerView(Player* player, float cameraDistance, bool isFixed = false);
     glm::mat4 GetFocusView(Actor* focusActor) const;
+    glm::mat4 GetTargetCameraView(Actor* targetActor);
 
 private:
+    bool mIsTargetFocus;
+
     float mCameraYaw;
     float mCameraPitch;
     float mCameraStickY;

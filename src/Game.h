@@ -134,6 +134,8 @@ private:
     bool mReloadKeyPressedPrev = false;
     bool mUIReloadKeyPressedPrev = false;
     bool mAPressedPrev = false;
+    bool mPPressedPrev = false;
+    bool mZLPressedPrev = false;
     bool mStartPressedPrev = false;
     bool mIsPlayer2Joined = false;
 

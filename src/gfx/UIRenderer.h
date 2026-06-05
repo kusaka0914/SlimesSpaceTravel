@@ -9,6 +9,7 @@
 class Game;
 class UIShader;
 class VertexArray;
+class DebugUIRenderer;
 
 class UIRenderer : public Renderer {
 public:
@@ -17,11 +18,16 @@ public:
     void Draw();
     void DrawSkyBox();
 
+    void FlipIsDebugMode() { mIsDebugMode = !mIsDebugMode; }
+
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
 
 private:
     void Initialize();
+    void InitImGui();
     void RegisterUITextures();
+
+    void EndImGuiFrame();
 
     void DrawTitle();
     void DrawOpening();
@@ -76,6 +82,10 @@ private:
 
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
+
+    std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
+
+    bool mIsDebugMode;
 
     int mFbWidth;
     int mFbHeight;

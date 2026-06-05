@@ -100,6 +100,7 @@ public:
     float GetAttackRange() const { return mAttackRange; }
     float GetAttackAngle() const { return mAttackAngle; }
     float GetRayCastTimer() const { return mRayCastTimer; }
+    float GetMoveSpeed() const { return mMoveSpeed; }
 
     ActionState GetActionState() const { return mActionState; }
 
