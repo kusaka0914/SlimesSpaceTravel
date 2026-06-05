@@ -36,7 +36,7 @@ void UIRenderer::Initialize()
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
-    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame);
+    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame, this);
 
     if (!mUIShader->GetShaderProgram()) {
         glfwTerminate();

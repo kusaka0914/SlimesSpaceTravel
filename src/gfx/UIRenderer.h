@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Renderer.h"
 #include "system/UILoadSystem.h"
 #include <GL/glew.h>

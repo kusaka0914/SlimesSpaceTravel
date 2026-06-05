@@ -7,10 +7,11 @@
 class Game;
 class Player;
 class Enemy;
+class UIRenderer;
 
 class DebugUIRenderer {
 public:
-    DebugUIRenderer(Game* game);
+    DebugUIRenderer(Game* game, UIRenderer* uiRenderer);
 
     void Draw();
 
@@ -19,11 +20,13 @@ private:
     void DrawPlayer();
     void DrawEnemies();
     void DrawCamera();
+    void DrawUI();
     // void DrawStage1();
     void DrawDebugDrawSettings();
     void SavePlayerYaml(Player* player);
     void SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy);
     bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
+    std::string GetUIDisplayName(const std::string& key) const;
 
     template <typename T>
     bool SetYamlSequenceValue(YAML::Node& config, const std::string& sequenceName, std::size_t index,
@@ -44,4 +47,5 @@ private:
     }
 
     Game* mGame;
+    UIRenderer* mUIRenderer;
 };

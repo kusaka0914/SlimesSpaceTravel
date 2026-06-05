@@ -1,5 +1,7 @@
 #include "DebugUIRenderer.h"
 
+#include "gfx/UIRenderer.h"
+
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Crystal.h"
@@ -8,12 +10,16 @@
 #include "actor/Player.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
+#include "system/UILoadSystem.h"
 
+#include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-DebugUIRenderer::DebugUIRenderer(Game* game)
-    : mGame(game)
+DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
+    : mGame(game),
+      mUIRenderer(uiRenderer)
 {
 }
 
@@ -25,6 +31,7 @@ void DebugUIRenderer::Draw()
     DrawPlayer();
     DrawEnemies();
     DrawCamera();
+    DrawUI();
     // DrawStage1();
     // DrawDebugDrawSettings();
 
@@ -464,6 +471,100 @@ void DebugUIRenderer::DrawCamera()
     }
 }
 
+void DebugUIRenderer::DrawUI()
+{
+    if (!mGame || !mUIRenderer) {
+        return;
+    }
+
+    UILoadSystem* uiLoadSystem = mUIRenderer->GetUILoadSystem();
+
+    if (!ImGui::CollapsingHeader("UI")) {
+        return;
+    }
+
+    const std::string filePath = "../assets/data/ui/ui.yaml";
+
+    auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
+    auto& textInfos = uiLoadSystem->GetEditableTextInfos();
+
+    if (ImGui::TreeNode("テクスチャ")) {
+        std::vector<std::string> keys;
+        keys.reserve(textureInfos.size());
+
+        for (const auto& pair : textureInfos) {
+            keys.emplace_back(pair.first);
+        }
+
+        std::sort(keys.begin(), keys.end());
+
+        for (const std::string& key : keys) {
+            UILoadSystem::TextureInfo& info = textureInfos[key];
+
+            const std::string displayName = GetUIDisplayName(key);
+            const std::string treeLabel = displayName + "##" + key;
+
+            if (ImGui::TreeNode(treeLabel.c_str())) {
+                ImGui::Text("ID: %s", key.c_str());
+
+                ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::SliderFloat("幅比率", &info.widthRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("高さ比率", &info.heightRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("テキスト")) {
+        std::vector<std::string> keys;
+        keys.reserve(textInfos.size());
+
+        for (const auto& pair : textInfos) {
+            keys.emplace_back(pair.first);
+        }
+
+        std::sort(keys.begin(), keys.end());
+
+        for (const std::string& key : keys) {
+            UILoadSystem::TextInfo& info = textInfos[key];
+
+            const std::string displayName = GetUIDisplayName(key);
+            const std::string treeLabel = displayName + "##" + key;
+
+            if (ImGui::TreeNode(treeLabel.c_str())) {
+                ImGui::Text("ID: %s", key.c_str());
+
+                ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::SliderFloat("文字スケール比率", &info.scaleRatio, 0.0f, 0.005f, "%.7f");
+
+                if (!info.texts.empty()) {
+                    ImGui::Separator();
+                    ImGui::Text("表示テキスト");
+
+                    for (const std::string& text : info.texts) {
+                        ImGui::BulletText("%s", text.c_str());
+                    }
+                }
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::Button("UI設定を保存する")) {
+        uiLoadSystem->SaveUIInfo(filePath);
+    }
+}
+
 // void DebugUIRenderer::DrawStage1()
 // {
 //     std::vector<Crystal*> crystals = mGame->GetCurrentStage()->GetPlanets()[0]->GetCrystals();
@@ -604,4 +705,49 @@ bool DebugUIRenderer::SaveYamlFile(const std::string& filePath, const YAML::Node
 
     file << config;
     return true;
+}
+
+std::string DebugUIRenderer::GetUIDisplayName(const std::string& key) const
+{
+    static const std::unordered_map<std::string, std::string> displayNames = {
+        {"title.bgTexture", "タイトル背景"},
+        {"title.startTextForGameController", "タイトル開始テキスト（コントローラー）"},
+        {"title.startTextForKeyBoard", "タイトル開始テキスト（キーボード）"},
+
+        {"opening.bgTexture", "オープニング背景"},
+        {"opening.openingText", "オープニング本文"},
+        {"opening.talkWithMotherText", "母との会話"},
+        {"opening.talkWithDoctorText", "ドクターとの会話"},
+
+        {"gameOver.gameOverText", "ゲームオーバー文字"},
+        {"gameOver.restartTextForGameController", "リスタート文字（コントローラー）"},
+        {"gameOver.restartTextForKeyBoard", "リスタート文字（キーボード）"},
+
+        {"default.operationSupportTextForGameController", "操作ガイド（コントローラー）"},
+        {"default.operationSupportTextForKeyBoard", "操作ガイド（キーボード）"},
+        {"default.operationSupportHiddenText", "操作ガイド非表示中テキスト"},
+        {"default.hpTexture", "HPアイコン"},
+        {"default.jewelTexture", "ジュエルアイコン"},
+        {"default.talkableTextForGameController", "会話可能テキスト（コントローラー）"},
+        {"default.talkableTextForKeyBoard", "会話可能テキスト（キーボード）"},
+        {"default.remainPartsText", "残りパーツ数テキスト"},
+
+        {"state.battleTutorialTextForGameController", "戦闘チュートリアル（コントローラー）"},
+        {"state.battleTutorialTextForKeyBoard", "戦闘チュートリアル（キーボード）"},
+        {"state.breakTutorialText", "ブレイクチュートリアル"},
+        {"state.jewelTutorialTextForGameController", "ジュエルチュートリアル（コントローラー）"},
+        {"state.jewelTutorialTextForKeyBoard", "ジュエルチュートリアル（キーボード）"},
+        {"state.stageClearText", "ステージクリアテキスト"},
+        {"state.loadingText", "ローディング文字"},
+        {"state.loadingTexture", "ローディング画像"},
+        {"state.talkBgTexture", "会話背景"},
+        {"state.talkText", "会話本文"},
+    };
+
+    const auto it = displayNames.find(key);
+    if (it != displayNames.end()) {
+        return it->second;
+    }
+
+    return key;
 }

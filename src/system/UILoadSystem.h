@@ -45,19 +45,11 @@ public:
         return (it != mTextInfo.end()) ? &it->second : nullptr;
     }
 
-    TextureInfo* GetEditableTextureInfo(const std::string& screenName, const std::string& id)
-    {
-        std::string mapId = screenName + "." + id;
-        auto it = mTextureInfo.find(mapId);
-        return (it != mTextureInfo.end()) ? &it->second : nullptr;
-    }
+    std::unordered_map<std::string, TextureInfo>& GetEditableTextureInfos() { return mTextureInfo; }
 
-    TextInfo* GetEditableTextInfo(const std::string& screenName, const std::string& id)
-    {
-        std::string mapId = screenName + "." + id;
-        auto it = mTextInfo.find(mapId);
-        return (it != mTextInfo.end()) ? &it->second : nullptr;
-    }
+    std::unordered_map<std::string, TextInfo>& GetEditableTextInfos() { return mTextInfo; }
+
+    bool SaveUIInfo(const std::string& path);
 
 private:
     void LoadUIInfo(const std::string& path);
