@@ -9,6 +9,7 @@
 class Game;
 class UIShader;
 class VertexArray;
+class DebugUIRenderer;
 
 class UIRenderer : public Renderer {
 public:
@@ -21,7 +22,10 @@ public:
 
 private:
     void Initialize();
+    void InitImGui();
     void RegisterUITextures();
+
+    void EndImGuiFrame();
 
     void DrawTitle();
     void DrawOpening();
@@ -76,6 +80,8 @@ private:
 
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
+
+    std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
 
     int mFbWidth;
     int mFbHeight;

@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
+#include "actor/Enemy.h"
 #include "actor/Key.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -17,7 +18,8 @@ CameraSystem::CameraSystem(Game* game)
       mCameraStickX(0.0f),
       mCameraUpVec(0.0f, 1.0f, 0.0f),
       mCameraTargetPos(0.0f),
-      mCameraPos(0.0f)
+      mCameraPos(0.0f),
+      mIsTargetFocus(false)
 {
 }
 
@@ -78,6 +80,55 @@ glm::mat4 CameraSystem::GetPlayerView(Player* player, float cameraDistance, bool
     return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
 }
 
+glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
+{
+    Player* player = mGame->GetPlayers()[0];
+
+    const glm::vec3 playerPos = player->GetPos();
+    const glm::vec3 targetPos = targetActor->GetPos();
+
+    const float cameraLerp = 0.12f;
+
+    glm::vec3 up = glm::normalize(player->GetUpVec());
+
+    const glm::vec3 center = glm::mix(playerPos, targetPos, 0.5f);
+
+    glm::vec3 targetToPlayer = playerPos - targetPos;
+
+    targetToPlayer -= up * glm::dot(targetToPlayer, up);
+
+    if (glm::length(targetToPlayer) < 0.001f) {
+        targetToPlayer = -player->GetForwardVec();
+        targetToPlayer -= up * glm::dot(targetToPlayer, up);
+    }
+
+    if (glm::length(targetToPlayer) < 0.001f) {
+        targetToPlayer = glm::cross(up, glm::vec3(1.0f, 0.0f, 0.0f));
+
+        if (glm::length(targetToPlayer) < 0.001f) {
+            targetToPlayer = glm::cross(up, glm::vec3(0.0f, 0.0f, 1.0f));
+        }
+    }
+
+    const glm::vec3 backDir = glm::normalize(targetToPlayer);
+
+    const float targetDistance = glm::length(playerPos - targetPos);
+    const float cameraDistance = glm::clamp(targetDistance + 6.0f, 8.0f, 16.0f);
+    const float cameraHeight = 4.0f;
+
+    const glm::vec3 desiredCameraPos = center + backDir * cameraDistance + up * cameraHeight;
+
+    const glm::vec3 lookAtBase = glm::mix(playerPos, targetPos, 0.75f);
+    const glm::vec3 desiredLookAt = lookAtBase + up * 1.5f;
+
+    mCameraPos = glm::mix(mCameraPos, desiredCameraPos, cameraLerp);
+    mCameraTargetPos = glm::mix(mCameraTargetPos, desiredLookAt, cameraLerp);
+
+    mCameraUpVec = glm::normalize(glm::mix(mCameraUpVec, up, cameraLerp));
+
+    return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
+}
+
 glm::mat4 CameraSystem::GetFocusView(Actor* focusActor) const
 {
     const glm::vec3 upVec = focusActor->GetUpVec();
@@ -132,6 +183,20 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         glm::mat4 playerFocusView = GetPlayerView(mGame->GetPlayers()[0], 4.0f, true);
         views.emplace_back(playerFocusView);
         return views;
+    }
+
+    if (mIsTargetFocus) {
+        Enemy* targetEnemy;
+        std::vector<Enemy*> enemies = mGame->GetPlayers()[0]->GetCurrentPlanet()->GetEnemies();
+        for (auto enemy : enemies) {
+            if (!enemy->GetIsBoss()) {
+                continue;
+            }
+
+            targetEnemy = enemy;
+            break;
+        }
+        views.emplace_back(GetTargetCameraView(targetEnemy));
     }
 
     glm::mat4 playerView = GetPlayerView(mGame->GetPlayers()[0], 10.0f);

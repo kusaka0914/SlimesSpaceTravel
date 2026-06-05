@@ -4,10 +4,7 @@ players:
     attack: 10
     attackSpeed: 5.0
     camera_pitch: 0.4
-    modelPath: player.obj
-    
-    moveSpeed: 4.0
-    # moveSpeed: 10.2
+    moveSpeed: 4
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.3
     dodgeDistance: 3.0
@@ -30,3 +27,4 @@ players:
     chargeMoveSpeed: 3.0
     defaultStrongAttackTimer: 0.06
     knockBackSpeed: 4.0
+    modelPath: player.obj
