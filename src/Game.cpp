@@ -380,9 +380,32 @@ void Game::OnEnemyLaunched()
     mSceneSystem->OnEnemyLaunched();
 }
 
+void Game::OnPlayerApplyDamage()
+{
+    mAudioSystem->PlaySE("damaged_se");
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 1000);
+}
+
+void Game::OnPlayerFinishCharging()
+{
+    mAudioSystem->PlaySE("charged_se");
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
+}
+
+void Game::OnPlayerAttackHit()
+{
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
+}
+
 void Game::OnStrongAttacked()
 {
     mSceneSystem->OnStrongAttacked();
+    SDL_GameControllerRumble(mSdlController, 35000, 0, 500);
+}
+
+void Game::OnPlayerCounter()
+{
+    SDL_GameControllerRumble(mSdlController, 25000, 0, 500);
 }
 
 void Game::OnLanded()

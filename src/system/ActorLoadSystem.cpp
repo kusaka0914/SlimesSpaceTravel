@@ -157,6 +157,9 @@ void ActorLoadSystem::LoadPlayers(const char* path)
                 playerNode["defaultStrongAttackTimer"] ? playerNode["defaultStrongAttackTimer"].as<float>() : 0.0f;
             player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
 
+            float knockBackSpeed = playerNode["knockBackSpeed"] ? playerNode["knockBackSpeed"].as<float>() : 0.0f;
+            player->SetKnockBackSpeed(knockBackSpeed);
+
             std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "player.obj";
             player->SetModelPath(modelPath);
         }

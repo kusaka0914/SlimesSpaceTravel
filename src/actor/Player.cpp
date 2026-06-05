@@ -91,7 +91,8 @@ Player::Player(Game* game)
       mDodgeDir(0.0f),
       mRayCasts(),
       mTalkableNPC(nullptr),
-      mAirAttackFloatingTimer(-1.0f)
+      mAirAttackFloatingTimer(-1.0f),
+      mKnockBackSpeed(0.0f)
 {
 }
 
@@ -606,7 +607,7 @@ void Player::StartJumping(float deltaTime)
 
 void Player::FinishCharging()
 {
-    mGame->GetAudioSystem()->PlaySE("charged_se");
+    mGame->OnPlayerFinishCharging();
     mIsCharged = true;
 }
 
@@ -655,7 +656,7 @@ void Player::MoveDuringAttacking(float deltaTime)
 void Player::MoveDuringKnockBack(float deltaTime)
 {
     glm::vec3 toPlayer = glm::normalize(mPos - mKnockBackFrom);
-    mPos += toPlayer * deltaTime;
+    mPos += toPlayer * mKnockBackSpeed * deltaTime;
 }
 
 void Player::ChangeFaceDir()
@@ -704,6 +705,7 @@ void Player::Attack(float deltaTime)
     }
 
     if (mAttackKind != AttackKind::Strong) {
+        mGame->OnPlayerAttackHit();
         StartAfterAttackReaction();
         if (mOnGround) {
             for (Enemy* enemy : hitEnemies) {
@@ -841,6 +843,7 @@ void Player::Recover()
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
     if (mActionState == ActionState::Dodging) {
+        mGame->OnPlayerCounter();
         enemy->ApplyBreak(deltaTime, true);
         if (mJewelCount < 2) {
             mJewelCount++;
@@ -857,7 +860,7 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
     mDamageTimer = mDefaultDamageTimer;
     mInvincibleTimer = mDefaultInvincibleTimer;
     mActionState = ActionState::KnockedBack;
-    mGame->GetAudioSystem()->PlaySE("damaged_se");
+    mGame->OnPlayerApplyDamage();
 }
 
 void Player::FollowMovingBoat(Boat* boat)

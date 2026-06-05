@@ -80,6 +80,7 @@ public:
     }
     void SetRayCastTimer(float rayCastTimer) { mRayCastTimer = rayCastTimer; }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
+    void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
 
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
 
@@ -242,6 +243,7 @@ private:
     float mStrongAttackSpeed;
     float mRayCastTimer;
     float mInputAvailableTimer;
+    float mKnockBackSpeed;
 
     glm::vec3 mForwardVec;
     glm::vec3 mLeftVec;

@@ -29,3 +29,4 @@ players:
     defaultAttackPressTimer: 1.0
     chargeMoveSpeed: 3.0
     defaultStrongAttackTimer: 0.06
+    knockBackSpeed: 4.0

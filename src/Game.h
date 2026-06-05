@@ -37,7 +37,11 @@ public:
     void OnBoatArrived(Boat* boat);
     void OnStarObtained();
     void OnEnemyLaunched();
+    void OnPlayerAttackHit();
     void OnStrongAttacked();
+    void OnPlayerCounter();
+    void OnPlayerApplyDamage();
+    void OnPlayerFinishCharging();
     void OnLanded();
     void OnPlayerDied();
     void OnBoatPartsObtained();
