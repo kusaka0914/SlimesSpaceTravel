@@ -18,28 +18,28 @@ planets:
     shape: Sphere
 enemies:
   - type: normal
-    theta: 2.007195
+    theta: 1.973047
     phi: 0.675763
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: -2.569516
-    phi: -0.316463
+    theta: -2.842698
+    phi: -0.111576
     height: 1
     currentPlanetNum: 1
   - type: normal
     theta: 2.272954
-    phi: -0.612432
+    phi: -0.578284
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.380324
+    theta: 1.331762
     phi: -0.528396
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 0
-    phi: 1
+    theta: 0.204886
+    phi: 1.007358
     height: 1
     currentPlanetNum: 1
   - type: normal
@@ -63,63 +63,63 @@ enemies:
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.012932
-    phi: -0.030296
+    theta: 1.536649
+    phi: 1.382983
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.016786
-    phi: 0.075506
+    theta: -1.373556
+    phi: -0.239034
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.038777
-    phi: 0.17911
+    theta: -1.761338
+    phi: 0.375625
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.079417
+    theta: 0
     phi: 0.277311
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.027116
+    theta: 0.75125
+    phi: 0.034148
+    height: 1
+    currentPlanetNum: 1
+  - type: normal
+    theta: -0.580512
+    phi: 0.512216
+    height: 1
+    currentPlanetNum: 1
+  - type: normal
+    theta: -0.478069
     phi: -0.135222
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.139365
-    phi: 0.366631
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.027116
-    phi: -0.135222
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.218886
+    theta: 1.400058
     phi: 0.443256
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.316993
-    phi: 0.503159
+    theta: 1.385288
+    phi: 1.570796
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.027116
+    theta: 0.341477
     phi: -0.135222
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.430467
-    phi: 0.542507
+    theta: 0.580512
+    phi: 0.525433
     height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.553312
-    phi: 0.558355
+    theta: 1.67324
+    phi: -0.039231
     height: 1
     currentPlanetNum: 1
   - type: boss

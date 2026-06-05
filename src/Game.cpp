@@ -270,6 +270,7 @@ void Game::UpdateGame()
     }
 
     if (mIsDebugMode) {
+        mCameraSystem->Update(deltaTime);
         return;
     }
 
