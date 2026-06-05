@@ -22,7 +22,6 @@ public:
     };
 
     Player(Game* game);
-    ~Player();
 
     void Initialize() override;
     void ProcessActor() override;

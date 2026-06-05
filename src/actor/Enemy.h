@@ -57,6 +57,8 @@ public:
     float GetHp() const { return mHp; }
     float GetMaxHp() const { return mMaxHp; }
     float GetAttack() const { return mAttack; }
+    float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2); }
+    float GetStandByAttackTimer() const { return mStandByAttackTimer; }
 
 private:
     void UpdateAlive(float deltaTime);

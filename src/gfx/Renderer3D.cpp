@@ -22,7 +22,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 
-Renderer3D::Renderer3D(Game* game) : Renderer(game), mAttackRangeVAO(0), mAttackRangeVBO(0)
+Renderer3D::Renderer3D(Game* game)
+    : Renderer(game),
+      mAttackRangeVAO(0),
+      mAttackRangeVBO(0)
 {
     Initialize();
 }
@@ -103,7 +106,11 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) c
     SetUniforms(viewMat, projMat);
 
     std::vector<Planet*> planets = mGame->GetCurrentStage()->GetPlanets();
+    glUniform1f(mShader3D->GetLocToonLevels(), 5.0f);
+    glUniform1f(mShader3D->GetLocToonStrength(), 0.45f);
     TryDrawActors(planets, false);
+    glUniform1f(mShader3D->GetLocToonLevels(), 3.0f);
+    glUniform1f(mShader3D->GetLocToonStrength(), 0.6f);
     TryDrawActorOnPlanets(planets, viewMat);
     TryDrawPlayers();
 }
@@ -119,8 +126,6 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat)
     glUniform3f(mShader3D->GetLocLightColor(), 0.5f, 0.5f, 0.5f);
 
     glUniform1f(mShader3D->GetLocAmbientStrength(), 0.8f);
-    glUniform1f(mShader3D->GetLocToonLevels(), 5.0f);
-    glUniform1f(mShader3D->GetLocToonStrength(), 0.45f);
     glUniform1f(mShader3D->GetLocRimStrength(), 0.20f);
     glUniform1f(mShader3D->GetLocRimPower(), 2.5f);
 }
@@ -168,6 +173,10 @@ void Renderer3D::TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::m
         DrawActor(enemy, true);
         DrawEnemyGuard(viewMat, enemy);
         DrawEnemyHp(viewMat, enemy);
+
+        if (enemy->GetStandByAttackTimer() > 0.0f && enemy->GetStandByAttackTimer() <= 1.0f) {
+            DrawEnemyAttackRange(enemy);
+        }
     }
 }
 
@@ -233,7 +242,7 @@ void Renderer3D::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) co
     glBindTexture(GL_TEXTURE_2D, mTextures.at("guard"));
     GLint locUseTexture = mShader3D->GetLocUseTexture();
     glUniform1i(locUseTexture, 1);
-    mVertexArrays.at("text")->SetActive();
+    mVertexArrays.at("quad")->SetActive();
 
     const float upMargin = enemy->GetRadius() * 0.8f;
     constexpr float guardWidth = 0.5f;
@@ -243,7 +252,7 @@ void Renderer3D::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) co
         glm::mat4 billboard =
             mGame->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
         glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 
     glUniform1i(locUseTexture, 0);
@@ -266,7 +275,7 @@ void Renderer3D::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 
     std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};
     glUniform4fv(mShader3D->GetLocObjectColor(), 1, hpGreen.data());
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     EndTransparentDraw();
 }
@@ -292,55 +301,116 @@ void Renderer3D::DrawAttackRange(Player* player) const
 
     constexpr int segments = 48;
 
-    const float radius = player->GetAttackRange();
-    const float attackAngleDeg = player->GetAttackAngle();
+    const float attackRange = player->GetAttackRange();
+    const float attackAngle = player->GetAttackAngle();
 
-    if (radius <= 0.0f || attackAngleDeg <= 0.0f) {
+    if (attackRange <= 0.0f || attackAngle <= 0.0f) {
         return;
     }
 
     const glm::vec3 center = player->GetPos();
     const glm::vec3 up = glm::normalize(player->GetUpVec());
     const glm::vec3 forward = glm::normalize(player->GetFacingForwardVec());
-    const glm::vec3 side = glm::normalize(player->GetLeftVec());
+    const glm::vec3 left = glm::normalize(player->GetLeftVec());
 
-    const float halfAngle = attackAngleDeg * 0.5f;
-    const float yOffset = 0.06f;
+    const float halfAngle = attackAngle * 0.5f;
+    constexpr float yOffset = 0.06f;
 
-    std::vector<glm::vec3> fillVertices;
-    fillVertices.reserve(segments + 2);
+    std::vector<glm::vec3> fanVertices;
+    fanVertices.reserve(segments + 2);
 
-    fillVertices.emplace_back(center + up * yOffset);
-
-    for (int i = 0; i <= segments; i++) {
-        const float t = static_cast<float>(i) / static_cast<float>(segments);
-        const float angle = glm::mix(-halfAngle, halfAngle, t);
-
-        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + side * std::sin(angle));
-
-        fillVertices.emplace_back(center + dir * radius + up * yOffset);
-    }
-
-    DrawAttackRangeVertices(fillVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
-
-    const float thickness = 0.08f;
-    const float innerRadius = std::max(0.0f, radius - thickness);
-    const float outerRadius = radius;
-
-    std::vector<glm::vec3> arcVertices;
-    arcVertices.reserve((segments + 1) * 2);
+    fanVertices.emplace_back(center + up * yOffset);
 
     for (int i = 0; i <= segments; i++) {
         const float t = static_cast<float>(i) / static_cast<float>(segments);
         const float angle = glm::mix(-halfAngle, halfAngle, t);
 
-        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + side * std::sin(angle));
+        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
 
-        arcVertices.emplace_back(center + dir * outerRadius + up * yOffset);
-        arcVertices.emplace_back(center + dir * innerRadius + up * yOffset);
+        fanVertices.emplace_back(center + dir * attackRange + up * yOffset);
     }
 
-    DrawAttackRangeVertices(arcVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+
+    constexpr float thickness = 0.08f;
+    const float innerRadius = attackRange - thickness;
+    const float outerRadius = attackRange;
+
+    std::vector<glm::vec3> edgeVertices;
+    edgeVertices.reserve((segments + 1) * 2);
+
+    for (int i = 0; i <= segments; i++) {
+        const float t = static_cast<float>(i) / static_cast<float>(segments);
+        const float angle = glm::mix(-halfAngle, halfAngle, t);
+
+        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
+
+        edgeVertices.emplace_back(center + dir * outerRadius + up * yOffset);
+        edgeVertices.emplace_back(center + dir * innerRadius + up * yOffset);
+    }
+
+    DrawAttackRangeVertices(edgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+}
+
+void Renderer3D::DrawEnemyAttackRange(Enemy* enemy) const
+{
+    if (!enemy) {
+        return;
+    }
+
+    const float enemyAttackRange = enemy->GetAttackRange();
+
+    if (enemyAttackRange <= 0.0f) {
+        return;
+    }
+
+    const glm::vec3 center = enemy->GetPos();
+    const glm::vec3 up = enemy->GetUpVec();
+    const glm::vec3 forward = glm::normalize(enemy->GetFacingForwardVec());
+    const glm::vec3 left = glm::normalize(enemy->GetLeftVec());
+    const float enemyRadius = enemy->GetRadius() * enemy->GetScale().x;
+    const glm::vec3 start = center + forward * enemy->GetRadius();
+    const glm::vec3 end = start + forward * enemyAttackRange;
+
+    std::vector<glm::vec3> fanVertices;
+    fanVertices.reserve(4);
+
+    constexpr float yOffset = 0.56f;
+
+    fanVertices.emplace_back(start + left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(start + -left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(end + -left * enemyRadius + up * yOffset);
+
+    DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+
+    std::vector<glm::vec3> leftEdgeVertices;
+    constexpr float thickness = 0.08f;
+
+    leftEdgeVertices.emplace_back(start + left * enemyRadius + up * yOffset);
+    leftEdgeVertices.emplace_back(start + left * (enemyRadius - thickness) + up * yOffset);
+    leftEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    leftEdgeVertices.emplace_back(end + left * (enemyRadius - thickness) + up * yOffset);
+
+    DrawAttackRangeVertices(leftEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+
+    std::vector<glm::vec3> rightEdgeVertices;
+
+    rightEdgeVertices.emplace_back(start - left * enemyRadius + up * yOffset);
+    rightEdgeVertices.emplace_back(start - left * (enemyRadius - thickness) + up * yOffset);
+    rightEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
+    rightEdgeVertices.emplace_back(end - left * (enemyRadius - thickness) + up * yOffset);
+
+    DrawAttackRangeVertices(rightEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+
+    std::vector<glm::vec3> frontEdgeVertices;
+
+    frontEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - forward * thickness + left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - forward * thickness - left * enemyRadius + up * yOffset);
+
+    DrawAttackRangeVertices(frontEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 }
 
 void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode,

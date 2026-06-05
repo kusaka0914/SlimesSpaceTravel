@@ -13,7 +13,7 @@ class VertexArray;
 class Renderer {
 public:
     Renderer(Game* game);
-    ~Renderer();
+    virtual ~Renderer();
 
 protected:
     void RegisterTexture(const std::string& path, const std::string& name);

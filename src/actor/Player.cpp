@@ -95,8 +95,6 @@ Player::Player(Game* game)
 {
 }
 
-Player::~Player() {}
-
 void Player::Initialize()
 {
     mRestartPlanetIndex = mCurrentPlanetNum;
@@ -268,10 +266,10 @@ void Player::UpdateWorldVec()
     }
 
     projectedForward = glm::normalize(projectedForward);
-    glm::vec3 worldLeft = glm::normalize(glm::cross(mUpVec, projectedForward));
+    glm::vec3 baseLeft = glm::normalize(glm::cross(mUpVec, projectedForward));
 
     // 地面に沿った前方向を、mCameraYaw分だけmUpVec軸まわりに回転させる
-    mForwardVec = glm::normalize(projectedForward * std::cos(mCameraYaw) - worldLeft * std::sin(mCameraYaw));
+    mForwardVec = glm::normalize(projectedForward * std::cos(mCameraYaw) - baseLeft * std::sin(mCameraYaw));
     mLeftVec = glm::normalize(glm::cross(mUpVec, mForwardVec));
 }
 

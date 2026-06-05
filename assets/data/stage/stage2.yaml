@@ -1,168 +1,168 @@
 planets:
   - center: [0.0, 0.0, 0.0]
-    scale: [16.0, 16.0, 16.0]
-    color: [1.0, 1.0, 1.0, 1.0]
-    model: planet9.obj
-    shape : Normal
+    scale: [8.0, 8.0, 8.0]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    shape : Sphere
     rocketSpawnCondition: AllBoatPartsCollected
-  # - center: [0.0, 0.0, 0.0]
-  #   scale: [8.0, 10.0, 8.0]
-  #   color: [1.0, 0.0, 0.0, 1.0]
-  #   model: planet.obj
-  #   shape : Ellipse
-  #   rocketSpawnCondition: AllBoatPartsCollected
   - center: [32.0, 0.0, 0.0]
     scale: [4.0, 4.0, 4.0]
-    color: [1.0, 1.0, 1.0, 1.0]
+    color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
     shape : Sphere
     rocketSpawnCondition: AllEnemiesDead
   - center: [64.0, 0.0, 0.0]
     scale: [4.0, 4.0, 4.0]
-    color: [1.0, 1.0, 1.0, 1.0]
+    color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
     shape : Sphere
 
 enemies:
+  # - type: normal
+  #   theta: 0.0
+  #   phi: 0.0
+  #   height : 1.0
+  #   currentPlanetNum: 0
+
   - type: normal
-    pos: [0.0, 10.0, 5.0]
-    currentPlanetNum: 0
-  - type: normal
-    theta: 2.056
-    u: 1.0
-    height : 0.0
+    theta: 2.007195
+    phi: 0.675763
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.513
-    u: -0.6
-    height : 0.0
+    theta: -2.569516
+    phi: -0.316463
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.969
-    u: 0.8
-    height : 0.0
+    theta: 2.272954
+    phi: -0.612432
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 5.026
-    u: 1.6
-    height : 0.0
+    theta: 1.380324
+    phi: -0.528396
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 1.0
-    u: 0.0
-    height : 0.0
+    theta: 0.000000
+    phi: 1.000000
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.056
-    u: 1.0
-    height : 0.0
+    theta: 2.354361
+    phi: 0.060486
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 4.513
-    u: -0.6
-    height : 0.0
+    theta: -1.889650
+    phi: -0.998213
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 4.969
-    u: 0.8
-    height : 0.0
+    theta: 1.263585
+    phi: -0.856111
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 0.0
+    theta: 1.027116
+    phi: -0.135222
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.226
-    u: 1.6
-    height : 0.0
+    theta: 1.012932
+    phi: -0.030296
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.426
-    u: 1.6
-    height : 0.0
+    theta: 1.016786
+    phi: 0.075506
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.626
-    u: 1.6
-    height : 0.0
+    theta: 1.038777
+    phi: 0.179110
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.826
-    u: 1.6
-    height : 0.0
+    theta: 1.079417
+    phi: 0.277311
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 0.0
+    theta: 1.027116
+    phi: -0.135222
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.026
-    u: 1.6
-    height : 0.0
+    theta: 1.139365
+    phi: 0.366631
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 0.0
+    theta: 1.027116
+    phi: -0.135222
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.226
-    u: 1.6
-    height : 0.0
+    theta: 1.218886
+    phi: 0.443256
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.426
-    u: 1.6
-    height : 0.0
+    theta: 1.316993
+    phi: 0.503159
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 0.0
+    theta: 1.027116
+    phi: -0.135222
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.626
-    u: 1.6
-    height : 0.0
+    theta: 1.430467
+    phi: 0.542507
+    height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.826
-    u: 1.6
-    height : 0.0
+    theta: 1.553312
+    phi: 0.558355
+    height : 1.0
     currentPlanetNum: 1
+
   # ボス（撃破でスター出現）
   - type: boss
-    theta: 6.083
-    u: -0.8
+    theta: -0.684602
+    phi: -0.155907
     height : 0.0
-    currentPlanetNum: 2
+    currentPlanetNum: 0
 
 keys:
   - currentPlanetNum : 1
-    theta : 100.0
-    u : 0.0
-    height : 0.0
-  
+    theta : 0.000000
+    phi : -0.530965
+    height : 0.1
+
 crystals:
   - type: little
     currentPlanetNum : 0
-    theta : 79.7
-    u : 1.2
-    height : 0.0
+    theta : 1.891925
+    phi : -0.627311
+    height : 0.05
   - type: big
     currentPlanetNum : 0
-    theta : -0.35
-    u : 0.3
-    height : 0.5
+    theta : 0.309124
+    phi : -0.334648
+    height : 1.0
 
 boats:
-  - pos: [0.0, 4.0, -4.0]
+  - theta : 0.000000
+    phi : 0.000000
+    height : 0.0
     startPlanet : 0
     destPlanet : 1
-  - theta : 0.0
-    u : 0.0
+  - theta : 0.000000
+    phi : 0.000000
     height : 0.0
     startPlanet : 1
     destPlanet : 2
@@ -170,66 +170,66 @@ boats:
 boatParts:
   - type: parts1
     currentPlanetNum : 0
-    theta : 1.0
-    u : 0.0
+    theta : 0.000000
+    phi : 1.000000
     height : 0.0
+
   # - type: parts1
   #   currentPlanetNum : 0
-  #   theta : 2.4
-  #   u : -0.65
-  #   height : 4.0
+  #   pos: [-5.5, 12.8, -0.13]
   # - type: parts2
   #   currentPlanetNum : 0
-  #   theta : 19.45
-  #   u : 1.05
+  #   theta : 0.941427
+  #   phi : 0.460641
   #   height : 3.3
   # - type: parts3
   #   currentPlanetNum : 0
-  #   theta : 42.65
-  #   u : -0.8
-  #   height : 2.3
+  #   theta : -1.399908
+  #   phi : -0.884174
+  #   height : 3.3
   # - type: parts4
   #   currentPlanetNum : 0
-  #   theta : -0.35
-  #   u : 0.3
+  #   theta : 0.309124
+  #   phi : -0.334648
   #   height : 1.0
   # - type: parts5
   #   currentPlanetNum : 0
-  #   theta : 79.7
-  #   u : 1.2
+  #   theta : 1.891925
+  #   phi : -0.627311
+  #   height: 0.1
 
 players:
-  # - theta : 2.5
-  #   u : -0.35
-  #   currentPlanetNum: 0
-  # - theta : 1.7
-  #   u : 9.5
-  #   currentPlanetNum: 0
-  - pos: [0.0, 10.0, 5.0]
+  - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 0
-  
+  # - pos: [1.0, 9.5, 0.0]
+  #   currentPlanetNum: 0
+
 star:
   - currentPlanetNum : 2
+    modelPath: star.obj
 
 NPCs:
-  - theta : 2.7
-    u : -0.35
-    height : 0.0
-    facingYaw: 3.0
-    modelPath: spaceSlime.obj
+  - pos: [3.0, 7.5, -2.0]
+    type: spaceSlime
     name: BoatPartsNPC
-    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。,あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。,そこに行ってみたらどうだ？,隣の惑星に行くならそこらへんに落ちている\nロケットのパーツを拾ってロケットで行くんだな！]
-  - theta : 79.9
-    u : 1.2
-    height : 0.0
-    facingYaw: 3.0
-    modelPath: spaceSlime.obj
-    name: CrystalNPC
-    talkTexts: [これはクリスタル！\nXで攻撃して壊せるよ！,中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
-  - theta : -0.55
-    u : 0.3
-    height : 0.0
-    facingYaw: 3.0
-    modelPath: spaceSlime.obj
-    name: BigCrystalNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！,空中溜め攻撃はジャンプしてX長押し！\n溜まったらXを離して！]
+    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。,あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。,そこに行ってみたらどうだ？,隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
+  - pos: [-3.06, -3.69, 6.3]
+    type: spaceSlime
+    name: CrystalTutorialNPC
+    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！,中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
+  - pos: [7.14, -3.41, -0.08]
+    type: spaceSlime
+    name: BigCrystalTutorialNPC
+    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！,空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！]
+  - pos: [-6.95, -3.7, 1.01]
+    type: spaceSlime
+    name: JumpDodgeTutorialNPC
+    talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
+  - pos: [-1.35, 4.0, 6.8]
+    type: spaceSlime
+    name: JumpTutorialNPC
+    talkTexts: [高い足場に乗りたい時はジャンプ！]
+  - pos: [-3.62, 6.6, 2.51]
+    type: spaceSlime
+    name: WallTutorialNPC
+    talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]

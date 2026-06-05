@@ -149,7 +149,9 @@ void Enemy::TryStartPreparingAttack()
 
 void Enemy::UpdatePreparingAttack(float deltaTime)
 {
-    UpdateFacingVec();
+    if (!mIsJustBeforeAttack) {
+        UpdateFacingVec();
+    }
 
     mStandByAttackTimer -= deltaTime;
 

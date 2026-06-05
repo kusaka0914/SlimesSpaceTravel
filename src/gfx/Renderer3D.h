@@ -53,6 +53,7 @@ private:
 
     void DrawActor(Actor* actor, bool useOrient) const;
     void DrawAttackRange(Player* player) const;
+    void DrawEnemyAttackRange(Enemy* enemy) const;
     void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
     void DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const;
     void DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const;

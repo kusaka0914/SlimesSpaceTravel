@@ -15,7 +15,10 @@
 #include <glm/glm.hpp>
 #include <iostream>
 
-ActorLoadSystem::ActorLoadSystem(Game* game) : mGame(game) {}
+ActorLoadSystem::ActorLoadSystem(Game* game)
+    : mGame(game)
+{
+}
 
 void ActorLoadSystem::LoadData(bool isLoadPlayer)
 {
@@ -646,9 +649,9 @@ glm::vec3 ActorLoadSystem::CalculatePos(YAML::Node node, Planet* currentPlanet)
     }
 
     float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-    float u = node["u"] ? node["u"].as<float>() : 0.0f;
+    float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
     float height = node["height"] ? node["height"].as<float>() : 0.0f;
-    glm::vec3 dir(std::cos(theta), std::sin(theta), u);
+    glm::vec3 dir(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta));
     float len = glm::length(dir);
     if (len < 1e-6f)
         dir = glm::vec3(1.0f, 0.0f, 0.0f);

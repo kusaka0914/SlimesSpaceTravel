@@ -81,15 +81,15 @@ glm::mat4 CameraSystem::GetPlayerView(Player* player, float cameraDistance, bool
 glm::mat4 CameraSystem::GetFocusView(Actor* focusActor) const
 {
     const glm::vec3 upVec = focusActor->GetUpVec();
-    glm::vec3 worldLeft = glm::cross(upVec, glm::vec3(0, 0, 1));
+    glm::vec3 baseLeft = glm::cross(upVec, glm::vec3(0, 0, 1));
 
-    if (glm::length(worldLeft) < 0.01f) {
-        worldLeft = glm::normalize(glm::cross(upVec, glm::vec3(0, 1, 0)));
+    if (glm::length(baseLeft) < 0.01f) {
+        baseLeft = glm::normalize(glm::cross(upVec, glm::vec3(0, 1, 0)));
     } else
-        worldLeft = glm::normalize(worldLeft);
+        baseLeft = glm::normalize(baseLeft);
 
     const glm::vec3 forwardVec =
-        glm::normalize(glm::cross(worldLeft, upVec) * std::cos(0.6f) - std::sin(0.6f) * worldLeft);
+        glm::normalize(glm::cross(baseLeft, upVec) * std::cos(0.6f) - std::sin(0.6f) * baseLeft);
     const glm::vec3 back = glm::normalize(-forwardVec);
     const glm::vec3 cameraDir = glm::normalize(std::cos(-0.5f) * back + std::sin(-0.5f) * upVec);
 

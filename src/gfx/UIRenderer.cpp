@@ -9,7 +9,8 @@
 #include "system/SceneSystem.h"
 #include <glm/gtc/type_ptr.hpp>
 
-UIRenderer::UIRenderer(Game* game) : Renderer(game)
+UIRenderer::UIRenderer(Game* game)
+    : Renderer(game)
 {
     Initialize();
 }
@@ -486,8 +487,8 @@ void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    mVertexArrays.at("text")->SetActive();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    mVertexArrays.at("quad")->SetActive();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 void UIRenderer::DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase, glm::vec4 color)
@@ -581,8 +582,8 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
 
-    mVertexArrays.at("text")->SetActive();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    mVertexArrays.at("quad")->SetActive();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDeleteTextures(1, &tex);
 }
@@ -606,9 +607,8 @@ void UIRenderer::DrawTexture(float x, float y, float width, float height, const 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glActiveTexture(GL_TEXTURE0);
 
-    const GLuint tex = mTextures.at(textureName);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindTexture(GL_TEXTURE_2D, mTextures.at(textureName));
 
-    mVertexArrays.at("text")->SetActive();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    mVertexArrays.at("quad")->SetActive();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

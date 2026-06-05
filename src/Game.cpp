@@ -76,7 +76,7 @@ bool Game::InitializeGLFW()
     //     mWindow = glfwCreateWindow(mode->width, mode->height, "Engine",
     //     monitor, nullptr);
 
-    mWindow = glfwCreateWindow(800, 450, "Slime'sSkyTravel", nullptr, nullptr);
+    mWindow = glfwCreateWindow(800, 450, "Slime'sSpaceTravel", nullptr, nullptr);
     if (!mWindow) {
         // std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();

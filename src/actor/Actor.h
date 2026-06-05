@@ -13,7 +13,7 @@ class Planet;
 class Actor {
 public:
     Actor(Game* game);
-    ~Actor();
+    virtual ~Actor();
 
     virtual void Initialize();
 

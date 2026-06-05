@@ -89,7 +89,7 @@ void Boat::UpdateMovement(float deltaTime)
 
     constexpr float transitionDuration = 3.0f;
     const float t = glm::min(1.0f, mTransitionTimer / transitionDuration);
-    mProgress = t * t * (3.0f - 2.0f * t);
+    mProgress = glm::smoothstep(0.0f, 1.0f, t);
 
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
 }

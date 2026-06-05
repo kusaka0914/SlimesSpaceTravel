@@ -20,147 +20,149 @@ planets:
 enemies:
   # - type: normal
   #   theta: 0.0
-  #   u: 0.0
+  #   phi: 0.0
   #   height : 1.0
   #   currentPlanetNum: 0
+
   - type: normal
-    theta: 2.056
-    u: 1.0
+    theta: 2.007195
+    phi: 0.675763
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.513
-    u: -0.6
+    theta: -2.569516
+    phi: -0.316463
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.969
-    u: 0.8
+    theta: 2.272954
+    phi: -0.612432
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 5.026
-    u: 1.6
+    theta: 1.380324
+    phi: -0.528396
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 1.0
-    u: 0.0
+    theta: 0.000000
+    phi: 1.000000
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 3.056
-    u: 1.0
+    theta: 2.354361
+    phi: 0.060486
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 4.513
-    u: -0.6
+    theta: -1.889650
+    phi: -0.998213
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 4.969
-    u: 0.8
+    theta: 1.263585
+    phi: -0.856111
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
+    theta: 1.027116
+    phi: -0.135222
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.226
-    u: 1.6
+    theta: 1.012932
+    phi: -0.030296
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.426
-    u: 1.6
+    theta: 1.016786
+    phi: 0.075506
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.626
-    u: 1.6
+    theta: 1.038777
+    phi: 0.179110
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.826
-    u: 1.6
+    theta: 1.079417
+    phi: 0.277311
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
+    theta: 1.027116
+    phi: -0.135222
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.026
-    u: 1.6
+    theta: 1.139365
+    phi: 0.366631
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
+    theta: 1.027116
+    phi: -0.135222
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.226
-    u: 1.6
+    theta: 1.218886
+    phi: 0.443256
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.426
-    u: 1.6
+    theta: 1.316993
+    phi: 0.503159
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
+    theta: 1.027116
+    phi: -0.135222
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.626
-    u: 1.6
+    theta: 1.430467
+    phi: 0.542507
     height : 1.0
     currentPlanetNum: 1
   - type: normal
-    theta: 7.826
-    u: 1.6
+    theta: 1.553312
+    phi: 0.558355
     height : 1.0
     currentPlanetNum: 1
+
   # ボス（撃破でスター出現）
   - type: boss
-    theta: 6.083
-    u: -0.8
+    theta: -0.684602
+    phi: -0.155907
     height : 0.0
     currentPlanetNum: 0
 
 keys:
   - currentPlanetNum : 1
-    theta : 100.0
-    u : 0.0
+    theta : 0.000000
+    phi : -0.530965
     height : 0.1
-  
+
 crystals:
   - type: little
     currentPlanetNum : 0
-    theta : 79.7
-    u : 1.2
+    theta : 1.891925
+    phi : -0.627311
     height : 0.05
   - type: big
     currentPlanetNum : 0
-    theta : -0.35
-    u : 0.3
+    theta : 0.309124
+    phi : -0.334648
     height : 1.0
 
 boats:
-  - theta : 0.0
-    u : 0.0
+  - theta : 0.000000
+    phi : 0.000000
     height : 0.0
     startPlanet : 0
     destPlanet : 1
-  - theta : 0.0
-    u : 0.0
+  - theta : 0.000000
+    phi : 0.000000
     height : 0.0
     startPlanet : 1
     destPlanet : 2
@@ -168,31 +170,32 @@ boats:
 boatParts:
   - type: parts1
     currentPlanetNum : 0
-    theta : 1.0
-    u : 0.0
+    theta : 0.000000
+    phi : 1.000000
     height : 0.0
+
   # - type: parts1
   #   currentPlanetNum : 0
   #   pos: [-5.5, 12.8, -0.13]
   # - type: parts2
   #   currentPlanetNum : 0
-  #   theta : 19.55
-  #   u : 1.05
+  #   theta : 0.941427
+  #   phi : 0.460641
   #   height : 3.3
   # - type: parts3
   #   currentPlanetNum : 0
-  #   theta : 42.55
-  #   u : -0.8
+  #   theta : -1.399908
+  #   phi : -0.884174
   #   height : 3.3
   # - type: parts4
   #   currentPlanetNum : 0
-  #   theta : -0.35
-  #   u : 0.3
+  #   theta : 0.309124
+  #   phi : -0.334648
   #   height : 1.0
   # - type: parts5
   #   currentPlanetNum : 0
-  #   theta : 79.7
-  #   u : 1.2
+  #   theta : 1.891925
+  #   phi : -0.627311
   #   height: 0.1
 
 players:
@@ -200,7 +203,7 @@ players:
     currentPlanetNum: 0
   # - pos: [1.0, 9.5, 0.0]
   #   currentPlanetNum: 0
-  
+
 star:
   - currentPlanetNum : 2
     modelPath: star.obj

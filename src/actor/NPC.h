@@ -9,7 +9,6 @@ class Player;
 class NPC : public CharacterActor {
 public:
     NPC(Game* game);
-    ~NPC();
 
     void UpdateActor(float deltaTime) override;
 
