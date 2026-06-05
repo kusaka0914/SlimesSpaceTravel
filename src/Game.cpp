@@ -35,7 +35,8 @@ Game::Game()
       mUIReloadKeyPressedPrev(false),
       mAPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/stage1.yaml")
+      mCurrentStageYamlPath("../assets/data/stage/stage1.yaml"),
+      mIsDebugMode(false)
 {
 }
 
@@ -216,7 +217,7 @@ void Game::ProcessGameInput()
 
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
     if (pPressed && !mPPressedPrev) {
-        mUIRenderer->FlipIsDebugMode();
+        mIsDebugMode = !mIsDebugMode;
     }
     mPPressedPrev = pPressed;
 
@@ -265,6 +266,10 @@ void Game::UpdateGame()
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
+        return;
+    }
+
+    if (mIsDebugMode) {
         return;
     }
 

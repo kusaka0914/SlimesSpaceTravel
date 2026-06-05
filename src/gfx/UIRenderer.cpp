@@ -15,8 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 UIRenderer::UIRenderer(Game* game)
-    : Renderer(game),
-      mIsDebugMode(false)
+    : Renderer(game)
 {
     Initialize();
 }
@@ -106,7 +105,7 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
-    if (mIsDebugMode) {
+    if (mGame->GetIsDebugMode()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

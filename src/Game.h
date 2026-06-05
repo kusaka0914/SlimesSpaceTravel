@@ -72,6 +72,7 @@ public:
     Stage* GetCurrentStage() const { return mCurrentStage; }
     int GetCurrentStageNum() const { return mCurrentStageNum; }
     const std::string& GetCurrentStageYamlPath() const { return mCurrentStageYamlPath; }
+    bool GetIsDebugMode() const { return mIsDebugMode; }
 
     AudioSystem* GetAudioSystem() const { return mAudioSystem.get(); }
     PhysicsSystem* GetPhysicsSystem() const { return mPhysicsSystem.get(); }
@@ -138,6 +139,7 @@ private:
     bool mZLPressedPrev = false;
     bool mStartPressedPrev = false;
     bool mIsPlayer2Joined = false;
+    bool mIsDebugMode;
 
     std::string mCurrentStageYamlPath;
 };

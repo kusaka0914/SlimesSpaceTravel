@@ -27,6 +27,8 @@ public:
     void OnBoatPartsObtained();
     void OnEnemyDead();
 
+    glm::vec3 CalculateSurfacePos(float theta, float phi, float height) const;
+
     void AddEnemy(Enemy* enemy) { mEnemies.emplace_back(enemy); }
     void AddBoat(Boat* boat) { mBoats.emplace_back(boat); }
     void AddBoatParts(BoatParts* boatParts) { mBoatParts.emplace_back(boatParts); }

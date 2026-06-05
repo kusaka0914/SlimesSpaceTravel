@@ -4,11 +4,13 @@
 
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Boat.h"
+#include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
-#include "actor/Planet.h"
+#include "actor/Key.h"
+#include "actor/NPC.h"
 #include "actor/Player.h"
-#include "imgui.h"
 #include "system/CameraSystem.h"
 #include "system/UILoadSystem.h"
 
@@ -31,6 +33,7 @@ void DebugUIRenderer::Draw()
     DrawPlayer();
     DrawEnemies();
     DrawCamera();
+    DrawStagePlacement();
     DrawUI();
     // DrawStage1();
     // DrawDebugDrawSettings();
@@ -563,6 +566,132 @@ void DebugUIRenderer::DrawUI()
     if (ImGui::Button("UI設定を保存する")) {
         uiLoadSystem->SaveUIInfo(filePath);
     }
+}
+
+void DebugUIRenderer::DrawStagePlacement()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    if (!ImGui::CollapsingHeader("ステージ配置")) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    std::vector<Enemy*> enemies;
+    std::vector<Crystal*> crystals;
+    std::vector<Boat*> boats;
+    std::vector<BoatParts*> boatParts;
+    std::vector<NPC*> npcs;
+    std::vector<Key*> keys;
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            enemies.emplace_back(enemy);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            crystals.emplace_back(crystal);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            boats.emplace_back(boat);
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            boatParts.emplace_back(part);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            npcs.emplace_back(npc);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            keys.emplace_back(key);
+        }
+    }
+
+    if (ImGui::Button("ステージ配置を保存する")) {
+        SaveStagePlacementYaml();
+    }
+
+    ImGui::Separator();
+
+    DrawSphericalActorList("敵", "enemies", enemies);
+    DrawSphericalActorList("キー", "keys", keys);
+    DrawSphericalActorList("ボート", "boats", boats);
+    DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);
+    DrawSphericalActorList("クリスタル", "crystals", crystals);
+    DrawSphericalActorList("NPC", "NPCs", npcs);
+}
+
+void DebugUIRenderer::SaveStagePlacementYaml()
+{
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    std::vector<Enemy*> enemies;
+    std::vector<Crystal*> crystals;
+    std::vector<Boat*> boats;
+    std::vector<BoatParts*> boatParts;
+    std::vector<NPC*> npcs;
+    std::vector<Key*> keys;
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            enemies.emplace_back(enemy);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            crystals.emplace_back(crystal);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            boats.emplace_back(boat);
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            boatParts.emplace_back(part);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            npcs.emplace_back(npc);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            keys.emplace_back(key);
+        }
+    }
+
+    SaveSphericalActors(config, "enemies", enemies);
+    SaveSphericalActors(config, "keys", keys);
+    SaveSphericalActors(config, "boats", boats);
+    SaveSphericalActors(config, "boatParts", boatParts);
+    SaveSphericalActors(config, "crystals", crystals);
+    SaveSphericalActors(config, "NPCs", npcs);
+
+    SaveYamlFile(filePath, config);
 }
 
 // void DebugUIRenderer::DrawStage1()
