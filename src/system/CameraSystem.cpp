@@ -19,12 +19,53 @@ CameraSystem::CameraSystem(Game* game)
       mCameraUpVec(0.0f, 1.0f, 0.0f),
       mCameraTargetPos(0.0f),
       mCameraPos(0.0f),
-      mIsTargetFocus(false)
+      mIsTargetFocus(false),
+      mMoveForward(0.0f),
+      mMoveRight(0.0f),
+      mMoveUp(0.0f),
+      mDebugCameraPitch(0.0f),
+      mDebugCameraYaw(0.0f),
+      mDebugYawInput(0.0f),
+      mDebugPitchInput(0.0f)
 {
 }
 
 void CameraSystem::ProcessInput()
 {
+    if (mGame->GetIsFreeCameraMode()) {
+        GLFWwindow* window = mGame->GetWindow();
+        mMoveForward = 0.0f;
+        mMoveRight = 0.0f;
+        mMoveUp = 0.0f;
+        mDebugYawInput = 0.0f;
+        mDebugPitchInput = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            mMoveForward += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            mMoveForward -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            mMoveRight -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            mMoveRight += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+            mMoveUp += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+            mMoveUp -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            mDebugYawInput += 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            mDebugYawInput -= 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            mDebugPitchInput += 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            mDebugPitchInput -= 1.0f;
+        }
+        return;
+    }
+
     SDL_GameController* sdlController = mGame->GetSdlController();
     constexpr float deadZone = 0.25f;
     constexpr float scale =
@@ -45,6 +86,29 @@ void CameraSystem::Update(float deltaTime)
 
 void CameraSystem::UpdateCamera(float deltaTime)
 {
+    if (mGame->GetIsFreeCameraMode()) {
+        constexpr float rotateSpeed = 2.0f;
+        mDebugCameraYaw += mDebugYawInput * rotateSpeed * deltaTime;
+        mDebugCameraPitch += mDebugPitchInput * rotateSpeed * deltaTime;
+
+        glm::vec3 forward;
+        forward.x = std::cos(mDebugCameraPitch) * std::sin(mDebugCameraYaw);
+        forward.y = std::sin(mDebugCameraPitch);
+        forward.z = std::cos(mDebugCameraPitch) * std::cos(mDebugCameraYaw);
+        forward = glm::normalize(forward);
+
+        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+        const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        constexpr float moveSpeed = 10.0f;
+        mCameraPos += forward * mMoveForward * moveSpeed * deltaTime + right * mMoveRight * moveSpeed * deltaTime +
+                      up * mMoveUp * moveSpeed * deltaTime;
+
+        mCameraUpVec = up;
+        mCameraTargetPos = mCameraPos + forward;
+
+        return;
+    }
     constexpr float cameraSensitivity = 2.5f;
 
     const float yawDelta = mCameraStickX * cameraSensitivity * deltaTime;
@@ -151,9 +215,22 @@ glm::mat4 CameraSystem::GetFocusView(Actor* focusActor) const
     return glm::lookAt(cameraPos, ownerPos, upVec);
 }
 
+glm::mat4 CameraSystem::GetDebugCameraView()
+{
+    return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
+}
+
 std::vector<glm::mat4> CameraSystem::GetViews()
 {
     std::vector<glm::mat4> views;
+
+    if (mGame->GetIsFreeCameraMode()) {
+        views.push_back(GetDebugCameraView());
+        if (!views.empty()) {
+            return views;
+        }
+    }
+
     if (mGame->GetSceneSystem()->IsOpening()) {
         views = GetOpeningViews();
         if (!views.empty()) {

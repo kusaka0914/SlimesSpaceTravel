@@ -61,6 +61,17 @@ public:
     float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2); }
     float GetStandByAttackTimer() const { return mStandByAttackTimer; }
 
+    int GetBreakCountMax() const { return mBreakCountMax; }
+
+    float GetDetectionRange() const { return mDetectionRange; }
+    float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
+    float GetAttackSpeed() const { return mAttackSpeed; }
+
+    float GetDefaultStandByAttackTimer() const { return mDefaultStandByAttackTimer; }
+    float GetDefaultLaunchedTimer() const { return mDefaultLaunchedTimer; }
+    float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
+
 private:
     void UpdateAlive(float deltaTime);
     void UpdateDying(float deltaTime);

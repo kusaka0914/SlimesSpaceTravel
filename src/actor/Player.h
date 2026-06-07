@@ -41,7 +41,6 @@ public:
     void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
     void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
 
-    void SetCameraPitch(float cameraPitch) { mCameraPitch = cameraPitch; }
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
     void SetAttack(float attack) { mAttack = attack; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
@@ -101,6 +100,44 @@ public:
     float GetAttackAngle() const { return mAttackAngle; }
     float GetRayCastTimer() const { return mRayCastTimer; }
     float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetCameraYaw() const { return mCameraYaw; }
+
+    float GetAttackSpeed() const { return mAttackSpeed; }
+    float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
+
+    float GetMaxHp() const { return mMaxHp; }
+
+    float GetDefaultDamageTimer() const { return mDefaultDamageTimer; }
+
+    float GetAttackCooldown() const { return mAttackCooldown; }
+    float GetLastAttackCooldown() const { return mLastAttackCooldown; }
+    float GetDefaultAttackPressTimer() const { return mDefaultAttackPressTimer; }
+
+    float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
+
+    float GetDodgeDuration() const { return mDodgeDuration; }
+    float GetDodgeCooldownTime() const { return mDodgeCooldownTime; }
+    float GetDodgeDistance() const { return mDodgeDistance; }
+
+    float GetDefaultInvincibleTimer() const { return mDefaultInvincibleTimer; }
+
+    float GetNormalAttackRange() const { return mNormalAttackRange; }
+    float GetNormalAttackAngle() const { return mNormalAttackAngle; }
+    float GetNormalAttack() const { return mNormalAttack; }
+
+    float GetWideAttackRange() const { return mWideAttackRange; }
+    float GetWideAttackAngle() const { return mWideAttackAngle; }
+    float GetWideAttack() const { return mWideAttack; }
+
+    float GetStrongAttackRange() const { return mStrongAttackRange; }
+    float GetStrongAttack() const { return mStrongAttack; }
+    float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
+
+    float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
+    float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
+
+    float GetInputAvailableTimer() const { return mInputAvailableTimer; }
+    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
 
     ActionState GetActionState() const { return mActionState; }
 
@@ -194,7 +231,6 @@ private:
     int mJewelCount;
 
     float mCameraYaw;
-    float mCameraPitch;
     float mMoveForward;
     float mMoveLeft;
     float mAttackStartHeight;

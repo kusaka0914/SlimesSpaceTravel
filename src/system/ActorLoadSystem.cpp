@@ -76,9 +76,6 @@ void ActorLoadSystem::LoadPlayers(const char* path)
             float attack = playerNode["attack"] ? playerNode["attack"].as<float>() : 0.0f;
             player->SetAttack(attack);
 
-            float cameraPitch = playerNode["cameraPitch"] ? playerNode["cameraPitch"].as<float>() : 0.0f;
-            player->SetCameraPitch(cameraPitch);
-
             float moveSpeed = playerNode["moveSpeed"] ? playerNode["moveSpeed"].as<float>() : 0.0f;
             player->SetMoveSpeed(moveSpeed);
 
@@ -174,11 +171,22 @@ void ActorLoadSystem::LoadPlayers(const char* path)
 void ActorLoadSystem::LoadNPCs(const char* path)
 {
     YAML::Node root = YAML::LoadFile(path);
+
     if (!root["NPCs"] || !root["NPCs"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'NPCs' sequence" << std::endl;
         return;
     }
-    for (const YAML::Node& node : root["NPCs"]) {
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveAllNPCs();
+        }
+    }
+
+    YAML::Node npcsNode = root["NPCs"];
+
+    for (std::size_t i = 0; i < npcsNode.size(); ++i) {
+        YAML::Node node = npcsNode[i];
+
         std::unique_ptr<NPC> npc = std::make_unique<NPC>(mGame);
 
         float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
@@ -201,10 +209,26 @@ void ActorLoadSystem::LoadNPCs(const char* path)
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         npc->SetCurrentPlanet(currentPlanet);
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
-        npc->SetPos(pos);
+        if (node["theta"] && node["phi"] && node["height"]) {
+            float theta = node["theta"].as<float>();
+            float phi = node["phi"].as<float>();
+            float height = node["height"].as<float>();
+
+            npc->SetSphericalPlacement(theta, phi, height);
+            npc->SetStageYamlIndex(static_cast<int>(i));
+
+            glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
+            npc->SetPos(pos);
+        } else {
+            glm::vec3 pos = CalculatePos(node, currentPlanet);
+            npc->SetPos(pos);
+
+            // pos形式のNPCはtheta/phi/height編集対象にしない
+            npc->SetStageYamlIndex(static_cast<int>(i));
+        }
 
         std::string type = node["type"] ? node["type"].as<std::string>() : "";
+
         YAML::Node npcRoot = YAML::LoadFile("../assets/data/actor/npcs.yaml");
         for (auto npcNode : npcRoot["npcs"]) {
             if (type != npcNode["type"].as<std::string>()) {
@@ -218,39 +242,53 @@ void ActorLoadSystem::LoadNPCs(const char* path)
             npc->SetScale(glm::vec3(scale));
         }
 
-        NPC* npc_ptr = npc.get();
+        NPC* npcPtr = npc.get();
         mGame->AddActor(std::move(npc));
-        currentPlanet->AddNPC(npc_ptr);
+        currentPlanet->AddNPC(npcPtr);
     }
 }
 
 void ActorLoadSystem::LoadEnemies(const char* path)
 {
-    int currentPlanetNum = 0;
     YAML::Node root = YAML::LoadFile(path);
+
     if (!root["enemies"] || !root["enemies"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'enemies' sequence" << std::endl;
         return;
     }
-    for (const YAML::Node& node : root["enemies"]) {
-        currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
-        Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
-        currentPlanet->RemoveAllEnemy();
+
+    // まず全Planetから敵を削除
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveAllEnemy();
+        }
     }
 
-    for (const YAML::Node& node : root["enemies"]) {
+    YAML::Node enemiesNode = root["enemies"];
+
+    for (std::size_t i = 0; i < enemiesNode.size(); ++i) {
+        YAML::Node node = enemiesNode[i];
+
         std::unique_ptr<Enemy> enemy = std::make_unique<Enemy>(mGame);
 
-        currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
+        int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         enemy->SetCurrentPlanet(currentPlanet);
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
+        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+        float height = node["height"] ? node["height"].as<float>() : 0.0f;
+
+        enemy->SetSphericalPlacement(theta, phi, height);
+        enemy->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
         enemy->SetPos(pos);
 
         std::string type = node["type"] ? node["type"].as<std::string>() : "";
-        if (type == "boss")
+        if (type == "boss") {
             enemy->SetIsBoss(true);
+        }
+
         YAML::Node enemyRoot = YAML::LoadFile("../assets/data/actor/enemies.yaml");
         for (auto enemyNode : enemyRoot["enemies"]) {
             if (enemyNode["type"].as<std::string>() == "common") {
@@ -263,11 +301,13 @@ void ActorLoadSystem::LoadEnemies(const char* path)
 
                 float detectionRange = enemyNode["detectionRange"] ? enemyNode["detectionRange"].as<float>() : 0.0f;
                 enemy->SetDetectionRange(detectionRange);
+
                 continue;
             }
 
-            if (type != enemyNode["type"].as<std::string>())
+            if (type != enemyNode["type"].as<std::string>()) {
                 continue;
+            }
 
             float hp = enemyNode["hp"] ? enemyNode["hp"].as<float>() : 80.0f;
             enemy->SetHp(hp);
@@ -304,9 +344,9 @@ void ActorLoadSystem::LoadEnemies(const char* path)
             enemy->SetAttackSpeed(attackSpeed);
         }
 
-        Enemy* enemy_ptr = enemy.get();
+        Enemy* enemyPtr = enemy.get();
         mGame->AddActor(std::move(enemy));
-        currentPlanet->AddEnemy(enemy_ptr);
+        currentPlanet->AddEnemy(enemyPtr);
     }
 }
 
@@ -377,19 +417,23 @@ void ActorLoadSystem::LoadPlanets(const char* path)
 
 void ActorLoadSystem::LoadBoats(const char* path)
 {
-    int currentPlanetNum = 0;
     YAML::Node root = YAML::LoadFile(path);
+
     if (!root["boats"] || !root["boats"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'boats' sequence" << std::endl;
         return;
     }
-    for (const YAML::Node& node : root["boats"]) {
-        currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
-        Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
-        currentPlanet->RemoveAllBoat();
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveAllBoat();
+        }
     }
 
-    for (auto node : root["boats"]) {
+    YAML::Node boatsNode = root["boats"];
+
+    for (std::size_t i = 0; i < boatsNode.size(); ++i) {
+        YAML::Node node = boatsNode[i];
+
         std::unique_ptr<Boat> boat = std::make_unique<Boat>(mGame);
 
         int startPlanetNum = node["startPlanet"] ? node["startPlanet"].as<int>() : 0;
@@ -406,7 +450,14 @@ void ActorLoadSystem::LoadBoats(const char* path)
         float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
         boat->SetFacingYaw(facingYaw);
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
+        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+        float height = node["height"] ? node["height"].as<float>() : 0.0f;
+
+        boat->SetSphericalPlacement(theta, phi, height);
+        boat->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
         boat->SetPos(pos);
 
         YAML::Node boatRoot = YAML::LoadFile("../assets/data/actor/boats.yaml");
@@ -419,79 +470,106 @@ void ActorLoadSystem::LoadBoats(const char* path)
         }
 
         boat->Initialize();
-        Boat* boat_ptr = boat.get();
+
+        Boat* boatPtr = boat.get();
         mGame->AddActor(std::move(boat));
-        currentPlanet->AddBoat(boat_ptr);
+        currentPlanet->AddBoat(boatPtr);
     }
 }
 
 void ActorLoadSystem::LoadBoatParts(const char* path)
 {
-    int currentPlanetNum = 0;
     YAML::Node root = YAML::LoadFile(path);
+
     if (!root["boatParts"] || !root["boatParts"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'boatParts' sequence" << std::endl;
         return;
     }
-    for (const YAML::Node& node : root["boatParts"]) {
-        currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
-        Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
-        currentPlanet->RemoveAllBoatParts();
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveAllBoatParts();
+        }
     }
 
-    for (auto node : root["boatParts"]) {
+    YAML::Node boatPartsNode = root["boatParts"];
+
+    for (std::size_t i = 0; i < boatPartsNode.size(); ++i) {
+        YAML::Node node = boatPartsNode[i];
+
         std::unique_ptr<BoatParts> boatParts = std::make_unique<BoatParts>(mGame);
 
         int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         boatParts->SetCurrentPlanet(currentPlanet);
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
+        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+        float height = node["height"] ? node["height"].as<float>() : 0.0f;
+
+        boatParts->SetSphericalPlacement(theta, phi, height);
+        boatParts->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
         boatParts->SetPos(pos);
 
         std::string type = node["type"] ? node["type"].as<std::string>() : "";
+
         YAML::Node boatPartsRoot = YAML::LoadFile("../assets/data/actor/boatparts.yaml");
-        for (auto boatPartsNode : boatPartsRoot["boatParts"]) {
-            if (boatPartsNode["type"].as<std::string>() == "common") {
-                float scale = boatPartsNode["scale"] ? boatPartsNode["scale"].as<float>() : 0.25f;
+        for (auto boatPartsInfoNode : boatPartsRoot["boatParts"]) {
+            if (boatPartsInfoNode["type"].as<std::string>() == "common") {
+                float scale = boatPartsInfoNode["scale"] ? boatPartsInfoNode["scale"].as<float>() : 0.25f;
                 boatParts->SetScale(glm::vec3(scale));
             }
 
-            if (type != boatPartsNode["type"].as<std::string>())
+            if (type != boatPartsInfoNode["type"].as<std::string>()) {
                 continue;
-            std::string modelPath = boatPartsNode["modelPath"] ? boatPartsNode["modelPath"].as<std::string>() : "";
+            }
+
+            std::string modelPath =
+                boatPartsInfoNode["modelPath"] ? boatPartsInfoNode["modelPath"].as<std::string>() : "";
             boatParts->SetModelPath(modelPath);
         }
 
-        BoatParts* boatParts_ptr = boatParts.get();
+        BoatParts* boatPartsPtr = boatParts.get();
         mGame->AddActor(std::move(boatParts));
-        currentPlanet->AddBoatParts(boatParts_ptr);
+        currentPlanet->AddBoatParts(boatPartsPtr);
         currentPlanet->Initialize();
     }
 }
 
 void ActorLoadSystem::LoadKeys(const char* path)
 {
-    int currentPlanetNum = 0;
     YAML::Node root = YAML::LoadFile(path);
+
     if (!root["keys"] || !root["keys"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'keys' sequence" << std::endl;
         return;
     }
-    for (const YAML::Node& node : root["keys"]) {
-        currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
-        Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
-        currentPlanet->RemoveKey();
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveKey();
+        }
     }
 
-    for (auto node : root["keys"]) {
+    YAML::Node keysNode = root["keys"];
+
+    for (std::size_t i = 0; i < keysNode.size(); ++i) {
+        YAML::Node node = keysNode[i];
+
         std::unique_ptr<Key> key = std::make_unique<Key>(mGame);
 
         int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         key->SetCurrentPlanet(currentPlanet);
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
+        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+        float height = node["height"] ? node["height"].as<float>() : 0.0f;
+
+        key->SetSphericalPlacement(theta, phi, height);
+        key->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
         key->SetPos(pos);
 
         YAML::Node keyRoot = YAML::LoadFile("../assets/data/actor/keys.yaml");
@@ -503,9 +581,9 @@ void ActorLoadSystem::LoadKeys(const char* path)
             key->SetScale(glm::vec3(scale));
         }
 
-        Key* key_ptr = key.get();
+        Key* keyPtr = key.get();
         mGame->AddActor(std::move(key));
-        currentPlanet->SetKey(key_ptr);
+        currentPlanet->SetKey(keyPtr);
     }
 }
 
@@ -523,7 +601,11 @@ void ActorLoadSystem::LoadCrystals(const char* path)
         currentPlanet->RemoveAllCrystals();
     }
 
-    for (auto node : root["crystals"]) {
+    YAML::Node crystalsNode = root["crystals"];
+
+    for (std::size_t i = 0; i < crystalsNode.size(); ++i) {
+        YAML::Node node = crystalsNode[i];
+
         std::unique_ptr<Crystal> crystal = std::make_unique<Crystal>(mGame);
 
         int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
@@ -531,6 +613,7 @@ void ActorLoadSystem::LoadCrystals(const char* path)
         crystal->SetCurrentPlanet(currentPlanet);
 
         std::string type = node["type"] ? node["type"].as<std::string>() : "";
+
         YAML::Node crystalRoot = YAML::LoadFile("../assets/data/actor/crystals.yaml");
         for (auto crystalNode : crystalRoot["crystals"]) {
             if (crystalNode["type"].as<std::string>() == "common") {
@@ -539,8 +622,9 @@ void ActorLoadSystem::LoadCrystals(const char* path)
                 continue;
             }
 
-            if (type != crystalNode["type"].as<std::string>())
+            if (type != crystalNode["type"].as<std::string>()) {
                 continue;
+            }
 
             float hp = crystalNode["hp"] ? crystalNode["hp"].as<float>() : 80.0f;
             crystal->GetDestructibleComponent()->SetDestroyHp(hp);
@@ -552,12 +636,19 @@ void ActorLoadSystem::LoadCrystals(const char* path)
             crystal->SetRadius(radius);
         }
 
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
+        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+        float height = node["height"] ? node["height"].as<float>() : 0.0f;
+
+        crystal->SetSphericalPlacement(theta, phi, height);
+        crystal->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
         crystal->SetPos(pos);
 
-        Crystal* crystal_ptr = crystal.get();
+        Crystal* crystalPtr = crystal.get();
         mGame->AddActor(std::move(crystal));
-        currentPlanet->AddCrystal(crystal_ptr);
+        currentPlanet->AddCrystal(crystalPtr);
     }
 }
 

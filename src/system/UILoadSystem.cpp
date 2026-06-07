@@ -1,4 +1,6 @@
 #include "UILoadSystem.h"
+#include <fstream>
+#include <iostream>
 
 UILoadSystem::UILoadSystem()
 {
@@ -63,4 +65,72 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
 
     std::string textId = screenName + "." + node["id"].as<std::string>();
     mTextInfo[textId] = info;
+}
+
+bool UILoadSystem::SaveUIInfo(const std::string& path)
+{
+    YAML::Node root;
+
+    try {
+        root = YAML::LoadFile(path);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load UI yaml: " << path << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+
+    for (auto screenIt = root.begin(); screenIt != root.end(); ++screenIt) {
+        const std::string screenName = screenIt->first.as<std::string>();
+        YAML::Node elements = screenIt->second;
+
+        for (std::size_t i = 0; i < elements.size(); ++i) {
+            YAML::Node node = elements[i];
+
+            if (!node["id"] || !node["type"]) {
+                continue;
+            }
+
+            const std::string id = node["id"].as<std::string>();
+            const std::string type = node["type"].as<std::string>();
+            const std::string mapId = screenName + "." + id;
+
+            if (type == "texture") {
+                auto it = mTextureInfo.find(mapId);
+                if (it == mTextureInfo.end()) {
+                    continue;
+                }
+
+                const TextureInfo& info = it->second;
+
+                node["posRatio"][0] = info.xRatio;
+                node["posRatio"][1] = info.yRatio;
+                node["scaleRatio"][0] = info.widthRatio;
+                node["scaleRatio"][1] = info.heightRatio;
+            } else if (type == "text") {
+                auto it = mTextInfo.find(mapId);
+                if (it == mTextInfo.end()) {
+                    continue;
+                }
+
+                const TextInfo& info = it->second;
+
+                node["posRatio"][0] = info.xRatio;
+                node["posRatio"][1] = info.yRatio;
+                node["scaleRatio"][0] = info.scaleRatio;
+
+                if (!node["scaleRatio"][1]) {
+                    node["scaleRatio"][1] = 1.0f;
+                }
+            }
+        }
+    }
+
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open UI yaml for writing: " << path << std::endl;
+        return false;
+    }
+
+    file << root;
+    return true;
 }

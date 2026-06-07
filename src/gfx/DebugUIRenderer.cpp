@@ -1,18 +1,29 @@
 #include "DebugUIRenderer.h"
 
+#include "gfx/UIRenderer.h"
+
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Actor.h"
+#include "actor/Boat.h"
+#include "actor/BoatParts.h"
 #include "actor/Crystal.h"
+#include "actor/Enemy.h"
+#include "actor/Key.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
-#include "imgui.h"
 #include "system/CameraSystem.h"
+#include "system/UILoadSystem.h"
 
+#include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-DebugUIRenderer::DebugUIRenderer(Game* game)
-    : mGame(game)
+DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
+    : mGame(game),
+      mUIRenderer(uiRenderer)
 {
 }
 
@@ -22,7 +33,10 @@ void DebugUIRenderer::Draw()
 
     DrawPerformance();
     DrawPlayer();
+    DrawEnemies();
     DrawCamera();
+    DrawStage();
+    DrawUI();
     // DrawStage1();
     // DrawDebugDrawSettings();
 
@@ -61,38 +75,386 @@ void DebugUIRenderer::DrawPlayer()
         ImGui::Text("Y: %.2f", pos.y);
         ImGui::Text("Z: %.2f", pos.z);
 
-        float moveSpeed = player->GetMoveSpeed();
+        if (ImGui::TreeNode("基本情報")) {
+            int hp = player->GetHp();
+            if (ImGui::SliderInt("体力", &hp, 1, 100)) {
+                player->SetHp(hp);
+            }
 
-        if (ImGui::SliderFloat("移動速度", &moveSpeed, 0.0f, 30.0f, "%.1f")) {
-            moveSpeed = std::round(moveSpeed * 10.0f) / 10.0f;
-            player->SetMoveSpeed(moveSpeed);
+            float scale = player->GetScale().x;
+            if (ImGui::SliderFloat("スケール", &scale, 0.01f, 5.0f, "%.2f")) {
+                scale = std::round(scale * 100.0f) / 100.0f;
+                player->SetScale(glm::vec3(scale));
+            }
+
+            int attack = player->GetAttack();
+            if (ImGui::SliderInt("攻撃力", &attack, 0, 999)) {
+                player->SetAttack(attack);
+            }
+
+            float attackSpeed = player->GetAttackSpeed();
+            if (ImGui::SliderFloat("攻撃速度", &attackSpeed, 0.0f, 100.0f, "%.1f")) {
+                attackSpeed = std::round(attackSpeed * 10.0f) / 10.0f;
+                player->SetAttackSpeed(attackSpeed);
+            }
+
+            ImGui::Text("モデル: %s", player->GetModelPath().c_str());
+
+            ImGui::TreePop();
         }
 
-        int hp = player->GetHp();
-        if (ImGui::SliderInt("体力", &hp, 1, 100)) {
-            player->SetHp(hp);
+        if (ImGui::TreeNode("移動")) {
+            float moveSpeed = player->GetMoveSpeed();
+            if (ImGui::SliderFloat("移動速度", &moveSpeed, 0.0f, 30.0f, "%.1f")) {
+                moveSpeed = std::round(moveSpeed * 10.0f) / 10.0f;
+                player->SetMoveSpeed(moveSpeed);
+            }
+
+            float dodgeDuration = player->GetDodgeDuration();
+            if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
+                dodgeDuration = std::round(dodgeDuration * 100.0f) / 100.0f;
+                player->SetDodgeDuration(dodgeDuration);
+            }
+
+            float dodgeCooldownTime = player->GetDodgeCooldownTime();
+            if (ImGui::SliderFloat("回避クールタイム", &dodgeCooldownTime, 0.0f, 5.0f, "%.2f")) {
+                dodgeCooldownTime = std::round(dodgeCooldownTime * 100.0f) / 100.0f;
+                player->SetDodgeCooldownTime(dodgeCooldownTime);
+            }
+
+            float dodgeDistance = player->GetDodgeDistance();
+            if (ImGui::SliderFloat("回避距離", &dodgeDistance, 0.0f, 20.0f, "%.1f")) {
+                dodgeDistance = std::round(dodgeDistance * 10.0f) / 10.0f;
+                player->SetDodgeDistance(dodgeDistance);
+            }
+
+            float chargeMoveSpeed = player->GetChargeMoveSpeed();
+            if (ImGui::SliderFloat("溜め移動速度", &chargeMoveSpeed, 0.0f, 30.0f, "%.1f")) {
+                chargeMoveSpeed = std::round(chargeMoveSpeed * 10.0f) / 10.0f;
+                player->SetChargeMoveSpeed(chargeMoveSpeed);
+            }
+
+            float knockBackSpeed = player->GetKnockBackSpeed();
+            if (ImGui::SliderFloat("ノックバック速度", &knockBackSpeed, 0.0f, 30.0f, "%.1f")) {
+                knockBackSpeed = std::round(knockBackSpeed * 10.0f) / 10.0f;
+                player->SetKnockBackSpeed(knockBackSpeed);
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("通常攻撃")) {
+            float normalAttackRange = player->GetNormalAttackRange();
+            if (ImGui::SliderFloat("通常攻撃範囲", &normalAttackRange, 0.0f, 20.0f, "%.2f")) {
+                normalAttackRange = std::round(normalAttackRange * 100.0f) / 100.0f;
+                player->SetNormalAttackRange(normalAttackRange);
+            }
+
+            float normalAttackAngle = player->GetNormalAttackAngle();
+            if (ImGui::SliderFloat("通常攻撃角度", &normalAttackAngle, 0.0f, 6.283f, "%.3f")) {
+                normalAttackAngle = std::round(normalAttackAngle * 1000.0f) / 1000.0f;
+                player->SetNormalAttackAngle(normalAttackAngle);
+            }
+
+            int normalAttack = player->GetNormalAttack();
+            if (ImGui::SliderInt("通常攻撃力", &normalAttack, 0, 999)) {
+                player->SetNormalAttack(normalAttack);
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("広範囲攻撃")) {
+            float wideAttackRange = player->GetWideAttackRange();
+            if (ImGui::SliderFloat("広範囲攻撃範囲", &wideAttackRange, 0.0f, 20.0f, "%.2f")) {
+                wideAttackRange = std::round(wideAttackRange * 100.0f) / 100.0f;
+                player->SetWideAttackRange(wideAttackRange);
+            }
+
+            float wideAttackAngle = player->GetWideAttackAngle();
+            if (ImGui::SliderFloat("広範囲攻撃角度", &wideAttackAngle, 0.0f, 6.283f, "%.3f")) {
+                wideAttackAngle = std::round(wideAttackAngle * 1000.0f) / 1000.0f;
+                player->SetWideAttackAngle(wideAttackAngle);
+            }
+
+            int wideAttack = player->GetWideAttack();
+            if (ImGui::SliderInt("広範囲攻撃力", &wideAttack, 0, 999)) {
+                player->SetWideAttack(wideAttack);
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("強攻撃")) {
+            float strongAttackRange = player->GetStrongAttackRange();
+            if (ImGui::SliderFloat("強攻撃範囲", &strongAttackRange, 0.0f, 20.0f, "%.2f")) {
+                strongAttackRange = std::round(strongAttackRange * 100.0f) / 100.0f;
+                player->SetStrongAttackRange(strongAttackRange);
+            }
+
+            int strongAttack = player->GetStrongAttack();
+            if (ImGui::SliderInt("強攻撃力", &strongAttack, 0, 999)) {
+                player->SetStrongAttack(strongAttack);
+            }
+
+            float strongAttackSpeed = player->GetStrongAttackSpeed();
+            if (ImGui::SliderFloat("強攻撃速度", &strongAttackSpeed, 0.0f, 100.0f, "%.1f")) {
+                strongAttackSpeed = std::round(strongAttackSpeed * 10.0f) / 10.0f;
+                player->SetStrongAttackSpeed(strongAttackSpeed);
+            }
+
+            float defaultStrongAttackTimer = player->GetDefaultStrongAttackTimer();
+            if (ImGui::SliderFloat("強攻撃時間", &defaultStrongAttackTimer, 0.0f, 5.0f, "%.2f")) {
+                defaultStrongAttackTimer = std::round(defaultStrongAttackTimer * 100.0f) / 100.0f;
+                player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
+            }
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("タイマー")) {
+            float specialAttackCooldown = player->GetSpecialAttackCooldown();
+            if (ImGui::SliderFloat("特殊攻撃クールタイム", &specialAttackCooldown, 0.0f, 60.0f, "%.1f")) {
+                specialAttackCooldown = std::round(specialAttackCooldown * 10.0f) / 10.0f;
+                player->SetSpecialAttackCooldown(specialAttackCooldown);
+            }
+
+            float defaultInvincibleTimer = player->GetDefaultInvincibleTimer();
+            if (ImGui::SliderFloat("無敵時間", &defaultInvincibleTimer, 0.0f, 10.0f, "%.2f")) {
+                defaultInvincibleTimer = std::round(defaultInvincibleTimer * 100.0f) / 100.0f;
+                player->SetDefaultInvincibleTimer(defaultInvincibleTimer);
+            }
+
+            float defaultDamageTimer = player->GetDefaultDamageTimer();
+            if (ImGui::SliderFloat("ダメージ時間", &defaultDamageTimer, 0.0f, 10.0f, "%.2f")) {
+                defaultDamageTimer = std::round(defaultDamageTimer * 100.0f) / 100.0f;
+                player->SetDefaultDamageTimer(defaultDamageTimer);
+            }
+
+            float defaultAttackMotionTimer = player->GetDefaultAttackMotionTimer();
+            if (ImGui::SliderFloat("攻撃モーション時間", &defaultAttackMotionTimer, 0.0f, 5.0f, "%.2f")) {
+                defaultAttackMotionTimer = std::round(defaultAttackMotionTimer * 100.0f) / 100.0f;
+                player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
+            }
+
+            float attackCooldown = player->GetAttackCooldown();
+            if (ImGui::SliderFloat("攻撃クールタイム", &attackCooldown, 0.0f, 5.0f, "%.2f")) {
+                attackCooldown = std::round(attackCooldown * 100.0f) / 100.0f;
+                player->SetAttackCooldown(attackCooldown);
+            }
+
+            float lastAttackCooldown = player->GetLastAttackCooldown();
+            if (ImGui::SliderFloat("最終攻撃クールタイム", &lastAttackCooldown, 0.0f, 5.0f, "%.2f")) {
+                lastAttackCooldown = std::round(lastAttackCooldown * 100.0f) / 100.0f;
+                player->SetLastAttackCooldown(lastAttackCooldown);
+            }
+
+            float defaultAttackPressTimer = player->GetDefaultAttackPressTimer();
+            if (ImGui::SliderFloat("攻撃入力受付時間", &defaultAttackPressTimer, 0.0f, 5.0f, "%.2f")) {
+                defaultAttackPressTimer = std::round(defaultAttackPressTimer * 100.0f) / 100.0f;
+                player->SetDefaultAttackPressTimer(defaultAttackPressTimer);
+            }
+
+            ImGui::TreePop();
         }
 
         if (ImGui::Button("保存する")) {
-            const std::string filePath = "../assets/data/actor/players.yaml";
+            SavePlayerYaml(player);
+        }
+    }
+}
 
-            YAML::Node config;
+void DebugUIRenderer::DrawEnemies()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
 
-            try {
-                config = YAML::LoadFile(filePath);
-            } catch (const YAML::Exception& e) {
-                std::cerr << "Failed to load yaml: " << filePath << std::endl;
-                std::cerr << e.what() << std::endl;
-                return;
+    Planet* planet = mGame->GetCurrentStage()->GetPlanets()[0];
+    if (!planet) {
+        return;
+    }
+
+    std::vector<Enemy*> enemies = planet->GetEnemies();
+
+    Enemy* normalEnemy = nullptr;
+    Enemy* bossEnemy = nullptr;
+
+    for (Enemy* enemy : enemies) {
+        if (!enemy) {
+            continue;
+        }
+
+        if (enemy->GetIsBoss()) {
+            bossEnemy = enemy;
+        } else {
+            normalEnemy = enemy;
+        }
+    }
+
+    if (!ImGui::CollapsingHeader("敵")) {
+        return;
+    }
+
+    if (ImGui::TreeNode("共通設定")) {
+        if (normalEnemy) {
+            float knockBackSpeed = normalEnemy->GetKnockBackSpeed();
+            if (ImGui::SliderFloat("ノックバック速度", &knockBackSpeed, 0.0f, 30.0f, "%.1f")) {
+                knockBackSpeed = std::round(knockBackSpeed * 10.0f) / 10.0f;
+
+                for (Enemy* enemy : enemies) {
+                    if (enemy) {
+                        enemy->SetKnockBackSpeed(knockBackSpeed);
+                    }
+                }
             }
 
-            const std::string sequenceName = "players";
+            float defaultLaunchedTimer = normalEnemy->GetDefaultLaunchedTimer();
+            if (ImGui::SliderFloat("打ち上げ時間", &defaultLaunchedTimer, 0.0f, 10.0f, "%.1f")) {
+                defaultLaunchedTimer = std::round(defaultLaunchedTimer * 10.0f) / 10.0f;
 
-            SetYamlSequenceValue(config, sequenceName, 0, "moveSpeed", player->GetMoveSpeed());
-            SetYamlSequenceValue(config, sequenceName, 0, "hp", player->GetHp());
+                for (Enemy* enemy : enemies) {
+                    if (enemy) {
+                        enemy->SetDefaultLaunchedTimer(defaultLaunchedTimer);
+                    }
+                }
+            }
 
-            SaveYamlFile(filePath, config);
+            float detectionRange = normalEnemy->GetDetectionRange();
+            if (ImGui::SliderFloat("検知範囲", &detectionRange, 0.0f, 50.0f, "%.1f")) {
+                detectionRange = std::round(detectionRange * 10.0f) / 10.0f;
+
+                for (Enemy* enemy : enemies) {
+                    if (enemy) {
+                        enemy->SetDetectionRange(detectionRange);
+                    }
+                }
+            }
+        } else {
+            ImGui::Text("通常敵が存在しないため、共通設定を表示できません");
         }
+
+        ImGui::TreePop();
+    }
+
+    if (normalEnemy && ImGui::TreeNode("通常敵")) {
+        float hp = normalEnemy->GetHp();
+        if (ImGui::SliderFloat("体力##normal", &hp, 1.0f, 999.0f, "%.0f")) {
+            normalEnemy->SetHp(hp);
+        }
+
+        float scale = normalEnemy->GetScale().x;
+        if (ImGui::SliderFloat("スケール##normal", &scale, 0.01f, 5.0f, "%.2f")) {
+            scale = std::round(scale * 100.0f) / 100.0f;
+            normalEnemy->SetScale(glm::vec3(scale));
+        }
+
+        float moveSpeed = normalEnemy->GetMoveSpeed();
+        if (ImGui::SliderFloat("移動速度##normal", &moveSpeed, 0.0f, 30.0f, "%.1f")) {
+            moveSpeed = std::round(moveSpeed * 10.0f) / 10.0f;
+            normalEnemy->SetMoveSpeed(moveSpeed);
+        }
+
+        float attack = normalEnemy->GetAttack();
+        if (ImGui::SliderFloat("攻撃力##normal", &attack, 0.0f, 999.0f, "%.1f")) {
+            attack = std::round(attack * 10.0f) / 10.0f;
+            normalEnemy->SetAttack(attack);
+        }
+
+        int breakCountMax = normalEnemy->GetBreakCountMax();
+        if (ImGui::SliderInt("ブレイク回数##normal", &breakCountMax, 0, 10)) {
+            normalEnemy->SetBreakCountMax(breakCountMax);
+        }
+
+        float radius = normalEnemy->GetRadius();
+        if (ImGui::SliderFloat("半径##normal", &radius, 0.0f, 10.0f, "%.2f")) {
+            radius = std::round(radius * 100.0f) / 100.0f;
+            normalEnemy->SetRadius(radius);
+        }
+
+        float defaultStandByAttackTimer = normalEnemy->GetDefaultStandByAttackTimer();
+        if (ImGui::SliderFloat("攻撃待機時間##normal", &defaultStandByAttackTimer, 0.0f, 20.0f, "%.1f")) {
+            defaultStandByAttackTimer = std::round(defaultStandByAttackTimer * 10.0f) / 10.0f;
+            normalEnemy->SetDefaultStandByAttackTimer(defaultStandByAttackTimer);
+        }
+
+        float defaultAttackMotionTimer = normalEnemy->GetDefaultAttackMotionTimer();
+        if (ImGui::SliderFloat("攻撃モーション時間##normal", &defaultAttackMotionTimer, 0.0f, 10.0f, "%.1f")) {
+            defaultAttackMotionTimer = std::round(defaultAttackMotionTimer * 10.0f) / 10.0f;
+            normalEnemy->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
+        }
+
+        float attackSpeed = normalEnemy->GetAttackSpeed();
+        if (ImGui::SliderFloat("攻撃速度##normal", &attackSpeed, 0.0f, 30.0f, "%.1f")) {
+            attackSpeed = std::round(attackSpeed * 10.0f) / 10.0f;
+            normalEnemy->SetAttackSpeed(attackSpeed);
+        }
+
+        ImGui::Text("モデル: %s", normalEnemy->GetModelPath().c_str());
+
+        ImGui::TreePop();
+    }
+
+    if (bossEnemy && ImGui::TreeNode("ボス敵")) {
+        float hp = bossEnemy->GetHp();
+        if (ImGui::SliderFloat("体力##boss", &hp, 1.0f, 9999.0f, "%.0f")) {
+            bossEnemy->SetHp(hp);
+        }
+
+        float scale = bossEnemy->GetScale().x;
+        if (ImGui::SliderFloat("スケール##boss", &scale, 0.01f, 10.0f, "%.2f")) {
+            scale = std::round(scale * 100.0f) / 100.0f;
+            bossEnemy->SetScale(glm::vec3(scale));
+        }
+
+        float moveSpeed = bossEnemy->GetMoveSpeed();
+        if (ImGui::SliderFloat("移動速度##boss", &moveSpeed, 0.0f, 30.0f, "%.1f")) {
+            moveSpeed = std::round(moveSpeed * 10.0f) / 10.0f;
+            bossEnemy->SetMoveSpeed(moveSpeed);
+        }
+
+        float attack = bossEnemy->GetAttack();
+        if (ImGui::SliderFloat("攻撃力##boss", &attack, 0.0f, 999.0f, "%.1f")) {
+            attack = std::round(attack * 10.0f) / 10.0f;
+            bossEnemy->SetAttack(attack);
+        }
+
+        int breakCountMax = bossEnemy->GetBreakCountMax();
+        if (ImGui::SliderInt("ブレイク回数##boss", &breakCountMax, 0, 10)) {
+            bossEnemy->SetBreakCountMax(breakCountMax);
+        }
+
+        float radius = bossEnemy->GetRadius();
+        if (ImGui::SliderFloat("半径##boss", &radius, 0.0f, 10.0f, "%.2f")) {
+            radius = std::round(radius * 100.0f) / 100.0f;
+            bossEnemy->SetRadius(radius);
+        }
+
+        float defaultStandByAttackTimer = bossEnemy->GetDefaultStandByAttackTimer();
+        if (ImGui::SliderFloat("攻撃待機時間##boss", &defaultStandByAttackTimer, 0.0f, 20.0f, "%.1f")) {
+            defaultStandByAttackTimer = std::round(defaultStandByAttackTimer * 10.0f) / 10.0f;
+            bossEnemy->SetDefaultStandByAttackTimer(defaultStandByAttackTimer);
+        }
+
+        float defaultAttackMotionTimer = bossEnemy->GetDefaultAttackMotionTimer();
+        if (ImGui::SliderFloat("攻撃モーション時間##boss", &defaultAttackMotionTimer, 0.0f, 10.0f, "%.1f")) {
+            defaultAttackMotionTimer = std::round(defaultAttackMotionTimer * 10.0f) / 10.0f;
+            bossEnemy->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
+        }
+
+        float attackSpeed = bossEnemy->GetAttackSpeed();
+        if (ImGui::SliderFloat("攻撃速度##boss", &attackSpeed, 0.0f, 30.0f, "%.1f")) {
+            attackSpeed = std::round(attackSpeed * 10.0f) / 10.0f;
+            bossEnemy->SetAttackSpeed(attackSpeed);
+        }
+
+        ImGui::Text("モデル: %s", bossEnemy->GetModelPath().c_str());
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::Button("敵設定を保存する")) {
+        SaveEnemiesYaml(normalEnemy, bossEnemy);
     }
 }
 
@@ -114,6 +476,417 @@ void DebugUIRenderer::DrawCamera()
     }
 }
 
+void DebugUIRenderer::DrawUI()
+{
+    if (!mGame || !mUIRenderer) {
+        return;
+    }
+
+    UILoadSystem* uiLoadSystem = mUIRenderer->GetUILoadSystem();
+
+    if (!ImGui::CollapsingHeader("UI")) {
+        return;
+    }
+
+    const std::string filePath = "../assets/data/ui/ui.yaml";
+
+    auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
+    auto& textInfos = uiLoadSystem->GetEditableTextInfos();
+
+    if (ImGui::TreeNode("テクスチャ")) {
+        std::vector<std::string> keys;
+        keys.reserve(textureInfos.size());
+
+        for (const auto& pair : textureInfos) {
+            keys.emplace_back(pair.first);
+        }
+
+        std::sort(keys.begin(), keys.end());
+
+        for (const std::string& key : keys) {
+            UILoadSystem::TextureInfo& info = textureInfos[key];
+
+            const std::string displayName = GetUIDisplayName(key);
+            const std::string treeLabel = displayName + "##" + key;
+
+            if (ImGui::TreeNode(treeLabel.c_str())) {
+                ImGui::Text("ID: %s", key.c_str());
+
+                ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::SliderFloat("幅比率", &info.widthRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("高さ比率", &info.heightRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("テキスト")) {
+        std::vector<std::string> keys;
+        keys.reserve(textInfos.size());
+
+        for (const auto& pair : textInfos) {
+            keys.emplace_back(pair.first);
+        }
+
+        std::sort(keys.begin(), keys.end());
+
+        for (const std::string& key : keys) {
+            UILoadSystem::TextInfo& info = textInfos[key];
+
+            const std::string displayName = GetUIDisplayName(key);
+            const std::string treeLabel = displayName + "##" + key;
+
+            if (ImGui::TreeNode(treeLabel.c_str())) {
+                ImGui::Text("ID: %s", key.c_str());
+
+                ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
+                ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
+
+                ImGui::SliderFloat("文字スケール比率", &info.scaleRatio, 0.0f, 0.005f, "%.7f");
+
+                if (!info.texts.empty()) {
+                    ImGui::Separator();
+                    ImGui::Text("表示テキスト");
+
+                    for (const std::string& text : info.texts) {
+                        ImGui::BulletText("%s", text.c_str());
+                    }
+                }
+
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::Button("UI設定を保存する")) {
+        uiLoadSystem->SaveUIInfo(filePath);
+    }
+}
+
+void DebugUIRenderer::DrawStagePlacement()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    if (!ImGui::TreeNode("配置")) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    std::vector<Enemy*> enemies;
+    std::vector<Crystal*> crystals;
+    std::vector<Boat*> boats;
+    std::vector<BoatParts*> boatParts;
+    std::vector<NPC*> npcs;
+    std::vector<Key*> keys;
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            enemies.emplace_back(enemy);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            crystals.emplace_back(crystal);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            boats.emplace_back(boat);
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            boatParts.emplace_back(part);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            npcs.emplace_back(npc);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            keys.emplace_back(key);
+        }
+    }
+
+    if (ImGui::Button("配置を保存する")) {
+        SaveStagePlacementYaml();
+    }
+
+    ImGui::Separator();
+
+    DrawSphericalActorList("敵", "enemies", enemies);
+    DrawSphericalActorList("キー", "keys", keys);
+    DrawSphericalActorList("ボート", "boats", boats);
+    DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);
+    DrawSphericalActorList("クリスタル", "crystals", crystals);
+    DrawSphericalActorList("NPC", "NPCs", npcs);
+
+    ImGui::TreePop();
+}
+
+void DebugUIRenderer::DrawPlanets()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (!ImGui::TreeNode("惑星")) {
+        return;
+    }
+
+    if (ImGui::Button("惑星設定を保存する")) {
+        SaveStagePlanetsYaml();
+    }
+
+    ImGui::Separator();
+
+    for (std::size_t i = 0; i < planets.size(); ++i) {
+        Planet* planet = planets[i];
+        if (!planet) {
+            continue;
+        }
+
+        const std::string treeLabel = "惑星 " + std::to_string(i) + "##planet" + std::to_string(i);
+
+        if (ImGui::TreeNode(treeLabel.c_str())) {
+            glm::vec3 center = planet->GetPos();
+            glm::vec3 scale = planet->GetScale();
+
+            bool centerChanged = false;
+            bool scaleChanged = false;
+
+            centerChanged |= ImGui::SliderFloat(("中心X##planetCenterX" + std::to_string(i)).c_str(), &center.x,
+                                                -100.0f, 100.0f, "%.2f");
+
+            centerChanged |= ImGui::SliderFloat(("中心Y##planetCenterY" + std::to_string(i)).c_str(), &center.y,
+                                                -100.0f, 100.0f, "%.2f");
+
+            centerChanged |= ImGui::SliderFloat(("中心Z##planetCenterZ" + std::to_string(i)).c_str(), &center.z,
+                                                -100.0f, 100.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールX##planetScaleX" + std::to_string(i)).c_str(), &scale.x, 0.1f,
+                                               30.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールY##planetScaleY" + std::to_string(i)).c_str(), &scale.y, 0.1f,
+                                               30.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールZ##planetScaleZ" + std::to_string(i)).c_str(), &scale.z, 0.1f,
+                                               30.0f, "%.2f");
+
+            if (centerChanged) {
+                planet->SetPos(center);
+                UpdateActorsOnPlanetSurface(planet);
+            }
+
+            if (scaleChanged) {
+                bool isSphere = false;
+                scale.x = std::round(scale.x * 100.0f) / 100.0f;
+                scale.y = std::round(scale.y * 100.0f) / 100.0f;
+                scale.z = std::round(scale.z * 100.0f) / 100.0f;
+                if (scale.x == scale.y && scale.y == scale.z && scale.x == scale.z) {
+                    isSphere = true;
+                }
+
+                planet->SetScale(scale);
+
+                if (isSphere) {
+                    planet->SetPlanetShape("Sphere");
+                } else {
+                    planet->SetPlanetShape("Ellipse");
+                }
+
+                // LoadPlanetsと同じくscale.xを半径扱い
+                planet->SetRadius(scale.x);
+
+                UpdateActorsOnPlanetSurface(planet);
+            }
+
+            ImGui::Text("モデル: %s", planet->GetModelPath().c_str());
+            // ImGui::Text("形状: %s", planet->GetPlanetShape().c_str());
+            // ImGui::Text("ロケット条件: %s", planet->GetRocketSpawnCondition().c_str());
+
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::TreePop();
+}
+
+void DebugUIRenderer::SaveStagePlanetsYaml()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (std::size_t i = 0; i < planets.size(); ++i) {
+        Planet* planet = planets[i];
+        if (!planet) {
+            continue;
+        }
+
+        const glm::vec3 center = planet->GetPos();
+        const glm::vec3 scale = planet->GetScale();
+
+        config["planets"][i]["center"][0] = center.x;
+        config["planets"][i]["center"][1] = center.y;
+        config["planets"][i]["center"][2] = center.z;
+
+        config["planets"][i]["scale"][0] = scale.x;
+        config["planets"][i]["scale"][1] = scale.y;
+        config["planets"][i]["scale"][2] = scale.z;
+
+        config["planets"][i]["model"] = planet->GetModelPath();
+        // config["planets"][i]["shape"] = planet->GetPlanetShape();
+        // config["planets"][i]["rocketSpawnCondition"] = planet->GetRocketSpawnCondition();
+    }
+
+    SaveYamlFile(filePath, config);
+}
+
+void DebugUIRenderer::UpdateActorsOnPlanetSurface(Planet* planet)
+{
+    if (!planet) {
+        return;
+    }
+
+    auto updateActor = [planet](Actor* actor) {
+        if (!actor) {
+            return;
+        }
+
+        const glm::vec3 newPos = planet->CalculateSurfacePos(actor->GetTheta(), actor->GetPhi(), actor->GetHeight());
+
+        actor->SetPos(newPos);
+    };
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        updateActor(enemy);
+    }
+
+    for (Crystal* crystal : planet->GetCrystals()) {
+        updateActor(crystal);
+    }
+
+    for (Boat* boat : planet->GetBoats()) {
+        updateActor(boat);
+    }
+
+    for (BoatParts* part : planet->GetBoatParts()) {
+        updateActor(part);
+    }
+
+    for (NPC* npc : planet->GetNPCs()) {
+        updateActor(npc);
+    }
+
+    if (Key* key = planet->GetKey()) {
+        updateActor(key);
+    }
+}
+
+void DebugUIRenderer::SaveStagePlacementYaml()
+{
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    std::vector<Enemy*> enemies;
+    std::vector<Crystal*> crystals;
+    std::vector<Boat*> boats;
+    std::vector<BoatParts*> boatParts;
+    std::vector<NPC*> npcs;
+    std::vector<Key*> keys;
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            enemies.emplace_back(enemy);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            crystals.emplace_back(crystal);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            boats.emplace_back(boat);
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            boatParts.emplace_back(part);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            npcs.emplace_back(npc);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            keys.emplace_back(key);
+        }
+    }
+
+    SaveSphericalActors(config, "enemies", enemies);
+    SaveSphericalActors(config, "keys", keys);
+    SaveSphericalActors(config, "boats", boats);
+    SaveSphericalActors(config, "boatParts", boatParts);
+    SaveSphericalActors(config, "crystals", crystals);
+    SaveSphericalActors(config, "NPCs", npcs);
+
+    SaveYamlFile(filePath, config);
+}
+
+void DebugUIRenderer::DrawStage()
+{
+    if (!ImGui::CollapsingHeader("ステージ")) {
+        return;
+    }
+
+    DrawPlanets();
+
+    ImGui::Separator();
+
+    DrawStagePlacement();
+}
+
 // void DebugUIRenderer::DrawStage1()
 // {
 //     std::vector<Crystal*> crystals = mGame->GetCurrentStage()->GetPlanets()[0]->GetCrystals();
@@ -132,6 +905,118 @@ void DebugUIRenderer::DrawCamera()
 //     }
 // }
 
+void DebugUIRenderer::SavePlayerYaml(Player* player)
+{
+    if (!player) {
+        return;
+    }
+
+    const std::string filePath = "../assets/data/actor/players.yaml";
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const std::string sequenceName = "players";
+    constexpr std::size_t index = 0;
+
+    SetYamlSequenceValue(config, sequenceName, index, "hp", player->GetHp());
+    SetYamlSequenceValue(config, sequenceName, index, "scale", player->GetScale().x);
+    SetYamlSequenceValue(config, sequenceName, index, "attack", player->GetAttack());
+    SetYamlSequenceValue(config, sequenceName, index, "attackSpeed", player->GetAttackSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "moveSpeed", player->GetMoveSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "dodgeDuration", player->GetDodgeDuration());
+    SetYamlSequenceValue(config, sequenceName, index, "dodgeCooldownTime", player->GetDodgeCooldownTime());
+    SetYamlSequenceValue(config, sequenceName, index, "dodgeDistance", player->GetDodgeDistance());
+    SetYamlSequenceValue(config, sequenceName, index, "normalAttackRange", player->GetNormalAttackRange());
+    SetYamlSequenceValue(config, sequenceName, index, "normalAttackAngle", player->GetNormalAttackAngle());
+    SetYamlSequenceValue(config, sequenceName, index, "normalAttack", player->GetNormalAttack());
+    SetYamlSequenceValue(config, sequenceName, index, "wideAttackRange", player->GetWideAttackRange());
+    SetYamlSequenceValue(config, sequenceName, index, "wideAttackAngle", player->GetWideAttackAngle());
+    SetYamlSequenceValue(config, sequenceName, index, "wideAttack", player->GetWideAttack());
+    SetYamlSequenceValue(config, sequenceName, index, "strongAttackRange", player->GetStrongAttackRange());
+    SetYamlSequenceValue(config, sequenceName, index, "strongAttack", player->GetStrongAttack());
+    SetYamlSequenceValue(config, sequenceName, index, "strongAttackSpeed", player->GetStrongAttackSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "specialAttackCooldown", player->GetSpecialAttackCooldown());
+    SetYamlSequenceValue(config, sequenceName, index, "defaultInvincibleTimer", player->GetDefaultInvincibleTimer());
+    SetYamlSequenceValue(config, sequenceName, index, "defaultDamageTimer", player->GetDefaultDamageTimer());
+    SetYamlSequenceValue(config, sequenceName, index, "defaultAttackMotionTimer",
+                         player->GetDefaultAttackMotionTimer());
+    SetYamlSequenceValue(config, sequenceName, index, "attackCooldown", player->GetAttackCooldown());
+    SetYamlSequenceValue(config, sequenceName, index, "lastAttackCooldown", player->GetLastAttackCooldown());
+    SetYamlSequenceValue(config, sequenceName, index, "defaultAttackPressTimer", player->GetDefaultAttackPressTimer());
+    SetYamlSequenceValue(config, sequenceName, index, "chargeMoveSpeed", player->GetChargeMoveSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "defaultStrongAttackTimer",
+                         player->GetDefaultStrongAttackTimer());
+    SetYamlSequenceValue(config, sequenceName, index, "knockBackSpeed", player->GetKnockBackSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "modelPath", player->GetModelPath());
+
+    SaveYamlFile(filePath, config);
+}
+
+void DebugUIRenderer::SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy)
+{
+    if (!normalEnemy && !bossEnemy) {
+        return;
+    }
+
+    const std::string filePath = "../assets/data/actor/enemies.yaml";
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const std::string sequenceName = "enemies";
+
+    if (normalEnemy) {
+        SetYamlSequenceValue(config, sequenceName, 0, "knockBackSpeed", normalEnemy->GetKnockBackSpeed());
+        SetYamlSequenceValue(config, sequenceName, 0, "defaultLaunchedTimer", normalEnemy->GetDefaultLaunchedTimer());
+        SetYamlSequenceValue(config, sequenceName, 0, "detectionRange", normalEnemy->GetDetectionRange());
+
+        SetYamlSequenceValue(config, sequenceName, 1, "hp", normalEnemy->GetHp());
+        SetYamlSequenceValue(config, sequenceName, 1, "modelPath", normalEnemy->GetModelPath());
+        SetYamlSequenceValue(config, sequenceName, 1, "scale", normalEnemy->GetScale().x);
+        SetYamlSequenceValue(config, sequenceName, 1, "speed", normalEnemy->GetMoveSpeed());
+        SetYamlSequenceValue(config, sequenceName, 1, "attack", normalEnemy->GetAttack());
+        SetYamlSequenceValue(config, sequenceName, 1, "breakCountMax", normalEnemy->GetBreakCountMax());
+        SetYamlSequenceValue(config, sequenceName, 1, "radius", normalEnemy->GetRadius());
+        SetYamlSequenceValue(config, sequenceName, 1, "defaultStandByAttackTimer",
+                             normalEnemy->GetDefaultStandByAttackTimer());
+        SetYamlSequenceValue(config, sequenceName, 1, "defaultAttackMotionTimer",
+                             normalEnemy->GetDefaultAttackMotionTimer());
+        SetYamlSequenceValue(config, sequenceName, 1, "attackSpeed", normalEnemy->GetAttackSpeed());
+    }
+
+    if (bossEnemy) {
+        SetYamlSequenceValue(config, sequenceName, 2, "hp", bossEnemy->GetHp());
+        SetYamlSequenceValue(config, sequenceName, 2, "modelPath", bossEnemy->GetModelPath());
+        SetYamlSequenceValue(config, sequenceName, 2, "scale", bossEnemy->GetScale().x);
+        SetYamlSequenceValue(config, sequenceName, 2, "speed", bossEnemy->GetMoveSpeed());
+        SetYamlSequenceValue(config, sequenceName, 2, "attack", bossEnemy->GetAttack());
+        SetYamlSequenceValue(config, sequenceName, 2, "breakCountMax", bossEnemy->GetBreakCountMax());
+        SetYamlSequenceValue(config, sequenceName, 2, "radius", bossEnemy->GetRadius());
+        SetYamlSequenceValue(config, sequenceName, 2, "defaultStandByAttackTimer",
+                             bossEnemy->GetDefaultStandByAttackTimer());
+        SetYamlSequenceValue(config, sequenceName, 2, "defaultAttackMotionTimer",
+                             bossEnemy->GetDefaultAttackMotionTimer());
+        SetYamlSequenceValue(config, sequenceName, 2, "attackSpeed", bossEnemy->GetAttackSpeed());
+    }
+
+    SaveYamlFile(filePath, config);
+}
+
 bool DebugUIRenderer::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
     std::ofstream file(filePath);
@@ -142,4 +1027,49 @@ bool DebugUIRenderer::SaveYamlFile(const std::string& filePath, const YAML::Node
 
     file << config;
     return true;
+}
+
+std::string DebugUIRenderer::GetUIDisplayName(const std::string& key) const
+{
+    static const std::unordered_map<std::string, std::string> displayNames = {
+        {"title.bgTexture", "タイトル背景"},
+        {"title.startTextForGameController", "タイトル開始テキスト（コントローラー）"},
+        {"title.startTextForKeyBoard", "タイトル開始テキスト（キーボード）"},
+
+        {"opening.bgTexture", "オープニング背景"},
+        {"opening.openingText", "オープニング本文"},
+        {"opening.talkWithMotherText", "母との会話"},
+        {"opening.talkWithDoctorText", "ドクターとの会話"},
+
+        {"gameOver.gameOverText", "ゲームオーバー文字"},
+        {"gameOver.restartTextForGameController", "リスタート文字（コントローラー）"},
+        {"gameOver.restartTextForKeyBoard", "リスタート文字（キーボード）"},
+
+        {"default.operationSupportTextForGameController", "操作ガイド（コントローラー）"},
+        {"default.operationSupportTextForKeyBoard", "操作ガイド（キーボード）"},
+        {"default.operationSupportHiddenText", "操作ガイド非表示中テキスト"},
+        {"default.hpTexture", "HPアイコン"},
+        {"default.jewelTexture", "ジュエルアイコン"},
+        {"default.talkableTextForGameController", "会話可能テキスト（コントローラー）"},
+        {"default.talkableTextForKeyBoard", "会話可能テキスト（キーボード）"},
+        {"default.remainPartsText", "残りパーツ数テキスト"},
+
+        {"state.battleTutorialTextForGameController", "戦闘チュートリアル（コントローラー）"},
+        {"state.battleTutorialTextForKeyBoard", "戦闘チュートリアル（キーボード）"},
+        {"state.breakTutorialText", "ブレイクチュートリアル"},
+        {"state.jewelTutorialTextForGameController", "ジュエルチュートリアル（コントローラー）"},
+        {"state.jewelTutorialTextForKeyBoard", "ジュエルチュートリアル（キーボード）"},
+        {"state.stageClearText", "ステージクリアテキスト"},
+        {"state.loadingText", "ローディング文字"},
+        {"state.loadingTexture", "ローディング画像"},
+        {"state.talkBgTexture", "会話背景"},
+        {"state.talkText", "会話本文"},
+    };
+
+    const auto it = displayNames.find(key);
+    if (it != displayNames.end()) {
+        return it->second;
+    }
+
+    return key;
 }

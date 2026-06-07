@@ -35,7 +35,9 @@ Game::Game()
       mUIReloadKeyPressedPrev(false),
       mAPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/stage1.yaml")
+      mCurrentStageYamlPath("../assets/data/stage/stage1.yaml"),
+      mIsDebugMode(false),
+      mIsFreeCameraMode(false)
 {
 }
 
@@ -216,9 +218,15 @@ void Game::ProcessGameInput()
 
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
     if (pPressed && !mPPressedPrev) {
-        mUIRenderer->FlipIsDebugMode();
+        mIsDebugMode = !mIsDebugMode;
     }
     mPPressedPrev = pPressed;
+
+    const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
+    if (lPressed && !mLPressedPrev && mIsDebugMode) {
+        mIsFreeCameraMode = !mIsFreeCameraMode;
+    }
+    mLPressedPrev = lPressed;
 
     // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
     // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
@@ -265,6 +273,11 @@ void Game::UpdateGame()
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
+        return;
+    }
+
+    if (mIsFreeCameraMode) {
+        mCameraSystem->Update(deltaTime);
         return;
     }
 

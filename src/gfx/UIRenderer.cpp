@@ -15,8 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 UIRenderer::UIRenderer(Game* game)
-    : Renderer(game),
-      mIsDebugMode(false)
+    : Renderer(game)
 {
     Initialize();
 }
@@ -36,7 +35,7 @@ void UIRenderer::Initialize()
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
-    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame);
+    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame, this);
 
     if (!mUIShader->GetShaderProgram()) {
         glfwTerminate();
@@ -106,7 +105,7 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
-    if (mIsDebugMode) {
+    if (mGame->GetIsDebugMode()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

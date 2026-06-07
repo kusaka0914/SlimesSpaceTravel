@@ -29,6 +29,7 @@ private:
     std::vector<glm::mat4> GetOpeningViews() const;
     std::vector<glm::mat4> GetBoatFocusViews(std::vector<Boat*> boats) const;
     glm::mat4 GetPlayerView(Player* player, float cameraDistance, bool isFixed = false);
+    glm::mat4 GetDebugCameraView();
     glm::mat4 GetFocusView(Actor* focusActor) const;
     glm::mat4 GetTargetCameraView(Actor* targetActor);
 
@@ -39,6 +40,13 @@ private:
     float mCameraPitch;
     float mCameraStickY;
     float mCameraStickX;
+    float mMoveForward;
+    float mMoveRight;
+    float mMoveUp;
+    float mDebugCameraYaw;
+    float mDebugCameraPitch;
+    float mDebugYawInput;
+    float mDebugPitchInput;
 
     glm::vec3 mCameraUpVec;
     glm::vec3 mCameraTargetPos;

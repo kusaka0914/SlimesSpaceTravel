@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Renderer.h"
 #include "system/UILoadSystem.h"
 #include <GL/glew.h>
@@ -17,8 +19,6 @@ public:
     ~UIRenderer();
     void Draw();
     void DrawSkyBox();
-
-    void FlipIsDebugMode() { mIsDebugMode = !mIsDebugMode; }
 
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
 
@@ -84,8 +84,6 @@ private:
     UILoadSystem* mUILoadSystem;
 
     std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
-
-    bool mIsDebugMode;
 
     int mFbWidth;
     int mFbHeight;

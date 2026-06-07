@@ -3,233 +3,203 @@ planets:
     scale: [8.0, 8.0, 8.0]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
-    shape : Sphere
+    shape: Sphere
     rocketSpawnCondition: AllBoatPartsCollected
   - center: [32.0, 0.0, 0.0]
     scale: [4.0, 4.0, 4.0]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
-    shape : Sphere
+    shape: Sphere
     rocketSpawnCondition: AllEnemiesDead
   - center: [64.0, 0.0, 0.0]
     scale: [4.0, 4.0, 4.0]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
-    shape : Sphere
-
+    shape: Sphere
 enemies:
-  # - type: normal
-  #   theta: 0.0
-  #   phi: 0.0
-  #   height : 1.0
-  #   currentPlanetNum: 0
-
   - type: normal
-    theta: 2.007195
+    theta: 1.973047
     phi: 0.675763
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: -2.569516
-    phi: -0.316463
-    height : 1.0
+    theta: -2.842698
+    phi: -0.111576
+    height: 1
     currentPlanetNum: 1
   - type: normal
     theta: 2.272954
-    phi: -0.612432
-    height : 1.0
+    phi: -0.578284
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.380324
+    theta: 1.331762
     phi: -0.528396
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 0.000000
-    phi: 1.000000
-    height : 1.0
+    theta: 0.204886
+    phi: 1.007358
+    height: 1
     currentPlanetNum: 1
   - type: normal
     theta: 2.354361
     phi: 0.060486
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: -1.889650
+    theta: -1.88965
     phi: -0.998213
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
     theta: 1.263585
     phi: -0.856111
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
     theta: 1.027116
     phi: -0.135222
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.012932
-    phi: -0.030296
-    height : 1.0
+    theta: 1.536649
+    phi: 1.382983
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.016786
-    phi: 0.075506
-    height : 1.0
+    theta: -1.373556
+    phi: -0.239034
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.038777
-    phi: 0.179110
-    height : 1.0
+    theta: -1.761338
+    phi: 0.375625
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.079417
+    theta: 0
     phi: 0.277311
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.027116
+    theta: 0.75125
+    phi: 0.034148
+    height: 1
+    currentPlanetNum: 1
+  - type: normal
+    theta: -0.580512
+    phi: 0.512216
+    height: 1
+    currentPlanetNum: 1
+  - type: normal
+    theta: -0.478069
     phi: -0.135222
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.139365
-    phi: 0.366631
-    height : 1.0
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.027116
-    phi: -0.135222
-    height : 1.0
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.218886
+    theta: 1.400058
     phi: 0.443256
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.316993
-    phi: 0.503159
-    height : 1.0
+    theta: 1.385288
+    phi: 1.570796
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.027116
+    theta: 0.341477
     phi: -0.135222
-    height : 1.0
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.430467
-    phi: 0.542507
-    height : 1.0
+    theta: 0.580512
+    phi: 0.525433
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.553312
-    phi: 0.558355
-    height : 1.0
+    theta: 1.67324
+    phi: -0.039231
+    height: 1
     currentPlanetNum: 1
-
-  # ボス（撃破でスター出現）
   - type: boss
     theta: -0.684602
     phi: -0.155907
-    height : 0.0
+    height: 0
     currentPlanetNum: 0
-
 keys:
-  - currentPlanetNum : 1
-    theta : 0.000000
-    phi : -0.530965
-    height : 0.1
-
+  - currentPlanetNum: 1
+    theta: 0
+    phi: -0.530965
+    height: 0.1
 crystals:
   - type: little
-    currentPlanetNum : 0
-    theta : 1.891925
-    phi : -0.627311
-    height : 0.05
+    currentPlanetNum: 0
+    theta: 1.891925
+    phi: -0.627311
+    height: 0.05
   - type: big
-    currentPlanetNum : 0
-    theta : 0.309124
-    phi : -0.334648
-    height : 1.0
-
+    currentPlanetNum: 0
+    theta: 0.309124
+    phi: -0.334648
+    height: 0.87
 boats:
-  - theta : 0.000000
-    phi : 0.000000
-    height : 0.0
-    startPlanet : 0
-    destPlanet : 1
-  - theta : 0.000000
-    phi : 0.000000
-    height : 0.0
-    startPlanet : 1
-    destPlanet : 2
-
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 0
+    destPlanet: 1
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 1
+    destPlanet: 2
 boatParts:
   - type: parts1
-    currentPlanetNum : 0
-    theta : 0.000000
-    phi : 1.000000
-    height : 0.0
-
-  # - type: parts1
-  #   currentPlanetNum : 0
-  #   pos: [-5.5, 12.8, -0.13]
-  # - type: parts2
-  #   currentPlanetNum : 0
-  #   theta : 0.941427
-  #   phi : 0.460641
-  #   height : 3.3
-  # - type: parts3
-  #   currentPlanetNum : 0
-  #   theta : -1.399908
-  #   phi : -0.884174
-  #   height : 3.3
-  # - type: parts4
-  #   currentPlanetNum : 0
-  #   theta : 0.309124
-  #   phi : -0.334648
-  #   height : 1.0
-  # - type: parts5
-  #   currentPlanetNum : 0
-  #   theta : 1.891925
-  #   phi : -0.627311
-  #   height: 0.1
-
+    currentPlanetNum: 0
+    theta: 0
+    phi: 1
+    height: 0
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 0
-  # - pos: [1.0, 9.5, 0.0]
-  #   currentPlanetNum: 0
-
 star:
-  - currentPlanetNum : 2
+  - currentPlanetNum: 2
     modelPath: star.obj
-
 NPCs:
-  - pos: [3.0, 7.5, -2.0]
+  - theta: -0.580512
+    phi: 1.126875
+    height: 0
     type: spaceSlime
     name: BoatPartsNPC
-    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。,あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。,そこに行ってみたらどうだ？,隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
-  - pos: [-3.06, -3.69, 6.3]
+    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。, あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。, そこに行ってみたらどうだ？, 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
+  - theta: 1.843978
+    phi: -0.819546
+    height: 0.196
     type: spaceSlime
     name: CrystalTutorialNPC
-    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！,中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
-  - pos: [7.14, -3.41, -0.08]
+    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！, 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
+  - theta: 0.341478
+    phi: -0.614659
+    height: 0
     type: spaceSlime
     name: BigCrystalTutorialNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！,空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！]
-  - pos: [-6.95, -3.7, 1.01]
+    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！]
+  - theta: 3.03915
+    phi: -0.460995
+    height: 0
     type: spaceSlime
     name: JumpDodgeTutorialNPC
     talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
-  - pos: [-1.35, 4.0, 6.8]
+  - theta: 1.80983
+    phi: 0.495141
+    height: 0
     type: spaceSlime
     name: JumpTutorialNPC
     talkTexts: [高い足場に乗りたい時はジャンプ！]
-  - pos: [-3.62, 6.6, 2.51]
+  - theta: 2.561081
+    phi: 0.97321
+    height: 0
     type: spaceSlime
     name: WallTutorialNPC
     talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]

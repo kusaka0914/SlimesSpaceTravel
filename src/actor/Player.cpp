@@ -36,7 +36,6 @@ Player::Player(Game* game)
       mPlayerNum(1),
       mJewelCount(2),
       mCameraYaw(0.0f),
-      mCameraPitch(0.4f),
       mMoveForward(0.0f),
       mMoveLeft(0.0f),
       mAttackStartHeight(0.0f),
