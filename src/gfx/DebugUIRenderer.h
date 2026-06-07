@@ -27,6 +27,10 @@ private:
     void DrawUI();
     // void DrawStage1();
     void DrawDebugDrawSettings();
+    void DrawStage();
+    void DrawPlanets();
+    void SaveStagePlanetsYaml();
+    void UpdateActorsOnPlanetSurface(Planet* planet);
     void SavePlayerYaml(Player* player);
     void SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy);
     void SaveStagePlacementYaml();

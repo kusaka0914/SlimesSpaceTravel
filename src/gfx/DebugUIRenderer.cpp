@@ -4,12 +4,14 @@
 
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "system/CameraSystem.h"
 #include "system/UILoadSystem.h"
@@ -33,7 +35,7 @@ void DebugUIRenderer::Draw()
     DrawPlayer();
     DrawEnemies();
     DrawCamera();
-    DrawStagePlacement();
+    DrawStage();
     DrawUI();
     // DrawStage1();
     // DrawDebugDrawSettings();
@@ -574,7 +576,7 @@ void DebugUIRenderer::DrawStagePlacement()
         return;
     }
 
-    if (!ImGui::CollapsingHeader("ステージ配置")) {
+    if (!ImGui::TreeNode("配置")) {
         return;
     }
 
@@ -617,7 +619,7 @@ void DebugUIRenderer::DrawStagePlacement()
         }
     }
 
-    if (ImGui::Button("ステージ配置を保存する")) {
+    if (ImGui::Button("配置を保存する")) {
         SaveStagePlacementYaml();
     }
 
@@ -629,6 +631,184 @@ void DebugUIRenderer::DrawStagePlacement()
     DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);
     DrawSphericalActorList("クリスタル", "crystals", crystals);
     DrawSphericalActorList("NPC", "NPCs", npcs);
+
+    ImGui::TreePop();
+}
+
+void DebugUIRenderer::DrawPlanets()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (!ImGui::TreeNode("惑星")) {
+        return;
+    }
+
+    if (ImGui::Button("惑星設定を保存する")) {
+        SaveStagePlanetsYaml();
+    }
+
+    ImGui::Separator();
+
+    for (std::size_t i = 0; i < planets.size(); ++i) {
+        Planet* planet = planets[i];
+        if (!planet) {
+            continue;
+        }
+
+        const std::string treeLabel = "惑星 " + std::to_string(i) + "##planet" + std::to_string(i);
+
+        if (ImGui::TreeNode(treeLabel.c_str())) {
+            glm::vec3 center = planet->GetPos();
+            glm::vec3 scale = planet->GetScale();
+
+            bool centerChanged = false;
+            bool scaleChanged = false;
+
+            centerChanged |= ImGui::SliderFloat(("中心X##planetCenterX" + std::to_string(i)).c_str(), &center.x,
+                                                -100.0f, 100.0f, "%.2f");
+
+            centerChanged |= ImGui::SliderFloat(("中心Y##planetCenterY" + std::to_string(i)).c_str(), &center.y,
+                                                -100.0f, 100.0f, "%.2f");
+
+            centerChanged |= ImGui::SliderFloat(("中心Z##planetCenterZ" + std::to_string(i)).c_str(), &center.z,
+                                                -100.0f, 100.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールX##planetScaleX" + std::to_string(i)).c_str(), &scale.x, 0.1f,
+                                               30.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールY##planetScaleY" + std::to_string(i)).c_str(), &scale.y, 0.1f,
+                                               30.0f, "%.2f");
+
+            scaleChanged |= ImGui::SliderFloat(("スケールZ##planetScaleZ" + std::to_string(i)).c_str(), &scale.z, 0.1f,
+                                               30.0f, "%.2f");
+
+            if (centerChanged) {
+                planet->SetPos(center);
+                UpdateActorsOnPlanetSurface(planet);
+            }
+
+            if (scaleChanged) {
+                bool isSphere = false;
+                scale.x = std::round(scale.x * 100.0f) / 100.0f;
+                scale.y = std::round(scale.y * 100.0f) / 100.0f;
+                scale.z = std::round(scale.z * 100.0f) / 100.0f;
+                if (scale.x == scale.y && scale.y == scale.z && scale.x == scale.z) {
+                    isSphere = true;
+                }
+
+                planet->SetScale(scale);
+
+                if (isSphere) {
+                    planet->SetPlanetShape("Sphere");
+                } else {
+                    planet->SetPlanetShape("Ellipse");
+                }
+
+                // LoadPlanetsと同じくscale.xを半径扱い
+                planet->SetRadius(scale.x);
+
+                UpdateActorsOnPlanetSurface(planet);
+            }
+
+            ImGui::Text("モデル: %s", planet->GetModelPath().c_str());
+            // ImGui::Text("形状: %s", planet->GetPlanetShape().c_str());
+            // ImGui::Text("ロケット条件: %s", planet->GetRocketSpawnCondition().c_str());
+
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::TreePop();
+}
+
+void DebugUIRenderer::SaveStagePlanetsYaml()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (std::size_t i = 0; i < planets.size(); ++i) {
+        Planet* planet = planets[i];
+        if (!planet) {
+            continue;
+        }
+
+        const glm::vec3 center = planet->GetPos();
+        const glm::vec3 scale = planet->GetScale();
+
+        config["planets"][i]["center"][0] = center.x;
+        config["planets"][i]["center"][1] = center.y;
+        config["planets"][i]["center"][2] = center.z;
+
+        config["planets"][i]["scale"][0] = scale.x;
+        config["planets"][i]["scale"][1] = scale.y;
+        config["planets"][i]["scale"][2] = scale.z;
+
+        config["planets"][i]["model"] = planet->GetModelPath();
+        // config["planets"][i]["shape"] = planet->GetPlanetShape();
+        // config["planets"][i]["rocketSpawnCondition"] = planet->GetRocketSpawnCondition();
+    }
+
+    SaveYamlFile(filePath, config);
+}
+
+void DebugUIRenderer::UpdateActorsOnPlanetSurface(Planet* planet)
+{
+    if (!planet) {
+        return;
+    }
+
+    auto updateActor = [planet](Actor* actor) {
+        if (!actor) {
+            return;
+        }
+
+        const glm::vec3 newPos = planet->CalculateSurfacePos(actor->GetTheta(), actor->GetPhi(), actor->GetHeight());
+
+        actor->SetPos(newPos);
+    };
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        updateActor(enemy);
+    }
+
+    for (Crystal* crystal : planet->GetCrystals()) {
+        updateActor(crystal);
+    }
+
+    for (Boat* boat : planet->GetBoats()) {
+        updateActor(boat);
+    }
+
+    for (BoatParts* part : planet->GetBoatParts()) {
+        updateActor(part);
+    }
+
+    for (NPC* npc : planet->GetNPCs()) {
+        updateActor(npc);
+    }
+
+    if (Key* key = planet->GetKey()) {
+        updateActor(key);
+    }
 }
 
 void DebugUIRenderer::SaveStagePlacementYaml()
@@ -692,6 +872,19 @@ void DebugUIRenderer::SaveStagePlacementYaml()
     SaveSphericalActors(config, "NPCs", npcs);
 
     SaveYamlFile(filePath, config);
+}
+
+void DebugUIRenderer::DrawStage()
+{
+    if (!ImGui::CollapsingHeader("ステージ")) {
+        return;
+    }
+
+    DrawPlanets();
+
+    ImGui::Separator();
+
+    DrawStagePlacement();
 }
 
 // void DebugUIRenderer::DrawStage1()

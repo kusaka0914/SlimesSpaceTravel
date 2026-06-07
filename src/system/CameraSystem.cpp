@@ -32,7 +32,7 @@ CameraSystem::CameraSystem(Game* game)
 
 void CameraSystem::ProcessInput()
 {
-    if (mGame->GetIsDebugMode()) {
+    if (mGame->GetIsFreeCameraMode()) {
         GLFWwindow* window = mGame->GetWindow();
         mMoveForward = 0.0f;
         mMoveRight = 0.0f;
@@ -86,7 +86,7 @@ void CameraSystem::Update(float deltaTime)
 
 void CameraSystem::UpdateCamera(float deltaTime)
 {
-    if (mGame->GetIsDebugMode()) {
+    if (mGame->GetIsFreeCameraMode()) {
         constexpr float rotateSpeed = 2.0f;
         mDebugCameraYaw += mDebugYawInput * rotateSpeed * deltaTime;
         mDebugCameraPitch += mDebugPitchInput * rotateSpeed * deltaTime;
@@ -224,7 +224,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
 {
     std::vector<glm::mat4> views;
 
-    if (mGame->GetIsDebugMode()) {
+    if (mGame->GetIsFreeCameraMode()) {
         views.push_back(GetDebugCameraView());
         if (!views.empty()) {
             return views;

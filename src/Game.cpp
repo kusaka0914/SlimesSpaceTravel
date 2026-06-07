@@ -36,7 +36,8 @@ Game::Game()
       mAPressedPrev(false),
       mIsPlayer2Joined(false),
       mCurrentStageYamlPath("../assets/data/stage/stage1.yaml"),
-      mIsDebugMode(false)
+      mIsDebugMode(false),
+      mIsFreeCameraMode(false)
 {
 }
 
@@ -221,6 +222,12 @@ void Game::ProcessGameInput()
     }
     mPPressedPrev = pPressed;
 
+    const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
+    if (lPressed && !mLPressedPrev && mIsDebugMode) {
+        mIsFreeCameraMode = !mIsFreeCameraMode;
+    }
+    mLPressedPrev = lPressed;
+
     // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
     // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
     // bool isBossExist = false;
@@ -269,7 +276,7 @@ void Game::UpdateGame()
         return;
     }
 
-    if (mIsDebugMode) {
+    if (mIsFreeCameraMode) {
         mCameraSystem->Update(deltaTime);
         return;
     }
