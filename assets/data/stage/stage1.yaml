@@ -1,21 +1,38 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
-    scale: [8.0, 8.0, 8.0]
+  - center: [0, 0, 0]
+    scale: [8, 8, 8]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
     shape: Sphere
     rocketSpawnCondition: AllBoatPartsCollected
-  - center: [32.0, 0.0, 0.0]
-    scale: [4.0, 4.0, 4.0]
+  - center: [32, 0, 0]
+    scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
     shape: Sphere
     rocketSpawnCondition: AllEnemiesDead
-  - center: [64.0, 0.0, 0.0]
-    scale: [4.0, 4.0, 4.0]
+  - center: [64, 0, 0]
+    scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
     shape: Sphere
+  - center:
+      - 96
+      - 0
+      - 0
+    scale:
+      - 8
+      - 2
+      - 8
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    shape: Sphere
+    stageNum: 3
+    rocketSpawnCondition: ""
 enemies:
   - type: normal
     theta: 1.973047
@@ -203,3 +220,186 @@ NPCs:
     type: spaceSlime
     name: WallTutorialNPC
     talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]
+platforms:
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.939608
+    height: -0.795
+    facingYaw: -3.142
+    scale:
+      - 0.5
+      - 0.5
+      - 0.5
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.5928248
+      - 0.8027634
+      - -0.06426155
+  - currentPlanetNum: 0
+    theta: -1.190649
+    phi: -0.444701
+    height: 2.699
+    facingYaw: 1.334
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.33460575
+      - -0.43328178
+      - -0.83684283
+  - currentPlanetNum: 0
+    theta: 2.883379
+    phi: -0.63836
+    height: -0.37
+    facingYaw: 0.33
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.7814075
+      - 0.58907855
+      - -0.20588501
+  - currentPlanetNum: 0
+    theta: -3.141593
+    phi: -0.720431
+    height: 0.411
+    facingYaw: -0.286
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.755814
+      - -0.65477455
+      - -0.003950139
+  - currentPlanetNum: 0
+    theta: 0.315594
+    phi: -0.344284
+    height: 0.563
+    facingYaw: 0
+    scale:
+      - 1.4
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - 0.897875
+      - -0.33004847
+      - 0.29135638
+  - currentPlanetNum: 0
+    theta: -1.821837
+    phi: -0.710085
+    height: 2.7
+    facingYaw: -1.406
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.18925914
+      - -0.64680505
+      - -0.73879915
+  - currentPlanetNum: 0
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 0.258
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.3477609
+      - -0.886508
+      - -0.30523086
+  - currentPlanetNum: 0
+    theta: 1.664041
+    phi: 0.308421
+    height: 0.452
+    facingYaw: -0.1
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.088604964
+      - 0.2969458
+      - 0.95077455
+  - currentPlanetNum: 0
+    theta: 1.405827
+    phi: 0.681396
+    height: 1
+    facingYaw: -0.631
+    scale:
+      - 1
+      - 1.41
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.12930916
+      - 0.62522095
+      - 0.7696609
+  - currentPlanetNum: 0
+    theta: 0.946782
+    phi: 0.451873
+    height: 1.342
+    facingYaw: 0.287
+    scale:
+      - 1
+      - 1.73
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.5271148
+      - 0.43639275
+      - 0.72918546
+  - currentPlanetNum: 3
+    theta: -0.80333
+    phi: 1.219339
+    height: -6.384
+    facingYaw: 0
+    scale:
+      - 0.4
+      - 0.4
+      - 0.4
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.021415995
+      - 0.9995439
+      - -0.021295782
+  - currentPlanetNum: 3
+    theta: -2.971
+    phi: 1.225597
+    height: -0.455
+    facingYaw: 0
+    scale:
+      - 1.32
+      - 1.92
+      - 0.39
+    modelPath: platform.obj
+    upVec:
+      - 0.021426897
+      - 0.9995439
+      - -0.021280866
+  - currentPlanetNum: 3
+    theta: -2.95
+    phi: 1.282612
+    height: 1.209
+    facingYaw: 0
+    scale:
+      - 0.41
+      - 0.4
+      - 0.4
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.9997708
+      - -0.021409959
+      - -4.261451e-11

@@ -1,29 +1,29 @@
 players:
   - hp: 10
     scale: 0.25
-    attack: 10
-    attackSpeed: 5.0
+    attack: 5
+    attackSpeed: 5
     moveSpeed: 4
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.3
-    dodgeDistance: 3.0
+    dodgeDistance: 3
     normalAttackRange: 2.6
     normalAttackAngle: 6.283
     normalAttack: 20
-    wideAttackRange: 2.0
+    wideAttackRange: 2
     wideAttackAngle: 2.2
     wideAttack: 5
     strongAttackRange: 2.6
     strongAttack: 50
-    strongAttackSpeed: 50.0
-    specialAttackCooldown: 30.0
-    defaultInvincibleTimer: 2.0
-    defaultDamageTimer: 1.0
+    strongAttackSpeed: 50
+    specialAttackCooldown: 30
+    defaultInvincibleTimer: 2
+    defaultDamageTimer: 1
     defaultAttackMotionTimer: 0.1
     attackCooldown: 0.15
-    lastAttackCooldown: 1.0
-    defaultAttackPressTimer: 1.0
-    chargeMoveSpeed: 3.0
+    lastAttackCooldown: 1
+    defaultAttackPressTimer: 1
+    chargeMoveSpeed: 3
     defaultStrongAttackTimer: 0.06
-    knockBackSpeed: 4.0
+    knockBackSpeed: 4
     modelPath: player.obj

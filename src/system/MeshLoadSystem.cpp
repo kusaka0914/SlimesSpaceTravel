@@ -26,7 +26,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "thirdParty/stb_image.h"
 
-MeshLoadSystem::MeshLoadSystem(Game* game) : mGame(game)
+MeshLoadSystem::MeshLoadSystem(Game* game)
+    : mGame(game)
 {
     Initialize();
 }
@@ -62,61 +63,9 @@ void MeshLoadSystem::CreateLoadedMeshes()
     mLoadedMeshes["motherSlime"] = LoadMeshFromFile("../assets/models/motherSlime.obj");
     mLoadedMeshes["enemy"] = LoadMeshFromFile("../assets/models/enemy.obj");
     mLoadedMeshes["platform"] = LoadMeshFromFile("../assets/models/platform.obj");
+    mLoadedMeshes["curvePlatform"] = LoadMeshFromFile("../assets/models/curvePlatform.obj");
     mLoadedMeshes["rocket"] = LoadMeshFromFile("../assets/models/rocket.fbx");
     mLoadedMeshes["skyBox"] = LoadMeshFromFile("../assets/models/skyBox.obj");
-}
-
-void MeshLoadSystem::LoadModel()
-{
-    auto players = mGame->GetPlayers();
-    for (auto player : players) {
-        SetActorMesh(player);
-    }
-
-    std::vector<Planet*> planets = mGame->GetCurrentStage()->GetPlanets();
-    for (auto planet : planets) {
-        SetActorMesh(planet);
-
-        std::vector<NPC*> NPCs = planet->GetNPCs();
-        for (auto NPC : NPCs)
-            SetActorMesh(NPC);
-
-        std::vector<Enemy*> enemies = planet->GetEnemies();
-        for (auto enemy : enemies)
-            SetActorMesh(enemy);
-
-        Key* key = planet->GetKey();
-        if (key)
-            SetActorMesh(key);
-
-        Star* star = planet->GetStar();
-        if (star)
-            SetActorMesh(star);
-
-        std::vector<Boat*> boats = planet->GetBoats();
-        if (!boats.empty()) {
-            for (auto boat : boats)
-                SetActorMesh(boat);
-        }
-
-        std::vector<BoatParts*> boatParts = planet->GetBoatParts();
-        if (!boatParts.empty()) {
-            for (auto parts : boatParts)
-                SetActorMesh(parts);
-        }
-
-        std::vector<Crystal*> crystals = planet->GetCrystals();
-        if (!crystals.empty()) {
-            for (auto crystal : crystals)
-                SetActorMesh(crystal);
-        }
-
-        std::vector<Platform*> platforms = planet->GetPlatforms();
-        if (!platforms.empty()) {
-            for (auto platform : platforms)
-                SetActorMesh(platform);
-        }
-    }
 }
 
 void MeshLoadSystem::SetActorMesh(Actor* actor)

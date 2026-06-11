@@ -325,8 +325,8 @@ void Player::UpdateIdle(float deltaTime)
     if (CanWalk())
         UpdateWalk(deltaTime);
 
-    if (IsFallIntoPlanetInside())
-        Respawn();
+    // if (IsFallIntoPlanetInside())
+    //     Respawn();
 
     bool isFalling = glm::dot(mVelocity, mUpVec) < 0.0f;
     if (isFalling)

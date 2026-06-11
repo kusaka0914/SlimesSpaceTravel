@@ -343,7 +343,6 @@ void Game::LoadData(bool isLoadPlayer)
 {
     RemoveAllActor();
     mActorLoadSystem->LoadData(isLoadPlayer);
-    mMeshLoadSystem->LoadModel();
 }
 
 void Game::ChangeStage(int stageNum)

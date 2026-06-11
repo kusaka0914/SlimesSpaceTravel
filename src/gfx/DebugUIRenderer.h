@@ -1,16 +1,25 @@
 #pragma once
+
+#include <GL/glew.h>
+
+#include "Game.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "imgui.h"
+#include "system/PhysicsSystem.h"
+#include <cmath>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <yaml-cpp/yaml.h>
 
 class Game;
 class Player;
 class Enemy;
 class UIRenderer;
+class UILoadSystem;
 
 class DebugUIRenderer {
 public:
@@ -20,22 +29,30 @@ public:
 
 private:
     void DrawPerformance();
-    void DrawPlayer();
-    void DrawEnemies();
     void DrawCamera();
+    void DrawParameterEditor();
+    void AddEnemyFromEditor(const std::string& type, int currentPlanetNum);
+    void DrawPlayerParameterEditor();
+    void DrawEnemyParameterEditor();
+    void DrawParameterSave();
     void DrawStagePlacement();
     void DrawUI();
-    // void DrawStage1();
-    void DrawDebugDrawSettings();
-    void DrawStage();
+    void DrawUITextures(UILoadSystem* uiLoadSystem);
+    void DrawUITexts(UILoadSystem* uiLoadSystem);
     void DrawPlanets();
+    void DrawStageEditor();
+    void DrawAddActors();
     void SaveStagePlanetsYaml();
     void UpdateActorsOnPlanetSurface(Planet* planet);
+    void AddPlanetFromEditor(const std::string& modelPath);
     void SavePlayerYaml(Player* player);
     void SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy);
     void SaveStagePlacementYaml();
     bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
     std::string GetUIDisplayName(const std::string& key) const;
+    void AddPlatformFromEditor(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale);
+
+    void SavePlatformsYaml(YAML::Node& config, const std::vector<Platform*>& platforms);
 
     template <typename T>
     bool SetYamlSequenceValue(YAML::Node& config, const std::string& sequenceName, std::size_t index,
@@ -80,14 +97,14 @@ private:
 
                 bool changed = false;
 
-                changed |= ImGui::SliderFloat(("theta##" + sequenceName + std::to_string(i)).c_str(), &theta,
-                                              -3.141593f, 3.141593f, "%.6f");
+                changed |= ImGui::DragFloat(("theta##" + sequenceName + std::to_string(i)).c_str(), &theta, 0.001f,
+                                            -3.141593f, 3.141593f, "%.6f");
 
-                changed |= ImGui::SliderFloat(("phi##" + sequenceName + std::to_string(i)).c_str(), &phi, -1.570796f,
-                                              1.570796f, "%.6f");
+                changed |= ImGui::DragFloat(("phi##" + sequenceName + std::to_string(i)).c_str(), &phi, 0.001f,
+                                            -1.570796f, 1.570796f, "%.6f");
 
-                changed |= ImGui::SliderFloat(("height##" + sequenceName + std::to_string(i)).c_str(), &height, -2.0f,
-                                              10.0f, "%.3f");
+                changed |= ImGui::DragFloat(("height##" + sequenceName + std::to_string(i)).c_str(), &height, 0.01f,
+                                            -10.0f, 10.0f, "%.3f");
 
                 if (changed) {
                     theta = std::round(theta * 1000000.0f) / 1000000.0f;
@@ -99,6 +116,50 @@ private:
                     Planet* planet = actor->GetCurrentPlanet();
                     if (planet) {
                         actor->SetPos(planet->CalculateSurfacePos(theta, phi, height));
+                    }
+                }
+
+                if (Platform* platform = dynamic_cast<Platform*>(actor)) {
+                    ImGui::Separator();
+                    ImGui::Text("プラットフォーム設定");
+
+                    glm::vec3 scale = platform->GetScale();
+
+                    bool scaleChanged = false;
+
+                    bool physicsRebuildRequired = false;
+
+                    scaleChanged |=
+                        ImGui::DragFloat(("スケールX##platformScaleX" + sequenceName + std::to_string(i)).c_str(),
+                                         &scale.x, 0.01f, 0.1f, 30.0f, "%.2f");
+                    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+                    scaleChanged |=
+                        ImGui::DragFloat(("スケールY##platformScaleY" + sequenceName + std::to_string(i)).c_str(),
+                                         &scale.y, 0.01f, 0.1f, 30.0f, "%.2f");
+                    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+                    scaleChanged |=
+                        ImGui::DragFloat(("スケールZ##platformScaleZ" + sequenceName + std::to_string(i)).c_str(),
+                                         &scale.z, 0.01f, 0.1f, 30.0f, "%.2f");
+                    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+                    if (scaleChanged) {
+                        scale.x = std::round(scale.x * 100.0f) / 100.0f;
+                        scale.y = std::round(scale.y * 100.0f) / 100.0f;
+                        scale.z = std::round(scale.z * 100.0f) / 100.0f;
+
+                        platform->SetScale(scale);
+                    }
+
+                    float facingYaw = actor->GetFacingYaw();
+                    if (ImGui::SliderFloat("向き facingYaw", &facingYaw, -3.14159f, 3.14159f, "%.3f")) {
+                        platform->SetFacingYaw(facingYaw);
+                    }
+                    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+                    if (physicsRebuildRequired && mGame->GetPhysicsSystem()) {
+                        mGame->GetPhysicsSystem()->Initialize();
                     }
                 }
 
