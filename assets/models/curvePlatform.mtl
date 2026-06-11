@@ -1,7 +1,7 @@
-# Blender 5.0.1 MTL File: 'platform.blend'
+# Blender 5.0.1 MTL File: 'curvePlatform.blend'
 # www.blender.org
 
-newmtl Material
+newmtl マテリアル.004
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000

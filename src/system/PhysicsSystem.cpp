@@ -9,9 +9,13 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "system/MeshLoadSystem.h"
+#include "utils/MathUtils.h"
 #include <btBulletDynamicsCommon.h>
 
-PhysicsSystem::PhysicsSystem(Game* game) : mGame(game) {}
+PhysicsSystem::PhysicsSystem(Game* game)
+    : mGame(game)
+{
+}
 
 PhysicsSystem::~PhysicsSystem()
 {
@@ -111,6 +115,18 @@ void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
     actorTransform.setIdentity();
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
+
+    if (dynamic_cast<Platform*>(actor)) {
+        glm::mat4 orient = mGame->GetMathUtils()->CreateOrient(actor);
+
+        glm::vec3 axisX = glm::normalize(glm::vec3(orient[0]));
+        glm::vec3 axisY = glm::normalize(glm::vec3(orient[1]));
+        glm::vec3 axisZ = glm::normalize(glm::vec3(orient[2]));
+
+        btMatrix3x3 basis(axisX.x, axisY.x, axisZ.x, axisX.y, axisY.y, axisZ.y, axisX.z, axisY.z, axisZ.z);
+
+        actorTransform.setBasis(basis);
+    }
 
     rigidBody->setWorldTransform(actorTransform);
     rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
