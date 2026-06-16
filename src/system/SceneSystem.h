@@ -39,7 +39,10 @@ public:
     bool IsOpening() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening; }
     bool IsPlaying() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Playing; }
     bool IsFocusing() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Focusing; }
-    bool IsStageClear() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::StageClear; }
+    bool IsStageClear() const
+    {
+        return mGameProgressState->GetSceneState() == GameProgressState::SceneState::StageClear;
+    }
     bool IsGameOver() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::GameOver; }
     bool IsGameClear() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::GameClear; }
     bool IsTalkWithOpening() const { return mUIState->GetCurrentTalkWith() == UIState::TalkWith::Opening; }
@@ -49,7 +52,11 @@ public:
     bool IsBattleTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Battle; }
     bool IsBreakTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Break; }
     bool IsJewelTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Jewel; }
-    
+    bool IsJustDodgeTutorialShowing() const
+    {
+        return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::JustDodge;
+    }
+
     bool GetHasPendingStageChange() const { return mHasPendingStageChange; }
     float GetFadeTimer() const { return mFadeTimer; }
     UIState::TalkWith GetCurrentTalkWith() const { return mUIState->GetCurrentTalkWith(); }
@@ -64,6 +71,8 @@ private:
     void ApplySceneChange();
 
     void TryStartTalkWithNPC();
+    void TryStartBattleTutorial();
+    void TryStartJustDodgeTutorial();
 
 private:
     Game* mGame;

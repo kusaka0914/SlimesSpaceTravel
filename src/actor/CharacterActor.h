@@ -19,6 +19,8 @@ public:
     void Land(const glm::vec3& hitPos);
     void NotLand();
 
+    void SetBaseScale(const glm::vec3& scale);
+
     bool GetOnGround() const { return mOnGround; }
 
     const glm::vec3& GetFacingForwardVec() const { return mFacingForwardVec; }
@@ -41,4 +43,6 @@ protected:
 
     glm::vec3 mVelocity;
     glm::vec3 mFacingForwardVec;
+
+    glm::vec3 mBaseScale;
 };

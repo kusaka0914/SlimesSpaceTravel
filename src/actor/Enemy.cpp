@@ -39,7 +39,9 @@ Enemy::Enemy(Game* game)
       mDyingTimer(-1.0f),
       mKnockBackTimer(-1.0f),
       mKnockBackFrom(0.0f),
-      mNearestPlayer(nullptr)
+      mNearestPlayer(nullptr),
+      mCanCounteredTimer(-1.0f),
+      mCanCountered(false)
 {
 }
 
@@ -69,6 +71,16 @@ void Enemy::UpdateActor(float deltaTime)
 
 void Enemy::UpdateAlive(float deltaTime)
 {
+    if (mActionState == ActionState::KnockedBack) {
+        UpdateKnockedBack(deltaTime);
+
+        if (!mOnGround) {
+            UpdateInAir(deltaTime);
+        }
+
+        return;
+    }
+
     if (mOnGround) {
         UpdateBehavior(deltaTime);
         return;
@@ -170,6 +182,11 @@ void Enemy::UpdateAttacking(float deltaTime)
     MoveDuringAttacking(deltaTime);
     TryApplyAttack(deltaTime);
 
+    mCanCounteredTimer -= deltaTime;
+    if (mCanCounteredTimer <= 0.0f) {
+        mCanCountered = false;
+    }
+
     mAttackMotionTimer -= deltaTime;
     if (mAttackMotionTimer <= 0.0f) {
         StartIdle();
@@ -220,6 +237,8 @@ void Enemy::StartAttacking()
     mAttackMotionTimer = mDefaultAttackMotionTimer;
     mIsHit = false;
     mIsJustBeforeAttack = false;
+    mCanCounteredTimer = 0.1f;
+    mCanCountered = true;
 }
 
 void Enemy::StartKnockedBack(float knockBackTimer)
@@ -227,6 +246,7 @@ void Enemy::StartKnockedBack(float knockBackTimer)
     mActionState = ActionState::KnockedBack;
     mKnockBackTimer = knockBackTimer;
     mKnockBackFrom = glm::normalize(mPos - mNearestPlayer->GetPos());
+    mLaunchedTimer = -1.0f;
 }
 
 void Enemy::StartDying()
@@ -234,7 +254,7 @@ void Enemy::StartDying()
     mLifeState = LifeState::Dying;
     mDyingTimer = 1.0f;
     mHp = 0;
-    constexpr float dyingKnockBackTimer = 1.0f;
+    constexpr float dyingKnockBackTimer = 0.5f;
     StartKnockedBack(dyingKnockBackTimer);
     mGame->GetAudioSystem()->PlaySE("defeat_se");
 }
@@ -252,7 +272,6 @@ void Enemy::FinishDying()
         }
 
         star->SetIsActive(true);
-        star->SetPos(mPos);
     }
 }
 
@@ -373,12 +392,11 @@ void Enemy::ApplyDamage(float damage, Player* player)
     }
 
     if (mIsStrongAttacked) {
-        constexpr float knockBackTimer = 1.0f;
+        constexpr float knockBackTimer = 0.5f;
         StartKnockedBack(knockBackTimer);
 
         mIsStrongAttacked = false;
         FinishLaunched();
-        mGame->OnStrongAttacked();
     }
 }
 

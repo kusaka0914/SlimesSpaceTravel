@@ -91,7 +91,11 @@ Player::Player(Game* game)
       mRayCasts(),
       mTalkableNPC(nullptr),
       mAirAttackFloatingTimer(-1.0f),
-      mKnockBackSpeed(0.0f)
+      mKnockBackSpeed(0.0f),
+      mContinuousAttackingTimer(-1.0f),
+      mContinuousAttackingCooldown(-1.0f),
+      mSpecialChargingTimer(-1.0f),
+      mCanSpecialAttack(false)
 {
 }
 
@@ -287,29 +291,9 @@ void Player::UpdateIdle(float deltaTime)
         ApplyGravity(deltaTime);
     }
 
-    bool canStartDodging = mDodgeCooldown <= 0.0f && mAttackDodgeLockRemaining <= 0.0f && !mIsDodged && mDodgePressed &&
-                           !mDodgePressedPrev;
-    if (canStartDodging) {
-        StartDodging();
-        return;
-    }
-
-    bool canStartAttacking = mAttackCooldownRemaining <= 0.0f &&
-                             ((mAttackPressed || mWideAttackPressed) && !mAttackPressedPrev && !mWideAttackPressedPrev);
-    if (canStartAttacking) {
-        StartAttacking(deltaTime);
-        return;
-    }
-
     bool canStartJumping = mJumpPressed && mOnGround;
-    if (canStartJumping) {
+    if (canStartJumping && (mSpecialChargingTimer <= 0.0f && !mCanSpecialAttack)) {
         StartJumping(deltaTime);
-        return;
-    }
-
-    bool canSpecialAttack = mSpecialAttackPressed && !mSpecialAttackPressedPrev && mJewelCount > 0;
-    if (canSpecialAttack) {
-        SpecialAttack(deltaTime);
         return;
     }
 
@@ -319,18 +303,57 @@ void Player::UpdateIdle(float deltaTime)
     }
 
     bool isMoving = std::abs(mMoveForward) > 0.01f || std::abs(mMoveLeft) > 0.01f;
-    if (isMoving)
+    if (isMoving) {
         ChangeFaceDir();
+    }
 
-    if (CanWalk())
+    if (CanWalk() && (mSpecialChargingTimer <= 0.0f && !mCanSpecialAttack))
         UpdateWalk(deltaTime);
-
-    // if (IsFallIntoPlanetInside())
-    //     Respawn();
 
     bool isFalling = glm::dot(mVelocity, mUpVec) < 0.0f;
     if (isFalling)
         mShouldJudgeLanding = true;
+
+    bool canSpecialAttack = mSpecialAttackPressed && mAttackPressed && !mAttackPressedPrev && mJewelCount >= 2;
+    if (canSpecialAttack) {
+        StartSpecialAttackCharging();
+        return;
+    }
+
+    if (mWideAttackPressed && !mWideAttackPressedPrev && mIsTired) {
+        ReduceTired();
+        return;
+    }
+
+    bool canContinuousAttacking =
+        mSpecialAttackPressed && mWideAttackPressed && !mWideAttackPressedPrev && mJewelCount >= 1;
+    if (canContinuousAttacking) {
+        StartContinuousAttacking();
+        return;
+    }
+
+    if (mSpecialChargingTimer >= 0.0f || mCanSpecialAttack) {
+        UpdateSpecialAttackCharging(deltaTime);
+    }
+
+    if (mContinuousAttackingTimer >= 0.0f) {
+        UpdateContinuousAttacking(deltaTime);
+        return;
+    }
+
+    bool canStartDodging = mDodgeCooldown <= 0.0f && mAttackDodgeLockRemaining <= 0.0f && !mIsDodged && mDodgePressed &&
+                           !mDodgePressedPrev;
+    if (canStartDodging) {
+        StartDodging();
+        return;
+    }
+
+    bool canStartAttacking = mAttackCooldownRemaining <= 0.0f &&
+                             ((mAttackPressed || mWideAttackPressed) && !mAttackPressedPrev && !mWideAttackPressedPrev);
+    if (canStartAttacking && (mSpecialChargingTimer <= 0.0f && !mCanSpecialAttack)) {
+        StartAttacking(deltaTime);
+        return;
+    }
 }
 
 bool Player::IsFallIntoPlanetInside()
@@ -352,13 +375,16 @@ void Player::UpdateDodging(float deltaTime)
     MoveDuringDodging(deltaTime);
 
     mDodgeTimer -= deltaTime;
-    if (mDodgeTimer <= 0.0f)
+    if (mDodgeTimer <= 0.0f) {
         StartIdle();
+    }
 }
 
 void Player::UpdateAttacking(float deltaTime)
 {
-    MoveDuringAttacking(deltaTime);
+    if (mOnGround) {
+        MoveDuringAttacking(deltaTime);
+    }
 
     if (CanWalk())
         UpdateWalk(deltaTime);
@@ -406,8 +432,8 @@ void Player::UpdateStrongAttacking(float deltaTime)
     }
 
     if (mIsStrongAttackHit) {
-        mGame->SetHitStopTimer(0.3f);
         mIsStrongAttackHit = false;
+        mGame->OnStrongAttacked();
     }
 }
 
@@ -418,6 +444,33 @@ void Player::UpdateKnockedBack(float deltaTime)
     mDamageTimer -= deltaTime;
     if (mDamageTimer <= 0.0f)
         StartIdle();
+}
+
+void Player::UpdateSpecialAttackCharging(float deltaTime)
+{
+    float specialChargingTimerPrev = mSpecialChargingTimer;
+    mSpecialChargingTimer -= deltaTime;
+    if (specialChargingTimerPrev >= 2.0f && mSpecialChargingTimer <= 2.0f) {
+        mGame->VibrateController(10000, 0, 1000);
+        mJewelCount--;
+    } else if (specialChargingTimerPrev >= 1.0f && mSpecialChargingTimer <= 1.0f) {
+        mGame->VibrateController(20000, 0, 1000);
+        mJewelCount--;
+    } else if (specialChargingTimerPrev >= 0.0f && mSpecialChargingTimer <= 0.0f) {
+        mGame->VibrateController(30000, 0, 1000);
+    }
+
+    if (mSpecialChargingTimer <= 0.0f) {
+        mCanSpecialAttack = true;
+    }
+
+    if (mSpecialChargingTimer <= 0.0f && mSpecialAttackPressedPrev && !mSpecialAttackPressed) {
+        SpecialAttack(deltaTime);
+    }
+
+    if (mSpecialAttackPressedPrev && !mSpecialAttackPressed) {
+        mSpecialChargingTimer = -1.0f;
+    }
 }
 
 void Player::UpdateTimer(float deltaTime)
@@ -436,8 +489,12 @@ void Player::UpdateTimer(float deltaTime)
     if (mAttackCooldownRemaining >= 0.0f)
         mAttackCooldownRemaining -= deltaTime;
 
-    if (mAttackMoveLockRemaining > 0.0f)
+    if (mAttackMoveLockRemaining > 0.0f) {
         mAttackMoveLockRemaining -= deltaTime;
+        if (mIsTired && mAttackMoveLockRemaining <= 0.0f) {
+            mIsTired = false;
+        }
+    }
 
     if (mAttackDodgeLockRemaining > 0.0f)
         mAttackDodgeLockRemaining -= deltaTime;
@@ -548,6 +605,7 @@ void Player::StartAttacking(float deltaTime)
         mAttackCooldownRemaining = mAttackCooldown;
         mAttack = mWideAttack / 2.0f;
         mAirAttackFloatingTimer = 0.5f;
+        mIsAirAttacking = true;
         Attack(deltaTime);
         return;
     }
@@ -612,8 +670,11 @@ void Player::FinishCharging()
 
 void Player::MoveDuringDodging(float deltaTime)
 {
-    const float dodgeSpeed =
-        (mOnGround) ? (mDodgeDistance / mDodgeDuration) : (mDodgeDistance / (mDodgeDuration * 4.0f));
+    float dodgeSpeed = (mOnGround) ? (mDodgeDistance / mDodgeDuration) : (mDodgeDistance / (mDodgeDuration * 4.0f));
+
+    if (mSpecialChargingTimer >= 0.0f || mCanSpecialAttack) {
+        dodgeSpeed /= 4.0f;
+    }
     const glm::vec3 moveDelta = mDodgeDir * dodgeSpeed * deltaTime;
     glm::vec3 desiredPos = mPos + moveDelta;
 
@@ -743,11 +804,20 @@ void Player::Attack(float deltaTime)
     }
 
     GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
+    StartTired();
     for (Enemy* enemy : hitEnemies) {
         enemy->SetIsStrongAttacked(true);
         enemy->ApplyDamage(mAttack, this);
         mIsStrongAttackHit = true;
     }
+}
+
+void Player::StartTired()
+{
+    mIsTired = true;
+    mAttackMoveLockRemaining = 5.0f;
+    mDodgeCooldown = 5.0f;
+    mAttackCooldownRemaining = 5.0f;
 }
 
 void Player::StartAfterAttackReaction()
@@ -762,6 +832,11 @@ void Player::StartAfterAttackReaction()
 
     if (mAttackKind == AttackKind::Normal && mAttackComboIndex != 3) {
         mAttackComboIndex = 0;
+        return;
+    }
+
+    if (mAttackKind == AttackKind::Strong) {
+        StartTired();
         return;
     }
 
@@ -791,7 +866,8 @@ std::vector<Enemy*> Player::FindHitEnemies()
             continue;
 
         const glm::vec3 enemyPos = enemy->GetPos();
-        const glm::vec3 toEnemy = glm::normalize(enemyPos - mPos);
+        const glm::vec3 toEnemy =
+            glm::normalize((enemyPos + enemy->GetFacingForwardVec() * (enemy->GetRadius() - 1.0f)) - mPos);
         const float dist = glm::length(enemyPos - mPos);
         const float dot = glm::dot(mFacingForwardVec, toEnemy);
         const float effectiveRange = mAttackRange + enemy->GetRadius();
@@ -810,22 +886,59 @@ bool Player::IsEnemyHitByAttack(float dist, float dot, float effectiveRange)
     return dist <= effectiveRange && dot >= threshold;
 }
 
-void Player::SpecialAttack(float deltaTime)
+void Player::StartSpecialAttackCharging()
+{
+    mSpecialChargingTimer = 3.0f;
+    mAttackRange = mWideAttackRange;
+    mAttackAngle = mWideAttackAngle / 2.0f;
+}
+
+void Player::StartContinuousAttacking()
 {
     mJewelCount--;
+    mContinuousAttackingTimer = 6.0f;
+}
 
-    std::vector<Enemy*> enemies = mCurrentPlanet->GetEnemies();
+void Player::UpdateContinuousAttacking(float deltaTime)
+{
+    mAttackKind = AttackKind::Wide;
+    mAttack = mWideAttack / 2.0f;
+    mAttackRange = mWideAttackRange;
+    mAttackAngle = mWideAttackAngle;
+    mContinuousAttackingTimer -= deltaTime;
+    mContinuousAttackingCooldown -= deltaTime;
+    if (mContinuousAttackingCooldown <= 0.0f) {
+        mContinuousAttackingCooldown = 0.25f;
+        Attack(deltaTime);
+        mAttackMoveLockRemaining = 0.0f;
+    }
+}
+
+void Player::SpecialAttack(float deltaTime)
+{
+    std::vector<Enemy*> enemies = FindHitEnemies();
     for (auto& enemy : enemies) {
         if (enemy->GetIsDead())
             continue;
 
-        mAttack = mNormalAttack;
-        enemy->ApplyDamage(mAttack, this);
-
         if (enemy->GetOnGround()) {
-            enemy->ApplyBreak(deltaTime);
+            while (enemy->GetBreakCount()) {
+                enemy->ApplyBreak(deltaTime);
+            }
+        }
+
+        if (enemy->GetCanCountered()) {
+            enemy->ApplyDamage(600, this);
+            enemy->FlipCanCountered();
+            mJewelCount = 2;
+            mGame->GetAudioSystem()->PlaySE("just_attack_se");
+        } else {
+            enemy->ApplyDamage(300, this);
         }
     }
+
+    mGame->VibrateController(0, 40000, 1000);
+    mCanSpecialAttack = false;
 }
 
 void Player::Recover()
@@ -841,9 +954,11 @@ void Player::Recover()
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
-    if (mActionState == ActionState::Dodging) {
+    if (mActionState == ActionState::Dodging && enemy->GetCanCountered()) {
         mGame->OnPlayerCounter();
         enemy->ApplyBreak(deltaTime, true);
+        enemy->FlipCanCountered();
+        mGame->GetAudioSystem()->PlaySE("just_dodge_se");
         if (mJewelCount < 2) {
             mJewelCount++;
         }
@@ -860,6 +975,9 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
     mInvincibleTimer = mDefaultInvincibleTimer;
     mActionState = ActionState::KnockedBack;
     mGame->OnPlayerApplyDamage();
+    mCanSpecialAttack = false;
+    mSpecialChargingTimer = -1.0f;
+    mContinuousAttackingTimer = -1.0f;
 }
 
 void Player::FollowMovingBoat(Boat* boat)
@@ -902,6 +1020,7 @@ void Player::OnLanded()
     mIsDodged = false;
     mIsStrongAttacked = false;
     mIsCharged = false;
+    mIsAirAttacking = false;
     mGame->OnLanded();
 }
 
@@ -919,4 +1038,15 @@ void Player::OnUpVecUpdateFailed()
 void Player::OnCastSucceeded()
 {
     mRayCastTimer = 0.5f;
+}
+
+void Player::ReduceTired()
+{
+    mAttackMoveLockRemaining -= 0.8f;
+    mDodgeCooldown -= 0.8f;
+    mAttackCooldownRemaining -= 0.8f;
+
+    if (mAttackMoveLockRemaining <= 0.0f) {
+        mIsTired = false;
+    }
 }

@@ -120,9 +120,6 @@ private:
                 }
 
                 if (Platform* platform = dynamic_cast<Platform*>(actor)) {
-                    ImGui::Separator();
-                    ImGui::Text("プラットフォーム設定");
-
                     glm::vec3 scale = platform->GetScale();
 
                     bool scaleChanged = false;
@@ -153,7 +150,7 @@ private:
                     }
 
                     float facingYaw = actor->GetFacingYaw();
-                    if (ImGui::SliderFloat("向き facingYaw", &facingYaw, -3.14159f, 3.14159f, "%.3f")) {
+                    if (ImGui::SliderFloat("向き", &facingYaw, -3.14159f, 3.14159f, "%.3f")) {
                         platform->SetFacingYaw(facingYaw);
                     }
                     physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();

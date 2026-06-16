@@ -163,6 +163,7 @@ void ActorLoadSystem::LoadPlayers(const char* path)
         }
 
         player->Initialize();
+        player->SetBaseScale(player->GetScale());
         Player* playerPtr = player.get();
         mGame->GetMeshLoadSystem()->SetActorMesh(playerPtr);
         mGame->AddActor(std::move(player));
@@ -244,6 +245,8 @@ void ActorLoadSystem::LoadNPCs(const char* path)
             npc->SetScale(glm::vec3(scale));
         }
 
+        npc->SetBaseScale(npc->GetScale());
+
         NPC* npcPtr = npc.get();
         mGame->GetMeshLoadSystem()->SetActorMesh(npcPtr);
         mGame->AddActor(std::move(npc));
@@ -318,6 +321,8 @@ Enemy* ActorLoadSystem::CreateEnemyFromStageNode(const YAML::Node& node, int sta
     }
 
     ApplyEnemyConfig(enemy.get(), type);
+
+    enemy->SetBaseScale(enemy->GetScale());
 
     Enemy* enemyPtr = enemy.get();
     mGame->GetMeshLoadSystem()->SetActorMesh(enemyPtr);
@@ -729,10 +734,12 @@ void ActorLoadSystem::LoadStar(const char* path)
         return;
     }
 
-    for (auto node : root["star"]) {
+    YAML::Node starNode = root["star"];
+
+    for (std::size_t i = 0; i < starNode.size(); ++i) {
         std::unique_ptr<Star> star = std::make_unique<Star>(mGame);
 
-        int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
+        int currentPlanetNum = starNode[i]["currentPlanetNum"] ? starNode[i]["currentPlanetNum"].as<int>() : 0;
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         star->SetCurrentPlanet(currentPlanet);
 
@@ -745,6 +752,16 @@ void ActorLoadSystem::LoadStar(const char* path)
             float scale = starNode["scale"] ? starNode["scale"].as<float>() : 0.0f;
             star->SetScale(glm::vec3(scale));
         }
+
+        float theta = starNode[i]["theta"] ? starNode[i]["theta"].as<float>() : 0.0f;
+        float phi = starNode[i]["phi"] ? starNode[i]["phi"].as<float>() : 0.0f;
+        float height = starNode[i]["height"] ? starNode[i]["height"].as<float>() : 0.0f;
+
+        star->SetSphericalPlacement(theta, phi, height);
+        star->SetStageYamlIndex(static_cast<int>(i));
+
+        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
+        star->SetPos(pos);
 
         Star* starPtr = star.get();
         mGame->GetMeshLoadSystem()->SetActorMesh(starPtr);

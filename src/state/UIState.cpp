@@ -5,6 +5,7 @@ UIState::UIState(Game* game)
     : mGame(game),
       mTalkUIIndex(0),
       mIsBattleTutorialShown(false),
+      mIsJustDodgeTutorialShown(false),
       mIsSpecialAttackTutorialShown(false),
       mCurrentTalkWith(TalkWith::Opening),
       mCurrentTutorialKind(TutorialKind::None),

@@ -140,6 +140,12 @@ void UIRenderer::DrawOpening()
     } else if (mGame->GetSceneSystem()->IsTalkWithDoctor()) {
         DrawOpeningTalkWithDoctor();
     }
+    DrawSkipUI();
+}
+
+void UIRenderer::DrawSkipUI()
+{
+    DrawTextDependsOnGameController("opening", "skipText", false);
 }
 
 void UIRenderer::DrawGameOver()
@@ -289,6 +295,8 @@ void UIRenderer::DrawStateUI()
         DrawBreakTutorial();
     } else if (mGame->GetSceneSystem()->IsJewelTutorialShowing()) {
         DrawJewelTutorial();
+    } else if (mGame->GetSceneSystem()->IsJustDodgeTutorialShowing()) {
+        DrawJustDodgeTutorial();
     }
 
     if (mGame->GetSceneSystem()->IsTalkWithNPC()) {
@@ -297,6 +305,10 @@ void UIRenderer::DrawStateUI()
 
     if (mGame->GetSceneSystem()->IsStageClear()) {
         DrawStageClear();
+    }
+
+    if (mGame->GetPlayers()[0]->GetIsTired()) {
+        DrawRecommendReduceTiredUI();
     }
 
     const float alpha = CalculateAlpha();
@@ -342,6 +354,16 @@ void UIRenderer::DrawJewelTutorial()
     mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
 }
 
+void UIRenderer::DrawJustDodgeTutorial()
+{
+    if (DrawSceneTalkUI("state", "justDodgeTutorialText")) {
+        return;
+    }
+
+    mGame->StartPlayingScene();
+    mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
+}
+
 void UIRenderer::DrawTalkWithNPC()
 {
     const std::vector<std::string> talkTexts = mGame->GetPlayers()[0]->GetTalkableNPC()->GetTalkTexts();
@@ -359,6 +381,11 @@ void UIRenderer::DrawTalkWithNPC()
 void UIRenderer::DrawStageClear()
 {
     DrawSceneText("state", "stageClearText", true, 0);
+}
+
+void UIRenderer::DrawRecommendReduceTiredUI()
+{
+    DrawTextDependsOnGameController("state", "recommendReduceTiredText", false);
 }
 
 float UIRenderer::CalculateAlpha() const

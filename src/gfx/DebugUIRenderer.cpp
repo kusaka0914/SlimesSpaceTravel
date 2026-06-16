@@ -498,6 +498,7 @@ void DebugUIRenderer::DrawEnemyParameterEditor()
         float hp = bossEnemy->GetHp();
         if (ImGui::SliderFloat("体力##boss", &hp, 1.0f, 9999.0f, "%.0f")) {
             bossEnemy->SetHp(hp);
+            bossEnemy->SetMaxHp(hp);
         }
 
         float scale = bossEnemy->GetScale().x;
@@ -658,9 +659,6 @@ void DebugUIRenderer::DrawAddActors()
         return;
     }
 
-    ImGui::Text("追加したいオブジェクトを選んでください");
-    ImGui::Separator();
-
     if (ImGui::TreeNode("惑星追加")) {
         const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
 
@@ -790,7 +788,7 @@ void DebugUIRenderer::DrawAddActors()
             ImGui::Combo("モデル##platform", &selectedPlatformModelIndex, platformModelLabels,
                          IM_ARRAYSIZE(platformModelLabels));
 
-            static glm::vec3 platformScale = glm::vec3(3.0f, 0.5f, 3.0f);
+            static glm::vec3 platformScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
             ImGui::SliderFloat("スケールX##platform", &platformScale.x, 0.1f, 30.0f, "%.2f");
             ImGui::SliderFloat("スケールY##platform", &platformScale.y, 0.1f, 30.0f, "%.2f");

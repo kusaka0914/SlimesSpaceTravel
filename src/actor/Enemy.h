@@ -49,9 +49,11 @@ public:
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
+    void FlipCanCountered() { mCanCountered = !mCanCountered; }
 
     bool GetIsDead() const { return mLifeState == LifeState::Dead; }
     bool GetIsBoss() const { return mIsBoss; }
+    bool GetCanCountered() const { return mCanCountered; }
 
     int GetBreakCount() const { return mBreakCount; }
 
@@ -118,6 +120,7 @@ private:
     bool mIsHit;
     bool mIsStrongAttacked;
     bool mIsJustBeforeAttack;
+    bool mCanCountered;
 
     int mBreakCount;
     int mBreakCountMax;
@@ -138,6 +141,7 @@ private:
     float mDefaultAttackMotionTimer;
     float mDyingTimer;
     float mKnockBackTimer;
+    float mCanCounteredTimer;
 
     glm::vec3 mKnockBackFrom;
 

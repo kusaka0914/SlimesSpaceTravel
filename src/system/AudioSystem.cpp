@@ -4,7 +4,8 @@
 #include "system/SceneSystem.h"
 #include <iostream>
 
-AudioSystem::AudioSystem(Game* game) : mGame(game)
+AudioSystem::AudioSystem(Game* game)
+    : mGame(game)
 {
     Initialize();
 }
@@ -60,6 +61,8 @@ void AudioSystem::CreateSEList()
     AddSE(basePath + "charging.wav", "charging_se");
     AddSE(basePath + "recover.wav", "recover_se");
     AddSE(basePath + "message.wav", "message_se");
+    AddSE(basePath + "just_attack.wav", "just_attack_se");
+    AddSE(basePath + "just_dodge.wav", "just_dodge_se");
 }
 
 void AudioSystem::Update() {}

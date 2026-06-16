@@ -5,7 +5,7 @@ GameProgressState::GameProgressState(Game* game)
     : mGame(game),
       mIsFirstBreak(false),
       mIsFirstStrongAttack(false),
-      mCurrentSceneState(SceneState::Playing),
+      mCurrentSceneState(SceneState::Title),
       mNextSceneState(SceneState::None)
 {
 }

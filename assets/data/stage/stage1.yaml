@@ -16,23 +16,6 @@ planets:
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
     shape: Sphere
-  - center:
-      - 96
-      - 0
-      - 0
-    scale:
-      - 8
-      - 2
-      - 8
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    model: planet.obj
-    shape: Sphere
-    stageNum: 3
-    rocketSpawnCondition: ""
 enemies:
   - type: normal
     theta: 1.973047
@@ -143,7 +126,7 @@ enemies:
     theta: -0.684602
     phi: -0.155907
     height: 0
-    currentPlanetNum: 0
+    currentPlanetNum: 2
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -174,14 +157,37 @@ boats:
 boatParts:
   - type: parts1
     currentPlanetNum: 0
-    theta: 0
-    phi: 1
-    height: 0
+    theta: 3.141593
+    phi: 1.128796
+    height: 3.59
+  - type: parts2
+    currentPlanetNum: 0
+    theta: 0.961
+    phi: 0.468
+    height: 3.3
+  - type: parts3
+    currentPlanetNum: 0
+    theta: -1.225
+    phi: -0.496
+    height: 3.3
+  - type: parts4
+    currentPlanetNum: 0
+    theta: 0.317
+    phi: -0.36
+    height: 1.59
+  - type: parts5
+    currentPlanetNum: 0
+    theta: 1.897
+    phi: -0.622
+    height: 0.1
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - currentPlanetNum: 2
+  - theta: 0.0
+    phi: 0.0
+    height: 0.0
+    currentPlanetNum: 2
     modelPath: star.obj
 NPCs:
   - theta: -0.580512
@@ -201,7 +207,7 @@ NPCs:
     height: 0
     type: spaceSlime
     name: BigCrystalTutorialNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！]
+    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！, "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"]
   - theta: 3.03915
     phi: -0.460995
     height: 0
@@ -246,8 +252,8 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - 0.33460575
-      - -0.43328178
+      - 0.33460563
+      - -0.4332818
       - -0.83684283
   - currentPlanetNum: 0
     theta: 2.883379
@@ -288,8 +294,8 @@ platforms:
       - 1.4
     modelPath: platform.obj
     upVec:
-      - 0.897875
-      - -0.33004847
+      - 0.8978751
+      - -0.3300485
       - 0.29135638
   - currentPlanetNum: 0
     theta: -1.821837
@@ -302,8 +308,8 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - -0.18925914
-      - -0.64680505
+      - -0.18925916
+      - -0.6468051
       - -0.73879915
   - currentPlanetNum: 0
     theta: -2.424334
@@ -316,9 +322,9 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - -0.3477609
-      - -0.886508
-      - -0.30523086
+      - -0.34776092
+      - -0.88650805
+      - -0.3052309
   - currentPlanetNum: 0
     theta: 1.664041
     phi: 0.308421
@@ -361,45 +367,3 @@ platforms:
       - 0.5271148
       - 0.43639275
       - 0.72918546
-  - currentPlanetNum: 3
-    theta: -0.80333
-    phi: 1.219339
-    height: -6.384
-    facingYaw: 0
-    scale:
-      - 0.4
-      - 0.4
-      - 0.4
-    modelPath: curvePlatform.obj
-    upVec:
-      - 0.021415995
-      - 0.9995439
-      - -0.021295782
-  - currentPlanetNum: 3
-    theta: -2.971
-    phi: 1.225597
-    height: -0.455
-    facingYaw: 0
-    scale:
-      - 1.32
-      - 1.92
-      - 0.39
-    modelPath: platform.obj
-    upVec:
-      - 0.021426897
-      - 0.9995439
-      - -0.021280866
-  - currentPlanetNum: 3
-    theta: -2.95
-    phi: 1.282612
-    height: 1.209
-    facingYaw: 0
-    scale:
-      - 0.41
-      - 0.4
-      - 0.4
-    modelPath: curvePlatform.obj
-    upVec:
-      - 0.9997708
-      - -0.021409959
-      - -4.261451e-11

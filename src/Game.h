@@ -45,6 +45,7 @@ public:
     void OnLanded();
     void OnPlayerDied();
     void OnBoatPartsObtained();
+    void VibrateController(float low, float high, float time);
 
     Player* FindNearestPlayer(Actor* actor) const;
 
@@ -135,7 +136,7 @@ private:
 
     bool mReloadKeyPressedPrev = false;
     bool mUIReloadKeyPressedPrev = false;
-    bool mAPressedPrev = false;
+    bool mXPressedPrev = false;
     bool mPPressedPrev = false;
     bool mLPressedPrev = false;
     bool mZLPressedPrev = false;
