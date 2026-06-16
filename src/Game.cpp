@@ -28,14 +28,14 @@ Game::Game()
     : mWindow(nullptr),
       mSdlController(nullptr),
       mCurrentStage(nullptr),
-      mCurrentStageNum(1),
+      mCurrentStageNum(0),
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
       mReloadKeyPressedPrev(false),
       mUIReloadKeyPressedPrev(false),
-      mAPressedPrev(false),
+      mXPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/stage1.yaml"),
+      mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
       mIsDebugMode(false),
       mIsFreeCameraMode(false)
 {
@@ -201,13 +201,13 @@ void Game::ProcessGameInput()
     //     CreatePlayer2();
     // }
 
-    const bool aPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_Y)) ||
-                          glfwGetKey(mWindow, GLFW_KEY_J) == GLFW_PRESS;
+    const bool xPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X)) ||
+                          glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
 
-    if (aPressed && !mAPressedPrev) {
+    if (xPressed && !mXPressedPrev) {
         mSceneSystem->OnConfirmPressed();
     }
-    mAPressedPrev = aPressed;
+    mXPressedPrev = xPressed;
 
     const bool escapePressed = glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS;
     const bool backPressed = mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK);
@@ -245,7 +245,8 @@ void Game::ProcessGameInput()
     // mZLPressedPrev = isZLPressed;
 
     const bool startPressed =
-        mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START);
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START)) ||
+        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS;
     if (startPressed && !mStartPressedPrev) {
         mSceneSystem->OnStartPressed();
     }
@@ -435,7 +436,8 @@ void Game::OnPlayerAttackHit()
 void Game::OnStrongAttacked()
 {
     mSceneSystem->OnStrongAttacked();
-    SDL_GameControllerRumble(mSdlController, 35000, 0, 500);
+    mHitStopTimer = 0.4f;
+    SDL_GameControllerRumble(mSdlController, 40000, 0, 500);
 }
 
 void Game::OnPlayerCounter()
@@ -505,4 +507,9 @@ void Game::StartPlayingScene()
 void Game::StartFocusingScene()
 {
     mSceneSystem->StartFocusingScene();
+}
+
+void Game::VibrateController(float low, float high, float time)
+{
+    SDL_GameControllerRumble(mSdlController, low, high, time);
 }

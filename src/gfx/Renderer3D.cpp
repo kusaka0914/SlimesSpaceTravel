@@ -149,7 +149,8 @@ void Renderer3D::TryDrawPlayers() const
     std::vector<Player*> players = mGame->GetPlayers();
     TryDrawActor(players[0]);
 
-    bool canDrawAttackRange = players[0]->IsAttacking() || players[0]->GetIsStrongAttacked();
+    bool canDrawAttackRange =
+        players[0]->IsAttacking() || players[0]->GetIsStrongAttacked() || players[0]->GetCanSpecialAttack();
     if (canDrawAttackRange) {
         DrawAttackRange(players[0]);
     }

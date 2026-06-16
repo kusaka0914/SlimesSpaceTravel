@@ -36,6 +36,7 @@ private:
     void DrawOpeningIntro();
     void DrawOpeningTalkWithMother();
     void DrawOpeningTalkWithDoctor();
+    void DrawSkipUI();
 
     void DrawDefaultUI();
 
@@ -51,8 +52,10 @@ private:
     void DrawBattleTutorial();
     void DrawBreakTutorial();
     void DrawJewelTutorial();
+    void DrawJustDodgeTutorial();
     void DrawTalkWithNPC();
     void DrawStageClear();
+    void DrawRecommendReduceTiredUI();
     float CalculateAlpha() const;
     void DrawFadeInBg(float alpha);
     void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex);

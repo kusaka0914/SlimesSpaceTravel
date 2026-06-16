@@ -145,3 +145,9 @@ glm::vec3 CharacterActor::CalculateCollisionAdjustedPos(const glm::vec3& moveDel
     desiredPos = mGame->GetPhysicsSystem()->CheckCollision(this, moveDelta, desiredPos);
     return desiredPos;
 }
+
+void CharacterActor::SetBaseScale(const glm::vec3& scale)
+{
+    mBaseScale = scale;
+    mScale = scale;
+}

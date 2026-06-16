@@ -12,7 +12,14 @@ class Enemy;
 
 class Player : public CharacterActor {
 public:
-    enum class ActionState { Idle, Dodging, Attacking, Charging, StrongAttacking, KnockedBack };
+    enum class ActionState {
+        Idle,
+        Dodging,
+        Attacking,
+        Charging,
+        StrongAttacking,
+        KnockedBack,
+    };
 
     enum class AttackKind { Normal, Wide, Strong };
 
@@ -33,7 +40,8 @@ public:
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; };
     bool IsAttacking() const
     {
-        return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking;
+        return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking ||
+               mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
     }
 
     void SetIsDodged(bool isDodged) { mIsDodged = isDodged; }
@@ -86,6 +94,9 @@ public:
     void SetTalkableNPC(NPC* talkableNPC) { mTalkableNPC = talkableNPC; }
 
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
+    bool GetIsSpecialAttackPressed() const { return mSpecialAttackPressed; }
+    bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
+    bool GetIsTired() const { return mIsTired; }
 
     int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
     int GetJewelCount() const { return mJewelCount; }
@@ -162,6 +173,8 @@ private:
     void UpdateCharging(float deltaTime);
     void UpdateStrongAttacking(float deltaTime);
     void UpdateKnockedBack(float deltaTime);
+    void UpdateSpecialAttackCharging(float deltaTime);
+    void UpdateContinuousAttacking(float deltaTime);
     void UpdateTimer(float deltaTime);
 
     void UpdateJewelTimer(float deltaTime);
@@ -177,8 +190,10 @@ private:
     void StartRidingBoat(Boat* boat);
     void StartJumping(float deltaTime);
     void StartJewelTimer();
+    void StartTired();
 
     void FinishCharging();
+    void FinishSpecialAttackCharging();
 
     void ChangeFaceDir();
     void UpdateFacingForwardVec();
@@ -190,16 +205,19 @@ private:
     void StartAfterAttackReaction();
     void WideAttack(float deltaTime);
     void StrongAttack(float deltaTime);
-    void MoveDuringKnockBack(float deltaTime);
     void SpecialAttack(float deltaTime);
+    void MoveDuringKnockBack(float deltaTime);
+    void StartSpecialAttackCharging();
+    void StartContinuousAttacking();
     void FollowMovingBoat(Boat* boat);
     void OnLanded() override;
+    void ReduceTired();
 
     bool IsAlive() const { return mHp > 0.0f; };
     bool IsTouchingBoat(Boat* boat);
     bool IsFallIntoPlanetInside();
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange);
-    bool CanWalk() const { return mAttackMoveLockRemaining <= 0.0f; }
+    bool CanWalk() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
     std::vector<Enemy*> FindHitEnemies();
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
@@ -223,6 +241,9 @@ private:
     bool mIsStrongAttackHit;
     bool mIsStrongAttacked;
     bool mIsCharged;
+    bool mCanSpecialAttack;
+    bool mIsAirAttacking;
+    bool mIsTired;
 
     int mCurrentPlanetNum;
     int mAttackComboIndex;
@@ -281,6 +302,9 @@ private:
     float mRayCastTimer;
     float mInputAvailableTimer;
     float mKnockBackSpeed;
+    float mSpecialChargingTimer;
+    float mContinuousAttackingTimer;
+    float mContinuousAttackingCooldown;
 
     glm::vec3 mForwardVec;
     glm::vec3 mLeftVec;

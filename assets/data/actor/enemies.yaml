@@ -1,8 +1,8 @@
 enemies:
   - type: common
-    knockBackSpeed: 5
+    knockBackSpeed: 15
     defaultLaunchedTimer: 4
-    detectionRange: 6
+    detectionRange: 10
   - type: normal
     hp: 80
     modelPath: enemy.obj
