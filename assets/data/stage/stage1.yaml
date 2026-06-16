@@ -230,7 +230,7 @@ platforms:
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.939608
-    height: -0.795
+    height: -0.245
     facingYaw: -3.142
     scale:
       - 0.5
@@ -238,9 +238,9 @@ platforms:
       - 0.5
     modelPath: curvePlatform.obj
     upVec:
-      - -0.5928248
-      - 0.8027634
-      - -0.06426155
+      - -0.5909515
+      - 0.8066904
+      - 0.0051955623
   - currentPlanetNum: 0
     theta: -1.190649
     phi: -0.444701

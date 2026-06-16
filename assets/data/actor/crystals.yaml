@@ -2,10 +2,10 @@ crystals :
   - type: common
     modelPath: crystals.obj
   - type: little
-    scale: 1.0
+    scale: 1.4
     hp: 10.0
-    radius : 1.0
+    radius : 1.4
   - type: big
-    scale: 2.0
+    scale: 2.2
     hp: 50.0
     radius: 2.3

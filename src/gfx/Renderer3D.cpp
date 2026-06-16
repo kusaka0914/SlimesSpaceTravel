@@ -17,7 +17,9 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
+#include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
@@ -44,6 +46,7 @@ void Renderer3D::Initialize()
 
     std::string basePath = "../assets/textures/";
     RegisterTexture(basePath + "guard.png", "guard");
+    RegisterTexture(basePath + "tired_star.png", "tired_star");
 
     glGenVertexArrays(1, &mAttackRangeVAO);
     glGenBuffers(1, &mAttackRangeVBO);
@@ -112,7 +115,7 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) c
     glUniform1f(mShader3D->GetLocToonLevels(), 3.0f);
     glUniform1f(mShader3D->GetLocToonStrength(), 0.6f);
     TryDrawActorOnPlanets(planets, viewMat);
-    TryDrawPlayers();
+    TryDrawPlayers(viewMat);
 }
 
 void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const
@@ -144,7 +147,7 @@ void Renderer3D::TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm:
     }
 }
 
-void Renderer3D::TryDrawPlayers() const
+void Renderer3D::TryDrawPlayers(const glm::mat4& viewMat) const
 {
     std::vector<Player*> players = mGame->GetPlayers();
     TryDrawActor(players[0]);
@@ -155,9 +158,83 @@ void Renderer3D::TryDrawPlayers() const
         DrawAttackRange(players[0]);
     }
 
+    DrawTiredEffect(viewMat, players[0]);
+
     if (mGame->GetIsPlayer2Joined()) {
         TryDrawActor(players[1]);
+        DrawTiredEffect(viewMat, players[1]);
     }
+}
+
+void Renderer3D::DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const
+{
+    if (!player || !player->GetIsActive() || !player->GetIsTired()) {
+        return;
+    }
+
+    auto texIt = mTextures.find("tired_star");
+    if (texIt == mTextures.end()) {
+        return;
+    }
+
+    StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texIt->second);
+    glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
+    glUniform1i(mShader3D->GetLocUseTexture(), 1);
+    glUniform4f(mShader3D->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+
+    mVertexArrays.at("quad")->SetActive();
+
+    constexpr int starCount = 3;
+    constexpr float orbitRadius = 0.35f;
+    constexpr float headHeight = 1.35f;
+    constexpr float starSize = 0.28f;
+    constexpr float rotateSpeed = 4.5f;
+
+    const float time = static_cast<float>(glfwGetTime());
+
+    glm::vec3 up = player->GetUpVec();
+    if (glm::length(up) < 1e-6f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    up = glm::normalize(up);
+
+    glm::vec3 forward = player->GetFacingForwardVec();
+    forward = forward - up * glm::dot(forward, up);
+
+    if (glm::length(forward) < 1e-6f) {
+        forward = player->GetForwardVec();
+        forward = forward - up * glm::dot(forward, up);
+    }
+
+    if (glm::length(forward) < 1e-6f) {
+        forward = glm::vec3(0.0f, 0.0f, 1.0f);
+        forward = forward - up * glm::dot(forward, up);
+    }
+
+    forward = glm::normalize(forward);
+
+    glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    glm::vec3 center = player->GetPos() + up * headHeight;
+
+    for (int i = 0; i < starCount; ++i) {
+        const float angle =
+            time * rotateSpeed + glm::two_pi<float>() * static_cast<float>(i) / static_cast<float>(starCount);
+
+        const glm::vec3 orbitOffset = forward * std::cos(angle) * orbitRadius + left * std::sin(angle) * orbitRadius;
+
+        const float scale = starSize * (1.0f + 0.15f * std::sin(time * 8.0f + static_cast<float>(i)));
+
+        glm::mat4 billboard = mGame->GetMathUtils()->CreateBillBoard(viewMat, center + orbitOffset, up, scale, scale);
+
+        glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
+    EndTransparentDraw();
 }
 
 void Renderer3D::TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::mat4& viewMat) const

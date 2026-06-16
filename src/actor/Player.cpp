@@ -303,7 +303,7 @@ void Player::UpdateIdle(float deltaTime)
     }
 
     bool isMoving = std::abs(mMoveForward) > 0.01f || std::abs(mMoveLeft) > 0.01f;
-    if (isMoving) {
+    if (isMoving && !mIsTired) {
         ChangeFaceDir();
     }
 
@@ -680,6 +680,41 @@ void Player::MoveDuringDodging(float deltaTime)
 
     desiredPos = mGame->GetPhysicsSystem()->CheckCollision(this, moveDelta, desiredPos);
     mPos = desiredPos;
+
+    if (mOnGround) {
+        SnapToGround(0.5f, 1.0f);
+    }
+}
+
+void Player::SnapToGround(float upOffset, float downLength)
+{
+    if (glm::length(mUpVec) < 1e-6f) {
+        return;
+    }
+
+    glm::vec3 up = glm::normalize(mUpVec);
+
+    glm::vec3 from = mPos + up * upOffset;
+    glm::vec3 to = mPos - up * downLength;
+
+    btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
+
+    auto* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    if (!bulletWorld) {
+        return;
+    }
+
+    bulletWorld->rayTest(cb.m_rayFromWorld, cb.m_rayToWorld, cb);
+
+    if (!cb.hasHit()) {
+        return;
+    }
+
+    glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+
+    mPos = hitPos;
+    mOnGround = true;
+    mVelocity = glm::vec3(0.0f);
 }
 
 void Player::MoveDuringCharging(float deltaTime)

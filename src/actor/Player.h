@@ -221,6 +221,7 @@ private:
     std::vector<Enemy*> FindHitEnemies();
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
+    void SnapToGround(float upOffset, float downLength);
 
 private:
     ActionState mActionState;
