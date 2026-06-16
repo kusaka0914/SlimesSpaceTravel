@@ -190,7 +190,7 @@ private:
     void StartRidingBoat(Boat* boat);
     void StartJumping(float deltaTime);
     void StartJewelTimer();
-    void StartTired();
+    void StartTired(float lockTime);
 
     void FinishCharging();
     void FinishSpecialAttackCharging();

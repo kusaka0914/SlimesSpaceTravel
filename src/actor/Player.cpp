@@ -453,11 +453,14 @@ void Player::UpdateSpecialAttackCharging(float deltaTime)
     if (specialChargingTimerPrev >= 2.0f && mSpecialChargingTimer <= 2.0f) {
         mGame->VibrateController(10000, 0, 1000);
         mJewelCount--;
+        mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 1.0f && mSpecialChargingTimer <= 1.0f) {
         mGame->VibrateController(20000, 0, 1000);
         mJewelCount--;
+        mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 0.0f && mSpecialChargingTimer <= 0.0f) {
         mGame->VibrateController(30000, 0, 1000);
+        mGame->GetAudioSystem()->PlaySE("charged_se");
     }
 
     if (mSpecialChargingTimer <= 0.0f) {
@@ -635,7 +638,7 @@ void Player::StartCharging(float deltaTime)
 {
     mActionState = ActionState::Charging;
     mAttackPressTimer = mDefaultAttackPressTimer;
-    mGame->GetAudioSystem()->PlaySE("charging_se");
+    mGame->GetAudioSystem()->PlaySE("air_charging_se");
 }
 
 void Player::StartStrongAttacking(float deltaTime)
@@ -839,7 +842,7 @@ void Player::Attack(float deltaTime)
     }
 
     GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
-    StartTired();
+    StartTired(5.0f);
     for (Enemy* enemy : hitEnemies) {
         enemy->SetIsStrongAttacked(true);
         enemy->ApplyDamage(mAttack, this);
@@ -847,12 +850,12 @@ void Player::Attack(float deltaTime)
     }
 }
 
-void Player::StartTired()
+void Player::StartTired(float lockTime)
 {
     mIsTired = true;
-    mAttackMoveLockRemaining = 5.0f;
-    mDodgeCooldown = 5.0f;
-    mAttackCooldownRemaining = 5.0f;
+    mAttackMoveLockRemaining = lockTime;
+    mDodgeCooldown = lockTime;
+    mAttackCooldownRemaining = lockTime;
 }
 
 void Player::StartAfterAttackReaction()
@@ -871,7 +874,7 @@ void Player::StartAfterAttackReaction()
     }
 
     if (mAttackKind == AttackKind::Strong) {
-        StartTired();
+        StartTired(5.0f);
         return;
     }
 
@@ -1004,6 +1007,9 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
         return;
     }
 
+    if (mCanSpecialAttack) {
+        StartTired(20.0f);
+    }
     mHp -= enemy->GetAttack();
     mKnockBackFrom = enemy->GetPos();
     mDamageTimer = mDefaultDamageTimer;

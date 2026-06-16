@@ -52,17 +52,19 @@ void AudioSystem::CreateSEList()
     AddSE(basePath + "damaged.wav", "damaged_se");
     AddSE(basePath + "destroy.wav", "destroy_se");
     AddSE(basePath + "break.wav", "break_se");
-    AddSE(basePath + "charged.wav", "charged_se");
+    AddSE(basePath + "air_charged.wav", "air_charged_se");
     AddSE(basePath + "show_boat.wav", "show_boat_se");
     AddSE(basePath + "show_key.wav", "show_key_se");
     AddSE(basePath + "pickup.wav", "pickup_se");
     AddSE(basePath + "dodge.wav", "dodge_se");
     AddSE(basePath + "jump.wav", "jump_se");
-    AddSE(basePath + "charging.wav", "charging_se");
+    AddSE(basePath + "air_charging.wav", "air_charging_se");
     AddSE(basePath + "recover.wav", "recover_se");
     AddSE(basePath + "message.wav", "message_se");
     AddSE(basePath + "just_attack.wav", "just_attack_se");
     AddSE(basePath + "just_dodge.wav", "just_dodge_se");
+    AddSE(basePath + "charging.wav", "charging_se");
+    AddSE(basePath + "charged.wav", "charged_se");
 }
 
 void AudioSystem::Update() {}

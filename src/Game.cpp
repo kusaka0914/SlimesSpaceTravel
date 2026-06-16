@@ -424,7 +424,7 @@ void Game::OnPlayerApplyDamage()
 
 void Game::OnPlayerFinishCharging()
 {
-    mAudioSystem->PlaySE("charged_se");
+    mAudioSystem->PlaySE("air_charged_se");
     SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
 }
 

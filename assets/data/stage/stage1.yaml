@@ -155,6 +155,11 @@ boats:
     startPlanet: 1
     destPlanet: 2
 boatParts:
+  # - type: parts1
+  #   currentPlanetNum: 0
+  #   theta: 0
+  #   phi: 0
+  #   height: 0
   - type: parts1
     currentPlanetNum: 0
     theta: 3.141593
