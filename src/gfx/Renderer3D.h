@@ -30,7 +30,8 @@ private:
 
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const;
     void DrawPlanets(const std::vector<Planet*>& planets) const;
-    void TryDrawPlayers() const;
+    void TryDrawPlayers(const glm::mat4& viewMat) const;
+    void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
     void TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::mat4& viewMat) const;
     void TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm::mat4 viewMat) const;
 

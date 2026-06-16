@@ -397,6 +397,9 @@ void Enemy::ApplyDamage(float damage, Player* player)
 
         mIsStrongAttacked = false;
         FinishLaunched();
+    } else if (!mIsBoss && mOnGround) {
+        constexpr float knockBackTimer = 0.04f;
+        StartKnockedBack(knockBackTimer);
     }
 }
 

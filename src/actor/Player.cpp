@@ -303,7 +303,7 @@ void Player::UpdateIdle(float deltaTime)
     }
 
     bool isMoving = std::abs(mMoveForward) > 0.01f || std::abs(mMoveLeft) > 0.01f;
-    if (isMoving) {
+    if (isMoving && !mIsTired) {
         ChangeFaceDir();
     }
 
@@ -453,11 +453,14 @@ void Player::UpdateSpecialAttackCharging(float deltaTime)
     if (specialChargingTimerPrev >= 2.0f && mSpecialChargingTimer <= 2.0f) {
         mGame->VibrateController(10000, 0, 1000);
         mJewelCount--;
+        mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 1.0f && mSpecialChargingTimer <= 1.0f) {
         mGame->VibrateController(20000, 0, 1000);
         mJewelCount--;
+        mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 0.0f && mSpecialChargingTimer <= 0.0f) {
         mGame->VibrateController(30000, 0, 1000);
+        mGame->GetAudioSystem()->PlaySE("charged_se");
     }
 
     if (mSpecialChargingTimer <= 0.0f) {
@@ -635,7 +638,7 @@ void Player::StartCharging(float deltaTime)
 {
     mActionState = ActionState::Charging;
     mAttackPressTimer = mDefaultAttackPressTimer;
-    mGame->GetAudioSystem()->PlaySE("charging_se");
+    mGame->GetAudioSystem()->PlaySE("air_charging_se");
 }
 
 void Player::StartStrongAttacking(float deltaTime)
@@ -680,6 +683,41 @@ void Player::MoveDuringDodging(float deltaTime)
 
     desiredPos = mGame->GetPhysicsSystem()->CheckCollision(this, moveDelta, desiredPos);
     mPos = desiredPos;
+
+    if (mOnGround) {
+        SnapToGround(0.5f, 1.0f);
+    }
+}
+
+void Player::SnapToGround(float upOffset, float downLength)
+{
+    if (glm::length(mUpVec) < 1e-6f) {
+        return;
+    }
+
+    glm::vec3 up = glm::normalize(mUpVec);
+
+    glm::vec3 from = mPos + up * upOffset;
+    glm::vec3 to = mPos - up * downLength;
+
+    btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
+
+    auto* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    if (!bulletWorld) {
+        return;
+    }
+
+    bulletWorld->rayTest(cb.m_rayFromWorld, cb.m_rayToWorld, cb);
+
+    if (!cb.hasHit()) {
+        return;
+    }
+
+    glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+
+    mPos = hitPos;
+    mOnGround = true;
+    mVelocity = glm::vec3(0.0f);
 }
 
 void Player::MoveDuringCharging(float deltaTime)
@@ -804,7 +842,7 @@ void Player::Attack(float deltaTime)
     }
 
     GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
-    StartTired();
+    StartTired(5.0f);
     for (Enemy* enemy : hitEnemies) {
         enemy->SetIsStrongAttacked(true);
         enemy->ApplyDamage(mAttack, this);
@@ -812,12 +850,12 @@ void Player::Attack(float deltaTime)
     }
 }
 
-void Player::StartTired()
+void Player::StartTired(float lockTime)
 {
     mIsTired = true;
-    mAttackMoveLockRemaining = 5.0f;
-    mDodgeCooldown = 5.0f;
-    mAttackCooldownRemaining = 5.0f;
+    mAttackMoveLockRemaining = lockTime;
+    mDodgeCooldown = lockTime;
+    mAttackCooldownRemaining = lockTime;
 }
 
 void Player::StartAfterAttackReaction()
@@ -836,7 +874,7 @@ void Player::StartAfterAttackReaction()
     }
 
     if (mAttackKind == AttackKind::Strong) {
-        StartTired();
+        StartTired(5.0f);
         return;
     }
 
@@ -969,6 +1007,9 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
         return;
     }
 
+    if (mCanSpecialAttack) {
+        StartTired(20.0f);
+    }
     mHp -= enemy->GetAttack();
     mKnockBackFrom = enemy->GetPos();
     mDamageTimer = mDefaultDamageTimer;

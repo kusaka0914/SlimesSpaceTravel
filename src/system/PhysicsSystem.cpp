@@ -180,28 +180,37 @@ glm::vec3 PhysicsSystem::CheckCollision(Actor* actor, const glm::vec3& moveDelta
 
 std::optional<glm::vec3> PhysicsSystem::CheckConflictActors(Actor* actor, const glm::vec3& desiredPos)
 {
-    Enemy* enemy = dynamic_cast<Enemy*>(actor);
-    if (!enemy) {
-        std::vector<Enemy*> enemies = actor->GetCurrentPlanet()->GetEnemies();
-        for (Enemy* enemy : enemies) {
-            if (auto conflictPos = CheckConflictActor(enemy, desiredPos)) {
-                return *conflictPos;
-            }
+    std::vector<Enemy*> enemies = actor->GetCurrentPlanet()->GetEnemies();
+
+    for (Enemy* enemy : enemies) {
+        if (enemy == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(enemy, desiredPos)) {
+            return *conflictPos;
         }
     }
 
     std::vector<Crystal*> crystals = actor->GetCurrentPlanet()->GetCrystals();
     for (Crystal* crystal : crystals) {
-        if (auto conflictPos = CheckConflictActor(crystal, desiredPos))
+        if (crystal == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(crystal, desiredPos)) {
             return *conflictPos;
+        }
     }
 
-    NPC* npc = dynamic_cast<NPC*>(actor);
-    if (!npc) {
-        std::vector<NPC*> npcs = actor->GetCurrentPlanet()->GetNPCs();
-        for (NPC* npc : npcs) {
-            if (auto conflictPos = CheckConflictActor(npc, desiredPos))
-                return *conflictPos;
+    std::vector<NPC*> npcs = actor->GetCurrentPlanet()->GetNPCs();
+    for (NPC* npc : npcs) {
+        if (npc == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(npc, desiredPos)) {
+            return *conflictPos;
         }
     }
 

@@ -73,8 +73,12 @@ void SceneSystem::OnConfirmPressed()
 
 void SceneSystem::OnStartPressed()
 {
-    if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening) {
+    if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
         StartFadeIn();
+        return;
+    }
+
+    if (!mGame->GetSdlController()) {
         return;
     }
 

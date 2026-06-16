@@ -56,3 +56,35 @@ glm::mat4 MathUtils::CreateBillBoard(const glm::mat4& viewMat, const Actor* acto
 
     return billboard;
 }
+
+glm::mat4 MathUtils::CreateBillBoard(const glm::mat4& viewMat, const glm::vec3& centerPos, const glm::vec3& upVec,
+                                     float width, float height) const
+{
+    glm::vec3 cameraPos(glm::inverse(viewMat)[3]);
+
+    glm::vec3 up = upVec;
+    if (glm::length(up) < 1e-6f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    up = glm::normalize(up);
+
+    glm::vec3 forward = glm::normalize(cameraPos - centerPos);
+    glm::vec3 right = glm::normalize(glm::cross(up, forward));
+
+    if (glm::length(right) < 0.01f) {
+        right = glm::normalize(glm::cross(up, glm::vec3(0.0f, 0.0f, 1.0f)));
+    }
+    if (glm::length(right) < 0.01f) {
+        right = glm::normalize(glm::cross(up, glm::vec3(1.0f, 0.0f, 0.0f)));
+    }
+
+    glm::vec3 upQuad = glm::cross(forward, right);
+
+    glm::mat4 billboard(1.0f);
+    billboard[0] = glm::vec4(right * width, 0.0f);
+    billboard[1] = glm::vec4(-upQuad * height, 0.0f);
+    billboard[2] = glm::vec4(forward, 0.0f);
+    billboard[3] = glm::vec4(centerPos, 1.0f);
+
+    return billboard;
+}
