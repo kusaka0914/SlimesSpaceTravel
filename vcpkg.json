@@ -1,0 +1,15 @@
+﻿{
+  "name": "slimes-space-travel",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "glfw3",
+    "glew",
+    "glm",
+    "assimp",
+    "bullet3",
+    "sdl2",
+    "sdl2-mixer",
+    "sdl2-ttf",
+    "yaml-cpp"
+  ]
+}

@@ -95,7 +95,8 @@ Player::Player(Game* game)
       mContinuousAttackingTimer(-1.0f),
       mContinuousAttackingCooldown(-1.0f),
       mSpecialChargingTimer(-1.0f),
-      mCanSpecialAttack(false)
+      mCanSpecialAttack(false),
+      mIsTired(false)
 {
 }
 
