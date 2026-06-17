@@ -467,11 +467,11 @@ void Player::UpdateSpecialAttackCharging(float deltaTime)
         mCanSpecialAttack = true;
     }
 
-    if (mSpecialChargingTimer <= 0.0f && mSpecialAttackPressedPrev && !mSpecialAttackPressed) {
+    if (mSpecialChargingTimer <= 0.0f && mAttackPressed && !mAttackPressedPrev) {
         SpecialAttack(deltaTime);
     }
 
-    if (mSpecialAttackPressedPrev && !mSpecialAttackPressed) {
+    if (mAttackPressed && !mAttackPressedPrev) {
         mSpecialChargingTimer = -1.0f;
     }
 }
@@ -977,6 +977,7 @@ void Player::SpecialAttack(float deltaTime)
 
     mGame->VibrateController(0, 40000, 1000);
     mCanSpecialAttack = false;
+    mAttackCooldownRemaining = 1.0f;
 }
 
 void Player::Recover()
