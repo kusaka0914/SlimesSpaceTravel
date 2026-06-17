@@ -13,7 +13,7 @@
 CameraSystem::CameraSystem(Game* game)
     : mGame(game),
       mCameraYaw(0.0f),
-      mCameraPitch(-1.2f),
+      mCameraPitch(-1.0f),
       mCameraStickY(0.0f),
       mCameraStickX(0.0f),
       mCameraUpVec(0.0f, 1.0f, 0.0f),
@@ -141,7 +141,8 @@ glm::mat4 CameraSystem::GetPlayerView(Player* player, float cameraDistance, bool
     toPosX = glm::normalize(-forwardVec);
     cameraDir = glm::normalize(std::cos(mCameraPitch) * toPosX + std::sin(mCameraPitch) * mCameraUpVec);
     mCameraPos = mCameraTargetPos - cameraDir * cameraDistance;
-    return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
+    glm::vec3 lookAtOffset = glm::normalize(mCameraUpVec) * 1.5f;
+    return glm::lookAt(mCameraPos, mCameraTargetPos + lookAtOffset, mCameraUpVec);
 }
 
 glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
@@ -257,7 +258,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     }
 
     if (mGame->GetSceneSystem()->IsStageClear()) {
-        glm::mat4 playerFocusView = GetPlayerView(mGame->GetPlayers()[0], 4.0f, true);
+        glm::mat4 playerFocusView = GetPlayerView(mGame->GetPlayers()[0], 6.0f, true);
         views.emplace_back(playerFocusView);
         return views;
     }
@@ -276,7 +277,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         views.emplace_back(GetTargetCameraView(targetEnemy));
     }
 
-    glm::mat4 playerView = GetPlayerView(mGame->GetPlayers()[0], 10.0f);
+    glm::mat4 playerView = GetPlayerView(mGame->GetPlayers()[0], 8.0f);
     views.emplace_back(playerView);
 
     bool isPlayer2Joined = mGame->GetIsPlayer2Joined();
