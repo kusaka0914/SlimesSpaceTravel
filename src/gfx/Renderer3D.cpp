@@ -17,12 +17,14 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
+#include <SDL_ttf.h>
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
+#include <string>
 
 Renderer3D::Renderer3D(Game* game)
     : Renderer(game),
@@ -116,6 +118,10 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) c
     glUniform1f(mShader3D->GetLocToonStrength(), 0.6f);
     TryDrawActorOnPlanets(planets, viewMat);
     TryDrawPlayers(viewMat);
+
+    if (mGame->GetIsDebugMode()) {
+        DrawDebugLabels(viewMat);
+    }
 }
 
 void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const
@@ -516,4 +522,95 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glBindVertexArray(0);
 
     EndTransparentDraw();
+}
+
+void Renderer3D::DrawDebugLabels(const glm::mat4& viewMat) const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const std::vector<Planet*>& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (auto planet : planets) {
+        for (Platform* platform : planet->GetPlatforms()) {
+            DrawDebugLabel(viewMat, platform, "足場 " + std::to_string(platform->GetStageYamlIndex()));
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            DrawDebugLabel(viewMat, npc, "NPC " + std::to_string(npc->GetStageYamlIndex()));
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            DrawDebugLabel(viewMat, enemy, "敵 " + std::to_string(enemy->GetStageYamlIndex()));
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            DrawDebugLabel(viewMat, crystal, "クリスタル " + std::to_string(crystal->GetStageYamlIndex()));
+        }
+
+        for (BoatParts* boatParts : planet->GetBoatParts()) {
+            DrawDebugLabel(viewMat, boatParts, "ボートパーツ " + std::to_string(boatParts->GetStageYamlIndex()));
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            DrawDebugLabel(viewMat, boat, "ボート " + std::to_string(boat->GetStageYamlIndex()));
+        }
+
+        if (planet->GetKey()) {
+            DrawDebugLabel(viewMat, planet->GetKey(), "鍵 " + std::to_string(planet->GetKey()->GetStageYamlIndex()));
+        }
+
+        if (planet->GetStar()) {
+            DrawDebugLabel(viewMat, planet->GetStar(),
+                           "スター " + std::to_string(planet->GetStar()->GetStageYamlIndex()));
+        }
+    }
+}
+
+void Renderer3D::DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const
+{
+    if (!actor || !actor->GetIsActive()) {
+        return;
+    }
+
+    int textWidth = 0;
+    int textHeight = 0;
+
+    const SDL_Color textColor{255, 255, 255, 255};
+
+    GLuint textTexture = CreateTextTexture(label, textWidth, textHeight, textColor, 1.0f);
+
+    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
+        return;
+    }
+
+    StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textTexture);
+    glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
+    glUniform1i(mShader3D->GetLocUseTexture(), 1);
+    glUniform4f(mShader3D->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+
+    mVertexArrays.at("quad")->SetActive();
+
+    const float labelHeight = actor->GetRadius() * actor->GetScale().y + 0.8f;
+
+    const float baseHeight = 0.5f;
+    const float aspect = static_cast<float>(textWidth) / static_cast<float>(textHeight);
+
+    const float height = baseHeight;
+    const float width = baseHeight * aspect;
+
+    glm::mat4 billboard = mGame->GetMathUtils()->CreateBillBoard(viewMat, actor, labelHeight, 0.0f, width, height);
+
+    glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
+
+    EndTransparentDraw();
+
+    glDeleteTextures(1, &textTexture);
 }

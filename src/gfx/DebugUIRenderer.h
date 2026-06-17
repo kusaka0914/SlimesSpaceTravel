@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
@@ -23,6 +24,15 @@ class UILoadSystem;
 
 class DebugUIRenderer {
 public:
+    enum class DeleteActorType { Enemy, Platform, Crystal, NPC, BoatParts, Boat, Key, Star };
+
+    struct DeleteTargetInfo {
+        DeleteActorType type;
+        int yamlIndex = -1;
+        std::string sequenceName;
+        std::string label;
+    };
+
     DebugUIRenderer(Game* game, UIRenderer* uiRenderer);
 
     void Draw();
@@ -42,15 +52,32 @@ private:
     void DrawPlanets();
     void DrawStageEditor();
     void DrawAddActors();
+    void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
     void SaveStagePlanetsYaml();
     void UpdateActorsOnPlanetSurface(Planet* planet);
     void AddPlanetFromEditor(const std::string& modelPath);
+    void AddNPCFromEditor(const std::string& type, int currentPlanetNum);
+    void AddCrystalFromEditor(const std::string& type, int currentPlanetNum);
+    void AddBoatPartsFromEditor(const std::string& type, int currentPlanetNum);
+    void AddBoatFromEditor(int startPlanetNum, int destPlanetNum, int destStage);
+    void AddStarFromEditor(int currentPlanetNum);
     void SavePlayerYaml(Player* player);
     void SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy);
     void SaveStagePlacementYaml();
     bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
     std::string GetUIDisplayName(const std::string& key) const;
     void AddPlatformFromEditor(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale);
+    void DrawDeleteActors();
+    void DeleteSelectedActorsFromEditor(const std::vector<DeleteTargetInfo>& targets,
+                                        const std::unordered_set<std::string>& selectedKeys);
+
+    std::string GetDeleteSequenceName(DeleteActorType type) const;
+    const char* GetDeleteTypeLabel(DeleteActorType type) const;
+
+    std::vector<DeleteTargetInfo> CollectAllDeleteTargets() const;
+
+    void DeleteActorFromEditor(DeleteActorType type, int yamlIndex);
+    bool RemoveYamlSequenceElement(YAML::Node& config, const std::string& sequenceName, int index);
 
     void SavePlatformsYaml(YAML::Node& config, const std::vector<Platform*>& platforms);
 
@@ -162,7 +189,6 @@ private:
 
                 const glm::vec3 pos = actor->GetPos();
                 ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
-                ImGui::Text("yaml index: %d", actor->GetStageYamlIndex());
 
                 ImGui::TreePop();
             }

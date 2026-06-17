@@ -178,12 +178,32 @@ void Game::ProcessInput()
     SDL_GameControllerUpdate();
 
     ProcessGameInput();
+
+    if (mIsPauseMenuOpen) {
+        return;
+    }
+
     ProcessActorsInput();
     mCameraSystem->ProcessInput();
 }
 
 void Game::ProcessGameInput()
 {
+    const bool pauseMenuKeyPressed =
+        glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK));
+
+    if (pauseMenuKeyPressed && !mPauseMenuKeyPressedPrev &&
+        (mSceneSystem->IsPlaying() || mSceneSystem->IsFocusing() || mIsPauseMenuOpen)) {
+        TogglePauseMenu();
+    }
+
+    mPauseMenuKeyPressedPrev = pauseMenuKeyPressed;
+
+    if (mIsPauseMenuOpen) {
+        ProcessPauseMenuInput();
+    }
+
     const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_R) == GLFW_PRESS;
     if (reloadKeyPressed && !mReloadKeyPressedPrev) {
         ReloadCurrentStage();
@@ -209,13 +229,6 @@ void Game::ProcessGameInput()
     }
     mXPressedPrev = xPressed;
 
-    const bool escapePressed = glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS;
-    const bool backPressed = mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK);
-
-    if (escapePressed || backPressed) {
-        FinishGame();
-    }
-
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
     if (pPressed && !mPPressedPrev) {
         mIsDebugMode = !mIsDebugMode;
@@ -223,7 +236,7 @@ void Game::ProcessGameInput()
     mPPressedPrev = pPressed;
 
     const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
-    if (lPressed && !mLPressedPrev && mIsDebugMode) {
+    if (lPressed && !mLPressedPrev) {
         mIsFreeCameraMode = !mIsFreeCameraMode;
     }
     mLPressedPrev = lPressed;
@@ -253,6 +266,99 @@ void Game::ProcessGameInput()
     mStartPressedPrev = startPressed;
 }
 
+void Game::ProcessPauseMenuInput()
+{
+    constexpr int menuItemCount = 4;
+
+    const bool upPressed =
+        glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_UP));
+
+    const bool downPressed =
+        glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_DOWN));
+
+    const bool confirmPressed =
+        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A)) ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X));
+
+    if (upPressed && !mPauseMenuUpPressedPrev) {
+        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + menuItemCount - 1) % menuItemCount;
+    }
+
+    if (downPressed && !mPauseMenuDownPressedPrev) {
+        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + 1) % menuItemCount;
+    }
+
+    if (confirmPressed && !mPauseMenuConfirmPressedPrev) {
+        ExecutePauseMenuItem();
+    }
+
+    mPauseMenuUpPressedPrev = upPressed;
+    mPauseMenuDownPressedPrev = downPressed;
+    mPauseMenuConfirmPressedPrev = confirmPressed;
+}
+
+void Game::TogglePauseMenu()
+{
+    mIsPauseMenuOpen = !mIsPauseMenuOpen;
+
+    if (mIsPauseMenuOpen) {
+        mPauseMenuSelectedIndex = 0;
+    }
+}
+
+void Game::ClosePauseMenu()
+{
+    mIsPauseMenuOpen = false;
+}
+
+void Game::ExecutePauseMenuItem()
+{
+    switch (mPauseMenuSelectedIndex) {
+    case 0:
+        ClosePauseMenu();
+        break;
+
+    case 1:
+        ReturnToBase();
+        break;
+
+    case 2:
+        OpenFeedbackForm();
+        break;
+
+    case 3:
+        FinishGame();
+        break;
+
+    default:
+        break;
+    }
+}
+
+void Game::ReturnToBase()
+{
+    ClosePauseMenu();
+
+    if (IsInBase()) {
+        return;
+    }
+
+    mSceneSystem->RequestStageChange(0);
+}
+
+void Game::OpenFeedbackForm()
+{
+    const char* url =
+        "https://docs.google.com/forms/d/e/1FAIpQLSdv81tlscrZ9gVi38bVqnHZ3aCfo0jD-iLgBGjDh9TYqNj8Qg/viewform";
+
+    if (SDL_OpenURL(url) != 0) {
+        std::cerr << "Failed to open URL: " << SDL_GetError() << std::endl;
+    }
+}
+
 void Game::ProcessActorsInput()
 {
     if (!mSceneSystem->IsPlaying()) {
@@ -274,6 +380,10 @@ void Game::UpdateGame()
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
+        return;
+    }
+
+    if (mIsPauseMenuOpen) {
         return;
     }
 

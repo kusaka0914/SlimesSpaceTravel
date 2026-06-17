@@ -14,6 +14,7 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "actor/Star.h"
 #include "system/ActorLoadSystem.h"
 #include "system/CameraSystem.h"
 #include "system/MeshLoadSystem.h"
@@ -117,9 +118,6 @@ void DebugUIRenderer::DrawPlayerParameterEditor()
     }
 
     const glm::vec3 pos = player->GetPos();
-
-    // ImGui::Text("位置");
-    // ImGui::Text("X: %.2f Y: %.2f Z: %.2f", pos.x, pos.y, pos.z);
 
     if (ImGui::TreeNode("基本情報")) {
         int hp = player->GetHp();
@@ -612,7 +610,7 @@ void DebugUIRenderer::DrawStageEditor()
 {
     static int selectedMenu = 0;
 
-    const char* menus[] = {"追加", "配置", "削除・複製"};
+    const char* menus[] = {"追加", "配置", "削除"};
 
     ImGui::BeginChild("StageEditorLeft", ImVec2(160, 0), true);
 
@@ -644,7 +642,7 @@ void DebugUIRenderer::DrawStageEditor()
         DrawStagePlacement();
         break;
     case 2:
-        ImGui::Text("削除・複製は後で実装");
+        DrawDeleteActors();
         break;
     default:
         break;
@@ -684,38 +682,16 @@ void DebugUIRenderer::DrawAddActors()
             return;
         }
 
+        static int selectedEnemyTypeIndex = 0;
         static int selectedEnemyPlanetIndex = -1;
 
-        if (selectedEnemyPlanetIndex >= static_cast<int>(planets.size())) {
-            selectedEnemyPlanetIndex = -1;
-        }
+        DrawPlanetCombo("敵の追加先惑星", selectedEnemyPlanetIndex);
 
-        std::string previewText = "未選択";
-        if (selectedEnemyPlanetIndex >= 0) {
-            previewText = "惑星 " + std::to_string(selectedEnemyPlanetIndex);
-        }
+        const char* enemyTypeLabels[] = {"通常敵", "ボス敵"};
 
-        if (ImGui::BeginCombo("敵の追加先惑星", previewText.c_str())) {
-            for (int i = 0; i < static_cast<int>(planets.size()); ++i) {
-                Planet* planet = planets[i];
-                if (!planet) {
-                    continue;
-                }
+        const char* enemyTypes[] = {"normal", "boss"};
 
-                std::string label = "惑星 " + std::to_string(i);
-                bool isSelected = selectedEnemyPlanetIndex == i;
-
-                if (ImGui::Selectable(label.c_str(), isSelected)) {
-                    selectedEnemyPlanetIndex = i;
-                }
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-
-            ImGui::EndCombo();
-        }
+        ImGui::Combo("敵タイプ", &selectedEnemyTypeIndex, enemyTypeLabels, IM_ARRAYSIZE(enemyTypeLabels));
 
         const bool canAddEnemy = selectedEnemyPlanetIndex >= 0;
 
@@ -724,12 +700,8 @@ void DebugUIRenderer::DrawAddActors()
             ImGui::BeginDisabled();
         }
 
-        if (ImGui::Button("通常敵を追加")) {
-            AddEnemyFromEditor("normal", selectedEnemyPlanetIndex);
-        }
-
-        if (ImGui::Button("ボス敵を追加")) {
-            AddEnemyFromEditor("boss", selectedEnemyPlanetIndex);
+        if (ImGui::Button("敵を追加")) {
+            AddEnemyFromEditor(enemyTypes[selectedEnemyTypeIndex], selectedEnemyPlanetIndex);
         }
 
         if (!canAddEnemy) {
@@ -739,11 +711,11 @@ void DebugUIRenderer::DrawAddActors()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("プラットフォーム追加")) {
+    if (ImGui::TreeNode("足場追加")) {
         const auto& planets = mGame->GetCurrentStage()->GetPlanets();
 
         if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、プラットフォームを追加できません");
+            ImGui::Text("惑星が存在しないため、足場を追加できません");
             ImGui::TreePop();
         } else {
             static int selectedPlatformPlanetIndex = -1;
@@ -797,11 +769,11 @@ void DebugUIRenderer::DrawAddActors()
             const bool canAddPlatform = selectedPlatformPlanetIndex >= 0;
 
             if (!canAddPlatform) {
-                ImGui::Text("プラットフォームを追加するには、追加先の惑星を選択してください");
+                ImGui::Text("足場を追加するには、追加先の惑星を選択してください");
                 ImGui::BeginDisabled();
             }
 
-            if (ImGui::Button("プラットフォームを追加")) {
+            if (ImGui::Button("足場を追加")) {
                 AddPlatformFromEditor(selectedPlatformPlanetIndex, platformModels[selectedPlatformModelIndex],
                                       platformScale);
             }
@@ -815,18 +787,182 @@ void DebugUIRenderer::DrawAddActors()
     }
 
     if (ImGui::TreeNode("クリスタル追加")) {
-        ImGui::Text("後でクリスタル追加を実装");
-        ImGui::TreePop();
+        const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::Text("惑星が存在しないため、クリスタルを追加できません");
+            ImGui::TreePop();
+        } else {
+            static int selectedCrystalPlanetIndex = -1;
+            static int selectedCrystalTypeIndex = 0;
+
+            DrawPlanetCombo("クリスタルの追加先惑星", selectedCrystalPlanetIndex);
+
+            const char* crystalTypeLabels[] = {"小さいクリスタル", "大きいクリスタル"};
+
+            const char* crystalTypes[] = {"little", "big"};
+
+            ImGui::Combo("クリスタルタイプ", &selectedCrystalTypeIndex, crystalTypeLabels,
+                         IM_ARRAYSIZE(crystalTypeLabels));
+
+            const bool canAddCrystal = selectedCrystalPlanetIndex >= 0;
+
+            if (!canAddCrystal) {
+                ImGui::Text("クリスタルを追加するには、追加先の惑星を選択してください");
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("クリスタルを追加")) {
+                AddCrystalFromEditor(crystalTypes[selectedCrystalTypeIndex], selectedCrystalPlanetIndex);
+            }
+
+            if (!canAddCrystal) {
+                ImGui::EndDisabled();
+            }
+
+            ImGui::TreePop();
+        }
     }
 
     if (ImGui::TreeNode("NPC追加")) {
-        ImGui::Text("後でNPC追加を実装");
-        ImGui::TreePop();
+        const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::Text("惑星が存在しないため、NPCを追加できません");
+            ImGui::TreePop();
+        } else {
+            static int selectedNPCPlanetIndex = -1;
+            static int selectedNPCTypeIndex = 0;
+
+            DrawPlanetCombo("NPCの追加先惑星", selectedNPCPlanetIndex);
+
+            const char* npcTypeLabels[] = {"宇宙スライム", "母スライム", "プレイヤー型", "悪い母スライム",
+                                           "博士スライム"};
+
+            const char* npcTypes[] = {"spaceSlime", "motherSlime", "player", "badMotherSlime", "doctorSlime"};
+
+            ImGui::Combo("NPCタイプ", &selectedNPCTypeIndex, npcTypeLabels, IM_ARRAYSIZE(npcTypeLabels));
+
+            const bool canAddNPC = selectedNPCPlanetIndex >= 0;
+
+            if (!canAddNPC) {
+                ImGui::Text("NPCを追加するには、追加先の惑星を選択してください");
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("NPCを追加")) {
+                AddNPCFromEditor(npcTypes[selectedNPCTypeIndex], selectedNPCPlanetIndex);
+            }
+
+            if (!canAddNPC) {
+                ImGui::EndDisabled();
+            }
+
+            ImGui::TreePop();
+        }
     }
 
     if (ImGui::TreeNode("ボートパーツ追加")) {
-        ImGui::Text("後でボートパーツ追加を実装");
-        ImGui::TreePop();
+        const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::Text("惑星が存在しないため、ボートパーツを追加できません");
+            ImGui::TreePop();
+        } else {
+            static int selectedBoatPartsPlanetIndex = -1;
+            static int selectedBoatPartsTypeIndex = 0;
+
+            DrawPlanetCombo("ボートパーツの追加先惑星", selectedBoatPartsPlanetIndex);
+
+            const char* boatPartsTypeLabels[] = {"パーツ1", "パーツ2", "パーツ3", "パーツ4", "パーツ5"};
+
+            const char* boatPartsTypes[] = {"parts1", "parts2", "parts3", "parts4", "parts5"};
+
+            ImGui::Combo("ボートパーツタイプ", &selectedBoatPartsTypeIndex, boatPartsTypeLabels,
+                         IM_ARRAYSIZE(boatPartsTypeLabels));
+
+            const bool canAddBoatParts = selectedBoatPartsPlanetIndex >= 0;
+
+            if (!canAddBoatParts) {
+                ImGui::Text("ボートパーツを追加するには、追加先の惑星を選択してください");
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("ボートパーツを追加")) {
+                AddBoatPartsFromEditor(boatPartsTypes[selectedBoatPartsTypeIndex], selectedBoatPartsPlanetIndex);
+            }
+
+            if (!canAddBoatParts) {
+                ImGui::EndDisabled();
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    if (ImGui::TreeNode("ボート追加")) {
+        const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::Text("惑星が存在しないため、ボートを追加できません");
+            ImGui::TreePop();
+        } else {
+            static int selectedBoatStartPlanetIndex = -1;
+            static int selectedBoatDestPlanetIndex = -1;
+            static int selectedBoatDestStage = 0;
+
+            DrawPlanetCombo("ボートの開始惑星", selectedBoatStartPlanetIndex);
+            DrawPlanetCombo("ボートの移動先惑星", selectedBoatDestPlanetIndex);
+
+            ImGui::InputInt("移動先ステージ", &selectedBoatDestStage);
+
+            const bool canAddBoat = selectedBoatStartPlanetIndex >= 0 && selectedBoatDestPlanetIndex >= 0;
+
+            if (!canAddBoat) {
+                ImGui::Text("ボートを追加するには、開始惑星と移動先惑星を選択してください");
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("ボートを追加")) {
+                AddBoatFromEditor(selectedBoatStartPlanetIndex, selectedBoatDestPlanetIndex, selectedBoatDestStage);
+            }
+
+            if (!canAddBoat) {
+                ImGui::EndDisabled();
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    if (ImGui::TreeNode("星追加")) {
+        const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::Text("惑星が存在しないため、星を追加できません");
+            ImGui::TreePop();
+        } else {
+            static int selectedStarPlanetIndex = -1;
+
+            DrawPlanetCombo("星の追加先惑星", selectedStarPlanetIndex);
+
+            const bool canAddStar = selectedStarPlanetIndex >= 0;
+
+            if (!canAddStar) {
+                ImGui::Text("星を追加するには、追加先の惑星を選択してください");
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("星を追加")) {
+                AddStarFromEditor(selectedStarPlanetIndex);
+            }
+
+            if (!canAddStar) {
+                ImGui::EndDisabled();
+            }
+
+            ImGui::TreePop();
+        }
     }
 }
 
@@ -984,6 +1120,253 @@ void DebugUIRenderer::AddEnemyFromEditor(const std::string& type, int currentPla
     }
 
     mGame->GetActorLoadSystem()->CreateEnemyFromStageNode(enemyNode, index);
+}
+
+void DebugUIRenderer::AddNPCFromEditor(const std::string& type, int currentPlanetNum)
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mGame->GetActorLoadSystem()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    if (!config["NPCs"]) {
+        config["NPCs"] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int index = static_cast<int>(config["NPCs"].size());
+
+    YAML::Node npcNode;
+    npcNode["type"] = type;
+    npcNode["currentPlanetNum"] = currentPlanetNum;
+    npcNode["theta"] = 0.0f;
+    npcNode["phi"] = 0.0f;
+    npcNode["height"] = 1.0f;
+    npcNode["facingYaw"] = 0.0f;
+    npcNode["radius"] = 0.75f;
+    npcNode["name"] = "新しいNPC";
+    npcNode["talkTexts"].push_back("こんにちは");
+
+    config["NPCs"].push_back(npcNode);
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->GetActorLoadSystem()->CreateNPCFromStageNode(npcNode, index);
+}
+
+void DebugUIRenderer::AddCrystalFromEditor(const std::string& type, int currentPlanetNum)
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mGame->GetActorLoadSystem()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    if (!config["crystals"]) {
+        config["crystals"] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int index = static_cast<int>(config["crystals"].size());
+
+    YAML::Node crystalNode;
+    crystalNode["type"] = type;
+    crystalNode["currentPlanetNum"] = currentPlanetNum;
+    crystalNode["theta"] = 0.0f;
+    crystalNode["phi"] = 0.0f;
+    crystalNode["height"] = 1.0f;
+
+    config["crystals"].push_back(crystalNode);
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->GetActorLoadSystem()->CreateCrystalFromStageNode(crystalNode, index);
+}
+
+void DebugUIRenderer::AddBoatPartsFromEditor(const std::string& type, int currentPlanetNum)
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mGame->GetActorLoadSystem()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    if (!config["boatParts"]) {
+        config["boatParts"] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int index = static_cast<int>(config["boatParts"].size());
+
+    YAML::Node partNode;
+    partNode["type"] = type;
+    partNode["currentPlanetNum"] = currentPlanetNum;
+    partNode["theta"] = 0.0f;
+    partNode["phi"] = 0.0f;
+    partNode["height"] = 1.0f;
+
+    config["boatParts"].push_back(partNode);
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->GetActorLoadSystem()->CreateBoatPartsFromStageNode(partNode, index);
+}
+
+void DebugUIRenderer::AddBoatFromEditor(int startPlanetNum, int destPlanetNum, int destStage)
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mGame->GetActorLoadSystem()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (startPlanetNum < 0 || startPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid start planet index: " << startPlanetNum << std::endl;
+        return;
+    }
+
+    if (destPlanetNum < 0 || destPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid destination planet index: " << destPlanetNum << std::endl;
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    if (!config["boats"]) {
+        config["boats"] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int index = static_cast<int>(config["boats"].size());
+
+    YAML::Node boatNode;
+    boatNode["startPlanet"] = startPlanetNum;
+    boatNode["destPlanet"] = destPlanetNum;
+    boatNode["destStage"] = destStage;
+
+    boatNode["theta"] = 0.0f;
+    boatNode["phi"] = 0.0f;
+    boatNode["height"] = 1.0f;
+    boatNode["facingYaw"] = 0.0f;
+
+    config["boats"].push_back(boatNode);
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->GetActorLoadSystem()->CreateBoatFromStageNode(boatNode, index);
+}
+
+void DebugUIRenderer::AddStarFromEditor(int currentPlanetNum)
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mGame->GetActorLoadSystem()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
+        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    if (!config["star"]) {
+        config["star"] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int index = static_cast<int>(config["star"].size());
+
+    YAML::Node starNode;
+    starNode["currentPlanetNum"] = currentPlanetNum;
+    starNode["theta"] = 0.0f;
+    starNode["phi"] = 0.0f;
+    starNode["height"] = 1.0f;
+    starNode["isActive"] = true;
+
+    config["star"].push_back(starNode);
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->GetActorLoadSystem()->CreateStarFromStageNode(starNode, index);
 }
 
 void DebugUIRenderer::DrawPerformance()
@@ -1165,6 +1548,7 @@ void DebugUIRenderer::DrawStagePlacement()
     std::vector<NPC*> npcs;
     std::vector<Key*> keys;
     std::vector<Platform*> platforms;
+    std::vector<Star*> stars;
 
     for (Planet* planet : planets) {
         if (!planet) {
@@ -1198,17 +1582,22 @@ void DebugUIRenderer::DrawStagePlacement()
         for (Platform* platform : planet->GetPlatforms()) {
             platforms.emplace_back(platform);
         }
+
+        if (Star* star = planet->GetStar()) {
+            stars.emplace_back(star);
+        }
     }
 
     ImGui::Separator();
 
     DrawSphericalActorList("敵", "enemies", enemies);
-    DrawSphericalActorList("プラットフォーム", "platforms", platforms);
+    DrawSphericalActorList("足場", "platforms", platforms);
     DrawSphericalActorList("キー", "keys", keys);
     DrawSphericalActorList("ボート", "boats", boats);
     DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);
     DrawSphericalActorList("クリスタル", "crystals", crystals);
     DrawSphericalActorList("NPC", "NPCs", npcs);
+    DrawSphericalActorList("星", "star", stars);
 
     ImGui::TreePop();
 }
@@ -1282,7 +1671,6 @@ void DebugUIRenderer::DrawPlanets()
                     planet->SetPlanetShape("Ellipse");
                 }
 
-                // LoadPlanetsと同じくscale.xを半径扱い
                 planet->SetRadius(scale.x);
 
                 UpdateActorsOnPlanetSurface(planet);
@@ -1406,6 +1794,10 @@ void DebugUIRenderer::UpdateActorsOnPlanetSurface(Planet* planet)
     if (Key* key = planet->GetKey()) {
         updateActor(key);
     }
+
+    if (Star* star = planet->GetStar()) {
+        updateActor(star);
+    }
 }
 
 void DebugUIRenderer::SaveStagePlacementYaml()
@@ -1431,6 +1823,7 @@ void DebugUIRenderer::SaveStagePlacementYaml()
     std::vector<NPC*> npcs;
     std::vector<Key*> keys;
     std::vector<Platform*> platforms;
+    std::vector<Star*> stars;
 
     for (Planet* planet : planets) {
         if (!planet) {
@@ -1464,6 +1857,10 @@ void DebugUIRenderer::SaveStagePlacementYaml()
         for (Platform* platform : planet->GetPlatforms()) {
             platforms.emplace_back(platform);
         }
+
+        if (Star* star = planet->GetStar()) {
+            stars.emplace_back(star);
+        }
     }
 
     SaveSphericalActors(config, "enemies", enemies);
@@ -1472,6 +1869,7 @@ void DebugUIRenderer::SaveStagePlacementYaml()
     SaveSphericalActors(config, "boatParts", boatParts);
     SaveSphericalActors(config, "crystals", crystals);
     SaveSphericalActors(config, "NPCs", npcs);
+    SaveSphericalActors(config, "star", stars);
     SavePlatformsYaml(config, platforms);
 
     SaveYamlFile(filePath, config);
@@ -1526,14 +1924,6 @@ void DebugUIRenderer::SavePlatformsYaml(YAML::Node& config, const std::vector<Pl
         config["platforms"].push_back(node);
     }
 }
-
-// void DebugUIRenderer::DrawDebugDrawSettings()
-// {
-//     if (ImGui::CollapsingHeader("Debug Draw")) {
-//         // 後で実装する用
-//         ImGui::Text("Debug draw settings will be here.");
-//     }
-// }
 
 void DebugUIRenderer::SavePlayerYaml(Player* player)
 {
@@ -1702,4 +2092,323 @@ std::string DebugUIRenderer::GetUIDisplayName(const std::string& key) const
     }
 
     return key;
+}
+
+void DebugUIRenderer::DrawPlanetCombo(const char* label, int& selectedPlanetIndex)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        selectedPlanetIndex = -1;
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    if (selectedPlanetIndex >= static_cast<int>(planets.size())) {
+        selectedPlanetIndex = -1;
+    }
+
+    std::string previewText = "未選択";
+    if (selectedPlanetIndex >= 0) {
+        previewText = "惑星 " + std::to_string(selectedPlanetIndex);
+    }
+
+    if (ImGui::BeginCombo(label, previewText.c_str())) {
+        for (int i = 0; i < static_cast<int>(planets.size()); ++i) {
+            Planet* planet = planets[i];
+            if (!planet) {
+                continue;
+            }
+
+            std::string itemLabel = "惑星 " + std::to_string(i);
+            bool isSelected = selectedPlanetIndex == i;
+
+            if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
+                selectedPlanetIndex = i;
+            }
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+}
+
+void DebugUIRenderer::DrawDeleteActors()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    static std::unordered_set<std::string> selectedKeys;
+
+    std::vector<DeleteTargetInfo> targets = CollectAllDeleteTargets();
+
+    if (targets.empty()) {
+        ImGui::Text("削除できるオブジェクトがありません");
+        return;
+    }
+
+    auto drawCategory = [&](const char* categoryName, DeleteActorType type) {
+        if (!ImGui::TreeNode(categoryName)) {
+            return;
+        }
+
+        bool hasItem = false;
+
+        for (const DeleteTargetInfo& target : targets) {
+            if (target.type != type) {
+                continue;
+            }
+
+            hasItem = true;
+
+            const std::string key = target.sequenceName + ":" + std::to_string(target.yamlIndex);
+            bool selected = selectedKeys.contains(key);
+
+            std::string checkboxLabel = target.label + "##delete_" + key;
+
+            if (ImGui::Checkbox(checkboxLabel.c_str(), &selected)) {
+                if (selected) {
+                    selectedKeys.insert(key);
+                } else {
+                    selectedKeys.erase(key);
+                }
+            }
+        }
+
+        if (!hasItem) {
+            ImGui::Text("なし");
+        }
+
+        ImGui::TreePop();
+    };
+
+    drawCategory("敵", DeleteActorType::Enemy);
+    drawCategory("足場", DeleteActorType::Platform);
+    drawCategory("クリスタル", DeleteActorType::Crystal);
+    drawCategory("NPC", DeleteActorType::NPC);
+    drawCategory("ボートパーツ", DeleteActorType::BoatParts);
+    drawCategory("ボート", DeleteActorType::Boat);
+    drawCategory("キー", DeleteActorType::Key);
+    drawCategory("星", DeleteActorType::Star);
+
+    ImGui::Separator();
+
+    ImGui::Text("選択数: %d", static_cast<int>(selectedKeys.size()));
+
+    const bool canDelete = !selectedKeys.empty();
+
+    if (!canDelete) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button("選択中のオブジェクトを削除")) {
+        ImGui::OpenPopup("削除確認");
+    }
+
+    if (!canDelete) {
+        ImGui::EndDisabled();
+    }
+
+    if (ImGui::BeginPopupModal("削除確認", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("選択中のオブジェクトを削除します。よろしいですか？");
+        ImGui::Text("削除数: %d", static_cast<int>(selectedKeys.size()));
+
+        if (ImGui::Button("削除する")) {
+            DeleteSelectedActorsFromEditor(targets, selectedKeys);
+            selectedKeys.clear();
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("キャンセル")) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+std::string DebugUIRenderer::GetDeleteSequenceName(DeleteActorType type) const
+{
+    switch (type) {
+    case DeleteActorType::Enemy:
+        return "enemies";
+    case DeleteActorType::Platform:
+        return "platforms";
+    case DeleteActorType::Crystal:
+        return "crystals";
+    case DeleteActorType::NPC:
+        return "NPCs";
+    case DeleteActorType::BoatParts:
+        return "boatParts";
+    case DeleteActorType::Boat:
+        return "boats";
+    case DeleteActorType::Key:
+        return "keys";
+    case DeleteActorType::Star:
+        return "star";
+    default:
+        return "";
+    }
+}
+
+std::vector<DebugUIRenderer::DeleteTargetInfo> DebugUIRenderer::CollectAllDeleteTargets() const
+{
+    std::vector<DeleteTargetInfo> targets;
+
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return targets;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    auto addTarget = [&targets](Actor* actor, DeleteActorType type, const std::string& sequenceName,
+                                const std::string& displayName, int planetIndex, int displayIndex) {
+        if (!actor) {
+            return;
+        }
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return;
+        }
+
+        std::string label = displayName + " " + std::to_string(displayIndex);
+
+        targets.push_back({type, yamlIndex, sequenceName, label});
+    };
+
+    int enemyIndex = 0;
+    int platformIndex = 0;
+    int crystalIndex = 0;
+    int npcIndex = 0;
+    int boatPartsIndex = 0;
+    int boatIndex = 0;
+    int keyIndex = 0;
+    int starIndex = 0;
+
+    for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
+        Planet* planet = planets[planetIndex];
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            addTarget(enemy, DeleteActorType::Enemy, "enemies", "敵", planetIndex, enemyIndex++);
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            addTarget(platform, DeleteActorType::Platform, "platforms", "足場", planetIndex, platformIndex++);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            addTarget(crystal, DeleteActorType::Crystal, "crystals", "クリスタル", planetIndex, crystalIndex++);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            addTarget(npc, DeleteActorType::NPC, "NPCs", "NPC", planetIndex, npcIndex++);
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            addTarget(part, DeleteActorType::BoatParts, "boatParts", "ボートパーツ", planetIndex, boatPartsIndex++);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            addTarget(boat, DeleteActorType::Boat, "boats", "ボート", planetIndex, boatIndex++);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            addTarget(key, DeleteActorType::Key, "keys", "キー", planetIndex, keyIndex++);
+        }
+
+        if (Star* star = planet->GetStar()) {
+            addTarget(star, DeleteActorType::Star, "star", "星", planetIndex, starIndex++);
+        }
+    }
+
+    return targets;
+}
+
+bool DebugUIRenderer::RemoveYamlSequenceElement(YAML::Node& config, const std::string& sequenceName, int index)
+{
+    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
+        std::cerr << "Invalid yaml sequence: " << sequenceName << std::endl;
+        return false;
+    }
+
+    YAML::Node oldSeq = config[sequenceName];
+
+    if (index < 0 || index >= static_cast<int>(oldSeq.size())) {
+        std::cerr << "Delete index out of range: " << index << std::endl;
+        return false;
+    }
+
+    YAML::Node newSeq(YAML::NodeType::Sequence);
+
+    for (int i = 0; i < static_cast<int>(oldSeq.size()); ++i) {
+        if (i == index) {
+            continue;
+        }
+
+        newSeq.push_back(oldSeq[i]);
+    }
+
+    config[sequenceName] = newSeq;
+    return true;
+}
+
+void DebugUIRenderer::DeleteSelectedActorsFromEditor(const std::vector<DeleteTargetInfo>& targets,
+                                                     const std::unordered_set<std::string>& selectedKeys)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node config;
+
+    try {
+        config = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
+        std::cerr << e.what() << std::endl;
+        return;
+    }
+
+    std::unordered_map<std::string, std::vector<int>> deleteIndicesBySequence;
+
+    for (const DeleteTargetInfo& target : targets) {
+        const std::string key = target.sequenceName + ":" + std::to_string(target.yamlIndex);
+
+        if (!selectedKeys.contains(key)) {
+            continue;
+        }
+
+        deleteIndicesBySequence[target.sequenceName].push_back(target.yamlIndex);
+    }
+
+    for (auto& pair : deleteIndicesBySequence) {
+        std::string sequenceName = pair.first;
+        std::vector<int>& indices = pair.second;
+
+        std::sort(indices.begin(), indices.end());
+        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+
+        std::sort(indices.rbegin(), indices.rend());
+
+        for (int index : indices) {
+            RemoveYamlSequenceElement(config, sequenceName, index);
+        }
+    }
+
+    if (!SaveYamlFile(filePath, config)) {
+        return;
+    }
+
+    mGame->ReloadCurrentStage();
 }

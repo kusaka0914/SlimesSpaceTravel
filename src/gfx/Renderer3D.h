@@ -61,6 +61,9 @@ private:
     void StartTransparentDraw() const;
     void EndTransparentDraw() const;
 
+    void DrawDebugLabels(const glm::mat4& viewMat) const;
+    void DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const;
+
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;

@@ -25,6 +25,7 @@ public:
 
 private:
     void UpdateCamera(float deltaTime);
+    glm::vec3 ResolveCameraCollision(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos) const;
 
     std::vector<glm::mat4> GetOpeningViews() const;
     std::vector<glm::mat4> GetBoatFocusViews(std::vector<Boat*> boats) const;

@@ -105,6 +105,10 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
+    if (mGame->GetIsPauseMenuOpen()) {
+        DrawPauseMenu();
+    }
+
     if (mGame->GetIsDebugMode()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -388,6 +392,37 @@ void UIRenderer::DrawRecommendReduceTiredUI()
     DrawTextDependsOnGameController("state", "recommendReduceTiredText", false);
 }
 
+void UIRenderer::DrawPauseMenu()
+{
+    DrawBGFromUIInfo("pauseMenu", "overlayBg", {0.0f, 0.0f, 0.0f, 0.55f});
+    DrawBGFromUIInfo("pauseMenu", "panelBg", {0.0f, 0.0f, 0.0f, 0.75f});
+
+    DrawSceneText("pauseMenu", "titleText", true, 0);
+
+    std::vector<std::string> menuTextIds = {"resumeText", "returnBaseText", "feedbackText", "quitText"};
+
+    const int selectedIndex = mGame->GetPauseMenuSelectedIndex();
+
+    for (int i = 0; i < menuTextIds.size(); ++i) {
+        const UILoadSystem::TextInfo* textInfo = mUILoadSystem->GetTextInfo("pauseMenu", menuTextIds[i]);
+        if (!textInfo || textInfo->texts.empty()) {
+            continue;
+        }
+
+        const bool selected = selectedIndex == i;
+
+        std::string text = selected ? "> " : "  ";
+        text += textInfo->texts[0];
+
+        const glm::vec4 color = selected ? glm::vec4(255, 230, 0, 255) : glm::vec4(255, 255, 255, 255);
+
+        DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio, text, true,
+                 color);
+    }
+
+    DrawTextDependsOnGameController("pauseMenu", "operationText", true);
+}
+
 float UIRenderer::CalculateAlpha() const
 {
     const float fadeInTimer = mGame->GetSceneSystem()->GetFadeTimer();
@@ -514,6 +549,17 @@ bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& scene
     return false;
 }
 
+void UIRenderer::DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color)
+{
+    const UILoadSystem::TextureInfo* textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
+    if (!textureInfo) {
+        return;
+    }
+
+    DrawBG(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
+           mFbHeight * textureInfo->heightRatio, color);
+}
+
 void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::string& UIName,
                                   const std::string& textureName)
 {
@@ -606,31 +652,17 @@ bool UIRenderer::SplitText(const std::string& message, std::string& message1, st
 void UIRenderer::DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase,
                               float yOffset, glm::vec4 color)
 {
+    int textWidth = 0;
+    int textHeight = 0;
+
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(mFont, message.c_str(), textColor);
-    if (!surf) {
+    GLuint textTexture = CreateTextTexture(message, textWidth, textHeight, textColor, scale);
+
+    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
         return;
     }
-
-    SDL_Surface* rgba = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
-    SDL_FreeSurface(surf);
-    if (!rgba) {
-        return;
-    }
-
-    GLuint tex = 0;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgba->w, rgba->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba->pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    const float textWidth = static_cast<float>(rgba->w) * scale;
-    const float textHeight = static_cast<float>(rgba->h) * scale;
-    SDL_FreeSurface(rgba);
 
     glm::vec3 pos;
     if (isCenterBase) {
@@ -654,12 +686,12 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindTexture(GL_TEXTURE_2D, textTexture);
 
     mVertexArrays.at("quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &textTexture);
 }
 
 void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName)
