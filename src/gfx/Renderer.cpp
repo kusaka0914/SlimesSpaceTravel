@@ -66,3 +66,42 @@ void Renderer::RegisterTexture(const std::string& path, const std::string& name)
 
     mTextures[name] = tex;
 }
+
+GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
+                                   float textScale) const
+{
+    outWidth = 0;
+    outHeight = 0;
+
+    if (!mFont) {
+        return 0;
+    }
+
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(mFont, text.c_str(), textColor);
+    if (!surf) {
+        return 0;
+    }
+
+    SDL_Surface* rgba = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_FreeSurface(surf);
+
+    if (!rgba) {
+        return 0;
+    }
+
+    outWidth = rgba->w * textScale;
+    outHeight = rgba->h * textScale;
+
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgba->w, rgba->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba->pixels);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    SDL_FreeSurface(rgba);
+
+    return tex;
+}

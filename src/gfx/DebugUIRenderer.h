@@ -162,7 +162,6 @@ private:
 
                 const glm::vec3 pos = actor->GetPos();
                 ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
-                ImGui::Text("yaml index: %d", actor->GetStageYamlIndex());
 
                 ImGui::TreePop();
             }

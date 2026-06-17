@@ -739,11 +739,11 @@ void DebugUIRenderer::DrawAddActors()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("プラットフォーム追加")) {
+    if (ImGui::TreeNode("足場追加")) {
         const auto& planets = mGame->GetCurrentStage()->GetPlanets();
 
         if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、プラットフォームを追加できません");
+            ImGui::Text("惑星が存在しないため、足場を追加できません");
             ImGui::TreePop();
         } else {
             static int selectedPlatformPlanetIndex = -1;
@@ -797,11 +797,11 @@ void DebugUIRenderer::DrawAddActors()
             const bool canAddPlatform = selectedPlatformPlanetIndex >= 0;
 
             if (!canAddPlatform) {
-                ImGui::Text("プラットフォームを追加するには、追加先の惑星を選択してください");
+                ImGui::Text("足場を追加するには、追加先の惑星を選択してください");
                 ImGui::BeginDisabled();
             }
 
-            if (ImGui::Button("プラットフォームを追加")) {
+            if (ImGui::Button("足場を追加")) {
                 AddPlatformFromEditor(selectedPlatformPlanetIndex, platformModels[selectedPlatformModelIndex],
                                       platformScale);
             }
@@ -1203,7 +1203,7 @@ void DebugUIRenderer::DrawStagePlacement()
     ImGui::Separator();
 
     DrawSphericalActorList("敵", "enemies", enemies);
-    DrawSphericalActorList("プラットフォーム", "platforms", platforms);
+    DrawSphericalActorList("足場", "platforms", platforms);
     DrawSphericalActorList("キー", "keys", keys);
     DrawSphericalActorList("ボート", "boats", boats);
     DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);

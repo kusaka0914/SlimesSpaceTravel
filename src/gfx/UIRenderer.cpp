@@ -606,31 +606,17 @@ bool UIRenderer::SplitText(const std::string& message, std::string& message1, st
 void UIRenderer::DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase,
                               float yOffset, glm::vec4 color)
 {
+    int textWidth = 0;
+    int textHeight = 0;
+
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(mFont, message.c_str(), textColor);
-    if (!surf) {
+    GLuint textTexture = CreateTextTexture(message, textWidth, textHeight, textColor, scale);
+
+    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
         return;
     }
-
-    SDL_Surface* rgba = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
-    SDL_FreeSurface(surf);
-    if (!rgba) {
-        return;
-    }
-
-    GLuint tex = 0;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgba->w, rgba->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba->pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    const float textWidth = static_cast<float>(rgba->w) * scale;
-    const float textHeight = static_cast<float>(rgba->h) * scale;
-    SDL_FreeSurface(rgba);
 
     glm::vec3 pos;
     if (isCenterBase) {
@@ -654,12 +640,12 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindTexture(GL_TEXTURE_2D, textTexture);
 
     mVertexArrays.at("quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &textTexture);
 }
 
 void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName)

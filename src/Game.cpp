@@ -223,7 +223,7 @@ void Game::ProcessGameInput()
     mPPressedPrev = pPressed;
 
     const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
-    if (lPressed && !mLPressedPrev && mIsDebugMode) {
+    if (lPressed && !mLPressedPrev) {
         mIsFreeCameraMode = !mIsFreeCameraMode;
     }
     mLPressedPrev = lPressed;
