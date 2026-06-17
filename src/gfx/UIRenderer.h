@@ -70,6 +70,8 @@ private:
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
                             float gap, int count);
+    void DrawPauseMenu();
+    void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color);
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,

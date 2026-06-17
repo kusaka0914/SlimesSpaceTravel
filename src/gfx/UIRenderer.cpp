@@ -105,6 +105,10 @@ void UIRenderer::Draw()
 
     DrawStateUI();
 
+    if (mGame->GetIsPauseMenuOpen()) {
+        DrawPauseMenu();
+    }
+
     if (mGame->GetIsDebugMode()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -388,6 +392,37 @@ void UIRenderer::DrawRecommendReduceTiredUI()
     DrawTextDependsOnGameController("state", "recommendReduceTiredText", false);
 }
 
+void UIRenderer::DrawPauseMenu()
+{
+    DrawBGFromUIInfo("pauseMenu", "overlayBg", {0.0f, 0.0f, 0.0f, 0.55f});
+    DrawBGFromUIInfo("pauseMenu", "panelBg", {0.0f, 0.0f, 0.0f, 0.75f});
+
+    DrawSceneText("pauseMenu", "titleText", true, 0);
+
+    std::vector<std::string> menuTextIds = {"resumeText", "returnBaseText", "feedbackText", "quitText"};
+
+    const int selectedIndex = mGame->GetPauseMenuSelectedIndex();
+
+    for (int i = 0; i < menuTextIds.size(); ++i) {
+        const UILoadSystem::TextInfo* textInfo = mUILoadSystem->GetTextInfo("pauseMenu", menuTextIds[i]);
+        if (!textInfo || textInfo->texts.empty()) {
+            continue;
+        }
+
+        const bool selected = selectedIndex == i;
+
+        std::string text = selected ? "> " : "  ";
+        text += textInfo->texts[0];
+
+        const glm::vec4 color = selected ? glm::vec4(255, 230, 0, 255) : glm::vec4(255, 255, 255, 255);
+
+        DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio, text, true,
+                 color);
+    }
+
+    DrawTextDependsOnGameController("pauseMenu", "operationText", true);
+}
+
 float UIRenderer::CalculateAlpha() const
 {
     const float fadeInTimer = mGame->GetSceneSystem()->GetFadeTimer();
@@ -512,6 +547,17 @@ bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& scene
         return true;
     }
     return false;
+}
+
+void UIRenderer::DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color)
+{
+    const UILoadSystem::TextureInfo* textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
+    if (!textureInfo) {
+        return;
+    }
+
+    DrawBG(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
+           mFbHeight * textureInfo->heightRatio, color);
 }
 
 void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::string& UIName,
