@@ -7,7 +7,9 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "component/FocusComponent.h"
+#include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
+#include <btBulletDynamicsCommon.h>
 #include <iostream>
 
 CameraSystem::CameraSystem(Game* game)
@@ -128,21 +130,60 @@ glm::mat4 CameraSystem::GetPlayerView(Player* player, float cameraDistance, bool
     glm::vec3 toPosX;
     glm::vec3 cameraDir;
 
+    glm::vec3 lookAtOffset;
+
     if (isFixed) {
         glm::vec3 facingForwardVec = player->GetFacingForwardVec();
         toPosX = glm::normalize(-facingForwardVec);
         cameraDir = glm::normalize(std::cos(-0.2f) * toPosX + std::sin(-0.2f) * mCameraUpVec);
-        mCameraPos = mCameraTargetPos - cameraDir * cameraDistance;
-        glm::vec3 offset = glm::normalize(mCameraUpVec) * 1.0f;
-        return glm::lookAt(mCameraPos, mCameraTargetPos + offset, mCameraUpVec);
+
+        lookAtOffset = glm::normalize(mCameraUpVec) * 1.0f;
+    } else {
+        glm::vec3 forwardVec = player->GetForwardVec();
+        toPosX = glm::normalize(-forwardVec);
+        cameraDir = glm::normalize(std::cos(mCameraPitch) * toPosX + std::sin(mCameraPitch) * mCameraUpVec);
+
+        lookAtOffset = glm::normalize(mCameraUpVec) * 1.5f;
     }
 
-    glm::vec3 forwardVec = player->GetForwardVec();
-    toPosX = glm::normalize(-forwardVec);
-    cameraDir = glm::normalize(std::cos(mCameraPitch) * toPosX + std::sin(mCameraPitch) * mCameraUpVec);
-    mCameraPos = mCameraTargetPos - cameraDir * cameraDistance;
-    glm::vec3 lookAtOffset = glm::normalize(mCameraUpVec) * 1.5f;
-    return glm::lookAt(mCameraPos, mCameraTargetPos + lookAtOffset, mCameraUpVec);
+    glm::vec3 lookAtPos = mCameraTargetPos + lookAtOffset;
+    glm::vec3 desiredCameraPos = mCameraTargetPos - cameraDir * cameraDistance;
+
+    mCameraPos = ResolveCameraCollision(lookAtPos, desiredCameraPos);
+
+    return glm::lookAt(mCameraPos, lookAtPos, mCameraUpVec);
+}
+
+glm::vec3 CameraSystem::ResolveCameraCollision(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos) const
+{
+    btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    if (!bulletWorld) {
+        return desiredCameraPos;
+    }
+
+    glm::vec3 from = targetPos;
+    glm::vec3 to = desiredCameraPos;
+
+    btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
+
+    bulletWorld->rayTest(cb.m_rayFromWorld, cb.m_rayToWorld, cb);
+
+    if (!cb.hasHit()) {
+        return desiredCameraPos;
+    }
+
+    glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+
+    glm::vec3 dir = desiredCameraPos - targetPos;
+    if (glm::length(dir) < 1e-5f) {
+        return desiredCameraPos;
+    }
+
+    dir = glm::normalize(dir);
+
+    constexpr float cameraCollisionMargin = 0.3f;
+
+    return hitPos - dir * cameraCollisionMargin;
 }
 
 glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
