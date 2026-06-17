@@ -85,7 +85,7 @@ void Renderer3D::DrawGameScreenForSinglePerson(float fbWidth, float fbHeight) co
 {
     glViewport(0, 0, fbWidth, fbHeight);
     float aspect = static_cast<float>(fbWidth) / static_cast<float>(fbHeight);
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
     glm::mat4 view = mGame->GetCameraSystem()->GetViews()[0];
     DrawScene(view, proj);
 }
