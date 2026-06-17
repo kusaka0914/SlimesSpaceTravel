@@ -63,13 +63,13 @@ default:
   - id: operationSupportTextForGameController
     type: text
     posRatio: [0.0125, 0.9333]
-    scaleRatio: [0.0002, 1.0]
-    text: [+:操作ガイド非表示 A:ジャンプ B:回避 X:強攻撃 Y:弱攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
+    scaleRatio: [0.00015, 1.0]
+    text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
   - id: operationSupportTextForKeyBoard
     type: text
     posRatio: [0.0125, 0.9333]
-    scaleRatio: [0.0002, 1.0]
-    text: ["WASD: 移動 矢印キー←→: カメラ回転 Space:ジャンプ U:回避 K:強攻撃 J:弱攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃"]
+    scaleRatio: [0.00015, 1.0]
+    text: ["ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃"]
   - id: operationSupportHiddenText
     type: text
     posRatio: [0.0125, 0.9333]
@@ -199,9 +199,9 @@ pauseMenu:
     type: text
     posRatio: [0.5, 0.732]
     scaleRatio: [0.00022, 1.0]
-    text: ["↑↓: 選択 / Enter・K: 決定 / ESC: 閉じる"]
+    text: ["↑↓:選択 Enter:決定 ESC:閉じる"]
   - id: operationTextForGameController
     type: text
     posRatio: [0.5, 0.732]
     scaleRatio: [0.00022, 1.0]
-    text: ["↑↓: 選択 / A・X: 決定 / -: 閉じる"]
+    text: ["↑↓:選択 A:決定 -:閉じる"]

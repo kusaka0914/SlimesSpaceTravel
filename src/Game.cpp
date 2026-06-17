@@ -279,9 +279,8 @@ void Game::ProcessPauseMenuInput()
         (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_DOWN));
 
     const bool confirmPressed =
-        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A)) ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X));
+        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A));
 
     if (upPressed && !mPauseMenuUpPressedPrev) {
         mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + menuItemCount - 1) % menuItemCount;
