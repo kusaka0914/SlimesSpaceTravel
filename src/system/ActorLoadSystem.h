@@ -7,6 +7,11 @@ class Game;
 class Planet;
 class Enemy;
 class Platform;
+class NPC;
+class Crystal;
+class BoatParts;
+class Boat;
+class Star;
 
 class ActorLoadSystem {
 public:
@@ -17,6 +22,11 @@ public:
     Planet* CreatePlanetFromStageNode(const YAML::Node& node);
     Enemy* CreateEnemyFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Platform* CreatePlatformFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    NPC* CreateNPCFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    Crystal* CreateCrystalFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    BoatParts* CreateBoatPartsFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    Boat* CreateBoatFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    Star* CreateStarFromStageNode(const YAML::Node& node, int stageYamlIndex);
 
 private:
     void LoadPlayers(const char* path);

@@ -4,28 +4,37 @@ planets:
     color: [1.0, 1.0, 1.0, 1.0]
     shape: Ellipse
     model: selectField.obj
-  
 boats:
-  - pos: [0.0, 10.0, -9.5]
+  - currentPlanetNum: 0
+    theta: -1.570796
+    phi: 0.811034
+    height: 3.793
     destStage: 1
     facingYaw: -1.6
-  # - pos: [-5.0, 1.0, -5.0]
-  #   destStage: 2
-
 players:
-  - pos: [0.0, 2.5, 4.0]
-    currentPlanetNum: 0
-  
+  - currentPlanetNum: 0
+    theta: 1.570796
+    phi: 0.558599
+    height: -6.783
 NPCs:
-  - pos: [-1.0, 10.5, -8.0]
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
     type: spaceSlime
     name: RocketGuideNPC
     talkTexts: [こちら惑星マルッコイ行きロケット〜まもなく発射します〜。\nお乗りの方はお急ぎください〜。]
-  - pos: [-3.0, 2.0, 0.0]
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
     type: spaceSlime
     name: BaseGuideNPC
     talkTexts: [ここはロケット発着所！\n他の惑星に行きたいならこの上のロケット乗り場からどうぞ！]
-  - pos: [0.0, -2.5, 0.0]
+  - currentPlanetNum: 0
+    theta: 0.0
+    phi: -1.570796
+    height: -7.5
     type: spaceSlime
     name: BackSideNPC
     talkTexts: [ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。]
