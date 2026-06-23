@@ -10,13 +10,11 @@
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include <btBulletDynamicsCommon.h>
-#include <iostream>
+#include <cmath>
 
 CameraSystem::CameraSystem(Game* game)
     : mGame(game),
-      mCameraYaw(0.0f),
       mCameraPitch(-1.0f),
-      mCameraStickY(0.0f),
       mCameraStickX(0.0f),
       mCameraUpVec(0.0f, 1.0f, 0.0f),
       mCameraTargetPos(0.0f),
@@ -36,23 +34,32 @@ void CameraSystem::ProcessInput()
 {
     if (mGame->GetIsFreeCameraMode()) {
         GLFWwindow* window = mGame->GetWindow();
+
         mMoveForward = 0.0f;
         mMoveRight = 0.0f;
         mMoveUp = 0.0f;
         mDebugYawInput = 0.0f;
         mDebugPitchInput = 0.0f;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             mMoveForward += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
             mMoveForward -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             mMoveRight -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             mMoveRight += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        }
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
             mMoveUp += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        }
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             mMoveUp -= 1.0f;
+        }
+
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
             mDebugYawInput += 1.0f;
         }
@@ -65,20 +72,24 @@ void CameraSystem::ProcessInput()
         if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
             mDebugPitchInput -= 1.0f;
         }
+
         return;
     }
 
     SDL_GameController* sdlController = mGame->GetSdlController();
+    if (!sdlController) {
+        mCameraStickX = 0.0f;
+        return;
+    }
+
     constexpr float deadZone = 0.25f;
-    constexpr float scale =
-        1.0f / 32767.0f; // SDL_GameControllerGetAxisの範囲が32767までで、scaleをかけて1.0f以内に抑えるため
+    constexpr float scale = 1.0f / 32767.0f;
 
     mCameraStickX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTX) * scale;
 
-    if (std::abs(mCameraStickY) < deadZone)
-        mCameraStickY = 0.0f;
-    if (std::abs(mCameraStickX) < deadZone)
+    if (std::abs(mCameraStickX) < deadZone) {
         mCameraStickX = 0.0f;
+    }
 }
 
 void CameraSystem::Update(float deltaTime)
@@ -90,6 +101,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
 {
     if (mGame->GetIsFreeCameraMode()) {
         constexpr float rotateSpeed = 2.0f;
+
         mDebugCameraYaw += mDebugYawInput * rotateSpeed * deltaTime;
         mDebugCameraPitch += mDebugPitchInput * rotateSpeed * deltaTime;
 
@@ -103,6 +115,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
         const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         constexpr float moveSpeed = 10.0f;
+
         mCameraPos += forward * mMoveForward * moveSpeed * deltaTime + right * mMoveRight * moveSpeed * deltaTime +
                       up * mMoveUp * moveSpeed * deltaTime;
 
@@ -111,47 +124,62 @@ void CameraSystem::UpdateCamera(float deltaTime)
 
         return;
     }
-    constexpr float cameraSensitivity = 2.5f;
 
+    constexpr float cameraSensitivity = 2.5f;
     const float yawDelta = mCameraStickX * cameraSensitivity * deltaTime;
-    const float upSmooth = 1.0f - std::exp(-8.0f * deltaTime);
-    const float targetSmooth = 1.0f - std::exp(-10.0f * deltaTime);
 
     std::vector<Player*> players = mGame->GetPlayers();
-    players[0]->SetCameraYaw(yawDelta);
-    for (auto player : players) {
-        mCameraUpVec = glm::normalize(glm::mix(mCameraUpVec, player->GetUpVec(), upSmooth));
-        mCameraTargetPos = glm::mix(mCameraTargetPos, player->GetPos(), targetSmooth);
+    if (players.empty()) {
+        return;
+    }
+
+    ResizePlayerCameraState(players.size());
+
+    if (players[0]) {
+        players[0]->SetCameraYaw(yawDelta);
+    }
+
+    for (int i = 0; i < static_cast<int>(players.size()); i++) {
+        UpdatePlayerCameraState(players[i], i, deltaTime);
     }
 }
 
-glm::mat4 CameraSystem::GetPlayerView(Player* player, float cameraDistance, bool isFixed)
+glm::mat4 CameraSystem::GetPlayerView(Player* player, int playerIndex, float cameraDistance, bool isFixed)
 {
+    if (!player) {
+        return glm::mat4(1.0f);
+    }
+
+    ResizePlayerCameraState(playerIndex + 1);
+
+    PlayerCameraState& playerCameraState = mPlayerCameraStates[playerIndex];
+
     glm::vec3 toPosX;
     glm::vec3 cameraDir;
-
     glm::vec3 lookAtOffset;
 
     if (isFixed) {
         glm::vec3 facingForwardVec = player->GetFacingForwardVec();
-        toPosX = glm::normalize(-facingForwardVec);
-        cameraDir = glm::normalize(std::cos(-0.2f) * toPosX + std::sin(-0.2f) * mCameraUpVec);
 
-        lookAtOffset = glm::normalize(mCameraUpVec) * 1.0f;
+        toPosX = glm::normalize(-facingForwardVec);
+        cameraDir = glm::normalize(std::cos(-0.2f) * toPosX + std::sin(-0.2f) * playerCameraState.upVec);
+
+        lookAtOffset = glm::normalize(playerCameraState.upVec) * 1.0f;
     } else {
         glm::vec3 forwardVec = player->GetForwardVec();
-        toPosX = glm::normalize(-forwardVec);
-        cameraDir = glm::normalize(std::cos(mCameraPitch) * toPosX + std::sin(mCameraPitch) * mCameraUpVec);
 
-        lookAtOffset = glm::normalize(mCameraUpVec) * 1.5f;
+        toPosX = glm::normalize(-forwardVec);
+        cameraDir = glm::normalize(std::cos(mCameraPitch) * toPosX + std::sin(mCameraPitch) * playerCameraState.upVec);
+
+        lookAtOffset = glm::normalize(playerCameraState.upVec) * 1.5f;
     }
 
-    glm::vec3 lookAtPos = mCameraTargetPos + lookAtOffset;
-    glm::vec3 desiredCameraPos = mCameraTargetPos - cameraDir * cameraDistance;
+    glm::vec3 lookAtPos = playerCameraState.targetPos + lookAtOffset;
+    glm::vec3 desiredCameraPos = playerCameraState.targetPos - cameraDir * cameraDistance;
 
-    mCameraPos = ResolveCameraCollision(lookAtPos, desiredCameraPos);
+    playerCameraState.cameraPos = ResolveCameraCollision(lookAtPos, desiredCameraPos);
 
-    return glm::lookAt(mCameraPos, lookAtPos, mCameraUpVec);
+    return glm::lookAt(playerCameraState.cameraPos, lookAtPos, playerCameraState.upVec);
 }
 
 glm::vec3 CameraSystem::ResolveCameraCollision(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos) const
@@ -188,19 +216,27 @@ glm::vec3 CameraSystem::ResolveCameraCollision(const glm::vec3& targetPos, const
 
 glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
 {
-    Player* player = mGame->GetPlayers()[0];
+    if (!targetActor) {
+        return glm::mat4(1.0f);
+    }
+
+    std::vector<Player*> players = mGame->GetPlayers();
+    if (players.empty() || !players[0]) {
+        return glm::mat4(1.0f);
+    }
+
+    Player* player = players[0];
 
     const glm::vec3 playerPos = player->GetPos();
     const glm::vec3 targetPos = targetActor->GetPos();
 
-    const float cameraLerp = 0.12f;
+    constexpr float cameraLerp = 0.12f;
 
     glm::vec3 up = glm::normalize(player->GetUpVec());
 
     const glm::vec3 center = glm::mix(playerPos, targetPos, 0.5f);
 
     glm::vec3 targetToPlayer = playerPos - targetPos;
-
     targetToPlayer -= up * glm::dot(targetToPlayer, up);
 
     if (glm::length(targetToPlayer) < 0.001f) {
@@ -220,7 +256,7 @@ glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
 
     const float targetDistance = glm::length(playerPos - targetPos);
     const float cameraDistance = glm::clamp(targetDistance + 6.0f, 8.0f, 16.0f);
-    const float cameraHeight = 4.0f;
+    constexpr float cameraHeight = 4.0f;
 
     const glm::vec3 desiredCameraPos = center + backDir * cameraDistance + up * cameraHeight;
 
@@ -229,7 +265,6 @@ glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
 
     mCameraPos = glm::mix(mCameraPos, desiredCameraPos, cameraLerp);
     mCameraTargetPos = glm::mix(mCameraTargetPos, desiredLookAt, cameraLerp);
-
     mCameraUpVec = glm::normalize(glm::mix(mCameraUpVec, up, cameraLerp));
 
     return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
@@ -237,20 +272,27 @@ glm::mat4 CameraSystem::GetTargetCameraView(Actor* targetActor)
 
 glm::mat4 CameraSystem::GetFocusView(Actor* focusActor) const
 {
+    if (!focusActor) {
+        return glm::mat4(1.0f);
+    }
+
     const glm::vec3 upVec = focusActor->GetUpVec();
-    glm::vec3 baseLeft = glm::cross(upVec, glm::vec3(0, 0, 1));
+    glm::vec3 baseLeft = glm::cross(upVec, glm::vec3(0.0f, 0.0f, 1.0f));
 
     if (glm::length(baseLeft) < 0.01f) {
-        baseLeft = glm::normalize(glm::cross(upVec, glm::vec3(0, 1, 0)));
-    } else
+        baseLeft = glm::normalize(glm::cross(upVec, glm::vec3(0.0f, 1.0f, 0.0f)));
+    } else {
         baseLeft = glm::normalize(baseLeft);
+    }
 
     const glm::vec3 forwardVec =
         glm::normalize(glm::cross(baseLeft, upVec) * std::cos(0.6f) - std::sin(0.6f) * baseLeft);
+
     const glm::vec3 back = glm::normalize(-forwardVec);
     const glm::vec3 cameraDir = glm::normalize(std::cos(-0.5f) * back + std::sin(-0.5f) * upVec);
 
     const glm::vec3 ownerPos = focusActor->GetPos();
+
     constexpr float cameraDistance = 15.0f;
     const glm::vec3 cameraPos = ownerPos - cameraDir * cameraDistance;
 
@@ -267,10 +309,13 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     std::vector<glm::mat4> views;
 
     if (mGame->GetIsFreeCameraMode()) {
-        views.push_back(GetDebugCameraView());
-        if (!views.empty()) {
-            return views;
-        }
+        views.emplace_back(GetDebugCameraView());
+        return views;
+    }
+
+    std::vector<Player*> players = mGame->GetPlayers();
+    if (players.empty() || !players[0]) {
+        return views;
     }
 
     if (mGame->GetSceneSystem()->IsOpening()) {
@@ -280,8 +325,12 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         }
     }
 
-    Planet* currentPlanet = mGame->GetPlayers()[0]->GetCurrentPlanet();
-    std::vector<Boat*> boats = mGame->GetPlayers()[0]->GetCurrentPlanet()->GetBoats();
+    Planet* currentPlanet = players[0]->GetCurrentPlanet();
+    if (!currentPlanet) {
+        return views;
+    }
+
+    std::vector<Boat*> boats = currentPlanet->GetBoats();
     if (!boats.empty()) {
         views = GetBoatFocusViews(boats);
         if (!views.empty()) {
@@ -291,40 +340,42 @@ std::vector<glm::mat4> CameraSystem::GetViews()
 
     Key* key = currentPlanet->GetKey();
     if (key) {
-        if (key->GetFocusComponent()->GetFocusTimer() >= 0.0f) {
-            glm::mat4 keyFocusView = GetFocusView(key);
-            views.emplace_back(keyFocusView);
+        FocusComponent* focusComponent = key->GetFocusComponent();
+        if (focusComponent && focusComponent->GetFocusTimer() >= 0.0f) {
+            views.emplace_back(GetFocusView(key));
             return views;
         }
     }
 
     if (mGame->GetSceneSystem()->IsStageClear()) {
-        glm::mat4 playerFocusView = GetPlayerView(mGame->GetPlayers()[0], 6.0f, true);
-        views.emplace_back(playerFocusView);
+        views.emplace_back(GetPlayerView(players[0], 0, 6.0f, true));
         return views;
     }
 
     if (mIsTargetFocus) {
-        Enemy* targetEnemy;
-        std::vector<Enemy*> enemies = mGame->GetPlayers()[0]->GetCurrentPlanet()->GetEnemies();
-        for (auto enemy : enemies) {
-            if (!enemy->GetIsBoss()) {
+        Enemy* targetEnemy = nullptr;
+
+        std::vector<Enemy*> enemies = currentPlanet->GetEnemies();
+        for (Enemy* enemy : enemies) {
+            if (!enemy || !enemy->GetIsBoss()) {
                 continue;
             }
 
             targetEnemy = enemy;
             break;
         }
-        views.emplace_back(GetTargetCameraView(targetEnemy));
+
+        if (targetEnemy) {
+            views.emplace_back(GetTargetCameraView(targetEnemy));
+            return views;
+        }
     }
 
-    glm::mat4 playerView = GetPlayerView(mGame->GetPlayers()[0], 8.0f);
-    views.emplace_back(playerView);
+    views.emplace_back(GetPlayerView(players[0], 0, 8.0f));
 
-    bool isPlayer2Joined = mGame->GetIsPlayer2Joined();
+    const bool isPlayer2Joined = mGame->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
     if (isPlayer2Joined) {
-        glm::mat4 player2View = GetPlayerView(mGame->GetPlayers()[1], 10.0f);
-        views.emplace_back(player2View);
+        views.emplace_back(GetPlayerView(players[1], 1, 8.0f));
     }
 
     return views;
@@ -333,9 +384,11 @@ std::vector<glm::mat4> CameraSystem::GetViews()
 std::vector<glm::mat4> CameraSystem::GetOpeningViews() const
 {
     std::vector<glm::mat4> views;
+
     if (mGame->GetSceneSystem()->IsTalkWithMother()) {
         glm::mat4 talkWithMotherView =
             glm::lookAt(glm::vec3(-2.0f, 4.0f, -2.0f), glm::vec3(4.0f, 2.0f, 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
         views.emplace_back(talkWithMotherView);
         return views;
     }
@@ -343,6 +396,7 @@ std::vector<glm::mat4> CameraSystem::GetOpeningViews() const
     if (mGame->GetSceneSystem()->IsTalkWithDoctor()) {
         glm::mat4 talkWithDoctorView =
             glm::lookAt(glm::vec3(3.0f, 4.0f, 1.0f), glm::vec3(-4.0f, 2.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
         views.emplace_back(talkWithDoctorView);
         return views;
     }
@@ -350,17 +404,50 @@ std::vector<glm::mat4> CameraSystem::GetOpeningViews() const
     return views;
 }
 
-std::vector<glm::mat4> CameraSystem::GetBoatFocusViews(std::vector<Boat*> boats) const
+std::vector<glm::mat4> CameraSystem::GetBoatFocusViews(const std::vector<Boat*>& boats) const
 {
     std::vector<glm::mat4> views;
-    for (auto boat : boats) {
-        if (boat->GetFocusComponent()->GetFocusTimer() < 0.0f) {
+
+    for (Boat* boat : boats) {
+        if (!boat) {
             continue;
         }
 
-        glm::mat4 view = mGame->GetCameraSystem()->GetFocusView(boat);
-        views.emplace_back(view);
+        FocusComponent* focusComponent = boat->GetFocusComponent();
+        if (!focusComponent || focusComponent->GetFocusTimer() < 0.0f) {
+            continue;
+        }
+
+        views.emplace_back(GetFocusView(boat));
         return views;
     }
+
     return views;
+}
+
+void CameraSystem::ResizePlayerCameraState(std::size_t count)
+{
+    if (mPlayerCameraStates.size() >= count) {
+        return;
+    }
+
+    mPlayerCameraStates.resize(count);
+}
+
+void CameraSystem::UpdatePlayerCameraState(Player* player, int playerIndex, float deltaTime)
+{
+    if (!player) {
+        return;
+    }
+
+    ResizePlayerCameraState(playerIndex + 1);
+
+    PlayerCameraState& playerCameraState = mPlayerCameraStates[playerIndex];
+
+    const float upSmooth = 1.0f - std::exp(-8.0f * deltaTime);
+    const float targetSmooth = 1.0f - std::exp(-10.0f * deltaTime);
+
+    playerCameraState.upVec = glm::normalize(glm::mix(playerCameraState.upVec, player->GetUpVec(), upSmooth));
+
+    playerCameraState.targetPos = glm::mix(playerCameraState.targetPos, player->GetPos(), targetSmooth);
 }

@@ -26,9 +26,9 @@ private:
     void DrawGameScreenForSinglePerson(float fbWidth, float fbHeight) const;
     void DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const;
 
-    void DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) const;
+    void DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
 
-    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const;
+    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     void DrawPlanets(const std::vector<Planet*>& planets) const;
     void TryDrawPlayers(const glm::mat4& viewMat) const;
     void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;

@@ -36,7 +36,7 @@ void SceneSystem::Update(float deltaTime)
     UpdateClearTimer(deltaTime);
 }
 
-void SceneSystem::OnConfirmPressed()
+void SceneSystem::OnConfirmPressed(int playerNum)
 {
     if (mFadeTimer >= 0.0f) {
         return;
@@ -60,11 +60,12 @@ void SceneSystem::OnConfirmPressed()
         break;
 
     case GameProgressState::SceneState::Playing:
-        TryStartTalkWithNPC();
+        TryStartTalkWithNPC(playerNum);
         break;
 
     case GameProgressState::SceneState::GameOver:
         RestartGame();
+        break;
 
     default:
         break;
@@ -103,6 +104,9 @@ void SceneSystem::StartPlayingScene()
 {
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
 
+    mTalkingNPC = nullptr;
+    mTalkingPlayer = nullptr;
+
     for (Player* player : mGame->GetPlayers()) {
         player->SetInputAvailableTimer(0.15f);
     }
@@ -113,9 +117,17 @@ void SceneSystem::StartFocusingScene()
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Focusing);
 }
 
-void SceneSystem::StartTalkWithNPC()
+void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
 {
+    if (!talkingNPC || !talkingPlayer) {
+        return;
+    }
+
+    mTalkingNPC = talkingNPC;
+    mTalkingPlayer = talkingPlayer;
+
     mUIState->SetCurrentTalkWith(UIState::TalkWith::NPC);
+    mUIState->SetTalkUIIndex(0);
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
     mGame->GetAudioSystem()->PlaySE("message_se");
 }
@@ -307,21 +319,29 @@ void SceneSystem::ApplySceneChange()
     }
 }
 
-void SceneSystem::TryStartTalkWithNPC()
+void SceneSystem::TryStartTalkWithNPC(int playerNum)
 {
-    Player* mainPlayer = mGame->GetMainPlayer();
-    if (!mainPlayer) {
+    const std::vector<Player*>& players = mGame->GetPlayers();
+
+    for (Player* player : players) {
+        if (!player) {
+            continue;
+        }
+
+        if (player->GetPlayerNum() != playerNum) {
+            continue;
+        }
+
+        NPC* talkableNPC = player->GetTalkableNPC();
+        if (!talkableNPC) {
+            return;
+        }
+
+        if (!talkableNPC->GetIsTalkable()) {
+            return;
+        }
+
+        StartTalkWithNPC(talkableNPC, player);
         return;
     }
-
-    NPC* talkableNPC = mainPlayer->GetTalkableNPC();
-    if (!talkableNPC) {
-        return;
-    }
-
-    if (!talkableNPC->GetIsTalkable()) {
-        return;
-    }
-
-    StartTalkWithNPC();
 }

@@ -42,15 +42,15 @@ public:
     void OnBoatArrived(Boat* boat);
     void OnStarObtained();
     void OnEnemyLaunched();
-    void OnPlayerAttackHit();
-    void OnStrongAttacked();
-    void OnPlayerCounter();
-    void OnPlayerApplyDamage();
-    void OnPlayerFinishCharging();
     void OnLanded();
     void OnPlayerDied();
     void OnBoatPartsObtained();
-    void VibrateController(float low, float high, float time);
+    void OnPlayerApplyDamage(int playerNum);
+    void OnPlayerFinishCharging(int playerNum);
+    void OnPlayerAttackHit(int playerNum);
+    void OnStrongAttacked(int playerNum);
+    void OnPlayerCounter(int playerNum);
+    void VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
 
     Player* FindNearestPlayer(Actor* actor) const;
 
@@ -149,6 +149,7 @@ private:
     bool mPPressedPrev = false;
     bool mLPressedPrev = false;
     bool mZLPressedPrev = false;
+    bool mQPressedPrev = false;
     bool mStartPressedPrev = false;
     bool mPauseMenuKeyPressedPrev = false;
     bool mPauseMenuUpPressedPrev = false;
@@ -158,6 +159,8 @@ private:
     bool mIsDebugMode;
     bool mIsFreeCameraMode;
     bool mIsPauseMenuOpen = false;
+    bool mControllerConfirmPressedPrev = false;
+    bool mKeyboardConfirmPressedPrev = false;
 
     std::string mCurrentStageYamlPath;
 };

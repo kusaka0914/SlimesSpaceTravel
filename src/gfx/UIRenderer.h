@@ -9,6 +9,7 @@
 #include <vector>
 
 class Game;
+class Player;
 class UIShader;
 class VertexArray;
 class DebugUIRenderer;
@@ -41,10 +42,13 @@ private:
     void DrawDefaultUI();
 
     void DrawOperationSupportUI();
-    void DrawHpUI(int hp);
+    void DrawPlayerStatusUI(const Player* player, float screenTopY, float uiScale);
+    void DrawPlayerPromptUI(const Player* player, float screenTopY, float uiScale);
+    void DrawHpUI(int hp, float screenTopY, float screenHeight);
+    void DrawJewelUI(int jewelCount, float screenTopY, float screenHeight);
     void DrawDangerBg(int hp);
-    void DrawJewelUI(int jewelCount);
-    void DrawTalkableUI();
+    void DrawTalkableUI(const Player* player, float screenTopY, float uiScale);
+    void DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale);
     void DrawRemainPartsUI(int remainBoatPartsCount);
 
     void DrawStateUI();
@@ -55,7 +59,6 @@ private:
     void DrawJustDodgeTutorial();
     void DrawTalkWithNPC();
     void DrawStageClear();
-    void DrawRecommendReduceTiredUI();
     float CalculateAlpha() const;
     void DrawFadeInBg(float alpha);
     void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex);
@@ -65,11 +68,15 @@ private:
     void DrawSceneText(const std::string& sceneName, const std::string& UIName, bool isCenterBase, int index,
                        glm::vec4 color = {255, 255, 255, 255});
     bool DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName);
-    void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName, bool isCenterBase);
+    void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName, bool isCenterBase,
+                                         float screenTopY = 0.0f, float uiScale = 1.0f);
+    void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
+                                      bool isCenterBase, float screenTopY, float uiScale);
+    bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
-                            float gap, int count);
+                            float gap, int count, float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawPauseMenu();
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 

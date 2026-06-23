@@ -86,34 +86,63 @@ void Renderer3D::Draw() const
 void Renderer3D::DrawGameScreenForSinglePerson(float fbWidth, float fbHeight) const
 {
     glViewport(0, 0, fbWidth, fbHeight);
-    float aspect = static_cast<float>(fbWidth) / static_cast<float>(fbHeight);
+
+    float aspect = fbWidth / fbHeight;
     glm::mat4 proj = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+
     glm::mat4 view = mGame->GetCameraSystem()->GetViews()[0];
-    DrawScene(view, proj);
+    glm::vec3 cameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(0);
+
+    DrawScene(view, proj, cameraPos);
 }
 
 void Renderer3D::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const
 {
-    float halfWidth = fbWidth * 0.5f;
-    float halfAspect = halfWidth / static_cast<float>(fbHeight);
-    glm::mat4 halfProj = glm::perspective(glm::radians(45.0f), halfAspect, 0.1f, 100.0f);
     std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
 
-    glViewport(0, 0, static_cast<GLsizei>(halfWidth), fbHeight);
-    DrawScene(views[0], halfProj);
+    if (views.size() < 2) {
+        DrawGameScreenForSinglePerson(fbWidth, fbHeight);
+        return;
+    }
 
-    glViewport(static_cast<GLsizei>(halfWidth), 0, static_cast<GLsizei>(halfWidth), fbHeight);
-    DrawScene(views[1], halfProj);
+    const float halfHeight = fbHeight * 0.5f;
+    const float aspect = fbWidth / halfHeight;
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+
+    const glm::vec3 p1CameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(0);
+    const glm::vec3 p2CameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(1);
+
+    glViewport(0, static_cast<GLint>(halfHeight), static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(halfHeight));
+    DrawScene(views[0], proj, p1CameraPos);
+
+    glViewport(0, 0, static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(halfHeight));
+    DrawScene(views[1], proj, p2CameraPos);
 }
 
-void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) const
+// void Renderer3D::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const
+// {
+//     float halfWidth = fbWidth * 0.5f;
+//     float halfAspect = halfWidth / static_cast<float>(fbHeight);
+//     glm::mat4 halfProj = glm::perspective(glm::radians(45.0f), halfAspect, 0.1f, 100.0f);
+//     std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+
+//     glViewport(0, 0, static_cast<GLsizei>(halfWidth), fbHeight);
+//     DrawScene(views[0], halfProj);
+
+//     glViewport(static_cast<GLsizei>(halfWidth), 0, static_cast<GLsizei>(halfWidth), fbHeight);
+//     DrawScene(views[1], halfProj);
+// }
+
+void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
 {
-    SetUniforms(viewMat, projMat);
+    SetUniforms(viewMat, projMat, cameraPos);
 
     std::vector<Planet*> planets = mGame->GetCurrentStage()->GetPlanets();
+
     glUniform1f(mShader3D->GetLocToonLevels(), 5.0f);
     glUniform1f(mShader3D->GetLocToonStrength(), 0.45f);
     TryDrawActors(planets, false);
+
     glUniform1f(mShader3D->GetLocToonLevels(), 3.0f);
     glUniform1f(mShader3D->GetLocToonStrength(), 0.6f);
     TryDrawActorOnPlanets(planets, viewMat);
@@ -124,12 +153,11 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) c
     }
 }
 
-void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const
+void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
 {
     glUniformMatrix4fv(mShader3D->GetLocView(), 1, GL_FALSE, glm::value_ptr(viewMat));
     glUniformMatrix4fv(mShader3D->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
 
-    glm::vec3 cameraPos = mGame->GetCameraSystem()->GetCameraPos();
     glUniform3f(mShader3D->GetLocViewPos(), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniform3f(mShader3D->GetLocLightPos(), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniform3f(mShader3D->GetLocLightColor(), 0.5f, 0.5f, 0.5f);
@@ -168,6 +196,11 @@ void Renderer3D::TryDrawPlayers(const glm::mat4& viewMat) const
 
     if (mGame->GetIsPlayer2Joined()) {
         TryDrawActor(players[1]);
+        canDrawAttackRange =
+            players[1]->IsAttacking() || players[1]->GetIsStrongAttacked() || players[1]->GetCanSpecialAttack();
+        if (canDrawAttackRange) {
+            DrawAttackRange(players[1]);
+        }
         DrawTiredEffect(viewMat, players[1]);
     }
 }

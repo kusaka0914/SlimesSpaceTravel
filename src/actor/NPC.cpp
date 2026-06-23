@@ -13,7 +13,7 @@ NPC::NPC(Game* game)
 void NPC::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
-    LookNearestPlayer();
+    LookNearestPlayer(deltaTime);
     CheckTalkable();
 
     if (!mOnGround) {
@@ -21,28 +21,34 @@ void NPC::UpdateActor(float deltaTime)
     }
 }
 
-void NPC::LookNearestPlayer()
+void NPC::LookNearestPlayer(float deltaTime)
 {
     const Player* nearestPlayer = mGame->FindNearestPlayer(this);
     const glm::vec3 toNearestPlayer = glm::normalize(nearestPlayer->GetPos() - mPos);
 
-    mFacingForwardVec = toNearestPlayer;
-    mFacingYaw = mGame->GetMathUtils()->GetYawFromDirection(mUpVec, toNearestPlayer) + 3.14159265f;
+    constexpr float turnSpeed = 5.0f;
+    const float t = 1.0f - std::exp(-turnSpeed * deltaTime);
+
+    mFacingForwardVec = glm::normalize(glm::mix(mFacingForwardVec, toNearestPlayer, t));
+    mFacingYaw = mGame->GetMathUtils()->GetYawFromDirection(mUpVec, mFacingForwardVec) + 3.14159265f;
 }
 
 void NPC::CheckTalkable()
 {
     const std::vector<Player*>& players = mGame->GetPlayers();
-    if (players.empty()) {
-        return;
-    }
 
-    for (auto player : players) {
+    mIsTalkable = false;
+
+    for (Player* player : players) {
+        if (!player) {
+            continue;
+        }
+
         if (IsPlayerInTalkableRange(player)) {
             mIsTalkable = true;
             player->SetTalkableNPC(this);
-        } else {
-            mIsTalkable = false;
+        } else if (player->GetTalkableNPC() == this) {
+            player->SetTalkableNPC(nullptr);
         }
     }
 }

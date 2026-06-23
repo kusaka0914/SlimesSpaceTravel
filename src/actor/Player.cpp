@@ -144,12 +144,22 @@ void Player::ProcessGameController()
 
 void Player::ProcessKeyboard()
 {
-    if (mGame->IsGameControllerConnected())
+    const bool isControllerConnected = mGame->IsGameControllerConnected();
+
+    if (!isControllerConnected && mPlayerNum != 1) {
         return;
+    }
+
+    if (isControllerConnected && mPlayerNum != 2) {
+        return;
+    }
 
     GLFWwindow* window = mGame->GetWindow();
+
     mMoveForward = 0.0f;
     mMoveLeft = 0.0f;
+    mCameraYaw = 0.0f;
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         mMoveForward -= 1.0f;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -434,7 +444,7 @@ void Player::UpdateStrongAttacking(float deltaTime)
 
     if (mIsStrongAttackHit) {
         mIsStrongAttackHit = false;
-        mGame->OnStrongAttacked();
+        mGame->OnStrongAttacked(mPlayerNum);
     }
 }
 
@@ -452,15 +462,15 @@ void Player::UpdateSpecialAttackCharging(float deltaTime)
     float specialChargingTimerPrev = mSpecialChargingTimer;
     mSpecialChargingTimer -= deltaTime;
     if (specialChargingTimerPrev >= 2.0f && mSpecialChargingTimer <= 2.0f) {
-        mGame->VibrateController(10000, 0, 1000);
+        mGame->VibrateControllerForPlayer(mPlayerNum, 10000, 0, 1000);
         mJewelCount--;
         mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 1.0f && mSpecialChargingTimer <= 1.0f) {
-        mGame->VibrateController(20000, 0, 1000);
+        mGame->VibrateControllerForPlayer(mPlayerNum, 20000, 0, 1000);
         mJewelCount--;
         mGame->GetAudioSystem()->PlaySE("charging_se");
     } else if (specialChargingTimerPrev >= 0.0f && mSpecialChargingTimer <= 0.0f) {
-        mGame->VibrateController(30000, 0, 1000);
+        mGame->VibrateControllerForPlayer(mPlayerNum, 30000, 0, 1000);
         mGame->GetAudioSystem()->PlaySE("charged_se");
     }
 
@@ -668,7 +678,7 @@ void Player::StartJumping(float deltaTime)
 
 void Player::FinishCharging()
 {
-    mGame->OnPlayerFinishCharging();
+    mGame->OnPlayerFinishCharging(mPlayerNum);
     mIsCharged = true;
 }
 
@@ -804,7 +814,7 @@ void Player::Attack(float deltaTime)
     }
 
     if (mAttackKind != AttackKind::Strong) {
-        mGame->OnPlayerAttackHit();
+        mGame->OnPlayerAttackHit(mPlayerNum);
         StartAfterAttackReaction();
         if (mOnGround) {
             for (Enemy* enemy : hitEnemies) {
@@ -976,7 +986,7 @@ void Player::SpecialAttack(float deltaTime)
         }
     }
 
-    mGame->VibrateController(0, 40000, 1000);
+    mGame->VibrateControllerForPlayer(mPlayerNum, 0, 40000, 1000);
     mCanSpecialAttack = false;
     mAttackCooldownRemaining = 1.0f;
 }
@@ -995,7 +1005,7 @@ void Player::Recover()
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
     if (mActionState == ActionState::Dodging && enemy->GetCanCountered()) {
-        mGame->OnPlayerCounter();
+        mGame->OnPlayerCounter(mPlayerNum);
         enemy->ApplyBreak(deltaTime, true);
         enemy->FlipCanCountered();
         mGame->GetAudioSystem()->PlaySE("just_dodge_se");
@@ -1017,7 +1027,7 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
     mDamageTimer = mDefaultDamageTimer;
     mInvincibleTimer = mDefaultInvincibleTimer;
     mActionState = ActionState::KnockedBack;
-    mGame->OnPlayerApplyDamage();
+    mGame->OnPlayerApplyDamage(mPlayerNum);
     mCanSpecialAttack = false;
     mSpecialChargingTimer = -1.0f;
     mContinuousAttackingTimer = -1.0f;
@@ -1026,6 +1036,7 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 void Player::FollowMovingBoat(Boat* boat)
 {
     mPos = boat->GetPos();
+    mIsActive = false;
 }
 
 bool Player::IsTouchingBoat(Boat* boat)

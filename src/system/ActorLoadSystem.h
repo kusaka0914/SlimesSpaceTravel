@@ -5,6 +5,7 @@
 
 class Game;
 class Planet;
+class Player;
 class Enemy;
 class Platform;
 class NPC;
@@ -20,6 +21,7 @@ public:
     void LoadData(bool isLoadPlayer);
 
     Planet* CreatePlanetFromStageNode(const YAML::Node& node);
+    Player* CreatePlayerFromStageNode(const YAML::Node& node, int playerNum);
     Enemy* CreateEnemyFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Platform* CreatePlatformFromStageNode(const YAML::Node& node, int stageYamlIndex);
     NPC* CreateNPCFromStageNode(const YAML::Node& node, int stageYamlIndex);
@@ -27,6 +29,7 @@ public:
     BoatParts* CreateBoatPartsFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Boat* CreateBoatFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Star* CreateStarFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    bool CreatePlayerFromCurrentStage(int playerNum);
 
 private:
     void LoadPlayers(const char* path);

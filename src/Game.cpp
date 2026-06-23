@@ -216,18 +216,34 @@ void Game::ProcessGameInput()
     }
     mUIReloadKeyPressedPrev = uiReloadKeyPressed;
 
-    // const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
-    // if (pPressed && !mIsPlayer2Joined) {
-    //     CreatePlayer2();
-    // }
-
-    const bool xPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X)) ||
-                          glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
-
-    if (xPressed && !mXPressedPrev) {
-        mSceneSystem->OnConfirmPressed();
+    const bool qPressed = glfwGetKey(mWindow, GLFW_KEY_Q) == GLFW_PRESS;
+    if (qPressed && !mQPressedPrev) {
+        if (IsGameControllerConnected() && !mIsPlayer2Joined && mPlayers.size() < 2) {
+            CreatePlayer2();
+        }
     }
-    mXPressedPrev = xPressed;
+    mQPressedPrev = qPressed;
+
+    const bool controllerConfirmPressed =
+    mSdlController &&
+    SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X);
+
+    const bool keyboardConfirmPressed =
+        glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
+
+    if (controllerConfirmPressed && !mControllerConfirmPressedPrev) {
+        mSceneSystem->OnConfirmPressed(1);
+    }
+
+    if (keyboardConfirmPressed && !mKeyboardConfirmPressedPrev) {
+        const int keyboardPlayerNum =
+            IsGameControllerConnected() && mIsPlayer2Joined ? 2 : 1;
+
+        mSceneSystem->OnConfirmPressed(keyboardPlayerNum);
+    }
+
+    mControllerConfirmPressedPrev = controllerConfirmPressed;
+    mKeyboardConfirmPressedPrev = keyboardConfirmPressed;
 
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
     if (pPressed && !mPPressedPrev) {
@@ -486,17 +502,16 @@ void Game::CreatePlayer2()
         return;
     }
 
+    if (!IsGameControllerConnected()) {
+        return;
+    }
+
+    const bool created = mActorLoadSystem->CreatePlayerFromCurrentStage(2);
+    if (!created) {
+        return;
+    }
+
     mIsPlayer2Joined = true;
-
-    auto player2 = std::make_unique<Player>(this);
-    Player* player2Ptr = player2.get();
-
-    mActors.emplace_back(std::move(player2));
-    mPlayers.emplace_back(player2Ptr);
-
-    auto playerMeshes = mMeshLoadSystem->GetLoadedMeshes("player");
-
-    player2Ptr->SetMeshes(playerMeshes);
 }
 
 void Game::OnBoatStageChangeRequested(int destStage)
@@ -523,35 +538,6 @@ void Game::OnEnemyLaunched()
 {
     mAudioSystem->PlaySE("break_se");
     mSceneSystem->OnEnemyLaunched();
-}
-
-void Game::OnPlayerApplyDamage()
-{
-    mAudioSystem->PlaySE("damaged_se");
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 1000);
-}
-
-void Game::OnPlayerFinishCharging()
-{
-    mAudioSystem->PlaySE("air_charged_se");
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
-}
-
-void Game::OnPlayerAttackHit()
-{
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
-}
-
-void Game::OnStrongAttacked()
-{
-    mSceneSystem->OnStrongAttacked();
-    mHitStopTimer = 0.4f;
-    SDL_GameControllerRumble(mSdlController, 40000, 0, 500);
-}
-
-void Game::OnPlayerCounter()
-{
-    SDL_GameControllerRumble(mSdlController, 25000, 0, 500);
 }
 
 void Game::OnLanded()
@@ -618,7 +604,44 @@ void Game::StartFocusingScene()
     mSceneSystem->StartFocusingScene();
 }
 
-void Game::VibrateController(float low, float high, float time)
+void Game::OnPlayerApplyDamage(int playerNum)
 {
-    SDL_GameControllerRumble(mSdlController, low, high, time);
+    mAudioSystem->PlaySE("damaged_se");
+    VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
+}
+
+void Game::OnPlayerFinishCharging(int playerNum)
+{
+    mAudioSystem->PlaySE("air_charged_se");
+    VibrateControllerForPlayer(playerNum, 0, 10000, 200);
+}
+
+void Game::OnPlayerAttackHit(int playerNum)
+{
+    VibrateControllerForPlayer(playerNum, 0, 10000, 200);
+}
+
+void Game::OnStrongAttacked(int playerNum)
+{
+    mSceneSystem->OnStrongAttacked();
+    mHitStopTimer = 0.4f;
+    VibrateControllerForPlayer(playerNum, 40000, 0, 500);
+}
+
+void Game::OnPlayerCounter(int playerNum)
+{
+    VibrateControllerForPlayer(playerNum, 25000, 0, 500);
+}
+
+void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+{
+    if (playerNum != 1) {
+        return;
+    }
+
+    if (!mSdlController) {
+        return;
+    }
+
+    SDL_GameControllerRumble(mSdlController, lowFrequency, highFrequency, duration);
 }

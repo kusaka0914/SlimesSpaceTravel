@@ -38,6 +38,7 @@ public:
     void OnBoatArrived(Boat* boat);
     void Restart();
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; };
+    bool IsAlive() const { return mHp > 0.0f; };
     bool IsAttacking() const
     {
         return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking ||
@@ -100,6 +101,7 @@ public:
 
     int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
     int GetJewelCount() const { return mJewelCount; }
+    int GetPlayerNum() const { return mPlayerNum; }
 
     float GetAttack() const { return mAttack; }
     float GetHp() const { return mHp; }
@@ -213,7 +215,6 @@ private:
     void OnLanded() override;
     void ReduceTired();
 
-    bool IsAlive() const { return mHp > 0.0f; };
     bool IsTouchingBoat(Boat* boat);
     bool IsFallIntoPlanetInside();
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange);

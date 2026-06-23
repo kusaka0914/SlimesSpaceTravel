@@ -128,23 +128,26 @@ void Enemy::UpdateBehavior(float deltaTime)
     }
 }
 
-void Enemy::UpdateFacingVec()
+void Enemy::UpdateFacingVec(float deltaTime)
 {
     const glm::vec3 toPlayer = glm::normalize(mNearestPlayer->GetPos() - mPos);
-    mFacingForwardVec = toPlayer;
-    mFacingYaw = mGame->GetMathUtils()->GetYawFromDirection(mUpVec, toPlayer) + 3.14159265f;
+    constexpr float turnSpeed = 5.0f;
+    const float t = 1.0f - std::exp(-turnSpeed * deltaTime);
+
+    mFacingForwardVec = glm::normalize(glm::mix(mFacingForwardVec, toPlayer, t));
+    mFacingYaw = mGame->GetMathUtils()->GetYawFromDirection(mUpVec, mFacingForwardVec) + 3.14159265f;
 }
 
 void Enemy::UpdateIdle()
 {
-    if (IsPlayerInRange(mDetectionRange)) {
+    if (IsPlayerInRange(mNearestPlayer, mDetectionRange)) {
         StartTracking();
     }
 }
 
 void Enemy::UpdateTracking(float deltaTime)
 {
-    UpdateFacingVec();
+    UpdateFacingVec(deltaTime);
     MoveToPlayer(deltaTime);
     TryStartPreparingAttack();
 }
@@ -154,7 +157,7 @@ void Enemy::TryStartPreparingAttack()
     constexpr float attackStartRangeMargin = 1.5f;
     const float attackStartRange = mRadius + attackStartRangeMargin;
 
-    if (IsPlayerInRange(attackStartRange)) {
+    if (IsPlayerInRange(mNearestPlayer, attackStartRange)) {
         StartPreparingAttack();
     }
 }
@@ -162,7 +165,7 @@ void Enemy::TryStartPreparingAttack()
 void Enemy::UpdatePreparingAttack(float deltaTime)
 {
     if (!mIsJustBeforeAttack) {
-        UpdateFacingVec();
+        UpdateFacingVec(deltaTime);
     }
 
     mStandByAttackTimer -= deltaTime;
@@ -195,13 +198,34 @@ void Enemy::UpdateAttacking(float deltaTime)
 
 void Enemy::TryApplyAttack(float deltaTime)
 {
+    if (!IsProgressing()) {
+        return;
+    }
+
     constexpr float hitRangeMargin = 0.2f;
     const float hitRange = mRadius + hitRangeMargin;
 
-    const bool canApplyDamage = IsPlayerInRange(hitRange) && !mIsHit && IsProgressing();
-    if (canApplyDamage) {
-        mNearestPlayer->ApplyDamage(this, deltaTime);
-        mIsHit = true;
+    for (Player* player : mGame->GetPlayers()) {
+        if (!player) {
+            continue;
+        }
+
+        if (!player->IsAlive()) {
+            continue;
+        }
+
+        if (mHitPlayers.contains(player)) {
+            continue;
+        }
+
+        const bool isInRange = IsPlayerInRange(player, hitRange);
+
+        if (!isInRange) {
+            continue;
+        }
+
+        player->ApplyDamage(this, deltaTime);
+        mHitPlayers.insert(player);
     }
 }
 
@@ -239,6 +263,7 @@ void Enemy::StartAttacking()
     mIsJustBeforeAttack = false;
     mCanCounteredTimer = 0.1f;
     mCanCountered = true;
+    mHitPlayers.clear();
 }
 
 void Enemy::StartKnockedBack(float knockBackTimer)
@@ -282,9 +307,9 @@ void Enemy::FinishLaunched()
     mLaunchedTimer = -1.0f;
 }
 
-bool Enemy::IsPlayerInRange(float range) const
+bool Enemy::IsPlayerInRange(Player* player, float range) const
 {
-    const float distToPlayer = glm::length(mNearestPlayer->GetPos() - mPos);
+    const float distToPlayer = glm::length(player->GetPos() - mPos);
     return distToPlayer <= range;
 }
 

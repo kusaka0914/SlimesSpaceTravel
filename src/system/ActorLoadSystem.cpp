@@ -42,133 +42,169 @@ void ActorLoadSystem::LoadPlayers(const char* path)
     YAML::Node root = YAML::LoadFile(path);
 
     if (!root["players"] || !root["players"].IsSequence()) {
-        // std::cerr << "ActorLoadSystem: missing or invalid 'players' sequence" << std::endl;
         return;
     }
 
     mGame->RemoveAllPlayer();
+
+    const int maxLoadPlayerCount = mGame->GetIsPlayer2Joined() ? 2 : 1;
+
     int playerNum = 0;
     for (const YAML::Node& node : root["players"]) {
-        std::unique_ptr<Player> player = std::make_unique<Player>(mGame);
-        playerNum++;
-        player->SetPlayerNum(playerNum);
-
-        int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
-        player->SetCurrentPlanetNum(currentPlanetNum);
-
-        Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
-        player->SetCurrentPlanet(currentPlanet);
-
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
-        player->SetPos(pos);
-
-        YAML::Node playerRoot = YAML::LoadFile("../assets/data/actor/players.yaml");
-        for (auto playerNode : playerRoot["players"]) {
-            float hp = playerNode["hp"] ? playerNode["hp"].as<float>() : 0.0f;
-            player->SetHp(hp);
-            player->SetMaxHp(hp);
-
-            float scale = playerNode["scale"] ? playerNode["scale"].as<float>() : 0.25f;
-            player->SetScale(glm::vec3(scale));
-
-            float attackSpeed = playerNode["attackSpeed"] ? playerNode["attackSpeed"].as<float>() : 0.0f;
-            player->SetAttackSpeed(attackSpeed);
-
-            float attack = playerNode["attack"] ? playerNode["attack"].as<float>() : 0.0f;
-            player->SetAttack(attack);
-
-            float moveSpeed = playerNode["moveSpeed"] ? playerNode["moveSpeed"].as<float>() : 0.0f;
-            player->SetMoveSpeed(moveSpeed);
-
-            float dodgeDuration = playerNode["dodgeDuration"] ? playerNode["dodgeDuration"].as<float>() : 0.0f;
-            player->SetDodgeDuration(dodgeDuration);
-
-            float dodgeCooldownTime =
-                playerNode["dodgeCooldownTime"] ? playerNode["dodgeCooldownTime"].as<float>() : 0.0f;
-            player->SetDodgeCooldownTime(dodgeCooldownTime);
-
-            float dodgeDistance = playerNode["dodgeDistance"] ? playerNode["dodgeDistance"].as<float>() : 0.0f;
-            player->SetDodgeDistance(dodgeDistance);
-
-            float normalAttackRange =
-                playerNode["normalAttackRange"] ? playerNode["normalAttackRange"].as<float>() : 0.0f;
-            player->SetNormalAttackRange(normalAttackRange);
-
-            float normalAttackAngle =
-                playerNode["normalAttackAngle"] ? playerNode["normalAttackAngle"].as<float>() : 0.0f;
-            player->SetNormalAttackAngle(normalAttackAngle);
-
-            float normalAttack = playerNode["normalAttack"] ? playerNode["normalAttack"].as<float>() : 0.0f;
-            player->SetNormalAttack(normalAttack);
-
-            float wideAttackRange = playerNode["wideAttackRange"] ? playerNode["wideAttackRange"].as<float>() : 0.0f;
-            player->SetWideAttackRange(wideAttackRange);
-
-            float wideAttackAngle = playerNode["wideAttackAngle"] ? playerNode["wideAttackAngle"].as<float>() : 0.0f;
-            player->SetWideAttackAngle(wideAttackAngle);
-
-            float wideAttack = playerNode["wideAttack"] ? playerNode["wideAttack"].as<float>() : 0.0f;
-            player->SetWideAttack(wideAttack);
-
-            float strongAttackRange =
-                playerNode["strongAttackRange"] ? playerNode["strongAttackRange"].as<float>() : 0.0f;
-            player->SetStrongAttackRange(strongAttackRange);
-
-            float strongAttack = playerNode["strongAttack"] ? playerNode["strongAttack"].as<float>() : 0.0f;
-            player->SetStrongAttack(strongAttack);
-
-            float strongAttackSpeed =
-                playerNode["strongAttackSpeed"] ? playerNode["strongAttackSpeed"].as<float>() : 0.0f;
-            player->SetStrongAttackSpeed(strongAttackSpeed);
-
-            float specialAttackCooldown =
-                playerNode["specialAttackCooldown"] ? playerNode["specialAttackCooldown"].as<float>() : 0.0f;
-            player->SetSpecialAttackCooldown(specialAttackCooldown);
-
-            float defaultInvincibleTimer =
-                playerNode["defaultInvincibleTimer"] ? playerNode["defaultInvincibleTimer"].as<float>() : 0.0f;
-            player->SetDefaultInvincibleTimer(defaultInvincibleTimer);
-
-            float defaultDamageTimer =
-                playerNode["defaultDamageTimer"] ? playerNode["defaultDamageTimer"].as<float>() : 0.0f;
-            player->SetDefaultDamageTimer(defaultDamageTimer);
-
-            float defaultAttackMotionTimer =
-                playerNode["defaultAttackMotionTimer"] ? playerNode["defaultAttackMotionTimer"].as<float>() : 0.0f;
-            player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
-
-            float attackCooldown = playerNode["attackCooldown"] ? playerNode["attackCooldown"].as<float>() : 0.0f;
-            player->SetAttackCooldown(attackCooldown);
-
-            float lastAttackCooldown =
-                playerNode["lastAttackCooldown"] ? playerNode["lastAttackCooldown"].as<float>() : 0.0f;
-            player->SetLastAttackCooldown(lastAttackCooldown);
-
-            float defaultAttackPressTimer =
-                playerNode["defaultAttackPressTimer"] ? playerNode["defaultAttackPressTimer"].as<float>() : 0.0f;
-            player->SetDefaultAttackPressTimer(defaultAttackPressTimer);
-
-            float chargeMoveSpeed = playerNode["chargeMoveSpeed"] ? playerNode["chargeMoveSpeed"].as<float>() : 0.0f;
-            player->SetChargeMoveSpeed(chargeMoveSpeed);
-
-            float defaultStrongAttackTimer =
-                playerNode["defaultStrongAttackTimer"] ? playerNode["defaultStrongAttackTimer"].as<float>() : 0.0f;
-            player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
-
-            float knockBackSpeed = playerNode["knockBackSpeed"] ? playerNode["knockBackSpeed"].as<float>() : 0.0f;
-            player->SetKnockBackSpeed(knockBackSpeed);
-
-            std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "player.obj";
-            player->SetModelPath(modelPath);
+        if (playerNum >= maxLoadPlayerCount) {
+            break;
         }
 
-        player->Initialize();
-        player->SetBaseScale(player->GetScale());
-        Player* playerPtr = player.get();
-        mGame->GetMeshLoadSystem()->SetActorMesh(playerPtr);
-        mGame->AddActor(std::move(player));
-        mGame->AddPlayer(playerPtr);
+        playerNum++;
+        CreatePlayerFromStageNode(node, playerNum);
     }
+}
+
+Player* ActorLoadSystem::CreatePlayerFromStageNode(const YAML::Node& node, int playerNum)
+{
+    std::unique_ptr<Player> player = std::make_unique<Player>(mGame);
+
+    player->SetPlayerNum(playerNum);
+
+    int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
+    player->SetCurrentPlanetNum(currentPlanetNum);
+
+    Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
+    player->SetCurrentPlanet(currentPlanet);
+
+    glm::vec3 pos = CalculatePos(node, currentPlanet);
+    player->SetPos(pos);
+
+    YAML::Node playerRoot = YAML::LoadFile("../assets/data/actor/players.yaml");
+    for (auto playerNode : playerRoot["players"]) {
+        float hp = playerNode["hp"] ? playerNode["hp"].as<float>() : 0.0f;
+        player->SetHp(hp);
+        player->SetMaxHp(hp);
+
+        float scale = playerNode["scale"] ? playerNode["scale"].as<float>() : 0.25f;
+        player->SetScale(glm::vec3(scale));
+
+        float attackSpeed = playerNode["attackSpeed"] ? playerNode["attackSpeed"].as<float>() : 0.0f;
+        player->SetAttackSpeed(attackSpeed);
+
+        float attack = playerNode["attack"] ? playerNode["attack"].as<float>() : 0.0f;
+        player->SetAttack(attack);
+
+        float moveSpeed = playerNode["moveSpeed"] ? playerNode["moveSpeed"].as<float>() : 0.0f;
+        player->SetMoveSpeed(moveSpeed);
+
+        float dodgeDuration = playerNode["dodgeDuration"] ? playerNode["dodgeDuration"].as<float>() : 0.0f;
+        player->SetDodgeDuration(dodgeDuration);
+
+        float dodgeCooldownTime =
+            playerNode["dodgeCooldownTime"] ? playerNode["dodgeCooldownTime"].as<float>() : 0.0f;
+        player->SetDodgeCooldownTime(dodgeCooldownTime);
+
+        float dodgeDistance = playerNode["dodgeDistance"] ? playerNode["dodgeDistance"].as<float>() : 0.0f;
+        player->SetDodgeDistance(dodgeDistance);
+
+        float normalAttackRange =
+            playerNode["normalAttackRange"] ? playerNode["normalAttackRange"].as<float>() : 0.0f;
+        player->SetNormalAttackRange(normalAttackRange);
+
+        float normalAttackAngle =
+            playerNode["normalAttackAngle"] ? playerNode["normalAttackAngle"].as<float>() : 0.0f;
+        player->SetNormalAttackAngle(normalAttackAngle);
+
+        float normalAttack = playerNode["normalAttack"] ? playerNode["normalAttack"].as<float>() : 0.0f;
+        player->SetNormalAttack(normalAttack);
+
+        float wideAttackRange = playerNode["wideAttackRange"] ? playerNode["wideAttackRange"].as<float>() : 0.0f;
+        player->SetWideAttackRange(wideAttackRange);
+
+        float wideAttackAngle = playerNode["wideAttackAngle"] ? playerNode["wideAttackAngle"].as<float>() : 0.0f;
+        player->SetWideAttackAngle(wideAttackAngle);
+
+        float wideAttack = playerNode["wideAttack"] ? playerNode["wideAttack"].as<float>() : 0.0f;
+        player->SetWideAttack(wideAttack);
+
+        float strongAttackRange =
+            playerNode["strongAttackRange"] ? playerNode["strongAttackRange"].as<float>() : 0.0f;
+        player->SetStrongAttackRange(strongAttackRange);
+
+        float strongAttack = playerNode["strongAttack"] ? playerNode["strongAttack"].as<float>() : 0.0f;
+        player->SetStrongAttack(strongAttack);
+
+        float strongAttackSpeed =
+            playerNode["strongAttackSpeed"] ? playerNode["strongAttackSpeed"].as<float>() : 0.0f;
+        player->SetStrongAttackSpeed(strongAttackSpeed);
+
+        float specialAttackCooldown =
+            playerNode["specialAttackCooldown"] ? playerNode["specialAttackCooldown"].as<float>() : 0.0f;
+        player->SetSpecialAttackCooldown(specialAttackCooldown);
+
+        float defaultInvincibleTimer =
+            playerNode["defaultInvincibleTimer"] ? playerNode["defaultInvincibleTimer"].as<float>() : 0.0f;
+        player->SetDefaultInvincibleTimer(defaultInvincibleTimer);
+
+        float defaultDamageTimer =
+            playerNode["defaultDamageTimer"] ? playerNode["defaultDamageTimer"].as<float>() : 0.0f;
+        player->SetDefaultDamageTimer(defaultDamageTimer);
+
+        float defaultAttackMotionTimer =
+            playerNode["defaultAttackMotionTimer"] ? playerNode["defaultAttackMotionTimer"].as<float>() : 0.0f;
+        player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
+
+        float attackCooldown = playerNode["attackCooldown"] ? playerNode["attackCooldown"].as<float>() : 0.0f;
+        player->SetAttackCooldown(attackCooldown);
+
+        float lastAttackCooldown =
+            playerNode["lastAttackCooldown"] ? playerNode["lastAttackCooldown"].as<float>() : 0.0f;
+        player->SetLastAttackCooldown(lastAttackCooldown);
+
+        float defaultAttackPressTimer =
+            playerNode["defaultAttackPressTimer"] ? playerNode["defaultAttackPressTimer"].as<float>() : 0.0f;
+        player->SetDefaultAttackPressTimer(defaultAttackPressTimer);
+
+        float chargeMoveSpeed = playerNode["chargeMoveSpeed"] ? playerNode["chargeMoveSpeed"].as<float>() : 0.0f;
+        player->SetChargeMoveSpeed(chargeMoveSpeed);
+
+        float defaultStrongAttackTimer =
+            playerNode["defaultStrongAttackTimer"] ? playerNode["defaultStrongAttackTimer"].as<float>() : 0.0f;
+        player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
+
+        float knockBackSpeed = playerNode["knockBackSpeed"] ? playerNode["knockBackSpeed"].as<float>() : 0.0f;
+        player->SetKnockBackSpeed(knockBackSpeed);
+
+        std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "player.obj";
+        player->SetModelPath(modelPath);
+    }
+
+    player->Initialize();
+    player->SetBaseScale(player->GetScale());
+
+    Player* playerPtr = player.get();
+
+    mGame->GetMeshLoadSystem()->SetActorMesh(playerPtr);
+    mGame->AddActor(std::move(player));
+    mGame->AddPlayer(playerPtr);
+
+    return playerPtr;
+}
+
+bool ActorLoadSystem::CreatePlayerFromCurrentStage(int playerNum)
+{
+    const std::string& path = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node root = YAML::LoadFile(path);
+
+    if (!root["players"] || !root["players"].IsSequence()) {
+        return false;
+    }
+
+    const int playerIndex = playerNum - 1;
+
+    if (playerIndex < 0 || playerIndex >= static_cast<int>(root["players"].size())) {
+        return false;
+    }
+
+    CreatePlayerFromStageNode(root["players"][playerIndex], playerNum);
+    return true;
 }
 
 void ActorLoadSystem::LoadNPCs(const char* path)

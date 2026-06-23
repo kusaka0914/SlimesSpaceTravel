@@ -20,7 +20,7 @@ public:
     const std::vector<std::string>& GetTalkTexts() const { return mTalkTexts; }
 
 private:
-    void LookNearestPlayer();
+    void LookNearestPlayer(float deltaTime);
     void CheckTalkable();
 
     Player* FindNearestPlayer() const;

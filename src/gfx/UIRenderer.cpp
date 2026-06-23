@@ -80,6 +80,7 @@ void UIRenderer::RegisterUITextures()
 void UIRenderer::Draw()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glViewport(0, 0, mFbWidth, mFbHeight);
     glUseProgram(mUIShader->GetShaderProgram());
 
     glDisable(GL_DEPTH_TEST);
@@ -201,41 +202,71 @@ void UIRenderer::DrawOpeningTalkWithDoctor()
 
 void UIRenderer::DrawDefaultUI()
 {
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    if (players.empty()) {
+        return;
+    }
+
     DrawOperationSupportUI();
 
-    const Player* player = mGame->GetPlayers()[0];
-    const NPC* talkableNPC = player->GetTalkableNPC();
-    if (talkableNPC) {
-        if (talkableNPC->GetIsTalkable()) {
-            DrawTalkableUI();
-        }
+    const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    const float halfHeight = static_cast<float>(mFbHeight) * 0.5f;
+
+    if (!isTwoPlayer) {
+        DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
+    } else {
+        DrawPlayerPromptUI(players[0], 0.0f, 0.5f);
+        DrawPlayerPromptUI(players[1], halfHeight, 0.5f);
     }
 
     if (mGame->IsInBase()) {
         return;
     }
 
-    const int hp = player->GetHp();
-    const bool isAlive = hp > 0;
-    if (isAlive) {
-        DrawHpUI(hp);
+    const Player* mainPlayer = players[0];
+    const int remainBoatPartsCount = mainPlayer->GetCurrentPlanet()->GetRemainBoatPartsCount();
+    if (remainBoatPartsCount != 0) {
+        DrawRemainPartsUI(remainBoatPartsCount);
     }
 
-    const bool isDanger = hp <= 3;
-    if (isDanger) {
-        DrawDangerBg(hp);
+    if (!isTwoPlayer) {
+        DrawPlayerStatusUI(players[0], 0.0f, 1.0f);
+    } else {
+        DrawPlayerStatusUI(players[0], 0.0f, 0.5f);
+        DrawPlayerStatusUI(players[1], halfHeight, 0.5f);
+    }
+}
+
+void UIRenderer::DrawPlayerStatusUI(const Player* player, float screenTopY, float uiScale)
+{
+    if (!player) {
+        return;
+    }
+
+    const int hp = player->GetHp();
+    if (hp > 0) {
+        DrawHpUI(hp, screenTopY, uiScale);
     }
 
     const int jewelCount = player->GetJewelCount();
-    const bool haveJewel = jewelCount > 0;
-    if (haveJewel) {
-        DrawJewelUI(jewelCount);
+    if (jewelCount > 0) {
+        DrawJewelUI(jewelCount, screenTopY, uiScale);
+    }
+}
+
+void UIRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float uiScale)
+{
+    if (!player) {
+        return;
     }
 
-    const int remainBoatPartsCount = player->GetCurrentPlanet()->GetRemainBoatPartsCount();
-    const bool isRemain = remainBoatPartsCount != 0;
-    if (isRemain) {
-        DrawRemainPartsUI(remainBoatPartsCount);
+    const NPC* talkableNPC = player->GetTalkableNPC();
+    if (talkableNPC && talkableNPC->GetIsTalkable()) {
+        DrawTalkableUI(player, screenTopY, uiScale);
+    }
+
+    if (player->GetIsTired()) {
+        DrawRecommendReduceTiredUI(player, screenTopY, uiScale);
     }
 }
 
@@ -250,10 +281,10 @@ void UIRenderer::DrawOperationSupportUI()
     DrawSceneText("default", "operationSupportHiddenText", false, 0);
 }
 
-void UIRenderer::DrawHpUI(int hp)
+void UIRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
 {
     const float hpGap = mFbWidth / 28.0f;
-    DrawLinedUpTexture("default", "hpTexture", "hp", hpGap, hp);
+    DrawLinedUpTexture("default", "hpTexture", "hp", hpGap, hp, screenTopY, uiScale);
 }
 
 void UIRenderer::DrawDangerBg(int hp)
@@ -268,15 +299,15 @@ void UIRenderer::DrawDangerBg(int hp)
     }
 }
 
-void UIRenderer::DrawJewelUI(int jewelCount)
+void UIRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
 {
     const float jewelGap = mFbWidth / 20.0f;
-    DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount);
+    DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
 }
 
-void UIRenderer::DrawTalkableUI()
+void UIRenderer::DrawTalkableUI(const Player* player, float screenTopY, float uiScale)
 {
-    DrawTextDependsOnGameController("default", "talkableText", true);
+    DrawTextDependsOnPlayerInput(player, "default", "talkableText", true, screenTopY, uiScale);
 }
 
 void UIRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
@@ -309,10 +340,6 @@ void UIRenderer::DrawStateUI()
 
     if (mGame->GetSceneSystem()->IsStageClear()) {
         DrawStageClear();
-    }
-
-    if (mGame->GetPlayers()[0]->GetIsTired()) {
-        DrawRecommendReduceTiredUI();
     }
 
     const float alpha = CalculateAlpha();
@@ -370,9 +397,17 @@ void UIRenderer::DrawJustDodgeTutorial()
 
 void UIRenderer::DrawTalkWithNPC()
 {
-    const std::vector<std::string> talkTexts = mGame->GetPlayers()[0]->GetTalkableNPC()->GetTalkTexts();
+    NPC* talkingNPC = mGame->GetSceneSystem()->GetTalkingNPC();
+    if (!talkingNPC) {
+        mGame->StartPlayingScene();
+        mGame->GetSceneSystem()->GetUIState()->FinishTalkWith();
+        return;
+    }
+
+    const std::vector<std::string> talkTexts = talkingNPC->GetTalkTexts();
     const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
-    const bool isTalking = talkUIIndex < talkTexts.size();
+
+    const bool isTalking = talkUIIndex < static_cast<int>(talkTexts.size());
     if (isTalking) {
         DrawTalkUI(talkTexts, talkUIIndex);
         return;
@@ -387,9 +422,9 @@ void UIRenderer::DrawStageClear()
     DrawSceneText("state", "stageClearText", true, 0);
 }
 
-void UIRenderer::DrawRecommendReduceTiredUI()
+void UIRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale)
 {
-    DrawTextDependsOnGameController("state", "recommendReduceTiredText", false);
+    DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", false, screenTopY, uiScale);
 }
 
 void UIRenderer::DrawPauseMenu()
@@ -511,7 +546,7 @@ bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string
 }
 
 void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
-                                                 bool isCenterBase)
+                                                 bool isCenterBase, float screenTopY, float uiScale)
 {
     const UILoadSystem::TextInfo* textInfo;
     if (mGame->IsGameControllerConnected()) {
@@ -524,8 +559,47 @@ void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, c
         return;
     }
 
-    DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio,
-             textInfo->texts[0], isCenterBase);
+    const float screenHeight = mFbHeight * uiScale;
+
+    const float x = mFbWidth * textInfo->xRatio;
+    const float y = screenTopY + screenHeight * textInfo->yRatio;
+    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
+
+    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
+}
+
+void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
+                                              const std::string& UIName, bool isCenterBase, float screenTopY,
+                                              float uiScale)
+{
+    const UILoadSystem::TextInfo* textInfo = nullptr;
+
+    if (UsesControllerUI(player)) {
+        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
+    } else {
+        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
+    }
+
+    if (!textInfo) {
+        return;
+    }
+
+    const float screenHeight = mFbHeight * uiScale;
+
+    const float x = mFbWidth * textInfo->xRatio;
+    const float y = screenTopY + screenHeight * textInfo->yRatio;
+    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
+
+    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
+}
+
+bool UIRenderer::UsesControllerUI(const Player* player) const
+{
+    if (!player) {
+        return false;
+    }
+
+    return mGame->IsGameControllerConnected() && player->GetPlayerNum() == 1;
 }
 
 bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName)
@@ -573,18 +647,29 @@ void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::strin
 }
 
 void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName,
-                                    const std::string& textureName, float gap, int count)
+                                    const std::string& textureName, float gap, int count, float screenTopY,
+                                    float uiScale)
 {
     const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
     if (!textureInfo) {
         return;
     }
 
-    float textureX = mFbWidth * textureInfo->xRatio;
+    const float screenHeight = mFbHeight * uiScale;
+
+    const float textureX = mFbWidth * textureInfo->xRatio;
+    const float textureY = screenTopY + screenHeight * textureInfo->yRatio;
+
+    const float textureWidth = mFbWidth * textureInfo->widthRatio * uiScale;
+    const float textureHeight = mFbWidth * textureInfo->heightRatio * uiScale;
+
+    const float textureGap = gap * uiScale;
+
+    float currentX = textureX;
+
     while (count > 0) {
-        DrawTexture(textureX, mFbWidth * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
-                    mFbWidth * textureInfo->heightRatio, textureName);
-        textureX += gap;
+        DrawTexture(currentX, textureY, textureWidth, textureHeight, textureName);
+        currentX += textureGap;
         count--;
     }
 }

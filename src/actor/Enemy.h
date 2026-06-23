@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class Game;
@@ -79,7 +80,7 @@ private:
     void UpdateDying(float deltaTime);
 
     void UpdateBehavior(float deltaTime);
-    void UpdateFacingVec();
+    void UpdateFacingVec(float deltaTime);
     void UpdateIdle();
     void UpdateTracking(float deltaTime);
     void UpdatePreparingAttack(float deltaTime);
@@ -98,7 +99,7 @@ private:
     void FinishLaunched();
     void FinishDying();
 
-    bool IsPlayerInRange(float range) const;
+    bool IsPlayerInRange(Player* player, float range) const;
     bool IsJustBeforeAttack() const;
     bool IsProgressing() const { return mAttackMotionTimer >= mDefaultAttackMotionTimer / 2; }
     bool IsHp0() const { return mHp <= 0.0f; }
@@ -146,4 +147,5 @@ private:
     glm::vec3 mKnockBackFrom;
 
     Player* mNearestPlayer;
+    std::unordered_set<Player*> mHitPlayers;
 };

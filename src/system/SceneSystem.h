@@ -5,6 +5,8 @@
 #include <memory>
 
 class Game;
+class NPC;
+class Player;
 class UIState;
 class Boat;
 
@@ -15,14 +17,14 @@ public:
 
     void Update(float deltaTime);
 
-    void OnConfirmPressed();
+    void OnConfirmPressed(int playerNum = 1);
     void OnStartPressed();
 
     void RestartGame();
     void StartOpening();
     void StartPlayingScene();
+    void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     void StartFocusingScene();
-    void StartTalkWithNPC();
     void StartFadeIn();
     void StartTalkWith(UIState::TalkWith talkWith) { mUIState->SetCurrentTalkWith(talkWith); }
 
@@ -65,12 +67,15 @@ public:
 
     UIState* GetUIState() { return mUIState.get(); }
 
+    NPC* GetTalkingNPC() const { return mTalkingNPC; }
+    Player* GetTalkingPlayer() const { return mTalkingPlayer; }
+
 private:
     void UpdateFade(float deltaTime);
     void UpdateClearTimer(float deltaTime);
     void ApplySceneChange();
 
-    void TryStartTalkWithNPC();
+    void TryStartTalkWithNPC(int playerNum);
     void TryStartBattleTutorial();
     void TryStartJustDodgeTutorial();
 
@@ -86,4 +91,7 @@ private:
     bool mIsFadeOut;
     bool mHasPendingStageChange;
     int mNextStageNum;
+
+    NPC* mTalkingNPC = nullptr;
+    Player* mTalkingPlayer = nullptr;
 };
