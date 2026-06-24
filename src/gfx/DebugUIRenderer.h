@@ -116,6 +116,13 @@ private:
     {
         const std::string treeLabel = label + "##" + sequenceName;
 
+        const bool shouldOpenThisList = mRequestOpenPickedActorPlacement && mPickedDeleteTarget &&
+                                        mPickedDeleteTarget->sequenceName == sequenceName;
+
+        if (shouldOpenThisList) {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+        }
+
         if (!ImGui::TreeNode(treeLabel.c_str())) {
             return;
         }
@@ -128,7 +135,21 @@ private:
 
             std::string itemLabel = label + " " + std::to_string(i) + "##" + sequenceName + std::to_string(i);
 
-            if (ImGui::TreeNode(itemLabel.c_str())) {
+            const bool shouldOpenThisActor =
+                shouldOpenThisList && actor->GetStageYamlIndex() == mPickedDeleteTarget->yamlIndex;
+
+            if (shouldOpenThisActor) {
+                ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+            }
+
+            const bool treeOpened = ImGui::TreeNode(itemLabel.c_str());
+
+            if (shouldOpenThisActor && mRequestScrollPickedActorPlacement) {
+                ImGui::SetScrollHereY(0.3f);
+                mRequestScrollPickedActorPlacement = false;
+            }
+
+            if (treeOpened) {
                 float theta = actor->GetTheta();
                 float phi = actor->GetPhi();
                 float height = actor->GetHeight();
@@ -361,4 +382,9 @@ private:
     Actor* mPickedActor = nullptr;
     int mLastMousePickFrame = -1;
     int mLastPickedActorControlFrame = -1;
+
+    int mStageEditorSelectedMenu = 0;
+    bool mRequestOpenStageEditorTab = false;
+    bool mRequestOpenPickedActorPlacement = false;
+    bool mRequestScrollPickedActorPlacement = false;
 };

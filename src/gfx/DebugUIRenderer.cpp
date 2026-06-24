@@ -52,9 +52,14 @@ void DebugUIRenderer::Draw()
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("ステージエディタ")) {
-            DrawStageEditor();
+        ImGuiTabItemFlags stageEditorTabFlags = 0;
+        if (mRequestOpenStageEditorTab) {
+            stageEditorTabFlags |= ImGuiTabItemFlags_SetSelected;
+            mRequestOpenStageEditorTab = false;
+        }
 
+        if (ImGui::BeginTabItem("ステージエディタ", nullptr, stageEditorTabFlags)) {
+            DrawStageEditor();
             ImGui::EndTabItem();
         }
 
@@ -612,15 +617,13 @@ void DebugUIRenderer::DrawParameterSave()
 
 void DebugUIRenderer::DrawStageEditor()
 {
-    static int selectedMenu = 0;
-
     const char* menus[] = {"追加", "配置", "削除"};
 
     ImGui::BeginChild("StageEditorLeft", ImVec2(160, 0), true);
 
     for (int i = 0; i < IM_ARRAYSIZE(menus); ++i) {
-        if (ImGui::Selectable(menus[i], selectedMenu == i)) {
-            selectedMenu = i;
+        if (ImGui::Selectable(menus[i], mStageEditorSelectedMenu == i)) {
+            mStageEditorSelectedMenu = i;
         }
     }
 
@@ -637,7 +640,7 @@ void DebugUIRenderer::DrawStageEditor()
 
     ImGui::BeginChild("StageEditorRight", ImVec2(0, 0), true);
 
-    switch (selectedMenu) {
+    switch (mStageEditorSelectedMenu) {
     case 0:
         DrawAddActors();
         break;
@@ -1557,6 +1560,10 @@ void DebugUIRenderer::DrawStagePlacement()
         return;
     }
 
+    if (mRequestOpenPickedActorPlacement) {
+        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    }
+
     if (!ImGui::TreeNode("オブジェクト配置")) {
         return;
     }
@@ -1622,6 +1629,8 @@ void DebugUIRenderer::DrawStagePlacement()
     DrawSphericalActorList("星", "star", stars);
 
     ImGui::TreePop();
+
+    mRequestOpenPickedActorPlacement = false;
 }
 
 void DebugUIRenderer::DrawPlanets()
@@ -2743,6 +2752,11 @@ void DebugUIRenderer::UpdatePickedActorByMouse()
 
     mPickedActor = hit->actor;
     mPickedDeleteTarget = *target;
+
+    mRequestOpenStageEditorTab = true;
+    mStageEditorSelectedMenu = 1; // 配置
+    mRequestOpenPickedActorPlacement = true;
+    mRequestScrollPickedActorPlacement = true;
 }
 
 void DebugUIRenderer::DrawPickedActorControls()
