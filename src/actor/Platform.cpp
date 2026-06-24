@@ -4,6 +4,7 @@
 Platform::Platform(Game* game)
     : Actor(game)
 {
+    mIsUpVecInitialized = true;
 }
 
 void Platform::UpdateActor(float deltaTime) {}

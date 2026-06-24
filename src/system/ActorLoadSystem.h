@@ -13,6 +13,7 @@ class Crystal;
 class BoatParts;
 class Boat;
 class Star;
+class Actor;
 
 class ActorLoadSystem {
 public:
@@ -30,6 +31,9 @@ public:
     Boat* CreateBoatFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Star* CreateStarFromStageNode(const YAML::Node& node, int stageYamlIndex);
     bool CreatePlayerFromCurrentStage(int playerNum);
+    void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
+                                     float defaultHeight = 0.0f);
+    void ApplyRotationFromStageNode(Actor* actor, const YAML::Node& node);
 
 private:
     void LoadPlayers(const char* path);

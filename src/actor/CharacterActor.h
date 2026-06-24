@@ -27,7 +27,7 @@ public:
 
 protected:
     void ApplyGravity(float deltaTime);
-    glm::vec3 CalculateCollisionAdjustedPos(const glm::vec3& moveDelta);
+    bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const override;
 
 private:
     void JudgeLanding();
@@ -35,7 +35,6 @@ private:
     RayInfo CreateRayInfo(const glm::vec3& rayOffset) const;
     virtual void OnLanded(){};
     bool ShouldUpdateUpVecEveryFrame() const override { return true; }
-    bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const override;
 
 protected:
     bool mOnGround;

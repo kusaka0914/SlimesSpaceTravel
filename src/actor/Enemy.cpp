@@ -448,3 +448,93 @@ void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
         return;
     }
 }
+
+glm::vec3 Enemy::CalculateCollisionAdjustedPos(const glm::vec3& moveDelta)
+{
+    glm::vec3 desiredPos = mPos + moveDelta;
+
+    desiredPos = mGame->GetPhysicsSystem()->CheckCollision(this, moveDelta, desiredPos);
+
+    if (IsAlive()) {
+        desiredPos = ClampMoveToGround(desiredPos);
+    }
+
+    return desiredPos;
+}
+
+glm::vec3 Enemy::ClampMoveToGround(const glm::vec3& desiredPos) const
+{
+    const glm::vec3 move = desiredPos - mPos;
+    const float moveLength = glm::length(move);
+
+    if (moveLength < 1e-6f) {
+        return desiredPos;
+    }
+
+    constexpr float checkStep = 0.25f;
+    const int checkCount = std::max(1, static_cast<int>(std::ceil(moveLength / checkStep)));
+
+    glm::vec3 lastSafePos = mPos;
+
+    for (int i = 1; i <= checkCount; ++i) {
+        const float t = static_cast<float>(i) / static_cast<float>(checkCount);
+        const glm::vec3 checkPos = glm::mix(mPos, desiredPos, t);
+
+        if (!HasGroundBelow(checkPos)) {
+            return lastSafePos;
+        }
+
+        lastSafePos = checkPos;
+    }
+
+    return desiredPos;
+}
+
+bool Enemy::HasGroundBelow(const glm::vec3& checkPos) const
+{
+    if (!mGame || !mGame->GetPhysicsSystem()) {
+        return true;
+    }
+
+    btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    if (!bulletWorld) {
+        return true;
+    }
+
+    if (glm::length(mUpVec) < 1e-6f) {
+        return true;
+    }
+
+    const glm::vec3 up = glm::normalize(mUpVec);
+
+    constexpr float rayStartOffset = 0.3f;
+    constexpr float rayLength = 1.2f;
+
+    const glm::vec3 rayFromPos = checkPos + up * rayStartOffset;
+    const glm::vec3 rayToPos = checkPos - up * rayLength;
+
+    const btVector3 rayFrom(rayFromPos.x, rayFromPos.y, rayFromPos.z);
+    const btVector3 rayTo(rayToPos.x, rayToPos.y, rayToPos.z);
+
+    btCollisionWorld::ClosestRayResultCallback rayCallback(rayFrom, rayTo);
+    bulletWorld->rayTest(rayFrom, rayTo, rayCallback);
+
+    if (!rayCallback.hasHit()) {
+        return false;
+    }
+
+    const btVector3 hitNormalBt = rayCallback.m_hitNormalWorld;
+    glm::vec3 hitNormal(hitNormalBt.x(), hitNormalBt.y(), hitNormalBt.z());
+
+    if (glm::length(hitNormal) < 1e-6f) {
+        return false;
+    }
+
+    hitNormal = glm::normalize(hitNormal);
+
+    if (CheckDotAngleSteep(hitNormal, up)) {
+        return false;
+    }
+
+    return true;
+}

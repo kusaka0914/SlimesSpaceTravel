@@ -16,7 +16,8 @@ Boat::Boat(Game* game)
       mDestPos(0.0f),
       mFocusComponent(nullptr)
 {
-    mIsActive = mGame->IsInBase();
+    // mIsActive = mGame->IsInBase();
+    mIsActive = true;
     AddFocusComponent();
 }
 

@@ -1057,7 +1057,7 @@ void Player::StartRidingBoat(Boat* boat)
 
 void Player::OnBoatArrived(Boat* boat)
 {
-    mCurrentPlanetNum++;
+    mCurrentPlanet = boat->GetDestPlanet();
 
     mPos = boat->GetDestPos();
     mRestartPos = mPos;
@@ -1081,6 +1081,10 @@ void Player::OnLanded()
 void Player::OnUpVecUpdateFailed()
 {
     if (mRayCastTimer > 0.0f) {
+        return;
+    }
+
+    if (mCurrentPlanet->GetPlanetShape() == Planet::PlanetShape::Normal) {
         return;
     }
 

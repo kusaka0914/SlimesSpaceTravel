@@ -28,23 +28,27 @@ Game::Game()
     : mWindow(nullptr),
       mSdlController(nullptr),
       mCurrentStage(nullptr),
-      mCurrentStageNum(0),
+      mCurrentStageNum(1),
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
       mReloadKeyPressedPrev(false),
       mUIReloadKeyPressedPrev(false),
       mXPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
-      mIsDebugMode(false),
-      mIsFreeCameraMode(false)
+      mCurrentStageYamlPath("../assets/data/stage/stage2.yaml"),
+      mIsDebugEditorShowing(false),
+      mIsFreeCameraMode(false),
+      mIsDebugMode(false)
 {
 }
 
 Game::~Game() = default;
 
-bool Game::Initialize()
+bool Game::Initialize(bool isDebugMode)
 {
+    if (isDebugMode) {
+        mIsDebugMode = true;
+    }
     if (!InitializeGLFW()) {
         return false;
     }
@@ -225,19 +229,16 @@ void Game::ProcessGameInput()
     mQPressedPrev = qPressed;
 
     const bool controllerConfirmPressed =
-    mSdlController &&
-    SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X);
+        mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X);
 
-    const bool keyboardConfirmPressed =
-        glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
+    const bool keyboardConfirmPressed = glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
 
     if (controllerConfirmPressed && !mControllerConfirmPressedPrev) {
         mSceneSystem->OnConfirmPressed(1);
     }
 
     if (keyboardConfirmPressed && !mKeyboardConfirmPressedPrev) {
-        const int keyboardPlayerNum =
-            IsGameControllerConnected() && mIsPlayer2Joined ? 2 : 1;
+        const int keyboardPlayerNum = IsGameControllerConnected() && mIsPlayer2Joined ? 2 : 1;
 
         mSceneSystem->OnConfirmPressed(keyboardPlayerNum);
     }
@@ -247,7 +248,7 @@ void Game::ProcessGameInput()
 
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
     if (pPressed && !mPPressedPrev) {
-        mIsDebugMode = !mIsDebugMode;
+        mIsDebugEditorShowing = !mIsDebugEditorShowing;
     }
     mPPressedPrev = pPressed;
 

@@ -181,7 +181,7 @@ bool Actor::CastRay(const glm::vec3& offset, glm::vec3& outNormal, const btColli
 
     const glm::vec3 up = glm::normalize(mUpVec);
     constexpr float rayStartOffset = 0.2f;
-    constexpr float rayLength = 30.0f;
+    constexpr float rayLength = 5.0f;
 
     const glm::vec3 downRayFromPos = mPos + offset + up * rayStartOffset;
     const glm::vec3 downRayToPos = mPos + offset - up * rayLength;

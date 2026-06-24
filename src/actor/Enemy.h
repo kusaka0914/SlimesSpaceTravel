@@ -111,6 +111,9 @@ private:
     void LaunchIntoAir(float deltaTime);
     void ApplyCounter(Player* player);
     void UpdateInAir(float deltaTime);
+    glm::vec3 ClampMoveToGround(const glm::vec3& desiredPos) const;
+    bool HasGroundBelow(const glm::vec3& checkPos) const;
+    glm::vec3 CalculateCollisionAdjustedPos(const glm::vec3& moveDelta);
 
 private:
     LifeState mLifeState;

@@ -96,19 +96,16 @@ Player* ActorLoadSystem::CreatePlayerFromStageNode(const YAML::Node& node, int p
         float dodgeDuration = playerNode["dodgeDuration"] ? playerNode["dodgeDuration"].as<float>() : 0.0f;
         player->SetDodgeDuration(dodgeDuration);
 
-        float dodgeCooldownTime =
-            playerNode["dodgeCooldownTime"] ? playerNode["dodgeCooldownTime"].as<float>() : 0.0f;
+        float dodgeCooldownTime = playerNode["dodgeCooldownTime"] ? playerNode["dodgeCooldownTime"].as<float>() : 0.0f;
         player->SetDodgeCooldownTime(dodgeCooldownTime);
 
         float dodgeDistance = playerNode["dodgeDistance"] ? playerNode["dodgeDistance"].as<float>() : 0.0f;
         player->SetDodgeDistance(dodgeDistance);
 
-        float normalAttackRange =
-            playerNode["normalAttackRange"] ? playerNode["normalAttackRange"].as<float>() : 0.0f;
+        float normalAttackRange = playerNode["normalAttackRange"] ? playerNode["normalAttackRange"].as<float>() : 0.0f;
         player->SetNormalAttackRange(normalAttackRange);
 
-        float normalAttackAngle =
-            playerNode["normalAttackAngle"] ? playerNode["normalAttackAngle"].as<float>() : 0.0f;
+        float normalAttackAngle = playerNode["normalAttackAngle"] ? playerNode["normalAttackAngle"].as<float>() : 0.0f;
         player->SetNormalAttackAngle(normalAttackAngle);
 
         float normalAttack = playerNode["normalAttack"] ? playerNode["normalAttack"].as<float>() : 0.0f;
@@ -123,15 +120,13 @@ Player* ActorLoadSystem::CreatePlayerFromStageNode(const YAML::Node& node, int p
         float wideAttack = playerNode["wideAttack"] ? playerNode["wideAttack"].as<float>() : 0.0f;
         player->SetWideAttack(wideAttack);
 
-        float strongAttackRange =
-            playerNode["strongAttackRange"] ? playerNode["strongAttackRange"].as<float>() : 0.0f;
+        float strongAttackRange = playerNode["strongAttackRange"] ? playerNode["strongAttackRange"].as<float>() : 0.0f;
         player->SetStrongAttackRange(strongAttackRange);
 
         float strongAttack = playerNode["strongAttack"] ? playerNode["strongAttack"].as<float>() : 0.0f;
         player->SetStrongAttack(strongAttack);
 
-        float strongAttackSpeed =
-            playerNode["strongAttackSpeed"] ? playerNode["strongAttackSpeed"].as<float>() : 0.0f;
+        float strongAttackSpeed = playerNode["strongAttackSpeed"] ? playerNode["strongAttackSpeed"].as<float>() : 0.0f;
         player->SetStrongAttackSpeed(strongAttackSpeed);
 
         float specialAttackCooldown =
@@ -267,22 +262,8 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
         }
     }
 
-    if (node["theta"] && node["phi"] && node["height"]) {
-        float theta = node["theta"].as<float>();
-        float phi = node["phi"].as<float>();
-        float height = node["height"].as<float>();
-
-        npc->SetSphericalPlacement(theta, phi, height);
-        npc->SetStageYamlIndex(stageYamlIndex);
-
-        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-        npc->SetPos(pos);
-    } else {
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
-        npc->SetPos(pos);
-
-        npc->SetStageYamlIndex(stageYamlIndex);
-    }
+    ApplyPlacementFromStageNode(npc.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(npc.get(), node);
 
     std::string type = node["type"] ? node["type"].as<std::string>() : "";
 
@@ -353,19 +334,8 @@ Enemy* ActorLoadSystem::CreateEnemyFromStageNode(const YAML::Node& node, int sta
 
     enemy->SetCurrentPlanet(currentPlanet);
 
-    const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-    const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
-    const float height = node["height"] ? node["height"].as<float>() : 1.0f;
-
-    enemy->SetSphericalPlacement(theta, phi, height);
-    enemy->SetStageYamlIndex(stageYamlIndex);
-
-    // if (node["editorName"]) {
-    //     enemy->SetEditorName(node["editorName"].as<std::string>());
-    // }
-
-    const glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-    enemy->SetPos(pos);
+    ApplyPlacementFromStageNode(enemy.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(enemy.get(), node);
 
     const std::string type = node["type"] ? node["type"].as<std::string>() : "normal";
 
@@ -591,22 +561,8 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
     float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
     boat->SetFacingYaw(facingYaw);
 
-    if (node["theta"] && node["phi"] && node["height"]) {
-        float theta = node["theta"].as<float>();
-        float phi = node["phi"].as<float>();
-        float height = node["height"].as<float>();
-
-        boat->SetSphericalPlacement(theta, phi, height);
-        boat->SetStageYamlIndex(stageYamlIndex);
-
-        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-        boat->SetPos(pos);
-    } else {
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
-        boat->SetPos(pos);
-
-        boat->SetStageYamlIndex(stageYamlIndex);
-    }
+    ApplyPlacementFromStageNode(boat.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(boat.get(), node);
 
     YAML::Node boatRoot = YAML::LoadFile("../assets/data/actor/boats.yaml");
     for (auto boatNode : boatRoot["boats"]) {
@@ -671,15 +627,8 @@ BoatParts* ActorLoadSystem::CreateBoatPartsFromStageNode(const YAML::Node& node,
 
     boatParts->SetCurrentPlanet(currentPlanet);
 
-    float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-    float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
-    float height = node["height"] ? node["height"].as<float>() : 0.0f;
-
-    boatParts->SetSphericalPlacement(theta, phi, height);
-    boatParts->SetStageYamlIndex(stageYamlIndex);
-
-    glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-    boatParts->SetPos(pos);
+    ApplyPlacementFromStageNode(boatParts.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(boatParts.get(), node);
 
     std::string type = node["type"] ? node["type"].as<std::string>() : "";
 
@@ -828,15 +777,8 @@ Crystal* ActorLoadSystem::CreateCrystalFromStageNode(const YAML::Node& node, int
         crystal->SetRadius(radius);
     }
 
-    float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-    float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
-    float height = node["height"] ? node["height"].as<float>() : 0.0f;
-
-    crystal->SetSphericalPlacement(theta, phi, height);
-    crystal->SetStageYamlIndex(stageYamlIndex);
-
-    glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-    crystal->SetPos(pos);
+    ApplyPlacementFromStageNode(crystal.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(crystal.get(), node);
 
     Crystal* crystalPtr = crystal.get();
     mGame->GetMeshLoadSystem()->SetActorMesh(crystalPtr);
@@ -893,15 +835,8 @@ Star* ActorLoadSystem::CreateStarFromStageNode(const YAML::Node& node, int stage
         star->SetScale(glm::vec3(scale));
     }
 
-    float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-    float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
-    float height = node["height"] ? node["height"].as<float>() : 0.0f;
-
-    star->SetSphericalPlacement(theta, phi, height);
-    star->SetStageYamlIndex(stageYamlIndex);
-
-    glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-    star->SetPos(pos);
+    ApplyPlacementFromStageNode(star.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(star.get(), node);
 
     if (node["isActive"]) {
         star->SetIsActive(node["isActive"].as<bool>());
@@ -963,32 +898,8 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
 
     platform->SetCurrentPlanet(currentPlanet);
 
-    if (node["theta"] && node["phi"] && node["height"]) {
-        float theta = node["theta"].as<float>();
-        float phi = node["phi"].as<float>();
-        float height = node["height"].as<float>();
-
-        platform->SetSphericalPlacement(theta, phi, height);
-        platform->SetStageYamlIndex(stageYamlIndex);
-
-        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-        platform->SetPos(pos);
-    } else {
-        glm::vec3 pos = CalculatePos(node, currentPlanet);
-        platform->SetPos(pos);
-
-        platform->SetStageYamlIndex(stageYamlIndex);
-    }
-
-    glm::vec3 upVec(0.0f, 1.0f, 0.0f);
-
-    if (node["upVec"] && node["upVec"].IsSequence() && node["upVec"].size() >= 3) {
-        upVec.x = node["upVec"][0].as<float>();
-        upVec.y = node["upVec"][1].as<float>();
-        upVec.z = node["upVec"][2].as<float>();
-    }
-
-    platform->SetUpVec(upVec);
+    ApplyPlacementFromStageNode(platform.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(platform.get(), node);
 
     if (node["scale"]) {
         const float scaleX = node["scale"][0] ? node["scale"][0].as<float>() : 3.0f;
@@ -999,9 +910,6 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
     } else {
         platform->SetScale(glm::vec3(3.0f, 0.5f, 3.0f));
     }
-
-    float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
-    platform->SetFacingYaw(facingYaw);
 
     std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "platform.obj";
     platform->SetModelPath(modelPath);
@@ -1039,4 +947,58 @@ glm::vec3 ActorLoadSystem::CalculatePos(YAML::Node node, Planet* currentPlanet)
 
     glm::vec3 pos = currentPlanet->GetPos() + (currentPlanet->GetRadius() + height) * dir;
     return pos;
+}
+
+void ActorLoadSystem::ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet,
+                                                  int stageYamlIndex, float defaultHeight)
+{
+    if (!actor || !currentPlanet) {
+        return;
+    }
+
+    actor->SetStageYamlIndex(stageYamlIndex);
+
+    const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
+    const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
+    const float height = node["height"] ? node["height"].as<float>() : defaultHeight;
+
+    actor->SetSphericalPlacement(theta, phi, height);
+
+    const bool hasPos = node["pos"] && node["pos"].IsSequence() && node["pos"].size() >= 3;
+
+    if (hasPos) {
+        actor->SetPos(CalculatePos(node, currentPlanet));
+    } else {
+        actor->SetPos(currentPlanet->CalculateSurfacePos(theta, phi, height));
+    }
+}
+
+void ActorLoadSystem::ApplyRotationFromStageNode(Actor* actor, const YAML::Node& node)
+{
+    if (!actor) {
+        return;
+    }
+
+    glm::vec3 editorRotation(0.0f);
+
+    if (node["facingYaw"]) {
+        editorRotation.y = node["facingYaw"].as<float>();
+    }
+
+    if (node["rotation"] && node["rotation"].IsSequence() && node["rotation"].size() >= 3) {
+        editorRotation.x = node["rotation"][0].as<float>();
+        editorRotation.y = node["rotation"][1].as<float>();
+        editorRotation.z = node["rotation"][2].as<float>();
+    }
+
+    actor->SetEditorRotation(editorRotation);
+    actor->SetFacingYaw(editorRotation.y);
+
+    if (node["upVec"] && node["upVec"].IsSequence() && node["upVec"].size() >= 3) {
+        glm::vec3 upVec(node["upVec"][0].as<float>(), node["upVec"][1].as<float>(), node["upVec"][2].as<float>());
+
+        if (glm::length(upVec) > 1e-6f) {
+            actor->SetUpVec(glm::normalize(upVec));
+        }
+    }
 }

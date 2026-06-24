@@ -110,7 +110,7 @@ void UIRenderer::Draw()
         DrawPauseMenu();
     }
 
-    if (mGame->GetIsDebugMode()) {
+    if (mGame->GetIsDebugEditorShowing()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

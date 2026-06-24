@@ -25,7 +25,7 @@ public:
     Game();
     ~Game();
 
-    bool Initialize();
+    bool Initialize(bool isDebugMode);
     void RunLoop();
     void Shutdown();
 
@@ -78,7 +78,7 @@ public:
     Stage* GetCurrentStage() const { return mCurrentStage; }
     int GetCurrentStageNum() const { return mCurrentStageNum; }
     const std::string& GetCurrentStageYamlPath() const { return mCurrentStageYamlPath; }
-    bool GetIsDebugMode() const { return mIsDebugMode; }
+    bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const { return mIsPauseMenuOpen; }
     int GetPauseMenuSelectedIndex() const { return mPauseMenuSelectedIndex; }
@@ -93,6 +93,7 @@ public:
 
     float GetHitStopTimer() const { return mHitStopTimer; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
+    bool GetIsDebugMode() const { return mIsDebugMode; }
 
     bool IsInBase() const { return mCurrentStageNum == 0; }
     bool IsGameControllerConnected() const { return mSdlController != nullptr; }
@@ -156,11 +157,12 @@ private:
     bool mPauseMenuDownPressedPrev = false;
     bool mPauseMenuConfirmPressedPrev = false;
     bool mIsPlayer2Joined = false;
-    bool mIsDebugMode;
+    bool mIsDebugEditorShowing;
     bool mIsFreeCameraMode;
     bool mIsPauseMenuOpen = false;
     bool mControllerConfirmPressedPrev = false;
     bool mKeyboardConfirmPressedPrev = false;
+    bool mIsDebugMode = false;
 
     std::string mCurrentStageYamlPath;
 };

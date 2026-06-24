@@ -687,10 +687,9 @@ void DebugUIRenderer::DrawAddActors()
 
         DrawPlanetCombo("敵の追加先惑星", selectedEnemyPlanetIndex);
 
-        const char* enemyTypeLabels[] = {"通常敵", "ボス敵"};
+        const char* enemyTypeLabels[] = {"通常敵", "ボス敵", "動かない敵", "動かない大きい敵"};
 
-        const char* enemyTypes[] = {"normal", "boss"};
-
+        const char* enemyTypes[] = {"normal", "boss", "normalFixed", "bigFixed"};
         ImGui::Combo("敵タイプ", &selectedEnemyTypeIndex, enemyTypeLabels, IM_ARRAYSIZE(enemyTypeLabels));
 
         const bool canAddEnemy = selectedEnemyPlanetIndex >= 0;
@@ -1006,6 +1005,10 @@ void DebugUIRenderer::AddPlatformFromEditor(int currentPlanetNum, const std::str
 
     platformNode["facingYaw"] = 0.0f;
 
+    platformNode["rotation"][0] = 0.0f;
+    platformNode["rotation"][1] = 0.0f;
+    platformNode["rotation"][2] = 0.0f;
+
     platformNode["scale"][0] = scale.x;
     platformNode["scale"][1] = scale.y;
     platformNode["scale"][2] = scale.z;
@@ -1112,6 +1115,13 @@ void DebugUIRenderer::AddEnemyFromEditor(const std::string& type, int currentPla
     enemyNode["theta"] = 0.0f;
     enemyNode["phi"] = 0.0f;
     enemyNode["height"] = 1.0f;
+    const Planet* planet = planets[currentPlanetNum];
+    const float initialHeight = 1.0f;
+    const float initialDistance = planet ? planet->GetRadius() + initialHeight : 1.0f;
+
+    enemyNode["pos"][0] = initialDistance;
+    enemyNode["pos"][1] = 0.0f;
+    enemyNode["pos"][2] = 0.0f;
 
     config["enemies"].push_back(enemyNode);
 
@@ -1312,6 +1322,14 @@ void DebugUIRenderer::AddBoatFromEditor(int startPlanetNum, int destPlanetNum, i
     boatNode["phi"] = 0.0f;
     boatNode["height"] = 1.0f;
     boatNode["facingYaw"] = 0.0f;
+
+    const Planet* planet = planets[startPlanetNum];
+    const float initialHeight = 1.0f;
+    const float initialDistance = planet ? planet->GetRadius() + initialHeight : 1.0f;
+
+    boatNode["pos"][0] = initialDistance;
+    boatNode["pos"][1] = 0.0f;
+    boatNode["pos"][2] = 0.0f;
 
     config["boats"].push_back(boatNode);
 
@@ -1900,11 +1918,29 @@ void DebugUIRenderer::SavePlatformsYaml(YAML::Node& config, const std::vector<Pl
         YAML::Node node;
 
         node["currentPlanetNum"] = currentPlanetNum;
+        glm::vec3 localPos = platform->GetPos();
+        if (platform->GetCurrentPlanet()) {
+            localPos -= platform->GetCurrentPlanet()->GetPos();
+        }
+
+        localPos.x = std::round(localPos.x * 100.0f) / 100.0f;
+        localPos.y = std::round(localPos.y * 100.0f) / 100.0f;
+        localPos.z = std::round(localPos.z * 100.0f) / 100.0f;
+
+        node["pos"][0] = localPos.x;
+        node["pos"][1] = localPos.y;
+        node["pos"][2] = localPos.z;
         node["theta"] = platform->GetTheta();
         node["phi"] = platform->GetPhi();
         node["height"] = platform->GetHeight();
 
         node["facingYaw"] = platform->GetFacingYaw();
+
+        const glm::vec3 rotation = platform->GetEditorRotation();
+
+        node["rotation"][0] = rotation.x;
+        node["rotation"][1] = rotation.y;
+        node["rotation"][2] = rotation.z;
 
         node["scale"][0] = scale.x;
         node["scale"][1] = scale.y;
@@ -2411,4 +2447,65 @@ void DebugUIRenderer::DeleteSelectedActorsFromEditor(const std::vector<DeleteTar
     }
 
     mGame->ReloadCurrentStage();
+}
+
+glm::vec3 DebugUIRenderer::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
+{
+    if (!actor) {
+        return glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+
+    glm::vec3 baseUp(0.0f, 1.0f, 0.0f);
+
+    Planet* planet = actor->GetCurrentPlanet();
+
+    if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+        glm::vec3 toActor = actor->GetPos() - planet->GetPos();
+
+        if (glm::length(toActor) > 1e-6f) {
+            baseUp = glm::normalize(toActor);
+        }
+    }
+
+    glm::vec3 baseForward(0.0f, 0.0f, 1.0f);
+
+    baseForward = baseForward - baseUp * glm::dot(baseForward, baseUp);
+
+    if (glm::length(baseForward) < 1e-6f) {
+        baseForward = glm::vec3(1.0f, 0.0f, 0.0f);
+        baseForward = baseForward - baseUp * glm::dot(baseForward, baseUp);
+    }
+
+    baseForward = glm::normalize(baseForward);
+
+    glm::vec3 baseRight = glm::normalize(glm::cross(baseForward, baseUp));
+
+    const float pitch = rotationRad.x;
+    const float yaw = rotationRad.y;
+    const float roll = rotationRad.z;
+
+    glm::mat4 rot(1.0f);
+    rot = glm::rotate(rot, yaw, baseUp);
+    rot = glm::rotate(rot, pitch, baseRight);
+    rot = glm::rotate(rot, roll, baseForward);
+
+    glm::vec3 upVec = glm::vec3(rot * glm::vec4(baseUp, 0.0f));
+
+    if (glm::length(upVec) < 1e-6f) {
+        return baseUp;
+    }
+
+    return glm::normalize(upVec);
+}
+
+void DebugUIRenderer::ApplyActorEditorRotation(Actor* actor)
+{
+    if (!actor) {
+        return;
+    }
+
+    const glm::vec3 rotation = actor->GetEditorRotation();
+
+    actor->SetFacingYaw(rotation.y);
+    actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
 }

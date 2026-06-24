@@ -22,6 +22,7 @@ public:
 
     float GetProgress() const { return mProgress; }
     const glm::vec3& GetDestPos() const { return mDestPos; }
+    Planet* GetDestPlanet() const { return mDestPlanet; }
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
 
 private:
