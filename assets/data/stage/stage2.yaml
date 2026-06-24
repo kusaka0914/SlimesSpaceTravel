@@ -355,8 +355,7 @@ boats:
       - -0.1427743
       - 0.98975533
       - 0
-boatParts:
-  []
+boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 3
@@ -383,8 +382,7 @@ star:
       - 0.99992305
       - 0.008745005
       - 0.008795579
-NPCs:
-  []
+NPCs: []
 platforms:
   - currentPlanetNum: 0
     pos:

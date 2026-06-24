@@ -88,6 +88,10 @@ public:
     int GetStageYamlIndex() const { return mStageYamlIndex; }
     void SetStageYamlIndex(int index) { mStageYamlIndex = index; }
 
+    void SetIsEditorSelected(bool isEditorSelected) { mIsEditorSelected = isEditorSelected; }
+
+    bool GetIsEditorSelected() const { return mIsEditorSelected; }
+
 private:
     glm::vec3 GetAverageNormal();
     bool CastRay(const glm::vec3& offset, glm::vec3& outNormal, const btCollisionObject*& outObj);
@@ -124,4 +128,5 @@ protected:
     std::vector<std::unique_ptr<Component>> mComponents;
     std::vector<struct LoadedMesh>* mMeshes;
     glm::vec3 mEditorRotation{0.0f};
+    bool mIsEditorSelected = false;
 };

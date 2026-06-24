@@ -64,6 +64,9 @@ private:
     void DrawDebugLabels(const glm::mat4& viewMat) const;
     void DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const;
 
+    glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
+    void DrawActorSelectionOutline(Actor* actor, bool useOrient) const;
+
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;

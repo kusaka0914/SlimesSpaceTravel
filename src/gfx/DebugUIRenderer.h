@@ -379,10 +379,15 @@ private:
 
     std::string MakeDeleteTargetKey(const DeleteTargetInfo& target) const;
     void HandlePickedActorDeleteShortcut();
+    void ApplyEditorSelectionFlags();
 
     void PushStageUndo();
     void HandleStageUndoShortcut();
     bool RestoreStageUndo();
+
+    void HandlePickedActorDuplicateShortcut();
+    bool DuplicateSelectedActorsFromEditor(const std::unordered_set<std::string>& selectedKeys);
+    void OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const;
 
     Game* mGame;
     UIRenderer* mUIRenderer;
@@ -399,6 +404,7 @@ private:
 
     std::vector<std::string> mStageUndoStack;
     bool mZPressedPrev = false;
+    bool mDPressedPrev = false;
 
     std::unordered_set<std::string> mMousePickedKeys;
 };

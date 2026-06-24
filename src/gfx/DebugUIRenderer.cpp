@@ -36,6 +36,8 @@ void DebugUIRenderer::Draw()
     UpdatePickedActorByMouse();
     HandlePickedActorDeleteShortcut();
     HandleStageUndoShortcut();
+    HandlePickedActorDuplicateShortcut();
+    ApplyEditorSelectionFlags();
 
     ImGui::Begin("デバッグ");
 
@@ -2998,4 +3000,232 @@ void DebugUIRenderer::HandleStageUndoShortcut()
     }
 
     RestoreStageUndo();
+}
+
+void DebugUIRenderer::ApplyEditorSelectionFlags()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    auto apply = [this](Actor* actor, const std::string& sequenceName) {
+        if (!actor) {
+            return;
+        }
+
+        actor->SetIsEditorSelected(false);
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return;
+        }
+
+        const std::string key = sequenceName + ":" + std::to_string(yamlIndex);
+
+        if (mMousePickedKeys.contains(key)) {
+            actor->SetIsEditorSelected(true);
+        }
+    };
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            apply(enemy, "enemies");
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            apply(platform, "platforms");
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            apply(crystal, "crystals");
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            apply(npc, "NPCs");
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            apply(part, "boatParts");
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            apply(boat, "boats");
+        }
+
+        if (Key* key = planet->GetKey()) {
+            apply(key, "keys");
+        }
+
+        if (Star* star = planet->GetStar()) {
+            apply(star, "star");
+        }
+    }
+}
+
+void DebugUIRenderer::HandlePickedActorDuplicateShortcut()
+{
+    if (!mGame || !mGame->GetWindow()) {
+        return;
+    }
+
+    if (mMousePickedKeys.empty()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    // テキスト入力中やDrag操作中に複製されると危険なので止める
+    if (io.WantTextInput) {
+        return;
+    }
+
+    if (ImGui::IsAnyItemActive()) {
+        return;
+    }
+
+    const bool commandPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+                                glfwGetKey(mGame->GetWindow(), GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
+
+    const bool dPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_D) == GLFW_PRESS;
+
+    const bool dTriggered = dPressed && !mDPressedPrev;
+    mDPressedPrev = dPressed;
+
+    if (!commandPressed || !dTriggered) {
+        return;
+    }
+
+    DuplicateSelectedActorsFromEditor(mMousePickedKeys);
+}
+
+bool DebugUIRenderer::DuplicateSelectedActorsFromEditor(const std::unordered_set<std::string>& selectedKeys)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return false;
+    }
+
+    if (selectedKeys.empty()) {
+        return false;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    YAML::Node stageYaml;
+    try {
+        stageYaml = YAML::LoadFile(filePath);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Failed to load stage yaml for duplicate: " << e.what() << std::endl;
+        return false;
+    }
+
+    std::vector<DeleteTargetInfo> targets = CollectAllDeleteTargets();
+
+    std::unordered_set<std::string> newSelectedKeys;
+
+    bool duplicated = false;
+
+    // 複製後に少し横へずらす量
+    const glm::vec3 duplicateOffset(1.0f, 0.0f, 0.0f);
+
+    for (const DeleteTargetInfo& target : targets) {
+        const std::string key = MakeDeleteTargetKey(target);
+
+        if (!selectedKeys.contains(key)) {
+            continue;
+        }
+
+        YAML::Node sequence = stageYaml[target.sequenceName];
+
+        if (!sequence || !sequence.IsSequence()) {
+            std::cerr << "Duplicate skipped. Sequence not found: " << target.sequenceName << std::endl;
+            continue;
+        }
+
+        if (target.yamlIndex < 0 || target.yamlIndex >= static_cast<int>(sequence.size())) {
+            std::cerr << "Duplicate skipped. Invalid yamlIndex: " << target.yamlIndex << std::endl;
+            continue;
+        }
+
+        YAML::Node sourceNode = sequence[target.yamlIndex];
+
+        // YAML::Node の単純代入だと参照っぽくなることがあるので Clone を使う
+        YAML::Node duplicatedNode = YAML::Clone(sourceNode);
+
+        OffsetDuplicatedActorNode(duplicatedNode, duplicateOffset);
+
+        const int newYamlIndex = static_cast<int>(sequence.size());
+
+        sequence.push_back(duplicatedNode);
+
+        newSelectedKeys.insert(target.sequenceName + ":" + std::to_string(newYamlIndex));
+
+        duplicated = true;
+    }
+
+    if (!duplicated) {
+        return false;
+    }
+
+    PushStageUndo();
+
+    try {
+        SaveYamlFile(filePath, stageYaml);
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to save duplicated stage yaml: " << e.what() << std::endl;
+        return false;
+    }
+
+    mMousePickedKeys = newSelectedKeys;
+    mPickedActor = nullptr;
+    mPickedDeleteTarget.reset();
+
+    mRequestOpenStageEditorTab = true;
+    mStageEditorSelectedMenu = 1;
+    mRequestOpenPickedActorPlacement = true;
+    mRequestScrollPickedActorPlacement = true;
+
+    mGame->ReloadCurrentStage();
+
+    return true;
+}
+
+void DebugUIRenderer::OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const
+{
+    if (!actorNode) {
+        return;
+    }
+
+    if (actorNode["pos"] && actorNode["pos"].IsSequence() && actorNode["pos"].size() >= 3) {
+        try {
+            const float x = actorNode["pos"][0].as<float>();
+            const float y = actorNode["pos"][1].as<float>();
+            const float z = actorNode["pos"][2].as<float>();
+
+            actorNode["pos"][0] = x + offset.x;
+            actorNode["pos"][1] = y + offset.y;
+            actorNode["pos"][2] = z + offset.z;
+
+            return;
+        } catch (const YAML::Exception& e) {
+            std::cerr << "Invalid pos while duplicating. Recreate pos." << std::endl;
+        }
+    }
+
+    // pos が無い古い形式の場合は、theta を少しずらす
+    if (actorNode["theta"]) {
+        try {
+            const float theta = actorNode["theta"].as<float>();
+            actorNode["theta"] = theta + 0.15f;
+        } catch (const YAML::Exception& e) {
+            actorNode["theta"] = 0.15f;
+        }
+    } else {
+        actorNode["theta"] = 0.15f;
+    }
 }

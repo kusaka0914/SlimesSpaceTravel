@@ -148,7 +148,7 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
     TryDrawActorOnPlanets(planets, viewMat);
     TryDrawPlayers(viewMat);
 
-    if (mGame->GetIsDebugMode()) {
+    if (mGame->GetIsDebugEditorShowing()) {
         DrawDebugLabels(viewMat);
     }
 }
@@ -310,14 +310,15 @@ void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
 
 void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 {
-    glm::mat4 model;
-    if (useOrient) {
-        model = glm::translate(glm::mat4(1.0f), actor->GetPos()) * mGame->GetMathUtils()->CreateOrient(actor) *
-                glm::scale(glm::mat4(1.0f), glm::vec3(actor->GetScale()));
-    } else {
-        model = glm::translate(glm::mat4(1.0f), actor->GetPos()) *
-                glm::scale(glm::mat4(1.0f), glm::vec3(actor->GetScale()));
+    if (!actor) {
+        return;
     }
+
+    if (mGame->GetIsDebugMode() && actor->GetIsEditorSelected()) {
+        DrawActorSelectionOutline(actor, useOrient);
+    }
+
+    glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
     GLint locObjectColor = mShader3D->GetLocObjectColor();
@@ -646,4 +647,52 @@ void Renderer3D::DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, co
     EndTransparentDraw();
 
     glDeleteTextures(1, &textTexture);
+}
+
+glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const
+{
+    const glm::vec3 scale = actor->GetScale() * scaleMultiplier;
+
+    if (useOrient) {
+        return glm::translate(glm::mat4(1.0f), actor->GetPos()) * mGame->GetMathUtils()->CreateOrient(actor) *
+               glm::scale(glm::mat4(1.0f), scale);
+    }
+
+    return glm::translate(glm::mat4(1.0f), actor->GetPos()) * glm::scale(glm::mat4(1.0f), scale);
+}
+
+void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
+{
+    if (!actor || !actor->GetIsActive()) {
+        return;
+    }
+
+    const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
+    if (!actorMeshes || actorMeshes->empty()) {
+        return;
+    }
+
+    constexpr float outlineScale = 1.06f;
+
+    glm::mat4 model = CreateActorModelMatrix(actor, useOrient, outlineScale);
+    glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
+
+    GLint locObjectColor = mShader3D->GetLocObjectColor();
+    GLint locUseTexture = mShader3D->GetLocUseTexture();
+
+    glUniform1i(locUseTexture, 0);
+
+    // オレンジ
+    glUniform4f(locObjectColor, 1.0f, 0.45f, 0.0f, 1.0f);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    for (const auto& actorMesh : *actorMeshes) {
+        glBindVertexArray(actorMesh.VAO);
+        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, 0);
+    }
+
+    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
 }
