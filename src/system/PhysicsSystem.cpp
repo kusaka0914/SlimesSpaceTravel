@@ -44,11 +44,21 @@ void PhysicsSystem::Initialize()
 void PhysicsSystem::ClearBulletWorld()
 {
     if (mBulletWorld) {
+        for (const auto& pickObject : mEditorPickObjects) {
+            if (pickObject) {
+                mBulletWorld->removeCollisionObject(pickObject.get());
+            }
+        }
+
         for (const auto& rigidBody : mBulletRigidBodies) {
-            if (rigidBody)
+            if (rigidBody) {
                 mBulletWorld->removeRigidBody(rigidBody.get());
+            }
         }
     }
+
+    mEditorPickObjects.clear();
+    mEditorPickShapes.clear();
 
     // world から外した後に所有物を破棄
     mPlayerShape.reset();
@@ -68,6 +78,7 @@ void PhysicsSystem::ClearBulletWorld()
 void PhysicsSystem::CreateWorld()
 {
     CreateStageCollisionBodies();
+    CreateEditorPickBodies();
     CreatePlayerShape();
 }
 
@@ -80,6 +91,83 @@ void PhysicsSystem::CreateStageCollisionBodies()
         std::vector<Platform*> platforms = planet->GetPlatforms();
         for (auto platform : platforms)
             CreateStaticMeshBody(platform);
+    }
+}
+
+void PhysicsSystem::CreateEditorPickBodies()
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mBulletWorld) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            CreateEditorPickBody(enemy);
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            CreateEditorPickBody(crystal);
+        }
+    }
+}
+
+void PhysicsSystem::CreateEditorPickBody(Actor* actor)
+{
+    if (!actor || !mBulletWorld) {
+        return;
+    }
+
+    const glm::vec3 scale = actor->GetScale();
+    const float maxScale = std::max(scale.x, std::max(scale.y, scale.z));
+
+    const float radius = std::max({actor->GetRadius(), maxScale * 0.5f, 0.5f});
+
+    auto shape = std::make_unique<btSphereShape>(radius);
+    auto object = std::make_unique<btCollisionObject>();
+
+    btTransform transform;
+    transform.setIdentity();
+
+    const glm::vec3 pos = actor->GetPos();
+    transform.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+    object->setWorldTransform(transform);
+    object->setCollisionShape(shape.get());
+    object->setUserPointer(actor);
+
+    object->setCollisionFlags(object->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+
+    mBulletWorld->addCollisionObject(object.get(), static_cast<short>(btBroadphaseProxy::SensorTrigger),
+                                     static_cast<short>(btBroadphaseProxy::DefaultFilter));
+
+    mEditorPickShapes.emplace_back(std::move(shape));
+    mEditorPickObjects.emplace_back(std::move(object));
+}
+
+void PhysicsSystem::SyncEditorPickBodies() const
+{
+    for (const auto& object : mEditorPickObjects) {
+        if (!object) {
+            continue;
+        }
+
+        Actor* actor = static_cast<Actor*>(object->getUserPointer());
+        if (!actor) {
+            continue;
+        }
+
+        btTransform transform = object->getWorldTransform();
+
+        const glm::vec3 pos = actor->GetPos();
+        transform.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+        object->setWorldTransform(transform);
     }
 }
 
@@ -147,10 +235,15 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const gl
         return std::nullopt;
     }
 
+    SyncEditorPickBodies();
+
     const btVector3 btFrom(rayFrom.x, rayFrom.y, rayFrom.z);
     const btVector3 btTo(rayTo.x, rayTo.y, rayTo.z);
 
     btCollisionWorld::AllHitsRayResultCallback cb(btFrom, btTo);
+
+    cb.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    cb.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::SensorTrigger);
 
     mBulletWorld->rayTest(btFrom, btTo, cb);
 
@@ -322,6 +415,9 @@ std::optional<glm::vec3> PhysicsSystem::CheckConflictWall(Actor* actor, const gl
     toTransform.setOrigin(btVector3(sweepTo.x, sweepTo.y, sweepTo.z));
 
     btCollisionWorld::ClosestConvexResultCallback sweepCallback(fromTransform.getOrigin(), toTransform.getOrigin());
+
+    sweepCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    sweepCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     mBulletWorld->convexSweepTest(mPlayerShape.get(), fromTransform, toTransform, sweepCallback);
 
     if (!sweepCallback.hasHit())
@@ -347,6 +443,9 @@ std::optional<glm::vec3> PhysicsSystem::CheckConflictWall(Actor* actor, const gl
 
         btCollisionWorld::ClosestConvexResultCallback slideCallback(slideFromTransition.getOrigin(),
                                                                     slideToTransition.getOrigin());
+
+        slideCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+        slideCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
 
         mBulletWorld->convexSweepTest(mPlayerShape.get(), slideFromTransition, slideToTransition, slideCallback);
 

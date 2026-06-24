@@ -19,6 +19,8 @@ class btPairCachingGhostObject;
 class btCapsuleShape;
 class btSphereShape;
 class btKinematicCharacterController;
+class btCollisionObject;
+class btCollisionShape;
 
 class Game;
 class Actor;
@@ -51,6 +53,9 @@ private:
     void CreatePlayerShape();
     std::unique_ptr<btTriangleMesh> CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& pos,
                                                        const std::vector<unsigned int>& idx);
+    void CreateEditorPickBodies();
+    void CreateEditorPickBody(Actor* actor);
+    void SyncEditorPickBodies() const;
 
     std::optional<glm::vec3> CheckConflictActors(Actor* actor, const glm::vec3& desiredPos);
     std::optional<glm::vec3> CheckConflictActor(Actor* actor, const glm::vec3& desiredPos);
@@ -70,4 +75,7 @@ private:
     std::vector<std::unique_ptr<btRigidBody>> mBulletRigidBodies;
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>> mBulletTriangleMeshShapes;
     std::vector<std::unique_ptr<btTriangleMesh>> mBulletTriangleMeshes;
+
+    std::vector<std::unique_ptr<btCollisionObject>> mEditorPickObjects;
+    std::vector<std::unique_ptr<btCollisionShape>> mEditorPickShapes;
 };

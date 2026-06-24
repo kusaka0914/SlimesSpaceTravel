@@ -34,6 +34,8 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 void DebugUIRenderer::Draw()
 {
     UpdatePickedActorByMouse();
+    HandlePickedActorDeleteShortcut();
+    HandleStageUndoShortcut();
 
     ImGui::Begin("デバッグ");
 
@@ -2266,6 +2268,7 @@ void DebugUIRenderer::DrawDeleteActors()
         ImGui::Text("削除数: %d", static_cast<int>(selectedKeys.size()));
 
         if (ImGui::Button("削除する")) {
+            PushStageUndo();
             DeleteSelectedActorsFromEditor(targets, selectedKeys);
             selectedKeys.clear();
             ImGui::CloseCurrentPopup();
@@ -2737,21 +2740,50 @@ void DebugUIRenderer::UpdatePickedActorByMouse()
     auto hit = mGame->GetPhysicsSystem()->PickActorByRay(rayFrom, rayTo);
 
     if (!hit || !hit->actor) {
-        mPickedActor = nullptr;
-        mPickedDeleteTarget.reset();
+        ImGuiIO& io = ImGui::GetIO();
+
+        if (!io.KeyShift) {
+            mPickedActor = nullptr;
+            mPickedDeleteTarget.reset();
+            mMousePickedKeys.clear();
+        }
+
         return;
     }
 
     auto target = FindDeleteTargetForActor(hit->actor);
 
     if (!target) {
-        mPickedActor = nullptr;
-        mPickedDeleteTarget.reset();
+        ImGuiIO& io = ImGui::GetIO();
+
+        if (!io.KeyShift) {
+            mPickedActor = nullptr;
+            mPickedDeleteTarget.reset();
+            mMousePickedKeys.clear();
+        }
+
         return;
     }
 
     mPickedActor = hit->actor;
     mPickedDeleteTarget = *target;
+
+    const std::string key = MakeDeleteTargetKey(*target);
+
+    const bool isShiftPressed = io.KeyShift;
+
+    if (isShiftPressed) {
+        // Shift押しながらクリックなら、選択をトグル
+        if (mMousePickedKeys.contains(key)) {
+            mMousePickedKeys.erase(key);
+        } else {
+            mMousePickedKeys.insert(key);
+        }
+    } else {
+        // 通常クリックなら単体選択
+        mMousePickedKeys.clear();
+        mMousePickedKeys.insert(key);
+    }
 
     mRequestOpenStageEditorTab = true;
     mStageEditorSelectedMenu = 1; // 配置
@@ -2763,32 +2795,44 @@ void DebugUIRenderer::DrawPickedActorControls()
 {
     ImGui::Separator();
 
-    if (!mPickedDeleteTarget) {
-        ImGui::TextDisabled("3Dビュー上の足場をクリックすると選択できます");
+    if (mMousePickedKeys.empty()) {
+        ImGui::TextDisabled("3Dビュー上のオブジェクトをクリックすると選択できます");
+        ImGui::TextDisabled("Shift + クリックで複数選択できます");
         return;
     }
 
-    ImGui::Text("マウス選択中: %s", mPickedDeleteTarget->label.c_str());
+    ImGui::Text("マウス選択数: %d", static_cast<int>(mMousePickedKeys.size()));
+
+    if (mPickedDeleteTarget) {
+        ImGui::Text("最後に選択: %s", mPickedDeleteTarget->label.c_str());
+    }
+
+    if (ImGui::Button("マウス選択を解除")) {
+        mMousePickedKeys.clear();
+        mPickedActor = nullptr;
+        mPickedDeleteTarget.reset();
+    }
+
+    ImGui::SameLine();
 
     if (ImGui::Button("マウス選択中のオブジェクトを削除")) {
         ImGui::OpenPopup("マウス選択削除確認");
     }
 
     if (ImGui::BeginPopupModal("マウス選択削除確認", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("%s を削除します。よろしいですか？", mPickedDeleteTarget->label.c_str());
+        ImGui::Text("マウス選択中のオブジェクトを削除します。よろしいですか？");
+        ImGui::Text("削除数: %d", static_cast<int>(mMousePickedKeys.size()));
 
         if (ImGui::Button("削除する")) {
-            std::vector<DeleteTargetInfo> targets;
-            targets.push_back(*mPickedDeleteTarget);
+            std::vector<DeleteTargetInfo> targets = CollectAllDeleteTargets();
 
-            std::unordered_set<std::string> selectedKeys;
-            selectedKeys.insert(mPickedDeleteTarget->sequenceName + ":" +
-                                std::to_string(mPickedDeleteTarget->yamlIndex));
+            PushStageUndo();
 
+            DeleteSelectedActorsFromEditor(targets, mMousePickedKeys);
+
+            mMousePickedKeys.clear();
             mPickedActor = nullptr;
             mPickedDeleteTarget.reset();
-
-            DeleteSelectedActorsFromEditor(targets, selectedKeys);
 
             ImGui::CloseCurrentPopup();
         }
@@ -2801,4 +2845,157 @@ void DebugUIRenderer::DrawPickedActorControls()
 
         ImGui::EndPopup();
     }
+}
+
+std::string DebugUIRenderer::MakeDeleteTargetKey(const DeleteTargetInfo& target) const
+{
+    return target.sequenceName + ":" + std::to_string(target.yamlIndex);
+}
+
+void DebugUIRenderer::HandlePickedActorDeleteShortcut()
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    if (mMousePickedKeys.empty()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    // テキスト入力中にBackspaceでオブジェクト削除されると危険なので止める
+    if (io.WantTextInput) {
+        return;
+    }
+
+    // ImGuiのInputTextやDrag操作中なども避ける
+    if (ImGui::IsAnyItemActive()) {
+        return;
+    }
+
+    const bool backspacePressed = ImGui::IsKeyPressed(ImGuiKey_Backspace, false);
+    const bool deletePressed = ImGui::IsKeyPressed(ImGuiKey_Delete, false);
+
+    if (!backspacePressed && !deletePressed) {
+        return;
+    }
+
+    std::vector<DeleteTargetInfo> targets = CollectAllDeleteTargets();
+
+    PushStageUndo();
+
+    DeleteSelectedActorsFromEditor(targets, mMousePickedKeys);
+
+    mMousePickedKeys.clear();
+    mPickedActor = nullptr;
+    mPickedDeleteTarget.reset();
+}
+
+void DebugUIRenderer::PushStageUndo()
+{
+    if (!mGame) {
+        return;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+
+    std::ifstream ifs(filePath);
+    if (!ifs) {
+        std::cerr << "Failed to open stage yaml for undo: " << filePath << std::endl;
+        return;
+    }
+
+    std::string yamlText((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+    try {
+        YAML::Load(yamlText);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Skip pushing invalid undo yaml: " << e.what() << std::endl;
+        return;
+    }
+
+    mStageUndoStack.push_back(yamlText);
+
+    constexpr std::size_t maxUndoCount = 20;
+    if (mStageUndoStack.size() > maxUndoCount) {
+        mStageUndoStack.erase(mStageUndoStack.begin());
+    }
+}
+
+bool DebugUIRenderer::RestoreStageUndo()
+{
+    if (!mGame || mStageUndoStack.empty()) {
+        return false;
+    }
+
+    const std::string filePath = mGame->GetCurrentStageYamlPath();
+    const std::string tempPath = filePath + ".tmp";
+
+    const std::string yamlText = mStageUndoStack.back();
+    mStageUndoStack.pop_back();
+
+    try {
+        YAML::Load(yamlText);
+    } catch (const YAML::Exception& e) {
+        std::cerr << "Undo yaml is invalid. Restore cancelled: " << e.what() << std::endl;
+        return false;
+    }
+
+    {
+        std::ofstream ofs(tempPath, std::ios::out | std::ios::trunc);
+        if (!ofs) {
+            std::cerr << "Failed to open temp undo yaml: " << tempPath << std::endl;
+            return false;
+        }
+
+        ofs << yamlText;
+        ofs.close();
+
+        if (!ofs) {
+            std::cerr << "Failed to write temp undo yaml completely: " << tempPath << std::endl;
+            return false;
+        }
+    }
+
+    std::filesystem::rename(tempPath, filePath);
+
+    mMousePickedKeys.clear();
+    mPickedActor = nullptr;
+    mPickedDeleteTarget.reset();
+
+    mGame->ReloadCurrentStage();
+
+    return true;
+}
+
+void DebugUIRenderer::HandleStageUndoShortcut()
+{
+    if (!mGame || !mGame->GetWindow()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.WantTextInput) {
+        return;
+    }
+
+    if (ImGui::IsAnyItemActive()) {
+        return;
+    }
+
+    const bool commandPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+                                glfwGetKey(mGame->GetWindow(), GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
+
+    const bool zPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_Z) == GLFW_PRESS;
+
+    const bool zTriggered = zPressed && !mZPressedPrev;
+    mZPressedPrev = zPressed;
+
+    if (!commandPressed || !zTriggered) {
+        return;
+    }
+
+    RestoreStageUndo();
 }

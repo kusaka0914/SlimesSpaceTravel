@@ -10,6 +10,8 @@
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include <cmath>
+#include <deque>
+#include <filesystem>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -375,6 +377,13 @@ private:
         config[sequenceName] = newSequence;
     }
 
+    std::string MakeDeleteTargetKey(const DeleteTargetInfo& target) const;
+    void HandlePickedActorDeleteShortcut();
+
+    void PushStageUndo();
+    void HandleStageUndoShortcut();
+    bool RestoreStageUndo();
+
     Game* mGame;
     UIRenderer* mUIRenderer;
 
@@ -387,4 +396,9 @@ private:
     bool mRequestOpenStageEditorTab = false;
     bool mRequestOpenPickedActorPlacement = false;
     bool mRequestScrollPickedActorPlacement = false;
+
+    std::vector<std::string> mStageUndoStack;
+    bool mZPressedPrev = false;
+
+    std::unordered_set<std::string> mMousePickedKeys;
 };
