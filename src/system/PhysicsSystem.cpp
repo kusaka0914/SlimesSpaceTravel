@@ -110,6 +110,7 @@ void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
     btRigidBody::btRigidBodyConstructionInfo rigidBodyConstructionInfo(0, nullptr, triangleMeshShape.get());
 
     auto rigidBody = std::make_unique<btRigidBody>(rigidBodyConstructionInfo);
+    rigidBody->setUserPointer(actor);
 
     btTransform actorTransform;
     actorTransform.setIdentity();
@@ -137,6 +138,76 @@ void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
 
     mBulletWorld->addRigidBody(mBulletRigidBodies.back().get(), static_cast<short>(btBroadphaseProxy::DefaultFilter),
                                static_cast<short>(-1));
+}
+
+std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const glm::vec3& rayFrom,
+                                                                        const glm::vec3& rayTo) const
+{
+    if (!mBulletWorld) {
+        return std::nullopt;
+    }
+
+    const btVector3 btFrom(rayFrom.x, rayFrom.y, rayFrom.z);
+    const btVector3 btTo(rayTo.x, rayTo.y, rayTo.z);
+
+    btCollisionWorld::AllHitsRayResultCallback cb(btFrom, btTo);
+
+    mBulletWorld->rayTest(btFrom, btTo, cb);
+
+    if (!cb.hasHit()) {
+        return std::nullopt;
+    }
+
+    int bestIndex = -1;
+    float bestFraction = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < cb.m_collisionObjects.size(); ++i) {
+        const btCollisionObject* obj = cb.m_collisionObjects[i];
+
+        if (!obj) {
+            continue;
+        }
+
+        Actor* actor = static_cast<Actor*>(obj->getUserPointer());
+
+        if (!actor) {
+            continue;
+        }
+
+        // 惑星はマウス選択対象から外す
+        if (dynamic_cast<Planet*>(actor)) {
+            continue;
+        }
+
+        const float fraction = cb.m_hitFractions[i];
+
+        if (fraction < bestFraction) {
+            bestFraction = fraction;
+            bestIndex = i;
+        }
+    }
+
+    if (bestIndex < 0) {
+        return std::nullopt;
+    }
+
+    Actor* hitActor = static_cast<Actor*>(cb.m_collisionObjects[bestIndex]->getUserPointer());
+
+    if (!hitActor) {
+        return std::nullopt;
+    }
+
+    RayHitActor hit;
+    hit.actor = hitActor;
+
+    const btVector3 hitPoint = cb.m_hitPointWorld[bestIndex];
+    const btVector3 hitNormal = cb.m_hitNormalWorld[bestIndex];
+
+    hit.hitPos = glm::vec3(hitPoint.x(), hitPoint.y(), hitPoint.z());
+    hit.hitNormal = glm::vec3(hitNormal.x(), hitNormal.y(), hitNormal.z());
+    hit.distance = glm::length(hit.hitPos - rayFrom);
+
+    return hit;
 }
 
 std::unique_ptr<btTriangleMesh> PhysicsSystem::CreateTriangleMesh(const glm::vec3& actorScale,

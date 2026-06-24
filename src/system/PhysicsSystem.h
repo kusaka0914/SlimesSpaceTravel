@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <vector>
 #include <glm/glm.hpp>
+#include <memory>
 #include <optional>
+#include <vector>
 
 class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
@@ -25,14 +25,23 @@ class Actor;
 
 class PhysicsSystem {
 public:
+    struct RayHitActor {
+        Actor* actor = nullptr;
+        glm::vec3 hitPos{0.0f};
+        glm::vec3 hitNormal{0.0f, 1.0f, 0.0f};
+        float distance = 0.0f;
+    };
+
     PhysicsSystem(Game* game);
     ~PhysicsSystem();
 
     void Initialize();
 
     btDiscreteDynamicsWorld* GetBulletWorld() const { return mBulletWorld.get(); }
-    
+
     glm::vec3 CheckCollision(Actor* Actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos);
+
+    std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
 
 private:
     void ClearBulletWorld();
@@ -40,7 +49,8 @@ private:
     void CreateStaticMeshBody(Actor* actor);
     void CreateStageCollisionBodies();
     void CreatePlayerShape();
-    std::unique_ptr<btTriangleMesh> CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& pos, const std::vector<unsigned int>& idx);
+    std::unique_ptr<btTriangleMesh> CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& pos,
+                                                       const std::vector<unsigned int>& idx);
 
     std::optional<glm::vec3> CheckConflictActors(Actor* actor, const glm::vec3& desiredPos);
     std::optional<glm::vec3> CheckConflictActor(Actor* actor, const glm::vec3& desiredPos);

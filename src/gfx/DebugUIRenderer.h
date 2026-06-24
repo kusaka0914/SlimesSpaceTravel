@@ -3,15 +3,18 @@
 #include <GL/glew.h>
 
 #include "Game.h"
+#include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "imgui.h"
+#include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include <cmath>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -71,6 +74,11 @@ private:
     void DrawDeleteActors();
     void DeleteSelectedActorsFromEditor(const std::vector<DeleteTargetInfo>& targets,
                                         const std::unordered_set<std::string>& selectedKeys);
+
+    bool CreateMousePickRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
+    void UpdatePickedActorByMouse();
+    void DrawPickedActorControls();
+    std::optional<DeleteTargetInfo> FindDeleteTargetForActor(Actor* actor) const;
 
     std::string GetDeleteSequenceName(DeleteActorType type) const;
     const char* GetDeleteTypeLabel(DeleteActorType type) const;
@@ -348,4 +356,9 @@ private:
 
     Game* mGame;
     UIRenderer* mUIRenderer;
+
+    std::optional<DeleteTargetInfo> mPickedDeleteTarget;
+    Actor* mPickedActor = nullptr;
+    int mLastMousePickFrame = -1;
+    int mLastPickedActorControlFrame = -1;
 };

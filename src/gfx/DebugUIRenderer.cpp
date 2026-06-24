@@ -33,7 +33,11 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 
 void DebugUIRenderer::Draw()
 {
+    UpdatePickedActorByMouse();
+
     ImGui::Begin("デバッグ");
+
+    DrawPickedActorControls();
 
     if (ImGui::BeginTabBar("DebugMainTabs")) {
         if (ImGui::BeginTabItem("基本情報")) {
@@ -2508,4 +2512,279 @@ void DebugUIRenderer::ApplyActorEditorRotation(Actor* actor)
 
     actor->SetFacingYaw(rotation.y);
     actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
+}
+
+bool DebugUIRenderer::CreateMousePickRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const
+{
+    if (!mGame || !mGame->GetWindow() || !mGame->GetCameraSystem()) {
+        return false;
+    }
+
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(mGame->GetWindow(), &windowWidth, &windowHeight);
+
+    if (windowWidth <= 0 || windowHeight <= 0) {
+        return false;
+    }
+
+    double mouseX = 0.0;
+    double mouseY = 0.0;
+    glfwGetCursorPos(mGame->GetWindow(), &mouseX, &mouseY);
+
+    if (mouseX < 0.0 || mouseX > windowWidth || mouseY < 0.0 || mouseY > windowHeight) {
+        return false;
+    }
+
+    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+    if (views.empty()) {
+        return false;
+    }
+
+    int viewIndex = 0;
+    float viewportHeight = static_cast<float>(windowHeight);
+    float localMouseY = static_cast<float>(mouseY);
+    float fovDeg = 60.0f;
+
+    if (mGame->GetIsPlayer2Joined() && views.size() >= 2) {
+        viewportHeight = static_cast<float>(windowHeight) * 0.5f;
+        fovDeg = 45.0f;
+
+        if (mouseY >= viewportHeight) {
+            viewIndex = 1;
+            localMouseY = static_cast<float>(mouseY) - viewportHeight;
+        }
+    }
+
+    if (viewIndex >= static_cast<int>(views.size())) {
+        return false;
+    }
+
+    const float ndcX = static_cast<float>(2.0 * mouseX / windowWidth - 1.0);
+    const float ndcY = 1.0f - 2.0f * localMouseY / viewportHeight;
+
+    const float aspect = static_cast<float>(windowWidth) / viewportHeight;
+
+    const glm::mat4 view = views[viewIndex];
+    const glm::mat4 proj = glm::perspective(glm::radians(fovDeg), aspect, 0.1f, 100.0f);
+
+    const glm::mat4 invView = glm::inverse(view);
+    const glm::mat4 invProj = glm::inverse(proj);
+
+    glm::vec4 rayClip(ndcX, ndcY, -1.0f, 1.0f);
+
+    glm::vec4 rayEye = invProj * rayClip;
+    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+
+    glm::vec4 rayWorld = invView * rayEye;
+
+    glm::vec3 rayDir = glm::vec3(rayWorld);
+    if (glm::length(rayDir) < 1e-6f) {
+        return false;
+    }
+
+    rayDir = glm::normalize(rayDir);
+
+    outRayFrom = glm::vec3(invView[3]);
+    outRayTo = outRayFrom + rayDir * 1000.0f;
+
+    return true;
+}
+
+std::optional<DebugUIRenderer::DeleteTargetInfo> DebugUIRenderer::FindDeleteTargetForActor(Actor* actor) const
+{
+    if (!actor || !mGame || !mGame->GetCurrentStage()) {
+        return std::nullopt;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    auto makeTarget = [](Actor* candidate, Actor* pickedActor, DeleteActorType type, const std::string& sequenceName,
+                         const std::string& displayName, int displayIndex) -> std::optional<DeleteTargetInfo> {
+        if (!candidate || candidate != pickedActor) {
+            return std::nullopt;
+        }
+
+        const int yamlIndex = candidate->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return std::nullopt;
+        }
+
+        DeleteTargetInfo target;
+        target.type = type;
+        target.yamlIndex = yamlIndex;
+        target.sequenceName = sequenceName;
+        target.label = displayName + " " + std::to_string(displayIndex);
+
+        return target;
+    };
+
+    int enemyIndex = 0;
+    int platformIndex = 0;
+    int crystalIndex = 0;
+    int npcIndex = 0;
+    int boatPartsIndex = 0;
+    int boatIndex = 0;
+    int keyIndex = 0;
+    int starIndex = 0;
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (auto target = makeTarget(enemy, actor, DeleteActorType::Enemy, "enemies", "敵", enemyIndex)) {
+                return target;
+            }
+            ++enemyIndex;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (auto target =
+                    makeTarget(platform, actor, DeleteActorType::Platform, "platforms", "足場", platformIndex)) {
+                return target;
+            }
+            ++platformIndex;
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            if (auto target =
+                    makeTarget(crystal, actor, DeleteActorType::Crystal, "crystals", "クリスタル", crystalIndex)) {
+                return target;
+            }
+            ++crystalIndex;
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            if (auto target = makeTarget(npc, actor, DeleteActorType::NPC, "NPCs", "NPC", npcIndex)) {
+                return target;
+            }
+            ++npcIndex;
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            if (auto target =
+                    makeTarget(part, actor, DeleteActorType::BoatParts, "boatParts", "ボートパーツ", boatPartsIndex)) {
+                return target;
+            }
+            ++boatPartsIndex;
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (auto target = makeTarget(boat, actor, DeleteActorType::Boat, "boats", "ボート", boatIndex)) {
+                return target;
+            }
+            ++boatIndex;
+        }
+
+        if (Key* key = planet->GetKey()) {
+            if (auto target = makeTarget(key, actor, DeleteActorType::Key, "keys", "キー", keyIndex)) {
+                return target;
+            }
+            ++keyIndex;
+        }
+
+        if (Star* star = planet->GetStar()) {
+            if (auto target = makeTarget(star, actor, DeleteActorType::Star, "star", "星", starIndex)) {
+                return target;
+            }
+            ++starIndex;
+        }
+    }
+
+    return std::nullopt;
+}
+
+void DebugUIRenderer::UpdatePickedActorByMouse()
+{
+    const int frame = ImGui::GetFrameCount();
+    if (mLastMousePickFrame == frame) {
+        return;
+    }
+    mLastMousePickFrame = frame;
+
+    if (!mGame || !mGame->GetIsDebugMode() || !mGame->GetPhysicsSystem()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.WantCaptureMouse) {
+        return;
+    }
+
+    if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        return;
+    }
+
+    glm::vec3 rayFrom;
+    glm::vec3 rayTo;
+
+    if (!CreateMousePickRay(rayFrom, rayTo)) {
+        return;
+    }
+
+    auto hit = mGame->GetPhysicsSystem()->PickActorByRay(rayFrom, rayTo);
+
+    if (!hit || !hit->actor) {
+        mPickedActor = nullptr;
+        mPickedDeleteTarget.reset();
+        return;
+    }
+
+    auto target = FindDeleteTargetForActor(hit->actor);
+
+    if (!target) {
+        mPickedActor = nullptr;
+        mPickedDeleteTarget.reset();
+        return;
+    }
+
+    mPickedActor = hit->actor;
+    mPickedDeleteTarget = *target;
+}
+
+void DebugUIRenderer::DrawPickedActorControls()
+{
+    ImGui::Separator();
+
+    if (!mPickedDeleteTarget) {
+        ImGui::TextDisabled("3Dビュー上の足場をクリックすると選択できます");
+        return;
+    }
+
+    ImGui::Text("マウス選択中: %s", mPickedDeleteTarget->label.c_str());
+
+    if (ImGui::Button("マウス選択中のオブジェクトを削除")) {
+        ImGui::OpenPopup("マウス選択削除確認");
+    }
+
+    if (ImGui::BeginPopupModal("マウス選択削除確認", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s を削除します。よろしいですか？", mPickedDeleteTarget->label.c_str());
+
+        if (ImGui::Button("削除する")) {
+            std::vector<DeleteTargetInfo> targets;
+            targets.push_back(*mPickedDeleteTarget);
+
+            std::unordered_set<std::string> selectedKeys;
+            selectedKeys.insert(mPickedDeleteTarget->sequenceName + ":" +
+                                std::to_string(mPickedDeleteTarget->yamlIndex));
+
+            mPickedActor = nullptr;
+            mPickedDeleteTarget.reset();
+
+            DeleteSelectedActorsFromEditor(targets, selectedKeys);
+
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("キャンセル")) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
 }
