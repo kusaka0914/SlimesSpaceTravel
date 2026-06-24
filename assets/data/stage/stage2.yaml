@@ -41,9 +41,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - -4.95
-      - -3.12
-      - -1.59
+      - -4.38
+      - -3
+      - -1.22
     rotation:
       - 0
       - 0
@@ -60,28 +60,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - -4.98
-      - -2.98
-      - 2.36
-    rotation:
-      - 0
-      - 0
-      - 0
-    facingYaw: 0
-    upVec:
-      - -0.18501435
-      - 0.98207617
-      - -0.036002792
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 3
-    theta: 0
-    phi: 0
-    height: 1
-    pos:
-      - -4.96
-      - -3.07
-      - -0.03
+      - -4.31
+      - -2.86
+      - 2.24
     rotation:
       - 0
       - 0
@@ -98,9 +79,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - -4.98
-      - -2.96
-      - 3.11
+      - -4.35
+      - -2.94
+      - 0.26
     rotation:
       - 0
       - 0
@@ -108,8 +89,27 @@ enemies:
     facingYaw: 0
     upVec:
       - -0.18501435
-      - 0.98207617
-      - -0.036002792
+      - 0.9820761
+      - -0.03600279
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -4.3
+      - -2.83
+      - 3.14
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 3
@@ -118,7 +118,7 @@ enemies:
     height: 1
     pos:
       - -4.96
-      - -15108.22
+      - -15388.94
       - -0.82
     rotation:
       - 0
@@ -258,9 +258,9 @@ keys:
       - 0
     facingYaw: 0
     upVec:
-      - 0.8651576
-      - -0.50138736
-      - 0.010633801
+      - 0
+      - 1
+      - 0
 crystals:
   - type: little
     currentPlanetNum: 0
@@ -355,7 +355,8 @@ boats:
       - -0.1427743
       - 0.98975533
       - 0
-boatParts: []
+boatParts:
+  []
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 3
@@ -379,10 +380,11 @@ star:
       - 0
     facingYaw: 0
     upVec:
-      - 0.99992305
-      - 0.008745005
-      - 0.008795579
-NPCs: []
+      - 0.99992317
+      - 0.008745006
+      - 0.00879558
+NPCs:
+  []
 platforms:
   - currentPlanetNum: 0
     pos:
@@ -408,7 +410,7 @@ platforms:
       - 0.0051955623
   - currentPlanetNum: 0
     pos:
-      - 3.58
+      - 2.66
       - -4.6
       - -8.97
     theta: -1.190649
@@ -425,9 +427,9 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - 0.33460563
-      - -0.43328178
-      - -0.8368428
+      - 0.33460566
+      - -0.43328184
+      - -0.8368429
   - currentPlanetNum: 0
     pos:
       - -5.83
@@ -447,9 +449,9 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - -0.76277417
-      - -0.60426146
-      - 0.23031178
+      - -0.7627743
+      - -0.6042615
+      - 0.23031181
   - currentPlanetNum: 0
     pos:
       - -6.32
@@ -491,9 +493,9 @@ platforms:
       - 1.4
     modelPath: platform.obj
     upVec:
-      - 0.8978751
-      - -0.3300485
-      - 0.29135638
+      - 0.89787495
+      - -0.33004847
+      - 0.29135635
   - currentPlanetNum: 0
     pos:
       - -2.02
@@ -601,9 +603,9 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - 0.527975
-      - 0.43324715
-      - 0.7304377
+      - 0.5279751
+      - 0.4332472
+      - 0.73043776
   - currentPlanetNum: 3
     pos:
       - 1
@@ -623,9 +625,9 @@ platforms:
       - 6
     modelPath: platform.obj
     upVec:
-      - -0.185
-      - 0.982
-      - -0.036
+      - -0.18501434
+      - 0.9820761
+      - -0.03600279
   - currentPlanetNum: 3
     pos:
       - 9.6
@@ -645,9 +647,9 @@ platforms:
       - 0.36
     modelPath: curvePlatform.obj
     upVec:
-      - -0.123
-      - 0.992
-      - -0.02
+      - -0.123025045
+      - 0.992202
+      - -0.020004071
   - currentPlanetNum: 3
     pos:
       - 11.19

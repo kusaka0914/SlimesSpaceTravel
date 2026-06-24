@@ -16,6 +16,7 @@ if (MSVC)
 endif()
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)
+set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/ImGuizmo)
 
 target_sources(game PRIVATE
     ${IMGUI_DIR}/imgui.cpp
@@ -26,6 +27,8 @@ target_sources(game PRIVATE
 
     ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+
+    ${IMGUIZMO_DIR}/ImGuizmo.cpp
 )
 
 find_package(OpenGL REQUIRED)
@@ -46,6 +49,7 @@ target_include_directories(game PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    ${IMGUIZMO_DIR}
 )
 target_link_directories(game PRIVATE /opt/homebrew/lib)
 

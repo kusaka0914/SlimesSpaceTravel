@@ -3,6 +3,7 @@
 #include "gfx/UIRenderer.h"
 
 #include "Game.h"
+#include "ImGuizmo.h"
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
@@ -21,6 +22,7 @@
 #include "system/UILoadSystem.h"
 
 #include <algorithm>
+#include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +40,8 @@ void DebugUIRenderer::Draw()
     HandleStageUndoShortcut();
     HandlePickedActorDuplicateShortcut();
     ApplyEditorSelectionFlags();
+
+    DrawSelectedActorsGizmo();
 
     ImGui::Begin("デバッグ");
 
@@ -3227,5 +3231,214 @@ void DebugUIRenderer::OffsetDuplicatedActorNode(YAML::Node actorNode, const glm:
         }
     } else {
         actorNode["theta"] = 0.15f;
+    }
+}
+
+void DebugUIRenderer::DrawSelectedActorsGizmo()
+{
+    if (!mGame || !mGame->GetWindow() || !mGame->GetCameraSystem()) {
+        return;
+    }
+
+    if (mMousePickedKeys.empty()) {
+        return;
+    }
+
+    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+    if (views.empty()) {
+        return;
+    }
+
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(mGame->GetWindow(), &windowWidth, &windowHeight);
+
+    if (windowWidth <= 0 || windowHeight <= 0) {
+        return;
+    }
+
+    const glm::mat4 view = views[0];
+
+    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+
+    const glm::vec3 center = CalculateSelectedActorsCenter();
+
+    glm::mat4 gizmoMatrix = glm::translate(glm::mat4(1.0f), center);
+
+    ImGuizmo::BeginFrame();
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+
+    ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), ImGuizmo::TRANSLATE, ImGuizmo::WORLD,
+                         glm::value_ptr(gizmoMatrix));
+
+    if (ImGuizmo::IsUsing()) {
+        const glm::vec3 newGizmoPos = glm::vec3(gizmoMatrix[3]);
+
+        if (!mIsUsingMoveGizmo) {
+            PushStageUndo();
+            mPreviousGizmoPos = center;
+            mIsUsingMoveGizmo = true;
+        }
+
+        const glm::vec3 delta = newGizmoPos - mPreviousGizmoPos;
+
+        if (glm::length(delta) > 1e-6f) {
+            MoveSelectedActorsByDelta(delta);
+            mPreviousGizmoPos = newGizmoPos;
+        }
+    } else {
+        if (mIsUsingMoveGizmo) {
+            mIsUsingMoveGizmo = false;
+
+            SaveStagePlanetsYaml();
+            SaveStagePlacementYaml();
+
+            if (mGame->GetPhysicsSystem()) {
+                mGame->GetPhysicsSystem()->Initialize();
+            }
+        }
+    }
+}
+
+glm::vec3 DebugUIRenderer::CalculateSelectedActorsCenter() const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return glm::vec3(0.0f);
+    }
+
+    glm::vec3 sum(0.0f);
+    int count = 0;
+
+    auto addIfSelected = [this, &sum, &count](Actor* actor, const std::string& sequenceName) {
+        if (!actor) {
+            return;
+        }
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return;
+        }
+
+        const std::string key = sequenceName + ":" + std::to_string(yamlIndex);
+
+        if (!mMousePickedKeys.contains(key)) {
+            return;
+        }
+
+        sum += actor->GetPos();
+        ++count;
+    };
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            addIfSelected(enemy, "enemies");
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            addIfSelected(platform, "platforms");
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            addIfSelected(crystal, "crystals");
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            addIfSelected(npc, "NPCs");
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            addIfSelected(part, "boatParts");
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            addIfSelected(boat, "boats");
+        }
+
+        if (Key* key = planet->GetKey()) {
+            addIfSelected(key, "keys");
+        }
+
+        if (Star* star = planet->GetStar()) {
+            addIfSelected(star, "star");
+        }
+    }
+
+    if (count == 0) {
+        return glm::vec3(0.0f);
+    }
+
+    return sum / static_cast<float>(count);
+}
+
+void DebugUIRenderer::MoveSelectedActorsByDelta(const glm::vec3& delta)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    auto moveIfSelected = [this, &delta](Actor* actor, const std::string& sequenceName) {
+        if (!actor) {
+            return;
+        }
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return;
+        }
+
+        const std::string key = sequenceName + ":" + std::to_string(yamlIndex);
+
+        if (!mMousePickedKeys.contains(key)) {
+            return;
+        }
+
+        actor->SetPos(actor->GetPos() + delta);
+    };
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            moveIfSelected(enemy, "enemies");
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            moveIfSelected(platform, "platforms");
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            moveIfSelected(crystal, "crystals");
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            moveIfSelected(npc, "NPCs");
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            moveIfSelected(part, "boatParts");
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            moveIfSelected(boat, "boats");
+        }
+
+        if (Key* key = planet->GetKey()) {
+            moveIfSelected(key, "keys");
+        }
+
+        if (Star* star = planet->GetStar()) {
+            moveIfSelected(star, "star");
+        }
     }
 }

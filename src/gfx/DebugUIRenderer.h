@@ -389,6 +389,14 @@ private:
     bool DuplicateSelectedActorsFromEditor(const std::unordered_set<std::string>& selectedKeys);
     void OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const;
 
+    void DrawSelectedActorsGizmo();
+    glm::vec3 CalculateSelectedActorsCenter() const;
+    void MoveSelectedActorsByDelta(const glm::vec3& delta);
+    void SaveSelectedActorPositionsToYaml();
+
+    bool mIsUsingMoveGizmo = false;
+    glm::vec3 mPreviousGizmoPos = glm::vec3(0.0f);
+
     Game* mGame;
     UIRenderer* mUIRenderer;
 
