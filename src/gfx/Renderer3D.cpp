@@ -314,7 +314,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         return;
     }
 
-    if (mGame->GetIsDebugMode() && actor->GetIsEditorSelected()) {
+    if (actor->GetIsEditorSelected()) {
         DrawActorSelectionOutline(actor, useOrient);
     }
 

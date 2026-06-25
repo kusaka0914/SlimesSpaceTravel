@@ -118,7 +118,7 @@ enemies:
     height: 1
     pos:
       - -4.96
-      - -15699.06
+      - -16381.49
       - -0.82
     rotation:
       - 0
@@ -155,9 +155,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 3.03
-      - 1.49
-      - -1.06
+      - 3.21
+      - 1.55
+      - -1.1
     rotation:
       - 0
       - 0
@@ -175,7 +175,7 @@ enemies:
     height: 1
     pos:
       - 0.67
-      - 1.49
+      - 1.55
       - -0.77
     rotation:
       - 0
@@ -194,7 +194,7 @@ enemies:
     height: 1
     pos:
       - 0.74
-      - 1.48
+      - 1.55
       - 0.9
     rotation:
       - 0
@@ -213,8 +213,8 @@ enemies:
     height: 1
     pos:
       - 2.88
-      - 1.49
-      - 1.31
+      - 1.55
+      - -0.23
     rotation:
       - 0
       - 0
@@ -232,7 +232,7 @@ enemies:
     height: 1
     pos:
       - -4.21
-      - 1.49
+      - 1.55
       - 0
     rotation:
       - 0
@@ -355,8 +355,7 @@ boats:
       - -0.1427743
       - 0.98975533
       - 0
-boatParts:
-  []
+boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 3
@@ -383,8 +382,7 @@ star:
       - 0.99992317
       - -0.008745005
       - -0.008795653
-NPCs:
-  []
+NPCs: []
 platforms:
   - currentPlanetNum: 0
     pos:

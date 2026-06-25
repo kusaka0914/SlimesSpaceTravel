@@ -1,0 +1,46 @@
+#pragma once
+
+#include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/stage/StageSelectionController.h"
+
+#include <glm/glm.hpp>
+#include <string>
+#include <unordered_set>
+#include <vector>
+#include <yaml-cpp/yaml.h>
+
+class StageEditCommandController {
+public:
+    StageEditCommandController(DebugEditorContext& context, StageSelectionController& selectionController);
+
+    void UpdateShortcuts();
+
+    void PushUndo();
+    bool RestoreUndo();
+
+    bool DeleteSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
+    bool DuplicateSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
+
+    bool ConsumeRequestOpenPlacement();
+
+private:
+    void HandleDeleteShortcut();
+    void HandleUndoShortcut();
+    void HandleDuplicateShortcut();
+
+    bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
+    bool RemoveYamlSequenceElement(YAML::Node& config, const std::string& sequenceName, int index);
+
+    void OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const;
+
+private:
+    DebugEditorContext& mContext;
+    StageSelectionController& mSelectionController;
+
+    std::vector<std::string> mUndoStack;
+
+    bool mZPressedPrev = false;
+    bool mDPressedPrev = false;
+
+    bool mRequestOpenPlacement = false;
+};

@@ -209,13 +209,13 @@ void Game::ProcessGameInput()
     }
 
     const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_F) == GLFW_PRESS;
-    if (reloadKeyPressed && !mReloadKeyPressedPrev) {
+    if (mIsDebugMode && reloadKeyPressed && !mReloadKeyPressedPrev) {
         ReloadCurrentStage();
     }
     mReloadKeyPressedPrev = reloadKeyPressed;
 
     const bool uiReloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_I) == GLFW_PRESS;
-    if (uiReloadKeyPressed && !mUIReloadKeyPressedPrev) {
+    if (mIsDebugMode && uiReloadKeyPressed && !mUIReloadKeyPressedPrev) {
         mUIRenderer->GetUILoadSystem()->Initialize();
     }
     mUIReloadKeyPressedPrev = uiReloadKeyPressed;
@@ -247,32 +247,16 @@ void Game::ProcessGameInput()
     mKeyboardConfirmPressedPrev = keyboardConfirmPressed;
 
     const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
-    if (pPressed && !mPPressedPrev) {
+    if (mIsDebugMode && pPressed && !mPPressedPrev) {
         mIsDebugEditorShowing = !mIsDebugEditorShowing;
     }
     mPPressedPrev = pPressed;
 
     const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
-    if (lPressed && !mLPressedPrev) {
+    if (mIsDebugMode && lPressed && !mLPressedPrev) {
         mIsFreeCameraMode = !mIsFreeCameraMode;
     }
     mLPressedPrev = lPressed;
-
-    // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
-    // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
-    // bool isBossExist = false;
-    // for (auto enemy : enemies) {
-    //     if (!enemy->GetIsBoss()) {
-    //         continue;
-    //     }
-
-    //     isBossExist = true;
-    //     break;
-    // }
-    // if (isZLPressed && !mZLPressedPrev && isBossExist) {
-    //     mCameraSystem->SetIsTargetFocus(!mCameraSystem->GetIsTargetFocus());
-    // }
-    // mZLPressedPrev = isZLPressed;
 
     const bool startPressed =
         (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START)) ||
