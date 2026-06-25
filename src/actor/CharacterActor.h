@@ -33,6 +33,7 @@ private:
     void JudgeLanding();
     bool TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& hitPosCorrection);
     RayInfo CreateRayInfo(const glm::vec3& rayOffset) const;
+    void ApplyGroundActorMovement();
     virtual void OnLanded(){};
     bool ShouldUpdateUpVecEveryFrame() const override { return true; }
 
@@ -44,4 +45,7 @@ protected:
     glm::vec3 mFacingForwardVec;
 
     glm::vec3 mBaseScale;
+
+private:
+    Actor* mGroundActor = nullptr;
 };

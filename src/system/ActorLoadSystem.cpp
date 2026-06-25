@@ -6,6 +6,7 @@
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
+#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -34,6 +35,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadStar(path.c_str());
     LoadNPCs(path.c_str());
     LoadPlatforms(path.c_str());
+    LoadMovingPlatforms(path.c_str());
     LoadPlayers(path.c_str());
 }
 
@@ -918,6 +920,86 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
     currentPlanet->AddPlatform(platformPtr);
 
     return platformPtr;
+}
+
+MovingPlatform* ActorLoadSystem::CreateMovingPlatformFromStageNode(const YAML::Node& node, int stageYamlIndex)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return nullptr;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    int currentPlanetNum = node["currentPlanetNum"] ? node["currentPlanetNum"].as<int>() : 0;
+
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
+        return nullptr;
+    }
+
+    Planet* currentPlanet = planets[currentPlanetNum];
+    if (!currentPlanet) {
+        return nullptr;
+    }
+
+    std::unique_ptr<MovingPlatform> platform = std::make_unique<MovingPlatform>(mGame);
+
+    platform->SetCurrentPlanet(currentPlanet);
+
+    ApplyPlacementFromStageNode(platform.get(), node, currentPlanet, stageYamlIndex, 1.0f);
+    ApplyRotationFromStageNode(platform.get(), node);
+
+    platform->SetScale(glm::vec3(3.0f, 0.5f, 3.0f));
+    ApplyScaleFromStageNode(platform.get(), node);
+
+    std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "platform.obj";
+    platform->SetModelPath(modelPath);
+
+    glm::vec3 moveOffset(4.0f, 0.0f, 0.0f);
+
+    if (node["moveOffset"] && node["moveOffset"].IsSequence() && node["moveOffset"].size() >= 3) {
+        moveOffset.x = node["moveOffset"][0] ? node["moveOffset"][0].as<float>() : moveOffset.x;
+        moveOffset.y = node["moveOffset"][1] ? node["moveOffset"][1].as<float>() : moveOffset.y;
+        moveOffset.z = node["moveOffset"][2] ? node["moveOffset"][2].as<float>() : moveOffset.z;
+    }
+
+    platform->SetMoveOffset(moveOffset);
+
+    const float moveDuration = node["moveDuration"] ? node["moveDuration"].as<float>() : 3.0f;
+    platform->SetMoveDuration(moveDuration);
+
+    platform->SetBaseLocalPos(platform->GetPos() - currentPlanet->GetPos());
+
+    platform->Initialize();
+
+    MovingPlatform* platformPtr = platform.get();
+
+    mGame->GetMeshLoadSystem()->SetActorMesh(platformPtr);
+    mGame->AddActor(std::move(platform));
+
+    currentPlanet->AddMovingPlatform(platformPtr);
+
+    return platformPtr;
+}
+
+void ActorLoadSystem::LoadMovingPlatforms(const char* path)
+{
+    YAML::Node root = YAML::LoadFile(path);
+
+    if (!root["movingPlatforms"] || !root["movingPlatforms"].IsSequence()) {
+        return;
+    }
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (planet) {
+            planet->RemoveAllMovingPlatforms();
+        }
+    }
+
+    YAML::Node platformsNode = root["movingPlatforms"];
+
+    for (std::size_t i = 0; i < platformsNode.size(); ++i) {
+        CreateMovingPlatformFromStageNode(platformsNode[i], static_cast<int>(i));
+    }
 }
 
 glm::vec3 ActorLoadSystem::CalculatePos(YAML::Node node, Planet* currentPlanet)

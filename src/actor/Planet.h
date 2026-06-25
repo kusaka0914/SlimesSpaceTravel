@@ -12,6 +12,7 @@ class BoatParts;
 class Crystal;
 class NPC;
 class Platform;
+class MovingPlatform;
 class Stage;
 class Key;
 class Star;
@@ -35,6 +36,7 @@ public:
     void AddCrystal(Crystal* crystal) { mCrystals.emplace_back(crystal); }
     void AddNPC(NPC* NPC) { mNPCs.emplace_back(NPC); }
     void AddPlatform(Platform* platform) { mPlatforms.emplace_back(platform); }
+    void AddMovingPlatform(MovingPlatform* platform) { mMovingPlatforms.emplace_back(platform); }
 
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveAllBoat() { mBoats.clear(); }
@@ -42,6 +44,7 @@ public:
     void RemoveAllCrystals() { mCrystals.clear(); }
     void RemoveAllNPCs() { mNPCs.clear(); }
     void RemoveAllPlatforms() { mPlatforms.clear(); }
+    void RemoveAllMovingPlatforms() { mMovingPlatforms.clear(); }
     void RemoveKey() { mKey = nullptr; }
     void RemoveStar() { mStar = nullptr; }
 
@@ -50,6 +53,7 @@ public:
     void SetColor(glm::vec4 color) { mColor = color; }
     void SetKey(Key* key) { mKey = key; }
     void SetStar(Star* star) { mStar = star; }
+
     void SetRocketSpawnCondition(const std::string& rocketSpawnCondition)
     {
         if (rocketSpawnCondition == "AllEnemiesDead") {
@@ -60,6 +64,7 @@ public:
             mRocketSpawnCondition = RocketSpawnCondition::None;
         }
     }
+
     void SetPlanetShape(const std::string& PlanetShape)
     {
         if (PlanetShape == "Normal") {
@@ -83,6 +88,8 @@ public:
     const std::vector<Crystal*>& GetCrystals() const { return mCrystals; }
     const std::vector<NPC*>& GetNPCs() const { return mNPCs; }
     const std::vector<Platform*>& GetPlatforms() const { return mPlatforms; }
+    const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mMovingPlatforms; }
+
     Key* GetKey() const { return mKey; }
     Star* GetStar() const { return mStar; }
     PlanetShape GetPlanetShape() const { return mPlanetShape; }
@@ -105,6 +112,7 @@ private:
     std::vector<Crystal*> mCrystals;
     std::vector<NPC*> mNPCs;
     std::vector<Platform*> mPlatforms;
+    std::vector<MovingPlatform*> mMovingPlatforms;
 
     Key* mKey;
     Star* mStar;

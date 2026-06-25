@@ -7,6 +7,7 @@
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
+#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -49,6 +50,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
     static const std::vector<StageActorTypeInfo> typeInfos = {
         {StageActorType::Enemy, "enemies", "敵"},
         {StageActorType::Platform, "platforms", "足場"},
+        {StageActorType::MovingPlatform, "movingPlatforms", "動く足場"},
         {StageActorType::Key, "keys", "キー"},
         {StageActorType::Boat, "boats", "ボート"},
         {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
@@ -85,6 +87,12 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
             const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
             AddInstance(instances, platform, StageActorType::Platform, yamlIndex, "platforms",
                         MakeIndexedLabel("足場", yamlIndex));
+        }
+
+        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
+            const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
+            AddInstance(instances, platform, StageActorType::MovingPlatform, yamlIndex, "movingPlatforms",
+                        MakeIndexedLabel("動く足場", yamlIndex));
         }
 
         if (Key* key = planet->GetKey()) {

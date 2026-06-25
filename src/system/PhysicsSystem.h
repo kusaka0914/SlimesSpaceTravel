@@ -21,6 +21,7 @@ class btSphereShape;
 class btKinematicCharacterController;
 class btCollisionObject;
 class btCollisionShape;
+class btTransform;
 
 class Game;
 class Actor;
@@ -45,17 +46,26 @@ public:
 
     std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
 
+    void SyncKinematicBodies() const;
+
 private:
     void ClearBulletWorld();
     void CreateWorld();
+
     void CreateStaticMeshBody(Actor* actor);
+    void CreateKinematicMeshBody(Actor* actor);
+
     void CreateStageCollisionBodies();
     void CreatePlayerShape();
+
     std::unique_ptr<btTriangleMesh> CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& pos,
                                                        const std::vector<unsigned int>& idx);
+
     void CreateEditorPickBodies();
     void CreateEditorPickBody(Actor* actor);
     void SyncEditorPickBodies() const;
+
+    btTransform CreateActorTransform(Actor* actor) const;
 
     std::optional<glm::vec3> CheckConflictActors(Actor* actor, const glm::vec3& desiredPos);
     std::optional<glm::vec3> CheckConflictActor(Actor* actor, const glm::vec3& desiredPos);

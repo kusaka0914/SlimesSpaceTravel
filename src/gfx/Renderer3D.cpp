@@ -7,6 +7,7 @@
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
+#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -175,6 +176,7 @@ void Renderer3D::TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm:
         TryDrawActors(planet->GetBoatParts());
         TryDrawActors(planet->GetCrystals());
         TryDrawActors(planet->GetPlatforms());
+        TryDrawActors(planet->GetMovingPlatforms());
         TryDrawActors(planet->GetNPCs());
         TryDrawActor(planet->GetKey());
         TryDrawActor(planet->GetStar());

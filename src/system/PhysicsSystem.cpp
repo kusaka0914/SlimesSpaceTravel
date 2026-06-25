@@ -4,6 +4,7 @@
 #include "actor/Actor.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -85,12 +86,21 @@ void PhysicsSystem::CreateWorld()
 void PhysicsSystem::CreateStageCollisionBodies()
 {
     const std::vector<Planet*> planets = mGame->GetCurrentStage()->GetPlanets();
-    for (auto planet : planets) {
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
         CreateStaticMeshBody(planet);
 
-        std::vector<Platform*> platforms = planet->GetPlatforms();
-        for (auto platform : platforms)
+        for (Platform* platform : planet->GetPlatforms()) {
             CreateStaticMeshBody(platform);
+        }
+
+        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
+            CreateKinematicMeshBody(platform);
+        }
     }
 }
 
@@ -179,29 +189,130 @@ void PhysicsSystem::CreatePlayerShape()
 
 void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
 {
+    if (!actor || !mBulletWorld) {
+        return;
+    }
+
     const std::string& actorModelPath = "../assets/models/" + actor->GetModelPath();
 
     std::vector<float> pos;
     std::vector<unsigned int> idx;
 
     if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
-        idx.size() < 3)
+        idx.size() < 3) {
         return;
+    }
 
     const glm::vec3& actorScale = actor->GetScale();
     auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
-    if (!triangleMesh)
+
+    if (!triangleMesh) {
         return;
+    }
 
     auto triangleMeshShape = std::make_unique<btBvhTriangleMeshShape>(triangleMesh.get(), true);
 
-    btRigidBody::btRigidBodyConstructionInfo rigidBodyConstructionInfo(0, nullptr, triangleMeshShape.get());
+    btRigidBody::btRigidBodyConstructionInfo rigidBodyConstructionInfo(0.0f, nullptr, triangleMeshShape.get());
 
     auto rigidBody = std::make_unique<btRigidBody>(rigidBodyConstructionInfo);
     rigidBody->setUserPointer(actor);
 
+    btTransform actorTransform = CreateActorTransform(actor);
+    rigidBody->setWorldTransform(actorTransform);
+
+    rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+
+    mBulletTriangleMeshes.emplace_back(std::move(triangleMesh));
+    mBulletTriangleMeshShapes.emplace_back(std::move(triangleMeshShape));
+    mBulletRigidBodies.emplace_back(std::move(rigidBody));
+
+    mBulletWorld->addRigidBody(mBulletRigidBodies.back().get(), static_cast<short>(btBroadphaseProxy::DefaultFilter),
+                               static_cast<short>(-1));
+}
+
+void PhysicsSystem::SyncKinematicBodies() const
+{
+    if (!mBulletWorld) {
+        return;
+    }
+
+    for (const auto& rigidBody : mBulletRigidBodies) {
+        if (!rigidBody) {
+            continue;
+        }
+
+        Actor* actor = static_cast<Actor*>(rigidBody->getUserPointer());
+
+        if (!actor) {
+            continue;
+        }
+
+        if (!dynamic_cast<MovingPlatform*>(actor)) {
+            continue;
+        }
+
+        const btTransform actorTransform = CreateActorTransform(actor);
+
+        rigidBody->setWorldTransform(actorTransform);
+        rigidBody->setInterpolationWorldTransform(actorTransform);
+
+        mBulletWorld->updateSingleAabb(rigidBody.get());
+    }
+}
+
+void PhysicsSystem::CreateKinematicMeshBody(Actor* actor)
+{
+    if (!actor || !mBulletWorld) {
+        return;
+    }
+
+    const std::string& actorModelPath = "../assets/models/" + actor->GetModelPath();
+
+    std::vector<float> pos;
+    std::vector<unsigned int> idx;
+
+    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
+        idx.size() < 3) {
+        return;
+    }
+
+    const glm::vec3& actorScale = actor->GetScale();
+    auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
+
+    if (!triangleMesh) {
+        return;
+    }
+
+    auto triangleMeshShape = std::make_unique<btBvhTriangleMeshShape>(triangleMesh.get(), true);
+
+    btRigidBody::btRigidBodyConstructionInfo rigidBodyConstructionInfo(0.0f, nullptr, triangleMeshShape.get());
+
+    auto rigidBody = std::make_unique<btRigidBody>(rigidBodyConstructionInfo);
+    rigidBody->setUserPointer(actor);
+
+    btTransform actorTransform = CreateActorTransform(actor);
+    rigidBody->setWorldTransform(actorTransform);
+
+    rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+    rigidBody->setActivationState(DISABLE_DEACTIVATION);
+
+    mBulletTriangleMeshes.emplace_back(std::move(triangleMesh));
+    mBulletTriangleMeshShapes.emplace_back(std::move(triangleMeshShape));
+    mBulletRigidBodies.emplace_back(std::move(rigidBody));
+
+    mBulletWorld->addRigidBody(mBulletRigidBodies.back().get(), static_cast<short>(btBroadphaseProxy::DefaultFilter),
+                               static_cast<short>(-1));
+}
+
+btTransform PhysicsSystem::CreateActorTransform(Actor* actor) const
+{
     btTransform actorTransform;
     actorTransform.setIdentity();
+
+    if (!actor) {
+        return actorTransform;
+    }
+
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
@@ -217,15 +328,7 @@ void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
         actorTransform.setBasis(basis);
     }
 
-    rigidBody->setWorldTransform(actorTransform);
-    rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
-
-    mBulletTriangleMeshes.emplace_back(std::move(triangleMesh));
-    mBulletTriangleMeshShapes.emplace_back(std::move(triangleMeshShape));
-    mBulletRigidBodies.emplace_back(std::move(rigidBody));
-
-    mBulletWorld->addRigidBody(mBulletRigidBodies.back().get(), static_cast<short>(btBroadphaseProxy::DefaultFilter),
-                               static_cast<short>(-1));
+    return actorTransform;
 }
 
 std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const glm::vec3& rayFrom,
@@ -235,6 +338,7 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const gl
         return std::nullopt;
     }
 
+    SyncKinematicBodies();
     SyncEditorPickBodies();
 
     const btVector3 btFrom(rayFrom.x, rayFrom.y, rayFrom.z);
@@ -330,11 +434,10 @@ std::unique_ptr<btTriangleMesh> PhysicsSystem::CreateTriangleMesh(const glm::vec
 
 glm::vec3 PhysicsSystem::CheckCollision(Actor* actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos)
 {
-    if (auto conflictPos = CheckConflictActors(actor, desiredPos))
-        return *conflictPos;
-
     if (!mBulletWorld || !mPlayerShape)
         return desiredPos;
+
+    SyncKinematicBodies();
 
     if (auto conflictPos = CheckConflictWall(actor, moveDelta, desiredPos))
         return *conflictPos;
