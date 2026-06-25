@@ -3,16 +3,13 @@
 #include "Game.h"
 #include "Stage.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageYamlRepository.h"
 
 #include "imgui.h"
 
 #include <GLFW/glfw3.h>
 #include <algorithm>
-#include <exception>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <iterator>
 #include <unordered_map>
 
 StageEditCommandController::StageEditCommandController(DebugEditorContext& context,
@@ -138,15 +135,11 @@ void StageEditCommandController::PushUndo()
         return;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
+    std::string yamlText;
 
-    std::ifstream ifs(filePath);
-    if (!ifs) {
-        std::cerr << "Failed to open stage yaml for undo: " << filePath << std::endl;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, yamlText)) {
         return;
     }
-
-    std::string yamlText((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
     try {
         YAML::Load(yamlText);
@@ -169,36 +162,13 @@ bool StageEditCommandController::RestoreUndo()
         return false;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-    const std::string tempPath = filePath + ".tmp";
-
     const std::string yamlText = mUndoStack.back();
-    mUndoStack.pop_back();
 
-    try {
-        YAML::Load(yamlText);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Undo yaml is invalid. Restore cancelled: " << e.what() << std::endl;
+    if (!StageYamlRepository::WriteCurrentStageTextAtomically(mContext, yamlText)) {
         return false;
     }
 
-    {
-        std::ofstream ofs(tempPath, std::ios::out | std::ios::trunc);
-        if (!ofs) {
-            std::cerr << "Failed to open temp undo yaml: " << tempPath << std::endl;
-            return false;
-        }
-
-        ofs << yamlText;
-        ofs.close();
-
-        if (!ofs) {
-            std::cerr << "Failed to write temp undo yaml completely: " << tempPath << std::endl;
-            return false;
-        }
-    }
-
-    std::filesystem::rename(tempPath, filePath);
+    mUndoStack.pop_back();
 
     mSelectionController.Clear();
 
@@ -217,22 +187,15 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
         return false;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
     YAML::Node config;
 
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
         return false;
     }
 
     std::vector<StageActorRef> targets = StageActorQuery::CollectAllTargets(mContext.game->GetCurrentStage());
 
     std::unordered_map<std::string, std::vector<int>> deleteIndicesBySequence;
-
     for (const StageActorRef& target : targets) {
         const std::string key = StageActorQuery::MakeKey(target);
 
@@ -259,11 +222,11 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
         std::sort(indices.rbegin(), indices.rend());
 
         for (int index : indices) {
-            RemoveYamlSequenceElement(config, sequenceName, index);
+            StageYamlRepository::RemoveSequenceElement(config, sequenceName, index);
         }
     }
 
-    if (!SaveYamlFile(filePath, config)) {
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
         return false;
     }
 
@@ -284,14 +247,9 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
         return false;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
     YAML::Node stageYaml;
 
-    try {
-        stageYaml = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml for duplicate: " << e.what() << std::endl;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
         return false;
     }
 
@@ -342,7 +300,7 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
     PushUndo();
 
-    if (!SaveYamlFile(filePath, stageYaml)) {
+    if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml)) {
         return false;
     }
 
@@ -352,47 +310,6 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
     mContext.game->ReloadCurrentStage();
 
-    return true;
-}
-
-bool StageEditCommandController::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
-{
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file << config;
-    return true;
-}
-
-bool StageEditCommandController::RemoveYamlSequenceElement(YAML::Node& config, const std::string& sequenceName,
-                                                           int index)
-{
-    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
-        std::cerr << "Invalid yaml sequence: " << sequenceName << std::endl;
-        return false;
-    }
-
-    YAML::Node oldSeq = config[sequenceName];
-
-    if (index < 0 || index >= static_cast<int>(oldSeq.size())) {
-        std::cerr << "Delete index out of range: " << index << std::endl;
-        return false;
-    }
-
-    YAML::Node newSeq(YAML::NodeType::Sequence);
-
-    for (int i = 0; i < static_cast<int>(oldSeq.size()); ++i) {
-        if (i == index) {
-            continue;
-        }
-
-        newSeq.push_back(oldSeq[i]);
-    }
-
-    config[sequenceName] = newSeq;
     return true;
 }
 

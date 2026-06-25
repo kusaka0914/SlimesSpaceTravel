@@ -2,16 +2,15 @@
 
 #include "Game.h"
 #include "Stage.h"
-#include "actor/Boat.h"
-#include "actor/BoatParts.h"
-#include "actor/Crystal.h"
-#include "actor/Enemy.h"
-#include "actor/Key.h"
-#include "actor/NPC.h"
-#include "actor/Star.h"
+#include "actor/Actor.h"
+#include "actor/Planet.h"
+#include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageYamlRepository.h"
+#include "imgui.h"
+#include "system/PhysicsSystem.h"
 
-#include <fstream>
-#include <iostream>
+#include <cmath>
+#include <glm/gtc/matrix_transform.hpp>
 
 StagePlacementPanel::StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController)
     : DebugPanel(context),
@@ -38,65 +37,13 @@ void StagePlacementPanel::Draw()
         return;
     }
 
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    std::vector<Enemy*> enemies;
-    std::vector<Crystal*> crystals;
-    std::vector<Boat*> boats;
-    std::vector<BoatParts*> boatParts;
-    std::vector<NPC*> npcs;
-    std::vector<Key*> keys;
-    std::vector<Platform*> platforms;
-    std::vector<Star*> stars;
-
-    for (Planet* planet : planets) {
-        if (!planet) {
-            continue;
-        }
-
-        for (Enemy* enemy : planet->GetEnemies()) {
-            enemies.emplace_back(enemy);
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            crystals.emplace_back(crystal);
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            boats.emplace_back(boat);
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            boatParts.emplace_back(part);
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            npcs.emplace_back(npc);
-        }
-
-        if (Key* key = planet->GetKey()) {
-            keys.emplace_back(key);
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            platforms.emplace_back(platform);
-        }
-
-        if (Star* star = planet->GetStar()) {
-            stars.emplace_back(star);
-        }
-    }
+    const std::vector<ActorGroup> groups = CollectActorGroups();
 
     ImGui::Separator();
 
-    DrawSphericalActorList("敵", "enemies", enemies);
-    DrawSphericalActorList("足場", "platforms", platforms);
-    DrawSphericalActorList("キー", "keys", keys);
-    DrawSphericalActorList("ボート", "boats", boats);
-    DrawSphericalActorList("ボートパーツ", "boatParts", boatParts);
-    DrawSphericalActorList("クリスタル", "crystals", crystals);
-    DrawSphericalActorList("NPC", "NPCs", npcs);
-    DrawSphericalActorList("星", "star", stars);
+    for (const ActorGroup& group : groups) {
+        DrawActorList(group);
+    }
 
     ImGui::TreePop();
 
@@ -109,163 +56,291 @@ void StagePlacementPanel::Save()
         return;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
     YAML::Node config;
 
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
         return;
     }
 
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    const std::vector<ActorGroup> groups = CollectActorGroups();
 
-    std::vector<Enemy*> enemies;
-    std::vector<Crystal*> crystals;
-    std::vector<Boat*> boats;
-    std::vector<BoatParts*> boatParts;
-    std::vector<NPC*> npcs;
-    std::vector<Key*> keys;
-    std::vector<Platform*> platforms;
-    std::vector<Star*> stars;
-
-    for (Planet* planet : planets) {
-        if (!planet) {
-            continue;
-        }
-
-        for (Enemy* enemy : planet->GetEnemies()) {
-            enemies.emplace_back(enemy);
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            crystals.emplace_back(crystal);
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            boats.emplace_back(boat);
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            boatParts.emplace_back(part);
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            npcs.emplace_back(npc);
-        }
-
-        if (Key* key = planet->GetKey()) {
-            keys.emplace_back(key);
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            platforms.emplace_back(platform);
-        }
-
-        if (Star* star = planet->GetStar()) {
-            stars.emplace_back(star);
-        }
+    for (const ActorGroup& group : groups) {
+        SaveActorsYaml(config, group);
     }
 
-    SaveSphericalActors(config, "enemies", enemies);
-    SaveSphericalActors(config, "keys", keys);
-    SaveSphericalActors(config, "boats", boats);
-    SaveSphericalActors(config, "boatParts", boatParts);
-    SaveSphericalActors(config, "crystals", crystals);
-    SaveSphericalActors(config, "NPCs", npcs);
-    SaveSphericalActors(config, "star", stars);
-    SavePlatformsYaml(config, platforms);
-
-    SaveYamlFile(filePath, config);
+    StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
-void StagePlacementPanel::SavePlatformsYaml(YAML::Node& config, const std::vector<Platform*>& platforms)
+std::vector<StagePlacementPanel::ActorGroup> StagePlacementPanel::CollectActorGroups() const
 {
-    config["platforms"] = YAML::Node(YAML::NodeType::Sequence);
+    std::vector<ActorGroup> groups;
 
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return;
+        return groups;
     }
 
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    for (const StageActorTypeInfo& info : StageActorQuery::GetTypeInfos()) {
+        ActorGroup group;
+        group.label = info.displayName;
+        group.sequenceName = info.sequenceName;
+        groups.emplace_back(group);
+    }
 
-    for (Platform* platform : platforms) {
-        if (!platform) {
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
+
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor) {
             continue;
         }
 
-        int currentPlanetNum = 0;
-
-        for (int i = 0; i < static_cast<int>(planets.size()); ++i) {
-            if (planets[i] == platform->GetCurrentPlanet()) {
-                currentPlanetNum = i;
-                break;
+        for (ActorGroup& group : groups) {
+            if (group.sequenceName != instance.ref.sequenceName) {
+                continue;
             }
+
+            group.actors.emplace_back(instance.actor);
+            break;
+        }
+    }
+
+    return groups;
+}
+
+void StagePlacementPanel::DrawActorList(const ActorGroup& group)
+{
+    const std::string treeLabel = group.label + "##" + group.sequenceName;
+
+    const auto& pickedActorRef = mSelectionController.GetPickedActorRef();
+
+    if (mRequestOpenPickedActorPlacement && pickedActorRef && pickedActorRef->sequenceName == group.sequenceName) {
+        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    }
+
+    if (!ImGui::TreeNode(treeLabel.c_str())) {
+        return;
+    }
+
+    if (group.actors.empty()) {
+        ImGui::Text("なし");
+        ImGui::TreePop();
+        return;
+    }
+
+    for (std::size_t i = 0; i < group.actors.size(); ++i) {
+        DrawActorPlacementEditor(group.actors[i], group.sequenceName, i);
+    }
+
+    ImGui::TreePop();
+}
+
+void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex)
+{
+    if (!actor) {
+        return;
+    }
+
+    const int yamlIndex = actor->GetStageYamlIndex();
+
+    std::string itemLabel =
+        "index " + std::to_string(yamlIndex) + "##" + sequenceName + "_" + std::to_string(listIndex);
+
+    const auto& pickedActorRef = mSelectionController.GetPickedActorRef();
+
+    if (mRequestOpenPickedActorPlacement && pickedActorRef && pickedActorRef->sequenceName == sequenceName &&
+        pickedActorRef->yamlIndex == yamlIndex) {
+        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    }
+
+    if (!ImGui::TreeNode(itemLabel.c_str())) {
+        return;
+    }
+
+    float theta = actor->GetTheta();
+    float phi = actor->GetPhi();
+    float height = actor->GetHeight();
+
+    bool placementChanged = false;
+
+    placementChanged |= ImGui::DragFloat(("theta##" + sequenceName + std::to_string(listIndex)).c_str(), &theta, 0.001f,
+                                         -3.141593f, 3.141593f, "%.6f");
+
+    placementChanged |= ImGui::DragFloat(("phi##" + sequenceName + std::to_string(listIndex)).c_str(), &phi, 0.001f,
+                                         -1.570796f, 1.570796f, "%.6f");
+
+    placementChanged |= ImGui::DragFloat(("height##" + sequenceName + std::to_string(listIndex)).c_str(), &height,
+                                         0.01f, -10.0f, 10.0f, "%.3f");
+
+    if (placementChanged) {
+        theta = std::round(theta * 1000000.0f) / 1000000.0f;
+        phi = std::round(phi * 1000000.0f) / 1000000.0f;
+        height = std::round(height * 1000.0f) / 1000.0f;
+
+        actor->SetSphericalPlacement(theta, phi, height);
+
+        Planet* planet = actor->GetCurrentPlanet();
+        if (planet) {
+            actor->SetPos(planet->CalculateSurfacePos(theta, phi, height));
         }
 
-        const glm::vec3 scale = platform->GetScale();
+        ApplyActorEditorRotation(actor);
+    }
 
-        YAML::Node node;
+    bool posChanged = false;
+    bool physicsRebuildRequired = false;
 
-        node["currentPlanetNum"] = currentPlanetNum;
+    Planet* planet = actor->GetCurrentPlanet();
 
-        glm::vec3 localPos = platform->GetPos();
-        if (platform->GetCurrentPlanet()) {
-            localPos -= platform->GetCurrentPlanet()->GetPos();
-        }
+    glm::vec3 localPos = actor->GetPos();
+    if (planet) {
+        localPos -= planet->GetPos();
+    }
 
+    posChanged |= ImGui::DragFloat(("posX##actorPosX" + sequenceName + std::to_string(listIndex)).c_str(), &localPos.x,
+                                   0.01f, -100.0f, 100.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    posChanged |= ImGui::DragFloat(("posY##actorPosY" + sequenceName + std::to_string(listIndex)).c_str(), &localPos.y,
+                                   0.01f, -100.0f, 100.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    posChanged |= ImGui::DragFloat(("posZ##actorPosZ" + sequenceName + std::to_string(listIndex)).c_str(), &localPos.z,
+                                   0.01f, -100.0f, 100.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    if (posChanged) {
         localPos.x = std::round(localPos.x * 100.0f) / 100.0f;
         localPos.y = std::round(localPos.y * 100.0f) / 100.0f;
         localPos.z = std::round(localPos.z * 100.0f) / 100.0f;
 
-        node["pos"][0] = localPos.x;
-        node["pos"][1] = localPos.y;
-        node["pos"][2] = localPos.z;
+        const glm::vec3 worldPos = planet ? planet->GetPos() + localPos : localPos;
+        actor->SetPos(worldPos);
+    }
 
-        node["theta"] = platform->GetTheta();
-        node["phi"] = platform->GetPhi();
-        node["height"] = platform->GetHeight();
+    glm::vec3 rotationRad = actor->GetEditorRotation();
+    glm::vec3 rotationDeg = glm::degrees(rotationRad);
 
-        node["facingYaw"] = platform->GetFacingYaw();
+    bool rotationChanged = false;
 
-        const glm::vec3 rotation = platform->GetEditorRotation();
+    rotationChanged |= ImGui::DragFloat(("Pitch##actorPitch" + sequenceName + std::to_string(listIndex)).c_str(),
+                                        &rotationDeg.x, 0.1f, -180.0f, 180.0f, "%.1f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
 
-        node["rotation"][0] = rotation.x;
-        node["rotation"][1] = rotation.y;
-        node["rotation"][2] = rotation.z;
+    rotationChanged |= ImGui::DragFloat(("Yaw##actorYaw" + sequenceName + std::to_string(listIndex)).c_str(),
+                                        &rotationDeg.y, 0.1f, -180.0f, 180.0f, "%.1f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
 
-        node["scale"][0] = scale.x;
-        node["scale"][1] = scale.y;
-        node["scale"][2] = scale.z;
+    rotationChanged |= ImGui::DragFloat(("Roll##actorRoll" + sequenceName + std::to_string(listIndex)).c_str(),
+                                        &rotationDeg.z, 0.1f, -180.0f, 180.0f, "%.1f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
 
-        node["modelPath"] = platform->GetModelPath();
+    if (rotationChanged) {
+        rotationDeg.x = std::round(rotationDeg.x * 10.0f) / 10.0f;
+        rotationDeg.y = std::round(rotationDeg.y * 10.0f) / 10.0f;
+        rotationDeg.z = std::round(rotationDeg.z * 10.0f) / 10.0f;
 
-        YAML::Node upVecNode;
-        glm::vec3 upVec = platform->GetUpVec();
+        rotationRad = glm::radians(rotationDeg);
 
-        upVecNode.push_back(upVec.x);
-        upVecNode.push_back(upVec.y);
-        upVecNode.push_back(upVec.z);
+        actor->SetEditorRotation(rotationRad);
+        ApplyActorEditorRotation(actor);
+    }
 
-        node["upVec"] = upVecNode;
+    glm::vec3 scale = actor->GetScale();
 
-        config["platforms"].push_back(node);
+    bool scaleChanged = false;
+
+    scaleChanged |= ImGui::DragFloat(("スケールX##actorScaleX" + sequenceName + std::to_string(listIndex)).c_str(),
+                                     &scale.x, 0.01f, 0.01f, 30.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    scaleChanged |= ImGui::DragFloat(("スケールY##actorScaleY" + sequenceName + std::to_string(listIndex)).c_str(),
+                                     &scale.y, 0.01f, 0.01f, 30.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    scaleChanged |= ImGui::DragFloat(("スケールZ##actorScaleZ" + sequenceName + std::to_string(listIndex)).c_str(),
+                                     &scale.z, 0.01f, 0.01f, 30.0f, "%.2f");
+    physicsRebuildRequired |= ImGui::IsItemDeactivatedAfterEdit();
+
+    if (scaleChanged) {
+        scale.x = std::round(scale.x * 100.0f) / 100.0f;
+        scale.y = std::round(scale.y * 100.0f) / 100.0f;
+        scale.z = std::round(scale.z * 100.0f) / 100.0f;
+
+        actor->SetScale(scale);
+    }
+
+    RebuildPhysicsWorldIfNeeded(physicsRebuildRequired);
+
+    const glm::vec3 pos = actor->GetPos();
+    ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
+
+    ImGui::TreePop();
+}
+
+void StagePlacementPanel::SaveActorsYaml(YAML::Node& config, const ActorGroup& group)
+{
+    for (Actor* actor : group.actors) {
+        SaveActorCommonYaml(config, group.sequenceName, actor);
     }
 }
 
-bool StagePlacementPanel::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
+void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::string& sequenceName, Actor* actor)
 {
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
+    if (!actor) {
+        return;
     }
 
-    file << config;
-    return true;
+    const int index = actor->GetStageYamlIndex();
+    if (index < 0) {
+        return;
+    }
+
+    const std::size_t yamlIndex = static_cast<std::size_t>(index);
+
+    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
+        return;
+    }
+
+    if (yamlIndex >= config[sequenceName].size()) {
+        return;
+    }
+
+    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "theta", actor->GetTheta());
+    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "phi", actor->GetPhi());
+    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "height", actor->GetHeight());
+
+    glm::vec3 localPos = actor->GetPos();
+    if (actor->GetCurrentPlanet()) {
+        localPos -= actor->GetCurrentPlanet()->GetPos();
+    }
+
+    localPos.x = std::round(localPos.x * 100.0f) / 100.0f;
+    localPos.y = std::round(localPos.y * 100.0f) / 100.0f;
+    localPos.z = std::round(localPos.z * 100.0f) / 100.0f;
+
+    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "pos", YAML::Node(YAML::NodeType::Sequence));
+    config[sequenceName][yamlIndex]["pos"][0] = localPos.x;
+    config[sequenceName][yamlIndex]["pos"][1] = localPos.y;
+    config[sequenceName][yamlIndex]["pos"][2] = localPos.z;
+
+    const glm::vec3 rotation = actor->GetEditorRotation();
+
+    config[sequenceName][yamlIndex]["facingYaw"] = rotation.y;
+    config[sequenceName][yamlIndex]["rotation"][0] = rotation.x;
+    config[sequenceName][yamlIndex]["rotation"][1] = rotation.y;
+    config[sequenceName][yamlIndex]["rotation"][2] = rotation.z;
+
+    const glm::vec3 scale = actor->GetScale();
+
+    config[sequenceName][yamlIndex]["scale"][0] = scale.x;
+    config[sequenceName][yamlIndex]["scale"][1] = scale.y;
+    config[sequenceName][yamlIndex]["scale"][2] = scale.z;
+
+    const glm::vec3 upVec = actor->GetUpVec();
+
+    config[sequenceName][yamlIndex]["upVec"][0] = upVec.x;
+    config[sequenceName][yamlIndex]["upVec"][1] = upVec.y;
+    config[sequenceName][yamlIndex]["upVec"][2] = upVec.z;
 }
 
 glm::vec3 StagePlacementPanel::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
@@ -327,4 +402,13 @@ void StagePlacementPanel::ApplyActorEditorRotation(Actor* actor)
 
     actor->SetFacingYaw(rotation.y);
     actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
+}
+
+void StagePlacementPanel::RebuildPhysicsWorldIfNeeded(bool required)
+{
+    if (!required || !mContext.game || !mContext.game->GetPhysicsSystem()) {
+        return;
+    }
+
+    mContext.game->GetPhysicsSystem()->Initialize();
 }

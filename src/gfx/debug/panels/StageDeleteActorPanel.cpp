@@ -63,14 +63,9 @@ void StageDeleteActorPanel::Draw()
         ImGui::TreePop();
     };
 
-    drawCategory("敵", StageActorType::Enemy);
-    drawCategory("足場", StageActorType::Platform);
-    drawCategory("クリスタル", StageActorType::Crystal);
-    drawCategory("NPC", StageActorType::NPC);
-    drawCategory("ボートパーツ", StageActorType::BoatParts);
-    drawCategory("ボート", StageActorType::Boat);
-    drawCategory("キー", StageActorType::Key);
-    drawCategory("星", StageActorType::Star);
+    for (const StageActorTypeInfo& info : StageActorQuery::GetTypeInfos()) {
+        drawCategory(info.displayName, info.type);
+    }
 
     ImGui::Separator();
 

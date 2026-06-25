@@ -2,8 +2,6 @@
 
 #include "gfx/debug/DebugPanel.h"
 
-#include <yaml-cpp/yaml.h>
-
 class Actor;
 class Planet;
 
@@ -16,5 +14,4 @@ public:
 
 private:
     void UpdateActorsOnPlanetSurface(Planet* planet);
-    bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
 };

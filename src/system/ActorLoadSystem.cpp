@@ -280,6 +280,8 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
         npc->SetScale(glm::vec3(scale));
     }
 
+    ApplyScaleFromStageNode(npc.get(), node);
+
     npc->SetBaseScale(npc->GetScale());
 
     NPC* npcPtr = npc.get();
@@ -346,6 +348,7 @@ Enemy* ActorLoadSystem::CreateEnemyFromStageNode(const YAML::Node& node, int sta
     }
 
     ApplyEnemyConfig(enemy.get(), type);
+    ApplyScaleFromStageNode(enemy.get(), node);
 
     enemy->SetBaseScale(enemy->GetScale());
 
@@ -572,6 +575,7 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
         float scale = boatNode["scale"] ? boatNode["scale"].as<float>() : 0.25f;
         boat->SetScale(glm::vec3(scale));
     }
+    ApplyScaleFromStageNode(boat.get(), node);
 
     boat->Initialize();
 
@@ -647,6 +651,7 @@ BoatParts* ActorLoadSystem::CreateBoatPartsFromStageNode(const YAML::Node& node,
         std::string modelPath = boatPartsInfoNode["modelPath"] ? boatPartsInfoNode["modelPath"].as<std::string>() : "";
         boatParts->SetModelPath(modelPath);
     }
+    ApplyScaleFromStageNode(boatParts.get(), node);
 
     BoatParts* boatPartsPtr = boatParts.get();
     mGame->GetMeshLoadSystem()->SetActorMesh(boatPartsPtr);
@@ -683,15 +688,8 @@ void ActorLoadSystem::LoadKeys(const char* path)
         Planet* currentPlanet = mGame->GetCurrentStage()->GetPlanets()[currentPlanetNum];
         key->SetCurrentPlanet(currentPlanet);
 
-        float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
-        float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
-        float height = node["height"] ? node["height"].as<float>() : 0.0f;
-
-        key->SetSphericalPlacement(theta, phi, height);
-        key->SetStageYamlIndex(static_cast<int>(i));
-
-        glm::vec3 pos = currentPlanet->CalculateSurfacePos(theta, phi, height);
-        key->SetPos(pos);
+        ApplyPlacementFromStageNode(key.get(), node, currentPlanet, static_cast<int>(i), 0.0f);
+        ApplyRotationFromStageNode(key.get(), node);
 
         YAML::Node keyRoot = YAML::LoadFile("../assets/data/actor/keys.yaml");
         for (auto keyNode : keyRoot["keys"]) {
@@ -701,6 +699,8 @@ void ActorLoadSystem::LoadKeys(const char* path)
             float scale = keyNode["scale"] ? keyNode["scale"].as<float>() : 0.25f;
             key->SetScale(glm::vec3(scale));
         }
+
+        ApplyScaleFromStageNode(key.get(), node);
 
         Key* keyPtr = key.get();
         mGame->GetMeshLoadSystem()->SetActorMesh(keyPtr);
@@ -779,6 +779,7 @@ Crystal* ActorLoadSystem::CreateCrystalFromStageNode(const YAML::Node& node, int
 
     ApplyPlacementFromStageNode(crystal.get(), node, currentPlanet, stageYamlIndex, 1.0f);
     ApplyRotationFromStageNode(crystal.get(), node);
+    ApplyScaleFromStageNode(crystal.get(), node);
 
     Crystal* crystalPtr = crystal.get();
     mGame->GetMeshLoadSystem()->SetActorMesh(crystalPtr);
@@ -837,6 +838,7 @@ Star* ActorLoadSystem::CreateStarFromStageNode(const YAML::Node& node, int stage
 
     ApplyPlacementFromStageNode(star.get(), node, currentPlanet, stageYamlIndex, 1.0f);
     ApplyRotationFromStageNode(star.get(), node);
+    ApplyScaleFromStageNode(star.get(), node);
 
     if (node["isActive"]) {
         star->SetIsActive(node["isActive"].as<bool>());
@@ -901,15 +903,8 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
     ApplyPlacementFromStageNode(platform.get(), node, currentPlanet, stageYamlIndex, 1.0f);
     ApplyRotationFromStageNode(platform.get(), node);
 
-    if (node["scale"]) {
-        const float scaleX = node["scale"][0] ? node["scale"][0].as<float>() : 3.0f;
-        const float scaleY = node["scale"][1] ? node["scale"][1].as<float>() : 0.5f;
-        const float scaleZ = node["scale"][2] ? node["scale"][2].as<float>() : 3.0f;
-
-        platform->SetScale(glm::vec3(scaleX, scaleY, scaleZ));
-    } else {
-        platform->SetScale(glm::vec3(3.0f, 0.5f, 3.0f));
-    }
+    platform->SetScale(glm::vec3(3.0f, 0.5f, 3.0f));
+    ApplyScaleFromStageNode(platform.get(), node);
 
     std::string modelPath = node["modelPath"] ? node["modelPath"].as<std::string>() : "platform.obj";
     platform->SetModelPath(modelPath);
@@ -1001,4 +996,23 @@ void ActorLoadSystem::ApplyRotationFromStageNode(Actor* actor, const YAML::Node&
             actor->SetUpVec(glm::normalize(upVec));
         }
     }
+}
+
+void ActorLoadSystem::ApplyScaleFromStageNode(Actor* actor, const YAML::Node& node)
+{
+    if (!actor) {
+        return;
+    }
+
+    if (!node["scale"] || !node["scale"].IsSequence() || node["scale"].size() < 3) {
+        return;
+    }
+
+    const glm::vec3 currentScale = actor->GetScale();
+
+    const float scaleX = node["scale"][0] ? node["scale"][0].as<float>() : currentScale.x;
+    const float scaleY = node["scale"][1] ? node["scale"][1].as<float>() : currentScale.y;
+    const float scaleZ = node["scale"][2] ? node["scale"][2].as<float>() : currentScale.z;
+
+    actor->SetScale(glm::vec3(scaleX, scaleY, scaleZ));
 }

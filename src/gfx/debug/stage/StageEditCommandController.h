@@ -28,9 +28,6 @@ private:
     void HandleUndoShortcut();
     void HandleDuplicateShortcut();
 
-    bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
-    bool RemoveYamlSequenceElement(YAML::Node& config, const std::string& sequenceName, int index);
-
     void OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const;
 
 private:

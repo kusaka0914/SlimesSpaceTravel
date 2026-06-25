@@ -13,11 +13,11 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
 
 #include <cmath>
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -137,15 +137,9 @@ void StagePlanetPanel::Save()
         return;
     }
 
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
     YAML::Node config;
 
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
         return;
     }
 
@@ -171,7 +165,7 @@ void StagePlanetPanel::Save()
         config["planets"][i]["model"] = planet->GetModelPath();
     }
 
-    SaveYamlFile(filePath, config);
+    StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
 void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)
@@ -221,16 +215,4 @@ void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)
     if (Star* star = planet->GetStar()) {
         updateActor(star);
     }
-}
-
-bool StagePlanetPanel::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
-{
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file << config;
-    return true;
 }

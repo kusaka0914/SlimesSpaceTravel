@@ -4,14 +4,12 @@
 #include "Stage.h"
 #include "actor/Planet.h"
 #include "imgui.h"
-#include "system/ActorLoadSystem.h"
 
-#include <fstream>
-#include <iostream>
-#include <vector>
+#include <string>
 
 StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
-    : DebugPanel(context)
+    : DebugPanel(context),
+      mCreateService(context)
 {
 }
 
@@ -28,7 +26,7 @@ void StageAddActorPanel::Draw()
         ImGui::Combo("惑星モデル", &mSelectedPlanetModelIndex, planetModelLabels, IM_ARRAYSIZE(planetModelLabels));
 
         if (ImGui::Button("惑星を追加")) {
-            AddPlanetFromEditor(planetModels[mSelectedPlanetModelIndex]);
+            mCreateService.AddPlanet(planetModels[mSelectedPlanetModelIndex]);
         }
 
         ImGui::TreePop();
@@ -58,7 +56,7 @@ void StageAddActorPanel::Draw()
         }
 
         if (ImGui::Button("敵を追加")) {
-            AddEnemyFromEditor(enemyTypes[mSelectedEnemyTypeIndex], mSelectedEnemyPlanetIndex);
+            mCreateService.AddEnemy(enemyTypes[mSelectedEnemyTypeIndex], mSelectedEnemyPlanetIndex);
         }
 
         if (!canAddEnemy) {
@@ -95,8 +93,8 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("足場を追加")) {
-                AddPlatformFromEditor(mSelectedPlatformPlanetIndex, platformModels[mSelectedPlatformModelIndex],
-                                      mPlatformScale);
+                mCreateService.AddPlatform(mSelectedPlatformPlanetIndex, platformModels[mSelectedPlatformModelIndex],
+                                           mPlatformScale);
             }
 
             if (!canAddPlatform) {
@@ -130,7 +128,7 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("クリスタルを追加")) {
-                AddCrystalFromEditor(crystalTypes[mSelectedCrystalTypeIndex], mSelectedCrystalPlanetIndex);
+                mCreateService.AddCrystal(crystalTypes[mSelectedCrystalTypeIndex], mSelectedCrystalPlanetIndex);
             }
 
             if (!canAddCrystal) {
@@ -165,7 +163,7 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("NPCを追加")) {
-                AddNPCFromEditor(npcTypes[mSelectedNPCTypeIndex], mSelectedNPCPlanetIndex);
+                mCreateService.AddNPC(npcTypes[mSelectedNPCTypeIndex], mSelectedNPCPlanetIndex);
             }
 
             if (!canAddNPC) {
@@ -199,7 +197,7 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("ボートパーツを追加")) {
-                AddBoatPartsFromEditor(boatPartsTypes[mSelectedBoatPartsTypeIndex], mSelectedBoatPartsPlanetIndex);
+                mCreateService.AddBoatParts(boatPartsTypes[mSelectedBoatPartsTypeIndex], mSelectedBoatPartsPlanetIndex);
             }
 
             if (!canAddBoatParts) {
@@ -230,7 +228,8 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("ボートを追加")) {
-                AddBoatFromEditor(mSelectedBoatStartPlanetIndex, mSelectedBoatDestPlanetIndex, mSelectedBoatDestStage);
+                mCreateService.AddBoat(mSelectedBoatStartPlanetIndex, mSelectedBoatDestPlanetIndex,
+                                       mSelectedBoatDestStage);
             }
 
             if (!canAddBoat) {
@@ -258,7 +257,7 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("星を追加")) {
-                AddStarFromEditor(mSelectedStarPlanetIndex);
+                mCreateService.AddStar(mSelectedStarPlanetIndex);
             }
 
             if (!canAddStar) {
@@ -309,440 +308,4 @@ void StageAddActorPanel::DrawPlanetCombo(const char* label, int& selectedPlanetI
 
         ImGui::EndCombo();
     }
-}
-
-void StageAddActorPanel::AddPlatformFromEditor(int currentPlanetNum, const std::string& modelPath,
-                                               const glm::vec3& scale)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["platforms"]) {
-        config["platforms"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["platforms"].size());
-
-    YAML::Node platformNode;
-
-    platformNode["currentPlanetNum"] = currentPlanetNum;
-    platformNode["theta"] = 0.0f;
-    platformNode["phi"] = 0.0f;
-    platformNode["height"] = 1.0f;
-
-    platformNode["facingYaw"] = 0.0f;
-
-    platformNode["rotation"][0] = 0.0f;
-    platformNode["rotation"][1] = 0.0f;
-    platformNode["rotation"][2] = 0.0f;
-
-    platformNode["scale"][0] = scale.x;
-    platformNode["scale"][1] = scale.y;
-    platformNode["scale"][2] = scale.z;
-
-    platformNode["modelPath"] = modelPath;
-
-    config["platforms"].push_back(platformNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(platformNode, index);
-}
-
-void StageAddActorPanel::AddPlanetFromEditor(const std::string& modelPath)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["planets"]) {
-        config["planets"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int planetIndex = static_cast<int>(config["planets"].size());
-
-    YAML::Node planetNode;
-
-    planetNode["center"][0] = static_cast<float>(planetIndex) * 32.0f;
-    planetNode["center"][1] = 0.0f;
-    planetNode["center"][2] = 0.0f;
-
-    planetNode["scale"][0] = 4.0f;
-    planetNode["scale"][1] = 4.0f;
-    planetNode["scale"][2] = 4.0f;
-
-    planetNode["color"][0] = 1.0f;
-    planetNode["color"][1] = 1.0f;
-    planetNode["color"][2] = 1.0f;
-    planetNode["color"][3] = 1.0f;
-
-    planetNode["model"] = modelPath;
-    planetNode["shape"] = "Sphere";
-    planetNode["stageNum"] = planetIndex;
-    planetNode["rocketSpawnCondition"] = "";
-
-    config["planets"].push_back(planetNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreatePlanetFromStageNode(planetNode);
-}
-
-void StageAddActorPanel::AddEnemyFromEditor(const std::string& type, int currentPlanetNum)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["enemies"]) {
-        config["enemies"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["enemies"].size());
-
-    YAML::Node enemyNode;
-    enemyNode["editorName"] = type == "boss" ? "新しいボス敵" : "新しい通常敵";
-    enemyNode["type"] = type;
-    enemyNode["currentPlanetNum"] = currentPlanetNum;
-    enemyNode["theta"] = 0.0f;
-    enemyNode["phi"] = 0.0f;
-    enemyNode["height"] = 1.0f;
-
-    const Planet* planet = planets[currentPlanetNum];
-    const float initialHeight = 1.0f;
-    const float initialDistance = planet ? planet->GetRadius() + initialHeight : 1.0f;
-
-    enemyNode["pos"][0] = initialDistance;
-    enemyNode["pos"][1] = 0.0f;
-    enemyNode["pos"][2] = 0.0f;
-
-    config["enemies"].push_back(enemyNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateEnemyFromStageNode(enemyNode, index);
-}
-
-void StageAddActorPanel::AddNPCFromEditor(const std::string& type, int currentPlanetNum)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["NPCs"]) {
-        config["NPCs"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["NPCs"].size());
-
-    YAML::Node npcNode;
-    npcNode["type"] = type;
-    npcNode["currentPlanetNum"] = currentPlanetNum;
-    npcNode["theta"] = 0.0f;
-    npcNode["phi"] = 0.0f;
-    npcNode["height"] = 1.0f;
-    npcNode["facingYaw"] = 0.0f;
-    npcNode["radius"] = 0.75f;
-    npcNode["name"] = "新しいNPC";
-    npcNode["talkTexts"].push_back("こんにちは");
-
-    config["NPCs"].push_back(npcNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateNPCFromStageNode(npcNode, index);
-}
-
-void StageAddActorPanel::AddCrystalFromEditor(const std::string& type, int currentPlanetNum)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["crystals"]) {
-        config["crystals"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["crystals"].size());
-
-    YAML::Node crystalNode;
-    crystalNode["type"] = type;
-    crystalNode["currentPlanetNum"] = currentPlanetNum;
-    crystalNode["theta"] = 0.0f;
-    crystalNode["phi"] = 0.0f;
-    crystalNode["height"] = 1.0f;
-
-    config["crystals"].push_back(crystalNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateCrystalFromStageNode(crystalNode, index);
-}
-
-void StageAddActorPanel::AddBoatPartsFromEditor(const std::string& type, int currentPlanetNum)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["boatParts"]) {
-        config["boatParts"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["boatParts"].size());
-
-    YAML::Node partNode;
-    partNode["type"] = type;
-    partNode["currentPlanetNum"] = currentPlanetNum;
-    partNode["theta"] = 0.0f;
-    partNode["phi"] = 0.0f;
-    partNode["height"] = 1.0f;
-
-    config["boatParts"].push_back(partNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateBoatPartsFromStageNode(partNode, index);
-}
-
-void StageAddActorPanel::AddBoatFromEditor(int startPlanetNum, int destPlanetNum, int destStage)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (startPlanetNum < 0 || startPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid start planet index: " << startPlanetNum << std::endl;
-        return;
-    }
-
-    if (destPlanetNum < 0 || destPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid destination planet index: " << destPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["boats"]) {
-        config["boats"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["boats"].size());
-
-    YAML::Node boatNode;
-    boatNode["startPlanet"] = startPlanetNum;
-    boatNode["destPlanet"] = destPlanetNum;
-    boatNode["destStage"] = destStage;
-
-    boatNode["theta"] = 0.0f;
-    boatNode["phi"] = 0.0f;
-    boatNode["height"] = 1.0f;
-    boatNode["facingYaw"] = 0.0f;
-
-    const Planet* planet = planets[startPlanetNum];
-    const float initialHeight = 1.0f;
-    const float initialDistance = planet ? planet->GetRadius() + initialHeight : 1.0f;
-
-    boatNode["pos"][0] = initialDistance;
-    boatNode["pos"][1] = 0.0f;
-    boatNode["pos"][2] = 0.0f;
-
-    config["boats"].push_back(boatNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateBoatFromStageNode(boatNode, index);
-}
-
-void StageAddActorPanel::AddStarFromEditor(int currentPlanetNum)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage() || !mContext.game->GetActorLoadSystem()) {
-        return;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
-        std::cerr << "Invalid planet index: " << currentPlanetNum << std::endl;
-        return;
-    }
-
-    const std::string filePath = mContext.game->GetCurrentStageYamlPath();
-
-    YAML::Node config;
-
-    try {
-        config = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return;
-    }
-
-    if (!config["star"]) {
-        config["star"] = YAML::Node(YAML::NodeType::Sequence);
-    }
-
-    const int index = static_cast<int>(config["star"].size());
-
-    YAML::Node starNode;
-    starNode["currentPlanetNum"] = currentPlanetNum;
-    starNode["theta"] = 0.0f;
-    starNode["phi"] = 0.0f;
-    starNode["height"] = 1.0f;
-    starNode["isActive"] = true;
-
-    config["star"].push_back(starNode);
-
-    if (!SaveYamlFile(filePath, config)) {
-        return;
-    }
-
-    mContext.game->GetActorLoadSystem()->CreateStarFromStageNode(starNode, index);
-}
-
-bool StageAddActorPanel::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
-{
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file << config;
-    return true;
 }

@@ -1,17 +1,7 @@
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "Game.h"
-#include "Stage.h"
 #include "actor/Actor.h"
-#include "actor/Boat.h"
-#include "actor/BoatParts.h"
-#include "actor/Crystal.h"
-#include "actor/Enemy.h"
-#include "actor/Key.h"
-#include "actor/NPC.h"
-#include "actor/Planet.h"
-#include "actor/Platform.h"
-#include "actor/Star.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
@@ -47,7 +37,6 @@ void StageSelectionController::DrawBoxSelectionRect() const
     ImDrawList* drawList = ImGui::GetForegroundDrawList();
 
     const ImVec2 rectMin(std::min(mBoxSelectStart.x, mBoxSelectEnd.x), std::min(mBoxSelectStart.y, mBoxSelectEnd.y));
-
     const ImVec2 rectMax(std::max(mBoxSelectStart.x, mBoxSelectEnd.x), std::max(mBoxSelectStart.y, mBoxSelectEnd.y));
 
     drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 150, 0, 45));
@@ -60,61 +49,16 @@ void StageSelectionController::ApplyEditorSelectionFlags()
         return;
     }
 
-    auto apply = [this](Actor* actor, const std::string& sequenceName) {
-        if (!actor) {
-            return;
-        }
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
-        actor->SetIsEditorSelected(false);
-
-        const int yamlIndex = actor->GetStageYamlIndex();
-        if (yamlIndex < 0) {
-            return;
-        }
-
-        const std::string key = MakeKey(sequenceName, yamlIndex);
-
-        if (mSelectedKeys.contains(key)) {
-            actor->SetIsEditorSelected(true);
-        }
-    };
-
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor) {
             continue;
         }
 
-        for (Enemy* enemy : planet->GetEnemies()) {
-            apply(enemy, "enemies");
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            apply(platform, "platforms");
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            apply(crystal, "crystals");
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            apply(npc, "NPCs");
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            apply(part, "boatParts");
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            apply(boat, "boats");
-        }
-
-        if (Key* key = planet->GetKey()) {
-            apply(key, "keys");
-        }
-
-        if (Star* star = planet->GetStar()) {
-            apply(star, "star");
-        }
+        const bool selected = mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref));
+        instance.actor->SetIsEditorSelected(selected);
     }
 }
 
@@ -233,74 +177,16 @@ Actor* StageSelectionController::GetSingleSelectedActor() const
         return nullptr;
     }
 
-    auto findSelected = [this](Actor* actor, const std::string& sequenceName) -> Actor* {
-        if (!actor) {
-            return nullptr;
-        }
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
-        const int yamlIndex = actor->GetStageYamlIndex();
-        if (yamlIndex < 0) {
-            return nullptr;
-        }
-
-        if (mSelectedKeys.contains(MakeKey(sequenceName, yamlIndex))) {
-            return actor;
-        }
-
-        return nullptr;
-    };
-
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor) {
             continue;
         }
 
-        for (Enemy* enemy : planet->GetEnemies()) {
-            if (Actor* actor = findSelected(enemy, "enemies")) {
-                return actor;
-            }
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            if (Actor* actor = findSelected(platform, "platforms")) {
-                return actor;
-            }
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            if (Actor* actor = findSelected(crystal, "crystals")) {
-                return actor;
-            }
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            if (Actor* actor = findSelected(npc, "NPCs")) {
-                return actor;
-            }
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            if (Actor* actor = findSelected(part, "boatParts")) {
-                return actor;
-            }
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            if (Actor* actor = findSelected(boat, "boats")) {
-                return actor;
-            }
-        }
-
-        if (Key* key = planet->GetKey()) {
-            if (Actor* actor = findSelected(key, "keys")) {
-                return actor;
-            }
-        }
-
-        if (Star* star = planet->GetStar()) {
-            if (Actor* actor = findSelected(star, "star")) {
-                return actor;
-            }
+        if (mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            return instance.actor;
         }
     }
 
@@ -316,60 +202,20 @@ glm::vec3 StageSelectionController::CalculateSelectedActorsCenter() const
     glm::vec3 sum(0.0f);
     int count = 0;
 
-    auto addIfSelected = [this, &sum, &count](Actor* actor, const std::string& sequenceName) {
-        if (!actor) {
-            return;
-        }
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
-        const int yamlIndex = actor->GetStageYamlIndex();
-        if (yamlIndex < 0) {
-            return;
-        }
-
-        if (!mSelectedKeys.contains(MakeKey(sequenceName, yamlIndex))) {
-            return;
-        }
-
-        sum += actor->GetPos();
-        ++count;
-    };
-
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor) {
             continue;
         }
 
-        for (Enemy* enemy : planet->GetEnemies()) {
-            addIfSelected(enemy, "enemies");
+        if (!mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
         }
 
-        for (Platform* platform : planet->GetPlatforms()) {
-            addIfSelected(platform, "platforms");
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            addIfSelected(crystal, "crystals");
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            addIfSelected(npc, "NPCs");
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            addIfSelected(part, "boatParts");
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            addIfSelected(boat, "boats");
-        }
-
-        if (Key* key = planet->GetKey()) {
-            addIfSelected(key, "keys");
-        }
-
-        if (Star* star = planet->GetStar()) {
-            addIfSelected(star, "star");
-        }
+        sum += instance.actor->GetPos();
+        ++count;
     }
 
     if (count == 0) {
@@ -385,59 +231,19 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
         return;
     }
 
-    auto moveIfSelected = [this, &delta](Actor* actor, const std::string& sequenceName) {
-        if (!actor) {
-            return;
-        }
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
-        const int yamlIndex = actor->GetStageYamlIndex();
-        if (yamlIndex < 0) {
-            return;
-        }
-
-        if (!mSelectedKeys.contains(MakeKey(sequenceName, yamlIndex))) {
-            return;
-        }
-
-        actor->SetPos(actor->GetPos() + delta);
-    };
-
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor) {
             continue;
         }
 
-        for (Enemy* enemy : planet->GetEnemies()) {
-            moveIfSelected(enemy, "enemies");
+        if (!mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
         }
 
-        for (Platform* platform : planet->GetPlatforms()) {
-            moveIfSelected(platform, "platforms");
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            moveIfSelected(crystal, "crystals");
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            moveIfSelected(npc, "NPCs");
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            moveIfSelected(part, "boatParts");
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            moveIfSelected(boat, "boats");
-        }
-
-        if (Key* key = planet->GetKey()) {
-            moveIfSelected(key, "keys");
-        }
-
-        if (Star* star = planet->GetStar()) {
-            moveIfSelected(star, "star");
-        }
+        instance.actor->SetPos(instance.actor->GetPos() + delta);
     }
 }
 
@@ -699,69 +505,30 @@ void StageSelectionController::SelectActorsInScreenRect(const ImVec2& rectMin, c
         Clear();
     }
 
-    auto selectIfInside = [this, &rectMin, &rectMax](Actor* actor, const std::string& sequenceName) {
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
+
+    for (const StageActorInstance& instance : instances) {
+        Actor* actor = instance.actor;
+
         if (!actor || !actor->GetIsActive()) {
-            return;
-        }
-
-        const int yamlIndex = actor->GetStageYamlIndex();
-
-        if (yamlIndex < 0) {
-            return;
+            continue;
         }
 
         ImVec2 screenPos;
 
         if (!WorldToScreenPoint(actor->GetPos(), screenPos)) {
-            return;
+            continue;
         }
 
         const bool inside = screenPos.x >= rectMin.x && screenPos.x <= rectMax.x && screenPos.y >= rectMin.y &&
                             screenPos.y <= rectMax.y;
 
         if (!inside) {
-            return;
-        }
-
-        AddSelectedKey(sequenceName, yamlIndex);
-    };
-
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
             continue;
         }
 
-        for (Enemy* enemy : planet->GetEnemies()) {
-            selectIfInside(enemy, "enemies");
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            selectIfInside(platform, "platforms");
-        }
-
-        for (Crystal* crystal : planet->GetCrystals()) {
-            selectIfInside(crystal, "crystals");
-        }
-
-        for (NPC* npc : planet->GetNPCs()) {
-            selectIfInside(npc, "NPCs");
-        }
-
-        for (BoatParts* part : planet->GetBoatParts()) {
-            selectIfInside(part, "boatParts");
-        }
-
-        for (Boat* boat : planet->GetBoats()) {
-            selectIfInside(boat, "boats");
-        }
-
-        if (Key* key = planet->GetKey()) {
-            selectIfInside(key, "keys");
-        }
-
-        if (Star* star = planet->GetStar()) {
-            selectIfInside(star, "star");
-        }
+        AddSelectedKey(StageActorQuery::MakeKey(instance.ref));
     }
 
     ClearPickedActor();
@@ -771,7 +538,7 @@ void StageSelectionController::SelectActorsInScreenRect(const ImVec2& rectMin, c
 
 std::string StageSelectionController::MakeKey(const StageActorRef& actorRef) const
 {
-    return MakeKey(actorRef.sequenceName, actorRef.yamlIndex);
+    return StageActorQuery::MakeKey(actorRef);
 }
 
 std::string StageSelectionController::MakeKey(const std::string& sequenceName, int yamlIndex) const

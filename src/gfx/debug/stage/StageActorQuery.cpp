@@ -17,30 +17,55 @@
 
 namespace {
 
-void AddTarget(std::vector<StageActorRef>& targets, StageActorType type, int yamlIndex, const std::string& sequenceName,
-               const std::string& label)
+void AddInstance(std::vector<StageActorInstance>& instances, Actor* actor, StageActorType type, int yamlIndex,
+                 const std::string& sequenceName, const std::string& label)
 {
-    if (yamlIndex < 0) {
+    if (!actor || yamlIndex < 0) {
         return;
     }
 
-    StageActorRef target;
-    target.type = type;
-    target.yamlIndex = yamlIndex;
-    target.sequenceName = sequenceName;
-    target.label = label;
+    StageActorRef ref;
+    ref.type = type;
+    ref.yamlIndex = yamlIndex;
+    ref.sequenceName = sequenceName;
+    ref.label = label;
 
-    targets.emplace_back(target);
+    StageActorInstance instance;
+    instance.actor = actor;
+    instance.ref = ref;
+
+    instances.emplace_back(instance);
+}
+
+std::string MakeIndexedLabel(const char* typeLabel, int yamlIndex)
+{
+    return std::string(typeLabel) + " " + std::to_string(yamlIndex);
 }
 
 } // namespace
 
-std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
+const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
 {
-    std::vector<StageActorRef> targets;
+    static const std::vector<StageActorTypeInfo> typeInfos = {
+        {StageActorType::Enemy, "enemies", "敵"},
+        {StageActorType::Platform, "platforms", "足場"},
+        {StageActorType::Key, "keys", "キー"},
+        {StageActorType::Boat, "boats", "ボート"},
+        {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
+        {StageActorType::Crystal, "crystals", "クリスタル"},
+        {StageActorType::NPC, "NPCs", "NPC"},
+        {StageActorType::Star, "star", "星"},
+    };
+
+    return typeInfos;
+}
+
+std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage* stage)
+{
+    std::vector<StageActorInstance> instances;
 
     if (!stage) {
-        return targets;
+        return instances;
     }
 
     const std::vector<Planet*> planets = stage->GetPlanets();
@@ -51,68 +76,60 @@ std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
-            if (!enemy) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::Enemy, enemy->GetStageYamlIndex(), "enemies",
-                      "敵 " + std::to_string(enemy->GetStageYamlIndex()));
+            const int yamlIndex = enemy ? enemy->GetStageYamlIndex() : -1;
+            AddInstance(instances, enemy, StageActorType::Enemy, yamlIndex, "enemies",
+                        MakeIndexedLabel("敵", yamlIndex));
         }
 
         for (Platform* platform : planet->GetPlatforms()) {
-            if (!platform) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::Platform, platform->GetStageYamlIndex(), "platforms",
-                      "足場 " + std::to_string(platform->GetStageYamlIndex()));
+            const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
+            AddInstance(instances, platform, StageActorType::Platform, yamlIndex, "platforms",
+                        MakeIndexedLabel("足場", yamlIndex));
         }
 
         if (Key* key = planet->GetKey()) {
-            AddTarget(targets, StageActorType::Key, key->GetStageYamlIndex(), "keys",
-                      "キー " + std::to_string(key->GetStageYamlIndex()));
+            const int yamlIndex = key->GetStageYamlIndex();
+            AddInstance(instances, key, StageActorType::Key, yamlIndex, "keys", MakeIndexedLabel("キー", yamlIndex));
         }
 
         for (Boat* boat : planet->GetBoats()) {
-            if (!boat) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::Boat, boat->GetStageYamlIndex(), "boats",
-                      "ボート " + std::to_string(boat->GetStageYamlIndex()));
+            const int yamlIndex = boat ? boat->GetStageYamlIndex() : -1;
+            AddInstance(instances, boat, StageActorType::Boat, yamlIndex, "boats",
+                        MakeIndexedLabel("ボート", yamlIndex));
         }
 
         for (BoatParts* part : planet->GetBoatParts()) {
-            if (!part) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::BoatParts, part->GetStageYamlIndex(), "boatParts",
-                      "ボートパーツ " + std::to_string(part->GetStageYamlIndex()));
+            const int yamlIndex = part ? part->GetStageYamlIndex() : -1;
+            AddInstance(instances, part, StageActorType::BoatParts, yamlIndex, "boatParts",
+                        MakeIndexedLabel("ボートパーツ", yamlIndex));
         }
 
         for (Crystal* crystal : planet->GetCrystals()) {
-            if (!crystal) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::Crystal, crystal->GetStageYamlIndex(), "crystals",
-                      "クリスタル " + std::to_string(crystal->GetStageYamlIndex()));
+            const int yamlIndex = crystal ? crystal->GetStageYamlIndex() : -1;
+            AddInstance(instances, crystal, StageActorType::Crystal, yamlIndex, "crystals",
+                        MakeIndexedLabel("クリスタル", yamlIndex));
         }
 
         for (NPC* npc : planet->GetNPCs()) {
-            if (!npc) {
-                continue;
-            }
-
-            AddTarget(targets, StageActorType::NPC, npc->GetStageYamlIndex(), "NPCs",
-                      "NPC " + std::to_string(npc->GetStageYamlIndex()));
+            const int yamlIndex = npc ? npc->GetStageYamlIndex() : -1;
+            AddInstance(instances, npc, StageActorType::NPC, yamlIndex, "NPCs", MakeIndexedLabel("NPC", yamlIndex));
         }
 
         if (Star* star = planet->GetStar()) {
-            AddTarget(targets, StageActorType::Star, star->GetStageYamlIndex(), "star",
-                      "星 " + std::to_string(star->GetStageYamlIndex()));
+            const int yamlIndex = star->GetStageYamlIndex();
+            AddInstance(instances, star, StageActorType::Star, yamlIndex, "star", MakeIndexedLabel("星", yamlIndex));
         }
+    }
+
+    return instances;
+}
+
+std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
+{
+    std::vector<StageActorRef> targets;
+
+    for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
+        targets.emplace_back(instance.ref);
     }
 
     return targets;
@@ -124,47 +141,30 @@ std::optional<StageActorRef> StageActorQuery::FindTargetForActor(Stage* stage, A
         return std::nullopt;
     }
 
-    const std::vector<StageActorRef> targets = CollectAllTargets(stage);
-
-    for (const StageActorRef& target : targets) {
-        if (target.yamlIndex != actor->GetStageYamlIndex()) {
-            continue;
-        }
-
-        if (target.sequenceName == "enemies" && dynamic_cast<Enemy*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "platforms" && dynamic_cast<Platform*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "keys" && dynamic_cast<Key*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "boats" && dynamic_cast<Boat*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "boatParts" && dynamic_cast<BoatParts*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "crystals" && dynamic_cast<Crystal*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "NPCs" && dynamic_cast<NPC*>(actor)) {
-            return target;
-        }
-
-        if (target.sequenceName == "star" && dynamic_cast<Star*>(actor)) {
-            return target;
+    for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
+        if (instance.actor == actor) {
+            return instance.ref;
         }
     }
 
     return std::nullopt;
+}
+
+Actor* StageActorQuery::FindActorByRef(Stage* stage, const StageActorRef& target)
+{
+    if (!stage) {
+        return nullptr;
+    }
+
+    const std::string targetKey = MakeKey(target);
+
+    for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
+        if (MakeKey(instance.ref) == targetKey) {
+            return instance.actor;
+        }
+    }
+
+    return nullptr;
 }
 
 std::string StageActorQuery::MakeKey(const StageActorRef& target)
@@ -174,48 +174,22 @@ std::string StageActorQuery::MakeKey(const StageActorRef& target)
 
 std::string StageActorQuery::GetSequenceName(StageActorType type)
 {
-    switch (type) {
-    case StageActorType::Enemy:
-        return "enemies";
-    case StageActorType::Platform:
-        return "platforms";
-    case StageActorType::Crystal:
-        return "crystals";
-    case StageActorType::NPC:
-        return "NPCs";
-    case StageActorType::BoatParts:
-        return "boatParts";
-    case StageActorType::Boat:
-        return "boats";
-    case StageActorType::Key:
-        return "keys";
-    case StageActorType::Star:
-        return "star";
-    default:
-        return "";
+    for (const StageActorTypeInfo& info : GetTypeInfos()) {
+        if (info.type == type) {
+            return info.sequenceName;
+        }
     }
+
+    return "";
 }
 
 const char* StageActorQuery::GetTypeLabel(StageActorType type)
 {
-    switch (type) {
-    case StageActorType::Enemy:
-        return "敵";
-    case StageActorType::Platform:
-        return "足場";
-    case StageActorType::Crystal:
-        return "クリスタル";
-    case StageActorType::NPC:
-        return "NPC";
-    case StageActorType::BoatParts:
-        return "ボートパーツ";
-    case StageActorType::Boat:
-        return "ボート";
-    case StageActorType::Key:
-        return "キー";
-    case StageActorType::Star:
-        return "星";
-    default:
-        return "不明";
+    for (const StageActorTypeInfo& info : GetTypeInfos()) {
+        if (info.type == type) {
+            return info.displayName;
+        }
     }
+
+    return "不明";
 }

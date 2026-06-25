@@ -1,10 +1,9 @@
 #pragma once
 
 #include "gfx/debug/DebugPanel.h"
+#include "gfx/debug/stage/StageActorCreateService.h"
 
 #include <glm/glm.hpp>
-#include <string>
-#include <yaml-cpp/yaml.h>
 
 class StageAddActorPanel : public DebugPanel {
 public:
@@ -15,18 +14,9 @@ public:
 private:
     void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
 
-    void AddPlatformFromEditor(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale);
-    void AddPlanetFromEditor(const std::string& modelPath);
-    void AddEnemyFromEditor(const std::string& type, int currentPlanetNum);
-    void AddNPCFromEditor(const std::string& type, int currentPlanetNum);
-    void AddCrystalFromEditor(const std::string& type, int currentPlanetNum);
-    void AddBoatPartsFromEditor(const std::string& type, int currentPlanetNum);
-    void AddBoatFromEditor(int startPlanetNum, int destPlanetNum, int destStage);
-    void AddStarFromEditor(int currentPlanetNum);
-
-    bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
-
 private:
+    StageActorCreateService mCreateService;
+
     int mSelectedPlanetModelIndex = 0;
 
     int mSelectedEnemyTypeIndex = 0;
