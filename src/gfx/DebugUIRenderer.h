@@ -3,12 +3,15 @@
 #include <GL/glew.h>
 
 #include "Game.h"
+#include "imgui.h"
+
+#include "ImGuizmo.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "imgui.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
+#include <algorithm>
 #include <cmath>
 #include <deque>
 #include <filesystem>
@@ -394,6 +397,19 @@ private:
     void MoveSelectedActorsByDelta(const glm::vec3& delta);
     void SaveSelectedActorPositionsToYaml();
 
+    void UpdateBoxSelection();
+    void DrawBoxSelectionRect() const;
+    void SelectActorsInScreenRect(const ImVec2& min, const ImVec2& max, bool addSelection);
+    bool WorldToScreenPoint(const glm::vec3& worldPos, ImVec2& outScreenPos) const;
+
+    void HandleGizmoOperationShortcuts();
+
+    Actor* GetSingleSelectedActor() const;
+    int GetSelectedActorCount() const;
+
+    glm::mat4 CreateSelectedActorGizmoMatrix(Actor* actor) const;
+    void ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4& matrix, ImGuizmo::OPERATION operation);
+
     bool mIsUsingMoveGizmo = false;
     glm::vec3 mPreviousGizmoPos = glm::vec3(0.0f);
 
@@ -413,6 +429,26 @@ private:
     std::vector<std::string> mStageUndoStack;
     bool mZPressedPrev = false;
     bool mDPressedPrev = false;
+
+    bool mIsBoxSelecting = false;
+    bool mBoxSelectMoved = false;
+    ImVec2 mBoxSelectStart = ImVec2(0.0f, 0.0f);
+    ImVec2 mBoxSelectEnd = ImVec2(0.0f, 0.0f);
+
+    ImGuizmo::OPERATION mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+
+    bool mEPressedPrev = false;
+    bool mRPressedPrev = false;
+    bool mTPressedPrev = false;
+
+    bool mIsUsingTransformGizmo = false;
+    glm::mat4 mPreviousGizmoMatrix = glm::mat4(1.0f);
+
+    bool mIsBoxSelectMouseDown = false;
+    ImVec2 mBoxSelectMouseDownPos = ImVec2(0.0f, 0.0f);
+
+    glm::mat4 mEditingGizmoMatrix = glm::mat4(1.0f);
+    bool mHasEditingGizmoMatrix = false;
 
     std::unordered_set<std::string> mMousePickedKeys;
 };

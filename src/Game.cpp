@@ -208,7 +208,7 @@ void Game::ProcessGameInput()
         ProcessPauseMenuInput();
     }
 
-    const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_R) == GLFW_PRESS;
+    const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_F) == GLFW_PRESS;
     if (reloadKeyPressed && !mReloadKeyPressedPrev) {
         ReloadCurrentStage();
     }

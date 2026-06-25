@@ -3,7 +3,6 @@
 #include "gfx/UIRenderer.h"
 
 #include "Game.h"
-#include "ImGuizmo.h"
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
@@ -22,6 +21,7 @@
 #include "system/UILoadSystem.h"
 
 #include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <unordered_map>
@@ -35,17 +35,24 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 
 void DebugUIRenderer::Draw()
 {
-    UpdatePickedActorByMouse();
+    UpdateBoxSelection();
+
+    if (!mIsBoxSelecting) {
+        UpdatePickedActorByMouse();
+    }
+
     HandlePickedActorDeleteShortcut();
     HandleStageUndoShortcut();
     HandlePickedActorDuplicateShortcut();
+
+    HandleGizmoOperationShortcuts();
+
     ApplyEditorSelectionFlags();
 
+    DrawBoxSelectionRect();
     DrawSelectedActorsGizmo();
 
     ImGui::Begin("デバッグ");
-
-    DrawPickedActorControls();
 
     if (ImGui::BeginTabBar("DebugMainTabs")) {
         if (ImGui::BeginTabItem("基本情報")) {
@@ -3234,77 +3241,6 @@ void DebugUIRenderer::OffsetDuplicatedActorNode(YAML::Node actorNode, const glm:
     }
 }
 
-void DebugUIRenderer::DrawSelectedActorsGizmo()
-{
-    if (!mGame || !mGame->GetWindow() || !mGame->GetCameraSystem()) {
-        return;
-    }
-
-    if (mMousePickedKeys.empty()) {
-        return;
-    }
-
-    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
-    if (views.empty()) {
-        return;
-    }
-
-    int windowWidth = 0;
-    int windowHeight = 0;
-    glfwGetWindowSize(mGame->GetWindow(), &windowWidth, &windowHeight);
-
-    if (windowWidth <= 0 || windowHeight <= 0) {
-        return;
-    }
-
-    const glm::mat4 view = views[0];
-
-    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
-    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
-
-    const glm::vec3 center = CalculateSelectedActorsCenter();
-
-    glm::mat4 gizmoMatrix = glm::translate(glm::mat4(1.0f), center);
-
-    ImGuizmo::BeginFrame();
-    ImGuizmo::SetOrthographic(false);
-    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
-
-    ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), ImGuizmo::TRANSLATE, ImGuizmo::WORLD,
-                         glm::value_ptr(gizmoMatrix));
-
-    if (ImGuizmo::IsUsing()) {
-        const glm::vec3 newGizmoPos = glm::vec3(gizmoMatrix[3]);
-
-        if (!mIsUsingMoveGizmo) {
-            PushStageUndo();
-            mPreviousGizmoPos = center;
-            mIsUsingMoveGizmo = true;
-        }
-
-        const glm::vec3 delta = newGizmoPos - mPreviousGizmoPos;
-
-        if (glm::length(delta) > 1e-6f) {
-            MoveSelectedActorsByDelta(delta);
-            mPreviousGizmoPos = newGizmoPos;
-        }
-    } else {
-        if (mIsUsingMoveGizmo) {
-            mIsUsingMoveGizmo = false;
-
-            SaveStagePlanetsYaml();
-            SaveStagePlacementYaml();
-
-            if (mGame->GetPhysicsSystem()) {
-                mGame->GetPhysicsSystem()->Initialize();
-            }
-        }
-    }
-}
-
 glm::vec3 DebugUIRenderer::CalculateSelectedActorsCenter() const
 {
     if (!mGame || !mGame->GetCurrentStage()) {
@@ -3439,6 +3375,527 @@ void DebugUIRenderer::MoveSelectedActorsByDelta(const glm::vec3& delta)
 
         if (Star* star = planet->GetStar()) {
             moveIfSelected(star, "star");
+        }
+    }
+}
+
+void DebugUIRenderer::UpdateBoxSelection()
+{
+    if (!mGame || !mGame->GetWindow()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.WantCaptureMouse) {
+        return;
+    }
+
+    if (ImGuizmo::IsOver() || ImGuizmo::IsUsing()) {
+        return;
+    }
+
+    double mouseX = 0.0;
+    double mouseY = 0.0;
+    glfwGetCursorPos(mGame->GetWindow(), &mouseX, &mouseY);
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    const ImVec2 mousePos(viewport->Pos.x + static_cast<float>(mouseX), viewport->Pos.y + static_cast<float>(mouseY));
+
+    const bool leftPressed = glfwGetMouseButton(mGame->GetWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+
+    if (leftPressed && !mIsBoxSelectMouseDown) {
+        mIsBoxSelectMouseDown = true;
+        mIsBoxSelecting = false;
+        mBoxSelectMoved = false;
+        mBoxSelectMouseDownPos = mousePos;
+        mBoxSelectStart = mousePos;
+        mBoxSelectEnd = mousePos;
+        return;
+    }
+
+    if (leftPressed && mIsBoxSelectMouseDown) {
+        mBoxSelectEnd = mousePos;
+
+        const float dx = mBoxSelectEnd.x - mBoxSelectMouseDownPos.x;
+        const float dy = mBoxSelectEnd.y - mBoxSelectMouseDownPos.y;
+        const float distance = std::sqrt(dx * dx + dy * dy);
+
+        if (distance > 5.0f) {
+            mIsBoxSelecting = true;
+            mBoxSelectMoved = true;
+        }
+
+        return;
+    }
+
+    if (!leftPressed && mIsBoxSelectMouseDown) {
+        if (mIsBoxSelecting && mBoxSelectMoved) {
+            ImVec2 rectMin(std::min(mBoxSelectStart.x, mBoxSelectEnd.x), std::min(mBoxSelectStart.y, mBoxSelectEnd.y));
+
+            ImVec2 rectMax(std::max(mBoxSelectStart.x, mBoxSelectEnd.x), std::max(mBoxSelectStart.y, mBoxSelectEnd.y));
+
+            const bool addSelection = io.KeyShift;
+
+            SelectActorsInScreenRect(rectMin, rectMax, addSelection);
+        }
+
+        mIsBoxSelectMouseDown = false;
+        mIsBoxSelecting = false;
+        mBoxSelectMoved = false;
+    }
+}
+
+void DebugUIRenderer::DrawBoxSelectionRect() const
+{
+    if (!mIsBoxSelecting || !mBoxSelectMoved) {
+        return;
+    }
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+
+    const ImVec2 rectMin(std::min(mBoxSelectStart.x, mBoxSelectEnd.x), std::min(mBoxSelectStart.y, mBoxSelectEnd.y));
+
+    const ImVec2 rectMax(std::max(mBoxSelectStart.x, mBoxSelectEnd.x), std::max(mBoxSelectStart.y, mBoxSelectEnd.y));
+
+    drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 150, 0, 45));
+
+    drawList->AddRect(rectMin, rectMax, IM_COL32(255, 150, 0, 220), 0.0f, 0, 2.0f);
+}
+
+bool DebugUIRenderer::WorldToScreenPoint(const glm::vec3& worldPos, ImVec2& outScreenPos) const
+{
+    if (!mGame || !mGame->GetWindow() || !mGame->GetCameraSystem()) {
+        return false;
+    }
+
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(mGame->GetWindow(), &windowWidth, &windowHeight);
+
+    if (windowWidth <= 0 || windowHeight <= 0) {
+        return false;
+    }
+
+    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+
+    if (views.empty()) {
+        return false;
+    }
+
+    const glm::mat4 view = views[0];
+
+    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+
+    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+
+    const glm::vec4 clip = projection * view * glm::vec4(worldPos, 1.0f);
+
+    if (clip.w <= 0.0f) {
+        return false;
+    }
+
+    const glm::vec3 ndc = glm::vec3(clip) / clip.w;
+
+    if (ndc.x < -1.0f || ndc.x > 1.0f || ndc.y < -1.0f || ndc.y > 1.0f || ndc.z < -1.0f || ndc.z > 1.0f) {
+        return false;
+    }
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    outScreenPos.x = viewport->Pos.x + (ndc.x * 0.5f + 0.5f) * static_cast<float>(windowWidth);
+
+    outScreenPos.y = viewport->Pos.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * static_cast<float>(windowHeight);
+
+    return true;
+}
+
+void DebugUIRenderer::SelectActorsInScreenRect(const ImVec2& rectMin, const ImVec2& rectMax, bool addSelection)
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    if (!addSelection) {
+        mMousePickedKeys.clear();
+    }
+
+    auto selectIfInside = [this, &rectMin, &rectMax](Actor* actor, const std::string& sequenceName) {
+        if (!actor || !actor->GetIsActive()) {
+            return;
+        }
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+
+        if (yamlIndex < 0) {
+            return;
+        }
+
+        ImVec2 screenPos;
+
+        if (!WorldToScreenPoint(actor->GetPos(), screenPos)) {
+            return;
+        }
+
+        const bool inside = screenPos.x >= rectMin.x && screenPos.x <= rectMax.x && screenPos.y >= rectMin.y &&
+                            screenPos.y <= rectMax.y;
+
+        if (!inside) {
+            return;
+        }
+
+        const std::string key = sequenceName + ":" + std::to_string(yamlIndex);
+
+        mMousePickedKeys.insert(key);
+    };
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            selectIfInside(enemy, "enemies");
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            selectIfInside(platform, "platforms");
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            selectIfInside(crystal, "crystals");
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            selectIfInside(npc, "NPCs");
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            selectIfInside(part, "boatParts");
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            selectIfInside(boat, "boats");
+        }
+
+        if (Key* key = planet->GetKey()) {
+            selectIfInside(key, "keys");
+        }
+
+        if (Star* star = planet->GetStar()) {
+            selectIfInside(star, "star");
+        }
+    }
+
+    mPickedActor = nullptr;
+    mPickedDeleteTarget.reset();
+
+    mRequestOpenStageEditorTab = true;
+    mStageEditorSelectedMenu = 1;
+    mRequestOpenPickedActorPlacement = true;
+}
+
+void DebugUIRenderer::HandleGizmoOperationShortcuts()
+{
+    if (!mGame || !mGame->GetWindow()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.WantTextInput) {
+        return;
+    }
+
+    if (ImGui::IsAnyItemActive()) {
+        return;
+    }
+
+    const bool ePressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_E) == GLFW_PRESS;
+
+    const bool rPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_R) == GLFW_PRESS;
+
+    const bool tPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_T) == GLFW_PRESS;
+
+    const bool eTriggered = ePressed && !mEPressedPrev;
+    const bool rTriggered = rPressed && !mRPressedPrev;
+    const bool tTriggered = tPressed && !mTPressedPrev;
+
+    mEPressedPrev = ePressed;
+    mRPressedPrev = rPressed;
+    mTPressedPrev = tPressed;
+
+    if (eTriggered) {
+        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+    }
+
+    if (rTriggered) {
+        mCurrentGizmoOperation = ImGuizmo::ROTATE;
+    }
+
+    if (tTriggered) {
+        mCurrentGizmoOperation = ImGuizmo::SCALE;
+    }
+}
+
+int DebugUIRenderer::GetSelectedActorCount() const
+{
+    return static_cast<int>(mMousePickedKeys.size());
+}
+
+Actor* DebugUIRenderer::GetSingleSelectedActor() const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return nullptr;
+    }
+
+    if (mMousePickedKeys.size() != 1) {
+        return nullptr;
+    }
+
+    auto findSelected = [this](Actor* actor, const std::string& sequenceName) -> Actor* {
+        if (!actor) {
+            return nullptr;
+        }
+
+        const int yamlIndex = actor->GetStageYamlIndex();
+        if (yamlIndex < 0) {
+            return nullptr;
+        }
+
+        const std::string key = sequenceName + ":" + std::to_string(yamlIndex);
+
+        if (mMousePickedKeys.contains(key)) {
+            return actor;
+        }
+
+        return nullptr;
+    };
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (Actor* actor = findSelected(enemy, "enemies")) {
+                return actor;
+            }
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (Actor* actor = findSelected(platform, "platforms")) {
+                return actor;
+            }
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            if (Actor* actor = findSelected(crystal, "crystals")) {
+                return actor;
+            }
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            if (Actor* actor = findSelected(npc, "NPCs")) {
+                return actor;
+            }
+        }
+
+        for (BoatParts* part : planet->GetBoatParts()) {
+            if (Actor* actor = findSelected(part, "boatParts")) {
+                return actor;
+            }
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (Actor* actor = findSelected(boat, "boats")) {
+                return actor;
+            }
+        }
+
+        if (Key* key = planet->GetKey()) {
+            if (Actor* actor = findSelected(key, "keys")) {
+                return actor;
+            }
+        }
+
+        if (Star* star = planet->GetStar()) {
+            if (Actor* actor = findSelected(star, "star")) {
+                return actor;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+glm::mat4 DebugUIRenderer::CreateSelectedActorGizmoMatrix(Actor* actor) const
+{
+    if (!actor) {
+        return glm::mat4(1.0f);
+    }
+
+    const glm::vec3 rotation = actor->GetEditorRotation();
+
+    glm::mat4 rotateMat(1.0f);
+    rotateMat = glm::rotate(rotateMat, rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    rotateMat = glm::rotate(rotateMat, rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    rotateMat = glm::rotate(rotateMat, rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+
+    return glm::translate(glm::mat4(1.0f), actor->GetPos()) * rotateMat *
+           glm::scale(glm::mat4(1.0f), actor->GetScale());
+}
+
+void DebugUIRenderer::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4& matrix, ImGuizmo::OPERATION operation)
+{
+    if (!actor) {
+        return;
+    }
+
+    float translation[3];
+    float rotationDeg[3];
+    float scale[3];
+
+    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), translation, rotationDeg, scale);
+
+    if (operation == ImGuizmo::TRANSLATE) {
+        actor->SetPos(glm::vec3(translation[0], translation[1], translation[2]));
+        return;
+    }
+
+    if (operation == ImGuizmo::SCALE) {
+        actor->SetScale(glm::vec3(scale[0], scale[1], scale[2]));
+        return;
+    }
+
+    if (operation == ImGuizmo::ROTATE) {
+        actor->SetEditorRotation(glm::radians(glm::vec3(rotationDeg[0], rotationDeg[1], rotationDeg[2])));
+
+        actor->SetFacingYaw(glm::radians(rotationDeg[1]));
+        return;
+    }
+}
+
+void DebugUIRenderer::DrawSelectedActorsGizmo()
+{
+    if (!mGame || !mGame->GetWindow() || !mGame->GetCameraSystem()) {
+        return;
+    }
+
+    if (mMousePickedKeys.empty()) {
+        return;
+    }
+
+    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+    if (views.empty()) {
+        return;
+    }
+
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(mGame->GetWindow(), &windowWidth, &windowHeight);
+
+    if (windowWidth <= 0 || windowHeight <= 0) {
+        return;
+    }
+
+    const glm::mat4 view = views[0];
+
+    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+
+    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+
+    ImGuizmo::BeginFrame();
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+
+    const int selectedCount = GetSelectedActorCount();
+    ImGuizmo::OPERATION operation = mCurrentGizmoOperation;
+
+    if (selectedCount <= 0) {
+        return;
+    }
+
+    // 複数選択時は移動だけ対応
+    if (selectedCount > 1) {
+        if (mCurrentGizmoOperation != ImGuizmo::TRANSLATE) {
+            return;
+        }
+
+        const glm::vec3 center = CalculateSelectedActorsCenter();
+
+        glm::mat4 gizmoMatrix = glm::translate(glm::mat4(1.0f), center);
+
+        ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), ImGuizmo::TRANSLATE, ImGuizmo::WORLD,
+                             glm::value_ptr(gizmoMatrix));
+
+        if (ImGuizmo::IsUsing()) {
+            const glm::vec3 newGizmoPos = glm::vec3(gizmoMatrix[3]);
+
+            if (!mIsUsingTransformGizmo) {
+                PushStageUndo();
+                mPreviousGizmoMatrix = glm::translate(glm::mat4(1.0f), center);
+                mIsUsingTransformGizmo = true;
+            }
+
+            const glm::vec3 previousPos = glm::vec3(mPreviousGizmoMatrix[3]);
+            const glm::vec3 delta = newGizmoPos - previousPos;
+
+            if (glm::length(delta) > 1e-6f) {
+                MoveSelectedActorsByDelta(delta);
+                mPreviousGizmoMatrix = gizmoMatrix;
+            }
+        } else {
+            if (mIsUsingTransformGizmo) {
+                mIsUsingTransformGizmo = false;
+
+                SaveStagePlacementYaml();
+
+                if (mGame->GetPhysicsSystem()) {
+                    mGame->GetPhysicsSystem()->Initialize();
+                }
+            }
+        }
+
+        return;
+    }
+
+    // 単体選択時は移動・回転・スケール対応
+    Actor* selectedActor = GetSingleSelectedActor();
+    if (!selectedActor) {
+        return;
+    }
+
+    if (!mIsUsingTransformGizmo) {
+        mEditingGizmoMatrix = CreateSelectedActorGizmoMatrix(selectedActor);
+        mHasEditingGizmoMatrix = true;
+    }
+
+    ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), operation, ImGuizmo::WORLD,
+                         glm::value_ptr(mEditingGizmoMatrix));
+
+    if (ImGuizmo::IsUsing()) {
+        if (!mIsUsingTransformGizmo) {
+            PushStageUndo();
+            mIsUsingTransformGizmo = true;
+        }
+
+        ApplyGizmoMatrixToActor(selectedActor, mEditingGizmoMatrix, operation);
+    } else {
+        if (mIsUsingTransformGizmo) {
+            mIsUsingTransformGizmo = false;
+            mHasEditingGizmoMatrix = false;
+
+            SaveStagePlacementYaml();
+
+            if (mGame->GetPhysicsSystem()) {
+                mGame->GetPhysicsSystem()->Initialize();
+            }
         }
     }
 }

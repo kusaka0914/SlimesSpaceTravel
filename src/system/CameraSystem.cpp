@@ -53,12 +53,6 @@ void CameraSystem::ProcessInput()
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             mMoveRight += 1.0f;
         }
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-            mMoveUp += 1.0f;
-        }
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-            mMoveUp -= 1.0f;
-        }
 
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
             mDebugYawInput += 1.0f;
