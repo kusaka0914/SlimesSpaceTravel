@@ -4,7 +4,18 @@
 
 class Actor;
 
-enum class StageActorType { Enemy, Platform, MovingPlatform, Crystal, NPC, BoatParts, Boat, Key, Star };
+enum class StageActorType {
+    Enemy,
+    Platform,
+    MovingPlatform,
+    Crystal,
+    NPC,
+    BoatParts,
+    Boat,
+    BoatArrivalPoint,
+    Key,
+    Star
+};
 
 struct StageActorRef {
     StageActorType type;

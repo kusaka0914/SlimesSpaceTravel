@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 class Game;
 class Enemy;
@@ -16,6 +17,7 @@ class MovingPlatform;
 class Stage;
 class Key;
 class Star;
+class BoatArrivalPoint;
 
 class Planet : public Actor {
 public:
@@ -38,6 +40,7 @@ public:
     void AddNPC(NPC* NPC) { mNPCs.emplace_back(NPC); }
     void AddPlatform(Platform* platform) { mPlatforms.emplace_back(platform); }
     void AddMovingPlatform(MovingPlatform* platform) { mMovingPlatforms.emplace_back(platform); }
+    void AddBoatArrivalPoint(BoatArrivalPoint* point) { mBoatArrivalPoints.emplace_back(point); }
 
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveAllBoat() { mBoats.clear(); }
@@ -48,6 +51,7 @@ public:
     void RemoveAllMovingPlatforms() { mMovingPlatforms.clear(); }
     void RemoveKey() { mKey = nullptr; }
     void RemoveStar() { mStar = nullptr; }
+    void RemoveAllBoatArrivalPoints() { mBoatArrivalPoints.clear(); }
 
     void SetCurrentStage(Stage* currentStage) { mCurrentStage = currentStage; }
     void SetStageNum(int stageNum) { mStageNum = stageNum; }
@@ -90,6 +94,7 @@ public:
     const std::vector<NPC*>& GetNPCs() const { return mNPCs; }
     const std::vector<Platform*>& GetPlatforms() const { return mPlatforms; }
     const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mMovingPlatforms; }
+    const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mBoatArrivalPoints; }
 
     Key* GetKey() const { return mKey; }
     Star* GetStar() const { return mStar; }
@@ -114,6 +119,7 @@ private:
     std::vector<NPC*> mNPCs;
     std::vector<Platform*> mPlatforms;
     std::vector<MovingPlatform*> mMovingPlatforms;
+    std::vector<BoatArrivalPoint*> mBoatArrivalPoints;
 
     Key* mKey;
     Star* mStar;

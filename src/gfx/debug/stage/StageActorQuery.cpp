@@ -3,6 +3,7 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
@@ -57,6 +58,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
         {StageActorType::Crystal, "crystals", "クリスタル"},
         {StageActorType::NPC, "NPCs", "NPC"},
         {StageActorType::Star, "star", "星"},
+        {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
     };
 
     return typeInfos;
@@ -126,6 +128,12 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
         if (Star* star = planet->GetStar()) {
             const int yamlIndex = star->GetStageYamlIndex();
             AddInstance(instances, star, StageActorType::Star, yamlIndex, "star", MakeIndexedLabel("星", yamlIndex));
+        }
+
+        for (BoatArrivalPoint* point : planet->GetBoatArrivalPoints()) {
+            const int yamlIndex = point ? point->GetStageYamlIndex() : -1;
+            AddInstance(instances, point, StageActorType::BoatArrivalPoint, yamlIndex, "boatArrivalPoints",
+                        MakeIndexedLabel("ボート到着点", yamlIndex));
         }
     }
 

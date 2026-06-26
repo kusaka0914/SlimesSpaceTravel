@@ -1,5 +1,6 @@
 #include "Boat.h"
 #include "Game.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
@@ -14,7 +15,8 @@ Boat::Boat(Game* game)
       mProgress(0.0f),
       mStartPos(0.0f),
       mDestPos(0.0f),
-      mFocusComponent(nullptr)
+      mFocusComponent(nullptr),
+      mArrivalPoint(nullptr)
 {
     // mIsActive = mGame->IsInBase();
     mIsActive = true;
@@ -36,6 +38,10 @@ void Boat::Initialize()
 
 glm::vec3 Boat::CalculateDestPos() const
 {
+    if (mArrivalPoint) {
+        return mArrivalPoint->GetPos();
+    }
+
     if (!mDestPlanet) {
         return mPos;
     }

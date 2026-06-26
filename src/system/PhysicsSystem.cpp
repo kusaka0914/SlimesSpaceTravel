@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/MovingPlatform.h"
@@ -123,6 +124,10 @@ void PhysicsSystem::CreateEditorPickBodies()
 
         for (Crystal* crystal : planet->GetCrystals()) {
             CreateEditorPickBody(crystal);
+        }
+
+        for (BoatArrivalPoint* arrivalPoint : planet->GetBoatArrivalPoints()) {
+            CreateEditorPickBody(arrivalPoint);
         }
     }
 }

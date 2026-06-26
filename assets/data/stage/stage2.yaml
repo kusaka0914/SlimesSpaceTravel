@@ -41,32 +41,32 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - -2.94
-      - -18.19
-      - -0.41
-    rotation:
-      - 0
-      - 0
-      - 0
-    facingYaw: 0
-    upVec:
-      - -0.18501435
-      - 0.9820761
-      - -0.03600279
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 3
-    theta: 0
-    phi: 0
-    height: 1
-    pos:
-      - -2.72
+      - -2.81
       - -18.06
-      - 2.05
+      - 0.44
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - 0
+      - 1
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -3.36
+      - -18.16
+      - 2.55
     rotation:
       - 0
       - 0
@@ -87,18 +87,18 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - -2.78
-      - -18.12
-      - 0.73
+      - -2.41
+      - -17.97
+      - 1.68
     rotation:
       - 0
       - 0
       - 0
     facingYaw: 0
     upVec:
-      - -0.18501435
-      - 0.9820761
-      - -0.03600279
+      - 0
+      - 1
+      - 0
     scale:
       - 0.25
       - 0.25
@@ -110,9 +110,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 3.4
-      - -17
-      - -0.53
+      - 3.63
+      - -16.92
+      - 0.37
     rotation:
       - 0
       - 0
@@ -134,7 +134,7 @@ enemies:
     height: 1
     pos:
       - -4.96
-      - -17869.31
+      - -22708.86
       - -0.82
     rotation:
       - 0
@@ -179,17 +179,17 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 3.03
+      - 3.12
       - 1.55
-      - -0.77
+      - -0.5
     rotation:
       - 0
       - 0
       - 0.23736478
     facingYaw: 0
     upVec:
-      - -0
-      - -1
+      - 0
+      - 1
       - 0
     scale:
       - 0.25
@@ -202,9 +202,9 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 0.67
+      - 0.92
       - 1.55
-      - -0.77
+      - -1.44
     rotation:
       - 0
       - -0
@@ -225,18 +225,18 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 1.14
-      - 1.55
-      - 1.54
+      - 1.22
+      - -17.33
+      - 1.56
     rotation:
       - 0
       - 0
       - 0.10821041
     facingYaw: 0
     upVec:
-      - 0
-      - 1
-      - 0
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
     scale:
       - 0.25
       - 0.25
@@ -248,18 +248,18 @@ enemies:
     phi: 0
     height: 1
     pos:
-      - 2.9
-      - 0.8
-      - -0.27
+      - 3.12
+      - 1.37
+      - -0.47
     rotation:
       - 0
       - 0
       - 0.2024582
     facingYaw: 0
     upVec:
-      - -0
-      - -1
-      - 0
+      - -0.18867789
+      - 0.63312745
+      - 0.7506999
     scale:
       - 0.25
       - 0.25
@@ -401,8 +401,9 @@ boats:
       - 0.8
       - 0.8
   - startPlanet: 3
-    destPlanet: 3
+    destPlanet: 2
     destStage: 0
+    arrivalPointIndex: 0
     theta: 0
     phi: 0
     height: 1
@@ -423,6 +424,23 @@ boats:
       - 0.8
       - 0.8
       - 0.8
+boatArrivalPoints:
+  - currentPlanetNum: 2
+    pos:
+      - 0.36
+      - 6.92
+      - 0
+    rotation: [0, 0, 0]
+    scale: [0.4, 0.4, 0.4]
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    upVec:
+      - 0.08468377
+      - 0.99631584
+      - 0.01354324
 boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
@@ -447,9 +465,9 @@ star:
       - 0
     facingYaw: 0
     upVec:
-      - 0.99992305
-      - 0.008745005
-      - 0.008795579
+      - 0.99992317
+      - 0.008745006
+      - 0.00879558
     scale:
       - 0.3
       - 0.3
@@ -877,7 +895,7 @@ platforms:
   - currentPlanetNum: 3
     pos:
       - -12.66
-      - -10.9
+      - -10.89
       - -3.47
     theta: 0
     phi: 0
@@ -965,7 +983,7 @@ platforms:
 movingPlatforms:
   - currentPlanetNum: 0
     pos:
-      - 30.84
+      - 38.37
       - -34.45
       - -5.27
     theta: 0

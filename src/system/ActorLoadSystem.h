@@ -23,6 +23,7 @@ class Boat;
 class Star;
 class Actor;
 class Key;
+class BoatArrivalPoint;
 
 class ActorLoadSystem {
 public:
@@ -42,6 +43,7 @@ public:
     Star* CreateStarFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Key* CreateKeyFromStageNode(const YAML::Node& node, int stageYamlIndex);
     bool CreatePlayerFromCurrentStage(int playerNum);
+    BoatArrivalPoint* CreateBoatArrivalPointFromStageNode(const YAML::Node& node, int stageYamlIndex);
 
     void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
                                      float defaultHeight = 0.0f);
@@ -60,6 +62,7 @@ private:
     void LoadStar(const char* path);
     void LoadPlatforms(const char* path);
     void LoadMovingPlatforms(const char* path);
+    void LoadBoatArrivalPoints(const char* path);
 
     glm::vec3 CalculatePos(YAML::Node node, Planet* currentPlanet);
 

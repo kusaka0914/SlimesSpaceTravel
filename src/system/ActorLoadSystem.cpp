@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Boat.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
@@ -27,6 +28,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
 
     LoadPlanets(path.c_str());
     LoadEnemies(path.c_str());
+    LoadBoatArrivalPoints(path.c_str());
     LoadBoats(path.c_str());
     LoadBoatParts(path.c_str());
     LoadKeys(path.c_str());
@@ -259,6 +261,17 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
     boat->SetCurrentPlanet(currentPlanet);
     boat->SetDestPlanet(destPlanet);
 
+    const int arrivalPointIndex = node["arrivalPointIndex"] ? node["arrivalPointIndex"].as<int>() : -1;
+
+    if (arrivalPointIndex >= 0) {
+        for (BoatArrivalPoint* point : destPlanet->GetBoatArrivalPoints()) {
+            if (point && point->GetStageYamlIndex() == arrivalPointIndex) {
+                boat->SetArrivalPoint(point);
+                break;
+            }
+        }
+    }
+
     int destStage = node["destStage"] ? node["destStage"].as<int>() : 0;
     boat->SetDestStage(destStage);
 
@@ -405,6 +418,21 @@ MovingPlatform* ActorLoadSystem::CreateMovingPlatformFromStageNode(const YAML::N
                 platform->SetBaseLocalPos(platform->GetPos() - platform->GetCurrentPlanet()->GetPos());
             }
         });
+}
+
+void ActorLoadSystem::LoadBoatArrivalPoints(const char* path)
+{
+    LoadActorSequence<BoatArrivalPoint>(
+        path, "boatArrivalPoints", [](Planet* planet) { planet->RemoveAllBoatArrivalPoints(); },
+        [this](const YAML::Node& node, int index) { return CreateBoatArrivalPointFromStageNode(node, index); });
+}
+
+BoatArrivalPoint* ActorLoadSystem::CreateBoatArrivalPointFromStageNode(const YAML::Node& node, int stageYamlIndex)
+{
+    return CreatePlacedActorFromStageNode<BoatArrivalPoint>(
+        node, stageYamlIndex, 1.0f, glm::vec3(0.4f), "platform.obj",
+        [](Planet* planet, BoatArrivalPoint* point) { planet->AddBoatArrivalPoint(point); },
+        [](BoatArrivalPoint* point, const YAML::Node&) { point->ApplyConfig(); });
 }
 
 glm::vec3 ActorLoadSystem::CalculatePos(YAML::Node node, Planet* currentPlanet)

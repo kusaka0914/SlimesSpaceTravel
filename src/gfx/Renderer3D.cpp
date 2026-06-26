@@ -3,6 +3,7 @@
 #include "Stage.h"
 #include "VertexArray.h"
 #include "actor/Boat.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
@@ -180,6 +181,9 @@ void Renderer3D::TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm:
         TryDrawActors(planet->GetNPCs());
         TryDrawActor(planet->GetKey());
         TryDrawActor(planet->GetStar());
+        if (mGame->GetIsDebugMode()) {
+            TryDrawActors(planet->GetBoatArrivalPoints());
+        }
     }
 }
 

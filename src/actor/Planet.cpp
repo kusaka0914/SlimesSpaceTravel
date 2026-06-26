@@ -4,8 +4,6 @@
 #include "actor/BoatParts.h"
 #include "actor/Enemy.h"
 
-#include <yaml-cpp/yaml.h>
-
 Planet::Planet(Game* game)
     : Actor(game),
       mStageNum(0),
