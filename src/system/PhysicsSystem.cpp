@@ -5,6 +5,7 @@
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/FallRespawnPoint.h"
 #include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
@@ -13,6 +14,7 @@
 #include "system/MeshLoadSystem.h"
 #include "utils/MathUtils.h"
 #include <btBulletDynamicsCommon.h>
+#include <limits>
 
 PhysicsSystem::PhysicsSystem(Game* game)
     : mGame(game)
@@ -46,6 +48,12 @@ void PhysicsSystem::Initialize()
 void PhysicsSystem::ClearBulletWorld()
 {
     if (mBulletWorld) {
+        for (const auto& triggerObject : mFallRespawnTriggerObjects) {
+            if (triggerObject) {
+                mBulletWorld->removeCollisionObject(triggerObject.get());
+            }
+        }
+
         for (const auto& pickObject : mEditorPickObjects) {
             if (pickObject) {
                 mBulletWorld->removeCollisionObject(pickObject.get());
@@ -58,6 +66,9 @@ void PhysicsSystem::ClearBulletWorld()
             }
         }
     }
+
+    mFallRespawnTriggerObjects.clear();
+    mFallRespawnTriggerShapes.clear();
 
     mEditorPickObjects.clear();
     mEditorPickShapes.clear();
@@ -80,6 +91,7 @@ void PhysicsSystem::ClearBulletWorld()
 void PhysicsSystem::CreateWorld()
 {
     CreateStageCollisionBodies();
+    CreateFallRespawnTriggerBodies();
     CreateEditorPickBodies();
     CreatePlayerShape();
 }
@@ -128,6 +140,10 @@ void PhysicsSystem::CreateEditorPickBodies()
 
         for (BoatArrivalPoint* arrivalPoint : planet->GetBoatArrivalPoints()) {
             CreateEditorPickBody(arrivalPoint);
+        }
+
+        for (FallRespawnPoint* fallRespawnPoint : planet->GetFallRespawnPoints()) {
+            CreateEditorPickBody(fallRespawnPoint);
         }
     }
 }
@@ -321,7 +337,8 @@ btTransform PhysicsSystem::CreateActorTransform(Actor* actor) const
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
-    if (dynamic_cast<Platform*>(actor)) {
+    if (dynamic_cast<Platform*>(actor) || dynamic_cast<MovingPlatform*>(actor) ||
+        dynamic_cast<FallRespawnPoint*>(actor)) {
         glm::mat4 orient = mGame->GetMathUtils()->CreateOrient(actor);
 
         glm::vec3 axisX = glm::normalize(glm::vec3(orient[0]));
@@ -334,6 +351,52 @@ btTransform PhysicsSystem::CreateActorTransform(Actor* actor) const
     }
 
     return actorTransform;
+}
+
+void PhysicsSystem::CreateFallRespawnTriggerBodies()
+{
+    if (!mGame || !mGame->GetCurrentStage() || !mBulletWorld) {
+        return;
+    }
+
+    const auto& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (FallRespawnPoint* point : planet->GetFallRespawnPoints()) {
+            CreateFallRespawnTriggerBody(point);
+        }
+    }
+}
+
+void PhysicsSystem::CreateFallRespawnTriggerBody(FallRespawnPoint* point)
+{
+    if (!point || !mBulletWorld) {
+        return;
+    }
+
+    const glm::vec3 scale = point->GetScale();
+    const glm::vec3 halfSize = scale * 0.5f;
+
+    auto shape = std::make_unique<btBoxShape>(btVector3(halfSize.x, halfSize.y, halfSize.z));
+    auto object = std::make_unique<btCollisionObject>();
+
+    const btTransform transform = CreateActorTransform(point);
+    object->setWorldTransform(transform);
+
+    object->setCollisionShape(shape.get());
+    object->setUserPointer(point);
+
+    object->setCollisionFlags(object->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+
+    mBulletWorld->addCollisionObject(object.get(), static_cast<short>(btBroadphaseProxy::SensorTrigger),
+                                     static_cast<short>(btBroadphaseProxy::DefaultFilter));
+
+    mFallRespawnTriggerShapes.emplace_back(std::move(shape));
+    mFallRespawnTriggerObjects.emplace_back(std::move(object));
 }
 
 std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const glm::vec3& rayFrom,
@@ -435,6 +498,95 @@ std::unique_ptr<btTriangleMesh> PhysicsSystem::CreateTriangleMesh(const glm::vec
         triangleMesh->addTriangle(v0, v1, v2);
     }
     return triangleMesh;
+}
+
+void PhysicsSystem::SyncFallRespawnTriggerBodies() const
+{
+    for (const auto& object : mFallRespawnTriggerObjects) {
+        if (!object) {
+            continue;
+        }
+
+        Actor* actor = static_cast<Actor*>(object->getUserPointer());
+
+        if (!actor) {
+            continue;
+        }
+
+        const btTransform transform = CreateActorTransform(actor);
+        object->setWorldTransform(transform);
+        mBulletWorld->updateSingleAabb(object.get());
+    }
+}
+
+std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep(const glm::vec3& from,
+                                                                                 const glm::vec3& to) const
+{
+    if (!mBulletWorld || !mPlayerShape) {
+        return std::nullopt;
+    }
+
+    if (glm::length(to - from) < 1e-5f) {
+        return std::nullopt;
+    }
+
+    SyncFallRespawnTriggerBodies();
+
+    btTransform fromTransform;
+    fromTransform.setIdentity();
+    fromTransform.setOrigin(btVector3(from.x, from.y, from.z));
+
+    btTransform toTransform;
+    toTransform.setIdentity();
+    toTransform.setOrigin(btVector3(to.x, to.y, to.z));
+
+    class FallRespawnSweepCallback : public btCollisionWorld::ClosestConvexResultCallback {
+    public:
+        FallRespawnSweepCallback(const btVector3& from, const btVector3& to)
+            : btCollisionWorld::ClosestConvexResultCallback(from, to)
+        {
+        }
+
+        btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace) override
+        {
+            Actor* actor = static_cast<Actor*>(convexResult.m_hitCollisionObject->getUserPointer());
+
+            if (!dynamic_cast<FallRespawnPoint*>(actor)) {
+                return 1.0f;
+            }
+
+            return btCollisionWorld::ClosestConvexResultCallback::addSingleResult(convexResult, normalInWorldSpace);
+        }
+    };
+
+    FallRespawnSweepCallback cb(fromTransform.getOrigin(), toTransform.getOrigin());
+
+    cb.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    cb.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::SensorTrigger);
+
+    mBulletWorld->convexSweepTest(mPlayerShape.get(), fromTransform, toTransform, cb);
+
+    if (!cb.hasHit()) {
+        return std::nullopt;
+    }
+
+    Actor* hitActor = static_cast<Actor*>(cb.m_hitCollisionObject->getUserPointer());
+
+    if (!hitActor) {
+        return std::nullopt;
+    }
+
+    RayHitActor hit;
+    hit.actor = hitActor;
+
+    const btVector3 hitPoint = cb.m_hitPointWorld;
+    const btVector3 hitNormal = cb.m_hitNormalWorld;
+
+    hit.hitPos = glm::vec3(hitPoint.x(), hitPoint.y(), hitPoint.z());
+    hit.hitNormal = glm::vec3(hitNormal.x(), hitNormal.y(), hitNormal.z());
+    hit.distance = glm::length(hit.hitPos - from);
+
+    return hit;
 }
 
 glm::vec3 PhysicsSystem::CheckCollision(Actor* actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos)

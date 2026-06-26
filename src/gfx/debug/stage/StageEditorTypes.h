@@ -13,6 +13,7 @@ enum class StageActorType {
     BoatParts,
     Boat,
     BoatArrivalPoint,
+    FallRespawnPoint,
     Key,
     Star
 };

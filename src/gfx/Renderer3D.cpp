@@ -7,6 +7,7 @@
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
 #include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
@@ -183,6 +184,7 @@ void Renderer3D::TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm:
         TryDrawActor(planet->GetStar());
         if (mGame->GetIsDebugMode()) {
             TryDrawActors(planet->GetBoatArrivalPoints());
+            TryDrawActors(planet->GetFallRespawnPoints());
         }
     }
 }

@@ -7,6 +7,7 @@
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
 #include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
@@ -59,6 +60,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
         {StageActorType::NPC, "NPCs", "NPC"},
         {StageActorType::Star, "star", "星"},
         {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
+        {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
     };
 
     return typeInfos;
@@ -134,6 +136,12 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
             const int yamlIndex = point ? point->GetStageYamlIndex() : -1;
             AddInstance(instances, point, StageActorType::BoatArrivalPoint, yamlIndex, "boatArrivalPoints",
                         MakeIndexedLabel("ボート到着点", yamlIndex));
+        }
+
+        for (FallRespawnPoint* point : planet->GetFallRespawnPoints()) {
+            const int yamlIndex = point ? point->GetStageYamlIndex() : -1;
+            AddInstance(instances, point, StageActorType::FallRespawnPoint, yamlIndex, "fallRespawnPoints",
+                        MakeIndexedLabel("落下判定", yamlIndex));
         }
     }
 

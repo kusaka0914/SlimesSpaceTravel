@@ -37,6 +37,7 @@ public:
     void UpdateActor(float deltaTime) override;
 
     void ApplyDamage(Enemy* enemy, float deltaTime);
+    void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
     void Restart();
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; };
@@ -225,6 +226,7 @@ private:
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
     void SnapToGround(float upOffset, float downLength);
+    void CheckFallRespawn(const glm::vec3& prevPos);
 
 private:
     ActionState mActionState;

@@ -2,11 +2,13 @@
 #include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
+#include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
 #include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
+#include <algorithm>
 #include <btBulletDynamicsCommon.h>
 #include <cmath>
 #include <iostream>
@@ -271,10 +273,14 @@ void Player::UpdateActor(float deltaTime)
     if (!isPlaying)
         return;
 
-    if (IsAlive())
+    const glm::vec3 prevPos = mPos;
+
+    if (IsAlive()) {
         UpdateAlive(deltaTime);
-    else
+        CheckFallRespawn(prevPos);
+    } else {
         Die();
+    }
 }
 
 void Player::UpdateAlive(float deltaTime)
@@ -1175,4 +1181,49 @@ void Player::ReduceTired()
     if (mAttackMoveLockRemaining <= 0.0f) {
         mIsTired = false;
     }
+}
+
+void Player::ApplyFallDamageAndRespawn(float damage)
+{
+    if (!IsAlive()) {
+        return;
+    }
+
+    mHp = std::max(0.0f, mHp - damage);
+
+    if (!IsAlive()) {
+        return;
+    }
+
+    StartIdle();
+    SetVelocity(glm::vec3(0.0f));
+    Respawn();
+
+    mDamageTimer = mDefaultDamageTimer;
+    mInvincibleTimer = mDefaultInvincibleTimer;
+}
+
+void Player::CheckFallRespawn(const glm::vec3& prevPos)
+{
+    if (!mGame || !mGame->GetPhysicsSystem()) {
+        return;
+    }
+
+    if (!IsAlive()) {
+        return;
+    }
+
+    auto hit = mGame->GetPhysicsSystem()->CheckFallRespawnBySweep(prevPos, mPos);
+
+    if (!hit || !hit->actor) {
+        return;
+    }
+
+    FallRespawnPoint* point = dynamic_cast<FallRespawnPoint*>(hit->actor);
+
+    if (!point) {
+        return;
+    }
+
+    ApplyFallDamageAndRespawn(point->GetDamage());
 }

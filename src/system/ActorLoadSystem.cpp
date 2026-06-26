@@ -6,6 +6,7 @@
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
 #include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
@@ -37,6 +38,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadNPCs(path.c_str());
     LoadPlatforms(path.c_str());
     LoadMovingPlatforms(path.c_str());
+    LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
 }
 
@@ -433,6 +435,26 @@ BoatArrivalPoint* ActorLoadSystem::CreateBoatArrivalPointFromStageNode(const YAM
         node, stageYamlIndex, 1.0f, glm::vec3(0.4f), "platform.obj",
         [](Planet* planet, BoatArrivalPoint* point) { planet->AddBoatArrivalPoint(point); },
         [](BoatArrivalPoint* point, const YAML::Node&) { point->ApplyConfig(); });
+}
+
+void ActorLoadSystem::LoadFallRespawnPoints(const char* path)
+{
+    LoadActorSequence<FallRespawnPoint>(
+        path, "fallRespawnPoints", [](Planet* planet) { planet->RemoveAllFallRespawnPoints(); },
+        [this](const YAML::Node& node, int index) { return CreateFallRespawnPointFromStageNode(node, index); });
+}
+
+FallRespawnPoint* ActorLoadSystem::CreateFallRespawnPointFromStageNode(const YAML::Node& node, int stageYamlIndex)
+{
+    return CreatePlacedActorFromStageNode<FallRespawnPoint>(
+        node, stageYamlIndex, 0.0f, glm::vec3(4.0f, 1.0f, 4.0f), "platform.obj",
+        [](Planet* planet, FallRespawnPoint* point) { planet->AddFallRespawnPoint(point); },
+        [](FallRespawnPoint* point, const YAML::Node&) { point->ApplyConfig(); },
+        [](FallRespawnPoint* point, const YAML::Node& node) {
+            if (node["damage"]) {
+                point->SetDamage(node["damage"].as<float>());
+            }
+        });
 }
 
 glm::vec3 ActorLoadSystem::CalculatePos(YAML::Node node, Planet* currentPlanet)

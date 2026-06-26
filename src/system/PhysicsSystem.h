@@ -25,6 +25,7 @@ class btTransform;
 
 class Game;
 class Actor;
+class FallRespawnPoint;
 
 class PhysicsSystem {
 public:
@@ -48,6 +49,8 @@ public:
 
     void SyncKinematicBodies() const;
 
+    std::optional<RayHitActor> CheckFallRespawnBySweep(const glm::vec3& from, const glm::vec3& to) const;
+
 private:
     void ClearBulletWorld();
     void CreateWorld();
@@ -57,6 +60,10 @@ private:
 
     void CreateStageCollisionBodies();
     void CreatePlayerShape();
+
+    void CreateFallRespawnTriggerBodies();
+    void CreateFallRespawnTriggerBody(FallRespawnPoint* point);
+    void SyncFallRespawnTriggerBodies() const;
 
     std::unique_ptr<btTriangleMesh> CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& pos,
                                                        const std::vector<unsigned int>& idx);
@@ -88,4 +95,7 @@ private:
 
     std::vector<std::unique_ptr<btCollisionObject>> mEditorPickObjects;
     std::vector<std::unique_ptr<btCollisionShape>> mEditorPickShapes;
+
+    std::vector<std::unique_ptr<btCollisionObject>> mFallRespawnTriggerObjects;
+    std::vector<std::unique_ptr<btCollisionShape>> mFallRespawnTriggerShapes;
 };
