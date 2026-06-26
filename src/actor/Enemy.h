@@ -27,6 +27,7 @@ public:
 
     void ApplyDamage(float damage, Player* player);
     void ApplyBreak(float deltaTim, bool isAllBrea = false);
+    void ApplyConfig(const std::string& type);
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }

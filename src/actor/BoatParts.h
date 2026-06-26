@@ -2,6 +2,8 @@
 
 #include "actor/Actor.h"
 
+#include <string>
+
 class Game;
 class CollectableComponent;
 
@@ -9,6 +11,8 @@ class BoatParts : public Actor {
 public:
     BoatParts(Game* game);
     void UpdateActor(float deltaTime) override;
+
+    void ApplyConfig(const std::string& type);
 
 private:
     void AddCollectableComponent();

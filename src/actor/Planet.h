@@ -24,6 +24,7 @@ public:
     enum class PlanetShape { Normal, Sphere, Ellipse };
 
     Planet(Game* game);
+    void ApplyConfig(const YAML::Node& node);
     void Initialize() override;
     void OnBoatPartsObtained();
     void OnEnemyDead();

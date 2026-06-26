@@ -3,11 +3,38 @@
 #include "Player.h"
 #include "utils/MathUtils.h"
 
+#include <yaml-cpp/yaml.h>
+
 NPC::NPC(Game* game)
     : CharacterActor(game),
       mIsTalkable(false)
 {
     mShouldJudgeLanding = true;
+}
+
+void NPC::ApplyConfig(const std::string& type)
+{
+    YAML::Node npcRoot = YAML::LoadFile("../assets/data/actor/npcs.yaml");
+
+    if (!npcRoot["npcs"] || !npcRoot["npcs"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& npcNode : npcRoot["npcs"]) {
+        const std::string npcType = npcNode["type"] ? npcNode["type"].as<std::string>() : "";
+
+        if (type != npcType) {
+            continue;
+        }
+
+        const std::string modelPath = npcNode["modelPath"] ? npcNode["modelPath"].as<std::string>() : "npc.obj";
+        SetModelPath(modelPath);
+
+        const float scale = npcNode["scale"] ? npcNode["scale"].as<float>() : 0.25f;
+        SetScale(glm::vec3(scale));
+
+        return;
+    }
 }
 
 void NPC::UpdateActor(float deltaTime)

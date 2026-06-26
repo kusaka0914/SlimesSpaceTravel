@@ -30,6 +30,8 @@ public:
 
     Player(Game* game);
 
+    void ApplyConfig();
+
     void Initialize() override;
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
