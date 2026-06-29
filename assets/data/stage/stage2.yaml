@@ -88,7 +88,7 @@ enemies:
     height: 1
     pos:
       - -2.4
-      - -18.01
+      - -17.97
       - 1.68
     rotation:
       - 0
@@ -325,9 +325,9 @@ crystals:
       - 0
     facingYaw: 0
     upVec:
-      - -0.25888503
-      - -0.58343476
-      - 0.7697937
+      - -0.25888506
+      - -0.5834348
+      - 0.7697938
     scale:
       - 1.4
       - 1.4
@@ -347,9 +347,9 @@ crystals:
       - 0
     facingYaw: 0
     upVec:
-      - 0.8978751
-      - -0.3300485
-      - 0.29135638
+      - 0.89787495
+      - -0.33004847
+      - 0.29135635
     scale:
       - 2.2
       - 2.2
@@ -380,6 +380,7 @@ boats:
   - startPlanet: 0
     destPlanet: 3
     destStage: 0
+    arrivalPointIndex: 1
     theta: 0.313
     phi: -0.342
     height: 1
@@ -393,9 +394,9 @@ boats:
       - 0
       - 0
     upVec:
-      - 0.8978751
-      - -0.3300485
-      - 0.29135638
+      - 0.89787495
+      - -0.33004847
+      - 0.29135635
     scale:
       - 0.8
       - 0.8
@@ -441,10 +442,26 @@ boatArrivalPoints:
       - 0.052961424
       - 0.99832976
       - -0.023082618
+  - currentPlanetNum: 3
+    pos:
+      - -3.65
+      - -17.69
+      - 0
+    rotation: [0, 0, 0]
+    scale: [0.4, 0.4, 0.4]
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    upVec:
+      - 0.052961424
+      - 0.99832976
+      - -0.023082618
 boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
-    currentPlanetNum: 3
+    currentPlanetNum: 0
     modelPath: player.obj
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
@@ -465,9 +482,9 @@ star:
       - 0
     facingYaw: 0
     upVec:
-      - 0.99992305
-      - -0.008745004
-      - -0.008795652
+      - 0.99992317
+      - -0.008745005
+      - -0.008795653
     scale:
       - 0.3
       - 0.3
@@ -515,9 +532,9 @@ platforms:
       - 1
     modelPath: platform.obj
     upVec:
-      - 0.33460563
-      - -0.43328178
-      - -0.8368428
+      - 0.33460566
+      - -0.43328184
+      - -0.8368429
   - currentPlanetNum: 0
     pos:
       - -5.83
@@ -581,9 +598,9 @@ platforms:
       - 1.4
     modelPath: platform.obj
     upVec:
-      - 0.8978751
-      - -0.3300485
-      - 0.29135638
+      - 0.89787495
+      - -0.33004847
+      - 0.29135635
   - currentPlanetNum: 0
     pos:
       - -2.02
@@ -740,9 +757,9 @@ platforms:
       - -0.020004071
   - currentPlanetNum: 3
     pos:
-      - 11.19
-      - -8.44
-      - -2.43
+      - 10.98
+      - -8.23
+      - -2.42
     theta: 0
     phi: 0
     height: 1
@@ -1003,7 +1020,35 @@ fallRespawnPoints:
   - currentPlanetNum: 3
     pos:
       - 0
-      - -36.77
+      - -27.91
+      - 3.61
+    scale: [20, 1.6492156, 20]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 0]
+    upVec: [0, -1, 0]
+  - currentPlanetNum: 3
+    pos:
+      - 18.55
+      - -11.54
+      - 3.56
+    scale: [20, 2.0673554, 19.999996]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 1.5707964]
+    upVec: [-1, -4.371139e-08, 0]
+  - currentPlanetNum: 3
+    pos:
+      - -21.82
+      - -11.14
       - 3.56
     scale: [20, 1.6492156, 20]
     damage: 1.0
@@ -1012,11 +1057,19 @@ fallRespawnPoints:
     phi: 0
     height: 0
     facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    upVec:
-      - 5.4495117e-06
-      - 1
-      - 4.5413177e-07
+    rotation: [0, 0, 1.5707964]
+    upVec: [-1, -4.371139e-08, 0]
+  - currentPlanetNum: 3
+    pos:
+      - 0.26
+      - 8.02
+      - 3.56
+    scale: [20, 1.6492156, 20]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 0]
+    upVec: [0, -1, 0]

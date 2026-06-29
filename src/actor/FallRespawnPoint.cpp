@@ -9,6 +9,7 @@ FallRespawnPoint::FallRespawnPoint(Game* game)
     SetModelPath("platform.obj");
     SetScale(glm::vec3(4.0f, 1.0f, 4.0f));
     SetRadius(2.0f);
+    mIsUpVecInitialized = true;
 }
 
 void FallRespawnPoint::ApplyConfig()

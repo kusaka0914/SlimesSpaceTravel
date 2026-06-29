@@ -1174,9 +1174,10 @@ void Player::OnCastSucceeded()
 
 void Player::ReduceTired()
 {
-    mAttackMoveLockRemaining -= 0.8f;
-    mDodgeCooldown -= 0.8f;
-    mAttackCooldownRemaining -= 0.8f;
+    constexpr float reduceTime = 0.8f;
+    mAttackMoveLockRemaining -= reduceTime;
+    mDodgeCooldown -= reduceTime;
+    mAttackCooldownRemaining -= reduceTime;
 
     if (mAttackMoveLockRemaining <= 0.0f) {
         mIsTired = false;
@@ -1206,6 +1207,10 @@ void Player::ApplyFallDamageAndRespawn(float damage)
 void Player::CheckFallRespawn(const glm::vec3& prevPos)
 {
     if (!mGame || !mGame->GetPhysicsSystem()) {
+        return;
+    }
+
+    if (!mIsActive) {
         return;
     }
 

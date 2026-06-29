@@ -379,9 +379,8 @@ void PhysicsSystem::CreateFallRespawnTriggerBody(FallRespawnPoint* point)
     }
 
     const glm::vec3 scale = point->GetScale();
-    const glm::vec3 halfSize = scale * 0.5f;
 
-    auto shape = std::make_unique<btBoxShape>(btVector3(halfSize.x, halfSize.y, halfSize.z));
+    auto shape = std::make_unique<btBoxShape>(btVector3(scale.x, scale.y, scale.z));
     auto object = std::make_unique<btCollisionObject>();
 
     const btTransform transform = CreateActorTransform(point);

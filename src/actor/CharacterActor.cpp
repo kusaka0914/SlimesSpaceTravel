@@ -81,6 +81,9 @@ bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& h
 
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayInfo.rayFrom, rayInfo.rayTo);
 
+    rayCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    rayCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+
     mGame->GetPhysicsSystem()->SyncKinematicBodies();
     bulletWorld->rayTest(rayInfo.rayFrom, rayInfo.rayTo, rayCallback);
 

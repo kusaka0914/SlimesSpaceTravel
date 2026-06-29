@@ -191,6 +191,9 @@ bool Actor::CastRay(const glm::vec3& offset, glm::vec3& outNormal, const btColli
 
     btCollisionWorld::ClosestRayResultCallback cb(downRayFrom, downRayTo);
 
+    cb.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    cb.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+
     const btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
 
     bulletWorld->rayTest(downRayFrom, downRayTo, cb);

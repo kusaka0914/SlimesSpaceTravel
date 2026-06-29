@@ -122,20 +122,6 @@ void Renderer3D::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) con
     DrawScene(views[1], proj, p2CameraPos);
 }
 
-// void Renderer3D::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const
-// {
-//     float halfWidth = fbWidth * 0.5f;
-//     float halfAspect = halfWidth / static_cast<float>(fbHeight);
-//     glm::mat4 halfProj = glm::perspective(glm::radians(45.0f), halfAspect, 0.1f, 100.0f);
-//     std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
-
-//     glViewport(0, 0, static_cast<GLsizei>(halfWidth), fbHeight);
-//     DrawScene(views[0], halfProj);
-
-//     glViewport(static_cast<GLsizei>(halfWidth), 0, static_cast<GLsizei>(halfWidth), fbHeight);
-//     DrawScene(views[1], halfProj);
-// }
-
 void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
 {
     SetUniforms(viewMat, projMat, cameraPos);
