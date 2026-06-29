@@ -1,6 +1,7 @@
 #include "system/SceneSystem.h"
 
 #include "Game.h"
+#include "SceneSystem.h"
 #include "Stage.h"
 
 #include "actor/Boat.h"
@@ -72,6 +73,15 @@ void SceneSystem::OnConfirmPressed()
 
 void SceneSystem::OnStartPressed()
 {
+    if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
+        StartFadeIn();
+        return;
+    }
+
+    if (!mGame->GetSdlController()) {
+        return;
+    }
+
     bool operationUIShow = mUIState->GetIsOperationUIShow();
     mUIState->SetIsOperationUIShow(!operationUIShow);
 }
@@ -147,6 +157,16 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         player->OnBoatArrived(boat);
     }
 
+    TryStartBattleTutorial();
+    TryStartJustDodgeTutorial();
+}
+
+void SceneSystem::TryStartBattleTutorial()
+{
+    if (mGame->GetPlayers()[0]->GetCurrentPlanetNum() != 1) {
+        return;
+    }
+
     if (mUIState->GetIsBattleTutorialShown()) {
         return;
     }
@@ -154,6 +174,21 @@ void SceneSystem::OnBoatArrived(Boat* boat)
     mUIState->SetCurrentTutorialKind(UIState::TutorialKind::Battle);
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
     mUIState->SetIsBattleTutorialShown(true);
+}
+
+void SceneSystem::TryStartJustDodgeTutorial()
+{
+    if (mGame->GetPlayers()[0]->GetCurrentPlanetNum() != 2) {
+        return;
+    }
+
+    if (mUIState->GetIsJustDodgeTutorialShown()) {
+        return;
+    }
+
+    mUIState->SetCurrentTutorialKind(UIState::TutorialKind::JustDodge);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
+    mUIState->SetIsJustDodgeTutorialShown(true);
 }
 
 void SceneSystem::OnStageClear()

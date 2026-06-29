@@ -12,7 +12,14 @@ class Enemy;
 
 class Player : public CharacterActor {
 public:
-    enum class ActionState { Idle, Dodging, Attacking, Charging, StrongAttacking, KnockedBack };
+    enum class ActionState {
+        Idle,
+        Dodging,
+        Attacking,
+        Charging,
+        StrongAttacking,
+        KnockedBack,
+    };
 
     enum class AttackKind { Normal, Wide, Strong };
 
@@ -22,19 +29,19 @@ public:
     };
 
     Player(Game* game);
-    ~Player();
 
     void Initialize() override;
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
 
-    void ApplyDamage(float damage, glm::vec3 knockBackFrom);
+    void ApplyDamage(Enemy* enemy, float deltaTime);
     void OnBoatArrived(Boat* boat);
     void Restart();
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; };
     bool IsAttacking() const
     {
-        return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking;
+        return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking ||
+               mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
     }
 
     void SetIsDodged(bool isDodged) { mIsDodged = isDodged; }
@@ -42,7 +49,6 @@ public:
     void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
     void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
 
-    void SetCameraPitch(float cameraPitch) { mCameraPitch = cameraPitch; }
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
     void SetAttack(float attack) { mAttack = attack; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
@@ -81,12 +87,16 @@ public:
     }
     void SetRayCastTimer(float rayCastTimer) { mRayCastTimer = rayCastTimer; }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
+    void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
 
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
 
     void SetTalkableNPC(NPC* talkableNPC) { mTalkableNPC = talkableNPC; }
 
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
+    bool GetIsSpecialAttackPressed() const { return mSpecialAttackPressed; }
+    bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
+    bool GetIsTired() const { return mIsTired; }
 
     int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
     int GetJewelCount() const { return mJewelCount; }
@@ -100,6 +110,45 @@ public:
     float GetAttackRange() const { return mAttackRange; }
     float GetAttackAngle() const { return mAttackAngle; }
     float GetRayCastTimer() const { return mRayCastTimer; }
+    float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetCameraYaw() const { return mCameraYaw; }
+
+    float GetAttackSpeed() const { return mAttackSpeed; }
+    float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
+
+    float GetMaxHp() const { return mMaxHp; }
+
+    float GetDefaultDamageTimer() const { return mDefaultDamageTimer; }
+
+    float GetAttackCooldown() const { return mAttackCooldown; }
+    float GetLastAttackCooldown() const { return mLastAttackCooldown; }
+    float GetDefaultAttackPressTimer() const { return mDefaultAttackPressTimer; }
+
+    float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
+
+    float GetDodgeDuration() const { return mDodgeDuration; }
+    float GetDodgeCooldownTime() const { return mDodgeCooldownTime; }
+    float GetDodgeDistance() const { return mDodgeDistance; }
+
+    float GetDefaultInvincibleTimer() const { return mDefaultInvincibleTimer; }
+
+    float GetNormalAttackRange() const { return mNormalAttackRange; }
+    float GetNormalAttackAngle() const { return mNormalAttackAngle; }
+    float GetNormalAttack() const { return mNormalAttack; }
+
+    float GetWideAttackRange() const { return mWideAttackRange; }
+    float GetWideAttackAngle() const { return mWideAttackAngle; }
+    float GetWideAttack() const { return mWideAttack; }
+
+    float GetStrongAttackRange() const { return mStrongAttackRange; }
+    float GetStrongAttack() const { return mStrongAttack; }
+    float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
+
+    float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
+    float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
+
+    float GetInputAvailableTimer() const { return mInputAvailableTimer; }
+    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
 
     ActionState GetActionState() const { return mActionState; }
 
@@ -124,6 +173,8 @@ private:
     void UpdateCharging(float deltaTime);
     void UpdateStrongAttacking(float deltaTime);
     void UpdateKnockedBack(float deltaTime);
+    void UpdateSpecialAttackCharging(float deltaTime);
+    void UpdateContinuousAttacking(float deltaTime);
     void UpdateTimer(float deltaTime);
 
     void UpdateJewelTimer(float deltaTime);
@@ -139,8 +190,10 @@ private:
     void StartRidingBoat(Boat* boat);
     void StartJumping(float deltaTime);
     void StartJewelTimer();
+    void StartTired(float lockTime);
 
     void FinishCharging();
+    void FinishSpecialAttackCharging();
 
     void ChangeFaceDir();
     void UpdateFacingForwardVec();
@@ -152,19 +205,23 @@ private:
     void StartAfterAttackReaction();
     void WideAttack(float deltaTime);
     void StrongAttack(float deltaTime);
-    void MoveDuringKnockBack(float deltaTime);
     void SpecialAttack(float deltaTime);
+    void MoveDuringKnockBack(float deltaTime);
+    void StartSpecialAttackCharging();
+    void StartContinuousAttacking();
     void FollowMovingBoat(Boat* boat);
     void OnLanded() override;
+    void ReduceTired();
 
     bool IsAlive() const { return mHp > 0.0f; };
     bool IsTouchingBoat(Boat* boat);
     bool IsFallIntoPlanetInside();
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange);
-    bool CanWalk() const { return mAttackMoveLockRemaining <= 0.0f; }
+    bool CanWalk() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
     std::vector<Enemy*> FindHitEnemies();
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
+    void SnapToGround(float upOffset, float downLength);
 
 private:
     ActionState mActionState;
@@ -185,6 +242,9 @@ private:
     bool mIsStrongAttackHit;
     bool mIsStrongAttacked;
     bool mIsCharged;
+    bool mCanSpecialAttack;
+    bool mIsAirAttacking;
+    bool mIsTired;
 
     int mCurrentPlanetNum;
     int mAttackComboIndex;
@@ -193,7 +253,6 @@ private:
     int mJewelCount;
 
     float mCameraYaw;
-    float mCameraPitch;
     float mMoveForward;
     float mMoveLeft;
     float mAttackStartHeight;
@@ -220,6 +279,7 @@ private:
     float mAttackDodgeLockRemaining;
     float mAttackMotionTimer;
     float mDefaultAttackMotionTimer;
+    float mAirAttackFloatingTimer;
     float mJewelTimer;
     float mSpecialAttackCooldown;
     float mAttackPressTimer;
@@ -242,6 +302,10 @@ private:
     float mStrongAttackSpeed;
     float mRayCastTimer;
     float mInputAvailableTimer;
+    float mKnockBackSpeed;
+    float mSpecialChargingTimer;
+    float mContinuousAttackingTimer;
+    float mContinuousAttackingCooldown;
 
     glm::vec3 mForwardVec;
     glm::vec3 mLeftVec;

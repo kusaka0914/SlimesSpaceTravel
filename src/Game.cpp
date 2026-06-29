@@ -4,6 +4,7 @@
 #include "Stage.h"
 
 #include "actor/Actor.h"
+#include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
@@ -32,9 +33,11 @@ Game::Game()
       mLastTime(0.0),
       mReloadKeyPressedPrev(false),
       mUIReloadKeyPressedPrev(false),
-      mAPressedPrev(false),
+      mXPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/house.yaml")
+      mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
+      mIsDebugMode(false),
+      mIsFreeCameraMode(false)
 {
 }
 
@@ -76,7 +79,7 @@ bool Game::InitializeGLFW()
     //     mWindow = glfwCreateWindow(mode->width, mode->height, "Engine",
     //     monitor, nullptr);
 
-    mWindow = glfwCreateWindow(800, 450, "Slime'sSkyTravel", nullptr, nullptr);
+    mWindow = glfwCreateWindow(800, 450, "Slime'sSpaceTravel", nullptr, nullptr);
     if (!mWindow) {
         // std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();
@@ -175,12 +178,32 @@ void Game::ProcessInput()
     SDL_GameControllerUpdate();
 
     ProcessGameInput();
+
+    if (mIsPauseMenuOpen) {
+        return;
+    }
+
     ProcessActorsInput();
     mCameraSystem->ProcessInput();
 }
 
 void Game::ProcessGameInput()
 {
+    const bool pauseMenuKeyPressed =
+        glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK));
+
+    if (pauseMenuKeyPressed && !mPauseMenuKeyPressedPrev &&
+        (mSceneSystem->IsPlaying() || mSceneSystem->IsFocusing() || mIsPauseMenuOpen)) {
+        TogglePauseMenu();
+    }
+
+    mPauseMenuKeyPressedPrev = pauseMenuKeyPressed;
+
+    if (mIsPauseMenuOpen) {
+        ProcessPauseMenuInput();
+    }
+
     const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_R) == GLFW_PRESS;
     if (reloadKeyPressed && !mReloadKeyPressedPrev) {
         ReloadCurrentStage();
@@ -198,27 +221,141 @@ void Game::ProcessGameInput()
     //     CreatePlayer2();
     // }
 
-    const bool aPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A)) ||
-                          glfwGetKey(mWindow, GLFW_KEY_SPACE) == GLFW_PRESS;
+    const bool xPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X)) ||
+                          glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
 
-    if (aPressed && !mAPressedPrev) {
+    if (xPressed && !mXPressedPrev) {
         mSceneSystem->OnConfirmPressed();
     }
-    mAPressedPrev = aPressed;
+    mXPressedPrev = xPressed;
 
-    const bool escapePressed = glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS;
-    const bool backPressed = mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK);
-
-    if (escapePressed || backPressed) {
-        FinishGame();
+    const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
+    if (pPressed && !mPPressedPrev) {
+        mIsDebugMode = !mIsDebugMode;
     }
+    mPPressedPrev = pPressed;
+
+    const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
+    if (lPressed && !mLPressedPrev) {
+        mIsFreeCameraMode = !mIsFreeCameraMode;
+    }
+    mLPressedPrev = lPressed;
+
+    // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
+    // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
+    // bool isBossExist = false;
+    // for (auto enemy : enemies) {
+    //     if (!enemy->GetIsBoss()) {
+    //         continue;
+    //     }
+
+    //     isBossExist = true;
+    //     break;
+    // }
+    // if (isZLPressed && !mZLPressedPrev && isBossExist) {
+    //     mCameraSystem->SetIsTargetFocus(!mCameraSystem->GetIsTargetFocus());
+    // }
+    // mZLPressedPrev = isZLPressed;
 
     const bool startPressed =
-        mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START);
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START)) ||
+        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS;
     if (startPressed && !mStartPressedPrev) {
         mSceneSystem->OnStartPressed();
     }
     mStartPressedPrev = startPressed;
+}
+
+void Game::ProcessPauseMenuInput()
+{
+    constexpr int menuItemCount = 4;
+
+    const bool upPressed =
+        glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_UP));
+
+    const bool downPressed =
+        glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_DOWN));
+
+    const bool confirmPressed =
+        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS ||
+        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A));
+
+    if (upPressed && !mPauseMenuUpPressedPrev) {
+        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + menuItemCount - 1) % menuItemCount;
+    }
+
+    if (downPressed && !mPauseMenuDownPressedPrev) {
+        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + 1) % menuItemCount;
+    }
+
+    if (confirmPressed && !mPauseMenuConfirmPressedPrev) {
+        ExecutePauseMenuItem();
+    }
+
+    mPauseMenuUpPressedPrev = upPressed;
+    mPauseMenuDownPressedPrev = downPressed;
+    mPauseMenuConfirmPressedPrev = confirmPressed;
+}
+
+void Game::TogglePauseMenu()
+{
+    mIsPauseMenuOpen = !mIsPauseMenuOpen;
+
+    if (mIsPauseMenuOpen) {
+        mPauseMenuSelectedIndex = 0;
+    }
+}
+
+void Game::ClosePauseMenu()
+{
+    mIsPauseMenuOpen = false;
+}
+
+void Game::ExecutePauseMenuItem()
+{
+    switch (mPauseMenuSelectedIndex) {
+    case 0:
+        ClosePauseMenu();
+        break;
+
+    case 1:
+        ReturnToBase();
+        break;
+
+    case 2:
+        OpenFeedbackForm();
+        break;
+
+    case 3:
+        FinishGame();
+        break;
+
+    default:
+        break;
+    }
+}
+
+void Game::ReturnToBase()
+{
+    ClosePauseMenu();
+
+    if (IsInBase()) {
+        return;
+    }
+
+    mSceneSystem->RequestStageChange(0);
+}
+
+void Game::OpenFeedbackForm()
+{
+    const char* url =
+        "https://docs.google.com/forms/d/e/1FAIpQLSdv81tlscrZ9gVi38bVqnHZ3aCfo0jD-iLgBGjDh9TYqNj8Qg/viewform";
+
+    if (SDL_OpenURL(url) != 0) {
+        std::cerr << "Failed to open URL: " << SDL_GetError() << std::endl;
+    }
 }
 
 void Game::ProcessActorsInput()
@@ -242,6 +379,15 @@ void Game::UpdateGame()
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
+        return;
+    }
+
+    if (mIsPauseMenuOpen) {
+        return;
+    }
+
+    if (mIsFreeCameraMode) {
+        mCameraSystem->Update(deltaTime);
         return;
     }
 
@@ -307,7 +453,6 @@ void Game::LoadData(bool isLoadPlayer)
 {
     RemoveAllActor();
     mActorLoadSystem->LoadData(isLoadPlayer);
-    mMeshLoadSystem->LoadModel();
 }
 
 void Game::ChangeStage(int stageNum)
@@ -380,9 +525,33 @@ void Game::OnEnemyLaunched()
     mSceneSystem->OnEnemyLaunched();
 }
 
+void Game::OnPlayerApplyDamage()
+{
+    mAudioSystem->PlaySE("damaged_se");
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 1000);
+}
+
+void Game::OnPlayerFinishCharging()
+{
+    mAudioSystem->PlaySE("air_charged_se");
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
+}
+
+void Game::OnPlayerAttackHit()
+{
+    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
+}
+
 void Game::OnStrongAttacked()
 {
     mSceneSystem->OnStrongAttacked();
+    mHitStopTimer = 0.4f;
+    SDL_GameControllerRumble(mSdlController, 40000, 0, 500);
+}
+
+void Game::OnPlayerCounter()
+{
+    SDL_GameControllerRumble(mSdlController, 25000, 0, 500);
 }
 
 void Game::OnLanded()
@@ -447,4 +616,9 @@ void Game::StartPlayingScene()
 void Game::StartFocusingScene()
 {
     mSceneSystem->StartFocusingScene();
+}
+
+void Game::VibrateController(float low, float high, float time)
+{
+    SDL_GameControllerRumble(mSdlController, low, high, time);
 }

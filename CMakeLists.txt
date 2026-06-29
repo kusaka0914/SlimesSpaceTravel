@@ -5,9 +5,28 @@ set(CMAKE_CXX_STANDARD 20)
 
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*/*.cpp"
 )
+
+list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
+
 add_executable(game ${GAME_SOURCES})
+
+if (MSVC)
+    target_compile_options(game PRIVATE /utf-8)
+endif()
+
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)
+
+target_sources(game PRIVATE
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -25,6 +44,8 @@ target_include_directories(game PRIVATE
     ${GLEW_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
 )
 target_link_directories(game PRIVATE /opt/homebrew/lib)
 

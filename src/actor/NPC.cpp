@@ -3,12 +3,12 @@
 #include "Player.h"
 #include "utils/MathUtils.h"
 
-NPC::NPC(Game* game) : CharacterActor(game), mIsTalkable(false)
+NPC::NPC(Game* game)
+    : CharacterActor(game),
+      mIsTalkable(false)
 {
     mShouldJudgeLanding = true;
 }
-
-NPC::~NPC() {}
 
 void NPC::UpdateActor(float deltaTime)
 {

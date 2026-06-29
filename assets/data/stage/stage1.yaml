@@ -1,232 +1,369 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
-    scale: [8.0, 8.0, 8.0]
+  - center: [0, 0, 0]
+    scale: [8, 8, 8]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
-    shape : Sphere
+    shape: Sphere
     rocketSpawnCondition: AllBoatPartsCollected
-  - center: [32.0, 0.0, 0.0]
-    scale: [4.0, 4.0, 4.0]
+  - center: [32, 0, 0]
+    scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
-    shape : Sphere
+    shape: Sphere
     rocketSpawnCondition: AllEnemiesDead
-  - center: [64.0, 0.0, 0.0]
-    scale: [4.0, 4.0, 4.0]
+  - center: [64, 0, 0]
+    scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
-    shape : Sphere
-
+    shape: Sphere
 enemies:
-  # - type: normal
-  #   theta: 0.0
-  #   u: 0.0
-  #   height : 1.0
-  #   currentPlanetNum: 0
   - type: normal
-    theta: 2.056
-    u: 1.0
-    height : 1.0
+    theta: 1.973047
+    phi: 0.675763
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 3.513
-    u: -0.6
-    height : 1.0
+    theta: -2.842698
+    phi: -0.111576
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 3.969
-    u: 0.8
-    height : 1.0
+    theta: 2.272954
+    phi: -0.578284
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 5.026
-    u: 1.6
-    height : 1.0
+    theta: 1.331762
+    phi: -0.528396
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 1.0
-    u: 0.0
-    height : 1.0
+    theta: 0.204886
+    phi: 1.007358
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 3.056
-    u: 1.0
-    height : 1.0
+    theta: 2.354361
+    phi: 0.060486
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 4.513
-    u: -0.6
-    height : 1.0
+    theta: -1.88965
+    phi: -0.998213
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 4.969
-    u: 0.8
-    height : 1.0
+    theta: 1.263585
+    phi: -0.856111
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 1.0
+    theta: 1.027116
+    phi: -0.135222
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.226
-    u: 1.6
-    height : 1.0
+    theta: 1.536649
+    phi: 1.382983
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.426
-    u: 1.6
-    height : 1.0
+    theta: -1.373556
+    phi: -0.239034
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.626
-    u: 1.6
-    height : 1.0
+    theta: -1.761338
+    phi: 0.375625
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.826
-    u: 1.6
-    height : 1.0
+    theta: 0
+    phi: 0.277311
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 1.0
+    theta: 0.75125
+    phi: 0.034148
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 7.026
-    u: 1.6
-    height : 1.0
+    theta: -0.580512
+    phi: 0.512216
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 1.0
+    theta: -0.478069
+    phi: -0.135222
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 7.226
-    u: 1.6
-    height : 1.0
+    theta: 1.400058
+    phi: 0.443256
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 7.426
-    u: 1.6
-    height : 1.0
+    theta: 1.385288
+    phi: 1.570796
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 6.026
-    u: 1.6
-    height : 1.0
+    theta: 0.341477
+    phi: -0.135222
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 7.626
-    u: 1.6
-    height : 1.0
+    theta: 0.580512
+    phi: 0.525433
+    height: 1
     currentPlanetNum: 1
   - type: normal
-    theta: 7.826
-    u: 1.6
-    height : 1.0
+    theta: 1.67324
+    phi: -0.039231
+    height: 1
     currentPlanetNum: 1
-  # ボス（撃破でスター出現）
   - type: boss
-    theta: 6.083
-    u: -0.8
-    height : 0.0
+    theta: -0.684602
+    phi: -0.155907
+    height: 0
     currentPlanetNum: 2
-
 keys:
-  - currentPlanetNum : 1
-    theta : 100.0
-    u : 0.0
-    height : 0.1
-  
+  - currentPlanetNum: 1
+    theta: 0
+    phi: -0.530965
+    height: 0.1
 crystals:
   - type: little
-    currentPlanetNum : 0
-    theta : 79.7
-    u : 1.2
-    height : 0.05
+    currentPlanetNum: 0
+    theta: 1.891925
+    phi: -0.627311
+    height: 0.05
   - type: big
-    currentPlanetNum : 0
-    theta : -0.35
-    u : 0.3
-    height : 1.0
-
+    currentPlanetNum: 0
+    theta: 0.309124
+    phi: -0.334648
+    height: 0.87
 boats:
-  - theta : 0.0
-    u : 0.0
-    height : 0.0
-    startPlanet : 0
-    destPlanet : 1
-  - theta : 0.0
-    u : 0.0
-    height : 0.0
-    startPlanet : 1
-    destPlanet : 2
-
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 0
+    destPlanet: 1
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 1
+    destPlanet: 2
 boatParts:
-  # - type: parts1
-  #   currentPlanetNum : 0
-  #   theta : 1.0
-  #   u : 0.0
-  #   height : 0.0
   - type: parts1
-    currentPlanetNum : 0
-    pos: [-5.5, 12.8, -0.13]
+    currentPlanetNum: 0
+    theta: 3.141593
+    phi: 1.128796
+    height: 3.59
   - type: parts2
-    currentPlanetNum : 0
-    theta : 19.55
-    u : 1.05
-    height : 3.3
+    currentPlanetNum: 0
+    theta: 0.961
+    phi: 0.468
+    height: 3.3
   - type: parts3
-    currentPlanetNum : 0
-    theta : 42.55
-    u : -0.8
-    height : 3.3
+    currentPlanetNum: 0
+    theta: -1.225
+    phi: -0.496
+    height: 3.3
   - type: parts4
-    currentPlanetNum : 0
-    theta : -0.35
-    u : 0.3
-    height : 1.0
+    currentPlanetNum: 0
+    theta: 0.317
+    phi: -0.36
+    height: 1.59
   - type: parts5
-    currentPlanetNum : 0
-    theta : 79.7
-    u : 1.2
+    currentPlanetNum: 0
+    theta: 1.897
+    phi: -0.622
     height: 0.1
-
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 0
-  # - pos: [1.0, 9.5, 0.0]
-  #   currentPlanetNum: 0
-  
 star:
-  - currentPlanetNum : 2
+  - theta: 0.0
+    phi: 0.0
+    height: 0.0
+    currentPlanetNum: 2
     modelPath: star.obj
-
 NPCs:
-  - pos: [3.0, 7.5, -2.0]
+  - theta: -0.580512
+    phi: 1.126875
+    height: 0
     type: spaceSlime
     name: BoatPartsNPC
-    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。,あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。,そこに行ってみたらどうだ？,隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
-  - pos: [-3.06, -3.69, 6.3]
+    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。, あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。, そこに行ってみたらどうだ？, 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
+  - theta: 1.843978
+    phi: -0.819546
+    height: 0.196
     type: spaceSlime
     name: CrystalTutorialNPC
-    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！,中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
-  - pos: [7.14, -3.41, -0.08]
+    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！, 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
+  - theta: 0.341478
+    phi: -0.614659
+    height: 0
     type: spaceSlime
     name: BigCrystalTutorialNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！,空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！]
-  - pos: [-6.95, -3.7, 1.01]
+    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！, "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"]
+  - theta: 3.03915
+    phi: -0.460995
+    height: 0
     type: spaceSlime
     name: JumpDodgeTutorialNPC
     talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
-  - pos: [-1.35, 4.0, 6.8]
+  - theta: 1.80983
+    phi: 0.495141
+    height: 0
     type: spaceSlime
     name: JumpTutorialNPC
     talkTexts: [高い足場に乗りたい時はジャンプ！]
-  - pos: [-3.62, 6.6, 2.51]
+  - theta: 2.561081
+    phi: 0.97321
+    height: 0
     type: spaceSlime
     name: WallTutorialNPC
     talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]
+platforms:
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.939608
+    height: -0.245
+    facingYaw: -3.142
+    scale:
+      - 0.5
+      - 0.5
+      - 0.5
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.5909515
+      - 0.8066904
+      - 0.0051955623
+  - currentPlanetNum: 0
+    theta: -1.190649
+    phi: -0.444701
+    height: 2.699
+    facingYaw: 1.334
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.33460563
+      - -0.43328178
+      - -0.8368428
+  - currentPlanetNum: 0
+    theta: 2.883379
+    phi: -0.63836
+    height: -0.49
+    facingYaw: -0.318
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.76277417
+      - -0.60426146
+      - 0.23031178
+  - currentPlanetNum: 0
+    theta: -3.141593
+    phi: -0.720431
+    height: 0.411
+    facingYaw: -0.286
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.755814
+      - -0.65477455
+      - -0.003950139
+  - currentPlanetNum: 0
+    theta: 0.315594
+    phi: -0.344284
+    height: 0.563
+    facingYaw: 0
+    scale:
+      - 1.4
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+  - currentPlanetNum: 0
+    theta: -1.821837
+    phi: -0.710085
+    height: 2.7
+    facingYaw: -1.406
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.18925916
+      - -0.6468051
+      - -0.73879915
+  - currentPlanetNum: 0
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 0.258
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.34776092
+      - -0.88650805
+      - -0.3052309
+  - currentPlanetNum: 0
+    theta: 1.664041
+    phi: 0.308421
+    height: 0.452
+    facingYaw: -0.1
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.088604964
+      - 0.2969458
+      - 0.95077455
+  - currentPlanetNum: 0
+    theta: 1.405827
+    phi: 0.681396
+    height: 1
+    facingYaw: -0.631
+    scale:
+      - 1
+      - 1.41
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.12930916
+      - 0.62522095
+      - 0.7696609
+  - currentPlanetNum: 0
+    theta: 0.946782
+    phi: 0.451873
+    height: 1.342
+    facingYaw: 0.287
+    scale:
+      - 1
+      - 1.73
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.5271148
+      - 0.43639275
+      - 0.72918546

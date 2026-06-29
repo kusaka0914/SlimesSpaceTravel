@@ -21,9 +21,7 @@ uniform float toonStrength;
 
 void main()
 {
-    vec4 baseColor = (useTexture != 0)
-        ? textureLod(diffuseTexture, texCoord, 0.0)
-        : objectColor;
+    vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord) : objectColor;
 
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(lightPos - fragPos);
@@ -35,12 +33,13 @@ void main()
     float levels = max(toonLevels, 1.0);
     float toonDiffuse = floor(diff * levels) / levels;
     float finalDiffuse = mix(diff, toonDiffuse, toonStrength);
+    vec3 diffuseLight = finalDiffuse * lightColor;
 
     float rim = 1.0 - max(dot(viewDir, norm), 0.0);
     rim = pow(rim, rimPower);
     vec3 rimLight = rimStrength * rim * lightColor;
 
-    vec3 lighting = ambient + finalDiffuse * lightColor + rimLight;
+    vec3 lighting = ambient + diffuseLight + rimLight;
     vec3 finalColor = baseColor.rgb * lighting;
     finalColor = pow(finalColor, vec3(1.0 / 2.2));
 

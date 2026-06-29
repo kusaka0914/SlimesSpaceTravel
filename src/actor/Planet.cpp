@@ -94,3 +94,11 @@ bool Planet::CheckIsAllBoatPartsCollected()
     }
     return true;
 }
+
+glm::vec3 Planet::CalculateSurfacePos(float theta, float phi, float height) const
+{
+    const glm::vec3 dir =
+        glm::normalize(glm::vec3(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta)));
+
+    return mPos + dir * (mRadius + height);
+}

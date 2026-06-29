@@ -13,7 +13,7 @@ class Planet;
 class Actor {
 public:
     Actor(Game* game);
-    ~Actor();
+    virtual ~Actor();
 
     virtual void Initialize();
 
@@ -50,6 +50,10 @@ public:
     void SetCurrentPlanet(Planet* currentPlanet) { mCurrentPlanet = currentPlanet; }
     void SetMeshes(std::vector<struct LoadedMesh>* Meshes) { mMeshes = Meshes; }
 
+    void SetTheta(float theta) { mTheta = theta; }
+    void SetPhi(float phi) { mPhi = phi; }
+    void SetHeight(float height) { mHeight = height; }
+
     bool GetIsActive() const { return mIsActive; }
 
     float GetRadius() const { return mRadius; }
@@ -67,6 +71,19 @@ public:
     Game* GetGame() const { return mGame; }
     Planet* GetCurrentPlanet() const { return mCurrentPlanet; }
     std::vector<struct LoadedMesh>* GetMeshes() const { return mMeshes; }
+    float GetTheta() const { return mTheta; }
+    float GetPhi() const { return mPhi; }
+    float GetHeight() const { return mHeight; }
+
+    void SetSphericalPlacement(float theta, float phi, float height)
+    {
+        mTheta = theta;
+        mPhi = phi;
+        mHeight = height;
+    }
+
+    int GetStageYamlIndex() const { return mStageYamlIndex; }
+    void SetStageYamlIndex(int index) { mStageYamlIndex = index; }
 
 private:
     glm::vec3 GetAverageNormal();
@@ -86,6 +103,10 @@ protected:
 
     float mRadius;
     float mFacingYaw;
+    float mTheta = 0.0f;
+    float mPhi = 0.0f;
+    float mHeight = 0.0f;
+    int mStageYamlIndex = 0;
 
     glm::vec3 mPos;
     glm::vec3 mUpVec;

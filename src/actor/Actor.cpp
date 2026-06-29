@@ -18,7 +18,7 @@ Actor::Actor(Game* game)
 {
 }
 
-Actor::~Actor() {}
+Actor::~Actor() = default;
 
 void Actor::Initialize() {}
 
@@ -89,16 +89,17 @@ void Actor::UpdateDirectionVectors()
     }
     upN = glm::normalize(upN);
 
-    glm::vec3 worldLeft = glm::cross(upN, glm::vec3(0.0f, 0.0f, 1.0f));
-    if (glm::length(worldLeft) < 0.01f) {
-        worldLeft = glm::cross(upN, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::vec3 baseLeft = glm::cross(upN, glm::vec3(0.0f, 0.0f, 1.0f));
+    if (glm::length(baseLeft) < 0.01f) {
+        baseLeft = glm::cross(upN, glm::vec3(0.0f, 1.0f, 0.0f));
     }
-    if (glm::length(worldLeft) < 0.01f) {
-        worldLeft = glm::cross(upN, glm::vec3(1.0f, 0.0f, 0.0f));
+    if (glm::length(baseLeft) < 0.01f) {
+        baseLeft = glm::cross(upN, glm::vec3(1.0f, 0.0f, 0.0f));
     }
-    worldLeft = glm::normalize(worldLeft);
+    baseLeft = glm::normalize(baseLeft);
+    glm::vec3 baseForward = glm::cross(baseLeft, upN);
 
-    mForwardVec = glm::normalize(glm::cross(worldLeft, upN) * std::cos(mFacingYaw) - worldLeft * std::sin(mFacingYaw));
+    mForwardVec = glm::normalize(baseForward * std::cos(mFacingYaw) - baseLeft * std::sin(mFacingYaw));
 
     mLeftVec = glm::normalize(glm::cross(upN, mForwardVec));
 }

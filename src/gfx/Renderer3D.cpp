@@ -17,12 +17,19 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
+#include <SDL_ttf.h>
+#include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
+#include <string>
 
-Renderer3D::Renderer3D(Game* game) : Renderer(game), mAttackRangeVAO(0), mAttackRangeVBO(0)
+Renderer3D::Renderer3D(Game* game)
+    : Renderer(game),
+      mAttackRangeVAO(0),
+      mAttackRangeVBO(0)
 {
     Initialize();
 }
@@ -41,6 +48,7 @@ void Renderer3D::Initialize()
 
     std::string basePath = "../assets/textures/";
     RegisterTexture(basePath + "guard.png", "guard");
+    RegisterTexture(basePath + "tired_star.png", "tired_star");
 
     glGenVertexArrays(1, &mAttackRangeVAO);
     glGenBuffers(1, &mAttackRangeVBO);
@@ -79,7 +87,7 @@ void Renderer3D::DrawGameScreenForSinglePerson(float fbWidth, float fbHeight) co
 {
     glViewport(0, 0, fbWidth, fbHeight);
     float aspect = static_cast<float>(fbWidth) / static_cast<float>(fbHeight);
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
     glm::mat4 view = mGame->GetCameraSystem()->GetViews()[0];
     DrawScene(view, proj);
 }
@@ -103,9 +111,17 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) c
     SetUniforms(viewMat, projMat);
 
     std::vector<Planet*> planets = mGame->GetCurrentStage()->GetPlanets();
+    glUniform1f(mShader3D->GetLocToonLevels(), 5.0f);
+    glUniform1f(mShader3D->GetLocToonStrength(), 0.45f);
     TryDrawActors(planets, false);
+    glUniform1f(mShader3D->GetLocToonLevels(), 3.0f);
+    glUniform1f(mShader3D->GetLocToonStrength(), 0.6f);
     TryDrawActorOnPlanets(planets, viewMat);
-    TryDrawPlayers();
+    TryDrawPlayers(viewMat);
+
+    if (mGame->GetIsDebugMode()) {
+        DrawDebugLabels(viewMat);
+    }
 }
 
 void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const
@@ -119,8 +135,6 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat)
     glUniform3f(mShader3D->GetLocLightColor(), 0.5f, 0.5f, 0.5f);
 
     glUniform1f(mShader3D->GetLocAmbientStrength(), 0.8f);
-    glUniform1f(mShader3D->GetLocToonLevels(), 5.0f);
-    glUniform1f(mShader3D->GetLocToonStrength(), 0.45f);
     glUniform1f(mShader3D->GetLocRimStrength(), 0.20f);
     glUniform1f(mShader3D->GetLocRimPower(), 2.5f);
 }
@@ -139,19 +153,94 @@ void Renderer3D::TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm:
     }
 }
 
-void Renderer3D::TryDrawPlayers() const
+void Renderer3D::TryDrawPlayers(const glm::mat4& viewMat) const
 {
     std::vector<Player*> players = mGame->GetPlayers();
     TryDrawActor(players[0]);
 
-    bool canDrawAttackRange = players[0]->IsAttacking() || players[0]->GetIsStrongAttacked();
+    bool canDrawAttackRange =
+        players[0]->IsAttacking() || players[0]->GetIsStrongAttacked() || players[0]->GetCanSpecialAttack();
     if (canDrawAttackRange) {
         DrawAttackRange(players[0]);
     }
 
+    DrawTiredEffect(viewMat, players[0]);
+
     if (mGame->GetIsPlayer2Joined()) {
         TryDrawActor(players[1]);
+        DrawTiredEffect(viewMat, players[1]);
     }
+}
+
+void Renderer3D::DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const
+{
+    if (!player || !player->GetIsActive() || !player->GetIsTired()) {
+        return;
+    }
+
+    auto texIt = mTextures.find("tired_star");
+    if (texIt == mTextures.end()) {
+        return;
+    }
+
+    StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texIt->second);
+    glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
+    glUniform1i(mShader3D->GetLocUseTexture(), 1);
+    glUniform4f(mShader3D->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+
+    mVertexArrays.at("quad")->SetActive();
+
+    constexpr int starCount = 3;
+    constexpr float orbitRadius = 0.35f;
+    constexpr float headHeight = 1.35f;
+    constexpr float starSize = 0.28f;
+    constexpr float rotateSpeed = 4.5f;
+
+    const float time = static_cast<float>(glfwGetTime());
+
+    glm::vec3 up = player->GetUpVec();
+    if (glm::length(up) < 1e-6f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    up = glm::normalize(up);
+
+    glm::vec3 forward = player->GetFacingForwardVec();
+    forward = forward - up * glm::dot(forward, up);
+
+    if (glm::length(forward) < 1e-6f) {
+        forward = player->GetForwardVec();
+        forward = forward - up * glm::dot(forward, up);
+    }
+
+    if (glm::length(forward) < 1e-6f) {
+        forward = glm::vec3(0.0f, 0.0f, 1.0f);
+        forward = forward - up * glm::dot(forward, up);
+    }
+
+    forward = glm::normalize(forward);
+
+    glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    glm::vec3 center = player->GetPos() + up * headHeight;
+
+    for (int i = 0; i < starCount; ++i) {
+        const float angle =
+            time * rotateSpeed + glm::two_pi<float>() * static_cast<float>(i) / static_cast<float>(starCount);
+
+        const glm::vec3 orbitOffset = forward * std::cos(angle) * orbitRadius + left * std::sin(angle) * orbitRadius;
+
+        const float scale = starSize * (1.0f + 0.15f * std::sin(time * 8.0f + static_cast<float>(i)));
+
+        glm::mat4 billboard = mGame->GetMathUtils()->CreateBillBoard(viewMat, center + orbitOffset, up, scale, scale);
+
+        glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
+    EndTransparentDraw();
 }
 
 void Renderer3D::TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::mat4& viewMat) const
@@ -168,6 +257,10 @@ void Renderer3D::TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::m
         DrawActor(enemy, true);
         DrawEnemyGuard(viewMat, enemy);
         DrawEnemyHp(viewMat, enemy);
+
+        if (enemy->GetStandByAttackTimer() > 0.0f && enemy->GetStandByAttackTimer() <= 1.0f) {
+            DrawEnemyAttackRange(enemy);
+        }
     }
 }
 
@@ -233,7 +326,7 @@ void Renderer3D::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) co
     glBindTexture(GL_TEXTURE_2D, mTextures.at("guard"));
     GLint locUseTexture = mShader3D->GetLocUseTexture();
     glUniform1i(locUseTexture, 1);
-    mVertexArrays.at("text")->SetActive();
+    mVertexArrays.at("quad")->SetActive();
 
     const float upMargin = enemy->GetRadius() * 0.8f;
     constexpr float guardWidth = 0.5f;
@@ -243,7 +336,7 @@ void Renderer3D::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) co
         glm::mat4 billboard =
             mGame->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
         glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 
     glUniform1i(locUseTexture, 0);
@@ -266,7 +359,7 @@ void Renderer3D::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 
     std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};
     glUniform4fv(mShader3D->GetLocObjectColor(), 1, hpGreen.data());
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     EndTransparentDraw();
 }
@@ -292,55 +385,116 @@ void Renderer3D::DrawAttackRange(Player* player) const
 
     constexpr int segments = 48;
 
-    const float radius = player->GetAttackRange();
-    const float attackAngleDeg = player->GetAttackAngle();
+    const float attackRange = player->GetAttackRange();
+    const float attackAngle = player->GetAttackAngle();
 
-    if (radius <= 0.0f || attackAngleDeg <= 0.0f) {
+    if (attackRange <= 0.0f || attackAngle <= 0.0f) {
         return;
     }
 
     const glm::vec3 center = player->GetPos();
     const glm::vec3 up = glm::normalize(player->GetUpVec());
     const glm::vec3 forward = glm::normalize(player->GetFacingForwardVec());
-    const glm::vec3 side = glm::normalize(player->GetLeftVec());
+    const glm::vec3 left = glm::normalize(player->GetLeftVec());
 
-    const float halfAngle = attackAngleDeg * 0.5f;
-    const float yOffset = 0.06f;
+    const float halfAngle = attackAngle * 0.5f;
+    constexpr float yOffset = 0.06f;
 
-    std::vector<glm::vec3> fillVertices;
-    fillVertices.reserve(segments + 2);
+    std::vector<glm::vec3> fanVertices;
+    fanVertices.reserve(segments + 2);
 
-    fillVertices.emplace_back(center + up * yOffset);
-
-    for (int i = 0; i <= segments; i++) {
-        const float t = static_cast<float>(i) / static_cast<float>(segments);
-        const float angle = glm::mix(-halfAngle, halfAngle, t);
-
-        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + side * std::sin(angle));
-
-        fillVertices.emplace_back(center + dir * radius + up * yOffset);
-    }
-
-    DrawAttackRangeVertices(fillVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
-
-    const float thickness = 0.08f;
-    const float innerRadius = std::max(0.0f, radius - thickness);
-    const float outerRadius = radius;
-
-    std::vector<glm::vec3> arcVertices;
-    arcVertices.reserve((segments + 1) * 2);
+    fanVertices.emplace_back(center + up * yOffset);
 
     for (int i = 0; i <= segments; i++) {
         const float t = static_cast<float>(i) / static_cast<float>(segments);
         const float angle = glm::mix(-halfAngle, halfAngle, t);
 
-        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + side * std::sin(angle));
+        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
 
-        arcVertices.emplace_back(center + dir * outerRadius + up * yOffset);
-        arcVertices.emplace_back(center + dir * innerRadius + up * yOffset);
+        fanVertices.emplace_back(center + dir * attackRange + up * yOffset);
     }
 
-    DrawAttackRangeVertices(arcVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+
+    constexpr float thickness = 0.08f;
+    const float innerRadius = attackRange - thickness;
+    const float outerRadius = attackRange;
+
+    std::vector<glm::vec3> edgeVertices;
+    edgeVertices.reserve((segments + 1) * 2);
+
+    for (int i = 0; i <= segments; i++) {
+        const float t = static_cast<float>(i) / static_cast<float>(segments);
+        const float angle = glm::mix(-halfAngle, halfAngle, t);
+
+        glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
+
+        edgeVertices.emplace_back(center + dir * outerRadius + up * yOffset);
+        edgeVertices.emplace_back(center + dir * innerRadius + up * yOffset);
+    }
+
+    DrawAttackRangeVertices(edgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+}
+
+void Renderer3D::DrawEnemyAttackRange(Enemy* enemy) const
+{
+    if (!enemy) {
+        return;
+    }
+
+    const float enemyAttackRange = enemy->GetAttackRange();
+
+    if (enemyAttackRange <= 0.0f) {
+        return;
+    }
+
+    const glm::vec3 center = enemy->GetPos();
+    const glm::vec3 up = enemy->GetUpVec();
+    const glm::vec3 forward = glm::normalize(enemy->GetFacingForwardVec());
+    const glm::vec3 left = glm::normalize(enemy->GetLeftVec());
+    const float enemyRadius = enemy->GetRadius() * enemy->GetScale().x;
+    const glm::vec3 start = center + forward * enemy->GetRadius();
+    const glm::vec3 end = start + forward * enemyAttackRange;
+
+    std::vector<glm::vec3> fanVertices;
+    fanVertices.reserve(4);
+
+    constexpr float yOffset = 0.56f;
+
+    fanVertices.emplace_back(start + left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(start + -left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    fanVertices.emplace_back(end + -left * enemyRadius + up * yOffset);
+
+    DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+
+    std::vector<glm::vec3> leftEdgeVertices;
+    constexpr float thickness = 0.08f;
+
+    leftEdgeVertices.emplace_back(start + left * enemyRadius + up * yOffset);
+    leftEdgeVertices.emplace_back(start + left * (enemyRadius - thickness) + up * yOffset);
+    leftEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    leftEdgeVertices.emplace_back(end + left * (enemyRadius - thickness) + up * yOffset);
+
+    DrawAttackRangeVertices(leftEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+
+    std::vector<glm::vec3> rightEdgeVertices;
+
+    rightEdgeVertices.emplace_back(start - left * enemyRadius + up * yOffset);
+    rightEdgeVertices.emplace_back(start - left * (enemyRadius - thickness) + up * yOffset);
+    rightEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
+    rightEdgeVertices.emplace_back(end - left * (enemyRadius - thickness) + up * yOffset);
+
+    DrawAttackRangeVertices(rightEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+
+    std::vector<glm::vec3> frontEdgeVertices;
+
+    frontEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - forward * thickness + left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
+    frontEdgeVertices.emplace_back(end - forward * thickness - left * enemyRadius + up * yOffset);
+
+    DrawAttackRangeVertices(frontEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 }
 
 void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode,
@@ -368,4 +522,95 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glBindVertexArray(0);
 
     EndTransparentDraw();
+}
+
+void Renderer3D::DrawDebugLabels(const glm::mat4& viewMat) const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    const std::vector<Planet*>& planets = mGame->GetCurrentStage()->GetPlanets();
+
+    for (auto planet : planets) {
+        for (Platform* platform : planet->GetPlatforms()) {
+            DrawDebugLabel(viewMat, platform, "足場 " + std::to_string(platform->GetStageYamlIndex()));
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            DrawDebugLabel(viewMat, npc, "NPC " + std::to_string(npc->GetStageYamlIndex()));
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            DrawDebugLabel(viewMat, enemy, "敵 " + std::to_string(enemy->GetStageYamlIndex()));
+        }
+
+        for (Crystal* crystal : planet->GetCrystals()) {
+            DrawDebugLabel(viewMat, crystal, "クリスタル " + std::to_string(crystal->GetStageYamlIndex()));
+        }
+
+        for (BoatParts* boatParts : planet->GetBoatParts()) {
+            DrawDebugLabel(viewMat, boatParts, "ボートパーツ " + std::to_string(boatParts->GetStageYamlIndex()));
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            DrawDebugLabel(viewMat, boat, "ボート " + std::to_string(boat->GetStageYamlIndex()));
+        }
+
+        if (planet->GetKey()) {
+            DrawDebugLabel(viewMat, planet->GetKey(), "鍵 " + std::to_string(planet->GetKey()->GetStageYamlIndex()));
+        }
+
+        if (planet->GetStar()) {
+            DrawDebugLabel(viewMat, planet->GetStar(),
+                           "スター " + std::to_string(planet->GetStar()->GetStageYamlIndex()));
+        }
+    }
+}
+
+void Renderer3D::DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const
+{
+    if (!actor || !actor->GetIsActive()) {
+        return;
+    }
+
+    int textWidth = 0;
+    int textHeight = 0;
+
+    const SDL_Color textColor{255, 255, 255, 255};
+
+    GLuint textTexture = CreateTextTexture(label, textWidth, textHeight, textColor, 1.0f);
+
+    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
+        return;
+    }
+
+    StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textTexture);
+    glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
+    glUniform1i(mShader3D->GetLocUseTexture(), 1);
+    glUniform4f(mShader3D->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+
+    mVertexArrays.at("quad")->SetActive();
+
+    const float labelHeight = actor->GetRadius() * actor->GetScale().y + 0.8f;
+
+    const float baseHeight = 0.5f;
+    const float aspect = static_cast<float>(textWidth) / static_cast<float>(textHeight);
+
+    const float height = baseHeight;
+    const float width = baseHeight * aspect;
+
+    glm::mat4 billboard = mGame->GetMathUtils()->CreateBillBoard(viewMat, actor, labelHeight, 0.0f, width, height);
+
+    glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
+
+    EndTransparentDraw();
+
+    glDeleteTextures(1, &textTexture);
 }

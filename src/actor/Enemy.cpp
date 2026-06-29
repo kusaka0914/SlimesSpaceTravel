@@ -39,7 +39,9 @@ Enemy::Enemy(Game* game)
       mDyingTimer(-1.0f),
       mKnockBackTimer(-1.0f),
       mKnockBackFrom(0.0f),
-      mNearestPlayer(nullptr)
+      mNearestPlayer(nullptr),
+      mCanCounteredTimer(-1.0f),
+      mCanCountered(false)
 {
 }
 
@@ -69,6 +71,16 @@ void Enemy::UpdateActor(float deltaTime)
 
 void Enemy::UpdateAlive(float deltaTime)
 {
+    if (mActionState == ActionState::KnockedBack) {
+        UpdateKnockedBack(deltaTime);
+
+        if (!mOnGround) {
+            UpdateInAir(deltaTime);
+        }
+
+        return;
+    }
+
     if (mOnGround) {
         UpdateBehavior(deltaTime);
         return;
@@ -149,7 +161,9 @@ void Enemy::TryStartPreparingAttack()
 
 void Enemy::UpdatePreparingAttack(float deltaTime)
 {
-    UpdateFacingVec();
+    if (!mIsJustBeforeAttack) {
+        UpdateFacingVec();
+    }
 
     mStandByAttackTimer -= deltaTime;
 
@@ -166,7 +180,12 @@ void Enemy::UpdatePreparingAttack(float deltaTime)
 void Enemy::UpdateAttacking(float deltaTime)
 {
     MoveDuringAttacking(deltaTime);
-    TryApplyAttack();
+    TryApplyAttack(deltaTime);
+
+    mCanCounteredTimer -= deltaTime;
+    if (mCanCounteredTimer <= 0.0f) {
+        mCanCountered = false;
+    }
 
     mAttackMotionTimer -= deltaTime;
     if (mAttackMotionTimer <= 0.0f) {
@@ -174,15 +193,14 @@ void Enemy::UpdateAttacking(float deltaTime)
     }
 }
 
-void Enemy::TryApplyAttack()
+void Enemy::TryApplyAttack(float deltaTime)
 {
     constexpr float hitRangeMargin = 0.2f;
     const float hitRange = mRadius + hitRangeMargin;
 
-    const bool canApplyDamage =
-        IsPlayerInRange(hitRange) && !mIsHit && !mNearestPlayer->IsInvincible() && IsProgressing();
+    const bool canApplyDamage = IsPlayerInRange(hitRange) && !mIsHit && IsProgressing();
     if (canApplyDamage) {
-        mNearestPlayer->ApplyDamage(mAttack, mPos);
+        mNearestPlayer->ApplyDamage(this, deltaTime);
         mIsHit = true;
     }
 }
@@ -219,6 +237,8 @@ void Enemy::StartAttacking()
     mAttackMotionTimer = mDefaultAttackMotionTimer;
     mIsHit = false;
     mIsJustBeforeAttack = false;
+    mCanCounteredTimer = 0.1f;
+    mCanCountered = true;
 }
 
 void Enemy::StartKnockedBack(float knockBackTimer)
@@ -226,6 +246,7 @@ void Enemy::StartKnockedBack(float knockBackTimer)
     mActionState = ActionState::KnockedBack;
     mKnockBackTimer = knockBackTimer;
     mKnockBackFrom = glm::normalize(mPos - mNearestPlayer->GetPos());
+    mLaunchedTimer = -1.0f;
 }
 
 void Enemy::StartDying()
@@ -233,7 +254,7 @@ void Enemy::StartDying()
     mLifeState = LifeState::Dying;
     mDyingTimer = 1.0f;
     mHp = 0;
-    constexpr float dyingKnockBackTimer = 1.0f;
+    constexpr float dyingKnockBackTimer = 0.5f;
     StartKnockedBack(dyingKnockBackTimer);
     mGame->GetAudioSystem()->PlaySE("defeat_se");
 }
@@ -251,7 +272,6 @@ void Enemy::FinishDying()
         }
 
         star->SetIsActive(true);
-        star->SetPos(mPos);
     }
 }
 
@@ -274,7 +294,7 @@ bool Enemy::IsJustBeforeAttack() const
         return false;
     }
 
-    constexpr float justBeforeAttackTime = 0.5f;
+    constexpr float justBeforeAttackTime = 1.0f;
     return mStandByAttackTimer <= justBeforeAttackTime;
 }
 
@@ -372,22 +392,31 @@ void Enemy::ApplyDamage(float damage, Player* player)
     }
 
     if (mIsStrongAttacked) {
-        constexpr float knockBackTimer = 1.0f;
+        constexpr float knockBackTimer = 0.5f;
         StartKnockedBack(knockBackTimer);
 
         mIsStrongAttacked = false;
         FinishLaunched();
-        mGame->OnStrongAttacked();
+    } else if (!mIsBoss && mOnGround) {
+        constexpr float knockBackTimer = 0.04f;
+        StartKnockedBack(knockBackTimer);
     }
 }
 
-void Enemy::ApplyBreak(float deltaTime)
+void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
 {
     if (!IsAlive()) {
         return;
     }
 
-    mBreakCount--;
+    if (isAllBreak) {
+        while (mBreakCount) {
+            mBreakCount--;
+        }
+    } else {
+        mBreakCount--;
+    }
+    mGame->GetAudioSystem()->PlaySE("destroy_se");
 
     if (mBreakCount <= 0) {
         LaunchIntoAir(deltaTime);

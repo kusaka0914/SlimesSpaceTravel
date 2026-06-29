@@ -30,7 +30,8 @@ private:
 
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const;
     void DrawPlanets(const std::vector<Planet*>& planets) const;
-    void TryDrawPlayers() const;
+    void TryDrawPlayers(const glm::mat4& viewMat) const;
+    void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
     void TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::mat4& viewMat) const;
     void TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm::mat4 viewMat) const;
 
@@ -53,11 +54,15 @@ private:
 
     void DrawActor(Actor* actor, bool useOrient) const;
     void DrawAttackRange(Player* player) const;
+    void DrawEnemyAttackRange(Enemy* enemy) const;
     void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
     void DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const;
     void DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const;
     void StartTransparentDraw() const;
     void EndTransparentDraw() const;
+
+    void DrawDebugLabels(const glm::mat4& viewMat) const;
+    void DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const;
 
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;

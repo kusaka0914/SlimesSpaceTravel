@@ -32,15 +32,25 @@ public:
     void LoadData(bool isLoadPlayer);
     void ReloadCurrentStage();
     void ChangeStage(int stageNum);
+    void TogglePauseMenu();
+    void ClosePauseMenu();
+    void ExecutePauseMenuItem();
+    void OpenFeedbackForm();
+    void ReturnToBase();
 
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
     void OnStarObtained();
     void OnEnemyLaunched();
+    void OnPlayerAttackHit();
     void OnStrongAttacked();
+    void OnPlayerCounter();
+    void OnPlayerApplyDamage();
+    void OnPlayerFinishCharging();
     void OnLanded();
     void OnPlayerDied();
     void OnBoatPartsObtained();
+    void VibrateController(float low, float high, float time);
 
     Player* FindNearestPlayer(Actor* actor) const;
 
@@ -68,6 +78,10 @@ public:
     Stage* GetCurrentStage() const { return mCurrentStage; }
     int GetCurrentStageNum() const { return mCurrentStageNum; }
     const std::string& GetCurrentStageYamlPath() const { return mCurrentStageYamlPath; }
+    bool GetIsDebugMode() const { return mIsDebugMode; }
+    bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
+    bool GetIsPauseMenuOpen() const { return mIsPauseMenuOpen; }
+    int GetPauseMenuSelectedIndex() const { return mPauseMenuSelectedIndex; }
 
     AudioSystem* GetAudioSystem() const { return mAudioSystem.get(); }
     PhysicsSystem* GetPhysicsSystem() const { return mPhysicsSystem.get(); }
@@ -92,6 +106,7 @@ private:
     void ProcessInput();
     void ProcessGameInput();
     void ProcessActorsInput();
+    void ProcessPauseMenuInput();
 
     void UpdateGame();
     void UpdateActors(float deltaTime);
@@ -123,15 +138,26 @@ private:
     Stage* mCurrentStage = nullptr;
 
     int mCurrentStageNum = 0;
+    int mPauseMenuSelectedIndex = 0;
     float mHitStopTimer = -1.0f;
 
     double mLastTime = 0.0;
 
     bool mReloadKeyPressedPrev = false;
     bool mUIReloadKeyPressedPrev = false;
-    bool mAPressedPrev = false;
+    bool mXPressedPrev = false;
+    bool mPPressedPrev = false;
+    bool mLPressedPrev = false;
+    bool mZLPressedPrev = false;
     bool mStartPressedPrev = false;
+    bool mPauseMenuKeyPressedPrev = false;
+    bool mPauseMenuUpPressedPrev = false;
+    bool mPauseMenuDownPressedPrev = false;
+    bool mPauseMenuConfirmPressedPrev = false;
     bool mIsPlayer2Joined = false;
+    bool mIsDebugMode;
+    bool mIsFreeCameraMode;
+    bool mIsPauseMenuOpen = false;
 
     std::string mCurrentStageYamlPath;
 };

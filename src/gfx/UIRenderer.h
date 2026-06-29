@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Renderer.h"
 #include "system/UILoadSystem.h"
 #include <GL/glew.h>
@@ -9,6 +11,7 @@
 class Game;
 class UIShader;
 class VertexArray;
+class DebugUIRenderer;
 
 class UIRenderer : public Renderer {
 public:
@@ -21,7 +24,10 @@ public:
 
 private:
     void Initialize();
+    void InitImGui();
     void RegisterUITextures();
+
+    void EndImGuiFrame();
 
     void DrawTitle();
     void DrawOpening();
@@ -30,6 +36,7 @@ private:
     void DrawOpeningIntro();
     void DrawOpeningTalkWithMother();
     void DrawOpeningTalkWithDoctor();
+    void DrawSkipUI();
 
     void DrawDefaultUI();
 
@@ -45,8 +52,10 @@ private:
     void DrawBattleTutorial();
     void DrawBreakTutorial();
     void DrawJewelTutorial();
+    void DrawJustDodgeTutorial();
     void DrawTalkWithNPC();
     void DrawStageClear();
+    void DrawRecommendReduceTiredUI();
     float CalculateAlpha() const;
     void DrawFadeInBg(float alpha);
     void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex);
@@ -61,6 +70,8 @@ private:
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
                             float gap, int count);
+    void DrawPauseMenu();
+    void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color);
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,
@@ -76,6 +87,8 @@ private:
 
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
+
+    std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
 
     int mFbWidth;
     int mFbHeight;

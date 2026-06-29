@@ -25,7 +25,7 @@ public:
     void UpdateActor(float deltaTime) override;
 
     void ApplyDamage(float damage, Player* player);
-    void ApplyBreak(float deltaTime);
+    void ApplyBreak(float deltaTim, bool isAllBrea = false);
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
@@ -49,13 +49,30 @@ public:
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
+    void FlipCanCountered() { mCanCountered = !mCanCountered; }
 
     bool GetIsDead() const { return mLifeState == LifeState::Dead; }
+    bool GetIsBoss() const { return mIsBoss; }
+    bool GetCanCountered() const { return mCanCountered; }
 
     int GetBreakCount() const { return mBreakCount; }
 
     float GetHp() const { return mHp; }
     float GetMaxHp() const { return mMaxHp; }
+    float GetAttack() const { return mAttack; }
+    float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2); }
+    float GetStandByAttackTimer() const { return mStandByAttackTimer; }
+
+    int GetBreakCountMax() const { return mBreakCountMax; }
+
+    float GetDetectionRange() const { return mDetectionRange; }
+    float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
+    float GetAttackSpeed() const { return mAttackSpeed; }
+
+    float GetDefaultStandByAttackTimer() const { return mDefaultStandByAttackTimer; }
+    float GetDefaultLaunchedTimer() const { return mDefaultLaunchedTimer; }
+    float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
 
 private:
     void UpdateAlive(float deltaTime);
@@ -73,7 +90,7 @@ private:
     void StartTracking();
     void TryStartPreparingAttack();
     void StartPreparingAttack();
-    void TryApplyAttack();
+    void TryApplyAttack(float deltaTime);
     void StartAttacking();
     void StartKnockedBack(float knockBackTimer);
     void StartDying();
@@ -103,6 +120,7 @@ private:
     bool mIsHit;
     bool mIsStrongAttacked;
     bool mIsJustBeforeAttack;
+    bool mCanCountered;
 
     int mBreakCount;
     int mBreakCountMax;
@@ -123,6 +141,7 @@ private:
     float mDefaultAttackMotionTimer;
     float mDyingTimer;
     float mKnockBackTimer;
+    float mCanCounteredTimer;
 
     glm::vec3 mKnockBackFrom;
 

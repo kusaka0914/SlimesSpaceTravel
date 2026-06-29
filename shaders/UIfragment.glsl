@@ -4,11 +4,11 @@ out vec4 fragColor;
 in vec2 texCoord;
 
 uniform vec4 objectColor;
-uniform bool useTexture;
+uniform int useTexture;
 uniform sampler2D diffuseTexture;
 
 void main()
 {
-    vec4 baseColor = useTexture ? texture(diffuseTexture, texCoord) : objectColor;
+    vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord) : objectColor;
     fragColor = baseColor;
 }

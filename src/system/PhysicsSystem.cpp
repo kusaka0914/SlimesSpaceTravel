@@ -9,9 +9,13 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "system/MeshLoadSystem.h"
+#include "utils/MathUtils.h"
 #include <btBulletDynamicsCommon.h>
 
-PhysicsSystem::PhysicsSystem(Game* game) : mGame(game) {}
+PhysicsSystem::PhysicsSystem(Game* game)
+    : mGame(game)
+{
+}
 
 PhysicsSystem::~PhysicsSystem()
 {
@@ -112,6 +116,18 @@ void PhysicsSystem::CreateStaticMeshBody(Actor* actor)
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
+    if (dynamic_cast<Platform*>(actor)) {
+        glm::mat4 orient = mGame->GetMathUtils()->CreateOrient(actor);
+
+        glm::vec3 axisX = glm::normalize(glm::vec3(orient[0]));
+        glm::vec3 axisY = glm::normalize(glm::vec3(orient[1]));
+        glm::vec3 axisZ = glm::normalize(glm::vec3(orient[2]));
+
+        btMatrix3x3 basis(axisX.x, axisY.x, axisZ.x, axisX.y, axisY.y, axisZ.y, axisX.z, axisY.z, axisZ.z);
+
+        actorTransform.setBasis(basis);
+    }
+
     rigidBody->setWorldTransform(actorTransform);
     rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
 
@@ -164,28 +180,37 @@ glm::vec3 PhysicsSystem::CheckCollision(Actor* actor, const glm::vec3& moveDelta
 
 std::optional<glm::vec3> PhysicsSystem::CheckConflictActors(Actor* actor, const glm::vec3& desiredPos)
 {
-    Enemy* enemy = dynamic_cast<Enemy*>(actor);
-    if (!enemy) {
-        std::vector<Enemy*> enemies = actor->GetCurrentPlanet()->GetEnemies();
-        for (Enemy* enemy : enemies) {
-            if (auto conflictPos = CheckConflictActor(enemy, desiredPos)) {
-                return *conflictPos;
-            }
+    std::vector<Enemy*> enemies = actor->GetCurrentPlanet()->GetEnemies();
+
+    for (Enemy* enemy : enemies) {
+        if (enemy == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(enemy, desiredPos)) {
+            return *conflictPos;
         }
     }
 
     std::vector<Crystal*> crystals = actor->GetCurrentPlanet()->GetCrystals();
     for (Crystal* crystal : crystals) {
-        if (auto conflictPos = CheckConflictActor(crystal, desiredPos))
+        if (crystal == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(crystal, desiredPos)) {
             return *conflictPos;
+        }
     }
 
-    NPC* npc = dynamic_cast<NPC*>(actor);
-    if (!npc) {
-        std::vector<NPC*> npcs = actor->GetCurrentPlanet()->GetNPCs();
-        for (NPC* npc : npcs) {
-            if (auto conflictPos = CheckConflictActor(npc, desiredPos))
-                return *conflictPos;
+    std::vector<NPC*> npcs = actor->GetCurrentPlanet()->GetNPCs();
+    for (NPC* npc : npcs) {
+        if (npc == actor) {
+            continue;
+        }
+
+        if (auto conflictPos = CheckConflictActor(npc, desiredPos)) {
+            return *conflictPos;
         }
     }
 
