@@ -1,78 +1,106 @@
 #include "actor/player/PlayerStatus.h"
 
-#include "actor/Enemy.h"
-#include "actor/Player.h"
-#include "actor/player/PlayerCombat.h"
-#include "actor/player/PlayerInput.h"
-#include "actor/player/PlayerModuleContext.h"
-#include "actor/player/PlayerMovement.h"
-#include "system/AudioSystem.h"
+#include "Game.h"
 
-void PlayerStatus::ApplyDamage(PlayerModuleContext& context, Enemy* enemy, float deltaTime)
+#include <algorithm>
+
+void PlayerStatus::ConfigureHp(float hp)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
-
-    if (combat.actionState == PlayerActionState::Dodging && enemy->GetCanCountered()) {
-        player.GetGame()->OnPlayerCounter(movement.playerNum);
-        enemy->ApplyBreak(deltaTime, true);
-        enemy->FlipCanCountered();
-        player.GetGame()->GetAudioSystem()->PlaySE("just_dodge_se");
-
-        if (combat.jewelCount < 2) {
-            combat.jewelCount++;
-        }
-
-        return;
-    }
-
-    if (invincibleTimer >= 0.0f) {
-        return;
-    }
-
-    if (combat.canSpecialAttack) {
-        isTired = true;
-        combat.attackMoveLockRemaining = 20.0f;
-        movement.dodgeCooldown = 20.0f;
-        combat.attackCooldownRemaining = 20.0f;
-    }
-
-    hp -= enemy->GetAttack();
-
-    movement.knockBackFrom = enemy->GetPos();
-    damageTimer = defaultDamageTimer;
-    invincibleTimer = defaultInvincibleTimer;
-
-    combat.actionState = PlayerActionState::KnockedBack;
-
-    player.GetGame()->OnPlayerApplyDamage(movement.playerNum);
-
-    combat.canSpecialAttack = false;
-    combat.specialChargingTimer = -1.0f;
-    combat.continuousAttackingTimer = -1.0f;
-
-    input.attackPressedPrev = input.attackPressed;
-    input.wideAttackPressedPrev = input.wideAttackPressed;
-    input.specialAttackPressedPrev = input.specialAttackPressed;
+    mHp = hp;
+    mMaxHp = hp;
 }
 
-void PlayerStatus::Recover(PlayerModuleContext& context)
+void PlayerStatus::SetMaxHp(float maxHp)
 {
-    PlayerCombat& combat = context.combat;
-
-    combat.jewelCount--;
-    hp += 1.0f;
-
-    context.player.GetGame()->GetAudioSystem()->PlaySE("recover_se");
-
-    if (hp >= maxHp) {
-        hp = maxHp;
+    mMaxHp = maxHp;
+    if (mHp > mMaxHp) {
+        mHp = mMaxHp;
     }
 }
 
-void PlayerStatus::Die(PlayerModuleContext& context)
+void PlayerStatus::TakeDamage(float damage)
 {
-    context.player.GetGame()->OnPlayerDied();
+    mHp = std::max(0.0f, mHp - damage);
+    StartDamageCooldown();
+    StartInvincible();
+}
+
+void PlayerStatus::TakeFallDamage(float damage)
+{
+    TakeDamage(damage);
+}
+
+void PlayerStatus::Heal(float amount)
+{
+    mHp = std::min(mMaxHp, mHp + amount);
+}
+
+void PlayerStatus::RestoreFullHp()
+{
+    mHp = mMaxHp;
+}
+
+void PlayerStatus::StartDamageCooldown()
+{
+    mDamageTimer = mDefaultDamageTimer;
+}
+
+void PlayerStatus::StartDamageCooldown(float seconds)
+{
+    mDamageTimer = seconds;
+}
+
+void PlayerStatus::ReduceDamageCooldown(float deltaTime)
+{
+    if (mDamageTimer > 0.0f) {
+        mDamageTimer -= deltaTime;
+    }
+}
+
+void PlayerStatus::StartInvincible()
+{
+    mInvincibleTimer = mDefaultInvincibleTimer;
+}
+
+void PlayerStatus::StartInvincible(float seconds)
+{
+    mInvincibleTimer = seconds;
+}
+
+void PlayerStatus::ClearInvincible()
+{
+    mInvincibleTimer = -1.0f;
+}
+
+void PlayerStatus::StartTired()
+{
+    mIsTired = true;
+}
+
+void PlayerStatus::EndTired()
+{
+    mIsTired = false;
+}
+
+void PlayerStatus::UpdateDamageTimer(float deltaTime)
+{
+    ReduceDamageCooldown(deltaTime);
+}
+
+void PlayerStatus::UpdateInvincibleTimer(float deltaTime)
+{
+    if (mInvincibleTimer > 0.0f) {
+        mInvincibleTimer -= deltaTime;
+    }
+}
+
+void PlayerStatus::UpdateTimers(float deltaTime)
+{
+    UpdateDamageTimer(deltaTime);
+    UpdateInvincibleTimer(deltaTime);
+}
+
+void PlayerStatus::Die(Game& game) const
+{
+    game.OnPlayerDied();
 }

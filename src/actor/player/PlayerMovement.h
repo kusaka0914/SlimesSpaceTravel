@@ -3,51 +3,89 @@
 #include <glm/glm.hpp>
 
 class Boat;
+class Player;
 class PlayerCombat;
-struct PlayerModuleContext;
+class PlayerInput;
+class PlayerRespawn;
+class PlayerStatus;
 
 class PlayerMovement {
 public:
-    bool isDodged = true;
-
-    int currentPlanetNum = 0;
-    int playerNum = 1;
-
-    float dodgeTimer = 0.0f;
-    float dodgeDuration = 0.1f;
-    float dodgeCooldown = 0.0f;
-    float dodgeCooldownTime = 0.3f;
-    float dodgeDistance = 3.0f;
-    float dodgeStartHeight = 0.0f;
-    float moveSpeed = 10.2f;
-    float chargeMoveSpeed = 6.0f;
-    float knockBackSpeed = 0.0f;
-
-    glm::vec3 forwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
-    glm::vec3 leftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
-    glm::vec3 knockBackFrom = glm::vec3(0.0f);
-    glm::vec3 dodgeDir = glm::vec3(0.0f);
-
     bool CanWalk(const PlayerCombat& combat) const;
+    bool CanDodge(const PlayerCombat& combat) const;
 
-    void UpdateWorldVec(PlayerModuleContext& context);
-    void UpdateWalk(PlayerModuleContext& context, float deltaTime);
-    void UpdateBoatRide(PlayerModuleContext& context);
-    void ChangeFaceDir(PlayerModuleContext& context);
-    void UpdateFacingForwardVec(PlayerModuleContext& context);
-    void MoveDuringDodging(PlayerModuleContext& context, float deltaTime);
-    void MoveDuringAttacking(PlayerModuleContext& context, float deltaTime);
-    void MoveDuringCharging(PlayerModuleContext& context, float deltaTime);
-    void MoveDuringStrongAttacking(PlayerModuleContext& context, float deltaTime);
-    void MoveDuringKnockBack(PlayerModuleContext& context, float deltaTime);
-    void FollowMovingBoat(PlayerModuleContext& context, Boat* boat);
-    bool IsTouchingBoat(PlayerModuleContext& context, Boat* boat);
-    void StartDodging(PlayerModuleContext& context);
-    void StartJumping(PlayerModuleContext& context, float deltaTime);
-    void StartRidingBoat(PlayerModuleContext& context, Boat* boat);
-    void OnBoatArrived(PlayerModuleContext& context, Boat* boat);
-    void OnLanded(PlayerModuleContext& context);
-    void OnUpVecUpdateFailed(PlayerModuleContext& context);
-    void OnCastSucceeded(PlayerModuleContext& context);
-    void SnapToGround(PlayerModuleContext& context, float upOffset, float downLength);
+    void UpdateWorldVec(Player& player, const PlayerInput& input);
+    void UpdateWalk(Player& player, const PlayerInput& input, float deltaTime);
+    void UpdateBoatRide(Player& player, PlayerRespawn& respawn);
+    void ChangeFaceDir(Player& player, const PlayerInput& input);
+    void UpdateFacingForwardVec(Player& player);
+
+    void MoveDuringDodging(Player& player, const PlayerCombat& combat, float deltaTime);
+    void MoveDuringAttacking(Player& player, const PlayerCombat& combat, float deltaTime);
+    void MoveDuringCharging(Player& player, float deltaTime);
+    void MoveDuringStrongAttacking(Player& player, const PlayerCombat& combat, float deltaTime);
+    void MoveDuringKnockBack(Player& player, float deltaTime);
+
+    void FollowMovingBoat(Player& player, Boat* boat);
+    bool IsTouchingBoat(const Player& player, Boat* boat) const;
+    void StartDodging(Player& player, const PlayerInput& input, PlayerCombat& combat, PlayerStatus& status);
+    void StartJumping(Player& player, float deltaTime);
+    void StartRidingBoat(Player& player, Boat* boat);
+
+    void OnBoatArrived(Player& player, PlayerRespawn& respawn, Boat* boat);
+    void OnLanded(Player& player, PlayerCombat& combat);
+    void OnUpVecUpdateFailed(Player& player, PlayerCombat& combat);
+    void OnCastSucceeded(PlayerCombat& combat);
+    void SnapToGround(Player& player, float upOffset, float downLength);
+
+    void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
+    void StartDodgeLock(float seconds) { mDodgeCooldown = seconds; }
+    void ReduceDodgeCooldown(float deltaTime);
+
+    void SetIsDodged(bool isDodged) { mIsDodged = isDodged; }
+    void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
+    void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
+    void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
+    void SetChargeMoveSpeed(float chargeMoveSpeed) { mChargeMoveSpeed = chargeMoveSpeed; }
+    void SetDodgeDuration(float dodgeDuration) { mDodgeDuration = dodgeDuration; }
+    void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownTime = dodgeCooldownTime; }
+    void SetDodgeDistance(float dodgeDistance) { mDodgeDistance = dodgeDistance; }
+    void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
+    void SetDodgeCooldown(float dodgeCooldown) { mDodgeCooldown = dodgeCooldown; }
+
+    bool GetIsDodged() const { return mIsDodged; }
+    int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
+    int GetPlayerNum() const { return mPlayerNum; }
+    float GetDodgeTimer() const { return mDodgeTimer; }
+    float GetDodgeDuration() const { return mDodgeDuration; }
+    float GetDodgeCooldown() const { return mDodgeCooldown; }
+    float GetDodgeCooldownTime() const { return mDodgeCooldownTime; }
+    float GetDodgeDistance() const { return mDodgeDistance; }
+    float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
+    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
+    const glm::vec3& GetForwardVec() const { return mForwardVec; }
+
+    void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
+
+private:
+    bool mIsDodged = true;
+
+    int mCurrentPlanetNum = 0;
+    int mPlayerNum = 1;
+
+    float mDodgeTimer = 0.0f;
+    float mDodgeDuration = 0.1f;
+    float mDodgeCooldown = 0.0f;
+    float mDodgeCooldownTime = 0.3f;
+    float mDodgeDistance = 3.0f;
+    float mDodgeStartHeight = 0.0f;
+    float mMoveSpeed = 10.2f;
+    float mChargeMoveSpeed = 6.0f;
+    float mKnockBackSpeed = 0.0f;
+
+    glm::vec3 mForwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
+    glm::vec3 mKnockBackFrom = glm::vec3(0.0f);
+    glm::vec3 mDodgeDir = glm::vec3(0.0f);
 };

@@ -1,7 +1,6 @@
 #include "actor/player/PlayerInput.h"
 
 #include "actor/Player.h"
-#include "actor/player/PlayerModuleContext.h"
 #include "actor/player/PlayerMovement.h"
 
 #include <GLFW/glfw3.h>
@@ -9,22 +8,19 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
-void PlayerInput::ProcessActor(PlayerModuleContext& context)
+void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 {
-    if (inputAvailableTimer >= 0.0f) {
+    if (mInputAvailableTimer >= 0.0f) {
         return;
     }
 
-    ProcessGameController(context);
-    ProcessKeyboard(context);
+    ProcessGameController(player, movement);
+    ProcessKeyboard(player, movement);
 }
 
-void PlayerInput::ProcessGameController(PlayerModuleContext& context)
+void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& movement)
 {
-    Player& player = context.player;
-    PlayerMovement& movement = context.movement;
-
-    if (!player.GetGame()->IsGameControllerConnected() || movement.playerNum != 1) {
+    if (!player.GetGame()->IsGameControllerConnected() || movement.GetPlayerNum() != 1) {
         return;
     }
 
@@ -33,80 +29,100 @@ void PlayerInput::ProcessGameController(PlayerModuleContext& context)
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
 
-    moveForward = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTY) * scale;
-    moveLeft = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTX) * scale;
+    mMoveForward = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTY) * scale;
+    mMoveLeft = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTX) * scale;
 
-    if (std::abs(moveForward) < deadZone) {
-        moveForward = 0.0f;
+    if (std::abs(mMoveForward) < deadZone) {
+        mMoveForward = 0.0f;
     }
 
-    if (std::abs(moveLeft) < deadZone) {
-        moveLeft = 0.0f;
+    if (std::abs(mMoveLeft) < deadZone) {
+        mMoveLeft = 0.0f;
     }
 
-    jumpPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_A);
-    attackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_X);
-    wideAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_Y);
-    dodgePressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_B);
-    specialAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    recoverPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    mJumpPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_A);
+    mAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_X);
+    mWideAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_Y);
+    mDodgePressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_B);
+    mSpecialAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+    mRecoverPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
 }
 
-void PlayerInput::ProcessKeyboard(PlayerModuleContext& context)
+void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
 {
-    Player& player = context.player;
-    PlayerMovement& movement = context.movement;
-
     const bool isControllerConnected = player.GetGame()->IsGameControllerConnected();
 
-    if (!isControllerConnected && movement.playerNum != 1) {
+    if (!isControllerConnected && movement.GetPlayerNum() != 1) {
         return;
     }
 
-    if (isControllerConnected && movement.playerNum != 2) {
+    if (isControllerConnected && movement.GetPlayerNum() != 2) {
         return;
     }
 
     GLFWwindow* window = player.GetGame()->GetWindow();
 
-    moveForward = 0.0f;
-    moveLeft = 0.0f;
-    cameraYaw = 0.0f;
+    mMoveForward = 0.0f;
+    mMoveLeft = 0.0f;
+    mCameraYaw = 0.0f;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        moveForward -= 1.0f;
+        mMoveForward -= 1.0f;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        moveForward += 1.0f;
+        mMoveForward += 1.0f;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        moveLeft -= 1.0f;
+        mMoveLeft -= 1.0f;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        moveLeft += 1.0f;
+        mMoveLeft += 1.0f;
     }
 
     constexpr float cameraKeySpeed = 0.02f;
 
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        cameraYaw += cameraKeySpeed;
+        mCameraYaw += cameraKeySpeed;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        cameraYaw -= cameraKeySpeed;
+        mCameraYaw -= cameraKeySpeed;
     }
 
-    glm::vec2 moveInput(moveLeft, moveForward);
+    glm::vec2 moveInput(mMoveLeft, mMoveForward);
     if (glm::length(moveInput) > 1.0f) {
         moveInput = glm::normalize(moveInput);
     }
 
-    moveLeft = moveInput.x;
-    moveForward = moveInput.y;
+    mMoveLeft = moveInput.x;
+    mMoveForward = moveInput.y;
 
-    jumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-    attackPressed = glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS;
-    wideAttackPressed = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
-    dodgePressed = glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS;
-    specialAttackPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
-    recoverPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+    mJumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+    mAttackPressed = glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS;
+    mWideAttackPressed = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
+    mDodgePressed = glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS;
+    mSpecialAttackPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+    mRecoverPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+}
+
+void PlayerInput::EndFrame()
+{
+    mDodgePressedPrev = mDodgePressed;
+    mAttackPressedPrev = mAttackPressed;
+    mWideAttackPressedPrev = mWideAttackPressed;
+    mSpecialAttackPressedPrev = mSpecialAttackPressed;
+    mRecoverPressedPrev = mRecoverPressed;
+}
+
+void PlayerInput::UpdateInputAvailableTimer(float deltaTime)
+{
+    if (mInputAvailableTimer >= 0.0f) {
+        mInputAvailableTimer -= deltaTime;
+    }
+}
+
+void PlayerInput::SyncAttackButtonPrev()
+{
+    mAttackPressedPrev = mAttackPressed;
+    mWideAttackPressedPrev = mWideAttackPressed;
+    mSpecialAttackPressedPrev = mSpecialAttackPressed;
 }

@@ -11,6 +11,7 @@
 #include "system/SceneSystem.h"
 #include <btBulletDynamicsCommon.h>
 #include <cmath>
+#include <glm/gtc/matrix_transform.hpp>
 
 CameraSystem::CameraSystem(Game* game)
     : mGame(game),

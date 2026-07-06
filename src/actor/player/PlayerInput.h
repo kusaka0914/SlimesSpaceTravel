@@ -1,29 +1,56 @@
 #pragma once
 
-struct PlayerModuleContext;
+class Player;
+class PlayerMovement;
 
 class PlayerInput {
 public:
-    bool dodgePressed = false;
-    bool dodgePressedPrev = false;
-    bool jumpPressed = false;
-    bool attackPressed = false;
-    bool attackPressedPrev = false;
-    bool wideAttackPressed = false;
-    bool wideAttackPressedPrev = false;
-    bool specialAttackPressed = false;
-    bool specialAttackPressedPrev = false;
-    bool recoverPressed = false;
-    bool recoverPressedPrev = false;
+    void ProcessActor(Player& player, const PlayerMovement& movement);
+    void ProcessGameController(Player& player, const PlayerMovement& movement);
+    void ProcessKeyboard(Player& player, const PlayerMovement& movement);
 
-    float cameraYaw = 0.0f;
-    float moveForward = 0.0f;
-    float moveLeft = 0.0f;
-    float cameraStickX = 0.0f;
-    float cameraStickY = 0.0f;
-    float inputAvailableTimer = -1.0f;
+    void EndFrame();
+    void UpdateInputAvailableTimer(float deltaTime);
 
-    void ProcessActor(PlayerModuleContext& context);
-    void ProcessGameController(PlayerModuleContext& context);
-    void ProcessKeyboard(PlayerModuleContext& context);
+    bool GetDodgePressed() const { return mDodgePressed; }
+    bool GetDodgePressedPrev() const { return mDodgePressedPrev; }
+    bool GetJumpPressed() const { return mJumpPressed; }
+    bool GetAttackPressed() const { return mAttackPressed; }
+    bool GetAttackPressedPrev() const { return mAttackPressedPrev; }
+    bool GetWideAttackPressed() const { return mWideAttackPressed; }
+    bool GetWideAttackPressedPrev() const { return mWideAttackPressedPrev; }
+    bool GetSpecialAttackPressed() const { return mSpecialAttackPressed; }
+    bool GetSpecialAttackPressedPrev() const { return mSpecialAttackPressedPrev; }
+    bool GetRecoverPressed() const { return mRecoverPressed; }
+    bool GetRecoverPressedPrev() const { return mRecoverPressedPrev; }
+
+    float GetCameraYaw() const { return mCameraYaw; }
+    float GetMoveForward() const { return mMoveForward; }
+    float GetMoveLeft() const { return mMoveLeft; }
+    float GetInputAvailableTimer() const { return mInputAvailableTimer; }
+
+    void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
+    void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
+
+    void SyncAttackButtonPrev();
+
+private:
+    bool mDodgePressed = false;
+    bool mDodgePressedPrev = false;
+    bool mJumpPressed = false;
+    bool mAttackPressed = false;
+    bool mAttackPressedPrev = false;
+    bool mWideAttackPressed = false;
+    bool mWideAttackPressedPrev = false;
+    bool mSpecialAttackPressed = false;
+    bool mSpecialAttackPressedPrev = false;
+    bool mRecoverPressed = false;
+    bool mRecoverPressedPrev = false;
+
+    float mCameraYaw = 0.0f;
+    float mMoveForward = 0.0f;
+    float mMoveLeft = 0.0f;
+    float mCameraStickX = 0.0f;
+    float mCameraStickY = 0.0f;
+    float mInputAvailableTimer = -1.0f;
 };

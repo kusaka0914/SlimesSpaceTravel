@@ -3,9 +3,8 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
-#include "actor/player/PlayerModuleContext.h"
+#include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerMovement.h"
-#include "actor/player/PlayerStateMachine.h"
 #include "actor/player/PlayerStatus.h"
 #include "system/AudioSystem.h"
 
@@ -15,27 +14,25 @@
 
 bool PlayerCombat::IsAttacking() const
 {
-    return actionState == PlayerActionState::Attacking || actionState == PlayerActionState::StrongAttacking ||
-           continuousAttackingTimer >= 0.0f || specialChargingTimer >= 0.0f || airAttackFloatingTimer >= 0.0f;
+    return mActionState == PlayerActionState::Attacking || mActionState == PlayerActionState::StrongAttacking ||
+           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
 }
 
-void PlayerCombat::StartAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement,
+                                  PlayerStatus& status, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
+    mActionState = PlayerActionState::Attacking;
 
-    actionState = PlayerActionState::Attacking;
+    if (!player.GetOnGround() && input.GetWideAttackPressed()) {
+        mAttackKind = PlayerAttackKind::Wide;
+        mAttackRange = mWideAttackRange;
+        mAttackAngle = mWideAttackAngle;
+        mAttackCooldownRemaining = mAttackCooldown;
+        mAttack = mWideAttack / 2.0f;
+        mAirAttackFloatingTimer = 0.5f;
+        mIsAirAttacking = true;
 
-    if (!player.GetOnGround() && input.wideAttackPressed) {
-        attackKind = PlayerAttackKind::Wide;
-        attackRange = wideAttackRange;
-        attackAngle = wideAttackAngle;
-        attackCooldownRemaining = attackCooldown;
-        attack = wideAttack / 2.0f;
-        airAttackFloatingTimer = 0.5f;
-        isAirAttacking = true;
-
-        Attack(context, deltaTime);
+        Attack(player, movement, status, deltaTime);
         return;
     }
 
@@ -43,84 +40,84 @@ void PlayerCombat::StartAttacking(PlayerModuleContext& context, float deltaTime)
         return;
     }
 
-    if (input.attackPressed) {
-        attackKind = PlayerAttackKind::Normal;
-        attackRange = normalAttackRange;
-        attackAngle = normalAttackAngle;
-        attackCooldownRemaining = lastAttackCooldown;
-        attack = normalAttack;
-    } else if (input.wideAttackPressed) {
-        attackKind = PlayerAttackKind::Wide;
-        attackRange = wideAttackRange;
-        attackAngle = wideAttackAngle;
-        attackCooldownRemaining = attackCooldown;
-        attack = wideAttack;
+    if (input.GetAttackPressed()) {
+        mAttackKind = PlayerAttackKind::Normal;
+        mAttackRange = mNormalAttackRange;
+        mAttackAngle = mNormalAttackAngle;
+        mAttackCooldownRemaining = mLastAttackCooldown;
+        mAttack = mNormalAttack;
+    } else if (input.GetWideAttackPressed()) {
+        mAttackKind = PlayerAttackKind::Wide;
+        mAttackRange = mWideAttackRange;
+        mAttackAngle = mWideAttackAngle;
+        mAttackCooldownRemaining = mAttackCooldown;
+        mAttack = mWideAttack;
     }
 
-    Attack(context, deltaTime);
+    Attack(player, movement, status, deltaTime);
 }
 
-void PlayerCombat::StartCharging(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::StartCharging(Player& player)
 {
-    actionState = PlayerActionState::Charging;
-    attackPressTimer = defaultAttackPressTimer;
+    mActionState = PlayerActionState::Charging;
+    mAttackPressTimer = mDefaultAttackPressTimer;
 
-    context.player.GetGame()->GetAudioSystem()->PlaySE("air_charging_se");
+    player.GetGame()->GetAudioSystem()->PlaySE("air_charging_se");
 }
 
-void PlayerCombat::StartStrongAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
 {
-    actionState = PlayerActionState::StrongAttacking;
-    attackKind = PlayerAttackKind::Strong;
-    attackRange = strongAttackRange;
-    attackAngle = normalAttackAngle;
-    attackCooldownRemaining = lastAttackCooldown;
-    attack = strongAttack;
+    mActionState = PlayerActionState::StrongAttacking;
+    mAttackKind = PlayerAttackKind::Strong;
+    mAttackRange = mStrongAttackRange;
+    mAttackAngle = mNormalAttackAngle;
+    mAttackCooldownRemaining = mLastAttackCooldown;
+    mAttack = mStrongAttack;
 
-    const float pressTime = std::min(1.0f, defaultAttackPressTimer - attackPressTimer / defaultAttackPressTimer);
-    strongAttackTimer = defaultStrongAttackTimer * pressTime;
+    float pressTime = 1.0f;
+    if (mDefaultAttackPressTimer > 0.0f) {
+        pressTime = std::min(1.0f, (mDefaultAttackPressTimer - mAttackPressTimer) / mDefaultAttackPressTimer);
+    }
+    mStrongAttackTimer = mDefaultStrongAttackTimer * pressTime;
 
-    isStrongAttacked = true;
+    mIsStrongAttacked = true;
 }
 
-void PlayerCombat::FinishCharging(PlayerModuleContext& context)
+void PlayerCombat::FinishCharging(Player& player, const PlayerMovement& movement)
 {
-    context.player.GetGame()->OnPlayerFinishCharging(context.movement.playerNum);
-    isCharged = true;
+    player.GetGame()->OnPlayerFinishCharging(movement.GetPlayerNum());
+    mIsCharged = true;
 }
 
-void PlayerCombat::FinishSpecialAttackCharging(PlayerModuleContext& context)
+void PlayerCombat::FinishSpecialAttackCharging()
 {
-    specialChargingTimer = -1.0f;
-    canSpecialAttack = false;
+    mSpecialChargingTimer = -1.0f;
+    mCanSpecialAttack = false;
 }
 
-void PlayerCombat::Attack(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerMovement& movement = context.movement;
-
-    std::vector<Enemy*> hitEnemies = FindHitEnemies(context);
+    std::vector<Enemy*> hitEnemies = FindHitEnemies(player);
 
     if (hitEnemies.empty()) {
-        StartAfterAttackReaction(context);
+        StartAfterAttackReaction(player, movement, status);
         player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
 
-        if (attackComboIndex != 3) {
+        if (mAttackComboIndex != 3) {
             return;
         }
 
-        attackComboIndex = 0;
+        mAttackComboIndex = 0;
         return;
     }
 
-    if (attackKind != PlayerAttackKind::Strong) {
-        player.GetGame()->OnPlayerAttackHit(movement.playerNum);
-        StartAfterAttackReaction(context);
+    if (mAttackKind != PlayerAttackKind::Strong) {
+        player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
+        StartAfterAttackReaction(player, movement, status);
 
         if (player.GetOnGround()) {
             for (Enemy* enemy : hitEnemies) {
-                enemy->ApplyDamage(attack, &player);
+                enemy->ApplyDamage(mAttack, &player);
             }
         } else {
             bool isHit = false;
@@ -130,7 +127,7 @@ void PlayerCombat::Attack(PlayerModuleContext& context, float deltaTime)
                     continue;
                 }
 
-                enemy->ApplyDamage(attack, &player);
+                enemy->ApplyDamage(mAttack, &player);
                 isHit = true;
             }
 
@@ -143,12 +140,12 @@ void PlayerCombat::Attack(PlayerModuleContext& context, float deltaTime)
             return;
         }
 
-        if (attackComboIndex != 3) {
+        if (mAttackComboIndex != 3) {
             player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
             return;
         }
 
-        attackComboIndex = 0;
+        mAttackComboIndex = 0;
         player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
 
         for (Enemy* enemy : hitEnemies) {
@@ -161,40 +158,38 @@ void PlayerCombat::Attack(PlayerModuleContext& context, float deltaTime)
     }
 
     player.GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
-    context.stateMachine.StartTired(context, 5.0f);
+    StartTiredLock(status, movement, 5.0f);
 
     for (Enemy* enemy : hitEnemies) {
         enemy->SetIsStrongAttacked(true);
-        enemy->ApplyDamage(attack, &player);
-        isStrongAttackHit = true;
+        enemy->ApplyDamage(mAttack, &player);
+        mIsStrongAttackHit = true;
     }
 }
 
-void PlayerCombat::WideAttack(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
-    attackKind = PlayerAttackKind::Wide;
-    attack = wideAttack;
-    attackRange = wideAttackRange;
-    attackAngle = wideAttackAngle;
+    mAttackKind = PlayerAttackKind::Wide;
+    mAttack = mWideAttack;
+    mAttackRange = mWideAttackRange;
+    mAttackAngle = mWideAttackAngle;
 
-    Attack(context, deltaTime);
+    Attack(player, movement, status, deltaTime);
 }
 
-void PlayerCombat::StrongAttack(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
-    attackKind = PlayerAttackKind::Strong;
-    attack = strongAttack;
-    attackRange = strongAttackRange;
-    attackAngle = normalAttackAngle;
+    mAttackKind = PlayerAttackKind::Strong;
+    mAttack = mStrongAttack;
+    mAttackRange = mStrongAttackRange;
+    mAttackAngle = mNormalAttackAngle;
 
-    Attack(context, deltaTime);
+    Attack(player, movement, status, deltaTime);
 }
 
-void PlayerCombat::SpecialAttack(PlayerModuleContext& context, float deltaTime)
+void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement, float deltaTime)
 {
-    Player& player = context.player;
-
-    std::vector<Enemy*> enemies = FindHitEnemies(context);
+    std::vector<Enemy*> enemies = FindHitEnemies(player);
 
     for (Enemy* enemy : enemies) {
         if (enemy->GetIsDead()) {
@@ -210,58 +205,75 @@ void PlayerCombat::SpecialAttack(PlayerModuleContext& context, float deltaTime)
         if (enemy->GetCanCountered()) {
             enemy->ApplyDamage(600, &player);
             enemy->FlipCanCountered();
-            jewelCount = 2;
+            mJewelCount = 2;
             player.GetGame()->GetAudioSystem()->PlaySE("just_attack_se");
         } else {
             enemy->ApplyDamage(300, &player);
         }
     }
 
-    player.GetGame()->VibrateControllerForPlayer(context.movement.playerNum, 0, 40000, 1000);
+    player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 0, 40000, 1000);
 
-    canSpecialAttack = false;
-    attackCooldownRemaining = 1.0f;
+    mCanSpecialAttack = false;
+    mAttackCooldownRemaining = 1.0f;
 }
 
-void PlayerCombat::StartAfterAttackReaction(PlayerModuleContext& context)
+
+void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status,
+                                             float deltaTime)
 {
-    attackMoveLockRemaining = 0.2f;
-    comboKeepTimer = attackMoveLockRemaining + 1.0f;
+    mAttackKind = PlayerAttackKind::Wide;
+    mAttack = mWideAttack / 2.0f;
+    mAttackRange = mWideAttackRange;
+    mAttackAngle = mWideAttackAngle;
 
-    if (context.player.GetOnGround()) {
-        attackMotionTimer = defaultAttackMotionTimer;
-    }
+    mContinuousAttackingTimer -= deltaTime;
+    mContinuousAttackingCooldown -= deltaTime;
 
-    attackComboIndex++;
-
-    if (attackKind == PlayerAttackKind::Normal && attackComboIndex != 3) {
-        attackComboIndex = 0;
-        return;
-    }
-
-    if (attackKind == PlayerAttackKind::Strong) {
-        context.stateMachine.StartTired(context, 5.0f);
-        return;
-    }
-
-    if (attackComboIndex != 3) {
-        return;
-    }
-
-    if (attackKind == PlayerAttackKind::Normal) {
-        attackMoveLockRemaining = 1.0f;
-    }
-
-    if (attackKind == PlayerAttackKind::Wide && context.player.GetOnGround()) {
-        attackCooldownRemaining = lastAttackCooldown;
-        attackMoveLockRemaining = 0.8f;
+    if (mContinuousAttackingCooldown <= 0.0f) {
+        mContinuousAttackingCooldown = 0.25f;
+        Attack(player, movement, status, deltaTime);
+        mAttackMoveLockRemaining = 0.0f;
     }
 }
 
-std::vector<Enemy*> PlayerCombat::FindHitEnemies(PlayerModuleContext& context)
+void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
-    Player& player = context.player;
+    mAttackMoveLockRemaining = 0.2f;
+    mComboKeepTimer = mAttackMoveLockRemaining + 1.0f;
 
+    if (player.GetOnGround()) {
+        mAttackMotionTimer = mDefaultAttackMotionTimer;
+    }
+
+    mAttackComboIndex++;
+
+    if (mAttackKind == PlayerAttackKind::Normal && mAttackComboIndex != 3) {
+        mAttackComboIndex = 0;
+        return;
+    }
+
+    if (mAttackKind == PlayerAttackKind::Strong) {
+        StartTiredLock(status, movement, 5.0f);
+        return;
+    }
+
+    if (mAttackComboIndex != 3) {
+        return;
+    }
+
+    if (mAttackKind == PlayerAttackKind::Normal) {
+        mAttackMoveLockRemaining = 1.0f;
+    }
+
+    if (mAttackKind == PlayerAttackKind::Wide && player.GetOnGround()) {
+        mAttackCooldownRemaining = mLastAttackCooldown;
+        mAttackMoveLockRemaining = 0.8f;
+    }
+}
+
+std::vector<Enemy*> PlayerCombat::FindHitEnemies(Player& player)
+{
     std::vector<Enemy*> hitEnemies;
 
     if (!player.GetCurrentPlanet()) {
@@ -273,7 +285,7 @@ std::vector<Enemy*> PlayerCombat::FindHitEnemies(PlayerModuleContext& context)
             continue;
         }
 
-        if (attackKind == PlayerAttackKind::Strong && enemy->GetOnGround()) {
+        if (mAttackKind == PlayerAttackKind::Strong && enemy->GetOnGround()) {
             continue;
         }
 
@@ -283,9 +295,9 @@ std::vector<Enemy*> PlayerCombat::FindHitEnemies(PlayerModuleContext& context)
 
         const float dist = glm::length(enemyPos - player.GetPos());
         const float dot = glm::dot(player.GetFacingForwardVec(), toEnemy);
-        const float effectiveRange = attackRange + enemy->GetRadius();
+        const float effectiveRange = mAttackRange + enemy->GetRadius();
 
-        if (IsEnemyHitByAttack(context, dist, dot, effectiveRange)) {
+        if (IsEnemyHitByAttack(dist, dot, effectiveRange)) {
             hitEnemies.push_back(enemy);
         }
     }
@@ -293,21 +305,119 @@ std::vector<Enemy*> PlayerCombat::FindHitEnemies(PlayerModuleContext& context)
     return hitEnemies;
 }
 
-bool PlayerCombat::IsEnemyHitByAttack(PlayerModuleContext& context, float dist, float dot, float effectiveRange)
+bool PlayerCombat::IsEnemyHitByAttack(float dist, float dot, float effectiveRange) const
 {
-    const float threshold = std::cos(attackAngle * 0.5f);
+    const float threshold = std::cos(mAttackAngle * 0.5f);
     return dist <= effectiveRange && dot >= threshold;
 }
 
-void PlayerCombat::StartSpecialAttackCharging(PlayerModuleContext& context)
+void PlayerCombat::StartSpecialAttackCharging()
 {
-    specialChargingTimer = 3.0f;
-    attackRange = wideAttackRange;
-    attackAngle = wideAttackAngle / 2.0f;
+    mSpecialChargingTimer = 3.0f;
+    mAttackRange = mWideAttackRange;
+    mAttackAngle = mWideAttackAngle / 2.0f;
 }
 
-void PlayerCombat::StartContinuousAttacking(PlayerModuleContext& context)
+void PlayerCombat::StartContinuousAttacking()
 {
-    jewelCount--;
-    continuousAttackingTimer = 6.0f;
+    mJewelCount--;
+    mContinuousAttackingTimer = 6.0f;
+}
+
+void PlayerCombat::StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime)
+{
+    status.StartTired();
+    mAttackMoveLockRemaining = lockTime;
+    movement.StartDodgeLock(lockTime);
+    mAttackCooldownRemaining = lockTime;
+}
+
+void PlayerCombat::ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime)
+{
+    mAttackMoveLockRemaining -= reduceTime;
+    movement.SetDodgeCooldown(movement.GetDodgeCooldown() - reduceTime);
+    mAttackCooldownRemaining -= reduceTime;
+
+    if (mAttackMoveLockRemaining <= 0.0f) {
+        status.EndTired();
+    }
+}
+
+void PlayerCombat::CancelSpecialAttack()
+{
+    mCanSpecialAttack = false;
+    mSpecialChargingTimer = -1.0f;
+    mContinuousAttackingTimer = -1.0f;
+}
+
+void PlayerCombat::OnLanded()
+{
+    mIsStrongAttacked = false;
+    mIsCharged = false;
+    mIsAirAttacking = false;
+}
+
+void PlayerCombat::UpdateAirAttackFloatingTimer(float deltaTime)
+{
+    if (mAirAttackFloatingTimer > 0.0f) {
+        mAirAttackFloatingTimer -= deltaTime;
+    }
+}
+
+void PlayerCombat::UpdateAttackCooldown(float deltaTime)
+{
+    if (mAttackCooldownRemaining >= 0.0f) {
+        mAttackCooldownRemaining -= deltaTime;
+    }
+}
+
+void PlayerCombat::UpdateAttackMoveLock(PlayerStatus& status, float deltaTime)
+{
+    if (mAttackMoveLockRemaining > 0.0f) {
+        mAttackMoveLockRemaining -= deltaTime;
+        if (status.IsTired() && mAttackMoveLockRemaining <= 0.0f) {
+            status.EndTired();
+        }
+    }
+}
+
+void PlayerCombat::UpdateAttackDodgeLock(float deltaTime)
+{
+    if (mAttackDodgeLockRemaining > 0.0f) {
+        mAttackDodgeLockRemaining -= deltaTime;
+    }
+}
+
+void PlayerCombat::UpdateRayCastTimer(float deltaTime)
+{
+    if (mRayCastTimer >= 0.0f) {
+        mRayCastTimer -= deltaTime;
+    }
+}
+
+void PlayerCombat::UpdateJewelTimer(float deltaTime)
+{
+    mJewelTimer -= deltaTime;
+    if (mJewelTimer >= 0.0f) {
+        return;
+    }
+
+    if (mJewelCount < 2) {
+        mJewelCount++;
+    }
+}
+
+void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
+{
+    mComboKeepTimer -= deltaTime;
+    if (mComboKeepTimer >= 0.0f) {
+        return;
+    }
+
+    mAttackComboIndex = 0;
+}
+
+void PlayerCombat::AddJewel(int value, int maxValue)
+{
+    mJewelCount = std::min(maxValue, mJewelCount + value);
 }

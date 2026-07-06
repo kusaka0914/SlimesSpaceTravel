@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <vector>
 
 enum class PlayerActionState {
     Idle,
@@ -12,7 +11,11 @@ enum class PlayerActionState {
     KnockedBack,
 };
 
-enum class PlayerAttackKind { Normal, Wide, Strong };
+enum class PlayerAttackKind {
+    Normal,
+    Wide,
+    Strong,
+};
 
 struct PlayerRaySegment {
     glm::vec3 from;

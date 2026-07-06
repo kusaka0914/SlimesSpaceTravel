@@ -3,7 +3,6 @@
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerInput.h"
-#include "actor/player/PlayerModuleContext.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerRespawn.h"
 #include "actor/player/PlayerStatus.h"
@@ -13,421 +12,316 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
-void PlayerStateMachine::Update(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                PlayerStatus& status, PlayerRespawn& respawn, float deltaTime)
 {
-    Player& player = context.player;
-
     if (!player.GetGame()->GetSceneSystem()->IsPlaying()) {
         return;
     }
 
     const glm::vec3 prevPos = player.GetPos();
 
-    if (context.status.IsAlive()) {
-        UpdateAlive(context, deltaTime);
-        context.respawn.CheckFallRespawn(context, prevPos);
+    if (status.IsAlive()) {
+        UpdateAlive(player, input, movement, combat, status, respawn, deltaTime);
+        respawn.CheckFallRespawn(player, combat, status, prevPos);
     } else {
-        context.status.Die(context);
+        status.Die(*player.GetGame());
     }
 }
 
-void PlayerStateMachine::UpdateAlive(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                     PlayerStatus& status, PlayerRespawn& respawn, float deltaTime)
 {
-    PlayerInput& input = context.input;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
+    movement.UpdateWorldVec(player, input);
+    movement.UpdateBoatRide(player, respawn);
 
-    movement.UpdateWorldVec(context);
-    movement.UpdateBoatRide(context);
-
-    if (combat.jewelCount < 2 && combat.jewelTimer <= 0.0f) {
-        StartJewelTimer(context);
+    if (combat.GetJewelCount() < 2 && combat.GetJewelTimer() <= 0.0f) {
+        StartJewelTimer(combat);
     }
 
-    switch (combat.actionState) {
+    switch (combat.GetActionState()) {
     case PlayerActionState::Idle:
-        UpdateIdle(context, deltaTime);
+        UpdateIdle(player, input, movement, combat, status, deltaTime);
         break;
     case PlayerActionState::Dodging:
-        UpdateDodging(context, deltaTime);
+        UpdateDodging(player, movement, combat, deltaTime);
         break;
     case PlayerActionState::Attacking:
-        UpdateAttacking(context, deltaTime);
+        UpdateAttacking(player, input, movement, combat, status, deltaTime);
         break;
     case PlayerActionState::Charging:
-        UpdateCharging(context, deltaTime);
+        UpdateCharging(player, input, movement, combat, deltaTime);
         break;
     case PlayerActionState::StrongAttacking:
-        UpdateStrongAttacking(context, deltaTime);
+        UpdateStrongAttacking(player, movement, combat, status, deltaTime);
         break;
     case PlayerActionState::KnockedBack:
-        UpdateKnockedBack(context, deltaTime);
+        UpdateKnockedBack(player, movement, combat, status, deltaTime);
         break;
     }
 
-    UpdateTimer(context, deltaTime);
-
-    input.dodgePressedPrev = input.dodgePressed;
-    input.attackPressedPrev = input.attackPressed;
-    input.wideAttackPressedPrev = input.wideAttackPressed;
-    input.specialAttackPressedPrev = input.specialAttackPressed;
-    input.recoverPressedPrev = input.recoverPressed;
+    UpdateTimer(input, movement, combat, status, deltaTime);
+    input.EndFrame();
 }
 
-void PlayerStateMachine::UpdateIdle(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                    PlayerStatus& status, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
-    PlayerStatus& status = context.status;
-
     if (!player.GetIsActive()) {
         return;
     }
 
-    const bool canStartCharging = !player.GetOnGround() && input.attackPressed && !combat.isStrongAttacked;
+    const bool canStartCharging = !player.GetOnGround() && input.GetAttackPressed() && !combat.GetIsStrongAttacked();
     if (canStartCharging) {
-        combat.StartCharging(context, deltaTime);
+        combat.StartCharging(player);
         return;
     }
 
-    if (combat.airAttackFloatingTimer <= 0.0f) {
-        player.ModuleApplyGravity(deltaTime);
+    if (!combat.IsAirAttackFloating()) {
+        player.ApplyGravityToSelf(deltaTime);
     }
 
-    const bool canStartJumping = input.jumpPressed && player.GetOnGround();
-    if (canStartJumping && combat.specialChargingTimer <= 0.0f && !combat.canSpecialAttack) {
-        movement.StartJumping(context, deltaTime);
+    const bool canStartJumping = input.GetJumpPressed() && player.GetOnGround();
+    if (canStartJumping && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
+        movement.StartJumping(player, deltaTime);
         return;
     }
 
-    const bool canRecover =
-        input.recoverPressed && !input.recoverPressedPrev && combat.jewelCount > 0 && status.hp != status.maxHp;
+    const bool canRecover = input.GetRecoverPressed() && !input.GetRecoverPressedPrev() && combat.GetJewelCount() > 0 &&
+                            status.GetHp() != status.GetMaxHp();
 
     if (canRecover) {
-        status.Recover(context);
+        combat.SetJewelCount(combat.GetJewelCount() - 1);
+        status.Heal(1.0f);
+        player.GetGame()->GetAudioSystem()->PlaySE("recover_se");
     }
 
-    const bool isMoving = std::abs(input.moveForward) > 0.01f || std::abs(input.moveLeft) > 0.01f;
-    if (isMoving && !status.isTired) {
-        movement.ChangeFaceDir(context);
+    const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
+    if (isMoving && !status.IsTired()) {
+        movement.ChangeFaceDir(player, input);
     }
 
-    if (movement.CanWalk(combat) && combat.specialChargingTimer <= 0.0f && !combat.canSpecialAttack) {
-        movement.UpdateWalk(context, deltaTime);
+    if (movement.CanWalk(combat) && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
+        movement.UpdateWalk(player, input, deltaTime);
     }
 
-    const bool isFalling = glm::dot(player.ModuleVelocity(), player.GetUpVec()) < 0.0f;
+    const bool isFalling = glm::dot(player.GetVelocity(), player.GetUpVec()) < 0.0f;
     if (isFalling) {
-        player.ModuleShouldJudgeLanding() = true;
+        player.SetShouldJudgeLanding(true);
     }
 
-    const bool canSpecialAttack =
-        input.specialAttackPressed && input.attackPressed && !input.attackPressedPrev && combat.jewelCount >= 2;
+    const bool canSpecialAttack = input.GetSpecialAttackPressed() && input.GetAttackPressed() &&
+                                  !input.GetAttackPressedPrev() && combat.GetJewelCount() >= 2;
 
     if (canSpecialAttack) {
-        combat.StartSpecialAttackCharging(context);
+        combat.StartSpecialAttackCharging();
         return;
     }
 
-    if (input.wideAttackPressed && !input.wideAttackPressedPrev && status.isTired) {
-        ReduceTired(context);
+    if (input.GetWideAttackPressed() && !input.GetWideAttackPressedPrev() && status.IsTired()) {
+        ReduceTired(status, movement, combat);
         return;
     }
 
-    const bool canContinuousAttacking =
-        input.specialAttackPressed && input.wideAttackPressed && !input.wideAttackPressedPrev && combat.jewelCount >= 1;
+    const bool canContinuousAttacking = input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
+                                        !input.GetWideAttackPressedPrev() && combat.GetJewelCount() >= 1;
 
     if (canContinuousAttacking) {
-        combat.StartContinuousAttacking(context);
+        combat.StartContinuousAttacking();
         return;
     }
 
-    if (combat.specialChargingTimer >= 0.0f || combat.canSpecialAttack) {
-        UpdateSpecialAttackCharging(context, deltaTime);
+    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
+        UpdateSpecialAttackCharging(player, input, movement, combat, deltaTime);
     }
 
-    if (combat.continuousAttackingTimer >= 0.0f) {
-        UpdateContinuousAttacking(context, deltaTime);
+    if (combat.IsContinuousAttacking()) {
+        UpdateContinuousAttacking(player, movement, combat, status, deltaTime);
         return;
     }
 
-    const bool canStartDodging = movement.dodgeCooldown <= 0.0f && combat.attackDodgeLockRemaining <= 0.0f &&
-                                 !movement.isDodged && input.dodgePressed && !input.dodgePressedPrev;
+    const bool canStartDodging = movement.CanDodge(combat) && input.GetDodgePressed() && !input.GetDodgePressedPrev();
 
     if (canStartDodging) {
-        movement.StartDodging(context);
+        movement.StartDodging(player, input, combat, status);
         return;
     }
 
-    const bool canStartAttacking =
-        combat.attackCooldownRemaining <= 0.0f &&
-        ((input.attackPressed || input.wideAttackPressed) && !input.attackPressedPrev && !input.wideAttackPressedPrev);
+    const bool canStartAttacking = combat.GetAttackCooldownRemaining() <= 0.0f &&
+                                   ((input.GetAttackPressed() || input.GetWideAttackPressed()) &&
+                                    !input.GetAttackPressedPrev() && !input.GetWideAttackPressedPrev());
 
-    if (canStartAttacking && combat.specialChargingTimer <= 0.0f && !combat.canSpecialAttack) {
-        combat.StartAttacking(context, deltaTime);
+    if (canStartAttacking && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
+        combat.StartAttacking(player, input, movement, status, deltaTime);
         return;
     }
 }
 
-void PlayerStateMachine::UpdateDodging(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerCombat& combat, float deltaTime)
 {
-    PlayerMovement& movement = context.movement;
+    movement.MoveDuringDodging(player, combat, deltaTime);
 
-    movement.MoveDuringDodging(context, deltaTime);
-
-    movement.dodgeTimer -= deltaTime;
-    if (movement.dodgeTimer <= 0.0f) {
-        StartIdle(context);
+    movement.ReduceDodgeTimer(deltaTime);
+    if (movement.GetDodgeTimer() <= 0.0f) {
+        StartIdle(combat);
     }
 }
 
-void PlayerStateMachine::UpdateAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                         PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
-
     if (player.GetOnGround()) {
-        movement.MoveDuringAttacking(context, deltaTime);
+        movement.MoveDuringAttacking(player, combat, deltaTime);
     }
 
     if (movement.CanWalk(combat)) {
-        movement.UpdateWalk(context, deltaTime);
+        movement.UpdateWalk(player, input, deltaTime);
     }
 
-    combat.attackMotionTimer -= deltaTime;
-    if (combat.attackMotionTimer <= 0.0f) {
-        StartIdle(context);
+    combat.ReduceAttackMotionTimer(deltaTime);
+    if (combat.GetAttackMotionTimer() <= 0.0f) {
+        StartIdle(combat);
     }
 }
 
-void PlayerStateMachine::UpdateCharging(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                        PlayerCombat& combat, float deltaTime)
 {
-    PlayerInput& input = context.input;
-    PlayerCombat& combat = context.combat;
-    PlayerMovement& movement = context.movement;
-
-    const bool isAttackBtnReleased = !input.attackPressed;
+    const bool isAttackBtnReleased = !input.GetAttackPressed();
     if (isAttackBtnReleased) {
-        combat.StartStrongAttacking(context, deltaTime);
+        combat.StartStrongAttacking(player, deltaTime);
         return;
     }
 
-    if (combat.attackPressTimer < 0.0f) {
+    if (combat.GetAttackPressTimer() < 0.0f) {
         return;
     }
 
-    combat.attackPressTimer -= deltaTime;
-    if (combat.attackPressTimer >= 0.0f) {
-        movement.MoveDuringCharging(context, deltaTime);
+    combat.ReduceAttackPressTimer(deltaTime);
+    if (combat.GetAttackPressTimer() >= 0.0f) {
+        movement.MoveDuringCharging(player, deltaTime);
         return;
     }
 
-    combat.FinishCharging(context);
+    combat.FinishCharging(player, movement);
 }
 
-void PlayerStateMachine::UpdateStrongAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
+                                               PlayerStatus& status, float deltaTime)
 {
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
+    movement.MoveDuringStrongAttacking(player, combat, deltaTime);
 
-    movement.MoveDuringStrongAttacking(context, deltaTime);
-
-    combat.strongAttackTimer -= deltaTime;
-    if (combat.strongAttackTimer >= 0.0f) {
+    combat.ReduceStrongAttackTimer(deltaTime);
+    if (combat.GetStrongAttackTimer() >= 0.0f) {
         return;
     }
 
-    StartIdle(context);
+    StartIdle(combat);
 
-    if (!combat.isCharged) {
+    if (!combat.GetIsCharged()) {
         return;
     }
 
-    if (!combat.isStrongAttackHit) {
-        combat.Attack(context, deltaTime);
+    if (!combat.GetIsStrongAttackHit()) {
+        combat.Attack(player, movement, status, deltaTime);
     }
 
-    if (combat.isStrongAttackHit) {
-        combat.isStrongAttackHit = false;
-        context.player.GetGame()->OnStrongAttacked(movement.playerNum);
+    if (combat.GetIsStrongAttackHit()) {
+        combat.ClearStrongAttackHit();
+        player.GetGame()->OnStrongAttacked(movement.GetPlayerNum());
     }
 }
 
-void PlayerStateMachine::UpdateKnockedBack(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
+                                           PlayerStatus& status, float deltaTime)
 {
-    PlayerMovement& movement = context.movement;
-    PlayerStatus& status = context.status;
+    movement.MoveDuringKnockBack(player, deltaTime);
 
-    movement.MoveDuringKnockBack(context, deltaTime);
-
-    status.damageTimer -= deltaTime;
-    if (status.damageTimer <= 0.0f) {
-        StartIdle(context);
+    status.UpdateDamageTimer(deltaTime);
+    if (status.GetDamageTimer() <= 0.0f) {
+        StartIdle(combat);
     }
 }
 
-void PlayerStateMachine::UpdateSpecialAttackCharging(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                                     PlayerCombat& combat, float deltaTime)
 {
-    PlayerInput& input = context.input;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
+    const float specialChargingTimerPrev = combat.GetSpecialChargingTimer();
 
-    const float specialChargingTimerPrev = combat.specialChargingTimer;
+    combat.ReduceSpecialChargingTimer(deltaTime);
 
-    combat.specialChargingTimer -= deltaTime;
-
-    if (specialChargingTimerPrev >= 2.0f && combat.specialChargingTimer <= 2.0f) {
-        context.player.GetGame()->VibrateControllerForPlayer(movement.playerNum, 10000, 0, 1000);
-        combat.jewelCount--;
-        context.player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 1.0f && combat.specialChargingTimer <= 1.0f) {
-        context.player.GetGame()->VibrateControllerForPlayer(movement.playerNum, 20000, 0, 1000);
-        combat.jewelCount--;
-        context.player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 0.0f && combat.specialChargingTimer <= 0.0f) {
-        context.player.GetGame()->VibrateControllerForPlayer(movement.playerNum, 30000, 0, 1000);
-        context.player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
+    if (specialChargingTimerPrev >= 2.0f && combat.GetSpecialChargingTimer() <= 2.0f) {
+        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 10000, 0, 1000);
+        combat.SetJewelCount(combat.GetJewelCount() - 1);
+        player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
+    } else if (specialChargingTimerPrev >= 1.0f && combat.GetSpecialChargingTimer() <= 1.0f) {
+        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 20000, 0, 1000);
+        combat.SetJewelCount(combat.GetJewelCount() - 1);
+        player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
+    } else if (specialChargingTimerPrev >= 0.0f && combat.GetSpecialChargingTimer() <= 0.0f) {
+        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 30000, 0, 1000);
+        player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
     }
 
-    if (combat.specialChargingTimer <= 0.0f) {
-        combat.canSpecialAttack = true;
+    if (combat.GetSpecialChargingTimer() <= 0.0f) {
+        combat.SetCanSpecialAttack(true);
     }
 
-    if (combat.specialChargingTimer <= 0.0f && input.attackPressed && !input.attackPressedPrev) {
-        combat.SpecialAttack(context, deltaTime);
+    if (combat.GetSpecialChargingTimer() <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
+        combat.SpecialAttack(player, movement, deltaTime);
     }
 
-    if (input.attackPressed && !input.attackPressedPrev) {
-        combat.specialChargingTimer = -1.0f;
+    if (input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
+        combat.FinishSpecialAttackCharging();
     }
 }
 
-void PlayerStateMachine::UpdateContinuousAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
+                                                   PlayerStatus& status, float deltaTime)
 {
-    PlayerCombat& combat = context.combat;
-
-    combat.attackKind = PlayerAttackKind::Wide;
-    combat.attack = combat.wideAttack / 2.0f;
-    combat.attackRange = combat.wideAttackRange;
-    combat.attackAngle = combat.wideAttackAngle;
-
-    combat.continuousAttackingTimer -= deltaTime;
-    combat.continuousAttackingCooldown -= deltaTime;
-
-    if (combat.continuousAttackingCooldown <= 0.0f) {
-        combat.continuousAttackingCooldown = 0.25f;
-        combat.Attack(context, deltaTime);
-        combat.attackMoveLockRemaining = 0.0f;
-    }
+    combat.UpdateContinuousAttacking(player, movement, status, deltaTime);
 }
 
-void PlayerStateMachine::UpdateTimer(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                     PlayerStatus& status, float deltaTime)
 {
-    PlayerInput& input = context.input;
-    PlayerMovement& movement = context.movement;
-    PlayerCombat& combat = context.combat;
-    PlayerStatus& status = context.status;
+    combat.UpdateAirAttackFloatingTimer(deltaTime);
+    movement.ReduceDodgeCooldown(deltaTime);
 
-    if (combat.airAttackFloatingTimer > 0.0f) {
-        combat.airAttackFloatingTimer -= deltaTime;
+    if (combat.GetJewelTimer() >= 0.0f) {
+        combat.UpdateJewelTimer(deltaTime);
     }
 
-    if (movement.dodgeCooldown > 0.0f) {
-        movement.dodgeCooldown -= deltaTime;
-    }
+    combat.UpdateAttackCooldown(deltaTime);
+    combat.UpdateAttackMoveLock(status, deltaTime);
+    combat.UpdateAttackDodgeLock(deltaTime);
+    status.UpdateInvincibleTimer(deltaTime);
+    combat.UpdateRayCastTimer(deltaTime);
+    input.UpdateInputAvailableTimer(deltaTime);
 
-    if (combat.jewelTimer >= 0.0f) {
-        UpdateJewelTimer(context, deltaTime);
-    }
-
-    if (combat.attackCooldownRemaining >= 0.0f) {
-        combat.attackCooldownRemaining -= deltaTime;
-    }
-
-    if (combat.attackMoveLockRemaining > 0.0f) {
-        combat.attackMoveLockRemaining -= deltaTime;
-        if (status.isTired && combat.attackMoveLockRemaining <= 0.0f) {
-            status.isTired = false;
-        }
-    }
-
-    if (combat.attackDodgeLockRemaining > 0.0f) {
-        combat.attackDodgeLockRemaining -= deltaTime;
-    }
-
-    if (status.invincibleTimer >= 0.0f) {
-        status.invincibleTimer -= deltaTime;
-    }
-
-    if (combat.rayCastTimer >= 0.0f) {
-        combat.rayCastTimer -= deltaTime;
-    }
-
-    if (input.inputAvailableTimer >= 0.0f) {
-        input.inputAvailableTimer -= deltaTime;
-    }
-
-    if (combat.comboKeepTimer > 0.0f) {
-        UpdateComboKeepTimer(context, deltaTime);
+    if (combat.GetComboKeepTimer() > 0.0f) {
+        combat.UpdateComboKeepTimer(deltaTime);
     }
 }
 
-void PlayerStateMachine::UpdateJewelTimer(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::StartIdle(PlayerCombat& combat)
 {
-    PlayerCombat& combat = context.combat;
-
-    combat.jewelTimer -= deltaTime;
-    if (combat.jewelTimer >= 0.0f) {
-        return;
-    }
-
-    if (combat.jewelCount < 2) {
-        combat.jewelCount++;
-    }
+    combat.StartIdle();
 }
 
-void PlayerStateMachine::UpdateComboKeepTimer(PlayerModuleContext& context, float deltaTime)
+void PlayerStateMachine::StartJewelTimer(PlayerCombat& combat)
 {
-    PlayerCombat& combat = context.combat;
-
-    combat.comboKeepTimer -= deltaTime;
-    if (combat.comboKeepTimer >= 0.0f) {
-        return;
-    }
-
-    combat.attackComboIndex = 0;
+    combat.SetJewelTimer(30.0f);
 }
 
-void PlayerStateMachine::StartIdle(PlayerModuleContext& context)
+void PlayerStateMachine::StartTired(PlayerStatus& status, PlayerMovement& movement, PlayerCombat& combat,
+                                    float lockTime)
 {
-    context.combat.actionState = PlayerActionState::Idle;
+    combat.StartTiredLock(status, movement, lockTime);
 }
 
-void PlayerStateMachine::StartJewelTimer(PlayerModuleContext& context)
-{
-    context.combat.jewelTimer = 30.0f;
-}
-
-void PlayerStateMachine::StartTired(PlayerModuleContext& context, float lockTime)
-{
-    context.status.isTired = true;
-    context.combat.attackMoveLockRemaining = lockTime;
-    context.movement.dodgeCooldown = lockTime;
-    context.combat.attackCooldownRemaining = lockTime;
-}
-
-void PlayerStateMachine::ReduceTired(PlayerModuleContext& context)
+void PlayerStateMachine::ReduceTired(PlayerStatus& status, PlayerMovement& movement, PlayerCombat& combat)
 {
     constexpr float reduceTime = 0.8f;
-
-    context.combat.attackMoveLockRemaining -= reduceTime;
-    context.movement.dodgeCooldown -= reduceTime;
-    context.combat.attackCooldownRemaining -= reduceTime;
-
-    if (context.combat.attackMoveLockRemaining <= 0.0f) {
-        context.status.isTired = false;
-    }
+    combat.ReduceTiredLock(status, movement, reduceTime);
 }

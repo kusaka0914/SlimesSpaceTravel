@@ -4,5 +4,9 @@ class NPC;
 
 class PlayerInteraction {
 public:
-    NPC* talkableNPC = nullptr;
+    void SetTalkableNPC(NPC* talkableNPC) { mTalkableNPC = talkableNPC; }
+    NPC* GetTalkableNPC() const { return mTalkableNPC; }
+
+private:
+    NPC* mTalkableNPC = nullptr;
 };

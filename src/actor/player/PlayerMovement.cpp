@@ -5,7 +5,8 @@
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerInput.h"
-#include "actor/player/PlayerModuleContext.h"
+#include "actor/player/PlayerRespawn.h"
+#include "actor/player/PlayerStatus.h"
 #include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
@@ -16,16 +17,18 @@
 
 bool PlayerMovement::CanWalk(const PlayerCombat& combat) const
 {
-    return combat.attackMoveLockRemaining <= 0.0f && !combat.isAirAttacking;
+    return combat.CanMoveDuringAttack();
 }
 
-void PlayerMovement::UpdateWorldVec(PlayerModuleContext& context)
+bool PlayerMovement::CanDodge(const PlayerCombat& combat) const
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
+    return mDodgeCooldown <= 0.0f && combat.CanDodgeDuringAttack() && !mIsDodged;
+}
 
+void PlayerMovement::UpdateWorldVec(Player& player, const PlayerInput& input)
+{
     const glm::vec3 upVec = player.GetUpVec();
-    glm::vec3 projectedForward = forwardVec - glm::dot(forwardVec, upVec) * upVec;
+    glm::vec3 projectedForward = mForwardVec - glm::dot(mForwardVec, upVec) * upVec;
 
     if (glm::length(projectedForward) < 1e-6f) {
         projectedForward = glm::cross(glm::vec3(1, 0, 0), upVec);
@@ -37,17 +40,15 @@ void PlayerMovement::UpdateWorldVec(PlayerModuleContext& context)
     projectedForward = glm::normalize(projectedForward);
     glm::vec3 baseLeft = glm::normalize(glm::cross(upVec, projectedForward));
 
-    forwardVec = glm::normalize(projectedForward * std::cos(input.cameraYaw) - baseLeft * std::sin(input.cameraYaw));
-    leftVec = glm::normalize(glm::cross(upVec, forwardVec));
+    mForwardVec =
+        glm::normalize(projectedForward * std::cos(input.GetCameraYaw()) - baseLeft * std::sin(input.GetCameraYaw()));
+    mLeftVec = glm::normalize(glm::cross(upVec, mForwardVec));
 }
 
-void PlayerMovement::UpdateWalk(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::UpdateWalk(Player& player, const PlayerInput& input, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
-
-    glm::vec3 moveDelta =
-        forwardVec * input.moveForward * moveSpeed * deltaTime + leftVec * input.moveLeft * moveSpeed * deltaTime;
+    glm::vec3 moveDelta = mForwardVec * input.GetMoveForward() * mMoveSpeed * deltaTime +
+                          mLeftVec * input.GetMoveLeft() * mMoveSpeed * deltaTime;
 
     glm::vec3 desiredPos = player.GetPos() + moveDelta;
     desiredPos = player.GetGame()->GetPhysicsSystem()->CheckCollision(&player, moveDelta, desiredPos);
@@ -55,10 +56,8 @@ void PlayerMovement::UpdateWalk(PlayerModuleContext& context, float deltaTime)
     player.SetPos(desiredPos);
 }
 
-void PlayerMovement::UpdateBoatRide(PlayerModuleContext& context)
+void PlayerMovement::UpdateBoatRide(Player& player, PlayerRespawn& respawn)
 {
-    Player& player = context.player;
-
     if (!player.GetCurrentPlanet()) {
         return;
     }
@@ -74,33 +73,28 @@ void PlayerMovement::UpdateBoatRide(PlayerModuleContext& context)
         }
 
         if (boat->GetIsMoving()) {
-            FollowMovingBoat(context, boat);
+            FollowMovingBoat(player, boat);
             return;
         }
 
-        if (IsTouchingBoat(context, boat)) {
-            StartRidingBoat(context, boat);
+        if (IsTouchingBoat(player, boat)) {
+            StartRidingBoat(player, boat);
             return;
         }
     }
 }
 
-void PlayerMovement::ChangeFaceDir(PlayerModuleContext& context)
+void PlayerMovement::ChangeFaceDir(Player& player, const PlayerInput& input)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
+    glm::vec3 moveDir = glm::normalize(mForwardVec * input.GetMoveForward() + mLeftVec * input.GetMoveLeft());
 
-    glm::vec3 moveDir = glm::normalize(forwardVec * input.moveForward + leftVec * input.moveLeft);
-
-    player.ModuleFacingForwardVec() = moveDir;
+    player.SetFacingForwardVec(moveDir);
     player.SetFacingYaw(player.GetGame()->GetMathUtils()->GetYawFromDirection(player.GetUpVec(), moveDir) +
                         3.14159265f);
 }
 
-void PlayerMovement::UpdateFacingForwardVec(PlayerModuleContext& context)
+void PlayerMovement::UpdateFacingForwardVec(Player& player)
 {
-    Player& player = context.player;
-
     glm::vec3 up = player.GetUpVec();
     if (glm::length(up) < 1e-6f) {
         up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -111,7 +105,7 @@ void PlayerMovement::UpdateFacingForwardVec(PlayerModuleContext& context)
     forward = forward - up * glm::dot(forward, up);
 
     if (glm::length(forward) < 1e-6f) {
-        forward = forwardVec;
+        forward = mForwardVec;
         forward = forward - up * glm::dot(forward, up);
     }
 
@@ -119,145 +113,119 @@ void PlayerMovement::UpdateFacingForwardVec(PlayerModuleContext& context)
         return;
     }
 
-    player.ModuleFacingForwardVec() = glm::normalize(forward);
+    player.SetFacingForwardVec(glm::normalize(forward));
     player.SetFacingYaw(player.GetGame()->GetMathUtils()->GetYawFromDirection(up, player.GetFacingForwardVec()) +
                         3.14159265f);
 }
 
-void PlayerMovement::MoveDuringDodging(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::MoveDuringDodging(Player& player, const PlayerCombat& combat, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerCombat& combat = context.combat;
-
     float dodgeSpeed =
-        player.GetOnGround() ? (dodgeDistance / dodgeDuration) : (dodgeDistance / (dodgeDuration * 4.0f));
+        player.GetOnGround() ? (mDodgeDistance / mDodgeDuration) : (mDodgeDistance / (mDodgeDuration * 4.0f));
 
-    if (combat.specialChargingTimer >= 0.0f || combat.canSpecialAttack) {
+    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
         dodgeSpeed /= 4.0f;
     }
 
-    const glm::vec3 moveDelta = dodgeDir * dodgeSpeed * deltaTime;
+    const glm::vec3 moveDelta = mDodgeDir * dodgeSpeed * deltaTime;
     glm::vec3 desiredPos = player.GetPos() + moveDelta;
 
     desiredPos = player.GetGame()->GetPhysicsSystem()->CheckCollision(&player, moveDelta, desiredPos);
     player.SetPos(desiredPos);
 
     if (player.GetOnGround()) {
-        SnapToGround(context, 0.5f, 1.0f);
+        SnapToGround(player, 0.5f, 1.0f);
     }
 }
 
-void PlayerMovement::MoveDuringAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::MoveDuringAttacking(Player& player, const PlayerCombat& combat, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerCombat& combat = context.combat;
-
-    glm::vec3 moveDelta = player.GetFacingForwardVec() * combat.attackSpeed * deltaTime;
+    glm::vec3 moveDelta = player.GetFacingForwardVec() * combat.GetAttackSpeed() * deltaTime;
     glm::vec3 desiredPos = player.GetPos() + moveDelta;
 
     desiredPos = player.GetGame()->GetPhysicsSystem()->CheckCollision(&player, moveDelta, desiredPos);
     player.SetPos(desiredPos);
 
-    UpdateFacingForwardVec(context);
+    UpdateFacingForwardVec(player);
 }
 
-void PlayerMovement::MoveDuringCharging(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::MoveDuringCharging(Player& player, float deltaTime)
 {
-    Player& player = context.player;
-
-    const glm::vec3 moveDelta = -player.GetFacingForwardVec() * chargeMoveSpeed * deltaTime;
+    const glm::vec3 moveDelta = -player.GetFacingForwardVec() * mChargeMoveSpeed * deltaTime;
     glm::vec3 desiredPos = player.GetPos() + moveDelta;
 
     desiredPos = player.GetGame()->GetPhysicsSystem()->CheckCollision(&player, moveDelta, desiredPos);
     player.SetPos(desiredPos);
 
-    UpdateFacingForwardVec(context);
+    UpdateFacingForwardVec(player);
 }
 
-void PlayerMovement::MoveDuringStrongAttacking(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::MoveDuringStrongAttacking(Player& player, const PlayerCombat& combat, float deltaTime)
 {
-    Player& player = context.player;
-    PlayerCombat& combat = context.combat;
-
-    const glm::vec3 moveDelta = player.GetFacingForwardVec() * combat.strongAttackSpeed * deltaTime;
+    const glm::vec3 moveDelta = player.GetFacingForwardVec() * combat.GetStrongAttackSpeed() * deltaTime;
     glm::vec3 desiredPos = player.GetPos() + moveDelta;
 
     desiredPos = player.GetGame()->GetPhysicsSystem()->CheckCollision(&player, moveDelta, desiredPos);
     player.SetPos(desiredPos);
 
-    UpdateFacingForwardVec(context);
+    UpdateFacingForwardVec(player);
 }
 
-void PlayerMovement::MoveDuringKnockBack(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::MoveDuringKnockBack(Player& player, float deltaTime)
 {
-    Player& player = context.player;
-
-    glm::vec3 toPlayer = glm::normalize(player.GetPos() - knockBackFrom);
-    player.SetPos(player.GetPos() + toPlayer * knockBackSpeed * deltaTime);
+    glm::vec3 toPlayer = glm::normalize(player.GetPos() - mKnockBackFrom);
+    player.SetPos(player.GetPos() + toPlayer * mKnockBackSpeed * deltaTime);
 }
 
-void PlayerMovement::FollowMovingBoat(PlayerModuleContext& context, Boat* boat)
+void PlayerMovement::FollowMovingBoat(Player& player, Boat* boat)
 {
-    Player& player = context.player;
-
     player.SetPos(boat->GetPos());
     player.SetIsActive(false);
 }
 
-bool PlayerMovement::IsTouchingBoat(PlayerModuleContext& context, Boat* boat)
+bool PlayerMovement::IsTouchingBoat(const Player& player, Boat* boat) const
 {
-    const Player& player = context.player;
-
     constexpr float boatTouchRadius = 0.9f;
     const float distToBoat = glm::length(player.GetPos() - boat->GetPos());
 
     return distToBoat <= boatTouchRadius;
 }
 
-void PlayerMovement::StartDodging(PlayerModuleContext& context)
+void PlayerMovement::StartDodging(Player& player, const PlayerInput& input, PlayerCombat& combat, PlayerStatus& status)
 {
-    Player& player = context.player;
-    PlayerInput& input = context.input;
-    PlayerCombat& combat = context.combat;
-    PlayerStatus& status = context.status;
+    combat.StartDodging();
 
-    combat.actionState = PlayerActionState::Dodging;
-
-    if (input.moveForward != 0.0f || input.moveLeft != 0.0f) {
-        dodgeDir = player.GetFacingForwardVec();
+    if (input.GetMoveForward() != 0.0f || input.GetMoveLeft() != 0.0f) {
+        mDodgeDir = player.GetFacingForwardVec();
     } else {
-        dodgeDir = -player.GetFacingForwardVec();
+        mDodgeDir = -player.GetFacingForwardVec();
     }
 
-    dodgeTimer = player.GetOnGround() ? dodgeDuration : dodgeDuration * 4.0f;
-    dodgeCooldown = dodgeCooldownTime;
-    status.invincibleTimer = dodgeDuration;
+    mDodgeTimer = player.GetOnGround() ? mDodgeDuration : mDodgeDuration * 4.0f;
+    mDodgeCooldown = mDodgeCooldownTime;
+    status.StartInvincible(mDodgeDuration);
 
     player.SetVelocity(glm::vec3(0.0f));
     player.GetGame()->GetAudioSystem()->PlaySE("dodge_se");
 
-    isDodged = true;
+    mIsDodged = true;
 }
 
-void PlayerMovement::StartJumping(PlayerModuleContext& context, float deltaTime)
+void PlayerMovement::StartJumping(Player& player, float deltaTime)
 {
-    Player& player = context.player;
-
     constexpr float jumpPower = 6.0f;
 
-    player.ModuleVelocity() += player.GetUpVec() * jumpPower;
-    player.SetPos(player.GetPos() + player.ModuleVelocity() * deltaTime);
+    player.AddVelocity(player.GetUpVec() * jumpPower);
+    player.SetPos(player.GetPos() + player.GetVelocity() * deltaTime);
 
-    player.ModuleOnGround() = false;
-    player.ModuleShouldJudgeLanding() = false;
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
 
     player.GetGame()->GetAudioSystem()->PlaySE("jump_se");
 }
 
-void PlayerMovement::StartRidingBoat(PlayerModuleContext& context, Boat* boat)
+void PlayerMovement::StartRidingBoat(Player& player, Boat* boat)
 {
-    Player& player = context.player;
-
     if (!player.GetIsActive()) {
         return;
     }
@@ -266,38 +234,30 @@ void PlayerMovement::StartRidingBoat(PlayerModuleContext& context, Boat* boat)
     player.SetIsActive(false);
 }
 
-void PlayerMovement::OnBoatArrived(PlayerModuleContext& context, Boat* boat)
+void PlayerMovement::OnBoatArrived(Player& player, PlayerRespawn& respawn, Boat* boat)
 {
-    Player& player = context.player;
-
     player.SetCurrentPlanet(boat->GetDestPlanet());
     player.SetPos(boat->GetDestPos());
 
-    context.respawn.restartPos = player.GetPos();
-    context.respawn.restartPlanetIndex = currentPlanetNum;
+    respawn.SetRestartPos(player.GetPos());
+    respawn.SetRestartPlanetIndex(mCurrentPlanetNum);
 
     player.SetVelocity(glm::vec3(0.0f));
     player.SetIsActive(true);
 
-    player.ModuleUpdateFallbackUpVec();
+    player.RefreshFallbackUpVec();
 }
 
-void PlayerMovement::OnLanded(PlayerModuleContext& context)
+void PlayerMovement::OnLanded(Player& player, PlayerCombat& combat)
 {
-    isDodged = false;
-
-    context.combat.isStrongAttacked = false;
-    context.combat.isCharged = false;
-    context.combat.isAirAttacking = false;
-
-    context.player.GetGame()->OnLanded();
+    mIsDodged = false;
+    combat.OnLanded();
+    player.GetGame()->OnLanded();
 }
 
-void PlayerMovement::OnUpVecUpdateFailed(PlayerModuleContext& context)
+void PlayerMovement::OnUpVecUpdateFailed(Player& player, PlayerCombat& combat)
 {
-    Player& player = context.player;
-
-    if (context.combat.rayCastTimer > 0.0f) {
+    if (combat.GetRayCastTimer() > 0.0f) {
         return;
     }
 
@@ -309,20 +269,18 @@ void PlayerMovement::OnUpVecUpdateFailed(PlayerModuleContext& context)
         return;
     }
 
-    player.ModuleUpdateFallbackUpVec();
+    player.RefreshFallbackUpVec();
     player.SetVelocity(glm::vec3(0.0f));
-    context.combat.rayCastTimer = 0.5f;
+    combat.ResetRayCastTimer();
 }
 
-void PlayerMovement::OnCastSucceeded(PlayerModuleContext& context)
+void PlayerMovement::OnCastSucceeded(PlayerCombat& combat)
 {
-    context.combat.rayCastTimer = 0.5f;
+    combat.ResetRayCastTimer();
 }
 
-void PlayerMovement::SnapToGround(PlayerModuleContext& context, float upOffset, float downLength)
+void PlayerMovement::SnapToGround(Player& player, float upOffset, float downLength)
 {
-    Player& player = context.player;
-
     if (glm::length(player.GetUpVec()) < 1e-6f) {
         return;
     }
@@ -348,6 +306,13 @@ void PlayerMovement::SnapToGround(PlayerModuleContext& context, float upOffset, 
     glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
 
     player.SetPos(hitPos);
-    player.ModuleOnGround() = true;
+    player.SetOnGround(true);
     player.SetVelocity(glm::vec3(0.0f));
+}
+
+void PlayerMovement::ReduceDodgeCooldown(float deltaTime)
+{
+    if (mDodgeCooldown > 0.0f) {
+        mDodgeCooldown -= deltaTime;
+    }
 }

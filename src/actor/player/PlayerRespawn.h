@@ -2,16 +2,25 @@
 
 #include <glm/glm.hpp>
 
-struct PlayerModuleContext;
+class Player;
+class PlayerCombat;
+class PlayerStatus;
 
 class PlayerRespawn {
 public:
-    int restartPlanetIndex = 0;
-    glm::vec3 restartPos = glm::vec3(0.0f);
+    void ApplyFallDamageAndRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, float damage);
+    void Respawn(Player& player);
+    void Restart(Player& player, PlayerCombat& combat, PlayerStatus& status);
+    bool IsFallIntoPlanetInside(const Player& player) const;
+    void CheckFallRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, const glm::vec3& prevPos);
 
-    void ApplyFallDamageAndRespawn(PlayerModuleContext& context, float damage);
-    void Respawn(PlayerModuleContext& context);
-    void Restart(PlayerModuleContext& context);
-    bool IsFallIntoPlanetInside(PlayerModuleContext& context);
-    void CheckFallRespawn(PlayerModuleContext& context, const glm::vec3& prevPos);
+    void SetRestartPlanetIndex(int restartPlanetIndex) { mRestartPlanetIndex = restartPlanetIndex; }
+    void SetRestartPos(const glm::vec3& restartPos) { mRestartPos = restartPos; }
+
+    int GetRestartPlanetIndex() const { return mRestartPlanetIndex; }
+    const glm::vec3& GetRestartPos() const { return mRestartPos; }
+
+private:
+    int mRestartPlanetIndex = 0;
+    glm::vec3 mRestartPos = glm::vec3(0.0f);
 };

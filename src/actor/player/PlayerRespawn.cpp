@@ -4,55 +4,42 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
-#include "actor/player/PlayerModuleContext.h"
 #include "actor/player/PlayerStatus.h"
 #include "system/PhysicsSystem.h"
 
-#include <algorithm>
 #include <glm/glm.hpp>
 
-void PlayerRespawn::ApplyFallDamageAndRespawn(PlayerModuleContext& context, float damage)
+void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, float damage)
 {
-    Player& player = context.player;
-    PlayerCombat& combat = context.combat;
-    PlayerStatus& status = context.status;
+    if (!status.IsAlive()) {
+        return;
+    }
+
+    status.TakeFallDamage(damage);
 
     if (!status.IsAlive()) {
         return;
     }
 
-    status.hp = std::max(0.0f, status.hp - damage);
-
-    if (!status.IsAlive()) {
-        return;
-    }
-
-    combat.actionState = PlayerActionState::Idle;
-
+    combat.StartIdle();
     player.SetVelocity(glm::vec3(0.0f));
-    Respawn(context);
-
-    status.damageTimer = status.defaultDamageTimer;
-    status.invincibleTimer = status.defaultInvincibleTimer;
+    Respawn(player);
 }
 
-void PlayerRespawn::Respawn(PlayerModuleContext& context)
+void PlayerRespawn::Respawn(Player& player)
 {
-    context.player.ModulePos() = restartPos;
+    player.SetPos(mRestartPos);
 }
 
-void PlayerRespawn::Restart(PlayerModuleContext& context)
+void PlayerRespawn::Restart(Player& player, PlayerCombat& combat, PlayerStatus& status)
 {
-    context.combat.actionState = PlayerActionState::Idle;
-    context.status.hp = context.status.maxHp;
-
-    Respawn(context);
+    combat.StartIdle();
+    status.RestoreFullHp();
+    Respawn(player);
 }
 
-bool PlayerRespawn::IsFallIntoPlanetInside(PlayerModuleContext& context)
+bool PlayerRespawn::IsFallIntoPlanetInside(const Player& player) const
 {
-    const Player& player = context.player;
-
     if (!player.GetCurrentPlanet()) {
         return false;
     }
@@ -67,10 +54,9 @@ bool PlayerRespawn::IsFallIntoPlanetInside(PlayerModuleContext& context)
     return dist < planetHalfRadius;
 }
 
-void PlayerRespawn::CheckFallRespawn(PlayerModuleContext& context, const glm::vec3& prevPos)
+void PlayerRespawn::CheckFallRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status,
+                                     const glm::vec3& prevPos)
 {
-    Player& player = context.player;
-
     if (!player.GetGame() || !player.GetGame()->GetPhysicsSystem()) {
         return;
     }
@@ -79,7 +65,7 @@ void PlayerRespawn::CheckFallRespawn(PlayerModuleContext& context, const glm::ve
         return;
     }
 
-    if (!context.status.IsAlive()) {
+    if (!status.IsAlive()) {
         return;
     }
 
@@ -95,5 +81,5 @@ void PlayerRespawn::CheckFallRespawn(PlayerModuleContext& context, const glm::ve
         return;
     }
 
-    ApplyFallDamageAndRespawn(context, point->GetDamage());
+    ApplyFallDamageAndRespawn(player, combat, status, point->GetDamage());
 }

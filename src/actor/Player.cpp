@@ -1,22 +1,16 @@
-// Core Player facade. Behavior lives in src/actor/player/*.cpp.
-
-// Core Player construction/configuration.
-// Most behavior functions were moved to src/actor/player/*.cpp by tools/apply_player_full_refactor.py.
-
 #include "Player.h"
+
 #include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
-#include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
 #include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
+
 #include <algorithm>
-#include <btBulletDynamicsCommon.h>
-#include <cmath>
-#include <iostream>
+#include <glm/glm.hpp>
 #include <yaml-cpp/yaml.h>
 
 Player::Player(Game* game) : CharacterActor(game)
@@ -92,66 +86,82 @@ void Player::ApplyConfig()
 
 void Player::Initialize()
 {
-    mRespawn.restartPlanetIndex = mMovement.currentPlanetNum;
-    mRespawn.restartPos = mPos;
-}
-
-PlayerModuleContext Player::MakeModuleContext()
-{
-    return PlayerModuleContext{*this, mInput, mMovement, mCombat, mStatus, mRespawn, mInteraction, mStateMachine};
+    mRespawn.SetRestartPlanetIndex(mMovement.GetCurrentPlanetNum());
+    mRespawn.SetRestartPos(mPos);
 }
 
 void Player::ProcessActor()
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mInput.ProcessActor(context);
+    mInput.ProcessActor(*this, mMovement);
 }
 
 void Player::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
-    PlayerModuleContext context = MakeModuleContext();
-    mStateMachine.Update(context, deltaTime);
+    mStateMachine.Update(*this, mInput, mMovement, mCombat, mStatus, mRespawn, deltaTime);
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mStatus.ApplyDamage(context, enemy, deltaTime);
+    if (!enemy) {
+        return;
+    }
+
+    if (mCombat.IsDodging() && enemy->GetCanCountered()) {
+        mGame->OnPlayerCounter(mMovement.GetPlayerNum());
+
+        enemy->ApplyBreak(deltaTime, true);
+        enemy->FlipCanCountered();
+
+        mGame->GetAudioSystem()->PlaySE("just_dodge_se");
+        mCombat.AddJewel(1, 2);
+        return;
+    }
+
+    if (mStatus.IsInvincible()) {
+        return;
+    }
+
+    if (mCombat.GetCanSpecialAttack()) {
+        mCombat.StartTiredLock(mStatus, mMovement, 20.0f);
+    }
+
+    mStatus.TakeDamage(enemy->GetAttack());
+    mMovement.StartKnockBack(enemy->GetPos());
+    mCombat.StartKnockedBack();
+
+    mGame->OnPlayerApplyDamage(mMovement.GetPlayerNum());
+
+    mCombat.CancelSpecialAttack();
+    mInput.SyncAttackButtonPrev();
 }
 
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mRespawn.ApplyFallDamageAndRespawn(context, damage);
+    mRespawn.ApplyFallDamageAndRespawn(*this, mCombat, mStatus, damage);
 }
 
 void Player::OnBoatArrived(Boat* boat)
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mMovement.OnBoatArrived(context, boat);
+    mMovement.OnBoatArrived(*this, mRespawn, boat);
 }
 
 void Player::Restart()
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mRespawn.Restart(context);
+    mRespawn.Restart(*this, mCombat, mStatus);
 }
 
 void Player::OnLanded()
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mMovement.OnLanded(context);
+    mMovement.OnLanded(*this, mCombat);
 }
 
 void Player::OnUpVecUpdateFailed()
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mMovement.OnUpVecUpdateFailed(context);
+    mMovement.OnUpVecUpdateFailed(*this, mCombat);
 }
 
 void Player::OnCastSucceeded()
 {
-    PlayerModuleContext context = MakeModuleContext();
-    mMovement.OnCastSucceeded(context);
+    mMovement.OnCastSucceeded(mCombat);
 }
