@@ -18,8 +18,8 @@ Boat::Boat(Game* game)
       mFocusComponent(nullptr),
       mArrivalPoint(nullptr)
 {
-    // mIsActive = mGame->IsInBase();
-    mIsActive = true;
+    mIsActive = mGame->IsInBase();
+    // mIsActive = true;
     AddFocusComponent();
 }
 

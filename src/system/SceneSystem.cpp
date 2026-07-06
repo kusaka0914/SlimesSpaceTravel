@@ -1,7 +1,6 @@
 #include "system/SceneSystem.h"
 
 #include "Game.h"
-#include "SceneSystem.h"
 #include "Stage.h"
 
 #include "actor/Boat.h"
@@ -9,10 +8,10 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
-#include "state/GameProgressState.h"
-#include "state/UIState.h"
-
 #include "system/AudioSystem.h"
+#include "system/scene/SceneTransitionController.h"
+#include "system/scene/TalkController.h"
+#include "system/scene/TutorialController.h"
 
 #include <SDL2/SDL_mixer.h>
 
@@ -26,13 +25,25 @@ SceneSystem::SceneSystem(Game* game)
 {
     mGameProgressState = std::make_unique<GameProgressState>(game);
     mUIState = std::make_unique<UIState>(game);
+
+    CreateControllers();
 }
 
 SceneSystem::~SceneSystem() = default;
 
+void SceneSystem::CreateControllers()
+{
+    mTransitionController = std::make_unique<SceneTransitionController>(mGame, mGameProgressState.get(), mUIState.get(),
+                                                                       mFadeTimer, mIsFadeOut,
+                                                                       mHasPendingStageChange, mNextStageNum);
+    mTalkController = std::make_unique<TalkController>(mGame, mGameProgressState.get(), mUIState.get(), mTalkingNPC,
+                                                       mTalkingPlayer);
+    mTutorialController = std::make_unique<TutorialController>(mGame, mGameProgressState.get(), mUIState.get());
+}
+
 void SceneSystem::Update(float deltaTime)
 {
-    UpdateFade(deltaTime);
+    mTransitionController->UpdateFade(deltaTime);
     UpdateClearTimer(deltaTime);
 }
 
@@ -50,17 +61,12 @@ void SceneSystem::OnConfirmPressed(int playerNum)
         break;
 
     case GameProgressState::SceneState::Opening:
-        mUIState->IncTalkUIIndex();
-        mGame->GetAudioSystem()->PlaySE("message_se");
-        break;
-
     case GameProgressState::SceneState::Talking:
-        mUIState->IncTalkUIIndex();
-        mGame->GetAudioSystem()->PlaySE("message_se");
+        mTalkController->AdvanceTalk();
         break;
 
     case GameProgressState::SceneState::Playing:
-        TryStartTalkWithNPC(playerNum);
+        mTalkController->TryStartTalkWithNPC(playerNum);
         break;
 
     case GameProgressState::SceneState::GameOver:
@@ -83,15 +89,13 @@ void SceneSystem::OnStartPressed()
         return;
     }
 
-    bool operationUIShow = mUIState->GetIsOperationUIShow();
+    const bool operationUIShow = mUIState->GetIsOperationUIShow();
     mUIState->SetIsOperationUIShow(!operationUIShow);
 }
 
 void SceneSystem::StartOpening()
 {
-    mFadeTimer = 1.0f;
-    mIsFadeOut = false;
-    mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Opening);
+    mTransitionController->StartOpening();
 }
 
 void SceneSystem::RestartGame()
@@ -119,35 +123,17 @@ void SceneSystem::StartFocusingScene()
 
 void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
 {
-    if (!talkingNPC || !talkingPlayer) {
-        return;
-    }
-
-    mTalkingNPC = talkingNPC;
-    mTalkingPlayer = talkingPlayer;
-
-    mUIState->SetCurrentTalkWith(UIState::TalkWith::NPC);
-    mUIState->SetTalkUIIndex(0);
-    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
-    mGame->GetAudioSystem()->PlaySE("message_se");
+    mTalkController->StartTalkWithNPC(talkingNPC, talkingPlayer);
 }
 
 void SceneSystem::StartFadeIn()
 {
-    mFadeTimer = 1.0f;
-    mIsFadeOut = false;
-
-    mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Playing);
-    mUIState->OnFadeIn();
+    mTransitionController->StartFadeIn();
 }
 
 void SceneSystem::RequestStageChange(int stageNum)
 {
-    mNextStageNum = stageNum;
-    mHasPendingStageChange = true;
-
-    mFadeTimer = 1.0f;
-    mIsFadeOut = false;
+    mTransitionController->RequestStageChange(stageNum);
 }
 
 void SceneSystem::OnBoatArrived(Boat* boat)
@@ -157,7 +143,7 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         return;
     }
 
-    std::vector<Planet*> planets = currentStage->GetPlanets();
+    const std::vector<Planet*> planets = currentStage->GetPlanets();
 
     for (Player* player : mGame->GetPlayers()) {
         const int nextPlanetIndex = player->GetCurrentPlanetNum() + 1;
@@ -169,38 +155,8 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         player->OnBoatArrived(boat);
     }
 
-    TryStartBattleTutorial();
-    TryStartJustDodgeTutorial();
-}
-
-void SceneSystem::TryStartBattleTutorial()
-{
-    if (mGame->GetPlayers()[0]->GetCurrentPlanetNum() != 1) {
-        return;
-    }
-
-    if (mUIState->GetIsBattleTutorialShown()) {
-        return;
-    }
-
-    mUIState->SetCurrentTutorialKind(UIState::TutorialKind::Battle);
-    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
-    mUIState->SetIsBattleTutorialShown(true);
-}
-
-void SceneSystem::TryStartJustDodgeTutorial()
-{
-    if (mGame->GetPlayers()[0]->GetCurrentPlanetNum() != 2) {
-        return;
-    }
-
-    if (mUIState->GetIsJustDodgeTutorialShown()) {
-        return;
-    }
-
-    mUIState->SetCurrentTutorialKind(UIState::TutorialKind::JustDodge);
-    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
-    mUIState->SetIsJustDodgeTutorialShown(true);
+    mTutorialController->TryStartBattleTutorial();
+    mTutorialController->TryStartJustDodgeTutorial();
 }
 
 void SceneSystem::OnStageClear()
@@ -218,53 +174,22 @@ void SceneSystem::OnStageClear()
 
 void SceneSystem::OnEnemyLaunched()
 {
-    if (mGameProgressState->GetIsFirstBreak()) {
-        return;
-    }
-
-    mGameProgressState->SetIsFirstBreak(true);
-    mUIState->SetCurrentTutorialKind(UIState::TutorialKind::Break);
-    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
+    mTutorialController->OnEnemyLaunched();
 }
 
 void SceneSystem::OnStrongAttacked()
 {
-    if (!mGameProgressState->GetIsFirstBreak() || mGameProgressState->GetIsFirstStrongAttack()) {
-        return;
-    }
-
-    mGameProgressState->SetIsFirstStrongAttack(true);
+    mTutorialController->OnStrongAttacked();
 }
 
 void SceneSystem::OnLanded()
 {
-    if (!mGameProgressState->GetIsFirstStrongAttack() || mUIState->GetIsSpecialAttackTutorialShown()) {
-        return;
-    }
-
-    mUIState->SetIsSpecialAttackTutorialShown(true);
-    mUIState->SetCurrentTutorialKind(UIState::TutorialKind::Jewel);
-    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
+    mTutorialController->OnLanded();
 }
 
 void SceneSystem::OnPlayerDied()
 {
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::GameOver);
-}
-
-void SceneSystem::UpdateFade(float deltaTime)
-{
-    if (mFadeTimer > -1.0f) {
-        mFadeTimer -= deltaTime;
-
-        if (mFadeTimer >= 0.0f || mIsFadeOut) {
-            return;
-        }
-
-        ApplySceneChange();
-    } else if (mIsFadeOut) {
-        mIsFadeOut = false;
-    }
 }
 
 void SceneSystem::UpdateClearTimer(float deltaTime)
@@ -276,72 +201,6 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     mClearTimer -= deltaTime;
 
     if (mClearTimer < 0.0f) {
-        // StartFadeIn();
         mGame->FinishGame();
-    }
-}
-
-void SceneSystem::ApplySceneChange()
-{
-    mIsFadeOut = true;
-
-    const auto nextSceneState = mGameProgressState->GetNextSceneState();
-
-    switch (nextSceneState) {
-    case GameProgressState::SceneState::Opening:
-        mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Opening);
-        mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
-        break;
-
-    case GameProgressState::SceneState::Playing:
-        mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
-        mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
-        mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
-        mGame->ChangeStage(0);
-        mUIState->SetTalkUIIndex(0);
-        mHasPendingStageChange = true;
-        break;
-
-    default:
-        break;
-    }
-
-    mGame->GetAudioSystem()->TryChangeBGM();
-
-    if (mHasPendingStageChange) {
-        mHasPendingStageChange = false;
-
-        mGame->ChangeStage(mNextStageNum);
-        mNextStageNum = -1;
-
-        Mix_HaltMusic();
-        mGame->ReloadCurrentStage();
-    }
-}
-
-void SceneSystem::TryStartTalkWithNPC(int playerNum)
-{
-    const std::vector<Player*>& players = mGame->GetPlayers();
-
-    for (Player* player : players) {
-        if (!player) {
-            continue;
-        }
-
-        if (player->GetPlayerNum() != playerNum) {
-            continue;
-        }
-
-        NPC* talkableNPC = player->GetTalkableNPC();
-        if (!talkableNPC) {
-            return;
-        }
-
-        if (!talkableNPC->GetIsTalkable()) {
-            return;
-        }
-
-        StartTalkWithNPC(talkableNPC, player);
-        return;
     }
 }

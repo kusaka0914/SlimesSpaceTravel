@@ -1,18 +1,12 @@
 #include "Planet.h"
-#include "Game.h"
-#include "actor/Boat.h"
-#include "actor/BoatParts.h"
-#include "actor/Enemy.h"
+
+#include <cmath>
 
 Planet::Planet(Game* game)
     : Actor(game),
       mStageNum(0),
-      mRemainBoatPartsCount(0),
       mColor(1.0f),
-      mKey(nullptr),
-      mStar(nullptr),
       mCurrentStage(nullptr),
-      mRocketSpawnCondition(RocketSpawnCondition::None),
       mPlanetShape(PlanetShape::Normal)
 {
 }
@@ -79,80 +73,17 @@ void Planet::ApplyConfig(const YAML::Node& node)
 
 void Planet::Initialize()
 {
-    InitRemainBoatPartsCount();
-}
-
-void Planet::InitRemainBoatPartsCount()
-{
-    if (mBoatParts.empty()) {
-        return;
-    }
-
-    mRemainBoatPartsCount = 0;
-    for (auto parts : mBoatParts) {
-        if (!parts->GetIsActive()) {
-            continue;
-        }
-
-        mRemainBoatPartsCount++;
-    }
+    mProgressController.Initialize(mActorRegistry);
 }
 
 void Planet::OnEnemyDead()
 {
-    bool shouldCheckIsAllEnemiesDead = mRocketSpawnCondition == RocketSpawnCondition::AllEnemiesDead;
-    if (!shouldCheckIsAllEnemiesDead) {
-        return;
-    }
-
-    if (CheckIsAllEnemiesDead()) {
-        StartBoatFocus();
-    }
-}
-
-bool Planet::CheckIsAllEnemiesDead()
-{
-    for (auto enemy : mEnemies) {
-        if (enemy->GetIsDead()) {
-            continue;
-        }
-
-        return false;
-    }
-    return true;
+    mProgressController.OnEnemyDead(mActorRegistry);
 }
 
 void Planet::OnBoatPartsObtained()
 {
-    mRemainBoatPartsCount--;
-
-    bool shouldCheckAllBoatPartsCollected = mRocketSpawnCondition == RocketSpawnCondition::AllBoatPartsCollected;
-    if (!shouldCheckAllBoatPartsCollected) {
-        return;
-    }
-
-    if (CheckIsAllBoatPartsCollected()) {
-        StartBoatFocus();
-    }
-}
-
-void Planet::StartBoatFocus()
-{
-    for (auto boat : mBoats) {
-        boat->StartFocus();
-    }
-}
-
-bool Planet::CheckIsAllBoatPartsCollected()
-{
-    for (auto parts : mBoatParts) {
-        if (!parts->GetIsActive()) {
-            continue;
-        }
-
-        return false;
-    }
-    return true;
+    mProgressController.OnBoatPartsObtained(mActorRegistry);
 }
 
 glm::vec3 Planet::CalculateSurfacePos(float theta, float phi, float height) const

@@ -92,10 +92,6 @@ public:
 
     bool GetIsEditorSelected() const { return mIsEditorSelected; }
 
-private:
-    glm::vec3 GetAverageNormal();
-    bool CastRay(const glm::vec3& offset, glm::vec3& outNormal, const btCollisionObject*& outObj);
-
 protected:
     void UpdateDirectionVectors();
     virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }

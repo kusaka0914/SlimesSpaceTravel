@@ -8,6 +8,7 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
+#include "state/GameProgressState.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
@@ -28,14 +29,14 @@ Game::Game()
     : mWindow(nullptr),
       mSdlController(nullptr),
       mCurrentStage(nullptr),
-      mCurrentStageNum(1),
+      mCurrentStageNum(0),
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
       mReloadKeyPressedPrev(false),
       mUIReloadKeyPressedPrev(false),
       mXPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/stage2.yaml"),
+      mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
       mIsDebugEditorShowing(false),
       mIsFreeCameraMode(false),
       mIsDebugMode(false)
@@ -46,15 +47,19 @@ Game::~Game() = default;
 
 bool Game::Initialize(bool isDebugMode)
 {
-    if (isDebugMode) {
-        mIsDebugMode = true;
-    }
     if (!InitializeGLFW()) {
         return false;
     }
 
     InitializeGameController();
     CreateGameSystems();
+
+    if (isDebugMode) {
+        mIsDebugMode = true;
+        mCurrentStageNum = 1;
+        mCurrentStageYamlPath = "../assets/data/stage/stage2.yaml";
+        mSceneSystem->StartPlayingScene();
+    }
 
     constexpr int stageCount = 5;
     CreateStages(stageCount);
