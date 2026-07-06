@@ -12,6 +12,7 @@
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
+#include "system/InputSystem.h"
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
@@ -24,6 +25,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 Game::Game()
     : mWindow(nullptr),
@@ -32,9 +34,6 @@ Game::Game()
       mCurrentStageNum(0),
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
-      mReloadKeyPressedPrev(false),
-      mUIReloadKeyPressedPrev(false),
-      mXPressedPrev(false),
       mIsPlayer2Joined(false),
       mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
       mIsDebugEditorShowing(false),
@@ -126,6 +125,7 @@ void Game::CreateGameSystems()
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>(this);
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);
+    mInputSystem = std::make_unique<InputSystem>(this);
 }
 
 void Game::CreateStages(int stageCount)
@@ -148,6 +148,15 @@ void Game::ReloadCurrentStage()
     LoadData(true);
     mPhysicsSystem->Initialize();
     mAudioSystem->TryChangeBGM();
+}
+
+void Game::ReloadUIData()
+{
+    if (!mUIRenderer) {
+        return;
+    }
+
+    mUIRenderer->GetUILoadSystem()->Initialize();
 }
 
 void Game::RunLoop()
@@ -186,7 +195,9 @@ void Game::ProcessInput()
     SDL_PumpEvents();
     SDL_GameControllerUpdate();
 
-    ProcessGameInput();
+    if (mInputSystem) {
+        mInputSystem->ProcessGameInput();
+    }
 
     if (mIsPauseMenuOpen) {
         return;
@@ -196,113 +207,10 @@ void Game::ProcessInput()
     mCameraSystem->ProcessInput();
 }
 
-void Game::ProcessGameInput()
-{
-    const bool pauseMenuKeyPressed =
-        glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK));
-
-    if (pauseMenuKeyPressed && !mPauseMenuKeyPressedPrev &&
-        (mSceneSystem->IsPlaying() || mSceneSystem->IsFocusing() || mIsPauseMenuOpen)) {
-        TogglePauseMenu();
-    }
-
-    mPauseMenuKeyPressedPrev = pauseMenuKeyPressed;
-
-    if (mIsPauseMenuOpen) {
-        ProcessPauseMenuInput();
-    }
-
-    const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_F) == GLFW_PRESS;
-    if (mIsDebugMode && reloadKeyPressed && !mReloadKeyPressedPrev) {
-        ReloadCurrentStage();
-    }
-    mReloadKeyPressedPrev = reloadKeyPressed;
-
-    const bool uiReloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_I) == GLFW_PRESS;
-    if (mIsDebugMode && uiReloadKeyPressed && !mUIReloadKeyPressedPrev) {
-        mUIRenderer->GetUILoadSystem()->Initialize();
-    }
-    mUIReloadKeyPressedPrev = uiReloadKeyPressed;
-
-    const bool qPressed = glfwGetKey(mWindow, GLFW_KEY_Q) == GLFW_PRESS;
-    if (qPressed && !mQPressedPrev) {
-        if (IsGameControllerConnected() && !mIsPlayer2Joined && mPlayers.size() < 2) {
-            CreatePlayer2();
-        }
-    }
-    mQPressedPrev = qPressed;
-
-    const bool controllerConfirmPressed =
-        mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X);
-
-    const bool keyboardConfirmPressed = glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
-
-    if (controllerConfirmPressed && !mControllerConfirmPressedPrev) {
-        mSceneSystem->OnConfirmPressed(1);
-    }
-
-    if (keyboardConfirmPressed && !mKeyboardConfirmPressedPrev) {
-        const int keyboardPlayerNum = IsGameControllerConnected() && mIsPlayer2Joined ? 2 : 1;
-
-        mSceneSystem->OnConfirmPressed(keyboardPlayerNum);
-    }
-
-    mControllerConfirmPressedPrev = controllerConfirmPressed;
-    mKeyboardConfirmPressedPrev = keyboardConfirmPressed;
-
-    const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
-    if (mIsDebugMode && pPressed && !mPPressedPrev) {
-        mIsDebugEditorShowing = !mIsDebugEditorShowing;
-    }
-    mPPressedPrev = pPressed;
-
-    const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
-    if (mIsDebugMode && lPressed && !mLPressedPrev) {
-        mIsFreeCameraMode = !mIsFreeCameraMode;
-    }
-    mLPressedPrev = lPressed;
-
-    const bool startPressed =
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START)) ||
-        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS;
-    if (startPressed && !mStartPressedPrev) {
-        mSceneSystem->OnStartPressed();
-    }
-    mStartPressedPrev = startPressed;
-}
-
-void Game::ProcessPauseMenuInput()
+void Game::MovePauseMenuSelection(int delta)
 {
     constexpr int menuItemCount = 4;
-
-    const bool upPressed =
-        glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_UP));
-
-    const bool downPressed =
-        glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_DOWN));
-
-    const bool confirmPressed =
-        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A));
-
-    if (upPressed && !mPauseMenuUpPressedPrev) {
-        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + menuItemCount - 1) % menuItemCount;
-    }
-
-    if (downPressed && !mPauseMenuDownPressedPrev) {
-        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + 1) % menuItemCount;
-    }
-
-    if (confirmPressed && !mPauseMenuConfirmPressedPrev) {
-        ExecutePauseMenuItem();
-    }
-
-    mPauseMenuUpPressedPrev = upPressed;
-    mPauseMenuDownPressedPrev = downPressed;
-    mPauseMenuConfirmPressedPrev = confirmPressed;
+    mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + delta + menuItemCount) % menuItemCount;
 }
 
 void Game::TogglePauseMenu()
@@ -362,6 +270,21 @@ void Game::OpenFeedbackForm()
     if (SDL_OpenURL(url) != 0) {
         std::cerr << "Failed to open URL: " << SDL_GetError() << std::endl;
     }
+}
+
+void Game::TryCreatePlayer2()
+{
+    CreatePlayer2();
+}
+
+void Game::ToggleDebugEditor()
+{
+    mIsDebugEditorShowing = !mIsDebugEditorShowing;
+}
+
+void Game::ToggleFreeCameraMode()
+{
+    mIsFreeCameraMode = !mIsFreeCameraMode;
 }
 
 void Game::ProcessActorsInput()

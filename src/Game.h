@@ -19,6 +19,7 @@ class Renderer3D;
 class UIRenderer;
 class AudioSystem;
 class SceneSystem;
+class InputSystem;
 
 class Game {
 public:
@@ -31,12 +32,17 @@ public:
 
     void LoadData(bool isLoadPlayer);
     void ReloadCurrentStage();
+    void ReloadUIData();
     void ChangeStage(int stageNum);
     void TogglePauseMenu();
     void ClosePauseMenu();
+    void MovePauseMenuSelection(int delta);
     void ExecutePauseMenuItem();
     void OpenFeedbackForm();
     void ReturnToBase();
+    void TryCreatePlayer2();
+    void ToggleDebugEditor();
+    void ToggleFreeCameraMode();
 
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
@@ -105,9 +111,7 @@ private:
     void CreateStages(int stageCount);
 
     void ProcessInput();
-    void ProcessGameInput();
     void ProcessActorsInput();
-    void ProcessPauseMenuInput();
 
     void UpdateGame();
     void UpdateActors(float deltaTime);
@@ -135,6 +139,7 @@ private:
     std::unique_ptr<MeshLoadSystem> mMeshLoadSystem;
     std::unique_ptr<MathUtils> mMathUtils;
     std::unique_ptr<SceneSystem> mSceneSystem;
+    std::unique_ptr<InputSystem> mInputSystem;
 
     Stage* mCurrentStage = nullptr;
 
@@ -144,24 +149,10 @@ private:
 
     double mLastTime = 0.0;
 
-    bool mReloadKeyPressedPrev = false;
-    bool mUIReloadKeyPressedPrev = false;
-    bool mXPressedPrev = false;
-    bool mPPressedPrev = false;
-    bool mLPressedPrev = false;
-    bool mZLPressedPrev = false;
-    bool mQPressedPrev = false;
-    bool mStartPressedPrev = false;
-    bool mPauseMenuKeyPressedPrev = false;
-    bool mPauseMenuUpPressedPrev = false;
-    bool mPauseMenuDownPressedPrev = false;
-    bool mPauseMenuConfirmPressedPrev = false;
     bool mIsPlayer2Joined = false;
-    bool mIsDebugEditorShowing;
-    bool mIsFreeCameraMode;
+    bool mIsDebugEditorShowing = false;
+    bool mIsFreeCameraMode = false;
     bool mIsPauseMenuOpen = false;
-    bool mControllerConfirmPressedPrev = false;
-    bool mKeyboardConfirmPressedPrev = false;
     bool mIsDebugMode = false;
 
     std::string mCurrentStageYamlPath;
