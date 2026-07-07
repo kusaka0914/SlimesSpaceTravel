@@ -1,15 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include "system/mesh/AssimpMeshLoader.h"
+#include "system/mesh/LoadedMesh.h"
+#include "system/mesh/MeshCollisionDataLoader.h"
+#include "system/mesh/TextureLoader.h"
+
+#include <string>
 #include <unordered_map>
 #include <vector>
-
-struct LoadedMesh {
-    unsigned int VAO = 0;
-    unsigned int indexCount = 0;
-    unsigned int textureID = 0;
-    float diffuseColor[3] = {1.0f, 1.0f, 1.0f};
-};
 
 class Actor;
 class Game;
@@ -26,17 +24,22 @@ public:
     bool LoadMeshPositionsAndIndices(const char* path, std::vector<float>& outPositions,
                                      std::vector<unsigned int>& outIndices);
 
-    std::vector<LoadedMesh>* GetLoadedMeshes(const std::string& MeshName)
+    std::vector<LoadedMesh>* GetLoadedMeshes(const std::string& meshName)
     {
-        auto it = mLoadedMeshes.find(MeshName);
+        auto it = mLoadedMeshes.find(meshName);
         return (it != mLoadedMeshes.end()) ? &it->second : nullptr;
     }
 
 private:
     void CreateLoadedMeshes();
-    unsigned int loadTexture(const char* path);
+    void RegisterMesh(const std::string& meshName, const char* path);
 
 private:
     Game* mGame;
+
+    TextureLoader mTextureLoader;
+    AssimpMeshLoader mAssimpMeshLoader;
+    MeshCollisionDataLoader mCollisionDataLoader;
+
     std::unordered_map<std::string, std::vector<LoadedMesh>> mLoadedMeshes;
 };

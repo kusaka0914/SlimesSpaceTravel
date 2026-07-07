@@ -10,6 +10,8 @@ class NPC : public CharacterActor {
 public:
     NPC(Game* game);
 
+    void ApplyConfig(const std::string& type);
+
     void UpdateActor(float deltaTime) override;
 
     void AddTalkTexts(const std::string& talkTexts) { mTalkTexts.emplace_back(talkTexts); }
@@ -20,7 +22,7 @@ public:
     const std::vector<std::string>& GetTalkTexts() const { return mTalkTexts; }
 
 private:
-    void LookNearestPlayer();
+    void LookNearestPlayer(float deltaTime);
     void CheckTalkable();
 
     Player* FindNearestPlayer() const;

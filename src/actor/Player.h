@@ -1,6 +1,18 @@
 #pragma once
 
 #include "actor/CharacterActor.h"
+#include "actor/player/PlayerBoatRide.h"
+#include "actor/player/PlayerCombat.h"
+#include "actor/player/PlayerGrounding.h"
+#include "actor/player/PlayerInput.h"
+#include "actor/player/PlayerInteraction.h"
+#include "actor/player/PlayerJewelGauge.h"
+#include "actor/player/PlayerMovement.h"
+#include "actor/player/PlayerRespawn.h"
+#include "actor/player/PlayerStateMachine.h"
+#include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTypes.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -9,310 +21,162 @@ class Game;
 class NPC;
 class Boat;
 class Enemy;
+class Planet;
+struct PlayerConfig;
 
 class Player : public CharacterActor {
 public:
-    enum class ActionState {
-        Idle,
-        Dodging,
-        Attacking,
-        Charging,
-        StrongAttacking,
-        KnockedBack,
-    };
+    using ActionState = PlayerActionState;
+    using AttackKind = PlayerAttackKind;
+    using PlayerRaySegment = ::PlayerRaySegment;
 
-    enum class AttackKind { Normal, Wide, Strong };
+    explicit Player(Game* game);
 
-    struct RaySegment {
-        glm::vec3 from;
-        glm::vec3 to;
-    };
-
-    Player(Game* game);
+    void ApplyConfig();
 
     void Initialize() override;
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
 
     void ApplyDamage(Enemy* enemy, float deltaTime);
+    void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
     void Restart();
-    bool IsInvincible() const { return mInvincibleTimer > 0.0f; };
-    bool IsAttacking() const
-    {
-        return mActionState == ActionState::Attacking || mActionState == ActionState::StrongAttacking ||
-               mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
-    }
 
-    void SetIsDodged(bool isDodged) { mIsDodged = isDodged; }
+    bool IsInvincible() const { return mStatus.IsInvincible(); }
+    bool IsAlive() const { return mStatus.IsAlive(); }
+    bool IsAttacking() const { return mStateMachine.IsAttackingState() || mCombat.IsAttacking(); }
 
-    void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
-    void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
+    void SetIsDodged(bool isDodged) { mMovement.SetIsDodged(isDodged); }
+    void SetCurrentPlanetNum(int currentPlanetNum) { mMovement.SetCurrentPlanetNum(currentPlanetNum); }
+    void SetPlayerNum(int playerNum) { mMovement.SetPlayerNum(playerNum); }
 
-    void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
-    void SetAttack(float attack) { mAttack = attack; }
-    void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
-    void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
-    void SetChargeMoveSpeed(float chargeMoveSpeed) { mChargeMoveSpeed = chargeMoveSpeed; }
-    void SetHp(float hp) { mHp = hp; }
-    void SetMaxHp(float maxHp) { mMaxHp = maxHp; }
-    void SetDefaultDamageTimer(float defaultDamageTimer) { mDefaultDamageTimer = defaultDamageTimer; }
-    void SetAttackCooldown(float attackCooldown) { mAttackCooldown = attackCooldown; }
-    void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
+    void SetCameraYaw(float cameraYaw) { mInput.SetCameraYaw(cameraYaw); }
+    void SetAttack(float attack) { mCombat.SetAttack(attack); }
+    void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
+    void SetAttackSpeed(float attackSpeed) { mCombat.SetAttackSpeed(attackSpeed); }
+    void SetChargeMoveSpeed(float chargeMoveSpeed) { mMovement.SetChargeMoveSpeed(chargeMoveSpeed); }
+    void SetHp(float hp) { mStatus.SetHp(hp); }
+    void SetMaxHp(float maxHp) { mStatus.SetMaxHp(maxHp); }
+    void SetDefaultDamageTimer(float defaultDamageTimer) { mStatus.SetDefaultDamageTimer(defaultDamageTimer); }
+    void SetAttackCooldown(float attackCooldown) { mCombat.SetAttackCooldown(attackCooldown); }
+    void SetLastAttackCooldown(float lastAttackCooldown) { mCombat.SetLastAttackCooldown(lastAttackCooldown); }
     void SetDefaultAttackPressTimer(float defaultAttackPressTimer)
     {
-        mDefaultAttackPressTimer = defaultAttackPressTimer;
+        mCombat.SetDefaultAttackPressTimer(defaultAttackPressTimer);
     }
-    void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
-    void SetDodgeDuration(float dodgeDuration) { mDodgeDuration = dodgeDuration; }
-    void SetDefaultInvincibleTimer(float defaultInvincibleTimer) { mDefaultInvincibleTimer = defaultInvincibleTimer; }
-    void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownTime = dodgeCooldownTime; }
-    void SetDodgeDistance(float dodgeDistance) { mDodgeDistance = dodgeDistance; }
-    void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
-    void SetNormalAttackAngle(float normalAttackAngle) { mNormalAttackAngle = normalAttackAngle; }
-    void SetNormalAttack(float normalAttack) { mNormalAttack = normalAttack; }
-    void SetWideAttackRange(float wideAttackRange) { mWideAttackRange = wideAttackRange; }
-    void SetWideAttackAngle(float wideAttackAngle) { mWideAttackAngle = wideAttackAngle; }
-    void SetWideAttack(float wideAttack) { mWideAttack = wideAttack; }
-    void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
-    void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
-    void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
+    void SetSpecialAttackCooldown(float specialAttackCooldown)
+    {
+        mCombat.SetSpecialAttackCooldown(specialAttackCooldown);
+    }
+    void SetDodgeDuration(float dodgeDuration) { mMovement.SetDodgeDuration(dodgeDuration); }
+    void SetDefaultInvincibleTimer(float defaultInvincibleTimer)
+    {
+        mStatus.SetDefaultInvincibleTimer(defaultInvincibleTimer);
+    }
+    void SetDodgeCooldownTime(float dodgeCooldownTime) { mMovement.SetDodgeCooldownTime(dodgeCooldownTime); }
+    void SetDodgeDistance(float dodgeDistance) { mMovement.SetDodgeDistance(dodgeDistance); }
+    void SetNormalAttackRange(float normalAttackRange) { mCombat.SetNormalAttackRange(normalAttackRange); }
+    void SetNormalAttackAngle(float normalAttackAngle) { mCombat.SetNormalAttackAngle(normalAttackAngle); }
+    void SetNormalAttack(float normalAttack) { mCombat.SetNormalAttack(normalAttack); }
+    void SetWideAttackRange(float wideAttackRange) { mCombat.SetWideAttackRange(wideAttackRange); }
+    void SetWideAttackAngle(float wideAttackAngle) { mCombat.SetWideAttackAngle(wideAttackAngle); }
+    void SetWideAttack(float wideAttack) { mCombat.SetWideAttack(wideAttack); }
+    void SetStrongAttackRange(float strongAttackRange) { mCombat.SetStrongAttackRange(strongAttackRange); }
+    void SetStrongAttack(float strongAttack) { mCombat.SetStrongAttack(strongAttack); }
+    void SetStrongAttackSpeed(float strongAttackSpeed) { mCombat.SetStrongAttackSpeed(strongAttackSpeed); }
     void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer)
     {
-        mDefaultStrongAttackTimer = defaultStrongAttackTimer;
+        mCombat.SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
     }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
     {
-        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
+        mCombat.SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
     }
-    void SetRayCastTimer(float rayCastTimer) { mRayCastTimer = rayCastTimer; }
-    void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
-    void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
+    void SetRayCastTimer(float rayCastTimer) { mGrounding.SetRayCastTimer(rayCastTimer); }
+    void SetInputAvailableTimer(float inputAvailableTimer) { mInput.SetInputAvailableTimer(inputAvailableTimer); }
+    void SetKnockBackSpeed(float knockBackSpeed) { mMovement.SetKnockBackSpeed(knockBackSpeed); }
 
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
+    void SetTalkableNPC(NPC* talkableNPC) { mInteraction.SetTalkableNPC(talkableNPC); }
 
-    void SetTalkableNPC(NPC* talkableNPC) { mTalkableNPC = talkableNPC; }
+    bool GetIsStrongAttacked() const { return mCombat.GetIsStrongAttacked(); }
+    bool GetIsSpecialAttackPressed() const { return mInput.GetSpecialAttackPressed(); }
+    bool GetCanSpecialAttack() const { return mCombat.GetCanSpecialAttack(); }
+    bool GetIsTired() const { return mStatus.GetIsTired(); }
 
-    bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
-    bool GetIsSpecialAttackPressed() const { return mSpecialAttackPressed; }
-    bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
-    bool GetIsTired() const { return mIsTired; }
+    int GetCurrentPlanetNum() const { return mMovement.GetCurrentPlanetNum(); }
+    int GetJewelCount() const { return mJewelGauge.GetCount(); }
+    int GetPlayerNum() const { return mMovement.GetPlayerNum(); }
 
-    int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
-    int GetJewelCount() const { return mJewelCount; }
+    float GetAttack() const { return mCombat.GetAttack(); }
+    float GetHp() const { return mStatus.GetHp(); }
+    float GetAttackMotionTimer() const { return mCombat.GetAttackMotionTimer(); }
+    float GetStrongAttackTimer() const { return mCombat.GetStrongAttackTimer(); }
+    float GetInvincibleTimer() const { return mStatus.GetInvincibleTimer(); }
+    float GetSpecialAttackCooldownRemaining() const { return mJewelGauge.GetRecoverTimer(); }
+    float GetAttackRange() const { return mCombat.GetAttackRange(); }
+    float GetAttackAngle() const { return mCombat.GetAttackAngle(); }
+    float GetRayCastTimer() const { return mGrounding.GetRayCastTimer(); }
+    float GetMoveSpeed() const { return mMovement.GetMoveSpeed(); }
+    float GetCameraYaw() const { return mInput.GetCameraYaw(); }
+    float GetAttackSpeed() const { return mCombat.GetAttackSpeed(); }
+    float GetChargeMoveSpeed() const { return mMovement.GetChargeMoveSpeed(); }
+    float GetMaxHp() const { return mStatus.GetMaxHp(); }
+    float GetDefaultDamageTimer() const { return mStatus.GetDefaultDamageTimer(); }
+    float GetAttackCooldown() const { return mCombat.GetAttackCooldown(); }
+    float GetLastAttackCooldown() const { return mCombat.GetLastAttackCooldown(); }
+    float GetDefaultAttackPressTimer() const { return mCombat.GetDefaultAttackPressTimer(); }
+    float GetSpecialAttackCooldown() const { return mCombat.GetSpecialAttackCooldown(); }
+    float GetDodgeDuration() const { return mMovement.GetDodgeDuration(); }
+    float GetDodgeCooldownTime() const { return mMovement.GetDodgeCooldownTime(); }
+    float GetDodgeDistance() const { return mMovement.GetDodgeDistance(); }
+    float GetDefaultInvincibleTimer() const { return mStatus.GetDefaultInvincibleTimer(); }
+    float GetNormalAttackRange() const { return mCombat.GetNormalAttackRange(); }
+    float GetNormalAttackAngle() const { return mCombat.GetNormalAttackAngle(); }
+    float GetNormalAttack() const { return mCombat.GetNormalAttack(); }
+    float GetWideAttackRange() const { return mCombat.GetWideAttackRange(); }
+    float GetWideAttackAngle() const { return mCombat.GetWideAttackAngle(); }
+    float GetWideAttack() const { return mCombat.GetWideAttack(); }
+    float GetStrongAttackRange() const { return mCombat.GetStrongAttackRange(); }
+    float GetStrongAttack() const { return mCombat.GetStrongAttack(); }
+    float GetStrongAttackSpeed() const { return mCombat.GetStrongAttackSpeed(); }
+    float GetDefaultStrongAttackTimer() const { return mCombat.GetDefaultStrongAttackTimer(); }
+    float GetDefaultAttackMotionTimer() const { return mCombat.GetDefaultAttackMotionTimer(); }
+    float GetInputAvailableTimer() const { return mInput.GetInputAvailableTimer(); }
+    float GetKnockBackSpeed() const { return mMovement.GetKnockBackSpeed(); }
 
-    float GetAttack() const { return mAttack; }
-    float GetHp() const { return mHp; }
-    float GetAttackMotionTimer() const { return mAttackMotionTimer; }
-    float GetStrongAttackTimer() const { return mStrongAttackTimer; }
-    float GetInvincibleTimer() const { return mInvincibleTimer; }
-    float GetSpecialAttackCooldownRemaining() const { return mJewelTimer; }
-    float GetAttackRange() const { return mAttackRange; }
-    float GetAttackAngle() const { return mAttackAngle; }
-    float GetRayCastTimer() const { return mRayCastTimer; }
-    float GetMoveSpeed() const { return mMoveSpeed; }
-    float GetCameraYaw() const { return mCameraYaw; }
+    ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 
-    float GetAttackSpeed() const { return mAttackSpeed; }
-    float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
+    const glm::vec3& GetForwardVec() const { return mMovement.GetForwardVec(); }
+    const std::vector<::PlayerRaySegment>& GetRayCasts() const { return mCombat.GetRayCasts(); }
 
-    float GetMaxHp() const { return mMaxHp; }
+    NPC* GetTalkableNPC() const { return mInteraction.GetTalkableNPC(); }
 
-    float GetDefaultDamageTimer() const { return mDefaultDamageTimer; }
-
-    float GetAttackCooldown() const { return mAttackCooldown; }
-    float GetLastAttackCooldown() const { return mLastAttackCooldown; }
-    float GetDefaultAttackPressTimer() const { return mDefaultAttackPressTimer; }
-
-    float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
-
-    float GetDodgeDuration() const { return mDodgeDuration; }
-    float GetDodgeCooldownTime() const { return mDodgeCooldownTime; }
-    float GetDodgeDistance() const { return mDodgeDistance; }
-
-    float GetDefaultInvincibleTimer() const { return mDefaultInvincibleTimer; }
-
-    float GetNormalAttackRange() const { return mNormalAttackRange; }
-    float GetNormalAttackAngle() const { return mNormalAttackAngle; }
-    float GetNormalAttack() const { return mNormalAttack; }
-
-    float GetWideAttackRange() const { return mWideAttackRange; }
-    float GetWideAttackAngle() const { return mWideAttackAngle; }
-    float GetWideAttack() const { return mWideAttack; }
-
-    float GetStrongAttackRange() const { return mStrongAttackRange; }
-    float GetStrongAttack() const { return mStrongAttack; }
-    float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
-
-    float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
-    float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
-
-    float GetInputAvailableTimer() const { return mInputAvailableTimer; }
-    float GetKnockBackSpeed() const { return mKnockBackSpeed; }
-
-    ActionState GetActionState() const { return mActionState; }
-
-    const glm::vec3& GetForwardVec() const { return mForwardVec; }
-    const std::vector<RaySegment>& GetRayCasts() const { return mRayCasts; }
-
-    NPC* GetTalkableNPC() const { return mTalkableNPC; }
+    const glm::vec3& GetVelocity() const { return mVelocity; }
+    void AddVelocity(const glm::vec3& velocityDelta) { mVelocity += velocityDelta; }
+    void SetFacingForwardVec(const glm::vec3& facingForwardVec) { mFacingForwardVec = facingForwardVec; }
+    void SetOnGround(bool onGround) { mOnGround = onGround; }
+    void SetShouldJudgeLanding(bool shouldJudgeLanding) { mShouldJudgeLanding = shouldJudgeLanding; }
+    void ApplyGravityToSelf(float deltaTime) { ApplyGravity(deltaTime); }
+    void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 
 private:
-    void ProcessGameController();
-    void ProcessKeyboard();
+    void ApplyPlayerConfig(const PlayerConfig& config);
 
-    void UpdateAlive(float deltaTime);
-    void Die();
-    void Recover();
-    void Respawn();
-
-    void UpdateWorldVec();
-    void UpdateIdle(float deltaTime);
-    void UpdateDodging(float deltaTime);
-    void UpdateAttacking(float deltaTime);
-    void UpdateCharging(float deltaTime);
-    void UpdateStrongAttacking(float deltaTime);
-    void UpdateKnockedBack(float deltaTime);
-    void UpdateSpecialAttackCharging(float deltaTime);
-    void UpdateContinuousAttacking(float deltaTime);
-    void UpdateTimer(float deltaTime);
-
-    void UpdateJewelTimer(float deltaTime);
-    void UpdateComboKeepTimer(float deltaTime);
-    void UpdateWalk(float deltaTime);
-    void UpdateBoatRide();
-
-    void StartIdle();
-    void StartDodging();
-    void StartAttacking(float deltaTime);
-    void StartCharging(float deltaTime);
-    void StartStrongAttacking(float deltaTime);
-    void StartRidingBoat(Boat* boat);
-    void StartJumping(float deltaTime);
-    void StartJewelTimer();
-    void StartTired(float lockTime);
-
-    void FinishCharging();
-    void FinishSpecialAttackCharging();
-
-    void ChangeFaceDir();
-    void UpdateFacingForwardVec();
-    void MoveDuringDodging(float deltaTime);
-    void MoveDuringAttacking(float deltaTime);
-    void MoveDuringCharging(float deltaTime);
-    void MoveDuringStrongAttacking(float deltaTime);
-    void Attack(float deltaTime);
-    void StartAfterAttackReaction();
-    void WideAttack(float deltaTime);
-    void StrongAttack(float deltaTime);
-    void SpecialAttack(float deltaTime);
-    void MoveDuringKnockBack(float deltaTime);
-    void StartSpecialAttackCharging();
-    void StartContinuousAttacking();
-    void FollowMovingBoat(Boat* boat);
     void OnLanded() override;
-    void ReduceTired();
-
-    bool IsAlive() const { return mHp > 0.0f; };
-    bool IsTouchingBoat(Boat* boat);
-    bool IsFallIntoPlanetInside();
-    bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange);
-    bool CanWalk() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
-    std::vector<Enemy*> FindHitEnemies();
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
-    void SnapToGround(float upOffset, float downLength);
 
 private:
-    ActionState mActionState;
-    AttackKind mAttackKind;
-
-    bool mDodgePressed;
-    bool mDodgePressedPrev;
-    bool mJumpPressed;
-    bool mAttackPressed;
-    bool mAttackPressedPrev;
-    bool mWideAttackPressed;
-    bool mWideAttackPressedPrev;
-    bool mSpecialAttackPressed;
-    bool mSpecialAttackPressedPrev;
-    bool mRecoverPressed;
-    bool mRecoverPressedPrev;
-    bool mIsDodged;
-    bool mIsStrongAttackHit;
-    bool mIsStrongAttacked;
-    bool mIsCharged;
-    bool mCanSpecialAttack;
-    bool mIsAirAttacking;
-    bool mIsTired;
-
-    int mCurrentPlanetNum;
-    int mAttackComboIndex;
-    int mRestartPlanetIndex;
-    int mPlayerNum;
-    int mJewelCount;
-
-    float mCameraYaw;
-    float mMoveForward;
-    float mMoveLeft;
-    float mAttackStartHeight;
-    float mDodgeTimer;
-    float mDodgeDuration;
-    float mDodgeCooldown;
-    float mDodgeCooldownTime;
-    float mDodgeDistance;
-    float mDodgeStartHeight;
-    float mMoveSpeed;
-    float mChargeMoveSpeed;
-    float mCameraStickX;
-    float mCameraStickY;
-    float mAttack;
-    float mAttackSpeed;
-    float mHp;
-    float mMaxHp;
-    float mDamageTimer;
-    float mDefaultDamageTimer;
-    float mAttackCooldownRemaining;
-    float mAttackCooldown;
-    float mLastAttackCooldown;
-    float mAttackMoveLockRemaining;
-    float mAttackDodgeLockRemaining;
-    float mAttackMotionTimer;
-    float mDefaultAttackMotionTimer;
-    float mAirAttackFloatingTimer;
-    float mJewelTimer;
-    float mSpecialAttackCooldown;
-    float mAttackPressTimer;
-    float mDefaultAttackPressTimer;
-    float mStrongAttackTimer;
-    float mDefaultStrongAttackTimer;
-    float mComboKeepTimer;
-    float mInvincibleTimer;
-    float mDefaultInvincibleTimer;
-    float mAttackRange;
-    float mAttackAngle;
-    float mNormalAttackRange;
-    float mNormalAttackAngle;
-    float mNormalAttack;
-    float mWideAttackRange;
-    float mWideAttackAngle;
-    float mWideAttack;
-    float mStrongAttackRange;
-    float mStrongAttack;
-    float mStrongAttackSpeed;
-    float mRayCastTimer;
-    float mInputAvailableTimer;
-    float mKnockBackSpeed;
-    float mSpecialChargingTimer;
-    float mContinuousAttackingTimer;
-    float mContinuousAttackingCooldown;
-
-    glm::vec3 mForwardVec;
-    glm::vec3 mLeftVec;
-    glm::vec3 mKnockBackFrom;
-    glm::vec3 mRestartPos;
-    glm::vec3 mDodgeDir;
-    std::vector<RaySegment> mRayCasts;
-
-    NPC* mTalkableNPC;
+    PlayerInput mInput;
+    PlayerMovement mMovement;
+    PlayerGrounding mGrounding;
+    PlayerBoatRide mBoatRide;
+    PlayerCombat mCombat;
+    PlayerJewelGauge mJewelGauge;
+    PlayerStatus mStatus;
+    PlayerRespawn mRespawn;
+    PlayerInteraction mInteraction;
+    PlayerStateMachine mStateMachine;
 };

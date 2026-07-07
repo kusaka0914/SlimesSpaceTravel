@@ -2,10 +2,30 @@
 #include "Game.h"
 #include "component/CollectableComponent.h"
 
-Star::Star(Game* game) : Actor(game)
+#include <yaml-cpp/yaml.h>
+
+Star::Star(Game* game)
+    : Actor(game)
 {
     mIsActive = false;
     AddCollectableComponent();
+}
+
+void Star::ApplyConfig()
+{
+    YAML::Node starRoot = YAML::LoadFile("../assets/data/actor/stars.yaml");
+
+    if (!starRoot["stars"] || !starRoot["stars"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& starNode : starRoot["stars"]) {
+        const std::string modelPath = starNode["modelPath"] ? starNode["modelPath"].as<std::string>() : "star.obj";
+        SetModelPath(modelPath);
+
+        const float scale = starNode["scale"] ? starNode["scale"].as<float>() : 0.0f;
+        SetScale(glm::vec3(scale));
+    }
 }
 
 void Star::AddCollectableComponent()

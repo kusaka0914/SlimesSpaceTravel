@@ -1,3 +1,10 @@
+#pragma once
+
+#include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/DebugCamera.h"
+#include "system/camera/FocusCamera.h"
+#include "system/camera/PlayerCamera.h"
+
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -5,53 +12,38 @@ class Game;
 class Actor;
 class Player;
 class Boat;
-class SceneSystem;
 class Planet;
-class Key;
+class Enemy;
 
 class CameraSystem {
 public:
-    CameraSystem(Game* game);
+    using PlayerCameraState = ::PlayerCameraState;
+
+    explicit CameraSystem(Game* game);
 
     void ProcessInput();
-
     void Update(float deltaTime);
 
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     std::vector<glm::mat4> GetViews();
-    glm::vec3 GetCameraPos() const { return mCameraPos; }
+    glm::vec3 GetCameraPos() const;
+    glm::vec3 GetPlayerCameraPos(int playerNum) const;
 
 private:
     void UpdateCamera(float deltaTime);
-    glm::vec3 ResolveCameraCollision(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos) const;
-
-    std::vector<glm::mat4> GetOpeningViews() const;
-    std::vector<glm::mat4> GetBoatFocusViews(std::vector<Boat*> boats) const;
-    glm::mat4 GetPlayerView(Player* player, float cameraDistance, bool isFixed = false);
-    glm::mat4 GetDebugCameraView();
-    glm::mat4 GetFocusView(Actor* focusActor) const;
-    glm::mat4 GetTargetCameraView(Actor* targetActor);
+    Enemy* FindBossEnemy(Planet* planet) const;
 
 private:
-    bool mIsTargetFocus;
-
-    float mCameraYaw;
-    float mCameraPitch;
-    float mCameraStickY;
-    float mCameraStickX;
-    float mMoveForward;
-    float mMoveRight;
-    float mMoveUp;
-    float mDebugCameraYaw;
-    float mDebugCameraPitch;
-    float mDebugYawInput;
-    float mDebugPitchInput;
-
-    glm::vec3 mCameraUpVec;
-    glm::vec3 mCameraTargetPos;
-    glm::vec3 mCameraPos;
-
     Game* mGame;
+
+    bool mIsTargetFocus = false;
+    float mCameraPitch = -1.0f;
+    float mCameraStickX = 0.0f;
+
+    CameraCollisionResolver mCollisionResolver;
+    DebugCamera mDebugCamera;
+    FocusCamera mFocusCamera;
+    PlayerCamera mPlayerCamera;
 };

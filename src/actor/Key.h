@@ -11,6 +11,8 @@ public:
     Key(Game* game);
     void UpdateActor(float deltaTime) override;
 
+    void ApplyConfig();
+
     CollectableComponent* GetCollectableComponent() const { return mCollectableComponent; }
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
 

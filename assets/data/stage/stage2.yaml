@@ -1,0 +1,1075 @@
+planets:
+  - center: [0, 0, 0]
+    scale: [8, 8, 8]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    shape: Sphere
+    rocketSpawnCondition: AllBoatPartsCollected
+  - center: [1002, 0, 0]
+    scale: [4, 4, 4]
+    color: [0.0, 1.0, 0.0, 1.0]
+    model: planet.obj
+    shape: Sphere
+    rocketSpawnCondition: AllEnemiesDead
+  - center: [64, 0, 0]
+    scale: [4, 4, 4]
+    color: [0.0, 1.0, 0.0, 1.0]
+    model: planet_2.obj
+    shape: Sphere
+  - center:
+      - 23.98
+      - -18.3
+      - 0
+    scale:
+      - 0
+      - 0
+      - 0
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    shape: Normal
+    stageNum: 3
+    rocketSpawnCondition: ""
+enemies:
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -2.8
+      - -18.13
+      - 0.44
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -3.36
+      - -18.16
+      - 2.55
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -2.39
+      - -18.01
+      - 1.68
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 3.64
+      - -16.92
+      - 0.37
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -4.96
+      - -33672.54
+      - -0.82
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - 0
+      - 1
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normalFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 4.59
+      - -16.76
+      - -0.09
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normalFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 3.09
+      - 1.55
+      - -0.44
+    rotation:
+      - 0
+      - 0
+      - 0.23736478
+    facingYaw: 0
+    upVec:
+      - 0
+      - 1
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normalFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 0.92
+      - 1.55
+      - -1.46
+    rotation:
+      - 0
+      - -0
+      - 0.1256637
+    facingYaw: -0
+    upVec:
+      - -0
+      - -1
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normalFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 1.22
+      - -17.33
+      - 1.56
+    rotation:
+      - 0
+      - 0
+      - 0.10821041
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: normalFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - 4.59
+      - -16.76
+      - -0.27
+    rotation:
+      - 0
+      - 0
+      - 0.2024582
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+  - editorName: 新しい通常敵
+    type: bigFixed
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -4.21
+      - 1.55
+      - 0
+    rotation:
+      - 0
+      - -1.5707964
+      - 3.1415927
+    facingYaw: -1.5707964
+    upVec:
+      - -0
+      - -1
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+keys:
+  - currentPlanetNum: 1
+    theta: 0
+    phi: -0.530965
+    height: 0.1
+    pos:
+      - 3.54
+      - -2.08
+      - 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - 0.8651578
+      - -0.5013875
+      - -0.010614668
+    scale:
+      - 2
+      - 2
+      - 2
+crystals:
+  - type: little
+    currentPlanetNum: 0
+    theta: 1.891925
+    phi: -0.627311
+    height: 0.05
+    pos:
+      - -2.06
+      - -4.73
+      - 6.18
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.25888503
+      - -0.58343476
+      - 0.7697937
+    scale:
+      - 1.4
+      - 1.4
+      - 1.4
+  - type: big
+    currentPlanetNum: 0
+    theta: 0.309124
+    phi: -0.334648
+    height: 0.87
+    pos:
+      - 7.98
+      - -2.91
+      - 2.55
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+    scale:
+      - 2.2
+      - 2.2
+      - 2.2
+  - type: big
+    currentPlanetNum: 3
+    theta: 0
+    phi: 0
+    height: 1
+    pos:
+      - -8.74
+      - -15.48
+      - 0.1
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - -0.1427743
+      - 0.98975533
+      - 0
+    scale:
+      - 2.2
+      - 2.2
+      - 2.2
+boats:
+  - startPlanet: 0
+    destPlanet: 3
+    destStage: 0
+    arrivalPointIndex: 1
+    theta: 0.313
+    phi: -0.342
+    height: 1
+    facingYaw: 0
+    pos:
+      - 8.07
+      - -3.02
+      - 2.61
+    rotation:
+      - 0
+      - 0
+      - 0
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+  - startPlanet: 3
+    destPlanet: 2
+    destStage: 0
+    arrivalPointIndex: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    pos:
+      - -8.67
+      - -15.47
+      - 0.14
+    rotation:
+      - 0
+      - 0
+      - 0
+    upVec:
+      - -0.1427743
+      - 0.98975533
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+boatArrivalPoints:
+  - currentPlanetNum: 2
+    pos:
+      - 0.36
+      - 6.92
+      - 0
+    rotation: [0, 0, 0]
+    scale: [0.4, 0.4, 0.4]
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    upVec:
+      - 0.055390853
+      - 0.9984194
+      - -0.009519702
+  - currentPlanetNum: 3
+    pos:
+      - -3.65
+      - -17.69
+      - 0
+    rotation: [0, 0, 0]
+    scale: [0.4, 0.4, 0.4]
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    upVec:
+      - -0.18501435
+      - 0.9820761
+      - -0.03600279
+boatParts: []
+players:
+  - pos: [3.0, 7.5, 0.0]
+    currentPlanetNum: 0
+    modelPath: player.obj
+  - pos: [4.0, 7.5, 0.0]
+    currentPlanetNum: 0
+    modelPath: player.obj
+star:
+  - theta: 0
+    phi: 0
+    height: 0
+    currentPlanetNum: 2
+    modelPath: star.obj
+    pos:
+      - 4
+      - 0
+      - 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    facingYaw: 0
+    upVec:
+      - 0.99992305
+      - 0.008745005
+      - 0.008795579
+    scale:
+      - 0.3
+      - 0.3
+      - 0.3
+NPCs: []
+platforms:
+  - currentPlanetNum: 0
+    pos:
+      - -4.58
+      - 6.26
+      - 0
+    theta: 3.141593
+    phi: 0.939608
+    height: -0.245
+    facingYaw: -3.142
+    rotation:
+      - 0
+      - -3.142
+      - 0
+    scale:
+      - 0.5
+      - 0.5
+      - 0.5
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.5909515
+      - 0.8066904
+      - 0.0051955623
+  - currentPlanetNum: 0
+    pos:
+      - 2.66
+      - -4.6
+      - -8.97
+    theta: -1.190649
+    phi: -0.444701
+    height: 2.699
+    facingYaw: 1.334
+    rotation:
+      - 0
+      - 1.334
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.33460563
+      - -0.43328178
+      - -0.8368428
+  - currentPlanetNum: 0
+    pos:
+      - -5.83
+      - -4.48
+      - 1.54
+    theta: 2.883379
+    phi: -0.63836
+    height: -0.49
+    facingYaw: -0.318
+    rotation:
+      - 0
+      - -0.318
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.7627743
+      - -0.6042615
+      - 0.23031181
+  - currentPlanetNum: 0
+    pos:
+      - -6.32
+      - -5.55
+      - 0
+    theta: -3.141593
+    phi: -0.720431
+    height: 0.411
+    facingYaw: -0.286
+    rotation:
+      - 0
+      - -0.286
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.7535172
+      - -0.6574161
+      - 0.003992642
+  - currentPlanetNum: 0
+    pos:
+      - 7.66
+      - -2.89
+      - 2.5
+    theta: 0.315594
+    phi: -0.344284
+    height: 0.563
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1.4
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+  - currentPlanetNum: 0
+    pos:
+      - -2.02
+      - -6.98
+      - -7.86
+    theta: -1.821837
+    phi: -0.710085
+    height: 2.7
+    facingYaw: -1.406
+    rotation:
+      - 0
+      - -1.406
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.18925916
+      - -0.6468051
+      - -0.73879915
+  - currentPlanetNum: 0
+    pos:
+      - -3.73
+      - -9.49
+      - -3.25
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 0.258
+    rotation:
+      - 0
+      - 0.258
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.34776092
+      - -0.88650805
+      - -0.3052309
+  - currentPlanetNum: 0
+    pos:
+      - -0.75
+      - 2.57
+      - 8.02
+    theta: 1.664041
+    phi: 0.308421
+    height: 0.452
+    facingYaw: -0.1
+    rotation:
+      - 0
+      - -0.1
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.08840287
+      - 0.30359074
+      - 0.94869256
+  - currentPlanetNum: 0
+    pos:
+      - 1.15
+      - 5.67
+      - 6.9
+    theta: 1.405827
+    phi: 0.681396
+    height: 1
+    facingYaw: -0.631
+    rotation:
+      - 0
+      - -0.631
+      - 0
+    scale:
+      - 1
+      - 1.41
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.12930916
+      - 0.62522095
+      - 0.7696609
+  - currentPlanetNum: 0
+    pos:
+      - 4.91
+      - 4.08
+      - 6.82
+    theta: 0.946782
+    phi: 0.451873
+    height: 1.342
+    facingYaw: 0.287
+    rotation:
+      - 0
+      - 0.287
+      - 0
+    scale:
+      - 1
+      - 1.73
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.5279751
+      - 0.4332472
+      - 0.73043776
+  - currentPlanetNum: 3
+    pos:
+      - 1.04
+      - -17.78
+      - 0.01
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0.021234527
+    rotation:
+      - -0.57209176
+      - -0.021234527
+      - 2.32884
+    scale:
+      - 2.74416
+      - 0.35000074
+      - 5.9999347
+    modelPath: platform.obj
+    upVec:
+      - -0.18501434
+      - 0.9820761
+      - -0.03600279
+  - currentPlanetNum: 3
+    pos:
+      - 9.6
+      - -16.38
+      - 0.35
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: -3.119
+    rotation:
+      - 0
+      - -3.119
+      - 0
+    scale:
+      - 0.69
+      - 0.42
+      - 0.36
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.123025045
+      - 0.992202
+      - -0.020004071
+  - currentPlanetNum: 3
+    pos:
+      - 10.98
+      - -8.23
+      - -2.42
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - -0
+      - 0.28972453
+    scale:
+      - 0.9999997
+      - 0.35
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.98715544
+      - 0.15976292
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - 10.58
+      - -4.63
+      - 1.28
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - -0.7941248
+    scale:
+      - 1
+      - 0.35
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.9917752
+      - 0.12796608
+      - -0.0025745525
+  - currentPlanetNum: 3
+    pos:
+      - 10.33
+      - -0.45
+      - 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    rotation:
+      - 0
+      - 3.1415927
+      - -2.1659536
+    scale:
+      - 0.12
+      - 0.31
+      - 0.29
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.9989568
+      - 0.045665473
+      - -7.239133e-08
+  - currentPlanetNum: 3
+    pos:
+      - -8.44
+      - -16.03
+      - 0.07
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - -1.3037609
+    scale:
+      - 2
+      - 0.3
+      - 2
+    modelPath: platform.obj
+    upVec:
+      - -0.14277428
+      - 0.9897553
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - -0.87
+      - 1.85
+      - 0.04
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - -0
+      - 0
+    scale:
+      - 1.5
+      - 0.3
+      - 4.99
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - 1
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - -7.71
+      - 1.94
+      - 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    rotation:
+      - 0
+      - 3.1415927
+      - 0.17104226
+    scale:
+      - 0.69
+      - 0.42
+      - 0.36
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.15298575
+      - -0.9882284
+      - 6.1162285e-07
+  - currentPlanetNum: 3
+    pos:
+      - -10.08
+      - -7.16
+      - 4.02
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 1.6109389
+    scale:
+      - 1
+      - 0.3
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.9991944
+      - -0.0401318
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - -12.66
+      - -10.89
+      - -3.47
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 1.6109389
+    scale:
+      - 1
+      - 0.3
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.9991944
+      - -0.0401318
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - -10.36
+      - -16.24
+      - 0.06
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    rotation:
+      - -3.1415927
+      - 3.1415927
+      - 0
+    scale:
+      - 0.61
+      - 0.32
+      - 0.3
+    modelPath: curvePlatform.obj
+    upVec:
+      - 7.642742e-15
+      - -1
+      - 8.742278e-08
+  - currentPlanetNum: 3
+    pos:
+      - -14.9
+      - -22.12
+      - 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    rotation:
+      - 0
+      - 3.1415927
+      - 0
+    scale:
+      - 0.61
+      - 0.32
+      - 0.3
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0
+      - 1
+      - 0
+  - currentPlanetNum: 3
+    pos:
+      - -14.8
+      - -22.1
+      - 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0.21991149
+    scale:
+      - 0.61
+      - 0.32
+      - 0.3
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.21814324
+      - 0.97591674
+      - 0
+movingPlatforms:
+  - currentPlanetNum: 0
+    pos:
+      - 50.4
+      - -34.45
+      - -5.27
+    theta: 0
+    phi: 0
+    height: 1
+    rotation: [0, 0, 0]
+    scale: [1.132118, 0.17359811, 1.1973001]
+    modelPath: platform.obj
+    moveOffset: [6.0, 0.0, 0.0]
+    moveDuration: 3.0
+    facingYaw: 0
+    upVec:
+      - 0
+      - 1
+      - 0
+fallRespawnPoints:
+  - currentPlanetNum: 3
+    pos:
+      - 0
+      - -27.91
+      - 3.61
+    scale: [20, 1.6492156, 20]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 0]
+    upVec: [0, 1, 0]
+  - currentPlanetNum: 3
+    pos:
+      - 18.55
+      - -11.54
+      - 3.56
+    scale: [20, 2.0673554, 19.999996]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 1.5707964]
+    upVec: [0, 1, 0]
+  - currentPlanetNum: 3
+    pos:
+      - -21.82
+      - -11.14
+      - 3.56
+    scale: [20, 1.6492156, 20]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 1.5707964]
+    upVec: [0, 1, 0]
+  - currentPlanetNum: 3
+    pos:
+      - 0.26
+      - 8.02
+      - 3.56
+    scale: [20, 1.6492156, 20]
+    damage: 1.0
+    modelPath: platform.obj
+    theta: 0
+    phi: 0
+    height: 0
+    facingYaw: 0
+    rotation: [0, 0, 0]
+    upVec: [0, 1, 0]

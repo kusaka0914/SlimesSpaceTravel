@@ -62,18 +62,18 @@ gameOver:
 default:
   - id: operationSupportTextForGameController
     type: text
-    posRatio: [0.0125, 0.9333]
+    posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
   - id: operationSupportTextForKeyBoard
     type: text
-    posRatio: [0.0125, 0.9333]
+    posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: ["ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃"]
+    text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
   - id: operationSupportHiddenText
     type: text
-    posRatio: [0.0125, 0.9333]
-    scaleRatio: [0.0002, 1.0]
+    posRatio: [0.0125, 0.9762]
+    scaleRatio: [0.00015, 1.0]
     text: [+:操作ガイド表示]
   - id: hpTexture
     type: texture
@@ -136,12 +136,12 @@ state:
     text: [Thank You For Playing！]
   - id: recommendReduceTiredTextForGameController
     type: text
-    posRatio: [0.3914, 0.558]
+    posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: [Y連打で疲労回復！]
   - id: recommendReduceTiredTextForKeyBoard
     type: text
-    posRatio: [0.3914, 0.558]
+    posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: [J連打で疲労回復！]
   - id: loadingText
@@ -199,9 +199,9 @@ pauseMenu:
     type: text
     posRatio: [0.5, 0.732]
     scaleRatio: [0.00022, 1.0]
-    text: ["↑↓:選択 Enter:決定 ESC:閉じる"]
+    text: [↑↓:選択 Enter:決定 ESC:閉じる]
   - id: operationTextForGameController
     type: text
     posRatio: [0.5, 0.732]
     scaleRatio: [0.00022, 1.0]
-    text: ["↑↓:選択 A:決定 -:閉じる"]
+    text: [↑↓:選択 A:決定 -:閉じる]
