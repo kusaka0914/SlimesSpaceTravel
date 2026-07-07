@@ -20,6 +20,10 @@ class UIRenderer;
 class AudioSystem;
 class SceneSystem;
 class InputSystem;
+class GameWorld;
+class PauseMenuController;
+class StageFlowController;
+class GamepadRumbleService;
 
 class Game {
 public:
@@ -69,25 +73,25 @@ public:
     void RemoveActor(Actor* actor);
     void RemoveAllActor();
 
-    void AddPlayer(Player* player) { mPlayers.emplace_back(player); }
-    void RemoveAllPlayer() { mPlayers.clear(); }
+    void AddPlayer(Player* player);
+    void RemoveAllPlayer();
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
 
     GLFWwindow* GetWindow() const { return mWindow; }
-    SDL_GameController* GetSdlController() const { return mSdlController; }
+    SDL_GameController* GetSdlController() const;
 
-    const std::vector<Player*>& GetPlayers() const { return mPlayers; }
-    Player* GetMainPlayer() const { return mPlayers.empty() ? nullptr : mPlayers[0]; }
+    const std::vector<Player*>& GetPlayers() const;
+    Player* GetMainPlayer() const;
 
-    const std::vector<Stage*>& GetStages() const { return mStages; }
-    Stage* GetCurrentStage() const { return mCurrentStage; }
-    int GetCurrentStageNum() const { return mCurrentStageNum; }
-    const std::string& GetCurrentStageYamlPath() const { return mCurrentStageYamlPath; }
+    const std::vector<Stage*>& GetStages() const;
+    Stage* GetCurrentStage() const;
+    int GetCurrentStageNum() const;
+    const std::string& GetCurrentStageYamlPath() const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
-    bool GetIsPauseMenuOpen() const { return mIsPauseMenuOpen; }
-    int GetPauseMenuSelectedIndex() const { return mPauseMenuSelectedIndex; }
+    bool GetIsPauseMenuOpen() const;
+    int GetPauseMenuSelectedIndex() const;
 
     AudioSystem* GetAudioSystem() const { return mAudioSystem.get(); }
     PhysicsSystem* GetPhysicsSystem() const { return mPhysicsSystem.get(); }
@@ -101,8 +105,8 @@ public:
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
     bool GetIsDebugMode() const { return mIsDebugMode; }
 
-    bool IsInBase() const { return mCurrentStageNum == 0; }
-    bool IsGameControllerConnected() const { return mSdlController != nullptr; }
+    bool IsInBase() const;
+    bool IsGameControllerConnected() const;
 
 private:
     bool InitializeGLFW();
@@ -123,12 +127,11 @@ private:
 
 private:
     GLFWwindow* mWindow = nullptr;
-    SDL_GameController* mSdlController = nullptr;
 
-    std::vector<Player*> mPlayers;
-    std::vector<std::unique_ptr<Actor>> mActors;
-    std::vector<Stage*> mStages;
-    std::vector<std::unique_ptr<Stage>> mStagesUnique;
+    std::unique_ptr<GameWorld> mWorld;
+    std::unique_ptr<PauseMenuController> mPauseMenuController;
+    std::unique_ptr<StageFlowController> mStageFlowController;
+    std::unique_ptr<GamepadRumbleService> mGamepadRumbleService;
 
     std::unique_ptr<AudioSystem> mAudioSystem;
     std::unique_ptr<UIRenderer> mUIRenderer;
@@ -141,10 +144,6 @@ private:
     std::unique_ptr<SceneSystem> mSceneSystem;
     std::unique_ptr<InputSystem> mInputSystem;
 
-    Stage* mCurrentStage = nullptr;
-
-    int mCurrentStageNum = 0;
-    int mPauseMenuSelectedIndex = 0;
     float mHitStopTimer = -1.0f;
 
     double mLastTime = 0.0;
@@ -152,8 +151,5 @@ private:
     bool mIsPlayer2Joined = false;
     bool mIsDebugEditorShowing = false;
     bool mIsFreeCameraMode = false;
-    bool mIsPauseMenuOpen = false;
     bool mIsDebugMode = false;
-
-    std::string mCurrentStageYamlPath;
 };

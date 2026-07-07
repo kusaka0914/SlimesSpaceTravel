@@ -118,7 +118,8 @@ void PlayerCombat::StrongAttack(Player& player, PlayerMovement& movement, Player
     Attack(player, movement, status, deltaTime);
 }
 
-void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime)
+void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge,
+                                 float deltaTime)
 {
     const std::vector<Enemy*> enemies = mHitDetector.FindHitEnemies(player, *this);
     mAttackResolver.ResolveSpecialAttack(player, jewelGauge, enemies, deltaTime);
@@ -165,6 +166,10 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
 
     if (mAttackKind == PlayerAttackKind::Strong) {
         StartTiredLock(status, movement, 5.0f);
+        return;
+    }
+
+    if (mAttackComboIndex != 3) {
         return;
     }
 
@@ -254,7 +259,6 @@ void PlayerCombat::UpdateAttackDodgeLock(float deltaTime)
     }
 }
 
-
 void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
 {
     mComboKeepTimer -= deltaTime;
@@ -264,4 +268,3 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
 
     mAttackComboIndex = 0;
 }
-

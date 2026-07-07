@@ -6,15 +6,23 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 
-#include <btBulletDynamicsCommon.h>
 #include <algorithm>
+#include <btBulletDynamicsCommon.h>
 #include <vector>
 
 glm::vec3 ActorCollisionResolver::CheckCollision(btDiscreteDynamicsWorld* world, btSphereShape* playerShape,
                                                  Actor* actor, const glm::vec3& moveDelta,
                                                  const glm::vec3& desiredPos) const
 {
-    if (!world || !playerShape || !actor) {
+    if (!actor) {
+        return desiredPos;
+    }
+
+    if (auto conflictPos = CheckConflictActors(actor, desiredPos)) {
+        return *conflictPos;
+    }
+
+    if (!world || !playerShape) {
         return desiredPos;
     }
 

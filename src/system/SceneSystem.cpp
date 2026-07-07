@@ -33,11 +33,10 @@ SceneSystem::~SceneSystem() = default;
 
 void SceneSystem::CreateControllers()
 {
-    mTransitionController = std::make_unique<SceneTransitionController>(mGame, mGameProgressState.get(), mUIState.get(),
-                                                                       mFadeTimer, mIsFadeOut,
-                                                                       mHasPendingStageChange, mNextStageNum);
-    mTalkController = std::make_unique<TalkController>(mGame, mGameProgressState.get(), mUIState.get(), mTalkingNPC,
-                                                       mTalkingPlayer);
+    mTransitionController = std::make_unique<SceneTransitionController>(
+        mGame, mGameProgressState.get(), mUIState.get(), mFadeTimer, mIsFadeOut, mHasPendingStageChange, mNextStageNum);
+    mTalkController =
+        std::make_unique<TalkController>(mGame, mGameProgressState.get(), mUIState.get(), mTalkingNPC, mTalkingPlayer);
     mTutorialController = std::make_unique<TutorialController>(mGame, mGameProgressState.get(), mUIState.get());
 }
 
@@ -149,6 +148,7 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         const int nextPlanetIndex = player->GetCurrentPlanetNum() + 1;
 
         if (nextPlanetIndex >= 0 && nextPlanetIndex < static_cast<int>(planets.size())) {
+            player->SetCurrentPlanetNum(nextPlanetIndex);
             player->SetCurrentPlanet(planets[nextPlanetIndex]);
         }
 
