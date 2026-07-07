@@ -2,11 +2,10 @@
 
 #include <glm/glm.hpp>
 
-class Boat;
 class Player;
 class PlayerCombat;
+class PlayerGrounding;
 class PlayerInput;
-class PlayerRespawn;
 class PlayerStatus;
 
 class PlayerMovement {
@@ -16,27 +15,17 @@ public:
 
     void UpdateWorldVec(Player& player, const PlayerInput& input);
     void UpdateWalk(Player& player, const PlayerInput& input, float deltaTime);
-    void UpdateBoatRide(Player& player, PlayerRespawn& respawn);
     void ChangeFaceDir(Player& player, const PlayerInput& input);
     void UpdateFacingForwardVec(Player& player);
 
-    void MoveDuringDodging(Player& player, const PlayerCombat& combat, float deltaTime);
+    void MoveDuringDodging(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding, float deltaTime);
     void MoveDuringAttacking(Player& player, const PlayerCombat& combat, float deltaTime);
     void MoveDuringCharging(Player& player, float deltaTime);
     void MoveDuringStrongAttacking(Player& player, const PlayerCombat& combat, float deltaTime);
     void MoveDuringKnockBack(Player& player, float deltaTime);
 
-    void FollowMovingBoat(Player& player, Boat* boat);
-    bool IsTouchingBoat(const Player& player, Boat* boat) const;
-    void StartDodging(Player& player, const PlayerInput& input, PlayerCombat& combat, PlayerStatus& status);
+    void StartDodging(Player& player, const PlayerInput& input, PlayerStatus& status);
     void StartJumping(Player& player, float deltaTime);
-    void StartRidingBoat(Player& player, Boat* boat);
-
-    void OnBoatArrived(Player& player, PlayerRespawn& respawn, Boat* boat);
-    void OnLanded(Player& player, PlayerCombat& combat);
-    void OnUpVecUpdateFailed(Player& player, PlayerCombat& combat);
-    void OnCastSucceeded(PlayerCombat& combat);
-    void SnapToGround(Player& player, float upOffset, float downLength);
 
     void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
     void StartDodgeLock(float seconds) { mDodgeCooldown = seconds; }

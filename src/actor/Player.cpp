@@ -1,17 +1,10 @@
 #include "Player.h"
 
-#include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
-#include "actor/Planet.h"
-#include "system/AudioSystem.h"
-#include "system/PhysicsSystem.h"
-#include "system/SceneSystem.h"
-#include "utils/MathUtils.h"
-
-#include <algorithm>
-#include <glm/glm.hpp>
-#include <yaml-cpp/yaml.h>
+#include "actor/player/PlayerConfig.h"
+#include "actor/player/PlayerConfigLoader.h"
+#include "actor/player/PlayerDamageHandler.h"
 
 Player::Player(Game* game) : CharacterActor(game)
 {
@@ -19,69 +12,47 @@ Player::Player(Game* game) : CharacterActor(game)
 
 void Player::ApplyConfig()
 {
-    YAML::Node playerRoot = YAML::LoadFile("../assets/data/actor/players.yaml");
+    const PlayerConfig config = PlayerConfigLoader::Load("../assets/data/actor/players.yaml");
+    ApplyPlayerConfig(config);
+}
 
-    if (!playerRoot["players"] || !playerRoot["players"].IsSequence()) {
-        return;
-    }
+void Player::ApplyPlayerConfig(const PlayerConfig& config)
+{
+    mStatus.ConfigureHp(config.hp);
+    SetScale(glm::vec3(config.scale));
 
-    for (const YAML::Node& playerNode : playerRoot["players"]) {
-        const float hp = playerNode["hp"] ? playerNode["hp"].as<float>() : 0.0f;
-        SetHp(hp);
-        SetMaxHp(hp);
+    mCombat.SetAttackSpeed(config.attackSpeed);
+    mCombat.SetAttack(config.attack);
+    mMovement.SetMoveSpeed(config.moveSpeed);
 
-        const float scale = playerNode["scale"] ? playerNode["scale"].as<float>() : 0.25f;
-        SetScale(glm::vec3(scale));
+    mMovement.SetDodgeDuration(config.dodgeDuration);
+    mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);
+    mMovement.SetDodgeDistance(config.dodgeDistance);
 
-        SetAttackSpeed(playerNode["attackSpeed"] ? playerNode["attackSpeed"].as<float>() : 0.0f);
-        SetAttack(playerNode["attack"] ? playerNode["attack"].as<float>() : 0.0f);
-        SetMoveSpeed(playerNode["moveSpeed"] ? playerNode["moveSpeed"].as<float>() : 0.0f);
+    mCombat.SetNormalAttackRange(config.normalAttackRange);
+    mCombat.SetNormalAttackAngle(config.normalAttackAngle);
+    mCombat.SetNormalAttack(config.normalAttack);
 
-        SetDodgeDuration(playerNode["dodgeDuration"] ? playerNode["dodgeDuration"].as<float>() : 0.0f);
-        SetDodgeCooldownTime(playerNode["dodgeCooldownTime"] ? playerNode["dodgeCooldownTime"].as<float>() : 0.0f);
-        SetDodgeDistance(playerNode["dodgeDistance"] ? playerNode["dodgeDistance"].as<float>() : 0.0f);
+    mCombat.SetWideAttackRange(config.wideAttackRange);
+    mCombat.SetWideAttackAngle(config.wideAttackAngle);
+    mCombat.SetWideAttack(config.wideAttack);
 
-        SetNormalAttackRange(playerNode["normalAttackRange"] ? playerNode["normalAttackRange"].as<float>() : 0.0f);
-        SetNormalAttackAngle(playerNode["normalAttackAngle"] ? playerNode["normalAttackAngle"].as<float>() : 0.0f);
-        SetNormalAttack(playerNode["normalAttack"] ? playerNode["normalAttack"].as<float>() : 0.0f);
+    mCombat.SetStrongAttackRange(config.strongAttackRange);
+    mCombat.SetStrongAttack(config.strongAttack);
+    mCombat.SetStrongAttackSpeed(config.strongAttackSpeed);
 
-        SetWideAttackRange(playerNode["wideAttackRange"] ? playerNode["wideAttackRange"].as<float>() : 0.0f);
-        SetWideAttackAngle(playerNode["wideAttackAngle"] ? playerNode["wideAttackAngle"].as<float>() : 0.0f);
-        SetWideAttack(playerNode["wideAttack"] ? playerNode["wideAttack"].as<float>() : 0.0f);
+    mCombat.SetSpecialAttackCooldown(config.specialAttackCooldown);
+    mStatus.SetDefaultInvincibleTimer(config.defaultInvincibleTimer);
+    mStatus.SetDefaultDamageTimer(config.defaultDamageTimer);
+    mCombat.SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
+    mCombat.SetAttackCooldown(config.attackCooldown);
+    mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
+    mCombat.SetDefaultAttackPressTimer(config.defaultAttackPressTimer);
+    mMovement.SetChargeMoveSpeed(config.chargeMoveSpeed);
+    mCombat.SetDefaultStrongAttackTimer(config.defaultStrongAttackTimer);
+    mMovement.SetKnockBackSpeed(config.knockBackSpeed);
 
-        SetStrongAttackRange(playerNode["strongAttackRange"] ? playerNode["strongAttackRange"].as<float>() : 0.0f);
-        SetStrongAttack(playerNode["strongAttack"] ? playerNode["strongAttack"].as<float>() : 0.0f);
-        SetStrongAttackSpeed(playerNode["strongAttackSpeed"] ? playerNode["strongAttackSpeed"].as<float>() : 0.0f);
-
-        SetSpecialAttackCooldown(playerNode["specialAttackCooldown"] ? playerNode["specialAttackCooldown"].as<float>()
-                                                                     : 0.0f);
-
-        SetDefaultInvincibleTimer(
-            playerNode["defaultInvincibleTimer"] ? playerNode["defaultInvincibleTimer"].as<float>() : 0.0f);
-
-        SetDefaultDamageTimer(playerNode["defaultDamageTimer"] ? playerNode["defaultDamageTimer"].as<float>() : 0.0f);
-
-        SetDefaultAttackMotionTimer(
-            playerNode["defaultAttackMotionTimer"] ? playerNode["defaultAttackMotionTimer"].as<float>() : 0.0f);
-
-        SetAttackCooldown(playerNode["attackCooldown"] ? playerNode["attackCooldown"].as<float>() : 0.0f);
-
-        SetLastAttackCooldown(playerNode["lastAttackCooldown"] ? playerNode["lastAttackCooldown"].as<float>() : 0.0f);
-
-        SetDefaultAttackPressTimer(
-            playerNode["defaultAttackPressTimer"] ? playerNode["defaultAttackPressTimer"].as<float>() : 0.0f);
-
-        SetChargeMoveSpeed(playerNode["chargeMoveSpeed"] ? playerNode["chargeMoveSpeed"].as<float>() : 0.0f);
-
-        SetDefaultStrongAttackTimer(
-            playerNode["defaultStrongAttackTimer"] ? playerNode["defaultStrongAttackTimer"].as<float>() : 0.0f);
-
-        SetKnockBackSpeed(playerNode["knockBackSpeed"] ? playerNode["knockBackSpeed"].as<float>() : 0.0f);
-
-        const std::string modelPath =
-            playerNode["modelPath"] ? playerNode["modelPath"].as<std::string>() : "player.obj";
-        SetModelPath(modelPath);
-    }
+    SetModelPath(config.modelPath);
 }
 
 void Player::Initialize()
@@ -98,70 +69,40 @@ void Player::ProcessActor()
 void Player::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
-    mStateMachine.Update(*this, mInput, mMovement, mCombat, mStatus, mRespawn, deltaTime);
+    mStateMachine.Update(*this, mInput, mMovement, mGrounding, mBoatRide, mCombat, mJewelGauge, mStatus, mRespawn, deltaTime);
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
-    if (!enemy) {
-        return;
-    }
-
-    if (mCombat.IsDodging() && enemy->GetCanCountered()) {
-        mGame->OnPlayerCounter(mMovement.GetPlayerNum());
-
-        enemy->ApplyBreak(deltaTime, true);
-        enemy->FlipCanCountered();
-
-        mGame->GetAudioSystem()->PlaySE("just_dodge_se");
-        mCombat.AddJewel(1, 2);
-        return;
-    }
-
-    if (mStatus.IsInvincible()) {
-        return;
-    }
-
-    if (mCombat.GetCanSpecialAttack()) {
-        mCombat.StartTiredLock(mStatus, mMovement, 20.0f);
-    }
-
-    mStatus.TakeDamage(enemy->GetAttack());
-    mMovement.StartKnockBack(enemy->GetPos());
-    mCombat.StartKnockedBack();
-
-    mGame->OnPlayerApplyDamage(mMovement.GetPlayerNum());
-
-    mCombat.CancelSpecialAttack();
-    mInput.SyncAttackButtonPrev();
+    PlayerDamageHandler::Apply(*this, mInput, mMovement, mStateMachine, mCombat, mJewelGauge, mStatus, enemy, deltaTime);
 }
 
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
-    mRespawn.ApplyFallDamageAndRespawn(*this, mCombat, mStatus, damage);
+    mRespawn.ApplyFallDamageAndRespawn(*this, mStateMachine, mCombat, mStatus, damage);
 }
 
 void Player::OnBoatArrived(Boat* boat)
 {
-    mMovement.OnBoatArrived(*this, mRespawn, boat);
+    mBoatRide.OnBoatArrived(*this, mMovement, mRespawn, boat);
 }
 
 void Player::Restart()
 {
-    mRespawn.Restart(*this, mCombat, mStatus);
+    mRespawn.Restart(*this, mStateMachine, mStatus);
 }
 
 void Player::OnLanded()
 {
-    mMovement.OnLanded(*this, mCombat);
+    mGrounding.OnLanded(*this, mMovement, mCombat);
 }
 
 void Player::OnUpVecUpdateFailed()
 {
-    mMovement.OnUpVecUpdateFailed(*this, mCombat);
+    mGrounding.OnUpVecUpdateFailed(*this);
 }
 
 void Player::OnCastSucceeded()
 {
-    mMovement.OnCastSucceeded(mCombat);
+    mGrounding.OnCastSucceeded();
 }

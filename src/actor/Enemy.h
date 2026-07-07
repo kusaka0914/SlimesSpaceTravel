@@ -1,28 +1,24 @@
 #pragma once
 
 #include "CharacterActor.h"
+#include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/EnemyStatus.h"
+
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
 
 class EnemyCombat;
+class EnemyDamageHandler;
 class EnemyMovement;
-class EnemyStateMachine;
 class Game;
 class Player;
+struct EnemyConfig;
 
 class Enemy : public CharacterActor {
 public:
-    enum class LifeState { Alive, Dying, Dead };
-
-    enum class ActionState {
-        Idle,
-        Tracking,
-        PreparingAttack,
-        Attacking,
-        KnockedBack,
-    };
+    using LifeState = EnemyStateMachine::LifeState;
+    using ActionState = EnemyStateMachine::ActionState;
 
     Enemy(Game* game);
     ~Enemy() override;
@@ -57,7 +53,7 @@ public:
     void SetAttackSpeed(float attackSpeed) { mStatus.SetAttackSpeed(attackSpeed); }
     void FlipCanCountered() { mStatus.FlipCanCountered(); }
 
-    bool GetIsDead() const { return mLifeState == LifeState::Dead; }
+    bool GetIsDead() const { return mStateMachine->IsDead(); }
     bool GetIsBoss() const { return mStatus.GetIsBoss(); }
     bool GetCanCountered() const { return mStatus.GetCanCountered(); }
 
@@ -80,13 +76,13 @@ public:
     float GetDefaultLaunchedTimer() const { return mStatus.GetDefaultLaunchedTimer(); }
     float GetDefaultAttackMotionTimer() const { return mStatus.GetDefaultAttackMotionTimer(); }
 
-    LifeState GetLifeState() const { return mLifeState; }
-    void SetLifeState(LifeState lifeState) { mLifeState = lifeState; }
+    LifeState GetLifeState() const { return mStateMachine->GetLifeState(); }
+    void SetLifeState(LifeState lifeState) { mStateMachine->SetLifeState(lifeState); }
 
-    ActionState GetActionState() const { return mActionState; }
-    void SetActionState(ActionState actionState) { mActionState = actionState; }
+    ActionState GetActionState() const { return mStateMachine->GetActionState(); }
+    void SetActionState(ActionState actionState) { mStateMachine->SetActionState(actionState); }
 
-    bool IsAlive() const { return mLifeState == LifeState::Alive; }
+    bool IsAlive() const { return mStateMachine->IsAlive(); }
     bool IsOnGround() const { return mOnGround; }
     void SetOnGroundForEnemy(bool onGround) { mOnGround = onGround; }
     void SetShouldJudgeLandingForEnemy(bool shouldJudgeLanding) { mShouldJudgeLanding = shouldJudgeLanding; }
@@ -106,11 +102,13 @@ public:
     }
 
 private:
+    void ApplyEnemyConfig(const EnemyConfig& config);
+
+private:
     EnemyStatus mStatus;
-    LifeState mLifeState;
-    ActionState mActionState;
 
     std::unique_ptr<EnemyStateMachine> mStateMachine;
     std::unique_ptr<EnemyMovement> mMovement;
     std::unique_ptr<EnemyCombat> mCombat;
+    std::unique_ptr<EnemyDamageHandler> mDamageHandler;
 };

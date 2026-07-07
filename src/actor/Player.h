@@ -1,9 +1,12 @@
 #pragma once
 
 #include "actor/CharacterActor.h"
+#include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"
+#include "actor/player/PlayerGrounding.h"
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerInteraction.h"
+#include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerRespawn.h"
 #include "actor/player/PlayerStateMachine.h"
@@ -19,6 +22,7 @@ class NPC;
 class Boat;
 class Enemy;
 class Planet;
+struct PlayerConfig;
 
 class Player : public CharacterActor {
 public:
@@ -41,7 +45,7 @@ public:
 
     bool IsInvincible() const { return mStatus.IsInvincible(); }
     bool IsAlive() const { return mStatus.IsAlive(); }
-    bool IsAttacking() const { return mCombat.IsAttacking(); }
+    bool IsAttacking() const { return mStateMachine.IsAttackingState() || mCombat.IsAttacking(); }
 
     void SetIsDodged(bool isDodged) { mMovement.SetIsDodged(isDodged); }
     void SetCurrentPlanetNum(int currentPlanetNum) { mMovement.SetCurrentPlanetNum(currentPlanetNum); }
@@ -89,7 +93,7 @@ public:
     {
         mCombat.SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
     }
-    void SetRayCastTimer(float rayCastTimer) { mCombat.SetRayCastTimer(rayCastTimer); }
+    void SetRayCastTimer(float rayCastTimer) { mGrounding.SetRayCastTimer(rayCastTimer); }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInput.SetInputAvailableTimer(inputAvailableTimer); }
     void SetKnockBackSpeed(float knockBackSpeed) { mMovement.SetKnockBackSpeed(knockBackSpeed); }
 
@@ -102,7 +106,7 @@ public:
     bool GetIsTired() const { return mStatus.GetIsTired(); }
 
     int GetCurrentPlanetNum() const { return mMovement.GetCurrentPlanetNum(); }
-    int GetJewelCount() const { return mCombat.GetJewelCount(); }
+    int GetJewelCount() const { return mJewelGauge.GetCount(); }
     int GetPlayerNum() const { return mMovement.GetPlayerNum(); }
 
     float GetAttack() const { return mCombat.GetAttack(); }
@@ -110,10 +114,10 @@ public:
     float GetAttackMotionTimer() const { return mCombat.GetAttackMotionTimer(); }
     float GetStrongAttackTimer() const { return mCombat.GetStrongAttackTimer(); }
     float GetInvincibleTimer() const { return mStatus.GetInvincibleTimer(); }
-    float GetSpecialAttackCooldownRemaining() const { return mCombat.GetSpecialAttackCooldownRemaining(); }
+    float GetSpecialAttackCooldownRemaining() const { return mJewelGauge.GetRecoverTimer(); }
     float GetAttackRange() const { return mCombat.GetAttackRange(); }
     float GetAttackAngle() const { return mCombat.GetAttackAngle(); }
-    float GetRayCastTimer() const { return mCombat.GetRayCastTimer(); }
+    float GetRayCastTimer() const { return mGrounding.GetRayCastTimer(); }
     float GetMoveSpeed() const { return mMovement.GetMoveSpeed(); }
     float GetCameraYaw() const { return mInput.GetCameraYaw(); }
     float GetAttackSpeed() const { return mCombat.GetAttackSpeed(); }
@@ -142,7 +146,7 @@ public:
     float GetInputAvailableTimer() const { return mInput.GetInputAvailableTimer(); }
     float GetKnockBackSpeed() const { return mMovement.GetKnockBackSpeed(); }
 
-    ActionState GetActionState() const { return mCombat.GetActionState(); }
+    ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 
     const glm::vec3& GetForwardVec() const { return mMovement.GetForwardVec(); }
     const std::vector<::PlayerRaySegment>& GetRayCasts() const { return mCombat.GetRayCasts(); }
@@ -158,6 +162,8 @@ public:
     void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 
 private:
+    void ApplyPlayerConfig(const PlayerConfig& config);
+
     void OnLanded() override;
     void OnUpVecUpdateFailed() override;
     void OnCastSucceeded() override;
@@ -165,7 +171,10 @@ private:
 private:
     PlayerInput mInput;
     PlayerMovement mMovement;
+    PlayerGrounding mGrounding;
+    PlayerBoatRide mBoatRide;
     PlayerCombat mCombat;
+    PlayerJewelGauge mJewelGauge;
     PlayerStatus mStatus;
     PlayerRespawn mRespawn;
     PlayerInteraction mInteraction;

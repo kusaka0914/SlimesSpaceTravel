@@ -4,15 +4,18 @@
 
 class Player;
 class PlayerCombat;
+class PlayerStateMachine;
 class PlayerStatus;
 
 class PlayerRespawn {
 public:
-    void ApplyFallDamageAndRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, float damage);
+    void ApplyFallDamageAndRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat,
+                                   PlayerStatus& status, float damage);
     void Respawn(Player& player);
-    void Restart(Player& player, PlayerCombat& combat, PlayerStatus& status);
+    void Restart(Player& player, PlayerStateMachine& stateMachine, PlayerStatus& status);
     bool IsFallIntoPlanetInside(const Player& player) const;
-    void CheckFallRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, const glm::vec3& prevPos);
+    void CheckFallRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat, PlayerStatus& status,
+                          const glm::vec3& prevPos);
 
     void SetRestartPlanetIndex(int restartPlanetIndex) { mRestartPlanetIndex = restartPlanetIndex; }
     void SetRestartPos(const glm::vec3& restartPos) { mRestartPos = restartPos; }

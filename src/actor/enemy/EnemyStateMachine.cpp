@@ -1,4 +1,6 @@
 #include "actor/enemy/EnemyStateMachine.h"
+
+#include "Game.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -7,13 +9,19 @@
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "system/AudioSystem.h"
-#include "Game.h"
+
 #include <glm/glm.hpp>
+
+EnemyStateMachine::EnemyStateMachine()
+    : mLifeState(LifeState::Alive),
+      mActionState(ActionState::Idle)
+{
+}
 
 void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
                                     float deltaTime)
 {
-    if (enemy.GetActionState() == Enemy::ActionState::KnockedBack) {
+    if (mActionState == ActionState::KnockedBack) {
         UpdateKnockedBack(enemy, status, movement, deltaTime);
 
         if (!enemy.IsOnGround()) {
@@ -48,24 +56,24 @@ void EnemyStateMachine::UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMove
 void EnemyStateMachine::UpdateBehavior(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
                                        float deltaTime)
 {
-    switch (enemy.GetActionState()) {
-    case Enemy::ActionState::Idle:
+    switch (mActionState) {
+    case ActionState::Idle:
         UpdateIdle(enemy, status, combat);
         break;
 
-    case Enemy::ActionState::Tracking:
+    case ActionState::Tracking:
         UpdateTracking(enemy, status, movement, combat, deltaTime);
         break;
 
-    case Enemy::ActionState::PreparingAttack:
+    case ActionState::PreparingAttack:
         UpdatePreparingAttack(enemy, status, movement, deltaTime);
         break;
 
-    case Enemy::ActionState::Attacking:
+    case ActionState::Attacking:
         UpdateAttacking(enemy, status, movement, combat, deltaTime);
         break;
 
-    case Enemy::ActionState::KnockedBack:
+    case ActionState::KnockedBack:
         UpdateKnockedBack(enemy, status, movement, deltaTime);
         break;
     }
@@ -96,7 +104,8 @@ void EnemyStateMachine::TryStartPreparingAttack(Enemy& enemy, EnemyStatus& statu
     }
 }
 
-void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
+void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                              float deltaTime)
 {
     if (!status.GetIsJustBeforeAttack()) {
         movement.UpdateFacingVec(enemy, status, deltaTime);
@@ -114,8 +123,8 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
     }
 }
 
-void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                        float deltaTime)
+void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                        EnemyCombat& combat, float deltaTime)
 {
     movement.MoveDuringAttacking(enemy, status, *this, deltaTime);
     combat.TryApplyAttack(enemy, status, *this, deltaTime);
@@ -143,23 +152,27 @@ void EnemyStateMachine::UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, Ene
 
 void EnemyStateMachine::StartIdle(Enemy& enemy)
 {
-    enemy.SetActionState(Enemy::ActionState::Idle);
+    (void)enemy;
+    mActionState = ActionState::Idle;
 }
 
 void EnemyStateMachine::StartTracking(Enemy& enemy)
 {
-    enemy.SetActionState(Enemy::ActionState::Tracking);
+    (void)enemy;
+    mActionState = ActionState::Tracking;
 }
 
 void EnemyStateMachine::StartPreparingAttack(Enemy& enemy, EnemyStatus& status)
 {
-    enemy.SetActionState(Enemy::ActionState::PreparingAttack);
+    (void)enemy;
+    mActionState = ActionState::PreparingAttack;
     status.ResetStandByAttackTimer();
 }
 
 void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 {
-    enemy.SetActionState(Enemy::ActionState::Attacking);
+    (void)enemy;
+    mActionState = ActionState::Attacking;
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
     status.SetIsJustBeforeAttack(false);
@@ -170,7 +183,7 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 
 void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer)
 {
-    enemy.SetActionState(Enemy::ActionState::KnockedBack);
+    mActionState = ActionState::KnockedBack;
     status.SetKnockBackTimer(knockBackTimer);
 
     if (status.GetNearestPlayer()) {
@@ -189,7 +202,7 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
 
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
-    enemy.SetLifeState(Enemy::LifeState::Dying);
+    mLifeState = LifeState::Dying;
     status.SetDyingTimer(1.0f);
     status.SetHpZero();
 
@@ -200,7 +213,7 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 
 void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
 {
-    enemy.SetLifeState(Enemy::LifeState::Dead);
+    mLifeState = LifeState::Dead;
     enemy.SetIsActive(false);
 
     if (enemy.GetCurrentPlanet()) {
@@ -243,5 +256,6 @@ bool EnemyStateMachine::IsProgressing(const EnemyStatus& status) const
 
 bool EnemyStateMachine::IsAlive(const Enemy& enemy) const
 {
-    return enemy.GetLifeState() == Enemy::LifeState::Alive;
+    (void)enemy;
+    return IsAlive();
 }

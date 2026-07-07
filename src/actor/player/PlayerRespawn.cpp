@@ -4,12 +4,15 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
+#include "actor/player/PlayerStateMachine.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTypes.h"
 #include "system/PhysicsSystem.h"
 
 #include <glm/glm.hpp>
 
-void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status, float damage)
+void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat,
+                                              PlayerStatus& status, float damage)
 {
     if (!status.IsAlive()) {
         return;
@@ -21,7 +24,8 @@ void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerCombat& comb
         return;
     }
 
-    combat.StartIdle();
+    stateMachine.ChangeState(PlayerActionState::Idle);
+    combat.CancelSpecialAttack();
     player.SetVelocity(glm::vec3(0.0f));
     Respawn(player);
 }
@@ -31,9 +35,9 @@ void PlayerRespawn::Respawn(Player& player)
     player.SetPos(mRestartPos);
 }
 
-void PlayerRespawn::Restart(Player& player, PlayerCombat& combat, PlayerStatus& status)
+void PlayerRespawn::Restart(Player& player, PlayerStateMachine& stateMachine, PlayerStatus& status)
 {
-    combat.StartIdle();
+    stateMachine.ChangeState(PlayerActionState::Idle);
     status.RestoreFullHp();
     Respawn(player);
 }
@@ -54,8 +58,8 @@ bool PlayerRespawn::IsFallIntoPlanetInside(const Player& player) const
     return dist < planetHalfRadius;
 }
 
-void PlayerRespawn::CheckFallRespawn(Player& player, PlayerCombat& combat, PlayerStatus& status,
-                                     const glm::vec3& prevPos)
+void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat,
+                                     PlayerStatus& status, const glm::vec3& prevPos)
 {
     if (!player.GetGame() || !player.GetGame()->GetPhysicsSystem()) {
         return;
@@ -81,5 +85,5 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerCombat& combat, Playe
         return;
     }
 
-    ApplyFallDamageAndRespawn(player, combat, status, point->GetDamage());
+    ApplyFallDamageAndRespawn(player, stateMachine, combat, status, point->GetDamage());
 }

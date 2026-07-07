@@ -1,17 +1,15 @@
 #include "actor/enemy/EnemyStatus.h"
 
 EnemyStatus::EnemyStatus()
-    : mIsCountered(false),
+    : mHealth(),
+      mBreakGauge(),
+      mIsCountered(false),
       mIsBoss(false),
       mIsHit(false),
       mIsStrongAttacked(false),
       mIsJustBeforeAttack(false),
       mCanCountered(false),
-      mBreakCount(0),
-      mBreakCountMax(0),
       mAttack(20.0f),
-      mHp(10.0f),
-      mMaxHp(10.0f),
       mDetectionRange(6.0f),
       mMoveSpeed(2.0f),
       mKnockBackSpeed(5.0f),

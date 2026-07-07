@@ -1,5 +1,8 @@
 #pragma once
 
+#include "actor/enemy/EnemyBreakGauge.h"
+#include "actor/enemy/EnemyHealth.h"
+
 #include <glm/glm.hpp>
 #include <unordered_set>
 
@@ -13,16 +16,16 @@ public:
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
-    void SetBreakCount(int breakCount) { mBreakCount = breakCount; }
-    void SetBreakCountMax(int breakCountMax) { mBreakCountMax = breakCountMax; }
-    void ResetBreakCount() { mBreakCount = mBreakCountMax; }
-    void DecrementBreakCount() { --mBreakCount; }
-    void BreakAll() { mBreakCount = 0; }
+    void SetBreakCount(int breakCount) { mBreakGauge.SetCount(breakCount); }
+    void SetBreakCountMax(int breakCountMax) { mBreakGauge.SetMax(breakCountMax); }
+    void ResetBreakCount() { mBreakGauge.Reset(); }
+    void DecrementBreakCount() { mBreakGauge.Decrease(); }
+    void BreakAll() { mBreakGauge.BreakAll(); }
 
-    void SetHp(float hp) { mHp = hp; }
-    void SetMaxHp(float maxHp) { mMaxHp = maxHp; }
-    void AddDamage(float damage) { mHp -= damage; }
-    void SetHpZero() { mHp = 0.0f; }
+    void SetHp(float hp) { mHealth.SetHp(hp); }
+    void SetMaxHp(float maxHp) { mHealth.SetMaxHp(maxHp); }
+    void AddDamage(float damage) { mHealth.AddDamage(damage); }
+    void SetHpZero() { mHealth.SetHpZero(); }
 
     void SetDefaultLaunchedTimer(float defaultLaunchedTimer) { mDefaultLaunchedTimer = defaultLaunchedTimer; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
@@ -76,11 +79,11 @@ public:
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
 
-    int GetBreakCount() const { return mBreakCount; }
-    int GetBreakCountMax() const { return mBreakCountMax; }
+    int GetBreakCount() const { return mBreakGauge.GetCount(); }
+    int GetBreakCountMax() const { return mBreakGauge.GetMax(); }
 
-    float GetHp() const { return mHp; }
-    float GetMaxHp() const { return mMaxHp; }
+    float GetHp() const { return mHealth.GetHp(); }
+    float GetMaxHp() const { return mHealth.GetMaxHp(); }
     float GetAttack() const { return mAttack; }
     float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2.0f); }
     float GetStandByAttackTimer() const { return mStandByAttackTimer; }
@@ -100,10 +103,18 @@ public:
     const glm::vec3& GetKnockBackFrom() const { return mKnockBackFrom; }
     Player* GetNearestPlayer() const { return mNearestPlayer; }
 
-    bool IsHp0() const { return mHp <= 0.0f; }
-    bool IsBreakCountEmpty() const { return mBreakCount <= 0; }
+    EnemyHealth& GetHealth() { return mHealth; }
+    const EnemyHealth& GetHealth() const { return mHealth; }
+    EnemyBreakGauge& GetBreakGauge() { return mBreakGauge; }
+    const EnemyBreakGauge& GetBreakGauge() const { return mBreakGauge; }
+
+    bool IsHp0() const { return mHealth.IsDead(); }
+    bool IsBreakCountEmpty() const { return mBreakGauge.IsEmpty(); }
 
 private:
+    EnemyHealth mHealth;
+    EnemyBreakGauge mBreakGauge;
+
     bool mIsCountered;
     bool mIsBoss;
     bool mIsHit;
@@ -111,12 +122,7 @@ private:
     bool mIsJustBeforeAttack;
     bool mCanCountered;
 
-    int mBreakCount;
-    int mBreakCountMax;
-
     float mAttack;
-    float mHp;
-    float mMaxHp;
     float mDetectionRange;
     float mMoveSpeed;
     float mKnockBackSpeed;
