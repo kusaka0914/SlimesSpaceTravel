@@ -1,5 +1,6 @@
 #include "CharacterActor.h"
 #include "Game.h"
+#include "actor/MovingPlatform.h"
 #include "system/PhysicsSystem.h"
 
 CharacterActor::CharacterActor(Game* game)
@@ -13,6 +14,8 @@ CharacterActor::CharacterActor(Game* game)
 
 void CharacterActor::UpdateActor(float deltaTime)
 {
+    ApplyGroundActorMovement();
+
     if (mShouldJudgeLanding) {
         JudgeLanding();
     }
@@ -20,6 +23,8 @@ void CharacterActor::UpdateActor(float deltaTime)
 
 void CharacterActor::JudgeLanding()
 {
+    mGroundActor = nullptr;
+
     constexpr float bodyOffset = 0.3f;
 
     const glm::vec3 frontOffset = mFacingForwardVec * bodyOffset;
@@ -76,10 +81,18 @@ bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& h
 
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayInfo.rayFrom, rayInfo.rayTo);
 
+    rayCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    rayCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+
+    mGame->GetPhysicsSystem()->SyncKinematicBodies();
     bulletWorld->rayTest(rayInfo.rayFrom, rayInfo.rayTo, rayCallback);
 
     if (!rayCallback.hasHit()) {
         return false;
+    }
+
+    if (rayCallback.m_collisionObject) {
+        mGroundActor = static_cast<Actor*>(rayCallback.m_collisionObject->getUserPointer());
     }
 
     const btVector3 hitPt = rayCallback.m_hitPointWorld;
@@ -138,16 +151,29 @@ bool CharacterActor::CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::v
     return false;
 }
 
-glm::vec3 CharacterActor::CalculateCollisionAdjustedPos(const glm::vec3& moveDelta)
-{
-    glm::vec3 desiredPos = mPos + moveDelta;
-
-    desiredPos = mGame->GetPhysicsSystem()->CheckCollision(this, moveDelta, desiredPos);
-    return desiredPos;
-}
-
 void CharacterActor::SetBaseScale(const glm::vec3& scale)
 {
     mBaseScale = scale;
     mScale = scale;
+}
+
+void CharacterActor::ApplyGroundActorMovement()
+{
+    if (!mOnGround || !mGroundActor) {
+        return;
+    }
+
+    MovingPlatform* movingPlatform = dynamic_cast<MovingPlatform*>(mGroundActor);
+
+    if (!movingPlatform) {
+        return;
+    }
+
+    const glm::vec3 platformDelta = movingPlatform->GetFrameDelta();
+
+    if (glm::length(platformDelta) < 1e-6f) {
+        return;
+    }
+
+    mPos += platformDelta;
 }

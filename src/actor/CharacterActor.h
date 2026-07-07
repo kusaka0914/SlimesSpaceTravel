@@ -27,15 +27,15 @@ public:
 
 protected:
     void ApplyGravity(float deltaTime);
-    glm::vec3 CalculateCollisionAdjustedPos(const glm::vec3& moveDelta);
+    bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const override;
 
 private:
     void JudgeLanding();
     bool TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& hitPosCorrection);
     RayInfo CreateRayInfo(const glm::vec3& rayOffset) const;
+    void ApplyGroundActorMovement();
     virtual void OnLanded(){};
     bool ShouldUpdateUpVecEveryFrame() const override { return true; }
-    bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const override;
 
 protected:
     bool mOnGround;
@@ -45,4 +45,7 @@ protected:
     glm::vec3 mFacingForwardVec;
 
     glm::vec3 mBaseScale;
+
+private:
+    Actor* mGroundActor = nullptr;
 };

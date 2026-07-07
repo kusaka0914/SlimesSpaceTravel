@@ -1,39 +1,55 @@
+#pragma once
+
 #include "Renderer.h"
+
 #include <GL/glew.h>
 #include <SDL_ttf.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
-class Game;
+class Actor;
+class DebugLabelRenderer;
 class Enemy;
+class Game;
+class Player;
+class PlayerEffectRenderer;
+class Planet;
+class RenderViewportController;
+class SceneObjectRenderer;
 class Shader3D;
 class VertexArray;
-class Player;
-class Planet;
-class Actor;
-class Boat;
 
 class Renderer3D : public Renderer {
 public:
     Renderer3D(Game* game);
     ~Renderer3D();
+
     void Initialize();
     void Draw() const;
 
-private:
-    void DrawGameScreenForSinglePerson(float fbWidth, float fbHeight) const;
-    void DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const;
+    void DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
 
-    void DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat) const;
+    Game* GetGame() const { return mGame; }
+    Shader3D* GetShader3D() const { return mShader3D; }
+    std::unordered_map<std::string, std::unique_ptr<VertexArray>>& GetVertexArrays() { return mVertexArrays; }
+    std::unordered_map<std::string, GLuint>& GetTextures() { return mTextures; }
+    GLuint GetAttackRangeVAO() const { return mAttackRangeVAO; }
+    GLuint GetAttackRangeVBO() const { return mAttackRangeVBO; }
 
-    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat) const;
-    void DrawPlanets(const std::vector<Planet*>& planets) const;
-    void TryDrawPlayers(const glm::mat4& viewMat) const;
-    void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
-    void TryDrawEnemies(const std::vector<Enemy*>& enemies, const glm::mat4& viewMat) const;
-    void TryDrawActorOnPlanets(const std::vector<Planet*>& planets, glm::mat4 viewMat) const;
+    GLuint CreateTextTextureFor3D(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
+                                  float textScale) const
+    {
+        return CreateTextTexture(text, outWidth, outHeight, textColor, textScale);
+    }
+
+    void StartTransparentDraw() const;
+    void EndTransparentDraw() const;
+
+    void TryDrawActor(Actor* actor, bool useOrient = true) const;
+    void DrawActor(Actor* actor, bool useOrient = true) const;
 
     template <class ActorType> void TryDrawActors(const std::vector<ActorType*>& actors, bool useOrient = true) const
     {
@@ -42,7 +58,7 @@ private:
         }
 
         for (ActorType* actor : actors) {
-            if (!actor->GetIsActive()) {
+            if (!actor || !actor->GetIsActive()) {
                 continue;
             }
 
@@ -50,23 +66,25 @@ private:
         }
     }
 
-    void TryDrawActor(Actor* actor, bool useOrient = true) const;
-
-    void DrawActor(Actor* actor, bool useOrient) const;
-    void DrawAttackRange(Player* player) const;
-    void DrawEnemyAttackRange(Enemy* enemy) const;
     void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
-    void DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const;
-    void DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const;
-    void StartTransparentDraw() const;
-    void EndTransparentDraw() const;
 
-    void DrawDebugLabels(const glm::mat4& viewMat) const;
-    void DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const;
+private:
+    void InitializeAttackRangeBuffer();
+    void InitializeRenderModules();
+
+    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
+    glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
+    void DrawActorSelectionOutline(Actor* actor, bool useOrient) const;
 
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;
+
+    std::unique_ptr<RenderViewportController> mRenderViewportController;
+    std::unique_ptr<SceneObjectRenderer> mSceneObjectRenderer;
+    std::unique_ptr<PlayerEffectRenderer> mPlayerEffectRenderer;
+    std::unique_ptr<DebugLabelRenderer> mDebugLabelRenderer;
+
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
 };

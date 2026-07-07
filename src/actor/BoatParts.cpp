@@ -3,9 +3,38 @@
 #include "component/CollectableComponent.h"
 #include "system/AudioSystem.h"
 
-BoatParts::BoatParts(Game* game) : Actor(game)
+#include <yaml-cpp/yaml.h>
+
+BoatParts::BoatParts(Game* game)
+    : Actor(game)
 {
     AddCollectableComponent();
+}
+
+void BoatParts::ApplyConfig(const std::string& type)
+{
+    YAML::Node boatPartsRoot = YAML::LoadFile("../assets/data/actor/boatparts.yaml");
+
+    if (!boatPartsRoot["boatParts"] || !boatPartsRoot["boatParts"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& boatPartsNode : boatPartsRoot["boatParts"]) {
+        const std::string nodeType = boatPartsNode["type"] ? boatPartsNode["type"].as<std::string>() : "";
+
+        if (nodeType == "common") {
+            const float scale = boatPartsNode["scale"] ? boatPartsNode["scale"].as<float>() : 0.25f;
+            SetScale(glm::vec3(scale));
+            continue;
+        }
+
+        if (type != nodeType) {
+            continue;
+        }
+
+        const std::string modelPath = boatPartsNode["modelPath"] ? boatPartsNode["modelPath"].as<std::string>() : "";
+        SetModelPath(modelPath);
+    }
 }
 
 void BoatParts::AddCollectableComponent()

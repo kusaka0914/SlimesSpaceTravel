@@ -1,12 +1,12 @@
 #pragma once
 
+#include "Game.h"
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
 #include <vector>
 
-class Game;
 class Component;
 class Planet;
 
@@ -82,16 +82,19 @@ public:
         mHeight = height;
     }
 
+    void SetEditorRotation(const glm::vec3& rotation) { mEditorRotation = rotation; }
+    const glm::vec3& GetEditorRotation() const { return mEditorRotation; }
+
     int GetStageYamlIndex() const { return mStageYamlIndex; }
     void SetStageYamlIndex(int index) { mStageYamlIndex = index; }
 
-private:
-    glm::vec3 GetAverageNormal();
-    bool CastRay(const glm::vec3& offset, glm::vec3& outNormal, const btCollisionObject*& outObj);
+    void SetIsEditorSelected(bool isEditorSelected) { mIsEditorSelected = isEditorSelected; }
+
+    bool GetIsEditorSelected() const { return mIsEditorSelected; }
 
 protected:
     void UpdateDirectionVectors();
-    virtual bool ShouldUpdateUpVecEveryFrame() const { return false; }
+    virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }
     virtual void OnUpVecUpdateFailed();
     void UpdateFallbackUpVec();
     virtual bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const { return false; };
@@ -120,4 +123,6 @@ protected:
     Planet* mCurrentPlanet;
     std::vector<std::unique_ptr<Component>> mComponents;
     std::vector<struct LoadedMesh>* mMeshes;
+    glm::vec3 mEditorRotation{0.0f};
+    bool mIsEditorSelected = false;
 };

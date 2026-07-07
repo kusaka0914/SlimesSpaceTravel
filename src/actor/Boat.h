@@ -5,6 +5,7 @@
 
 class Game;
 class FocusComponent;
+class BoatArrivalPoint;
 
 class Boat : public Actor {
 public:
@@ -17,12 +18,15 @@ public:
 
     void SetDestPlanet(Planet* destPlanet) { mDestPlanet = destPlanet; }
     void SetDestStage(int destStage) { mDestStage = destStage; }
+    void SetArrivalPoint(BoatArrivalPoint* arrivalPoint) { mArrivalPoint = arrivalPoint; }
 
     bool GetIsMoving() const { return mIsMoving; }
 
     float GetProgress() const { return mProgress; }
     const glm::vec3& GetDestPos() const { return mDestPos; }
+    Planet* GetDestPlanet() const { return mDestPlanet; }
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
+    BoatArrivalPoint* GetArrivalPoint() const { return mArrivalPoint; }
 
 private:
     void AddFocusComponent();
@@ -51,4 +55,5 @@ private:
     glm::vec3 mDestPos;
 
     FocusComponent* mFocusComponent;
+    BoatArrivalPoint* mArrivalPoint;
 };

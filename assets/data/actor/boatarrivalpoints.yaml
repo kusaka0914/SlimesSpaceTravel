@@ -1,0 +1,3 @@
+boatArrivalPoints:
+  - modelPath: platform.obj
+    scale: 0.4

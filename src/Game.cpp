@@ -8,12 +8,18 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
+#include "state/GameProgressState.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
+#include "system/GameWorld.h"
+#include "system/GamepadRumbleService.h"
+#include "system/InputSystem.h"
 #include "system/MeshLoadSystem.h"
+#include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
+#include "system/StageFlowController.h"
 #include "system/UILoadSystem.h"
 
 #include "gfx/Renderer3D.h"
@@ -26,34 +32,35 @@
 
 Game::Game()
     : mWindow(nullptr),
-      mSdlController(nullptr),
-      mCurrentStage(nullptr),
-      mCurrentStageNum(0),
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
-      mReloadKeyPressedPrev(false),
-      mUIReloadKeyPressedPrev(false),
-      mXPressedPrev(false),
       mIsPlayer2Joined(false),
-      mCurrentStageYamlPath("../assets/data/stage/house.yaml"),
-      mIsDebugMode(false),
-      mIsFreeCameraMode(false)
+      mIsDebugEditorShowing(false),
+      mIsFreeCameraMode(false),
+      mIsDebugMode(false)
 {
 }
 
 Game::~Game() = default;
 
-bool Game::Initialize()
+bool Game::Initialize(bool isDebugMode)
 {
     if (!InitializeGLFW()) {
         return false;
     }
 
-    InitializeGameController();
     CreateGameSystems();
+    InitializeGameController();
 
     constexpr int stageCount = 5;
     CreateStages(stageCount);
+
+    if (isDebugMode) {
+        mIsDebugMode = true;
+        mWorld->ChangeStage(1);
+        mStageFlowController->SetCurrentStageYamlPath("../assets/data/stage/stage2.yaml");
+        mSceneSystem->StartPlayingScene();
+    }
 
     ReloadCurrentStage();
 
@@ -66,7 +73,6 @@ bool Game::Initialize()
 bool Game::InitializeGLFW()
 {
     if (!glfwInit()) {
-        // std::cerr << "Failed to init GLFW" << std::endl;
         return false;
     }
 
@@ -74,14 +80,8 @@ bool Game::InitializeGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    //     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    //     mWindow = glfwCreateWindow(mode->width, mode->height, "Engine",
-    //     monitor, nullptr);
-
     mWindow = glfwCreateWindow(800, 450, "Slime'sSpaceTravel", nullptr, nullptr);
     if (!mWindow) {
-        // std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();
         return false;
     }
@@ -90,7 +90,6 @@ bool Game::InitializeGLFW()
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
-        // std::cerr << "Failed to init GLEW" << std::endl;
         glfwDestroyWindow(mWindow);
         glfwTerminate();
         return false;
@@ -101,13 +100,16 @@ bool Game::InitializeGLFW()
 
 void Game::InitializeGameController()
 {
-    if (SDL_Init(SDL_INIT_GAMECONTROLLER) == 0) {
-        CheckGameControllerConnected();
-    }
+    mGamepadRumbleService->Initialize();
 }
 
 void Game::CreateGameSystems()
 {
+    mWorld = std::make_unique<GameWorld>();
+    mPauseMenuController = std::make_unique<PauseMenuController>();
+    mStageFlowController = std::make_unique<StageFlowController>();
+    mGamepadRumbleService = std::make_unique<GamepadRumbleService>();
+
     mAudioSystem = std::make_unique<AudioSystem>(this);
     mUIRenderer = std::make_unique<UIRenderer>(this);
     mRenderer3D = std::make_unique<Renderer3D>(this);
@@ -117,28 +119,26 @@ void Game::CreateGameSystems()
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>(this);
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);
+    mInputSystem = std::make_unique<InputSystem>(this);
 }
 
 void Game::CreateStages(int stageCount)
 {
-    for (int i = 0; i < stageCount; i++) {
-        auto stageUnique = std::make_unique<Stage>();
-        Stage* stage = stageUnique.get();
-
-        mStagesUnique.emplace_back(std::move(stageUnique));
-        mStages.emplace_back(stage);
-
-        if (i == 0) {
-            mCurrentStage = stage;
-        }
-    }
+    mWorld->CreateStages(stageCount);
 }
 
 void Game::ReloadCurrentStage()
 {
-    LoadData(true);
-    mPhysicsSystem->Initialize();
-    mAudioSystem->TryChangeBGM();
+    mStageFlowController->ReloadCurrentStage(*this);
+}
+
+void Game::ReloadUIData()
+{
+    if (!mUIRenderer) {
+        return;
+    }
+
+    mUIRenderer->GetUILoadSystem()->Initialize();
 }
 
 void Game::RunLoop()
@@ -153,9 +153,8 @@ void Game::RunLoop()
 
 void Game::Shutdown()
 {
-    if (mSdlController) {
-        SDL_GameControllerClose(mSdlController);
-        mSdlController = nullptr;
+    if (mGamepadRumbleService) {
+        mGamepadRumbleService->Shutdown();
     }
 
     if (mAudioSystem) {
@@ -177,9 +176,11 @@ void Game::ProcessInput()
     SDL_PumpEvents();
     SDL_GameControllerUpdate();
 
-    ProcessGameInput();
+    if (mInputSystem) {
+        mInputSystem->ProcessGameInput();
+    }
 
-    if (mIsPauseMenuOpen) {
+    if (mPauseMenuController->IsOpen()) {
         return;
     }
 
@@ -187,165 +188,29 @@ void Game::ProcessInput()
     mCameraSystem->ProcessInput();
 }
 
-void Game::ProcessGameInput()
+void Game::MovePauseMenuSelection(int delta)
 {
-    const bool pauseMenuKeyPressed =
-        glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_BACK));
-
-    if (pauseMenuKeyPressed && !mPauseMenuKeyPressedPrev &&
-        (mSceneSystem->IsPlaying() || mSceneSystem->IsFocusing() || mIsPauseMenuOpen)) {
-        TogglePauseMenu();
-    }
-
-    mPauseMenuKeyPressedPrev = pauseMenuKeyPressed;
-
-    if (mIsPauseMenuOpen) {
-        ProcessPauseMenuInput();
-    }
-
-    const bool reloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_R) == GLFW_PRESS;
-    if (reloadKeyPressed && !mReloadKeyPressedPrev) {
-        ReloadCurrentStage();
-    }
-    mReloadKeyPressedPrev = reloadKeyPressed;
-
-    const bool uiReloadKeyPressed = glfwGetKey(mWindow, GLFW_KEY_I) == GLFW_PRESS;
-    if (uiReloadKeyPressed && !mUIReloadKeyPressedPrev) {
-        mUIRenderer->GetUILoadSystem()->Initialize();
-    }
-    mUIReloadKeyPressedPrev = uiReloadKeyPressed;
-
-    // const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
-    // if (pPressed && !mIsPlayer2Joined) {
-    //     CreatePlayer2();
-    // }
-
-    const bool xPressed = (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_X)) ||
-                          glfwGetKey(mWindow, GLFW_KEY_K) == GLFW_PRESS;
-
-    if (xPressed && !mXPressedPrev) {
-        mSceneSystem->OnConfirmPressed();
-    }
-    mXPressedPrev = xPressed;
-
-    const bool pPressed = glfwGetKey(mWindow, GLFW_KEY_P) == GLFW_PRESS;
-    if (pPressed && !mPPressedPrev) {
-        mIsDebugMode = !mIsDebugMode;
-    }
-    mPPressedPrev = pPressed;
-
-    const bool lPressed = glfwGetKey(mWindow, GLFW_KEY_L) == GLFW_PRESS;
-    if (lPressed && !mLPressedPrev) {
-        mIsFreeCameraMode = !mIsFreeCameraMode;
-    }
-    mLPressedPrev = lPressed;
-
-    // const bool isZLPressed = SDL_GameControllerGetAxis(mSdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000;
-    // std::vector<Enemy*> enemies = mPlayers[0]->GetCurrentPlanet()->GetEnemies();
-    // bool isBossExist = false;
-    // for (auto enemy : enemies) {
-    //     if (!enemy->GetIsBoss()) {
-    //         continue;
-    //     }
-
-    //     isBossExist = true;
-    //     break;
-    // }
-    // if (isZLPressed && !mZLPressedPrev && isBossExist) {
-    //     mCameraSystem->SetIsTargetFocus(!mCameraSystem->GetIsTargetFocus());
-    // }
-    // mZLPressedPrev = isZLPressed;
-
-    const bool startPressed =
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_START)) ||
-        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS;
-    if (startPressed && !mStartPressedPrev) {
-        mSceneSystem->OnStartPressed();
-    }
-    mStartPressedPrev = startPressed;
-}
-
-void Game::ProcessPauseMenuInput()
-{
-    constexpr int menuItemCount = 4;
-
-    const bool upPressed =
-        glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_W) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_UP));
-
-    const bool downPressed =
-        glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(mWindow, GLFW_KEY_S) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_DPAD_DOWN));
-
-    const bool confirmPressed =
-        glfwGetKey(mWindow, GLFW_KEY_ENTER) == GLFW_PRESS ||
-        (mSdlController && SDL_GameControllerGetButton(mSdlController, SDL_CONTROLLER_BUTTON_A));
-
-    if (upPressed && !mPauseMenuUpPressedPrev) {
-        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + menuItemCount - 1) % menuItemCount;
-    }
-
-    if (downPressed && !mPauseMenuDownPressedPrev) {
-        mPauseMenuSelectedIndex = (mPauseMenuSelectedIndex + 1) % menuItemCount;
-    }
-
-    if (confirmPressed && !mPauseMenuConfirmPressedPrev) {
-        ExecutePauseMenuItem();
-    }
-
-    mPauseMenuUpPressedPrev = upPressed;
-    mPauseMenuDownPressedPrev = downPressed;
-    mPauseMenuConfirmPressedPrev = confirmPressed;
+    mPauseMenuController->MoveSelection(delta);
 }
 
 void Game::TogglePauseMenu()
 {
-    mIsPauseMenuOpen = !mIsPauseMenuOpen;
-
-    if (mIsPauseMenuOpen) {
-        mPauseMenuSelectedIndex = 0;
-    }
+    mPauseMenuController->Toggle();
 }
 
 void Game::ClosePauseMenu()
 {
-    mIsPauseMenuOpen = false;
+    mPauseMenuController->Close();
 }
 
 void Game::ExecutePauseMenuItem()
 {
-    switch (mPauseMenuSelectedIndex) {
-    case 0:
-        ClosePauseMenu();
-        break;
-
-    case 1:
-        ReturnToBase();
-        break;
-
-    case 2:
-        OpenFeedbackForm();
-        break;
-
-    case 3:
-        FinishGame();
-        break;
-
-    default:
-        break;
-    }
+    mPauseMenuController->ExecuteSelectedItem(*this);
 }
 
 void Game::ReturnToBase()
 {
-    ClosePauseMenu();
-
-    if (IsInBase()) {
-        return;
-    }
-
-    mSceneSystem->RequestStageChange(0);
+    mStageFlowController->ReturnToBase(*this);
 }
 
 void Game::OpenFeedbackForm()
@@ -358,15 +223,28 @@ void Game::OpenFeedbackForm()
     }
 }
 
+void Game::TryCreatePlayer2()
+{
+    CreatePlayer2();
+}
+
+void Game::ToggleDebugEditor()
+{
+    mIsDebugEditorShowing = !mIsDebugEditorShowing;
+}
+
+void Game::ToggleFreeCameraMode()
+{
+    mIsFreeCameraMode = !mIsFreeCameraMode;
+}
+
 void Game::ProcessActorsInput()
 {
     if (!mSceneSystem->IsPlaying()) {
         return;
     }
 
-    for (const auto& actorUnique : mActors) {
-        actorUnique->ProcessInput();
-    }
+    mWorld->ProcessActorsInput();
 }
 
 void Game::UpdateGame()
@@ -382,7 +260,7 @@ void Game::UpdateGame()
         return;
     }
 
-    if (mIsPauseMenuOpen) {
+    if (mPauseMenuController->IsOpen()) {
         return;
     }
 
@@ -401,9 +279,7 @@ void Game::UpdateGame()
 
 void Game::UpdateActors(float deltaTime)
 {
-    for (const auto& actorUnique : mActors) {
-        actorUnique->Update(deltaTime);
-    }
+    mWorld->UpdateActors(deltaTime);
 }
 
 void Game::GenerateOutput()
@@ -429,55 +305,42 @@ void Game::GenerateOutput()
 
 void Game::AddActor(std::unique_ptr<Actor> actor)
 {
-    mActors.emplace_back(std::move(actor));
+    mWorld->AddActor(std::move(actor));
 }
 
 void Game::RemoveActor(Actor* actor)
 {
-    auto iter = std::find_if(mActors.begin(), mActors.end(),
-                             [actor](const std::unique_ptr<Actor>& current) { return current.get() == actor; });
-
-    if (iter != mActors.end()) {
-        std::iter_swap(iter, mActors.end() - 1);
-        mActors.pop_back();
-    }
+    mWorld->RemoveActor(actor);
 }
 
 void Game::RemoveAllActor()
 {
-    mPlayers.clear();
-    mActors.clear();
+    mWorld->RemoveAllActors();
+}
+
+void Game::AddPlayer(Player* player)
+{
+    mWorld->AddPlayer(player);
+}
+
+void Game::RemoveAllPlayer()
+{
+    mWorld->RemoveAllPlayers();
 }
 
 void Game::LoadData(bool isLoadPlayer)
 {
-    RemoveAllActor();
-    mActorLoadSystem->LoadData(isLoadPlayer);
+    mStageFlowController->LoadData(*this, isLoadPlayer);
 }
 
 void Game::ChangeStage(int stageNum)
 {
-    if (stageNum < 0 || stageNum >= static_cast<int>(mStages.size())) {
-        return;
-    }
-
-    mCurrentStage = mStages[stageNum];
-    mCurrentStageNum = stageNum;
-    mCurrentStageYamlPath = "../assets/data/stage/stage" + std::to_string(stageNum) + ".yaml";
+    mStageFlowController->ChangeStage(*mWorld, stageNum);
 }
 
 void Game::CheckGameControllerConnected()
 {
-    if (mSdlController) {
-        return;
-    }
-
-    for (int i = 0; i < SDL_NumJoysticks(); ++i) {
-        if (SDL_IsGameController(i)) {
-            mSdlController = SDL_GameControllerOpen(i);
-            break;
-        }
-    }
+    mGamepadRumbleService->UpdateConnection();
 }
 
 void Game::CreatePlayer2()
@@ -486,22 +349,21 @@ void Game::CreatePlayer2()
         return;
     }
 
+    if (!IsGameControllerConnected()) {
+        return;
+    }
+
+    const bool created = mActorLoadSystem->CreatePlayerFromCurrentStage(2);
+    if (!created) {
+        return;
+    }
+
     mIsPlayer2Joined = true;
-
-    auto player2 = std::make_unique<Player>(this);
-    Player* player2Ptr = player2.get();
-
-    mActors.emplace_back(std::move(player2));
-    mPlayers.emplace_back(player2Ptr);
-
-    auto playerMeshes = mMeshLoadSystem->GetLoadedMeshes("player");
-
-    player2Ptr->SetMeshes(playerMeshes);
 }
 
 void Game::OnBoatStageChangeRequested(int destStage)
 {
-    if (mCurrentStageNum != 0) {
+    if (GetCurrentStageNum() != 0) {
         return;
     }
 
@@ -525,35 +387,6 @@ void Game::OnEnemyLaunched()
     mSceneSystem->OnEnemyLaunched();
 }
 
-void Game::OnPlayerApplyDamage()
-{
-    mAudioSystem->PlaySE("damaged_se");
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 1000);
-}
-
-void Game::OnPlayerFinishCharging()
-{
-    mAudioSystem->PlaySE("air_charged_se");
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
-}
-
-void Game::OnPlayerAttackHit()
-{
-    SDL_GameControllerRumble(mSdlController, 0, 10000, 200);
-}
-
-void Game::OnStrongAttacked()
-{
-    mSceneSystem->OnStrongAttacked();
-    mHitStopTimer = 0.4f;
-    SDL_GameControllerRumble(mSdlController, 40000, 0, 500);
-}
-
-void Game::OnPlayerCounter()
-{
-    SDL_GameControllerRumble(mSdlController, 25000, 0, 500);
-}
-
 void Game::OnLanded()
 {
     mSceneSystem->OnLanded();
@@ -567,33 +400,18 @@ void Game::OnPlayerDied()
 void Game::OnBoatPartsObtained()
 {
     mAudioSystem->PlaySE("pickup_se");
-    mPlayers[0]->GetCurrentPlanet()->OnBoatPartsObtained();
+
+    Player* mainPlayer = GetMainPlayer();
+    if (!mainPlayer || !mainPlayer->GetCurrentPlanet()) {
+        return;
+    }
+
+    mainPlayer->GetCurrentPlanet()->OnBoatPartsObtained();
 }
 
 Player* Game::FindNearestPlayer(Actor* actor) const
 {
-    if (!actor) {
-        return nullptr;
-    }
-
-    Player* nearestPlayer = nullptr;
-    float nearestDist = std::numeric_limits<float>::max();
-
-    for (Player* player : mPlayers) {
-        if (!player) {
-            continue;
-        }
-
-        const glm::vec3 toPlayer = player->GetPos() - actor->GetPos();
-        const float dist = glm::dot(toPlayer, toPlayer);
-
-        if (dist < nearestDist) {
-            nearestDist = dist;
-            nearestPlayer = player;
-        }
-    }
-
-    return nearestPlayer;
+    return mWorld->FindNearestPlayer(actor);
 }
 
 void Game::FinishGame()
@@ -603,7 +421,7 @@ void Game::FinishGame()
 
 void Game::RestartGame()
 {
-    for (auto player : mPlayers) {
+    for (auto player : GetPlayers()) {
         player->Restart();
     }
 }
@@ -618,7 +436,91 @@ void Game::StartFocusingScene()
     mSceneSystem->StartFocusingScene();
 }
 
-void Game::VibrateController(float low, float high, float time)
+void Game::OnPlayerApplyDamage(int playerNum)
 {
-    SDL_GameControllerRumble(mSdlController, low, high, time);
+    mAudioSystem->PlaySE("damaged_se");
+    VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
+}
+
+void Game::OnPlayerFinishCharging(int playerNum)
+{
+    mAudioSystem->PlaySE("air_charged_se");
+    VibrateControllerForPlayer(playerNum, 0, 10000, 200);
+}
+
+void Game::OnPlayerAttackHit(int playerNum)
+{
+    VibrateControllerForPlayer(playerNum, 0, 10000, 200);
+}
+
+void Game::OnStrongAttacked(int playerNum)
+{
+    mSceneSystem->OnStrongAttacked();
+    mHitStopTimer = 0.4f;
+    VibrateControllerForPlayer(playerNum, 40000, 0, 500);
+}
+
+void Game::OnPlayerCounter(int playerNum)
+{
+    VibrateControllerForPlayer(playerNum, 25000, 0, 500);
+}
+
+void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+{
+    mGamepadRumbleService->VibrateForPlayer(playerNum, lowFrequency, highFrequency, duration);
+}
+
+SDL_GameController* Game::GetSdlController() const
+{
+    return mGamepadRumbleService->GetController();
+}
+
+const std::vector<Player*>& Game::GetPlayers() const
+{
+    return mWorld->GetPlayers();
+}
+
+Player* Game::GetMainPlayer() const
+{
+    return mWorld->GetMainPlayer();
+}
+
+const std::vector<Stage*>& Game::GetStages() const
+{
+    return mWorld->GetStages();
+}
+
+Stage* Game::GetCurrentStage() const
+{
+    return mWorld->GetCurrentStage();
+}
+
+int Game::GetCurrentStageNum() const
+{
+    return mWorld->GetCurrentStageNum();
+}
+
+const std::string& Game::GetCurrentStageYamlPath() const
+{
+    return mStageFlowController->GetCurrentStageYamlPath();
+}
+
+bool Game::GetIsPauseMenuOpen() const
+{
+    return mPauseMenuController->IsOpen();
+}
+
+int Game::GetPauseMenuSelectedIndex() const
+{
+    return mPauseMenuController->GetSelectedIndex();
+}
+
+bool Game::IsInBase() const
+{
+    return mWorld->IsInBase();
+}
+
+bool Game::IsGameControllerConnected() const
+{
+    return mGamepadRumbleService->IsConnected();
 }

@@ -6,12 +6,33 @@
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
 
-Key::Key(Game* game) : Actor(game), mIsActivePrev(false)
+#include <yaml-cpp/yaml.h>
+
+Key::Key(Game* game)
+    : Actor(game),
+      mIsActivePrev(false)
 {
     mIsActive = false;
 
     AddCollectableComponent();
     AddFocusComponent();
+}
+
+void Key::ApplyConfig()
+{
+    YAML::Node keyRoot = YAML::LoadFile("../assets/data/actor/keys.yaml");
+
+    if (!keyRoot["keys"] || !keyRoot["keys"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& keyNode : keyRoot["keys"]) {
+        const std::string modelPath = keyNode["modelPath"] ? keyNode["modelPath"].as<std::string>() : "key.obj";
+        SetModelPath(modelPath);
+
+        const float scale = keyNode["scale"] ? keyNode["scale"].as<float>() : 0.25f;
+        SetScale(glm::vec3(scale));
+    }
 }
 
 void Key::AddCollectableComponent()

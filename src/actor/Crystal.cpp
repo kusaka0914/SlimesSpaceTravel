@@ -3,10 +3,44 @@
 #include "component/DestructibleComponent.h"
 #include "system/AudioSystem.h"
 #include <iostream>
+#include <yaml-cpp/yaml.h>
 
-Crystal::Crystal(Game* game) : Actor(game)
+Crystal::Crystal(Game* game)
+    : Actor(game)
 {
     AddDestructibleComponent();
+}
+
+void Crystal::ApplyConfig(const std::string& type)
+{
+    YAML::Node crystalRoot = YAML::LoadFile("../assets/data/actor/crystals.yaml");
+
+    if (!crystalRoot["crystals"] || !crystalRoot["crystals"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& crystalNode : crystalRoot["crystals"]) {
+        const std::string nodeType = crystalNode["type"] ? crystalNode["type"].as<std::string>() : "";
+
+        if (nodeType == "common") {
+            const std::string modelPath = crystalNode["modelPath"] ? crystalNode["modelPath"].as<std::string>() : "";
+            SetModelPath(modelPath);
+            continue;
+        }
+
+        if (type != nodeType) {
+            continue;
+        }
+
+        const float hp = crystalNode["hp"] ? crystalNode["hp"].as<float>() : 80.0f;
+        mDestructibleComponent->SetDestroyHp(hp);
+
+        const float scale = crystalNode["scale"] ? crystalNode["scale"].as<float>() : 0.25f;
+        SetScale(glm::vec3(scale));
+
+        const float radius = crystalNode["radius"] ? crystalNode["radius"].as<float>() : 1.0f;
+        SetRadius(radius);
+    }
 }
 
 void Crystal::AddDestructibleComponent()

@@ -16,6 +16,11 @@ players:
     theta: 1.570796
     phi: 0.558599
     height: -6.783
+  - currentPlanetNum: 0
+    playerNum: 2
+    theta: 1.570796
+    phi: 0.558599
+    height: -6.783
 NPCs:
   - currentPlanetNum: 0
     theta: -1.695151

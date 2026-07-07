@@ -1,0 +1,3 @@
+fallRespawnPoints:
+  - modelPath: platform.obj
+    damage: 1.0
