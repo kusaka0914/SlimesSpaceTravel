@@ -11,7 +11,7 @@ C++ / OpenGL を中心に、Bullet Physics、Assimp、SDL2、yaml-cpp、Dear ImG
 
 ## デモ・資料
 
-* プレイ映像: [https://youtu.be/JpgFTtJgUL4](https://youtu.be/Xqg5LFoFi6A)
+* プレイ映像: [https://youtu.be/Xqg5LFoFi6A](https://youtu.be/Xqg5LFoFi6A)
 * Releases: https://github.com/kusaka0914/SlimesSpaceTravel/releases
 * 説明資料: [summary.pdf](summary.pdf)
 
