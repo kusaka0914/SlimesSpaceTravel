@@ -2,18 +2,18 @@
 
 ## 概要
 
-**Slime's Space Travel** は、球体地形や複雑なモデル地形を探索しながら敵と戦い、ロケットのパーツを集めたり、敵を倒したりしてロケットを出現させ、複数の惑星を旅するステージクリア型3Dアクションゲームです。
+Slime's Space Travelは、球体地形を探索しながら、ロケットのパーツを集めたり、敵を倒したりしてロケットを出現させ、複数の惑星を旅するステージクリア型3Dアクションゲームです。
 
 C++ / OpenGL を中心に、Bullet Physics、Assimp、SDL2、yaml-cpp、Dear ImGui などを使用して制作しています。Unity や Unreal Engine などの汎用ゲームエンジンは使用していません。
 
-詳細な作品説明、制作意図、操作方法、開発期間、担当範囲、技術的な工夫は [summary.pdf](summary.pdf) にまとめています。
+詳細は [summary.pdf](summary.pdf) にまとめています。
 この README では、実行方法と、ソースコード上で特に見ていただきたい実装箇所を案内します。
 
 ## デモ・資料
 
 * プレイ映像: [https://youtu.be/Xqg5LFoFi6A](https://youtu.be/Xqg5LFoFi6A)
 * Releases: https://github.com/kusaka0914/SlimesSpaceTravel/releases
-* 説明資料: [summary.pdf](summary.pdf)
+* 要点PDF: [summary.pdf](summary.pdf)
 
 ## 実行方法
 
@@ -22,11 +22,9 @@ C++ / OpenGL を中心に、Bullet Physics、Assimp、SDL2、yaml-cpp、Dear ImG
 Releases には、実行ファイル、必要なライブラリ、assets、shaders をまとめた配布用ファイルを公開しています。
 ダウンロード後、zip ファイルを展開し、展開したフォルダ内の実行ファイルを起動してください。
 
-提出用フォルダでは、実行可能形式を `bin` フォルダにまとめています。
-
 ## ソースからのビルドについて
 
-CMake を使用しています。
+ビルドはCMake を使用しています。
 依存ライブラリは [vcpkg.json](vcpkg.json) にまとめています。
 
 vcpkg を使用する場合は、環境に合わせて toolchain file を指定して CMake を実行してください。
@@ -36,7 +34,7 @@ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=<vcpkgのパス>/scripts/buildsystems
 cmake --build build --config Release
 ```
 
-すぐに動作を確認したい場合は、GitHub Releases の配布版を使用してください。
+動作を確認だけで良い場合は、GitHub Releases の配布版を使用してください。
 
 ## デバッグモードについて
 
@@ -46,7 +44,7 @@ cmake --build build --config Release
 <実行ファイル名> --debug
 ```
 
-デバッグモードでは、ステージ編集用UI、自由カメラ、ステージデータ再読み込み、UIデータ再読み込みなど、調整用の機能を使用できます。
+デバッグモードでは、デバッグエディタ用UI、自由カメラ、ステージデータ再読み込み、UIデータ再読み込みなど、調整用の機能を使用できます。
 
 ## 開発環境・使用技術
 
@@ -87,9 +85,46 @@ src/
 └─ Game.cpp           ゲーム全体の初期化、更新、描画呼び出し、各Systemへの委譲
 ```
 
-## 特に見ていただきたい実装
+## 特に見ていただきたい実装（ここだけでも！というところを抜粋しています。）
 
-### 1. 球体・任意形状地形上での接地判定
+### 1. デバッグエディタによるステージ編集
+
+主に見ていただきたい箇所:
+
+* [StageSelectionController.cpp](src/gfx/debug/stage/StageSelectionController.cpp)
+
+  * `UpdatePickedActorByMouse`
+  * `UpdateBoxSelection`
+  * `MoveSelectedActorsByDelta`
+* [StageGizmoController.cpp](src/gfx/debug/stage/StageGizmoController.cpp)
+
+  * `DrawGizmo`
+  * `ApplyGizmoMatrixToActor`
+* [StageEditCommandController.cpp](src/gfx/debug/stage/StageEditCommandController.cpp)
+
+  * `RestoreUndo`
+  * `DuplicateSelectedKeys`
+
+関連ファイル:
+
+* [StageYamlRepository.cpp](src/gfx/debug/stage/StageYamlRepository.cpp)
+* [StageActorCreateService.cpp](src/gfx/debug/stage/StageActorCreateService.cpp)
+* [StageActorQuery.cpp](src/gfx/debug/stage/StageActorQuery.cpp)
+
+ステージ制作や調整をしやすくするため、Dear ImGui と ImGuizmo を使ったデバッグエディタを実装しています。
+
+マウスクリックによるActor選択、Shiftを使った複数選択、ドラッグによる範囲選択、ギズモによる移動、Actorの追加、削除、複製、アンドゥ、YAMLへの保存、ステージ再読み込みに対応しています。
+
+見るポイント:
+
+* `UpdatePickedActorByMouse` で、マウスクリック位置からRayを作り、Actorを選択している点
+* `UpdateBoxSelection` で、ドラッグ矩形による範囲選択を行っている点
+* `MoveSelectedActorsByDelta` で、複数選択中のActorをまとめて移動している点
+* `DrawGizmo` で、ImGuizmoを使った移動・回転・拡大縮小を行っている点
+* `RestoreUndo` で、保存済みYAMLテキストからアンドゥしている点
+* `DuplicateSelectedKeys` で、選択中ActorをYAML上で複製している点
+
+### 2. 球体上での接地判定
 
 主に見ていただきたい箇所:
 
@@ -108,9 +143,9 @@ src/
   * `TryLandByRay`
   * `ApplyGravity`
 
-球体地形や複雑なモデル地形の上を自然に移動できるように、足元方向へレイキャストを行い、地面法線を取得してキャラクターの上方向ベクトルを更新しています。
+球体地形や楕円、滑らかな壁の上を自然に移動できるように、足元方向へレイキャストを行い、地面法線を取得してキャラクターの上方向ベクトルを更新しています。
 
-当初は惑星中心からプレイヤー位置へのベクトルを上方向として扱っていましたが、その方法では、突き出した足場や角度のついた地形で姿勢が不自然になる問題がありました。現在は、中央・前後左右へのレイキャストで地面法線を取得し、その平均法線をもとに上方向を更新することで、球体地形、足場、緩やかな壁、楕円形の地形に対応しています。
+当初は惑星中心からプレイヤー位置へのベクトルを上方向として扱っていましたが、その方法では、惑星から突き出した足場や角度のついた地形で姿勢が不自然になる問題がありました。現在は、中央・前後左右へのレイキャストで地面法線を取得し、その平均法線をもとに上方向を更新することで、球体地形、足場、緩やかな壁、楕円形の地形に対応しています。
 
 見るポイント:
 
@@ -118,9 +153,9 @@ src/
 * 取得した法線をもとにした `upVec` 更新
 * `upVec` に応じた前方向・左方向ベクトルの再計算
 * 接地判定と重力方向を、キャラクターの上方向に合わせて処理している点
-* 地面法線が取得できない場合に、惑星形状に応じたフォールバック方向を使っている点
+* 地面法線が取得できない場合に、惑星形状に応じたフォールバック方向を使うことで無限に落下することを防いでいる点
 
-### 2. Bullet Physics によるモデル形状コリジョン
+### 3. Bullet Physics によるモデル形状コリジョン
 
 主に見ていただきたい箇所:
 
@@ -138,144 +173,15 @@ src/
 
 Assimpで読み込んだモデルの頂点・インデックス情報から三角形メッシュを作成し、Bullet Physics の当たり判定として登録しています。
 
-これにより、単純な球体半径による補正では対応できない、突き出した足場や複雑なモデル地形に対して、見た目に近いコリジョンを作成しています。また、移動床についてはキネマティックな剛体として扱い、Actorの位置に合わせてBullet側のTransformを同期しています。
+これにより、単純な球体半径による補正では対応できない、突き出した足場や複雑なモデル地形に対して、見た目に近いコリジョンを作成しています。
 
 見るポイント:
 
 * モデルデータから頂点・インデックス情報を取得している点
 * `btTriangleMesh` と `btBvhTriangleMeshShape` を使って地形コリジョンを作成している点
 * 惑星、通常足場、移動床の形状に合わせて当たり判定を構築している点
-* 移動床のTransformを更新し、見た目と当たり判定がずれないようにしている点
 
-### 3. 壁衝突判定とスライド移動
-
-主に見ていただきたい箇所:
-
-* [ActorCollisionResolver.cpp](src/system/physics/ActorCollisionResolver.cpp)
-
-  * `CheckCollision`
-  * `CheckConflictActors`
-  * `CheckConflictWall`
-
-プレイヤーや敵の移動時に、Actor同士の押し戻し判定と、Bullet Physics による壁衝突判定を行っています。
-
-壁に衝突した場合は、衝突位置まで移動したうえで、残りの移動量から壁法線方向の成分を取り除き、壁沿いにスライドするようにしています。スライド方向にも再度 Sweep 判定を行い、二重にめり込みを防いでいます。
-
-見るポイント:
-
-* Enemy、Crystal、NPC との距離ベースの押し戻し判定
-* 移動前位置から移動後位置までを `convexSweepTest` で判定している点
-* スライド方向にも再度 Sweep 判定を行い、めり込みを防いでいる点
-
-### 4. 球体地形向けのカメラ制御
-
-主に見ていただきたい箇所:
-
-* [CameraSystem.cpp](src/system/CameraSystem.cpp)
-
-  * `UpdateCamera`
-  * `GetViews`
-* [PlayerCamera.cpp](src/system/camera/PlayerCamera.cpp)
-
-  * `Update`
-  * `GetView`
-  * `UpdateState`
-* [CameraCollisionResolver.cpp](src/system/camera/CameraCollisionResolver.cpp)
-* [FocusCamera.cpp](src/system/camera/FocusCamera.cpp)
-* [DebugCamera.cpp](src/system/camera/DebugCamera.cpp)
-
-球体地形では、地面法線に応じてプレイヤーの上方向ベクトルが変化します。その値をそのままカメラに反映すると画面が小刻みに揺れるため、カメラの位置や上方向を補間して滑らかに追従するようにしています。
-
-また、カメラと注視点の間に障害物がある場合は、レイキャストによってカメラ位置を補正しています。船、キーなど、状況に応じたフォーカスカメラも実装しています。
-
-見るポイント:
-
-* `upVec` と注視点を補間し、球体地形上でもカメラが急に揺れないようにしている点
-* カメラと注視点の間にある障害物を検出し、カメラ位置を補正している点
-* 通常カメラ、フォーカスカメラ、自由カメラを状況に応じて切り替えている点
-* 2人プレイ時にプレイヤーごとのカメラ状態を管理している点
-
-### 5. YAMLによるステージ・アクター生成
-
-主に見ていただきたい箇所:
-
-* [ActorLoadSystem.cpp](src/system/ActorLoadSystem.cpp)
-
-  * `LoadData`
-  * `CreatePlayerFromStageNode`
-  * `CreatePlayerFromCurrentStage`
-* [ActorPlacementLoader.cpp](src/system/actor_loader/ActorPlacementLoader.cpp)
-* [StageActorFactory.h](src/system/actor_loader/StageActorFactory.h)
-* [assets/data/stage](assets/data/stage)
-
-惑星、敵、船、ロケットパーツ、キー、クリスタル、NPC、足場、移動床、落下復帰ポイント、プレイヤーなどをYAMLから読み込み、ステージ上に配置できるようにしています。
-
-コードを書き換えずにステージ構成を変更できるため、ステージ制作や調整を行いやすくしています。Actor生成時には、共通の配置処理を `ActorPlacementLoader` に寄せ、Actorごとの生成処理が重複しすぎないようにしています。
-
-見るポイント:
-
-* ステージ上のオブジェクト配置をYAMLで管理している点
-* Actorの種類ごとに読み込み処理を分けている点
-* パラメータ調整やステージ構成の変更を、コード変更なしで行えるようにしている点
-* 2人目プレイヤーを、現在のステージデータから追加生成できるようにしている点
-
-### 6. プレイヤーの状態管理・戦闘処理
-
-主に見ていただきたい箇所:
-
-* [Player.cpp](src/actor/Player.cpp)
-
-  * `ApplyConfig`
-  * `UpdateActor`
-  * `ApplyDamage`
-  * `OnBoatArrived`
-* [PlayerStateMachine.cpp](src/actor/player/PlayerStateMachine.cpp)
-* [PlayerCombat.cpp](src/actor/player/PlayerCombat.cpp)
-
-  * `StartAttacking`
-  * `Attack`
-  * `StartAfterAttackReaction`
-* [PlayerAttackHitDetector.cpp](src/actor/player/PlayerAttackHitDetector.cpp)
-* [PlayerAttackResolver.cpp](src/actor/player/PlayerAttackResolver.cpp)
-
-弱攻撃、強攻撃、回避、スペシャル攻撃、敵のガード破壊、打ち上げ、空中攻撃などを実装しています。
-
-リファクタリング後は、`Player` 本体に処理を集中させるのではなく、入力、移動、接地、戦闘、攻撃判定、攻撃結果処理、被ダメージ、ジュエル管理、状態遷移を役割ごとに分離しています。`Player` 本体は外部から呼ばれる窓口として残し、実際の処理は専用クラスに委譲する構成にしています。
-
-見るポイント:
-
-* `PlayerStateMachine` によるアクション状態の切り替え
-* `PlayerInput`、`PlayerMovement`、`PlayerCombat` などへの責務分割
-* `PlayerAttackResolver` による命中後のダメージ、ブレイク、SE、振動などの処理
-* `PlayerDamageHandler` による被ダメージ、ジャスト回避、カウンター処理
-
-### 7. 敵AI・敵の状態管理
-
-主に見ていただきたい箇所:
-
-* [Enemy.cpp](src/actor/Enemy.cpp)
-
-  * `ApplyConfig`
-  * `UpdateActor`
-  * `ApplyDamage`
-  * `ApplyBreak`
-* [EnemyStateMachine.cpp](src/actor/enemy/EnemyStateMachine.cpp)
-* [EnemyMovement.cpp](src/actor/enemy/EnemyMovement.cpp)
-* [EnemyCombat.cpp](src/actor/enemy/EnemyCombat.cpp)
-* [EnemyDamageHandler.cpp](src/actor/enemy/EnemyDamageHandler.cpp)
-
-敵は、待機、追跡、攻撃準備、攻撃、ノックバック、死亡などの状態を持ちます。プレイヤーとの距離に応じて追跡や攻撃へ遷移し、攻撃前には予兆SEを再生します。
-
-リファクタリング後は、`Enemy` 本体から状態遷移、移動、攻撃、被ダメージ、HP管理、ブレイクゲージ管理を分離しました。敵の行動仕様を変更する場合に、どのファイルを見ればよいか分かりやすい構成を目指しています。
-
-見るポイント:
-
-* `EnemyStateMachine` が敵の状態を所有している点
-* `EnemyMovement` が追跡、攻撃中移動、ノックバック、打ち上げを担当している点
-* `EnemyCombat` が敵の攻撃判定とブレイク処理を担当している点
-* `EnemyDamageHandler` がダメージ、死亡、ノックバック開始を担当している点
-
-### 8. 2人プレイ対応
+### 4. 2人プレイ対応
 
 主に見ていただきたい箇所:
 
@@ -308,7 +214,7 @@ Assimpで読み込んだモデルの頂点・インデックス情報から三�
 * 現在ステージのYAMLから2人目プレイヤーを生成する処理
 * プレイヤーごとにカメラの状態を管理している点
 
-### 9. 攻撃範囲表示
+### 5. 攻撃範囲表示
 
 主に見ていただきたい箇所:
 
@@ -328,47 +234,136 @@ Assimpで読み込んだモデルの頂点・インデックス情報から三�
 
 * `DrawPlayerAttackRange` で、攻撃角度・攻撃距離から扇形の頂点を生成している点
 * `GL_TRIANGLE_FAN` と `GL_TRIANGLE_STRIP` を使い、半透明の範囲と外周線を描き分けている点
-* `upVec` を基準にすることで、球体地形や斜面上でも攻撃範囲が地形に沿って表示される点
 * `DrawEnemyAttackRange` で、敵の攻撃予兆を視覚的に表示している点
 
-### 10. デバッグエディタによるステージ編集
+## その他可能であれば見ていただきたい実装
+
+### 1. YAMLによるステージ・アクター生成
 
 主に見ていただきたい箇所:
 
-* [StageSelectionController.cpp](src/gfx/debug/stage/StageSelectionController.cpp)
+* [ActorLoadSystem.cpp](src/system/ActorLoadSystem.cpp)
 
-  * `UpdatePickedActorByMouse`
-  * `UpdateBoxSelection`
-  * `MoveSelectedActorsByDelta`
-* [StageGizmoController.cpp](src/gfx/debug/stage/StageGizmoController.cpp)
+  * `LoadData`
+  * `CreatePlayerFromStageNode`
+  * `CreatePlayerFromCurrentStage`
+* [ActorPlacementLoader.cpp](src/system/actor_loader/ActorPlacementLoader.cpp)
+* [StageActorFactory.h](src/system/actor_loader/StageActorFactory.h)
+* [assets/data/stage](assets/data/stage)
 
-  * `DrawGizmo`
-  * `ApplyGizmoMatrixToActor`
-* [StageEditCommandController.cpp](src/gfx/debug/stage/StageEditCommandController.cpp)
+惑星、敵、船、ロケットパーツ、キー、クリスタル、NPC、足場、移動床、落下復帰ポイント、プレイヤーなどをYAMLから読み込み、ステージ上に配置できるようにしています。
 
-  * `RestoreUndo`
-  * `DuplicateSelectedKeys`
-
-関連ファイル:
-
-* [StageYamlRepository.cpp](src/gfx/debug/stage/StageYamlRepository.cpp)
-* [StageActorCreateService.cpp](src/gfx/debug/stage/StageActorCreateService.cpp)
-* [StageActorQuery.cpp](src/gfx/debug/stage/StageActorQuery.cpp)
-
-ステージ制作や調整をしやすくするため、Dear ImGui と ImGuizmo を使ったデバッグエディタを実装しています。
-
-マウスクリックによるActor選択、Shiftを使った複数選択、ドラッグによる範囲選択、ギズモによる移動・回転・拡大縮小、Actorの追加、削除、複製、アンドゥ、YAMLへの保存、ステージ再読み込みに対応しています。
+コードを書き換えずにステージ構成を変更できるため、ステージ制作や調整を行いやすくしています。Actor生成時には、共通の配置処理を `ActorPlacementLoader` に寄せ、Actorごとの生成処理が重複しすぎないようにしています。
 
 見るポイント:
 
-* `UpdatePickedActorByMouse` で、マウスクリック位置からRayを作り、Actorを選択している点
-* `UpdateBoxSelection` で、ドラッグ矩形による範囲選択を行っている点
-* `MoveSelectedActorsByDelta` で、複数選択中のActorをまとめて移動している点
-* `DrawGizmo` で、ImGuizmoを使った移動・回転・拡大縮小を行っている点
-* `RestoreUndo` で、保存済みYAMLテキストからアンドゥしている点
-* `DuplicateSelectedKeys` で、選択中ActorをYAML上で複製している点
+* ステージ上のオブジェクト配置をYAMLで管理している点
+* パラメータ調整やステージ構成の変更を、コード変更なしで行えるようにしている点
 
-### 11. フィードバックフォームへの導線
+### 2. 球体地形向けのカメラ制御
+
+主に見ていただきたい箇所:
+
+* [CameraSystem.cpp](src/system/CameraSystem.cpp)
+
+  * `UpdateCamera`
+  * `GetViews`
+* [PlayerCamera.cpp](src/system/camera/PlayerCamera.cpp)
+
+  * `Update`
+  * `GetView`
+  * `UpdateState`
+* [CameraCollisionResolver.cpp](src/system/camera/CameraCollisionResolver.cpp)
+* [FocusCamera.cpp](src/system/camera/FocusCamera.cpp)
+* [DebugCamera.cpp](src/system/camera/DebugCamera.cpp)
+
+球体地形では、地面法線に応じてプレイヤーの上方向ベクトルが変化します。その値をそのままカメラに反映すると画面が小刻みに揺れるため、カメラの位置や上方向を補間して滑らかに追従するようにしています。
+
+また、カメラと注視点の間に障害物がある場合は、レイキャストによってカメラ位置を補正しています。船、キーなど、状況に応じたフォーカスカメラも実装しています。
+
+見るポイント:
+
+* `upVec` と注視点を補間し、球体地形上でもカメラが急に揺れないようにしている点
+* カメラと注視点の間にある障害物を検出し、カメラ位置を補正している点
+* 通常カメラ、フォーカスカメラ、自由カメラを状況に応じて切り替えている点
+* 2人プレイ時にプレイヤーごとのカメラ状態を管理している点
+
+### 3. 壁衝突判定とスライド移動
+
+主に見ていただきたい箇所:
+
+* [ActorCollisionResolver.cpp](src/system/physics/ActorCollisionResolver.cpp)
+
+  * `CheckCollision`
+  * `CheckConflictActors`
+  * `CheckConflictWall`
+
+プレイヤーや敵の移動時に、Actor同士の押し戻し判定と、Bullet Physics による壁衝突判定を行っています。
+
+壁に衝突した場合は、衝突位置まで移動したうえで、残りの移動量から壁法線方向の成分を取り除き、壁沿いにスライドするようにしています。スライド方向にも再度 Sweep 判定を行い、二重にめり込みを防いでいます。
+
+見るポイント:
+
+* Enemy、Crystal、NPC との距離ベースの押し戻し判定
+* 移動前位置から移動後位置までを `convexSweepTest` で判定している点
+
+### 4. プレイヤーの状態管理・戦闘処理
+
+主に見ていただきたい箇所:
+
+* [Player.cpp](src/actor/Player.cpp)
+
+  * `ApplyConfig`
+  * `UpdateActor`
+  * `ApplyDamage`
+  * `OnBoatArrived`
+* [PlayerStateMachine.cpp](src/actor/player/PlayerStateMachine.cpp)
+* [PlayerCombat.cpp](src/actor/player/PlayerCombat.cpp)
+
+  * `StartAttacking`
+  * `Attack`
+  * `StartAfterAttackReaction`
+* [PlayerAttackHitDetector.cpp](src/actor/player/PlayerAttackHitDetector.cpp)
+* [PlayerAttackResolver.cpp](src/actor/player/PlayerAttackResolver.cpp)
+
+弱攻撃、強攻撃、回避、スペシャル攻撃、敵のガード破壊、打ち上げ、空中攻撃などを実装しています。
+
+リファクタリング後は、`Player` 本体に処理を集中させるのではなく、入力、移動、接地、戦闘、攻撃判定、攻撃結果処理、被ダメージ、ジュエル管理、状態遷移を役割ごとに分離しています。`Player` 本体は外部から呼ばれる窓口として残し、実際の処理は専用クラスに委譲する構成にしています。
+
+見るポイント:
+
+* `PlayerStateMachine` によるアクション状態の切り替え
+* `PlayerInput`、`PlayerMovement`、`PlayerCombat` などへの責務分割
+* `PlayerAttackResolver` による命中後のダメージ、ブレイク、SE、振動などの処理
+* `PlayerDamageHandler` による被ダメージ、ジャスト回避、カウンター処理
+
+### 5. 敵AI・敵の状態管理
+
+主に見ていただきたい箇所:
+
+* [Enemy.cpp](src/actor/Enemy.cpp)
+
+  * `ApplyConfig`
+  * `UpdateActor`
+  * `ApplyDamage`
+  * `ApplyBreak`
+* [EnemyStateMachine.cpp](src/actor/enemy/EnemyStateMachine.cpp)
+* [EnemyMovement.cpp](src/actor/enemy/EnemyMovement.cpp)
+* [EnemyCombat.cpp](src/actor/enemy/EnemyCombat.cpp)
+* [EnemyDamageHandler.cpp](src/actor/enemy/EnemyDamageHandler.cpp)
+
+敵は、待機、追跡、攻撃準備、攻撃、ノックバック、死亡などの状態を持ちます。プレイヤーとの距離に応じて追跡や攻撃へ遷移し、攻撃前には予兆SEを再生します。
+
+リファクタリング後は、`Enemy` 本体から状態遷移、移動、攻撃、被ダメージ、HP管理、ブレイクゲージ管理を分離しました。敵の行動仕様を変更する場合に、どのファイルを見ればよいか分かりやすい構成を目指しています。
+
+見るポイント:
+
+* `EnemyStateMachine` が敵の状態を所有している点
+* `EnemyMovement` が追跡、攻撃中移動、ノックバック、打ち上げを担当している点
+* `EnemyCombat` が敵の攻撃判定とブレイク処理を担当している点
+* `EnemyDamageHandler` がダメージ、死亡、ノックバック開始を担当している点
+
+### 6. フィードバックフォームへの導線
 
 主に見ていただきたい箇所:
 
