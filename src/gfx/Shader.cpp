@@ -37,10 +37,11 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 
     if (!success) {
-        char log[512];
-        glGetShaderInfoLog(id, 512, nullptr, log);
-        // std::cerr << (type == GL_VERTEX_SHADER ? "Vertex" : "Fragment") << " shader compile error:\n"
-        //           << log << std::endl;
+        char log[2048];
+        glGetShaderInfoLog(id, sizeof(log), nullptr, log);
+
+        std::cerr << (type == GL_VERTEX_SHADER ? "Vertex" : "Fragment") << " shader compile error:\n" << log << '\n';
+
         glDeleteShader(id);
         return 0;
     }
@@ -74,9 +75,11 @@ unsigned int Shader::CreateShaderProgram(const std::string& vertexPath, const st
     int success;
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if (!success) {
-        char log[512];
-        glGetProgramInfoLog(program, 512, nullptr, log);
-        // std::cerr << "Program link error:\n" << log << std::endl;
+        char log[2048];
+        glGetProgramInfoLog(program, sizeof(log), nullptr, log);
+
+        std::cerr << "Shader program link error:\n" << log << '\n';
+
         glDeleteProgram(program);
         return 0;
     }

@@ -1,18 +1,22 @@
 #pragma once
 
 #include "Game.h"
+
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 class Component;
 class Planet;
+struct LoadedMesh;
+struct LoadedModel;
 
 class Actor {
 public:
-    Actor(Game* game);
+    explicit Actor(Game* game);
     virtual ~Actor();
 
     virtual void Initialize();
@@ -46,9 +50,9 @@ public:
     void SetScale(const glm::vec3& scale) { mScale = scale; }
 
     void SetModelPath(const std::string& modelPath) { mModelPath = modelPath; }
+    void SetLoadedModel(const LoadedModel* loadedModel);
 
     void SetCurrentPlanet(Planet* currentPlanet) { mCurrentPlanet = currentPlanet; }
-    void SetMeshes(std::vector<struct LoadedMesh>* Meshes) { mMeshes = Meshes; }
 
     void SetTheta(float theta) { mTheta = theta; }
     void SetPhi(float phi) { mPhi = phi; }
@@ -67,10 +71,13 @@ public:
     const glm::vec3& GetScale() const { return mScale; }
 
     const std::string& GetModelPath() const { return mModelPath; }
+    const LoadedModel* GetLoadedModel() const { return mLoadedModel; }
+    const std::vector<LoadedMesh>* GetMeshes() const;
+
+    virtual const std::vector<glm::mat4>* GetSkinningMatrices() const { return nullptr; }
 
     Game* GetGame() const { return mGame; }
     Planet* GetCurrentPlanet() const { return mCurrentPlanet; }
-    std::vector<struct LoadedMesh>* GetMeshes() const { return mMeshes; }
     float GetTheta() const { return mTheta; }
     float GetPhi() const { return mPhi; }
     float GetHeight() const { return mHeight; }
@@ -97,8 +104,9 @@ protected:
     virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }
     virtual void OnUpVecUpdateFailed();
     void UpdateFallbackUpVec();
-    virtual bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const { return false; };
-    virtual void OnCastSucceeded(){};
+    virtual bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const { return false; }
+    virtual void OnCastSucceeded() {}
+    virtual void OnLoadedModelChanged() {}
 
 protected:
     bool mIsActive;
@@ -122,7 +130,8 @@ protected:
     Game* mGame;
     Planet* mCurrentPlanet;
     std::vector<std::unique_ptr<Component>> mComponents;
-    std::vector<struct LoadedMesh>* mMeshes;
+    const LoadedModel* mLoadedModel;
+
     glm::vec3 mEditorRotation{0.0f};
     bool mIsEditorSelected = false;
 };

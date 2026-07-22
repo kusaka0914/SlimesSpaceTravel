@@ -52,7 +52,10 @@ public:
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
     void SetAttackCooldown(float attackCooldown) { mAttackCooldown = attackCooldown; }
     void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
-    void SetDefaultAttackPressTimer(float defaultAttackPressTimer) { mDefaultAttackPressTimer = defaultAttackPressTimer; }
+    void SetDefaultAttackPressTimer(float defaultAttackPressTimer)
+    {
+        mDefaultAttackPressTimer = defaultAttackPressTimer;
+    }
     void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
     void SetNormalAttackAngle(float normalAttackAngle) { mNormalAttackAngle = normalAttackAngle; }
@@ -63,8 +66,14 @@ public:
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
-    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer) { mDefaultStrongAttackTimer = defaultStrongAttackTimer; }
-    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
+    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer)
+    {
+        mDefaultStrongAttackTimer = defaultStrongAttackTimer;
+    }
+    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
+    {
+        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
+    }
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
     void SetStrongAttackHit(bool value) { mIsStrongAttackHit = value; }
@@ -115,6 +124,7 @@ public:
     void SetContinuousAttackingCooldown(float value) { mContinuousAttackingCooldown = value; }
     float GetContinuousAttackingCooldown() const { return mContinuousAttackingCooldown; }
     void ClearStrongAttackHit() { mIsStrongAttackHit = false; }
+    bool CanAcceptMovementInput() const;
 
 private:
     PlayerAttackKind mAttackKind = PlayerAttackKind::Normal;

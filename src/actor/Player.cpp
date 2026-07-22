@@ -6,13 +6,28 @@
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
 
-Player::Player(Game* game) : CharacterActor(game)
+namespace {
+bool DidAttackAnimationStart(PlayerActionState previousState, PlayerActionState currentState)
+{
+    const bool didNormalAttackStart =
+        currentState == PlayerActionState::Attacking && previousState != PlayerActionState::Attacking;
+
+    const bool didStrongAttackStart =
+        currentState == PlayerActionState::StrongAttacking && previousState != PlayerActionState::StrongAttacking;
+
+    return didNormalAttackStart || didStrongAttackStart;
+}
+} // namespace
+
+Player::Player(Game* game)
+    : CharacterActor(game)
 {
 }
 
 void Player::ApplyConfig()
 {
     const PlayerConfig config = PlayerConfigLoader::Load("../assets/data/actor/players.yaml");
+
     ApplyPlayerConfig(config);
 }
 
@@ -53,6 +68,8 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mMovement.SetKnockBackSpeed(config.knockBackSpeed);
 
     SetModelPath(config.modelPath);
+
+    mAnimationController.Configure(config.idleAnimationName, config.attackAnimationName);
 }
 
 void Player::Initialize()
@@ -69,12 +86,29 @@ void Player::ProcessActor()
 void Player::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
-    mStateMachine.Update(*this, mInput, mMovement, mGrounding, mBoatRide, mCombat, mJewelGauge, mStatus, mRespawn, deltaTime);
+
+    const bool wasOnGround = GetOnGround();
+    const PlayerActionState previousActionState = mStateMachine.GetActionState();
+
+    mPlanetGravityController.Update(*this, mMovement, deltaTime);
+
+    mStateMachine.Update(*this, mInput, mMovement, mGrounding, mBoatRide, mCombat, mJewelGauge, mStatus, mRespawn,
+                         deltaTime);
+
+    if (wasOnGround && !GetOnGround()) {
+        mPlanetGravityController.OnJumpStarted();
+    }
+
+    const PlayerActionState currentActionState = mStateMachine.GetActionState();
+    const bool didAttackStart = DidAttackAnimationStart(previousActionState, currentActionState);
+
+    mAnimationController.Update(didAttackStart, deltaTime);
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
-    PlayerDamageHandler::Apply(*this, mInput, mMovement, mStateMachine, mCombat, mJewelGauge, mStatus, enemy, deltaTime);
+    PlayerDamageHandler::Apply(*this, mInput, mMovement, mStateMachine, mCombat, mJewelGauge, mStatus, enemy,
+                               deltaTime);
 }
 
 void Player::ApplyFallDamageAndRespawn(float damage)
@@ -90,10 +124,17 @@ void Player::OnBoatArrived(Boat* boat)
 void Player::Restart()
 {
     mRespawn.Restart(*this, mStateMachine, mStatus);
+    mAnimationController.ResetToIdle();
+}
+
+const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
+{
+    return mAnimationController.GetSkinningMatrices();
 }
 
 void Player::OnLanded()
 {
+    mPlanetGravityController.OnLanded(*this, mMovement);
     mGrounding.OnLanded(*this, mMovement, mCombat);
 }
 
@@ -105,4 +146,9 @@ void Player::OnUpVecUpdateFailed()
 void Player::OnCastSucceeded()
 {
     mGrounding.OnCastSucceeded();
+}
+
+void Player::OnLoadedModelChanged()
+{
+    mAnimationController.SetLoadedModel(GetLoadedModel());
 }

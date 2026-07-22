@@ -1,12 +1,14 @@
-#include "Shader3D.h"
+#include "gfx/Shader3D.h"
+
 #include <GL/glew.h>
 
-Shader3D::Shader3D() : Shader()
+Shader3D::Shader3D()
+    : Shader()
 {
     Initialize();
 }
 
-Shader3D::~Shader3D() {}
+Shader3D::~Shader3D() = default;
 
 void Shader3D::Initialize()
 {
@@ -25,4 +27,6 @@ void Shader3D::Initialize()
     mLocToonStrength = glGetUniformLocation(mShaderProgram, "toonStrength");
     mLocRimStrength = glGetUniformLocation(mShaderProgram, "rimStrength");
     mLocRimPower = glGetUniformLocation(mShaderProgram, "rimPower");
+    mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
+    mLocBoneTransforms = glGetUniformLocation(mShaderProgram, "boneTransforms[0]");
 }

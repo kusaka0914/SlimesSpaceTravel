@@ -39,10 +39,10 @@ private:
                                float deltaTime);
     void UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                            float deltaTime);
-    void UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, float deltaTime);
-    void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                   PlayerStatus& status, float deltaTime);
+    void UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                     PlayerJewelGauge& jewelGauge, float deltaTime);
+    void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
+                                   float deltaTime);
     void UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding, PlayerCombat& combat,
                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
 
@@ -56,10 +56,10 @@ private:
     bool TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
     bool TryReduceTired(PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status);
     bool TryStartContinuousAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
-    void UpdateSpecialAttackIfNeeded(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                     PlayerCombat& combat, PlayerJewelGauge& jewelGauge, float deltaTime);
-    bool TryUpdateContinuousAttack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                   PlayerStatus& status, float deltaTime);
+    void UpdateSpecialAttackIfNeeded(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                     PlayerJewelGauge& jewelGauge, float deltaTime);
+    bool TryUpdateContinuousAttack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
+                                   float deltaTime);
     bool TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status);
     bool TryStartAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,

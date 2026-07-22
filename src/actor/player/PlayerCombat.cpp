@@ -268,3 +268,8 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
 
     mAttackComboIndex = 0;
 }
+
+bool PlayerCombat::CanAcceptMovementInput() const
+{
+    return CanMoveDuringAttack() && !IsSpecialCharging() && !GetCanSpecialAttack();
+}

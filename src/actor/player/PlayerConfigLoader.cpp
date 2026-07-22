@@ -2,6 +2,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <string>
+
 namespace {
 float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
 {
@@ -60,6 +62,8 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.knockBackSpeed = ReadFloat(playerNode, "knockBackSpeed", config.knockBackSpeed);
 
         config.modelPath = ReadString(playerNode, "modelPath", config.modelPath);
+        config.idleAnimationName = ReadString(playerNode, "idleAnimationName", config.idleAnimationName);
+        config.attackAnimationName = ReadString(playerNode, "attackAnimationName", config.attackAnimationName);
     }
 
     return config;

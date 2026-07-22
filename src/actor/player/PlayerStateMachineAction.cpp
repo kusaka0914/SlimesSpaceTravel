@@ -12,7 +12,7 @@
 void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding,
                                        PlayerCombat& combat, float deltaTime)
 {
-    movement.MoveDuringDodging(player, combat, grounding, deltaTime);
+    movement.ApplyDodgeMovement(player, combat, grounding, deltaTime);
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {
@@ -24,11 +24,11 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
     if (player.GetOnGround()) {
-        movement.MoveDuringAttacking(player, combat, deltaTime);
+        movement.ApplyAttackMovement(player, combat, deltaTime);
     }
 
-    if (movement.CanWalk(combat)) {
-        movement.UpdateWalk(player, input, deltaTime);
+    if (combat.CanAcceptMovementInput()) {
+        movement.MoveFromInput(player, input, deltaTime);
     }
 
     combat.ReduceAttackMotionTimer(deltaTime);
@@ -53,7 +53,7 @@ void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, Play
 
     combat.ReduceAttackPressTimer(deltaTime);
     if (combat.GetAttackPressTimer() >= 0.0f) {
-        movement.MoveDuringCharging(player, deltaTime);
+        movement.ApplyChargeMovement(player, deltaTime);
         return;
     }
 
@@ -63,7 +63,7 @@ void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, Play
 void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
                                                PlayerStatus& status, float deltaTime)
 {
-    movement.MoveDuringStrongAttacking(player, combat, deltaTime);
+    movement.ApplyStrongAttackMovement(player, combat, deltaTime);
 
     combat.ReduceStrongAttackTimer(deltaTime);
     if (combat.GetStrongAttackTimer() >= 0.0f) {
@@ -89,7 +89,7 @@ void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& m
 void PlayerStateMachine::UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
                                            PlayerStatus& status, float deltaTime)
 {
-    movement.MoveDuringKnockBack(player, deltaTime);
+    movement.ApplyKnockBackMovement(player, deltaTime);
 
     status.UpdateDamageTimer(deltaTime);
     if (status.GetDamageTimer() <= 0.0f) {

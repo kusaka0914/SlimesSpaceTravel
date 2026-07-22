@@ -58,7 +58,7 @@ bool Game::Initialize(bool isDebugMode)
     if (isDebugMode) {
         mIsDebugMode = true;
         mWorld->ChangeStage(1);
-        mStageFlowController->SetCurrentStageYamlPath("../assets/data/stage/stage2.yaml");
+        mStageFlowController->SetCurrentStageYamlPath("../assets/data/stage/test.yaml");
         mSceneSystem->StartPlayingScene();
     }
 

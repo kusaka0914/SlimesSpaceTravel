@@ -11,7 +11,7 @@
 
 void PlayerGrounding::OnLanded(Player& player, PlayerMovement& movement, PlayerCombat& combat)
 {
-    movement.SetIsDodged(false);
+    movement.SetHasUsedDodge(false);
     combat.OnLanded();
     player.GetGame()->OnLanded();
 }

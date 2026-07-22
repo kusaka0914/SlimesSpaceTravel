@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <SDL_ttf.h>
 #include <glm/glm.hpp>
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -24,7 +25,7 @@ class VertexArray;
 
 class Renderer3D : public Renderer {
 public:
-    Renderer3D(Game* game);
+    explicit Renderer3D(Game* game);
     ~Renderer3D();
 
     void Initialize();
@@ -75,6 +76,9 @@ private:
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
     void DrawActorSelectionOutline(Actor* actor, bool useOrient) const;
+
+    bool UploadActorSkinningMatrices(const Actor* actor) const;
+    void SetSkinningEnabled(bool isEnabled) const;
 
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;

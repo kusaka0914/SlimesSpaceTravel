@@ -1,8 +1,9 @@
-#include "Renderer3D.h"
+#include "gfx/Renderer3D.h"
 
 #include "Game.h"
 #include "VertexArray.h"
 #include "actor/Actor.h"
+#include "animation/SkeletalAnimationConstants.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
@@ -10,12 +11,15 @@
 #include "gfx/render3d/SceneObjectRenderer.h"
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
+#include "system/mesh/LoadedMesh.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -58,12 +62,13 @@ void Renderer3D::Draw() const
         return;
     }
 
-    int fbWidth = 0;
-    int fbHeight = 0;
-    glfwGetFramebufferSize(mGame->GetWindow(), &fbWidth, &fbHeight);
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(mGame->GetWindow(), &framebufferWidth, &framebufferHeight);
 
     glUseProgram(mShader3D->GetShaderProgram());
-    mRenderViewportController->DrawGameScreen(static_cast<float>(fbWidth), static_cast<float>(fbHeight));
+    mRenderViewportController->DrawGameScreen(static_cast<float>(framebufferWidth),
+                                              static_cast<float>(framebufferHeight));
 }
 
 void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
@@ -95,11 +100,13 @@ void Renderer3D::InitializeRenderModules()
 {
     mPlayerEffectRenderer = std::make_unique<PlayerEffectRenderer>(this);
     mDebugLabelRenderer = std::make_unique<DebugLabelRenderer>(this);
-    mSceneObjectRenderer = std::make_unique<SceneObjectRenderer>(this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get());
+    mSceneObjectRenderer =
+        std::make_unique<SceneObjectRenderer>(this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get());
     mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);
 }
 
-void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
+void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
+                             const glm::vec3& cameraPos) const
 {
     glUniformMatrix4fv(mShader3D->GetLocView(), 1, GL_FALSE, glm::value_ptr(viewMat));
     glUniformMatrix4fv(mShader3D->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
@@ -111,6 +118,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform1f(mShader3D->GetLocAmbientStrength(), 0.8f);
     glUniform1f(mShader3D->GetLocRimStrength(), 0.20f);
     glUniform1f(mShader3D->GetLocRimPower(), 2.5f);
+    SetSkinningEnabled(false);
 }
 
 void Renderer3D::StartTransparentDraw() const
@@ -141,6 +149,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         return;
     }
 
+    SetSkinningEnabled(false);
+
     if (actor->GetIsEditorSelected()) {
         DrawActorSelectionOutline(actor, useOrient);
     }
@@ -148,32 +158,36 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
-    const GLint locObjectColor = mShader3D->GetLocObjectColor();
-    const GLint locUseTexture = mShader3D->GetLocUseTexture();
+    const GLint objectColorLocation = mShader3D->GetLocObjectColor();
+    const GLint useTextureLocation = mShader3D->GetLocUseTexture();
 
     const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
     if (!actorMeshes || actorMeshes->empty()) {
         return;
     }
 
-    for (const auto& actorMesh : *actorMeshes) {
+    const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
+
+    for (const LoadedMesh& actorMesh : *actorMeshes) {
+        SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
         glBindVertexArray(actorMesh.VAO);
 
         if (actorMesh.textureID != 0) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, actorMesh.textureID);
             glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
-            glUniform1i(locUseTexture, 1);
+            glUniform1i(useTextureLocation, 1);
         } else {
-            glUniform1i(locUseTexture, 0);
+            glUniform1i(useTextureLocation, 0);
         }
 
-        glUniform4f(locObjectColor, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1], actorMesh.diffuseColor[2],
-                    1.0f);
-        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, 0);
+        glUniform4f(objectColorLocation, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1],
+                    actorMesh.diffuseColor[2], 1.0f);
+        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
     }
 
-    glUniform1i(locUseTexture, 0);
+    SetSkinningEnabled(false);
+    glUniform1i(useTextureLocation, 0);
 }
 
 void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode,
@@ -183,6 +197,7 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
         return;
     }
 
+    SetSkinningEnabled(false);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
     glUniform1i(mShader3D->GetLocUseTexture(), 0);
     glUniform4f(mShader3D->GetLocObjectColor(), color.r, color.g, color.b, color.a);
@@ -192,7 +207,8 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glBindVertexArray(mAttackRangeVAO);
     glBindBuffer(GL_ARRAY_BUFFER, mAttackRangeVBO);
 
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(glm::vec3)), vertices.data(),
+                 GL_DYNAMIC_DRAW);
     glDrawArrays(drawMode, 0, static_cast<GLsizei>(vertices.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -229,20 +245,50 @@ void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, outlineScale);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
-    const GLint locObjectColor = mShader3D->GetLocObjectColor();
-    const GLint locUseTexture = mShader3D->GetLocUseTexture();
+    const GLint objectColorLocation = mShader3D->GetLocObjectColor();
+    const GLint useTextureLocation = mShader3D->GetLocUseTexture();
 
-    glUniform1i(locUseTexture, 0);
-    glUniform4f(locObjectColor, 1.0f, 0.45f, 0.0f, 1.0f);
+    glUniform1i(useTextureLocation, 0);
+    glUniform4f(objectColorLocation, 1.0f, 0.45f, 0.0f, 1.0f);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 
-    for (const auto& actorMesh : *actorMeshes) {
+    const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
+    for (const LoadedMesh& actorMesh : *actorMeshes) {
+        SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
         glBindVertexArray(actorMesh.VAO);
-        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
     }
 
+    SetSkinningEnabled(false);
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
+}
+
+bool Renderer3D::UploadActorSkinningMatrices(const Actor* actor) const
+{
+    if (!actor || !mShader3D || mShader3D->GetLocBoneTransforms() < 0) {
+        return false;
+    }
+
+    const std::vector<glm::mat4>* skinningMatrices = actor->GetSkinningMatrices();
+    if (!skinningMatrices || skinningMatrices->empty()) {
+        return false;
+    }
+
+    const std::size_t uploadCount =
+        std::min(skinningMatrices->size(), SkeletalAnimationConstants::MaxShaderBoneCount);
+    glUniformMatrix4fv(mShader3D->GetLocBoneTransforms(), static_cast<GLsizei>(uploadCount), GL_FALSE,
+                       glm::value_ptr(skinningMatrices->front()));
+    return true;
+}
+
+void Renderer3D::SetSkinningEnabled(bool isEnabled) const
+{
+    if (!mShader3D || mShader3D->GetLocUseSkinning() < 0) {
+        return;
+    }
+
+    glUniform1i(mShader3D->GetLocUseSkinning(), isEnabled ? 1 : 0);
 }

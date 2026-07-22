@@ -86,7 +86,9 @@ bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, Pla
         return false;
     }
 
-    movement.StartJumping(player, deltaTime);
+    movement.StartJumpMovement(player, deltaTime);
+
+    player.GetGame()->GetAudioSystem()->PlaySE("jump_se");
     return true;
 }
 
@@ -110,11 +112,11 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
 {
     const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
     if (isMoving && !status.IsTired()) {
-        movement.ChangeFaceDir(player, input);
+        movement.UpdateFacingDirectionFromInput(player, input);
     }
 
-    if (movement.CanWalk(combat) && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
-        movement.UpdateWalk(player, input, deltaTime);
+    if (combat.CanMoveDuringAttack() && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
+        movement.MoveFromInput(player, input, deltaTime);
     }
 
     const bool isFalling = glm::dot(player.GetVelocity(), player.GetUpVec()) < 0.0f;
@@ -183,13 +185,20 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
 bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status)
 {
-    const bool canStartDodging = movement.CanDodge(combat) && input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    const bool canStartDodging = movement.CanDodge(combat) && combat.CanDodgeDuringAttack() &&
+                                 input.GetDodgePressed() && !input.GetDodgePressedPrev();
+
     if (!canStartDodging) {
         return false;
     }
 
     ChangeState(PlayerActionState::Dodging);
-    movement.StartDodging(player, input, status);
+
+    movement.StartDodgeMovement(player, input);
+    status.StartInvincible(movement.GetDodgeDuration());
+
+    player.GetGame()->GetAudioSystem()->PlaySE("dodge_se");
+
     return true;
 }
 

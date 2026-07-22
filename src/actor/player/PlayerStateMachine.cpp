@@ -13,9 +13,10 @@
 
 #include <glm/glm.hpp>
 
-void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
-                                PlayerBoatRide& boatRide, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
-                                PlayerStatus& status, PlayerRespawn& respawn, float deltaTime)
+void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                PlayerGrounding& grounding, PlayerBoatRide& boatRide, PlayerCombat& combat,
+                                PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
+                                float deltaTime)
 {
     if (!player.GetGame()->GetSceneSystem()->IsPlaying()) {
         return;
@@ -36,7 +37,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                      float deltaTime)
 {
-    movement.UpdateWorldVec(player, input);
+    movement.UpdateCameraRelativeMovementDirections(player, input);
     boatRide.Update(player, movement, respawn);
 
     if (jewelGauge.ShouldStartRecoverTimer()) {
@@ -73,7 +74,7 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
                                      float deltaTime)
 {
     combat.UpdateAirAttackFloatingTimer(deltaTime);
-    movement.ReduceDodgeCooldown(deltaTime);
+    movement.UpdateDodgeCooldown(deltaTime);
 
     if (jewelGauge.GetRecoverTimer() >= 0.0f) {
         jewelGauge.UpdateRecoverTimer(deltaTime);

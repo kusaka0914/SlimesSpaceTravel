@@ -461,7 +461,7 @@ boatArrivalPoints:
 boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
-    currentPlanetNum: 0
+    currentPlanetNum: 3
     modelPath: player.obj
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
@@ -1017,59 +1017,4 @@ movingPlatforms:
       - 1
       - 0
 fallRespawnPoints:
-  - currentPlanetNum: 3
-    pos:
-      - 0
-      - -27.91
-      - 3.61
-    scale: [20, 1.6492156, 20]
-    damage: 1.0
-    modelPath: platform.obj
-    theta: 0
-    phi: 0
-    height: 0
-    facingYaw: 0
-    rotation: [0, 0, 0]
-    upVec: [0, 1, 0]
-  - currentPlanetNum: 3
-    pos:
-      - 18.55
-      - -11.54
-      - 3.56
-    scale: [20, 2.0673554, 19.999996]
-    damage: 1.0
-    modelPath: platform.obj
-    theta: 0
-    phi: 0
-    height: 0
-    facingYaw: 0
-    rotation: [0, 0, 1.5707964]
-    upVec: [0, 1, 0]
-  - currentPlanetNum: 3
-    pos:
-      - -21.82
-      - -11.14
-      - 3.56
-    scale: [20, 1.6492156, 20]
-    damage: 1.0
-    modelPath: platform.obj
-    theta: 0
-    phi: 0
-    height: 0
-    facingYaw: 0
-    rotation: [0, 0, 1.5707964]
-    upVec: [0, 1, 0]
-  - currentPlanetNum: 3
-    pos:
-      - 0.26
-      - 8.02
-      - 3.56
-    scale: [20, 1.6492156, 20]
-    damage: 1.0
-    modelPath: platform.obj
-    theta: 0
-    phi: 0
-    height: 0
-    facingYaw: 0
-    rotation: [0, 0, 0]
-    upVec: [0, 1, 0]
+  []

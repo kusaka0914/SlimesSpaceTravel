@@ -1,7 +1,7 @@
 #pragma once
 
 #include "system/mesh/AssimpMeshLoader.h"
-#include "system/mesh/LoadedMesh.h"
+#include "system/mesh/LoadedModel.h"
 #include "system/mesh/MeshCollisionDataLoader.h"
 #include "system/mesh/TextureLoader.h"
 
@@ -14,25 +14,24 @@ class Game;
 
 class MeshLoadSystem {
 public:
-    MeshLoadSystem(Game* game);
+    explicit MeshLoadSystem(Game* game);
 
     void Initialize();
     void SetActorMesh(Actor* actor);
 
-    std::vector<LoadedMesh> LoadMeshFromFile(const char* path);
+    LoadedModel LoadModelFromFile(const char* path);
 
     bool LoadMeshPositionsAndIndices(const char* path, std::vector<float>& outPositions,
                                      std::vector<unsigned int>& outIndices);
 
-    std::vector<LoadedMesh>* GetLoadedMeshes(const std::string& meshName)
-    {
-        auto it = mLoadedMeshes.find(meshName);
-        return (it != mLoadedMeshes.end()) ? &it->second : nullptr;
-    }
+    const LoadedModel* FindLoadedModel(const std::string& modelPath) const;
 
 private:
-    void CreateLoadedMeshes();
-    void RegisterMesh(const std::string& meshName, const char* path);
+    void CreateLoadedModels();
+    void RegisterModel(const std::string& modelPath);
+
+    LoadedModel* FindOrLoadModel(const std::string& modelPath);
+    std::string ResolveModelFilePath(const std::string& modelPath) const;
 
 private:
     Game* mGame;
@@ -41,5 +40,5 @@ private:
     AssimpMeshLoader mAssimpMeshLoader;
     MeshCollisionDataLoader mCollisionDataLoader;
 
-    std::unordered_map<std::string, std::vector<LoadedMesh>> mLoadedMeshes;
+    std::unordered_map<std::string, LoadedModel> mLoadedModels;
 };

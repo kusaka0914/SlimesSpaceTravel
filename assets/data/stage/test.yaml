@@ -1,0 +1,1133 @@
+planets:
+  - center: [0, 0, 0]
+    scale: [8, 8, 8]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    shape: Sphere
+    rocketSpawnCondition: AllBoatPartsCollected
+  - center: [32, 0, 0]
+    scale: [4, 4, 4]
+    color: [0.0, 1.0, 0.0, 1.0]
+    model: planet.obj
+    shape: Sphere
+    rocketSpawnCondition: AllEnemiesDead
+  - center: [64, 0, 0]
+    scale: [4, 4, 4]
+    color: [0.0, 1.0, 0.0, 1.0]
+    model: planet_2.obj
+    shape: Sphere
+  - center:
+      - -10.25
+      - 0
+      - 0
+    scale:
+      - 0.86
+      - 4
+      - 4
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    shape: Sphere
+    stageNum: 3
+    rocketSpawnCondition: ""
+enemies:
+  - type: normal
+    theta: 1.973047
+    phi: 0.675763
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -1.21
+      - 2.48
+      - 2.84
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.30914786
+      - 0.62008315
+      - 0.72105783
+  - type: normal
+    theta: -2.842698
+    phi: -0.111576
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -3.75
+      - -0.44
+      - -1.15
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.94861513
+      - -0.1095647
+      - -0.29685816
+  - type: normal
+    theta: 2.272954
+    phi: -0.578284
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -2.14
+      - -2.17
+      - 2.53
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.5429304
+      - -0.54316926
+      - 0.6404636
+  - type: normal
+    theta: 1.331762
+    phi: -0.528396
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 0.81
+      - -2
+      - 3.32
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.20578258
+      - -0.5013536
+      - 0.8404154
+  - type: normal
+    theta: 0.204886
+    phi: 1.007358
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 2.06
+      - 3.36
+      - 0.43
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.5205884
+      - 0.84666175
+      - 0.11023518
+  - type: normal
+    theta: 2.354361
+    phi: 0.060486
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -2.78
+      - 0.24
+      - 2.79
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.7020663
+      - 0.060984746
+      - 0.70949537
+  - type: normal
+    theta: -1.88965
+    phi: -0.998213
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -0.7
+      - -3.46
+      - -2.11
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.1745506
+      - -0.8370972
+      - -0.5184597
+  - type: normal
+    theta: 1.263585
+    phi: -0.856111
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 0.78
+      - -3
+      - 2.47
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.19975783
+      - -0.7497663
+      - 0.6308307
+  - type: normal
+    theta: 1.027116
+    phi: -0.135222
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 2.02
+      - -0.53
+      - 3.35
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.514379
+      - -0.12685417
+      - 0.8481287
+  - type: normal
+    theta: 1.536649
+    phi: 1.382983
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 0.03
+      - 3.91
+      - 0.73
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.0038107329
+      - 0.9811624
+      - 0.193147
+  - type: normal
+    theta: -1.373556
+    phi: -0.239034
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 0.81
+      - -1.01
+      - -4.03
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.19807959
+      - -0.23317704
+      - -0.95204675
+  - type: normal
+    theta: -1.761338
+    phi: 0.375625
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -0.74
+      - 1.55
+      - -3.86
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.17697078
+      - 0.36297175
+      - -0.9148403
+  - type: normal
+    theta: 0
+    phi: 0.277311
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 3.8
+      - 1.08
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.96178985
+      - 0.27365768
+      - 0.008468514
+  - type: normal
+    theta: 0.75125
+    phi: 0.034148
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 2.88
+      - 0.14
+      - 2.69
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.72979754
+      - 0.03662181
+      - 0.6826818
+  - type: normal
+    theta: -0.580512
+    phi: 0.512216
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 2.98
+      - 2.01
+      - -1.96
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.7338771
+      - 0.48315594
+      - -0.47747737
+  - type: normal
+    theta: -0.478069
+    phi: -0.135222
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 3.59
+      - -0.55
+      - -1.86
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.8796542
+      - -0.13379277
+      - -0.45640755
+  - type: normal
+    theta: 1.400058
+    phi: 0.443256
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 0.61
+      - 1.7
+      - 3.52
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.15015015
+      - 0.42082936
+      - 0.89462703
+  - type: normal
+    theta: 1.385288
+    phi: 1.570796
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -0
+      - 3.99
+      - -0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.03220023
+      - 0.99940896
+      - -0.012036988
+  - type: normal
+    theta: 0.341477
+    phi: -0.135222
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 3.69
+      - -0.53
+      - 1.31
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.9348502
+      - -0.13377546
+      - 0.32887557
+  - type: normal
+    theta: 0.580512
+    phi: 0.525433
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - 2.86
+      - 1.99
+      - 1.88
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.7266857
+      - 0.49837744
+      - 0.47280854
+  - type: normal
+    theta: 1.67324
+    phi: -0.039231
+    height: 1
+    currentPlanetNum: 1
+    pos:
+      - -0.4
+      - -0.16
+      - 3.93
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.10664434
+      - -0.0400774
+      - 0.9934892
+  - type: boss
+    theta: -0.684602
+    phi: -0.155907
+    height: 0
+    currentPlanetNum: 2
+    pos:
+      - 3.02
+      - -0.61
+      - -2.47
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - 0.767428
+      - -0.15103905
+      - -0.62309027
+keys:
+  - currentPlanetNum: 1
+    theta: 0
+    phi: -0.530965
+    height: 0.1
+    pos:
+      - 3.54
+      - -2.08
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 2
+      - 2
+      - 2
+    upVec:
+      - 0.8651576
+      - -0.50138736
+      - 0.010633801
+crystals:
+  - type: little
+    currentPlanetNum: 0
+    theta: 1.891925
+    phi: -0.627311
+    height: 0.05
+    pos:
+      - -2.06
+      - -4.73
+      - 6.18
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1.4
+      - 1.4
+      - 1.4
+    upVec:
+      - -0.25888503
+      - -0.58343476
+      - 0.7697937
+  - type: big
+    currentPlanetNum: 0
+    theta: 0.309124
+    phi: -0.334648
+    height: 0.87
+    pos:
+      - 7.98
+      - -2.91
+      - 2.55
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 2.2
+      - 2.2
+      - 2.2
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+boats:
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 0
+    destPlanet: 1
+    pos:
+      - 8
+      - 0
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.99992317
+      - 0.00873489
+      - 0.008789532
+  - theta: 0
+    phi: 0
+    height: 0
+    startPlanet: 1
+    destPlanet: 2
+    pos:
+      - 4
+      - 0
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.99992305
+      - 0.008745005
+      - 0.008795579
+boatParts:
+  - type: parts1
+    currentPlanetNum: 0
+    theta: 3.141593
+    phi: 1.128796
+    height: 3.59
+    pos:
+      - -4.96
+      - 10.48
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - -0.93607897
+      - -0.3517823
+      - 0.0023369743
+  - type: parts2
+    currentPlanetNum: 0
+    theta: 0.961
+    phi: 0.468
+    height: 3.3
+    pos:
+      - 5.78
+      - 5.1
+      - 8.27
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - 0.52711475
+      - 0.4363927
+      - 0.72918546
+  - type: parts3
+    currentPlanetNum: 0
+    theta: -1.225
+    phi: -0.496
+    height: 3.3
+    pos:
+      - 3.37
+      - -5.38
+      - -9.35
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - 0.3346057
+      - -0.4332819
+      - -0.8368428
+  - type: parts4
+    currentPlanetNum: 0
+    theta: 0.317
+    phi: -0.36
+    height: 1.59
+    pos:
+      - 8.53
+      - -3.38
+      - 2.8
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - 0.8978751
+      - -0.3300485
+      - 0.29135638
+  - type: parts5
+    currentPlanetNum: 0
+    theta: 1.897
+    phi: -0.622
+    height: 0.1
+    pos:
+      - -2.11
+      - -4.72
+      - 6.24
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - -0.2620882
+      - -0.58061653
+      - 0.7708399
+players:
+  - pos: [3.0, 7.5, 0.0]
+    currentPlanetNum: 0
+    modelPath: player.obj
+  - pos: [4.0, 7.5, 0.0]
+    currentPlanetNum: 0
+    modelPath: player.obj
+star:
+  - theta: 0
+    phi: 0
+    height: 0
+    currentPlanetNum: 2
+    modelPath: star.obj
+    pos:
+      - 4
+      - 0
+      - 0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.3
+      - 0.3
+      - 0.3
+    upVec:
+      - 0.99992305
+      - 0.008745005
+      - 0.008795579
+NPCs:
+  - theta: -0.580512
+    phi: 1.126875
+    height: 0
+    type: spaceSlime
+    name: BoatPartsNPC
+    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。, あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。, そこに行ってみたらどうだ？, 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
+    pos:
+      - 2.85
+      - 7.17
+      - -1.87
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.36685157
+      - 0.8991861
+      - -0.23850475
+  - theta: 1.843978
+    phi: -0.819546
+    height: 0.196
+    type: spaceSlime
+    name: CrystalTutorialNPC
+    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！, 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
+    pos:
+      - -1.46
+      - -5.79
+      - 5.21
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.1869637
+      - -0.7257405
+      - 0.6620765
+  - theta: 0.341478
+    phi: -0.614659
+    height: 0
+    type: spaceSlime
+    name: BigCrystalTutorialNPC
+    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！, "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"]
+    pos:
+      - 6.09
+      - -4.56
+      - 2.17
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.7775116
+      - -0.56623924
+      - 0.27358502
+  - theta: 3.03915
+    phi: -0.460995
+    height: 0
+    type: spaceSlime
+    name: JumpDodgeTutorialNPC
+    talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
+    pos:
+      - -7.04
+      - -3.52
+      - 0.73
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.8949304
+      - -0.43643618
+      - 0.09286044
+  - theta: 1.80983
+    phi: 0.495141
+    height: 0
+    type: spaceSlime
+    name: JumpTutorialNPC
+    talkTexts: [高い足場に乗りたい時はジャンプ！]
+    pos:
+      - -1.65
+      - 3.76
+      - 6.76
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.20660524
+      - 0.47370395
+      - 0.8561067
+  - theta: 2.561081
+    phi: 0.97321
+    height: 0
+    type: spaceSlime
+    name: WallTutorialNPC
+    talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]
+    pos:
+      - -3.73
+      - 6.56
+      - 2.45
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.4750099
+      - 0.82300365
+      - 0.31149736
+platforms:
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.939608
+    height: -0.245
+    facingYaw: -3.142
+    scale:
+      - 0.5
+      - 0.5
+      - 0.5
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.5909515
+      - 0.8066904
+      - 0.0051955623
+    pos:
+      - -4.58
+      - 6.26
+      - 0
+    rotation:
+      - 0
+      - -3.142
+      - 0
+  - currentPlanetNum: 0
+    theta: -1.190649
+    phi: -0.444701
+    height: 2.699
+    facingYaw: 1.334
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.33460566
+      - -0.43328184
+      - -0.8368429
+    pos:
+      - 3.58
+      - -4.6
+      - -8.97
+    rotation:
+      - 0
+      - 1.334
+      - 0
+  - currentPlanetNum: 0
+    theta: 2.883379
+    phi: -0.63836
+    height: -0.49
+    facingYaw: -0.318
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.7627743
+      - -0.6042615
+      - 0.23031181
+    pos:
+      - -5.83
+      - -4.48
+      - 1.54
+    rotation:
+      - 0
+      - -0.318
+      - 0
+  - currentPlanetNum: 0
+    theta: -3.141593
+    phi: -0.720431
+    height: 0.411
+    facingYaw: -0.286
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.755814
+      - -0.65477455
+      - -0.003950139
+    pos:
+      - -6.32
+      - -5.55
+      - 0
+    rotation:
+      - 0
+      - -0.286
+      - 0
+  - currentPlanetNum: 0
+    theta: 0.315594
+    phi: -0.344284
+    height: 0.563
+    facingYaw: 0
+    scale:
+      - 1.4
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - 0.89787495
+      - -0.33004847
+      - 0.29135635
+    pos:
+      - 7.66
+      - -2.89
+      - 2.5
+    rotation:
+      - 0
+      - 0
+      - 0
+  - currentPlanetNum: 0
+    theta: -1.821837
+    phi: -0.710085
+    height: 2.7
+    facingYaw: -1.406
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.18925916
+      - -0.6468051
+      - -0.73879915
+    pos:
+      - -2.02
+      - -6.98
+      - -7.86
+    rotation:
+      - 0
+      - -1.406
+      - 0
+  - currentPlanetNum: 0
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 0.258
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.34776092
+      - -0.88650805
+      - -0.3052309
+    pos:
+      - -3.73
+      - -9.49
+      - -3.25
+    rotation:
+      - 0
+      - 0.258
+      - 0
+  - currentPlanetNum: 0
+    theta: 1.664041
+    phi: 0.308421
+    height: 0.452
+    facingYaw: -0.1
+    scale:
+      - 1
+      - 1
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.08860497
+      - 0.29694584
+      - 0.95077467
+    pos:
+      - -0.75
+      - 2.57
+      - 8.02
+    rotation:
+      - 0
+      - -0.1
+      - 0
+  - currentPlanetNum: 0
+    theta: 1.405827
+    phi: 0.681396
+    height: 1
+    facingYaw: -0.631
+    scale:
+      - 1
+      - 1.41
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.12930916
+      - 0.62522095
+      - 0.7696609
+    pos:
+      - 1.15
+      - 5.67
+      - 6.9
+    rotation:
+      - 0
+      - -0.631
+      - 0
+  - currentPlanetNum: 0
+    theta: 0.946782
+    phi: 0.451873
+    height: 1.342
+    facingYaw: 0.287
+    scale:
+      - 1
+      - 1.73
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.5271148
+      - 0.43639275
+      - 0.72918546
+    pos:
+      - 4.91
+      - 4.08
+      - 6.82
+    rotation:
+      - 0
+      - 0.287
+      - 0

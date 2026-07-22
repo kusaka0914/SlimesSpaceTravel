@@ -17,6 +17,8 @@ public:
     int GetLocToonStrength() const { return mLocToonStrength; }
     int GetLocRimStrength() const { return mLocRimStrength; }
     int GetLocRimPower() const { return mLocRimPower; }
+    int GetLocUseSkinning() const { return mLocUseSkinning; }
+    int GetLocBoneTransforms() const { return mLocBoneTransforms; }
 
 private:
     int mLocLightPos;
@@ -27,4 +29,6 @@ private:
     int mLocToonLevels;
     int mLocRimStrength;
     int mLocRimPower;
+    int mLocUseSkinning;
+    int mLocBoneTransforms;
 };

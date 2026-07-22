@@ -123,8 +123,8 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
     }
 }
 
-void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
-                                        EnemyCombat& combat, float deltaTime)
+void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
+                                        float deltaTime)
 {
     movement.MoveDuringAttacking(enemy, status, *this, deltaTime);
     combat.TryApplyAttack(enemy, status, *this, deltaTime);

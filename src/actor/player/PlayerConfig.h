@@ -38,4 +38,6 @@ struct PlayerConfig {
     float knockBackSpeed = 0.0f;
 
     std::string modelPath = "player.obj";
+    std::string idleAnimationName = "Idle";
+    std::string attackAnimationName = "Attack";
 };
