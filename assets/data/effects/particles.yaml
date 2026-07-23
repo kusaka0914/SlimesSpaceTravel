@@ -87,3 +87,77 @@ particleEffects:
 
         colorStart: [1.0, 0.58, 0.10, 0.95]
         colorEnd: [1.0, 0.12, 0.01, 0.0]
+
+  walk_start_dust:
+    emitters:
+      - texture: "dust_puff.png"
+        blendMode: "alpha"
+        renderMode: "billboard"
+        directionMode: "cone"
+        count: 5
+
+        lifetime:
+          min: 0.24
+          max: 0.38
+
+        speed:
+          min: 0.45
+          max: 1.10
+
+        size:
+          start:
+            min: 0.17
+            max: 0.27
+          endMultiplier: 1.90
+
+        spreadAngleDegrees: 48.0
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        angularVelocityDegrees:
+          min: -70.0
+          max: 70.0
+
+        gravity: -0.12
+        drag: 3.2
+
+        colorStart: [0.96, 0.94, 0.88, 0.74]
+        colorEnd: [0.72, 0.70, 0.66, 0.0]
+
+  landing_dust:
+    emitters:
+      - texture: "dust_puff.png"
+        blendMode: "alpha"
+        renderMode: "billboard"
+        directionMode: "hemisphere"
+        count: 10
+
+        lifetime:
+          min: 0.30
+          max: 0.52
+
+        speed:
+          min: 0.55
+          max: 1.45
+
+        size:
+          start:
+            min: 0.20
+            max: 0.34
+          endMultiplier: 2.15
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        angularVelocityDegrees:
+          min: -90.0
+          max: 90.0
+
+        gravity: 0.18
+        drag: 2.9
+
+        colorStart: [0.98, 0.96, 0.90, 0.80]
+        colorEnd: [0.70, 0.68, 0.64, 0.0]

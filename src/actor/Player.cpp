@@ -6,6 +6,7 @@
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <string_view>
@@ -107,9 +108,22 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    const bool wasOnGroundBeforeLandingCheck = GetOnGround();
+    const glm::vec3 velocityBeforeLandingCheck = GetVelocity();
+    const glm::vec3 upBeforeLandingCheck = GetUpVec();
+
     CharacterActor::UpdateActor(deltaTime);
 
-    const bool wasOnGround = GetOnGround();
+    const bool didLand = !wasOnGroundBeforeLandingCheck && GetOnGround();
+
+    float landingSpeed = 0.0f;
+    const float upLengthSquared = glm::dot(upBeforeLandingCheck, upBeforeLandingCheck);
+    if (didLand && upLengthSquared > 0.000001f) {
+        const glm::vec3 normalizedUp = upBeforeLandingCheck / std::sqrt(upLengthSquared);
+        landingSpeed = std::max(0.0f, -glm::dot(velocityBeforeLandingCheck, normalizedUp));
+    }
+
+    const bool wasOnGroundBeforeStateUpdate = GetOnGround();
     const PlayerActionState previousActionState = mStateMachine.GetActionState();
 
     mPlanetGravityController.Update(*this, mMovement, deltaTime);
@@ -117,9 +131,8 @@ void Player::UpdateActor(float deltaTime)
     mStateMachine.Update(*this, mInput, mMovement, mGrounding, mBoatRide, mCombat, mJewelGauge, mStatus, mRespawn,
                          deltaTime);
 
-    if (wasOnGround && !GetOnGround()) {
+    if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
         mPlanetGravityController.OnJumpStarted();
-        mAnimationController.RequestAnimation("jump");
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
@@ -129,6 +142,11 @@ void Player::UpdateActor(float deltaTime)
                                   std::abs(mInput.GetMoveLeft()) > movementInputDeadZone;
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
                             hasMovementInput;
+
+    if (didLand) {
+        mParticleEffectController.EmitLanding(*this, landingSpeed);
+    }
+    mParticleEffectController.UpdateWalking(*this, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
     RequestEnteredActionAnimation(mAnimationController, previousActionState, currentActionState);
@@ -154,6 +172,7 @@ void Player::OnBoatArrived(Boat* boat)
 void Player::Restart()
 {
     mRespawn.Restart(*this, mStateMachine, mStatus);
+    mParticleEffectController.Reset();
     mAnimationController.ResetToAnimation(idleAnimationId);
 }
 

@@ -10,6 +10,7 @@
 #include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerPlanetGravityController.h"
+#include "actor/player/PlayerParticleEffectController.h"
 #include "actor/player/PlayerRespawn.h"
 #include "actor/player/PlayerStateMachine.h"
 #include "actor/player/PlayerStatus.h"
@@ -268,5 +269,6 @@ private:
     PlayerRespawn mRespawn;
     PlayerInteraction mInteraction;
     PlayerStateMachine mStateMachine;
+    PlayerParticleEffectController mParticleEffectController;
     PlayerAnimationController mAnimationController;
 };
