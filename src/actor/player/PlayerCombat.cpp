@@ -150,7 +150,7 @@ void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
-    mAttackMoveLockRemaining = 0.2f;
+    mAttackMoveLockRemaining = 1.0f;
     mComboKeepTimer = mAttackMoveLockRemaining + 1.0f;
 
     if (player.GetOnGround()) {

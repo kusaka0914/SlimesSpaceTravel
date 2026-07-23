@@ -1,5 +1,7 @@
 #pragma once
 
+#include "actor/player/PlayerAnimationDefinition.h"
+
 #include <string>
 
 struct PlayerConfig {
@@ -38,7 +40,10 @@ struct PlayerConfig {
     float knockBackSpeed = 0.0f;
 
     std::string modelPath = "player.obj";
-    std::string idleAnimationName = "Idle";
-    std::string walkAnimationName = "Walk";
-    std::string attackAnimationName = "Attack";
+
+    PlayerAnimationDefinitions animations = {
+        {"idle", {"Idle", PlayerAnimationPlaybackMode::BaseLoop}},
+        {"walk", {"Walk", PlayerAnimationPlaybackMode::BaseLoop}},
+        {"attack", {"Attack", PlayerAnimationPlaybackMode::OneShot}},
+    };
 };

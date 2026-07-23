@@ -2,14 +2,28 @@
 
 #include "system/mesh/LoadedModel.h"
 
-#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <string>
 #include <utility>
 
 namespace {
-std::string NormalizeAnimationName(const std::string& animationName)
+std::string NormalizeAnimationId(std::string_view animationId)
+{
+    std::string normalizedId;
+    normalizedId.reserve(animationId.size());
+
+    for (const unsigned char character : animationId) {
+        if (std::isspace(character) || character == '-' || character == '_') {
+            continue;
+        }
+        normalizedId.push_back(static_cast<char>(std::tolower(character)));
+    }
+
+    return normalizedId;
+}
+
+std::string NormalizeClipName(const std::string& animationName)
 {
     std::string normalizedName;
     normalizedName.reserve(animationName.size());
@@ -30,16 +44,19 @@ std::string GetAnimationNameSuffix(const std::string& normalizedName)
 }
 } // namespace
 
-void PlayerAnimationController::Configure(std::string idleAnimationName, std::string walkAnimationName,
-                                          std::string attackAnimationName)
+void PlayerAnimationController::Configure(PlayerAnimationDefinitions animationDefinitions)
 {
-    mIdleAnimationName = std::move(idleAnimationName);
-    mWalkAnimationName = std::move(walkAnimationName);
-    mAttackAnimationName = std::move(attackAnimationName);
+    mAnimationDefinitions.clear();
+    for (auto& [animationId, definition] : animationDefinitions) {
+        const std::string normalizedId = NormalizeAnimationId(animationId);
+        if (!normalizedId.empty()) {
+            mAnimationDefinitions[normalizedId] = std::move(definition);
+        }
+    }
 
     if (mLoadedModel) {
         ResolveAnimationClips();
-        ResetToIdle();
+        ResetToAnimation(mBaseAnimationId);
     }
 }
 
@@ -52,41 +69,64 @@ void PlayerAnimationController::SetLoadedModel(const LoadedModel* loadedModel)
     mAnimationPlayer.SetAnimationData(animationData);
 
     ResolveAnimationClips();
-    ResetToIdle();
+    ResetToAnimation(mBaseAnimationId);
 }
 
-void PlayerAnimationController::Update(bool didAttackStart, bool shouldWalk, float deltaTimeSeconds)
+bool PlayerAnimationController::RequestAnimation(std::string_view animationId, bool shouldRestart)
+{
+    const std::string normalizedId = NormalizeAnimationId(animationId);
+    const ResolvedAnimation* animation = FindResolvedAnimation(normalizedId);
+    if (!animation || !animation->clip) {
+        return false;
+    }
+
+    if (animation->playbackMode == PlayerAnimationPlaybackMode::BaseLoop) {
+        mBaseAnimationId = normalizedId;
+
+        if (!mIsOneShotPlaying) {
+            PlayResolvedAnimation(normalizedId, *animation, false);
+        }
+        return true;
+    }
+
+    PlayResolvedAnimation(normalizedId, *animation, shouldRestart);
+    mIsOneShotPlaying = true;
+    return true;
+}
+
+bool PlayerAnimationController::HasAnimation(std::string_view animationId) const
+{
+    const ResolvedAnimation* animation = FindResolvedAnimation(animationId);
+    return animation && animation->clip;
+}
+
+void PlayerAnimationController::Update(float deltaTimeSeconds)
 {
     if (!mAnimationPlayer.HasSkinningData()) {
         return;
-    }
-
-    if (didAttackStart && mAttackAnimationClip) {
-        mAnimationPlayer.Play(mAttackAnimationClip, false, true);
-    } else {
-        const bool isAttackPlaying =
-            mAttackAnimationClip && mAnimationPlayer.IsPlaying(mAttackAnimationClip) && !mAnimationPlayer.IsFinished();
-
-        if (!isAttackPlaying) {
-            PlayLocomotionAnimation(shouldWalk);
-        }
     }
 
     mAnimationPlayer.Update(deltaTimeSeconds);
+
+    if (!mIsOneShotPlaying || !mAnimationPlayer.IsFinished()) {
+        return;
+    }
+
+    mIsOneShotPlaying = false;
+    PlayBaseAnimation();
 }
 
-void PlayerAnimationController::ResetToIdle()
+void PlayerAnimationController::ResetToAnimation(std::string_view animationId)
 {
+    mBaseAnimationId = NormalizeAnimationId(animationId);
+    mCurrentAnimationId.clear();
+    mIsOneShotPlaying = false;
+
     if (!mAnimationPlayer.HasSkinningData()) {
         return;
     }
 
-    if (mIdleAnimationClip) {
-        mAnimationPlayer.Play(mIdleAnimationClip, true, true);
-        return;
-    }
-
-    mAnimationPlayer.ResetToBindPose();
+    PlayBaseAnimation();
 }
 
 const std::vector<glm::mat4>* PlayerAnimationController::GetSkinningMatrices() const
@@ -96,63 +136,86 @@ const std::vector<glm::mat4>* PlayerAnimationController::GetSkinningMatrices() c
 
 void PlayerAnimationController::ResolveAnimationClips()
 {
-    mIdleAnimationClip = FindAnimationClip(mIdleAnimationName, false);
-    mWalkAnimationClip = FindAnimationClip(mWalkAnimationName, false);
-    mAttackAnimationClip = FindAnimationClip(mAttackAnimationName, true);
+    mResolvedAnimations.clear();
 
     if (!mLoadedModel || !mLoadedModel->HasAnimationClips()) {
         return;
     }
 
-    if (!mIdleAnimationClip) {
-        std::cerr << "Idle animation '" << mIdleAnimationName << "' was not found.\n";
-    }
+    for (const auto& [animationId, definition] : mAnimationDefinitions) {
+        const AnimationClip* clip = FindAnimationClip(definition.clipName);
+        mResolvedAnimations[animationId] = {clip, definition.playbackMode};
 
-    if (!mWalkAnimationClip) {
-        std::cerr << "Walk animation '" << mWalkAnimationName << "' was not found.\n";
-    }
-
-    if (!mAttackAnimationClip) {
-        std::cerr << "Attack animation '" << mAttackAnimationName << "' was not found. Available clips:";
-        for (const AnimationClip& animationClip : mLoadedModel->skeletalAnimation.clips) {
-            std::cerr << " '" << animationClip.name << "'";
+        if (!clip) {
+            std::cerr << "Player animation '" << animationId << "' could not find clip '" << definition.clipName
+                      << "'.\n";
         }
-        std::cerr << '\n';
     }
-}
 
-void PlayerAnimationController::PlayLocomotionAnimation(bool shouldWalk)
-{
-    const AnimationClip* locomotionAnimationClip =
-        shouldWalk && mWalkAnimationClip ? mWalkAnimationClip : mIdleAnimationClip;
-
-    if (!locomotionAnimationClip) {
-        if (mAnimationPlayer.GetCurrentClip()) {
-            mAnimationPlayer.ResetToBindPose();
+    bool hasMissingClip = false;
+    for (const auto& [animationId, animation] : mResolvedAnimations) {
+        if (!animation.clip) {
+            hasMissingClip = true;
+            break;
         }
+    }
+
+    if (!hasMissingClip) {
         return;
     }
 
-    if (!mAnimationPlayer.IsPlaying(locomotionAnimationClip)) {
-        mAnimationPlayer.Play(locomotionAnimationClip, true, true);
+    std::cerr << "Available animation clips:";
+    for (const AnimationClip& animationClip : mLoadedModel->skeletalAnimation.clips) {
+        std::cerr << " '" << animationClip.name << "'";
     }
+    std::cerr << '\n';
 }
 
-const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::string& requestedName,
-                                                                   bool canUseSingleClipFallback) const
+void PlayerAnimationController::PlayBaseAnimation()
 {
-    if (!mLoadedModel || !mLoadedModel->HasAnimationClips()) {
+    const ResolvedAnimation* baseAnimation = FindResolvedAnimation(mBaseAnimationId);
+    if (!baseAnimation || !baseAnimation->clip) {
+        mCurrentAnimationId.clear();
+        mAnimationPlayer.ResetToBindPose();
+        return;
+    }
+
+    PlayResolvedAnimation(mBaseAnimationId, *baseAnimation, false);
+}
+
+void PlayerAnimationController::PlayResolvedAnimation(const std::string& animationId,
+                                                       const ResolvedAnimation& animation,
+                                                       bool shouldRestart)
+{
+    if (!animation.clip) {
+        return;
+    }
+
+    const bool isSameAnimation = mCurrentAnimationId == animationId && mAnimationPlayer.IsPlaying(animation.clip);
+    if (isSameAnimation && !shouldRestart) {
+        return;
+    }
+
+    const bool shouldLoop = animation.playbackMode == PlayerAnimationPlaybackMode::BaseLoop;
+    mAnimationPlayer.Play(animation.clip, shouldLoop, shouldRestart);
+    mCurrentAnimationId = animationId;
+}
+
+const PlayerAnimationController::ResolvedAnimation*
+PlayerAnimationController::FindResolvedAnimation(std::string_view animationId) const
+{
+    const std::string normalizedId = NormalizeAnimationId(animationId);
+    const auto animationIt = mResolvedAnimations.find(normalizedId);
+    return animationIt == mResolvedAnimations.end() ? nullptr : &animationIt->second;
+}
+
+const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::string& requestedName) const
+{
+    if (!mLoadedModel || !mLoadedModel->HasAnimationClips() || requestedName.empty()) {
         return nullptr;
     }
 
     const std::vector<AnimationClip>& animationClips = mLoadedModel->skeletalAnimation.clips;
-    if (canUseSingleClipFallback && animationClips.size() == 1) {
-        return &animationClips.front();
-    }
-
-    if (requestedName.empty()) {
-        return nullptr;
-    }
 
     for (const AnimationClip& animationClip : animationClips) {
         if (animationClip.name == requestedName) {
@@ -160,9 +223,9 @@ const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::str
         }
     }
 
-    const std::string normalizedRequestedName = NormalizeAnimationName(requestedName);
+    const std::string normalizedRequestedName = NormalizeClipName(requestedName);
     for (const AnimationClip& animationClip : animationClips) {
-        const std::string normalizedClipName = NormalizeAnimationName(animationClip.name);
+        const std::string normalizedClipName = NormalizeClipName(animationClip.name);
         if (normalizedClipName == normalizedRequestedName ||
             GetAnimationNameSuffix(normalizedClipName) == normalizedRequestedName) {
             return &animationClip;
@@ -171,7 +234,7 @@ const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::str
 
     const AnimationClip* partialMatch = nullptr;
     for (const AnimationClip& animationClip : animationClips) {
-        const std::string normalizedClipName = NormalizeAnimationName(animationClip.name);
+        const std::string normalizedClipName = NormalizeClipName(animationClip.name);
         if (normalizedClipName.find(normalizedRequestedName) == std::string::npos) {
             continue;
         }

@@ -27,9 +27,9 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
         movement.ApplyAttackMovement(player, combat, deltaTime);
     }
 
-    if (combat.CanAcceptMovementInput()) {
+    /*if (combat.CanAcceptMovementInput()) {
         movement.MoveFromInput(player, input, deltaTime);
-    }
+    }*/
 
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {

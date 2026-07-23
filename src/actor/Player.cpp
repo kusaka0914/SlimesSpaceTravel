@@ -6,18 +6,38 @@
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
 
+#include <array>
 #include <cmath>
+#include <string_view>
 
 namespace {
-bool DidAttackAnimationStart(PlayerActionState previousState, PlayerActionState currentState)
+constexpr std::string_view idleAnimationId = "idle";
+constexpr std::string_view walkAnimationId = "walk";
+
+struct ActionAnimationBinding {
+    PlayerActionState state;
+    std::string_view animationId;
+};
+
+constexpr std::array actionAnimationBindings = {
+    ActionAnimationBinding{PlayerActionState::Dodging, "dodge"},
+    ActionAnimationBinding{PlayerActionState::Attacking, "attack"},
+    ActionAnimationBinding{PlayerActionState::StrongAttacking, "attack"},
+};
+
+void RequestEnteredActionAnimation(PlayerAnimationController& animationController, PlayerActionState previousState,
+                                   PlayerActionState currentState)
 {
-    const bool didNormalAttackStart =
-        currentState == PlayerActionState::Attacking && previousState != PlayerActionState::Attacking;
+    if (previousState == currentState) {
+        return;
+    }
 
-    const bool didStrongAttackStart =
-        currentState == PlayerActionState::StrongAttacking && previousState != PlayerActionState::StrongAttacking;
-
-    return didNormalAttackStart || didStrongAttackStart;
+    for (const ActionAnimationBinding& binding : actionAnimationBindings) {
+        if (binding.state == currentState) {
+            animationController.RequestAnimation(binding.animationId);
+            return;
+        }
+    }
 }
 } // namespace
 
@@ -71,8 +91,7 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
 
     SetModelPath(config.modelPath);
 
-    mAnimationController.Configure(config.idleAnimationName, config.walkAnimationName,
-                                   config.attackAnimationName);
+    mAnimationController.Configure(config.animations);
 }
 
 void Player::Initialize()
@@ -103,7 +122,6 @@ void Player::UpdateActor(float deltaTime)
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
-    const bool didAttackStart = DidAttackAnimationStart(previousActionState, currentActionState);
 
     constexpr float movementInputDeadZone = 0.01f;
     const bool hasMovementInput = std::abs(mInput.GetMoveForward()) > movementInputDeadZone ||
@@ -111,7 +129,9 @@ void Player::UpdateActor(float deltaTime)
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
                             hasMovementInput;
 
-    mAnimationController.Update(didAttackStart, shouldWalk, deltaTime);
+    mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
+    RequestEnteredActionAnimation(mAnimationController, previousActionState, currentActionState);
+    mAnimationController.Update(deltaTime);
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
@@ -133,7 +153,7 @@ void Player::OnBoatArrived(Boat* boat)
 void Player::Restart()
 {
     mRespawn.Restart(*this, mStateMachine, mStatus);
-    mAnimationController.ResetToIdle();
+    mAnimationController.ResetToAnimation(idleAnimationId);
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const

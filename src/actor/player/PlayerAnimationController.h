@@ -1,10 +1,13 @@
 #pragma once
 
+#include "actor/player/PlayerAnimationDefinition.h"
 #include "animation/AnimationPlayer.h"
 
 #include <glm/glm.hpp>
 
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <vector>
 
 struct AnimationClip;
@@ -12,28 +15,42 @@ struct LoadedModel;
 
 class PlayerAnimationController {
 public:
-    void Configure(std::string idleAnimationName, std::string walkAnimationName, std::string attackAnimationName);
+    void Configure(PlayerAnimationDefinitions animationDefinitions);
     void SetLoadedModel(const LoadedModel* loadedModel);
 
-    void Update(bool didAttackStart, bool shouldWalk, float deltaTimeSeconds);
-    void ResetToIdle();
+    // BaseLoop animations become the fallback pose. OneShot animations temporarily
+    // override the base animation and return to it when playback finishes.
+    bool RequestAnimation(std::string_view animationId, bool shouldRestart = true);
+    bool HasAnimation(std::string_view animationId) const;
+
+    void Update(float deltaTimeSeconds);
+    void ResetToAnimation(std::string_view animationId = "idle");
 
     const std::vector<glm::mat4>* GetSkinningMatrices() const;
 
 private:
+    struct ResolvedAnimation {
+        const AnimationClip* clip = nullptr;
+        PlayerAnimationPlaybackMode playbackMode = PlayerAnimationPlaybackMode::OneShot;
+    };
+
     void ResolveAnimationClips();
-    void PlayLocomotionAnimation(bool shouldWalk);
-    const AnimationClip* FindAnimationClip(const std::string& requestedName, bool canUseSingleClipFallback) const;
+    void PlayBaseAnimation();
+    void PlayResolvedAnimation(const std::string& animationId, const ResolvedAnimation& animation,
+                               bool shouldRestart);
+
+    const ResolvedAnimation* FindResolvedAnimation(std::string_view animationId) const;
+    const AnimationClip* FindAnimationClip(const std::string& requestedName) const;
 
 private:
     const LoadedModel* mLoadedModel = nullptr;
-    const AnimationClip* mIdleAnimationClip = nullptr;
-    const AnimationClip* mWalkAnimationClip = nullptr;
-    const AnimationClip* mAttackAnimationClip = nullptr;
 
-    std::string mIdleAnimationName = "Idle";
-    std::string mWalkAnimationName = "Walk";
-    std::string mAttackAnimationName = "Attack";
+    PlayerAnimationDefinitions mAnimationDefinitions;
+    std::unordered_map<std::string, ResolvedAnimation> mResolvedAnimations;
+
+    std::string mBaseAnimationId = "idle";
+    std::string mCurrentAnimationId;
+    bool mIsOneShotPlaying = false;
 
     AnimationPlayer mAnimationPlayer;
 };
