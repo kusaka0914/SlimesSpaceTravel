@@ -12,7 +12,10 @@ public:
         float attackAngle,
         bool requireAirborneTarget);
 
-    static Enemy* FindAssistStrongTarget(const Player& player, float maxDistance);
+    static Enemy* FindAssistStrongTarget(
+        const Player& player,
+        float maxDistance,
+        float attackAngle);
 
     static bool FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target);
 };

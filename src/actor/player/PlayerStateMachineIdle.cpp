@@ -25,7 +25,7 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    if (TryStartCharging(player, input, combat)) {
+    if (TryStartCharging(player, input, movement, combat)) {
         return;
     }
 
@@ -81,14 +81,17 @@ bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput&
 
     constexpr float assistStrongTargetRangeMargin = 2.0f;
     const float targetRange = combat.GetStrongAttackRange() + assistStrongTargetRangeMargin;
-    Enemy* target = PlayerTargetingAssist::FindAssistStrongTarget(player, targetRange);
+    Enemy* target = PlayerTargetingAssist::FindAssistStrongTarget(
+        player,
+        targetRange,
+        combat.GetNormalAttackAngle());
     if (!target) {
         return false;
     }
 
-    mAttackDirectionTarget = nullptr;
+    mAttackDirectionTarget = target;
     PlayerTargetingAssist::FaceTarget(player, movement, *target);
-    movement.StartAssistStrongAttackMovement(player, target->GetPos());
+    movement.StartStrongAttackMovementTowards(player, target->GetPos());
 
     input.ConsumeBufferedAttackInput();
     mCoyoteTimeRemaining = 0.0f;
@@ -98,21 +101,46 @@ bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput&
     return true;
 }
 
-bool PlayerStateMachine::TryStartCharging(Player& player, PlayerInput& input, PlayerCombat& combat)
+bool PlayerStateMachine::TryStartCharging(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat)
 {
-    const bool hasNormalAttackRequest = input.GetBufferedAttackInput() == PlayerAttackInputKind::Normal;
-    const bool canStartCharging = !player.GetOnGround() && hasNormalAttackRequest && input.GetAttackPressed() &&
-                                  !input.GetSpecialAttackPressed() && !combat.GetIsStrongAttacked();
+    const bool hasNormalAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Normal;
+    const bool canStartCharging =
+        !player.GetOnGround() &&
+        hasNormalAttackRequest &&
+        input.GetAttackPressed() &&
+        !input.GetSpecialAttackPressed() &&
+        !combat.GetIsStrongAttacked();
+
     if (!canStartCharging) {
         return false;
     }
 
-    mAttackDirectionTarget = nullptr;
+    // Strongが実際に届く距離にいる空中敵を対象にする。
+    // 正面の攻撃範囲内を優先し、正面にいなければ全方向の最寄りを選ぶ。
+    mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
+        player,
+        combat.GetStrongAttackRange(),
+        combat.GetNormalAttackAngle(),
+        true);
+
+    if (mAttackDirectionTarget) {
+        PlayerTargetingAssist::FaceTarget(
+            player,
+            movement,
+            *mAttackDirectionTarget);
+    }
+
     input.ConsumeBufferedAttackInput();
     ChangeState(PlayerActionState::Charging);
     combat.StartCharging(player);
     return true;
 }
+
 
 void PlayerStateMachine::ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime)
 {

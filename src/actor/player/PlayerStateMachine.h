@@ -51,7 +51,11 @@ private:
 
     bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                     float deltaTime);
-    bool TryStartCharging(Player& player, PlayerInput& input, PlayerCombat& combat);
+    bool TryStartCharging(
+        Player& player,
+        PlayerInput& input,
+        PlayerMovement& movement,
+        PlayerCombat& combat);
     void ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          float deltaTime);

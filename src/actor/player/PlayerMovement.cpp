@@ -303,7 +303,20 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
     player.SetShouldJudgeLanding(false);
 }
 
-void PlayerMovement::StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition)
+void PlayerMovement::StartStrongAttackMovementTowards(
+    Player& player,
+    const glm::vec3& targetPosition)
+{
+    UpdateStrongAttackDirectionTowards(player, targetPosition);
+
+    player.SetVelocity(glm::vec3(0.0f));
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
+}
+
+void PlayerMovement::UpdateStrongAttackDirectionTowards(
+    Player& player,
+    const glm::vec3& targetPosition)
 {
     glm::vec3 attackDirection;
     if (!TryNormalizeDirection(targetPosition - player.GetPos(), attackDirection)) {
@@ -313,10 +326,13 @@ void PlayerMovement::StartAssistStrongAttackMovement(Player& player, const glm::
 
     mStrongAttackDirectionOverride = attackDirection;
     mHasStrongAttackDirectionOverride = true;
+}
 
-    player.SetVelocity(glm::vec3(0.0f));
-    player.SetOnGround(false);
-    player.SetShouldJudgeLanding(false);
+void PlayerMovement::StartAssistStrongAttackMovement(
+    Player& player,
+    const glm::vec3& targetPosition)
+{
+    StartStrongAttackMovementTowards(player, targetPosition);
 }
 
 void PlayerMovement::ClearStrongAttackDirectionOverride()

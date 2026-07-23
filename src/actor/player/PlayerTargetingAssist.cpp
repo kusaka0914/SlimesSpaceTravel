@@ -122,39 +122,84 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
 }
 
 
-Enemy* PlayerTargetingAssist::FindAssistStrongTarget(const Player& player, float maxDistance)
+Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
+    const Player& player,
+    float maxDistance,
+    float attackAngle)
 {
     Planet* planet = player.GetCurrentPlanet();
     if (!planet || maxDistance <= 0.0f) {
         return nullptr;
     }
 
+    glm::vec3 normalizedFacingDirection;
+    const bool hasFacingDirection =
+        TryNormalize(player.GetFacingForwardVec(), normalizedFacingDirection);
+
+    const float facingThreshold = std::cos(attackAngle * 0.5f);
     const float maxDistanceSquared = maxDistance * maxDistance;
-    Enemy* nearestTarget = nullptr;
-    float nearestDistanceSquared = maxDistanceSquared;
+
+    Enemy* nearestForwardTarget = nullptr;
+    float nearestForwardDistanceSquared = std::numeric_limits<float>::max();
+
+    Enemy* nearestAnyDirectionTarget = nullptr;
+    float nearestAnyDirectionDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
         if (!IsValidEnemy(player, enemy)) {
             continue;
         }
 
-        // ガードを全破壊され、打ち上げられている敵だけを対象にする。
+        // アシストStrongは、ガードを全破壊されて空中にいる敵だけを対象にする。
         if (enemy->GetBreakCount() != 0 || enemy->IsOnGround()) {
             continue;
         }
 
-        const glm::vec3 toEnemy = enemy->GetPos() - player.GetPos();
-        const float distanceSquared = glm::dot(toEnemy, toEnemy);
-        if (distanceSquared > nearestDistanceSquared) {
+        const glm::vec3 toEnemyCenter = enemy->GetPos() - player.GetPos();
+        const float distanceSquared = glm::dot(toEnemyCenter, toEnemyCenter);
+        if (distanceSquared > maxDistanceSquared) {
             continue;
         }
 
-        nearestDistanceSquared = distanceSquared;
-        nearestTarget = enemy;
+        if (distanceSquared < nearestAnyDirectionDistanceSquared) {
+            nearestAnyDirectionDistanceSquared = distanceSquared;
+            nearestAnyDirectionTarget = enemy;
+        }
+
+        if (!hasFacingDirection) {
+            continue;
+        }
+
+        const glm::vec3 targetPoint =
+            enemy->GetPos() +
+            enemy->GetFacingForwardVec() * (enemy->GetRadius() - 1.0f);
+
+        glm::vec3 directionToTarget;
+        if (!TryNormalize(targetPoint - player.GetPos(), directionToTarget)) {
+            directionToTarget = normalizedFacingDirection;
+        }
+
+        const float facingDot =
+            glm::dot(normalizedFacingDirection, directionToTarget);
+
+        if (facingDot < facingThreshold) {
+            continue;
+        }
+
+        if (distanceSquared < nearestForwardDistanceSquared) {
+            nearestForwardDistanceSquared = distanceSquared;
+            nearestForwardTarget = enemy;
+        }
     }
 
-    return nearestTarget;
+    // 通常攻撃と同様、正面の攻撃範囲内を優先する。
+    if (nearestForwardTarget) {
+        return nearestForwardTarget;
+    }
+
+    return nearestAnyDirectionTarget;
 }
+
 
 bool PlayerTargetingAssist::FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target)
 {

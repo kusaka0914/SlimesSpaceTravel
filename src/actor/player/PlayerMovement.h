@@ -24,6 +24,8 @@ public:
 
     void StartDodgeMovement(Player& player, const PlayerInput& input);
     void StartJumpMovement(Player& player, float deltaTime);
+    void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
+    void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
     void ClearStrongAttackDirectionOverride();
 
