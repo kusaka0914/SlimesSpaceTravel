@@ -10,19 +10,22 @@
 
 #include <SDL.h>
 #include <cmath>
+#include <glm/common.hpp>
 
 CameraSystem::CameraSystem(Game* game)
     : mGame(game),
       mCollisionResolver(game),
       mDebugCamera(game),
       mFocusCamera(game),
-      mPlayerCamera(mCollisionResolver)
+      mPlayerCamera(mCollisionResolver),
+      mCinematicLibrary("../assets/data/camera/cinematics.yaml")
 {
+    mCinematicLibrary.Load();
 }
 
 void CameraSystem::ProcessInput()
 {
-    if (!mGame) {
+    if (!mGame || mCinematicCamera.IsPlaying()) {
         return;
     }
 
@@ -52,9 +55,44 @@ void CameraSystem::Update(float deltaTime)
     UpdateCamera(deltaTime);
 }
 
+bool CameraSystem::PlayCinematic(std::string_view sequenceId)
+{
+    const CinematicSequence* sequence = mCinematicLibrary.Find(sequenceId);
+    return sequence && mCinematicCamera.Play(*sequence);
+}
+
+void CameraSystem::StopCinematic()
+{
+    mCinematicCamera.Stop();
+}
+
+bool CameraSystem::ReloadCinematicSequences()
+{
+    StopCinematic();
+    return mCinematicLibrary.Load();
+}
+
+float CameraSystem::GetFieldOfViewDegrees() const
+{
+    if (mCinematicCamera.IsPlaying()) {
+        return glm::clamp(mCinematicCamera.GetPose().fieldOfViewDegrees, 10.0f, 120.0f);
+    }
+
+    if (mGame && mGame->GetIsFreeCameraMode()) {
+        return mDebugCamera.GetFieldOfViewDegrees();
+    }
+
+    return 60.0f;
+}
+
 void CameraSystem::UpdateCamera(float deltaTime)
 {
     if (!mGame) {
+        return;
+    }
+
+    if (mCinematicCamera.IsPlaying()) {
+        mCinematicCamera.Update(deltaTime);
         return;
     }
 
@@ -74,6 +112,11 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     std::vector<glm::mat4> views;
 
     if (!mGame) {
+        return views;
+    }
+
+    if (mCinematicCamera.IsPlaying()) {
+        views.emplace_back(mCinematicCamera.GetView());
         return views;
     }
 
@@ -144,6 +187,10 @@ glm::vec3 CameraSystem::GetCameraPos() const
 {
     if (!mGame) {
         return glm::vec3(0.0f);
+    }
+
+    if (mCinematicCamera.IsPlaying()) {
+        return mCinematicCamera.GetPose().position;
     }
 
     if (mGame->GetIsFreeCameraMode()) {

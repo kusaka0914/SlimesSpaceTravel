@@ -279,6 +279,8 @@ void Game::UpdateGame()
 
     mSceneSystem->Update(deltaTime);
 
+    bool cameraUpdated = false;
+
     if (mSceneSystem->CanUpdateWorld()) {
         UpdateActors(deltaTime);
 
@@ -286,6 +288,11 @@ void Game::UpdateGame()
             mParticleSystem->Update(deltaTime);
         }
 
+        mCameraSystem->Update(deltaTime);
+        cameraUpdated = true;
+    }
+
+    if (!cameraUpdated && mCameraSystem->IsCinematicPlaying()) {
         mCameraSystem->Update(deltaTime);
     }
 }

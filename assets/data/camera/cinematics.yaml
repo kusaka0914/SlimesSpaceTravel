@@ -1,0 +1,17 @@
+cinematics:
+  boss_sequence:
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        position: [64.24321, 0.2688266, -13.965152]
+        target: [64.36733, 0.24745746, -12.973115]
+        up: [0.97256374, -0.1956244, -0.1259004]
+        fieldOfView: 60
+        easing: easeInOut
+      - time: 2
+        position: [65.06469, 0.121905684, -8.938409]
+        target: [65.30504, 0.077133, -7.9687552]
+        up: [0.95053643, -0.19162664, -0.24445838]
+        fieldOfView: 60
+        easing: easeInOut

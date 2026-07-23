@@ -32,15 +32,21 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
 {
     glViewport(0, 0, static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(fbHeight));
 
-    const float aspect = fbWidth / fbHeight;
-    const glm::mat4 proj = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+    CameraSystem* cameraSystem = mGame->GetCameraSystem();
+    if (!cameraSystem || fbHeight <= 0.0f) {
+        return;
+    }
 
-    std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
+    const float aspect = fbWidth / fbHeight;
+    const float fieldOfViewDegrees = cameraSystem->GetFieldOfViewDegrees();
+    const glm::mat4 proj = glm::perspective(glm::radians(fieldOfViewDegrees), aspect, 0.1f, 100.0f);
+
+    std::vector<glm::mat4> views = cameraSystem->GetViews();
     if (views.empty()) {
         return;
     }
 
-    const glm::vec3 cameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(0);
+    const glm::vec3 cameraPos = cameraSystem->GetCameraPos();
     mRenderer->DrawScene(views[0], proj, cameraPos);
 }
 
