@@ -7,6 +7,62 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
 #include "system/AudioSystem.h"
+#include "system/ParticleSystem.h"
+
+#include <algorithm>
+
+namespace {
+constexpr float directionEpsilonSquared = 0.000001f;
+
+glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
+{
+    if (glm::dot(value, value) <= directionEpsilonSquared) {
+        return fallback;
+    }
+
+    return glm::normalize(value);
+}
+
+void EmitAttackHitEffect(Player& player, const Enemy& enemy, float effectScale)
+{
+    ParticleSystem* particleSystem = player.GetGame()->GetParticleSystem();
+    if (!particleSystem) {
+        return;
+    }
+
+    const glm::vec3 fallbackNormal = -SafeNormalize(
+        player.GetFacingForwardVec(),
+        glm::vec3(0.0f, 0.0f, 1.0f));
+
+    const glm::vec3 hitNormal = SafeNormalize(
+        player.GetPos() - enemy.GetPos(),
+        fallbackNormal);
+
+    const glm::vec3 enemyUp = SafeNormalize(
+        enemy.GetUpVec(),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+
+    const float enemyRadius = std::max(0.1f, enemy.GetRadius());
+    const glm::vec3 hitPosition =
+        enemy.GetPos() +
+        enemyUp * enemyRadius * 0.55f +
+        hitNormal * enemyRadius * 0.90f;
+
+    ParticleSpawnContext context;
+    context.position = hitPosition;
+    context.normal = hitNormal;
+    context.direction = hitNormal;
+    context.scale = effectScale;
+
+    particleSystem->Emit("attack_hit", context);
+}
+
+void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float effectScale)
+{
+    enemy.ApplyDamage(damage, &player);
+    EmitAttackHitEffect(player, enemy, effectScale);
+}
+} // namespace
 
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,
@@ -30,7 +86,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
 
         if (player.GetOnGround()) {
             for (Enemy* enemy : hitEnemies) {
-                enemy->ApplyDamage(combat.GetAttack(), &player);
+                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
             }
         } else {
             bool isHit = false;
@@ -40,7 +96,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
                     continue;
                 }
 
-                enemy->ApplyDamage(combat.GetAttack(), &player);
+                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
                 isHit = true;
             }
 
@@ -75,7 +131,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
 
     for (Enemy* enemy : hitEnemies) {
         enemy->SetIsStrongAttacked(true);
-        enemy->ApplyDamage(combat.GetAttack(), &player);
+        ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.45f);
         combat.SetStrongAttackHit(true);
     }
 }
@@ -95,12 +151,12 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
         }
 
         if (enemy->GetCanCountered()) {
-            enemy->ApplyDamage(600, &player);
+            ApplyDamageWithHitEffect(*enemy, 600.0f, player, 1.7f);
             enemy->FlipCanCountered();
             jewelGauge.RestoreFull();
             player.GetGame()->GetAudioSystem()->PlaySE("just_attack_se");
         } else {
-            enemy->ApplyDamage(300, &player);
+            ApplyDamageWithHitEffect(*enemy, 300.0f, player, 1.45f);
         }
     }
 }

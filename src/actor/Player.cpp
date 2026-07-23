@@ -119,6 +119,7 @@ void Player::UpdateActor(float deltaTime)
 
     if (wasOnGround && !GetOnGround()) {
         mPlanetGravityController.OnJumpStarted();
+        mAnimationController.RequestAnimation("jump");
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();

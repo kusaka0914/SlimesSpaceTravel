@@ -1,0 +1,89 @@
+particleEffects:
+  attack_hit:
+    emitters:
+      # The short white-hot center flash.
+      - texture: "spark_core.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "sphere"
+        count: 1
+
+        lifetime:
+          min: 0.065
+          max: 0.095
+
+        speed: 0.0
+
+        size:
+          start:
+            min: 0.58
+            max: 0.72
+          endMultiplier: 0.05
+
+        rotationDegrees:
+          min: -25.0
+          max: 25.0
+
+        colorStart: [1.0, 1.0, 0.90, 1.0]
+        colorEnd: [1.0, 0.38, 0.04, 0.0]
+
+      # A wider group of long orange streaks.
+      - texture: "spark_streak.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "sphere"
+        count: 1
+
+        lifetime:
+          min: 0.10
+          max: 0.15
+
+        speed: 0.0
+
+        size:
+          start:
+            min: 0.78
+            max: 0.95
+          endMultiplier: 0.10
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        colorStart: [1.0, 0.73, 0.20, 1.0]
+        colorEnd: [1.0, 0.18, 0.01, 0.0]
+
+      # Fine embers that linger slightly longer than the center flash.
+      - texture: "spark_dot.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "hemisphere"
+        count: 2
+
+        lifetime:
+          min: 0.16
+          max: 0.27
+
+        speed:
+          min: 0.30
+          max: 0.85
+
+        size:
+          start:
+            min: 0.34
+            max: 0.46
+          endMultiplier: 0.18
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        angularVelocityDegrees:
+          min: -80.0
+          max: 80.0
+
+        gravity: 0.15
+        drag: 2.5
+
+        colorStart: [1.0, 0.58, 0.10, 0.95]
+        colorEnd: [1.0, 0.12, 0.01, 0.0]

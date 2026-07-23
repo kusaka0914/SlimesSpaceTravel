@@ -4,7 +4,16 @@
 #include <iostream>
 #include <sstream>
 
-Shader::Shader() {}
+Shader::Shader()
+    : mShaderProgram(0),
+      mLocModel(-1),
+      mLocView(-1),
+      mLocProj(-1),
+      mLocObjectColor(-1),
+      mLocUseTexture(-1),
+      mLocDiffuseTexture(-1)
+{
+}
 
 Shader::~Shader()
 {

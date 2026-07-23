@@ -17,6 +17,7 @@ class Enemy;
 class Game;
 class Player;
 class PlayerEffectRenderer;
+class ParticleRenderer;
 class Planet;
 class RenderViewportController;
 class SceneObjectRenderer;
@@ -88,6 +89,7 @@ private:
     std::unique_ptr<SceneObjectRenderer> mSceneObjectRenderer;
     std::unique_ptr<PlayerEffectRenderer> mPlayerEffectRenderer;
     std::unique_ptr<DebugLabelRenderer> mDebugLabelRenderer;
+    std::unique_ptr<ParticleRenderer> mParticleRenderer;
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;

@@ -24,6 +24,7 @@ class GameWorld;
 class PauseMenuController;
 class StageFlowController;
 class GamepadRumbleService;
+class ParticleSystem;
 
 class Game {
 public:
@@ -100,6 +101,7 @@ public:
     ActorLoadSystem* GetActorLoadSystem() const { return mActorLoadSystem.get(); }
     CameraSystem* GetCameraSystem() const { return mCameraSystem.get(); }
     MathUtils* GetMathUtils() const { return mMathUtils.get(); }
+    ParticleSystem* GetParticleSystem() const { return mParticleSystem.get(); }
 
     float GetHitStopTimer() const { return mHitStopTimer; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
@@ -143,6 +145,7 @@ private:
     std::unique_ptr<MathUtils> mMathUtils;
     std::unique_ptr<SceneSystem> mSceneSystem;
     std::unique_ptr<InputSystem> mInputSystem;
+    std::unique_ptr<ParticleSystem> mParticleSystem;
 
     float mHitStopTimer = -1.0f;
 

@@ -17,6 +17,7 @@
 #include "system/InputSystem.h"
 #include "system/MeshLoadSystem.h"
 #include "system/PauseMenuController.h"
+#include "system/ParticleSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include "system/StageFlowController.h"
@@ -120,6 +121,9 @@ void Game::CreateGameSystems()
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);
     mInputSystem = std::make_unique<InputSystem>(this);
+
+    mParticleSystem = std::make_unique<ParticleSystem>();
+    mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
 }
 
 void Game::CreateStages(int stageCount)
@@ -129,6 +133,10 @@ void Game::CreateStages(int stageCount)
 
 void Game::ReloadCurrentStage()
 {
+    if (mParticleSystem) {
+        mParticleSystem->Clear();
+    }
+
     mStageFlowController->ReloadCurrentStage(*this);
 }
 
@@ -273,6 +281,11 @@ void Game::UpdateGame()
 
     if (mSceneSystem->CanUpdateWorld()) {
         UpdateActors(deltaTime);
+
+        if (mParticleSystem) {
+            mParticleSystem->Update(deltaTime);
+        }
+
         mCameraSystem->Update(deltaTime);
     }
 }

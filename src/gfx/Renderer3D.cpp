@@ -7,6 +7,7 @@
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
+#include "gfx/particle/ParticleRenderer.h"
 #include "gfx/render3d/RenderViewportController.h"
 #include "gfx/render3d/SceneObjectRenderer.h"
 #include "system/MeshLoadSystem.h"
@@ -73,12 +74,17 @@ void Renderer3D::Draw() const
 
 void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
 {
-    if (!mSceneObjectRenderer) {
+    if (!mSceneObjectRenderer || !mShader3D) {
         return;
     }
 
+    glUseProgram(mShader3D->GetShaderProgram());
     SetUniforms(viewMat, projMat, cameraPos);
     mSceneObjectRenderer->DrawSceneObjects(viewMat);
+
+    if (mParticleRenderer) {
+        mParticleRenderer->Draw(viewMat, projMat);
+    }
 }
 
 void Renderer3D::InitializeAttackRangeBuffer()
@@ -100,6 +106,7 @@ void Renderer3D::InitializeRenderModules()
 {
     mPlayerEffectRenderer = std::make_unique<PlayerEffectRenderer>(this);
     mDebugLabelRenderer = std::make_unique<DebugLabelRenderer>(this);
+    mParticleRenderer = std::make_unique<ParticleRenderer>(mGame);
     mSceneObjectRenderer =
         std::make_unique<SceneObjectRenderer>(this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get());
     mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);
