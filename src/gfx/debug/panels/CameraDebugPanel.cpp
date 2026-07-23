@@ -95,6 +95,11 @@ void CameraDebugPanel::Draw()
         "位置追従速度##PlayerCamera", &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
     ImGui::Spacing();
+    ImGui::TextUnformatted("攻撃時カメラアシスト");
+    playerCameraChanged |= ImGui::DragFloat(
+        "対象への追従速度##AttackCamera", &playerCameraSettings.attackTargetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+
+    ImGui::Spacing();
     ImGui::TextUnformatted("NPC会話カメラ");
     playerCameraChanged |= ImGui::DragFloat(
         "距離##TalkCamera", &playerCameraSettings.talkDistance, 0.1f, 0.5f, 50.0f);

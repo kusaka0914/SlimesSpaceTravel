@@ -68,6 +68,9 @@ bool EnemyGrounding::HasGroundBelow(const Enemy& enemy, const glm::vec3& checkPo
     const btVector3 rayTo(rayToPos.x, rayToPos.y, rayToPos.z);
 
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayFrom, rayTo);
+    rayCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    rayCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+
     bulletWorld->rayTest(rayFrom, rayTo, rayCallback);
 
     if (!rayCallback.hasHit()) {

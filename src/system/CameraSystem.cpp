@@ -139,7 +139,8 @@ void CameraSystem::UpdateCamera(float deltaTime)
                                : mCameraStickX * mPlayerCameraSettings.yawSensitivity * deltaTime;
 
     mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
-                         mPlayerCameraSettings.targetSmoothingSpeed, deltaTime);
+                         mPlayerCameraSettings.targetSmoothingSpeed,
+                         mPlayerCameraSettings.attackTargetSmoothingSpeed, deltaTime);
 }
 
 void CameraSystem::UpdateTalkCameraTransition(float deltaTime)

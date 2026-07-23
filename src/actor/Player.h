@@ -62,6 +62,11 @@ public:
 
     void SetCameraYaw(float cameraYaw) { mInput.SetCameraYaw(cameraYaw); }
 
+    void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection)
+    {
+        mMovement.SetCameraForwardDirection(forwardDirection, upDirection);
+    }
+
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
 
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
@@ -234,6 +239,7 @@ public:
     const std::vector<glm::mat4>* GetSkinningMatrices() const override;
 
     NPC* GetTalkableNPC() const { return mInteraction.GetTalkableNPC(); }
+    Enemy* GetAttackDirectionTarget() const { return mStateMachine.GetAttackDirectionTarget(); }
 
     const glm::vec3& GetVelocity() const { return mVelocity; }
 

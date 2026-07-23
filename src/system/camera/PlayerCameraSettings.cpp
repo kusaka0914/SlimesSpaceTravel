@@ -27,6 +27,7 @@ void PlayerCameraSettings::Normalize()
     yawSensitivity = glm::clamp(yawSensitivity, 0.0f, 20.0f);
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
+    attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
 
     talkDistance = glm::clamp(talkDistance, 0.5f, 50.0f);
     talkPitchDegrees = glm::clamp(talkPitchDegrees, -89.0f, 89.0f);
@@ -72,6 +73,8 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             ReadFloat(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
         loadedSettings.targetSmoothingSpeed =
             ReadFloat(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
+        loadedSettings.attackTargetSmoothingSpeed =
+            ReadFloat(cameraNode, "attackTargetSmoothingSpeed", loadedSettings.attackTargetSmoothingSpeed);
 
         const YAML::Node talkNode = cameraNode["talk"];
         if (talkNode && talkNode.IsMap()) {
@@ -121,6 +124,8 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "upSmoothingSpeed" << YAML::Value << normalizedSettings.upSmoothingSpeed;
         emitter << YAML::Key << "targetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.targetSmoothingSpeed;
+        emitter << YAML::Key << "attackTargetSmoothingSpeed" << YAML::Value
+                << normalizedSettings.attackTargetSmoothingSpeed;
 
         emitter << YAML::Key << "talk" << YAML::Value << YAML::BeginMap;
         emitter << YAML::Key << "distance" << YAML::Value << normalizedSettings.talkDistance;

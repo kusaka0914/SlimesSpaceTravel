@@ -23,6 +23,7 @@ public:
     void ChangeState(PlayerActionState actionState) { mActionState = actionState; }
     bool IsDodging() const { return mActionState == PlayerActionState::Dodging; }
     bool IsAttackingState() const;
+    Enemy* GetAttackDirectionTarget() const { return mAttackDirectionTarget; }
     void ClearAttackDirectionTarget() { mAttackDirectionTarget = nullptr; }
 
 private:

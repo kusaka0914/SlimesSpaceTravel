@@ -11,6 +11,7 @@ struct PlayerCameraSettings {
     float yawSensitivity = 2.5f;
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
+    float attackTargetSmoothingSpeed = 6.0f;
 
     float talkDistance = 4.5f;
     float talkPitchDegrees = -30.0f;

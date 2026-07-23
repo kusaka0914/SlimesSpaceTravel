@@ -12,6 +12,7 @@ public:
     bool CanDodge(const PlayerCombat& combat) const;
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
+    void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);
     void FaceDirection(Player& player, const glm::vec3& facingDirection);

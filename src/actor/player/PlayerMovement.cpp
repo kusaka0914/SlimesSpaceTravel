@@ -150,6 +150,29 @@ void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, cons
     mLeftVec = movementLeftDirection;
 }
 
+void PlayerMovement::SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection)
+{
+    glm::vec3 normalizedUpDirection;
+    if (!TryNormalizeDirection(upDirection, normalizedUpDirection)) {
+        return;
+    }
+
+    glm::vec3 normalizedForwardDirection;
+    if (!TryNormalizeDirection(ProjectOntoPlane(forwardDirection, normalizedUpDirection),
+                               normalizedForwardDirection)) {
+        return;
+    }
+
+    glm::vec3 normalizedLeftDirection;
+    if (!TryNormalizeDirection(glm::cross(normalizedUpDirection, normalizedForwardDirection),
+                               normalizedLeftDirection)) {
+        return;
+    }
+
+    mForwardVec = normalizedForwardDirection;
+    mLeftVec = normalizedLeftDirection;
+}
+
 void PlayerMovement::UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input)
 {
     const glm::vec3 requestedFacingDirection = mForwardVec * input.GetMoveForward() + mLeftVec * input.GetMoveLeft();
