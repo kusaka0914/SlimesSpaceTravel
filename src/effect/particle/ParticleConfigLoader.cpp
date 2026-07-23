@@ -4,9 +4,12 @@
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 std::string ToLower(std::string value)
@@ -92,7 +95,8 @@ ParticleBlendMode ParseBlendMode(const std::string& value)
 
 ParticleRenderMode ParseRenderMode(const std::string& value)
 {
-    return ToLower(value) == "velocityaligned" || ToLower(value) == "velocity_aligned"
+    const std::string lowerValue = ToLower(value);
+    return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned"
                ? ParticleRenderMode::VelocityAligned
                : ParticleRenderMode::Billboard;
 }
@@ -110,6 +114,31 @@ ParticleDirectionMode ParseDirectionMode(const std::string& value)
         return ParticleDirectionMode::Cone;
     }
     return ParticleDirectionMode::Sphere;
+}
+
+const char* ToString(ParticleBlendMode blendMode)
+{
+    return blendMode == ParticleBlendMode::Alpha ? "alpha" : "additive";
+}
+
+const char* ToString(ParticleRenderMode renderMode)
+{
+    return renderMode == ParticleRenderMode::VelocityAligned ? "velocityAligned" : "billboard";
+}
+
+const char* ToString(ParticleDirectionMode directionMode)
+{
+    switch (directionMode) {
+    case ParticleDirectionMode::Fixed:
+        return "fixed";
+    case ParticleDirectionMode::Hemisphere:
+        return "hemisphere";
+    case ParticleDirectionMode::Cone:
+        return "cone";
+    case ParticleDirectionMode::Sphere:
+    default:
+        return "sphere";
+    }
 }
 
 ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
@@ -137,13 +166,77 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
     definition.spreadAngleDegrees = ReadFloat(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
     definition.gravity = ReadFloat(emitterNode, "gravity", definition.gravity);
     definition.drag = std::max(0.0f, ReadFloat(emitterNode, "drag", definition.drag));
-    definition.velocityStretch = std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
+    definition.velocityStretch =
+        std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
 
     definition.positionOffset = ReadVec3(emitterNode["positionOffset"], definition.positionOffset);
     definition.startColor = ReadVec4(emitterNode["colorStart"], definition.startColor);
     definition.endColor = ReadVec4(emitterNode["colorEnd"], definition.endColor);
 
     return definition;
+}
+
+void EmitRange(YAML::Emitter& emitter, const ParticleFloatRange& range)
+{
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key << "min" << YAML::Value << range.min;
+    emitter << YAML::Key << "max" << YAML::Value << range.max;
+    emitter << YAML::EndMap;
+}
+
+void EmitVec3(YAML::Emitter& emitter, const glm::vec3& value)
+{
+    emitter << YAML::Flow << YAML::BeginSeq << value.x << value.y << value.z << YAML::EndSeq;
+}
+
+void EmitVec4(YAML::Emitter& emitter, const glm::vec4& value)
+{
+    emitter << YAML::Flow << YAML::BeginSeq << value.r << value.g << value.b << value.a << YAML::EndSeq;
+}
+
+void EmitEmitterDefinition(YAML::Emitter& emitter, const ParticleEmitterDefinition& definition)
+{
+    emitter << YAML::BeginMap;
+
+    emitter << YAML::Key << "texture" << YAML::Value << definition.texturePath;
+    emitter << YAML::Key << "blendMode" << YAML::Value << ToString(definition.blendMode);
+    emitter << YAML::Key << "renderMode" << YAML::Value << ToString(definition.renderMode);
+    emitter << YAML::Key << "directionMode" << YAML::Value << ToString(definition.directionMode);
+    emitter << YAML::Key << "count" << YAML::Value << definition.count;
+
+    emitter << YAML::Key << "lifetime" << YAML::Value;
+    EmitRange(emitter, definition.lifetime);
+
+    emitter << YAML::Key << "speed" << YAML::Value;
+    EmitRange(emitter, definition.speed);
+
+    emitter << YAML::Key << "size" << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "start" << YAML::Value;
+    EmitRange(emitter, definition.startSize);
+    emitter << YAML::Key << "endMultiplier" << YAML::Value << definition.endSizeMultiplier;
+    emitter << YAML::EndMap;
+
+    emitter << YAML::Key << "rotationDegrees" << YAML::Value;
+    EmitRange(emitter, definition.rotationDegrees);
+
+    emitter << YAML::Key << "angularVelocityDegrees" << YAML::Value;
+    EmitRange(emitter, definition.angularVelocityDegrees);
+
+    emitter << YAML::Key << "spreadAngleDegrees" << YAML::Value << definition.spreadAngleDegrees;
+    emitter << YAML::Key << "gravity" << YAML::Value << definition.gravity;
+    emitter << YAML::Key << "drag" << YAML::Value << definition.drag;
+    emitter << YAML::Key << "velocityStretch" << YAML::Value << definition.velocityStretch;
+
+    emitter << YAML::Key << "positionOffset" << YAML::Value;
+    EmitVec3(emitter, definition.positionOffset);
+
+    emitter << YAML::Key << "colorStart" << YAML::Value;
+    EmitVec4(emitter, definition.startColor);
+
+    emitter << YAML::Key << "colorEnd" << YAML::Value;
+    EmitVec4(emitter, definition.endColor);
+
+    emitter << YAML::EndMap;
 }
 } // namespace
 
@@ -186,9 +279,69 @@ bool ParticleConfigLoader::Load(
         }
 
         outDefinitions = std::move(loadedDefinitions);
-        return !outDefinitions.empty();
+        return true;
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load particle config '" << filePath << "': " << exception.what() << '\n';
+        return false;
+    }
+}
+
+bool ParticleConfigLoader::Save(
+    const std::string& filePath,
+    const std::unordered_map<std::string, ParticleEffectDefinition>& definitions)
+{
+    try {
+        const std::filesystem::path outputPath(filePath);
+        if (outputPath.has_parent_path()) {
+            std::filesystem::create_directories(outputPath.parent_path());
+        }
+
+        std::vector<std::string> effectIds;
+        effectIds.reserve(definitions.size());
+
+        for (const auto& [effectId, definition] : definitions) {
+            (void)definition;
+            effectIds.push_back(effectId);
+        }
+
+        std::sort(effectIds.begin(), effectIds.end());
+
+        YAML::Emitter emitter;
+        emitter << YAML::BeginMap;
+        emitter << YAML::Key << "particleEffects" << YAML::Value << YAML::BeginMap;
+
+        for (const std::string& effectId : effectIds) {
+            const ParticleEffectDefinition& effectDefinition = definitions.at(effectId);
+
+            emitter << YAML::Key << effectId << YAML::Value << YAML::BeginMap;
+            emitter << YAML::Key << "emitters" << YAML::Value << YAML::BeginSeq;
+
+            for (const ParticleEmitterDefinition& emitterDefinition : effectDefinition.emitters) {
+                EmitEmitterDefinition(emitter, emitterDefinition);
+            }
+
+            emitter << YAML::EndSeq;
+            emitter << YAML::EndMap;
+        }
+
+        emitter << YAML::EndMap;
+        emitter << YAML::EndMap;
+
+        if (!emitter.good()) {
+            std::cerr << "Failed to serialize particle config: " << emitter.GetLastError() << '\n';
+            return false;
+        }
+
+        std::ofstream output(filePath);
+        if (!output) {
+            std::cerr << "Failed to open particle config for writing: " << filePath << '\n';
+            return false;
+        }
+
+        output << emitter.c_str() << '\n';
+        return static_cast<bool>(output);
+    } catch (const std::exception& exception) {
+        std::cerr << "Failed to save particle config '" << filePath << "': " << exception.what() << '\n';
         return false;
     }
 }

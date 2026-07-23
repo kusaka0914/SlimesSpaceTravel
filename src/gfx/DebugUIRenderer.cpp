@@ -8,15 +8,23 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mCameraPanel(mContext),
       mUIPanel(mContext),
       mParameterPanel(mContext),
+      mParticleEffectPanel(mContext),
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
       mSelectionController(mContext),
       mStagePlacementPanel(mContext, mSelectionController),
       mEditCommandController(mContext, mSelectionController),
       mStageDeleteActorPanel(mContext, mEditCommandController),
-      mStageEditorPanel(mContext, mStageAddActorPanel, mStagePlanetPanel, mStagePlacementPanel, mStageDeleteActorPanel),
+      mStageEditorPanel(
+          mContext,
+          mStageAddActorPanel,
+          mStagePlanetPanel,
+          mStagePlacementPanel,
+          mStageDeleteActorPanel),
       mGizmoController(
-          mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
+          mContext,
+          mSelectionController,
+          [this]() { mEditCommandController.PushUndo(); },
           [this]() { mStagePlacementPanel.Save(); })
 {
 }
@@ -54,13 +62,21 @@ void DebugUIRenderer::Draw()
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("パーティクル")) {
+            mParticleEffectPanel.Draw();
+            ImGui::EndTabItem();
+        }
+
         ImGuiTabItemFlags stageEditorTabFlags = 0;
 
         if (mStageEditorPanel.ConsumeRequestOpenMainTab()) {
             stageEditorTabFlags |= ImGuiTabItemFlags_SetSelected;
         }
 
-        if (ImGui::BeginTabItem("ステージエディタ", nullptr, stageEditorTabFlags)) {
+        if (ImGui::BeginTabItem(
+                "ステージエディタ",
+                nullptr,
+                stageEditorTabFlags)) {
             mStageEditorPanel.Draw();
             ImGui::EndTabItem();
         }

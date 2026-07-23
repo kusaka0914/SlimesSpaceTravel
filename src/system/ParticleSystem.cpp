@@ -32,6 +32,25 @@ glm::vec3 CreatePerpendicular(const glm::vec3& axis)
                                                          : glm::vec3(1.0f, 0.0f, 0.0f);
     return SafeNormalize(glm::cross(axis, reference), glm::vec3(1.0f, 0.0f, 0.0f));
 }
+
+ParticleEmitterDefinition CreateDefaultEmitter()
+{
+    ParticleEmitterDefinition emitter;
+    emitter.texturePath = "spark_dot.png";
+    emitter.blendMode = ParticleBlendMode::Additive;
+    emitter.renderMode = ParticleRenderMode::Billboard;
+    emitter.directionMode = ParticleDirectionMode::Sphere;
+    emitter.count = 8;
+    emitter.lifetime = {0.25f, 0.50f};
+    emitter.speed = {0.5f, 2.0f};
+    emitter.startSize = {0.15f, 0.30f};
+    emitter.endSizeMultiplier = 0.1f;
+    emitter.rotationDegrees = {0.0f, 360.0f};
+    emitter.angularVelocityDegrees = {-90.0f, 90.0f};
+    emitter.startColor = glm::vec4(1.0f);
+    emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
+    return emitter;
+}
 } // namespace
 
 ParticleSystem::ParticleSystem(std::size_t maxParticleCount)
@@ -49,7 +68,26 @@ bool ParticleSystem::LoadDefinitions(const std::string& filePath)
     }
 
     mDefinitions = std::move(loadedDefinitions);
+    mDefinitionFilePath = filePath;
     return true;
+}
+
+bool ParticleSystem::ReloadDefinitions()
+{
+    if (mDefinitionFilePath.empty()) {
+        return false;
+    }
+
+    return LoadDefinitions(mDefinitionFilePath);
+}
+
+bool ParticleSystem::SaveDefinitions() const
+{
+    if (mDefinitionFilePath.empty()) {
+        return false;
+    }
+
+    return ParticleConfigLoader::Save(mDefinitionFilePath, mDefinitions);
 }
 
 bool ParticleSystem::Emit(const std::string& effectId, const ParticleSpawnContext& context)
@@ -65,6 +103,63 @@ bool ParticleSystem::Emit(const std::string& effectId, const ParticleSpawnContex
     }
 
     return true;
+}
+
+void ParticleSystem::EmitEmitter(
+    const ParticleEmitterDefinition& definition,
+    const ParticleSpawnContext& context)
+{
+    EmitFromDefinition(definition, context);
+}
+
+bool ParticleSystem::CreateEffect(const std::string& effectId)
+{
+    ParticleEffectDefinition definition;
+    definition.emitters.push_back(CreateDefaultEmitter());
+    return CreateEffect(effectId, definition);
+}
+
+bool ParticleSystem::CreateEffect(
+    const std::string& effectId,
+    const ParticleEffectDefinition& definition)
+{
+    if (effectId.empty() || mDefinitions.find(effectId) != mDefinitions.end()) {
+        return false;
+    }
+
+    mDefinitions.emplace(effectId, definition);
+    return true;
+}
+
+bool ParticleSystem::RemoveEffect(std::string_view effectId)
+{
+    return mDefinitions.erase(std::string(effectId)) > 0;
+}
+
+const ParticleEffectDefinition* ParticleSystem::FindEffect(std::string_view effectId) const
+{
+    const auto found = mDefinitions.find(std::string(effectId));
+    return found == mDefinitions.end() ? nullptr : &found->second;
+}
+
+ParticleEffectDefinition* ParticleSystem::FindEffectMutable(std::string_view effectId)
+{
+    const auto found = mDefinitions.find(std::string(effectId));
+    return found == mDefinitions.end() ? nullptr : &found->second;
+}
+
+std::vector<std::string> ParticleSystem::GetEffectIds() const
+{
+    std::vector<std::string> effectIds;
+    effectIds.reserve(mDefinitions.size());
+
+    for (const auto& [effectId, definition] : mDefinitions) {
+        (void)definition;
+        effectIds.push_back(effectId);
+    }
+
+    std::sort(effectIds.begin(), effectIds.end());
+    return effectIds;
 }
 
 void ParticleSystem::Update(float deltaTime)
@@ -101,8 +196,9 @@ void ParticleSystem::Clear()
     mParticles.clear();
 }
 
-void ParticleSystem::EmitFromDefinition(const ParticleEmitterDefinition& definition,
-                                        const ParticleSpawnContext& context)
+void ParticleSystem::EmitFromDefinition(
+    const ParticleEmitterDefinition& definition,
+    const ParticleSpawnContext& context)
 {
     if (mParticles.size() >= mMaxParticleCount) {
         return;
@@ -148,8 +244,9 @@ float ParticleSystem::RandomFloat(const ParticleFloatRange& range)
     return distribution(mRandomEngine);
 }
 
-glm::vec3 ParticleSystem::CreateSpawnDirection(const ParticleEmitterDefinition& definition,
-                                                const ParticleSpawnContext& context)
+glm::vec3 ParticleSystem::CreateSpawnDirection(
+    const ParticleEmitterDefinition& definition,
+    const ParticleSpawnContext& context)
 {
     const glm::vec3 normal = SafeNormalize(context.normal, glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 direction = SafeNormalize(context.direction, normal);

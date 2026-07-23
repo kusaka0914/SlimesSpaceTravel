@@ -3,6 +3,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
+#include "gfx/debug/panels/ParticleEffectDebugPanel.h"
 #include "gfx/debug/panels/PerformanceDebugPanel.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
@@ -30,6 +31,7 @@ private:
     CameraDebugPanel mCameraPanel;
     UIDebugPanel mUIPanel;
     ParameterDebugPanel mParameterPanel;
+    ParticleEffectDebugPanel mParticleEffectPanel;
 
     StageAddActorPanel mStageAddActorPanel;
     StagePlanetPanel mStagePlanetPanel;
