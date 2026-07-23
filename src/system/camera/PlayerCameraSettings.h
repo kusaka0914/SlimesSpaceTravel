@@ -12,6 +12,13 @@ struct PlayerCameraSettings {
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
 
+    float talkDistance = 4.5f;
+    float talkPitchDegrees = -30.0f;
+    float talkTargetHeight = 1.25f;
+    float talkFieldOfViewDegrees = 55.0f;
+    float talkTransitionInDuration = 0.6f;
+    float talkTransitionOutDuration = 0.45f;
+
     void Normalize();
 };
 

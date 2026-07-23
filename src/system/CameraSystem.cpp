@@ -9,6 +9,7 @@
 #include "system/SceneSystem.h"
 
 #include <SDL.h>
+#include <algorithm>
 #include <cmath>
 #include <glm/common.hpp>
 
@@ -106,11 +107,13 @@ float CameraSystem::GetFieldOfViewDegrees() const
         return mDebugCamera.GetFieldOfViewDegrees();
     }
 
-    if (mGame && mGame->GetIsPlayer2Joined()) {
-        return mPlayerCameraSettings.splitScreenFieldOfViewDegrees;
-    }
+    const float normalFieldOfView =
+        mGame && mGame->GetIsPlayer2Joined()
+            ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
+            : mPlayerCameraSettings.fieldOfViewDegrees;
 
-    return mPlayerCameraSettings.fieldOfViewDegrees;
+    return glm::mix(
+        normalFieldOfView, mPlayerCameraSettings.talkFieldOfViewDegrees, GetEasedTalkCameraBlend());
 }
 
 void CameraSystem::UpdateCamera(float deltaTime)
@@ -118,6 +121,8 @@ void CameraSystem::UpdateCamera(float deltaTime)
     if (!mGame) {
         return;
     }
+
+    UpdateTalkCameraTransition(deltaTime);
 
     if (mCinematicCamera.IsPlaying()) {
         mCinematicCamera.Update(deltaTime);
@@ -129,10 +134,65 @@ void CameraSystem::UpdateCamera(float deltaTime)
         return;
     }
 
-    const float yawDelta = mCameraStickX * mPlayerCameraSettings.yawSensitivity * deltaTime;
+    const float yawDelta = mTalkCameraBlend > 0.0f
+                               ? 0.0f
+                               : mCameraStickX * mPlayerCameraSettings.yawSensitivity * deltaTime;
 
     mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
                          mPlayerCameraSettings.targetSmoothingSpeed, deltaTime);
+}
+
+void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
+{
+    SceneSystem* sceneSystem = mGame ? mGame->GetSceneSystem() : nullptr;
+
+    Player* targetPlayer = nullptr;
+    if (sceneSystem && sceneSystem->IsTalkWithNPC() && sceneSystem->GetTalkingPlayer()) {
+        targetPlayer = sceneSystem->GetTalkingPlayer();
+    } else if (mTalkCameraPreviewEnabled && mGame) {
+        targetPlayer = mGame->GetMainPlayer();
+    }
+
+    if (targetPlayer) {
+        if (mTalkCameraPlayer && mTalkCameraPlayer != targetPlayer) {
+            mTalkCameraBlend = 0.0f;
+        }
+
+        mTalkCameraPlayer = targetPlayer;
+
+        const float duration = mPlayerCameraSettings.talkTransitionInDuration;
+        mTalkCameraBlend =
+            duration <= 0.0f ? 1.0f : std::min(1.0f, mTalkCameraBlend + std::max(0.0f, deltaTime) / duration);
+        return;
+    }
+
+    const float duration = mPlayerCameraSettings.talkTransitionOutDuration;
+    mTalkCameraBlend =
+        duration <= 0.0f ? 0.0f : std::max(0.0f, mTalkCameraBlend - std::max(0.0f, deltaTime) / duration);
+
+    if (mTalkCameraBlend <= 0.0f) {
+        mTalkCameraPlayer = nullptr;
+    }
+}
+
+float CameraSystem::GetEasedTalkCameraBlend() const
+{
+    const float blend = glm::clamp(mTalkCameraBlend, 0.0f, 1.0f);
+    return blend * blend * (3.0f - 2.0f * blend);
+}
+
+glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
+{
+    const float talkBlend = player && player == mTalkCameraPlayer ? GetEasedTalkCameraBlend() : 0.0f;
+    const float distance =
+        glm::mix(mPlayerCameraSettings.distance, mPlayerCameraSettings.talkDistance, talkBlend);
+    const float pitchDegrees =
+        glm::mix(mPlayerCameraSettings.pitchDegrees, mPlayerCameraSettings.talkPitchDegrees, talkBlend);
+    const float targetHeight =
+        glm::mix(mPlayerCameraSettings.targetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
+
+    return mPlayerCamera.GetView(
+        player, playerIndex, distance, glm::radians(pitchDegrees), targetHeight);
 }
 
 std::vector<glm::mat4> CameraSystem::GetViews()
@@ -171,6 +231,15 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
+    const bool isPlayer2Joined = mGame->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
+    if (mTalkCameraPlayer && mTalkCameraBlend > 0.0f) {
+        views.emplace_back(GetPlayerCameraView(players[0], 0));
+        if (isPlayer2Joined) {
+            views.emplace_back(GetPlayerCameraView(players[1], 1));
+        }
+        return views;
+    }
+
     const std::vector<Boat*> boats = currentPlanet->GetBoats();
     if (!boats.empty()) {
         views = mFocusCamera.GetBoatFocusViews(boats);
@@ -201,14 +270,10 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         }
     }
 
-    const float cameraPitch = glm::radians(mPlayerCameraSettings.pitchDegrees);
-    views.emplace_back(mPlayerCamera.GetView(players[0], 0, mPlayerCameraSettings.distance, cameraPitch,
-                                             mPlayerCameraSettings.targetHeight));
+    views.emplace_back(GetPlayerCameraView(players[0], 0));
 
-    const bool isPlayer2Joined = mGame->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
     if (isPlayer2Joined) {
-        views.emplace_back(mPlayerCamera.GetView(players[1], 1, mPlayerCameraSettings.distance, cameraPitch,
-                                                 mPlayerCameraSettings.targetHeight));
+        views.emplace_back(GetPlayerCameraView(players[1], 1));
     }
 
     return views;
@@ -226,6 +291,10 @@ glm::vec3 CameraSystem::GetCameraPos() const
 
     if (mGame->GetIsFreeCameraMode()) {
         return mDebugCamera.GetCameraPos();
+    }
+
+    if (mTalkCameraPlayer && mTalkCameraBlend > 0.0f) {
+        return mPlayerCamera.GetCameraPos(0);
     }
 
     if (mIsTargetFocus) {

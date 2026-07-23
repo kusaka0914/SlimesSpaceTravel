@@ -42,6 +42,7 @@ public:
     bool CanUpdateWorld() const { return IsPlaying() || IsFocusing(); }
     bool IsTitle() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Title; }
     bool IsOpening() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening; }
+    bool IsTalking() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Talking; }
     bool IsPlaying() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Playing; }
     bool IsFocusing() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Focusing; }
     bool IsStageClear() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::StageClear; }

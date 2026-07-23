@@ -46,6 +46,9 @@ public:
     bool SavePlayerCameraSettings() const;
     bool ReloadPlayerCameraSettings();
 
+    bool GetTalkCameraPreviewEnabled() const { return mTalkCameraPreviewEnabled; }
+    void SetTalkCameraPreviewEnabled(bool enabled) { mTalkCameraPreviewEnabled = enabled; }
+
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
@@ -63,13 +66,19 @@ public:
 
 private:
     void UpdateCamera(float deltaTime);
+    void UpdateTalkCameraTransition(float deltaTime);
+    float GetEasedTalkCameraBlend() const;
+    glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
     Enemy* FindBossEnemy(Planet* planet) const;
 
 private:
     Game* mGame;
 
     bool mIsTargetFocus = false;
+    bool mTalkCameraPreviewEnabled = false;
     float mCameraStickX = 0.0f;
+    float mTalkCameraBlend = 0.0f;
+    Player* mTalkCameraPlayer = nullptr;
 
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;

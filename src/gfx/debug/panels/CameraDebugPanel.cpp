@@ -94,8 +94,28 @@ void CameraDebugPanel::Draw()
     playerCameraChanged |= ImGui::DragFloat(
         "位置追従速度##PlayerCamera", &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
+    ImGui::Spacing();
+    ImGui::TextUnformatted("NPC会話カメラ");
+    playerCameraChanged |= ImGui::DragFloat(
+        "距離##TalkCamera", &playerCameraSettings.talkDistance, 0.1f, 0.5f, 50.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "ピッチ角（度）##TalkCamera", &playerCameraSettings.talkPitchDegrees, 0.25f, -89.0f, 89.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "注視点の高さ##TalkCamera", &playerCameraSettings.talkTargetHeight, 0.05f, -10.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "FOV##TalkCamera", &playerCameraSettings.talkFieldOfViewDegrees, 0.25f, 10.0f, 120.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "近づく時間（秒）##TalkCamera", &playerCameraSettings.talkTransitionInDuration, 0.01f, 0.0f, 10.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "戻る時間（秒）##TalkCamera", &playerCameraSettings.talkTransitionOutDuration, 0.01f, 0.0f, 10.0f);
+
     if (playerCameraChanged) {
         cameraSystem->SetPlayerCameraSettings(playerCameraSettings);
+    }
+
+    bool talkCameraPreviewEnabled = cameraSystem->GetTalkCameraPreviewEnabled();
+    if (ImGui::Checkbox("会話カメラをプレビュー", &talkCameraPreviewEnabled)) {
+        cameraSystem->SetTalkCameraPreviewEnabled(talkCameraPreviewEnabled);
     }
 
     if (ImGui::Button("プレイヤーカメラ設定を保存")) {

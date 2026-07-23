@@ -292,7 +292,7 @@ void Game::UpdateGame()
         cameraUpdated = true;
     }
 
-    if (!cameraUpdated && mCameraSystem->IsCinematicPlaying()) {
+    if (!cameraUpdated && (mCameraSystem->IsCinematicPlaying() || mSceneSystem->IsTalking())) {
         mCameraSystem->Update(deltaTime);
     }
 }

@@ -27,6 +27,13 @@ void PlayerCameraSettings::Normalize()
     yawSensitivity = glm::clamp(yawSensitivity, 0.0f, 20.0f);
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
+
+    talkDistance = glm::clamp(talkDistance, 0.5f, 50.0f);
+    talkPitchDegrees = glm::clamp(talkPitchDegrees, -89.0f, 89.0f);
+    talkTargetHeight = glm::clamp(talkTargetHeight, -10.0f, 20.0f);
+    talkFieldOfViewDegrees = glm::clamp(talkFieldOfViewDegrees, 10.0f, 120.0f);
+    talkTransitionInDuration = glm::clamp(talkTransitionInDuration, 0.0f, 10.0f);
+    talkTransitionOutDuration = glm::clamp(talkTransitionOutDuration, 0.0f, 10.0f);
 }
 
 PlayerCameraSettingsRepository::PlayerCameraSettingsRepository(std::string filePath)
@@ -65,6 +72,22 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             ReadFloat(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
         loadedSettings.targetSmoothingSpeed =
             ReadFloat(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
+
+        const YAML::Node talkNode = cameraNode["talk"];
+        if (talkNode && talkNode.IsMap()) {
+            loadedSettings.talkDistance = ReadFloat(talkNode, "distance", loadedSettings.talkDistance);
+            loadedSettings.talkPitchDegrees =
+                ReadFloat(talkNode, "pitchDegrees", loadedSettings.talkPitchDegrees);
+            loadedSettings.talkTargetHeight =
+                ReadFloat(talkNode, "targetHeight", loadedSettings.talkTargetHeight);
+            loadedSettings.talkFieldOfViewDegrees =
+                ReadFloat(talkNode, "fieldOfView", loadedSettings.talkFieldOfViewDegrees);
+            loadedSettings.talkTransitionInDuration =
+                ReadFloat(talkNode, "transitionInDuration", loadedSettings.talkTransitionInDuration);
+            loadedSettings.talkTransitionOutDuration =
+                ReadFloat(talkNode, "transitionOutDuration", loadedSettings.talkTransitionOutDuration);
+        }
+
         loadedSettings.Normalize();
         settings = loadedSettings;
         return true;
@@ -98,6 +121,19 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "upSmoothingSpeed" << YAML::Value << normalizedSettings.upSmoothingSpeed;
         emitter << YAML::Key << "targetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.targetSmoothingSpeed;
+
+        emitter << YAML::Key << "talk" << YAML::Value << YAML::BeginMap;
+        emitter << YAML::Key << "distance" << YAML::Value << normalizedSettings.talkDistance;
+        emitter << YAML::Key << "pitchDegrees" << YAML::Value << normalizedSettings.talkPitchDegrees;
+        emitter << YAML::Key << "targetHeight" << YAML::Value << normalizedSettings.talkTargetHeight;
+        emitter << YAML::Key << "fieldOfView" << YAML::Value
+                << normalizedSettings.talkFieldOfViewDegrees;
+        emitter << YAML::Key << "transitionInDuration" << YAML::Value
+                << normalizedSettings.talkTransitionInDuration;
+        emitter << YAML::Key << "transitionOutDuration" << YAML::Value
+                << normalizedSettings.talkTransitionOutDuration;
+        emitter << YAML::EndMap;
+
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 

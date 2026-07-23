@@ -7,3 +7,10 @@ playerCamera:
   yawSensitivity: 2.5
   upSmoothingSpeed: 8
   targetSmoothingSpeed: 6
+  talk:
+    distance: 2.9
+    pitchDegrees: -46
+    targetHeight: 0.9
+    fieldOfView: 55
+    transitionInDuration: 0.6
+    transitionOutDuration: 0.45
