@@ -154,6 +154,7 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.defaultInvincibleTimer = ReadFloat(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);
         config.defaultDamageTimer = ReadFloat(playerNode, "defaultDamageTimer", config.defaultDamageTimer);
         config.defaultAttackMotionTimer = ReadFloat(playerNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
+        config.attackHitDelay = ReadFloat(playerNode, "attackHitDelay", config.attackHitDelay);
         config.attackCooldown = ReadFloat(playerNode, "attackCooldown", config.attackCooldown);
         config.lastAttackCooldown = ReadFloat(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
         config.defaultAttackPressTimer = ReadFloat(playerNode, "defaultAttackPressTimer", config.defaultAttackPressTimer);

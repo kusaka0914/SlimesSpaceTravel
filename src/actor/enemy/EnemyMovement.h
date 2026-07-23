@@ -14,8 +14,9 @@ public:
 
     void MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime);
     void MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
-                             float deltaTime);
+                              float deltaTime);
     void MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime);
+    void MoveDuringDying(Enemy& enemy, float deltaTime);
 
     void LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
     void UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);

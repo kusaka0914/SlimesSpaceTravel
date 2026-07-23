@@ -32,6 +32,7 @@ struct PlayerConfig {
     float defaultInvincibleTimer = 2.0f;
     float defaultDamageTimer = 1.0f;
     float defaultAttackMotionTimer = 0.3f;
+    float attackHitDelay = 0.5f;
     float attackCooldown = 0.3f;
     float lastAttackCooldown = 1.0f;
     float defaultAttackPressTimer = 0.0f;

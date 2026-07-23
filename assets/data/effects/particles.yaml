@@ -161,3 +161,96 @@ particleEffects:
 
         colorStart: [0.98, 0.96, 0.90, 0.80]
         colorEnd: [0.70, 0.68, 0.64, 0.0]
+
+  enemy_defeat:
+    emitters:
+      # Enemy disappears after this larger center flash is emitted.
+      - texture: "spark_core.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "sphere"
+        count: 1
+
+        lifetime:
+          min: 0.12
+          max: 0.18
+
+        speed: 0.0
+
+        size:
+          start:
+            min: 0.95
+            max: 1.20
+          endMultiplier: 0.05
+
+        rotationDegrees:
+          min: -30.0
+          max: 30.0
+
+        colorStart: [1.0, 1.0, 0.82, 1.0]
+        colorEnd: [1.0, 0.30, 0.02, 0.0]
+
+      # A wider burst distinguishes defeat from an ordinary attack hit.
+      - texture: "spark_streak.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "sphere"
+        count: 2
+
+        lifetime:
+          min: 0.18
+          max: 0.28
+
+        speed: 0.0
+
+        size:
+          start:
+            min: 1.15
+            max: 1.50
+          endMultiplier: 0.08
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        angularVelocityDegrees:
+          min: -100.0
+          max: 100.0
+
+        colorStart: [1.0, 0.72, 0.16, 1.0]
+        colorEnd: [1.0, 0.12, 0.01, 0.0]
+
+      # Embers continue moving after the enemy model has disappeared.
+      - texture: "spark_dot.png"
+        blendMode: "additive"
+        renderMode: "billboard"
+        directionMode: "sphere"
+        count: 8
+
+        lifetime:
+          min: 0.35
+          max: 0.62
+
+        speed:
+          min: 1.20
+          max: 3.80
+
+        size:
+          start:
+            min: 0.18
+            max: 0.32
+          endMultiplier: 0.10
+
+        rotationDegrees:
+          min: 0.0
+          max: 360.0
+
+        angularVelocityDegrees:
+          min: -120.0
+          max: 120.0
+
+        gravity: 0.70
+        drag: 1.60
+
+        colorStart: [1.0, 0.62, 0.10, 1.0]
+        colorEnd: [0.95, 0.08, 0.01, 0.0]

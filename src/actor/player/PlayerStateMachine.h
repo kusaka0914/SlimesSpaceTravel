@@ -35,8 +35,8 @@ private:
                          PlayerStatus& status, float deltaTime);
     void UpdateCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                         float deltaTime);
-    void UpdateStrongAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
-                               float deltaTime);
+    void UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                               PlayerStatus& status, float deltaTime);
     void UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                            float deltaTime);
     void UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,

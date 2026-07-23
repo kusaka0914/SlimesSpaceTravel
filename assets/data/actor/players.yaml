@@ -2,7 +2,7 @@ players:
   - hp: 10
     scale: 0.0025
     attack: 5
-    attackSpeed: 5
+    attackSpeed: 3
     moveSpeed: 4
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.3
@@ -19,32 +19,34 @@ players:
     specialAttackCooldown: 30
     defaultInvincibleTimer: 2
     defaultDamageTimer: 1
-    defaultAttackMotionTimer: 0.1
+    defaultAttackMotionTimer: 0.3
+    attackHitDelay: 0.2
     attackCooldown: 0.39
     lastAttackCooldown: 1
     defaultAttackPressTimer: 1
     chargeMoveSpeed: 3
     defaultStrongAttackTimer: 0.06
     knockBackSpeed: 4
-    # modelPath: player.obj
-    modelPath: "slime_attack_test.fbx"
+    modelPath: slime_attack_test.fbx
     animations:
       idle:
-        clip: "Idle"
-        mode: "base"
-
+        clip: Idle
+        mode: base
       walk:
-        clip: "Walk"
-        mode: "base"
-
+        clip: Walk
+        mode: base
       attack:
-        clip: "Attack"
-        mode: "oneShot"
-       
+        clip: Attack
+        mode: oneShot
+      second_attack:
+        clip: SecondAttack
+        mode: oneShot
+      strong_attack:
+        clip: StrongAttack
+        mode: oneShot
       dodge:
-        clip: "Dodge"
-        mode: "oneShot"
-
+        clip: Dodge
+        mode: oneShot
       jump:
-        clip: "Jump"
-        mode: "oneShot"
+        clip: Jump
+        mode: oneShot

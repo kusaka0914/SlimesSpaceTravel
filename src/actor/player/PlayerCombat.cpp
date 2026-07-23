@@ -15,12 +15,17 @@
 bool PlayerCombat::IsAttacking() const
 {
     return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f || mAttackPressTimer >= 0.0f ||
-           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
+           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f ||
+           mHasPendingAttackHit;
 }
 
 void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement,
                                   PlayerStatus& status, float deltaTime)
 {
+    (void)movement;
+    (void)status;
+    (void)deltaTime;
+
     if (!player.GetOnGround() && input.GetWideAttackPressed()) {
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
@@ -30,7 +35,7 @@ void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, Play
         mAirAttackFloatingTimer = 0.5f;
         mIsAirAttacking = true;
 
-        Attack(player, movement, status, deltaTime);
+        StartAttackHitDelay();
         return;
     }
 
@@ -52,7 +57,7 @@ void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, Play
         mAttack = mWideAttack;
     }
 
-    Attack(player, movement, status, deltaTime);
+    StartAttackHitDelay();
 }
 
 void PlayerCombat::StartCharging(Player& player)
@@ -78,6 +83,12 @@ void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
     mAttackPressTimer = -1.0f;
 
     mIsStrongAttacked = true;
+
+    if (mIsCharged) {
+        StartAttackHitDelay();
+    } else {
+        ClearPendingAttackHit();
+    }
 }
 
 void PlayerCombat::FinishCharging(Player& player, const PlayerMovement& movement)
@@ -90,6 +101,38 @@ void PlayerCombat::FinishSpecialAttackCharging()
 {
     mSpecialChargingTimer = -1.0f;
     mCanSpecialAttack = false;
+}
+
+void PlayerCombat::StartAttackHitDelay()
+{
+    mAttackHitDelayRemaining = std::max(0.0f, mAttackHitDelay);
+    mHasPendingAttackHit = true;
+}
+
+void PlayerCombat::ClearPendingAttackHit()
+{
+    mAttackHitDelayRemaining = -1.0f;
+    mHasPendingAttackHit = false;
+}
+
+bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status,
+                                          float deltaTime)
+{
+    if (!mHasPendingAttackHit) {
+        return false;
+    }
+
+    mAttackHitDelayRemaining -= deltaTime;
+    if (mAttackHitDelayRemaining > 0.0f) {
+        return false;
+    }
+
+    ClearPendingAttackHit();
+
+    // FindHitEnemies reads the player's facing vector here, so the hit direction
+    // is the direction the player is facing at the end of the wind-up.
+    Attack(player, movement, status, deltaTime);
+    return true;
 }
 
 void PlayerCombat::Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
@@ -150,7 +193,7 @@ void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
-    mAttackMoveLockRemaining = 1.0f;
+    mAttackMoveLockRemaining = 0.6f;
     mComboKeepTimer = mAttackMoveLockRemaining + 1.0f;
 
     if (player.GetOnGround()) {

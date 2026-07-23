@@ -15,6 +15,7 @@ class PlayerStatus;
 class PlayerCombat {
 public:
     bool IsAttacking() const;
+    bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
     bool CanMoveDuringAttack() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
@@ -33,6 +34,7 @@ public:
     void StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime);
     void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+    bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 
     void StartSpecialAttackCharging();
@@ -74,6 +76,7 @@ public:
     {
         mDefaultAttackMotionTimer = defaultAttackMotionTimer;
     }
+    void SetAttackHitDelay(float attackHitDelay) { mAttackHitDelay = attackHitDelay; }
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
     void SetStrongAttackHit(bool value) { mIsStrongAttackHit = value; }
@@ -113,6 +116,7 @@ public:
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
     float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
     float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
+    float GetAttackHitDelay() const { return mAttackHitDelay; }
     const std::vector<PlayerRaySegment>& GetRayCasts() const { return mRayCasts; }
 
     void ReduceAttackMotionTimer(float deltaTime) { mAttackMotionTimer -= deltaTime; }
@@ -127,6 +131,10 @@ public:
     bool CanAcceptMovementInput() const;
 
 private:
+    void StartAttackHitDelay();
+    void ClearPendingAttackHit();
+
+private:
     PlayerAttackKind mAttackKind = PlayerAttackKind::Normal;
 
     bool mIsStrongAttackHit = false;
@@ -134,6 +142,7 @@ private:
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
+    bool mHasPendingAttackHit = false;
 
     int mAttackComboIndex = 0;
 
@@ -147,6 +156,8 @@ private:
     float mAttackDodgeLockRemaining = 0.0f;
     float mAttackMotionTimer = -1.0f;
     float mDefaultAttackMotionTimer = 0.3f;
+    float mAttackHitDelay = 0.5f;
+    float mAttackHitDelayRemaining = -1.0f;
     float mAirAttackFloatingTimer = -1.0f;
     float mSpecialAttackCooldown = 30.0f;
     float mAttackPressTimer = -1.0f;

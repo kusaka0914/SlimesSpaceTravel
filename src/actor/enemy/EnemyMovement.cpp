@@ -40,7 +40,7 @@ void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float 
 }
 
 void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
-                                        float deltaTime)
+                                         float deltaTime)
 {
     glm::vec3 moveDelta;
     if (stateMachine.IsProgressing(status)) {
@@ -55,6 +55,25 @@ void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status,
 void EnemyMovement::MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
     const glm::vec3 moveDelta = status.GetKnockBackFrom() * status.GetKnockBackSpeed() * deltaTime;
+    enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
+}
+
+void EnemyMovement::MoveDuringDying(Enemy& enemy, float deltaTime)
+{
+    glm::vec3 upDirection = enemy.GetUpVec();
+    if (glm::length(upDirection) < 1e-6f) {
+        return;
+    }
+
+    upDirection = glm::normalize(upDirection);
+
+    constexpr float gravityAcceleration = 9.8f;
+    const glm::vec3 gravityVelocityDelta = -upDirection * gravityAcceleration * deltaTime;
+    const glm::vec3 velocity = enemy.GetVelocity() + gravityVelocityDelta;
+
+    enemy.SetVelocity(velocity);
+
+    const glm::vec3 moveDelta = velocity * deltaTime;
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 

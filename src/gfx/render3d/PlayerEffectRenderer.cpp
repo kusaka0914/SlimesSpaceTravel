@@ -32,11 +32,11 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
 
     mRenderer->TryDrawActor(players[0]);
 
-    const bool canDrawP1AttackRange =
+    /*const bool canDrawP1AttackRange =
         players[0]->IsAttacking() || players[0]->GetIsStrongAttacked() || players[0]->GetCanSpecialAttack();
     if (canDrawP1AttackRange) {
         DrawPlayerAttackRange(players[0]);
-    }
+    }*/
 
     DrawTiredEffect(viewMat, players[0]);
 
@@ -47,11 +47,11 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
 
     mRenderer->TryDrawActor(players[1]);
 
-    const bool canDrawP2AttackRange =
+    /*const bool canDrawP2AttackRange =
         players[1]->IsAttacking() || players[1]->GetIsStrongAttacked() || players[1]->GetCanSpecialAttack();
     if (canDrawP2AttackRange) {
         DrawPlayerAttackRange(players[1]);
-    }
+    }*/
 
     DrawTiredEffect(viewMat, players[1]);
 }

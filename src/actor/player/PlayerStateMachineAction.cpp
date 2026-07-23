@@ -23,13 +23,17 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
 void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
+    if (combat.HasPendingAttackHit()) {
+        // Turning is allowed during the wind-up, but movement remains locked.
+        // The hit detector therefore uses the facing direction on the exact hit frame.
+        movement.UpdateFacingDirectionFromInput(player, input);
+        combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
+        return;
+    }
+
     if (player.GetOnGround()) {
         movement.ApplyAttackMovement(player, combat, deltaTime);
     }
-
-    /*if (combat.CanAcceptMovementInput()) {
-        movement.MoveFromInput(player, input, deltaTime);
-    }*/
 
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
@@ -60,13 +64,21 @@ void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, Play
     combat.FinishCharging(player, movement);
 }
 
-void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                               PlayerStatus& status, float deltaTime)
+void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                               PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
-    movement.ApplyStrongAttackMovement(player, combat, deltaTime);
+    if (combat.HasPendingAttackHit()) {
+        movement.UpdateFacingDirectionFromInput(player, input);
+    }
 
-    combat.ReduceStrongAttackTimer(deltaTime);
     if (combat.GetStrongAttackTimer() >= 0.0f) {
+        movement.ApplyStrongAttackMovement(player, combat, deltaTime);
+        combat.ReduceStrongAttackTimer(deltaTime);
+    }
+
+    combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
+
+    if (combat.HasPendingAttackHit() || combat.GetStrongAttackTimer() >= 0.0f) {
         return;
     }
 
@@ -74,10 +86,6 @@ void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& m
 
     if (!combat.GetIsCharged()) {
         return;
-    }
-
-    if (!combat.GetIsStrongAttackHit()) {
-        combat.Attack(player, movement, status, deltaTime);
     }
 
     if (combat.GetIsStrongAttackHit()) {

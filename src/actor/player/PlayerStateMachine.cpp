@@ -58,7 +58,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         UpdateCharging(player, input, movement, combat, deltaTime);
         break;
     case PlayerActionState::StrongAttacking:
-        UpdateStrongAttacking(player, movement, combat, status, deltaTime);
+        UpdateStrongAttacking(player, input, movement, combat, status, deltaTime);
         break;
     case PlayerActionState::KnockedBack:
         UpdateKnockedBack(player, movement, combat, status, deltaTime);

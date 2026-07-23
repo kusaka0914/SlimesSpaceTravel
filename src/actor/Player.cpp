@@ -7,39 +7,16 @@
 #include "actor/player/PlayerDamageHandler.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <string_view>
 
 namespace {
 constexpr std::string_view idleAnimationId = "idle";
 constexpr std::string_view walkAnimationId = "walk";
-
-struct ActionAnimationBinding {
-    PlayerActionState state;
-    std::string_view animationId;
-};
-
-constexpr std::array actionAnimationBindings = {
-    ActionAnimationBinding{PlayerActionState::Dodging, "dodge"},
-    ActionAnimationBinding{PlayerActionState::Attacking, "attack"},
-    ActionAnimationBinding{PlayerActionState::StrongAttacking, "attack"},
-};
-
-void RequestEnteredActionAnimation(PlayerAnimationController& animationController, PlayerActionState previousState,
-                                   PlayerActionState currentState)
-{
-    if (previousState == currentState) {
-        return;
-    }
-
-    for (const ActionAnimationBinding& binding : actionAnimationBindings) {
-        if (binding.state == currentState) {
-            animationController.RequestAnimation(binding.animationId);
-            return;
-        }
-    }
-}
+constexpr std::string_view dodgeAnimationId = "dodge";
+constexpr std::string_view attackAnimationId = "attack";
+constexpr std::string_view secondAttackAnimationId = "second_attack";
+constexpr std::string_view strongAttackAnimationId = "strong_attack";
 } // namespace
 
 Player::Player(Game* game)
@@ -83,6 +60,7 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mStatus.SetDefaultInvincibleTimer(config.defaultInvincibleTimer);
     mStatus.SetDefaultDamageTimer(config.defaultDamageTimer);
     mCombat.SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
+    mCombat.SetAttackHitDelay(config.attackHitDelay);
     mCombat.SetAttackCooldown(config.attackCooldown);
     mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
     mCombat.SetDefaultAttackPressTimer(config.defaultAttackPressTimer);
@@ -149,8 +127,41 @@ void Player::UpdateActor(float deltaTime)
     mParticleEffectController.UpdateWalking(*this, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
-    RequestEnteredActionAnimation(mAnimationController, previousActionState, currentActionState);
+    RequestEnteredActionAnimation(previousActionState, currentActionState);
     mAnimationController.Update(deltaTime);
+}
+
+void Player::RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState)
+{
+    if (previousState == currentState) {
+        return;
+    }
+
+    switch (currentState) {
+    case PlayerActionState::Dodging:
+        mAnimationController.RequestAnimation(dodgeAnimationId);
+        return;
+
+    case PlayerActionState::Attacking:
+        if (mCombat.GetAttackKind() == PlayerAttackKind::Wide) {
+            const std::string_view weakAttackAnimationId =
+                mUseSecondAttackAnimationNext ? secondAttackAnimationId : attackAnimationId;
+
+            mAnimationController.RequestAnimation(weakAttackAnimationId);
+            mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
+            return;
+        }
+
+        mAnimationController.RequestAnimation(strongAttackAnimationId);
+        return;
+
+    case PlayerActionState::StrongAttacking:
+        mAnimationController.RequestAnimation(strongAttackAnimationId);
+        return;
+
+    default:
+        return;
+    }
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
@@ -173,6 +184,7 @@ void Player::Restart()
 {
     mRespawn.Restart(*this, mStateMachine, mStatus);
     mParticleEffectController.Reset();
+    mUseSecondAttackAnimationNext = false;
     mAnimationController.ResetToAnimation(idleAnimationId);
 }
 

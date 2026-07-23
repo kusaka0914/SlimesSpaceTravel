@@ -7,12 +7,12 @@ title:
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
-    text: ["START: X"]
+    text: [Xを押してください]
   - id: startTextForKeyBoard
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
-    text: ["START: K"]
+    text: [Kを押してください]
 opening:
   - id: bgTexture
     type: texture
@@ -87,17 +87,17 @@ default:
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: ["会話: X"]
+    text: ["はなす: X"]
   - id: talkableTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: ["会話: K"]
+    text: ["はなす: K"]
   - id: remainPartsText
     type: text
-    posRatio: [0.2, 0.015]
+    posRatio: [0.2199, 0.015]
     scaleRatio: [0.0003125, 1.0]
-    text: ["残りのパーツ数: "]
+    text: ["のこりのパーツ数: "]
 state:
   - id: battleTutorialTextForGameController
     type: text

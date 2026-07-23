@@ -251,6 +251,7 @@ public:
 
 private:
     void ApplyPlayerConfig(const PlayerConfig& config);
+    void RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState);
 
     void OnLanded() override;
     void OnUpVecUpdateFailed() override;
@@ -271,4 +272,6 @@ private:
     PlayerStateMachine mStateMachine;
     PlayerParticleEffectController mParticleEffectController;
     PlayerAnimationController mAnimationController;
+
+    bool mUseSecondAttackAnimationNext = false;
 };
