@@ -18,14 +18,17 @@ class PlayerCamera {
 public:
     explicit PlayerCamera(CameraCollisionResolver& collisionResolver);
 
-    void Update(const std::vector<Player*>& players, float yawDelta, float deltaTime);
+    void Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
+                float targetSmoothingSpeed, float deltaTime);
 
-    glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch, bool isFixed = false);
+    glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
+                      float targetHeight, bool isFixed = false);
     glm::vec3 GetCameraPos(int playerIndex) const;
 
 private:
     void ResizeState(std::size_t count);
-    void UpdateState(Player* player, int playerIndex, float deltaTime);
+    void UpdateState(Player* player, int playerIndex, float upSmoothingSpeed, float targetSmoothingSpeed,
+                     float deltaTime);
 
 private:
     CameraCollisionResolver& mCollisionResolver;

@@ -6,6 +6,7 @@
 #include "system/camera/DebugCamera.h"
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
+#include "system/camera/PlayerCameraSettings.h"
 
 #include <glm/glm.hpp>
 
@@ -40,6 +41,11 @@ public:
     bool SaveCinematicSequences() const { return mCinematicLibrary.Save(); }
     bool ReloadCinematicSequences();
 
+    const PlayerCameraSettings& GetPlayerCameraSettings() const { return mPlayerCameraSettings; }
+    void SetPlayerCameraSettings(PlayerCameraSettings settings);
+    bool SavePlayerCameraSettings() const;
+    bool ReloadPlayerCameraSettings();
+
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
@@ -63,13 +69,14 @@ private:
     Game* mGame;
 
     bool mIsTargetFocus = false;
-    float mCameraPitch = -1.0f;
     float mCameraStickX = 0.0f;
 
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;
     FocusCamera mFocusCamera;
     PlayerCamera mPlayerCamera;
+    PlayerCameraSettings mPlayerCameraSettings;
+    PlayerCameraSettingsRepository mPlayerCameraSettingsRepository;
 
     CinematicSequenceLibrary mCinematicLibrary;
     CinematicCamera mCinematicCamera;

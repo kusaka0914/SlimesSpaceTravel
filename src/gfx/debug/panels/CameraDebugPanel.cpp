@@ -73,6 +73,59 @@ void CameraDebugPanel::Draw()
         return;
     }
 
+    ImGui::TextUnformatted("通常プレイヤーカメラ");
+
+    PlayerCameraSettings playerCameraSettings = cameraSystem->GetPlayerCameraSettings();
+    bool playerCameraChanged = false;
+    playerCameraChanged |=
+        ImGui::DragFloat("距離##PlayerCamera", &playerCameraSettings.distance, 0.1f, 0.5f, 50.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "ピッチ角（度）##PlayerCamera", &playerCameraSettings.pitchDegrees, 0.25f, -89.0f, 89.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "注視点の高さ##PlayerCamera", &playerCameraSettings.targetHeight, 0.05f, -10.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "FOV##PlayerCamera", &playerCameraSettings.fieldOfViewDegrees, 0.25f, 10.0f, 120.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "2画面時FOV##PlayerCamera", &playerCameraSettings.splitScreenFieldOfViewDegrees, 0.25f, 10.0f, 120.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "旋回感度##PlayerCamera", &playerCameraSettings.yawSensitivity, 0.05f, 0.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "上方向追従速度##PlayerCamera", &playerCameraSettings.upSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "位置追従速度##PlayerCamera", &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+
+    if (playerCameraChanged) {
+        cameraSystem->SetPlayerCameraSettings(playerCameraSettings);
+    }
+
+    if (ImGui::Button("プレイヤーカメラ設定を保存")) {
+        mStatusMessage =
+            cameraSystem->SavePlayerCameraSettings() ? "プレイヤーカメラ設定を保存しました"
+                                                     : "プレイヤーカメラ設定の保存に失敗しました";
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("プレイヤーカメラ設定を再読み込み")) {
+        mStatusMessage =
+            cameraSystem->ReloadPlayerCameraSettings() ? "プレイヤーカメラ設定を再読み込みしました"
+                                                       : "プレイヤーカメラ設定の再読み込みに失敗しました";
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("プレイヤーカメラを初期値に戻す")) {
+        cameraSystem->SetPlayerCameraSettings(PlayerCameraSettings{});
+        mStatusMessage = "プレイヤーカメラ設定を初期値に戻しました（未保存）";
+    }
+
+    if (mContext.game->GetIsFreeCameraMode()) {
+        ImGui::TextDisabled("調整結果はフリーカメラを終了すると確認できます");
+    } else {
+        ImGui::TextDisabled("変更はゲーム画面へ即時反映されます。確定するには保存してください");
+    }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("フリーカメラ");
+
     const bool isFreeCamera = mContext.game->GetIsFreeCameraMode();
     if (ImGui::Button(isFreeCamera ? "フリーカメラを終了" : "フリーカメラを開始")) {
         mContext.game->ToggleFreeCameraMode();

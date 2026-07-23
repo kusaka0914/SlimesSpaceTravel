@@ -61,7 +61,8 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
 
     const float halfHeight = fbHeight * 0.5f;
     const float aspect = fbWidth / halfHeight;
-    const glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+    const float fieldOfViewDegrees = mGame->GetCameraSystem()->GetFieldOfViewDegrees();
+    const glm::mat4 proj = glm::perspective(glm::radians(fieldOfViewDegrees), aspect, 0.1f, 100.0f);
 
     const glm::vec3 p1CameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(0);
     const glm::vec3 p2CameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(1);

@@ -18,8 +18,10 @@ CameraSystem::CameraSystem(Game* game)
       mDebugCamera(game),
       mFocusCamera(game),
       mPlayerCamera(mCollisionResolver),
+      mPlayerCameraSettingsRepository("../assets/data/camera/player.yaml"),
       mCinematicLibrary("../assets/data/camera/cinematics.yaml")
 {
+    mPlayerCameraSettingsRepository.Load(mPlayerCameraSettings);
     mCinematicLibrary.Load();
 }
 
@@ -72,6 +74,28 @@ bool CameraSystem::ReloadCinematicSequences()
     return mCinematicLibrary.Load();
 }
 
+void CameraSystem::SetPlayerCameraSettings(PlayerCameraSettings settings)
+{
+    settings.Normalize();
+    mPlayerCameraSettings = settings;
+}
+
+bool CameraSystem::SavePlayerCameraSettings() const
+{
+    return mPlayerCameraSettingsRepository.Save(mPlayerCameraSettings);
+}
+
+bool CameraSystem::ReloadPlayerCameraSettings()
+{
+    PlayerCameraSettings settings;
+    if (!mPlayerCameraSettingsRepository.Load(settings)) {
+        return false;
+    }
+
+    mPlayerCameraSettings = settings;
+    return true;
+}
+
 float CameraSystem::GetFieldOfViewDegrees() const
 {
     if (mCinematicCamera.IsPlaying()) {
@@ -82,7 +106,11 @@ float CameraSystem::GetFieldOfViewDegrees() const
         return mDebugCamera.GetFieldOfViewDegrees();
     }
 
-    return 60.0f;
+    if (mGame && mGame->GetIsPlayer2Joined()) {
+        return mPlayerCameraSettings.splitScreenFieldOfViewDegrees;
+    }
+
+    return mPlayerCameraSettings.fieldOfViewDegrees;
 }
 
 void CameraSystem::UpdateCamera(float deltaTime)
@@ -101,10 +129,10 @@ void CameraSystem::UpdateCamera(float deltaTime)
         return;
     }
 
-    constexpr float cameraSensitivity = 2.5f;
-    const float yawDelta = mCameraStickX * cameraSensitivity * deltaTime;
+    const float yawDelta = mCameraStickX * mPlayerCameraSettings.yawSensitivity * deltaTime;
 
-    mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, deltaTime);
+    mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
+                         mPlayerCameraSettings.targetSmoothingSpeed, deltaTime);
 }
 
 std::vector<glm::mat4> CameraSystem::GetViews()
@@ -161,7 +189,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     }
 
     if (sceneSystem && sceneSystem->IsStageClear()) {
-        views.emplace_back(mPlayerCamera.GetView(players[0], 0, 6.0f, mCameraPitch, true));
+        views.emplace_back(mPlayerCamera.GetView(players[0], 0, 6.0f, -1.0f, 1.0f, true));
         return views;
     }
 
@@ -173,11 +201,14 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         }
     }
 
-    views.emplace_back(mPlayerCamera.GetView(players[0], 0, 8.0f, mCameraPitch));
+    const float cameraPitch = glm::radians(mPlayerCameraSettings.pitchDegrees);
+    views.emplace_back(mPlayerCamera.GetView(players[0], 0, mPlayerCameraSettings.distance, cameraPitch,
+                                             mPlayerCameraSettings.targetHeight));
 
     const bool isPlayer2Joined = mGame->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
     if (isPlayer2Joined) {
-        views.emplace_back(mPlayerCamera.GetView(players[1], 1, 8.0f, mCameraPitch));
+        views.emplace_back(mPlayerCamera.GetView(players[1], 1, mPlayerCameraSettings.distance, cameraPitch,
+                                                 mPlayerCameraSettings.targetHeight));
     }
 
     return views;

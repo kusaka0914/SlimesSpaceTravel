@@ -11,7 +11,8 @@ PlayerCamera::PlayerCamera(CameraCollisionResolver& collisionResolver)
 {
 }
 
-void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, float deltaTime)
+void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
+                          float targetSmoothingSpeed, float deltaTime)
 {
     if (players.empty()) {
         return;
@@ -24,11 +25,12 @@ void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, f
     }
 
     for (int i = 0; i < static_cast<int>(players.size()); ++i) {
-        UpdateState(players[i], i, deltaTime);
+        UpdateState(players[i], i, upSmoothingSpeed, targetSmoothingSpeed, deltaTime);
     }
 }
 
-glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch, bool isFixed)
+glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
+                                float targetHeight, bool isFixed)
 {
     if (!player) {
         return glm::mat4(1.0f);
@@ -55,7 +57,7 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
         toPosX = glm::normalize(-forwardVec);
         cameraDir = glm::normalize(std::cos(cameraPitch) * toPosX + std::sin(cameraPitch) * state.upVec);
 
-        lookAtOffset = glm::normalize(state.upVec) * 1.5f;
+        lookAtOffset = glm::normalize(state.upVec) * targetHeight;
     }
 
     const glm::vec3 lookAtPos = state.targetPos + lookAtOffset;
@@ -84,7 +86,8 @@ void PlayerCamera::ResizeState(std::size_t count)
     mStates.resize(count);
 }
 
-void PlayerCamera::UpdateState(Player* player, int playerIndex, float deltaTime)
+void PlayerCamera::UpdateState(Player* player, int playerIndex, float upSmoothingSpeed,
+                               float targetSmoothingSpeed, float deltaTime)
 {
     if (!player) {
         return;
@@ -94,8 +97,8 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, float deltaTime)
 
     PlayerCameraState& state = mStates[playerIndex];
 
-    const float upSmooth = 1.0f - std::exp(-8.0f * deltaTime);
-    const float targetSmooth = 1.0f - std::exp(-10.0f * deltaTime);
+    const float upSmooth = 1.0f - std::exp(-upSmoothingSpeed * deltaTime);
+    const float targetSmooth = 1.0f - std::exp(-targetSmoothingSpeed * deltaTime);
 
     state.upVec = glm::normalize(glm::mix(state.upVec, player->GetUpVec(), upSmooth));
     state.targetPos = glm::mix(state.targetPos, player->GetPos(), targetSmooth);
