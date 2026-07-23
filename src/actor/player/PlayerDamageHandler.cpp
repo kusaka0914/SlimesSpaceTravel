@@ -40,10 +40,14 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
 
     status.TakeDamage(enemy->GetAttack());
     movement.StartKnockBack(enemy->GetPos());
+    movement.ClearStrongAttackDirectionOverride();
+    stateMachine.ClearAttackDirectionTarget();
+    player.SetShouldJudgeLanding(true);
     stateMachine.ChangeState(PlayerActionState::KnockedBack);
 
     player.GetGame()->OnPlayerApplyDamage(movement.GetPlayerNum());
 
     combat.CancelSpecialAttack();
+    input.ClearAttackBuffer();
     input.SyncAttackButtonPrev();
 }

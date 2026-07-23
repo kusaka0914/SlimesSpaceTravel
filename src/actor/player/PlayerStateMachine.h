@@ -2,6 +2,7 @@
 
 #include "actor/player/PlayerTypes.h"
 
+class Enemy;
 class Player;
 class PlayerBoatRide;
 class PlayerCombat;
@@ -22,6 +23,7 @@ public:
     void ChangeState(PlayerActionState actionState) { mActionState = actionState; }
     bool IsDodging() const { return mActionState == PlayerActionState::Dodging; }
     bool IsAttackingState() const;
+    void ClearAttackDirectionTarget() { mAttackDirectionTarget = nullptr; }
 
 private:
     void UpdateAlive(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
@@ -45,7 +47,10 @@ private:
                                    float deltaTime);
     void UpdateTimer(PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding, PlayerCombat& combat,
                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
+    void UpdateCoyoteTime(const Player& player, float deltaTime);
 
+    bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                                    float deltaTime);
     bool TryStartCharging(Player& player, PlayerInput& input, PlayerCombat& combat);
     void ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -72,4 +77,7 @@ private:
 
 private:
     PlayerActionState mActionState = PlayerActionState::Idle;
+    Enemy* mAttackDirectionTarget = nullptr;
+    float mCoyoteTimeRemaining = 0.0f;
+    float mCoyoteTimeDuration = 0.15f;
 };

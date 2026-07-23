@@ -2,6 +2,11 @@
 
 #include <glm/glm.hpp>
 
+enum class PlayerControlStyle {
+    Standard,
+    Assist,
+};
+
 enum class PlayerActionState {
     Idle,
     Dodging,
@@ -15,6 +20,12 @@ enum class PlayerAttackKind {
     Normal,
     Wide,
     Strong,
+};
+
+enum class PlayerAttackInputKind {
+    None,
+    Normal,
+    Wide,
 };
 
 struct PlayerRaySegment {

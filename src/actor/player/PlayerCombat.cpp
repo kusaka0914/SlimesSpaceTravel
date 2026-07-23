@@ -19,14 +19,14 @@ bool PlayerCombat::IsAttacking() const
            mHasPendingAttackHit;
 }
 
-void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement,
-                                  PlayerStatus& status, float deltaTime)
+void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
+                                   PlayerStatus& status, float deltaTime)
 {
     (void)movement;
     (void)status;
     (void)deltaTime;
 
-    if (!player.GetOnGround() && input.GetWideAttackPressed()) {
+    if (!player.GetOnGround() && attackInput == PlayerAttackInputKind::Wide) {
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
@@ -43,13 +43,18 @@ void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, Play
         return;
     }
 
-    if (input.GetAttackPressed()) {
+    const bool shouldFinishAssistCombo =
+        player.GetGame()->IsAssistControlStyle() &&
+        attackInput == PlayerAttackInputKind::Wide &&
+        mAttackComboIndex == 2;
+
+    if (attackInput == PlayerAttackInputKind::Normal || shouldFinishAssistCombo) {
         mAttackKind = PlayerAttackKind::Normal;
         mAttackRange = mNormalAttackRange;
         mAttackAngle = mNormalAttackAngle;
         mAttackCooldownRemaining = mLastAttackCooldown;
         mAttack = mNormalAttack;
-    } else if (input.GetWideAttackPressed()) {
+    } else if (attackInput == PlayerAttackInputKind::Wide) {
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
@@ -67,13 +72,21 @@ void PlayerCombat::StartCharging(Player& player)
     player.GetGame()->GetAudioSystem()->PlaySE("air_charging_se");
 }
 
-void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
+void PlayerCombat::ConfigureStrongAttack()
 {
     mAttackKind = PlayerAttackKind::Strong;
     mAttackRange = mStrongAttackRange;
     mAttackAngle = mNormalAttackAngle;
     mAttackCooldownRemaining = mLastAttackCooldown;
     mAttack = mStrongAttack;
+}
+
+void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
+{
+    (void)deltaTime;
+
+    ConfigureStrongAttack();
+    mIsAssistStrongAttack = false;
 
     float pressTime = 1.0f;
     if (mDefaultAttackPressTimer > 0.0f) {
@@ -89,6 +102,21 @@ void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
     } else {
         ClearPendingAttackHit();
     }
+}
+
+void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
+{
+    (void)deltaTime;
+
+    ConfigureStrongAttack();
+    mIsAssistStrongAttack = true;
+    mStrongAttackTimer = mDefaultStrongAttackTimer;
+    mAttackPressTimer = -1.0f;
+    mIsStrongAttacked = true;
+    mIsCharged = true;
+
+    StartAttackHitDelay();
+    player.GetGame()->GetAudioSystem()->PlaySE("air_charged_se");
 }
 
 void PlayerCombat::FinishCharging(Player& player, const PlayerMovement& movement)
@@ -259,6 +287,7 @@ void PlayerCombat::ReduceTiredLock(PlayerStatus& status, PlayerMovement& movemen
 
 void PlayerCombat::CancelSpecialAttack()
 {
+    mIsAssistStrongAttack = false;
     mCanSpecialAttack = false;
     mSpecialChargingTimer = -1.0f;
     mContinuousAttackingTimer = -1.0f;
@@ -267,6 +296,7 @@ void PlayerCombat::CancelSpecialAttack()
 void PlayerCombat::OnLanded()
 {
     mIsStrongAttacked = false;
+    mIsAssistStrongAttack = false;
     mIsCharged = false;
     mIsAirAttacking = false;
 }

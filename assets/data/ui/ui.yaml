@@ -70,6 +70,16 @@ default:
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
+  - id: operationSupportAssistTextForGameController
+    type: text
+    posRatio: [0.0125, 0.9762]
+    scaleRatio: [0.00015, 1.0]
+    text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 R:回復]
+  - id: operationSupportAssistTextForKeyBoard
+    type: text
+    posRatio: [0.0125, 0.9762]
+    scaleRatio: [0.00015, 1.0]
+    text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復]
   - id: operationSupportHiddenText
     type: text
     posRatio: [0.0125, 0.9762]
@@ -168,40 +178,45 @@ pauseMenu:
     scaleRatio: [1, 1]
   - id: panelBg
     type: texture
-    posRatio: [0.29, 0.21]
-    scaleRatio: [0.42, 0.58]
+    posRatio: [0.29, 0.18]
+    scaleRatio: [0.42, 0.64]
   - id: titleText
     type: text
-    posRatio: [0.5, 0.3028]
+    posRatio: [0.5, 0.275]
     scaleRatio: [0.0003801, 1.0]
     text: [メニュー]
   - id: resumeText
     type: text
-    posRatio: [0.5, 0.4072]
+    posRatio: [0.5, 0.37]
     scaleRatio: [0.0003072, 1.0]
     text: [ゲームに戻る]
+  - id: controlStyleText
+    type: text
+    posRatio: [0.5, 0.44]
+    scaleRatio: [0.0003072, 1.0]
+    text: ["操作モード: "]
   - id: returnBaseText
     type: text
-    posRatio: [0.5, 0.4826]
+    posRatio: [0.5, 0.51]
     scaleRatio: [0.0003072, 1.0]
     text: [拠点に戻る]
   - id: feedbackText
     type: text
-    posRatio: [0.5, 0.558]
+    posRatio: [0.5, 0.58]
     scaleRatio: [0.0003072, 1.0]
     text: [感想を書く]
   - id: quitText
     type: text
-    posRatio: [0.5, 0.6334]
+    posRatio: [0.5, 0.65]
     scaleRatio: [0.0003072, 1.0]
     text: [ゲーム終了]
   - id: operationTextForKeyBoard
     type: text
-    posRatio: [0.5, 0.732]
+    posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text: [↑↓:選択 Enter:決定 ESC:閉じる]
   - id: operationTextForGameController
     type: text
-    posRatio: [0.5, 0.732]
+    posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text: [↑↓:選択 A:決定 -:閉じる]

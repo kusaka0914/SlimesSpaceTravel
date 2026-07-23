@@ -19,20 +19,32 @@ void PauseMenuRenderer::Draw()
 
     mRenderer->DrawSceneText("pauseMenu", "titleText", true, 0);
 
-    std::vector<std::string> menuTextIds = {"resumeText", "returnBaseText", "feedbackText", "quitText"};
+    std::vector<std::string> menuTextIds = {
+        "resumeText",
+        "controlStyleText",
+        "returnBaseText",
+        "feedbackText",
+        "quitText",
+    };
 
     const int selectedIndex = mGame->GetPauseMenuSelectedIndex();
 
     for (int i = 0; i < static_cast<int>(menuTextIds.size()); ++i) {
-        const UILoadSystem::TextInfo* textInfo = mRenderer->GetUILoadSystem()->GetTextInfo("pauseMenu", menuTextIds[i]);
+        const UILoadSystem::TextInfo* textInfo =
+            mRenderer->GetUILoadSystem()->GetTextInfo("pauseMenu", menuTextIds[i]);
         if (!textInfo || textInfo->texts.empty()) {
             continue;
         }
 
         const bool selected = selectedIndex == i;
 
+        std::string label = textInfo->texts[0];
+        if (menuTextIds[i] == "controlStyleText") {
+            label += mGame->IsAssistControlStyle() ? "アシスト" : "スタンダード";
+        }
+
         std::string text = selected ? "> " : "  ";
-        text += textInfo->texts[0];
+        text += label;
 
         const glm::vec4 color = selected ? glm::vec4(255, 230, 0, 255) : glm::vec4(255, 255, 255, 255);
 

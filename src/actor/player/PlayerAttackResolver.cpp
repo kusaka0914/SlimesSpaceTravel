@@ -126,14 +126,22 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         return;
     }
 
-    player.GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
     combat.StartTiredLock(status, movement, 5.0f);
 
+    bool hitAirborneEnemy = false;
     for (Enemy* enemy : hitEnemies) {
+        // アシスト操作から地上で発動しても、Strongは空中の敵にしか当たらない。
+        if (!enemy || enemy->GetOnGround()) {
+            continue;
+        }
+
         enemy->SetIsStrongAttacked(true);
         ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.45f);
         combat.SetStrongAttackHit(true);
+        hitAirborneEnemy = true;
     }
+
+    player.GetGame()->GetAudioSystem()->PlaySE(hitAirborneEnemy ? "attack_air_se" : "attack_miss_se");
 }
 
 void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge& jewelGauge,

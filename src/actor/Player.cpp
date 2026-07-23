@@ -173,6 +173,9 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
     mRespawn.ApplyFallDamageAndRespawn(*this, mStateMachine, mCombat, mStatus, damage);
+    mInput.ClearAttackBuffer();
+    mMovement.ClearStrongAttackDirectionOverride();
+    mStateMachine.ClearAttackDirectionTarget();
 }
 
 void Player::OnBoatArrived(Boat* boat)
@@ -183,6 +186,9 @@ void Player::OnBoatArrived(Boat* boat)
 void Player::Restart()
 {
     mRespawn.Restart(*this, mStateMachine, mStatus);
+    mInput.ClearAttackBuffer();
+    mMovement.ClearStrongAttackDirectionOverride();
+    mStateMachine.ClearAttackDirectionTarget();
     mParticleEffectController.Reset();
     mUseSecondAttackAnimationNext = false;
     mAnimationController.ResetToAnimation(idleAnimationId);
@@ -195,6 +201,7 @@ const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
 
 void Player::OnLanded()
 {
+    mMovement.ClearStrongAttackDirectionOverride();
     mPlanetGravityController.OnLanded(*this, mMovement);
     mGrounding.OnLanded(*this, mMovement, mCombat);
 }

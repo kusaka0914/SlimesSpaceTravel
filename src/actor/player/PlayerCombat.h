@@ -22,10 +22,11 @@ public:
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
     bool IsAirAttackFloating() const { return mAirAttackFloatingTimer > 0.0f; }
 
-    void StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement, PlayerStatus& status,
-                        float deltaTime);
+    void StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
+                        PlayerStatus& status, float deltaTime);
     void StartCharging(Player& player);
     void StartStrongAttacking(Player& player, float deltaTime);
+    void StartAssistStrongAttacking(Player& player, float deltaTime);
     void FinishCharging(Player& player, const PlayerMovement& movement);
     void FinishSpecialAttackCharging();
 
@@ -54,10 +55,7 @@ public:
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
     void SetAttackCooldown(float attackCooldown) { mAttackCooldown = attackCooldown; }
     void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
-    void SetDefaultAttackPressTimer(float defaultAttackPressTimer)
-    {
-        mDefaultAttackPressTimer = defaultAttackPressTimer;
-    }
+    void SetDefaultAttackPressTimer(float defaultAttackPressTimer) { mDefaultAttackPressTimer = defaultAttackPressTimer; }
     void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
     void SetNormalAttackAngle(float normalAttackAngle) { mNormalAttackAngle = normalAttackAngle; }
@@ -68,14 +66,8 @@ public:
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
-    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer)
-    {
-        mDefaultStrongAttackTimer = defaultStrongAttackTimer;
-    }
-    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
-    {
-        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
-    }
+    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer) { mDefaultStrongAttackTimer = defaultStrongAttackTimer; }
+    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
     void SetAttackHitDelay(float attackHitDelay) { mAttackHitDelay = attackHitDelay; }
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
@@ -84,6 +76,7 @@ public:
 
     PlayerAttackKind GetAttackKind() const { return mAttackKind; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
+    bool GetIsAssistStrongAttack() const { return mIsAssistStrongAttack; }
     bool GetIsCharged() const { return mIsCharged; }
     bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
     bool GetIsStrongAttackHit() const { return mIsStrongAttackHit; }
@@ -133,11 +126,13 @@ public:
 private:
     void StartAttackHitDelay();
     void ClearPendingAttackHit();
+    void ConfigureStrongAttack();
 
 private:
     PlayerAttackKind mAttackKind = PlayerAttackKind::Normal;
 
     bool mIsStrongAttackHit = false;
+    bool mIsAssistStrongAttack = false;
     bool mIsStrongAttacked = false;
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;

@@ -94,7 +94,9 @@ void HudRenderer::DrawOperationSupportUI()
 {
     const bool isOperationUIShow = mGame->GetSceneSystem()->GetUIState()->GetIsOperationUIShow();
     if (isOperationUIShow) {
-        mRenderer->DrawTextDependsOnGameController("default", "operationSupportText", false);
+        const char* operationTextId =
+            mGame->IsAssistControlStyle() ? "operationSupportAssistText" : "operationSupportText";
+        mRenderer->DrawTextDependsOnGameController("default", operationTextId, false);
         return;
     }
 

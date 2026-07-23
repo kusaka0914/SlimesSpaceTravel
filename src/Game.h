@@ -1,5 +1,7 @@
 #pragma once
 
+#include "actor/player/PlayerTypes.h"
+
 #include <GLFW/glfw3.h>
 #include <SDL.h>
 #include <memory>
@@ -48,6 +50,7 @@ public:
     void TryCreatePlayer2();
     void ToggleDebugEditor();
     void ToggleFreeCameraMode();
+    void TogglePlayerControlStyle();
 
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
@@ -106,6 +109,8 @@ public:
     float GetHitStopTimer() const { return mHitStopTimer; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
     bool GetIsDebugMode() const { return mIsDebugMode; }
+    PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
+    bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
 
     bool IsInBase() const;
     bool IsGameControllerConnected() const;
@@ -155,4 +160,6 @@ private:
     bool mIsDebugEditorShowing = false;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+
+    PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
 };

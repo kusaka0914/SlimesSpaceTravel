@@ -1,5 +1,6 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerGrounding.h"
@@ -7,6 +8,7 @@
 #include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTargetingAssist.h"
 #include "system/AudioSystem.h"
 
 void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding,
@@ -24,10 +26,25 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
     if (combat.HasPendingAttackHit()) {
-        // Turning is allowed during the wind-up, but movement remains locked.
-        // The hit detector therefore uses the facing direction on the exact hit frame.
-        movement.UpdateFacingDirectionFromInput(player, input);
-        combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
+        const bool hasValidDirectionTarget =
+            mAttackDirectionTarget &&
+            mAttackDirectionTarget->GetIsActive() &&
+            mAttackDirectionTarget->IsAlive() &&
+            !mAttackDirectionTarget->GetIsDead() &&
+            mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
+
+        if (hasValidDirectionTarget) {
+            // 攻撃開始時に選んだ最寄りの敵へ、判定が出る瞬間まで向きを維持する。
+            PlayerTargetingAssist::FaceTarget(player, movement, *mAttackDirectionTarget);
+        } else {
+            mAttackDirectionTarget = nullptr;
+            movement.UpdateFacingDirectionFromInput(player, input);
+        }
+
+        const bool didResolveAttack = combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
+        if (didResolveAttack) {
+            mAttackDirectionTarget = nullptr;
+        }
         return;
     }
 
@@ -37,6 +54,7 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
 
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
+        mAttackDirectionTarget = nullptr;
         StartIdle();
     }
 }
@@ -46,6 +64,7 @@ void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, Play
 {
     const bool isAttackBtnReleased = !input.GetAttackPressed();
     if (isAttackBtnReleased) {
+        movement.ClearStrongAttackDirectionOverride();
         ChangeState(PlayerActionState::StrongAttacking);
         combat.StartStrongAttacking(player, deltaTime);
         return;
@@ -67,7 +86,7 @@ void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, Play
 void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
                                                PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
-    if (combat.HasPendingAttackHit()) {
+    if (combat.HasPendingAttackHit() && !combat.GetIsAssistStrongAttack()) {
         movement.UpdateFacingDirectionFromInput(player, input);
     }
 
@@ -82,6 +101,8 @@ void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerInput& inpu
         return;
     }
 
+    movement.ClearStrongAttackDirectionOverride();
+    player.SetShouldJudgeLanding(true);
     StartIdle();
 
     if (!combat.GetIsCharged()) {

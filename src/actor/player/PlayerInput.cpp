@@ -16,6 +16,7 @@ void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 
     ProcessGameController(player, movement);
     ProcessKeyboard(player, movement);
+    CaptureAttackInput();
 }
 
 void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& movement)
@@ -104,9 +105,29 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mRecoverPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
 }
 
+void PlayerInput::CaptureAttackInput()
+{
+    // L/Nとの同時押しはスペシャル攻撃用なので、通常攻撃として予約しない。
+    if (mSpecialAttackPressed) {
+        return;
+    }
+
+    const bool normalAttackStarted = mAttackPressed && !mAttackPressedPrev;
+    const bool wideAttackStarted = mWideAttackPressed && !mWideAttackPressedPrev;
+
+    if (normalAttackStarted) {
+        mBufferedAttackInput = PlayerAttackInputKind::Normal;
+        mAttackBufferRemaining = mAttackBufferDuration;
+    } else if (wideAttackStarted) {
+        mBufferedAttackInput = PlayerAttackInputKind::Wide;
+        mAttackBufferRemaining = mAttackBufferDuration;
+    }
+}
+
 void PlayerInput::EndFrame()
 {
     mDodgePressedPrev = mDodgePressed;
+    mJumpPressedPrev = mJumpPressed;
     mAttackPressedPrev = mAttackPressed;
     mWideAttackPressedPrev = mWideAttackPressed;
     mSpecialAttackPressedPrev = mSpecialAttackPressed;
@@ -118,6 +139,29 @@ void PlayerInput::UpdateInputAvailableTimer(float deltaTime)
     if (mInputAvailableTimer >= 0.0f) {
         mInputAvailableTimer -= deltaTime;
     }
+}
+
+void PlayerInput::UpdateAttackBuffer(float deltaTime)
+{
+    if (mBufferedAttackInput == PlayerAttackInputKind::None) {
+        return;
+    }
+
+    mAttackBufferRemaining -= deltaTime;
+    if (mAttackBufferRemaining <= 0.0f) {
+        ClearAttackBuffer();
+    }
+}
+
+void PlayerInput::ConsumeBufferedAttackInput()
+{
+    ClearAttackBuffer();
+}
+
+void PlayerInput::ClearAttackBuffer()
+{
+    mBufferedAttackInput = PlayerAttackInputKind::None;
+    mAttackBufferRemaining = 0.0f;
 }
 
 void PlayerInput::SyncAttackButtonPrev()

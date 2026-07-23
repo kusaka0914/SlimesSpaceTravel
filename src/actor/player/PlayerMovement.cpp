@@ -160,9 +160,18 @@ void PlayerMovement::UpdateFacingDirectionFromInput(Player& player, const Player
         return;
     }
 
-    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
+    FaceDirection(player, facingDirection);
+}
 
-    ApplyFacingDirection(player, upDirection, facingDirection);
+void PlayerMovement::FaceDirection(Player& player, const glm::vec3& facingDirection)
+{
+    glm::vec3 normalizedFacingDirection;
+    if (!TryNormalizeDirection(facingDirection, normalizedFacingDirection)) {
+        return;
+    }
+
+    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
+    ApplyFacingDirection(player, upDirection, normalizedFacingDirection);
 }
 
 void PlayerMovement::UpdateDodgeCooldown(float deltaTime)
@@ -181,7 +190,7 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
 }
 
 void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding,
-                                        float deltaTime)
+                                         float deltaTime)
 {
     const float dodgeMovementDuration = CalculateDodgeMovementDuration(player.GetOnGround(), mDodgeDuration);
 
@@ -228,7 +237,9 @@ void PlayerMovement::ApplyChargeMovement(Player& player, float deltaTime)
 
 void PlayerMovement::ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime)
 {
-    const glm::vec3 movementDelta = player.GetFacingForwardVec() * combat.GetStrongAttackSpeed() * deltaTime;
+    const glm::vec3 attackDirection =
+        mHasStrongAttackDirectionOverride ? mStrongAttackDirectionOverride : player.GetFacingForwardVec();
+    const glm::vec3 movementDelta = attackDirection * combat.GetStrongAttackSpeed() * deltaTime;
 
     MoveWithCollision(player, movementDelta);
 }
@@ -273,8 +284,16 @@ void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input
 void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 {
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
-    const glm::vec3 jumpVelocityDelta = upDirection * mJumpSpeed;
 
+    // 足場から落ち始めた直後でも、下向き速度を消して同じ高さのジャンプにする。
+    glm::vec3 velocity = player.GetVelocity();
+    const float verticalSpeed = glm::dot(velocity, upDirection);
+    if (verticalSpeed < 0.0f) {
+        velocity -= upDirection * verticalSpeed;
+        player.SetVelocity(velocity);
+    }
+
+    const glm::vec3 jumpVelocityDelta = upDirection * mJumpSpeed;
     player.AddVelocity(jumpVelocityDelta);
 
     // ジャンプ開始後は状態更新から即時returnするため、このフレーム分の上昇移動をここで反映する。
@@ -282,4 +301,26 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 
     player.SetOnGround(false);
     player.SetShouldJudgeLanding(false);
+}
+
+void PlayerMovement::StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition)
+{
+    glm::vec3 attackDirection;
+    if (!TryNormalizeDirection(targetPosition - player.GetPos(), attackDirection)) {
+        ClearStrongAttackDirectionOverride();
+        return;
+    }
+
+    mStrongAttackDirectionOverride = attackDirection;
+    mHasStrongAttackDirectionOverride = true;
+
+    player.SetVelocity(glm::vec3(0.0f));
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
+}
+
+void PlayerMovement::ClearStrongAttackDirectionOverride()
+{
+    mHasStrongAttackDirectionOverride = false;
+    mStrongAttackDirectionOverride = glm::vec3(0.0f);
 }

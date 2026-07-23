@@ -11,6 +11,7 @@
 #include "actor/player/PlayerStatus.h"
 #include "system/SceneSystem.h"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 
 void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement,
@@ -39,6 +40,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
 {
     movement.UpdateCameraRelativeMovementDirections(player, input);
     boatRide.Update(player, movement, respawn);
+    UpdateCoyoteTime(player, deltaTime);
 
     if (jewelGauge.ShouldStartRecoverTimer()) {
         StartJewelTimer(jewelGauge);
@@ -86,10 +88,21 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
     status.UpdateInvincibleTimer(deltaTime);
     grounding.UpdateRayCastTimer(deltaTime);
     input.UpdateInputAvailableTimer(deltaTime);
+    input.UpdateAttackBuffer(deltaTime);
 
     if (combat.GetComboKeepTimer() > 0.0f) {
         combat.UpdateComboKeepTimer(deltaTime);
     }
+}
+
+void PlayerStateMachine::UpdateCoyoteTime(const Player& player, float deltaTime)
+{
+    if (player.GetOnGround()) {
+        mCoyoteTimeRemaining = mCoyoteTimeDuration;
+        return;
+    }
+
+    mCoyoteTimeRemaining = std::max(0.0f, mCoyoteTimeRemaining - deltaTime);
 }
 
 bool PlayerStateMachine::IsAttackingState() const

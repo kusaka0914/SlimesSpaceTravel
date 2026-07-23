@@ -14,6 +14,7 @@ public:
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);
+    void FaceDirection(Player& player, const glm::vec3& facingDirection);
 
     void ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding, float deltaTime);
     void ApplyAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
@@ -23,6 +24,8 @@ public:
 
     void StartDodgeMovement(Player& player, const PlayerInput& input);
     void StartJumpMovement(Player& player, float deltaTime);
+    void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
+    void ClearStrongAttackDirectionOverride();
 
     void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
@@ -55,6 +58,7 @@ public:
 
 private:
     bool mHasUsedDodge = false;
+    bool mHasStrongAttackDirectionOverride = false;
 
     int mCurrentPlanetNum = 0;
     int mPlayerNum = 1;
@@ -74,4 +78,5 @@ private:
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
     glm::vec3 mKnockBackFrom = glm::vec3(0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);
+    glm::vec3 mStrongAttackDirectionOverride = glm::vec3(0.0f);
 };

@@ -18,7 +18,7 @@ void PauseMenuController::Close()
 
 void PauseMenuController::MoveSelection(int delta)
 {
-    constexpr int menuItemCount = 4;
+    constexpr int menuItemCount = 5;
     mSelectedIndex = (mSelectedIndex + delta + menuItemCount) % menuItemCount;
 }
 
@@ -30,14 +30,18 @@ void PauseMenuController::ExecuteSelectedItem(Game& game)
         break;
 
     case 1:
-        game.ReturnToBase();
+        game.TogglePlayerControlStyle();
         break;
 
     case 2:
-        game.OpenFeedbackForm();
+        game.ReturnToBase();
         break;
 
     case 3:
+        game.OpenFeedbackForm();
+        break;
+
+    case 4:
         game.FinishGame();
         break;
 
