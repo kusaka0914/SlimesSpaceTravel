@@ -12,24 +12,27 @@ struct LoadedModel;
 
 class PlayerAnimationController {
 public:
-    void Configure(std::string idleAnimationName, std::string attackAnimationName);
+    void Configure(std::string idleAnimationName, std::string walkAnimationName, std::string attackAnimationName);
     void SetLoadedModel(const LoadedModel* loadedModel);
 
-    void Update(bool didAttackStart, float deltaTimeSeconds);
+    void Update(bool didAttackStart, bool shouldWalk, float deltaTimeSeconds);
     void ResetToIdle();
 
     const std::vector<glm::mat4>* GetSkinningMatrices() const;
 
 private:
     void ResolveAnimationClips();
+    void PlayLocomotionAnimation(bool shouldWalk);
     const AnimationClip* FindAnimationClip(const std::string& requestedName, bool canUseSingleClipFallback) const;
 
 private:
     const LoadedModel* mLoadedModel = nullptr;
     const AnimationClip* mIdleAnimationClip = nullptr;
+    const AnimationClip* mWalkAnimationClip = nullptr;
     const AnimationClip* mAttackAnimationClip = nullptr;
 
     std::string mIdleAnimationName = "Idle";
+    std::string mWalkAnimationName = "Walk";
     std::string mAttackAnimationName = "Attack";
 
     AnimationPlayer mAnimationPlayer;

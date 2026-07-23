@@ -30,9 +30,11 @@ std::string GetAnimationNameSuffix(const std::string& normalizedName)
 }
 } // namespace
 
-void PlayerAnimationController::Configure(std::string idleAnimationName, std::string attackAnimationName)
+void PlayerAnimationController::Configure(std::string idleAnimationName, std::string walkAnimationName,
+                                          std::string attackAnimationName)
 {
     mIdleAnimationName = std::move(idleAnimationName);
+    mWalkAnimationName = std::move(walkAnimationName);
     mAttackAnimationName = std::move(attackAnimationName);
 
     if (mLoadedModel) {
@@ -53,7 +55,7 @@ void PlayerAnimationController::SetLoadedModel(const LoadedModel* loadedModel)
     ResetToIdle();
 }
 
-void PlayerAnimationController::Update(bool didAttackStart, float deltaTimeSeconds)
+void PlayerAnimationController::Update(bool didAttackStart, bool shouldWalk, float deltaTimeSeconds)
 {
     if (!mAnimationPlayer.HasSkinningData()) {
         return;
@@ -61,9 +63,13 @@ void PlayerAnimationController::Update(bool didAttackStart, float deltaTimeSecon
 
     if (didAttackStart && mAttackAnimationClip) {
         mAnimationPlayer.Play(mAttackAnimationClip, false, true);
-    } else if (mAttackAnimationClip && mAnimationPlayer.IsPlaying(mAttackAnimationClip) &&
-               mAnimationPlayer.IsFinished()) {
-        ResetToIdle();
+    } else {
+        const bool isAttackPlaying =
+            mAttackAnimationClip && mAnimationPlayer.IsPlaying(mAttackAnimationClip) && !mAnimationPlayer.IsFinished();
+
+        if (!isAttackPlaying) {
+            PlayLocomotionAnimation(shouldWalk);
+        }
     }
 
     mAnimationPlayer.Update(deltaTimeSeconds);
@@ -91,17 +97,45 @@ const std::vector<glm::mat4>* PlayerAnimationController::GetSkinningMatrices() c
 void PlayerAnimationController::ResolveAnimationClips()
 {
     mIdleAnimationClip = FindAnimationClip(mIdleAnimationName, false);
+    mWalkAnimationClip = FindAnimationClip(mWalkAnimationName, false);
     mAttackAnimationClip = FindAnimationClip(mAttackAnimationName, true);
 
-    if (!mLoadedModel || !mLoadedModel->HasAnimationClips() || mAttackAnimationClip) {
+    if (!mLoadedModel || !mLoadedModel->HasAnimationClips()) {
         return;
     }
 
-    std::cerr << "Attack animation '" << mAttackAnimationName << "' was not found. Available clips:";
-    for (const AnimationClip& animationClip : mLoadedModel->skeletalAnimation.clips) {
-        std::cerr << " '" << animationClip.name << "'";
+    if (!mIdleAnimationClip) {
+        std::cerr << "Idle animation '" << mIdleAnimationName << "' was not found.\n";
     }
-    std::cerr << '\n';
+
+    if (!mWalkAnimationClip) {
+        std::cerr << "Walk animation '" << mWalkAnimationName << "' was not found.\n";
+    }
+
+    if (!mAttackAnimationClip) {
+        std::cerr << "Attack animation '" << mAttackAnimationName << "' was not found. Available clips:";
+        for (const AnimationClip& animationClip : mLoadedModel->skeletalAnimation.clips) {
+            std::cerr << " '" << animationClip.name << "'";
+        }
+        std::cerr << '\n';
+    }
+}
+
+void PlayerAnimationController::PlayLocomotionAnimation(bool shouldWalk)
+{
+    const AnimationClip* locomotionAnimationClip =
+        shouldWalk && mWalkAnimationClip ? mWalkAnimationClip : mIdleAnimationClip;
+
+    if (!locomotionAnimationClip) {
+        if (mAnimationPlayer.GetCurrentClip()) {
+            mAnimationPlayer.ResetToBindPose();
+        }
+        return;
+    }
+
+    if (!mAnimationPlayer.IsPlaying(locomotionAnimationClip)) {
+        mAnimationPlayer.Play(locomotionAnimationClip, true, true);
+    }
 }
 
 const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::string& requestedName,

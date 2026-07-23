@@ -63,6 +63,7 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
 
         config.modelPath = ReadString(playerNode, "modelPath", config.modelPath);
         config.idleAnimationName = ReadString(playerNode, "idleAnimationName", config.idleAnimationName);
+        config.walkAnimationName = ReadString(playerNode, "walkAnimationName", config.walkAnimationName);
         config.attackAnimationName = ReadString(playerNode, "attackAnimationName", config.attackAnimationName);
     }
 

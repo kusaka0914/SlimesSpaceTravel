@@ -462,10 +462,8 @@ boatParts: []
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 3
-    modelPath: player.obj
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
-    modelPath: player.obj
 star:
   - theta: 0
     phi: 0

@@ -6,6 +6,8 @@
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
 
+#include <cmath>
+
 namespace {
 bool DidAttackAnimationStart(PlayerActionState previousState, PlayerActionState currentState)
 {
@@ -69,7 +71,8 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
 
     SetModelPath(config.modelPath);
 
-    mAnimationController.Configure(config.idleAnimationName, config.attackAnimationName);
+    mAnimationController.Configure(config.idleAnimationName, config.walkAnimationName,
+                                   config.attackAnimationName);
 }
 
 void Player::Initialize()
@@ -102,7 +105,13 @@ void Player::UpdateActor(float deltaTime)
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
     const bool didAttackStart = DidAttackAnimationStart(previousActionState, currentActionState);
 
-    mAnimationController.Update(didAttackStart, deltaTime);
+    constexpr float movementInputDeadZone = 0.01f;
+    const bool hasMovementInput = std::abs(mInput.GetMoveForward()) > movementInputDeadZone ||
+                                  std::abs(mInput.GetMoveLeft()) > movementInputDeadZone;
+    const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
+                            hasMovementInput;
+
+    mAnimationController.Update(didAttackStart, shouldWalk, deltaTime);
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)

@@ -1,6 +1,6 @@
 players:
   - hp: 10
-    scale: 0.25
+    scale: 0.0025
     attack: 5
     attackSpeed: 5
     moveSpeed: 4
@@ -20,10 +20,13 @@ players:
     defaultInvincibleTimer: 2
     defaultDamageTimer: 1
     defaultAttackMotionTimer: 0.1
-    attackCooldown: 0.15
+    attackCooldown: 0.39
     lastAttackCooldown: 1
     defaultAttackPressTimer: 1
     chargeMoveSpeed: 3
     defaultStrongAttackTimer: 0.06
     knockBackSpeed: 4
-    modelPath: player.obj
+    modelPath: slime_attack_test.fbx
+    idleAnimationName: Idle
+    attackAnimationName: Attack
+    walkAnimationName: Walk

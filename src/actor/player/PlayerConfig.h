@@ -39,5 +39,6 @@ struct PlayerConfig {
 
     std::string modelPath = "player.obj";
     std::string idleAnimationName = "Idle";
+    std::string walkAnimationName = "Walk";
     std::string attackAnimationName = "Attack";
 };

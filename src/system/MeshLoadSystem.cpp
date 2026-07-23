@@ -47,6 +47,7 @@ void MeshLoadSystem::CreateLoadedModels()
     RegisterModel("curvePlatform.obj");
     RegisterModel("rocket.fbx");
     RegisterModel("skyBox.obj");
+    RegisterModel("slime_attack_test.fbx");
 }
 
 void MeshLoadSystem::RegisterModel(const std::string& modelPath)
