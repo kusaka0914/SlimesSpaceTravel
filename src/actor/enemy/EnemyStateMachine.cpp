@@ -1,6 +1,7 @@
 #include "actor/enemy/EnemyStateMachine.h"
 
 #include "Game.h"
+#include "Stage.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -8,10 +9,14 @@
 #include "actor/enemy/EnemyCombat.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStatus.h"
+#include "actor/enemy/behavior/EnemyBehaviorController.h"
 #include "system/AudioSystem.h"
+#include "system/CameraSystem.h"
 #include "system/ParticleSystem.h"
+#include "utils/MathUtils.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace {
 
@@ -81,6 +86,95 @@ void InitializeDyingMovement(Enemy& enemy, EnemyStatus& status)
     enemy.SetShouldJudgeLandingForEnemy(false);
 }
 
+void StageBossDefeatActors(Enemy& boss)
+{
+    Planet* planet = boss.GetCurrentPlanet();
+    if (!planet) {
+        return;
+    }
+
+    constexpr float bossTheta = 0.0f;
+    constexpr float bossPhi = 0.0f;
+    boss.SetSphericalPlacement(bossTheta, bossPhi, boss.GetHeight());
+    boss.SetPos(planet->CalculateSurfacePos(bossTheta, bossPhi, boss.GetHeight()));
+    const glm::vec3 bossUp = boss.GetPos() - planet->GetPos();
+    if (glm::length(bossUp) > directionEpsilon) {
+        boss.SetUpVec(glm::normalize(bossUp));
+    }
+
+    Player* player = boss.GetGame()->GetMainPlayer();
+    if (!player) {
+        return;
+    }
+
+    player->RecoverFromFatigue();
+
+    constexpr float playerTheta = 0.75f;
+    constexpr float playerPhi = 0.0f;
+    player->SetCurrentPlanet(planet);
+
+    Stage* stage = boss.GetGame()->GetCurrentStage();
+    if (stage) {
+        const std::vector<Planet*>& planets = stage->GetPlanets();
+        for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
+            if (planets[planetIndex] == planet) {
+                player->SetCurrentPlanetNum(planetIndex);
+                break;
+            }
+        }
+    }
+
+    player->SetSphericalPlacement(playerTheta, playerPhi, player->GetHeight());
+    player->SetPos(planet->CalculateSurfacePos(playerTheta, playerPhi, player->GetHeight()));
+    player->SetVelocity(glm::vec3(0.0f));
+    player->SetOnGround(false);
+    player->SetShouldJudgeLanding(true);
+    player->RefreshFallbackUpVec();
+
+    MathUtils* mathUtils = boss.GetGame()->GetMathUtils();
+
+    glm::vec3 facingBoss = boss.GetPos() - player->GetPos();
+    facingBoss -= player->GetUpVec() * glm::dot(facingBoss, player->GetUpVec());
+    if (glm::length(facingBoss) > directionEpsilon) {
+        facingBoss = glm::normalize(facingBoss);
+        player->SetFacingForwardVec(facingBoss);
+
+        if (mathUtils) {
+            player->SetFacingYaw(
+                mathUtils->GetYawFromDirection(player->GetUpVec(), facingBoss) + glm::pi<float>());
+        }
+    }
+
+    glm::vec3 facingPlayer = player->GetPos() - boss.GetPos();
+    facingPlayer -= boss.GetUpVec() * glm::dot(facingPlayer, boss.GetUpVec());
+    if (glm::length(facingPlayer) > directionEpsilon) {
+        facingPlayer = glm::normalize(facingPlayer);
+        boss.SetFacingForwardForEnemy(facingPlayer);
+
+        if (mathUtils) {
+            boss.SetFacingYaw(
+                mathUtils->GetYawFromDirection(boss.GetUpVec(), facingPlayer) + glm::pi<float>());
+        }
+    }
+
+    Star* star = planet->GetStar();
+    if (star) {
+        constexpr float starHeightAboveBoss = 1.2f;
+        star->SetSphericalPlacement(
+            bossTheta, bossPhi, boss.GetHeight() + starHeightAboveBoss);
+        star->SetPos(boss.GetPos() + boss.GetUpVec() * starHeightAboveBoss);
+        star->SetUpVec(boss.GetUpVec());
+
+        glm::vec3 starFacingPlayer = player->GetPos() - star->GetPos();
+        starFacingPlayer -= star->GetUpVec() * glm::dot(starFacingPlayer, star->GetUpVec());
+        if (mathUtils && glm::length(starFacingPlayer) > directionEpsilon) {
+            starFacingPlayer = glm::normalize(starFacingPlayer);
+            star->SetFacingYaw(
+                mathUtils->GetYawFromDirection(star->GetUpVec(), starFacingPlayer) + glm::pi<float>());
+        }
+    }
+}
+
 void EmitEnemyDefeatEffect(Enemy& enemy, const EnemyStatus& status)
 {
     ParticleSystem* particleSystem = enemy.GetGame()->GetParticleSystem();
@@ -108,7 +202,7 @@ EnemyStateMachine::EnemyStateMachine()
 }
 
 void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                     float deltaTime)
+                                     EnemyBehaviorController& behaviorController, float deltaTime)
 {
     if (mActionState == ActionState::KnockedBack) {
         UpdateKnockedBack(enemy, status, movement, deltaTime);
@@ -121,7 +215,7 @@ void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMove
     }
 
     if (enemy.IsOnGround()) {
-        UpdateBehavior(enemy, status, movement, combat, deltaTime);
+        behaviorController.Update(enemy, status, movement, combat, *this, deltaTime);
         return;
     }
 
@@ -130,37 +224,13 @@ void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMove
 
 void EnemyStateMachine::UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
-    movement.MoveDuringDying(enemy, deltaTime);
+    if (!status.GetIsBoss()) {
+        movement.MoveDuringDying(enemy, deltaTime);
+    }
 
     status.DecreaseDyingTimer(deltaTime);
     if (status.GetDyingTimer() <= 0.0f) {
         FinishDying(enemy, status);
-    }
-}
-
-void EnemyStateMachine::UpdateBehavior(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                        float deltaTime)
-{
-    switch (mActionState) {
-    case ActionState::Idle:
-        UpdateIdle(enemy, status, combat);
-        break;
-
-    case ActionState::Tracking:
-        UpdateTracking(enemy, status, movement, combat, deltaTime);
-        break;
-
-    case ActionState::PreparingAttack:
-        UpdatePreparingAttack(enemy, status, movement, deltaTime);
-        break;
-
-    case ActionState::Attacking:
-        UpdateAttacking(enemy, status, movement, combat, deltaTime);
-        break;
-
-    case ActionState::KnockedBack:
-        UpdateKnockedBack(enemy, status, movement, deltaTime);
-        break;
     }
 }
 
@@ -288,12 +358,25 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
     mLifeState = LifeState::Dying;
-    status.SetDyingTimer(1.0f);
+    constexpr float normalEnemyDyingDuration = 1.0f;
+    constexpr float bossDyingDuration = 3.0f;
+    status.SetDyingTimer(status.GetIsBoss() ? bossDyingDuration : normalEnemyDyingDuration);
     status.SetHpZero();
 
-    constexpr float dyingKnockBackTimer = 0.5f;
-    StartKnockedBack(enemy, status, dyingKnockBackTimer);
-    InitializeDyingMovement(enemy, status);
+    if (status.GetIsBoss()) {
+        enemy.SetVelocity(glm::vec3(0.0f));
+        StageBossDefeatActors(enemy);
+
+        Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
+        CameraSystem* cameraSystem = enemy.GetGame()->GetCameraSystem();
+        if (cameraSystem) {
+            cameraSystem->StartBossDefeatSequence(&enemy, star);
+        }
+    } else {
+        constexpr float dyingKnockBackTimer = 0.5f;
+        StartKnockedBack(enemy, status, dyingKnockBackTimer);
+        InitializeDyingMovement(enemy, status);
+    }
 
     enemy.GetGame()->GetAudioSystem()->PlaySE("defeat_se");
 }
@@ -313,12 +396,8 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
         return;
     }
 
-    Star* star = enemy.GetCurrentPlanet()->GetStar();
-    if (!star) {
-        return;
-    }
-
-    star->SetIsActive(true);
+    // The boss defeat camera sequence reveals the star one second after this
+    // death effect, rather than immediately when the boss disappears.
 }
 
 void EnemyStateMachine::FinishLaunched(Enemy& enemy, EnemyStatus& status)

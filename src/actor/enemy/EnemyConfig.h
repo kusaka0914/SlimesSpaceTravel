@@ -1,6 +1,25 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
+#include <vector>
+
+struct EnemyBehaviorActionConfig {
+    std::string type;
+    float weight = 1.0f;
+    std::unordered_map<std::string, float> parameters;
+
+    float GetParameter(const std::string& name, float fallback) const
+    {
+        const auto found = parameters.find(name);
+        return found != parameters.end() ? found->second : fallback;
+    }
+};
+
+struct EnemyBehaviorConfig {
+    std::string profileName = "legacyMelee";
+    std::vector<EnemyBehaviorActionConfig> actions;
+};
 
 struct EnemyConfig {
     bool isBoss = false;
@@ -22,4 +41,6 @@ struct EnemyConfig {
     float knockBackSpeed = 0.0f;
     float defaultLaunchedTimer = 0.0f;
     float detectionRange = 0.0f;
+
+    EnemyBehaviorConfig behavior;
 };

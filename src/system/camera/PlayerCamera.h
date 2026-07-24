@@ -14,8 +14,10 @@ struct PlayerCameraState {
     glm::vec3 upVec{0.0f, 1.0f, 0.0f};
     glm::vec3 cameraForwardVec{0.0f, 0.0f, 1.0f};
     glm::vec3 attackTargetForwardVec{0.0f, 0.0f, 1.0f};
+    glm::vec3 alignTargetForwardVec{0.0f, 0.0f, 1.0f};
     bool hasCameraForward = false;
     bool hasAttackTargetForward = false;
+    bool isAligningBehindPlayer = false;
 };
 
 class PlayerCamera {
@@ -24,6 +26,7 @@ public:
 
     void Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
                 float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime);
+    void AlignBehindPlayer(Player* player, int playerIndex);
 
     glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
                       float targetHeight, bool isFixed = false);

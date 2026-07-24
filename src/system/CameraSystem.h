@@ -19,6 +19,7 @@ class Player;
 class Boat;
 class Planet;
 class Enemy;
+class Star;
 
 class CameraSystem {
 public:
@@ -60,12 +61,18 @@ public:
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
+    bool AllowsPlayerInput() const;
+    void StartBossDefeatSequence(Enemy* boss, Star* star);
+    bool PreviewBossDefeatSequence();
+    void StopBossDefeatSequence();
+    bool IsBossDefeatSequencePlaying() const { return mBossDefeatSequenceTimer >= 0.0f; }
     std::vector<glm::mat4> GetViews();
     glm::vec3 GetCameraPos() const;
     glm::vec3 GetPlayerCameraPos(int playerNum) const;
 
 private:
     void UpdateCamera(float deltaTime);
+    void UpdateBossDefeatSequence(float deltaTime);
     void UpdateTalkCameraTransition(float deltaTime);
     float GetEasedTalkCameraBlend() const;
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
@@ -76,9 +83,14 @@ private:
 
     bool mIsTargetFocus = false;
     bool mTalkCameraPreviewEnabled = false;
+    bool mAlignCameraPressedPrev = false;
+    bool mBossDefeatSequenceIsPreview = false;
+    float mBossDefeatSequenceTimer = -1.0f;
     float mCameraStickX = 0.0f;
     float mTalkCameraBlend = 0.0f;
     Player* mTalkCameraPlayer = nullptr;
+    Enemy* mDefeatedBoss = nullptr;
+    Star* mBossDefeatStar = nullptr;
 
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;

@@ -33,6 +33,24 @@ void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float del
                                3.14159265f);
 }
 
+void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus& status)
+{
+    Player* nearestPlayer = status.GetNearestPlayer();
+    if (!nearestPlayer) {
+        return;
+    }
+
+    const glm::vec3 toPlayer = nearestPlayer->GetPos() - enemy.GetPos();
+    if (glm::length(toPlayer) < 1e-6f) {
+        return;
+    }
+
+    const glm::vec3 facingForward = glm::normalize(toPlayer);
+    enemy.SetFacingForwardForEnemy(facingForward);
+    enemy.SetFacingYawForEnemy(enemy.GetGame()->GetMathUtils()->GetYawFromDirection(enemy.GetUpVec(), facingForward) +
+                               3.14159265f);
+}
+
 void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
     const glm::vec3 moveDelta = enemy.GetFacingForwardVec() * status.GetMoveSpeed() * deltaTime;

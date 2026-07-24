@@ -114,6 +114,34 @@ void CameraDebugPanel::Draw()
     playerCameraChanged |= ImGui::DragFloat(
         "戻る時間（秒）##TalkCamera", &playerCameraSettings.talkTransitionOutDuration, 0.01f, 0.0f, 10.0f);
 
+    ImGui::Spacing();
+    ImGui::TextUnformatted("ボス撃破カメラ");
+    playerCameraChanged |= ImGui::DragFloat(
+        "ボスとの距離##BossDefeatCamera", &playerCameraSettings.bossDefeatDistance, 0.1f, 0.5f, 50.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "カメラの高さ##BossDefeatCamera", &playerCameraSettings.bossDefeatCameraHeight, 0.05f, -20.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "ボス注視点の高さ##BossDefeatCamera", &playerCameraSettings.bossDefeatTargetHeight, 0.05f, -20.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "FOV##BossDefeatCamera", &playerCameraSettings.bossDefeatFieldOfViewDegrees, 0.25f, 10.0f, 120.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "星との距離##BossDefeatCamera", &playerCameraSettings.bossDefeatStarDistance, 0.1f, 0.5f, 50.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "星カメラの高さ##BossDefeatCamera", &playerCameraSettings.bossDefeatStarCameraHeight, 0.05f, -20.0f, 20.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "星注視点の高さ##BossDefeatCamera", &playerCameraSettings.bossDefeatStarTargetHeight, 0.05f, -20.0f, 20.0f);
+
+    if (cameraSystem->IsBossDefeatSequencePlaying()) {
+        if (ImGui::Button("撃破カメラのプレビューを停止")) {
+            cameraSystem->StopBossDefeatSequence();
+            mStatusMessage = "ボス撃破カメラのプレビューを停止しました";
+        }
+    } else if (ImGui::Button("撃破カメラをプレビュー")) {
+        mStatusMessage = cameraSystem->PreviewBossDefeatSequence()
+                             ? "ボス撃破カメラのプレビューを開始しました"
+                             : "現在の惑星にボスがいないためプレビューできません";
+    }
+
     if (playerCameraChanged) {
         cameraSystem->SetPlayerCameraSettings(playerCameraSettings);
     }

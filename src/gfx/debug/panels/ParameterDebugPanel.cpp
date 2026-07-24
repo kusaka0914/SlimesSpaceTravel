@@ -105,6 +105,36 @@ void ParameterDebugPanel::DrawPlayer()
     }
 
     if (ImGui::TreeNode("基本情報")) {
+        Stage* stage = mContext.game->GetCurrentStage();
+        if (stage) {
+            const std::vector<Planet*>& planets = stage->GetPlanets();
+            const int currentPlanetIndex = player->GetCurrentPlanetNum();
+            const std::string preview =
+                currentPlanetIndex >= 0 && currentPlanetIndex < static_cast<int>(planets.size())
+                    ? "惑星 " + std::to_string(currentPlanetIndex)
+                    : "未設定";
+
+            if (ImGui::BeginCombo("現在の惑星（デバッグ移動）", preview.c_str())) {
+                for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
+                    Planet* planet = planets[planetIndex];
+                    if (!planet) {
+                        continue;
+                    }
+
+                    const std::string label = "惑星 " + std::to_string(planetIndex);
+                    const bool isSelected = planetIndex == currentPlanetIndex;
+                    if (ImGui::Selectable(label.c_str(), isSelected)) {
+                        player->DebugMoveToPlanet(planet, planetIndex);
+                    }
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+
         int hp = player->GetHp();
         if (ImGui::SliderInt("体力", &hp, 1, 100)) {
             player->SetHp(hp);
@@ -388,6 +418,9 @@ void ParameterDebugPanel::DrawEnemies()
     }
 
     if (normalEnemy && ImGui::TreeNode("通常敵")) {
+        ImGui::Text("行動プロファイル: %s", normalEnemy->GetBehaviorProfileName().c_str());
+        ImGui::Text("現在の行動: %s", normalEnemy->GetCurrentBehaviorActionType());
+
         float hp = normalEnemy->GetHp();
         if (ImGui::SliderFloat("体力##normal", &hp, 1.0f, 999.0f, "%.0f")) {
             for (Enemy* enemy : normalEnemies) {
@@ -486,6 +519,9 @@ void ParameterDebugPanel::DrawEnemies()
     }
 
     if (bossEnemy && ImGui::TreeNode("ボス敵")) {
+        ImGui::Text("行動プロファイル: %s", bossEnemy->GetBehaviorProfileName().c_str());
+        ImGui::Text("現在の行動: %s", bossEnemy->GetCurrentBehaviorActionType());
+
         float hp = bossEnemy->GetHp();
         if (ImGui::SliderFloat("体力##boss", &hp, 1.0f, 9999.0f, "%.0f")) {
             bossEnemy->SetHp(hp);

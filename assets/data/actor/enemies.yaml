@@ -4,6 +4,7 @@ enemies:
     defaultLaunchedTimer: 4
     detectionRange: 10
   - type: normal
+    behaviorProfile: legacyMelee
     hp: 80
     modelPath: enemy.obj
     scale: 0.25
@@ -15,6 +16,7 @@ enemies:
     defaultAttackMotionTimer: 3
     attackSpeed: 1.5
   - type: normalFixed
+    behaviorProfile: legacyMelee
     hp: 80
     modelPath: enemy.obj
     scale: 0.25
@@ -26,6 +28,7 @@ enemies:
     defaultAttackMotionTimer: 0.5
     attackSpeed: 4.5
   - type: bigFixed
+    behaviorProfile: legacyMelee
     hp: 80
     modelPath: enemy.obj
     scale: 1
@@ -37,6 +40,7 @@ enemies:
     defaultAttackMotionTimer: 0.5
     attackSpeed: 4.5
   - type: boss
+    behaviorProfile: bossMelee
     hp: 400
     modelPath: enemy.obj
     scale: 1
@@ -47,3 +51,36 @@ enemies:
     defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
     attackSpeed: 9
+
+behaviorProfiles:
+  legacyMelee:
+    actions:
+      - type: idle
+        weight: 1
+      - type: chase
+        weight: 1
+      - type: meleeAttack
+        weight: 1
+  bossMelee:
+    actions:
+      - type: idle
+        weight: 1
+      - type: chase
+        weight: 1
+      - type: meleeAttack
+        weight: 40
+      - type: tripleChargeAttack
+        weight: 30
+        chargeCount: 3
+        repeatDelay: 1
+      - type: fanAttack
+        weight: 15
+        range: 6
+        angleDegrees: 120
+        windUpDuration: 2
+        attackDuration: 0.5
+      - type: radialAttack
+        weight: 15
+        range: 5
+        windUpDuration: 2
+        attackDuration: 0.5

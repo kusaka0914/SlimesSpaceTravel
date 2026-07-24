@@ -2,6 +2,7 @@
 
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/player/PlayerConfig.h"
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
@@ -79,6 +80,53 @@ void Player::Initialize()
     mRespawn.SetRestartPos(mPos);
 }
 
+void Player::RecoverFromFatigue()
+{
+    if (!mStatus.IsTired()) {
+        return;
+    }
+
+    mCombat.EndTiredLock(mStatus, mMovement);
+    mStateMachine.ChangeState(PlayerActionState::Idle);
+}
+
+void Player::MoveToCurrentPlanetOrigin()
+{
+    Planet* planet = GetCurrentPlanet();
+    if (!planet) {
+        return;
+    }
+
+    constexpr float originTheta = 0.0f;
+    constexpr float originPhi = 0.0f;
+    SetSphericalPlacement(originTheta, originPhi, GetHeight());
+    SetPos(planet->CalculateSurfacePos(originTheta, originPhi, GetHeight()));
+    SetVelocity(glm::vec3(0.0f));
+    SetOnGround(false);
+    SetShouldJudgeLanding(true);
+    RefreshFallbackUpVec();
+
+    mRespawn.SetRestartPos(GetPos());
+}
+
+void Player::DebugMoveToPlanet(Planet* planet, int planetIndex)
+{
+    if (!planet || planetIndex < 0) {
+        return;
+    }
+
+    SetCurrentPlanet(planet);
+    mMovement.SetCurrentPlanetNum(planetIndex);
+    SetPos(planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight()));
+    SetVelocity(glm::vec3(0.0f));
+    SetOnGround(false);
+    SetShouldJudgeLanding(true);
+    RefreshFallbackUpVec();
+
+    mRespawn.SetRestartPlanetIndex(planetIndex);
+    mRespawn.SetRestartPos(GetPos());
+}
+
 void Player::ProcessActor()
 {
     mInput.ProcessActor(*this, mMovement);
@@ -86,6 +134,14 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    if (mControlLocked) {
+        mVelocity = glm::vec3(0.0f);
+        mParticleEffectController.UpdateWalking(*this, false);
+        mAnimationController.RequestAnimation(idleAnimationId, false);
+        mAnimationController.Update(deltaTime);
+        return;
+    }
+
     const bool wasOnGroundBeforeLandingCheck = GetOnGround();
     const glm::vec3 velocityBeforeLandingCheck = GetVelocity();
     const glm::vec3 upBeforeLandingCheck = GetUpVec();

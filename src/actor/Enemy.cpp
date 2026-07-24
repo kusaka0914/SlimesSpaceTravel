@@ -9,6 +9,7 @@
 #include "actor/enemy/EnemyDamageHandler.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
+#include "actor/enemy/behavior/EnemyBehaviorController.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
 
@@ -17,7 +18,8 @@ Enemy::Enemy(Game* game)
       mStateMachine(std::make_unique<EnemyStateMachine>()),
       mMovement(std::make_unique<EnemyMovement>()),
       mCombat(std::make_unique<EnemyCombat>()),
-      mDamageHandler(std::make_unique<EnemyDamageHandler>())
+      mDamageHandler(std::make_unique<EnemyDamageHandler>()),
+      mBehaviorController(std::make_unique<EnemyBehaviorController>())
 {
 }
 
@@ -51,6 +53,8 @@ void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
     SetDefaultStandByAttackTimer(config.defaultStandByAttackTimer);
     SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
     SetAttackSpeed(config.attackSpeed);
+
+    mBehaviorController->Configure(config.behavior);
 }
 
 void Enemy::UpdateActor(float deltaTime)
@@ -65,7 +69,8 @@ void Enemy::UpdateActor(float deltaTime)
 
     switch (mStateMachine->GetLifeState()) {
     case LifeState::Alive:
-        mStateMachine->UpdateAlive(*this, mStatus, *mMovement, *mCombat, deltaTime);
+        mStateMachine->UpdateAlive(
+            *this, mStatus, *mMovement, *mCombat, *mBehaviorController, deltaTime);
         break;
 
     case LifeState::Dying:
@@ -85,4 +90,19 @@ void Enemy::ApplyDamage(float damage, Player* player)
 void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
 {
     mCombat->ApplyBreak(*this, mStatus, *mMovement, *mStateMachine, deltaTime, isAllBreak);
+}
+
+const char* Enemy::GetCurrentBehaviorActionType() const
+{
+    return mBehaviorController->GetCurrentActionType();
+}
+
+const std::string& Enemy::GetBehaviorProfileName() const
+{
+    return mBehaviorController->GetProfileName();
+}
+
+bool Enemy::GetBehaviorAttackPreview(EnemyAttackPreview& preview) const
+{
+    return mBehaviorController->GetCurrentAttackPreview(preview);
 }

@@ -15,3 +15,11 @@ playerCamera:
     fieldOfView: 55
     transitionInDuration: 0.6
     transitionOutDuration: 0.45
+  bossDefeat:
+    distance: 6
+    cameraHeight: 1.5
+    targetHeight: 0.5
+    fieldOfView: 45
+    starDistance: 6
+    starCameraHeight: 1.5
+    starTargetHeight: 0.35

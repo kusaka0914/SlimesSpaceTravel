@@ -1,5 +1,6 @@
 #include "Star.h"
 #include "Game.h"
+#include "actor/Player.h"
 #include "component/CollectableComponent.h"
 
 #include <yaml-cpp/yaml.h>
@@ -46,5 +47,11 @@ void Star::UpdateActor(float deltaTime)
 void Star::OnObtained()
 {
     mIsActive = false;
+
+    Player* player = mGame ? mGame->GetMainPlayer() : nullptr;
+    if (player) {
+        player->MoveToCurrentPlanetOrigin();
+    }
+
     mGame->OnStarObtained();
 }

@@ -10,7 +10,7 @@ CollectableComponent::CollectableComponent(Actor* owner, int updateOrder)
 
 void CollectableComponent::Update(float deltaTime)
 {
-    if (mIsObtained) {
+    if (mIsObtained || !mOwner || !mOwner->GetIsActive()) {
         return;
     }
 
@@ -22,6 +22,10 @@ void CollectableComponent::Update(float deltaTime)
 bool CollectableComponent::IsCollectablePlayerInPickUpRadius() const
 {
     const Player* nearestPlayer = mOwner->GetGame()->FindNearestPlayer(mOwner);
+
+    if (!nearestPlayer) {
+        return false;
+    }
 
     if (nearestPlayer->IsAttacking()) {
         return false;

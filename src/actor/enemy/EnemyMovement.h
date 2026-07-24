@@ -11,6 +11,7 @@ class EnemyStatus;
 class EnemyMovement {
 public:
     void UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float deltaTime);
+    void FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus& status);
 
     void MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime);
     void MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,

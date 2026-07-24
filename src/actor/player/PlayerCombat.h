@@ -42,6 +42,7 @@ public:
     void StartContinuousAttacking();
     void StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime);
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
+    void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
     void CancelSpecialAttack();
     void OnLanded();
 

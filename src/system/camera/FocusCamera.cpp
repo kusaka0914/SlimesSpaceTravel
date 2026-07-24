@@ -44,6 +44,54 @@ glm::mat4 FocusCamera::GetFocusView(Actor* focusActor) const
     return glm::lookAt(cameraPos, ownerPos, upVec);
 }
 
+glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance, float cameraHeight,
+                                         float targetHeight)
+{
+    if (!focusActor) {
+        return glm::mat4(1.0f);
+    }
+
+    glm::vec3 up = focusActor->GetUpVec();
+    if (glm::length(up) < 0.001f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
+
+    glm::vec3 back = mGame && mGame->GetMainPlayer()
+                         ? mGame->GetMainPlayer()->GetPos() - focusActor->GetPos()
+                         : glm::vec3(0.0f, 0.0f, 1.0f);
+    back -= up * glm::dot(back, up);
+    if (glm::length(back) < 0.001f) {
+        back = glm::cross(up, glm::vec3(1.0f, 0.0f, 0.0f));
+    }
+    if (glm::length(back) < 0.001f) {
+        back = glm::cross(up, glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    back = glm::normalize(back);
+
+    const glm::vec3 desiredTargetPos = focusActor->GetPos() + up * targetHeight;
+    const glm::vec3 desiredCameraPos =
+        desiredTargetPos + back * cameraDistance + up * cameraHeight;
+
+    constexpr float transitionBlend = 0.12f;
+    mCameraPos = glm::mix(mCameraPos, desiredCameraPos, transitionBlend);
+    mCameraTargetPos = glm::mix(mCameraTargetPos, desiredTargetPos, transitionBlend);
+    mCameraUpVec = glm::normalize(glm::mix(mCameraUpVec, up, transitionBlend));
+
+    return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
+}
+
+void FocusCamera::BeginTransition(const glm::vec3& cameraPos, const glm::vec3& targetPos,
+                                  const glm::vec3& upVec)
+{
+    mCameraPos = cameraPos;
+    mCameraTargetPos = targetPos;
+    mCameraUpVec = glm::length(upVec) < 0.001f
+                       ? glm::vec3(0.0f, 1.0f, 0.0f)
+                       : glm::normalize(upVec);
+}
+
 glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor)
 {
     if (!mGame || !targetActor) {

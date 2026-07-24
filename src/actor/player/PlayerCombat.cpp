@@ -285,6 +285,14 @@ void PlayerCombat::ReduceTiredLock(PlayerStatus& status, PlayerMovement& movemen
     }
 }
 
+void PlayerCombat::EndTiredLock(PlayerStatus& status, PlayerMovement& movement)
+{
+    status.EndTired();
+    mAttackMoveLockRemaining = 0.0f;
+    movement.SetDodgeCooldown(0.0f);
+    mAttackCooldownRemaining = 0.0f;
+}
+
 void PlayerCombat::CancelSpecialAttack()
 {
     mIsAssistStrongAttack = false;

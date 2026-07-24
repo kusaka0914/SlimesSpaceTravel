@@ -1,6 +1,7 @@
 #pragma once
 
 class Enemy;
+class EnemyBehaviorController;
 class EnemyCombat;
 class EnemyMovement;
 class EnemyStatus;
@@ -19,9 +20,9 @@ public:
 
     EnemyStateMachine();
 
-    void UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat, float deltaTime);
+    void UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
+                     EnemyBehaviorController& behaviorController, float deltaTime);
     void UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
-    void UpdateBehavior(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat, float deltaTime);
 
     void UpdateIdle(Enemy& enemy, EnemyStatus& status, EnemyCombat& combat);
     void UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat, float deltaTime);

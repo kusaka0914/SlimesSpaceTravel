@@ -5,9 +5,11 @@
 #include "actor/Key.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/Star.h"
 #include "component/FocusComponent.h"
 #include "system/SceneSystem.h"
 
+#include <GLFW/glfw3.h>
 #include <SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -37,20 +39,33 @@ void CameraSystem::ProcessInput()
         return;
     }
 
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
     SDL_GameController* sdlController = mGame->GetSdlController();
-    if (!sdlController) {
-        mCameraStickX = 0.0f;
-        return;
-    }
 
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
 
-    mCameraStickX = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTX) * scale;
+    mCameraStickX =
+        sdlController
+            ? SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_RIGHTX) * scale
+            : 0.0f;
 
     if (std::abs(mCameraStickX) < deadZone) {
         mCameraStickX = 0.0f;
     }
+
+    constexpr Sint16 triggerPressedThreshold = 16000;
+    const bool alignCameraPressed =
+        (mGame->GetWindow() && glfwGetKey(mGame->GetWindow(), GLFW_KEY_Y) == GLFW_PRESS) ||
+        (sdlController &&
+         SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >
+             triggerPressedThreshold);
+
+    if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
+        mPlayerCamera.AlignBehindPlayer(mGame->GetMainPlayer(), 0);
+    }
+
+    mAlignCameraPressedPrev = alignCameraPressed;
 }
 
 void CameraSystem::Update(float deltaTime)
@@ -107,6 +122,10 @@ float CameraSystem::GetFieldOfViewDegrees() const
         return mDebugCamera.GetFieldOfViewDegrees();
     }
 
+    if (mBossDefeatSequenceTimer >= 0.0f) {
+        return mPlayerCameraSettings.bossDefeatFieldOfViewDegrees;
+    }
+
     const float normalFieldOfView =
         mGame && mGame->GetIsPlayer2Joined()
             ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
@@ -123,6 +142,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
     }
 
     UpdateTalkCameraTransition(deltaTime);
+    UpdateBossDefeatSequence(deltaTime);
 
     if (mCinematicCamera.IsPlaying()) {
         mCinematicCamera.Update(deltaTime);
@@ -141,6 +161,74 @@ void CameraSystem::UpdateCamera(float deltaTime)
     mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
                          mPlayerCameraSettings.targetSmoothingSpeed,
                          mPlayerCameraSettings.attackTargetSmoothingSpeed, deltaTime);
+}
+
+bool CameraSystem::AllowsPlayerInput() const
+{
+    return mBossDefeatSequenceTimer < 0.0f && !mCinematicCamera.IsPlaying() &&
+           !(mGame && mGame->GetIsFreeCameraMode()) && !mIsTargetFocus;
+}
+
+void CameraSystem::StartBossDefeatSequence(Enemy* boss, Star* star)
+{
+    if (!boss) {
+        return;
+    }
+
+    mDefeatedBoss = boss;
+    mBossDefeatStar = star;
+    mBossDefeatSequenceIsPreview = false;
+    mBossDefeatSequenceTimer = 0.0f;
+    mCameraStickX = 0.0f;
+
+    Player* player = mGame ? mGame->GetMainPlayer() : nullptr;
+    const glm::vec3 targetPos = player ? player->GetPos() : boss->GetPos();
+    const glm::vec3 up = player ? player->GetUpVec() : boss->GetUpVec();
+    mFocusCamera.BeginTransition(mPlayerCamera.GetCameraPos(0), targetPos, up);
+}
+
+bool CameraSystem::PreviewBossDefeatSequence()
+{
+    Player* player = mGame ? mGame->GetMainPlayer() : nullptr;
+    Planet* planet = player ? player->GetCurrentPlanet() : nullptr;
+    Enemy* boss = FindBossEnemy(planet);
+    if (!boss) {
+        return false;
+    }
+
+    StartBossDefeatSequence(boss, planet->GetStar());
+    mBossDefeatSequenceIsPreview = true;
+    return true;
+}
+
+void CameraSystem::StopBossDefeatSequence()
+{
+    mBossDefeatSequenceTimer = -1.0f;
+    mBossDefeatSequenceIsPreview = false;
+    mDefeatedBoss = nullptr;
+    mBossDefeatStar = nullptr;
+}
+
+void CameraSystem::UpdateBossDefeatSequence(float deltaTime)
+{
+    if (mBossDefeatSequenceTimer < 0.0f) {
+        return;
+    }
+
+    mBossDefeatSequenceTimer += std::max(0.0f, deltaTime);
+
+    constexpr float starRevealTime = 4.0f;
+    if (!mBossDefeatSequenceIsPreview && mBossDefeatStar &&
+        mBossDefeatSequenceTimer >= starRevealTime && !mBossDefeatStar->GetIsActive()) {
+        mBossDefeatStar->SetIsActive(true);
+    }
+
+    constexpr float sequenceDuration = 7.0f;
+    if (mBossDefeatSequenceTimer < sequenceDuration) {
+        return;
+    }
+
+    StopBossDefeatSequence();
 }
 
 void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
@@ -212,6 +300,25 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     if (mGame->GetIsFreeCameraMode()) {
         views.emplace_back(mDebugCamera.GetView());
         return views;
+    }
+
+    if (mBossDefeatSequenceTimer >= 0.0f) {
+        constexpr float starRevealTime = 4.0f;
+        if (mBossDefeatSequenceTimer < starRevealTime && mDefeatedBoss) {
+            views.emplace_back(mFocusCamera.GetCloseFocusView(
+                mDefeatedBoss, mPlayerCameraSettings.bossDefeatDistance,
+                mPlayerCameraSettings.bossDefeatCameraHeight,
+                mPlayerCameraSettings.bossDefeatTargetHeight));
+        } else if (mBossDefeatStar) {
+            views.emplace_back(mFocusCamera.GetCloseFocusView(
+                mBossDefeatStar, mPlayerCameraSettings.bossDefeatStarDistance,
+                mPlayerCameraSettings.bossDefeatStarCameraHeight,
+                mPlayerCameraSettings.bossDefeatStarTargetHeight));
+        }
+
+        if (!views.empty()) {
+            return views;
+        }
     }
 
     const std::vector<Player*>& players = mGame->GetPlayers();

@@ -9,10 +9,12 @@
 #include <string>
 
 class EnemyCombat;
+class EnemyBehaviorController;
 class EnemyDamageHandler;
 class EnemyMovement;
 class Game;
 class Player;
+struct EnemyAttackPreview;
 struct EnemyConfig;
 
 class Enemy : public CharacterActor {
@@ -95,6 +97,10 @@ public:
     void SetFacingForwardForEnemy(const glm::vec3& facingForward) { mFacingForwardVec = facingForward; }
     void SetFacingYawForEnemy(float facingYaw) { mFacingYaw = facingYaw; }
 
+    const char* GetCurrentBehaviorActionType() const;
+    const std::string& GetBehaviorProfileName() const;
+    bool GetBehaviorAttackPreview(EnemyAttackPreview& preview) const;
+
     void ApplyGravityForEnemy(float deltaTime) { ApplyGravity(deltaTime); }
     bool IsSteepGroundForEnemy(const glm::vec3& hitNormal, const glm::vec3& up) const
     {
@@ -111,4 +117,5 @@ private:
     std::unique_ptr<EnemyMovement> mMovement;
     std::unique_ptr<EnemyCombat> mCombat;
     std::unique_ptr<EnemyDamageHandler> mDamageHandler;
+    std::unique_ptr<EnemyBehaviorController> mBehaviorController;
 };

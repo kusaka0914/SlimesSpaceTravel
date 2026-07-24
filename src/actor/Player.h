@@ -47,6 +47,10 @@ public:
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
     void Restart();
+    void RecoverFromFatigue();
+    void MoveToCurrentPlanetOrigin();
+    void DebugMoveToPlanet(Planet* planet, int planetIndex);
+    void SetControlLocked(bool locked) { mControlLocked = locked; }
 
     bool IsInvincible() const { return mStatus.IsInvincible(); }
 
@@ -280,4 +284,5 @@ private:
     PlayerAnimationController mAnimationController;
 
     bool mUseSecondAttackAnimationNext = false;
+    bool mControlLocked = false;
 };

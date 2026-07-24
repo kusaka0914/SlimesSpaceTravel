@@ -35,6 +35,14 @@ void PlayerCameraSettings::Normalize()
     talkFieldOfViewDegrees = glm::clamp(talkFieldOfViewDegrees, 10.0f, 120.0f);
     talkTransitionInDuration = glm::clamp(talkTransitionInDuration, 0.0f, 10.0f);
     talkTransitionOutDuration = glm::clamp(talkTransitionOutDuration, 0.0f, 10.0f);
+
+    bossDefeatDistance = glm::clamp(bossDefeatDistance, 0.5f, 50.0f);
+    bossDefeatCameraHeight = glm::clamp(bossDefeatCameraHeight, -20.0f, 20.0f);
+    bossDefeatTargetHeight = glm::clamp(bossDefeatTargetHeight, -20.0f, 20.0f);
+    bossDefeatFieldOfViewDegrees = glm::clamp(bossDefeatFieldOfViewDegrees, 10.0f, 120.0f);
+    bossDefeatStarDistance = glm::clamp(bossDefeatStarDistance, 0.5f, 50.0f);
+    bossDefeatStarCameraHeight = glm::clamp(bossDefeatStarCameraHeight, -20.0f, 20.0f);
+    bossDefeatStarTargetHeight = glm::clamp(bossDefeatStarTargetHeight, -20.0f, 20.0f);
 }
 
 PlayerCameraSettingsRepository::PlayerCameraSettingsRepository(std::string filePath)
@@ -91,6 +99,24 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
                 ReadFloat(talkNode, "transitionOutDuration", loadedSettings.talkTransitionOutDuration);
         }
 
+        const YAML::Node bossDefeatNode = cameraNode["bossDefeat"];
+        if (bossDefeatNode && bossDefeatNode.IsMap()) {
+            loadedSettings.bossDefeatDistance =
+                ReadFloat(bossDefeatNode, "distance", loadedSettings.bossDefeatDistance);
+            loadedSettings.bossDefeatCameraHeight =
+                ReadFloat(bossDefeatNode, "cameraHeight", loadedSettings.bossDefeatCameraHeight);
+            loadedSettings.bossDefeatTargetHeight =
+                ReadFloat(bossDefeatNode, "targetHeight", loadedSettings.bossDefeatTargetHeight);
+            loadedSettings.bossDefeatFieldOfViewDegrees =
+                ReadFloat(bossDefeatNode, "fieldOfView", loadedSettings.bossDefeatFieldOfViewDegrees);
+            loadedSettings.bossDefeatStarDistance =
+                ReadFloat(bossDefeatNode, "starDistance", loadedSettings.bossDefeatStarDistance);
+            loadedSettings.bossDefeatStarCameraHeight =
+                ReadFloat(bossDefeatNode, "starCameraHeight", loadedSettings.bossDefeatStarCameraHeight);
+            loadedSettings.bossDefeatStarTargetHeight =
+                ReadFloat(bossDefeatNode, "starTargetHeight", loadedSettings.bossDefeatStarTargetHeight);
+        }
+
         loadedSettings.Normalize();
         settings = loadedSettings;
         return true;
@@ -137,6 +163,20 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
                 << normalizedSettings.talkTransitionInDuration;
         emitter << YAML::Key << "transitionOutDuration" << YAML::Value
                 << normalizedSettings.talkTransitionOutDuration;
+        emitter << YAML::EndMap;
+
+        emitter << YAML::Key << "bossDefeat" << YAML::Value << YAML::BeginMap;
+        emitter << YAML::Key << "distance" << YAML::Value << normalizedSettings.bossDefeatDistance;
+        emitter << YAML::Key << "cameraHeight" << YAML::Value << normalizedSettings.bossDefeatCameraHeight;
+        emitter << YAML::Key << "targetHeight" << YAML::Value << normalizedSettings.bossDefeatTargetHeight;
+        emitter << YAML::Key << "fieldOfView" << YAML::Value
+                << normalizedSettings.bossDefeatFieldOfViewDegrees;
+        emitter << YAML::Key << "starDistance" << YAML::Value
+                << normalizedSettings.bossDefeatStarDistance;
+        emitter << YAML::Key << "starCameraHeight" << YAML::Value
+                << normalizedSettings.bossDefeatStarCameraHeight;
+        emitter << YAML::Key << "starTargetHeight" << YAML::Value
+                << normalizedSettings.bossDefeatStarTargetHeight;
         emitter << YAML::EndMap;
 
         emitter << YAML::EndMap;

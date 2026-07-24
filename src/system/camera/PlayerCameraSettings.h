@@ -20,6 +20,14 @@ struct PlayerCameraSettings {
     float talkTransitionInDuration = 0.6f;
     float talkTransitionOutDuration = 0.45f;
 
+    float bossDefeatDistance = 6.0f;
+    float bossDefeatCameraHeight = 1.5f;
+    float bossDefeatTargetHeight = 0.5f;
+    float bossDefeatFieldOfViewDegrees = 45.0f;
+    float bossDefeatStarDistance = 6.0f;
+    float bossDefeatStarCameraHeight = 1.5f;
+    float bossDefeatStarTargetHeight = 0.35f;
+
     void Normalize();
 };
 

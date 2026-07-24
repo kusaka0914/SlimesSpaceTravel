@@ -20,6 +20,7 @@ void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemySta
 
     if (status.IsHp0()) {
         stateMachine.StartDying(enemy, status);
+        return;
     }
 
     if (status.GetIsStrongAttacked()) {

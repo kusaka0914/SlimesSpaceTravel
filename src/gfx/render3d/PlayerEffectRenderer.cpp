@@ -5,11 +5,13 @@
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
+#include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -67,7 +69,14 @@ void PlayerEffectRenderer::DrawEnemyWithEffects(Enemy* enemy, const glm::mat4& v
     DrawEnemyHp(viewMat, enemy);
 
     if (enemy->GetStandByAttackTimer() > 0.0f && enemy->GetStandByAttackTimer() <= 1.0f) {
-        DrawEnemyAttackRange(enemy);
+        EnemyAttackPreview preview;
+        if (enemy->GetBehaviorAttackPreview(preview) &&
+            (preview.shape == EnemyAttackPreviewShape::Fan ||
+             preview.shape == EnemyAttackPreviewShape::Radial)) {
+            DrawEnemyFanAttackRange(enemy, preview.range, preview.angleRadians);
+        } else {
+            DrawEnemyAttackRange(enemy);
+        }
     }
 }
 
@@ -160,22 +169,43 @@ void PlayerEffectRenderer::DrawPlayerAttackRange(Player* player) const
         return;
     }
 
-    constexpr int segments = 48;
+    DrawFanAttackRange(
+        player->GetPos(),
+        glm::normalize(player->GetUpVec()),
+        glm::normalize(player->GetFacingForwardVec()),
+        glm::normalize(player->GetLeftVec()),
+        player->GetAttackRange(),
+        player->GetAttackAngle(),
+        0.06f);
+}
 
-    const float attackRange = player->GetAttackRange();
-    const float attackAngle = player->GetAttackAngle();
-
-    if (attackRange <= 0.0f || attackAngle <= 0.0f) {
+void PlayerEffectRenderer::DrawEnemyFanAttackRange(
+    Enemy* enemy, float range, float angleRadians) const
+{
+    if (!mRenderer || !enemy) {
         return;
     }
 
-    const glm::vec3 center = player->GetPos();
-    const glm::vec3 up = glm::normalize(player->GetUpVec());
-    const glm::vec3 forward = glm::normalize(player->GetFacingForwardVec());
-    const glm::vec3 left = glm::normalize(player->GetLeftVec());
+    DrawFanAttackRange(
+        enemy->GetPos(),
+        glm::normalize(enemy->GetUpVec()),
+        glm::normalize(enemy->GetFacingForwardVec()),
+        glm::normalize(enemy->GetLeftVec()),
+        range,
+        angleRadians,
+        0.56f);
+}
 
-    const float halfAngle = attackAngle * 0.5f;
-    constexpr float yOffset = 0.06f;
+void PlayerEffectRenderer::DrawFanAttackRange(
+    const glm::vec3& center, const glm::vec3& up, const glm::vec3& forward,
+    const glm::vec3& left, float range, float angleRadians, float yOffset) const
+{
+    if (!mRenderer || range <= 0.0f || angleRadians <= 0.0f) {
+        return;
+    }
+
+    constexpr int segments = 48;
+    const float halfAngle = angleRadians * 0.5f;
 
     std::vector<glm::vec3> fanVertices;
     fanVertices.reserve(segments + 2);
@@ -187,14 +217,14 @@ void PlayerEffectRenderer::DrawPlayerAttackRange(Player* player) const
         const float angle = glm::mix(-halfAngle, halfAngle, t);
 
         glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
-        fanVertices.emplace_back(center + dir * attackRange + up * yOffset);
+        fanVertices.emplace_back(center + dir * range + up * yOffset);
     }
 
     mRenderer->DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
 
     constexpr float thickness = 0.08f;
-    const float innerRadius = attackRange - thickness;
-    const float outerRadius = attackRange;
+    const float innerRadius = std::max(0.0f, range - thickness);
+    const float outerRadius = range;
 
     std::vector<glm::vec3> edgeVertices;
     edgeVertices.reserve((segments + 1) * 2);
@@ -274,7 +304,8 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
 
 void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy) {
+    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy ||
+        !enemy->IsAlive()) {
         return;
     }
 

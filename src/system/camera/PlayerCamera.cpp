@@ -64,6 +64,25 @@ void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, f
     }
 }
 
+void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
+{
+    if (!player || playerIndex < 0) {
+        return;
+    }
+
+    ResizeState(playerIndex + 1);
+
+    PlayerCameraState& state = mStates[playerIndex];
+    glm::vec3 cameraForward;
+    if (!TryGetTangentDirection(-player->GetFacingForwardVec(), player->GetUpVec(), cameraForward)) {
+        return;
+    }
+
+    state.alignTargetForwardVec = cameraForward;
+    state.isAligningBehindPlayer = true;
+    state.hasAttackTargetForward = false;
+}
+
 glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
                                 float targetHeight, bool isFixed)
 {
@@ -163,6 +182,21 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
     if (!state.hasCameraForward) {
         state.cameraForwardVec = normalForward;
         state.hasCameraForward = true;
+    }
+
+    if (state.isAligningBehindPlayer) {
+        constexpr float alignSmoothingSpeed = 8.0f;
+        state.cameraForwardVec = RotateTowards(
+            state.cameraForwardVec, state.alignTargetForwardVec, up, alignSmoothingSpeed, deltaTime);
+        player->SetCameraForwardDirection(state.cameraForwardVec, up);
+
+        constexpr float alignmentCompleteDot = 0.9995f;
+        if (glm::dot(state.cameraForwardVec, state.alignTargetForwardVec) >= alignmentCompleteDot) {
+            state.cameraForwardVec = state.alignTargetForwardVec;
+            player->SetCameraForwardDirection(state.cameraForwardVec, up);
+            state.isAligningBehindPlayer = false;
+        }
+        return;
     }
 
     Enemy* attackTarget = player->GetAttackDirectionTarget();

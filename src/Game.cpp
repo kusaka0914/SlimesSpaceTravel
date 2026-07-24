@@ -248,7 +248,16 @@ void Game::ToggleFreeCameraMode()
 
 void Game::ProcessActorsInput()
 {
-    if (!mSceneSystem->IsPlaying()) {
+    const bool allowsPlayerControl =
+        mSceneSystem->IsPlaying() && mCameraSystem->AllowsPlayerInput();
+
+    for (Player* player : GetPlayers()) {
+        if (player) {
+            player->SetControlLocked(!allowsPlayerControl);
+        }
+    }
+
+    if (!allowsPlayerControl) {
         return;
     }
 

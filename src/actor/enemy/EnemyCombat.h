@@ -12,6 +12,10 @@ public:
                     float deltaTime, bool isAllBreak = false);
 
     void TryApplyAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine, float deltaTime);
+    void TryApplyFanAttack(Enemy& enemy, EnemyStatus& status, float range, float angleRadians,
+                           float deltaTime);
+    void TryApplyGroundRadialAttack(Enemy& enemy, EnemyStatus& status, float range,
+                                    float deltaTime);
 
     bool IsPlayerInRange(const Enemy& enemy, Player* player, float range) const;
 };

@@ -13,6 +13,9 @@ public:
     explicit FocusCamera(Game* game);
 
     glm::mat4 GetFocusView(Actor* focusActor) const;
+    glm::mat4 GetCloseFocusView(Actor* focusActor, float cameraDistance, float cameraHeight,
+                                float targetHeight);
+    void BeginTransition(const glm::vec3& cameraPos, const glm::vec3& targetPos, const glm::vec3& upVec);
     glm::mat4 GetTargetCameraView(Actor* targetActor);
     std::vector<glm::mat4> GetOpeningViews() const;
     std::vector<glm::mat4> GetBoatFocusViews(const std::vector<Boat*>& boats) const;
