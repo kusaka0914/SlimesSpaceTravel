@@ -112,6 +112,18 @@ bool CameraSystem::ReloadPlayerCameraSettings()
     return true;
 }
 
+void CameraSystem::ResetForStageChange()
+{
+    StopCinematic();
+    StopBossDefeatSequence();
+
+    mIsTargetFocus = false;
+    mAlignCameraPressedPrev = false;
+    mCameraStickX = 0.0f;
+    mTalkCameraBlend = 0.0f;
+    mTalkCameraPlayer = nullptr;
+}
+
 float CameraSystem::GetFieldOfViewDegrees() const
 {
     if (mCinematicCamera.IsPlaying()) {

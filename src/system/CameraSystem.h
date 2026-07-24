@@ -46,6 +46,7 @@ public:
     void SetPlayerCameraSettings(PlayerCameraSettings settings);
     bool SavePlayerCameraSettings() const;
     bool ReloadPlayerCameraSettings();
+    void ResetForStageChange();
 
     bool GetTalkCameraPreviewEnabled() const { return mTalkCameraPreviewEnabled; }
     void SetTalkCameraPreviewEnabled(bool enabled) { mTalkCameraPreviewEnabled = enabled; }

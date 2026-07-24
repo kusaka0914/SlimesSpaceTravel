@@ -95,5 +95,6 @@ void SceneTransitionController::ApplySceneChange()
 
         Mix_HaltMusic();
         mGame->ReloadCurrentStage();
+        mGame->StartPlayingScene();
     }
 }

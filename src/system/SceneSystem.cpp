@@ -132,6 +132,8 @@ void SceneSystem::StartFadeIn()
 
 void SceneSystem::RequestStageChange(int stageNum)
 {
+    mTalkingNPC = nullptr;
+    mTalkingPlayer = nullptr;
     mTransitionController->RequestStageChange(stageNum);
 }
 
@@ -201,6 +203,9 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     mClearTimer -= deltaTime;
 
     if (mClearTimer < 0.0f) {
-        mGame->FinishGame();
+        // Stop this timer before requesting the transition so that the fade
+        // timer is not restarted on every frame.
+        mClearTimer = -1.0f;
+        RequestStageChange(0);
     }
 }

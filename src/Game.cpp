@@ -133,6 +133,10 @@ void Game::CreateStages(int stageCount)
 
 void Game::ReloadCurrentStage()
 {
+    if (mCameraSystem) {
+        mCameraSystem->ResetForStageChange();
+    }
+
     if (mParticleSystem) {
         mParticleSystem->Clear();
     }
