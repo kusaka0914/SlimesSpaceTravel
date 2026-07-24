@@ -42,6 +42,12 @@ void Renderer::InitializeVertexArrays()
     };
     mVertexArrays["quad"] = std::make_unique<VertexArray>(quad.data(), 4, nullptr, 0);
 
+    const std::vector<float> quadFlipVertical = {
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+    };
+    mVertexArrays["quadFlipVertical"] = std::make_unique<VertexArray>(quadFlipVertical.data(), 4, nullptr, 0);
+
     const std::vector<float> hpBarQuad = {
         0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
@@ -54,6 +60,11 @@ void Renderer::RegisterTexture(const std::string& path, const std::string& name)
 {
     int imgWidth, imgHeight, imgChannels;
     unsigned char* imgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
+    if (!imgData || imgWidth <= 0 || imgHeight <= 0) {
+        std::cerr << "Failed to load texture: " << path << std::endl;
+        stbi_image_free(imgData);
+        return;
+    }
 
     GLuint tex;
     glGenTextures(1, &tex);
@@ -64,7 +75,13 @@ void Renderer::RegisterTexture(const std::string& path, const std::string& name)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    mTextures[name] = tex;
+    const auto existing = mTextures.find(name);
+    if (existing != mTextures.end()) {
+        glDeleteTextures(1, &existing->second);
+        existing->second = tex;
+    } else {
+        mTextures[name] = tex;
+    }
 }
 
 GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,

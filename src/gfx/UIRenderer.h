@@ -32,6 +32,15 @@ public:
     int GetFbWidth() const { return mFbWidth; }
     int GetFbHeight() const { return mFbHeight; }
 
+    void SetCustomUIElementVisible(const std::string& screen, const std::string& id, bool visible);
+    void SetCustomUIScreenVisible(const std::string& screen, bool visible);
+    void ClearCustomUIVisibilityOverrides();
+
+    void SetCustomUIPreviewEnabled(bool enabled) { mCustomUIPreviewEnabled = enabled; }
+    bool GetCustomUIPreviewEnabled() const { return mCustomUIPreviewEnabled; }
+    bool RegisterCustomUITexture(const std::string& assetRelativePath);
+    GLuint GetCustomUITextureHandle(const std::string& assetRelativePath) const;
+
     void DrawSceneText(const std::string& sceneName, const std::string& UIName, bool isCenterBase, int index,
                        glm::vec4 color = {255, 255, 255, 255});
     bool DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName);
@@ -53,12 +62,21 @@ public:
     void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color);
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,
                   glm::vec4 color = {255, 255, 255, 255});
-    void DrawTexture(float x, float y, float width, float height, const std::string& textureName);
+    void DrawTexture(
+        float x,
+        float y,
+        float width,
+        float height,
+        const std::string& textureName,
+        bool flipVertical = false);
 
 private:
     void Initialize();
     void InitImGui();
     void RegisterUITextures();
+    void RegisterCustomUITextures();
+    void DrawCustomUI();
+    static std::string GetCustomTextureName(const std::string& assetRelativePath);
 
     void EndImGuiFrame();
 
@@ -82,4 +100,5 @@ private:
 
     int mFbWidth;
     int mFbHeight;
+    bool mCustomUIPreviewEnabled = true;
 };

@@ -105,6 +105,7 @@ public:
     CameraSystem* GetCameraSystem() const { return mCameraSystem.get(); }
     MathUtils* GetMathUtils() const { return mMathUtils.get(); }
     ParticleSystem* GetParticleSystem() const { return mParticleSystem.get(); }
+    UIRenderer* GetUIRenderer() const { return mUIRenderer.get(); }
 
     float GetHitStopTimer() const { return mHitStopTimer; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }

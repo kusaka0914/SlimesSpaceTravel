@@ -13,6 +13,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "system/SceneSystem.h"
+#include <algorithm>
+#include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -55,6 +57,7 @@ void UIRenderer::Initialize()
     InitImGui();
 
     RegisterUITextures();
+    RegisterCustomUITextures();
 }
 
 void UIRenderer::InitImGui()
@@ -85,6 +88,19 @@ void UIRenderer::RegisterUITextures()
     RegisterTexture(basePath + "special.png", "special");
     RegisterTexture(basePath + "skyBox.png", "skyBox");
     RegisterTexture(basePath + "jewel.png", "jewel");
+}
+
+void UIRenderer::RegisterCustomUITextures()
+{
+    if (!mUILoadSystem) {
+        return;
+    }
+
+    for (const UILoadSystem::CustomElement& element : mUILoadSystem->GetCustomElements()) {
+        if (element.type == UILoadSystem::CustomElementType::Image && !element.texturePath.empty()) {
+            RegisterCustomUITexture(element.texturePath);
+        }
+    }
 }
 
 void UIRenderer::Draw()
@@ -121,6 +137,8 @@ void UIRenderer::Draw()
         mPauseMenuRenderer->Draw();
     }
 
+    DrawCustomUI();
+
     if (mGame->GetIsDebugEditorShowing()) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -133,6 +151,139 @@ void UIRenderer::Draw()
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::SetCustomUIElementVisible(
+    const std::string& screen,
+    const std::string& id,
+    bool visible)
+{
+    if (mUILoadSystem) {
+        mUILoadSystem->SetCustomElementVisible(screen, id, visible);
+    }
+}
+
+void UIRenderer::SetCustomUIScreenVisible(const std::string& screen, bool visible)
+{
+    if (mUILoadSystem) {
+        mUILoadSystem->SetCustomScreenVisible(screen, visible);
+    }
+}
+
+void UIRenderer::ClearCustomUIVisibilityOverrides()
+{
+    if (mUILoadSystem) {
+        mUILoadSystem->ClearCustomVisibilityOverrides();
+    }
+}
+
+bool UIRenderer::RegisterCustomUITexture(const std::string& assetRelativePath)
+{
+    if (assetRelativePath.empty()) {
+        return false;
+    }
+
+    std::string normalizedPath = assetRelativePath;
+    std::replace(normalizedPath.begin(), normalizedPath.end(), '\\', '/');
+
+    const std::string textureName = GetCustomTextureName(normalizedPath);
+    if (mTextures.find(textureName) != mTextures.end()) {
+        return true;
+    }
+
+    const std::filesystem::path fullPath = std::filesystem::path("../assets") / normalizedPath;
+    if (!std::filesystem::is_regular_file(fullPath)) {
+        return false;
+    }
+
+    RegisterTexture(fullPath.string(), textureName);
+    return mTextures.find(textureName) != mTextures.end();
+}
+
+GLuint UIRenderer::GetCustomUITextureHandle(const std::string& assetRelativePath) const
+{
+    const std::string textureName = GetCustomTextureName(assetRelativePath);
+    const auto it = mTextures.find(textureName);
+    return it != mTextures.end() ? it->second : 0;
+}
+
+std::string UIRenderer::GetCustomTextureName(const std::string& assetRelativePath)
+{
+    std::string normalizedPath = assetRelativePath;
+    std::replace(normalizedPath.begin(), normalizedPath.end(), '\\', '/');
+    return "custom-ui:" + normalizedPath;
+}
+
+void UIRenderer::DrawCustomUI()
+{
+    if (!mUILoadSystem) {
+        return;
+    }
+
+    const auto& elements = mUILoadSystem->GetCustomElements();
+    std::vector<const UILoadSystem::CustomElement*> sortedElements;
+    sortedElements.reserve(elements.size());
+
+    for (const UILoadSystem::CustomElement& element : elements) {
+        sortedElements.push_back(&element);
+    }
+
+    std::stable_sort(
+        sortedElements.begin(),
+        sortedElements.end(),
+        [](const UILoadSystem::CustomElement* lhs, const UILoadSystem::CustomElement* rhs) {
+            return lhs->zOrder < rhs->zOrder;
+        });
+
+    const bool previewAll = mCustomUIPreviewEnabled && mGame->GetIsDebugEditorShowing();
+
+    for (const UILoadSystem::CustomElement* element : sortedElements) {
+        if (!element || (!previewAll && !mUILoadSystem->IsCustomElementVisible(*element))) {
+            continue;
+        }
+
+        const float x = mFbWidth * element->xRatio;
+        const float y = mFbWidth * element->yRatio;
+        const float width = mFbWidth * element->widthRatio;
+        const float height = mFbWidth * element->heightRatio;
+        const float topLeftX = element->centerBased ? x - width * 0.5f : x;
+        const float topLeftY = element->centerBased ? y - height * 0.5f : y;
+
+        switch (element->type) {
+        case UILoadSystem::CustomElementType::Text:
+            DrawText(
+                x,
+                y,
+                mFbWidth * element->textScaleRatio,
+                element->text,
+                element->centerBased,
+                glm::vec4(
+                    element->color[0] * 255.0f,
+                    element->color[1] * 255.0f,
+                    element->color[2] * 255.0f,
+                    element->color[3] * 255.0f));
+            break;
+        case UILoadSystem::CustomElementType::Image:
+            if (RegisterCustomUITexture(element->texturePath)) {
+                DrawTexture(
+                    topLeftX,
+                    topLeftY,
+                    width,
+                    height,
+                    GetCustomTextureName(element->texturePath),
+                    element->flipVertical);
+            }
+            break;
+        case UILoadSystem::CustomElementType::Panel:
+            DrawBG(
+                topLeftX,
+                topLeftY,
+                width,
+                height,
+                {element->color[0], element->color[1], element->color[2], element->color[3]});
+            break;
+        }
+    }
 }
 
 void UIRenderer::EndImGuiFrame()
@@ -460,7 +611,13 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     glDeleteTextures(1, &textTexture);
 }
 
-void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName)
+void UIRenderer::DrawTexture(
+    float x,
+    float y,
+    float width,
+    float height,
+    const std::string& textureName,
+    bool flipVertical)
 {
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -487,6 +644,6 @@ void UIRenderer::DrawTexture(float x, float y, float width, float height, const 
 
     glBindTexture(GL_TEXTURE_2D, textureIt->second);
 
-    mVertexArrays.at("quad")->SetActive();
+    mVertexArrays.at(flipVertical ? "quadFlipVertical" : "quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

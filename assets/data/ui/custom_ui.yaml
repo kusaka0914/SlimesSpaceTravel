@@ -1,0 +1,23 @@
+coordinateBasis: screenWidth
+elements:
+  - screen: custom
+    id: element
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    posRatio:
+      - 0.7759
+      - 0.3491
+    sizeRatio:
+      - 0.2
+      - 0.2
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/jewel.png
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
