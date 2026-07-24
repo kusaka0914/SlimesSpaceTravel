@@ -15,6 +15,9 @@
 
 void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movement, float deltaTime)
 {
+    const bool groundRayHitThisFrame = mGroundRayHitThisFrame;
+    mGroundRayHitThisFrame = false;
+
     if (!player.GetIsActive()) {
         return;
     }
@@ -47,21 +50,73 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
 
     // currentPlanetは即時変更するが、
     // upVecと重力方向は徐々に回転させる。
-    SmoothAirborneUpVec(player, deltaTime);
+    // A ground ray always takes priority over the planet fallback.
+    // Once a ray takes over after fallback, fallback stays disabled until landing.
+    if (groundRayHitThisFrame) {
+        mNoGroundRayDuration = 0.0f;
+        mFallbackGravityActive = false;
+        mSmoothedUpInitialized = false;
+        return;
+    }
+
+    if (!mFallbackAppliedThisJump) {
+        mNoGroundRayDuration += deltaTime;
+
+        if (mNoGroundRayDuration < fallbackDelay) {
+            return;
+        }
+
+        mFallbackAppliedThisJump = true;
+        mFallbackGravityActive = true;
+
+        // Preserve the old behavior at the end of the grace period: apply the
+        // current planet's default gravity direction once.
+        player.RefreshFallbackUpVec();
+        player.SetVelocity(glm::vec3(0.0f));
+        mSmoothedUpVec = player.GetUpVec();
+
+        if (glm::length(mSmoothedUpVec) < 1e-6f) {
+            mSmoothedUpVec = glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+
+        mSmoothedUpVec = glm::normalize(mSmoothedUpVec);
+        mSmoothedUpInitialized = true;
+    }
+
+    if (mFallbackGravityActive) {
+        SmoothAirborneUpVec(player, deltaTime);
+    }
 }
 
 void PlayerPlanetGravityController::OnJumpStarted()
 {
     mIsJumpSwitchingActive = true;
+    mGroundRayHitThisFrame = false;
+    mFallbackAppliedThisJump = false;
+    mFallbackGravityActive = false;
+    mNoGroundRayDuration = 0.0f;
 
     // ジャンプ開始時のplayer.GetUpVec()を、
     // 次のUpdateで補間開始方向として保存する。
     mSmoothedUpInitialized = false;
 }
 
+void PlayerPlanetGravityController::OnGroundRayCastSucceeded()
+{
+    if (!mIsJumpSwitchingActive) {
+        return;
+    }
+
+    mGroundRayHitThisFrame = true;
+}
+
 void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& movement)
 {
     mIsJumpSwitchingActive = false;
+    mGroundRayHitThisFrame = false;
+    mFallbackAppliedThisJump = false;
+    mFallbackGravityActive = false;
+    mNoGroundRayDuration = 0.0f;
     mSmoothedUpInitialized = false;
 
     Planet* landedPlanet = ResolvePlanetFromGroundActor(player.GetGroundActor());

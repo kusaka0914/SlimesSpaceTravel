@@ -21,4 +21,7 @@ private:
 
 private:
     CollectableComponent* mCollectableComponent;
+    float mGlowEmitTimer = 0.0f;
+    float mSparkleEmitTimer = 0.0f;
+    float mSparklePhase = 0.0f;
 };

@@ -264,12 +264,17 @@ void Player::OnLanded()
 
 void Player::OnUpVecUpdateFailed()
 {
+    if (mPlanetGravityController.IsJumpGravityActive()) {
+        return;
+    }
+
     mGrounding.OnUpVecUpdateFailed(*this);
 }
 
 void Player::OnCastSucceeded()
 {
     mGrounding.OnCastSucceeded();
+    mPlanetGravityController.OnGroundRayCastSucceeded();
 }
 
 void Player::OnLoadedModelChanged()

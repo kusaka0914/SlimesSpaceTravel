@@ -207,7 +207,11 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
     const glm::vec3 forwardMovement = mForwardVec * input.GetMoveForward();
     const glm::vec3 leftMovement = mLeftVec * input.GetMoveLeft();
 
-    const glm::vec3 movementDelta = (forwardMovement + leftMovement) * mMoveSpeed * deltaTime;
+    constexpr float fallbackAirControlMultiplier = 0.3f;
+    const float inputMovementMultiplier =
+        player.WasPlanetGravityFallbackAppliedThisJump() ? fallbackAirControlMultiplier : 1.0f;
+    const glm::vec3 movementDelta =
+        (forwardMovement + leftMovement) * mMoveSpeed * inputMovementMultiplier * deltaTime;
 
     MoveWithCollision(player, movementDelta);
 }

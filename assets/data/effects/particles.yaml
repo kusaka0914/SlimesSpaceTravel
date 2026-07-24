@@ -177,6 +177,97 @@ particleEffects:
         positionOffset: [0, 0, 0]
         colorStart: [1, 0.62, 0.1, 1]
         colorEnd: [0.95, 0.08, 0.01, 0]
+  star_glow:
+    emitters:
+      - texture: star_magic_glow.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.55
+          max: 0.75
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 0.85
+            max: 1.1
+          endMultiplier: 0.72
+        rotationDegrees:
+          min: -8
+          max: 8
+        angularVelocityDegrees:
+          min: -18
+          max: 18
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.8, 0.32]
+        colorEnd: [1, 0.72, 0.15, 0]
+  star_sparkle:
+    emitters:
+      - texture: spark_streak.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.18
+          max: 0.32
+        speed:
+          min: 0.12
+          max: 0.38
+        size:
+          start:
+            min: 0.22
+            max: 0.48
+          endMultiplier: 0.15
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -45
+          max: 45
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0.6
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.72, 0.8]
+        colorEnd: [1, 0.55, 0.05, 0]
+      - texture: spark_dot.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 3
+        lifetime:
+          min: 0.45
+          max: 0.8
+        speed:
+          min: 0.28
+          max: 0.72
+        size:
+          start:
+            min: 0.055
+            max: 0.14
+          endMultiplier: 0.05
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -100
+          max: 100
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0.8
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.95, 0.35, 0.9]
+        colorEnd: [0.55, 0.9, 1, 0]
   landing_dust:
     emitters:
       - texture: dust_puff.png

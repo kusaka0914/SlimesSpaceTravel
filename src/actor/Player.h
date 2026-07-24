@@ -234,6 +234,11 @@ public:
 
     float GetKnockBackSpeed() const { return mMovement.GetKnockBackSpeed(); }
 
+    bool WasPlanetGravityFallbackAppliedThisJump() const
+    {
+        return mPlanetGravityController.WasFallbackAppliedThisJump();
+    }
+
     ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 
     const glm::vec3& GetForwardVec() const { return mMovement.GetForwardVec(); }

@@ -16,7 +16,12 @@ public:
 
     void OnJumpStarted();
 
+    void OnGroundRayCastSucceeded();
+
     void OnLanded(Player& player, PlayerMovement& movement);
+
+    bool IsJumpGravityActive() const { return mIsJumpSwitchingActive; }
+    bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
 
 private:
     bool ShouldSwitchPlanet(const Player& player, const PlanetDistanceCandidate& candidate) const;
@@ -44,7 +49,13 @@ private:
     // 5.0f: 比較的速い
     static constexpr float gravityTurnSpeed = 4.0f;
 
+    static constexpr float fallbackDelay = 1.0f;
+
     bool mIsJumpSwitchingActive = false;
+    bool mGroundRayHitThisFrame = false;
+    bool mFallbackAppliedThisJump = false;
+    bool mFallbackGravityActive = false;
+    float mNoGroundRayDuration = 0.0f;
 
     // Actor::UpdateUpVecによる毎フレームの書き換えに影響されないよう、
     // 補間中の上方向をこのクラスで保持する。
