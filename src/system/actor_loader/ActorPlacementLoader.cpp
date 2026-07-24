@@ -12,6 +12,11 @@ bool HasVec3(const YAML::Node& node, const char* key)
     return node[key] && node[key].IsSequence() && node[key].size() >= 3;
 }
 
+bool HasVec2(const YAML::Node& node, const char* key)
+{
+    return node[key] && node[key].IsSequence() && node[key].size() >= 2;
+}
+
 glm::vec3 ReadVec3(const YAML::Node& node, const char* key, const glm::vec3& fallback)
 {
     if (!HasVec3(node, key)) {
@@ -101,15 +106,27 @@ void ActorPlacementLoader::ApplyScaleFromStageNode(Actor* actor, const YAML::Nod
         return;
     }
 
-    if (!HasVec3(node, "scale")) {
-        return;
+    if (HasVec3(node, "scale")) {
+        const glm::vec3 currentScale = actor->GetScale();
+
+        const float scaleX = node["scale"][0] ? node["scale"][0].as<float>() : currentScale.x;
+        const float scaleY = node["scale"][1] ? node["scale"][1].as<float>() : currentScale.y;
+        const float scaleZ = node["scale"][2] ? node["scale"][2].as<float>() : currentScale.z;
+
+        actor->SetScale(glm::vec3(scaleX, scaleY, scaleZ));
     }
 
-    const glm::vec3 currentScale = actor->GetScale();
+    if (HasVec2(node, "textureTiling")) {
+        const glm::vec2 currentTiling = actor->GetTextureTiling();
+        const float tilingX =
+            node["textureTiling"][0] ? node["textureTiling"][0].as<float>() : currentTiling.x;
+        const float tilingY =
+            node["textureTiling"][1] ? node["textureTiling"][1].as<float>() : currentTiling.y;
 
-    const float scaleX = node["scale"][0] ? node["scale"][0].as<float>() : currentScale.x;
-    const float scaleY = node["scale"][1] ? node["scale"][1].as<float>() : currentScale.y;
-    const float scaleZ = node["scale"][2] ? node["scale"][2].as<float>() : currentScale.z;
+        actor->SetTextureTiling(glm::max(glm::vec2(tilingX, tilingY), glm::vec2(0.01f)));
+    }
 
-    actor->SetScale(glm::vec3(scaleX, scaleY, scaleZ));
+    if (node["textureOverride"]) {
+        actor->SetTextureOverridePath(node["textureOverride"].as<std::string>());
+    }
 }

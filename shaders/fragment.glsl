@@ -9,6 +9,7 @@ in vec2 texCoord;
 uniform vec4 objectColor;
 uniform int useTexture;
 uniform sampler2D diffuseTexture;
+uniform vec2 textureTiling;
 
 uniform vec3 viewPos;
 uniform vec3 lightPos;
@@ -21,7 +22,7 @@ uniform float toonStrength;
 
 void main()
 {
-    vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord) : objectColor;
+    vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord * textureTiling) : objectColor;
 
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(lightPos - fragPos);

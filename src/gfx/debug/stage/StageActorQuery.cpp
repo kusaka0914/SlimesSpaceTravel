@@ -14,6 +14,7 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
 
 #include <string>
 #include <vector>
@@ -61,6 +62,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
         {StageActorType::Star, "star", "星"},
         {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
         {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
+        {StageActorType::StageObject, "stageObjects", "汎用モデル"},
     };
 
     return typeInfos;
@@ -142,6 +144,14 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
             const int yamlIndex = point ? point->GetStageYamlIndex() : -1;
             AddInstance(instances, point, StageActorType::FallRespawnPoint, yamlIndex, "fallRespawnPoints",
                         MakeIndexedLabel("落下判定", yamlIndex));
+        }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            const int yamlIndex = stageObject ? stageObject->GetStageYamlIndex() : -1;
+            const std::string modelName =
+                stageObject ? stageObject->GetModelPath() : std::string("汎用モデル");
+            AddInstance(instances, stageObject, StageActorType::StageObject, yamlIndex, "stageObjects",
+                        modelName + " " + std::to_string(yamlIndex));
         }
     }
 

@@ -12,6 +12,23 @@
 #include <iostream>
 #include <unordered_map>
 
+namespace {
+bool IsPrimaryShortcutModifierPressed(GLFWwindow* window)
+{
+    if (!window) {
+        return false;
+    }
+
+#if defined(__APPLE__)
+    return glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+           glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
+#else
+    return glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+           glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+#endif
+}
+}
+
 StageEditCommandController::StageEditCommandController(DebugEditorContext& context,
                                                        StageSelectionController& selectionController)
     : mContext(context),
@@ -79,8 +96,8 @@ void StageEditCommandController::HandleUndoShortcut()
         return;
     }
 
-    const bool commandPressed = glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
-                                glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
+    const bool commandPressed =
+        IsPrimaryShortcutModifierPressed(mContext.game->GetWindow());
 
     const bool zPressed = glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_Z) == GLFW_PRESS;
 
@@ -114,8 +131,8 @@ void StageEditCommandController::HandleDuplicateShortcut()
         return;
     }
 
-    const bool commandPressed = glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
-                                glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
+    const bool commandPressed =
+        IsPrimaryShortcutModifierPressed(mContext.game->GetWindow());
 
     const bool dPressed = glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_D) == GLFW_PRESS;
 

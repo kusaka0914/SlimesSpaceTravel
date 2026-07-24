@@ -19,6 +19,7 @@ public:
     int GetLocRimPower() const { return mLocRimPower; }
     int GetLocUseSkinning() const { return mLocUseSkinning; }
     int GetLocBoneTransforms() const { return mLocBoneTransforms; }
+    int GetLocTextureTiling() const { return mLocTextureTiling; }
 
 private:
     int mLocLightPos;
@@ -31,4 +32,5 @@ private:
     int mLocRimPower;
     int mLocUseSkinning;
     int mLocBoneTransforms;
+    int mLocTextureTiling;
 };

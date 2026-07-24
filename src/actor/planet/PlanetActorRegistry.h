@@ -13,6 +13,7 @@ class MovingPlatform;
 class NPC;
 class Platform;
 class Star;
+class StageObject;
 
 class PlanetActorRegistry {
 public:
@@ -25,6 +26,7 @@ public:
     void AddMovingPlatform(MovingPlatform* platform) { mMovingPlatforms.emplace_back(platform); }
     void AddBoatArrivalPoint(BoatArrivalPoint* point) { mBoatArrivalPoints.emplace_back(point); }
     void AddFallRespawnPoint(FallRespawnPoint* point) { mFallRespawnPoints.emplace_back(point); }
+    void AddStageObject(StageObject* stageObject) { mStageObjects.emplace_back(stageObject); }
 
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveAllBoat() { mBoats.clear(); }
@@ -37,6 +39,7 @@ public:
     void RemoveStar() { mStar = nullptr; }
     void RemoveAllBoatArrivalPoints() { mBoatArrivalPoints.clear(); }
     void RemoveAllFallRespawnPoints() { mFallRespawnPoints.clear(); }
+    void RemoveAllStageObjects() { mStageObjects.clear(); }
 
     void SetKey(Key* key) { mKey = key; }
     void SetStar(Star* star) { mStar = star; }
@@ -50,6 +53,7 @@ public:
     const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mMovingPlatforms; }
     const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mBoatArrivalPoints; }
     const std::vector<FallRespawnPoint*>& GetFallRespawnPoints() const { return mFallRespawnPoints; }
+    const std::vector<StageObject*>& GetStageObjects() const { return mStageObjects; }
 
     Key* GetKey() const { return mKey; }
     Star* GetStar() const { return mStar; }
@@ -64,6 +68,7 @@ private:
     std::vector<MovingPlatform*> mMovingPlatforms;
     std::vector<BoatArrivalPoint*> mBoatArrivalPoints;
     std::vector<FallRespawnPoint*> mFallRespawnPoints;
+    std::vector<StageObject*> mStageObjects;
 
     Key* mKey = nullptr;
     Star* mStar = nullptr;

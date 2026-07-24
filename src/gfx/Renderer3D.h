@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class Actor;
@@ -40,6 +41,7 @@ public:
     std::unordered_map<std::string, GLuint>& GetTextures() { return mTextures; }
     GLuint GetAttackRangeVAO() const { return mAttackRangeVAO; }
     GLuint GetAttackRangeVBO() const { return mAttackRangeVBO; }
+    GLuint GetOrLoadTextureOverride(const std::string& assetRelativePath);
 
     GLuint CreateTextTextureFor3D(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
                                   float textScale) const
@@ -93,4 +95,5 @@ private:
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
+    std::unordered_set<std::string> mFailedTextureOverrides;
 };

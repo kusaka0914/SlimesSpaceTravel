@@ -5,7 +5,57 @@
 #include "actor/Planet.h"
 #include "imgui.h"
 
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 #include <string>
+#include <vector>
+
+namespace {
+std::string ToLower(std::string value)
+{
+    std::transform(
+        value.begin(),
+        value.end(),
+        value.begin(),
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+    return value;
+}
+
+bool IsSupportedModelExtension(const std::filesystem::path& path)
+{
+    const std::string extension = ToLower(path.extension().string());
+    return extension == ".obj" || extension == ".fbx" || extension == ".gltf" ||
+           extension == ".glb" || extension == ".dae";
+}
+
+std::vector<std::string> CollectModelAssets()
+{
+    std::vector<std::string> modelPaths;
+    const std::filesystem::path modelDirectory("../assets/models");
+    std::error_code error;
+
+    for (std::filesystem::recursive_directory_iterator it(modelDirectory, error), end;
+         it != end && !error;
+         it.increment(error)) {
+        if (!it->is_regular_file(error) || !IsSupportedModelExtension(it->path())) {
+            continue;
+        }
+
+        const std::filesystem::path relativePath =
+            std::filesystem::relative(it->path(), modelDirectory, error);
+        if (error) {
+            error.clear();
+            continue;
+        }
+
+        modelPaths.emplace_back(relativePath.generic_string());
+    }
+
+    std::sort(modelPaths.begin(), modelPaths.end());
+    return modelPaths;
+}
+}
 
 StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
     : DebugPanel(context),
@@ -17,6 +67,73 @@ void StageAddActorPanel::Draw()
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
+    }
+
+    if (ImGui::TreeNode("汎用モデル追加")) {
+        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+        if (planets.empty()) {
+            ImGui::TextUnformatted("惑星が存在しないため、モデルを追加できません");
+        } else {
+            DrawPlanetCombo("追加先の惑星##stageObject", mSelectedStageObjectPlanetIndex);
+            ImGui::InputTextWithHint(
+                "##stageObjectSearch",
+                "モデル名を検索",
+                mStageObjectSearch.data(),
+                mStageObjectSearch.size());
+
+            const std::vector<std::string> modelAssets = CollectModelAssets();
+            const std::string searchText = ToLower(mStageObjectSearch.data());
+
+            ImGui::BeginChild("StageObjectAssetPicker", ImVec2(0.0f, 180.0f), true);
+            for (const std::string& modelPath : modelAssets) {
+                if (!searchText.empty() &&
+                    ToLower(modelPath).find(searchText) == std::string::npos) {
+                    continue;
+                }
+
+                const bool selected = modelPath == mSelectedStageObjectModel;
+                if (ImGui::Selectable(modelPath.c_str(), selected)) {
+                    mSelectedStageObjectModel = modelPath;
+                }
+            }
+            ImGui::EndChild();
+
+            ImGui::Text(
+                "選択中: %s",
+                mSelectedStageObjectModel.empty()
+                    ? "未選択"
+                    : mSelectedStageObjectModel.c_str());
+            ImGui::Checkbox("モデル形状の当たり判定を作る", &mStageObjectCollisionEnabled);
+
+            const bool canAdd =
+                mSelectedStageObjectPlanetIndex >= 0 &&
+                !mSelectedStageObjectModel.empty();
+            if (!canAdd) {
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button("選択したモデルをステージに追加")) {
+                const bool created = mCreateService.AddStageObject(
+                    mSelectedStageObjectPlanetIndex,
+                    mSelectedStageObjectModel,
+                    mStageObjectCollisionEnabled);
+                mStageObjectStatus =
+                    created ? "モデルを追加しました" : "モデルの追加に失敗しました";
+            }
+
+            if (!canAdd) {
+                ImGui::EndDisabled();
+            }
+
+            if (!mStageObjectStatus.empty()) {
+                ImGui::SameLine();
+                ImGui::TextUnformatted(mStageObjectStatus.c_str());
+            }
+
+            ImGui::TextDisabled(
+                "assets/models 内の対応モデルは自動的にこの一覧へ反映されます。");
+        }
+        ImGui::TreePop();
     }
 
     if (ImGui::TreeNode("惑星追加")) {

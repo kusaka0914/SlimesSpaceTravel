@@ -1,5 +1,6 @@
 #include "Planet.h"
 
+#include <algorithm>
 #include <cmath>
 
 Planet::Planet(Game* game)
@@ -12,6 +13,16 @@ Planet::Planet(Game* game)
 }
 
 namespace {
+glm::vec2 ReadVec2(const YAML::Node& node, const char* key, const glm::vec2& defaultValue)
+{
+    if (!node[key] || !node[key].IsSequence() || node[key].size() < 2) {
+        return defaultValue;
+    }
+
+    return glm::vec2(node[key][0] ? node[key][0].as<float>() : defaultValue.x,
+                     node[key][1] ? node[key][1].as<float>() : defaultValue.y);
+}
+
 glm::vec3 ReadVec3(const YAML::Node& node, const char* key, const glm::vec3& defaultValue)
 {
     if (!node[key] || !node[key].IsSequence() || node[key].size() < 3) {
@@ -60,6 +71,16 @@ void Planet::ApplyConfig(const YAML::Node& node)
 
     const std::string modelPath = ReadString(node, "model", "planet.obj");
     SetModelPath(modelPath);
+
+    const std::string textureOverride = ReadString(node, "textureOverride", "");
+    SetTextureOverridePath(textureOverride);
+
+    const glm::vec2 automaticTextureTiling(
+        std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),
+        std::max(1.0f, std::abs(scale.y)));
+    const glm::vec2 textureTiling =
+        ReadVec2(node, "textureTiling", automaticTextureTiling);
+    SetTextureTiling(glm::max(textureTiling, glm::vec2(0.01f)));
 
     const std::string shape = ReadString(node, "shape", "Sphere");
     SetPlanetShape(shape);

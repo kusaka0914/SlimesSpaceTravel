@@ -2,10 +2,14 @@
 
 #include "Game.h"
 #include "actor/Actor.h"
+#include "actor/Platform.h"
+#include "actor/StageObject.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 
 #include <GLFW/glfw3.h>
+#include <algorithm>
+#include <cmath>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
@@ -100,7 +104,20 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
     }
 
     if (operation == ImGuizmo::SCALE) {
-        actor->SetScale(glm::vec3(scale[0], scale[1], scale[2]));
+        const glm::vec3 previousScale = actor->GetScale();
+        const glm::vec3 actorScale(scale[0], scale[1], scale[2]);
+        actor->SetScale(actorScale);
+
+        const bool horizontalScaleChanged =
+            std::abs(actorScale.x - previousScale.x) > 0.0001f ||
+            std::abs(actorScale.z - previousScale.z) > 0.0001f;
+        if (horizontalScaleChanged &&
+            (dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor))) {
+            actor->SetTextureTiling(
+                glm::vec2(
+                    std::max(1.0f, std::abs(actorScale.x)),
+                    std::max(1.0f, std::abs(actorScale.z))));
+        }
         return;
     }
 

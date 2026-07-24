@@ -48,6 +48,8 @@ public:
         UpdateDirectionVectors();
     }
     void SetScale(const glm::vec3& scale) { mScale = scale; }
+    void SetTextureTiling(const glm::vec2& textureTiling) { mTextureTiling = textureTiling; }
+    void SetTextureOverridePath(const std::string& texturePath) { mTextureOverridePath = texturePath; }
 
     void SetModelPath(const std::string& modelPath) { mModelPath = modelPath; }
     void SetLoadedModel(const LoadedModel* loadedModel);
@@ -69,6 +71,8 @@ public:
     const glm::vec3& GetLeftVec() const { return mLeftVec; }
     glm::vec3 GetRightVec() const { return -mLeftVec; }
     const glm::vec3& GetScale() const { return mScale; }
+    const glm::vec2& GetTextureTiling() const { return mTextureTiling; }
+    const std::string& GetTextureOverridePath() const { return mTextureOverridePath; }
 
     const std::string& GetModelPath() const { return mModelPath; }
     const LoadedModel* GetLoadedModel() const { return mLoadedModel; }
@@ -124,8 +128,10 @@ protected:
     glm::vec3 mForwardVec{0.0f, 0.0f, 1.0f};
     glm::vec3 mLeftVec{-1.0f, 0.0f, 0.0f};
     glm::vec3 mScale;
+    glm::vec2 mTextureTiling{1.0f, 1.0f};
 
     std::string mModelPath;
+    std::string mTextureOverridePath;
 
     Game* mGame;
     Planet* mCurrentPlanet;

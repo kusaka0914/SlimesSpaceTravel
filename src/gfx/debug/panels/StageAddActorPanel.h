@@ -3,7 +3,9 @@
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
 
+#include <array>
 #include <glm/glm.hpp>
+#include <string>
 
 class StageAddActorPanel : public DebugPanel {
 public:
@@ -40,4 +42,10 @@ private:
     int mSelectedBoatDestStage = 0;
 
     int mSelectedStarPlanetIndex = -1;
+
+    int mSelectedStageObjectPlanetIndex = -1;
+    std::string mSelectedStageObjectModel;
+    std::array<char, 128> mStageObjectSearch = {};
+    bool mStageObjectCollisionEnabled = true;
+    std::string mStageObjectStatus;
 };

@@ -108,6 +108,7 @@ public:
     MathUtils* GetMathUtils() const { return mMathUtils.get(); }
     ParticleSystem* GetParticleSystem() const { return mParticleSystem.get(); }
     UIRenderer* GetUIRenderer() const { return mUIRenderer.get(); }
+    Renderer3D* GetRenderer3D() const { return mRenderer3D.get(); }
     SequenceSystem* GetSequenceSystem() const { return mSequenceSystem.get(); }
 
     float GetHitStopTimer() const { return mHitStopTimer; }

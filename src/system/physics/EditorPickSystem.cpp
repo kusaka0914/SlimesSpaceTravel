@@ -8,6 +8,7 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
+#include "actor/StageObject.h"
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
@@ -48,6 +49,10 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
 
         for (FallRespawnPoint* fallRespawnPoint : planet->GetFallRespawnPoints()) {
             CreatePickBody(world, fallRespawnPoint, pickObjects, pickShapes);
+        }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            CreatePickBody(world, stageObject, pickObjects, pickShapes);
         }
     }
 }

@@ -29,4 +29,5 @@ void Shader3D::Initialize()
     mLocRimPower = glGetUniformLocation(mShaderProgram, "rimPower");
     mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
     mLocBoneTransforms = glGetUniformLocation(mShaderProgram, "boneTransforms[0]");
+    mLocTextureTiling = glGetUniformLocation(mShaderProgram, "textureTiling");
 }

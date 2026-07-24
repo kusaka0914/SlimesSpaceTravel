@@ -7,6 +7,7 @@
 #include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
 #include "utils/MathUtils.h"
 
@@ -44,6 +45,12 @@ void StageCollisionBuilder::CreateStageCollisionBodies(
 
         for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
             CreateKinematicMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+        }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            if (stageObject && stageObject->GetCollisionEnabled()) {
+                CreateStaticMeshBody(world, stageObject, rigidBodies, triangleMeshShapes, triangleMeshes);
+            }
         }
     }
 }
@@ -185,6 +192,7 @@ btTransform StageCollisionBuilder::CreateActorTransform(Game* game, Actor* actor
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
     if (dynamic_cast<Platform*>(actor) || dynamic_cast<MovingPlatform*>(actor) ||
+        dynamic_cast<StageObject*>(actor) ||
         dynamic_cast<FallRespawnPoint*>(actor)) {
         if (!game || !game->GetMathUtils()) {
             return actorTransform;

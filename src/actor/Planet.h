@@ -20,6 +20,7 @@ class Key;
 class Star;
 class BoatArrivalPoint;
 class FallRespawnPoint;
+class StageObject;
 
 class Planet : public Actor {
 public:
@@ -46,6 +47,7 @@ public:
     void AddMovingPlatform(MovingPlatform* platform) { mActorRegistry.AddMovingPlatform(platform); }
     void AddBoatArrivalPoint(BoatArrivalPoint* point) { mActorRegistry.AddBoatArrivalPoint(point); }
     void AddFallRespawnPoint(FallRespawnPoint* point) { mActorRegistry.AddFallRespawnPoint(point); }
+    void AddStageObject(StageObject* stageObject) { mActorRegistry.AddStageObject(stageObject); }
 
     void RemoveAllEnemy() { mActorRegistry.RemoveAllEnemy(); }
     void RemoveAllBoat() { mActorRegistry.RemoveAllBoat(); }
@@ -58,6 +60,7 @@ public:
     void RemoveStar() { mActorRegistry.RemoveStar(); }
     void RemoveAllBoatArrivalPoints() { mActorRegistry.RemoveAllBoatArrivalPoints(); }
     void RemoveAllFallRespawnPoints() { mActorRegistry.RemoveAllFallRespawnPoints(); }
+    void RemoveAllStageObjects() { mActorRegistry.RemoveAllStageObjects(); }
 
     void SetCurrentStage(Stage* currentStage) { mCurrentStage = currentStage; }
     void SetStageNum(int stageNum) { mStageNum = stageNum; }
@@ -96,6 +99,7 @@ public:
     const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mActorRegistry.GetMovingPlatforms(); }
     const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mActorRegistry.GetBoatArrivalPoints(); }
     const std::vector<FallRespawnPoint*>& GetFallRespawnPoints() const { return mActorRegistry.GetFallRespawnPoints(); }
+    const std::vector<StageObject*>& GetStageObjects() const { return mActorRegistry.GetStageObjects(); }
 
     Key* GetKey() const { return mActorRegistry.GetKey(); }
     Star* GetStar() const { return mActorRegistry.GetStar(); }

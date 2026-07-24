@@ -1,9 +1,13 @@
 planets:
   - center: [0, 0, 0]
-    scale: [10, 10, 10]
+    scale: [20, 3, 20]
     color: [1.0, 1.0, 1.0, 1.0]
     shape: Ellipse
-    model: selectField.obj
+    model: planet_3.obj
+    textureOverride: textures/selectFieldTex.png
+    textureTiling:
+      - 20
+      - 20
 boats:
   - currentPlanetNum: 0
     theta: -1.570796
@@ -13,8 +17,8 @@ boats:
     facingYaw: -1.6
     pos:
       - 0
-      - 10
-      - -9.5
+      - 17.25
+      - -16.39
     rotation:
       - 0
       - -1.6
@@ -24,9 +28,9 @@ boats:
       - 0.8
       - 0.8
     upVec:
-      - -0.0072686947
-      - 0.9999535
-      - 0.0063482323
+      - 0
+      - 0.724947
+      - -0.6888047
   - startPlanet: 0
     destPlanet: 0
     destStage: 0
@@ -35,8 +39,8 @@ boats:
     height: 1
     facingYaw: -1.6057029
     pos:
-      - 11
-      - 17.74
+      - 21
+      - 0
       - 0
     rotation:
       - -0.0052359877
@@ -47,9 +51,9 @@ boats:
       - 0.8
       - 0.8
     upVec:
-      - 0.52698123
-      - 0.84987694
-      - 0
+      - 0.9709957
+      - -0.2390469
+      - -0.0048859706
 players:
   - currentPlanetNum: 0
     theta: 1.570796
@@ -69,9 +73,9 @@ NPCs:
     name: RocketGuideNPC
     talkTexts: [こちら惑星マルッコイ行きロケット〜まもなく発射します〜。\nお乗りの方はお急ぎください〜。]
     pos:
-      - -1
-      - 10.13
-      - -8
+      - -0.32
+      - 2.96
+      - -2.59
     facingYaw: 0
     rotation:
       - 0
@@ -82,9 +86,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0011851748
-      - 0.99995476
-      - -0.009436844
+      - -0.0054500476
+      - 0.9997942
+      - -0.01954702
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -93,9 +97,9 @@ NPCs:
     name: BaseGuideNPC
     talkTexts: [ここはロケット発着所！\n他の惑星に行きたいならこの上のロケット乗り場からどうぞ！]
     pos:
-      - -2.98
-      - 1.84
-      - -0
+      - -4.36
+      - 2.91
+      - 0
     facingYaw: 0
     rotation:
       - 0
@@ -106,9 +110,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.110255346
-      - 0.993903
-      - -0.00082189776
+      - -0.8317566
+      - 0.5551403
+      - 0
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
@@ -117,8 +121,8 @@ NPCs:
     name: BackSideNPC
     talkTexts: [ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。]
     pos:
-      - 0
-      - -1.99
+      - -0
+      - -2.99
       - -0
     facingYaw: 0
     rotation:
@@ -130,6 +134,8 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.0070099323
-      - -0.99997413
-      - -0.0015909512
+      - -0.0024161125
+      - -0.9999806
+      - -0.005751588
+stageObjects: []
+platforms: []

@@ -15,7 +15,8 @@ enum class StageActorType {
     BoatArrivalPoint,
     FallRespawnPoint,
     Key,
-    Star
+    Star,
+    StageObject
 };
 
 struct StageActorRef {

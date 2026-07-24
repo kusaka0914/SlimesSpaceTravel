@@ -18,6 +18,7 @@ public:
     bool AddBoatParts(const std::string& type, int currentPlanetNum);
     bool AddBoat(int startPlanetNum, int destPlanetNum, int destStage);
     bool AddStar(int currentPlanetNum);
+    bool AddStageObject(int currentPlanetNum, const std::string& modelPath, bool collisionEnabled);
 
 private:
     bool CanCreateActor() const;
@@ -33,6 +34,8 @@ private:
     YAML::Node CreateBoatPartsNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateBoatNode(int startPlanetNum, int destPlanetNum, int destStage) const;
     YAML::Node CreateStarNode(int currentPlanetNum) const;
+    YAML::Node CreateStageObjectNode(int currentPlanetNum, const std::string& modelPath,
+                                     bool collisionEnabled) const;
 
 private:
     DebugEditorContext& mContext;

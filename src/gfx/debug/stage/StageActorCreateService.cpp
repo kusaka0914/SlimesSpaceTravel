@@ -5,6 +5,7 @@
 #include "actor/Planet.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "system/ActorLoadSystem.h"
+#include "system/PhysicsSystem.h"
 
 #include <iostream>
 
@@ -289,6 +290,42 @@ bool StageActorCreateService::AddStar(int currentPlanetNum)
     return true;
 }
 
+bool StageActorCreateService::AddStageObject(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    bool collisionEnabled)
+{
+    if (!CanCreateActor() || modelPath.empty()) {
+        return false;
+    }
+
+    if (!IsValidPlanetIndex(currentPlanetNum, "stage object")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "stageObjects");
+
+    const int index = static_cast<int>(config["stageObjects"].size());
+    YAML::Node stageObjectNode =
+        CreateStageObjectNode(currentPlanetNum, modelPath, collisionEnabled);
+    config["stageObjects"].push_back(stageObjectNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mContext.game->GetActorLoadSystem()->CreateStageObjectFromStageNode(stageObjectNode, index);
+    if (mContext.game->GetPhysicsSystem()) {
+        mContext.game->GetPhysicsSystem()->Initialize();
+    }
+    return true;
+}
+
 YAML::Node StageActorCreateService::CreatePlatformNode(int currentPlanetNum, const std::string& modelPath,
                                                        const glm::vec3& scale) const
 {
@@ -439,6 +476,40 @@ YAML::Node StageActorCreateService::CreateStarNode(int currentPlanetNum) const
     node["phi"] = 0.0f;
     node["height"] = 1.0f;
     node["isActive"] = true;
+
+    return node;
+}
+
+YAML::Node StageActorCreateService::CreateStageObjectNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    bool collisionEnabled) const
+{
+    YAML::Node node;
+
+    node["currentPlanetNum"] = currentPlanetNum;
+    node["theta"] = 0.0f;
+    node["phi"] = 0.0f;
+    node["height"] = 1.0f;
+    node["facingYaw"] = 0.0f;
+    node["modelPath"] = modelPath;
+    node["collision"] = collisionEnabled;
+
+    node["rotation"][0] = 0.0f;
+    node["rotation"][1] = 0.0f;
+    node["rotation"][2] = 0.0f;
+
+    node["scale"][0] = 1.0f;
+    node["scale"][1] = 1.0f;
+    node["scale"][2] = 1.0f;
+
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    const Planet* planet = planets[currentPlanetNum];
+    const float initialDistance = planet ? planet->GetRadius() + 1.0f : 1.0f;
+
+    node["pos"][0] = initialDistance;
+    node["pos"][1] = 0.0f;
+    node["pos"][2] = 0.0f;
 
     return node;
 }

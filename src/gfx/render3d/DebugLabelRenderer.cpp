@@ -14,6 +14,7 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
 #include "gfx/Shader3D.h"
 #include "utils/MathUtils.h"
 
@@ -63,6 +64,13 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
 
         for (Boat* boat : planet->GetBoats()) {
             DrawDebugLabel(viewMat, boat, "ボート " + std::to_string(boat->GetStageYamlIndex()));
+        }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            DrawDebugLabel(
+                viewMat,
+                stageObject,
+                stageObject->GetModelPath() + " " + std::to_string(stageObject->GetStageYamlIndex()));
         }
 
         if (planet->GetKey()) {

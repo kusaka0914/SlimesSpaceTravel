@@ -13,6 +13,7 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "system/mesh/LoadedMesh.h"
+#include "system/mesh/TextureLoader.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
@@ -21,6 +22,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -167,6 +169,11 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     const GLint objectColorLocation = mShader3D->GetLocObjectColor();
     const GLint useTextureLocation = mShader3D->GetLocUseTexture();
+    const glm::vec2 textureTiling = actor->GetTextureTiling();
+    glUniform2f(
+        mShader3D->GetLocTextureTiling(),
+        textureTiling.x,
+        textureTiling.y);
 
     const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
     if (!actorMeshes || actorMeshes->empty()) {
@@ -174,14 +181,20 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     }
 
     const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
+    GLuint textureOverride = 0;
+    if (!actor->GetTextureOverridePath().empty()) {
+        textureOverride =
+            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(actor->GetTextureOverridePath());
+    }
 
     for (const LoadedMesh& actorMesh : *actorMeshes) {
         SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
         glBindVertexArray(actorMesh.VAO);
 
-        if (actorMesh.textureID != 0) {
+        const GLuint textureID = textureOverride != 0 ? textureOverride : actorMesh.textureID;
+        if (textureID != 0) {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, actorMesh.textureID);
+            glBindTexture(GL_TEXTURE_2D, textureID);
             glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
             glUniform1i(useTextureLocation, 1);
         } else {
@@ -195,6 +208,48 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     SetSkinningEnabled(false);
     glUniform1i(useTextureLocation, 0);
+    glUniform2f(mShader3D->GetLocTextureTiling(), 1.0f, 1.0f);
+}
+
+GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)
+{
+    if (assetRelativePath.empty()) {
+        return 0;
+    }
+
+    std::filesystem::path relativePath(assetRelativePath);
+    relativePath = relativePath.lexically_normal();
+    if (relativePath.is_absolute()) {
+        return 0;
+    }
+
+    for (const auto& component : relativePath) {
+        if (component == "..") {
+            return 0;
+        }
+    }
+
+    const std::string normalizedPath = relativePath.generic_string();
+    const std::string textureKey = "actor_override:" + normalizedPath;
+    const auto loaded = mTextures.find(textureKey);
+    if (loaded != mTextures.end()) {
+        return loaded->second;
+    }
+    if (mFailedTextureOverrides.contains(normalizedPath)) {
+        return 0;
+    }
+
+    const std::filesystem::path fullPath =
+        std::filesystem::path("../assets") / relativePath;
+    TextureLoader textureLoader;
+    const GLuint textureID = textureLoader.LoadTexture(fullPath.string().c_str());
+    if (textureID == 0) {
+        mFailedTextureOverrides.insert(normalizedPath);
+        return 0;
+    }
+
+    mTextures[textureKey] = textureID;
+    return textureID;
 }
 
 void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode,

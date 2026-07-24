@@ -15,6 +15,7 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
 
 #include <glm/glm.hpp>
@@ -49,6 +50,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadNPCs(path.c_str());
     LoadPlatforms(path.c_str());
     LoadMovingPlatforms(path.c_str());
+    LoadStageObjects(path.c_str());
     LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
 }
@@ -475,6 +477,24 @@ FallRespawnPoint* ActorLoadSystem::CreateFallRespawnPointFromStageNode(const YAM
             if (node["damage"]) {
                 point->SetDamage(node["damage"].as<float>());
             }
+        });
+}
+
+void ActorLoadSystem::LoadStageObjects(const char* path)
+{
+    mActorFactory.LoadActorSequence<StageObject>(
+        path, "stageObjects", [](Planet* planet) { planet->RemoveAllStageObjects(); },
+        [this](const YAML::Node& node, int index) { return CreateStageObjectFromStageNode(node, index); });
+}
+
+StageObject* ActorLoadSystem::CreateStageObjectFromStageNode(const YAML::Node& node, int stageYamlIndex)
+{
+    return mActorFactory.CreatePlacedActorFromStageNode<StageObject>(
+        node, stageYamlIndex, 1.0f, glm::vec3(1.0f), "",
+        [](Planet* planet, StageObject* stageObject) { planet->AddStageObject(stageObject); },
+        [](StageObject* stageObject, const YAML::Node& node) {
+            const bool collisionEnabled = node["collision"] ? node["collision"].as<bool>() : true;
+            stageObject->SetCollisionEnabled(collisionEnabled);
         });
 }
 
