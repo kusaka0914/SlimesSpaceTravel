@@ -142,6 +142,11 @@ void Player::UpdateActor(float deltaTime)
         return;
     }
 
+    if (mRespawn.UpdateMissingGroundRayRespawn(*this, mStatus, deltaTime)) {
+        mVelocity = glm::vec3(0.0f);
+        return;
+    }
+
     const bool wasOnGroundBeforeLandingCheck = GetOnGround();
     const glm::vec3 velocityBeforeLandingCheck = GetVelocity();
     const glm::vec3 upBeforeLandingCheck = GetUpVec();
@@ -228,7 +233,7 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
-    mRespawn.ApplyFallDamageAndRespawn(*this, mStateMachine, mCombat, mStatus, damage);
+    mRespawn.ApplyFallDamageAndRespawn(*this, mStatus, damage);
     mInput.ClearAttackBuffer();
     mMovement.ClearStrongAttackDirectionOverride();
     mStateMachine.ClearAttackDirectionTarget();
@@ -239,15 +244,33 @@ void Player::OnBoatArrived(Boat* boat)
     mBoatRide.OnBoatArrived(*this, mMovement, mRespawn, boat);
 }
 
-void Player::Restart()
+void Player::RespawnAtRestartPoint()
 {
-    mRespawn.Restart(*this, mStateMachine, mStatus);
+    mRespawn.Respawn(*this);
+    mStateMachine.ChangeState(PlayerActionState::Idle);
+    mCombat.CancelSpecialAttack();
+
+    SetIsActive(true);
+    SetVelocity(glm::vec3(0.0f));
+    SetOnGround(false);
+    SetShouldJudgeLanding(true);
+    RefreshFallbackUpVec();
+
     mInput.ClearAttackBuffer();
     mMovement.ClearStrongAttackDirectionOverride();
     mStateMachine.ClearAttackDirectionTarget();
+    mGrounding.ResetRayCastTimer();
+    mPlanetGravityController.OnRespawned();
+    mRespawn.OnRespawnCompleted();
     mParticleEffectController.Reset();
     mUseSecondAttackAnimationNext = false;
     mAnimationController.ResetToAnimation(idleAnimationId);
+}
+
+void Player::Restart()
+{
+    mStatus.RestoreFullHp();
+    RespawnAtRestartPoint();
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
@@ -275,6 +298,7 @@ void Player::OnCastSucceeded()
 {
     mGrounding.OnCastSucceeded();
     mPlanetGravityController.OnGroundRayCastSucceeded();
+    mRespawn.OnGroundRayCastSucceeded();
 }
 
 void Player::OnLoadedModelChanged()

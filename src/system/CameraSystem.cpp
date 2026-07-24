@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
@@ -122,6 +123,8 @@ void CameraSystem::ResetForStageChange()
     mCameraStickX = 0.0f;
     mTalkCameraBlend = 0.0f;
     mTalkCameraPlayer = nullptr;
+    mHasTalkCameraTarget = false;
+    mTalkCameraTargetPos = glm::vec3(0.0f);
 }
 
 float CameraSystem::GetFieldOfViewDegrees() const
@@ -173,6 +176,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
     mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
                          mPlayerCameraSettings.targetSmoothingSpeed,
                          mPlayerCameraSettings.attackTargetSmoothingSpeed, deltaTime);
+    UpdateTalkCameraAim();
 }
 
 bool CameraSystem::AllowsPlayerInput() const
@@ -248,8 +252,10 @@ void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
     SceneSystem* sceneSystem = mGame ? mGame->GetSceneSystem() : nullptr;
 
     Player* targetPlayer = nullptr;
+    NPC* targetNPC = nullptr;
     if (sceneSystem && sceneSystem->IsTalkWithNPC() && sceneSystem->GetTalkingPlayer()) {
         targetPlayer = sceneSystem->GetTalkingPlayer();
+        targetNPC = sceneSystem->GetTalkingNPC();
     } else if (mTalkCameraPreviewEnabled && mGame) {
         targetPlayer = mGame->GetMainPlayer();
     }
@@ -260,6 +266,10 @@ void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
         }
 
         mTalkCameraPlayer = targetPlayer;
+        if (targetNPC) {
+            mTalkCameraTargetPos = targetNPC->GetPos();
+            mHasTalkCameraTarget = true;
+        }
 
         const float duration = mPlayerCameraSettings.talkTransitionInDuration;
         mTalkCameraBlend =
@@ -273,6 +283,25 @@ void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
 
     if (mTalkCameraBlend <= 0.0f) {
         mTalkCameraPlayer = nullptr;
+        mHasTalkCameraTarget = false;
+    }
+}
+
+void CameraSystem::UpdateTalkCameraAim()
+{
+    if (!mGame || !mTalkCameraPlayer || !mHasTalkCameraTarget || mTalkCameraBlend <= 0.0f) {
+        return;
+    }
+
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    for (int playerIndex = 0; playerIndex < static_cast<int>(players.size()); ++playerIndex) {
+        if (players[playerIndex] != mTalkCameraPlayer) {
+            continue;
+        }
+
+        mPlayerCamera.BlendBehindTarget(
+            mTalkCameraPlayer, playerIndex, mTalkCameraTargetPos, GetEasedTalkCameraBlend());
+        return;
     }
 }
 

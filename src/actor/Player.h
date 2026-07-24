@@ -46,6 +46,7 @@ public:
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
+    void RespawnAtRestartPoint();
     void Restart();
     void RecoverFromFatigue();
     void MoveToCurrentPlanetOrigin();
@@ -255,6 +256,7 @@ public:
     void AddVelocity(const glm::vec3& velocityDelta) { mVelocity += velocityDelta; }
 
     void SetFacingForwardVec(const glm::vec3& facingForwardVec) { mFacingForwardVec = facingForwardVec; }
+    void FaceDirection(const glm::vec3& facingDirection) { mMovement.FaceDirection(*this, facingDirection); }
 
     void SetOnGround(bool onGround) { mOnGround = onGround; }
 

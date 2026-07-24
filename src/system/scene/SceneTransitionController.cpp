@@ -7,6 +7,8 @@
 
 #include <SDL2/SDL_mixer.h>
 
+#include <utility>
+
 SceneTransitionController::SceneTransitionController(Game* game, GameProgressState* gameProgressState, UIState* uiState,
                                                      float& fadeTimer, bool& isFadeOut, bool& hasPendingStageChange,
                                                      int& nextStageNum)
@@ -37,6 +39,7 @@ void SceneTransitionController::UpdateFade(float deltaTime)
 
 void SceneTransitionController::StartOpening()
 {
+    mMidpointAction = {};
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
     mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Opening);
@@ -44,6 +47,7 @@ void SceneTransitionController::StartOpening()
 
 void SceneTransitionController::StartFadeIn()
 {
+    mMidpointAction = {};
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
 
@@ -53,11 +57,24 @@ void SceneTransitionController::StartFadeIn()
 
 void SceneTransitionController::RequestStageChange(int stageNum)
 {
+    mMidpointAction = {};
     mNextStageNum = stageNum;
     mHasPendingStageChange = true;
 
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
+}
+
+bool SceneTransitionController::RequestFadeAction(std::function<void()> midpointAction)
+{
+    if (!midpointAction || mFadeTimer > -1.0f || mIsFadeOut || mHasPendingStageChange) {
+        return false;
+    }
+
+    mMidpointAction = std::move(midpointAction);
+    mFadeTimer = 1.0f;
+    mIsFadeOut = false;
+    return true;
 }
 
 void SceneTransitionController::ApplySceneChange()
@@ -83,6 +100,12 @@ void SceneTransitionController::ApplySceneChange()
 
     default:
         break;
+    }
+
+    if (mMidpointAction) {
+        std::function<void()> midpointAction = std::move(mMidpointAction);
+        mMidpointAction = {};
+        midpointAction();
     }
 
     mGame->GetAudioSystem()->TryChangeBGM();

@@ -31,6 +31,7 @@ public:
     void StartFadeIn();
     void StartTalkWith(UIState::TalkWith talkWith) { mUIState->SetCurrentTalkWith(talkWith); }
 
+    bool RequestPlayerRespawn(Player* player);
     void RequestStageChange(int stageNum);
     void OnBoatArrived(Boat* boat);
     void OnStageClear();

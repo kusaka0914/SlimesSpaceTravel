@@ -27,6 +27,7 @@ public:
     void Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
                 float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime);
     void AlignBehindPlayer(Player* player, int playerIndex);
+    void BlendBehindTarget(Player* player, int playerIndex, const glm::vec3& targetPosition, float blend);
 
     glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
                       float targetHeight, bool isFixed = false);

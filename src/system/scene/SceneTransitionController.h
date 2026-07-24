@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 class Game;
 class GameProgressState;
 class UIState;
@@ -13,6 +15,7 @@ public:
     void StartOpening();
     void StartFadeIn();
     void RequestStageChange(int stageNum);
+    bool RequestFadeAction(std::function<void()> midpointAction);
 
 private:
     void ApplySceneChange();
@@ -26,4 +29,6 @@ private:
     bool& mIsFadeOut;
     bool& mHasPendingStageChange;
     int& mNextStageNum;
+
+    std::function<void()> mMidpointAction;
 };

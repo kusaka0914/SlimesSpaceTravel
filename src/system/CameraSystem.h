@@ -75,6 +75,7 @@ private:
     void UpdateCamera(float deltaTime);
     void UpdateBossDefeatSequence(float deltaTime);
     void UpdateTalkCameraTransition(float deltaTime);
+    void UpdateTalkCameraAim();
     float GetEasedTalkCameraBlend() const;
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
     Enemy* FindBossEnemy(Planet* planet) const;
@@ -90,6 +91,8 @@ private:
     float mCameraStickX = 0.0f;
     float mTalkCameraBlend = 0.0f;
     Player* mTalkCameraPlayer = nullptr;
+    bool mHasTalkCameraTarget = false;
+    glm::vec3 mTalkCameraTargetPos{0.0f};
     Enemy* mDefeatedBoss = nullptr;
     Star* mBossDefeatStar = nullptr;
 

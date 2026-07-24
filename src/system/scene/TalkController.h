@@ -11,6 +11,7 @@ public:
     TalkController(Game* game, GameProgressState* gameProgressState, UIState* uiState, NPC*& talkingNPC,
                    Player*& talkingPlayer);
 
+    void Update(float deltaTime);
     void AdvanceTalk();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     void TryStartTalkWithNPC(int playerNum);

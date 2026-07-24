@@ -14,6 +14,7 @@
 #include "system/scene/TutorialController.h"
 
 #include <SDL2/SDL_mixer.h>
+#include <glm/glm.hpp>
 
 SceneSystem::SceneSystem(Game* game)
     : mGame(game),
@@ -43,6 +44,7 @@ void SceneSystem::CreateControllers()
 void SceneSystem::Update(float deltaTime)
 {
     mTransitionController->UpdateFade(deltaTime);
+    mTalkController->Update(deltaTime);
     UpdateClearTimer(deltaTime);
 }
 
@@ -99,8 +101,10 @@ void SceneSystem::StartOpening()
 
 void SceneSystem::RestartGame()
 {
-    StartPlayingScene();
-    mGame->RestartGame();
+    mTransitionController->RequestFadeAction([this]() {
+        mGame->RestartGame();
+        StartPlayingScene();
+    });
 }
 
 void SceneSystem::StartPlayingScene()
@@ -128,6 +132,26 @@ void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
 void SceneSystem::StartFadeIn()
 {
     mTransitionController->StartFadeIn();
+}
+
+bool SceneSystem::RequestPlayerRespawn(Player* player)
+{
+    if (!player) {
+        return false;
+    }
+
+    const bool requested = mTransitionController->RequestFadeAction([this, player]() {
+        player->RespawnAtRestartPoint();
+        StartPlayingScene();
+    });
+
+    if (!requested) {
+        return false;
+    }
+
+    player->SetVelocity(glm::vec3(0.0f));
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Focusing);
+    return true;
 }
 
 void SceneSystem::RequestStageChange(int stageNum)

@@ -141,6 +141,16 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     ApplyCurrentPlanet(player, movement, landedPlanet);
 }
 
+void PlayerPlanetGravityController::OnRespawned()
+{
+    mIsJumpSwitchingActive = false;
+    mGroundRayHitThisFrame = false;
+    mFallbackAppliedThisJump = false;
+    mFallbackGravityActive = false;
+    mNoGroundRayDuration = 0.0f;
+    mSmoothedUpInitialized = false;
+}
+
 bool PlayerPlanetGravityController::ShouldSwitchPlanet(const Player& player,
                                                        const PlanetDistanceCandidate& candidate) const
 {

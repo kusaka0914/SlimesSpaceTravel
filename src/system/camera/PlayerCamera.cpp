@@ -83,6 +83,50 @@ void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
     state.hasAttackTargetForward = false;
 }
 
+void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm::vec3& targetPosition, float blend)
+{
+    if (!player || playerIndex < 0) {
+        return;
+    }
+
+    ResizeState(playerIndex + 1);
+
+    PlayerCameraState& state = mStates[playerIndex];
+
+    glm::vec3 up = state.upVec;
+    const float upLengthSquared = glm::dot(up, up);
+    if (upLengthSquared <= directionEpsilonSquared) {
+        return;
+    }
+    up /= std::sqrt(upLengthSquared);
+
+    glm::vec3 currentForward;
+    if (!TryGetTangentDirection(state.cameraForwardVec, up, currentForward) &&
+        !TryGetTangentDirection(player->GetForwardVec(), up, currentForward)) {
+        return;
+    }
+
+    // cameraForwardVec points from the player toward the camera, so place the
+    // camera on the side opposite the conversation target.
+    glm::vec3 targetForward;
+    if (!TryGetTangentDirection(player->GetPos() - targetPosition, up, targetForward)) {
+        return;
+    }
+
+    const float clampedBlend = glm::clamp(blend, 0.0f, 1.0f);
+    const float dotValue = glm::clamp(glm::dot(currentForward, targetForward), -1.0f, 1.0f);
+    const float signedAngle =
+        std::atan2(glm::dot(glm::cross(currentForward, targetForward), up), dotValue);
+    const float angle = signedAngle * clampedBlend;
+    const glm::vec3 rotated =
+        currentForward * std::cos(angle) + glm::cross(up, currentForward) * std::sin(angle);
+
+    if (!TryGetTangentDirection(rotated, up, state.cameraForwardVec)) {
+        state.cameraForwardVec = targetForward;
+    }
+    state.hasCameraForward = true;
+}
+
 glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
                                 float targetHeight, bool isFixed)
 {

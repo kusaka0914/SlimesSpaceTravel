@@ -19,6 +19,7 @@ public:
     void OnGroundRayCastSucceeded();
 
     void OnLanded(Player& player, PlayerMovement& movement);
+    void OnRespawned();
 
     bool IsJumpGravityActive() const { return mIsJumpSwitchingActive; }
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
