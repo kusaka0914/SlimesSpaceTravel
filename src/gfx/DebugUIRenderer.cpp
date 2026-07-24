@@ -9,6 +9,7 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mUIPanel(mContext),
       mParameterPanel(mContext),
       mParticleEffectPanel(mContext),
+      mSequencePanel(mContext),
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
       mSelectionController(mContext),
@@ -20,7 +21,8 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           mStageAddActorPanel,
           mStagePlanetPanel,
           mStagePlacementPanel,
-          mStageDeleteActorPanel),
+          mStageDeleteActorPanel,
+          mSelectionController),
       mGizmoController(
           mContext,
           mSelectionController,
@@ -64,6 +66,11 @@ void DebugUIRenderer::Draw()
 
         if (ImGui::BeginTabItem("パーティクル")) {
             mParticleEffectPanel.Draw();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("演出エディタ")) {
+            mSequencePanel.Draw();
             ImGui::EndTabItem();
         }
 

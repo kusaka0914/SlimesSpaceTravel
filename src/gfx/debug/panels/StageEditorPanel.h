@@ -2,15 +2,19 @@
 
 #include "gfx/debug/DebugPanel.h"
 
+#include <string>
+
 class StageAddActorPanel;
 class StagePlanetPanel;
 class StagePlacementPanel;
 class StageDeleteActorPanel;
+class StageSelectionController;
 
 class StageEditorPanel : public DebugPanel {
 public:
     StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel, StagePlanetPanel& planetPanel,
-                     StagePlacementPanel& placementPanel, StageDeleteActorPanel& deleteActorPanel);
+                     StagePlacementPanel& placementPanel, StageDeleteActorPanel& deleteActorPanel,
+                     StageSelectionController& selectionController);
 
     void Draw() override;
 
@@ -18,11 +22,16 @@ public:
     bool ConsumeRequestOpenMainTab();
 
 private:
+    void DrawStageSwitcher();
+
     StageAddActorPanel& mAddActorPanel;
     StagePlanetPanel& mPlanetPanel;
     StagePlacementPanel& mPlacementPanel;
     StageDeleteActorPanel& mDeleteActorPanel;
+    StageSelectionController& mSelectionController;
 
     int mSelectedMenu = 0;
     bool mRequestOpenMainTab = false;
+    std::string mSelectedStageYamlPath;
+    std::string mStageSwitchStatus;
 };

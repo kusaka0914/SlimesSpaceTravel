@@ -1,0 +1,70 @@
+sequences:
+  base_arrival_template:
+    loop: false
+    clips:
+      - type: playerControl
+        start: 0
+        enabled: false
+      - type: actorVisibility
+        start: 0
+        target:
+          group: players
+          index: 0
+        visible: false
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: boats
+          index: 1
+        from: [-0.01, 6.75, 1.29]
+        to: [-0.01, 1.85, 1.29]
+        easing: easeOut
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: players
+          index: 0
+        from: [-0.01, 6.75, 1.29]
+        to: [-0.00010876762, 1.7832834, 2.4045577]
+        easing: easeOut
+      - type: actorVisibility
+        start: 3
+        target:
+          group: players
+          index: 0
+        visible: true
+      - type: actorMove
+        start: 4
+        duration: 2
+        target:
+          group: boats
+          index: 1
+        from: [-0.01, 1.85, 1.29]
+        to: [-0.01, 27.25, 1.29]
+        easing: easeIn
+      - type: playerControl
+        start: 6
+        enabled: true
+  launch_rocket_from_base:
+    loop: false
+    clips:
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: boats
+          index: 0
+        from: [0, 10, -9.5]
+        to: [0, 17, -9.5]
+        easing: easeInOut
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: players
+          index: 0
+        from: [0, 10.059345, -9.5]
+        to: [0, 17, -9.5]
+        easing: easeInOut

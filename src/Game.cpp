@@ -22,6 +22,7 @@
 #include "system/SceneSystem.h"
 #include "system/StageFlowController.h"
 #include "system/UILoadSystem.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
@@ -121,6 +122,7 @@ void Game::CreateGameSystems()
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);
     mInputSystem = std::make_unique<InputSystem>(this);
+    mSequenceSystem = std::make_unique<SequenceSystem>(this);
 
     mParticleSystem = std::make_unique<ParticleSystem>();
     mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
@@ -133,6 +135,10 @@ void Game::CreateStages(int stageCount)
 
 void Game::ReloadCurrentStage()
 {
+    if (mSequenceSystem) {
+        mSequenceSystem->Stop(true);
+    }
+
     if (mCameraSystem) {
         mCameraSystem->ResetForStageChange();
     }
@@ -253,7 +259,8 @@ void Game::ToggleFreeCameraMode()
 void Game::ProcessActorsInput()
 {
     const bool allowsPlayerControl =
-        mSceneSystem->IsPlaying() && mCameraSystem->AllowsPlayerInput();
+        mSceneSystem->IsPlaying() && mCameraSystem->AllowsPlayerInput() &&
+        (!mSequenceSystem || !mSequenceSystem->LocksPlayerControl());
 
     for (Player* player : GetPlayers()) {
         if (player) {
@@ -286,6 +293,9 @@ void Game::UpdateGame()
     }
 
     if (mIsFreeCameraMode) {
+        if (mSequenceSystem) {
+            mSequenceSystem->Update(deltaTime);
+        }
         mCameraSystem->Update(deltaTime);
         return;
     }
@@ -301,6 +311,13 @@ void Game::UpdateGame()
             mParticleSystem->Update(deltaTime);
         }
 
+    }
+
+    if (mSequenceSystem) {
+        mSequenceSystem->Update(deltaTime);
+    }
+
+    if (mSceneSystem->CanUpdateWorld()) {
         mCameraSystem->Update(deltaTime);
         cameraUpdated = true;
     }
@@ -369,6 +386,29 @@ void Game::LoadData(bool isLoadPlayer)
 void Game::ChangeStage(int stageNum)
 {
     mStageFlowController->ChangeStage(*mWorld, stageNum);
+}
+
+bool Game::DebugChangeStage(int stageNum, const std::string& yamlPath)
+{
+    if (yamlPath.empty() || stageNum < 0 || stageNum >= static_cast<int>(GetStages().size())) {
+        return false;
+    }
+
+    if (!mWorld->ChangeStage(stageNum)) {
+        return false;
+    }
+
+    mStageFlowController->SetCurrentStageYamlPath(yamlPath);
+    mSceneSystem->StartPlayingScene();
+    ReloadCurrentStage();
+
+    const bool isBaseStageYaml =
+        yamlPath.ends_with("/stage0.yaml") || yamlPath.ends_with("\\stage0.yaml");
+    if (isBaseStageYaml && mSequenceSystem) {
+        mSequenceSystem->Play("base_arrival_template");
+    }
+
+    return true;
 }
 
 void Game::CheckGameControllerConnected()

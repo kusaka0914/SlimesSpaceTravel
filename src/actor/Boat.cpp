@@ -4,6 +4,11 @@
 #include "actor/Planet.h"
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
+#include "system/sequence/SequenceSystem.h"
+
+namespace {
+constexpr const char* BaseLaunchSequenceId = "launch_rocket_from_base";
+}
 
 Boat::Boat(Game* game)
     : Actor(game),
@@ -113,6 +118,11 @@ void Boat::FinishMoving()
 void Boat::StartTravel()
 {
     if (mGame->IsInBase()) {
+        SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+        if (sequenceSystem) {
+            sequenceSystem->Play(BaseLaunchSequenceId);
+        }
+
         mGame->OnBoatStageChangeRequested(mDestStage);
         return;
     }

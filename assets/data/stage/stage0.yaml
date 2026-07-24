@@ -1,6 +1,6 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
-    scale: [10.0, 10.0, 10.0]
+  - center: [0, 0, 0]
+    scale: [10, 10, 10]
     color: [1.0, 1.0, 1.0, 1.0]
     shape: Ellipse
     model: selectField.obj
@@ -11,6 +11,45 @@ boats:
     height: 3.793
     destStage: 1
     facingYaw: -1.6
+    pos:
+      - 0
+      - 10
+      - -9.5
+    rotation:
+      - 0
+      - -1.6
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.0072686947
+      - 0.9999535
+      - 0.0063482323
+  - startPlanet: 0
+    destPlanet: 0
+    destStage: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.6057029
+    pos:
+      - 11
+      - 17.74
+      - 0
+    rotation:
+      - -0.0052359877
+      - -1.6057029
+      - 0.1256637
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.52698123
+      - 0.84987694
+      - 0
 players:
   - currentPlanetNum: 0
     theta: 1.570796
@@ -29,6 +68,23 @@ NPCs:
     type: spaceSlime
     name: RocketGuideNPC
     talkTexts: [こちら惑星マルッコイ行きロケット〜まもなく発射します〜。\nお乗りの方はお急ぎください〜。]
+    pos:
+      - -1
+      - 10.13
+      - -8
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.0011851748
+      - 0.99995476
+      - -0.009436844
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -36,10 +92,44 @@ NPCs:
     type: spaceSlime
     name: BaseGuideNPC
     talkTexts: [ここはロケット発着所！\n他の惑星に行きたいならこの上のロケット乗り場からどうぞ！]
+    pos:
+      - -2.98
+      - 1.84
+      - -0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.110255346
+      - 0.993903
+      - -0.00082189776
   - currentPlanetNum: 0
-    theta: 0.0
+    theta: 0
     phi: -1.570796
     height: -7.5
     type: spaceSlime
     name: BackSideNPC
     talkTexts: [ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。]
+    pos:
+      - 0
+      - -1.99
+      - -0
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.0070099323
+      - -0.99997413
+      - -0.0015909512

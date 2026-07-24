@@ -27,6 +27,7 @@ class PauseMenuController;
 class StageFlowController;
 class GamepadRumbleService;
 class ParticleSystem;
+class SequenceSystem;
 
 class Game {
 public:
@@ -41,6 +42,7 @@ public:
     void ReloadCurrentStage();
     void ReloadUIData();
     void ChangeStage(int stageNum);
+    bool DebugChangeStage(int stageNum, const std::string& yamlPath);
     void TogglePauseMenu();
     void ClosePauseMenu();
     void MovePauseMenuSelection(int delta);
@@ -106,6 +108,7 @@ public:
     MathUtils* GetMathUtils() const { return mMathUtils.get(); }
     ParticleSystem* GetParticleSystem() const { return mParticleSystem.get(); }
     UIRenderer* GetUIRenderer() const { return mUIRenderer.get(); }
+    SequenceSystem* GetSequenceSystem() const { return mSequenceSystem.get(); }
 
     float GetHitStopTimer() const { return mHitStopTimer; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
@@ -152,6 +155,7 @@ private:
     std::unique_ptr<SceneSystem> mSceneSystem;
     std::unique_ptr<InputSystem> mInputSystem;
     std::unique_ptr<ParticleSystem> mParticleSystem;
+    std::unique_ptr<SequenceSystem> mSequenceSystem;
 
     float mHitStopTimer = -1.0f;
 

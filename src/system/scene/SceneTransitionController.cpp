@@ -4,6 +4,7 @@
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include <SDL2/SDL_mixer.h>
 
@@ -93,8 +94,8 @@ void SceneTransitionController::ApplySceneChange()
         mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
         mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
         mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
-        mGame->ChangeStage(0);
         mUIState->SetTalkUIIndex(0);
+        mNextStageNum = 0;
         mHasPendingStageChange = true;
         break;
 
@@ -113,11 +114,18 @@ void SceneTransitionController::ApplySceneChange()
     if (mHasPendingStageChange) {
         mHasPendingStageChange = false;
 
-        mGame->ChangeStage(mNextStageNum);
+        const int destinationStageNum = mNextStageNum;
+        const bool shouldPlayBaseArrival = destinationStageNum == 0;
+
+        mGame->ChangeStage(destinationStageNum);
         mNextStageNum = -1;
 
         Mix_HaltMusic();
         mGame->ReloadCurrentStage();
         mGame->StartPlayingScene();
+
+        if (shouldPlayBaseArrival && mGame->GetSequenceSystem()) {
+            mGame->GetSequenceSystem()->Play("base_arrival_template");
+        }
     }
 }
