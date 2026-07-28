@@ -99,7 +99,14 @@ void StageEditorPanel::Draw()
     DrawStageSwitcher();
     ImGui::Separator();
 
-    const char* menus[] = {"追加", "配置", "削除"};
+    const char* menus[] = {
+        "追加",
+        "一覧",
+        "選択中",
+        "プレイヤー",
+        "惑星設定",
+        "削除",
+    };
 
     ImGui::BeginChild("StageEditorLeft", ImVec2(160, 0), true);
 
@@ -127,10 +134,18 @@ void StageEditorPanel::Draw()
         mAddActorPanel.Draw();
         break;
     case 1:
-        mPlanetPanel.Draw();
-        mPlacementPanel.Draw();
+        mPlacementPanel.DrawObjectList();
         break;
     case 2:
+        mPlacementPanel.Draw();
+        break;
+    case 3:
+        mPlacementPanel.DrawPlayerSpawn();
+        break;
+    case 4:
+        mPlanetPanel.Draw();
+        break;
+    case 5:
         mDeleteActorPanel.Draw();
         break;
     default:
@@ -212,7 +227,7 @@ void StageEditorPanel::DrawStageSwitcher()
 void StageEditorPanel::RequestOpenPlacementTab()
 {
     mRequestOpenMainTab = true;
-    mSelectedMenu = 1;
+    mSelectedMenu = 2;
     mPlacementPanel.RequestOpenPickedActorPlacement();
 }
 

@@ -1,10 +1,13 @@
 playerCamera:
   distance: 6
-  pitchDegrees: -57.296
+  pitchDegrees: -52.546
   targetHeight: 2.45
   fieldOfView: 60
   splitScreenFieldOfView: 45
   yawSensitivity: 2.5
+  pitchSensitivityDegrees: 90
+  minPitchDegrees: -80
+  maxPitchDegrees: 0
   upSmoothingSpeed: 8
   targetSmoothingSpeed: 6
   attackTargetSmoothingSpeed: 6

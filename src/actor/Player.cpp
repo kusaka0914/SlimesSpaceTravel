@@ -40,6 +40,9 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mCombat.SetAttackSpeed(config.attackSpeed);
     mCombat.SetAttack(config.attack);
     mMovement.SetMoveSpeed(config.moveSpeed);
+    mMovement.SetJumpHeight(config.jumpHeight);
+    mMovement.SetJumpAscentDuration(config.jumpAscentDuration);
+    mMovement.SetJumpFallDuration(config.jumpFallDuration);
 
     mMovement.SetDodgeDuration(config.dodgeDuration);
     mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);

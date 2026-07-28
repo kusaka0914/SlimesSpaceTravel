@@ -363,6 +363,20 @@ void UIDebugPanel::DrawTexts(UILoadSystem* uiLoadSystem)
             ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
             ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
             ImGui::SliderFloat("文字サイズ比率", &info.scaleRatio, 0.0f, 0.005f, "%.7f");
+            if (key == "state.talkText") {
+                ImGui::SliderFloat(
+                    "ルビサイズ倍率（全会話）",
+                    &info.rubyScaleRatio,
+                    0.2f,
+                    1.0f,
+                    "%.2f");
+                ImGui::SliderFloat(
+                    "漢字とルビの間隔（全会話）",
+                    &info.rubyGapRatio,
+                    -0.5f,
+                    2.0f,
+                    "%.2f");
+            }
 
             for (const std::string& text : info.texts) {
                 ImGui::BulletText("%s", text.c_str());

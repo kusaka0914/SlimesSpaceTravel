@@ -3,11 +3,18 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
+#include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
+#include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
+#include "actor/Key.h"
+#include "actor/MovingPlatform.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
+#include "actor/Star.h"
 #include "actor/StageObject.h"
 
 #include <algorithm>
@@ -39,8 +46,36 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
             CreatePickBody(world, enemy, pickObjects, pickShapes);
         }
 
+        for (Platform* platform : planet->GetPlatforms()) {
+            CreatePickBody(world, platform, pickObjects, pickShapes);
+        }
+
+        for (MovingPlatform* movingPlatform : planet->GetMovingPlatforms()) {
+            CreatePickBody(world, movingPlatform, pickObjects, pickShapes);
+        }
+
+        if (Key* key = planet->GetKey()) {
+            CreatePickBody(world, key, pickObjects, pickShapes);
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            CreatePickBody(world, boat, pickObjects, pickShapes);
+        }
+
+        for (BoatParts* boatParts : planet->GetBoatParts()) {
+            CreatePickBody(world, boatParts, pickObjects, pickShapes);
+        }
+
         for (Crystal* crystal : planet->GetCrystals()) {
             CreatePickBody(world, crystal, pickObjects, pickShapes);
+        }
+
+        for (NPC* npc : planet->GetNPCs()) {
+            CreatePickBody(world, npc, pickObjects, pickShapes);
+        }
+
+        if (Star* star = planet->GetStar()) {
+            CreatePickBody(world, star, pickObjects, pickShapes);
         }
 
         for (BoatArrivalPoint* arrivalPoint : planet->GetBoatArrivalPoints()) {

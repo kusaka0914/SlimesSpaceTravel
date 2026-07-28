@@ -9,6 +9,9 @@ struct PlayerCameraSettings {
     float fieldOfViewDegrees = 60.0f;
     float splitScreenFieldOfViewDegrees = 45.0f;
     float yawSensitivity = 2.5f;
+    float pitchSensitivityDegrees = 90.0f;
+    float minPitchDegrees = -80.0f;
+    float maxPitchDegrees = 0.0f;
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
     float attackTargetSmoothingSpeed = 6.0f;

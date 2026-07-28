@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "text/RubyText.h"
 #include <yaml-cpp/yaml.h>
 
 class UILoadSystem {
@@ -32,7 +33,10 @@ public:
         float yRatio = 0.0f;
         float scale = 0.0f;
         float scaleRatio = 0.0f;
+        float rubyScaleRatio = 0.48f;
+        float rubyGapRatio = 0.0f;
         std::vector<std::string> texts;
+        std::vector<std::vector<RubyTextSegment>> rubySegments;
     };
 
     struct CustomElement {

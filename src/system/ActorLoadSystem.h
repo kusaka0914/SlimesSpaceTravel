@@ -4,6 +4,7 @@
 #include "system/actor_loader/StageActorFactory.h"
 
 #include <glm/glm.hpp>
+#include <string>
 #include <yaml-cpp/yaml.h>
 
 class Game;
@@ -44,6 +45,7 @@ public:
     BoatArrivalPoint* CreateBoatArrivalPointFromStageNode(const YAML::Node& node, int stageYamlIndex);
     FallRespawnPoint* CreateFallRespawnPointFromStageNode(const YAML::Node& node, int stageYamlIndex);
     StageObject* CreateStageObjectFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    Actor* FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const;
 
     void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
                                      float defaultHeight = 0.0f);

@@ -416,7 +416,7 @@ enemies:
     pos:
       - -0
       - 3.99
-      - -0
+      - 0
     facingYaw: 0
     rotation:
       - 0
@@ -427,9 +427,9 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.03220023
-      - 0.99940896
-      - -0.012036988
+      - -0.0295766
+      - 0.99940383
+      - 0.017805928
   - type: normal
     theta: 0.341477
     phi: -0.135222
@@ -537,9 +537,9 @@ keys:
       - 2
       - 2
     upVec:
-      - 0.8651576
-      - -0.50138736
-      - 0.010633801
+      - 0.8651578
+      - -0.5013875
+      - -0.010614668
 crystals:
   - type: little
     currentPlanetNum: 0
@@ -606,8 +606,8 @@ boats:
       - 0.8
     upVec:
       - 0.99992317
-      - 0.00873489
-      - 0.008789532
+      - -0.00873489
+      - -0.008789605
   - theta: 0
     phi: 0
     height: 0
@@ -628,8 +628,8 @@ boats:
       - 0.8
     upVec:
       - 0.99992305
-      - 0.008745005
-      - 0.008795579
+      - -0.008745004
+      - -0.008795652
 boatParts:
   - type: parts1
     currentPlanetNum: 0
@@ -653,94 +653,6 @@ boatParts:
       - -0.93607897
       - -0.3517823
       - 0.0023369743
-  # - type: parts2
-  #   currentPlanetNum: 0
-  #   theta: 0.961
-  #   phi: 0.468
-  #   height: 3.3
-  #   pos:
-  #     - 5.78
-  #     - 5.1
-  #     - 8.27
-  #   facingYaw: 0
-  #   rotation:
-  #     - 0
-  #     - 0
-  #     - 0
-  #   scale:
-  #     - 1
-  #     - 1
-  #     - 1
-  #   upVec:
-  #     - 0.52711475
-  #     - 0.4363927
-  #     - 0.72918546
-  # - type: parts3
-  #   currentPlanetNum: 0
-  #   theta: -1.225
-  #   phi: -0.496
-  #   height: 3.3
-  #   pos:
-  #     - 3.37
-  #     - -5.38
-  #     - -9.35
-  #   facingYaw: 0
-  #   rotation:
-  #     - 0
-  #     - 0
-  #     - 0
-  #   scale:
-  #     - 1
-  #     - 1
-  #     - 1
-  #   upVec:
-  #     - 0.3346057
-  #     - -0.4332819
-  #     - -0.8368428
-  # - type: parts4
-  #   currentPlanetNum: 0
-  #   theta: 0.317
-  #   phi: -0.36
-  #   height: 1.59
-  #   pos:
-  #     - 8.53
-  #     - -3.38
-  #     - 2.8
-  #   facingYaw: 0
-  #   rotation:
-  #     - 0
-  #     - 0
-  #     - 0
-  #   scale:
-  #     - 1
-  #     - 1
-  #     - 1
-  #   upVec:
-  #     - 0.8978751
-  #     - -0.3300485
-  #     - 0.29135638
-  # - type: parts5
-  #   currentPlanetNum: 0
-  #   theta: 1.897
-  #   phi: -0.622
-  #   height: 0.1
-  #   pos:
-  #     - -2.11
-  #     - -4.72
-  #     - 6.24
-  #   facingYaw: 0
-  #   rotation:
-  #     - 0
-  #     - 0
-  #     - 0
-  #   scale:
-  #     - 1
-  #     - 1
-  #     - 1
-  #   upVec:
-  #     - -0.2620882
-  #     - -0.58061653
-  #     - 0.7708399
 players:
   - pos: [3.0, 7.5, 0.0]
     currentPlanetNum: 0
@@ -767,15 +679,19 @@ star:
       - 0.3
     upVec:
       - 0.99992305
-      - 0.008745005
-      - 0.008795579
+      - -0.008745004
+      - -0.008795652
 NPCs:
   - theta: -0.580512
     phi: 1.126875
     height: 0
     type: spaceSlime
     name: BoatPartsNPC
-    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。, あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。, そこに行ってみたらどうだ？, 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
+    talkTexts:
+      - 星を探している？残念だがこの惑星にはそんなものないぞ。
+      - あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。
+      - そこに行ってみたらどうだ？
+      - 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！
     pos:
       - 2.85
       - 7.17
@@ -790,15 +706,19 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.36685157
-      - 0.8991861
-      - -0.23850475
+      - 0.3658341
+      - 0.899234
+      - -0.23988241
+    modelPath: spaceSlime.obj
+    radius: 0.75
   - theta: 1.843978
     phi: -0.819546
     height: 0.196
     type: spaceSlime
     name: CrystalTutorialNPC
-    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！, 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
+    talkTexts:
+      - これはクリスタル！\n攻撃して壊せるよ！
+      - 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！
     pos:
       - -1.46
       - -5.79
@@ -813,15 +733,20 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.1869637
-      - -0.7257405
-      - 0.6620765
+      - -0.18854474
+      - -0.7281732
+      - 0.6589497
+    modelPath: spaceSlime.obj
+    radius: 0.75
   - theta: 0.341478
     phi: -0.614659
     height: 0
     type: spaceSlime
     name: BigCrystalTutorialNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！, "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"]
+    talkTexts:
+      - 大きなクリスタルは空中溜め攻撃で壊せるよ！
+      - 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！
+      - "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"
     pos:
       - 6.09
       - -4.56
@@ -836,15 +761,18 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.7775116
-      - -0.56623924
-      - 0.27358502
+      - 0.775654
+      - -0.5691145
+      - 0.27289084
+    modelPath: spaceSlime.obj
+    radius: 0.75
   - theta: 3.03915
     phi: -0.460995
     height: 0
     type: spaceSlime
     name: JumpDodgeTutorialNPC
-    talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
+    talkTexts:
+      - 遠い足場に乗りたい時はジャンプした後に回避！
     pos:
       - -7.04
       - -3.52
@@ -859,15 +787,18 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.8949304
-      - -0.43643618
-      - 0.09286044
+      - -0.8946006
+      - -0.43642756
+      - 0.09602529
+    modelPath: spaceSlime.obj
+    radius: 0.75
   - theta: 1.80983
     phi: 0.495141
     height: 0
     type: spaceSlime
     name: JumpTutorialNPC
-    talkTexts: [高い足場に乗りたい時はジャンプ！]
+    talkTexts:
+      - 高い足場に乗りたい時はジャンプ！
     pos:
       - -1.65
       - 3.76
@@ -882,15 +813,18 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.20660524
-      - 0.47370395
-      - 0.8561067
+      - -0.20955566
+      - 0.4737114
+      - 0.8553851
+    modelPath: spaceSlime.obj
+    radius: 0.75
   - theta: 2.561081
     phi: 0.97321
     height: 0
     type: spaceSlime
     name: WallTutorialNPC
-    talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]
+    talkTexts:
+      - 緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜
     pos:
       - -3.73
       - 6.56
@@ -905,9 +839,11 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.4750099
-      - 0.82300365
-      - 0.31149736
+      - -0.47619936
+      - 0.822952
+      - 0.30981314
+    modelPath: spaceSlime.obj
+    radius: 0.75
 platforms:
   - currentPlanetNum: 0
     theta: 3.141593
@@ -931,6 +867,9 @@ platforms:
       - 0
       - -3.142
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: -1.190649
     phi: -0.444701
@@ -953,6 +892,9 @@ platforms:
       - 0
       - 1.334
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: 2.883379
     phi: -0.63836
@@ -975,6 +917,9 @@ platforms:
       - 0
       - -0.318
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: -3.141593
     phi: -0.720431
@@ -997,6 +942,9 @@ platforms:
       - 0
       - -0.286
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: 0.315594
     phi: -0.344284
@@ -1019,6 +967,9 @@ platforms:
       - 0
       - 0
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: -1.821837
     phi: -0.710085
@@ -1041,6 +992,9 @@ platforms:
       - 0
       - -1.406
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: -2.424334
     phi: -1.090234
@@ -1063,6 +1017,9 @@ platforms:
       - 0
       - 0.258
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: 1.664041
     phi: 0.308421
@@ -1085,6 +1042,9 @@ platforms:
       - 0
       - -0.1
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: 1.405827
     phi: 0.681396
@@ -1107,6 +1067,9 @@ platforms:
       - 0
       - -0.631
       - 0
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 0
     theta: 0.946782
     phi: 0.451873
@@ -1129,3 +1092,6 @@ platforms:
       - 0
       - 0.287
       - 0
+    textureTiling:
+      - 1
+      - 1

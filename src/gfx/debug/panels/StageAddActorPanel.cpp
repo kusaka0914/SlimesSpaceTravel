@@ -3,11 +3,12 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Planet.h"
+#include "gfx/debug/stage/StageModelAssets.h"
 #include "imgui.h"
 
 #include <algorithm>
 #include <cctype>
-#include <filesystem>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -22,45 +23,19 @@ std::string ToLower(std::string value)
     return value;
 }
 
-bool IsSupportedModelExtension(const std::filesystem::path& path)
-{
-    const std::string extension = ToLower(path.extension().string());
-    return extension == ".obj" || extension == ".fbx" || extension == ".gltf" ||
-           extension == ".glb" || extension == ".dae";
-}
-
-std::vector<std::string> CollectModelAssets()
-{
-    std::vector<std::string> modelPaths;
-    const std::filesystem::path modelDirectory("../assets/models");
-    std::error_code error;
-
-    for (std::filesystem::recursive_directory_iterator it(modelDirectory, error), end;
-         it != end && !error;
-         it.increment(error)) {
-        if (!it->is_regular_file(error) || !IsSupportedModelExtension(it->path())) {
-            continue;
-        }
-
-        const std::filesystem::path relativePath =
-            std::filesystem::relative(it->path(), modelDirectory, error);
-        if (error) {
-            error.clear();
-            continue;
-        }
-
-        modelPaths.emplace_back(relativePath.generic_string());
-    }
-
-    std::sort(modelPaths.begin(), modelPaths.end());
-    return modelPaths;
-}
 }
 
 StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
     : DebugPanel(context),
       mCreateService(context)
 {
+    std::snprintf(mNPCName.data(), mNPCName.size(), "%s", "新しいNPC");
+    mNPCTalkTexts.emplace_back();
+    std::snprintf(
+        mNPCTalkTexts.front().data(),
+        mNPCTalkTexts.front().size(),
+        "%s",
+        "こんにちは");
 }
 
 void StageAddActorPanel::Draw()
@@ -81,7 +56,7 @@ void StageAddActorPanel::Draw()
                 mStageObjectSearch.data(),
                 mStageObjectSearch.size());
 
-            const std::vector<std::string> modelAssets = CollectModelAssets();
+            const std::vector<std::string> modelAssets = StageModelAssets::Collect();
             const std::string searchText = ToLower(mStageObjectSearch.data());
 
             ImGui::BeginChild("StageObjectAssetPicker", ImVec2(0.0f, 180.0f), true);
@@ -265,26 +240,113 @@ void StageAddActorPanel::Draw()
         } else {
             DrawPlanetCombo("NPCの追加先惑星", mSelectedNPCPlanetIndex);
 
-            const char* npcTypeLabels[] = {"宇宙スライム", "母スライム", "プレイヤー型", "悪い母スライム",
-                                           "博士スライム"};
+            ImGui::InputTextWithHint(
+                "##npcModelSearch",
+                "NPCモデル名を検索",
+                mNPCModelSearch.data(),
+                mNPCModelSearch.size());
 
-            const char* npcTypes[] = {"spaceSlime", "motherSlime", "player", "badMotherSlime", "doctorSlime"};
+            const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+            const std::string searchText = ToLower(mNPCModelSearch.data());
 
-            ImGui::Combo("NPCタイプ", &mSelectedNPCTypeIndex, npcTypeLabels, IM_ARRAYSIZE(npcTypeLabels));
+            ImGui::BeginChild("NPCModelAssetPicker", ImVec2(0.0f, 180.0f), true);
+            for (const std::string& modelPath : modelAssets) {
+                if (!searchText.empty() &&
+                    ToLower(modelPath).find(searchText) == std::string::npos) {
+                    continue;
+                }
 
-            const bool canAddNPC = mSelectedNPCPlanetIndex >= 0;
+                const bool selected = modelPath == mSelectedNPCModel;
+                if (ImGui::Selectable(modelPath.c_str(), selected)) {
+                    mSelectedNPCModel = modelPath;
+                }
+            }
+            ImGui::EndChild();
+
+            ImGui::Text(
+                "選択中のモデル: %s",
+                mSelectedNPCModel.empty() ? "未選択" : mSelectedNPCModel.c_str());
+            ImGui::TextDisabled(
+                "assets/models 内の対応モデルは自動的にこの一覧へ反映されます。");
+
+            ImGui::InputText("NPC名", mNPCName.data(), mNPCName.size());
+            ImGui::DragFloat(
+                "初期スケール",
+                &mNPCScale,
+                0.01f,
+                0.01f,
+                30.0f,
+                "%.2f");
+            ImGui::DragFloat(
+                "会話できる距離",
+                &mNPCTalkRadius,
+                0.05f,
+                0.1f,
+                20.0f,
+                "%.2f");
+
+            ImGui::SeparatorText("会話内容");
+            for (std::size_t talkIndex = 0;
+                 talkIndex < mNPCTalkTexts.size();
+                 ++talkIndex) {
+                const std::string label =
+                    "会話 " + std::to_string(talkIndex + 1) +
+                    "##newNPCTalk" + std::to_string(talkIndex);
+                ImGui::InputTextMultiline(
+                    label.c_str(),
+                    mNPCTalkTexts[talkIndex].data(),
+                    mNPCTalkTexts[talkIndex].size(),
+                    ImVec2(-1.0f, 70.0f));
+
+                if (mNPCTalkTexts.size() > 1 &&
+                    ImGui::Button(
+                        ("この会話を削除##newNPCTalkDelete" +
+                         std::to_string(talkIndex))
+                            .c_str())) {
+                    mNPCTalkTexts.erase(
+                        mNPCTalkTexts.begin() +
+                        static_cast<std::ptrdiff_t>(talkIndex));
+                    break;
+                }
+            }
+
+            if (ImGui::Button("会話を追加##newNPC")) {
+                mNPCTalkTexts.emplace_back();
+            }
+
+            const bool canAddNPC =
+                mSelectedNPCPlanetIndex >= 0 &&
+                !mSelectedNPCModel.empty();
 
             if (!canAddNPC) {
-                ImGui::Text("NPCを追加するには、追加先の惑星を選択してください");
+                ImGui::Text("NPCを追加するには、追加先の惑星とモデルを選択してください");
                 ImGui::BeginDisabled();
             }
 
             if (ImGui::Button("NPCを追加")) {
-                mCreateService.AddNPC(npcTypes[mSelectedNPCTypeIndex], mSelectedNPCPlanetIndex);
+                std::vector<std::string> talkTexts;
+                talkTexts.reserve(mNPCTalkTexts.size());
+                for (const auto& talkText : mNPCTalkTexts) {
+                    talkTexts.emplace_back(talkText.data());
+                }
+
+                const bool created = mCreateService.AddNPC(
+                    mSelectedNPCModel,
+                    mSelectedNPCPlanetIndex,
+                    mNPCName.data(),
+                    talkTexts,
+                    mNPCTalkRadius,
+                    mNPCScale);
+                mNPCStatus =
+                    created ? "NPCを追加しました" : "NPCの追加に失敗しました";
             }
 
             if (!canAddNPC) {
                 ImGui::EndDisabled();
+            }
+
+            if (!mNPCStatus.empty()) {
+                ImGui::TextUnformatted(mNPCStatus.c_str());
             }
 
             ImGui::TreePop();

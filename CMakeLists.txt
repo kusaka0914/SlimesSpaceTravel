@@ -66,6 +66,10 @@ target_link_libraries(game
     yaml-cpp
 )
 
+if (WIN32)
+    target_link_libraries(game windowsapp)
+endif()
+
 set_target_properties(game PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )

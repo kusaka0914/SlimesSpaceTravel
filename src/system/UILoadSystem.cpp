@@ -1,4 +1,5 @@
 #include "UILoadSystem.h"
+#include "system/text/JapaneseRubyGenerator.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -59,9 +60,18 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
     info.yRatio = node["posRatio"][1] ? node["posRatio"][1].as<float>() : 0.0f;
     info.scale = node["scale"][0] ? node["scale"][0].as<float>() : 0.0f;
     info.scaleRatio = node["scaleRatio"][0] ? node["scaleRatio"][0].as<float>() : 0.0f;
+    info.rubyScaleRatio =
+        node["rubyScaleRatio"] ? node["rubyScaleRatio"].as<float>() : info.rubyScaleRatio;
+    info.rubyGapRatio =
+        node["rubyGapRatio"] ? node["rubyGapRatio"].as<float>() : info.rubyGapRatio;
     if (node["text"]) {
         for (auto text : node["text"]) {
             info.texts.emplace_back(text.as<std::string>());
+
+            std::vector<RubyTextSegment> segments;
+            std::string errorMessage;
+            JapaneseRubyGenerator::Generate(info.texts.back(), segments, errorMessage);
+            info.rubySegments.emplace_back(std::move(segments));
         }
     }
 
@@ -119,6 +129,8 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
                 node["posRatio"][0] = info.xRatio;
                 node["posRatio"][1] = info.yRatio;
                 node["scaleRatio"][0] = info.scaleRatio;
+                node["rubyScaleRatio"] = info.rubyScaleRatio;
+                node["rubyGapRatio"] = info.rubyGapRatio;
 
                 if (!node["scaleRatio"][1]) {
                     node["scaleRatio"][1] = 1.0f;

@@ -4,17 +4,23 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
 #include "actor/StageObject.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageModelAssets.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
+#include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/text/JapaneseRubyGenerator.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -54,25 +60,163 @@ void StagePlacementPanel::Draw()
         return;
     }
 
-    if (mRequestOpenPickedActorPlacement) {
-        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-    }
+    DrawSelectedActorEditor();
+    mRequestOpenPickedActorPlacement = false;
+}
 
-    if (!ImGui::TreeNode("オブジェクト配置")) {
+void StagePlacementPanel::DrawObjectList()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
     }
 
     const std::vector<ActorGroup> groups = CollectActorGroups();
 
-    ImGui::Separator();
+    ImGui::SeparatorText("オブジェクト一覧");
+    ImGui::TextDisabled("一覧またはゲーム画面のモデルをクリックして選択します。");
 
+    bool hasAnyActor = false;
     for (const ActorGroup& group : groups) {
+        if (group.actors.empty()) {
+            continue;
+        }
+
+        hasAnyActor = true;
         DrawActorList(group);
     }
 
-    ImGui::TreePop();
+    if (!hasAnyActor) {
+        ImGui::TextDisabled("このステージには配置済みオブジェクトがありません。");
+    }
+}
 
-    mRequestOpenPickedActorPlacement = false;
+void StagePlacementPanel::DrawPlayerSpawn()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return;
+    }
+
+    DrawPlayerSpawnEditor();
+}
+
+void StagePlacementPanel::DrawPlayerSpawnEditor()
+{
+    ImGui::SeparatorText("プレイヤースポーン");
+
+    const std::vector<Player*>& players = mContext.game->GetPlayers();
+    if (players.empty()) {
+        ImGui::TextDisabled("現在のプレイヤーが存在しません。");
+        return;
+    }
+
+    mSelectedSpawnPlayerIndex = std::clamp(
+        mSelectedSpawnPlayerIndex,
+        0,
+        static_cast<int>(players.size()) - 1);
+
+    const std::string previewLabel =
+        "プレイヤー " + std::to_string(mSelectedSpawnPlayerIndex + 1);
+    if (players.size() > 1 &&
+        ImGui::BeginCombo("対象プレイヤー##spawnPlayer", previewLabel.c_str())) {
+        for (std::size_t i = 0; i < players.size(); ++i) {
+            const bool selected = static_cast<int>(i) == mSelectedSpawnPlayerIndex;
+            const std::string label = "プレイヤー " + std::to_string(i + 1);
+            if (ImGui::Selectable(label.c_str(), selected)) {
+                mSelectedSpawnPlayerIndex = static_cast<int>(i);
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    Player* player = players[static_cast<std::size_t>(mSelectedSpawnPlayerIndex)];
+    if (!player) {
+        ImGui::TextDisabled("対象プレイヤーを取得できません。");
+        return;
+    }
+
+    ImGui::Text(
+        "現在: 惑星 %d / 位置 (%.2f, %.2f, %.2f) / 向き %.1f°",
+        player->GetCurrentPlanetNum(),
+        player->GetPos().x,
+        player->GetPos().y,
+        player->GetPos().z,
+        glm::degrees(player->GetFacingYaw()));
+
+    if (ImGui::Button("現在の位置と向きをスポーン位置に設定")) {
+        mPlayerSpawnStatus = SavePlayerSpawnFromCurrentTransform(player)
+            ? "現在の位置と向きをステージへ保存しました"
+            : "スポーン位置の保存に失敗しました";
+    }
+
+    if (!mPlayerSpawnStatus.empty()) {
+        ImGui::SameLine();
+        ImGui::TextUnformatted(mPlayerSpawnStatus.c_str());
+    }
+
+    ImGui::TextDisabled(
+        "このボタンは現在のステージYAMLへ直接保存します。次回ステージ開始時から反映されます。");
+}
+
+bool StagePlacementPanel::SavePlayerSpawnFromCurrentTransform(Player* player)
+{
+    if (!player || !player->GetCurrentPlanet()) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config) ||
+        !config["players"] ||
+        !config["players"].IsSequence()) {
+        return false;
+    }
+
+    const int playerIndex = player->GetPlayerNum() - 1;
+    if (playerIndex < 0 ||
+        static_cast<std::size_t>(playerIndex) >= config["players"].size()) {
+        return false;
+    }
+
+    Planet* planet = player->GetCurrentPlanet();
+    const glm::vec3 localPos = player->GetPos() - planet->GetPos();
+
+    glm::vec3 radialDirection(1.0f, 0.0f, 0.0f);
+    const float radialDistance = glm::length(localPos);
+    if (radialDistance > 1e-6f) {
+        radialDirection = localPos / radialDistance;
+    }
+
+    const float theta = std::atan2(radialDirection.z, radialDirection.x);
+    const float phi = std::asin(std::clamp(radialDirection.y, -1.0f, 1.0f));
+    const float height = radialDistance - planet->GetRadius();
+    const float facingYaw = player->GetFacingYaw();
+
+    YAML::Node playerNode = config["players"][static_cast<std::size_t>(playerIndex)];
+    playerNode["currentPlanetNum"] = player->GetCurrentPlanetNum();
+    playerNode["theta"] = theta;
+    playerNode["phi"] = phi;
+    playerNode["height"] = height;
+    playerNode["pos"][0] = localPos.x;
+    playerNode["pos"][1] = localPos.y;
+    playerNode["pos"][2] = localPos.z;
+    playerNode["facingYaw"] = facingYaw;
+
+    glm::vec3 rotation = player->GetEditorRotation();
+    rotation.y = facingYaw;
+    playerNode["rotation"][0] = rotation.x;
+    playerNode["rotation"][1] = rotation.y;
+    playerNode["rotation"][2] = rotation.z;
+
+    glm::vec3 upVec = player->GetUpVec();
+    if (glm::length(upVec) > 1e-6f) {
+        upVec = glm::normalize(upVec);
+    } else {
+        upVec = radialDirection;
+    }
+    playerNode["upVec"][0] = upVec.x;
+    playerNode["upVec"][1] = upVec.y;
+    playerNode["upVec"][2] = upVec.z;
+
+    return StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
 void StagePlacementPanel::Save()
@@ -124,7 +268,7 @@ std::vector<StagePlacementPanel::ActorGroup> StagePlacementPanel::CollectActorGr
                 continue;
             }
 
-            group.actors.emplace_back(instance.actor);
+            group.actors.emplace_back(instance);
             break;
         }
     }
@@ -134,6 +278,10 @@ std::vector<StagePlacementPanel::ActorGroup> StagePlacementPanel::CollectActorGr
 
 void StagePlacementPanel::DrawActorList(const ActorGroup& group)
 {
+    if (group.actors.empty()) {
+        return;
+    }
+
     const std::string treeLabel = group.label + "##" + group.sequenceName;
 
     const auto& pickedActorRef = mSelectionController.GetPickedActorRef();
@@ -146,17 +294,72 @@ void StagePlacementPanel::DrawActorList(const ActorGroup& group)
         return;
     }
 
-    if (group.actors.empty()) {
-        ImGui::Text("なし");
-        ImGui::TreePop();
-        return;
-    }
-
     for (std::size_t i = 0; i < group.actors.size(); ++i) {
-        DrawActorPlacementEditor(group.actors[i], group.sequenceName, i);
+        const StageActorInstance& instance = group.actors[i];
+        if (!instance.actor) {
+            continue;
+        }
+
+        const bool selected = mSelectionController.IsSelected(instance.ref);
+        const std::string selectableId =
+            instance.ref.label + "##placementList_" +
+            StageActorQuery::MakeKey(instance.ref);
+
+        if (ImGui::Selectable(selectableId.c_str(), selected)) {
+            const ImGuiIO& io = ImGui::GetIO();
+            if (io.KeyCtrl || io.KeyShift) {
+                mSelectionController.ToggleSelection(instance.actor, instance.ref);
+            } else {
+                mSelectionController.SetSingleSelection(instance.actor, instance.ref);
+            }
+        }
     }
 
     ImGui::TreePop();
+}
+
+void StagePlacementPanel::DrawSelectedActorEditor()
+{
+    ImGui::SeparatorText("選択中のオブジェクト");
+
+    const int selectedCount = mSelectionController.GetSelectedActorCount();
+    if (selectedCount <= 0) {
+        ImGui::TextDisabled("編集するオブジェクトを選択してください。");
+        return;
+    }
+
+    if (selectedCount > 1) {
+        ImGui::Text("%d個のオブジェクトを選択中", selectedCount);
+        ImGui::TextDisabled("個別設定を編集するには1個だけ選択してください。");
+        return;
+    }
+
+    Actor* actor = mSelectionController.GetSingleSelectedActor();
+    if (!actor) {
+        ImGui::TextDisabled("選択したオブジェクトを現在のステージで見つけられません。");
+        return;
+    }
+
+    const std::optional<StageActorRef> actorRef =
+        StageActorQuery::FindTargetForActor(mContext.game->GetCurrentStage(), actor);
+    if (!actorRef) {
+        ImGui::TextDisabled("選択したオブジェクトの配置情報を取得できません。");
+        return;
+    }
+
+    ImGui::Text("種類: %s", StageActorQuery::GetTypeLabel(actorRef->type));
+    ImGui::Text("対象: %s", actorRef->label.c_str());
+    ImGui::SameLine();
+    if (ImGui::SmallButton("選択解除")) {
+        mSelectionController.Clear();
+        return;
+    }
+
+    ImGui::Separator();
+    DrawActorPlacementEditor(
+        actor,
+        actorRef->sequenceName,
+        static_cast<std::size_t>(std::max(0, actorRef->yamlIndex)));
 }
 
 void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex)
@@ -167,22 +370,10 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const int yamlIndex = actor->GetStageYamlIndex();
 
-    std::string itemLabel =
-        "index " + std::to_string(yamlIndex) + "##" + sequenceName + "_" + std::to_string(listIndex);
-
-    const auto& pickedActorRef = mSelectionController.GetPickedActorRef();
-
-    if (mRequestOpenPickedActorPlacement && pickedActorRef && pickedActorRef->sequenceName == sequenceName &&
-        pickedActorRef->yamlIndex == yamlIndex) {
-        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-    }
-
-    if (!ImGui::TreeNode(itemLabel.c_str())) {
-        return;
-    }
-
     if (StageObject* stageObject = dynamic_cast<StageObject*>(actor)) {
-        ImGui::Text("モデル: %s", stageObject->GetModelPath().c_str());
+        ImGui::SeparatorText("汎用モデル設定");
+        DrawStageObjectModelPicker(stageObject, sequenceName, listIndex);
+
         bool collisionEnabled = stageObject->GetCollisionEnabled();
         if (ImGui::Checkbox(
                 ("当たり判定##stageObjectCollision" + std::to_string(yamlIndex)).c_str(),
@@ -190,6 +381,215 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             stageObject->SetCollisionEnabled(collisionEnabled);
             RebuildPhysicsWorldIfNeeded(true);
         }
+    }
+
+    if (NPC* npc = dynamic_cast<NPC*>(actor)) {
+        ImGui::SeparatorText("NPC・会話設定");
+
+        DrawNPCModelPicker(npc, sequenceName, listIndex);
+
+        std::array<char, 128> nameBuffer = {};
+        std::snprintf(
+            nameBuffer.data(),
+            nameBuffer.size(),
+            "%s",
+            npc->GetName().c_str());
+        if (ImGui::InputText(
+                ("NPC名##placedNPCName" + std::to_string(yamlIndex)).c_str(),
+                nameBuffer.data(),
+                nameBuffer.size())) {
+            npc->SetName(nameBuffer.data());
+        }
+
+        float talkRadius = npc->GetRadius();
+        if (ImGui::DragFloat(
+                ("会話判定の半径##placedNPCRadius" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &talkRadius,
+                0.05f,
+                0.1f,
+                20.0f,
+                "%.2f")) {
+            npc->SetRadius(std::max(0.1f, talkRadius));
+        }
+        ImGui::TextDisabled("実際の会話可能距離は、この半径に0.5を加えた値です。");
+
+        const std::vector<std::string>& talkTexts = npc->GetTalkTexts();
+        const std::vector<StageActorInstance> talkFocusCandidates =
+            StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
+
+        ImGui::TextDisabled(
+            "ルビは全会話に自動生成されます。必要な箇所だけ読みを修正できます。");
+
+        for (std::size_t talkIndex = 0;
+             talkIndex < talkTexts.size();
+             ++talkIndex) {
+            std::array<char, 1024> talkTextBuffer = {};
+            std::snprintf(
+                talkTextBuffer.data(),
+                talkTextBuffer.size(),
+                "%s",
+                talkTexts[talkIndex].c_str());
+
+            const std::string talkLabel =
+                "会話 " + std::to_string(talkIndex + 1) +
+                "##placedNPCTalk" + std::to_string(yamlIndex) + "_" +
+                std::to_string(talkIndex);
+            if (ImGui::InputTextMultiline(
+                    talkLabel.c_str(),
+                    talkTextBuffer.data(),
+                    talkTextBuffer.size(),
+                    ImVec2(-1.0f, 70.0f))) {
+                npc->SetTalkText(talkIndex, talkTextBuffer.data());
+                std::vector<RubyTextSegment> generatedSegments;
+                std::string errorMessage;
+                if (JapaneseRubyGenerator::Generate(
+                        talkTextBuffer.data(),
+                        generatedSegments,
+                        errorMessage)) {
+                    npc->SetTalkRubySegments(talkIndex, std::move(generatedSegments));
+                    mRubyGenerationStatus = "本文に合わせてルビを自動更新しました。";
+                } else {
+                    mRubyGenerationStatus =
+                        errorMessage.empty() ? "ルビの生成に失敗しました。" : errorMessage;
+                }
+            }
+
+            const std::vector<RubyTextSegment>& rubySegments =
+                npc->GetTalkRubySegments(talkIndex);
+            if (npc->HasValidTalkRuby(talkIndex)) {
+                const std::string rubyTreeId =
+                    "ルビの読みを修正##placedNPCRubyEdit" +
+                    std::to_string(yamlIndex) + "_" + std::to_string(talkIndex);
+                if (ImGui::TreeNode(rubyTreeId.c_str())) {
+                    for (std::size_t segmentIndex = 0;
+                         segmentIndex < rubySegments.size();
+                         ++segmentIndex) {
+                        const RubyTextSegment& segment = rubySegments[segmentIndex];
+                        if (!segment.showsRuby) {
+                            continue;
+                        }
+
+                        ImGui::Text("「%s」", segment.text.c_str());
+                        ImGui::SameLine();
+
+                        std::array<char, 256> readingBuffer = {};
+                        std::snprintf(
+                            readingBuffer.data(),
+                            readingBuffer.size(),
+                            "%s",
+                            segment.reading.c_str());
+                        const std::string readingInputId =
+                            "##placedNPCRubyReading" + std::to_string(yamlIndex) +
+                            "_" + std::to_string(talkIndex) + "_" +
+                            std::to_string(segmentIndex);
+                        if (ImGui::InputText(
+                                readingInputId.c_str(),
+                                readingBuffer.data(),
+                                readingBuffer.size())) {
+                            npc->SetTalkRubyReading(
+                                talkIndex, segmentIndex, readingBuffer.data());
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
+
+            if (!mRubyGenerationStatus.empty()) {
+                ImGui::TextDisabled("%s", mRubyGenerationStatus.c_str());
+            }
+
+            const NPCTalkCameraFocusTarget* currentFocus =
+                npc->GetTalkCameraFocusTarget(talkIndex);
+            const bool hasCurrentFocus = currentFocus != nullptr;
+            const std::string currentFocusSequence =
+                currentFocus ? currentFocus->sequenceName : std::string();
+            const int currentFocusIndex =
+                currentFocus ? currentFocus->yamlIndex : -1;
+            std::string focusPreview = "フォーカスなし";
+            bool focusTargetFound = !currentFocus;
+
+            if (currentFocus) {
+                for (const StageActorInstance& candidate : talkFocusCandidates) {
+                    if (candidate.ref.sequenceName != currentFocus->sequenceName ||
+                        candidate.ref.yamlIndex != currentFocus->yamlIndex) {
+                        continue;
+                    }
+
+                    focusPreview =
+                        std::string(StageActorQuery::GetTypeLabel(candidate.ref.type)) +
+                        " / " + candidate.ref.label;
+                    if (const NPC* targetNPC = dynamic_cast<const NPC*>(candidate.actor);
+                        targetNPC && !targetNPC->GetName().empty()) {
+                        focusPreview += " (" + targetNPC->GetName() + ")";
+                    }
+                    focusTargetFound = true;
+                    break;
+                }
+            }
+
+            if (!focusTargetFound && currentFocus) {
+                focusPreview =
+                    "対象が見つかりません (" + currentFocus->sequenceName + ":" +
+                    std::to_string(currentFocus->yamlIndex) + ")";
+            }
+
+            const std::string focusComboId =
+                "カメラフォーカス##placedNPCTalkFocus" +
+                std::to_string(yamlIndex) + "_" + std::to_string(talkIndex);
+            if (ImGui::BeginCombo(focusComboId.c_str(), focusPreview.c_str())) {
+                const bool noFocusSelected = !hasCurrentFocus;
+                if (ImGui::Selectable("フォーカスなし", noFocusSelected)) {
+                    npc->ClearTalkCameraFocusTarget(talkIndex);
+                }
+
+                ImGui::Separator();
+                for (const StageActorInstance& candidate : talkFocusCandidates) {
+                    std::string candidateLabel =
+                        std::string(StageActorQuery::GetTypeLabel(candidate.ref.type)) +
+                        " / " + candidate.ref.label;
+                    if (const NPC* targetNPC = dynamic_cast<const NPC*>(candidate.actor);
+                        targetNPC && !targetNPC->GetName().empty()) {
+                        candidateLabel += " (" + targetNPC->GetName() + ")";
+                    }
+                    candidateLabel +=
+                        "##talkFocusCandidate" + candidate.ref.sequenceName +
+                        std::to_string(candidate.ref.yamlIndex) + "_" +
+                        std::to_string(talkIndex);
+
+                    const bool selected =
+                        hasCurrentFocus &&
+                        currentFocusSequence == candidate.ref.sequenceName &&
+                        currentFocusIndex == candidate.ref.yamlIndex;
+                    if (ImGui::Selectable(candidateLabel.c_str(), selected)) {
+                        npc->SetTalkCameraFocusTarget(
+                            talkIndex,
+                            candidate.ref.sequenceName,
+                            candidate.ref.yamlIndex);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::TextDisabled(
+                "設定した会話が表示された間だけ、選択対象へカメラが滑らかに移動します。");
+
+            if (talkTexts.size() > 1 &&
+                ImGui::Button(
+                    ("この会話を削除##placedNPCTalkDelete" +
+                     std::to_string(yamlIndex) + "_" +
+                     std::to_string(talkIndex))
+                        .c_str())) {
+                npc->RemoveTalkText(talkIndex);
+                break;
+            }
+        }
+
+        if (ImGui::Button(
+                ("会話を追加##placedNPC" + std::to_string(yamlIndex)).c_str())) {
+            npc->AddTalkTexts("");
+        }
+        ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
     }
 
     float theta = actor->GetTheta();
@@ -361,7 +761,101 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const glm::vec3 pos = actor->GetPos();
     ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
+}
 
+void StagePlacementPanel::DrawStageObjectModelPicker(
+    StageObject* stageObject,
+    const std::string& sequenceName,
+    std::size_t listIndex)
+{
+    if (!stageObject || !mContext.game || !mContext.game->GetMeshLoadSystem()) {
+        return;
+    }
+
+    ImGui::TextWrapped("モデル: %s", stageObject->GetModelPath().c_str());
+
+    const std::string pickerId =
+        "##placedStageObjectModelPicker" + sequenceName + std::to_string(listIndex);
+    if (!ImGui::TreeNode(("モデルを変更" + pickerId).c_str())) {
+        return;
+    }
+
+    const std::string filterId =
+        "##placedStageObjectModelFilter" + sequenceName + std::to_string(listIndex);
+    ImGui::InputTextWithHint(
+        filterId.c_str(),
+        "モデル名で検索",
+        mStageObjectModelAssetFilter.data(),
+        mStageObjectModelAssetFilter.size());
+
+    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::string filter = ToLower(mStageObjectModelAssetFilter.data());
+    const std::string listId =
+        "PlacedStageObjectModelAssetPicker##" + sequenceName + std::to_string(listIndex);
+
+    ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
+    for (const std::string& modelPath : modelAssets) {
+        if (!filter.empty() && ToLower(modelPath).find(filter) == std::string::npos) {
+            continue;
+        }
+
+        const bool selected = modelPath == stageObject->GetModelPath();
+        if (ImGui::Selectable(modelPath.c_str(), selected)) {
+            stageObject->SetModelPath(modelPath);
+            mContext.game->GetMeshLoadSystem()->SetActorMesh(stageObject);
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+    }
+    ImGui::EndChild();
+    ImGui::TextDisabled(
+        "見た目と当たり判定へ即時反映されます。変更後は「保存する」を押してください。");
+    ImGui::TreePop();
+}
+
+void StagePlacementPanel::DrawNPCModelPicker(
+    NPC* npc,
+    const std::string& sequenceName,
+    std::size_t listIndex)
+{
+    if (!npc || !mContext.game || !mContext.game->GetMeshLoadSystem()) {
+        return;
+    }
+
+    ImGui::TextWrapped("モデル: %s", npc->GetModelPath().c_str());
+
+    const std::string pickerId =
+        "##placedNPCModelPicker" + sequenceName + std::to_string(listIndex);
+    if (!ImGui::TreeNode(("モデルを変更" + pickerId).c_str())) {
+        return;
+    }
+
+    const std::string filterId =
+        "##placedNPCModelFilter" + sequenceName + std::to_string(listIndex);
+    ImGui::InputTextWithHint(
+        filterId.c_str(),
+        "モデル名で検索",
+        mNPCModelAssetFilter.data(),
+        mNPCModelAssetFilter.size());
+
+    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::string filter = ToLower(mNPCModelAssetFilter.data());
+    const std::string listId =
+        "PlacedNPCModelAssetPicker##" + sequenceName + std::to_string(listIndex);
+
+    ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
+    for (const std::string& modelPath : modelAssets) {
+        if (!filter.empty() && ToLower(modelPath).find(filter) == std::string::npos) {
+            continue;
+        }
+
+        const bool selected = modelPath == npc->GetModelPath();
+        if (ImGui::Selectable(modelPath.c_str(), selected)) {
+            npc->SetModelPath(modelPath);
+            mContext.game->GetMeshLoadSystem()->SetActorMesh(npc);
+        }
+    }
+    ImGui::EndChild();
+    ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
     ImGui::TreePop();
 }
 
@@ -490,8 +984,8 @@ void StagePlacementPanel::RefreshTextureAssets()
 
 void StagePlacementPanel::SaveActorsYaml(YAML::Node& config, const ActorGroup& group)
 {
-    for (Actor* actor : group.actors) {
-        SaveActorCommonYaml(config, group.sequenceName, actor);
+    for (const StageActorInstance& instance : group.actors) {
+        SaveActorCommonYaml(config, group.sequenceName, instance.actor);
     }
 }
 
@@ -557,6 +1051,72 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex]["modelPath"] = stageObject->GetModelPath();
         config[sequenceName][yamlIndex]["collision"] =
             stageObject->GetCollisionEnabled();
+    }
+
+    if (const NPC* npc = dynamic_cast<const NPC*>(actor)) {
+        config[sequenceName][yamlIndex]["modelPath"] = npc->GetModelPath();
+        config[sequenceName][yamlIndex]["name"] = npc->GetName();
+        config[sequenceName][yamlIndex]["radius"] = npc->GetRadius();
+        config[sequenceName][yamlIndex]["talkTexts"] =
+            YAML::Node(YAML::NodeType::Sequence);
+        for (const std::string& talkText : npc->GetTalkTexts()) {
+            config[sequenceName][yamlIndex]["talkTexts"].push_back(talkText);
+        }
+
+        YAML::Node talkCameraFocus(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            const NPCTalkCameraFocusTarget* focusTarget =
+                npc->GetTalkCameraFocusTarget(talkIndex);
+            if (!focusTarget || !focusTarget->IsValid()) {
+                continue;
+            }
+
+            YAML::Node focusNode(YAML::NodeType::Map);
+            focusNode["talkIndex"] = static_cast<int>(talkIndex);
+            focusNode["sequence"] = focusTarget->sequenceName;
+            focusNode["index"] = focusTarget->yamlIndex;
+            talkCameraFocus.push_back(focusNode);
+        }
+
+        if (talkCameraFocus.size() > 0) {
+            config[sequenceName][yamlIndex]["talkCameraFocus"] = talkCameraFocus;
+        } else {
+            config[sequenceName][yamlIndex].remove("talkCameraFocus");
+        }
+
+        YAML::Node talkRubies(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            if (!npc->HasValidTalkRuby(talkIndex)) {
+                continue;
+            }
+
+            YAML::Node rubyNode(YAML::NodeType::Map);
+            rubyNode["talkIndex"] = static_cast<int>(talkIndex);
+            rubyNode["segments"] = YAML::Node(YAML::NodeType::Sequence);
+
+            for (const RubyTextSegment& segment :
+                 npc->GetTalkRubySegments(talkIndex)) {
+                YAML::Node segmentNode(YAML::NodeType::Map);
+                segmentNode["text"] = segment.text;
+                segmentNode["ruby"] = segment.showsRuby;
+                if (segment.showsRuby) {
+                    segmentNode["reading"] = segment.reading;
+                }
+                rubyNode["segments"].push_back(segmentNode);
+            }
+
+            talkRubies.push_back(rubyNode);
+        }
+
+        if (talkRubies.size() > 0) {
+            config[sequenceName][yamlIndex]["talkRubies"] = talkRubies;
+        } else {
+            config[sequenceName][yamlIndex].remove("talkRubies");
+        }
     }
 
     if (dynamic_cast<const Platform*>(actor) ||

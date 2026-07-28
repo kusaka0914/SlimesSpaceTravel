@@ -7,6 +7,7 @@
 #include "system/ActorLoadSystem.h"
 #include "system/PhysicsSystem.h"
 
+#include <algorithm>
 #include <iostream>
 
 StageActorCreateService::StageActorCreateService(DebugEditorContext& context)
@@ -33,6 +34,13 @@ bool StageActorCreateService::IsValidPlanetIndex(int planetIndex, const char* la
     }
 
     return true;
+}
+
+void StageActorCreateService::RefreshPhysicsWorld() const
+{
+    if (mContext.game && mContext.game->GetPhysicsSystem()) {
+        mContext.game->GetPhysicsSystem()->Initialize();
+    }
 }
 
 void StageActorCreateService::EnsureSequence(YAML::Node& config, const std::string& sequenceName) const
@@ -70,6 +78,7 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
     }
 
     mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(platformNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -97,6 +106,7 @@ bool StageActorCreateService::AddPlanet(const std::string& modelPath)
     }
 
     mContext.game->GetActorLoadSystem()->CreatePlanetFromStageNode(planetNode);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -128,10 +138,17 @@ bool StageActorCreateService::AddEnemy(const std::string& type, int currentPlane
     }
 
     mContext.game->GetActorLoadSystem()->CreateEnemyFromStageNode(enemyNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
-bool StageActorCreateService::AddNPC(const std::string& type, int currentPlanetNum)
+bool StageActorCreateService::AddNPC(
+    const std::string& modelPath,
+    int currentPlanetNum,
+    const std::string& name,
+    const std::vector<std::string>& talkTexts,
+    float radius,
+    float scale)
 {
     if (!CanCreateActor()) {
         return false;
@@ -150,7 +167,14 @@ bool StageActorCreateService::AddNPC(const std::string& type, int currentPlanetN
     EnsureSequence(config, "NPCs");
 
     const int index = static_cast<int>(config["NPCs"].size());
-    YAML::Node npcNode = CreateNPCNode(type, currentPlanetNum);
+    YAML::Node npcNode =
+        CreateNPCNode(
+            modelPath,
+            currentPlanetNum,
+            name,
+            talkTexts,
+            radius,
+            scale);
 
     config["NPCs"].push_back(npcNode);
 
@@ -159,6 +183,7 @@ bool StageActorCreateService::AddNPC(const std::string& type, int currentPlanetN
     }
 
     mContext.game->GetActorLoadSystem()->CreateNPCFromStageNode(npcNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -190,6 +215,7 @@ bool StageActorCreateService::AddCrystal(const std::string& type, int currentPla
     }
 
     mContext.game->GetActorLoadSystem()->CreateCrystalFromStageNode(crystalNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -221,6 +247,7 @@ bool StageActorCreateService::AddBoatParts(const std::string& type, int currentP
     }
 
     mContext.game->GetActorLoadSystem()->CreateBoatPartsFromStageNode(partNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -256,6 +283,7 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
     }
 
     mContext.game->GetActorLoadSystem()->CreateBoatFromStageNode(boatNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -287,6 +315,7 @@ bool StageActorCreateService::AddStar(int currentPlanetNum)
     }
 
     mContext.game->GetActorLoadSystem()->CreateStarFromStageNode(starNode, index);
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -320,9 +349,7 @@ bool StageActorCreateService::AddStageObject(
     }
 
     mContext.game->GetActorLoadSystem()->CreateStageObjectFromStageNode(stageObjectNode, index);
-    if (mContext.game->GetPhysicsSystem()) {
-        mContext.game->GetPhysicsSystem()->Initialize();
-    }
+    RefreshPhysicsWorld();
     return true;
 }
 
@@ -399,19 +426,34 @@ YAML::Node StageActorCreateService::CreateEnemyNode(const std::string& type, int
     return node;
 }
 
-YAML::Node StageActorCreateService::CreateNPCNode(const std::string& type, int currentPlanetNum) const
+YAML::Node StageActorCreateService::CreateNPCNode(
+    const std::string& modelPath,
+    int currentPlanetNum,
+    const std::string& name,
+    const std::vector<std::string>& talkTexts,
+    float radius,
+    float scale) const
 {
     YAML::Node node;
 
-    node["type"] = type;
+    node["modelPath"] = modelPath;
     node["currentPlanetNum"] = currentPlanetNum;
     node["theta"] = 0.0f;
     node["phi"] = 0.0f;
     node["height"] = 1.0f;
     node["facingYaw"] = 0.0f;
-    node["radius"] = 0.75f;
-    node["name"] = "新しいNPC";
-    node["talkTexts"].push_back("こんにちは");
+    node["radius"] = std::max(0.1f, radius);
+    const float safeScale = std::max(0.01f, scale);
+    node["scale"][0] = safeScale;
+    node["scale"][1] = safeScale;
+    node["scale"][2] = safeScale;
+    node["name"] = name;
+    for (const std::string& talkText : talkTexts) {
+        node["talkTexts"].push_back(talkText);
+    }
+    if (talkTexts.empty()) {
+        node["talkTexts"].push_back("");
+    }
 
     return node;
 }

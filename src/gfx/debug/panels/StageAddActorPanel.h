@@ -6,6 +6,7 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <string>
+#include <vector>
 
 class StageAddActorPanel : public DebugPanel {
 public:
@@ -32,7 +33,13 @@ private:
     int mSelectedCrystalTypeIndex = 0;
 
     int mSelectedNPCPlanetIndex = -1;
-    int mSelectedNPCTypeIndex = 0;
+    std::string mSelectedNPCModel;
+    std::array<char, 128> mNPCModelSearch = {};
+    std::array<char, 128> mNPCName = {};
+    std::vector<std::array<char, 1024>> mNPCTalkTexts;
+    float mNPCTalkRadius = 0.75f;
+    float mNPCScale = 1.0f;
+    std::string mNPCStatus;
 
     int mSelectedBoatPartsPlanetIndex = -1;
     int mSelectedBoatPartsTypeIndex = 0;

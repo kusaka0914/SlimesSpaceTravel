@@ -90,6 +90,24 @@ void CameraDebugPanel::Draw()
     playerCameraChanged |= ImGui::DragFloat(
         "旋回感度##PlayerCamera", &playerCameraSettings.yawSensitivity, 0.05f, 0.0f, 20.0f);
     playerCameraChanged |= ImGui::DragFloat(
+        "上下感度（度/秒）##PlayerCamera",
+        &playerCameraSettings.pitchSensitivityDegrees,
+        1.0f,
+        0.0f,
+        360.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "上下角度の最小値##PlayerCamera",
+        &playerCameraSettings.minPitchDegrees,
+        0.5f,
+        -89.0f,
+        89.0f);
+    playerCameraChanged |= ImGui::DragFloat(
+        "上下角度の最大値##PlayerCamera",
+        &playerCameraSettings.maxPitchDegrees,
+        0.5f,
+        -89.0f,
+        0.0f);
+    playerCameraChanged |= ImGui::DragFloat(
         "上方向追従速度##PlayerCamera", &playerCameraSettings.upSmoothingSpeed, 0.1f, 0.0f, 50.0f);
     playerCameraChanged |= ImGui::DragFloat(
         "位置追従速度##PlayerCamera", &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);

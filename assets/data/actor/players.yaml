@@ -4,6 +4,9 @@ players:
     attack: 5
     attackSpeed: 3
     moveSpeed: 4
+    jumpHeight: 1.8367347
+    jumpAscentDuration: 0.4
+    jumpFallDuration: 0.85
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.3
     dodgeDistance: 3

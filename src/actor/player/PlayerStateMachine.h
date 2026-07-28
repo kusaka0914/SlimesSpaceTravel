@@ -57,7 +57,7 @@ private:
         PlayerInput& input,
         PlayerMovement& movement,
         PlayerCombat& combat);
-    void ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime);
+    void ApplyIdleGravity(Player& player, PlayerMovement& movement, PlayerCombat& combat, float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          float deltaTime);
     bool TryRecover(Player& player, PlayerInput& input, PlayerJewelGauge& jewelGauge, PlayerStatus& status);

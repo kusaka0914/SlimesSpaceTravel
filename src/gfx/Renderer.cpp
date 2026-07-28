@@ -122,3 +122,22 @@ GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& 
 
     return tex;
 }
+
+bool Renderer::MeasureText(const std::string& text, float textScale, int& outWidth, int& outHeight) const
+{
+    outWidth = 0;
+    outHeight = 0;
+    if (!mFont || text.empty()) {
+        return false;
+    }
+
+    int unscaledWidth = 0;
+    int unscaledHeight = 0;
+    if (TTF_SizeUTF8(mFont, text.c_str(), &unscaledWidth, &unscaledHeight) != 0) {
+        return false;
+    }
+
+    outWidth = static_cast<int>(unscaledWidth * textScale);
+    outHeight = static_cast<int>(unscaledHeight * textScale);
+    return outWidth > 0 && outHeight > 0;
+}

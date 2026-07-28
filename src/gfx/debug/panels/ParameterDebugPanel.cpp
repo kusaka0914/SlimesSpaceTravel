@@ -188,6 +188,25 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetMoveSpeed(moveSpeed);
         }
 
+        ImGui::SeparatorText("ジャンプ");
+
+        float jumpHeight = player->GetJumpHeight();
+        if (ImGui::DragFloat("ジャンプ高さ", &jumpHeight, 0.01f, 0.1f, 10.0f, "%.2f")) {
+            player->SetJumpHeight(jumpHeight);
+        }
+
+        float jumpAscentDuration = player->GetJumpAscentDuration();
+        if (ImGui::DragFloat("上昇時間（秒）", &jumpAscentDuration, 0.01f, 0.05f, 3.0f, "%.2f")) {
+            player->SetJumpAscentDuration(jumpAscentDuration);
+        }
+
+        float jumpFallDuration = player->GetJumpFallDuration();
+        if (ImGui::DragFloat("落下時間（秒）", &jumpFallDuration, 0.01f, 0.05f, 5.0f, "%.2f")) {
+            player->SetJumpFallDuration(jumpFallDuration);
+        }
+
+        ImGui::TextDisabled("上昇時間を短くすると素早く上がり、落下時間を長くするとゆっくり落ちます。");
+
         float dodgeDuration = player->GetDodgeDuration();
         if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
             dodgeDuration = std::round(dodgeDuration * 100.0f) / 100.0f;
@@ -664,6 +683,9 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "attack", player->GetAttack());
     SetYamlSequenceValue(config, sequenceName, index, "attackSpeed", player->GetAttackSpeed());
     SetYamlSequenceValue(config, sequenceName, index, "moveSpeed", player->GetMoveSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "jumpHeight", player->GetJumpHeight());
+    SetYamlSequenceValue(config, sequenceName, index, "jumpAscentDuration", player->GetJumpAscentDuration());
+    SetYamlSequenceValue(config, sequenceName, index, "jumpFallDuration", player->GetJumpFallDuration());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDuration", player->GetDodgeDuration());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeCooldownTime", player->GetDodgeCooldownTime());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDistance", player->GetDodgeDistance());

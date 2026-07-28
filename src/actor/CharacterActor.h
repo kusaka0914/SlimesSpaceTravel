@@ -34,6 +34,7 @@ public:
 
 protected:
     void ApplyGravity(float deltaTime);
+    void ApplyGravity(float deltaTime, float gravityAcceleration);
 
     bool CheckDotAngleSteep(
         const glm::vec3& hitNormal,

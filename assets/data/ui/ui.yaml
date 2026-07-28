@@ -8,11 +8,15 @@ title:
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
     text: [Xを押してください]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: startTextForKeyBoard
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
     text: [Kを押してください]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
 opening:
   - id: bgTexture
     type: texture
@@ -23,68 +27,94 @@ opening:
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: ["ある草原のど真ん中\nスライムはママと仲良く暮らしていました。", "ママはいつもお仕事で大忙し\nそれでもスライムを愛しているため一生懸命働いていました。", "ある日、スライムはいつものように\nママのお見送りをしていました。"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: talkWithMotherText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: ["スライム: ママ、いってらっしゃい！", "ママ: いってきます。\nスライム、いい子にしてるんだよ。", "ママ: !?", "ママ: ううっ...", ママが突然倒れこんでしまいました。, "スライム: どうしたの！？ママ！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: talkWithDoctorText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: [スライムは急いでドクターを呼びました。, "ドクター: これは、私にはどうしても治せない\nとてもとても複雑な病気だよ。", "ドクター: きっともう目覚めることはないだろう。", "スライム: ほ、ほんとなの、？", スライムは泣き出してしまいました。, "スライム: どうにか治す方法はないの？", "ドクター: ごめんな、普通の方法じゃ治らないんだ。\nただ...", "スライム: ただ...？", "ドクター: 一つだけ方法はあるんだが、\nこれはとても難しい方法なんだ。", "ドクター: この世界の宇宙になんでも願いを叶えてくれる\n星が存在するという話は聞いたことあるかな？", "スライム: 聞いたことないや、、", "ドクター: そうか、もしその星を全て集めて、\nお母さんの病気が治ることを願うことができれば...", "スライム: じゃあ僕が集めてくるよ！", "ドクター: ダメだダメだ！\nおまえさん、宇宙がどれだけ危険なのか分かっているのか！", "スライム: じゃあドクターはママを助けてくれるの？", "ドクター: ...", "スライム: ママを助けられるのは僕しかいない！", "そういうとスライムはすぐに家を飛び出し、\nロケットに乗り込んで宇宙へと旅立ちました。"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: skipTextForKeyBoard
     type: text
     posRatio: [0.7872, 0.0102]
     scaleRatio: [0.0003, 1.0]
     text: ["スキップする: Enter"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: skipTextForGameController
     type: text
     posRatio: [0.8312, 0.0102]
     scaleRatio: [0.0003, 1.0]
     text: ["スキップする: +"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
 gameOver:
   - id: gameOverText
     type: text
     posRatio: [0.5, 0.444]
     scaleRatio: [0.000625, 1.0]
     text: [ゲームオーバー！]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: restartTextForGameController
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
     text: ["直前からリスタート: X"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: restartTextForKeyBoard
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
     text: ["直前からリスタート: K"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
 default:
   - id: operationSupportTextForGameController
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
+    text: [+:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationSupportTextForKeyBoard
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
+    text: [ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationSupportAssistTextForGameController
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 R:回復]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationSupportAssistTextForKeyBoard
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復]
+    text: [ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationSupportHiddenText
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text: [+:操作ガイド表示]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: hpTexture
     type: texture
     posRatio: [0.01875, 0.01875]
@@ -98,67 +128,93 @@ default:
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: ["はなす: X"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: talkableTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: ["はなす: K"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: remainPartsText
     type: text
     posRatio: [0.2199, 0.015]
     scaleRatio: [0.0003125, 1.0]
     text: ["のこりのパーツ数: "]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
 state:
   - id: battleTutorialTextForGameController
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: ["この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！", 戦闘の基本としては敵に近づいてYまたはXで攻撃します！, "Yは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！", "Xは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！", "まずはY→Y→YまたはY→Y→Xのコンボを使って、\n敵に3回攻撃してみましょう！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: battleTutorialTextForKeyBoard
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: ["この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！", 戦闘の基本としては敵に近づいてJまたはKで攻撃します！, "Jは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！", "Kは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！", "まずはJ→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃してみましょう！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: breakTutorialText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: ["3回攻撃できましたね！\n敵の頭上にあったガードがなくなったことに気づきましたか？", "というのも、敵に3回攻撃を当てると\nガードを1個破壊することができるのです！", "全てのガードを破壊することで\n敵を空中に打ち上げることができます！", 空中の敵を攻撃する時は空中乱舞か空中溜め攻撃を使います！, 空中乱舞はジャンプ中に弱攻撃を連打できるというものです！, "空中溜め攻撃は大きなクリスタルを壊すときに使った技です！\n強力ですが、攻撃後に少しの間動けなくなります！", "動けない時に弱攻撃ボタンを連打することで\n早く動けるようになるため、忘れずに連打しましょう！", "非常に強い技なので、ガードを全破壊して空中乱舞と\n空中溜め攻撃でサクサク敵を倒していきましょう！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: jewelTutorialTextForGameController
     type: text
     posRatio: [0.065, 0.74]
     scaleRatio: [0.000333333, 1.0]
     text: ["ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？", "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。", "まずRを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。", "またLを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。", "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！", "そしてLを押しながらXでジュエルを2個消費して、\n溜め状態になります！", 溜め状態中はLもXも離したままで大丈夫ですよ！, "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！", "溜まったらXを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！", "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！", "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！", "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: jewelTutorialTextForKeyBoard
     type: text
     posRatio: [0.065, 0.74]
     scaleRatio: [0.000333333, 1.0]
     text: ["ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？", "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。", "まずMを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。", "またNを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。", "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！", "そしてNを押しながらXでジュエルを2個消費して、\n溜め状態になります！", 溜め状態中はNもKも離したままで大丈夫ですよ！, "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！", "溜まったらKを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！", "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！", "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！", "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: justDodgeTutorialText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     text: [さあ、ここが最後の惑星です！, この惑星にはとても大きなボスがいます。, "ボスは体力が多いため、倒すのに苦労すると思います！\nということで新技を伝授します！", "敵が攻撃した瞬間に、敵に向かって回避をすることで\nジャスト回避をすることができます！", "ジャスト回避が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！", "回復したいけどジュエルが足りない、\nそんな窮地に立たされた時に狙ってみてください！", さあ、ボスを倒しに行きましょう！]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: stageClearText
     type: text
     posRatio: [0.5, 0.333]
     scaleRatio: [0.000625, 1.0]
     text: [Thank You For Playing！]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: recommendReduceTiredTextForGameController
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: [Y連打で疲労回復！]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: recommendReduceTiredTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
     text: [J連打で疲労回復！]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: loadingText
     type: text
     posRatio: [0.01875, 0.9222]
     scaleRatio: [0.0003125, 1.0]
     text: [Loading...]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: loadingTexture
     type: texture
     posRatio: [0.01875, 0.8555]
@@ -171,6 +227,8 @@ state:
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
+    rubyScaleRatio: 0.36
+    rubyGapRatio: -0.46
 pauseMenu:
   - id: overlayBg
     type: texture
@@ -185,38 +243,54 @@ pauseMenu:
     posRatio: [0.5, 0.275]
     scaleRatio: [0.0003801, 1.0]
     text: [メニュー]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: resumeText
     type: text
     posRatio: [0.5, 0.37]
     scaleRatio: [0.0003072, 1.0]
     text: [ゲームに戻る]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: controlStyleText
     type: text
     posRatio: [0.5, 0.44]
     scaleRatio: [0.0003072, 1.0]
     text: ["操作モード: "]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: returnBaseText
     type: text
     posRatio: [0.5, 0.51]
     scaleRatio: [0.0003072, 1.0]
     text: [拠点に戻る]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: feedbackText
     type: text
     posRatio: [0.5, 0.58]
     scaleRatio: [0.0003072, 1.0]
     text: [感想を書く]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: quitText
     type: text
     posRatio: [0.5, 0.65]
     scaleRatio: [0.0003072, 1.0]
     text: [ゲーム終了]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationTextForKeyBoard
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text: [↑↓:選択 Enter:決定 ESC:閉じる]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
   - id: operationTextForGameController
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text: [↑↓:選択 A:決定 -:閉じる]
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0

@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include "system/UILoadSystem.h"
+#include "text/RubyText.h"
 #include <GL/glew.h>
 #include <SDL_ttf.h>
 #include <glm/glm.hpp>
@@ -56,7 +57,8 @@ public:
                             float gap, int count, float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
-    void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex);
+    void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex,
+                    const std::vector<RubyTextSegment>* rubySegments = nullptr);
     void DrawTalkUI(const UILoadSystem::TextInfo* textInfo);
 
     void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color);
@@ -83,6 +85,9 @@ private:
     bool SplitText(const std::string& message, std::string& message1, std::string& message2) const;
     void DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase, float yOffset,
                       glm::vec4 color);
+    void DrawRubyText(float x, float y, float scale, float rubyScaleRatio,
+                      float rubyGapRatio,
+                      const std::vector<RubyTextSegment>& segments, glm::vec4 color);
 
 private:
     std::unique_ptr<UIShader> mUIShaderUnique;

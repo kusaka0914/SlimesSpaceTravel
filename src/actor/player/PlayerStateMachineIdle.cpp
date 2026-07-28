@@ -29,7 +29,7 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    ApplyIdleGravity(player, combat, deltaTime);
+    ApplyIdleGravity(player, movement, combat, deltaTime);
 
     if (TryStartJumping(player, input, movement, combat, deltaTime)) {
         return;
@@ -142,10 +142,14 @@ bool PlayerStateMachine::TryStartCharging(
 }
 
 
-void PlayerStateMachine::ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime)
+void PlayerStateMachine::ApplyIdleGravity(
+    Player& player,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    float deltaTime)
 {
     if (!combat.IsAirAttackFloating()) {
-        player.ApplyGravityToSelf(deltaTime);
+        movement.ApplyJumpGravity(player, deltaTime);
     }
 }
 

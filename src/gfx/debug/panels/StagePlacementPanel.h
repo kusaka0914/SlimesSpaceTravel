@@ -16,6 +16,8 @@ public:
     StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController);
 
     void Draw() override;
+    void DrawObjectList();
+    void DrawPlayerSpawn();
     void Save();
 
     void RequestOpenPickedActorPlacement();
@@ -24,13 +26,19 @@ private:
     struct ActorGroup {
         std::string label;
         std::string sequenceName;
-        std::vector<Actor*> actors;
+        std::vector<StageActorInstance> actors;
     };
 
     std::vector<ActorGroup> CollectActorGroups() const;
 
+    void DrawPlayerSpawnEditor();
+    bool SavePlayerSpawnFromCurrentTransform(class Player* player);
     void DrawActorList(const ActorGroup& group);
+    void DrawSelectedActorEditor();
     void DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
+    void DrawStageObjectModelPicker(class StageObject* stageObject, const std::string& sequenceName,
+                                    std::size_t listIndex);
+    void DrawNPCModelPicker(class NPC* npc, const std::string& sequenceName, std::size_t listIndex);
     void DrawTextureOverrideEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
     void RefreshTextureAssets();
 
@@ -45,8 +53,13 @@ private:
 private:
     StageSelectionController& mSelectionController;
     bool mRequestOpenPickedActorPlacement = false;
+    int mSelectedSpawnPlayerIndex = 0;
+    std::string mPlayerSpawnStatus;
     std::array<char, 128> mTextureAssetFilter = {};
+    std::array<char, 128> mStageObjectModelAssetFilter = {};
+    std::array<char, 128> mNPCModelAssetFilter = {};
     std::vector<std::string> mTextureAssets;
     std::string mTextureAssetStatus;
+    std::string mRubyGenerationStatus;
     bool mTextureAssetsScanned = false;
 };

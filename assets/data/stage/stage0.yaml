@@ -1,13 +1,13 @@
 planets:
   - center: [0, 0, 0]
-    scale: [20, 3, 20]
+    scale: [30, 3, 30]
     color: [1.0, 1.0, 1.0, 1.0]
     shape: Ellipse
     model: planet_3.obj
-    textureOverride: textures/selectFieldTex.png
+    textureOverride: textures/planet.png
     textureTiling:
-      - 20
-      - 20
+      - 30
+      - 3
 boats:
   - currentPlanetNum: 0
     theta: -1.570796
@@ -17,8 +17,8 @@ boats:
     facingYaw: -1.6
     pos:
       - 0
-      - 17.25
-      - -16.39
+      - 24.5
+      - -23.27
     rotation:
       - 0
       - -1.6
@@ -29,8 +29,8 @@ boats:
       - 0.8
     upVec:
       - 0
-      - 0.724947
-      - -0.6888047
+      - 0.7250733
+      - -0.68867165
   - startPlanet: 0
     destPlanet: 0
     destStage: 0
@@ -39,9 +39,9 @@ boats:
     height: 1
     facingYaw: -1.6057029
     pos:
-      - 21
-      - 0
-      - 0
+      - -13.21
+      - 8.45
+      - -0.94
     rotation:
       - -0.0052359877
       - -1.6057029
@@ -51,14 +51,50 @@ boats:
       - 0.8
       - 0.8
     upVec:
-      - 0.9709957
-      - -0.2390469
-      - -0.0048859706
+      - -0.07845911
+      - 0.99691737
+      - 0
+  - startPlanet: 0
+    destPlanet: 0
+    destStage: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.6057029
+    pos:
+      - 14.09
+      - 8.45
+      - -3.51
+    rotation:
+      - -0.0052359877
+      - -1.6057029
+      - 0.1256637
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.07671904
+      - 0.99705124
+      - -0.0017401912
 players:
   - currentPlanetNum: 0
-    theta: 1.570796
-    phi: 0.558599
-    height: -6.783
+    theta: 1.570679
+    phi: 0.15509969
+    height: -13.777088
+    pos:
+      - 0.0018813743
+      - 2.5060925
+      - 16.028173
+    facingYaw: 0.000120162964
+    rotation:
+      - 0
+      - 0.000120162964
+      - 0
+    upVec:
+      - 0.0005695741
+      - 0.9978954
+      - 0.06484274
   - currentPlanetNum: 0
     playerNum: 2
     theta: 1.570796
@@ -71,11 +107,13 @@ NPCs:
     height: 3.238
     type: spaceSlime
     name: RocketGuideNPC
-    talkTexts: [こちら惑星マルッコイ行きロケット〜まもなく発射します〜。\nお乗りの方はお急ぎください〜。]
+    talkTexts:
+      - 見知らぬスライムさんだ！やっほ～！\nここはロケット発着所だよ～！
+      - ロケットの案内はあの子に聞いてみて～！
     pos:
-      - -0.32
-      - 2.96
-      - -2.59
+      - -0.05
+      - 2.64
+      - 13.82
     facingYaw: 0
     rotation:
       - 0
@@ -86,20 +124,28 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0054500476
-      - 0.9997942
-      - -0.01954702
+      - -0.00046408235
+      - 0.99861556
+      - 0.052600224
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 1
+        sequence: NPCs
+        index: 1
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
     height: -6.394
     type: spaceSlime
     name: BaseGuideNPC
-    talkTexts: [ここはロケット発着所！\n他の惑星に行きたいならこの上のロケット乗り場からどうぞ！]
+    talkTexts:
+      - 惑星マルッコイ行きのロケットはこの上だよ！
+      - ジャンプで階段をのぼってね！
     pos:
-      - -4.36
-      - 2.91
-      - 0
+      - -9.92
+      - 2.65
+      - 9.34
     facingYaw: 0
     rotation:
       - 0
@@ -110,20 +156,27 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.8317566
-      - 0.5551403
-      - 0
+      - -0.038085133
+      - 0.9986393
+      - 0.035624955
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: boats
+        index: 1
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
     height: -7.5
     type: spaceSlime
     name: BackSideNPC
-    talkTexts: [ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。]
+    talkTexts:
+      - ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。
     pos:
-      - -0
+      - 0
       - -2.99
-      - -0
+      - 0
     facingYaw: 0
     rotation:
       - 0
@@ -134,8 +187,281 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0024161125
-      - -0.9999806
-      - -0.005751588
-stageObjects: []
+      - -0.0027979533
+      - -0.9999949
+      - -0.0016212873
+    radius: 0.75
+    modelPath: spaceSlime.obj
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - あっちにロケットがあるんだけど...
+      - ジャンプじゃ届かないんだよねぇ...
+    pos:
+      - 14.65
+      - 8.39
+      - 5.17
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.07671904
+      - 0.99705124
+      - -0.0017401912
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: boats
+        index: 2
+stageObjects:
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.0588229, 5.979225], pos: [0.45, 3.68, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1]}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: CarAssets/cone-flat.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 2.78], upVec: [0, 1, 0], textureTiling: [1, 1]}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/building-a.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.07853982
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -13.26
+      - 2.29
+      - 0.95
+    upVec:
+      - -0.07845911
+      - 0.9969174
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5777776
+    modelPath: HouseAssets/building-skyscraper-d.fbx
+    collision: true
+    rotation:
+      - 0
+      - 1.5777776
+      - 0
+    scale:
+      - 0.04000002
+      - 0.04000002
+      - 0.04000002
+    pos:
+      - 0.32
+      - 6.4
+      - -14.69
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [4.5679984, 2.0588229, 4.6613183], pos: [0.21, 4.37, -14.86], upVec: [0, 1, 0], textureTiling: [4.5679984, 4.6613183], textureOverride: textures/selectFieldTex.png}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: HouseAssets/building-h.fbx
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 12.69
+      - 2.42
+      - 6.27
+    upVec:
+      - 0.07671904
+      - 0.9970513
+      - -0.0017401914
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: FantasyAssets/stairs-stone-corner.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.07853982
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -13.29
+      - 2.04
+      - 8.57
+    upVec:
+      - -0.07845911
+      - 0.9969174
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: HouseAssets/building-h.fbx
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 12.63
+      - 2.42
+      - -2.7
+    upVec:
+      - 0.07671904
+      - 0.9970513
+      - -0.0017401914
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.6231562
+    modelPath: CarAssets/tractor.fbx
+    collision: true
+    rotation:
+      - -0.0017453292
+      - -1.6231562
+      - -0.23038346
+    scale:
+      - 0.030006075
+      - 0.030006073
+      - 0.030006077
+    pos:
+      - 13.69
+      - 2.54
+      - 11.04
+    upVec:
+      - -0.013647843
+      - 0.97357744
+      - 0.22794898
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/chimney-medium.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -8.74
+      - 2.29
+      - -15.1
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/chimney-medium.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 10.4
+      - 2.29
+      - -15.1
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    modelPath: CarAssets/suv-luxury.fbx
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 0
+      - 0.07679449
+    scale:
+      - 0.012531349
+      - 0.012531349
+      - 0.01253135
+    pos:
+      - 13.07
+      - 2.61
+      - 2.04
+    upVec:
+      - -0.07671904
+      - 0.9970513
+      - 0.0017401846
+    textureTiling:
+      - 1
+      - 1
 platforms: []

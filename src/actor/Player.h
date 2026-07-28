@@ -144,6 +144,9 @@ public:
     void SetInputAvailableTimer(float inputAvailableTimer) { mInput.SetInputAvailableTimer(inputAvailableTimer); }
 
     void SetKnockBackSpeed(float knockBackSpeed) { mMovement.SetKnockBackSpeed(knockBackSpeed); }
+    void SetJumpHeight(float jumpHeight) { mMovement.SetJumpHeight(jumpHeight); }
+    void SetJumpAscentDuration(float duration) { mMovement.SetJumpAscentDuration(duration); }
+    void SetJumpFallDuration(float duration) { mMovement.SetJumpFallDuration(duration); }
 
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
 
@@ -234,6 +237,9 @@ public:
     float GetInputAvailableTimer() const { return mInput.GetInputAvailableTimer(); }
 
     float GetKnockBackSpeed() const { return mMovement.GetKnockBackSpeed(); }
+    float GetJumpHeight() const { return mMovement.GetJumpHeight(); }
+    float GetJumpAscentDuration() const { return mMovement.GetJumpAscentDuration(); }
+    float GetJumpFallDuration() const { return mMovement.GetJumpFallDuration(); }
 
     bool WasPlanetGravityFallbackAppliedThisJump() const
     {
@@ -263,6 +269,10 @@ public:
     void SetShouldJudgeLanding(bool shouldJudgeLanding) { mShouldJudgeLanding = shouldJudgeLanding; }
 
     void ApplyGravityToSelf(float deltaTime) { ApplyGravity(deltaTime); }
+    void ApplyGravityToSelf(float deltaTime, float gravityAcceleration)
+    {
+        ApplyGravity(deltaTime, gravityAcceleration);
+    }
 
     void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 

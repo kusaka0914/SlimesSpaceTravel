@@ -76,8 +76,13 @@ private:
     void UpdateBossDefeatSequence(float deltaTime);
     void UpdateTalkCameraTransition(float deltaTime);
     void UpdateTalkCameraAim();
+    void UpdateTalkPageFocus(float deltaTime);
+    void UpdatePlayerPitchOffsets(float deltaTime);
     float GetEasedTalkCameraBlend() const;
+    float GetEasedTalkPageFocusBlend() const;
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
+    glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
+    Actor* ResolveTalkPageFocusActor() const;
     Enemy* FindBossEnemy(Planet* planet) const;
 
 private:
@@ -89,10 +94,20 @@ private:
     bool mBossDefeatSequenceIsPreview = false;
     float mBossDefeatSequenceTimer = -1.0f;
     float mCameraStickX = 0.0f;
+    float mCameraStickY = 0.0f;
+    float mKeyboardPitchInput = 0.0f;
     float mTalkCameraBlend = 0.0f;
+    std::vector<float> mPlayerPitchOffsetsDegrees;
     Player* mTalkCameraPlayer = nullptr;
     bool mHasTalkCameraTarget = false;
     glm::vec3 mTalkCameraTargetPos{0.0f};
+    Actor* mTalkPageFocusActor = nullptr;
+    float mTalkPageFocusBlend = 0.0f;
+    bool mHasTalkPageFocusPose = false;
+    glm::vec3 mTalkPageFocusCameraPos{0.0f};
+    glm::vec3 mTalkPageFocusTargetPos{0.0f};
+    glm::vec3 mTalkPageFocusUpVec{0.0f, 1.0f, 0.0f};
+    glm::vec3 mRenderedTalkPageCameraPos{0.0f};
     Enemy* mDefeatedBoss = nullptr;
     Star* mBossDefeatStar = nullptr;
 

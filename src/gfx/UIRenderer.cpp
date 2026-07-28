@@ -316,7 +316,8 @@ void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& 
              textInfo->texts[index], isCenterBase, color);
 }
 
-void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index)
+void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
+                            const std::vector<RubyTextSegment>* rubySegments)
 {
     DrawSceneTexture("state", "talkBgTexture", "textBg");
 
@@ -330,8 +331,24 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index)
     }
 
     constexpr glm::vec4 black{0.0f, 0.0f, 0.0f, 255.0f};
-    DrawText(mFbWidth * talkTextInfo->xRatio, mFbHeight * talkTextInfo->yRatio, mFbWidth * talkTextInfo->scaleRatio,
-             texts[index], false, black);
+    const float x = mFbWidth * talkTextInfo->xRatio;
+    const float y = mFbHeight * talkTextInfo->yRatio;
+    const float scale = mFbWidth * talkTextInfo->scaleRatio;
+
+    if (rubySegments && !rubySegments->empty() &&
+        JoinRubyBaseText(*rubySegments) == texts[index]) {
+        DrawRubyText(
+            x,
+            y,
+            scale,
+            talkTextInfo->rubyScaleRatio,
+            talkTextInfo->rubyGapRatio,
+            *rubySegments,
+            black);
+        return;
+    }
+
+    DrawText(x, y, scale, texts[index], false, black);
 }
 
 void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
@@ -357,8 +374,34 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
         return;
     }
 
-    DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio,
-             textInfo->texts[talkUIIndex], false, black);
+    if (talkUIIndex < static_cast<int>(textInfo->rubySegments.size()) &&
+        !textInfo->rubySegments[talkUIIndex].empty() &&
+        JoinRubyBaseText(textInfo->rubySegments[talkUIIndex]) ==
+            textInfo->texts[talkUIIndex]) {
+        const UILoadSystem::TextInfo* globalTalkTextInfo =
+            mUILoadSystem->GetTextInfo("state", "talkText");
+        const float rubyScaleRatio =
+            globalTalkTextInfo ? globalTalkTextInfo->rubyScaleRatio : 0.48f;
+        const float rubyGapRatio =
+            globalTalkTextInfo ? globalTalkTextInfo->rubyGapRatio : 0.0f;
+        DrawRubyText(
+            mFbWidth * textInfo->xRatio,
+            mFbHeight * textInfo->yRatio,
+            mFbWidth * textInfo->scaleRatio,
+            rubyScaleRatio,
+            rubyGapRatio,
+            textInfo->rubySegments[talkUIIndex],
+            black);
+        return;
+    }
+
+    DrawText(
+        mFbWidth * textInfo->xRatio,
+        mFbHeight * textInfo->yRatio,
+        mFbWidth * textInfo->scaleRatio,
+        textInfo->texts[talkUIIndex],
+        false,
+        black);
 }
 
 bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)
@@ -609,6 +652,92 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDeleteTextures(1, &textTexture);
+}
+
+void UIRenderer::DrawRubyText(float x, float y, float scale,
+                              float rubyScaleRatio,
+                              float rubyGapRatio,
+                              const std::vector<RubyTextSegment>& segments,
+                              glm::vec4 color)
+{
+    std::vector<std::vector<RubyTextSegment>> lines(1);
+
+    for (const RubyTextSegment& sourceSegment : segments) {
+        std::size_t position = 0;
+        while (position < sourceSegment.text.size()) {
+            const std::size_t actualNewline = sourceSegment.text.find('\n', position);
+            const std::size_t escapedNewline = sourceSegment.text.find("\\n", position);
+
+            std::size_t newline = std::string::npos;
+            std::size_t delimiterLength = 0;
+            if (actualNewline != std::string::npos &&
+                (escapedNewline == std::string::npos || actualNewline < escapedNewline)) {
+                newline = actualNewline;
+                delimiterLength = 1;
+            } else if (escapedNewline != std::string::npos) {
+                newline = escapedNewline;
+                delimiterLength = 2;
+            }
+
+            const std::size_t end =
+                newline == std::string::npos ? sourceSegment.text.size() : newline;
+            if (end > position) {
+                RubyTextSegment part = sourceSegment;
+                part.text = sourceSegment.text.substr(position, end - position);
+                lines.back().emplace_back(std::move(part));
+            }
+
+            if (newline == std::string::npos) {
+                break;
+            }
+
+            lines.emplace_back();
+            position = newline + delimiterLength;
+        }
+    }
+
+    if (lines.empty()) {
+        return;
+    }
+
+    glUseProgram(mUIShader->GetShaderProgram());
+
+    const float firstLineOffset =
+        lines.size() > 1 ? -mFbHeight * 0.0222f : 0.0f;
+    const float lineSpacing = mFbHeight * 0.0666f;
+    for (std::size_t lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
+        float currentX = x;
+        const float lineY =
+            y + firstLineOffset + lineSpacing * static_cast<float>(lineIndex);
+
+        for (const RubyTextSegment& segment : lines[lineIndex]) {
+            int baseWidth = 0;
+            int baseHeight = 0;
+            if (!MeasureText(segment.text, scale, baseWidth, baseHeight)) {
+                continue;
+            }
+
+            DrawTextLine(segment.text, currentX, lineY, scale, false, 0.0f, color);
+
+            if (segment.showsRuby && !segment.reading.empty()) {
+                const float rubyScale = scale * rubyScaleRatio;
+                int rubyWidth = 0;
+                int rubyHeight = 0;
+                if (MeasureText(segment.reading, rubyScale, rubyWidth, rubyHeight)) {
+                    const float rubyX =
+                        currentX + (static_cast<float>(baseWidth - rubyWidth) * 0.5f);
+                    const float rubyY =
+                        lineY -
+                        static_cast<float>(rubyHeight) *
+                            (0.9f + rubyGapRatio);
+                    DrawTextLine(
+                        segment.reading, rubyX, rubyY, rubyScale, false, 0.0f, color);
+                }
+            }
+
+            currentX += static_cast<float>(baseWidth);
+        }
+    }
 }
 
 void UIRenderer::DrawTexture(

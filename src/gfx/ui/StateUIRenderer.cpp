@@ -100,7 +100,9 @@ void StateUIRenderer::DrawTalkWithNPC()
 
     const bool isTalking = talkUIIndex < static_cast<int>(talkTexts.size());
     if (isTalking) {
-        mRenderer->DrawTalkUI(talkTexts, talkUIIndex);
+        const std::vector<RubyTextSegment>& rubySegments =
+            talkingNPC->GetTalkRubySegments(static_cast<std::size_t>(talkUIIndex));
+        mRenderer->DrawTalkUI(talkTexts, talkUIIndex, &rubySegments);
         return;
     }
 

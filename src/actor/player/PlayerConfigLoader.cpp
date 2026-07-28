@@ -133,6 +133,9 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.attackSpeed = ReadFloat(playerNode, "attackSpeed", config.attackSpeed);
         config.attack = ReadFloat(playerNode, "attack", config.attack);
         config.moveSpeed = ReadFloat(playerNode, "moveSpeed", config.moveSpeed);
+        config.jumpHeight = ReadFloat(playerNode, "jumpHeight", config.jumpHeight);
+        config.jumpAscentDuration = ReadFloat(playerNode, "jumpAscentDuration", config.jumpAscentDuration);
+        config.jumpFallDuration = ReadFloat(playerNode, "jumpFallDuration", config.jumpFallDuration);
 
         config.dodgeDuration = ReadFloat(playerNode, "dodgeDuration", config.dodgeDuration);
         config.dodgeCooldownTime = ReadFloat(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);

@@ -17,6 +17,7 @@
 #include "actor/Star.h"
 #include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
+#include "system/text/JapaneseRubyGenerator.h"
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -178,10 +179,138 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
                 }
             }
 
+            if (node["talkCameraFocus"] && node["talkCameraFocus"].IsSequence()) {
+                for (const YAML::Node& focusNode : node["talkCameraFocus"]) {
+                    if (!focusNode.IsMap() || !focusNode["talkIndex"] ||
+                        !focusNode["sequence"] || !focusNode["index"]) {
+                        continue;
+                    }
+
+                    const int talkIndex = focusNode["talkIndex"].as<int>();
+                    if (talkIndex < 0) {
+                        continue;
+                    }
+
+                    npc->SetTalkCameraFocusTarget(
+                        static_cast<std::size_t>(talkIndex),
+                        focusNode["sequence"].as<std::string>(),
+                        focusNode["index"].as<int>());
+                }
+            }
+
+            if (node["talkRubies"] && node["talkRubies"].IsSequence()) {
+                for (const YAML::Node& rubyNode : node["talkRubies"]) {
+                    if (!rubyNode.IsMap() || !rubyNode["talkIndex"] ||
+                        !rubyNode["segments"] || !rubyNode["segments"].IsSequence()) {
+                        continue;
+                    }
+
+                    const int talkIndex = rubyNode["talkIndex"].as<int>();
+                    if (talkIndex < 0) {
+                        continue;
+                    }
+
+                    std::vector<RubyTextSegment> segments;
+                    for (const YAML::Node& segmentNode : rubyNode["segments"]) {
+                        if (!segmentNode.IsMap() || !segmentNode["text"]) {
+                            continue;
+                        }
+
+                        RubyTextSegment segment;
+                        segment.text = segmentNode["text"].as<std::string>();
+                        segment.reading =
+                            segmentNode["reading"]
+                                ? segmentNode["reading"].as<std::string>()
+                                : std::string();
+                        segment.showsRuby =
+                            segmentNode["ruby"]
+                                ? segmentNode["ruby"].as<bool>()
+                                : !segment.reading.empty();
+                        segments.emplace_back(std::move(segment));
+                    }
+
+                    npc->SetTalkRubySegments(
+                        static_cast<std::size_t>(talkIndex),
+                        std::move(segments));
+                }
+            }
+
+            const std::vector<std::string>& talkTexts = npc->GetTalkTexts();
+            for (std::size_t talkIndex = 0; talkIndex < talkTexts.size(); ++talkIndex) {
+                if (npc->HasValidTalkRuby(talkIndex)) {
+                    continue;
+                }
+
+                std::vector<RubyTextSegment> generatedSegments;
+                std::string errorMessage;
+                if (JapaneseRubyGenerator::Generate(
+                        talkTexts[talkIndex], generatedSegments, errorMessage)) {
+                    npc->SetTalkRubySegments(
+                        talkIndex, std::move(generatedSegments));
+                }
+            }
+
             const std::string type = node["type"] ? node["type"].as<std::string>() : "";
             npc->ApplyConfig(type);
         },
         [](NPC* npc, const YAML::Node&) { npc->SetBaseScale(npc->GetScale()); });
+}
+
+Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const
+{
+    if (!mGame || stageYamlIndex < 0) {
+        return nullptr;
+    }
+
+    Stage* stage = mGame->GetCurrentStage();
+    if (!stage) {
+        return nullptr;
+    }
+
+    const auto findByIndex = [stageYamlIndex](const auto& actors) -> Actor* {
+        for (auto* actor : actors) {
+            if (actor && actor->GetStageYamlIndex() == stageYamlIndex) {
+                return actor;
+            }
+        }
+        return nullptr;
+    };
+
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        if (sequenceName == "enemies") {
+            if (Actor* actor = findByIndex(planet->GetEnemies())) return actor;
+        } else if (sequenceName == "platforms") {
+            if (Actor* actor = findByIndex(planet->GetPlatforms())) return actor;
+        } else if (sequenceName == "movingPlatforms") {
+            if (Actor* actor = findByIndex(planet->GetMovingPlatforms())) return actor;
+        } else if (sequenceName == "boats") {
+            if (Actor* actor = findByIndex(planet->GetBoats())) return actor;
+        } else if (sequenceName == "boatParts") {
+            if (Actor* actor = findByIndex(planet->GetBoatParts())) return actor;
+        } else if (sequenceName == "crystals") {
+            if (Actor* actor = findByIndex(planet->GetCrystals())) return actor;
+        } else if (sequenceName == "NPCs") {
+            if (Actor* actor = findByIndex(planet->GetNPCs())) return actor;
+        } else if (sequenceName == "boatArrivalPoints") {
+            if (Actor* actor = findByIndex(planet->GetBoatArrivalPoints())) return actor;
+        } else if (sequenceName == "fallRespawnPoints") {
+            if (Actor* actor = findByIndex(planet->GetFallRespawnPoints())) return actor;
+        } else if (sequenceName == "stageObjects") {
+            if (Actor* actor = findByIndex(planet->GetStageObjects())) return actor;
+        } else if (sequenceName == "keys") {
+            Key* key = planet->GetKey();
+            if (key && key->GetStageYamlIndex() == stageYamlIndex) return key;
+        } else if (sequenceName == "star") {
+            Star* star = planet->GetStar();
+            if (star && star->GetStageYamlIndex() == stageYamlIndex) return star;
+        }
+    }
+
+    return nullptr;
 }
 
 void ActorLoadSystem::LoadEnemies(const char* path)

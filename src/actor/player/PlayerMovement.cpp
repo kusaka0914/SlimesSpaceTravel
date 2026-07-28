@@ -320,7 +320,9 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
         player.SetVelocity(velocity);
     }
 
-    const glm::vec3 jumpVelocityDelta = upDirection * mJumpSpeed;
+    const float safeAscentDuration = std::max(mJumpAscentDuration, 0.05f);
+    const float jumpSpeed = (2.0f * std::max(mJumpHeight, 0.0f)) / safeAscentDuration;
+    const glm::vec3 jumpVelocityDelta = upDirection * jumpSpeed;
     player.AddVelocity(jumpVelocityDelta);
 
     // ジャンプ開始後は状態更新から即時returnするため、このフレーム分の上昇移動をここで反映する。
@@ -328,6 +330,21 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 
     player.SetOnGround(false);
     player.SetShouldJudgeLanding(false);
+}
+
+void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime) const
+{
+    if (player.GetOnGround()) {
+        player.ApplyGravityToSelf(deltaTime);
+        return;
+    }
+
+    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
+    const float verticalSpeed = glm::dot(player.GetVelocity(), upDirection);
+    const float duration =
+        verticalSpeed > 0.0f ? std::max(mJumpAscentDuration, 0.05f) : std::max(mJumpFallDuration, 0.05f);
+    const float gravityAcceleration = (2.0f * std::max(mJumpHeight, 0.0f)) / (duration * duration);
+    player.ApplyGravityToSelf(deltaTime, gravityAcceleration);
 }
 
 void PlayerMovement::StartStrongAttackMovementTowards(

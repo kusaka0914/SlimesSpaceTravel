@@ -25,6 +25,10 @@ void PlayerCameraSettings::Normalize()
     fieldOfViewDegrees = glm::clamp(fieldOfViewDegrees, 10.0f, 120.0f);
     splitScreenFieldOfViewDegrees = glm::clamp(splitScreenFieldOfViewDegrees, 10.0f, 120.0f);
     yawSensitivity = glm::clamp(yawSensitivity, 0.0f, 20.0f);
+    pitchSensitivityDegrees = glm::clamp(pitchSensitivityDegrees, 0.0f, 360.0f);
+    minPitchDegrees = glm::clamp(minPitchDegrees, -89.0f, 89.0f);
+    maxPitchDegrees = glm::clamp(maxPitchDegrees, minPitchDegrees, 0.0f);
+    pitchDegrees = glm::clamp(pitchDegrees, minPitchDegrees, maxPitchDegrees);
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
     attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
@@ -77,6 +81,12 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             ReadFloat(cameraNode, "splitScreenFieldOfView", loadedSettings.splitScreenFieldOfViewDegrees);
         loadedSettings.yawSensitivity =
             ReadFloat(cameraNode, "yawSensitivity", loadedSettings.yawSensitivity);
+        loadedSettings.pitchSensitivityDegrees =
+            ReadFloat(cameraNode, "pitchSensitivityDegrees", loadedSettings.pitchSensitivityDegrees);
+        loadedSettings.minPitchDegrees =
+            ReadFloat(cameraNode, "minPitchDegrees", loadedSettings.minPitchDegrees);
+        loadedSettings.maxPitchDegrees =
+            ReadFloat(cameraNode, "maxPitchDegrees", loadedSettings.maxPitchDegrees);
         loadedSettings.upSmoothingSpeed =
             ReadFloat(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
         loadedSettings.targetSmoothingSpeed =
@@ -147,6 +157,12 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "splitScreenFieldOfView" << YAML::Value
                 << normalizedSettings.splitScreenFieldOfViewDegrees;
         emitter << YAML::Key << "yawSensitivity" << YAML::Value << normalizedSettings.yawSensitivity;
+        emitter << YAML::Key << "pitchSensitivityDegrees" << YAML::Value
+                << normalizedSettings.pitchSensitivityDegrees;
+        emitter << YAML::Key << "minPitchDegrees" << YAML::Value
+                << normalizedSettings.minPitchDegrees;
+        emitter << YAML::Key << "maxPitchDegrees" << YAML::Value
+                << normalizedSettings.maxPitchDegrees;
         emitter << YAML::Key << "upSmoothingSpeed" << YAML::Value << normalizedSettings.upSmoothingSpeed;
         emitter << YAML::Key << "targetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.targetSmoothingSpeed;

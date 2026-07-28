@@ -135,7 +135,12 @@ void CharacterActor::NotLand()
 void CharacterActor::ApplyGravity(float deltaTime)
 {
     constexpr float gravity = 9.8f;
-    mVelocity -= mUpVec * gravity * deltaTime;
+    ApplyGravity(deltaTime, gravity);
+}
+
+void CharacterActor::ApplyGravity(float deltaTime, float gravityAcceleration)
+{
+    mVelocity -= mUpVec * gravityAcceleration * deltaTime;
     mPos += mVelocity * deltaTime;
 }
 

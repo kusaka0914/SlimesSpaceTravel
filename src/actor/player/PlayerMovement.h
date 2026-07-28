@@ -22,6 +22,7 @@ public:
     void ApplyChargeMovement(Player& player, float deltaTime);
     void ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyKnockBackMovement(Player& player, float deltaTime);
+    void ApplyJumpGravity(Player& player, float deltaTime) const;
 
     void StartDodgeMovement(Player& player, const PlayerInput& input);
     void StartJumpMovement(Player& player, float deltaTime);
@@ -43,6 +44,9 @@ public:
     void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownDuration = dodgeCooldownTime; }
     void SetDodgeDistance(float dodgeDistance) { mDodgeDistance = dodgeDistance; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
+    void SetJumpHeight(float jumpHeight) { mJumpHeight = jumpHeight; }
+    void SetJumpAscentDuration(float duration) { mJumpAscentDuration = duration; }
+    void SetJumpFallDuration(float duration) { mJumpFallDuration = duration; }
     void SetDodgeCooldown(float dodgeCooldown) { mDodgeCooldownRemaining = dodgeCooldown; }
 
     int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
@@ -55,6 +59,9 @@ public:
     float GetMoveSpeed() const { return mMoveSpeed; }
     float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
     float GetKnockBackSpeed() const { return mKnockBackSpeed; }
+    float GetJumpHeight() const { return mJumpHeight; }
+    float GetJumpAscentDuration() const { return mJumpAscentDuration; }
+    float GetJumpFallDuration() const { return mJumpFallDuration; }
     const glm::vec3& GetForwardVec() const { return mForwardVec; }
 
     void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
@@ -75,7 +82,11 @@ private:
     float mMoveSpeed = 10.2f;
     float mChargeMoveSpeed = 6.0f;
     float mKnockBackSpeed = 0.0f;
-    float mJumpSpeed = 6.0f;
+    // The old 6.0 m/s jump under 9.8 m/s^2 gravity reached about 1.84 m.
+    // Durations independently control the faster rise and slower fall.
+    float mJumpHeight = 1.8367347f;
+    float mJumpAscentDuration = 0.4f;
+    float mJumpFallDuration = 0.85f;
 
     glm::vec3 mForwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
