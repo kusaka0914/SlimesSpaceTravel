@@ -121,6 +121,7 @@ public:
     bool IsInBase() const;
     bool IsStageCleared(int stageNum) const;
     void MarkStageCleared(int stageNum);
+    void SetStageCleared(int stageNum, bool isCleared);
     bool IsGameControllerConnected() const;
 
 private:

@@ -77,13 +77,26 @@ bool StageProgressSystem::IsStageCleared(int stageNum) const
 
 bool StageProgressSystem::MarkStageCleared(int stageNum)
 {
+    return SetStageCleared(stageNum, true);
+}
+
+bool StageProgressSystem::SetStageCleared(
+    int stageNum,
+    bool isCleared)
+{
     if (stageNum < 0) {
         return false;
     }
 
-    const auto [_, inserted] = mClearedStages.insert(stageNum);
-    if (inserted) {
+    bool changed = false;
+    if (isCleared) {
+        changed = mClearedStages.insert(stageNum).second;
+    } else {
+        changed = mClearedStages.erase(stageNum) > 0;
+    }
+
+    if (changed) {
         Save();
     }
-    return inserted;
+    return changed;
 }

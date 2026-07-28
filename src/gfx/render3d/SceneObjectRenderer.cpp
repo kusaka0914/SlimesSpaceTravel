@@ -18,15 +18,18 @@
 #include "actor/StageObject.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
+#include "gfx/render3d/NPCProximityMessageRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
 
 #include <GL/glew.h>
 
 SceneObjectRenderer::SceneObjectRenderer(const Renderer3D* renderer, const PlayerEffectRenderer* playerEffectRenderer,
-                                         const DebugLabelRenderer* debugLabelRenderer)
+                                         const DebugLabelRenderer* debugLabelRenderer,
+                                         const NPCProximityMessageRenderer* npcProximityMessageRenderer)
     : mRenderer(renderer),
       mPlayerEffectRenderer(playerEffectRenderer),
-      mDebugLabelRenderer(debugLabelRenderer)
+      mDebugLabelRenderer(debugLabelRenderer),
+      mNPCProximityMessageRenderer(npcProximityMessageRenderer)
 {
 }
 
@@ -43,6 +46,10 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
 
     if (mPlayerEffectRenderer) {
         mPlayerEffectRenderer->DrawPlayers(viewMat);
+    }
+
+    if (mNPCProximityMessageRenderer) {
+        mNPCProximityMessageRenderer->Draw(viewMat, planets);
     }
 
     if (mRenderer->GetGame()->GetIsDebugEditorShowing() && mDebugLabelRenderer) {

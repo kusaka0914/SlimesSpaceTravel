@@ -189,9 +189,27 @@ void StageAddActorPanel::Draw()
                                            mPlatformScale);
             }
 
+            if (ImGui::Button("乗ると動く足場を追加")) {
+                const bool created =
+                    mCreateService.AddRideMovingPlatform(
+                        mSelectedPlatformPlanetIndex,
+                        platformModels[mSelectedPlatformModelIndex],
+                        mPlatformScale);
+                mRideMovingPlatformStatus =
+                    created
+                        ? "乗降式の動く足場を追加しました"
+                        : "動く足場の追加に失敗しました";
+            }
+
             if (!canAddPlatform) {
                 ImGui::EndDisabled();
             }
+
+            if (!mRideMovingPlatformStatus.empty()) {
+                ImGui::TextUnformatted(mRideMovingPlatformStatus.c_str());
+            }
+            ImGui::TextDisabled(
+                "追加後は「配置」から出発地点と到着地点を調整できます。");
 
             ImGui::TreePop();
         }

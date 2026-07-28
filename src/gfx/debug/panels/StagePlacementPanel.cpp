@@ -7,6 +7,7 @@
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/NPC.h"
+#include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
@@ -385,6 +386,134 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
     }
 
+    if (MovingPlatform* movingPlatform =
+            dynamic_cast<MovingPlatform*>(actor)) {
+        ImGui::SeparatorText("動く足場設定");
+
+        bool moveOnPlayer = movingPlatform->GetMoveOnPlayer();
+        if (ImGui::Checkbox(
+                ("プレイヤーが乗ったら動く##moveOnPlayer" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &moveOnPlayer)) {
+            movingPlatform->SetMoveOnPlayer(moveOnPlayer);
+            if (moveOnPlayer && movingPlatform->GetCurrentPlanet()) {
+                const glm::vec3 currentLocalPos =
+                    movingPlatform->GetPos() -
+                    movingPlatform->GetCurrentPlanet()->GetPos();
+                const glm::vec3 destination =
+                    movingPlatform->GetDestinationLocalPos();
+                movingPlatform->SetBaseLocalPos(currentLocalPos);
+                movingPlatform->SetDestinationLocalPos(destination);
+            }
+        }
+
+        float moveDuration = movingPlatform->GetMoveDuration();
+        const std::string durationLabel =
+            (moveOnPlayer
+                 ? "片道の移動時間（秒）##movingPlatformDuration"
+                 : "往復周期（秒）##movingPlatformDuration") +
+            std::to_string(yamlIndex);
+        if (ImGui::DragFloat(
+                durationLabel.c_str(),
+                &moveDuration,
+                0.1f,
+                0.1f,
+                60.0f,
+                "%.1f")) {
+            movingPlatform->SetMoveDuration(std::max(0.1f, moveDuration));
+        }
+
+        Planet* movingPlatformPlanet = movingPlatform->GetCurrentPlanet();
+        const glm::vec3 planetCenter =
+            movingPlatformPlanet
+                ? movingPlatformPlanet->GetPos()
+                : glm::vec3(0.0f);
+
+        glm::vec3 startWorldPos =
+            planetCenter + movingPlatform->GetBaseLocalPos();
+        glm::vec3 endWorldPos =
+            planetCenter + movingPlatform->GetDestinationLocalPos();
+
+        if (ImGui::DragFloat3(
+                ("出発地点（ワールド）##movingPlatformStart" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &startWorldPos.x,
+                0.05f,
+                -500.0f,
+                500.0f,
+                "%.2f")) {
+            const glm::vec3 destinationLocalPos =
+                movingPlatform->GetDestinationLocalPos();
+            movingPlatform->SetBaseLocalPos(startWorldPos - planetCenter);
+            movingPlatform->SetDestinationLocalPos(destinationLocalPos);
+        }
+
+        if (ImGui::DragFloat3(
+                ("到着地点（ワールド）##movingPlatformEnd" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &endWorldPos.x,
+                0.05f,
+                -500.0f,
+                500.0f,
+                "%.2f")) {
+            movingPlatform->SetDestinationLocalPos(
+                endWorldPos - planetCenter);
+        }
+
+        if (moveOnPlayer) {
+            float returnDelay = movingPlatform->GetReturnDelay();
+            if (ImGui::DragFloat(
+                    ("降りてから戻るまで（秒）##movingPlatformReturnDelay" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &returnDelay,
+                    0.1f,
+                    0.0f,
+                    30.0f,
+                    "%.1f")) {
+                movingPlatform->SetReturnDelay(returnDelay);
+            }
+
+            const bool previewsStart =
+                movingPlatform->GetEditorPreviewPoint() == 0;
+            if (ImGui::RadioButton(
+                    ("出発地点を表示・編集##movingPlatformPreviewStart" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    previewsStart)) {
+                movingPlatform->SetEditorPreviewPoint(0);
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton(
+                    ("到着地点を表示・編集##movingPlatformPreviewEnd" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    !previewsStart)) {
+                movingPlatform->SetEditorPreviewPoint(1);
+            }
+            ImGui::TextDisabled(
+                "編集する地点を選ぶと足場がそこへ表示されます。下の位置入力やギズモで動かせます。");
+        } else {
+            glm::vec3 moveOffset = movingPlatform->GetMoveOffset();
+            if (ImGui::DragFloat3(
+                    ("往復移動量##movingPlatformOffset" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &moveOffset.x,
+                    0.05f,
+                    -500.0f,
+                    500.0f,
+                    "%.2f")) {
+                movingPlatform->SetMoveOffset(moveOffset);
+            }
+            ImGui::TextDisabled(
+                "従来モードでは出発地点と到着地点の間を自動で往復します。");
+        }
+    }
+
     if (Boat* boat = dynamic_cast<Boat*>(actor)) {
         ImGui::SeparatorText("ロケット設定");
 
@@ -575,6 +704,84 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
         ImGui::TextDisabled("実際の会話可能距離は、この半径に0.5を加えた値です。");
 
+        ImGui::SeparatorText("頭上のひとこと表示");
+
+        int proximityMessageMode =
+            static_cast<int>(npc->GetProximityMessageMode());
+        constexpr const char* proximityModeLabels[] = {
+            "使用しない",
+            "通常会話を終えた後",
+            "最初から表示のみ（会話不可）"
+        };
+        proximityMessageMode =
+            std::clamp(proximityMessageMode, 0, 2);
+        if (ImGui::Combo(
+                ("表示タイミング##npcProximityMessageMode" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &proximityMessageMode,
+                proximityModeLabels,
+                IM_ARRAYSIZE(proximityModeLabels))) {
+            npc->SetProximityMessageMode(
+                static_cast<NPCProximityMessageMode>(
+                    proximityMessageMode));
+        }
+
+        if (proximityMessageMode !=
+            static_cast<int>(NPCProximityMessageMode::Disabled)) {
+            float proximityRange = npc->GetProximityMessageRange();
+            if (ImGui::DragFloat(
+                    ("表示される距離##npcProximityMessageRange" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &proximityRange,
+                    0.05f,
+                    0.1f,
+                    30.0f,
+                    "%.2f")) {
+                npc->SetProximityMessageRange(proximityRange);
+            }
+
+            float proximityHeight = npc->GetProximityMessageHeight();
+            if (ImGui::DragFloat(
+                    ("頭上の高さ##npcProximityMessageHeight" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &proximityHeight,
+                    0.05f,
+                    0.0f,
+                    20.0f,
+                    "%.2f")) {
+                npc->SetProximityMessageHeight(proximityHeight);
+            }
+
+            float proximityScale = npc->GetProximityMessageScale();
+            if (ImGui::DragFloat(
+                    ("吹き出しの大きさ##npcProximityMessageScale" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &proximityScale,
+                    0.02f,
+                    0.1f,
+                    5.0f,
+                    "%.2f")) {
+                npc->SetProximityMessageScale(proximityScale);
+            }
+
+            ImGui::TextDisabled(
+                "エディターを開いている間は、距離や会話済みに関係なくプレビュー表示します。");
+            if (proximityMessageMode ==
+                static_cast<int>(NPCProximityMessageMode::AfterTalk)) {
+                ImGui::TextDisabled(
+                    "会話を最後まで読んだ後は再び話しかけられず、近づくとこの一言を表示します。");
+            } else {
+                ImGui::TextDisabled(
+                    "このNPCには話しかけられず、近づくとこの一言だけを表示します。");
+            }
+            ImGui::TextDisabled(
+                "一言の内容は、下にある各通常会話の設定内で入力します。");
+        }
+
         const std::vector<std::string>& talkTexts = npc->GetTalkTexts();
         const std::vector<StageActorInstance> talkFocusCandidates =
             StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
@@ -658,6 +865,91 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
             if (!mRubyGenerationStatus.empty()) {
                 ImGui::TextDisabled("%s", mRubyGenerationStatus.c_str());
+            }
+
+            int talkStageCondition =
+                npc->GetTalkStageClearCondition(talkIndex);
+            bool usesTalkStageCondition = talkStageCondition >= 0;
+            if (ImGui::Checkbox(
+                    ("ステージクリア後の会話##npcTalkStageConditionEnabled" +
+                     std::to_string(yamlIndex) + "_" +
+                     std::to_string(talkIndex))
+                        .c_str(),
+                    &usesTalkStageCondition)) {
+                if (usesTalkStageCondition) {
+                    talkStageCondition =
+                        std::max(
+                            0,
+                            mContext.game
+                                ? mContext.game->GetCurrentStageNum()
+                                : 0);
+                } else {
+                    talkStageCondition = -1;
+                }
+                npc->SetTalkStageClearCondition(
+                    talkIndex, talkStageCondition);
+            }
+
+            if (usesTalkStageCondition) {
+                const std::string stagePreview =
+                    "ステージ " + std::to_string(talkStageCondition);
+                const std::string conditionComboId =
+                    "クリア済み条件##npcTalkStageCondition" +
+                    std::to_string(yamlIndex) + "_" +
+                    std::to_string(talkIndex);
+                if (ImGui::BeginCombo(
+                        conditionComboId.c_str(), stagePreview.c_str())) {
+                    const int stageCount =
+                        mContext.game
+                            ? static_cast<int>(
+                                  mContext.game->GetStages().size())
+                            : 0;
+                    for (int stageNum = 0;
+                         stageNum < stageCount;
+                         ++stageNum) {
+                        const bool selected =
+                            talkStageCondition == stageNum;
+                        const std::string label =
+                            "ステージ " + std::to_string(stageNum) +
+                            "##npcTalkStageConditionOption" +
+                            std::to_string(yamlIndex) + "_" +
+                            std::to_string(talkIndex) + "_" +
+                            std::to_string(stageNum);
+                        if (ImGui::Selectable(
+                                label.c_str(), selected)) {
+                            talkStageCondition = stageNum;
+                            npc->SetTalkStageClearCondition(
+                                talkIndex, stageNum);
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            } else {
+                ImGui::TextDisabled(
+                    "この会話は未クリア時の通常会話に含まれます。");
+            }
+
+            if (proximityMessageMode !=
+                static_cast<int>(NPCProximityMessageMode::Disabled)) {
+                std::array<char, 512> proximityTextBuffer = {};
+                std::snprintf(
+                    proximityTextBuffer.data(),
+                    proximityTextBuffer.size(),
+                    "%s",
+                    npc->GetTalkProximityMessageText(talkIndex).c_str());
+                if (ImGui::InputText(
+                        ("この会話に対応する頭上一言##npcTalkProximityMessageText" +
+                         std::to_string(yamlIndex) + "_" +
+                         std::to_string(talkIndex))
+                            .c_str(),
+                        proximityTextBuffer.data(),
+                        proximityTextBuffer.size())) {
+                    npc->SetTalkProximityMessageText(
+                        talkIndex,
+                        proximityTextBuffer.data());
+                }
+                ImGui::TextDisabled(
+                    "この通常会話がクリア状況によって選ばれたときに使われます。");
             }
 
             const NPCTalkCameraFocusTarget* currentFocus =
@@ -748,6 +1040,13 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         if (ImGui::Button(
                 ("会話を追加##placedNPC" + std::to_string(yamlIndex)).c_str())) {
             npc->AddTalkTexts("");
+        }
+        ImGui::TextDisabled(
+            "同じクリア条件の会話が1セットとして順番に表示されます。複数条件を満たす場合は数字が最大のステージ条件を使います。");
+        if (proximityMessageMode !=
+            static_cast<int>(NPCProximityMessageMode::Disabled)) {
+            ImGui::TextDisabled(
+                "同じ条件に複数ページある場合、最後のページに設定した頭上一言を優先します。");
         }
         ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
     }
@@ -873,6 +1172,13 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
         const glm::vec3 worldPos = planet ? planet->GetPos() + localPos : localPos;
         actor->SetPos(worldPos);
+
+        if (MovingPlatform* movingPlatform =
+                dynamic_cast<MovingPlatform*>(actor);
+            movingPlatform && movingPlatform->GetMoveOnPlayer() &&
+            mContext.game && mContext.game->GetIsDebugEditorShowing()) {
+            movingPlatform->SetEditorPreviewLocalPos(localPos);
+        }
     }
 
     glm::vec3 rotationRad = actor->GetEditorRotation();
@@ -1334,6 +1640,43 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             stageObject->GetCollisionEnabled();
     }
 
+    if (const MovingPlatform* movingPlatform =
+            dynamic_cast<const MovingPlatform*>(actor)) {
+        const glm::vec3 startLocalPos =
+            movingPlatform->GetBaseLocalPos();
+        const glm::vec3 endLocalPos =
+            movingPlatform->GetDestinationLocalPos();
+        const glm::vec3 moveOffset = movingPlatform->GetMoveOffset();
+
+        config[sequenceName][yamlIndex]["startLocalPos"][0] =
+            startLocalPos.x;
+        config[sequenceName][yamlIndex]["startLocalPos"][1] =
+            startLocalPos.y;
+        config[sequenceName][yamlIndex]["startLocalPos"][2] =
+            startLocalPos.z;
+        config[sequenceName][yamlIndex]["endLocalPos"][0] =
+            endLocalPos.x;
+        config[sequenceName][yamlIndex]["endLocalPos"][1] =
+            endLocalPos.y;
+        config[sequenceName][yamlIndex]["endLocalPos"][2] =
+            endLocalPos.z;
+        config[sequenceName][yamlIndex]["moveOffset"][0] = moveOffset.x;
+        config[sequenceName][yamlIndex]["moveOffset"][1] = moveOffset.y;
+        config[sequenceName][yamlIndex]["moveOffset"][2] = moveOffset.z;
+        config[sequenceName][yamlIndex]["moveDuration"] =
+            movingPlatform->GetMoveDuration();
+        config[sequenceName][yamlIndex]["moveOnPlayer"] =
+            movingPlatform->GetMoveOnPlayer();
+        config[sequenceName][yamlIndex]["returnDelay"] =
+            movingPlatform->GetReturnDelay();
+
+        // プレビュー中に到着地点へ表示していても、通常の配置位置は
+        // 必ず出発地点として保存する。
+        config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
+        config[sequenceName][yamlIndex]["pos"][1] = startLocalPos.y;
+        config[sequenceName][yamlIndex]["pos"][2] = startLocalPos.z;
+    }
+
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
         Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
         const std::vector<Planet*> planets =
@@ -1376,10 +1719,71 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex]["modelPath"] = npc->GetModelPath();
         config[sequenceName][yamlIndex]["name"] = npc->GetName();
         config[sequenceName][yamlIndex]["radius"] = npc->GetRadius();
+
+        if (npc->GetProximityMessageMode() ==
+            NPCProximityMessageMode::Disabled) {
+            config[sequenceName][yamlIndex].remove("proximityMessage");
+        } else {
+            YAML::Node proximityMessage(YAML::NodeType::Map);
+            proximityMessage["mode"] =
+                npc->GetProximityMessageMode() ==
+                        NPCProximityMessageMode::AfterTalk
+                    ? "afterTalk"
+                    : "always";
+            proximityMessage["variants"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (std::size_t talkIndex = 0;
+                 talkIndex < npc->GetTalkTexts().size();
+                 ++talkIndex) {
+                const std::string& messageText =
+                    npc->GetTalkProximityMessageText(talkIndex);
+                if (messageText.empty()) {
+                    continue;
+                }
+
+                YAML::Node variantNode(YAML::NodeType::Map);
+                variantNode["talkIndex"] =
+                    static_cast<int>(talkIndex);
+                variantNode["text"] = messageText;
+                proximityMessage["variants"].push_back(variantNode);
+            }
+            proximityMessage["range"] =
+                npc->GetProximityMessageRange();
+            proximityMessage["height"] =
+                npc->GetProximityMessageHeight();
+            proximityMessage["scale"] =
+                npc->GetProximityMessageScale();
+            config[sequenceName][yamlIndex]["proximityMessage"] =
+                proximityMessage;
+        }
+
         config[sequenceName][yamlIndex]["talkTexts"] =
             YAML::Node(YAML::NodeType::Sequence);
         for (const std::string& talkText : npc->GetTalkTexts()) {
             config[sequenceName][yamlIndex]["talkTexts"].push_back(talkText);
+        }
+
+        YAML::Node talkStageClearConditions(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            const int stageCondition =
+                npc->GetTalkStageClearCondition(talkIndex);
+            if (stageCondition < 0) {
+                continue;
+            }
+
+            YAML::Node conditionNode(YAML::NodeType::Map);
+            conditionNode["talkIndex"] = static_cast<int>(talkIndex);
+            conditionNode["stage"] = stageCondition;
+            talkStageClearConditions.push_back(conditionNode);
+        }
+        if (talkStageClearConditions.size() > 0) {
+            config[sequenceName][yamlIndex]["talkStageClearConditions"] =
+                talkStageClearConditions;
+        } else {
+            config[sequenceName][yamlIndex].remove(
+                "talkStageClearConditions");
         }
 
         YAML::Node talkCameraFocus(YAML::NodeType::Sequence);

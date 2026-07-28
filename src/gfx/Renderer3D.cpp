@@ -6,6 +6,7 @@
 #include "animation/SkeletalAnimationConstants.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
+#include "gfx/render3d/NPCProximityMessageRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
 #include "gfx/particle/ParticleRenderer.h"
 #include "gfx/render3d/RenderViewportController.h"
@@ -50,6 +51,7 @@ void Renderer3D::Initialize()
     const std::string basePath = "../assets/textures/";
     RegisterTexture(basePath + "guard.png", "guard");
     RegisterTexture(basePath + "tired_star.png", "tired_star");
+    RegisterTexture(basePath + "textBg.png", "npcMessageBg");
 
     InitializeAttackRangeBuffer();
     InitializeRenderModules();
@@ -108,9 +110,15 @@ void Renderer3D::InitializeRenderModules()
 {
     mPlayerEffectRenderer = std::make_unique<PlayerEffectRenderer>(this);
     mDebugLabelRenderer = std::make_unique<DebugLabelRenderer>(this);
+    mNPCProximityMessageRenderer =
+        std::make_unique<NPCProximityMessageRenderer>(this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(mGame);
     mSceneObjectRenderer =
-        std::make_unique<SceneObjectRenderer>(this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get());
+        std::make_unique<SceneObjectRenderer>(
+            this,
+            mPlayerEffectRenderer.get(),
+            mDebugLabelRenderer.get(),
+            mNPCProximityMessageRenderer.get());
     mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);
 }
 

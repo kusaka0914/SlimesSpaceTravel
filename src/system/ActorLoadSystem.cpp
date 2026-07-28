@@ -173,9 +173,108 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
             const std::string name = node["name"] ? node["name"].as<std::string>() : "";
             npc->SetName(name);
 
+            if (node["proximityMessage"] &&
+                node["proximityMessage"].IsMap()) {
+                const YAML::Node messageNode = node["proximityMessage"];
+                const std::string mode =
+                    messageNode["mode"]
+                        ? messageNode["mode"].as<std::string>()
+                        : "disabled";
+                if (mode == "afterTalk") {
+                    npc->SetProximityMessageMode(
+                        NPCProximityMessageMode::AfterTalk);
+                } else if (mode == "always") {
+                    npc->SetProximityMessageMode(
+                        NPCProximityMessageMode::Always);
+                } else {
+                    npc->SetProximityMessageMode(
+                        NPCProximityMessageMode::Disabled);
+                }
+
+                npc->SetProximityMessageRange(
+                    messageNode["range"]
+                        ? messageNode["range"].as<float>()
+                        : 3.0f);
+                npc->SetProximityMessageHeight(
+                    messageNode["height"]
+                        ? messageNode["height"].as<float>()
+                        : 1.8f);
+                npc->SetProximityMessageScale(
+                    messageNode["scale"]
+                        ? messageNode["scale"].as<float>()
+                        : 1.0f);
+            }
+
             if (node["talkTexts"] && node["talkTexts"].IsSequence()) {
                 for (const YAML::Node& talkTextNode : node["talkTexts"]) {
                     npc->AddTalkTexts(talkTextNode.as<std::string>());
+                }
+            }
+
+            if (npc->GetTalkTexts().empty() &&
+                npc->GetProximityMessageMode() !=
+                    NPCProximityMessageMode::Disabled) {
+                npc->AddTalkTexts("");
+            }
+
+            if (node["proximityMessage"] &&
+                node["proximityMessage"].IsMap()) {
+                const YAML::Node messageNode = node["proximityMessage"];
+                bool loadedVariants = false;
+                if (messageNode["variants"] &&
+                    messageNode["variants"].IsSequence()) {
+                    for (const YAML::Node& variantNode :
+                         messageNode["variants"]) {
+                        if (!variantNode.IsMap() ||
+                            !variantNode["talkIndex"] ||
+                            !variantNode["text"]) {
+                            continue;
+                        }
+
+                        const int talkIndex =
+                            variantNode["talkIndex"].as<int>();
+                        if (talkIndex < 0) {
+                            continue;
+                        }
+                        npc->SetTalkProximityMessageText(
+                            static_cast<std::size_t>(talkIndex),
+                            variantNode["text"].as<std::string>());
+                        loadedVariants = true;
+                    }
+                }
+
+                // Compatibility with the first implementation, which stored
+                // one shared message for every clear-state conversation.
+                if (!loadedVariants && messageNode["text"]) {
+                    const std::string legacyText =
+                        messageNode["text"].as<std::string>();
+                    for (std::size_t talkIndex = 0;
+                         talkIndex < npc->GetTalkTexts().size();
+                         ++talkIndex) {
+                        npc->SetTalkProximityMessageText(
+                            talkIndex, legacyText);
+                    }
+                }
+            }
+
+            if (node["talkStageClearConditions"] &&
+                node["talkStageClearConditions"].IsSequence()) {
+                for (const YAML::Node& conditionNode :
+                     node["talkStageClearConditions"]) {
+                    if (!conditionNode.IsMap() ||
+                        !conditionNode["talkIndex"] ||
+                        !conditionNode["stage"]) {
+                        continue;
+                    }
+
+                    const int talkIndex =
+                        conditionNode["talkIndex"].as<int>();
+                    const int stageNum = conditionNode["stage"].as<int>();
+                    if (talkIndex < 0 || stageNum < 0) {
+                        continue;
+                    }
+                    npc->SetTalkStageClearCondition(
+                        static_cast<std::size_t>(talkIndex), stageNum);
                 }
             }
 
@@ -573,6 +672,21 @@ MovingPlatform* ActorLoadSystem::CreateMovingPlatformFromStageNode(const YAML::N
         node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
         [](Planet* planet, MovingPlatform* platform) { planet->AddMovingPlatform(platform); },
         [](MovingPlatform* platform, const YAML::Node& node) {
+            glm::vec3 baseLocalPos(0.0f);
+            if (platform->GetCurrentPlanet()) {
+                baseLocalPos =
+                    platform->GetPos() -
+                    platform->GetCurrentPlanet()->GetPos();
+            }
+            if (node["startLocalPos"] &&
+                node["startLocalPos"].IsSequence() &&
+                node["startLocalPos"].size() >= 3) {
+                baseLocalPos.x = node["startLocalPos"][0].as<float>();
+                baseLocalPos.y = node["startLocalPos"][1].as<float>();
+                baseLocalPos.z = node["startLocalPos"][2].as<float>();
+            }
+            platform->SetBaseLocalPos(baseLocalPos);
+
             glm::vec3 moveOffset(4.0f, 0.0f, 0.0f);
 
             if (node["moveOffset"] && node["moveOffset"].IsSequence() && node["moveOffset"].size() >= 3) {
@@ -583,12 +697,26 @@ MovingPlatform* ActorLoadSystem::CreateMovingPlatformFromStageNode(const YAML::N
 
             platform->SetMoveOffset(moveOffset);
 
+            if (node["endLocalPos"] &&
+                node["endLocalPos"].IsSequence() &&
+                node["endLocalPos"].size() >= 3) {
+                platform->SetDestinationLocalPos(
+                    glm::vec3(
+                        node["endLocalPos"][0].as<float>(),
+                        node["endLocalPos"][1].as<float>(),
+                        node["endLocalPos"][2].as<float>()));
+            }
+
             const float moveDuration = node["moveDuration"] ? node["moveDuration"].as<float>() : 3.0f;
             platform->SetMoveDuration(moveDuration);
 
-            if (platform->GetCurrentPlanet()) {
-                platform->SetBaseLocalPos(platform->GetPos() - platform->GetCurrentPlanet()->GetPos());
-            }
+            const bool moveOnPlayer =
+                node["moveOnPlayer"] ? node["moveOnPlayer"].as<bool>() : false;
+            platform->SetMoveOnPlayer(moveOnPlayer);
+
+            const float returnDelay =
+                node["returnDelay"] ? node["returnDelay"].as<float>() : 1.0f;
+            platform->SetReturnDelay(returnDelay);
         });
 }
 

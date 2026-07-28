@@ -563,7 +563,8 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
     }
 
     const NPCTalkCameraFocusTarget* target =
-        talkingNPC->GetTalkCameraFocusTarget(static_cast<std::size_t>(talkIndex));
+        talkingNPC->GetResolvedTalkCameraFocusTarget(
+            static_cast<std::size_t>(talkIndex));
     if (!target || !target->IsValid()) {
         return nullptr;
     }

@@ -469,15 +469,21 @@ bool Game::IsStageCleared(int stageNum) const
 
 void Game::MarkStageCleared(int stageNum)
 {
+    SetStageCleared(stageNum, true);
+}
+
+void Game::SetStageCleared(int stageNum, bool isCleared)
+{
     if (!mStageProgressSystem) {
         return;
     }
 
-    mStageProgressSystem->MarkStageCleared(stageNum);
-    if (mWorld) {
+    const bool changed =
+        mStageProgressSystem->SetStageCleared(stageNum, isCleared);
+    if (changed && mWorld) {
         mWorld->RefreshActorProgressVisibility();
     }
-    if (mPhysicsSystem) {
+    if (changed && mPhysicsSystem) {
         mPhysicsSystem->Initialize();
     }
 }

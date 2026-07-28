@@ -23,6 +23,7 @@ public:
 
 private:
     void DrawStageSwitcher();
+    void DrawStageClearProgressEditor();
 
     StageAddActorPanel& mAddActorPanel;
     StagePlanetPanel& mPlanetPanel;

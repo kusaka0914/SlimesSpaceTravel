@@ -330,7 +330,7 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
         return;
     }
 
-    constexpr glm::vec4 black{0.0f, 0.0f, 0.0f, 255.0f};
+    constexpr glm::vec4 talkTextColor{35.0f, 35.0f, 42.0f, 255.0f};
     const float x = mFbWidth * talkTextInfo->xRatio;
     const float y = mFbHeight * talkTextInfo->yRatio;
     const float scale = mFbWidth * talkTextInfo->scaleRatio;
@@ -344,11 +344,11 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
             talkTextInfo->rubyScaleRatio,
             talkTextInfo->rubyGapRatio,
             *rubySegments,
-            black);
+            talkTextColor);
         return;
     }
 
-    DrawText(x, y, scale, texts[index], false, black);
+    DrawText(x, y, scale, texts[index], false, talkTextColor);
 }
 
 void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
@@ -367,7 +367,7 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
     DrawTexture(mFbWidth * (textInfo->xRatio - textureMarginX), mFbHeight * (textInfo->yRatio - textureMarginY),
                 mFbWidth * talkBgTextureInfo->widthRatio, mFbHeight * talkBgTextureInfo->heightRatio, "textBg");
 
-    const glm::vec4 black{0.0f, 0.0f, 0.0f, 255.0f};
+    const glm::vec4 talkTextColor{35.0f, 35.0f, 42.0f, 255.0f};
     const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
 
     if (talkUIIndex < 0 || talkUIIndex >= static_cast<int>(textInfo->texts.size())) {
@@ -391,7 +391,7 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
             rubyScaleRatio,
             rubyGapRatio,
             textInfo->rubySegments[talkUIIndex],
-            black);
+            talkTextColor);
         return;
     }
 
@@ -401,7 +401,7 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
         mFbWidth * textInfo->scaleRatio,
         textInfo->texts[talkUIIndex],
         false,
-        black);
+        talkTextColor);
 }
 
 bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)

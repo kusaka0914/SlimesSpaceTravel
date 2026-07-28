@@ -28,6 +28,7 @@ private:
     int mSelectedPlatformPlanetIndex = -1;
     int mSelectedPlatformModelIndex = 0;
     glm::vec3 mPlatformScale = glm::vec3(1.0f, 1.0f, 1.0f);
+    std::string mRideMovingPlatformStatus;
 
     int mSelectedCrystalPlanetIndex = -1;
     int mSelectedCrystalTypeIndex = 0;

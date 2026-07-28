@@ -82,6 +82,37 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
     return true;
 }
 
+bool StageActorCreateService::AddRideMovingPlatform(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const glm::vec3& scale)
+{
+    if (!CanCreateActor() ||
+        !IsValidPlanetIndex(currentPlanetNum, "ride moving platform")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "movingPlatforms");
+    const int index = static_cast<int>(config["movingPlatforms"].size());
+    YAML::Node platformNode =
+        CreateRideMovingPlatformNode(currentPlanetNum, modelPath, scale);
+    config["movingPlatforms"].push_back(platformNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mContext.game->GetActorLoadSystem()->CreateMovingPlatformFromStageNode(
+        platformNode, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
 bool StageActorCreateService::AddPlanet(const std::string& modelPath)
 {
     if (!CanCreateActor()) {
@@ -375,6 +406,22 @@ YAML::Node StageActorCreateService::CreatePlatformNode(int currentPlanetNum, con
 
     node["modelPath"] = modelPath;
 
+    return node;
+}
+
+YAML::Node StageActorCreateService::CreateRideMovingPlatformNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const glm::vec3& scale) const
+{
+    YAML::Node node =
+        CreatePlatformNode(currentPlanetNum, modelPath, scale);
+    node["moveOnPlayer"] = true;
+    node["moveDuration"] = 3.0f;
+    node["returnDelay"] = 1.0f;
+    node["moveOffset"][0] = 0.0f;
+    node["moveOffset"][1] = 5.0f;
+    node["moveOffset"][2] = 0.0f;
     return node;
 }
 

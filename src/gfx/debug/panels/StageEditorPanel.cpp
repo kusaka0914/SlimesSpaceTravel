@@ -100,6 +100,7 @@ void StageEditorPanel::Draw()
     ImGui::Separator();
 
     const char* menus[] = {
+        "クリア状況",
         "追加",
         "一覧",
         "選択中",
@@ -131,21 +132,24 @@ void StageEditorPanel::Draw()
 
     switch (mSelectedMenu) {
     case 0:
-        mAddActorPanel.Draw();
+        DrawStageClearProgressEditor();
         break;
     case 1:
-        mPlacementPanel.DrawObjectList();
+        mAddActorPanel.Draw();
         break;
     case 2:
-        mPlacementPanel.Draw();
+        mPlacementPanel.DrawObjectList();
         break;
     case 3:
-        mPlacementPanel.DrawPlayerSpawn();
+        mPlacementPanel.Draw();
         break;
     case 4:
-        mPlanetPanel.Draw();
+        mPlacementPanel.DrawPlayerSpawn();
         break;
     case 5:
+        mPlanetPanel.Draw();
+        break;
+    case 6:
         mDeleteActorPanel.Draw();
         break;
     default:
@@ -153,6 +157,38 @@ void StageEditorPanel::Draw()
     }
 
     ImGui::EndChild();
+}
+
+void StageEditorPanel::DrawStageClearProgressEditor()
+{
+    if (!mContext.game) {
+        return;
+    }
+
+    ImGui::SeparatorText("ステージクリア状況");
+    ImGui::TextDisabled(
+        "チェックを変更すると即座に反映され、次回起動時にも保持されます。");
+    ImGui::TextDisabled(
+        "NPC会話・頭上の一言・クリア条件付きオブジェクトの判定に使用されます。");
+
+    const int currentStageNum = mContext.game->GetCurrentStageNum();
+    const int stageCount =
+        static_cast<int>(mContext.game->GetStages().size());
+    for (int stageNum = 0; stageNum < stageCount; ++stageNum) {
+        bool isCleared = mContext.game->IsStageCleared(stageNum);
+        const std::string checkboxLabel =
+            "ステージ " + std::to_string(stageNum) +
+            " をクリア済みにする##stageClearProgress" +
+            std::to_string(stageNum);
+        if (ImGui::Checkbox(checkboxLabel.c_str(), &isCleared)) {
+            mContext.game->SetStageCleared(stageNum, isCleared);
+        }
+
+        if (stageNum == currentStageNum) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("（現在編集中）");
+        }
+    }
 }
 
 void StageEditorPanel::DrawStageSwitcher()
@@ -227,7 +263,7 @@ void StageEditorPanel::DrawStageSwitcher()
 void StageEditorPanel::RequestOpenPlacementTab()
 {
     mRequestOpenMainTab = true;
-    mSelectedMenu = 2;
+    mSelectedMenu = 3;
     mPlacementPanel.RequestOpenPickedActorPlacement();
 }
 

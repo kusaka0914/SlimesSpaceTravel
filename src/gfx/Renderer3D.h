@@ -16,6 +16,7 @@ class Actor;
 class DebugLabelRenderer;
 class Enemy;
 class Game;
+class NPCProximityMessageRenderer;
 class Player;
 class PlayerEffectRenderer;
 class ParticleRenderer;
@@ -91,6 +92,7 @@ private:
     std::unique_ptr<SceneObjectRenderer> mSceneObjectRenderer;
     std::unique_ptr<PlayerEffectRenderer> mPlayerEffectRenderer;
     std::unique_ptr<DebugLabelRenderer> mDebugLabelRenderer;
+    std::unique_ptr<NPCProximityMessageRenderer> mNPCProximityMessageRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;
 
     GLuint mAttackRangeVAO;

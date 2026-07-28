@@ -2,6 +2,8 @@
 
 #include "Game.h"
 #include "actor/Actor.h"
+#include "actor/MovingPlatform.h"
+#include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
 #include "system/CameraSystem.h"
@@ -99,7 +101,17 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
     ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), translation, rotationDeg, scale);
 
     if (operation == ImGuizmo::TRANSLATE) {
-        actor->SetPos(glm::vec3(translation[0], translation[1], translation[2]));
+        const glm::vec3 worldPos(
+            translation[0], translation[1], translation[2]);
+        actor->SetPos(worldPos);
+
+        if (MovingPlatform* movingPlatform =
+                dynamic_cast<MovingPlatform*>(actor);
+            movingPlatform && movingPlatform->GetMoveOnPlayer() &&
+            movingPlatform->GetCurrentPlanet()) {
+            movingPlatform->SetEditorPreviewLocalPos(
+                worldPos - movingPlatform->GetCurrentPlanet()->GetPos());
+        }
         return;
     }
 

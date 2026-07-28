@@ -124,7 +124,8 @@ void TalkController::TryStartTalkWithNPC(int playerNum)
             return;
         }
 
-        if (!talkableNPC->GetIsTalkable()) {
+        if (!talkableNPC->GetIsTalkable() ||
+            !talkableNPC->CanStartRegularTalk()) {
             return;
         }
 

@@ -13,6 +13,7 @@ public:
 
     bool IsStageCleared(int stageNum) const;
     bool MarkStageCleared(int stageNum);
+    bool SetStageCleared(int stageNum, bool isCleared);
 
 private:
     std::string mSavePath;

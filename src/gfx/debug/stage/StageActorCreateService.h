@@ -12,6 +12,10 @@ public:
     explicit StageActorCreateService(DebugEditorContext& context);
 
     bool AddPlatform(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale);
+    bool AddRideMovingPlatform(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const glm::vec3& scale);
     bool AddPlanet(const std::string& modelPath);
     bool AddEnemy(const std::string& type, int currentPlanetNum);
     bool AddNPC(const std::string& modelPath, int currentPlanetNum, const std::string& name,
@@ -30,6 +34,10 @@ private:
     void EnsureSequence(YAML::Node& config, const std::string& sequenceName) const;
 
     YAML::Node CreatePlatformNode(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale) const;
+    YAML::Node CreateRideMovingPlatformNode(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const glm::vec3& scale) const;
     YAML::Node CreatePlanetNode(int planetIndex, const std::string& modelPath) const;
     YAML::Node CreateEnemyNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateNPCNode(const std::string& modelPath, int currentPlanetNum,

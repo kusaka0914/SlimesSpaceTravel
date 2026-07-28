@@ -16,9 +16,9 @@ boats:
     destStage: 1
     facingYaw: -1.6
     pos:
-      - 0
-      - 24.5
-      - -23.27
+      - 1.4
+      - 28.34
+      - -14.58
     rotation:
       - 0
       - -1.6
@@ -133,6 +133,9 @@ NPCs:
     talkTexts:
       - 見知らぬスライムさんだ！やっほ～！\nここはロケット発着所だよ～！
       - "他の惑星に行きたい？\nじゃああの子に聞いてみて～！"
+      - "あそこにとても大きい車が落ちてきたんだ...\n危ないよねぇ～！"
+      - でもあれに登ったら家の屋上に行けそうだなぁ～
+      - "あの子のエレベーターが帰ってきたみたいだよ！\n使ってみたら～？"
     pos:
       - -0.05
       - 2.64
@@ -147,15 +150,24 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.00046408235
-      - 0.99861556
-      - 0.052600224
+      - -0.00028048185
+      - 0.9986157
+      - 0.05260023
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
       - talkIndex: 1
         sequence: NPCs
         index: 1
+      - talkIndex: 2
+        sequence: stageObjects
+        index: 9
+      - talkIndex: 3
+        sequence: stageObjects
+        index: 9
+      - talkIndex: 4
+        sequence: NPCs
+        index: 5
     talkRubies:
       - talkIndex: 0
         segments:
@@ -208,6 +220,95 @@ NPCs:
             reading: き
           - text: いてみて～！
             ruby: false
+      - talkIndex: 2
+        segments:
+          - text: あそこにとても
+            ruby: false
+          - text: 大
+            ruby: true
+            reading: おお
+          - text: きい
+            ruby: false
+          - text: 車
+            ruby: true
+            reading: くるま
+          - text: が
+            ruby: false
+          - text: 落
+            ruby: true
+            reading: お
+          - text: "ちてきたんだ...\n"
+            ruby: false
+          - text: 危
+            ruby: true
+            reading: あぶ
+          - text: ないよねぇ～！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: でもあれに
+            ruby: false
+          - text: 登
+            ruby: true
+            reading: のぼ
+          - text: ったら
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: の
+            ruby: false
+          - text: 屋
+            ruby: true
+            reading: おく
+          - text: 上
+            ruby: true
+            reading: じょう
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けそうだなぁ～
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: あの
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: のエレベーターが
+            ruby: false
+          - text: 帰
+            ruby: true
+            reading: かえ
+          - text: "ってきたみたいだよ！\n"
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: ってみたら～？
+            ruby: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 1
+      - talkIndex: 3
+        stage: 1
+      - talkIndex: 4
+        stage: 2
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: あの子に聞いてみて～！
+        - talkIndex: 3
+          text: あれ登れるかなぁ～？
+        - talkIndex: 4
+          text: エレベーター使ってみたら～？
+      range: 3
+      height: 1.8
+      scale: 1
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -231,9 +332,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.038085133
-      - 0.9986393
-      - 0.035624955
+      - -0.037958685
+      - 0.9986394
+      - 0.03575778
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
@@ -273,6 +374,16 @@ NPCs:
             reading: だん
           - text: をのぼってね！
             ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: ジャンプで階段登って！
+      range: 3
+      height: 1.8
+      scale: 1
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
@@ -295,9 +406,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0016212875
+      - -0.0016212873
       - -0.9999949
-      - 0.0027979533
+      - -0.0027979533
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -345,7 +456,7 @@ NPCs:
     pos:
       - 14.65
       - 8.39
-      - 5.17
+      - 6.16
     facingYaw: 0
     rotation:
       - 0
@@ -379,6 +490,16 @@ NPCs:
             reading: とど
           - text: かないんだよねぇ...
             ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: 行ける方法ないかなぁ～
+        - talkIndex: 1
+          text: 行ける方法ないかなぁ～
+      range: 3
+      height: 1.8
+      scale: 1
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -386,12 +507,140 @@ NPCs:
     type: spaceSlime
     name: BaseGuideNPC
     talkTexts:
-      - ""
-      - ジャンプで階段をのぼってね！
+      - "このでっかい家、全部僕の家だよ！\nいいでしょ～！"
+      - "ん？中に入りたい？\nダメダメ！君ももっとビッグになるんだね！"
+      - 屋上に行けるエレベーター作っちゃった～！
+      - ...勝手に使わないでね？
     pos:
-      - -8.91
-      - 2.82
+      - -8.32
+      - 2.84
       - 3.57
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - -0.029784592
+      - 0.9994756
+      - 0.012705434
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: このでっかい
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: 、
+            ruby: false
+          - text: 全
+            ruby: true
+            reading: ぜん
+          - text: 部
+            ruby: true
+            reading: ぶ
+          - text: 僕
+            ruby: true
+            reading: ぼく
+          - text: の
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: "だよ！\nいいでしょ～！"
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ん？
+            ruby: false
+          - text: 中
+            ruby: true
+            reading: なか
+          - text: に
+            ruby: false
+          - text: 入
+            ruby: true
+            reading: はい
+          - text: "りたい？\nダメダメ！"
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: ももっとビッグになるんだね！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 屋
+            ruby: true
+            reading: おく
+          - text: 上
+            ruby: true
+            reading: じょう
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるエレベーター
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: っちゃった～！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: ...
+            ruby: false
+          - text: 勝手
+            ruby: true
+            reading: かって
+          - text: に
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: わないでね？
+            ruby: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 1
+      - talkIndex: 3
+        stage: 1
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: 使わないでねっ？
+        - talkIndex: 1
+          text: ビッグになるんだね！
+        - talkIndex: 2
+          text: 使わないでねっ？
+        - talkIndex: 3
+          text: 使わないでねっ？
+      range: 3
+      height: 1.8
+      scale: 1
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - "エレベーターが帰ってきたの！\nこれに乗ったら上に行けるよ！"
+      - ここにあったエレベーター、知らない..？
+    pos:
+      - -2.6
+      - 7.52
+      - -12.68
     facingYaw: 0
     rotation:
       - 0
@@ -402,30 +651,64 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.032391906
-      - 0.999391
-      - 0.012980582
+      - 0
+      - 1
+      - 0
     radius: 0.75
     modelPath: spaceSlime.obj
-    talkCameraFocus:
-      - talkIndex: 0
-        sequence: boats
-        index: 1
     talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: エレベーターが
+            ruby: false
+          - text: 帰
+            ruby: true
+            reading: かえ
+          - text: "ってきたの！\nこれに"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: ったら
+            ruby: false
+          - text: 上
+            ruby: true
+            reading: うえ
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるよ！
+            ruby: false
       - talkIndex: 1
         segments:
-          - text: ジャンプで
+          - text: ここにあったエレベーター、
             ruby: false
-          - text: 階
+          - text: 知
             ruby: true
-            reading: かい
-          - text: 段
-            ruby: true
-            reading: だん
-          - text: をのぼってね！
+            reading: し
+          - text: らない..？
             ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: movingPlatforms
+        index: 0
+    talkStageClearConditions:
+      - talkIndex: 0
+        stage: 2
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: エレベーター使っていいよ～！
+        - talkIndex: 1
+          text: エレベーターどこ～？
+      range: 3
+      height: 1.8
+      scale: 1
 stageObjects:
-  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.0588229, 5.979225], pos: [0.45, 4.77, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.334428, 5.979225], pos: [0.45, 4.43, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png}
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1]}
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: CarAssets/cone-flat.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 2.78], upVec: [0, 1, 0], textureTiling: [1, 1]}
   - currentPlanetNum: 0
@@ -499,7 +782,7 @@ stageObjects:
     pos:
       - 12.69
       - 2.42
-      - 6.27
+      - 7.26
     upVec:
       - 0.07671904
       - 0.9970513
@@ -578,7 +861,7 @@ stageObjects:
     pos:
       - 13.69
       - 2.54
-      - 11.04
+      - 12.03
     upVec:
       - -0.013647843
       - 0.97357744
@@ -657,7 +940,7 @@ stageObjects:
     pos:
       - 13.07
       - 2.61
-      - 2.04
+      - 3.66
     upVec:
       - -0.07671904
       - 0.9970513
@@ -683,7 +966,7 @@ stageObjects:
     pos:
       - -13.69
       - 1.87
-      - 16.19
+      - 15.72
     upVec:
       - -0.11146895
       - 0.9908391
@@ -709,7 +992,7 @@ stageObjects:
     pos:
       - 13.42
       - 2.01
-      - 18
+      - 17.72
     upVec:
       - 0.036643703
       - 0.9976713
@@ -735,7 +1018,7 @@ stageObjects:
     pos:
       - 0.24
       - 1.18
-      - -6.22
+      - -6.43
     upVec:
       - 0
       - 1
@@ -744,5 +1027,467 @@ stageObjects:
       - 1
       - 1
     textureOverride: textures/roadTex.png
-    visibleIfStageCleared: 2
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/delivery.fbx
+    collision: true
+    rotation:
+      - -0.07679449
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -17.61
+      - 1.87
+      - 13.49
+    upVec:
+      - -0.11146895
+      - 0.9908391
+      - 0.07624092
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/truck-flat.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.54
+      - 2.58
+      - 4.49
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/truck.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.47
+      - 2.58
+      - 2.31
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/firetruck.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.41
+      - 2.58
+      - -0.17
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/van.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.37
+      - 2.58
+      - -2.7
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0.09424778], scale: [4.5679984, 0.055122286, 4.300166], pos: [-20.4, 2.11, 0.81], upVec: [-0.09410831, 0.99556196, 0], textureTiling: [4.5679984, 4.300166], textureOverride: textures/selectFieldTex.png}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: CarAssets/truck-flat.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -23.05
+      - 1.82
+      - 4.49
+    upVec:
+      - -0.09931976
+      - 0.9950557
+      - 8.682809e-09
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: CarAssets/truck.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.98
+      - 1.82
+      - 2.31
+    upVec:
+      - -0.09931976
+      - 0.9950557
+      - 8.682809e-09
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: CarAssets/firetruck.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.92
+      - 1.82
+      - -0.17
+    upVec:
+      - -0.09931976
+      - 0.9950557
+      - 8.682809e-09
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: CarAssets/van.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.88
+      - 2.06
+      - -2.7
+    upVec:
+      - -0.09931976
+      - 0.9950557
+      - 8.682809e-09
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 27.03856
+      - 30.443556
+      - 0.96222866
+    pos:
+      - 17.41
+      - 2.42
+      - 0.7
+    upVec:
+      - 0.07671904
+      - 0.9970513
+      - -0.0017401914
+    textureTiling:
+      - 27.03856
+      - 27.04
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415927
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 27.03856
+      - 31.514084
+      - 0.9622287
+    pos:
+      - -21.88
+      - 2.42
+      - 0.7
+    upVec:
+      - 0.07671904
+      - 0.9970513
+      - -0.0017401914
+    textureTiling:
+      - 27.03856
+      - 27.04
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5707964
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 1.5707964
+      - 0.07679449
+    scale:
+      - 24.795946
+      - 30.791155
+      - 0.96222866
+    pos:
+      - -0.78
+      - 2.42
+      - -20.03
+    upVec:
+      - 0.001740188
+      - 0.99705124
+      - 0.07671904
+    textureTiling:
+      - 24.795942
+      - 27.04
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5707964
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 1.5707964
+      - 0.07679449
+    scale:
+      - 24.795944
+      - 31.827467
+      - 0.9622287
+    pos:
+      - 0.22
+      - 1.5
+      - 21.31
+    upVec:
+      - 0.001740188
+      - 0.99705124
+      - 0.07671904
+    textureTiling:
+      - 24.795942
+      - 27.04
 platforms: []
+movingPlatforms:
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 0.13529083
+      - 1
+    modelPath: platform.obj
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0
+      - 20.82056
+      - 0
+    pos:
+      - -3.2836747
+      - 7.6387854
+      - -14.403467
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - -3.2836747
+      - 7.6387854
+      - -14.403467
+    endLocalPos:
+      - -3.2836747
+      - 28.459347
+      - -14.403467
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 2
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 0.13529083
+      - 1
+    modelPath: platform.obj
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0.002869606
+      - 6.2577267
+      - 0.0004439652
+    pos:
+      - -9.112869
+      - 3.0422735
+      - 0.35955605
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - -9.112869
+      - 3.0422735
+      - 0.35955605
+    endLocalPos:
+      - -9.11
+      - 9.3
+      - 0.36
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 0.13529083
+      - 1
+    modelPath: platform.obj
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - -0.0036535263
+      - 5.7592525
+      - 0.0004823208
+    pos:
+      - 12.373653
+      - 3.0422509
+      - 0.76951766
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - 12.373653
+      - 3.0422509
+      - 0.76951766
+    endLocalPos:
+      - 12.37
+      - 8.801503
+      - 0.77
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 2
