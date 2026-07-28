@@ -30,6 +30,9 @@ void Actor::Initialize() {}
 
 void Actor::ProcessInput()
 {
+    if (!IsProgressVisibleForCurrentMode()) {
+        return;
+    }
     ProcessActor();
 }
 
@@ -37,6 +40,10 @@ void Actor::ProcessActor() {}
 
 void Actor::Update(float deltaTime)
 {
+    if (!IsProgressVisibleForCurrentMode()) {
+        return;
+    }
+
     UpdateUpVec();
     UpdateDirectionVectors();
 
@@ -74,6 +81,19 @@ void Actor::SetLoadedModel(const LoadedModel* loadedModel)
 {
     mLoadedModel = loadedModel;
     OnLoadedModelChanged();
+}
+
+void Actor::SetVisibleIfStageCleared(int stageNum)
+{
+    mVisibleIfStageCleared = stageNum >= 0 ? stageNum : -1;
+    RefreshProgressVisibility();
+}
+
+void Actor::RefreshProgressVisibility()
+{
+    mProgressVisibilitySatisfied =
+        mVisibleIfStageCleared < 0 ||
+        (mGame && mGame->IsStageCleared(mVisibleIfStageCleared));
 }
 
 const std::vector<LoadedMesh>* Actor::GetMeshes() const

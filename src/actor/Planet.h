@@ -51,6 +51,7 @@ public:
 
     void RemoveAllEnemy() { mActorRegistry.RemoveAllEnemy(); }
     void RemoveAllBoat() { mActorRegistry.RemoveAllBoat(); }
+    void RemoveBoat(Boat* boat) { mActorRegistry.RemoveBoat(boat); }
     void RemoveAllBoatParts() { mActorRegistry.RemoveAllBoatParts(); }
     void RemoveAllCrystals() { mActorRegistry.RemoveAllCrystals(); }
     void RemoveAllNPCs() { mActorRegistry.RemoveAllNPCs(); }
@@ -71,6 +72,10 @@ public:
     void SetRocketSpawnCondition(const std::string& rocketSpawnCondition)
     {
         mProgressController.SetRocketSpawnCondition(rocketSpawnCondition);
+    }
+    std::string GetRocketSpawnCondition() const
+    {
+        return mProgressController.GetRocketSpawnCondition();
     }
 
     void SetPlanetShape(const std::string& planetShape)

@@ -4,6 +4,7 @@
 #include "system/PhysicsSystem.h"
 
 #include <btBulletDynamicsCommon.h>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -124,6 +125,17 @@ glm::vec3 ActorGroundResolver::CalculateFallbackUpVec(const Planet* currentPlane
     }
 
     const glm::vec3 toActor = actorPos - currentPlanet->GetPos();
+
+    // Ellipseは平たい惑星として扱い、重力のリセット時に中心へ斜めに
+    // 引っ張られないよう、中心からアクターまでの縦方向だけを使用する。
+    if (currentPlanet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+        if (std::abs(toActor.y) < 1e-6f) {
+            return glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+
+        return glm::vec3(0.0f, toActor.y > 0.0f ? 1.0f : -1.0f, 0.0f);
+    }
+
     if (glm::length(toActor) < 1e-6f) {
         return glm::vec3(0.0f, 1.0f, 0.0f);
     }

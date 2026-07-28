@@ -33,6 +33,8 @@ public:
     void RemoveComponent(std::unique_ptr<Component> component);
 
     void SetIsActive(bool isActive) { mIsActive = isActive; }
+    void SetVisibleIfStageCleared(int stageNum);
+    void RefreshProgressVisibility();
 
     void SetRadius(float radius) { mRadius = radius; }
     void SetFacingYaw(float facingYaw)
@@ -60,7 +62,20 @@ public:
     void SetPhi(float phi) { mPhi = phi; }
     void SetHeight(float height) { mHeight = height; }
 
-    bool GetIsActive() const { return mIsActive; }
+    bool GetIsActive() const
+    {
+        return mIsActive && IsProgressVisibleForCurrentMode();
+    }
+    int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
+    bool IsProgressVisibilitySatisfied() const
+    {
+        return mProgressVisibilitySatisfied;
+    }
+    bool IsProgressVisibleForCurrentMode() const
+    {
+        return mProgressVisibilitySatisfied ||
+               (mGame && mGame->GetIsDebugEditorShowing());
+    }
 
     float GetRadius() const { return mRadius; }
     float GetFacingYaw() const { return mFacingYaw; }
@@ -114,6 +129,8 @@ protected:
 
 protected:
     bool mIsActive;
+    bool mProgressVisibilitySatisfied = true;
+    int mVisibleIfStageCleared = -1;
     bool mIsUpVecInitialized;
 
     float mRadius;

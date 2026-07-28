@@ -41,7 +41,7 @@ void FallRespawnTriggerSystem::CreateTriggerBody(
     std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects,
     std::vector<std::unique_ptr<btCollisionShape>>& triggerShapes) const
 {
-    if (!point || !world) {
+    if (!point || !point->GetIsActive() || !world) {
         return;
     }
 

@@ -20,6 +20,7 @@ public:
 
     void ProcessActorsInput();
     void UpdateActors(float deltaTime);
+    void RefreshActorProgressVisibility();
 
     Player* FindNearestPlayer(Actor* actor) const;
 

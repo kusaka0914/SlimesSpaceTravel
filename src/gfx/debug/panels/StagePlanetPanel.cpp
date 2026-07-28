@@ -156,6 +156,38 @@ void StagePlanetPanel::Draw()
             DrawTexturePicker(planet, i);
             DrawTextureTilingEditor(planet, i);
 
+            ImGui::SeparatorText("ロケット出現条件");
+            const char* spawnConditionLabels[] = {
+                "なし",
+                "敵をすべて倒す",
+                "ボートパーツをすべて集める",
+            };
+            const char* spawnConditionValues[] = {
+                "",
+                "AllEnemiesDead",
+                "AllBoatPartsCollected",
+            };
+            const std::string currentSpawnCondition =
+                planet->GetRocketSpawnCondition();
+            int spawnConditionIndex = 0;
+            for (int conditionIndex = 0;
+                 conditionIndex < IM_ARRAYSIZE(spawnConditionValues);
+                 ++conditionIndex) {
+                if (currentSpawnCondition ==
+                    spawnConditionValues[conditionIndex]) {
+                    spawnConditionIndex = conditionIndex;
+                    break;
+                }
+            }
+            if (ImGui::Combo(
+                    ("出現条件##rocketSpawnCondition" + std::to_string(i)).c_str(),
+                    &spawnConditionIndex,
+                    spawnConditionLabels,
+                    IM_ARRAYSIZE(spawnConditionLabels))) {
+                planet->SetRocketSpawnCondition(
+                    spawnConditionValues[spawnConditionIndex]);
+            }
+
             ImGui::TreePop();
         }
     }
@@ -206,6 +238,8 @@ void StagePlanetPanel::Save()
         const glm::vec2 textureTiling = planet->GetTextureTiling();
         config["planets"][i]["textureTiling"][0] = textureTiling.x;
         config["planets"][i]["textureTiling"][1] = textureTiling.y;
+        config["planets"][i]["rocketSpawnCondition"] =
+            planet->GetRocketSpawnCondition();
     }
 
     StageYamlRepository::SaveCurrentStage(mContext, config);

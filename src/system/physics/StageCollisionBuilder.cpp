@@ -60,7 +60,8 @@ void StageCollisionBuilder::CreateStaticMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !world || !mGame || !mGame->GetMeshLoadSystem()) {
+    if (!actor || !actor->GetIsActive() || !world || !mGame ||
+        !mGame->GetMeshLoadSystem()) {
         return;
     }
 
@@ -106,7 +107,8 @@ void StageCollisionBuilder::CreateKinematicMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !world || !mGame || !mGame->GetMeshLoadSystem()) {
+    if (!actor || !actor->GetIsActive() || !world || !mGame ||
+        !mGame->GetMeshLoadSystem()) {
         return;
     }
 

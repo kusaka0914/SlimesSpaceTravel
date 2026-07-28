@@ -27,6 +27,19 @@ void PlanetProgressController::SetRocketSpawnCondition(const std::string& rocket
     }
 }
 
+std::string PlanetProgressController::GetRocketSpawnCondition() const
+{
+    switch (mRocketSpawnCondition) {
+    case RocketSpawnCondition::AllEnemiesDead:
+        return "AllEnemiesDead";
+    case RocketSpawnCondition::AllBoatPartsCollected:
+        return "AllBoatPartsCollected";
+    case RocketSpawnCondition::None:
+    default:
+        return "";
+    }
+}
+
 void PlanetProgressController::InitRemainBoatPartsCount(const PlanetActorRegistry& actorRegistry)
 {
     mRemainBoatPartsCount = 0;

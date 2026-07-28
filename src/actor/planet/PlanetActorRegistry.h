@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 class Boat;
@@ -30,6 +31,12 @@ public:
 
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveAllBoat() { mBoats.clear(); }
+    void RemoveBoat(Boat* boat)
+    {
+        mBoats.erase(
+            std::remove(mBoats.begin(), mBoats.end(), boat),
+            mBoats.end());
+    }
     void RemoveAllBoatParts() { mBoatParts.clear(); }
     void RemoveAllCrystals() { mCrystals.clear(); }
     void RemoveAllNPCs() { mNPCs.clear(); }

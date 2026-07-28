@@ -39,6 +39,7 @@ private:
     void DrawStageObjectModelPicker(class StageObject* stageObject, const std::string& sequenceName,
                                     std::size_t listIndex);
     void DrawNPCModelPicker(class NPC* npc, const std::string& sequenceName, std::size_t listIndex);
+    void DrawBoatModelPicker(class Boat* boat, const std::string& sequenceName, std::size_t listIndex);
     void DrawTextureOverrideEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
     void RefreshTextureAssets();
 
@@ -58,6 +59,7 @@ private:
     std::array<char, 128> mTextureAssetFilter = {};
     std::array<char, 128> mStageObjectModelAssetFilter = {};
     std::array<char, 128> mNPCModelAssetFilter = {};
+    std::array<char, 128> mBoatModelAssetFilter = {};
     std::vector<std::string> mTextureAssets;
     std::string mTextureAssetStatus;
     std::string mRubyGenerationStatus;

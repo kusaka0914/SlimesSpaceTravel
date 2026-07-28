@@ -4,6 +4,8 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
+#include "actor/Boat.h"
+#include "actor/BoatArrivalPoint.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -383,6 +385,164 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
     }
 
+    if (Boat* boat = dynamic_cast<Boat*>(actor)) {
+        ImGui::SeparatorText("ロケット設定");
+
+        DrawBoatModelPicker(boat, sequenceName, listIndex);
+
+        Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
+        const std::vector<Planet*> planets =
+            stage ? stage->GetPlanets() : std::vector<Planet*>();
+
+        const auto findPlanetIndex =
+            [&planets](const Planet* target) {
+                for (int index = 0; index < static_cast<int>(planets.size()); ++index) {
+                    if (planets[index] == target) {
+                        return index;
+                    }
+                }
+                return -1;
+            };
+
+        int startPlanetIndex = findPlanetIndex(boat->GetCurrentPlanet());
+        const std::string startPlanetPreview =
+            startPlanetIndex >= 0
+                ? "惑星 " + std::to_string(startPlanetIndex)
+                : std::string("未設定");
+        if (ImGui::BeginCombo(
+                ("所属惑星##boatStartPlanet" + std::to_string(yamlIndex)).c_str(),
+                startPlanetPreview.c_str())) {
+            for (int index = 0; index < static_cast<int>(planets.size()); ++index) {
+                const bool selected = index == startPlanetIndex;
+                const std::string label =
+                    "惑星 " + std::to_string(index) +
+                    "##boatStartPlanetOption" + std::to_string(index);
+                if (ImGui::Selectable(label.c_str(), selected) && planets[index]) {
+                    if (Planet* previousPlanet = boat->GetCurrentPlanet()) {
+                        previousPlanet->RemoveBoat(boat);
+                    }
+                    boat->SetCurrentPlanet(planets[index]);
+                    planets[index]->AddBoat(boat);
+                    ApplyActorEditorRotation(boat);
+                    startPlanetIndex = index;
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        int destPlanetIndex = findPlanetIndex(boat->GetDestPlanet());
+        const std::string destPlanetPreview =
+            destPlanetIndex >= 0
+                ? "惑星 " + std::to_string(destPlanetIndex)
+                : std::string("未設定");
+        if (ImGui::BeginCombo(
+                ("移動先惑星##boatDestPlanet" + std::to_string(yamlIndex)).c_str(),
+                destPlanetPreview.c_str())) {
+            for (int index = 0; index < static_cast<int>(planets.size()); ++index) {
+                const bool selected = index == destPlanetIndex;
+                const std::string label =
+                    "惑星 " + std::to_string(index) +
+                    "##boatDestPlanetOption" + std::to_string(index);
+                if (ImGui::Selectable(label.c_str(), selected) && planets[index]) {
+                    boat->SetArrivalPoint(nullptr);
+                    boat->SetDestPlanet(planets[index]);
+                    destPlanetIndex = index;
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        Planet* destPlanet = boat->GetDestPlanet();
+        BoatArrivalPoint* selectedArrivalPoint = boat->GetArrivalPoint();
+        std::string arrivalPointPreview = "自動計算";
+        if (selectedArrivalPoint) {
+            arrivalPointPreview =
+                "到着点 " +
+                std::to_string(selectedArrivalPoint->GetStageYamlIndex());
+        }
+        if (ImGui::BeginCombo(
+                ("到着点##boatArrivalPoint" + std::to_string(yamlIndex)).c_str(),
+                arrivalPointPreview.c_str())) {
+            if (ImGui::Selectable("自動計算", selectedArrivalPoint == nullptr)) {
+                boat->SetArrivalPoint(nullptr);
+            }
+
+            if (destPlanet) {
+                for (BoatArrivalPoint* arrivalPoint :
+                     destPlanet->GetBoatArrivalPoints()) {
+                    if (!arrivalPoint) {
+                        continue;
+                    }
+
+                    const int arrivalIndex = arrivalPoint->GetStageYamlIndex();
+                    const std::string label =
+                        "到着点 " + std::to_string(arrivalIndex) +
+                        "##boatArrivalPointOption" +
+                        std::to_string(arrivalIndex);
+                    if (ImGui::Selectable(
+                            label.c_str(),
+                            selectedArrivalPoint == arrivalPoint)) {
+                        boat->SetArrivalPoint(arrivalPoint);
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        int destStage = boat->GetDestStage();
+        if (ImGui::InputInt(
+                ("移動先ステージ##boatDestStage" + std::to_string(yamlIndex)).c_str(),
+                &destStage)) {
+            boat->SetDestStage(std::max(0, destStage));
+        }
+
+        float travelDuration = boat->GetTravelDuration();
+        if (ImGui::DragFloat(
+                ("飛行時間（秒）##boatTravelDuration" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &travelDuration,
+                0.1f,
+                0.1f,
+                60.0f,
+                "%.1f")) {
+            boat->SetTravelDuration(travelDuration);
+        }
+
+        float destMargin = boat->GetDestMargin();
+        if (ImGui::DragFloat(
+                ("到着距離##boatDestMargin" + std::to_string(yamlIndex)).c_str(),
+                &destMargin,
+                0.1f,
+                0.0f,
+                100.0f,
+                "%.1f")) {
+            boat->SetDestMargin(destMargin);
+        }
+        ImGui::TextDisabled(
+            "到着点が未設定の場合に、移動先惑星の表面から離す距離です。");
+
+        std::array<char, 128> launchSequenceBuffer = {};
+        std::snprintf(
+            launchSequenceBuffer.data(),
+            launchSequenceBuffer.size(),
+            "%s",
+            boat->GetLaunchSequenceId().c_str());
+        if (ImGui::InputText(
+                ("発射シーケンスID##boatLaunchSequence" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                launchSequenceBuffer.data(),
+                launchSequenceBuffer.size())) {
+            boat->SetLaunchSequenceId(launchSequenceBuffer.data());
+        }
+
+        ImGui::TextDisabled(
+            "拠点では移動先ステージ、通常ステージでは移動先惑星と到着点を使用します。");
+        ImGui::TextDisabled(
+            "変更後、左側の「保存する」でステージへ保存してください。");
+    }
+
     if (NPC* npc = dynamic_cast<NPC*>(actor)) {
         ImGui::SeparatorText("NPC・会話設定");
 
@@ -592,6 +752,68 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
     }
 
+    ImGui::SeparatorText("進行状況による表示条件");
+    int visibleIfStageCleared = actor->GetVisibleIfStageCleared();
+    bool usesStageClearCondition = visibleIfStageCleared >= 0;
+    if (ImGui::Checkbox(
+            ("指定ステージをクリア済みなら表示##visibleIfStageClearedEnabled" +
+             sequenceName + std::to_string(yamlIndex))
+                .c_str(),
+            &usesStageClearCondition)) {
+        if (usesStageClearCondition) {
+            const int currentStageNum =
+                mContext.game ? mContext.game->GetCurrentStageNum() : 0;
+            visibleIfStageCleared = std::max(0, currentStageNum);
+        } else {
+            visibleIfStageCleared = -1;
+        }
+        actor->SetVisibleIfStageCleared(visibleIfStageCleared);
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    if (usesStageClearCondition) {
+        const int stageCount =
+            mContext.game
+                ? static_cast<int>(mContext.game->GetStages().size())
+                : 0;
+        const std::string stagePreview =
+            "ステージ " + std::to_string(visibleIfStageCleared);
+        if (ImGui::BeginCombo(
+                ("クリア必須ステージ##visibleIfStageClearedStage" +
+                 sequenceName + std::to_string(yamlIndex))
+                    .c_str(),
+                stagePreview.c_str())) {
+            for (int stageNum = 0; stageNum < stageCount; ++stageNum) {
+                const bool selected = stageNum == visibleIfStageCleared;
+                const std::string label =
+                    "ステージ " + std::to_string(stageNum) +
+                    "##visibleIfStageClearedOption" +
+                    sequenceName + std::to_string(yamlIndex) + "_" +
+                    std::to_string(stageNum);
+                if (ImGui::Selectable(label.c_str(), selected)) {
+                    visibleIfStageCleared = stageNum;
+                    actor->SetVisibleIfStageCleared(stageNum);
+                    RebuildPhysicsWorldIfNeeded(true);
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        const bool isCleared =
+            mContext.game &&
+            mContext.game->IsStageCleared(visibleIfStageCleared);
+        ImGui::TextColored(
+            isCleared
+                ? ImVec4(0.35f, 0.9f, 0.45f, 1.0f)
+                : ImVec4(1.0f, 0.7f, 0.25f, 1.0f),
+            "%s",
+            isCleared
+                ? "現在はクリア済みのため表示されます。"
+                : "未クリアですが、エディター表示中は確認用に表示されます。");
+    } else {
+        ImGui::TextDisabled("条件なし：常に表示されます。");
+    }
+
     float theta = actor->GetTheta();
     float phi = actor->GetPhi();
     float height = actor->GetHeight();
@@ -683,7 +905,8 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const bool canEditTextureTiling =
         dynamic_cast<Platform*>(actor) != nullptr ||
-        dynamic_cast<StageObject*>(actor) != nullptr;
+        dynamic_cast<StageObject*>(actor) != nullptr ||
+        dynamic_cast<Boat*>(actor) != nullptr;
 
     const glm::vec3 previousScale = actor->GetScale();
     glm::vec3 scale = previousScale;
@@ -859,6 +1082,56 @@ void StagePlacementPanel::DrawNPCModelPicker(
     ImGui::TreePop();
 }
 
+void StagePlacementPanel::DrawBoatModelPicker(
+    Boat* boat,
+    const std::string& sequenceName,
+    std::size_t listIndex)
+{
+    if (!boat || !mContext.game || !mContext.game->GetMeshLoadSystem()) {
+        return;
+    }
+
+    ImGui::TextWrapped("モデル: %s", boat->GetModelPath().c_str());
+
+    const std::string pickerId =
+        "##placedBoatModelPicker" + sequenceName + std::to_string(listIndex);
+    if (!ImGui::TreeNode(("モデルを変更" + pickerId).c_str())) {
+        return;
+    }
+
+    const std::string filterId =
+        "##placedBoatModelFilter" + sequenceName + std::to_string(listIndex);
+    ImGui::InputTextWithHint(
+        filterId.c_str(),
+        "モデル名で検索",
+        mBoatModelAssetFilter.data(),
+        mBoatModelAssetFilter.size());
+
+    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::string filter = ToLower(mBoatModelAssetFilter.data());
+    const std::string listId =
+        "PlacedBoatModelAssetPicker##" + sequenceName +
+        std::to_string(listIndex);
+
+    ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
+    for (const std::string& modelPath : modelAssets) {
+        if (!filter.empty() &&
+            ToLower(modelPath).find(filter) == std::string::npos) {
+            continue;
+        }
+
+        const bool selected = modelPath == boat->GetModelPath();
+        if (ImGui::Selectable(modelPath.c_str(), selected)) {
+            boat->SetModelPath(modelPath);
+            mContext.game->GetMeshLoadSystem()->SetActorMesh(boat);
+        }
+    }
+    ImGui::EndChild();
+    ImGui::TextDisabled(
+        "変更後、左側の「保存する」でステージへ保存してください。");
+    ImGui::TreePop();
+}
+
 void StagePlacementPanel::DrawTextureOverrideEditor(
     Actor* actor,
     const std::string& sequenceName,
@@ -1010,6 +1283,14 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         return;
     }
 
+    const int visibleIfStageCleared = actor->GetVisibleIfStageCleared();
+    if (visibleIfStageCleared >= 0) {
+        config[sequenceName][yamlIndex]["visibleIfStageCleared"] =
+            visibleIfStageCleared;
+    } else {
+        config[sequenceName][yamlIndex].remove("visibleIfStageCleared");
+    }
+
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "theta", actor->GetTheta());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "phi", actor->GetPhi());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "height", actor->GetHeight());
@@ -1051,6 +1332,44 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex]["modelPath"] = stageObject->GetModelPath();
         config[sequenceName][yamlIndex]["collision"] =
             stageObject->GetCollisionEnabled();
+    }
+
+    if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
+        Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
+        const std::vector<Planet*> planets =
+            stage ? stage->GetPlanets() : std::vector<Planet*>();
+
+        const auto findPlanetIndex =
+            [&planets](const Planet* target) {
+                for (int index = 0; index < static_cast<int>(planets.size()); ++index) {
+                    if (planets[index] == target) {
+                        return index;
+                    }
+                }
+                return -1;
+            };
+
+        config[sequenceName][yamlIndex]["startPlanet"] =
+            findPlanetIndex(boat->GetCurrentPlanet());
+        config[sequenceName][yamlIndex]["destPlanet"] =
+            findPlanetIndex(boat->GetDestPlanet());
+        config[sequenceName][yamlIndex]["destStage"] = boat->GetDestStage();
+        config[sequenceName][yamlIndex]["travelDuration"] =
+            boat->GetTravelDuration();
+        config[sequenceName][yamlIndex]["destMargin"] =
+            boat->GetDestMargin();
+        config[sequenceName][yamlIndex]["launchSequenceId"] =
+            boat->GetLaunchSequenceId();
+        config[sequenceName][yamlIndex]["modelPath"] = boat->GetModelPath();
+
+        if (const BoatArrivalPoint* arrivalPoint = boat->GetArrivalPoint()) {
+            config[sequenceName][yamlIndex]["arrivalPointIndex"] =
+                arrivalPoint->GetStageYamlIndex();
+        } else {
+            config[sequenceName][yamlIndex].remove("arrivalPointIndex");
+        }
+
+        config[sequenceName][yamlIndex].remove("currentPlanetNum");
     }
 
     if (const NPC* npc = dynamic_cast<const NPC*>(actor)) {
@@ -1120,7 +1439,8 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
     }
 
     if (dynamic_cast<const Platform*>(actor) ||
-        dynamic_cast<const StageObject*>(actor)) {
+        dynamic_cast<const StageObject*>(actor) ||
+        dynamic_cast<const Boat*>(actor)) {
         const glm::vec2 textureTiling = actor->GetTextureTiling();
         config[sequenceName][yamlIndex]["textureTiling"][0] = textureTiling.x;
         config[sequenceName][yamlIndex]["textureTiling"][1] = textureTiling.y;

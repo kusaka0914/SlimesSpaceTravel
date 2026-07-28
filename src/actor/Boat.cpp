@@ -6,6 +6,8 @@
 #include "system/AudioSystem.h"
 #include "system/sequence/SequenceSystem.h"
 
+#include <algorithm>
+
 namespace {
 constexpr const char* BaseLaunchSequenceId = "launch_rocket_from_base";
 }
@@ -18,8 +20,11 @@ Boat::Boat(Game* game)
       mDestStage(0),
       mTransitionTimer(0.0f),
       mProgress(0.0f),
+      mTravelDuration(3.0f),
+      mDestMargin(4.0f),
       mStartPos(0.0f),
       mDestPos(0.0f),
+      mLaunchSequenceId(BaseLaunchSequenceId),
       mFocusComponent(nullptr),
       mArrivalPoint(nullptr)
 {
@@ -41,6 +46,36 @@ void Boat::Initialize()
     mDestPos = CalculateDestPos();
 }
 
+void Boat::SetDestPlanet(Planet* destPlanet)
+{
+    mDestPlanet = destPlanet;
+    RefreshDestination();
+}
+
+void Boat::SetArrivalPoint(BoatArrivalPoint* arrivalPoint)
+{
+    mArrivalPoint = arrivalPoint;
+    RefreshDestination();
+}
+
+void Boat::SetTravelDuration(float travelDuration)
+{
+    mTravelDuration = std::max(0.1f, travelDuration);
+}
+
+void Boat::SetDestMargin(float destMargin)
+{
+    mDestMargin = std::max(0.0f, destMargin);
+    RefreshDestination();
+}
+
+void Boat::RefreshDestination()
+{
+    if (!mIsMoving) {
+        mDestPos = CalculateDestPos();
+    }
+}
+
 glm::vec3 Boat::CalculateDestPos() const
 {
     if (mArrivalPoint) {
@@ -52,10 +87,16 @@ glm::vec3 Boat::CalculateDestPos() const
     }
 
     const glm::vec3 destPlanetCenter = mDestPlanet->GetPos();
-    const glm::vec3 toDestPlanet = glm::normalize(destPlanetCenter - mPos);
+    glm::vec3 toDestPlanet = destPlanetCenter - mPos;
+    if (glm::length(toDestPlanet) < 1e-6f) {
+        toDestPlanet = glm::vec3(0.0f, -1.0f, 0.0f);
+    } else {
+        toDestPlanet = glm::normalize(toDestPlanet);
+    }
 
-    constexpr float destMargin = 4.0f;
-    const glm::vec3 destPos = destPlanetCenter - toDestPlanet * (mDestPlanet->GetRadius() + destMargin);
+    const glm::vec3 destPos =
+        destPlanetCenter -
+        toDestPlanet * (mDestPlanet->GetRadius() + mDestMargin);
     return destPos;
 }
 
@@ -99,8 +140,7 @@ void Boat::UpdateMovement(float deltaTime)
 {
     mTransitionTimer += deltaTime;
 
-    constexpr float transitionDuration = 3.0f;
-    const float t = glm::min(1.0f, mTransitionTimer / transitionDuration);
+    const float t = glm::min(1.0f, mTransitionTimer / mTravelDuration);
     mProgress = glm::smoothstep(0.0f, 1.0f, t);
 
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
@@ -119,13 +159,17 @@ void Boat::StartTravel()
 {
     if (mGame->IsInBase()) {
         SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-        if (sequenceSystem) {
-            sequenceSystem->Play(BaseLaunchSequenceId);
+        if (sequenceSystem && !mLaunchSequenceId.empty()) {
+            sequenceSystem->Play(mLaunchSequenceId);
         }
 
         mGame->OnBoatStageChangeRequested(mDestStage);
         return;
     }
 
+    mStartPos = mPos;
+    mDestPos = CalculateDestPos();
+    mTransitionTimer = 0.0f;
+    mProgress = 0.0f;
     mIsMoving = true;
 }

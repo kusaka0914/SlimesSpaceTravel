@@ -2,6 +2,7 @@
 
 #include "actor/Actor.h"
 #include <glm/glm.hpp>
+#include <string>
 
 class Game;
 class FocusComponent;
@@ -16,14 +17,22 @@ public:
     void StartTravel();
     void StartFocus();
 
-    void SetDestPlanet(Planet* destPlanet) { mDestPlanet = destPlanet; }
+    void SetDestPlanet(Planet* destPlanet);
     void SetDestStage(int destStage) { mDestStage = destStage; }
-    void SetArrivalPoint(BoatArrivalPoint* arrivalPoint) { mArrivalPoint = arrivalPoint; }
+    void SetArrivalPoint(BoatArrivalPoint* arrivalPoint);
+    void SetTravelDuration(float travelDuration);
+    void SetDestMargin(float destMargin);
+    void SetLaunchSequenceId(const std::string& sequenceId) { mLaunchSequenceId = sequenceId; }
+    void RefreshDestination();
 
     bool GetIsMoving() const { return mIsMoving; }
 
     float GetProgress() const { return mProgress; }
+    float GetTravelDuration() const { return mTravelDuration; }
+    float GetDestMargin() const { return mDestMargin; }
+    int GetDestStage() const { return mDestStage; }
     const glm::vec3& GetDestPos() const { return mDestPos; }
+    const std::string& GetLaunchSequenceId() const { return mLaunchSequenceId; }
     Planet* GetDestPlanet() const { return mDestPlanet; }
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
     BoatArrivalPoint* GetArrivalPoint() const { return mArrivalPoint; }
@@ -50,9 +59,13 @@ private:
 
     float mTransitionTimer;
     float mProgress;
+    float mTravelDuration;
+    float mDestMargin;
 
     glm::vec3 mStartPos;
     glm::vec3 mDestPos;
+
+    std::string mLaunchSequenceId;
 
     FocusComponent* mFocusComponent;
     BoatArrivalPoint* mArrivalPoint;

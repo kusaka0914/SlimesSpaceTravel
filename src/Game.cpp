@@ -21,6 +21,7 @@
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include "system/StageFlowController.h"
+#include "system/StageProgressSystem.h"
 #include "system/UILoadSystem.h"
 #include "system/sequence/SequenceSystem.h"
 
@@ -110,6 +111,8 @@ void Game::CreateGameSystems()
     mWorld = std::make_unique<GameWorld>();
     mPauseMenuController = std::make_unique<PauseMenuController>();
     mStageFlowController = std::make_unique<StageFlowController>();
+    mStageProgressSystem = std::make_unique<StageProgressSystem>();
+    mStageProgressSystem->Load();
     mGamepadRumbleService = std::make_unique<GamepadRumbleService>();
 
     mAudioSystem = std::make_unique<AudioSystem>(this);
@@ -249,6 +252,9 @@ void Game::TryCreatePlayer2()
 void Game::ToggleDebugEditor()
 {
     mIsDebugEditorShowing = !mIsDebugEditorShowing;
+    if (mPhysicsSystem) {
+        mPhysicsSystem->Initialize();
+    }
 }
 
 void Game::ToggleFreeCameraMode()
@@ -451,7 +457,29 @@ void Game::OnBoatArrived(Boat* boat)
 
 void Game::OnStarObtained()
 {
+    MarkStageCleared(GetCurrentStageNum());
     mSceneSystem->OnStageClear();
+}
+
+bool Game::IsStageCleared(int stageNum) const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->IsStageCleared(stageNum);
+}
+
+void Game::MarkStageCleared(int stageNum)
+{
+    if (!mStageProgressSystem) {
+        return;
+    }
+
+    mStageProgressSystem->MarkStageCleared(stageNum);
+    if (mWorld) {
+        mWorld->RefreshActorProgressVisibility();
+    }
+    if (mPhysicsSystem) {
+        mPhysicsSystem->Initialize();
+    }
 }
 
 void Game::OnEnemyLaunched()

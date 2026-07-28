@@ -28,6 +28,7 @@ class StageFlowController;
 class GamepadRumbleService;
 class ParticleSystem;
 class SequenceSystem;
+class StageProgressSystem;
 
 class Game {
 public:
@@ -118,6 +119,8 @@ public:
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
 
     bool IsInBase() const;
+    bool IsStageCleared(int stageNum) const;
+    void MarkStageCleared(int stageNum);
     bool IsGameControllerConnected() const;
 
 private:
@@ -157,6 +160,7 @@ private:
     std::unique_ptr<InputSystem> mInputSystem;
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
+    std::unique_ptr<StageProgressSystem> mStageProgressSystem;
 
     float mHitStopTimer = -1.0f;
 

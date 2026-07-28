@@ -427,6 +427,20 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
     const int destStage = node["destStage"] ? node["destStage"].as<int>() : 0;
     boat->SetDestStage(destStage);
 
+    const float travelDuration =
+        node["travelDuration"] ? node["travelDuration"].as<float>() : 3.0f;
+    boat->SetTravelDuration(travelDuration);
+
+    const float destMargin =
+        node["destMargin"] ? node["destMargin"].as<float>() : 4.0f;
+    boat->SetDestMargin(destMargin);
+
+    const std::string launchSequenceId =
+        node["launchSequenceId"]
+            ? node["launchSequenceId"].as<std::string>()
+            : std::string("launch_rocket_from_base");
+    boat->SetLaunchSequenceId(launchSequenceId);
+
     const float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
     boat->SetFacingYaw(facingYaw);
 
@@ -440,6 +454,10 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
 
         const float scale = boatNode["scale"] ? boatNode["scale"].as<float>() : 0.25f;
         boat->SetScale(glm::vec3(scale));
+    }
+
+    if (node["modelPath"]) {
+        boat->SetModelPath(node["modelPath"].as<std::string>());
     }
 
     mPlacementLoader.ApplyScaleFromStageNode(boat.get(), node);

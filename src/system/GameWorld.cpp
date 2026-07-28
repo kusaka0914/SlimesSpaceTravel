@@ -74,6 +74,15 @@ void GameWorld::UpdateActors(float deltaTime)
     }
 }
 
+void GameWorld::RefreshActorProgressVisibility()
+{
+    for (const auto& actor : mActors) {
+        if (actor) {
+            actor->RefreshProgressVisibility();
+        }
+    }
+}
+
 Player* GameWorld::FindNearestPlayer(Actor* actor) const
 {
     if (!actor) {
