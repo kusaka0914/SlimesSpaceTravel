@@ -86,14 +86,31 @@ void Actor::SetLoadedModel(const LoadedModel* loadedModel)
 void Actor::SetVisibleIfStageCleared(int stageNum)
 {
     mVisibleIfStageCleared = stageNum >= 0 ? stageNum : -1;
+    if (mVisibleIfStageCleared >= 0) {
+        mHiddenIfStageCleared = -1;
+    }
+    RefreshProgressVisibility();
+}
+
+void Actor::SetHiddenIfStageCleared(int stageNum)
+{
+    mHiddenIfStageCleared = stageNum >= 0 ? stageNum : -1;
+    if (mHiddenIfStageCleared >= 0) {
+        mVisibleIfStageCleared = -1;
+    }
     RefreshProgressVisibility();
 }
 
 void Actor::RefreshProgressVisibility()
 {
-    mProgressVisibilitySatisfied =
+    const bool visibleConditionSatisfied =
         mVisibleIfStageCleared < 0 ||
         (mGame && mGame->IsStageCleared(mVisibleIfStageCleared));
+    const bool hiddenConditionSatisfied =
+        mHiddenIfStageCleared < 0 ||
+        !(mGame && mGame->IsStageCleared(mHiddenIfStageCleared));
+    mProgressVisibilitySatisfied =
+        visibleConditionSatisfied && hiddenConditionSatisfied;
 }
 
 const std::vector<LoadedMesh>* Actor::GetMeshes() const

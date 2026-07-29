@@ -30,4 +30,10 @@ void Shader3D::Initialize()
     mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
     mLocBoneTransforms = glGetUniformLocation(mShaderProgram, "boneTransforms[0]");
     mLocTextureTiling = glGetUniformLocation(mShaderProgram, "textureTiling");
+    mLocUseBackTexture =
+        glGetUniformLocation(mShaderProgram, "useBackTexture");
+    mLocBackTexture =
+        glGetUniformLocation(mShaderProgram, "backTexture");
+    mLocTextureSideBlendWidth =
+        glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
 }

@@ -66,6 +66,14 @@ public:
     void SetCurrentStage(Stage* currentStage) { mCurrentStage = currentStage; }
     void SetStageNum(int stageNum) { mStageNum = stageNum; }
     void SetColor(glm::vec4 color) { mColor = color; }
+    void SetBackTextureOverridePath(const std::string& texturePath)
+    {
+        mBackTextureOverridePath = texturePath;
+    }
+    void SetTextureSideBlendWidth(float width)
+    {
+        mTextureSideBlendWidth = glm::clamp(width, 0.0f, 0.5f);
+    }
     void SetKey(Key* key) { mActorRegistry.SetKey(key); }
     void SetStar(Star* star) { mActorRegistry.SetStar(star); }
 
@@ -94,6 +102,14 @@ public:
     int GetRemainBoatPartsCount() const { return mProgressController.GetRemainBoatPartsCount(); }
 
     const glm::vec4& GetColor() const { return mColor; }
+    const std::string& GetBackTextureOverridePath() const
+    {
+        return mBackTextureOverridePath;
+    }
+    float GetTextureSideBlendWidth() const
+    {
+        return mTextureSideBlendWidth;
+    }
 
     const std::vector<Enemy*>& GetEnemies() const { return mActorRegistry.GetEnemies(); }
     const std::vector<Boat*>& GetBoats() const { return mActorRegistry.GetBoats(); }
@@ -121,4 +137,6 @@ private:
     PlanetProgressController mProgressController;
 
     PlanetShape mPlanetShape;
+    std::string mBackTextureOverridePath;
+    float mTextureSideBlendWidth = 0.05f;
 };

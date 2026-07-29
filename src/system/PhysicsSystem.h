@@ -45,6 +45,7 @@ public:
     glm::vec3 CheckCollision(Actor* actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos);
 
     std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
+    std::vector<RayHitActor> PickActorsByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
 
     void SyncKinematicBodies() const;
 
@@ -78,6 +79,7 @@ private:
 
     std::vector<std::unique_ptr<btCollisionObject>> mEditorPickObjects;
     std::vector<std::unique_ptr<btCollisionShape>> mEditorPickShapes;
+    std::vector<std::unique_ptr<btTriangleMesh>> mEditorPickTriangleMeshes;
 
     std::vector<std::unique_ptr<btCollisionObject>> mFallRespawnTriggerObjects;
     std::vector<std::unique_ptr<btCollisionShape>> mFallRespawnTriggerShapes;

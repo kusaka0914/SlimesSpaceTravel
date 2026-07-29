@@ -64,6 +64,11 @@ void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML:
             ? node["visibleIfStageCleared"].as<int>()
             : -1;
     actor->SetVisibleIfStageCleared(visibleIfStageCleared);
+    const int hiddenIfStageCleared =
+        node["hiddenIfStageCleared"]
+            ? node["hiddenIfStageCleared"].as<int>()
+            : -1;
+    actor->SetHiddenIfStageCleared(hiddenIfStageCleared);
 
     const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
     const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;

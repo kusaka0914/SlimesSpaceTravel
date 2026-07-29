@@ -19,6 +19,7 @@ uniform mat4 boneTransforms[MAX_BONE_COUNT];
 out vec3 fragPos;
 out vec3 normal;
 out vec2 texCoord;
+out vec3 localFragPos;
 
 void main()
 {
@@ -59,6 +60,7 @@ void main()
     fragPos = worldPosition.xyz;
     normal = mat3(transpose(inverse(model))) * localNormal;
     texCoord = aTexCoord;
+    localFragPos = localPosition.xyz;
 
     gl_Position = projection * view * worldPosition;
 }

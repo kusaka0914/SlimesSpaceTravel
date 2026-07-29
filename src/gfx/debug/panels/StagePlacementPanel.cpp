@@ -77,6 +77,7 @@ void StagePlacementPanel::DrawObjectList()
 
     ImGui::SeparatorText("オブジェクト一覧");
     ImGui::TextDisabled("一覧またはゲーム画面のモデルをクリックして選択します。");
+    ImGui::TextDisabled("同じ場所を続けてクリックすると、手前から奥へ選択を切り替えます。");
 
     bool hasAnyActor = false;
     for (const ActorGroup& group : groups) {
@@ -373,9 +374,14 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const int yamlIndex = actor->GetStageYamlIndex();
 
+    if (dynamic_cast<Platform*>(actor)) {
+        ImGui::SeparatorText("足場モデル設定");
+        DrawPlacementModelPicker(actor, sequenceName, listIndex);
+    }
+
     if (StageObject* stageObject = dynamic_cast<StageObject*>(actor)) {
         ImGui::SeparatorText("汎用モデル設定");
-        DrawStageObjectModelPicker(stageObject, sequenceName, listIndex);
+        DrawPlacementModelPicker(stageObject, sequenceName, listIndex);
 
         bool collisionEnabled = stageObject->GetCollisionEnabled();
         if (ImGui::Checkbox(
@@ -1113,6 +1119,73 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         ImGui::TextDisabled("条件なし：常に表示されます。");
     }
 
+    int hiddenIfStageCleared = actor->GetHiddenIfStageCleared();
+    bool usesHiddenStageClearCondition = hiddenIfStageCleared >= 0;
+    if (ImGui::Checkbox(
+            ("指定ステージをクリア済みなら非表示##hiddenIfStageClearedEnabled" +
+             sequenceName + std::to_string(yamlIndex))
+                .c_str(),
+            &usesHiddenStageClearCondition)) {
+        if (usesHiddenStageClearCondition) {
+            const int currentStageNum =
+                mContext.game ? mContext.game->GetCurrentStageNum() : 0;
+            hiddenIfStageCleared = std::max(0, currentStageNum);
+        } else {
+            hiddenIfStageCleared = -1;
+        }
+        actor->SetHiddenIfStageCleared(hiddenIfStageCleared);
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    if (usesHiddenStageClearCondition) {
+        const int stageCount =
+            mContext.game
+                ? static_cast<int>(mContext.game->GetStages().size())
+                : 0;
+        const std::string stagePreview =
+            "ステージ " + std::to_string(hiddenIfStageCleared);
+        if (ImGui::BeginCombo(
+                ("非表示になるステージ##hiddenIfStageClearedStage" +
+                 sequenceName + std::to_string(yamlIndex))
+                    .c_str(),
+                stagePreview.c_str())) {
+            for (int stageNum = 0; stageNum < stageCount; ++stageNum) {
+                const bool selected = stageNum == hiddenIfStageCleared;
+                const std::string label =
+                    "ステージ " + std::to_string(stageNum) +
+                    "##hiddenIfStageClearedOption" +
+                    sequenceName + std::to_string(yamlIndex) + "_" +
+                    std::to_string(stageNum);
+                if (ImGui::Selectable(label.c_str(), selected)) {
+                    hiddenIfStageCleared = stageNum;
+                    actor->SetHiddenIfStageCleared(stageNum);
+                    RebuildPhysicsWorldIfNeeded(true);
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        const bool isCleared =
+            mContext.game &&
+            mContext.game->IsStageCleared(hiddenIfStageCleared);
+        ImGui::TextColored(
+            isCleared
+                ? ImVec4(1.0f, 0.55f, 0.3f, 1.0f)
+                : ImVec4(0.35f, 0.9f, 0.45f, 1.0f),
+            "%s",
+            isCleared
+                ? "現在はクリア済みのため、ゲーム中は非表示になります。"
+                : "現在は未クリアのため、ゲーム中も表示されます。");
+        ImGui::TextDisabled(
+            "エディターを開いている間は、配置確認のため表示されたままです。");
+    }
+
+    if (actor->GetVisibleIfStageCleared() >= 0 &&
+        actor->GetHiddenIfStageCleared() >= 0) {
+        ImGui::TextDisabled(
+            "表示条件と非表示条件は同時に使えません。最後に有効化した方を使用します。");
+    }
+
     float theta = actor->GetTheta();
     float phi = actor->GetPhi();
     float height = actor->GetHeight();
@@ -1292,35 +1365,35 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
 }
 
-void StagePlacementPanel::DrawStageObjectModelPicker(
-    StageObject* stageObject,
+void StagePlacementPanel::DrawPlacementModelPicker(
+    Actor* actor,
     const std::string& sequenceName,
     std::size_t listIndex)
 {
-    if (!stageObject || !mContext.game || !mContext.game->GetMeshLoadSystem()) {
+    if (!actor || !mContext.game || !mContext.game->GetMeshLoadSystem()) {
         return;
     }
 
-    ImGui::TextWrapped("モデル: %s", stageObject->GetModelPath().c_str());
+    ImGui::TextWrapped("モデル: %s", actor->GetModelPath().c_str());
 
     const std::string pickerId =
-        "##placedStageObjectModelPicker" + sequenceName + std::to_string(listIndex);
+        "##placedActorModelPicker" + sequenceName + std::to_string(listIndex);
     if (!ImGui::TreeNode(("モデルを変更" + pickerId).c_str())) {
         return;
     }
 
     const std::string filterId =
-        "##placedStageObjectModelFilter" + sequenceName + std::to_string(listIndex);
+        "##placedActorModelFilter" + sequenceName + std::to_string(listIndex);
     ImGui::InputTextWithHint(
         filterId.c_str(),
         "モデル名で検索",
-        mStageObjectModelAssetFilter.data(),
-        mStageObjectModelAssetFilter.size());
+        mPlacementModelAssetFilter.data(),
+        mPlacementModelAssetFilter.size());
 
     const std::vector<std::string> modelAssets = StageModelAssets::Collect();
-    const std::string filter = ToLower(mStageObjectModelAssetFilter.data());
+    const std::string filter = ToLower(mPlacementModelAssetFilter.data());
     const std::string listId =
-        "PlacedStageObjectModelAssetPicker##" + sequenceName + std::to_string(listIndex);
+        "PlacedActorModelAssetPicker##" + sequenceName + std::to_string(listIndex);
 
     ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
     for (const std::string& modelPath : modelAssets) {
@@ -1328,10 +1401,10 @@ void StagePlacementPanel::DrawStageObjectModelPicker(
             continue;
         }
 
-        const bool selected = modelPath == stageObject->GetModelPath();
+        const bool selected = modelPath == actor->GetModelPath();
         if (ImGui::Selectable(modelPath.c_str(), selected)) {
-            stageObject->SetModelPath(modelPath);
-            mContext.game->GetMeshLoadSystem()->SetActorMesh(stageObject);
+            actor->SetModelPath(modelPath);
+            mContext.game->GetMeshLoadSystem()->SetActorMesh(actor);
             RebuildPhysicsWorldIfNeeded(true);
         }
     }
@@ -1597,6 +1670,14 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex].remove("visibleIfStageCleared");
     }
 
+    const int hiddenIfStageCleared = actor->GetHiddenIfStageCleared();
+    if (hiddenIfStageCleared >= 0) {
+        config[sequenceName][yamlIndex]["hiddenIfStageCleared"] =
+            hiddenIfStageCleared;
+    } else {
+        config[sequenceName][yamlIndex].remove("hiddenIfStageCleared");
+    }
+
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "theta", actor->GetTheta());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "phi", actor->GetPhi());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "height", actor->GetHeight());
@@ -1634,8 +1715,11 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
     config[sequenceName][yamlIndex]["upVec"][1] = upVec.y;
     config[sequenceName][yamlIndex]["upVec"][2] = upVec.z;
 
+    if (dynamic_cast<const Platform*>(actor) || dynamic_cast<const StageObject*>(actor)) {
+        config[sequenceName][yamlIndex]["modelPath"] = actor->GetModelPath();
+    }
+
     if (const StageObject* stageObject = dynamic_cast<const StageObject*>(actor)) {
-        config[sequenceName][yamlIndex]["modelPath"] = stageObject->GetModelPath();
         config[sequenceName][yamlIndex]["collision"] =
             stageObject->GetCollisionEnabled();
     }

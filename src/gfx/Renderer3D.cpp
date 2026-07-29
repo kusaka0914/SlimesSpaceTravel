@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "VertexArray.h"
 #include "actor/Actor.h"
+#include "actor/Planet.h"
 #include "animation/SkeletalAnimationConstants.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
@@ -135,6 +136,9 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform1f(mShader3D->GetLocAmbientStrength(), 0.8f);
     glUniform1f(mShader3D->GetLocRimStrength(), 0.20f);
     glUniform1f(mShader3D->GetLocRimPower(), 2.5f);
+    glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
+    glUniform1i(mShader3D->GetLocBackTexture(), 1);
+    glUniform1f(mShader3D->GetLocTextureSideBlendWidth(), 0.05f);
     SetSkinningEnabled(false);
 }
 
@@ -195,6 +199,29 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
             const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(actor->GetTextureOverridePath());
     }
 
+    GLuint backTextureOverride = 0;
+    const Planet* planet = dynamic_cast<const Planet*>(actor);
+    if (planet &&
+        planet->GetPlanetShape() == Planet::PlanetShape::Ellipse &&
+        !planet->GetBackTextureOverridePath().empty()) {
+        backTextureOverride =
+            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
+                planet->GetBackTextureOverridePath());
+    }
+
+    if (backTextureOverride != 0) {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, backTextureOverride);
+        glUniform1i(mShader3D->GetLocBackTexture(), 1);
+        glUniform1i(mShader3D->GetLocUseBackTexture(), 1);
+        glUniform1f(
+            mShader3D->GetLocTextureSideBlendWidth(),
+            planet->GetTextureSideBlendWidth());
+        glActiveTexture(GL_TEXTURE0);
+    } else {
+        glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
+    }
+
     for (const LoadedMesh& actorMesh : *actorMeshes) {
         SetSkinningEnabled(hasUploadedSkinningMatrices && actorMesh.hasBoneInfluences);
         glBindVertexArray(actorMesh.VAO);
@@ -216,7 +243,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     SetSkinningEnabled(false);
     glUniform1i(useTextureLocation, 0);
+    glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     glUniform2f(mShader3D->GetLocTextureTiling(), 1.0f, 1.0f);
+    glActiveTexture(GL_TEXTURE0);
 }
 
 GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)

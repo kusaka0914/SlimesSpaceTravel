@@ -5,11 +5,15 @@ out vec4 fragColor;
 in vec3 fragPos;
 in vec3 normal;
 in vec2 texCoord;
+in vec3 localFragPos;
 
 uniform vec4 objectColor;
 uniform int useTexture;
 uniform sampler2D diffuseTexture;
 uniform vec2 textureTiling;
+uniform int useBackTexture;
+uniform sampler2D backTexture;
+uniform float textureSideBlendWidth;
 
 uniform vec3 viewPos;
 uniform vec3 lightPos;
@@ -23,6 +27,15 @@ uniform float toonStrength;
 void main()
 {
     vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord * textureTiling) : objectColor;
+    if (useBackTexture != 0) {
+        vec4 backColor = texture(backTexture, texCoord * textureTiling);
+        float blendWidth = max(textureSideBlendWidth, 0.00001);
+        float backAmount = smoothstep(
+            -blendWidth,
+            blendWidth,
+            -localFragPos.y);
+        baseColor = mix(baseColor, backColor, backAmount);
+    }
 
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(lightPos - fragPos);

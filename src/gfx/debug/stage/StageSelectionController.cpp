@@ -74,6 +74,7 @@ void StageSelectionController::Clear()
     mPickedActor = nullptr;
     mPickedActorRef.reset();
     mSelectedKeys.clear();
+    mHasLastPickClick = false;
 }
 
 void StageSelectionController::ClearPickedActor()
@@ -344,9 +345,10 @@ void StageSelectionController::UpdatePickedActorByMouse()
         return;
     }
 
-    auto hit = mContext.game->GetPhysicsSystem()->PickActorByRay(rayFrom, rayTo);
+    const std::vector<PhysicsSystem::RayHitActor> hits =
+        mContext.game->GetPhysicsSystem()->PickActorsByRay(rayFrom, rayTo);
 
-    if (!hit || !hit->actor) {
+    if (hits.empty()) {
         if (!io.KeyShift) {
             Clear();
         }
@@ -354,8 +356,35 @@ void StageSelectionController::UpdatePickedActorByMouse()
         return;
     }
 
+    size_t hitIndex = 0;
+    const ImVec2 clickPos = ImGui::GetMousePos();
+
+    if (!io.KeyShift && mHasLastPickClick) {
+        const float clickDeltaX = clickPos.x - mLastPickClickPos.x;
+        const float clickDeltaY = clickPos.y - mLastPickClickPos.y;
+        constexpr float cycleClickRadius = 6.0f;
+
+        if (clickDeltaX * clickDeltaX + clickDeltaY * clickDeltaY <= cycleClickRadius * cycleClickRadius) {
+            const auto currentHit =
+                std::find_if(hits.begin(), hits.end(),
+                             [this](const PhysicsSystem::RayHitActor& hit) { return hit.actor == mPickedActor; });
+
+            if (currentHit != hits.end()) {
+                hitIndex = (static_cast<size_t>(std::distance(hits.begin(), currentHit)) + 1) % hits.size();
+            }
+        }
+    }
+
+    mLastPickClickPos = clickPos;
+    mHasLastPickClick = true;
+
+    Actor* hitActor = hits[hitIndex].actor;
+    if (!hitActor) {
+        return;
+    }
+
     std::optional<StageActorRef> target =
-        StageActorQuery::FindTargetForActor(mContext.game->GetCurrentStage(), hit->actor);
+        StageActorQuery::FindTargetForActor(mContext.game->GetCurrentStage(), hitActor);
 
     if (!target) {
         if (!io.KeyShift) {
@@ -366,9 +395,9 @@ void StageSelectionController::UpdatePickedActorByMouse()
     }
 
     if (io.KeyShift) {
-        ToggleSelection(hit->actor, *target);
+        ToggleSelection(hitActor, *target);
     } else {
-        SetSingleSelection(hit->actor, *target);
+        SetSingleSelection(hitActor, *target);
     }
 }
 

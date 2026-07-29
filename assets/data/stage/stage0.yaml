@@ -9,6 +9,8 @@ planets:
       - 30
       - 3
     rocketSpawnCondition: ""
+    backTextureOverride: textures/planet_dry.png
+    textureSideBlendWidth: 0.05
 boats:
   - theta: -1.570796
     phi: 0.811034
@@ -136,10 +138,12 @@ NPCs:
       - "あそこにとても大きい車が落ちてきたんだ...\n危ないよねぇ～！"
       - でもあれに登ったら家の屋上に行けそうだなぁ～
       - "あの子のエレベーターが帰ってきたみたいだよ！\n使ってみたら～？"
+      - "工事が終わって裏側に行けるようになったよ...！\nでも..."
+      - 裏側はこことは雰囲気が違うから気を付けて...！
     pos:
       - -0.05
-      - 2.64
-      - 13.82
+      - 2.63
+      - 13.85
     facingYaw: 0
     rotation:
       - 0
@@ -150,9 +154,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.00028048185
-      - 0.9986157
-      - 0.05260023
+      - -0.00046408235
+      - 0.99861556
+      - 0.052600224
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
@@ -290,6 +294,70 @@ NPCs:
             reading: つか
           - text: ってみたら～？
             ruby: false
+      - talkIndex: 5
+        segments:
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: が
+            ruby: false
+          - text: 終
+            ruby: true
+            reading: お
+          - text: わって
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "けるようになったよ...！\nでも..."
+            ruby: false
+      - talkIndex: 6
+        segments:
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: はこことは
+            ruby: false
+          - text: 雰
+            ruby: true
+            reading: ふん
+          - text: 囲
+            ruby: true
+            reading: い
+          - text: 気
+            ruby: true
+            reading: き
+          - text: が
+            ruby: false
+          - text: 違
+            ruby: true
+            reading: ちが
+          - text: うから
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: を
+            ruby: false
+          - text: 付
+            ruby: true
+            reading: つ
+          - text: けて...！
+            ruby: false
     talkStageClearConditions:
       - talkIndex: 2
         stage: 1
@@ -297,6 +365,10 @@ NPCs:
         stage: 1
       - talkIndex: 4
         stage: 2
+      - talkIndex: 5
+        stage: 3
+      - talkIndex: 6
+        stage: 3
     proximityMessage:
       mode: afterTalk
       variants:
@@ -306,6 +378,8 @@ NPCs:
           text: あれ登れるかなぁ～？
         - talkIndex: 4
           text: エレベーター使ってみたら～？
+        - talkIndex: 6
+          text: 裏側に行くなら気を付けて...！
       range: 3
       height: 1.8
       scale: 1
@@ -393,9 +467,9 @@ NPCs:
     talkTexts:
       - ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。
     pos:
-      - 0
-      - -2.99
       - -0
+      - -2.99
+      - 0
     facingYaw: 0
     rotation:
       - 0
@@ -406,9 +480,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0016212873
+      - -0.0016212875
       - -0.9999949
-      - -0.0027979533
+      - 0.0027979533
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -525,9 +599,9 @@ NPCs:
       - 1
       - 1
     upVec:
-      - -0.029784592
-      - 0.9994756
-      - 0.012705434
+      - -0.029765548
+      - 0.9994759
+      - 0.012732478
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -707,6 +781,104 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - 発着所の裏側はただいま工事中だよ～！
+      - "工事が終わったらこの壁壊すから\nもうちょっと待ってて～！"
+    pos:
+      - -0.23
+      - 2.3
+      - 18.79
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.0010367003
+      - 0.9965319
+      - 0.08320535
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 発
+            ruby: true
+            reading: はっ
+          - text: 着
+            ruby: true
+            reading: ちゃく
+          - text: 所
+            ruby: true
+            reading: じょ
+          - text: の
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: はただいま
+            ruby: false
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: 中
+            ruby: true
+            reading: ちゅう
+          - text: だよ～！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: が
+            ruby: false
+          - text: 終
+            ruby: true
+            reading: お
+          - text: わったらこの
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: 壊
+            ruby: true
+            reading: こわ
+          - text: "すから\nもうちょっと"
+            ruby: false
+          - text: 待
+            ruby: true
+            reading: ま
+          - text: ってて～！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: 工事終わるまで待って～！
+      range: 3
+      height: 1.8
+      scale: 1
+    hiddenIfStageCleared: 3
 stageObjects:
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.334428, 5.979225], pos: [0.45, 4.43, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png}
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1]}
@@ -1288,6 +1460,7 @@ stageObjects:
     textureTiling:
       - 27.03856
       - 27.04
+    hiddenIfStageCleared: 3
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -1314,6 +1487,7 @@ stageObjects:
     textureTiling:
       - 27.03856
       - 27.04
+    hiddenIfStageCleared: 3
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -1340,6 +1514,7 @@ stageObjects:
     textureTiling:
       - 24.795942
       - 27.04
+    hiddenIfStageCleared: 3
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -1366,6 +1541,33 @@ stageObjects:
     textureTiling:
       - 24.795942
       - 27.04
+    hiddenIfStageCleared: 3
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: VillageAssets/Bell_Tower.fbx
+    collision: true
+    rotation:
+      - -0.07679449
+      - -0
+      - 1.5707964
+    scale:
+      - 3.9858127
+      - 3.9858131
+      - 3.9858112
+    pos:
+      - -1.15
+      - -2.95
+      - -0.14
+    upVec:
+      - -1
+      - -4.358256e-08
+      - -3.3534953e-09
+    textureTiling:
+      - 3.9858122
+      - 3.9858108
 platforms: []
 movingPlatforms:
   - currentPlanetNum: 0
@@ -1378,70 +1580,29 @@ movingPlatforms:
       - 0
       - 0
     scale:
-      - 1
-      - 0.13529083
-      - 1
-    modelPath: platform.obj
+      - 0.01274696
+      - 0.0122
+      - 0.012188368
+    modelPath: FantasyAssets/fountain-round.fbx
     moveOnPlayer: true
     moveDuration: 3
     returnDelay: 1
     moveOffset:
-      - 0
-      - 20.82056
-      - 0
+      - -1.1642618
+      - 6.3077374
+      - -0.0009846687
     pos:
-      - -3.2836747
-      - 7.6387854
-      - -14.403467
+      - -7.945738
+      - 2.992263
+      - 0.36098468
     upVec:
       - 0
       - 1
       - 0
     startLocalPos:
-      - -3.2836747
-      - 7.6387854
-      - -14.403467
-    endLocalPos:
-      - -3.2836747
-      - 28.459347
-      - -14.403467
-    textureTiling:
-      - 1
-      - 1
-    visibleIfStageCleared: 2
-  - currentPlanetNum: 0
-    theta: 0
-    phi: 0
-    height: 1
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 1
-      - 0.13529083
-      - 1
-    modelPath: platform.obj
-    moveOnPlayer: true
-    moveDuration: 3
-    returnDelay: 1
-    moveOffset:
-      - 0.002869606
-      - 6.2577267
-      - 0.0004439652
-    pos:
-      - -9.112869
-      - 3.0422735
-      - 0.35955605
-    upVec:
-      - 0
-      - 1
-      - 0
-    startLocalPos:
-      - -9.112869
-      - 3.0422735
-      - 0.35955605
+      - -7.945738
+      - 2.992263
+      - 0.36098468
     endLocalPos:
       - -9.11
       - 9.3
@@ -1460,29 +1621,29 @@ movingPlatforms:
       - 0
       - 0
     scale:
-      - 1
-      - 0.13529083
-      - 1
-    modelPath: platform.obj
+      - 0.01
+      - 0.01
+      - 0.01
+    modelPath: FantasyAssets/fountain-round.fbx
     moveOnPlayer: true
     moveDuration: 3
     returnDelay: 1
     moveOffset:
       - -0.0036535263
-      - 5.7592525
-      - 0.0004823208
+      - 6.0536985
+      - -0.17966229
     pos:
       - 12.373653
-      - 3.0422509
-      - 0.76951766
+      - 2.7478049
+      - 0.94966227
     upVec:
       - 0
       - 1
       - 0
     startLocalPos:
       - 12.373653
-      - 3.0422509
-      - 0.76951766
+      - 2.7478049
+      - 0.94966227
     endLocalPos:
       - 12.37
       - 8.801503
@@ -1491,3 +1652,44 @@ movingPlatforms:
       - 1
       - 1
     visibleIfStageCleared: 2
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.009688355
+      - 0.00915366
+      - 0.009144933
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0.002077818
+      - 20.839237
+      - -0.0012903214
+    pos:
+      - -3.2620778
+      - 7.6032667
+      - -14.07871
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - -3.2620778
+      - 7.6032667
+      - -14.07871
+    endLocalPos:
+      - -3.26
+      - 28.442505
+      - -14.08
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 1

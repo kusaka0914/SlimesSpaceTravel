@@ -20,6 +20,12 @@ public:
     int GetLocUseSkinning() const { return mLocUseSkinning; }
     int GetLocBoneTransforms() const { return mLocBoneTransforms; }
     int GetLocTextureTiling() const { return mLocTextureTiling; }
+    int GetLocUseBackTexture() const { return mLocUseBackTexture; }
+    int GetLocBackTexture() const { return mLocBackTexture; }
+    int GetLocTextureSideBlendWidth() const
+    {
+        return mLocTextureSideBlendWidth;
+    }
 
 private:
     int mLocLightPos;
@@ -33,4 +39,7 @@ private:
     int mLocUseSkinning;
     int mLocBoneTransforms;
     int mLocTextureTiling;
+    int mLocUseBackTexture;
+    int mLocBackTexture;
+    int mLocTextureSideBlendWidth;
 };

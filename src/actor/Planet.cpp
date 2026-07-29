@@ -74,6 +74,12 @@ void Planet::ApplyConfig(const YAML::Node& node)
 
     const std::string textureOverride = ReadString(node, "textureOverride", "");
     SetTextureOverridePath(textureOverride);
+    SetBackTextureOverridePath(
+        ReadString(node, "backTextureOverride", ""));
+    SetTextureSideBlendWidth(
+        node["textureSideBlendWidth"]
+            ? node["textureSideBlendWidth"].as<float>()
+            : 0.05f);
 
     const glm::vec2 automaticTextureTiling(
         std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),

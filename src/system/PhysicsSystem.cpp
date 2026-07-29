@@ -59,6 +59,7 @@ void PhysicsSystem::ClearBulletWorld()
 
     mEditorPickObjects.clear();
     mEditorPickShapes.clear();
+    mEditorPickTriangleMeshes.clear();
 
     // world から外した後に所有物を破棄
     mPlayerShape.reset();
@@ -77,7 +78,8 @@ void PhysicsSystem::CreateWorld()
                                                        mBulletTriangleMeshShapes, mBulletTriangleMeshes);
     mFallRespawnTriggerSystem->CreateTriggerBodies(mBulletWorld.get(), mFallRespawnTriggerObjects,
                                                    mFallRespawnTriggerShapes);
-    mEditorPickSystem->CreatePickBodies(mBulletWorld.get(), mEditorPickObjects, mEditorPickShapes);
+    mEditorPickSystem->CreatePickBodies(mBulletWorld.get(), mEditorPickObjects, mEditorPickShapes,
+                                        mEditorPickTriangleMeshes);
     CreatePlayerShape();
 }
 
@@ -101,6 +103,17 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorByRay(const gl
 
     SyncKinematicBodies();
     return mEditorPickSystem->PickActorByRay(mBulletWorld.get(), rayFrom, rayTo, mEditorPickObjects);
+}
+
+std::vector<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorsByRay(const glm::vec3& rayFrom,
+                                                                       const glm::vec3& rayTo) const
+{
+    if (!mBulletWorld) {
+        return {};
+    }
+
+    SyncKinematicBodies();
+    return mEditorPickSystem->PickActorsByRay(mBulletWorld.get(), rayFrom, rayTo, mEditorPickObjects);
 }
 
 std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep(const glm::vec3& from,

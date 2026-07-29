@@ -154,6 +154,10 @@ void StagePlanetPanel::Draw()
             }
 
             DrawTexturePicker(planet, i);
+            if (planet->GetPlanetShape() ==
+                Planet::PlanetShape::Ellipse) {
+                DrawBackTexturePicker(planet, i);
+            }
             DrawTextureTilingEditor(planet, i);
 
             ImGui::SeparatorText("ロケット出現条件");
@@ -238,6 +242,18 @@ void StagePlanetPanel::Save()
         const glm::vec2 textureTiling = planet->GetTextureTiling();
         config["planets"][i]["textureTiling"][0] = textureTiling.x;
         config["planets"][i]["textureTiling"][1] = textureTiling.y;
+
+        const std::string& backTextureOverride =
+            planet->GetBackTextureOverridePath();
+        if (backTextureOverride.empty()) {
+            config["planets"][i].remove("backTextureOverride");
+        } else {
+            config["planets"][i]["backTextureOverride"] =
+                backTextureOverride;
+        }
+        config["planets"][i]["textureSideBlendWidth"] =
+            planet->GetTextureSideBlendWidth();
+
         config["planets"][i]["rocketSpawnCondition"] =
             planet->GetRocketSpawnCondition();
     }
@@ -318,6 +334,133 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
             mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(selectedTexture);
         if (texture != 0) {
             ImGui::TextUnformatted("プレビュー");
+            ImGui::Image(
+                static_cast<ImTextureID>(texture),
+                ImVec2(128.0f, 128.0f),
+                ImVec2(0.0f, 1.0f),
+                ImVec2(1.0f, 0.0f));
+        }
+    }
+}
+
+void StagePlanetPanel::DrawBackTexturePicker(
+    Planet* planet,
+    std::size_t planetIndex)
+{
+    if (!planet) {
+        return;
+    }
+
+    if (!mTextureAssetsScanned) {
+        RefreshTextureAssets();
+    }
+
+    ImGui::SeparatorText("楕円の裏側テクスチャ");
+    ImGui::TextDisabled(
+        "惑星中心より下半分に使用します。未設定なら表側と同じテクスチャです。");
+
+    const std::string& selectedTexture =
+        planet->GetBackTextureOverridePath();
+    ImGui::TextWrapped(
+        "選択中: %s",
+        selectedTexture.empty()
+            ? "表側と同じ"
+            : selectedTexture.c_str());
+
+    const std::string pickerId =
+        "##planetBackTexturePicker" + std::to_string(planetIndex);
+    if (ImGui::TreeNode(
+            ("裏側テクスチャを選ぶ" + pickerId).c_str())) {
+        const std::string filterId =
+            "##planetBackTextureFilter" + std::to_string(planetIndex);
+        ImGui::InputTextWithHint(
+            filterId.c_str(),
+            "ファイル名で検索",
+            mTextureAssetFilter.data(),
+            mTextureAssetFilter.size());
+        ImGui::SameLine();
+        if (ImGui::Button(
+                ("更新##planetBackTextureRefresh" +
+                 std::to_string(planetIndex))
+                    .c_str())) {
+            RefreshTextureAssets();
+        }
+
+        if (ImGui::Selectable(
+                ("表側と同じ##planetBackTextureDefault" +
+                 std::to_string(planetIndex))
+                    .c_str(),
+                selectedTexture.empty())) {
+            planet->SetBackTextureOverridePath("");
+        }
+
+        const std::string assetListId =
+            "PlanetBackTextureAssetPicker##" +
+            std::to_string(planetIndex);
+        ImGui::BeginChild(
+            assetListId.c_str(),
+            ImVec2(0.0f, 180.0f),
+            true);
+        const std::string filter =
+            ToLower(mTextureAssetFilter.data());
+        for (const std::string& asset : mTextureAssets) {
+            if (!filter.empty() &&
+                ToLower(asset).find(filter) == std::string::npos) {
+                continue;
+            }
+
+            if (ImGui::Selectable(
+                    asset.c_str(),
+                    selectedTexture == asset)) {
+                planet->SetBackTextureOverridePath(asset);
+                if (mContext.game &&
+                    mContext.game->GetRenderer3D()) {
+                    const GLuint texture =
+                        mContext.game->GetRenderer3D()
+                            ->GetOrLoadTextureOverride(asset);
+                    if (texture == 0) {
+                        mTextureAssetStatus =
+                            "裏側テクスチャの読み込みに失敗しました: " +
+                            asset;
+                    } else {
+                        mTextureAssetStatus.clear();
+                    }
+                }
+            }
+        }
+        ImGui::EndChild();
+
+        if (!mTextureAssetStatus.empty()) {
+            ImGui::TextColored(
+                ImVec4(1.0f, 0.35f, 0.25f, 1.0f),
+                "%s",
+                mTextureAssetStatus.c_str());
+        }
+        ImGui::TreePop();
+    }
+
+    float blendWidth = planet->GetTextureSideBlendWidth();
+    if (ImGui::SliderFloat(
+            ("表裏の境界ぼかし##planetTextureSideBlendWidth" +
+             std::to_string(planetIndex))
+                .c_str(),
+            &blendWidth,
+            0.0f,
+            0.5f,
+            "%.3f")) {
+        planet->SetTextureSideBlendWidth(blendWidth);
+    }
+    ImGui::TextDisabled(
+        "0に近いほど中心でくっきり切り替わり、大きいほど滑らかに混ざります。");
+
+    if (!selectedTexture.empty() &&
+        mContext.game &&
+        mContext.game->GetRenderer3D()) {
+        const GLuint texture =
+            mContext.game->GetRenderer3D()
+                ->GetOrLoadTextureOverride(selectedTexture);
+        if (texture != 0) {
+            ImGui::TextUnformatted("裏側プレビュー");
             ImGui::Image(
                 static_cast<ImTextureID>(texture),
                 ImVec2(128.0f, 128.0f),

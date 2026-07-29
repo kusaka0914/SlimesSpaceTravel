@@ -1,10 +1,38 @@
 #include "system/camera/CameraCollisionResolver.h"
 
 #include "Game.h"
+#include "actor/Actor.h"
 #include "system/PhysicsSystem.h"
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
+
+namespace {
+class CameraRayResultCallback : public btCollisionWorld::ClosestRayResultCallback {
+public:
+    CameraRayResultCallback(const btVector3& rayFromWorld, const btVector3& rayToWorld)
+        : btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
+    {
+        m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+        m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    }
+
+    bool needsCollision(btBroadphaseProxy* proxy) const override
+    {
+        if (!btCollisionWorld::ClosestRayResultCallback::needsCollision(proxy)) {
+            return false;
+        }
+
+        const auto* collisionObject = static_cast<const btCollisionObject*>(proxy->m_clientObject);
+        if (!collisionObject) {
+            return false;
+        }
+
+        const Actor* actor = static_cast<const Actor*>(collisionObject->getUserPointer());
+        return !actor || actor->GetIsActive();
+    }
+};
+} // namespace
 
 CameraCollisionResolver::CameraCollisionResolver(Game* game)
     : mGame(game)
@@ -25,7 +53,7 @@ glm::vec3 CameraCollisionResolver::Resolve(const glm::vec3& targetPos, const glm
     const glm::vec3 from = targetPos;
     const glm::vec3 to = desiredCameraPos;
 
-    btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
+    CameraRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
 
     bulletWorld->rayTest(cb.m_rayFromWorld, cb.m_rayToWorld, cb);
 

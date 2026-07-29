@@ -66,6 +66,8 @@ private:
     bool mRequestOpenPlacement = false;
 
     int mLastMousePickFrame = -1;
+    bool mHasLastPickClick = false;
+    ImVec2 mLastPickClickPos = ImVec2(0.0f, 0.0f);
 
     bool mIsBoxSelectMouseDown = false;
     bool mIsBoxSelecting = false;

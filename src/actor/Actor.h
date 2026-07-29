@@ -34,6 +34,7 @@ public:
 
     void SetIsActive(bool isActive) { mIsActive = isActive; }
     void SetVisibleIfStageCleared(int stageNum);
+    void SetHiddenIfStageCleared(int stageNum);
     void RefreshProgressVisibility();
 
     void SetRadius(float radius) { mRadius = radius; }
@@ -67,6 +68,7 @@ public:
         return mIsActive && IsProgressVisibleForCurrentMode();
     }
     int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
+    int GetHiddenIfStageCleared() const { return mHiddenIfStageCleared; }
     bool IsProgressVisibilitySatisfied() const
     {
         return mProgressVisibilitySatisfied;
@@ -131,6 +133,7 @@ protected:
     bool mIsActive;
     bool mProgressVisibilitySatisfied = true;
     int mVisibleIfStageCleared = -1;
+    int mHiddenIfStageCleared = -1;
     bool mIsUpVecInitialized;
 
     float mRadius;
