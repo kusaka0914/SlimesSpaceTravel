@@ -7,7 +7,6 @@ class Actor;
 enum class StageActorType {
     Enemy,
     Platform,
-    MovingPlatform,
     Crystal,
     NPC,
     BoatParts,
@@ -33,6 +32,6 @@ struct StageActorInstance {
 
 struct StageActorTypeInfo {
     StageActorType type;
-    const char* sequenceName;
-    const char* displayName;
+    std::string sequenceName;
+    std::string displayName;
 };

@@ -25,7 +25,7 @@ private:
     void HandleOperationShortcuts();
     void DrawGizmo();
 
-    glm::mat4 CreateSelectedActorGizmoMatrix(Actor* actor) const;
+    glm::mat4 CreateSelectedActorGizmoMatrix(Actor* actor, ImGuizmo::OPERATION operation) const;
     void ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4& matrix, ImGuizmo::OPERATION operation);
 
 private:

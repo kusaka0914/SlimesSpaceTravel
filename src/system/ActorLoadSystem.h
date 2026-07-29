@@ -11,7 +11,6 @@ class Game;
 class Player;
 class Enemy;
 class Platform;
-class MovingPlatform;
 class NPC;
 class Crystal;
 class BoatParts;
@@ -34,7 +33,7 @@ public:
     Player* CreatePlayerFromStageNode(const YAML::Node& node, int playerNum);
     Enemy* CreateEnemyFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Platform* CreatePlatformFromStageNode(const YAML::Node& node, int stageYamlIndex);
-    MovingPlatform* CreateMovingPlatformFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    Platform* CreateLegacyMovingPlatformFromStageNode(const YAML::Node& node, int stageYamlIndex);
     NPC* CreateNPCFromStageNode(const YAML::Node& node, int stageYamlIndex);
     Crystal* CreateCrystalFromStageNode(const YAML::Node& node, int stageYamlIndex);
     BoatParts* CreateBoatPartsFromStageNode(const YAML::Node& node, int stageYamlIndex);
@@ -63,7 +62,7 @@ private:
     void LoadCrystals(const char* path);
     void LoadStar(const char* path);
     void LoadPlatforms(const char* path);
-    void LoadMovingPlatforms(const char* path);
+    void LoadLegacyMovingPlatforms(const char* path);
     void LoadBoatArrivalPoints(const char* path);
     void LoadFallRespawnPoints(const char* path);
     void LoadStageObjects(const char* path);

@@ -411,7 +411,15 @@ bool Game::DebugChangeStage(int stageNum, const std::string& yamlPath)
     const bool isBaseStageYaml =
         yamlPath.ends_with("/stage0.yaml") || yamlPath.ends_with("\\stage0.yaml");
     if (isBaseStageYaml && mSequenceSystem) {
-        mSequenceSystem->Play("base_arrival_template");
+        if (mSequenceSystem->PlayCinematicChainThenSequence(
+                {"base_sequence", "base_second_sequence"},
+                "base_arrival_template")) {
+            if (Player* player = GetMainPlayer()) {
+                player->SetIsActive(false);
+            }
+        } else {
+            mSequenceSystem->Play("base_arrival_template");
+        }
     }
 
     return true;

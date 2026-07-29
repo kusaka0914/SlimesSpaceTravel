@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 class Boat;
@@ -10,7 +11,6 @@ class Crystal;
 class Enemy;
 class FallRespawnPoint;
 class Key;
-class MovingPlatform;
 class NPC;
 class Platform;
 class Star;
@@ -24,7 +24,6 @@ public:
     void AddCrystal(Crystal* crystal) { mCrystals.emplace_back(crystal); }
     void AddNPC(NPC* npc) { mNPCs.emplace_back(npc); }
     void AddPlatform(Platform* platform) { mPlatforms.emplace_back(platform); }
-    void AddMovingPlatform(MovingPlatform* platform) { mMovingPlatforms.emplace_back(platform); }
     void AddBoatArrivalPoint(BoatArrivalPoint* point) { mBoatArrivalPoints.emplace_back(point); }
     void AddFallRespawnPoint(FallRespawnPoint* point) { mFallRespawnPoints.emplace_back(point); }
     void AddStageObject(StageObject* stageObject) { mStageObjects.emplace_back(stageObject); }
@@ -40,8 +39,8 @@ public:
     void RemoveAllBoatParts() { mBoatParts.clear(); }
     void RemoveAllCrystals() { mCrystals.clear(); }
     void RemoveAllNPCs() { mNPCs.clear(); }
-    void RemoveAllPlatforms() { mPlatforms.clear(); }
-    void RemoveAllMovingPlatforms() { mMovingPlatforms.clear(); }
+    void RemoveAllPlatforms();
+    void RemovePlatformsByStageSequence(const std::string& sequenceName);
     void RemoveKey() { mKey = nullptr; }
     void RemoveStar() { mStar = nullptr; }
     void RemoveAllBoatArrivalPoints() { mBoatArrivalPoints.clear(); }
@@ -57,7 +56,6 @@ public:
     const std::vector<Crystal*>& GetCrystals() const { return mCrystals; }
     const std::vector<NPC*>& GetNPCs() const { return mNPCs; }
     const std::vector<Platform*>& GetPlatforms() const { return mPlatforms; }
-    const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mMovingPlatforms; }
     const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mBoatArrivalPoints; }
     const std::vector<FallRespawnPoint*>& GetFallRespawnPoints() const { return mFallRespawnPoints; }
     const std::vector<StageObject*>& GetStageObjects() const { return mStageObjects; }
@@ -72,7 +70,6 @@ private:
     std::vector<Crystal*> mCrystals;
     std::vector<NPC*> mNPCs;
     std::vector<Platform*> mPlatforms;
-    std::vector<MovingPlatform*> mMovingPlatforms;
     std::vector<BoatArrivalPoint*> mBoatArrivalPoints;
     std::vector<FallRespawnPoint*> mFallRespawnPoints;
     std::vector<StageObject*> mStageObjects;

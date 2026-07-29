@@ -1,6 +1,6 @@
 #include "CharacterActor.h"
 #include "Game.h"
-#include "actor/MovingPlatform.h"
+#include "actor/Platform.h"
 #include "system/PhysicsSystem.h"
 
 CharacterActor::CharacterActor(Game* game)
@@ -14,11 +14,13 @@ CharacterActor::CharacterActor(Game* game)
 
 void CharacterActor::UpdateActor(float deltaTime)
 {
-    ApplyGroundActorMovement();
+    ApplyGroundActorTransformMovement();
 
     if (mShouldJudgeLanding) {
         JudgeLanding();
     }
+
+    ApplyGroundActorConveyorMovement();
 }
 
 void CharacterActor::JudgeLanding()
@@ -56,6 +58,8 @@ void CharacterActor::JudgeLanding()
             return;
         }
     }
+
+    NotLand();
 }
 
 bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& hitPosCorrection)
@@ -162,23 +166,51 @@ void CharacterActor::SetBaseScale(const glm::vec3& scale)
     mScale = scale;
 }
 
-void CharacterActor::ApplyGroundActorMovement()
+void CharacterActor::ApplyGroundActorTransformMovement()
 {
     if (!mOnGround || !mGroundActor) {
         return;
     }
 
-    MovingPlatform* movingPlatform = dynamic_cast<MovingPlatform*>(mGroundActor);
-
-    if (!movingPlatform) {
+    Platform* platform = dynamic_cast<Platform*>(mGroundActor);
+    if (!platform) {
         return;
     }
 
-    const glm::vec3 platformDelta = movingPlatform->GetFrameDelta();
+    const glm::vec3 platformDelta =
+        platform->GetTransformFrameDelta(mPos);
 
-    if (glm::length(platformDelta) < 1e-6f) {
+    ApplyExternalGroundMovement(platformDelta);
+}
+
+void CharacterActor::ApplyGroundActorConveyorMovement()
+{
+    if (!mOnGround || !mGroundActor) {
         return;
     }
 
-    mPos += platformDelta;
+    Platform* platform = dynamic_cast<Platform*>(mGroundActor);
+    if (!platform || !platform->GetConveyorComponent()) {
+        return;
+    }
+
+    ApplyExternalGroundMovement(platform->GetConveyorFrameDelta());
+}
+
+void CharacterActor::ApplyExternalGroundMovement(
+    const glm::vec3& movementDelta)
+{
+    if (glm::length(movementDelta) < 1e-6f) {
+        return;
+    }
+
+    if (!mGame || !mGame->GetPhysicsSystem()) {
+        mPos += movementDelta;
+        return;
+    }
+
+    mPos = mGame->GetPhysicsSystem()->CheckCollision(
+        this,
+        movementDelta,
+        mPos + movementDelta);
 }

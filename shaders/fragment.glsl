@@ -27,6 +27,9 @@ uniform float toonStrength;
 void main()
 {
     vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord * textureTiling) : objectColor;
+    if (useTexture != 0) {
+        baseColor.a *= objectColor.a;
+    }
     if (useBackTexture != 0) {
         vec4 backColor = texture(backTexture, texCoord * textureTiling);
         float blendWidth = max(textureSideBlendWidth, 0.00001);

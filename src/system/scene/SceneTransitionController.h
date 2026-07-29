@@ -31,4 +31,5 @@ private:
     int& mNextStageNum;
 
     std::function<void()> mMidpointAction;
+    bool mHasPlayedBaseIntroThisSession = false;
 };

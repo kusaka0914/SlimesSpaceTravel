@@ -166,6 +166,7 @@ bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, Pla
 
     mCoyoteTimeRemaining = 0.0f;
     movement.StartJumpMovement(player, deltaTime);
+    player.NotifyJumpStarted();
 
     player.GetGame()->GetAudioSystem()->PlaySE("jump_se");
     return true;

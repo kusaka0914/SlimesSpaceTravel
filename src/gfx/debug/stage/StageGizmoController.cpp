@@ -2,10 +2,10 @@
 
 #include "Game.h"
 #include "actor/Actor.h"
-#include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
+#include "component/PlatformMovementComponent.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
@@ -72,37 +72,18 @@ void StageGizmoController::HandleOperationShortcuts()
     }
 }
 
-glm::mat4 StageGizmoController::CreateSelectedActorGizmoMatrix(Actor* actor) const
+glm::mat4 StageGizmoController::CreateSelectedActorGizmoMatrix(
+    Actor* actor, ImGuizmo::OPERATION operation) const
 {
     if (!actor) {
         return glm::mat4(1.0f);
     }
 
-    glm::vec3 up = actor->GetUpVec();
-    glm::vec3 forward = actor->GetForwardVec();
-
-    if (glm::length(up) < 1e-6f) {
-        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::mat4 orientation = glm::mat4_cast(actor->GetOrientation());
+    if (operation == ImGuizmo::SCALE &&
+        mContext.game && mContext.game->GetMathUtils()) {
+        orientation = mContext.game->GetMathUtils()->CreateOrient(actor);
     }
-    up = glm::normalize(up);
-
-    forward -= up * glm::dot(forward, up);
-    if (glm::length(forward) < 1e-6f) {
-        forward = glm::vec3(0.0f, 0.0f, 1.0f);
-        forward -= up * glm::dot(forward, up);
-    }
-    if (glm::length(forward) < 1e-6f) {
-        forward = glm::vec3(1.0f, 0.0f, 0.0f);
-        forward -= up * glm::dot(forward, up);
-    }
-    forward = glm::normalize(forward);
-
-    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
-
-    glm::mat4 orientation(1.0f);
-    orientation[0] = glm::vec4(left, 0.0f);
-    orientation[1] = glm::vec4(up, 0.0f);
-    orientation[2] = glm::vec4(forward, 0.0f);
 
     return glm::translate(glm::mat4(1.0f), actor->GetPos()) * orientation *
            glm::scale(glm::mat4(1.0f), actor->GetScale());
@@ -129,15 +110,19 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
         }
         forward = glm::normalize(forward);
 
-        actor->SetUpVec(up);
-
         if (mContext.game && mContext.game->GetMathUtils()) {
-            const float facingYaw = mContext.game->GetMathUtils()->GetYawFromDirection(up, forward);
-            actor->SetFacingYaw(facingYaw);
+            const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+            forward = glm::normalize(glm::cross(left, up));
 
-            glm::vec3 editorRotation = actor->GetEditorRotation();
-            editorRotation.y = facingYaw;
-            actor->SetEditorRotation(editorRotation);
+            glm::mat3 orientationMatrix(1.0f);
+            orientationMatrix[0] = left;
+            orientationMatrix[1] = up;
+            orientationMatrix[2] = forward;
+
+            const glm::quat orientation = glm::normalize(glm::quat_cast(orientationMatrix));
+            actor->SetOrientation(orientation);
+            actor->SetEditorRotation(
+                mContext.game->GetMathUtils()->CalculateActorEditorRotationFromOrientation(actor, orientation));
         }
         return;
     }
@@ -153,12 +138,12 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
             translation[0], translation[1], translation[2]);
         actor->SetPos(worldPos);
 
-        if (MovingPlatform* movingPlatform =
-                dynamic_cast<MovingPlatform*>(actor);
-            movingPlatform && movingPlatform->GetMoveOnPlayer() &&
-            movingPlatform->GetCurrentPlanet()) {
-            movingPlatform->SetEditorPreviewLocalPos(
-                worldPos - movingPlatform->GetCurrentPlanet()->GetPos());
+        if (Platform* platform = dynamic_cast<Platform*>(actor);
+            platform && platform->GetMovementComponent() &&
+            platform->GetMovementComponent()->GetMoveOnPlayer() &&
+            platform->GetCurrentPlanet()) {
+            platform->GetMovementComponent()->SetEditorPreviewLocalPos(
+                worldPos - platform->GetCurrentPlanet()->GetPos());
         }
         return;
     }
@@ -276,7 +261,8 @@ void StageGizmoController::DrawGizmo()
     }
 
     if (!mIsUsingTransformGizmo) {
-        mEditingGizmoMatrix = CreateSelectedActorGizmoMatrix(selectedActor);
+        mEditingGizmoMatrix =
+            CreateSelectedActorGizmoMatrix(selectedActor, mCurrentGizmoOperation);
     }
 
     const ImGuizmo::MODE gizmoMode =

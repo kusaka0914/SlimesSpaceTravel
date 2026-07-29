@@ -23,6 +23,11 @@ SequenceSystem::SequenceSystem(Game* game)
 
 void SequenceSystem::Update(float deltaTime)
 {
+    if (mIsCinematicChainPlaying) {
+        UpdateCinematicChain();
+        return;
+    }
+
     if (!mIsPlaying || !mActiveSequence) {
         return;
     }
@@ -79,9 +84,52 @@ bool SequenceSystem::Play(const std::string& sequenceId, bool preview)
     return true;
 }
 
+bool SequenceSystem::PlayCinematicChainThenSequence(
+    const std::vector<std::string>& cinematicSequenceIds,
+    const std::string& gameplaySequenceId)
+{
+    Stop(true);
+
+    if (!mGame || !mGame->GetCameraSystem() || cinematicSequenceIds.empty() || gameplaySequenceId.empty()) {
+        mLastError = "Invalid cinematic chain";
+        return false;
+    }
+
+    if (!mLibrary.Find(gameplaySequenceId)) {
+        mLastError = "Sequence not found: " + gameplaySequenceId;
+        return false;
+    }
+
+    for (const std::string& cinematicSequenceId : cinematicSequenceIds) {
+        if (cinematicSequenceId.empty() ||
+            !mGame->GetCameraSystem()->GetCinematicLibrary().Find(cinematicSequenceId)) {
+            mLastError = "Camera sequence not found: " + cinematicSequenceId;
+            return false;
+        }
+    }
+
+    mCinematicSequenceChain = cinematicSequenceIds;
+    mCinematicSequenceIndex = 0;
+    mGameplaySequenceAfterCinematics = gameplaySequenceId;
+    mIsCinematicChainPlaying = true;
+    mLocksPlayerControl = true;
+    mActiveSequenceId = gameplaySequenceId;
+    mLastError.clear();
+
+    if (!mGame->GetCameraSystem()->PlayCinematic(mCinematicSequenceChain.front())) {
+        mLastError = "Failed to play camera sequence: " + mCinematicSequenceChain.front();
+        ClearCinematicChain();
+        mLocksPlayerControl = false;
+        mActiveSequenceId.clear();
+        return false;
+    }
+
+    return true;
+}
+
 void SequenceSystem::Stop(bool restorePreviewState)
 {
-    if (mGame && mGame->GetCameraSystem() && mIsPreview) {
+    if (mGame && mGame->GetCameraSystem() && (mIsPreview || mIsCinematicChainPlaying)) {
         mGame->GetCameraSystem()->StopCinematic();
     }
 
@@ -97,6 +145,7 @@ void SequenceSystem::Stop(bool restorePreviewState)
     mIsPlaying = false;
     mIsPreview = false;
     mLocksPlayerControl = false;
+    ClearCinematicChain();
 }
 
 float SequenceSystem::GetDuration() const
@@ -233,6 +282,44 @@ void SequenceSystem::ApplyEventClip(const SequenceClip& clip)
     default:
         break;
     }
+}
+
+void SequenceSystem::UpdateCinematicChain()
+{
+    if (!mGame || !mGame->GetCameraSystem()) {
+        ClearCinematicChain();
+        mLocksPlayerControl = false;
+        return;
+    }
+
+    CameraSystem* cameraSystem = mGame->GetCameraSystem();
+    if (cameraSystem->IsCinematicPlaying() || !cameraSystem->HasCinematicFinished()) {
+        return;
+    }
+
+    ++mCinematicSequenceIndex;
+    if (mCinematicSequenceIndex < mCinematicSequenceChain.size()) {
+        const std::string& nextCinematic = mCinematicSequenceChain[mCinematicSequenceIndex];
+        if (!cameraSystem->PlayCinematic(nextCinematic)) {
+            mLastError = "Failed to play camera sequence: " + nextCinematic;
+            const std::string gameplaySequenceId = mGameplaySequenceAfterCinematics;
+            ClearCinematicChain();
+            Play(gameplaySequenceId);
+        }
+        return;
+    }
+
+    const std::string gameplaySequenceId = mGameplaySequenceAfterCinematics;
+    ClearCinematicChain();
+    Play(gameplaySequenceId);
+}
+
+void SequenceSystem::ClearCinematicChain()
+{
+    mCinematicSequenceChain.clear();
+    mCinematicSequenceIndex = 0;
+    mGameplaySequenceAfterCinematics.clear();
+    mIsCinematicChainPlaying = false;
 }
 
 float SequenceSystem::ApplyEasing(float t, SequenceEasing easing)

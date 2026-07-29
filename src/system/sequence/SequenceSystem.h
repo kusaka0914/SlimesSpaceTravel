@@ -6,6 +6,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class Actor;
 class Game;
@@ -17,9 +18,11 @@ public:
     void Update(float deltaTime);
 
     bool Play(const std::string& sequenceId, bool preview = false);
+    bool PlayCinematicChainThenSequence(const std::vector<std::string>& cinematicSequenceIds,
+                                        const std::string& gameplaySequenceId);
     void Stop(bool restorePreviewState = true);
 
-    bool IsPlaying() const { return mIsPlaying; }
+    bool IsPlaying() const { return mIsPlaying || mIsCinematicChainPlaying; }
     bool IsPreviewing() const { return mIsPreview; }
     bool HasPreviewSnapshot() const { return !mPreviewSnapshots.empty(); }
     bool LocksPlayerControl() const { return mLocksPlayerControl; }
@@ -49,6 +52,8 @@ private:
     void ApplyMovementClips(const GameplaySequence& sequence, float time);
     void ApplyEventClips(const GameplaySequence& sequence, float previousTime, float time);
     void ApplyEventClip(const SequenceClip& clip);
+    void UpdateCinematicChain();
+    void ClearCinematicChain();
 
     static float ApplyEasing(float t, SequenceEasing easing);
 
@@ -64,6 +69,11 @@ private:
     bool mIsPlaying = false;
     bool mIsPreview = false;
     bool mLocksPlayerControl = false;
+
+    std::vector<std::string> mCinematicSequenceChain;
+    std::size_t mCinematicSequenceIndex = 0;
+    std::string mGameplaySequenceAfterCinematics;
+    bool mIsCinematicChainPlaying = false;
 
     std::unordered_map<Actor*, ActorSnapshot> mPreviewSnapshots;
 };

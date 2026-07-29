@@ -4,6 +4,7 @@
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include <array>
+#include <functional>
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -13,7 +14,12 @@ class Actor;
 
 class StagePlacementPanel : public DebugPanel {
 public:
-    StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController);
+    using Callback = std::function<void()>;
+
+    StagePlacementPanel(
+        DebugEditorContext& context,
+        StageSelectionController& selectionController,
+        Callback pushUndoCallback = {});
 
     void Draw() override;
     void DrawObjectList();
@@ -36,6 +42,15 @@ private:
     void DrawActorList(const ActorGroup& group);
     void DrawSelectedActorEditor();
     void DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
+    bool DrawPlatformTypeEditor(
+        class Platform* platform,
+        const std::string& sequenceName,
+        std::size_t listIndex);
+    void DrawPlatformBehaviorEditors(class Platform* platform, int yamlIndex);
+    bool ChangePlatformType(
+        const std::string& sourceSequenceName,
+        std::size_t sourceIndex,
+        const struct PlatformTypeDefinition& targetType);
     void DrawPlacementModelPicker(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
     void DrawNPCModelPicker(class NPC* npc, const std::string& sequenceName, std::size_t listIndex);
     void DrawBoatModelPicker(class Boat* boat, const std::string& sequenceName, std::size_t listIndex);
@@ -52,6 +67,7 @@ private:
 
 private:
     StageSelectionController& mSelectionController;
+    Callback mPushUndoCallback;
     bool mRequestOpenPickedActorPlacement = false;
     int mSelectedSpawnPlayerIndex = 0;
     std::string mPlayerSpawnStatus;
@@ -62,5 +78,6 @@ private:
     std::vector<std::string> mTextureAssets;
     std::string mTextureAssetStatus;
     std::string mRubyGenerationStatus;
+    std::string mPlatformTypeChangeStatus;
     bool mTextureAssetsScanned = false;
 };

@@ -7,13 +7,15 @@
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/NPC.h"
-#include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/StageObject.h"
+#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageModelAssets.h"
+#include "gfx/debug/stage/PlatformTypeRegistry.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
@@ -27,6 +29,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
+#include <utility>
 
 namespace {
 std::string ToLower(std::string value)
@@ -47,9 +50,13 @@ bool IsSupportedTextureExtension(const std::filesystem::path& path)
 }
 }
 
-StagePlacementPanel::StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController)
+StagePlacementPanel::StagePlacementPanel(
+    DebugEditorContext& context,
+    StageSelectionController& selectionController,
+    Callback pushUndoCallback)
     : DebugPanel(context),
-      mSelectionController(selectionController)
+      mSelectionController(selectionController),
+      mPushUndoCallback(std::move(pushUndoCallback))
 {
 }
 
@@ -221,6 +228,12 @@ bool StagePlacementPanel::SavePlayerSpawnFromCurrentTransform(Player* player)
     playerNode["upVec"][1] = upVec.y;
     playerNode["upVec"][2] = upVec.z;
 
+    const glm::quat orientation = player->GetOrientation();
+    playerNode["rotationQuat"][0] = orientation.w;
+    playerNode["rotationQuat"][1] = orientation.x;
+    playerNode["rotationQuat"][2] = orientation.y;
+    playerNode["rotationQuat"][3] = orientation.z;
+
     return StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
@@ -352,7 +365,7 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         return;
     }
 
-    ImGui::Text("種類: %s", StageActorQuery::GetTypeLabel(actorRef->type));
+    ImGui::Text("種類: %s", StageActorQuery::GetTypeLabel(*actorRef).c_str());
     ImGui::Text("対象: %s", actorRef->label.c_str());
     ImGui::SameLine();
     if (ImGui::SmallButton("選択解除")) {
@@ -375,7 +388,11 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const int yamlIndex = actor->GetStageYamlIndex();
 
-    if (dynamic_cast<Platform*>(actor)) {
+    if (Platform* platform = dynamic_cast<Platform*>(actor)) {
+        if (DrawPlatformTypeEditor(platform, sequenceName, listIndex)) {
+            return;
+        }
+
         ImGui::SeparatorText("足場モデル設定");
         DrawPlacementModelPicker(actor, sequenceName, listIndex);
     }
@@ -393,29 +410,31 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
     }
 
-    if (MovingPlatform* movingPlatform =
-            dynamic_cast<MovingPlatform*>(actor)) {
+    if (Platform* movingPlatform = dynamic_cast<Platform*>(actor);
+        movingPlatform && movingPlatform->GetMovementComponent()) {
+        PlatformMovementComponent* movement =
+            movingPlatform->GetMovementComponent();
         ImGui::SeparatorText("動く足場設定");
 
-        bool moveOnPlayer = movingPlatform->GetMoveOnPlayer();
+        bool moveOnPlayer = movement->GetMoveOnPlayer();
         if (ImGui::Checkbox(
                 ("プレイヤーが乗ったら動く##moveOnPlayer" +
                  std::to_string(yamlIndex))
                     .c_str(),
                 &moveOnPlayer)) {
-            movingPlatform->SetMoveOnPlayer(moveOnPlayer);
+            movement->SetMoveOnPlayer(moveOnPlayer);
             if (moveOnPlayer && movingPlatform->GetCurrentPlanet()) {
                 const glm::vec3 currentLocalPos =
                     movingPlatform->GetPos() -
                     movingPlatform->GetCurrentPlanet()->GetPos();
                 const glm::vec3 destination =
-                    movingPlatform->GetDestinationLocalPos();
-                movingPlatform->SetBaseLocalPos(currentLocalPos);
-                movingPlatform->SetDestinationLocalPos(destination);
+                    movement->GetDestinationLocalPos();
+                movement->SetBaseLocalPos(currentLocalPos);
+                movement->SetDestinationLocalPos(destination);
             }
         }
 
-        float moveDuration = movingPlatform->GetMoveDuration();
+        float moveDuration = movement->GetMoveDuration();
         const std::string durationLabel =
             (moveOnPlayer
                  ? "片道の移動時間（秒）##movingPlatformDuration"
@@ -428,7 +447,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 0.1f,
                 60.0f,
                 "%.1f")) {
-            movingPlatform->SetMoveDuration(std::max(0.1f, moveDuration));
+            movement->SetMoveDuration(std::max(0.1f, moveDuration));
         }
 
         Planet* movingPlatformPlanet = movingPlatform->GetCurrentPlanet();
@@ -438,9 +457,9 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 : glm::vec3(0.0f);
 
         glm::vec3 startWorldPos =
-            planetCenter + movingPlatform->GetBaseLocalPos();
+            planetCenter + movement->GetBaseLocalPos();
         glm::vec3 endWorldPos =
-            planetCenter + movingPlatform->GetDestinationLocalPos();
+            planetCenter + movement->GetDestinationLocalPos();
 
         if (ImGui::DragFloat3(
                 ("出発地点（ワールド）##movingPlatformStart" +
@@ -452,9 +471,9 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 500.0f,
                 "%.2f")) {
             const glm::vec3 destinationLocalPos =
-                movingPlatform->GetDestinationLocalPos();
-            movingPlatform->SetBaseLocalPos(startWorldPos - planetCenter);
-            movingPlatform->SetDestinationLocalPos(destinationLocalPos);
+                movement->GetDestinationLocalPos();
+            movement->SetBaseLocalPos(startWorldPos - planetCenter);
+            movement->SetDestinationLocalPos(destinationLocalPos);
         }
 
         if (ImGui::DragFloat3(
@@ -466,12 +485,12 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 -500.0f,
                 500.0f,
                 "%.2f")) {
-            movingPlatform->SetDestinationLocalPos(
+            movement->SetDestinationLocalPos(
                 endWorldPos - planetCenter);
         }
 
         if (moveOnPlayer) {
-            float returnDelay = movingPlatform->GetReturnDelay();
+            float returnDelay = movement->GetReturnDelay();
             if (ImGui::DragFloat(
                     ("降りてから戻るまで（秒）##movingPlatformReturnDelay" +
                      std::to_string(yamlIndex))
@@ -481,17 +500,17 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     0.0f,
                     30.0f,
                     "%.1f")) {
-                movingPlatform->SetReturnDelay(returnDelay);
+                movement->SetReturnDelay(returnDelay);
             }
 
             const bool previewsStart =
-                movingPlatform->GetEditorPreviewPoint() == 0;
+                movement->GetEditorPreviewPoint() == 0;
             if (ImGui::RadioButton(
                     ("出発地点を表示・編集##movingPlatformPreviewStart" +
                      std::to_string(yamlIndex))
                         .c_str(),
                     previewsStart)) {
-                movingPlatform->SetEditorPreviewPoint(0);
+                movement->SetEditorPreviewPoint(0);
             }
             ImGui::SameLine();
             if (ImGui::RadioButton(
@@ -499,12 +518,12 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                      std::to_string(yamlIndex))
                         .c_str(),
                     !previewsStart)) {
-                movingPlatform->SetEditorPreviewPoint(1);
+                movement->SetEditorPreviewPoint(1);
             }
             ImGui::TextDisabled(
                 "編集する地点を選ぶと足場がそこへ表示されます。下の位置入力やギズモで動かせます。");
         } else {
-            glm::vec3 moveOffset = movingPlatform->GetMoveOffset();
+            glm::vec3 moveOffset = movement->GetMoveOffset();
             if (ImGui::DragFloat3(
                     ("往復移動量##movingPlatformOffset" +
                      std::to_string(yamlIndex))
@@ -514,11 +533,15 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     -500.0f,
                     500.0f,
                     "%.2f")) {
-                movingPlatform->SetMoveOffset(moveOffset);
+                movement->SetMoveOffset(moveOffset);
             }
             ImGui::TextDisabled(
                 "従来モードでは出発地点と到着地点の間を自動で往復します。");
         }
+    }
+
+    if (Platform* platform = dynamic_cast<Platform*>(actor)) {
+        DrawPlatformBehaviorEditors(platform, yamlIndex);
     }
 
     if (Boat* boat = dynamic_cast<Boat*>(actor)) {
@@ -977,7 +1000,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     }
 
                     focusPreview =
-                        std::string(StageActorQuery::GetTypeLabel(candidate.ref.type)) +
+                        StageActorQuery::GetTypeLabel(candidate.ref) +
                         " / " + candidate.ref.label;
                     if (const NPC* targetNPC = dynamic_cast<const NPC*>(candidate.actor);
                         targetNPC && !targetNPC->GetName().empty()) {
@@ -1006,7 +1029,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 ImGui::Separator();
                 for (const StageActorInstance& candidate : talkFocusCandidates) {
                     std::string candidateLabel =
-                        std::string(StageActorQuery::GetTypeLabel(candidate.ref.type)) +
+                        StageActorQuery::GetTypeLabel(candidate.ref) +
                         " / " + candidate.ref.label;
                     if (const NPC* targetNPC = dynamic_cast<const NPC*>(candidate.actor);
                         targetNPC && !targetNPC->GetName().empty()) {
@@ -1247,11 +1270,11 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         const glm::vec3 worldPos = planet ? planet->GetPos() + localPos : localPos;
         actor->SetPos(worldPos);
 
-        if (MovingPlatform* movingPlatform =
-                dynamic_cast<MovingPlatform*>(actor);
-            movingPlatform && movingPlatform->GetMoveOnPlayer() &&
+        if (Platform* platform = dynamic_cast<Platform*>(actor);
+            platform && platform->GetMovementComponent() &&
+            platform->GetMovementComponent()->GetMoveOnPlayer() &&
             mContext.game && mContext.game->GetIsDebugEditorShowing()) {
-            movingPlatform->SetEditorPreviewLocalPos(localPos);
+            platform->GetMovementComponent()->SetEditorPreviewLocalPos(localPos);
         }
     }
 
@@ -1364,6 +1387,340 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
     const glm::vec3 pos = actor->GetPos();
     ImGui::Text("pos: %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
+}
+
+bool StagePlacementPanel::DrawPlatformTypeEditor(
+    Platform* platform,
+    const std::string& sequenceName,
+    std::size_t listIndex)
+{
+    if (!platform) {
+        return false;
+    }
+
+    ImGui::SeparatorText("足場の機能");
+
+    bool movementEnabled = platform->GetMovementComponent() != nullptr;
+    const bool wasMovementEnabled = movementEnabled;
+    if (ImGui::Checkbox(
+            ("移動##platformMovementEnabled" + sequenceName +
+             std::to_string(listIndex))
+                .c_str(),
+            &movementEnabled)) {
+        if (mPushUndoCallback) {
+            mPushUndoCallback();
+        }
+
+        if (movementEnabled) {
+            PlatformMovementComponent* movement =
+                platform->AddMovementComponent();
+            if (movement && platform->GetCurrentPlanet()) {
+                movement->SetBaseLocalPos(
+                    platform->GetPos() -
+                    platform->GetCurrentPlanet()->GetPos());
+            }
+            mPlatformTypeChangeStatus = "移動機能を追加しました";
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        } else if (sequenceName == "movingPlatforms") {
+            const PlatformTypeDefinition* normalType =
+                PlatformTypeRegistry::FindBySequenceName("platforms");
+            if (normalType &&
+                ChangePlatformType(sequenceName, listIndex, *normalType)) {
+                mPlatformTypeChangeStatus = "移動機能を削除しました";
+                return true;
+            }
+            movementEnabled = wasMovementEnabled;
+            mPlatformTypeChangeStatus = "移動機能を削除できませんでした";
+        } else {
+            platform->RemoveMovementComponent();
+            mPlatformTypeChangeStatus = "移動機能を削除しました";
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+    }
+
+    bool fadeEnabled = platform->GetFadeOnStandComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("乗ると透明##platformFadeEnabled" + sequenceName +
+             std::to_string(listIndex)).c_str(),
+            &fadeEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (fadeEnabled) platform->AddFadeOnStandComponent();
+        else platform->RemoveFadeOnStandComponent();
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    bool jumpToggleEnabled = platform->GetJumpToggleComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("ジャンプで表示切替##platformJumpToggleEnabled" + sequenceName +
+             std::to_string(listIndex)).c_str(),
+            &jumpToggleEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (jumpToggleEnabled) platform->AddJumpToggleComponent();
+        else platform->RemoveJumpToggleComponent();
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    bool intervalToggleEnabled =
+        platform->GetIntervalToggleComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("一定間隔で表示切替##platformIntervalToggleEnabled" +
+             sequenceName + std::to_string(listIndex)).c_str(),
+            &intervalToggleEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (intervalToggleEnabled) platform->AddIntervalToggleComponent();
+        else platform->RemoveIntervalToggleComponent();
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    bool directionalMovementEnabled =
+        platform->GetDirectionalMovementComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("乗った方向へ移動##platformDirectionalMovementEnabled" +
+             sequenceName + std::to_string(listIndex)).c_str(),
+            &directionalMovementEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (directionalMovementEnabled) {
+            platform->AddDirectionalMovementComponent();
+        } else {
+            platform->RemoveDirectionalMovementComponent();
+        }
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    bool rotationEnabled = platform->GetRotationComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("回転##platformRotationEnabled" + sequenceName +
+             std::to_string(listIndex)).c_str(),
+            &rotationEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (rotationEnabled) platform->AddRotationComponent();
+        else platform->RemoveRotationComponent();
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    bool conveyorEnabled = platform->GetConveyorComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("ベルトコンベア##platformConveyorEnabled" + sequenceName +
+             std::to_string(listIndex)).c_str(),
+            &conveyorEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (conveyorEnabled) platform->AddConveyorComponent();
+        else platform->RemoveConveyorComponent();
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    ImGui::TextDisabled(
+        "必要な機能を追加して組み合わせます。移動を有効にすると設定欄が表示されます。");
+
+    if (!mPlatformTypeChangeStatus.empty()) {
+        ImGui::TextUnformatted(mPlatformTypeChangeStatus.c_str());
+    }
+    return false;
+}
+
+void StagePlacementPanel::DrawPlatformBehaviorEditors(
+    Platform* platform,
+    int yamlIndex)
+{
+    if (!platform) return;
+
+    if (PlatformFadeOnStandComponent* fade =
+            platform->GetFadeOnStandComponent()) {
+        ImGui::SeparatorText("乗ると透明になる足場");
+
+        float fadeOutDuration = fade->GetFadeOutDuration();
+        if (ImGui::DragFloat(
+                ("消える時間（秒）##fadeOutDuration" +
+                 std::to_string(yamlIndex)).c_str(),
+                &fadeOutDuration, 0.05f, 0.05f, 30.0f, "%.2f")) {
+            fade->SetFadeOutDuration(fadeOutDuration);
+        }
+
+        float reappearDelay = fade->GetReappearDelay();
+        if (ImGui::DragFloat(
+                ("完全透明後の待ち時間（秒）##fadeReappearDelay" +
+                 std::to_string(yamlIndex)).c_str(),
+                &reappearDelay, 0.05f, 0.0f, 30.0f, "%.2f")) {
+            fade->SetReappearDelay(reappearDelay);
+        }
+        ImGui::TextDisabled(
+            "完全に透明になると当たり判定がなくなり、待ち時間後に再表示します。");
+    }
+
+    if (PlatformJumpToggleComponent* toggle =
+            platform->GetJumpToggleComponent()) {
+        ImGui::SeparatorText("ジャンプで表示切り替え");
+        bool initiallyVisible = toggle->GetInitiallyVisible();
+        if (ImGui::Checkbox(
+                ("最初は表示##jumpToggleInitiallyVisible" +
+                 std::to_string(yamlIndex)).c_str(),
+                &initiallyVisible)) {
+            toggle->SetInitiallyVisible(initiallyVisible);
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+    }
+
+    if (PlatformIntervalToggleComponent* toggle =
+            platform->GetIntervalToggleComponent()) {
+        ImGui::SeparatorText("一定間隔で表示切り替え");
+
+        bool initiallyVisible = toggle->GetInitiallyVisible();
+        if (ImGui::Checkbox(
+                ("最初は表示##intervalToggleInitiallyVisible" +
+                 std::to_string(yamlIndex)).c_str(),
+                &initiallyVisible)) {
+            toggle->SetInitiallyVisible(initiallyVisible);
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+
+        float interval = toggle->GetInterval();
+        if (ImGui::DragFloat(
+                ("切り替え間隔（秒）##intervalToggleInterval" +
+                 std::to_string(yamlIndex)).c_str(),
+                &interval, 0.05f, 0.1f, 60.0f, "%.2f")) {
+            toggle->SetInterval(interval);
+        }
+
+        float warningDuration = toggle->GetWarningDuration();
+        if (ImGui::DragFloat(
+                ("点滅開始（切替前の秒数）##intervalToggleWarning" +
+                 std::to_string(yamlIndex)).c_str(),
+                &warningDuration, 0.05f, 0.0f, 10.0f, "%.2f")) {
+            toggle->SetWarningDuration(warningDuration);
+        }
+
+        float blinkInterval = toggle->GetBlinkInterval();
+        if (ImGui::DragFloat(
+                ("点滅間隔（秒）##intervalToggleBlink" +
+                 std::to_string(yamlIndex)).c_str(),
+                &blinkInterval, 0.01f, 0.03f, 2.0f, "%.2f")) {
+            toggle->SetBlinkInterval(blinkInterval);
+        }
+    }
+
+    if (PlatformDirectionalMovementComponent* movement =
+            platform->GetDirectionalMovementComponent()) {
+        ImGui::SeparatorText("乗った方向へ動く足場");
+        float speed = movement->GetSpeed();
+        if (ImGui::DragFloat(
+                ("移動速度##directionalMovementSpeed" +
+                 std::to_string(yamlIndex)).c_str(),
+                &speed, 0.05f, 0.0f, 100.0f, "%.2f")) {
+            movement->SetSpeed(speed);
+        }
+        ImGui::TextDisabled(
+            "中心から見た前後左右のうち、乗った側へ移動します。");
+    }
+
+    if (PlatformRotationComponent* rotation =
+            platform->GetRotationComponent()) {
+        ImGui::SeparatorText("回転する足場");
+
+        glm::vec3 axis = rotation->GetLocalAxis();
+        if (ImGui::DragFloat3(
+                ("ローカル回転軸##platformRotationAxis" +
+                 std::to_string(yamlIndex)).c_str(),
+                &axis.x, 0.05f, -1.0f, 1.0f, "%.2f")) {
+            rotation->SetLocalAxis(axis);
+        }
+
+        float degreesPerSecond = rotation->GetDegreesPerSecond();
+        if (ImGui::DragFloat(
+                ("回転速度（度/秒）##platformRotationSpeed" +
+                 std::to_string(yamlIndex)).c_str(),
+                &degreesPerSecond, 1.0f, -720.0f, 720.0f, "%.1f")) {
+            rotation->SetDegreesPerSecond(degreesPerSecond);
+        }
+    }
+
+    if (PlatformConveyorComponent* conveyor =
+            platform->GetConveyorComponent()) {
+        ImGui::SeparatorText("ベルトコンベア");
+
+        glm::vec3 direction = conveyor->GetLocalDirection();
+        if (ImGui::DragFloat3(
+                ("ローカル運搬方向##platformConveyorDirection" +
+                 std::to_string(yamlIndex)).c_str(),
+                &direction.x, 0.05f, -1.0f, 1.0f, "%.2f")) {
+            conveyor->SetLocalDirection(direction);
+        }
+
+        float speed = conveyor->GetSpeed();
+        if (ImGui::DragFloat(
+                ("運搬速度##platformConveyorSpeed" +
+                 std::to_string(yamlIndex)).c_str(),
+                &speed, 0.05f, 0.0f, 100.0f, "%.2f")) {
+            conveyor->SetSpeed(speed);
+        }
+    }
+}
+
+bool StagePlacementPanel::ChangePlatformType(
+    const std::string& sourceSequenceName,
+    std::size_t sourceIndex,
+    const PlatformTypeDefinition& targetType)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage() ||
+        targetType.sequenceName.empty() ||
+        targetType.sequenceName == sourceSequenceName) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    // 画面上でまだ保存ボタンを押していない編集内容も、種類変更後へ引き継ぐ。
+    for (const ActorGroup& group : CollectActorGroups()) {
+        SaveActorsYaml(config, group);
+    }
+
+    YAML::Node sourceSequence = config[sourceSequenceName];
+    if (!sourceSequence || !sourceSequence.IsSequence() ||
+        sourceIndex >= sourceSequence.size()) {
+        return false;
+    }
+
+    YAML::Node convertedNode = YAML::Clone(sourceSequence[sourceIndex]);
+    PlatformTypeRegistry::ApplyDefaults(convertedNode, targetType);
+
+    if (!config[targetType.sequenceName] ||
+        !config[targetType.sequenceName].IsSequence()) {
+        config[targetType.sequenceName] = YAML::Node(YAML::NodeType::Sequence);
+    }
+
+    const int targetIndex =
+        static_cast<int>(config[targetType.sequenceName].size());
+    config[targetType.sequenceName].push_back(convertedNode);
+
+    if (!StageYamlRepository::RemoveSequenceElement(
+            config,
+            sourceSequenceName,
+            static_cast<int>(sourceIndex))) {
+        return false;
+    }
+
+    if (mPushUndoCallback) {
+        mPushUndoCallback();
+    }
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mSelectionController.SetSelectedKeys(
+        {targetType.sequenceName + ":" + std::to_string(targetIndex)});
+    mContext.game->ReloadCurrentStage();
+    return true;
 }
 
 void StagePlacementPanel::DrawPlacementModelPicker(
@@ -1699,10 +2056,16 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
 
     const glm::vec3 rotation = actor->GetEditorRotation();
 
-    config[sequenceName][yamlIndex]["facingYaw"] = rotation.y;
+    config[sequenceName][yamlIndex]["facingYaw"] = actor->GetFacingYaw();
     config[sequenceName][yamlIndex]["rotation"][0] = rotation.x;
     config[sequenceName][yamlIndex]["rotation"][1] = rotation.y;
     config[sequenceName][yamlIndex]["rotation"][2] = rotation.z;
+
+    const glm::quat orientation = actor->GetOrientation();
+    config[sequenceName][yamlIndex]["rotationQuat"][0] = orientation.w;
+    config[sequenceName][yamlIndex]["rotationQuat"][1] = orientation.x;
+    config[sequenceName][yamlIndex]["rotationQuat"][2] = orientation.y;
+    config[sequenceName][yamlIndex]["rotationQuat"][3] = orientation.z;
 
     const glm::vec3 scale = actor->GetScale();
 
@@ -1725,41 +2088,130 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             stageObject->GetCollisionEnabled();
     }
 
-    if (const MovingPlatform* movingPlatform =
-            dynamic_cast<const MovingPlatform*>(actor)) {
+    if (const Platform* platform = dynamic_cast<const Platform*>(actor)) {
+        const PlatformMovementComponent* movement =
+            platform->GetMovementComponent();
+
+        if (!movement) {
+            if (sequenceName != "movingPlatforms" &&
+                config[sequenceName][yamlIndex]["components"]) {
+                config[sequenceName][yamlIndex]["components"].remove("movement");
+                if (config[sequenceName][yamlIndex]["components"].size() == 0) {
+                    config[sequenceName][yamlIndex].remove("components");
+                }
+            }
+        } else {
+            YAML::Node movementNode =
+                sequenceName == "movingPlatforms"
+                    ? config[sequenceName][yamlIndex]
+                    : config[sequenceName][yamlIndex]["components"]["movement"];
+
         const glm::vec3 startLocalPos =
-            movingPlatform->GetBaseLocalPos();
+                movement->GetBaseLocalPos();
         const glm::vec3 endLocalPos =
-            movingPlatform->GetDestinationLocalPos();
-        const glm::vec3 moveOffset = movingPlatform->GetMoveOffset();
+                movement->GetDestinationLocalPos();
+            const glm::vec3 moveOffset = movement->GetMoveOffset();
 
-        config[sequenceName][yamlIndex]["startLocalPos"][0] =
-            startLocalPos.x;
-        config[sequenceName][yamlIndex]["startLocalPos"][1] =
-            startLocalPos.y;
-        config[sequenceName][yamlIndex]["startLocalPos"][2] =
-            startLocalPos.z;
-        config[sequenceName][yamlIndex]["endLocalPos"][0] =
-            endLocalPos.x;
-        config[sequenceName][yamlIndex]["endLocalPos"][1] =
-            endLocalPos.y;
-        config[sequenceName][yamlIndex]["endLocalPos"][2] =
-            endLocalPos.z;
-        config[sequenceName][yamlIndex]["moveOffset"][0] = moveOffset.x;
-        config[sequenceName][yamlIndex]["moveOffset"][1] = moveOffset.y;
-        config[sequenceName][yamlIndex]["moveOffset"][2] = moveOffset.z;
-        config[sequenceName][yamlIndex]["moveDuration"] =
-            movingPlatform->GetMoveDuration();
-        config[sequenceName][yamlIndex]["moveOnPlayer"] =
-            movingPlatform->GetMoveOnPlayer();
-        config[sequenceName][yamlIndex]["returnDelay"] =
-            movingPlatform->GetReturnDelay();
+            movementNode["startLocalPos"][0] = startLocalPos.x;
+            movementNode["startLocalPos"][1] = startLocalPos.y;
+            movementNode["startLocalPos"][2] = startLocalPos.z;
+            movementNode["endLocalPos"][0] = endLocalPos.x;
+            movementNode["endLocalPos"][1] = endLocalPos.y;
+            movementNode["endLocalPos"][2] = endLocalPos.z;
+            movementNode["moveOffset"][0] = moveOffset.x;
+            movementNode["moveOffset"][1] = moveOffset.y;
+            movementNode["moveOffset"][2] = moveOffset.z;
+            movementNode["moveDuration"] = movement->GetMoveDuration();
+            movementNode["moveOnPlayer"] = movement->GetMoveOnPlayer();
+            movementNode["returnDelay"] = movement->GetReturnDelay();
 
-        // プレビュー中に到着地点へ表示していても、通常の配置位置は
-        // 必ず出発地点として保存する。
-        config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
-        config[sequenceName][yamlIndex]["pos"][1] = startLocalPos.y;
-        config[sequenceName][yamlIndex]["pos"][2] = startLocalPos.z;
+            // プレビュー中に到着地点へ表示していても、通常の配置位置は
+            // 必ず出発地点として保存する。
+            config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
+            config[sequenceName][yamlIndex]["pos"][1] = startLocalPos.y;
+            config[sequenceName][yamlIndex]["pos"][2] = startLocalPos.z;
+        }
+
+        YAML::Node platformNode = config[sequenceName][yamlIndex];
+        const auto removeComponentNode =
+            [&platformNode](const char* key) {
+                if (platformNode["components"]) {
+                    platformNode["components"].remove(key);
+                }
+            };
+        const auto writeVec3 =
+            [](YAML::Node node, const char* key, const glm::vec3& value) {
+                node[key][0] = value.x;
+                node[key][1] = value.y;
+                node[key][2] = value.z;
+            };
+
+        if (const PlatformFadeOnStandComponent* component =
+                platform->GetFadeOnStandComponent()) {
+            YAML::Node node =
+                platformNode["components"]["fadeOnStand"];
+            node["fadeOutDuration"] = component->GetFadeOutDuration();
+            node.remove("fadeInDuration");
+            node["reappearDelay"] = component->GetReappearDelay();
+        } else {
+            removeComponentNode("fadeOnStand");
+        }
+
+        if (const PlatformJumpToggleComponent* component =
+                platform->GetJumpToggleComponent()) {
+            YAML::Node node =
+                platformNode["components"]["jumpToggle"];
+            node["initiallyVisible"] = component->GetInitiallyVisible();
+        } else {
+            removeComponentNode("jumpToggle");
+        }
+
+        if (const PlatformIntervalToggleComponent* component =
+                platform->GetIntervalToggleComponent()) {
+            YAML::Node node =
+                platformNode["components"]["intervalToggle"];
+            node["initiallyVisible"] = component->GetInitiallyVisible();
+            node["interval"] = component->GetInterval();
+            node["warningDuration"] = component->GetWarningDuration();
+            node["blinkInterval"] = component->GetBlinkInterval();
+        } else {
+            removeComponentNode("intervalToggle");
+        }
+
+        if (const PlatformDirectionalMovementComponent* component =
+                platform->GetDirectionalMovementComponent()) {
+            YAML::Node node =
+                platformNode["components"]["directionalMovement"];
+            node["speed"] = component->GetSpeed();
+        } else {
+            removeComponentNode("directionalMovement");
+        }
+
+        if (const PlatformRotationComponent* component =
+                platform->GetRotationComponent()) {
+            YAML::Node node =
+                platformNode["components"]["rotation"];
+            writeVec3(node, "axis", component->GetLocalAxis());
+            node["degreesPerSecond"] =
+                component->GetDegreesPerSecond();
+        } else {
+            removeComponentNode("rotation");
+        }
+
+        if (const PlatformConveyorComponent* component =
+                platform->GetConveyorComponent()) {
+            YAML::Node node =
+                platformNode["components"]["conveyor"];
+            writeVec3(node, "direction", component->GetLocalDirection());
+            node["speed"] = component->GetSpeed();
+        } else {
+            removeComponentNode("conveyor");
+        }
+
+        if (platformNode["components"] &&
+            platformNode["components"].size() == 0) {
+            platformNode.remove("components");
+        }
     }
 
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {

@@ -49,7 +49,9 @@ private:
 
     RayInfo CreateRayInfo(const glm::vec3& rayOffset) const;
 
-    void ApplyGroundActorMovement();
+    void ApplyGroundActorTransformMovement();
+    void ApplyGroundActorConveyorMovement();
+    void ApplyExternalGroundMovement(const glm::vec3& movementDelta);
 
     virtual void OnLanded() {}
 

@@ -23,4 +23,5 @@ public:
 
     static std::string GetSequenceName(StageActorType type);
     static const char* GetTypeLabel(StageActorType type);
+    static std::string GetTypeLabel(const StageActorRef& actorRef);
 };

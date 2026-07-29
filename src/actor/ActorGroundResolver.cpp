@@ -78,6 +78,10 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
                                                        const NormalRejector& shouldRejectNormal,
                                                        const CastSucceededCallback& onCastSucceeded)
 {
+    if (game && game->GetPhysicsSystem()) {
+        game->GetPhysicsSystem()->SyncKinematicBodies();
+    }
+
     RayHit mainHit;
     if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal, onCastSucceeded, mainHit)) {
         return glm::vec3(0.0f);

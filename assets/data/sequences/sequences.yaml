@@ -16,9 +16,9 @@ sequences:
         duration: 2
         target:
           group: boats
-          index: 1
-        from: [-0.01, 6.75, 1.29]
-        to: [-0.01, 1.85, 1.29]
+          index: 5
+        from: [0.002, 10, 16.028]
+        to: [0.002, 2.506, 16.028]
         easing: easeOut
       - type: actorMove
         start: 0
@@ -26,27 +26,33 @@ sequences:
         target:
           group: players
           index: 0
-        from: [-0.01, 6.75, 1.29]
-        to: [-0.00010876762, 1.7832834, 2.4045577]
+        from: [0.0018811935, 10, 16.028183]
+        to: [0.0018812361, 2.506, 16.0282]
         easing: easeOut
       - type: actorVisibility
-        start: 3
+        start: 2
         target:
           group: players
           index: 0
         visible: true
       - type: actorMove
-        start: 4
-        duration: 2
+        start: 2.5
+        duration: 1
         target:
           group: boats
-          index: 1
-        from: [-0.01, 1.85, 1.29]
-        to: [-0.01, 27.25, 1.29]
+          index: 5
+        from: [0.002, 2.506, 16.028]
+        to: [0.002, 24.270756, 16.028]
         easing: easeIn
       - type: playerControl
-        start: 6
+        start: 3.5
         enabled: true
+      - type: actorVisibility
+        start: 3.5
+        target:
+          group: boats
+          index: 5
+        visible: false
   launch_rocket_from_base:
     loop: false
     clips:

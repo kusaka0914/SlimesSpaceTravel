@@ -10,7 +10,6 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -84,7 +83,6 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         mRenderer->TryDrawActors(planet->GetBoatParts());
         mRenderer->TryDrawActors(planet->GetCrystals());
         mRenderer->TryDrawActors(planet->GetPlatforms());
-        mRenderer->TryDrawActors(planet->GetMovingPlatforms());
         mRenderer->TryDrawActors(planet->GetStageObjects());
         mRenderer->TryDrawActors(planet->GetNPCs());
         mRenderer->TryDrawActor(planet->GetKey());

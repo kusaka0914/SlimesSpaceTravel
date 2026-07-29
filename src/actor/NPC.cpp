@@ -221,7 +221,7 @@ void NPC::LookNearestPlayer(float deltaTime)
     const float t = 1.0f - std::exp(-turnSpeed * deltaTime);
 
     mFacingForwardVec = glm::normalize(glm::mix(mFacingForwardVec, toNearestPlayer, t));
-    mFacingYaw = mGame->GetMathUtils()->GetYawFromDirection(mUpVec, mFacingForwardVec) + 3.14159265f;
+    SetFacingYaw(mGame->GetMathUtils()->GetYawFromDirection(mUpVec, mFacingForwardVec) + 3.14159265f);
 }
 
 void NPC::CheckTalkable()

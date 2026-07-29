@@ -4,7 +4,6 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/FallRespawnPoint.h"
-#include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
@@ -40,11 +39,11 @@ void StageCollisionBuilder::CreateStageCollisionBodies(
         CreateStaticMeshBody(world, planet, rigidBodies, triangleMeshShapes, triangleMeshes);
 
         for (Platform* platform : planet->GetPlatforms()) {
-            CreateStaticMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
-        }
-
-        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
-            CreateKinematicMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            if (platform && platform->UsesKinematicPhysics()) {
+                CreateKinematicMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            } else {
+                CreateStaticMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            }
         }
 
         for (StageObject* stageObject : planet->GetStageObjects()) {
@@ -168,7 +167,31 @@ void StageCollisionBuilder::SyncKinematicBodies(
             continue;
         }
 
-        if (!dynamic_cast<MovingPlatform*>(actor)) {
+        Platform* platform = dynamic_cast<Platform*>(actor);
+        if (!platform) {
+            continue;
+        }
+
+        const bool shouldBeInWorld =
+            platform->GetIsActive() &&
+            platform->GetCollisionEnabled();
+        const bool isInWorld = rigidBody->isInWorld();
+
+        if (!shouldBeInWorld) {
+            if (isInWorld) {
+                world->removeRigidBody(rigidBody.get());
+            }
+            continue;
+        }
+
+        if (!isInWorld) {
+            world->addRigidBody(
+                rigidBody.get(),
+                static_cast<short>(btBroadphaseProxy::DefaultFilter),
+                static_cast<short>(-1));
+        }
+
+        if (!platform->UsesKinematicPhysics()) {
             continue;
         }
 
@@ -193,8 +216,7 @@ btTransform StageCollisionBuilder::CreateActorTransform(Game* game, Actor* actor
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
-    if (dynamic_cast<Platform*>(actor) || dynamic_cast<MovingPlatform*>(actor) ||
-        dynamic_cast<StageObject*>(actor) ||
+    if (dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor) ||
         dynamic_cast<FallRespawnPoint*>(actor)) {
         if (!game || !game->GetMathUtils()) {
             return actorTransform;

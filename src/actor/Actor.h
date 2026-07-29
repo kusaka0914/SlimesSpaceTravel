@@ -4,6 +4,7 @@
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <memory>
 #include <string>
@@ -30,7 +31,7 @@ public:
     void UpdateUpVec();
 
     void AddComponent(std::unique_ptr<Component> component);
-    void RemoveComponent(std::unique_ptr<Component> component);
+    void RemoveComponent(Component* component);
 
     void SetIsActive(bool isActive) { mIsActive = isActive; }
     void SetVisibleIfStageCleared(int stageNum);
@@ -38,18 +39,11 @@ public:
     void RefreshProgressVisibility();
 
     void SetRadius(float radius) { mRadius = radius; }
-    void SetFacingYaw(float facingYaw)
-    {
-        mFacingYaw = facingYaw;
-        UpdateDirectionVectors();
-    }
+    void SetFacingYaw(float facingYaw);
 
     void SetPos(const glm::vec3& pos) { mPos = pos; }
-    void SetUpVec(const glm::vec3& upVec)
-    {
-        mUpVec = upVec;
-        UpdateDirectionVectors();
-    }
+    void SetUpVec(const glm::vec3& upVec);
+    void SetOrientation(const glm::quat& orientation);
     void SetScale(const glm::vec3& scale) { mScale = scale; }
     void SetTextureTiling(const glm::vec2& textureTiling) { mTextureTiling = textureTiling; }
     void SetTextureOverridePath(const std::string& texturePath) { mTextureOverridePath = texturePath; }
@@ -67,6 +61,7 @@ public:
     {
         return mIsActive && IsProgressVisibleForCurrentMode();
     }
+    virtual float GetRenderOpacity() const { return 1.0f; }
     int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
     int GetHiddenIfStageCleared() const { return mHiddenIfStageCleared; }
     bool IsProgressVisibilitySatisfied() const
@@ -87,6 +82,7 @@ public:
     const glm::vec3& GetForwardVec() const { return mForwardVec; }
     const glm::vec3& GetLeftVec() const { return mLeftVec; }
     glm::vec3 GetRightVec() const { return -mLeftVec; }
+    const glm::quat& GetOrientation() const { return mOrientation; }
     const glm::vec3& GetScale() const { return mScale; }
     const glm::vec2& GetTextureTiling() const { return mTextureTiling; }
     const std::string& GetTextureOverridePath() const { return mTextureOverridePath; }
@@ -115,6 +111,8 @@ public:
 
     int GetStageYamlIndex() const { return mStageYamlIndex; }
     void SetStageYamlIndex(int index) { mStageYamlIndex = index; }
+    const std::string& GetStageSequenceName() const { return mStageSequenceName; }
+    void SetStageSequenceName(const std::string& sequenceName) { mStageSequenceName = sequenceName; }
 
     void SetIsEditorSelected(bool isEditorSelected) { mIsEditorSelected = isEditorSelected; }
 
@@ -122,7 +120,9 @@ public:
 
 protected:
     void UpdateDirectionVectors();
+    void UpdateOrientationFromDirectionVectors();
     virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }
+    virtual bool ShouldRebuildDirectionVectorsEveryFrame() const { return true; }
     virtual void OnUpVecUpdateFailed();
     void UpdateFallbackUpVec();
     virtual bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const { return false; }
@@ -146,12 +146,14 @@ protected:
     glm::vec3 mPos;
     glm::vec3 mUpVec;
     glm::vec3 mForwardVec{0.0f, 0.0f, 1.0f};
-    glm::vec3 mLeftVec{-1.0f, 0.0f, 0.0f};
+    glm::vec3 mLeftVec{1.0f, 0.0f, 0.0f};
+    glm::quat mOrientation{1.0f, 0.0f, 0.0f, 0.0f};
     glm::vec3 mScale;
     glm::vec2 mTextureTiling{1.0f, 1.0f};
 
     std::string mModelPath;
     std::string mTextureOverridePath;
+    std::string mStageSequenceName;
 
     Game* mGame;
     Planet* mCurrentPlanet;

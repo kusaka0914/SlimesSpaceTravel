@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace {
 bool HasVec3(const YAML::Node& node, const char* key)
@@ -15,6 +16,11 @@ bool HasVec3(const YAML::Node& node, const char* key)
 bool HasVec2(const YAML::Node& node, const char* key)
 {
     return node[key] && node[key].IsSequence() && node[key].size() >= 2;
+}
+
+bool HasQuat(const YAML::Node& node, const char* key)
+{
+    return node[key] && node[key].IsSequence() && node[key].size() >= 4;
 }
 
 glm::vec3 ReadVec3(const YAML::Node& node, const char* key, const glm::vec3& fallback)
@@ -107,6 +113,14 @@ void ActorPlacementLoader::ApplyRotationFromStageNode(Actor* actor, const YAML::
 
         if (glm::length(upVec) > 1e-6f) {
             actor->SetUpVec(glm::normalize(upVec));
+        }
+    }
+
+    if (HasQuat(node, "rotationQuat")) {
+        const glm::quat orientation(node["rotationQuat"][0].as<float>(), node["rotationQuat"][1].as<float>(),
+                                    node["rotationQuat"][2].as<float>(), node["rotationQuat"][3].as<float>());
+        if (glm::length(orientation) > 1e-6f) {
+            actor->SetOrientation(glm::normalize(orientation));
         }
     }
 }

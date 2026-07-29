@@ -9,13 +9,14 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformMovementComponent.h"
 #include "system/MeshLoadSystem.h"
 #include "system/text/JapaneseRubyGenerator.h"
 
@@ -23,6 +24,190 @@
 #include <memory>
 #include <string>
 #include <yaml-cpp/yaml.h>
+
+namespace {
+
+void ApplyPlatformMovementConfig(
+    Platform* platform,
+    const YAML::Node& movementNode)
+{
+    if (!platform || !movementNode || !movementNode.IsMap()) {
+        return;
+    }
+
+    PlatformMovementComponent* movement =
+        platform->AddMovementComponent();
+    if (!movement) {
+        return;
+    }
+
+    glm::vec3 baseLocalPos(0.0f);
+    if (platform->GetCurrentPlanet()) {
+        baseLocalPos =
+            platform->GetPos() -
+            platform->GetCurrentPlanet()->GetPos();
+    }
+
+    if (movementNode["startLocalPos"] &&
+        movementNode["startLocalPos"].IsSequence() &&
+        movementNode["startLocalPos"].size() >= 3) {
+        baseLocalPos.x = movementNode["startLocalPos"][0].as<float>();
+        baseLocalPos.y = movementNode["startLocalPos"][1].as<float>();
+        baseLocalPos.z = movementNode["startLocalPos"][2].as<float>();
+    }
+    movement->SetBaseLocalPos(baseLocalPos);
+
+    glm::vec3 moveOffset(4.0f, 0.0f, 0.0f);
+    if (movementNode["moveOffset"] &&
+        movementNode["moveOffset"].IsSequence() &&
+        movementNode["moveOffset"].size() >= 3) {
+        moveOffset.x = movementNode["moveOffset"][0].as<float>();
+        moveOffset.y = movementNode["moveOffset"][1].as<float>();
+        moveOffset.z = movementNode["moveOffset"][2].as<float>();
+    }
+    movement->SetMoveOffset(moveOffset);
+
+    if (movementNode["endLocalPos"] &&
+        movementNode["endLocalPos"].IsSequence() &&
+        movementNode["endLocalPos"].size() >= 3) {
+        movement->SetDestinationLocalPos(
+            glm::vec3(
+                movementNode["endLocalPos"][0].as<float>(),
+                movementNode["endLocalPos"][1].as<float>(),
+                movementNode["endLocalPos"][2].as<float>()));
+    }
+
+    movement->SetMoveDuration(
+        movementNode["moveDuration"]
+            ? movementNode["moveDuration"].as<float>()
+            : 3.0f);
+    movement->SetMoveOnPlayer(
+        movementNode["moveOnPlayer"]
+            ? movementNode["moveOnPlayer"].as<bool>()
+            : false);
+    movement->SetReturnDelay(
+        movementNode["returnDelay"]
+            ? movementNode["returnDelay"].as<float>()
+            : 1.0f);
+}
+
+YAML::Node GetMovementComponentNode(const YAML::Node& platformNode)
+{
+    if (platformNode["components"] &&
+        platformNode["components"].IsMap() &&
+        platformNode["components"]["movement"] &&
+        platformNode["components"]["movement"].IsMap()) {
+        return platformNode["components"]["movement"];
+    }
+
+    return YAML::Node();
+}
+
+glm::vec3 ReadComponentVec3(
+    const YAML::Node& node,
+    const char* key,
+    const glm::vec3& fallback)
+{
+    if (!node || !node[key] || !node[key].IsSequence() ||
+        node[key].size() < 3) {
+        return fallback;
+    }
+
+    return glm::vec3(
+        node[key][0].as<float>(),
+        node[key][1].as<float>(),
+        node[key][2].as<float>());
+}
+
+void ApplyPlatformBehaviorConfigs(
+    Platform* platform,
+    const YAML::Node& platformNode)
+{
+    if (!platform || !platformNode["components"] ||
+        !platformNode["components"].IsMap()) {
+        return;
+    }
+
+    const YAML::Node components = platformNode["components"];
+
+    if (const YAML::Node node = components["fadeOnStand"];
+        node && node.IsMap()) {
+        PlatformFadeOnStandComponent* component =
+            platform->AddFadeOnStandComponent();
+        component->SetFadeOutDuration(
+            node["fadeOutDuration"]
+                ? node["fadeOutDuration"].as<float>()
+                : 1.0f);
+        component->SetReappearDelay(
+            node["reappearDelay"]
+                ? node["reappearDelay"].as<float>()
+                : 2.0f);
+    }
+
+    if (const YAML::Node node = components["jumpToggle"];
+        node && node.IsMap()) {
+        platform->AddJumpToggleComponent()->SetInitiallyVisible(
+            node["initiallyVisible"]
+                ? node["initiallyVisible"].as<bool>()
+                : true);
+    }
+
+    if (const YAML::Node node = components["intervalToggle"];
+        node && node.IsMap()) {
+        PlatformIntervalToggleComponent* component =
+            platform->AddIntervalToggleComponent();
+        component->SetInitiallyVisible(
+            node["initiallyVisible"]
+                ? node["initiallyVisible"].as<bool>()
+                : true);
+        component->SetInterval(
+            node["interval"] ? node["interval"].as<float>() : 3.0f);
+        component->SetWarningDuration(
+            node["warningDuration"]
+                ? node["warningDuration"].as<float>()
+                : 1.0f);
+        component->SetBlinkInterval(
+            node["blinkInterval"]
+                ? node["blinkInterval"].as<float>()
+                : 0.15f);
+    }
+
+    if (const YAML::Node node = components["directionalMovement"];
+        node && node.IsMap()) {
+        platform->AddDirectionalMovementComponent()->SetSpeed(
+            node["speed"] ? node["speed"].as<float>() : 2.0f);
+    }
+
+    if (const YAML::Node node = components["rotation"];
+        node && node.IsMap()) {
+        PlatformRotationComponent* component =
+            platform->AddRotationComponent();
+        component->SetLocalAxis(
+            ReadComponentVec3(
+                node,
+                "axis",
+                glm::vec3(0.0f, 1.0f, 0.0f)));
+        component->SetDegreesPerSecond(
+            node["degreesPerSecond"]
+                ? node["degreesPerSecond"].as<float>()
+                : 45.0f);
+    }
+
+    if (const YAML::Node node = components["conveyor"];
+        node && node.IsMap()) {
+        PlatformConveyorComponent* component =
+            platform->AddConveyorComponent();
+        component->SetLocalDirection(
+            ReadComponentVec3(
+                node,
+                "direction",
+                glm::vec3(0.0f, 0.0f, 1.0f)));
+        component->SetSpeed(
+            node["speed"] ? node["speed"].as<float>() : 2.0f);
+    }
+}
+
+} // namespace
 
 ActorLoadSystem::ActorLoadSystem(Game* game)
     : mGame(game),
@@ -50,7 +235,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadStar(path.c_str());
     LoadNPCs(path.c_str());
     LoadPlatforms(path.c_str());
-    LoadMovingPlatforms(path.c_str());
+    LoadLegacyMovingPlatforms(path.c_str());
     LoadStageObjects(path.c_str());
     LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
@@ -380,12 +565,16 @@ Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int sta
             continue;
         }
 
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (platform &&
+                platform->GetStageSequenceName() == sequenceName &&
+                platform->GetStageYamlIndex() == stageYamlIndex) {
+                return platform;
+            }
+        }
+
         if (sequenceName == "enemies") {
             if (Actor* actor = findByIndex(planet->GetEnemies())) return actor;
-        } else if (sequenceName == "platforms") {
-            if (Actor* actor = findByIndex(planet->GetPlatforms())) return actor;
-        } else if (sequenceName == "movingPlatforms") {
-            if (Actor* actor = findByIndex(planet->GetMovingPlatforms())) return actor;
         } else if (sequenceName == "boats") {
             if (Actor* actor = findByIndex(planet->GetBoats())) return actor;
         } else if (sequenceName == "boatParts") {
@@ -654,70 +843,52 @@ void ActorLoadSystem::LoadPlatforms(const char* path)
 
 Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, int stageYamlIndex)
 {
-    return mActorFactory.CreatePlacedActorFromStageNode<Platform>(
+    Platform* platform = mActorFactory.CreatePlacedActorFromStageNode<Platform>(
         node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
-        [](Planet* planet, Platform* platform) { planet->AddPlatform(platform); });
-}
-
-void ActorLoadSystem::LoadMovingPlatforms(const char* path)
-{
-    mActorFactory.LoadActorSequence<MovingPlatform>(
-        path, "movingPlatforms", [](Planet* planet) { planet->RemoveAllMovingPlatforms(); },
-        [this](const YAML::Node& node, int index) { return CreateMovingPlatformFromStageNode(node, index); });
-}
-
-MovingPlatform* ActorLoadSystem::CreateMovingPlatformFromStageNode(const YAML::Node& node, int stageYamlIndex)
-{
-    return mActorFactory.CreatePlacedActorFromStageNode<MovingPlatform>(
-        node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
-        [](Planet* planet, MovingPlatform* platform) { planet->AddMovingPlatform(platform); },
-        [](MovingPlatform* platform, const YAML::Node& node) {
-            glm::vec3 baseLocalPos(0.0f);
-            if (platform->GetCurrentPlanet()) {
-                baseLocalPos =
-                    platform->GetPos() -
-                    platform->GetCurrentPlanet()->GetPos();
-            }
-            if (node["startLocalPos"] &&
-                node["startLocalPos"].IsSequence() &&
-                node["startLocalPos"].size() >= 3) {
-                baseLocalPos.x = node["startLocalPos"][0].as<float>();
-                baseLocalPos.y = node["startLocalPos"][1].as<float>();
-                baseLocalPos.z = node["startLocalPos"][2].as<float>();
-            }
-            platform->SetBaseLocalPos(baseLocalPos);
-
-            glm::vec3 moveOffset(4.0f, 0.0f, 0.0f);
-
-            if (node["moveOffset"] && node["moveOffset"].IsSequence() && node["moveOffset"].size() >= 3) {
-                moveOffset.x = node["moveOffset"][0] ? node["moveOffset"][0].as<float>() : moveOffset.x;
-                moveOffset.y = node["moveOffset"][1] ? node["moveOffset"][1].as<float>() : moveOffset.y;
-                moveOffset.z = node["moveOffset"][2] ? node["moveOffset"][2].as<float>() : moveOffset.z;
-            }
-
-            platform->SetMoveOffset(moveOffset);
-
-            if (node["endLocalPos"] &&
-                node["endLocalPos"].IsSequence() &&
-                node["endLocalPos"].size() >= 3) {
-                platform->SetDestinationLocalPos(
-                    glm::vec3(
-                        node["endLocalPos"][0].as<float>(),
-                        node["endLocalPos"][1].as<float>(),
-                        node["endLocalPos"][2].as<float>()));
-            }
-
-            const float moveDuration = node["moveDuration"] ? node["moveDuration"].as<float>() : 3.0f;
-            platform->SetMoveDuration(moveDuration);
-
-            const bool moveOnPlayer =
-                node["moveOnPlayer"] ? node["moveOnPlayer"].as<bool>() : false;
-            platform->SetMoveOnPlayer(moveOnPlayer);
-
-            const float returnDelay =
-                node["returnDelay"] ? node["returnDelay"].as<float>() : 1.0f;
-            platform->SetReturnDelay(returnDelay);
+        [](Planet* planet, Platform* platform) { planet->AddPlatform(platform); },
+        [](Platform* platform, const YAML::Node& node) {
+            ApplyPlatformMovementConfig(
+                platform,
+                GetMovementComponentNode(node));
+            ApplyPlatformBehaviorConfigs(platform, node);
         });
+    if (platform) {
+        platform->SetStageSequenceName("platforms");
+    }
+    return platform;
+}
+
+void ActorLoadSystem::LoadLegacyMovingPlatforms(const char* path)
+{
+    mActorFactory.LoadActorSequence<Platform>(
+        path, "movingPlatforms",
+        [](Planet* planet) {
+            planet->RemovePlatformsByStageSequence("movingPlatforms");
+        },
+        [this](const YAML::Node& node, int index) {
+            return CreateLegacyMovingPlatformFromStageNode(node, index);
+        });
+}
+
+Platform* ActorLoadSystem::CreateLegacyMovingPlatformFromStageNode(
+    const YAML::Node& node,
+    int stageYamlIndex)
+{
+    Platform* platform = mActorFactory.CreatePlacedActorFromStageNode<Platform>(
+        node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
+        [](Planet* planet, Platform* platform) { planet->AddPlatform(platform); },
+        [](Platform* platform, const YAML::Node& node) {
+            const YAML::Node componentNode =
+                GetMovementComponentNode(node);
+            ApplyPlatformMovementConfig(
+                platform,
+                componentNode ? componentNode : node);
+            ApplyPlatformBehaviorConfigs(platform, node);
+        });
+    if (platform) {
+        platform->SetStageSequenceName("movingPlatforms");
+    }
+    return platform;
 }
 
 void ActorLoadSystem::LoadBoatArrivalPoints(const char* path)

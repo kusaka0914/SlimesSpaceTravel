@@ -157,7 +157,8 @@ void Renderer3D::EndTransparentDraw() const
 
 void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
 {
-    if (!actor || !actor->GetIsActive()) {
+    if (!actor || !actor->GetIsActive() ||
+        actor->GetRenderOpacity() <= 0.001f) {
         return;
     }
 
@@ -166,7 +167,8 @@ void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
 
 void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 {
-    if (!actor || !mShader3D) {
+    if (!actor || !mShader3D ||
+        actor->GetRenderOpacity() <= 0.001f) {
         return;
     }
 
@@ -190,6 +192,13 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
     if (!actorMeshes || actorMeshes->empty()) {
         return;
+    }
+
+    const float renderOpacity =
+        glm::clamp(actor->GetRenderOpacity(), 0.0f, 1.0f);
+    const bool transparent = renderOpacity < 0.999f;
+    if (transparent) {
+        StartTransparentDraw();
     }
 
     const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
@@ -237,8 +246,12 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         }
 
         glUniform4f(objectColorLocation, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1],
-                    actorMesh.diffuseColor[2], 1.0f);
+                    actorMesh.diffuseColor[2], renderOpacity);
         glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+    }
+
+    if (transparent) {
+        EndTransparentDraw();
     }
 
     SetSkinningEnabled(false);

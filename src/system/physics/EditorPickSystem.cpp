@@ -10,7 +10,6 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -51,10 +50,6 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
 
         for (Platform* platform : planet->GetPlatforms()) {
             CreatePickBody(world, platform, pickObjects, pickShapes, pickTriangleMeshes);
-        }
-
-        for (MovingPlatform* movingPlatform : planet->GetMovingPlatforms()) {
-            CreatePickBody(world, movingPlatform, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
         if (Key* key = planet->GetKey()) {
@@ -105,7 +100,7 @@ void EditorPickSystem::CreatePickBody(btDiscreteDynamicsWorld* world, Actor* act
     }
 
     const bool useMesh =
-        dynamic_cast<Platform*>(actor) || dynamic_cast<MovingPlatform*>(actor) || dynamic_cast<StageObject*>(actor);
+        dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor);
 
     if (useMesh && CreateMeshPickBody(world, actor, pickObjects, pickShapes, pickTriangleMeshes)) {
         return;

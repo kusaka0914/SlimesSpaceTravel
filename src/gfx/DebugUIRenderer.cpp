@@ -13,7 +13,10 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
       mSelectionController(mContext),
-      mStagePlacementPanel(mContext, mSelectionController),
+      mStagePlacementPanel(
+          mContext,
+          mSelectionController,
+          [this]() { mEditCommandController.PushUndo(); }),
       mEditCommandController(mContext, mSelectionController),
       mStageDeleteActorPanel(mContext, mEditCommandController),
       mStageEditorPanel(

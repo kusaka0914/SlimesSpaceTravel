@@ -97,17 +97,17 @@ bool StageActorCreateService::AddRideMovingPlatform(
         return false;
     }
 
-    EnsureSequence(config, "movingPlatforms");
-    const int index = static_cast<int>(config["movingPlatforms"].size());
+    EnsureSequence(config, "platforms");
+    const int index = static_cast<int>(config["platforms"].size());
     YAML::Node platformNode =
         CreateRideMovingPlatformNode(currentPlanetNum, modelPath, scale);
-    config["movingPlatforms"].push_back(platformNode);
+    config["platforms"].push_back(platformNode);
 
     if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
         return false;
     }
 
-    mContext.game->GetActorLoadSystem()->CreateMovingPlatformFromStageNode(
+    mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(
         platformNode, index);
     RefreshPhysicsWorld();
     return true;
@@ -416,12 +416,13 @@ YAML::Node StageActorCreateService::CreateRideMovingPlatformNode(
 {
     YAML::Node node =
         CreatePlatformNode(currentPlanetNum, modelPath, scale);
-    node["moveOnPlayer"] = true;
-    node["moveDuration"] = 3.0f;
-    node["returnDelay"] = 1.0f;
-    node["moveOffset"][0] = 0.0f;
-    node["moveOffset"][1] = 5.0f;
-    node["moveOffset"][2] = 0.0f;
+    YAML::Node movement = node["components"]["movement"];
+    movement["moveOnPlayer"] = true;
+    movement["moveDuration"] = 3.0f;
+    movement["returnDelay"] = 1.0f;
+    movement["moveOffset"][0] = 0.0f;
+    movement["moveOffset"][1] = 5.0f;
+    movement["moveOffset"][2] = 0.0f;
     return node;
 }
 

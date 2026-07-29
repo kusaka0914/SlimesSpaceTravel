@@ -14,7 +14,6 @@ class BoatParts;
 class Crystal;
 class NPC;
 class Platform;
-class MovingPlatform;
 class Stage;
 class Key;
 class Star;
@@ -44,7 +43,6 @@ public:
     void AddCrystal(Crystal* crystal) { mActorRegistry.AddCrystal(crystal); }
     void AddNPC(NPC* npc) { mActorRegistry.AddNPC(npc); }
     void AddPlatform(Platform* platform) { mActorRegistry.AddPlatform(platform); }
-    void AddMovingPlatform(MovingPlatform* platform) { mActorRegistry.AddMovingPlatform(platform); }
     void AddBoatArrivalPoint(BoatArrivalPoint* point) { mActorRegistry.AddBoatArrivalPoint(point); }
     void AddFallRespawnPoint(FallRespawnPoint* point) { mActorRegistry.AddFallRespawnPoint(point); }
     void AddStageObject(StageObject* stageObject) { mActorRegistry.AddStageObject(stageObject); }
@@ -56,7 +54,10 @@ public:
     void RemoveAllCrystals() { mActorRegistry.RemoveAllCrystals(); }
     void RemoveAllNPCs() { mActorRegistry.RemoveAllNPCs(); }
     void RemoveAllPlatforms() { mActorRegistry.RemoveAllPlatforms(); }
-    void RemoveAllMovingPlatforms() { mActorRegistry.RemoveAllMovingPlatforms(); }
+    void RemovePlatformsByStageSequence(const std::string& sequenceName)
+    {
+        mActorRegistry.RemovePlatformsByStageSequence(sequenceName);
+    }
     void RemoveKey() { mActorRegistry.RemoveKey(); }
     void RemoveStar() { mActorRegistry.RemoveStar(); }
     void RemoveAllBoatArrivalPoints() { mActorRegistry.RemoveAllBoatArrivalPoints(); }
@@ -117,7 +118,6 @@ public:
     const std::vector<Crystal*>& GetCrystals() const { return mActorRegistry.GetCrystals(); }
     const std::vector<NPC*>& GetNPCs() const { return mActorRegistry.GetNPCs(); }
     const std::vector<Platform*>& GetPlatforms() const { return mActorRegistry.GetPlatforms(); }
-    const std::vector<MovingPlatform*>& GetMovingPlatforms() const { return mActorRegistry.GetMovingPlatforms(); }
     const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mActorRegistry.GetBoatArrivalPoints(); }
     const std::vector<FallRespawnPoint*>& GetFallRespawnPoints() const { return mActorRegistry.GetFallRespawnPoints(); }
     const std::vector<StageObject*>& GetStageObjects() const { return mActorRegistry.GetStageObjects(); }

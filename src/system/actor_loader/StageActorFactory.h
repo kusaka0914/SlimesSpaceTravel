@@ -128,6 +128,9 @@ void StageActorFactory::LoadActorSequence(const char* path, const std::string& s
     const YAML::Node sequence = root[sequenceName];
 
     for (std::size_t i = 0; i < sequence.size(); ++i) {
-        createActor(sequence[i], static_cast<int>(i));
+        TActor* actor = createActor(sequence[i], static_cast<int>(i));
+        if (actor) {
+            actor->SetStageSequenceName(sequenceName);
+        }
     }
 }

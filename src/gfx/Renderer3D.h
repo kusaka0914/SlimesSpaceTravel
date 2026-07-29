@@ -63,7 +63,8 @@ public:
         }
 
         for (ActorType* actor : actors) {
-            if (!actor || !actor->GetIsActive()) {
+            if (!actor || !actor->GetIsActive() ||
+                actor->GetRenderOpacity() <= 0.001f) {
                 continue;
             }
 

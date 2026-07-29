@@ -19,6 +19,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <cstdint>
 #include <vector>
 
 class Game;
@@ -155,6 +156,8 @@ public:
     bool GetIsStrongAttacked() const { return mCombat.GetIsStrongAttacked(); }
 
     bool GetIsSpecialAttackPressed() const { return mInput.GetSpecialAttackPressed(); }
+    void NotifyJumpStarted() { ++mJumpSequence; }
+    std::uint64_t GetJumpSequence() const { return mJumpSequence; }
 
     bool GetCanSpecialAttack() const { return mCombat.GetCanSpecialAttack(); }
 
@@ -302,4 +305,5 @@ private:
 
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
+    std::uint64_t mJumpSequence = 0;
 };

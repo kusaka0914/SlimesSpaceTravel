@@ -1,6 +1,7 @@
 #include "system/scene/SceneTransitionController.h"
 
 #include "Game.h"
+#include "actor/Player.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
@@ -125,7 +126,20 @@ void SceneTransitionController::ApplySceneChange()
         mGame->StartPlayingScene();
 
         if (shouldPlayBaseArrival && mGame->GetSequenceSystem()) {
-            mGame->GetSequenceSystem()->Play("base_arrival_template");
+            SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+            const bool shouldPlayBaseIntro = !mHasPlayedBaseIntroThisSession;
+
+            if (shouldPlayBaseIntro &&
+                sequenceSystem->PlayCinematicChainThenSequence(
+                    {"base_sequence", "base_second_sequence"},
+                    "base_arrival_template")) {
+                mHasPlayedBaseIntroThisSession = true;
+                if (Player* player = mGame->GetMainPlayer()) {
+                    player->SetIsActive(false);
+                }
+            } else {
+                sequenceSystem->Play("base_arrival_template");
+            }
         }
     }
 }

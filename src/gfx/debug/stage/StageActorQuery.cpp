@@ -9,12 +9,12 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "gfx/debug/stage/PlatformTypeRegistry.h"
 
 #include <string>
 #include <vector>
@@ -50,20 +50,31 @@ std::string MakeIndexedLabel(const char* typeLabel, int yamlIndex)
 
 const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
 {
-    static const std::vector<StageActorTypeInfo> typeInfos = {
-        {StageActorType::Enemy, "enemies", "敵"},
-        {StageActorType::Platform, "platforms", "足場"},
-        {StageActorType::MovingPlatform, "movingPlatforms", "動く足場"},
-        {StageActorType::Key, "keys", "キー"},
-        {StageActorType::Boat, "boats", "ボート"},
-        {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
-        {StageActorType::Crystal, "crystals", "クリスタル"},
-        {StageActorType::NPC, "NPCs", "NPC"},
-        {StageActorType::Star, "star", "星"},
-        {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
-        {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
-        {StageActorType::StageObject, "stageObjects", "汎用モデル"},
-    };
+    static const std::vector<StageActorTypeInfo> typeInfos = [] {
+        std::vector<StageActorTypeInfo> result = {
+            {StageActorType::Enemy, "enemies", "敵"},
+            {StageActorType::Key, "keys", "キー"},
+            {StageActorType::Boat, "boats", "ボート"},
+            {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
+            {StageActorType::Crystal, "crystals", "クリスタル"},
+            {StageActorType::NPC, "NPCs", "NPC"},
+            {StageActorType::Star, "star", "星"},
+            {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
+            {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
+            {StageActorType::StageObject, "stageObjects", "汎用モデル"},
+        };
+
+        const auto& platformTypes = PlatformTypeRegistry::GetDefinitions();
+        result.reserve(result.size() + platformTypes.size());
+        for (const PlatformTypeDefinition& definition : platformTypes) {
+            result.emplace_back(StageActorTypeInfo{
+                StageActorType::Platform,
+                definition.sequenceName,
+                definition.displayName});
+        }
+
+        return result;
+    }();
 
     return typeInfos;
 }
@@ -91,14 +102,26 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
 
         for (Platform* platform : planet->GetPlatforms()) {
             const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
-            AddInstance(instances, platform, StageActorType::Platform, yamlIndex, "platforms",
-                        MakeIndexedLabel("足場", yamlIndex));
-        }
+            if (!platform) {
+                continue;
+            }
 
-        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
-            const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
-            AddInstance(instances, platform, StageActorType::MovingPlatform, yamlIndex, "movingPlatforms",
-                        MakeIndexedLabel("動く足場", yamlIndex));
+            std::string sequenceName = platform->GetStageSequenceName();
+            if (sequenceName.empty()) {
+                sequenceName = "platforms";
+            }
+
+            const PlatformTypeDefinition* definition =
+                PlatformTypeRegistry::FindBySequenceName(sequenceName);
+            const std::string displayName =
+                definition ? definition->displayName : "足場";
+            AddInstance(
+                instances,
+                platform,
+                StageActorType::Platform,
+                yamlIndex,
+                sequenceName,
+                MakeIndexedLabel(displayName.c_str(), yamlIndex));
         }
 
         if (Key* key = planet->GetKey()) {
@@ -221,9 +244,19 @@ const char* StageActorQuery::GetTypeLabel(StageActorType type)
 {
     for (const StageActorTypeInfo& info : GetTypeInfos()) {
         if (info.type == type) {
-            return info.displayName;
+            return info.displayName.c_str();
         }
     }
 
     return "不明";
+}
+
+std::string StageActorQuery::GetTypeLabel(const StageActorRef& actorRef)
+{
+    if (const PlatformTypeDefinition* definition =
+            PlatformTypeRegistry::FindBySequenceName(actorRef.sequenceName)) {
+        return definition->displayName;
+    }
+
+    return GetTypeLabel(actorRef.type);
 }

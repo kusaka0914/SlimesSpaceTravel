@@ -1,4 +1,36 @@
 cinematics:
+  base_second_sequence:
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        position: [0.11434949, 22.338888, 21.057901]
+        target: [0.18894827, 22.048058, 20.10404]
+        up: [0.028665258, 0.95675725, -0.28947178]
+        fieldOfView: 60
+        easing: easeInOut
+      - time: 4
+        position: [0.8368539, 10.699432, -1.2634356]
+        target: [0.91630214, 10.662878, -2.2596042]
+        up: [0.00864015, 0.99931514, -0.035980713]
+        fieldOfView: 60
+        easing: easeInOut
+  base_sequence:
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        position: [7.1099377, 11.265764, 20.872694]
+        target: [6.5499353, 11.121745, 20.056816]
+        up: [-0.11190812, 0.9888993, -0.09774944]
+        fieldOfView: 60
+        easing: easeInOut
+      - time: 4
+        position: [16.065174, 11.664637, 14.655585]
+        target: [15.505172, 11.5206175, 13.839707]
+        up: [-0.11190812, 0.9888993, -0.09774944]
+        fieldOfView: 60
+        easing: easeInOut
   boss_sequence:
     loop: false
     endHoldDuration: 0.5

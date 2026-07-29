@@ -28,15 +28,15 @@ void StageDeleteActorPanel::Draw()
         return;
     }
 
-    auto drawCategory = [&](const char* categoryName, StageActorType type) {
-        if (!ImGui::TreeNode(categoryName)) {
+    auto drawCategory = [&](const StageActorTypeInfo& typeInfo) {
+        if (!ImGui::TreeNode(typeInfo.displayName.c_str())) {
             return;
         }
 
         bool hasItem = false;
 
         for (const StageActorRef& target : targets) {
-            if (target.type != type) {
+            if (target.sequenceName != typeInfo.sequenceName) {
                 continue;
             }
 
@@ -64,7 +64,7 @@ void StageDeleteActorPanel::Draw()
     };
 
     for (const StageActorTypeInfo& info : StageActorQuery::GetTypeInfos()) {
-        drawCategory(info.displayName, info.type);
+        drawCategory(info);
     }
 
     ImGui::Separator();

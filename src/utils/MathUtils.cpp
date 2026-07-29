@@ -4,43 +4,11 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-float MathUtils::GetYawFromDirection(const glm::vec3& up, const glm::vec3& dir) const
-{
-    glm::vec3 baseLeft = glm::cross(up, glm::vec3(0, 0, 1));
-    if (glm::length(baseLeft) < 0.01f) {
-        baseLeft = glm::normalize(glm::cross(up, glm::vec3(0, 1, 0)));
-    } else
-        baseLeft = glm::normalize(baseLeft);
-    glm::vec3 baseForward = glm::cross(baseLeft, up);
-    return std::atan2(-glm::dot(dir, baseLeft), glm::dot(dir, baseForward));
-}
-
-glm::mat4 MathUtils::CreateOrient(Actor* actor) const
-{
-    glm::vec3 upN = glm::normalize(actor->GetUpVec());
-    glm::vec3 worldLeft = glm::cross(upN, glm::vec3(0, 0, 1));
-    if (glm::length(worldLeft) < 0.01f) {
-        worldLeft = glm::normalize(glm::cross(upN, glm::vec3(0, 1, 0)));
-    } else
-        worldLeft = glm::normalize(worldLeft);
-
-    float actorYaw = actor->GetFacingYaw();
-    glm::vec3 fwd = glm::normalize(glm::cross(worldLeft, upN) * std::cos(actorYaw) - std::sin(actorYaw) * worldLeft);
-    glm::vec3 left = glm::normalize(glm::cross(upN, fwd));
-    glm::vec3 right = -left;
-    glm::mat4 orient = glm::mat4(1.0f);
-    orient[0] = glm::vec4(-fwd, 0.0f);
-    orient[1] = glm::vec4(upN, 0.0f);
-    orient[2] = glm::vec4(right, 0.0f);
-    orient[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-    return orient;
-}
-
-glm::vec3 MathUtils::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
+namespace {
+glm::quat CreateSurfaceBaseOrientation(Actor* actor)
 {
     if (!actor) {
-        return glm::vec3(0.0f, 1.0f, 0.0f);
+        return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
     }
 
     glm::vec3 baseUp(0.0f, 1.0f, 0.0f);
@@ -55,22 +23,72 @@ glm::vec3 MathUtils::CalculateActorUpVecFromEditorRotation(Actor* actor, const g
 
     glm::vec3 baseForward(0.0f, 0.0f, 1.0f);
     baseForward -= baseUp * glm::dot(baseForward, baseUp);
-
     if (glm::length(baseForward) < 1e-6f) {
         baseForward = glm::vec3(1.0f, 0.0f, 0.0f);
         baseForward -= baseUp * glm::dot(baseForward, baseUp);
     }
-
     baseForward = glm::normalize(baseForward);
-    const glm::vec3 baseRight = glm::normalize(glm::cross(baseForward, baseUp));
 
-    glm::mat4 rotationMatrix(1.0f);
-    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.y, baseUp);
-    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.x, baseRight);
-    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.z, baseForward);
+    const glm::vec3 baseLeft = glm::normalize(glm::cross(baseUp, baseForward));
 
-    const glm::vec3 upVec = glm::vec3(rotationMatrix * glm::vec4(baseUp, 0.0f));
-    return glm::length(upVec) > 1e-6f ? glm::normalize(upVec) : baseUp;
+    glm::mat3 basis(1.0f);
+    basis[0] = baseLeft;
+    basis[1] = baseUp;
+    basis[2] = baseForward;
+    return glm::normalize(glm::quat_cast(basis));
+}
+} // namespace
+
+float MathUtils::GetYawFromDirection(const glm::vec3& up, const glm::vec3& dir) const
+{
+    glm::vec3 baseLeft = glm::cross(up, glm::vec3(0, 0, 1));
+    if (glm::length(baseLeft) < 0.01f) {
+        baseLeft = glm::normalize(glm::cross(up, glm::vec3(0, 1, 0)));
+    } else
+        baseLeft = glm::normalize(baseLeft);
+    glm::vec3 baseForward = glm::cross(baseLeft, up);
+    return std::atan2(-glm::dot(dir, baseLeft), glm::dot(dir, baseForward));
+}
+
+glm::mat4 MathUtils::CreateOrient(Actor* actor) const
+{
+    if (!actor) {
+        return glm::mat4(1.0f);
+    }
+
+    const glm::mat4 semanticOrientation = glm::mat4_cast(actor->GetOrientation());
+
+    glm::mat4 modelAxisCorrection(1.0f);
+    modelAxisCorrection[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+    modelAxisCorrection[1] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+    modelAxisCorrection[2] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+
+    return semanticOrientation * modelAxisCorrection;
+}
+
+glm::quat MathUtils::CalculateActorOrientationFromEditorRotation(Actor* actor,
+                                                                 const glm::vec3& rotationRad) const
+{
+    const glm::quat baseOrientation = CreateSurfaceBaseOrientation(actor);
+    const glm::quat localOrientation = glm::quat(rotationRad);
+    return glm::normalize(baseOrientation * localOrientation);
+}
+
+glm::vec3 MathUtils::CalculateActorEditorRotationFromOrientation(Actor* actor, const glm::quat& orientation) const
+{
+    if (glm::length(orientation) < 1e-6f) {
+        return glm::vec3(0.0f);
+    }
+
+    const glm::quat baseOrientation = CreateSurfaceBaseOrientation(actor);
+    const glm::quat localOrientation = glm::normalize(glm::inverse(baseOrientation) * glm::normalize(orientation));
+    return glm::eulerAngles(localOrientation);
+}
+
+glm::vec3 MathUtils::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
+{
+    const glm::quat orientation = CalculateActorOrientationFromEditorRotation(actor, rotationRad);
+    return glm::normalize(orientation * glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void MathUtils::ApplyActorEditorRotation(Actor* actor) const
@@ -79,9 +97,7 @@ void MathUtils::ApplyActorEditorRotation(Actor* actor) const
         return;
     }
 
-    const glm::vec3 rotation = actor->GetEditorRotation();
-    actor->SetFacingYaw(rotation.y);
-    actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
+    actor->SetOrientation(CalculateActorOrientationFromEditorRotation(actor, actor->GetEditorRotation()));
 }
 
 glm::mat4 MathUtils::CreateBillBoard(const glm::mat4& viewMat, const Actor* actor, float upMargin, float rightMargin,

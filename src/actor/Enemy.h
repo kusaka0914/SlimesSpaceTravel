@@ -95,7 +95,7 @@ public:
 
     void AddPos(const glm::vec3& delta) { mPos += delta; }
     void SetFacingForwardForEnemy(const glm::vec3& facingForward) { mFacingForwardVec = facingForward; }
-    void SetFacingYawForEnemy(float facingYaw) { mFacingYaw = facingYaw; }
+    void SetFacingYawForEnemy(float facingYaw) { SetFacingYaw(facingYaw); }
 
     const char* GetCurrentBehaviorActionType() const;
     const std::string& GetBehaviorProfileName() const;
