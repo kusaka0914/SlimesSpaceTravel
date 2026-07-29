@@ -1,5 +1,8 @@
 #include "MathUtils.h"
 #include "actor/Actor.h"
+#include "actor/Planet.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 float MathUtils::GetYawFromDirection(const glm::vec3& up, const glm::vec3& dir) const
 {
@@ -32,6 +35,53 @@ glm::mat4 MathUtils::CreateOrient(Actor* actor) const
     orient[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
     return orient;
+}
+
+glm::vec3 MathUtils::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
+{
+    if (!actor) {
+        return glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+
+    glm::vec3 baseUp(0.0f, 1.0f, 0.0f);
+    Planet* planet = actor->GetCurrentPlanet();
+
+    if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+        const glm::vec3 toActor = actor->GetPos() - planet->GetPos();
+        if (glm::length(toActor) > 1e-6f) {
+            baseUp = glm::normalize(toActor);
+        }
+    }
+
+    glm::vec3 baseForward(0.0f, 0.0f, 1.0f);
+    baseForward -= baseUp * glm::dot(baseForward, baseUp);
+
+    if (glm::length(baseForward) < 1e-6f) {
+        baseForward = glm::vec3(1.0f, 0.0f, 0.0f);
+        baseForward -= baseUp * glm::dot(baseForward, baseUp);
+    }
+
+    baseForward = glm::normalize(baseForward);
+    const glm::vec3 baseRight = glm::normalize(glm::cross(baseForward, baseUp));
+
+    glm::mat4 rotationMatrix(1.0f);
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.y, baseUp);
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.x, baseRight);
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRad.z, baseForward);
+
+    const glm::vec3 upVec = glm::vec3(rotationMatrix * glm::vec4(baseUp, 0.0f));
+    return glm::length(upVec) > 1e-6f ? glm::normalize(upVec) : baseUp;
+}
+
+void MathUtils::ApplyActorEditorRotation(Actor* actor) const
+{
+    if (!actor) {
+        return;
+    }
+
+    const glm::vec3 rotation = actor->GetEditorRotation();
+    actor->SetFacingYaw(rotation.y);
+    actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
 }
 
 glm::mat4 MathUtils::CreateBillBoard(const glm::mat4& viewMat, const Actor* actor, float upMargin, float rightMargin,

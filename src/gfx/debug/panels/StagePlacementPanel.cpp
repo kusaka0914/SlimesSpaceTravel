@@ -19,6 +19,7 @@
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/text/JapaneseRubyGenerator.h"
+#include "utils/MathUtils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -1944,63 +1945,20 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
 
 glm::vec3 StagePlacementPanel::CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const
 {
-    if (!actor) {
+    if (!actor || !mContext.game || !mContext.game->GetMathUtils()) {
         return glm::vec3(0.0f, 1.0f, 0.0f);
     }
 
-    glm::vec3 baseUp(0.0f, 1.0f, 0.0f);
-
-    Planet* planet = actor->GetCurrentPlanet();
-
-    if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
-        glm::vec3 toActor = actor->GetPos() - planet->GetPos();
-
-        if (glm::length(toActor) > 1e-6f) {
-            baseUp = glm::normalize(toActor);
-        }
-    }
-
-    glm::vec3 baseForward(0.0f, 0.0f, 1.0f);
-
-    baseForward = baseForward - baseUp * glm::dot(baseForward, baseUp);
-
-    if (glm::length(baseForward) < 1e-6f) {
-        baseForward = glm::vec3(1.0f, 0.0f, 0.0f);
-        baseForward = baseForward - baseUp * glm::dot(baseForward, baseUp);
-    }
-
-    baseForward = glm::normalize(baseForward);
-
-    glm::vec3 baseRight = glm::normalize(glm::cross(baseForward, baseUp));
-
-    const float pitch = rotationRad.x;
-    const float yaw = rotationRad.y;
-    const float roll = rotationRad.z;
-
-    glm::mat4 rot(1.0f);
-    rot = glm::rotate(rot, yaw, baseUp);
-    rot = glm::rotate(rot, pitch, baseRight);
-    rot = glm::rotate(rot, roll, baseForward);
-
-    glm::vec3 upVec = glm::vec3(rot * glm::vec4(baseUp, 0.0f));
-
-    if (glm::length(upVec) < 1e-6f) {
-        return baseUp;
-    }
-
-    return glm::normalize(upVec);
+    return mContext.game->GetMathUtils()->CalculateActorUpVecFromEditorRotation(actor, rotationRad);
 }
 
 void StagePlacementPanel::ApplyActorEditorRotation(Actor* actor)
 {
-    if (!actor) {
+    if (!actor || !mContext.game || !mContext.game->GetMathUtils()) {
         return;
     }
 
-    const glm::vec3 rotation = actor->GetEditorRotation();
-
-    actor->SetFacingYaw(rotation.y);
-    actor->SetUpVec(CalculateActorUpVecFromEditorRotation(actor, rotation));
+    mContext.game->GetMathUtils()->ApplyActorEditorRotation(actor);
 }
 
 void StagePlacementPanel::RebuildPhysicsWorldIfNeeded(bool required)

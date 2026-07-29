@@ -144,11 +144,11 @@ NPCs:
       - -0.05
       - 2.63
       - 13.85
-    facingYaw: 0
+    facingYaw: 1.3045033
     rotation:
-      - 0
-      - 0
-      - 0
+      - -1.8871484
+      - 1.3045033
+      - -1.0284376
     scale:
       - 0.25
       - 0.25
@@ -406,9 +406,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.037958685
-      - 0.9986394
-      - 0.03575778
+      - -0.038085133
+      - 0.9986393
+      - 0.035624955
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
@@ -467,9 +467,9 @@ NPCs:
     talkTexts:
       - ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。
     pos:
-      - -0
-      - -2.99
       - 0
+      - -2.99
+      - -0
     facingYaw: 0
     rotation:
       - 0
@@ -480,9 +480,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0016212875
+      - -0.0027979533
       - -0.9999949
-      - 0.0027979533
+      - -0.0016212873
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -599,9 +599,9 @@ NPCs:
       - 1
       - 1
     upVec:
-      - -0.029765548
-      - 0.9994759
-      - 0.012732478
+      - -0.029790808
+      - 0.99947554
+      - 0.012698325
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -767,7 +767,7 @@ NPCs:
     talkCameraFocus:
       - talkIndex: 0
         sequence: movingPlatforms
-        index: 0
+        index: 2
     talkStageClearConditions:
       - talkIndex: 0
         stage: 2
@@ -804,9 +804,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0010367003
-      - 0.9965319
-      - 0.08320535
+      - -0.0010080427
+      - 0.99653196
+      - 0.08320511
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -1128,21 +1128,21 @@ stageObjects:
     modelPath: HouseAssets/building-e.fbx
     collision: true
     rotation:
-      - -0.07679449
+      - -0.0767945
       - -0
-      - 0.11170107
+      - 0.08287842
     scale:
       - 0.050857753
-      - 0.050857753
+      - 0.05085775
       - 0.050857756
     pos:
       - -13.69
       - 1.87
       - 15.72
     upVec:
-      - -0.11146895
-      - 0.9908391
-      - 0.07624092
+      - -0.08278357
+      - 0.9936304
+      - 0.076455705
     textureTiling:
       - 1
       - 1
@@ -1546,25 +1546,25 @@ stageObjects:
     theta: 0
     phi: 0
     height: 1
-    facingYaw: -0
+    facingYaw: 1.5708876
     modelPath: VillageAssets/Bell_Tower.fbx
     collision: true
     rotation:
-      - -0.07679449
-      - -0
-      - 1.5707964
+      - 0.46840653
+      - 1.5708876
+      - 1.5708992
     scale:
       - 3.9858127
       - 3.9858131
       - 3.9858112
     pos:
-      - -1.15
+      - -0.39
       - -2.95
       - -0.14
     upVec:
-      - -1
-      - -4.358256e-08
-      - -3.3534953e-09
+      - -0.009229607
+      - -7.0478825e-05
+      - -0.9999575
     textureTiling:
       - 3.9858122
       - 3.9858108
