@@ -171,6 +171,26 @@ std::size_t UILoadSystem::AddCustomElement(
     return mCustomElements.size() - 1;
 }
 
+std::optional<std::size_t> UILoadSystem::DuplicateCustomElement(std::size_t index)
+{
+    if (index >= mCustomElements.size()) {
+        return std::nullopt;
+    }
+
+    CustomElement duplicatedElement = mCustomElements[index];
+    duplicatedElement.id =
+        MakeUniqueCustomElementId(duplicatedElement.screen, duplicatedElement.id + "_copy");
+
+    constexpr float DuplicateOffsetRatio = 0.02f;
+    duplicatedElement.xRatio =
+        std::clamp(duplicatedElement.xRatio + DuplicateOffsetRatio, -0.5f, 1.5f);
+    duplicatedElement.yRatio =
+        std::clamp(duplicatedElement.yRatio + DuplicateOffsetRatio, -0.25f, 1.0f);
+
+    mCustomElements.emplace_back(std::move(duplicatedElement));
+    return mCustomElements.size() - 1;
+}
+
 bool UILoadSystem::RemoveCustomElement(std::size_t index)
 {
     if (index >= mCustomElements.size()) {
@@ -225,6 +245,8 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
         element.centerBased = node["centerBased"] ? node["centerBased"].as<bool>() : false;
         element.flipVertical = node["flipVertical"] ? node["flipVertical"].as<bool>() : true;
         element.zOrder = node["zOrder"] ? node["zOrder"].as<int>() : 0;
+        element.rotationDegrees =
+            node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
 
         if (node["posRatio"] && node["posRatio"].IsSequence() && node["posRatio"].size() >= 2) {
             element.xRatio = node["posRatio"][0].as<float>();
@@ -245,10 +267,36 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
             node["textScaleRatio"] ? node["textScaleRatio"].as<float>() : element.textScaleRatio;
         element.text = node["text"] ? node["text"].as<std::string>() : element.text;
         element.texturePath = node["texture"] ? node["texture"].as<std::string>() : "";
+        element.shadowEnabled =
+            node["shadowEnabled"] ? node["shadowEnabled"].as<bool>() : element.shadowEnabled;
+        element.shadowOffsetXRatio =
+            node["shadowOffsetXRatio"]
+                ? node["shadowOffsetXRatio"].as<float>()
+                : element.shadowOffsetXRatio;
+        element.shadowOffsetYRatio =
+            node["shadowOffsetYRatio"]
+                ? node["shadowOffsetYRatio"].as<float>()
+                : element.shadowOffsetYRatio;
+        element.outlineEnabled =
+            node["outlineEnabled"] ? node["outlineEnabled"].as<bool>() : element.outlineEnabled;
+        element.outlineWidthRatio =
+            node["outlineWidthRatio"]
+                ? node["outlineWidthRatio"].as<float>()
+                : element.outlineWidthRatio;
 
         if (node["color"] && node["color"].IsSequence() && node["color"].size() >= 4) {
             for (std::size_t i = 0; i < element.color.size(); ++i) {
                 element.color[i] = node["color"][i].as<float>();
+            }
+        }
+        if (node["shadowColor"] && node["shadowColor"].IsSequence() && node["shadowColor"].size() >= 4) {
+            for (std::size_t i = 0; i < element.shadowColor.size(); ++i) {
+                element.shadowColor[i] = node["shadowColor"][i].as<float>();
+            }
+        }
+        if (node["outlineColor"] && node["outlineColor"].IsSequence() && node["outlineColor"].size() >= 4) {
+            for (std::size_t i = 0; i < element.outlineColor.size(); ++i) {
+                element.outlineColor[i] = node["outlineColor"][i].as<float>();
             }
         }
 
@@ -272,6 +320,7 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
         node["centerBased"] = element.centerBased;
         node["flipVertical"] = element.flipVertical;
         node["zOrder"] = element.zOrder;
+        node["rotationDegrees"] = element.rotationDegrees;
         node["posRatio"].push_back(element.xRatio);
         node["posRatio"].push_back(element.yRatio);
         node["sizeRatio"].push_back(element.widthRatio);
@@ -279,9 +328,20 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
         node["textScaleRatio"] = element.textScaleRatio;
         node["text"] = element.text;
         node["texture"] = element.texturePath;
+        node["shadowEnabled"] = element.shadowEnabled;
+        node["shadowOffsetXRatio"] = element.shadowOffsetXRatio;
+        node["shadowOffsetYRatio"] = element.shadowOffsetYRatio;
+        node["outlineEnabled"] = element.outlineEnabled;
+        node["outlineWidthRatio"] = element.outlineWidthRatio;
 
         for (float component : element.color) {
             node["color"].push_back(component);
+        }
+        for (float component : element.shadowColor) {
+            node["shadowColor"].push_back(component);
+        }
+        for (float component : element.outlineColor) {
+            node["outlineColor"].push_back(component);
         }
 
         elements.push_back(node);

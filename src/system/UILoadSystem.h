@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -51,10 +52,18 @@ public:
         float yRatio = 0.28125f;
         float widthRatio = 0.2f;
         float heightRatio = 0.05625f;
+        float rotationDegrees = 0.0f;
         float textScaleRatio = 0.0007f;
         std::string text = "New Text";
         std::string texturePath;
         std::array<float, 4> color = {1.0f, 1.0f, 1.0f, 1.0f};
+        bool shadowEnabled = false;
+        float shadowOffsetXRatio = 0.0015f;
+        float shadowOffsetYRatio = 0.0015f;
+        std::array<float, 4> shadowColor = {0.0f, 0.0f, 0.0f, 0.65f};
+        bool outlineEnabled = false;
+        float outlineWidthRatio = 0.001f;
+        std::array<float, 4> outlineColor = {0.0f, 0.0f, 0.0f, 1.0f};
     };
 
     UILoadSystem();
@@ -85,6 +94,7 @@ public:
     const std::vector<CustomElement>& GetCustomElements() const { return mCustomElements; }
 
     std::size_t AddCustomElement(CustomElementType type, const std::string& screen, const std::string& requestedId);
+    std::optional<std::size_t> DuplicateCustomElement(std::size_t index);
     bool RemoveCustomElement(std::size_t index);
 
     bool LoadCustomUI(const std::string& path = "../assets/data/ui/custom_ui.yaml");

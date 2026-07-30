@@ -1,23 +1,964 @@
 coordinateBasis: screenWidth
 elements:
-  - screen: custom
-    id: element
+  - screen: operation
+    id: buttonA
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.84003747
+      - 0.45066562
+    sizeRatio:
+      - 0.02
+      - 0.02
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_a.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextA
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.88087493
+      - 0.46051875
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: ジャンプ
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.81685317
+      - 0.47509995
+    sizeRatio:
+      - 0.02
+      - 0.02
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_b.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.802653
+      - 0.48506245
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: 回避
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonX
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.81650627
+      - 0.42556563
+    sizeRatio:
+      - 0.02
+      - 0.02
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_x.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextX
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.8003529
+      - 0.43502814
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: 強攻撃
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonY
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.7922965
+      - 0.4501656
+    sizeRatio:
+      - 0.019999992
+      - 0.02
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_y.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextY
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.7727276
+      - 0.45945626
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999994
+    text: 弱攻撃
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.00123
+    shadowOffsetYRatio: 0.00123
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 1
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonA_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.011600058
+      - 0.55777496
+    sizeRatio:
+      - 0.019999996
+      - 0.02
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_minus.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.062887385
+      - 0.5663906
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999997
+    text: メニュー表示
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.012634503
+      - 0.47478718
+    sizeRatio:
+      - 0.020000007
+      - 0.020000007
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_stick_l.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.044137478
+      - 0.48474973
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999997
+    text: 移動
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.013493863
+      - 0.49517775
+    sizeRatio:
+      - 0.02
+      - 0.019999996
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_stick_r.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.057496835
+      - 0.5051405
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999996
+    text: カメラ回転
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.840525
+      - 0.40111542
+    sizeRatio:
+      - 0.020000001
+      - 0.020000001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_r.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.8712467
+      - 0.41107813
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: 回復
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy_copy_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.88982165
+      - 0.53556854
+    sizeRatio:
+      - 0.019999998
+      - 0.020000001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_l.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy_copy_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.96819985
+      - 0.54553115
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013000001
+    text: ラッシュ攻撃
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy_copy_copy_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.91802484
+      - 0.5356465
+    sizeRatio:
+      - 0.02
+      - 0.020000001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_y.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy_copy_copy_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.912809
+      - 0.54560924
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: +
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy_copy_copy_copy2
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.88989973
+      - 0.55556864
+    sizeRatio:
+      - 0.019999998
+      - 0.020000001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_l.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy_copy_copy_copy2
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.95929354
+      - 0.5655312
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: 溜め攻撃
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy_copy_copy_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
     flipVertical: true
     zOrder: 0
+    rotationDegrees: 0
     posRatio:
-      - 0.7759
-      - 0.3491
+      - 0.9181029
+      - 0.55564654
     sizeRatio:
-      - 0.2
-      - 0.2
+      - 0.019999998
+      - 0.020000001
     textScaleRatio: 0.0007
     text: New Text
-    texture: textures/jewel.png
+    texture: textures/Inputs/switch_button_x.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
     color:
       - 1
       - 1
       - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy_copy_copy_copy_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.9128871
+      - 0.5656093
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999999
+    text: +
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy2
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.013884388
+      - 0.45494342
+    sizeRatio:
+      - 0.020000005
+      - 0.020000005
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_zl.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy2
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.06687173
+      - 0.46490592
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999996
+    text: カメラリセット
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
       - 1

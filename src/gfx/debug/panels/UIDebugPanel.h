@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/debug/DebugPanel.h"
+#include "gfx/debug/ui/UICanvasEditorController.h"
 #include "system/UILoadSystem.h"
 
 #include <array>
@@ -17,6 +18,7 @@ private:
     void DrawTextures(UILoadSystem* uiLoadSystem);
     void DrawTexts(UILoadSystem* uiLoadSystem);
     void DrawCustomUIEditor(UILoadSystem* uiLoadSystem);
+    void DrawCanvasToolbar();
     void DrawCustomElementList(UILoadSystem* uiLoadSystem);
     void DrawCustomElementInspector(UILoadSystem* uiLoadSystem);
     void DrawAssetPicker(UILoadSystem::CustomElement& element);
@@ -25,7 +27,7 @@ private:
     std::string GetDisplayName(const std::string& key) const;
 
 private:
-    int mSelectedCustomElement = -1;
+    UICanvasEditorController mCanvasEditor;
     int mNewElementType = 0;
     std::array<char, 128> mNewScreen = {"custom"};
     std::array<char, 128> mNewId = {"element"};

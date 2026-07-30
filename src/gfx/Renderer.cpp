@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "VertexArray.h"
 #include "thirdParty/stb_image.h"
+#include <algorithm>
 #include <iostream>
 
 Renderer::Renderer(Game* game)
@@ -85,7 +86,7 @@ void Renderer::RegisterTexture(const std::string& path, const std::string& name)
 }
 
 GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
-                                   float textScale) const
+                                   float textScale, int outlinePixels) const
 {
     outWidth = 0;
     outHeight = 0;
@@ -94,7 +95,17 @@ GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& 
         return 0;
     }
 
+    const int previousOutline = TTF_GetFontOutline(mFont);
+    const int requestedOutline = std::max(outlinePixels, 0);
+    if (previousOutline != requestedOutline) {
+        TTF_SetFontOutline(mFont, requestedOutline);
+    }
+
     SDL_Surface* surf = TTF_RenderUTF8_Blended(mFont, text.c_str(), textColor);
+    if (previousOutline != requestedOutline) {
+        TTF_SetFontOutline(mFont, previousOutline);
+    }
+
     if (!surf) {
         return 0;
     }

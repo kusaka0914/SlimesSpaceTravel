@@ -34,7 +34,8 @@ std::string ToLower(std::string value)
 }
 
 UIDebugPanel::UIDebugPanel(DebugEditorContext& context)
-    : DebugPanel(context)
+    : DebugPanel(context),
+      mCanvasEditor(context)
 {
 }
 
@@ -84,7 +85,7 @@ void UIDebugPanel::DrawCustomUIEditor(UILoadSystem* uiLoadSystem)
     ImGui::SameLine();
     if (ImGui::Button("再読込")) {
         if (uiLoadSystem->LoadCustomUI()) {
-            mSelectedCustomElement = -1;
+            mCanvasEditor.ClearSelection();
             for (const auto& element : uiLoadSystem->GetCustomElements()) {
                 if (element.type == UILoadSystem::CustomElementType::Image) {
                     mContext.uiRenderer->RegisterCustomUITexture(element.texturePath);
@@ -102,9 +103,52 @@ void UIDebugPanel::DrawCustomUIEditor(UILoadSystem* uiLoadSystem)
     }
 
     ImGui::Separator();
+    DrawCanvasToolbar();
     DrawCustomElementList(uiLoadSystem);
     ImGui::SameLine();
     DrawCustomElementInspector(uiLoadSystem);
+    mCanvasEditor.Update(uiLoadSystem, mStatusMessage);
+}
+
+void UIDebugPanel::DrawCanvasToolbar()
+{
+    ImGui::TextUnformatted("画面上のUIをクリックして選択できます。Ctrl/Shiftで複数選択、空き場所ドラッグで範囲選択。");
+
+    const auto drawOperationButton =
+        [this](
+            const char* label,
+            UICanvasEditorController::Operation operation) {
+            const bool selected = mCanvasEditor.GetOperation() == operation;
+            if (selected) {
+                ImGui::PushStyleColor(
+                    ImGuiCol_Button,
+                    ImVec4(0.85f, 0.48f, 0.12f, 1.0f));
+            }
+
+            if (ImGui::Button(label)) {
+                mCanvasEditor.SetOperation(operation);
+            }
+
+            if (selected) {
+                ImGui::PopStyleColor();
+            }
+        };
+
+    drawOperationButton(
+        "移動 (E)",
+        UICanvasEditorController::Operation::Translate);
+    ImGui::SameLine();
+    drawOperationButton(
+        "回転 (R)",
+        UICanvasEditorController::Operation::Rotate);
+    ImGui::SameLine();
+    drawOperationButton(
+        "拡縮 (T)",
+        UICanvasEditorController::Operation::Scale);
+    ImGui::SameLine();
+    ImGui::Text(
+        "選択: %zu  |  Ctrl+D:複製  Delete:削除  Ctrl+Z:元に戻す",
+        mCanvasEditor.GetSelectedCount());
 }
 
 void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
@@ -119,8 +163,9 @@ void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
 
     if (ImGui::Button("新規追加", ImVec2(-1.0f, 0.0f))) {
         const auto type = static_cast<UILoadSystem::CustomElementType>(mNewElementType);
-        mSelectedCustomElement = static_cast<int>(
-            uiLoadSystem->AddCustomElement(type, mNewScreen.data(), mNewId.data()));
+        const std::size_t addedIndex =
+            uiLoadSystem->AddCustomElement(type, mNewScreen.data(), mNewId.data());
+        mCanvasEditor.SetSingleSelection(addedIndex);
         mStatusMessage = "要素を追加しました（保存はまだです）";
     }
 
@@ -133,8 +178,11 @@ void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
             element.screen + "." + element.id + " [" + UILoadSystem::CustomElementTypeToString(element.type) +
             "]##custom" + std::to_string(i);
 
-        if (ImGui::Selectable(label.c_str(), mSelectedCustomElement == static_cast<int>(i))) {
-            mSelectedCustomElement = static_cast<int>(i);
+        if (ImGui::Selectable(label.c_str(), mCanvasEditor.IsSelected(i))) {
+            const ImGuiIO& io = ImGui::GetIO();
+            mCanvasEditor.SelectFromList(
+                i,
+                io.KeyCtrl || io.KeySuper || io.KeyShift);
         }
     }
 
@@ -146,14 +194,15 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     ImGui::BeginChild("CustomUIElementInspector", ImVec2(0.0f, 0.0f), true);
 
     auto& elements = uiLoadSystem->GetCustomElements();
-    if (mSelectedCustomElement < 0 ||
-        mSelectedCustomElement >= static_cast<int>(elements.size())) {
+    const int selectedElementIndex = mCanvasEditor.GetPrimarySelectedIndex();
+    if (selectedElementIndex < 0 ||
+        selectedElementIndex >= static_cast<int>(elements.size())) {
         ImGui::TextWrapped("左側でテキスト・画像・パネルを追加するか、編集する要素を選んでください。");
         ImGui::EndChild();
         return;
     }
 
-    auto& element = elements[static_cast<std::size_t>(mSelectedCustomElement)];
+    auto& element = elements[static_cast<std::size_t>(selectedElementIndex)];
     std::array<char, 128> screenBuffer = {};
     std::array<char, 128> idBuffer = {};
     std::array<char, 2048> textBuffer = {};
@@ -177,6 +226,7 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     ImGui::Checkbox("ゲーム開始時から表示", &element.visibleByDefault);
     ImGui::Checkbox("中心座標を基準にする", &element.centerBased);
     ImGui::InputInt("重なり順", &element.zOrder);
+    ImGui::SliderFloat("回転角度", &element.rotationDegrees, -180.0f, 180.0f, "%.1f°");
 
     ImGui::SeparatorText("配置（すべて画面横幅に対する比率）");
     ImGui::SliderFloat("X", &element.xRatio, -0.5f, 1.5f, "%.4f");
@@ -185,6 +235,35 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     if (element.type == UILoadSystem::CustomElementType::Text) {
         ImGui::SliderFloat("文字サイズ", &element.textScaleRatio, 0.00005f, 0.003f, "%.7f");
         ImGui::ColorEdit4("文字色", element.color.data());
+
+        ImGui::SeparatorText("文字効果（距離・太さは画面横幅に対する比率）");
+        ImGui::Checkbox("影を表示", &element.shadowEnabled);
+        if (element.shadowEnabled) {
+            ImGui::ColorEdit4("影の色", element.shadowColor.data());
+            ImGui::SliderFloat(
+                "影のX位置",
+                &element.shadowOffsetXRatio,
+                -0.01f,
+                0.01f,
+                "%.5f");
+            ImGui::SliderFloat(
+                "影のY位置",
+                &element.shadowOffsetYRatio,
+                -0.01f,
+                0.01f,
+                "%.5f");
+        }
+
+        ImGui::Checkbox("輪郭を表示", &element.outlineEnabled);
+        if (element.outlineEnabled) {
+            ImGui::ColorEdit4("輪郭の色", element.outlineColor.data());
+            ImGui::SliderFloat(
+                "輪郭の太さ",
+                &element.outlineWidthRatio,
+                0.0001f,
+                0.01f,
+                "%.5f");
+        }
 
         std::snprintf(textBuffer.data(), textBuffer.size(), "%s", element.text.c_str());
         if (ImGui::InputTextMultiline(
@@ -207,12 +286,13 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     }
 
     ImGui::Separator();
+    if (ImGui::Button("この要素を複製")) {
+        mCanvasEditor.DuplicateSelected(uiLoadSystem, mStatusMessage);
+    }
+
+    ImGui::SameLine();
     if (ImGui::Button("この要素を削除")) {
-        uiLoadSystem->RemoveCustomElement(static_cast<std::size_t>(mSelectedCustomElement));
-        if (mSelectedCustomElement >= static_cast<int>(uiLoadSystem->GetCustomElements().size())) {
-            mSelectedCustomElement = static_cast<int>(uiLoadSystem->GetCustomElements().size()) - 1;
-        }
-        mStatusMessage = "要素を削除しました（保存はまだです）";
+        mCanvasEditor.DeleteSelected(uiLoadSystem, mStatusMessage);
     }
 
     ImGui::EndChild();

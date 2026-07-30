@@ -18,7 +18,7 @@ public:
 protected:
     void RegisterTexture(const std::string& path, const std::string& name);
     GLuint CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
-                             float textScale) const;
+                             float textScale, int outlinePixels = 0) const;
     bool MeasureText(const std::string& text, float textScale, int& outWidth, int& outHeight) const;
 
 private:

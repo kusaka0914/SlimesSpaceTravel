@@ -207,6 +207,56 @@ GLuint UIRenderer::GetCustomUITextureHandle(const std::string& assetRelativePath
     return it != mTextures.end() ? it->second : 0;
 }
 
+bool UIRenderer::CalculateCustomElementScreenTransform(
+    const UILoadSystem::CustomElement& element,
+    CustomElementScreenTransform& outTransform) const
+{
+    if (mFbWidth <= 0 || mFbHeight <= 0) {
+        return false;
+    }
+
+    const float x = mFbWidth * element.xRatio;
+    const float y = mFbWidth * element.yRatio;
+
+    float width = mFbWidth * element.widthRatio;
+    float height = mFbWidth * element.heightRatio;
+
+    if (element.type == UILoadSystem::CustomElementType::Text) {
+        std::string firstLine = element.text;
+        std::string secondLine;
+        const bool hasSecondLine = SplitText(element.text, firstLine, secondLine);
+        const float textScale = mFbWidth * element.textScaleRatio;
+
+        int firstWidth = 0;
+        int firstHeight = 0;
+        MeasureText(firstLine, textScale, firstWidth, firstHeight);
+
+        int secondWidth = 0;
+        int secondHeight = 0;
+        if (hasSecondLine) {
+            MeasureText(secondLine, textScale, secondWidth, secondHeight);
+        }
+
+        width = static_cast<float>(std::max(firstWidth, secondWidth));
+        height = static_cast<float>(std::max(firstHeight, secondHeight));
+        if (hasSecondLine) {
+            height += mFbHeight * 0.0666f;
+        }
+    }
+
+    width = std::max(width, 1.0f);
+    height = std::max(height, 1.0f);
+
+    outTransform.size = glm::vec2(width, height);
+    if (element.centerBased) {
+        outTransform.center = glm::vec2(x, y);
+    } else {
+        outTransform.center = glm::vec2(x + width * 0.5f, y + height * 0.5f);
+    }
+
+    return true;
+}
+
 std::string UIRenderer::GetCustomTextureName(const std::string& assetRelativePath)
 {
     std::string normalizedPath = assetRelativePath;
@@ -236,9 +286,18 @@ void UIRenderer::DrawCustomUI()
         });
 
     const bool previewAll = mCustomUIPreviewEnabled && mGame->GetIsDebugEditorShowing();
+    const bool isPlaying = mGame->GetSceneSystem()->IsPlaying();
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
-        if (!element || (!previewAll && !mUILoadSystem->IsCustomElementVisible(*element))) {
+        if (!element) {
+            continue;
+        }
+
+        const bool visibleInGame =
+            element->screen == "operation"
+                ? isPlaying
+                : mUILoadSystem->IsCustomElementVisible(*element);
+        if (!previewAll && !visibleInGame) {
             continue;
         }
 
@@ -251,6 +310,27 @@ void UIRenderer::DrawCustomUI()
 
         switch (element->type) {
         case UILoadSystem::CustomElementType::Text:
+        {
+            TextEffect effect;
+            effect.shadowEnabled = element->shadowEnabled;
+            effect.shadowOffset =
+                static_cast<float>(mFbWidth) *
+                glm::vec2(element->shadowOffsetXRatio, element->shadowOffsetYRatio);
+            effect.shadowColor =
+                glm::vec4(
+                    element->shadowColor[0] * 255.0f,
+                    element->shadowColor[1] * 255.0f,
+                    element->shadowColor[2] * 255.0f,
+                    element->shadowColor[3] * 255.0f);
+            effect.outlineEnabled = element->outlineEnabled;
+            effect.outlineWidth = mFbWidth * element->outlineWidthRatio;
+            effect.outlineColor =
+                glm::vec4(
+                    element->outlineColor[0] * 255.0f,
+                    element->outlineColor[1] * 255.0f,
+                    element->outlineColor[2] * 255.0f,
+                    element->outlineColor[3] * 255.0f);
+
             DrawText(
                 x,
                 y,
@@ -261,8 +341,11 @@ void UIRenderer::DrawCustomUI()
                     element->color[0] * 255.0f,
                     element->color[1] * 255.0f,
                     element->color[2] * 255.0f,
-                    element->color[3] * 255.0f));
+                    element->color[3] * 255.0f),
+                element->rotationDegrees,
+                &effect);
             break;
+        }
         case UILoadSystem::CustomElementType::Image:
             if (RegisterCustomUITexture(element->texturePath)) {
                 DrawTexture(
@@ -271,7 +354,8 @@ void UIRenderer::DrawCustomUI()
                     width,
                     height,
                     GetCustomTextureName(element->texturePath),
-                    element->flipVertical);
+                    element->flipVertical,
+                    element->rotationDegrees);
             }
             break;
         case UILoadSystem::CustomElementType::Panel:
@@ -280,7 +364,8 @@ void UIRenderer::DrawCustomUI()
                 topLeftY,
                 width,
                 height,
-                {element->color[0], element->color[1], element->color[2], element->color[3]});
+                {element->color[0], element->color[1], element->color[2], element->color[3]},
+                element->rotationDegrees);
             break;
         }
     }
@@ -548,11 +633,21 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
     }
 }
 
-void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color)
+void UIRenderer::DrawBG(
+    float x,
+    float y,
+    float width,
+    float height,
+    std::vector<GLfloat> color,
+    float rotationDegrees)
 {
     glUseProgram(mUIShader->GetShaderProgram());
 
     glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
+                      glm::rotate(
+                          glm::mat4(1.0f),
+                          glm::radians(rotationDegrees),
+                          glm::vec3(0.0f, 0.0f, 1.0f)) *
                       glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 proj = glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
@@ -570,7 +665,15 @@ void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void UIRenderer::DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase, glm::vec4 color)
+void UIRenderer::DrawText(
+    float x,
+    float y,
+    float scale,
+    const std::string& message,
+    bool isCenterBase,
+    glm::vec4 color,
+    float rotationDegrees,
+    const TextEffect* effect)
 {
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -578,13 +681,76 @@ void UIRenderer::DrawText(float x, float y, float scale, const std::string& mess
     std::string message2;
     const bool isNewLine = SplitText(message, message1, message2);
 
-    DrawTextLine(message1, x, y, scale, isCenterBase, isNewLine ? -mFbHeight * 0.0222f : 0.0f, color);
+    glm::vec2 rotationPivot(x, y);
+    if (!isCenterBase) {
+        int firstWidth = 0;
+        int firstHeight = 0;
+        int secondWidth = 0;
+        int secondHeight = 0;
+        MeasureText(message1, scale, firstWidth, firstHeight);
+        if (isNewLine) {
+            MeasureText(message2, scale, secondWidth, secondHeight);
+        }
+
+        const float textWidth =
+            static_cast<float>(std::max(firstWidth, secondWidth));
+        float textHeight =
+            static_cast<float>(std::max(firstHeight, secondHeight));
+        if (isNewLine) {
+            textHeight += mFbHeight * 0.0666f;
+        }
+        rotationPivot += glm::vec2(textWidth, textHeight) * 0.5f;
+    }
+
+    const auto drawStyledLine =
+        [&](const std::string& line, float lineOffset) {
+            if (effect && effect->shadowEnabled && effect->shadowColor.a > 0.0f) {
+                DrawTextLine(
+                    line,
+                    x + effect->shadowOffset.x,
+                    y + effect->shadowOffset.y,
+                    scale,
+                    isCenterBase,
+                    lineOffset,
+                    effect->shadowColor,
+                    rotationDegrees,
+                    rotationPivot);
+            }
+
+            if (effect && effect->outlineEnabled &&
+                effect->outlineWidth > 0.0f && effect->outlineColor.a > 0.0f) {
+                DrawTextLine(
+                    line,
+                    x,
+                    y,
+                    scale,
+                    isCenterBase,
+                    lineOffset,
+                    effect->outlineColor,
+                    rotationDegrees,
+                    rotationPivot,
+                    effect->outlineWidth);
+            }
+
+            DrawTextLine(
+                line,
+                x,
+                y,
+                scale,
+                isCenterBase,
+                lineOffset,
+                color,
+                rotationDegrees,
+                rotationPivot);
+        };
+
+    drawStyledLine(message1, isNewLine ? -mFbHeight * 0.0222f : 0.0f);
 
     if (!isNewLine) {
         return;
     }
 
-    DrawTextLine(message2, x, y, scale, isCenterBase, mFbHeight * 0.0444f, color);
+    drawStyledLine(message2, mFbHeight * 0.0444f);
 }
 
 bool UIRenderer::SplitText(const std::string& message, std::string& message1, std::string& message2) const
@@ -608,8 +774,17 @@ bool UIRenderer::SplitText(const std::string& message, std::string& message1, st
     return false;
 }
 
-void UIRenderer::DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase,
-                              float yOffset, glm::vec4 color)
+void UIRenderer::DrawTextLine(
+    const std::string& message,
+    float x,
+    float y,
+    float scale,
+    bool isCenterBase,
+    float yOffset,
+    glm::vec4 color,
+    float rotationDegrees,
+    glm::vec2 rotationPivot,
+    float outlineWidth)
 {
     int textWidth = 0;
     int textHeight = 0;
@@ -617,7 +792,13 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
-    GLuint textTexture = CreateTextTexture(message, textWidth, textHeight, textColor, scale);
+    const int outlinePixels =
+        outlineWidth > 0.0f && scale > 0.0f
+            ? std::max(1, static_cast<int>(std::round(outlineWidth / scale)))
+            : 0;
+    const float actualOutlineWidth = static_cast<float>(outlinePixels) * scale;
+    GLuint textTexture =
+        CreateTextTexture(message, textWidth, textHeight, textColor, scale, outlinePixels);
 
     if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
         return;
@@ -627,11 +808,25 @@ void UIRenderer::DrawTextLine(const std::string& message, float x, float y, floa
     if (isCenterBase) {
         pos = glm::vec3(x, y + yOffset, 0.0f);
     } else {
-        pos = glm::vec3(x + textWidth * 0.5f, y + textHeight * 0.5f + yOffset, 0.0f);
+        pos = glm::vec3(
+            x + textWidth * 0.5f - actualOutlineWidth,
+            y + textHeight * 0.5f + yOffset - actualOutlineWidth,
+            0.0f);
     }
 
+    if (rotationPivot == glm::vec2(0.0f)) {
+        rotationPivot = glm::vec2(pos.x, pos.y);
+    }
+
+    const glm::vec3 pivot(rotationPivot.x, rotationPivot.y, 0.0f);
     const glm::mat4 model =
-        glm::translate(glm::mat4(1.0f), pos) * glm::scale(glm::mat4(1.0f), glm::vec3(textWidth, textHeight, 1.0f));
+        glm::translate(glm::mat4(1.0f), pivot) *
+        glm::rotate(
+            glm::mat4(1.0f),
+            glm::radians(rotationDegrees),
+            glm::vec3(0.0f, 0.0f, 1.0f)) *
+        glm::translate(glm::mat4(1.0f), pos - pivot) *
+        glm::scale(glm::mat4(1.0f), glm::vec3(textWidth, textHeight, 1.0f));
     const glm::mat4 view = glm::mat4(1.0f);
     const glm::mat4 proj =
         glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
@@ -746,11 +941,16 @@ void UIRenderer::DrawTexture(
     float width,
     float height,
     const std::string& textureName,
-    bool flipVertical)
+    bool flipVertical,
+    float rotationDegrees)
 {
     glUseProgram(mUIShader->GetShaderProgram());
 
     const glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
+                            glm::rotate(
+                                glm::mat4(1.0f),
+                                glm::radians(rotationDegrees),
+                                glm::vec3(0.0f, 0.0f, 1.0f)) *
                             glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
     const glm::mat4 view = glm::mat4(1.0f);
     const glm::mat4 proj =

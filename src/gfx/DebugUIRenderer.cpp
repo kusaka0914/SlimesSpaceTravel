@@ -36,23 +36,6 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 
 void DebugUIRenderer::Draw()
 {
-    mSelectionController.Update();
-
-    if (mSelectionController.ConsumeRequestOpenPlacement()) {
-        mStageEditorPanel.RequestOpenPlacementTab();
-    }
-
-    mEditCommandController.UpdateShortcuts();
-
-    if (mEditCommandController.ConsumeRequestOpenPlacement()) {
-        mStageEditorPanel.RequestOpenPlacementTab();
-    }
-
-    mSelectionController.ApplyEditorSelectionFlags();
-
-    mSelectionController.DrawBoxSelectionRect();
-    mGizmoController.Update();
-
     ImGui::Begin("デバッグ");
 
     if (ImGui::BeginTabBar("DebugMainTabs")) {
@@ -87,6 +70,22 @@ void DebugUIRenderer::Draw()
                 "ステージエディタ",
                 nullptr,
                 stageEditorTabFlags)) {
+            mSelectionController.Update();
+
+            if (mSelectionController.ConsumeRequestOpenPlacement()) {
+                mStageEditorPanel.RequestOpenPlacementTab();
+            }
+
+            mEditCommandController.UpdateShortcuts();
+
+            if (mEditCommandController.ConsumeRequestOpenPlacement()) {
+                mStageEditorPanel.RequestOpenPlacementTab();
+            }
+
+            mSelectionController.ApplyEditorSelectionFlags();
+            mSelectionController.DrawBoxSelectionRect();
+            mGizmoController.Update();
+
             mStageEditorPanel.Draw();
             ImGui::EndTabItem();
         }
