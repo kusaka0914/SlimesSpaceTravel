@@ -4,6 +4,7 @@
 #include "state/UIState.h"
 
 #include <memory>
+#include <string>
 
 class Game;
 class NPC;
@@ -27,6 +28,10 @@ public:
     void StartOpening();
     void StartPlayingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
+    bool TryStartTutorial(
+        const std::string& tutorialId,
+        Player* tutorialPlayer = nullptr);
+    bool PreviewTutorial(const std::string& tutorialId);
     void StartFocusingScene();
     void StartFadeIn();
     void StartTalkWith(UIState::TalkWith talkWith) { mUIState->SetCurrentTalkWith(talkWith); }
@@ -58,24 +63,23 @@ public:
     bool IsWaitingForTutorialPlayerSwitch() const;
     bool IsWaitingForTutorialPlayerJump() const;
 
-    bool IsBattleTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Battle; }
-    bool IsBreakTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Break; }
-    bool IsJewelTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Jewel; }
-    bool IsJustDodgeTutorialShowing() const
-    {
-        return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::JustDodge;
-    }
+    bool HasActiveTutorial() const;
+    bool IsTutorialActive(
+        const std::string& tutorialId) const;
 
     bool GetHasPendingStageChange() const { return mHasPendingStageChange; }
     float GetFadeTimer() const { return mFadeTimer; }
     UIState::TalkWith GetCurrentTalkWith() const { return mUIState->GetCurrentTalkWith(); }
-    UIState::TutorialKind GetCurrentTutorialKind() const { return mUIState->GetCurrentTutorialKind(); }
     int GetTalkUIIndex() const { return mUIState->GetTalkUIIndex(); }
 
     UIState* GetUIState() { return mUIState.get(); }
+    TutorialController* GetTutorialController() const
+    {
+        return mTutorialController.get();
+    }
 
     NPC* GetTalkingNPC() const { return mTalkingNPC; }
-    Player* GetTalkingPlayer() const { return mTalkingPlayer; }
+    Player* GetTalkingPlayer() const;
 
 private:
     void CreateControllers();

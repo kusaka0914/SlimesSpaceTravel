@@ -15,7 +15,7 @@ particleEffects:
         size:
           start:
             min: 0
-            max: 0.84
+            max: 1.68
           endMultiplier: 0.05
         rotationDegrees:
           min: -25
@@ -44,7 +44,7 @@ particleEffects:
         size:
           start:
             min: 0.78
-            max: 0.95
+            max: 2.57
           endMultiplier: 0.1
         rotationDegrees:
           min: 0
@@ -72,8 +72,8 @@ particleEffects:
           max: 0.85
         size:
           start:
-            min: 0.34
-            max: 0.46
+            min: 0
+            max: 1.4
           endMultiplier: 0.18
         rotationDegrees:
           min: 0

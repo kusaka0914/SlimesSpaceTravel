@@ -106,7 +106,7 @@ void EditorPickSystem::CreatePickBody(btDiscreteDynamicsWorld* world, Actor* act
                                       std::vector<std::unique_ptr<btCollisionShape>>& pickShapes,
                                       std::vector<std::unique_ptr<btTriangleMesh>>& pickTriangleMeshes) const
 {
-    if (!actor || !world) {
+    if (!actor || actor->IsDebugDisabled() || !world) {
         return;
     }
 

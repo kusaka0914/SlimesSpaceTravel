@@ -65,6 +65,12 @@ void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML:
 
     actor->SetStageYamlIndex(stageYamlIndex);
 
+    const bool isDebugDisabled =
+        node["debugDisabled"]
+            ? node["debugDisabled"].as<bool>()
+            : false;
+    actor->SetIsDebugDisabled(isDebugDisabled);
+
     const int visibleIfStageCleared =
         node["visibleIfStageCleared"]
             ? node["visibleIfStageCleared"].as<int>()

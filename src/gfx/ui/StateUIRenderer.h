@@ -10,10 +10,7 @@ public:
     void DrawStateUI();
 
 private:
-    void DrawBattleTutorial();
-    void DrawBreakTutorial();
-    void DrawJewelTutorial();
-    void DrawJustDodgeTutorial();
+    void DrawActiveTutorial();
     void DrawTalkWithNPC();
     void DrawStageClear();
     float CalculateAlpha() const;

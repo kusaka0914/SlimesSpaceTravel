@@ -10,6 +10,8 @@
 #include "component/FocusComponent.h"
 #include "system/ActorLoadSystem.h"
 #include "system/SceneSystem.h"
+#include "system/scene/TutorialController.h"
+#include "system/tutorial/TutorialLibrary.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -646,6 +648,26 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
     }
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    if (sceneSystem && sceneSystem->HasActiveTutorial()) {
+        TutorialController* tutorialController =
+            sceneSystem->GetTutorialController();
+        const TutorialPage* page =
+            tutorialController
+                ? tutorialController->GetCurrentPage()
+                : nullptr;
+        if (!page || !page->focusTarget.IsValid()) {
+            return nullptr;
+        }
+
+        ActorLoadSystem* actorLoadSystem =
+            mGame->GetActorLoadSystem();
+        return actorLoadSystem
+                   ? actorLoadSystem->FindPlacedActor(
+                         page->focusTarget.sequenceName,
+                         page->focusTarget.yamlIndex)
+                   : nullptr;
+    }
+
     NPC* talkingNPC = sceneSystem ? sceneSystem->GetTalkingNPC() : nullptr;
     Player* talkingPlayer =
         sceneSystem ? sceneSystem->GetTalkingPlayer() : nullptr;
@@ -852,7 +874,8 @@ Enemy* CameraSystem::FindBossEnemy(Planet* planet) const
 
     const std::vector<Enemy*> enemies = planet->GetEnemies();
     for (Enemy* enemy : enemies) {
-        if (!enemy || !enemy->GetIsBoss()) {
+        if (!enemy || !enemy->GetIsActive() ||
+            !enemy->GetIsBoss()) {
             continue;
         }
 

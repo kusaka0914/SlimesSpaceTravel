@@ -33,7 +33,8 @@ void Actor::Initialize() {}
 
 void Actor::ProcessInput()
 {
-    if (!IsProgressVisibleForCurrentMode()) {
+    if (mIsDebugDisabled ||
+        !IsProgressVisibleForCurrentMode()) {
         return;
     }
     ProcessActor();
@@ -43,7 +44,8 @@ void Actor::ProcessActor() {}
 
 void Actor::Update(float deltaTime)
 {
-    if (!IsProgressVisibleForCurrentMode()) {
+    if (mIsDebugDisabled ||
+        !IsProgressVisibleForCurrentMode()) {
         return;
     }
 

@@ -158,8 +158,15 @@ void TutorialTrigger::UpdateActor(float)
             continue;
         }
 
-        mHasTriggeredThisVisit = true;
-        sceneSystem->StartTalkWithNPC(this, player);
+        if (!mTutorialId.empty()) {
+            mHasTriggeredThisVisit =
+                sceneSystem->TryStartTutorial(
+                    mTutorialId,
+                    player);
+        } else {
+            mHasTriggeredThisVisit = true;
+            sceneSystem->StartTalkWithNPC(this, player);
+        }
         return;
     }
 }

@@ -73,7 +73,10 @@ void Key::OnObtained()
 {
     mIsActive = false;
 
-    for (auto boat : mCurrentPlanet->GetBoats()) {
+    for (Boat* boat : mCurrentPlanet->GetBoats()) {
+        if (!boat || !boat->GetIsActive()) {
+            continue;
+        }
         boat->GetFocusComponent()->StartFocus();
     }
 }

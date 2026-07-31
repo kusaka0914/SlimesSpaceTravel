@@ -44,6 +44,7 @@ void SceneSystem::CreateControllers()
 void SceneSystem::Update(float deltaTime)
 {
     mTransitionController->UpdateFade(deltaTime);
+    mTutorialController->Update(deltaTime);
     mTalkController->Update(deltaTime);
     UpdateClearTimer(deltaTime);
 }
@@ -66,7 +67,11 @@ void SceneSystem::OnConfirmPressed(int playerNum)
         break;
 
     case GameProgressState::SceneState::Talking:
-        mTalkController->TryAdvanceTalkFromConfirm();
+        if (mTutorialController->HasActiveTutorial()) {
+            mTutorialController->TryAdvanceFromConfirm();
+        } else {
+            mTalkController->TryAdvanceTalkFromConfirm();
+        }
         break;
 
     case GameProgressState::SceneState::Playing:
@@ -84,20 +89,40 @@ void SceneSystem::OnConfirmPressed(int playerNum)
 
 bool SceneSystem::IsWaitingForTutorialPlayerAction() const
 {
-    return mTalkController &&
-           mTalkController->IsWaitingForPlayerAction();
+    return (mTutorialController &&
+            mTutorialController->IsWaitingForPlayerAction()) ||
+           (mTalkController &&
+            mTalkController->IsWaitingForPlayerAction());
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerSwitch() const
 {
-    return mTalkController &&
-           mTalkController->IsWaitingForPlayerSwitch();
+    return (mTutorialController &&
+            mTutorialController->IsWaitingForPlayerSwitch()) ||
+           (mTalkController &&
+            mTalkController->IsWaitingForPlayerSwitch());
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerJump() const
 {
-    return mTalkController &&
-           mTalkController->IsWaitingForPlayerJump();
+    return (mTutorialController &&
+            mTutorialController->IsWaitingForPlayerJump()) ||
+           (mTalkController &&
+            mTalkController->IsWaitingForPlayerJump());
+}
+
+bool SceneSystem::HasActiveTutorial() const
+{
+    return mTutorialController &&
+           mTutorialController->HasActiveTutorial();
+}
+
+bool SceneSystem::IsTutorialActive(
+    const std::string& tutorialId) const
+{
+    return mTutorialController &&
+           mTutorialController->GetActiveTutorialId() ==
+               tutorialId;
 }
 
 void SceneSystem::OnStartPressed()
@@ -130,6 +155,9 @@ void SceneSystem::RestartGame()
 
 void SceneSystem::StartPlayingScene()
 {
+    if (mTutorialController) {
+        mTutorialController->Stop(false);
+    }
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
 
     mTalkingNPC = nullptr;
@@ -148,6 +176,32 @@ void SceneSystem::StartFocusingScene()
 void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
 {
     mTalkController->StartTalkWithNPC(talkingNPC, talkingPlayer);
+}
+
+bool SceneSystem::TryStartTutorial(
+    const std::string& tutorialId,
+    Player* tutorialPlayer)
+{
+    return mTutorialController &&
+           mTutorialController->TryStart(
+               tutorialId,
+               tutorialPlayer);
+}
+
+bool SceneSystem::PreviewTutorial(
+    const std::string& tutorialId)
+{
+    return mTutorialController &&
+           mTutorialController->Preview(tutorialId);
+}
+
+Player* SceneSystem::GetTalkingPlayer() const
+{
+    if (mTutorialController &&
+        mTutorialController->HasActiveTutorial()) {
+        return mTutorialController->GetTutorialPlayer();
+    }
+    return mTalkingPlayer;
 }
 
 void SceneSystem::StartFadeIn()

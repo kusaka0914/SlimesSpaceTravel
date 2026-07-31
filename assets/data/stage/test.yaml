@@ -2298,6 +2298,7 @@ stageObjects:
     affectsGravityDirection: false
 tutorialTriggers:
   - currentPlanetNum: 0
+    tutorialId: split_switch
     theta: -0.54565513
     phi: 0.08152652
     height: 3.174387

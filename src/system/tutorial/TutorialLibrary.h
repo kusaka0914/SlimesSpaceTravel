@@ -1,0 +1,103 @@
+#pragma once
+
+#include "text/RubyText.h"
+
+#include <string>
+#include <vector>
+
+enum class TutorialAdvanceCondition {
+    Confirm = 0,
+    PlayerSwitch,
+    Jump
+};
+
+enum class TutorialRepeatPolicy {
+    OncePerSession = 0,
+    EveryRequest
+};
+
+struct TutorialFocusTarget {
+    std::string sequenceName;
+    int yamlIndex = -1;
+
+    bool IsValid() const
+    {
+        return !sequenceName.empty() && yamlIndex >= 0;
+    }
+};
+
+struct TutorialPage {
+    std::string id;
+    std::string text;
+    std::string controllerText;
+    std::string keyboardText;
+    TutorialAdvanceCondition advanceCondition =
+        TutorialAdvanceCondition::Confirm;
+    TutorialFocusTarget focusTarget;
+    std::vector<RubyTextSegment> rubySegments;
+    std::vector<RubyTextSegment> controllerRubySegments;
+    std::vector<RubyTextSegment> keyboardRubySegments;
+
+    const std::string& ResolveText(bool usesController) const;
+    const std::vector<RubyTextSegment>&
+    ResolveRubySegments(bool usesController) const;
+};
+
+struct TutorialDefinition {
+    std::string id;
+    std::string displayName;
+    TutorialRepeatPolicy repeatPolicy =
+        TutorialRepeatPolicy::OncePerSession;
+    float textXRatio = 0.065f;
+    float textYRatio = 0.14f;
+    float textScaleRatio = 0.000333333f;
+    std::vector<TutorialPage> pages;
+};
+
+class TutorialLibrary {
+public:
+    explicit TutorialLibrary(
+        std::string path =
+            "../assets/data/tutorials/tutorials.yaml");
+
+    bool Load();
+    bool Save();
+
+    TutorialDefinition* Find(const std::string& tutorialId);
+    const TutorialDefinition* Find(
+        const std::string& tutorialId) const;
+
+    TutorialDefinition* Add(const std::string& requestedId);
+    TutorialDefinition* Duplicate(const std::string& tutorialId);
+    bool Remove(const std::string& tutorialId);
+
+    void RegeneratePageRuby(TutorialPage& page) const;
+
+    std::vector<TutorialDefinition>& GetDefinitions()
+    {
+        return mDefinitions;
+    }
+    const std::vector<TutorialDefinition>& GetDefinitions() const
+    {
+        return mDefinitions;
+    }
+    const std::string& GetLastError() const { return mLastError; }
+
+private:
+    std::string MakeUniqueId(const std::string& requestedId) const;
+
+private:
+    std::string mPath;
+    std::vector<TutorialDefinition> mDefinitions;
+    std::string mLastError;
+};
+
+const char* GetTutorialAdvanceConditionId(
+    TutorialAdvanceCondition condition);
+TutorialAdvanceCondition ParseTutorialAdvanceConditionId(
+    const std::string& conditionId);
+
+const char* GetTutorialRepeatPolicyId(
+    TutorialRepeatPolicy policy);
+TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
+    const std::string& policyId);

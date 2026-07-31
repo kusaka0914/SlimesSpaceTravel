@@ -1,0 +1,176 @@
+tutorials:
+  - id: battle_basic
+    name: 戦闘の基本
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: introduction
+        text: "この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！"
+        advance: confirm
+      - id: attack_buttons
+        text: 戦闘の基本としては敵に近づいて攻撃します！
+        controllerText: 戦闘の基本としては敵に近づいてYまたはXで攻撃します！
+        keyboardText: 戦闘の基本としては敵に近づいてJまたはKで攻撃します！
+        advance: confirm
+      - id: weak_attack
+        text: "弱攻撃は攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
+        controllerText: "Yは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
+        keyboardText: "Jは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
+        advance: confirm
+      - id: strong_attack
+        text: "強攻撃は攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
+        controllerText: "Xは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
+        keyboardText: "Kは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
+        advance: confirm
+      - id: combo
+        text: "まずは弱攻撃を3回、または弱攻撃2回から強攻撃のコンボを使って、\n敵に3回攻撃してみましょう！"
+        controllerText: "まずはY→Y→YまたはY→Y→Xのコンボを使って、\n敵に3回攻撃してみましょう！"
+        keyboardText: "まずはJ→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃してみましょう！"
+        advance: confirm
+  - id: enemy_break
+    name: ガード破壊と空中攻撃
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: guard_broken
+        text: "3回攻撃できましたね！\n敵の頭上にあったガードがなくなったことに気づきましたか？"
+        advance: confirm
+      - id: guard_rule
+        text: "というのも、敵に3回攻撃を当てると\nガードを1個破壊することができるのです！"
+        advance: confirm
+      - id: launch_rule
+        text: "全てのガードを破壊することで\n敵を空中に打ち上げることができます！"
+        advance: confirm
+      - id: air_attack_types
+        text: 空中の敵を攻撃する時は空中弱攻撃と空中回避攻撃を使います。
+        advance: confirm
+      - id: air_dodge_attack
+        text: "空中回避攻撃は、空中で回避して敵にぶつかることで\n自動で攻撃することです。"
+        advance: confirm
+      - id: air_weak_attack
+        text: "そして空中弱攻撃は最大3回しか使えませんが、\n空中回避攻撃を当てると再使用できます。"
+        advance: confirm
+      - id: summary_air_attack
+        text: "つまり、空中弱攻撃→空中回避攻撃→空中弱攻撃のように繰り返す\nことでpkkp絶え間なく攻撃でき、大ダメージを与えられます。"
+        advance: confirm
+      - id: air_strong_attack
+        text: "そして、打ち上げ解除直前になると敵が白く点滅します！\nそのタイミングで空中強攻撃を放ちましょう！"
+        advance: confirm
+      - id: recover_from_stun
+        text: "空中強攻撃は超協力ですが、使用後は疲労して動けなくなります。\n弱攻撃を連打することで早く回復できるのでk連打しましょう。"
+        advance: confirm
+      - id: break_summary
+        text: "ガードを破壊し打ち上げ、空中弱攻撃と空中回避攻撃を繰り返す。\n点滅したら空中強攻撃の流れを覚えて敵を倒していきましょう！"
+        advance: confirm
+  - id: jewel_usage
+    name: ジュエルの使い方
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.74
+    textScaleRatio: 0.000333333
+    pages:
+      - id: introduction
+        text: "ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？"
+        advance: confirm
+      - id: generation
+        text: "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。"
+        advance: confirm
+      - id: heal
+        text: "回復ボタンを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        controllerText: "まずRを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        keyboardText: "まずMを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        advance: confirm
+      - id: automatic_attack
+        text: "特殊入力と弱攻撃でジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
+        controllerText: "またLを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
+        keyboardText: "またNを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
+        advance: confirm
+      - id: automatic_attack_warning
+        text: "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！"
+        advance: confirm
+      - id: charge_start
+        text: "特殊入力と強攻撃でジュエルを2個消費して、\n溜め状態になります！"
+        controllerText: "そしてLを押しながらXでジュエルを2個消費して、\n溜め状態になります！"
+        keyboardText: "そしてNを押しながらKでジュエルを2個消費して、\n溜め状態になります！"
+        advance: confirm
+      - id: charge_release_buttons
+        text: 溜め状態中はボタンを離したままで大丈夫ですよ！
+        controllerText: 溜め状態中はLもXも離したままで大丈夫ですよ！
+        keyboardText: 溜め状態中はNもKも離したままで大丈夫ですよ！
+        advance: confirm
+      - id: charge_warning
+        text: "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！"
+        advance: confirm
+      - id: charged_attack
+        text: "溜まったら強攻撃を押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
+        controllerText: "溜まったらXを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
+        keyboardText: "溜まったらKを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
+        advance: confirm
+      - id: counter_bonus
+        text: "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！"
+        advance: confirm
+      - id: jewel_summary
+        text: "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！"
+        advance: confirm
+      - id: finish
+        text: "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"
+        advance: confirm
+  - id: just_dodge
+    name: ジャスト回避
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: arrival
+        text: さあ、ここが最後の惑星です！
+        advance: confirm
+      - id: boss
+        text: この惑星にはとても大きなボスがいます。
+        advance: confirm
+      - id: introduction
+        text: "ボスは体力が多いため、倒すのに苦労すると思います！\nということで新技を伝授します！"
+        advance: confirm
+      - id: timing
+        text: "敵が攻撃した瞬間に、敵に向かって回避をすることで\nジャスト回避をすることができます！"
+        advance: confirm
+      - id: reward
+        text: "ジャスト回避が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！"
+        advance: confirm
+      - id: advice
+        text: "回復したいけどジュエルが足りない、\nそんな窮地に立たされた時に狙ってみてください！"
+        advance: confirm
+      - id: finish
+        text: さあ、ボスを倒しに行きましょう！
+        advance: confirm
+  - id: split_switch
+    name: 分身とスイッチ
+    repeat: everyRequest
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: transparent_platform
+        text: "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+        advance: confirm
+        focus:
+          sequence: platforms
+          index: 4
+      - id: blocked_route
+        text: "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+        advance: confirm
+      - id: switch_player
+        text: "そうだ！君はスライムだから分裂できるんじゃない？\n操作するスライムを切り替えてみようよ！"
+        controllerText: "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+        keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nOを押して分身を作って、切り替えてみようよ！"
+        advance: playerSwitch
+      - id: switched
+        text: "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+        advance: confirm
+      - id: find_switch
+        text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+        advance: confirm

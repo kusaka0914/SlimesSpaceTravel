@@ -68,7 +68,8 @@ void PlanetProgressController::OnEnemyDead(const PlanetActorRegistry& actorRegis
 bool PlanetProgressController::CheckIsAllEnemiesDead(const PlanetActorRegistry& actorRegistry) const
 {
     for (Enemy* enemy : actorRegistry.GetEnemies()) {
-        if (enemy && enemy->GetIsDead()) {
+        if (!enemy || !enemy->GetIsActive() ||
+            enemy->GetIsDead()) {
             continue;
         }
 
@@ -108,7 +109,7 @@ bool PlanetProgressController::CheckIsAllBoatPartsCollected(const PlanetActorReg
 void PlanetProgressController::StartBoatFocus(const PlanetActorRegistry& actorRegistry) const
 {
     for (Boat* boat : actorRegistry.GetBoats()) {
-        if (!boat) {
+        if (!boat || !boat->GetIsActive()) {
             continue;
         }
 

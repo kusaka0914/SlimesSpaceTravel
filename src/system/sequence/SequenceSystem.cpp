@@ -199,7 +199,9 @@ void SequenceSystem::CapturePreviewState(const GameplaySequence& sequence)
             continue;
         }
 
-        mPreviewSnapshots[actor] = {actor->GetPos(), actor->GetIsActive()};
+        mPreviewSnapshots[actor] = {
+            actor->GetPos(),
+            actor->IsExplicitlyActive()};
     }
 }
 

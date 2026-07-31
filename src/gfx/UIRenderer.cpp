@@ -126,7 +126,9 @@ void UIRenderer::Draw()
         mSceneUIRenderer->DrawGameOver();
     }
 
-    const bool shouldDrawDefaultUI = sceneSystem->IsPlaying() || sceneSystem->IsJewelTutorialShowing();
+    const bool shouldDrawDefaultUI =
+        sceneSystem->IsPlaying() ||
+        sceneSystem->IsTutorialActive("jewel_usage");
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
     }

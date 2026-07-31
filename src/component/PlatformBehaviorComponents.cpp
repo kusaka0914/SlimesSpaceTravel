@@ -423,7 +423,8 @@ Platform* PlatformPressureSwitchComponent::FindTargetPlatform(
          mPlatform->GetGame()->GetCurrentStage()->GetPlanets()) {
         if (!planet) continue;
         for (Platform* platform : planet->GetPlatforms()) {
-            if (platform && platform != mPlatform &&
+            if (platform && platform->GetIsActive() &&
+                platform != mPlatform &&
                 platform->GetPlatformId() == platformId) {
                 return platform;
             }

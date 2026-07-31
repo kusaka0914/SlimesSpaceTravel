@@ -727,6 +727,11 @@ TutorialTrigger* ActorLoadSystem::CreateTutorialTriggerFromStageNode(
             planet->AddTutorialTrigger(trigger);
         },
         [](TutorialTrigger* trigger, const YAML::Node& triggerNode) {
+            trigger->SetTutorialId(
+                triggerNode["tutorialId"]
+                    ? triggerNode["tutorialId"].as<std::string>()
+                    : std::string());
+
             if (triggerNode["talkTexts"] &&
                 triggerNode["talkTexts"].IsSequence()) {
                 for (const YAML::Node& textNode :

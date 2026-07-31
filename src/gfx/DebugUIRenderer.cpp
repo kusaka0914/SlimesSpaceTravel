@@ -10,6 +10,7 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mParameterPanel(mContext),
       mParticleEffectPanel(mContext),
       mSequencePanel(mContext),
+      mTutorialPanel(mContext),
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
       mSelectionController(mContext),
@@ -57,6 +58,11 @@ void DebugUIRenderer::Draw()
 
         if (ImGui::BeginTabItem("演出エディタ")) {
             mSequencePanel.Draw();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("チュートリアル")) {
+            mTutorialPanel.Draw();
             ImGui::EndTabItem();
         }
 

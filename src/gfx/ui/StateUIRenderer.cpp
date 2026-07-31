@@ -5,6 +5,8 @@
 #include "actor/NPC.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
+#include "system/scene/TutorialController.h"
+#include "system/tutorial/TutorialLibrary.h"
 #include <string>
 #include <vector>
 
@@ -16,14 +18,8 @@ StateUIRenderer::StateUIRenderer(Game* game, UIRenderer* renderer)
 
 void StateUIRenderer::DrawStateUI()
 {
-    if (mGame->GetSceneSystem()->IsBattleTutorialShowing()) {
-        DrawBattleTutorial();
-    } else if (mGame->GetSceneSystem()->IsBreakTutorialShowing()) {
-        DrawBreakTutorial();
-    } else if (mGame->GetSceneSystem()->IsJewelTutorialShowing()) {
-        DrawJewelTutorial();
-    } else if (mGame->GetSceneSystem()->IsJustDodgeTutorialShowing()) {
-        DrawJustDodgeTutorial();
+    if (mGame->GetSceneSystem()->HasActiveTutorial()) {
+        DrawActiveTutorial();
     }
 
     if (mGame->GetSceneSystem()->IsTalkWithNPC()) {
@@ -44,46 +40,6 @@ void StateUIRenderer::DrawStateUI()
     if (isLoading) {
         DrawLoading();
     }
-}
-
-void StateUIRenderer::DrawBattleTutorial()
-{
-    if (mRenderer->DrawSceneTalkUIDependsOnGameController("state", "battleTutorialText")) {
-        return;
-    }
-
-    mGame->StartPlayingScene();
-    mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
-}
-
-void StateUIRenderer::DrawBreakTutorial()
-{
-    if (mRenderer->DrawSceneTalkUI("state", "breakTutorialText")) {
-        return;
-    }
-
-    mGame->StartPlayingScene();
-    mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
-}
-
-void StateUIRenderer::DrawJewelTutorial()
-{
-    if (mRenderer->DrawSceneTalkUIDependsOnGameController("state", "jewelTutorialText")) {
-        return;
-    }
-
-    mGame->StartPlayingScene();
-    mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
-}
-
-void StateUIRenderer::DrawJustDodgeTutorial()
-{
-    if (mRenderer->DrawSceneTalkUI("state", "justDodgeTutorialText")) {
-        return;
-    }
-
-    mGame->StartPlayingScene();
-    mGame->GetSceneSystem()->GetUIState()->FinishTutorial();
 }
 
 void StateUIRenderer::DrawTalkWithNPC()
@@ -111,6 +67,38 @@ void StateUIRenderer::DrawTalkWithNPC()
     talkingNPC->MarkTalkCompletedThisVisit();
     mGame->StartPlayingScene();
     mGame->GetSceneSystem()->GetUIState()->FinishTalkWith();
+}
+
+void StateUIRenderer::DrawActiveTutorial()
+{
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    TutorialController* tutorialController =
+        sceneSystem ? sceneSystem->GetTutorialController() : nullptr;
+    const TutorialDefinition* definition =
+        tutorialController
+            ? tutorialController->GetActiveDefinition()
+            : nullptr;
+    if (!definition) {
+        return;
+    }
+
+    const bool usesController =
+        mGame->IsGameControllerConnected();
+    UILoadSystem::TextInfo textInfo;
+    textInfo.xRatio = definition->textXRatio;
+    textInfo.yRatio = definition->textYRatio;
+    textInfo.scaleRatio = definition->textScaleRatio;
+    textInfo.texts.reserve(definition->pages.size());
+    textInfo.rubySegments.reserve(definition->pages.size());
+
+    for (const TutorialPage& page : definition->pages) {
+        textInfo.texts.emplace_back(
+            page.ResolveText(usesController));
+        textInfo.rubySegments.emplace_back(
+            page.ResolveRubySegments(usesController));
+    }
+
+    mRenderer->DrawTalkUI(&textInfo);
 }
 
 void StateUIRenderer::DrawStageClear()

@@ -118,7 +118,8 @@ void Planet::OnBoatPartsObtained()
 bool Planet::HasAppearedRocket() const
 {
     for (const Boat* boat : mActorRegistry.GetBoats()) {
-        if (boat && boat->HasAppeared()) {
+        if (boat && boat->GetIsActive() &&
+            boat->HasAppeared()) {
             return true;
         }
     }

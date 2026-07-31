@@ -11,6 +11,7 @@
 #include "gfx/debug/panels/StageEditorPanel.h"
 #include "gfx/debug/panels/StagePlacementPanel.h"
 #include "gfx/debug/panels/StagePlanetPanel.h"
+#include "gfx/debug/panels/TutorialDebugPanel.h"
 #include "gfx/debug/panels/UIDebugPanel.h"
 #include "gfx/debug/stage/StageEditCommandController.h"
 #include "gfx/debug/stage/StageGizmoController.h"
@@ -34,6 +35,7 @@ private:
     ParameterDebugPanel mParameterPanel;
     ParticleEffectDebugPanel mParticleEffectPanel;
     SequenceDebugPanel mSequencePanel;
+    TutorialDebugPanel mTutorialPanel;
 
     StageAddActorPanel mStageAddActorPanel;
     StagePlanetPanel mStagePlanetPanel;

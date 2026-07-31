@@ -34,6 +34,10 @@ public:
     void RemoveComponent(Component* component);
 
     void SetIsActive(bool isActive) { mIsActive = isActive; }
+    void SetIsDebugDisabled(bool isDebugDisabled)
+    {
+        mIsDebugDisabled = isDebugDisabled;
+    }
     void SetVisibleIfStageCleared(int stageNum);
     void SetHiddenIfStageCleared(int stageNum);
     void SetHiddenWhenRocketAppears(bool shouldHide)
@@ -67,8 +71,12 @@ public:
 
     bool GetIsActive() const
     {
-        return mIsActive && IsProgressVisibleForCurrentMode();
+        return mIsActive &&
+               !mIsDebugDisabled &&
+               IsProgressVisibleForCurrentMode();
     }
+    bool IsExplicitlyActive() const { return mIsActive; }
+    bool IsDebugDisabled() const { return mIsDebugDisabled; }
     virtual float GetRenderOpacity() const { return 1.0f; }
     virtual bool ShouldRenderSolidWhite() const { return false; }
     int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
@@ -142,6 +150,7 @@ protected:
 
 protected:
     bool mIsActive;
+    bool mIsDebugDisabled = false;
     bool mStageClearVisibilitySatisfied = true;
     bool mHiddenWhenRocketAppears = false;
     bool mShouldAffectGravityDirection = true;

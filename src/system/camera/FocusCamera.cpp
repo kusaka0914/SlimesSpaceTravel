@@ -178,7 +178,7 @@ std::vector<glm::mat4> FocusCamera::GetBoatFocusViews(const std::vector<Boat*>& 
     std::vector<glm::mat4> views;
 
     for (Boat* boat : boats) {
-        if (!boat) {
+        if (!boat || !boat->GetIsActive()) {
             continue;
         }
 
