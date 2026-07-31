@@ -19,7 +19,11 @@ void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMoveme
                                 PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                 float deltaTime)
 {
-    if (!player.GetGame()->GetSceneSystem()->IsPlaying()) {
+    SceneSystem* sceneSystem =
+        player.GetGame()->GetSceneSystem();
+    if (!sceneSystem ||
+        (!sceneSystem->IsPlaying() &&
+         !sceneSystem->IsWaitingForTutorialPlayerJump())) {
         return;
     }
 
@@ -56,11 +60,16 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
     case PlayerActionState::Attacking:
         UpdateAttacking(player, input, movement, combat, status, deltaTime);
         break;
-    case PlayerActionState::Charging:
-        UpdateCharging(player, input, movement, combat, deltaTime);
-        break;
     case PlayerActionState::StrongAttacking:
         UpdateStrongAttacking(player, input, movement, combat, status, deltaTime);
+        break;
+    case PlayerActionState::AirSlamAttacking:
+        UpdateAirSlamAttacking(
+            player,
+            movement,
+            combat,
+            status,
+            deltaTime);
         break;
     case PlayerActionState::KnockedBack:
         UpdateKnockedBack(player, movement, combat, status, deltaTime);
@@ -107,8 +116,9 @@ void PlayerStateMachine::UpdateCoyoteTime(const Player& player, float deltaTime)
 
 bool PlayerStateMachine::IsAttackingState() const
 {
-    return mActionState == PlayerActionState::Attacking || mActionState == PlayerActionState::Charging ||
-           mActionState == PlayerActionState::StrongAttacking;
+    return mActionState == PlayerActionState::Attacking ||
+           mActionState == PlayerActionState::StrongAttacking ||
+           mActionState == PlayerActionState::AirSlamAttacking;
 }
 
 void PlayerStateMachine::StartIdle()

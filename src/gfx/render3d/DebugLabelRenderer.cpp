@@ -15,6 +15,7 @@
 #include "actor/Platform.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/Shader3D.h"
 #include "utils/MathUtils.h"
 
@@ -48,6 +49,16 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
 
         for (NPC* npc : planet->GetNPCs()) {
             DrawDebugLabel(viewMat, npc, "NPC " + std::to_string(npc->GetStageYamlIndex()));
+        }
+
+        for (TutorialTrigger* trigger :
+             planet->GetTutorialTriggers()) {
+            DrawDebugLabel(
+                viewMat,
+                trigger,
+                "Tutorial Trigger " +
+                    std::to_string(
+                        trigger->GetStageYamlIndex()));
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {

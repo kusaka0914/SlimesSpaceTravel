@@ -58,7 +58,6 @@ void AudioSystem::CreateSEList()
     AddSE(basePath + "pickup.wav", "pickup_se");
     AddSE(basePath + "dodge.wav", "dodge_se");
     AddSE(basePath + "jump.wav", "jump_se");
-    AddSE(basePath + "air_charging.wav", "air_charging_se");
     AddSE(basePath + "recover.wav", "recover_se");
     AddSE(basePath + "message.wav", "message_se");
     AddSE(basePath + "just_attack.wav", "just_attack_se");
@@ -92,7 +91,12 @@ void AudioSystem::TryChangeBGM()
         return;
     }
 
-    int currentPlanetNum = mGame->GetPlayers()[0]->GetCurrentPlanetNum();
+    Player* mainPlayer = mGame->GetMainPlayer();
+    if (!mainPlayer) {
+        return;
+    }
+
+    int currentPlanetNum = mainPlayer->GetCurrentPlanetNum();
     if (currentPlanetNum == 0) {
         Mix_HaltMusic();
         PlayBGM("stage_bgm");

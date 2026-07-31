@@ -18,6 +18,7 @@ EnemyStatus::EnemyStatus()
       mDefaultStandByAttackTimer(-1.0f),
       mLaunchedTimer(-1.0f),
       mDefaultLaunchedTimer(-1.0f),
+      mLaunchHeight(1.2755f),
       mAttackMotionTimer(-1.0f),
       mDefaultAttackMotionTimer(-1.0f),
       mDyingTimer(-1.0f),

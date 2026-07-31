@@ -27,9 +27,10 @@ void HudRenderer::DrawDefaultUI()
 
     const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
     const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+    const Player* mainPlayer = mGame->GetMainPlayer();
 
     if (!isTwoPlayer) {
-        DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
+        DrawPlayerPromptUI(mainPlayer, 0.0f, 1.0f);
     } else {
         DrawPlayerPromptUI(players[0], 0.0f, 0.5f);
         DrawPlayerPromptUI(players[1], halfHeight, 0.5f);
@@ -39,7 +40,6 @@ void HudRenderer::DrawDefaultUI()
         return;
     }
 
-    const Player* mainPlayer = players[0];
     if (!mainPlayer || !mainPlayer->GetCurrentPlanet()) {
         return;
     }
@@ -50,7 +50,7 @@ void HudRenderer::DrawDefaultUI()
     }
 
     if (!isTwoPlayer) {
-        DrawPlayerStatusUI(players[0], 0.0f, 1.0f);
+        DrawPlayerStatusUI(mainPlayer, 0.0f, 1.0f);
     } else {
         DrawPlayerStatusUI(players[0], 0.0f, 0.5f);
         DrawPlayerStatusUI(players[1], halfHeight, 0.5f);

@@ -264,17 +264,27 @@ void Game::ToggleFreeCameraMode()
 
 void Game::ProcessActorsInput()
 {
+    const bool isWaitingForTutorialPlayerJump =
+        mSceneSystem->IsWaitingForTutorialPlayerJump();
     const bool allowsPlayerControl =
-        mSceneSystem->IsPlaying() && mCameraSystem->AllowsPlayerInput() &&
+        (mSceneSystem->IsPlaying() ||
+         isWaitingForTutorialPlayerJump) &&
+        mCameraSystem->AllowsPlayerInput() &&
         (!mSequenceSystem || !mSequenceSystem->LocksPlayerControl());
 
-    for (Player* player : GetPlayers()) {
+    const std::vector<Player*>& players = GetPlayers();
+    for (Player* player : players) {
         if (player) {
             player->SetControlLocked(!allowsPlayerControl);
         }
     }
 
     if (!allowsPlayerControl) {
+        return;
+    }
+
+    if (isWaitingForTutorialPlayerJump) {
+        mWorld->ProcessPlayerInput(GetControlledPlayer());
         return;
     }
 
@@ -309,21 +319,27 @@ void Game::UpdateGame()
     mSceneSystem->Update(deltaTime);
 
     bool cameraUpdated = false;
+    const bool shouldUpdateEntireWorld =
+        mSceneSystem->CanUpdateWorld();
+    const bool shouldUpdateTutorialPlayer =
+        mSceneSystem->IsWaitingForTutorialPlayerJump();
 
-    if (mSceneSystem->CanUpdateWorld()) {
+    if (shouldUpdateEntireWorld) {
         UpdateActors(deltaTime);
 
         if (mParticleSystem) {
             mParticleSystem->Update(deltaTime);
         }
-
+    } else if (shouldUpdateTutorialPlayer) {
+        mWorld->UpdatePlayer(GetControlledPlayer(), deltaTime);
     }
 
     if (mSequenceSystem) {
         mSequenceSystem->Update(deltaTime);
     }
 
-    if (mSceneSystem->CanUpdateWorld()) {
+    if (shouldUpdateEntireWorld ||
+        shouldUpdateTutorialPlayer) {
         mCameraSystem->Update(deltaTime);
         cameraUpdated = true;
     }
@@ -372,6 +388,7 @@ void Game::RemoveActor(Actor* actor)
 void Game::RemoveAllActor()
 {
     mWorld->RemoveAllActors();
+    mControlledPlayerIndex = 0;
 }
 
 void Game::AddPlayer(Player* player)
@@ -382,6 +399,42 @@ void Game::AddPlayer(Player* player)
 void Game::RemoveAllPlayer()
 {
     mWorld->RemoveAllPlayers();
+    mControlledPlayerIndex = 0;
+}
+
+bool Game::SwitchControlledPlayer()
+{
+    const std::vector<Player*>& players = GetPlayers();
+    const bool allowsPlayerSwitch =
+        mSceneSystem &&
+        (mSceneSystem->IsPlaying() ||
+         mSceneSystem->IsWaitingForTutorialPlayerSwitch());
+    if (mIsPlayer2Joined || players.size() < 2 ||
+        !allowsPlayerSwitch ||
+        GetIsPauseMenuOpen() ||
+        !mCameraSystem || !mCameraSystem->AllowsPlayerInput() ||
+        (mSequenceSystem && mSequenceSystem->LocksPlayerControl())) {
+        return false;
+    }
+
+    const int previousIndex = mControlledPlayerIndex;
+    int nextIndex = previousIndex;
+    for (int offset = 1; offset <= static_cast<int>(players.size()); ++offset) {
+        const int candidate =
+            (previousIndex + offset) % static_cast<int>(players.size());
+        if (players[static_cast<std::size_t>(candidate)]) {
+            nextIndex = candidate;
+            break;
+        }
+    }
+
+    if (nextIndex == previousIndex) {
+        return false;
+    }
+
+    mCameraSystem->BeginPlayerSwitchTransition(previousIndex, nextIndex);
+    mControlledPlayerIndex = nextIndex;
+    return true;
 }
 
 void Game::LoadData(bool isLoadPlayer)
@@ -440,12 +493,15 @@ void Game::CreatePlayer2()
         return;
     }
 
-    const bool created = mActorLoadSystem->CreatePlayerFromCurrentStage(2);
-    if (!created) {
-        return;
+    if (GetPlayers().size() < 2) {
+        const bool created = mActorLoadSystem->CreatePlayerFromCurrentStage(2);
+        if (!created) {
+            return;
+        }
     }
 
     mIsPlayer2Joined = true;
+    mControlledPlayerIndex = 0;
 }
 
 void Game::OnBoatStageChangeRequested(int destStage)
@@ -557,12 +613,6 @@ void Game::OnPlayerApplyDamage(int playerNum)
     VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
 }
 
-void Game::OnPlayerFinishCharging(int playerNum)
-{
-    mAudioSystem->PlaySE("air_charged_se");
-    VibrateControllerForPlayer(playerNum, 0, 10000, 200);
-}
-
 void Game::OnPlayerAttackHit(int playerNum)
 {
     VibrateControllerForPlayer(playerNum, 0, 10000, 200);
@@ -597,7 +647,24 @@ const std::vector<Player*>& Game::GetPlayers() const
 
 Player* Game::GetMainPlayer() const
 {
+    if (!mIsPlayer2Joined) {
+        if (Player* controlledPlayer = GetControlledPlayer()) {
+            return controlledPlayer;
+        }
+    }
+
     return mWorld->GetMainPlayer();
+}
+
+Player* Game::GetControlledPlayer() const
+{
+    const std::vector<Player*>& players = GetPlayers();
+    if (mControlledPlayerIndex < 0 ||
+        mControlledPlayerIndex >= static_cast<int>(players.size())) {
+        return players.empty() ? nullptr : players[0];
+    }
+
+    return players[static_cast<std::size_t>(mControlledPlayerIndex)];
 }
 
 const std::vector<Stage*>& Game::GetStages() const

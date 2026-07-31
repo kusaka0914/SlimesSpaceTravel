@@ -7,8 +7,9 @@ players:
     jumpHeight: 1.8367347
     jumpAscentDuration: 0.4
     jumpFallDuration: 0.85
+    groundNormalRayLength: 40
     dodgeDuration: 0.1
-    dodgeCooldownTime: 0.3
+    dodgeCooldownTime: 0.4
     dodgeDistance: 3
     normalAttackRange: 2
     normalAttackAngle: 6.283
@@ -19,6 +20,9 @@ players:
     strongAttackRange: 2.6
     strongAttack: 50
     strongAttackSpeed: 50
+    airSlamRiseHeight: 1
+    airSlamRiseDurationSeconds: 0.5
+    airSlamHoverDurationSeconds: 0.3
     specialAttackCooldown: 30
     defaultInvincibleTimer: 2
     defaultDamageTimer: 1
@@ -26,8 +30,6 @@ players:
     attackHitDelay: 0.2
     attackCooldown: 0.39
     lastAttackCooldown: 1
-    defaultAttackPressTimer: 1
-    chargeMoveSpeed: 3
     defaultStrongAttackTimer: 0.06
     knockBackSpeed: 4
     modelPath: slime_attack_test.fbx
@@ -53,3 +55,7 @@ players:
       jump:
         clip: Jump
         mode: oneShot
+    collisionWidth: 0.77
+    collisionHeight: 0.1
+    collisionDepth: 0.97
+    collisionCenterHeight: 0.32

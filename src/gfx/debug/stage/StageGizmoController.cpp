@@ -89,6 +89,123 @@ glm::mat4 StageGizmoController::CreateSelectedActorGizmoMatrix(
            glm::scale(glm::mat4(1.0f), actor->GetScale());
 }
 
+bool StageGizmoController::UsesSphereSurfaceTranslation(Actor* actor) const
+{
+    if (!actor || mCurrentGizmoOperation != ImGuizmo::TRANSLATE) {
+        return false;
+    }
+
+    Planet* planet = actor->GetCurrentPlanet();
+    return planet &&
+           planet->GetPlanetShape() == Planet::PlanetShape::Sphere &&
+           glm::length(actor->GetPos() - planet->GetPos()) > 1e-6f;
+}
+
+glm::mat4 StageGizmoController::CreateSphereSurfaceTranslationMatrix(Actor* actor) const
+{
+    if (!actor || !actor->GetCurrentPlanet()) {
+        return CreateSelectedActorGizmoMatrix(actor, ImGuizmo::TRANSLATE);
+    }
+
+    Planet* planet = actor->GetCurrentPlanet();
+    const glm::vec3 radial = actor->GetPos() - planet->GetPos();
+    if (glm::length(radial) < 1e-6f) {
+        return CreateSelectedActorGizmoMatrix(actor, ImGuizmo::TRANSLATE);
+    }
+
+    const glm::vec3 up = glm::normalize(radial);
+
+    glm::vec3 forward = actor->GetForwardVec();
+    forward -= up * glm::dot(forward, up);
+    if (glm::length(forward) < 1e-6f) {
+        forward = glm::vec3(0.0f, 0.0f, 1.0f);
+        forward -= up * glm::dot(forward, up);
+    }
+    if (glm::length(forward) < 1e-6f) {
+        forward = glm::vec3(1.0f, 0.0f, 0.0f);
+        forward -= up * glm::dot(forward, up);
+    }
+    forward = glm::normalize(forward);
+
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    forward = glm::normalize(glm::cross(left, up));
+
+    glm::mat4 surfaceOrientation(1.0f);
+    surfaceOrientation[0] = glm::vec4(left, 0.0f);
+    surfaceOrientation[1] = glm::vec4(up, 0.0f);
+    surfaceOrientation[2] = glm::vec4(forward, 0.0f);
+
+    return glm::translate(glm::mat4(1.0f), actor->GetPos()) *
+           surfaceOrientation;
+}
+
+void StageGizmoController::ApplySphereSurfaceTranslation(
+    Actor* actor, const glm::vec3& rawWorldPos)
+{
+    if (!actor) {
+        return;
+    }
+
+    Planet* planet = actor->GetCurrentPlanet();
+    if (!planet || planet->GetPlanetShape() != Planet::PlanetShape::Sphere) {
+        actor->SetPos(rawWorldPos);
+        return;
+    }
+
+    const glm::vec3 currentPos = actor->GetPos();
+    const glm::vec3 currentRadial =
+        currentPos - planet->GetPos();
+    const float currentRadius = glm::length(currentRadial);
+    if (currentRadius < 1e-6f) {
+        actor->SetPos(rawWorldPos);
+        return;
+    }
+
+    const glm::vec3 currentNormal = currentRadial / currentRadius;
+    const glm::vec3 rawDelta = rawWorldPos - currentPos;
+    const float radialDelta = glm::dot(rawDelta, currentNormal);
+    const glm::vec3 tangentDelta =
+        rawDelta - currentNormal * radialDelta;
+
+    glm::vec3 newDirection = currentNormal;
+    const float tangentDistance = glm::length(tangentDelta);
+    if (tangentDistance > 1e-6f) {
+        const glm::vec3 tangentDirection =
+            tangentDelta / tangentDistance;
+        glm::vec3 rotationAxis =
+            glm::cross(currentNormal, tangentDirection);
+        if (glm::length(rotationAxis) > 1e-6f) {
+            rotationAxis = glm::normalize(rotationAxis);
+            const float surfaceAngle =
+                tangentDistance / currentRadius;
+            newDirection =
+                glm::normalize(
+                    glm::angleAxis(surfaceAngle, rotationAxis) *
+                    currentNormal);
+        }
+    }
+
+    const float newRadius =
+        std::max(0.01f, currentRadius + radialDelta);
+    const glm::vec3 newPos =
+        planet->GetPos() + newDirection * newRadius;
+    actor->SetPos(newPos);
+
+    const float theta = std::atan2(newDirection.z, newDirection.x);
+    const float phi = std::asin(glm::clamp(newDirection.y, -1.0f, 1.0f));
+    actor->SetSphericalPlacement(
+        theta,
+        phi,
+        newRadius - planet->GetRadius());
+
+    if (Platform* platform = dynamic_cast<Platform*>(actor);
+        platform && platform->GetMovementComponent() &&
+        platform->GetMovementComponent()->GetMoveOnPlayer()) {
+        platform->GetMovementComponent()->SetEditorPreviewLocalPos(
+            newPos - planet->GetPos());
+    }
+}
+
 void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4& matrix, ImGuizmo::OPERATION operation)
 {
     if (!actor) {
@@ -262,11 +379,19 @@ void StageGizmoController::DrawGizmo()
 
     if (!mIsUsingTransformGizmo) {
         mEditingGizmoMatrix =
-            CreateSelectedActorGizmoMatrix(selectedActor, mCurrentGizmoOperation);
+            UsesSphereSurfaceTranslation(selectedActor)
+                ? CreateSphereSurfaceTranslationMatrix(selectedActor)
+                : CreateSelectedActorGizmoMatrix(
+                      selectedActor, mCurrentGizmoOperation);
     }
 
+    const bool usesSphereSurfaceTranslation =
+        UsesSphereSurfaceTranslation(selectedActor);
     const ImGuizmo::MODE gizmoMode =
-        mCurrentGizmoOperation == ImGuizmo::ROTATE ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+        mCurrentGizmoOperation == ImGuizmo::ROTATE ||
+                usesSphereSurfaceTranslation
+            ? ImGuizmo::LOCAL
+            : ImGuizmo::WORLD;
     ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), mCurrentGizmoOperation, gizmoMode,
                          glm::value_ptr(mEditingGizmoMatrix));
 
@@ -279,7 +404,17 @@ void StageGizmoController::DrawGizmo()
             mIsUsingTransformGizmo = true;
         }
 
-        ApplyGizmoMatrixToActor(selectedActor, mEditingGizmoMatrix, mCurrentGizmoOperation);
+        if (usesSphereSurfaceTranslation) {
+            ApplySphereSurfaceTranslation(
+                selectedActor, glm::vec3(mEditingGizmoMatrix[3]));
+            mEditingGizmoMatrix[3] =
+                glm::vec4(selectedActor->GetPos(), 1.0f);
+        } else {
+            ApplyGizmoMatrixToActor(
+                selectedActor,
+                mEditingGizmoMatrix,
+                mCurrentGizmoOperation);
+        }
     } else {
         if (mIsUsingTransformGizmo) {
             mIsUsingTransformGizmo = false;

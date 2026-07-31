@@ -11,6 +11,7 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
@@ -373,6 +374,54 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         return;
     }
 
+    Planet* surfacePlanet = actor->GetCurrentPlanet();
+    const bool canAlignToSphere =
+        surfacePlanet &&
+        surfacePlanet->GetPlanetShape() == Planet::PlanetShape::Sphere &&
+        glm::length(actor->GetPos() - surfacePlanet->GetPos()) > 1e-6f;
+
+    if (!canAlignToSphere) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button("惑星表面に垂直")) {
+        if (mPushUndoCallback) {
+            mPushUndoCallback();
+        }
+
+        glm::vec3 surfaceRotation = actor->GetEditorRotation();
+        surfaceRotation.x = 0.0f;
+        surfaceRotation.z = 0.0f;
+        actor->SetEditorRotation(surfaceRotation);
+        ApplyActorEditorRotation(actor);
+
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+        mSurfaceAlignmentStatus =
+            "Yawを保ったまま、オブジェクトを惑星表面に垂直にしました";
+    }
+
+    if (!canAlignToSphere) {
+        ImGui::EndDisabled();
+    }
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+        ImGui::SetTooltip(
+            canAlignToSphere
+                ? "オブジェクトの上方向をSphere惑星の中心から外側へ揃えます"
+                : "Sphere型の惑星に属するオブジェクトで使用できます");
+    }
+
+    if (!mSurfaceAlignmentStatus.empty()) {
+        ImGui::TextDisabled("%s", mSurfaceAlignmentStatus.c_str());
+    }
+
+    if (surfacePlanet &&
+        surfacePlanet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+        ImGui::TextDisabled(
+            "移動ギズモ: 赤・青は球面方向 / 緑は表面からの高さ");
+    }
+
     ImGui::Separator();
     DrawActorPlacementEditor(
         actor,
@@ -703,41 +752,64 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     }
 
     if (NPC* npc = dynamic_cast<NPC*>(actor)) {
-        ImGui::SeparatorText("NPC・会話設定");
+        const bool isTutorialTrigger =
+            dynamic_cast<TutorialTrigger*>(npc) != nullptr;
+        ImGui::SeparatorText(
+            isTutorialTrigger
+                ? "チュートリアルトリガー設定"
+                : "NPC・会話設定");
 
-        DrawNPCModelPicker(npc, sequenceName, listIndex);
+        if (!isTutorialTrigger) {
+            DrawNPCModelPicker(
+                npc,
+                sequenceName,
+                listIndex);
 
-        std::array<char, 128> nameBuffer = {};
-        std::snprintf(
-            nameBuffer.data(),
-            nameBuffer.size(),
-            "%s",
-            npc->GetName().c_str());
-        if (ImGui::InputText(
-                ("NPC名##placedNPCName" + std::to_string(yamlIndex)).c_str(),
+            std::array<char, 128> nameBuffer = {};
+            std::snprintf(
                 nameBuffer.data(),
-                nameBuffer.size())) {
-            npc->SetName(nameBuffer.data());
-        }
+                nameBuffer.size(),
+                "%s",
+                npc->GetName().c_str());
+            if (ImGui::InputText(
+                    ("NPC名##placedNPCName" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    nameBuffer.data(),
+                    nameBuffer.size())) {
+                npc->SetName(nameBuffer.data());
+            }
 
-        float talkRadius = npc->GetRadius();
-        if (ImGui::DragFloat(
-                ("会話判定の半径##placedNPCRadius" +
-                 std::to_string(yamlIndex))
-                    .c_str(),
-                &talkRadius,
-                0.05f,
-                0.1f,
-                20.0f,
-                "%.2f")) {
-            npc->SetRadius(std::max(0.1f, talkRadius));
+            float talkRadius = npc->GetRadius();
+            if (ImGui::DragFloat(
+                    ("会話判定の半径##placedNPCRadius" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &talkRadius,
+                    0.05f,
+                    0.1f,
+                    20.0f,
+                    "%.2f")) {
+                npc->SetRadius(std::max(0.1f, talkRadius));
+            }
+            ImGui::TextDisabled(
+                "実際の会話可能距離は、この半径に0.5を加えた値です。");
+        } else {
+            DrawPlacementModelPicker(
+                actor,
+                sequenceName,
+                listIndex);
+            ImGui::TextDisabled(
+                "モデルの位置・回転・スケールが、そのままトリガー範囲になります。");
+            ImGui::TextDisabled(
+                "箱型モデル以外では、モデル全体を囲む箱として判定します。");
         }
-        ImGui::TextDisabled("実際の会話可能距離は、この半径に0.5を加えた値です。");
-
-        ImGui::SeparatorText("頭上のひとこと表示");
 
         int proximityMessageMode =
             static_cast<int>(npc->GetProximityMessageMode());
+        if (!isTutorialTrigger) {
+            ImGui::SeparatorText("頭上のひとこと表示");
+
         constexpr const char* proximityModeLabels[] = {
             "使用しない",
             "通常会話を終えた後",
@@ -810,6 +882,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             }
             ImGui::TextDisabled(
                 "一言の内容は、下にある各通常会話の設定内で入力します。");
+        }
         }
 
         const std::vector<std::string>& talkTexts = npc->GetTalkTexts();
@@ -959,6 +1032,43 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     "この会話は未クリア時の通常会話に含まれます。");
             }
 
+            if (isTutorialTrigger) {
+                constexpr const char* advanceConditionLabels[] = {
+                    "決定ボタンで進む",
+                    "分身切替成功で進む",
+                    "ジャンプ後の着地で進む"
+                };
+                int advanceCondition =
+                    static_cast<int>(
+                        npc->GetTalkAdvanceCondition(talkIndex));
+                const std::string advanceConditionId =
+                    "進行条件##tutorialAdvanceCondition" +
+                    std::to_string(yamlIndex) + "_" +
+                    std::to_string(talkIndex);
+                if (ImGui::Combo(
+                        advanceConditionId.c_str(),
+                        &advanceCondition,
+                        advanceConditionLabels,
+                        IM_ARRAYSIZE(advanceConditionLabels))) {
+                    npc->SetTalkAdvanceCondition(
+                        talkIndex,
+                        static_cast<TalkPageAdvanceCondition>(
+                            advanceCondition));
+                }
+
+                if (advanceCondition ==
+                    static_cast<int>(
+                        TalkPageAdvanceCondition::Confirm)) {
+                    ImGui::TextDisabled(
+                        "通常の会話と同じく、決定ボタンで次へ進みます。");
+                } else {
+                    ImGui::TextDisabled(
+                        "操作が成功するまで決定ボタンでは進みません。");
+                    ImGui::TextDisabled(
+                        "待機中は操作中のプレイヤーだけが動き、敵や足場ギミックは停止します。");
+                }
+            }
+
             if (proximityMessageMode !=
                 static_cast<int>(NPCProximityMessageMode::Disabled)) {
                 std::array<char, 512> proximityTextBuffer = {};
@@ -977,6 +1087,85 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     npc->SetTalkProximityMessageText(
                         talkIndex,
                         proximityTextBuffer.data());
+
+                    const std::string& proximityText =
+                        npc->GetTalkProximityMessageText(talkIndex);
+                    if (proximityText.empty()) {
+                        npc->ClearTalkProximityMessageRubySegments(
+                            talkIndex);
+                    } else {
+                        std::vector<RubyTextSegment>
+                            generatedProximitySegments;
+                        std::string errorMessage;
+                        if (JapaneseRubyGenerator::Generate(
+                                proximityText,
+                                generatedProximitySegments,
+                                errorMessage)) {
+                            npc->SetTalkProximityMessageRubySegments(
+                                talkIndex,
+                                std::move(
+                                    generatedProximitySegments));
+                            mRubyGenerationStatus =
+                                "頭上一言に合わせてルビを自動更新しました。";
+                        } else {
+                            mRubyGenerationStatus =
+                                errorMessage.empty()
+                                    ? "頭上一言のルビ生成に失敗しました。"
+                                    : errorMessage;
+                        }
+                    }
+                }
+
+                const std::vector<RubyTextSegment>&
+                    proximityRubySegments =
+                        npc->GetTalkProximityMessageRubySegments(
+                            talkIndex);
+                if (npc->HasValidTalkProximityMessageRuby(
+                        talkIndex)) {
+                    const std::string proximityRubyTreeId =
+                        "頭上一言のルビを修正##npcProximityRubyEdit" +
+                        std::to_string(yamlIndex) + "_" +
+                        std::to_string(talkIndex);
+                    if (ImGui::TreeNode(
+                            proximityRubyTreeId.c_str())) {
+                        for (std::size_t segmentIndex = 0;
+                             segmentIndex <
+                                 proximityRubySegments.size();
+                             ++segmentIndex) {
+                            const RubyTextSegment& segment =
+                                proximityRubySegments[segmentIndex];
+                            if (!segment.showsRuby) {
+                                continue;
+                            }
+
+                            ImGui::Text(
+                                "「%s」",
+                                segment.text.c_str());
+                            ImGui::SameLine();
+
+                            std::array<char, 256> readingBuffer = {};
+                            std::snprintf(
+                                readingBuffer.data(),
+                                readingBuffer.size(),
+                                "%s",
+                                segment.reading.c_str());
+                            const std::string readingInputId =
+                                "##npcProximityRubyReading" +
+                                std::to_string(yamlIndex) + "_" +
+                                std::to_string(talkIndex) + "_" +
+                                std::to_string(segmentIndex);
+                            if (ImGui::InputText(
+                                    readingInputId.c_str(),
+                                    readingBuffer.data(),
+                                    readingBuffer.size())) {
+                                npc->SetTalkProximityMessageRubyReading(
+                                    talkIndex,
+                                    segmentIndex,
+                                    readingBuffer.data());
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
                 }
                 ImGui::TextDisabled(
                     "この通常会話がクリア状況によって選ばれたときに使われます。");
@@ -1055,7 +1244,6 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             }
             ImGui::TextDisabled(
                 "設定した会話が表示された間だけ、選択対象へカメラが滑らかに移動します。");
-
             if (talkTexts.size() > 1 &&
                 ImGui::Button(
                     ("この会話を削除##placedNPCTalkDelete" +
@@ -1208,6 +1396,60 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         actor->GetHiddenIfStageCleared() >= 0) {
         ImGui::TextDisabled(
             "表示条件と非表示条件は同時に使えません。最後に有効化した方を使用します。");
+    }
+
+    if (dynamic_cast<Boat*>(actor) == nullptr) {
+        bool shouldHideWhenRocketAppears =
+            actor->ShouldHideWhenRocketAppears();
+        if (ImGui::Checkbox(
+                ("同じ惑星のロケットが出現したら非表示##hiddenWhenRocketAppears" +
+                 sequenceName + std::to_string(yamlIndex))
+                    .c_str(),
+                &shouldHideWhenRocketAppears)) {
+            actor->SetHiddenWhenRocketAppears(
+                shouldHideWhenRocketAppears);
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+
+        const Planet* currentPlanet =
+            actor->GetCurrentPlanet();
+        const bool hasAppearedRocket =
+            currentPlanet &&
+            currentPlanet->HasAppearedRocket();
+        if (shouldHideWhenRocketAppears) {
+            ImGui::TextColored(
+                hasAppearedRocket
+                    ? ImVec4(1.0f, 0.55f, 0.3f, 1.0f)
+                    : ImVec4(0.35f, 0.9f, 0.45f, 1.0f),
+                "%s",
+                hasAppearedRocket
+                    ? "ロケット出現済みのため、ゲーム中は非表示になります。"
+                    : "ロケット出現前のため、ゲーム中も表示されます。");
+            ImGui::TextDisabled(
+                "エディターを開いている間は、配置確認のため表示と当たり判定を維持します。");
+        }
+    }
+
+    const bool canConfigureGravityDirection =
+        dynamic_cast<Platform*>(actor) != nullptr ||
+        dynamic_cast<StageObject*>(actor) != nullptr;
+    if (canConfigureGravityDirection) {
+        ImGui::SeparatorText("重力方向");
+
+        bool shouldAffectGravityDirection =
+            actor->ShouldAffectGravityDirection();
+        if (ImGui::Checkbox(
+                ("重力方向の判定対象にする##affectsGravityDirection" +
+                 sequenceName + std::to_string(yamlIndex))
+                    .c_str(),
+                &shouldAffectGravityDirection)) {
+            actor->SetShouldAffectGravityDirection(
+                shouldAffectGravityDirection);
+        }
+        ImGui::TextDisabled(
+            "OFFの物体へ接地判定レイが当たると、接地せず惑星の重力方向へ即座に戻します。");
+        ImGui::TextDisabled(
+            "見た目と当たり判定には影響しません。");
     }
 
     float theta = actor->GetTheta();
@@ -1517,6 +1759,22 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
         RebuildPhysicsWorldIfNeeded(true);
     }
 
+    bool pressureSwitchEnabled =
+        platform->GetPressureSwitchComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("乗っている間、対象足場を表示##platformPressureSwitchEnabled" +
+             sequenceName + std::to_string(listIndex)).c_str(),
+            &pressureSwitchEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (pressureSwitchEnabled) {
+            platform->AddPressureSwitchComponent();
+        } else {
+            platform->RemovePressureSwitchComponent();
+        }
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
     ImGui::TextDisabled(
         "必要な機能を追加して組み合わせます。移動を有効にすると設定欄が表示されます。");
 
@@ -1659,6 +1917,120 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                  std::to_string(yamlIndex)).c_str(),
                 &speed, 0.05f, 0.0f, 100.0f, "%.2f")) {
             conveyor->SetSpeed(speed);
+        }
+    }
+
+    if (PlatformPressureSwitchComponent* pressureSwitch =
+            platform->GetPressureSwitchComponent()) {
+        ImGui::SeparatorText("感圧スイッチ");
+        ImGui::TextDisabled(
+            "プレイヤーがこの足場に乗っている間だけ、選択した足場を表示します。");
+
+        float inactiveOpacity =
+            pressureSwitch->GetInactiveOpacity();
+        if (ImGui::SliderFloat(
+                ("OFF時の透明度##pressureSwitchInactiveOpacity" +
+                 std::to_string(yamlIndex)).c_str(),
+                &inactiveOpacity,
+                0.0f,
+                1.0f,
+                "%.2f")) {
+            pressureSwitch->SetInactiveOpacity(inactiveOpacity);
+        }
+        ImGui::TextDisabled(
+            "OFF時は薄く表示されますが、当たり判定はありません。");
+
+        std::vector<std::string> targetIds =
+            pressureSwitch->GetTargetPlatformIds();
+        std::vector<std::string> candidateIds;
+        bool hasCandidate = false;
+
+        const std::vector<StageActorInstance> instances =
+            StageActorQuery::CollectAllActorInstances(
+                mContext.game->GetCurrentStage());
+        for (const StageActorInstance& instance : instances) {
+            Platform* target =
+                dynamic_cast<Platform*>(instance.actor);
+            if (!target || target == platform ||
+                target->GetPlatformId().empty()) {
+                continue;
+            }
+
+            hasCandidate = true;
+            const std::string& targetId = target->GetPlatformId();
+            candidateIds.emplace_back(targetId);
+            const auto targetIt =
+                std::find(
+                    targetIds.begin(),
+                    targetIds.end(),
+                    targetId);
+            bool selected = targetIt != targetIds.end();
+            const std::string label =
+                instance.ref.label + "##pressureSwitchTarget_" +
+                platform->GetPlatformId() + "_" + targetId;
+
+            if (ImGui::Checkbox(label.c_str(), &selected)) {
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+
+                if (selected && targetIt == targetIds.end()) {
+                    targetIds.emplace_back(targetId);
+                } else if (!selected &&
+                           targetIt != targetIds.end()) {
+                    targetIds.erase(targetIt);
+                }
+
+                pressureSwitch->SetTargetPlatformIds(targetIds);
+                Save();
+                RebuildPhysicsWorldIfNeeded(true);
+            }
+        }
+
+        std::vector<std::string> missingTargetIds;
+        for (const std::string& targetId : targetIds) {
+            if (std::find(
+                    candidateIds.begin(),
+                    candidateIds.end(),
+                    targetId) == candidateIds.end()) {
+                missingTargetIds.emplace_back(targetId);
+            }
+        }
+        for (const std::string& missingTargetId : missingTargetIds) {
+            bool keepTarget = true;
+            const std::string label =
+                "見つからない対象: " + missingTargetId +
+                "##missingPressureSwitchTarget_" +
+                platform->GetPlatformId() + "_" + missingTargetId;
+            if (ImGui::Checkbox(label.c_str(), &keepTarget) &&
+                !keepTarget) {
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                targetIds.erase(
+                    std::remove(
+                        targetIds.begin(),
+                        targetIds.end(),
+                        missingTargetId),
+                    targetIds.end());
+                pressureSwitch->SetTargetPlatformIds(targetIds);
+                Save();
+                RebuildPhysicsWorldIfNeeded(true);
+            }
+        }
+
+        if (!hasCandidate) {
+            ImGui::TextDisabled(
+                "対象にできる別の足場がありません。");
+        } else if (targetIds.empty()) {
+            ImGui::TextDisabled(
+                "表示する対象足場を1つ以上選択してください。");
+        }
+
+        if (!mContext.game->GetIsDebugEditorShowing()) {
+            ImGui::Text(
+                "現在の状態: %s",
+                pressureSwitch->GetIsPressed() ? "ON" : "OFF");
         }
     }
 }
@@ -2036,6 +2408,22 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex].remove("hiddenIfStageCleared");
     }
 
+    if (actor->ShouldHideWhenRocketAppears()) {
+        config[sequenceName][yamlIndex]["hiddenWhenRocketAppears"] =
+            true;
+    } else {
+        config[sequenceName][yamlIndex].remove(
+            "hiddenWhenRocketAppears");
+    }
+
+    if (actor->ShouldAffectGravityDirection()) {
+        config[sequenceName][yamlIndex].remove(
+            "affectsGravityDirection");
+    } else {
+        config[sequenceName][yamlIndex]["affectsGravityDirection"] =
+            false;
+    }
+
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "theta", actor->GetTheta());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "phi", actor->GetPhi());
     StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "height", actor->GetHeight());
@@ -2089,6 +2477,9 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
     }
 
     if (const Platform* platform = dynamic_cast<const Platform*>(actor)) {
+        config[sequenceName][yamlIndex]["platformId"] =
+            platform->GetPlatformId();
+
         const PlatformMovementComponent* movement =
             platform->GetMovementComponent();
 
@@ -2208,6 +2599,22 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             removeComponentNode("conveyor");
         }
 
+        if (const PlatformPressureSwitchComponent* component =
+                platform->GetPressureSwitchComponent()) {
+            YAML::Node node =
+                platformNode["components"]["pressureSwitch"];
+            node["inactiveOpacity"] =
+                component->GetInactiveOpacity();
+            node["targets"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const std::string& targetId :
+                 component->GetTargetPlatformIds()) {
+                node["targets"].push_back(targetId);
+            }
+        } else {
+            removeComponentNode("pressureSwitch");
+        }
+
         if (platformNode["components"] &&
             platformNode["components"].size() == 0) {
             platformNode.remove("components");
@@ -2254,10 +2661,22 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
 
     if (const NPC* npc = dynamic_cast<const NPC*>(actor)) {
         config[sequenceName][yamlIndex]["modelPath"] = npc->GetModelPath();
-        config[sequenceName][yamlIndex]["name"] = npc->GetName();
-        config[sequenceName][yamlIndex]["radius"] = npc->GetRadius();
+        const bool isTutorialTrigger =
+            dynamic_cast<const TutorialTrigger*>(npc) != nullptr;
+        if (isTutorialTrigger) {
+            config[sequenceName][yamlIndex].remove("name");
+            config[sequenceName][yamlIndex].remove("radius");
+            config[sequenceName][yamlIndex].remove(
+                "proximityMessage");
+        } else {
+            config[sequenceName][yamlIndex]["name"] =
+                npc->GetName();
+            config[sequenceName][yamlIndex]["radius"] =
+                npc->GetRadius();
+        }
 
-        if (npc->GetProximityMessageMode() ==
+        if (isTutorialTrigger ||
+            npc->GetProximityMessageMode() ==
             NPCProximityMessageMode::Disabled) {
             config[sequenceName][yamlIndex].remove("proximityMessage");
         } else {
@@ -2268,6 +2687,8 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
                     ? "afterTalk"
                     : "always";
             proximityMessage["variants"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            proximityMessage["rubies"] =
                 YAML::Node(YAML::NodeType::Sequence);
             for (std::size_t talkIndex = 0;
                  talkIndex < npc->GetTalkTexts().size();
@@ -2283,6 +2704,32 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
                     static_cast<int>(talkIndex);
                 variantNode["text"] = messageText;
                 proximityMessage["variants"].push_back(variantNode);
+
+                if (!npc->HasValidTalkProximityMessageRuby(
+                        talkIndex)) {
+                    continue;
+                }
+
+                YAML::Node rubyNode(YAML::NodeType::Map);
+                rubyNode["talkIndex"] =
+                    static_cast<int>(talkIndex);
+                rubyNode["segments"] =
+                    YAML::Node(YAML::NodeType::Sequence);
+                for (const RubyTextSegment& segment :
+                     npc->GetTalkProximityMessageRubySegments(
+                         talkIndex)) {
+                    YAML::Node segmentNode(YAML::NodeType::Map);
+                    segmentNode["text"] = segment.text;
+                    segmentNode["ruby"] = segment.showsRuby;
+                    if (segment.showsRuby) {
+                        segmentNode["reading"] = segment.reading;
+                    }
+                    rubyNode["segments"].push_back(segmentNode);
+                }
+                proximityMessage["rubies"].push_back(rubyNode);
+            }
+            if (proximityMessage["rubies"].size() == 0) {
+                proximityMessage.remove("rubies");
             }
             proximityMessage["range"] =
                 npc->GetProximityMessageRange();
@@ -2344,6 +2791,32 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             config[sequenceName][yamlIndex]["talkCameraFocus"] = talkCameraFocus;
         } else {
             config[sequenceName][yamlIndex].remove("talkCameraFocus");
+        }
+
+        YAML::Node talkAdvanceConditions(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            const TalkPageAdvanceCondition condition =
+                npc->GetTalkAdvanceCondition(talkIndex);
+            if (condition == TalkPageAdvanceCondition::Confirm) {
+                continue;
+            }
+
+            YAML::Node conditionNode(YAML::NodeType::Map);
+            conditionNode["talkIndex"] =
+                static_cast<int>(talkIndex);
+            conditionNode["condition"] =
+                GetTalkPageAdvanceConditionId(condition);
+            talkAdvanceConditions.push_back(conditionNode);
+        }
+
+        if (talkAdvanceConditions.size() > 0) {
+            config[sequenceName][yamlIndex]["talkAdvanceConditions"] =
+                talkAdvanceConditions;
+        } else {
+            config[sequenceName][yamlIndex].remove(
+                "talkAdvanceConditions");
         }
 
         YAML::Node talkRubies(YAML::NodeType::Sequence);

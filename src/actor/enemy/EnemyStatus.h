@@ -28,6 +28,7 @@ public:
     void SetHpZero() { mHealth.SetHpZero(); }
 
     void SetDefaultLaunchedTimer(float defaultLaunchedTimer) { mDefaultLaunchedTimer = defaultLaunchedTimer; }
+    void SetLaunchHeight(float launchHeight) { mLaunchHeight = launchHeight; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
     void SetAttack(float attack) { mAttack = attack; }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
@@ -93,6 +94,7 @@ public:
     float GetAttackSpeed() const { return mAttackSpeed; }
     float GetDefaultStandByAttackTimer() const { return mDefaultStandByAttackTimer; }
     float GetDefaultLaunchedTimer() const { return mDefaultLaunchedTimer; }
+    float GetLaunchHeight() const { return mLaunchHeight; }
     float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
     float GetAttackMotionTimer() const { return mAttackMotionTimer; }
     float GetDyingTimer() const { return mDyingTimer; }
@@ -132,6 +134,7 @@ private:
     float mDefaultStandByAttackTimer;
     float mLaunchedTimer;
     float mDefaultLaunchedTimer;
+    float mLaunchHeight;
     float mAttackMotionTimer;
     float mDefaultAttackMotionTimer;
     float mDyingTimer;

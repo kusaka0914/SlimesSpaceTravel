@@ -75,6 +75,17 @@ void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML:
             ? node["hiddenIfStageCleared"].as<int>()
             : -1;
     actor->SetHiddenIfStageCleared(hiddenIfStageCleared);
+    actor->SetHiddenWhenRocketAppears(
+        node["hiddenWhenRocketAppears"]
+            ? node["hiddenWhenRocketAppears"].as<bool>()
+            : false);
+
+    const bool shouldAffectGravityDirection =
+        node["affectsGravityDirection"]
+            ? node["affectsGravityDirection"].as<bool>()
+            : true;
+    actor->SetShouldAffectGravityDirection(
+        shouldAffectGravityDirection);
 
     const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
     const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;

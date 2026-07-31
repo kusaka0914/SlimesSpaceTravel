@@ -19,7 +19,9 @@ public:
     void RemoveAllPlayers();
 
     void ProcessActorsInput();
+    void ProcessPlayerInput(Player* player);
     void UpdateActors(float deltaTime);
+    void UpdatePlayer(Player* player, float deltaTime);
     void RefreshActorProgressVisibility();
 
     Player* FindNearestPlayer(Actor* actor) const;

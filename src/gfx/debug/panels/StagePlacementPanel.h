@@ -79,5 +79,6 @@ private:
     std::string mTextureAssetStatus;
     std::string mRubyGenerationStatus;
     std::string mPlatformTypeChangeStatus;
+    std::string mSurfaceAlignmentStatus;
     bool mTextureAssetsScanned = false;
 };

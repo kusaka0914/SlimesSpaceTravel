@@ -33,7 +33,7 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
 
     const glm::vec3 up = glm::normalize(upVec);
     constexpr float rayStartOffset = 0.2f;
-    constexpr float rayLength = 5.0f;
+    const float rayLength = game->GetGroundNormalRayLength();
 
     const glm::vec3 rayFromPos = pos + offset + up * rayStartOffset;
     const glm::vec3 rayToPos = pos + offset - up * rayLength;

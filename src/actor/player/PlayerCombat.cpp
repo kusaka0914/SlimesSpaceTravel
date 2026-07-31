@@ -12,9 +12,13 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
+namespace {
+constexpr float attackDodgeCancelDelaySeconds = 0.5f;
+}
+
 bool PlayerCombat::IsAttacking() const
 {
-    return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f || mAttackPressTimer >= 0.0f ||
+    return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f ||
            mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f ||
            mHasPendingAttackHit;
 }
@@ -27,13 +31,20 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
     (void)deltaTime;
 
     if (!player.GetOnGround() && attackInput == PlayerAttackInputKind::Wide) {
+        if (!CanStartAirAttack()) {
+            return;
+        }
+
+        ++mAirAttackCount;
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
         mAttackCooldownRemaining = mAttackCooldown;
-        mAttack = mWideAttack / 2.0f;
+        mAttack = mWideAttack;
         mAirAttackFloatingTimer = 0.5f;
         mIsAirAttacking = true;
+        mAttackDodgeLockRemaining =
+            attackDodgeCancelDelaySeconds;
 
         StartAttackHitDelay();
         return;
@@ -62,14 +73,9 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         mAttack = mWideAttack;
     }
 
+    mAttackDodgeLockRemaining =
+        attackDodgeCancelDelaySeconds;
     StartAttackHitDelay();
-}
-
-void PlayerCombat::StartCharging(Player& player)
-{
-    mAttackPressTimer = mDefaultAttackPressTimer;
-
-    player.GetGame()->GetAudioSystem()->PlaySE("air_charging_se");
 }
 
 void PlayerCombat::ConfigureStrongAttack()
@@ -81,27 +87,43 @@ void PlayerCombat::ConfigureStrongAttack()
     mAttack = mStrongAttack;
 }
 
-void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
+void PlayerCombat::StartAirSlamAttack()
 {
-    (void)deltaTime;
-
     ConfigureStrongAttack();
     mIsAssistStrongAttack = false;
-
-    float pressTime = 1.0f;
-    if (mDefaultAttackPressTimer > 0.0f) {
-        pressTime = std::min(1.0f, (mDefaultAttackPressTimer - mAttackPressTimer) / mDefaultAttackPressTimer);
-    }
-    mStrongAttackTimer = mDefaultStrongAttackTimer * pressTime;
-    mAttackPressTimer = -1.0f;
-
     mIsStrongAttacked = true;
+    mIsCharged = true;
+    ClearPendingAttackHit();
+}
 
-    if (mIsCharged) {
-        StartAttackHitDelay();
-    } else {
-        ClearPendingAttackHit();
-    }
+bool PlayerCombat::ResolveAirSlamImpact(
+    Player& player,
+    PlayerMovement& movement,
+    PlayerStatus& status,
+    float deltaTime)
+{
+    ConfigureStrongAttack();
+    const std::vector<Enemy*> hitEnemies =
+        mHitDetector.FindEnemiesInRadius(
+            player,
+            mStrongAttackRange);
+
+    StartTiredLock(
+        status,
+        movement,
+        5.0f);
+    const bool didHitEnemy =
+        mAttackResolver.ResolveAirSlamAttack(
+            player,
+            movement,
+            *this,
+            hitEnemies,
+            deltaTime);
+
+    mIsStrongAttackHit = didHitEnemy;
+    mIsStrongAttacked = false;
+    mIsCharged = false;
+    return didHitEnemy;
 }
 
 void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
@@ -111,18 +133,11 @@ void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
     ConfigureStrongAttack();
     mIsAssistStrongAttack = true;
     mStrongAttackTimer = mDefaultStrongAttackTimer;
-    mAttackPressTimer = -1.0f;
     mIsStrongAttacked = true;
     mIsCharged = true;
 
     StartAttackHitDelay();
     player.GetGame()->GetAudioSystem()->PlaySE("air_charged_se");
-}
-
-void PlayerCombat::FinishCharging(Player& player, const PlayerMovement& movement)
-{
-    player.GetGame()->OnPlayerFinishCharging(movement.GetPlayerNum());
-    mIsCharged = true;
 }
 
 void PlayerCombat::FinishSpecialAttackCharging()
@@ -301,12 +316,80 @@ void PlayerCombat::CancelSpecialAttack()
     mContinuousAttackingTimer = -1.0f;
 }
 
+void PlayerCombat::CancelCurrentAttack()
+{
+    ClearPendingAttackHit();
+    mAttackMotionTimer = -1.0f;
+    mAirAttackFloatingTimer = -1.0f;
+    mAttackMoveLockRemaining = 0.0f;
+    mAttackDodgeLockRemaining = 0.0f;
+    mIsAirAttacking = false;
+}
+
 void PlayerCombat::OnLanded()
 {
     mIsStrongAttacked = false;
     mIsAssistStrongAttack = false;
     mIsCharged = false;
     mIsAirAttacking = false;
+    mAirAttackCount = 0;
+    EndAirDodgeAttack();
+}
+
+void PlayerCombat::StartAirDodgeAttack()
+{
+    mIsAirDodgeAttackActive = true;
+    mAirDodgeHitEnemies.clear();
+}
+
+void PlayerCombat::UpdateAirDodgeAttack(
+    Player& player,
+    PlayerMovement& movement,
+    const glm::vec3& movementStart,
+    const glm::vec3& movementEnd)
+{
+    if (!mIsAirDodgeAttackActive) {
+        return;
+    }
+
+    const std::vector<Enemy*> touchingEnemies =
+        mHitDetector.FindEnemiesTouchingAirDodgeMovement(
+            player,
+            movementStart,
+            movementEnd);
+    std::vector<Enemy*> newlyHitEnemies;
+    for (Enemy* enemy : touchingEnemies) {
+        const bool wasAlreadyHit =
+            std::find(
+                mAirDodgeHitEnemies.begin(),
+                mAirDodgeHitEnemies.end(),
+                enemy) != mAirDodgeHitEnemies.end();
+        if (wasAlreadyHit) {
+            continue;
+        }
+
+        mAirDodgeHitEnemies.emplace_back(enemy);
+        newlyHitEnemies.emplace_back(enemy);
+    }
+
+    constexpr float airDodgeDamageMultiplier = 2.0f;
+    const float airDodgeDamage =
+        mWideAttack * airDodgeDamageMultiplier;
+    const bool didHitEnemy =
+        mAttackResolver.ResolveAirDodgeAttack(
+            player,
+            movement,
+            newlyHitEnemies,
+            airDodgeDamage);
+    if (didHitEnemy) {
+        mAirAttackCount = 0;
+    }
+}
+
+void PlayerCombat::EndAirDodgeAttack()
+{
+    mIsAirDodgeAttackActive = false;
+    mAirDodgeHitEnemies.clear();
 }
 
 void PlayerCombat::UpdateAirAttackFloatingTimer(float deltaTime)

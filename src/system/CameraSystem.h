@@ -63,6 +63,7 @@ public:
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     bool AllowsPlayerInput() const;
+    void BeginPlayerSwitchTransition(int fromPlayerIndex, int toPlayerIndex);
     void StartBossDefeatSequence(Enemy* boss, Star* star);
     bool PreviewBossDefeatSequence();
     void StopBossDefeatSequence();
@@ -78,6 +79,7 @@ private:
     void UpdateTalkCameraAim();
     void UpdateTalkPageFocus(float deltaTime);
     void UpdatePlayerPitchOffsets(float deltaTime);
+    int GetPrimaryPlayerIndex() const;
     float GetEasedTalkCameraBlend() const;
     float GetEasedTalkPageFocusBlend() const;
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);

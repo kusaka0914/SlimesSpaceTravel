@@ -98,12 +98,10 @@ glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor)
         return glm::mat4(1.0f);
     }
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
-    if (players.empty() || !players[0]) {
+    Player* player = mGame->GetMainPlayer();
+    if (!player) {
         return glm::mat4(1.0f);
     }
-
-    Player* player = players[0];
 
     const glm::vec3 playerPos = player->GetPos();
     const glm::vec3 targetPos = targetActor->GetPos();

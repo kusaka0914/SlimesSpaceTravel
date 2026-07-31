@@ -92,15 +92,12 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             bool isHit = false;
 
             for (Enemy* enemy : hitEnemies) {
-                if (enemy->GetOnGround()) {
-                    continue;
-                }
-
                 ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
                 isHit = true;
             }
 
             if (isHit) {
+                movement.RestoreAirDodge();
                 player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
             } else {
                 player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
@@ -142,6 +139,91 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
     }
 
     player.GetGame()->GetAudioSystem()->PlaySE(hitAirborneEnemy ? "attack_air_se" : "attack_miss_se");
+}
+
+bool PlayerAttackResolver::ResolveAirSlamAttack(
+    Player& player,
+    const PlayerMovement& movement,
+    PlayerCombat& combat,
+    const std::vector<Enemy*>& hitEnemies,
+    float deltaTime) const
+{
+    (void)deltaTime;
+
+    constexpr float groundedEnemyDamage = 30.0f;
+    constexpr float airborneEnemyDamage = 50.0f;
+
+    bool didHitEnemy = false;
+    for (Enemy* enemy : hitEnemies) {
+        if (!enemy || enemy->GetIsDead() ||
+            !enemy->GetIsActive()) {
+            continue;
+        }
+
+        const bool shouldKnockBackEnemy =
+            !enemy->IsOnGround();
+        if (shouldKnockBackEnemy) {
+            enemy->SetIsStrongAttacked(true);
+        }
+
+        const float airSlamDamage =
+            shouldKnockBackEnemy
+                ? airborneEnemyDamage
+                : groundedEnemyDamage;
+
+        ApplyDamageWithHitEffect(
+            *enemy,
+            airSlamDamage,
+            player,
+            1.45f);
+        combat.SetStrongAttackHit(true);
+        didHitEnemy = true;
+    }
+
+    if (!didHitEnemy) {
+        player.GetGame()->GetAudioSystem()->PlaySE(
+            "attack_miss_se");
+        return false;
+    }
+
+    player.GetGame()->OnPlayerAttackHit(
+        movement.GetPlayerNum());
+    player.GetGame()->GetAudioSystem()->PlaySE(
+        "attack_air_se");
+    return true;
+}
+
+bool PlayerAttackResolver::ResolveAirDodgeAttack(
+    Player& player,
+    const PlayerMovement& movement,
+    const std::vector<Enemy*>& hitEnemies,
+    float damage) const
+{
+    bool didHitEnemy = false;
+    for (Enemy* enemy : hitEnemies) {
+        if (!enemy || enemy->GetIsDead() ||
+            !enemy->GetIsActive()) {
+            continue;
+        }
+
+        ApplyDamageWithHitEffect(
+            *enemy,
+            damage,
+            player,
+            1.25f);
+        enemy->ApplyAirDodgePush(
+            movement.GetDodgeDirection());
+        didHitEnemy = true;
+    }
+
+    if (!didHitEnemy) {
+        return false;
+    }
+
+    player.GetGame()->OnPlayerAttackHit(
+        movement.GetPlayerNum());
+    player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
+    return true;
 }
 
 void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge& jewelGauge,

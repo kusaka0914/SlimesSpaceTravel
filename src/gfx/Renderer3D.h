@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer.h"
+#include "text/RubyText.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
@@ -49,6 +50,14 @@ public:
     {
         return CreateTextTexture(text, outWidth, outHeight, textColor, textScale);
     }
+    GLuint CreateRubyTextTextureFor3D(
+        const std::vector<RubyTextSegment>& segments,
+        int& outWidth,
+        int& outHeight,
+        int& outBaseTextHeight,
+        const SDL_Color textColor,
+        float rubyScaleRatio,
+        float rubyGapRatio) const;
 
     void StartTransparentDraw() const;
     void EndTransparentDraw() const;

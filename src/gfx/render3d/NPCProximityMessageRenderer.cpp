@@ -7,7 +7,9 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "gfx/Shader3D.h"
+#include "gfx/UIRenderer.h"
 #include "gfx/VertexArray.h"
+#include "system/UILoadSystem.h"
 #include "utils/MathUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -61,27 +63,74 @@ void NPCProximityMessageRenderer::DrawMessage(
 
     int textPixelWidth = 0;
     int textPixelHeight = 0;
+    int baseTextPixelHeight = 0;
     const SDL_Color textColor{35, 35, 42, 255};
-    const GLuint textTexture = renderer.CreateTextTextureFor3D(
-        npc->GetResolvedProximityMessageText(),
-        textPixelWidth,
-        textPixelHeight,
-        textColor,
-        1.0f);
-    if (textTexture == 0 || textPixelWidth <= 0 || textPixelHeight <= 0) {
+    float rubyScaleRatio = 0.36f;
+    float rubyGapRatio = -0.46f;
+    if (UIRenderer* uiRenderer =
+            renderer.GetGame()->GetUIRenderer()) {
+        if (UILoadSystem* uiLoadSystem =
+                uiRenderer->GetUILoadSystem()) {
+            if (const UILoadSystem::TextInfo* talkTextInfo =
+                    uiLoadSystem->GetTextInfo(
+                        "state",
+                        "talkText")) {
+                rubyScaleRatio =
+                    talkTextInfo->rubyScaleRatio;
+                rubyGapRatio =
+                    talkTextInfo->rubyGapRatio;
+            }
+        }
+    }
+
+    GLuint textTexture = 0;
+    const std::vector<RubyTextSegment>& rubySegments =
+        npc->GetResolvedProximityMessageRubySegments();
+    if (!rubySegments.empty()) {
+        textTexture =
+            renderer.CreateRubyTextTextureFor3D(
+                rubySegments,
+                textPixelWidth,
+                textPixelHeight,
+                baseTextPixelHeight,
+                textColor,
+                rubyScaleRatio,
+                rubyGapRatio);
+    } else {
+        textTexture = renderer.CreateTextTextureFor3D(
+            npc->GetResolvedProximityMessageText(),
+            textPixelWidth,
+            textPixelHeight,
+            textColor,
+            1.0f);
+        baseTextPixelHeight = textPixelHeight;
+    }
+
+    if (textTexture == 0 ||
+        textPixelWidth <= 0 ||
+        textPixelHeight <= 0 ||
+        baseTextPixelHeight <= 0) {
         return;
     }
 
     const float scale = npc->GetProximityMessageScale();
-    const float textHeight = 0.28f * scale;
-    const float textAspect =
-        static_cast<float>(textPixelWidth) /
-        static_cast<float>(textPixelHeight);
-    const float textWidth = textHeight * textAspect;
+    const float baseTextHeight = 0.28f * scale;
+    const float pixelToWorldScale =
+        baseTextHeight /
+        static_cast<float>(baseTextPixelHeight);
+    const float textWidth =
+        static_cast<float>(textPixelWidth) *
+        pixelToWorldScale;
+    const float textHeight =
+        static_cast<float>(textPixelHeight) *
+        pixelToWorldScale;
     const float horizontalPadding = 0.42f * scale;
     const float backgroundWidth =
         std::max(1.35f * scale, textWidth + horizontalPadding * 2.0f);
-    const float backgroundHeight = 0.68f * scale;
+    const float backgroundHeight =
+        std::max(
+            0.68f * scale,
+            textHeight + 0.3f * scale);
     const glm::vec3 center =
         npc->GetPos() +
         npc->GetUpVec() * npc->GetProximityMessageHeight();

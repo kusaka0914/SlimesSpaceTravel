@@ -1,5 +1,7 @@
 #include "Planet.h"
 
+#include "actor/Boat.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -111,6 +113,16 @@ void Planet::OnEnemyDead()
 void Planet::OnBoatPartsObtained()
 {
     mProgressController.OnBoatPartsObtained(mActorRegistry);
+}
+
+bool Planet::HasAppearedRocket() const
+{
+    for (const Boat* boat : mActorRegistry.GetBoats()) {
+        if (boat && boat->HasAppeared()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 glm::vec3 Planet::CalculateSurfacePos(float theta, float phi, float height) const

@@ -54,6 +54,9 @@ public:
     bool IsTalkWithMother() const { return mUIState->GetCurrentTalkWith() == UIState::TalkWith::Mother; }
     bool IsTalkWithDoctor() const { return mUIState->GetCurrentTalkWith() == UIState::TalkWith::Doctor; }
     bool IsTalkWithNPC() const { return mUIState->GetCurrentTalkWith() == UIState::TalkWith::NPC; }
+    bool IsWaitingForTutorialPlayerAction() const;
+    bool IsWaitingForTutorialPlayerSwitch() const;
+    bool IsWaitingForTutorialPlayerJump() const;
 
     bool IsBattleTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Battle; }
     bool IsBreakTutorialShowing() const { return mUIState->GetCurrentTutorialKind() == UIState::TutorialKind::Break; }

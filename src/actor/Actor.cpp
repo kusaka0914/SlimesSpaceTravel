@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "actor/ActorGroundResolver.h"
+#include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "component/Component.h"
 #include "system/mesh/LoadedModel.h"
@@ -155,8 +156,19 @@ void Actor::RefreshProgressVisibility()
     const bool hiddenConditionSatisfied =
         mHiddenIfStageCleared < 0 ||
         !(mGame && mGame->IsStageCleared(mHiddenIfStageCleared));
-    mProgressVisibilitySatisfied =
+    mStageClearVisibilitySatisfied =
         visibleConditionSatisfied && hiddenConditionSatisfied;
+}
+
+bool Actor::IsProgressVisibilitySatisfied() const
+{
+    const bool isHiddenByRocket =
+        mHiddenWhenRocketAppears &&
+        dynamic_cast<const Boat*>(this) == nullptr &&
+        mCurrentPlanet &&
+        mCurrentPlanet->HasAppearedRocket();
+    return mStageClearVisibilitySatisfied &&
+           !isHiddenByRocket;
 }
 
 const std::vector<LoadedMesh>* Actor::GetMeshes() const

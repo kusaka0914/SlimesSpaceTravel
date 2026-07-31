@@ -230,9 +230,9 @@ boats:
       - 0.8
       - 0.8
     upVec:
-      - 0
-      - 1
-      - 0
+      - -0.00058960234
+      - 0.9999394
+      - 0.010997062
     travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
@@ -241,10 +241,10 @@ boats:
       - 1
       - 1
     rotationQuat:
-      - 0.69465834
-      - 0
-      - 0.71933985
-      - 0
+      - 0.69464666
+      - 0.0036075858
+      - 0.7193301
+      - 0.004160167
 players:
   - currentPlanetNum: 0
     theta: 1.570679
@@ -287,7 +287,7 @@ NPCs:
       - -0.05
       - 2.63
       - 13.85
-    facingYaw: 6.1618385
+    facingYaw: 3.1313503
     rotation:
       - -1.8871484
       - 1.3045033
@@ -502,10 +502,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.99781406
-      - 0.026246719
-      - 0.060621273
-      - 0.0018271449
+      - -0.0051255054
+      - -0.00036701324
+      - 0.9996407
+      - 0.026307682
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -519,7 +519,7 @@ NPCs:
       - -9.92
       - 2.65
       - 9.34
-    facingYaw: 0.3476298
+    facingYaw: 2.3429108
     rotation:
       - 0
       - 0
@@ -529,9 +529,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.037958685
-      - 0.9986394
-      - 0.03575778
+      - -0.03808537
+      - 0.9986393
+      - 0.03562487
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
@@ -582,10 +582,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.9846558
-      - 0.020893607
-      - -0.1725476
-      - 0.015613781
+      - -0.38899174
+      - -0.02448142
+      - 0.9208719
+      - 0.009001648
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
@@ -597,8 +597,8 @@ NPCs:
     pos:
       - -0
       - -2.99
-      - -0
-    facingYaw: 0.2916267
+      - 0
+    facingYaw: 0.08020258
     rotation:
       - 0
       - 0
@@ -647,10 +647,10 @@ NPCs:
           - text: のスライムだ。
             ruby: false
     rotationQuat:
-      - 0.0015019176
-      - 0.14529812
-      - 0.0005987729
-      - 0.9893866
+      - 0.0014303537
+      - 0.04009162
+      - 0.00075390557
+      - 0.99919474
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -664,7 +664,7 @@ NPCs:
       - 14.35
       - 8.52
       - 6.16
-    facingYaw: 5.464869
+    facingYaw: 3.9562256
     rotation:
       - 0
       - 0
@@ -708,10 +708,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.91745573
-      - -0.0008006701
-      - 0.39783695
-      - -0.00034714746
+      - 0.39614666
+      - -0.0003457526
+      - 0.91818684
+      - -0.0008012735
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -727,7 +727,7 @@ NPCs:
       - -8.32
       - 2.84
       - 3.57
-    facingYaw: 0.37841487
+    facingYaw: 0.45263052
     rotation:
       - 0
       - 0
@@ -841,10 +841,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.98204273
-      - 0.009051698
-      - -0.18796282
-      - 0.013422421
+      - 0.97439337
+      - 0.00954343
+      - -0.2242665
+      - 0.01307737
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -858,7 +858,7 @@ NPCs:
       - -2.6
       - 7.52
       - -12.68
-    facingYaw: 3.2907305
+    facingYaw: 2.023314
     rotation:
       - 0
       - 0
@@ -925,9 +925,9 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.07449982
+      - -0.5304568
       - 0
-      - 0.99722105
+      - 0.847712
       - 0
     visibleIfStageCleared: 1
   - currentPlanetNum: 0
@@ -943,7 +943,7 @@ NPCs:
       - -0.23
       - 2.3
       - 18.79
-    facingYaw: 6.188834
+    facingYaw: 1.825092
     rotation:
       - 0
       - 0
@@ -953,9 +953,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.0010367003
-      - 0.9965319
-      - 0.08320535
+      - -0.0010087903
+      - 0.99653196
+      - 0.08320572
     radius: 0.75
     modelPath: spaceSlime.obj
     talkRubies:
@@ -1029,10 +1029,10 @@ NPCs:
       scale: 1
     hiddenIfStageCleared: 3
     rotationQuat:
-      - 0.99802
-      - 0.041567948
-      - 0.047138788
-      - 0.0024827288
+      - -0.61121976
+      - -0.025872009
+      - 0.79036474
+      - 0.032629717
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1048,7 +1048,7 @@ NPCs:
       - -0.24
       - -2.95
       - 4.54
-    facingYaw: 0.18742871
+    facingYaw: 0.041370153
     rotation:
       - -3.0921311
       - -0.681663
@@ -1058,9 +1058,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.0009527135
-      - -0.99987894
-      - 0.015530782
+      - 0.0010243242
+      - -0.99987596
+      - 0.01571816
     radius: 0.75
     modelPath: spaceSlimeReverse.obj
     talkRubies:
@@ -1160,10 +1160,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.0002523763
-      - 0.09357073
-      - 0.00777613
-      - 0.99558234
+      - -0.000349541
+      - 0.020678936
+      - 0.007868235
+      - 0.99975514
     talkStageClearConditions:
       - talkIndex: 2
         stage: 4
@@ -1184,7 +1184,7 @@ NPCs:
       - 10.43
       - -2.51
       - 12.08
-    facingYaw: 0.5413203
+    facingYaw: 2.2767124
     rotation:
       - -3.0921311
       - -0.681663
@@ -1194,9 +1194,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.04260767
+      - 0.042781807
       - -0.9978955
-      - 0.04887955
+      - 0.048729334
     radius: 0.75
     modelPath: spaceSlimeReverse.obj
     talkRubies:
@@ -1282,10 +1282,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - -0.014016491
-      - 0.26672432
-      - 0.02925408
-      - 0.9632268
+      - 0.013148578
+      - 0.9072491
+      - 0.029655185
+      - 0.4193409
     talkStageClearConditions:
       - talkIndex: 2
         stage: 4
@@ -1306,7 +1306,7 @@ NPCs:
       - -10.57
       - -2.56
       - 10.89
-    facingYaw: 5.9465523
+    facingYaw: 3.9533834
     rotation:
       - -3.0921311
       - -0.681663
@@ -1316,9 +1316,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.041407555
-      - -0.9982281
-      - 0.042734273
+      - -0.041220322
+      - -0.9982565
+      - 0.04224733
     radius: 0.75
     modelPath: spaceSlimeReverse.obj
     talkRubies:
@@ -1400,10 +1400,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - 0.016850049
-      - -0.16701192
-      - 0.024536947
-      - 0.9855055
+      - 0.011262617
+      - 0.91817653
+      - -0.027292889
+      - -0.39507005
     talkCameraFocus:
       - talkIndex: 0
         sequence: platforms
@@ -1436,7 +1436,7 @@ NPCs:
       - -13.19
       - -2.34
       - -12.8
-    facingYaw: 4.4898157
+    facingYaw: 4.682138
     rotation:
       - -3.0921311
       - -0.681663
@@ -1446,9 +1446,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.05727113
-      - -0.99681586
-      - -0.05548274
+      - -0.05685842
+      - -0.99686074
+      - -0.055099394
     radius: 0.75
     modelPath: spaceSlimeReverse.obj
     talkRubies:
@@ -1523,10 +1523,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - -0.039575167
-      - 0.78113645
-      - -0.005091185
-      - -0.6230841
+      - -0.039599247
+      - 0.71770376
+      - -0.0012526021
+      - -0.6952206
     talkStageClearConditions:
       - talkIndex: 2
         stage: 4
@@ -1545,7 +1545,7 @@ NPCs:
       - 12.84
       - -2.34
       - -13.16
-    facingYaw: 1.7335867
+    facingYaw: 1.6232425
     rotation:
       - -3.0921311
       - -0.681663
@@ -1555,9 +1555,9 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.055686682
-      - -0.9968156
-      - -0.057076383
+      - 0.055293486
+      - -0.9968605
+      - -0.05667336
     radius: 0.75
     modelPath: spaceSlimeReverse.obj
     talkRubies:
@@ -1666,10 +1666,10 @@ NPCs:
       height: 1.8
       scale: 1
     rotationQuat:
-      - -0.03980522
-      - 0.76216555
-      - 0.00278568
-      - 0.6461513
+      - -0.0396161
+      - 0.7253748
+      - 0.0005818323
+      - 0.68721294
     talkStageClearConditions:
       - talkIndex: 2
         stage: 4
@@ -1699,8 +1699,8 @@ stageObjects:
       - 2.29
       - 0.95
     upVec:
-      - -0.07845922
-      - 0.9969173
+      - -0.078459226
+      - 0.9969174
       - 0
     textureTiling:
       - 1
@@ -1741,6 +1741,7 @@ stageObjects:
       - 0
       - 0.7095707
       - 0
+    affectsGravityDirection: false
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [4.5679984, 2.0588229, 4.6613183], pos: [0.21, 5.46, -14.86], upVec: [0, 1, 0], textureTiling: [4.5679984, 4.6613183], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
   - currentPlanetNum: 0
     theta: 0
@@ -1762,17 +1763,17 @@ stageObjects:
       - 2.42
       - 7.26
     upVec:
-      - -8.7422656e-08
-      - 0.99999845
-      - -0.0017453748
+      - -8.742266e-08
+      - 0.99999857
+      - -0.0017453751
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 7.553602e-08
+      - 7.553601e-08
       - -4.3777263e-08
       - 0.99999964
-      - -0.0008726877
+      - -0.0008726878
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -1793,8 +1794,8 @@ stageObjects:
       - 2.04
       - 8.57
     upVec:
-      - -0.07845922
-      - 0.9969173
+      - -0.078459226
+      - 0.9969174
       - 0
     textureTiling:
       - 1
@@ -1980,15 +1981,15 @@ stageObjects:
       - 2.01
       - 17.72
     upVec:
-      - 0.03664387
+      - 0.036643874
       - 0.9976713
       - 0.057525903
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 0.00052809936
-      - 0.018347817
+      - 0.0005280994
+      - 0.018347818
       - 0.99941754
       - 0.02877002
   - currentPlanetNum: 0
@@ -2178,7 +2179,7 @@ stageObjects:
       - 0
       - 0
       - 0.055821504
-  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0.09424778], scale: [4.5679984, 0.055122286, 4.300166], pos: [-20.4, 2.11, 0.81], upVec: [-0.09410831, 0.99556196, 0], textureTiling: [4.5679984, 4.300166], textureOverride: textures/selectFieldTex.png, rotationQuat: [0.9988899, 0, 0, 0.04710645]}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0.09424778], scale: [4.5679984, 0.055122286, 4.300166], pos: [-20.4, 2.11, 0.81], upVec: [-0.09410833, 0.9955621, 0], textureTiling: [4.5679984, 4.300166], textureOverride: textures/selectFieldTex.png, rotationQuat: [0.9988899, 0, 0, 0.04710645]}
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2514,7 +2515,7 @@ stageObjects:
       - -14.71
     upVec:
       - 0.72305405
-      - 0.060266383
+      - 0.060266323
       - -0.6881576
     textureTiling:
       - 1.6740404
@@ -2523,12 +2524,12 @@ stageObjects:
       - -0.27470985
       - 0.6381341
       - 0.6742905
-      - -0.2503032
+      - -0.25030318
   - currentPlanetNum: 0
     theta: 0
     phi: 0
     height: 1
-    facingYaw: 1.6683421
+    facingYaw: 1.6683418
     modelPath: VillageAssets/Mill.fbx
     collision: true
     rotation:
@@ -2544,17 +2545,17 @@ stageObjects:
       - -1.88
       - -22.45
     upVec:
-      - 0.013944417
-      - 0.12532681
-      - -0.99201757
+      - 0.013944387
+      - 0.12532687
+      - -0.9920175
     textureTiling:
       - 1.6740404
       - 1.6740406
     rotationQuat:
       - 0.5304314
       - -0.47416723
-      - -0.5303828
-      - 0.4609794
+      - -0.5303829
+      - 0.46097943
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2637,8 +2638,8 @@ stageObjects:
       - -1.94
       - 15.57
     upVec:
-      - 0.71704
-      - -0.0050101276
+      - 0.71704006
+      - -0.005010128
       - 0.69701403
     textureTiling:
       - 1.6740404
@@ -2646,7 +2647,7 @@ stageObjects:
     rotationQuat:
       - 0.29794955
       - 0.66944194
-      - 0.6393129
+      - 0.639313
       - 0.23313637
   - currentPlanetNum: 0
     theta: 0
@@ -2664,7 +2665,7 @@ stageObjects:
       - 30.791155
       - 0.96222866
     pos:
-      - 0.22000003
+      - 0.22
       - 2.42
       - -20.03
     upVec:
@@ -2681,7 +2682,7 @@ stageObjects:
       - 0.706609
       - 0.02776089
 platforms:
-  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1}}}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1}}, platformId: legacy_platforms_0}
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2736,6 +2737,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_1
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2790,6 +2792,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_2
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2844,6 +2847,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_3
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2897,6 +2901,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_4
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2950,6 +2955,7 @@ platforms:
         moveDuration: 10
         moveOnPlayer: false
         returnDelay: 1
+    platformId: legacy_platforms_5
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -3003,6 +3009,7 @@ platforms:
         moveDuration: 10
         moveOnPlayer: false
         returnDelay: 1
+    platformId: legacy_platforms_6
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -3057,6 +3064,7 @@ platforms:
         moveOnPlayer: true
         returnDelay: 1
     visibleIfStageCleared: 4
+    platformId: legacy_platforms_7
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -3111,6 +3119,7 @@ platforms:
         moveOnPlayer: true
         returnDelay: 1
     visibleIfStageCleared: 4
+    platformId: legacy_platforms_8
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -3164,6 +3173,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_9
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -3218,3 +3228,4 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+    platformId: legacy_platforms_10

@@ -16,6 +16,9 @@ public:
         const Player& player,
         float maxDistance,
         float attackAngle);
+    static Enemy* FindNearestAirborneTarget(
+        const Player& player,
+        float maxDistance);
 
     static bool FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target);
 };

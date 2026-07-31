@@ -9,6 +9,49 @@
 
 #include <algorithm>
 #include <iostream>
+#include <unordered_set>
+
+namespace {
+
+std::string CreateUniquePlatformId(const YAML::Node& config)
+{
+    std::unordered_set<std::string> usedIds;
+    if (config && config.IsMap()) {
+        for (const auto& entry : config) {
+            const YAML::Node sequence = entry.second;
+            if (!sequence || !sequence.IsSequence()) {
+                continue;
+            }
+            for (const YAML::Node& node : sequence) {
+                if (!node || !node.IsMap()) {
+                    continue;
+                }
+                if (node["platformId"]) {
+                    usedIds.insert(node["platformId"].as<std::string>());
+                }
+                const YAML::Node targets =
+                    node["components"]["pressureSwitch"]["targets"];
+                if (targets && targets.IsSequence()) {
+                    for (const YAML::Node& target : targets) {
+                        if (target && target.IsScalar()) {
+                            usedIds.insert(target.as<std::string>());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (int suffix = 1;; ++suffix) {
+        const std::string candidate =
+            "platform_" + std::to_string(suffix);
+        if (!usedIds.contains(candidate)) {
+            return candidate;
+        }
+    }
+}
+
+} // namespace
 
 StageActorCreateService::StageActorCreateService(DebugEditorContext& context)
     : mContext(context)
@@ -70,6 +113,7 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
 
     const int index = static_cast<int>(config["platforms"].size());
     YAML::Node platformNode = CreatePlatformNode(currentPlanetNum, modelPath, scale);
+    platformNode["platformId"] = CreateUniquePlatformId(config);
 
     config["platforms"].push_back(platformNode);
 
@@ -101,6 +145,7 @@ bool StageActorCreateService::AddRideMovingPlatform(
     const int index = static_cast<int>(config["platforms"].size());
     YAML::Node platformNode =
         CreateRideMovingPlatformNode(currentPlanetNum, modelPath, scale);
+    platformNode["platformId"] = CreateUniquePlatformId(config);
     config["platforms"].push_back(platformNode);
 
     if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
@@ -214,6 +259,53 @@ bool StageActorCreateService::AddNPC(
     }
 
     mContext.game->GetActorLoadSystem()->CreateNPCFromStageNode(npcNode, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddTutorialTrigger(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::vector<std::string>& talkTexts,
+    const glm::vec3& scale)
+{
+    if (!CanCreateActor() || modelPath.empty() ||
+        !IsValidPlanetIndex(
+            currentPlanetNum,
+            "tutorial trigger")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(
+            mContext,
+            config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "tutorialTriggers");
+    const int index =
+        static_cast<int>(
+            config["tutorialTriggers"].size());
+    YAML::Node triggerNode =
+        CreateTutorialTriggerNode(
+            currentPlanetNum,
+            modelPath,
+            talkTexts,
+            scale);
+    config["tutorialTriggers"].push_back(triggerNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(
+            mContext,
+            config)) {
+        return false;
+    }
+
+    mContext.game
+        ->GetActorLoadSystem()
+        ->CreateTutorialTriggerFromStageNode(
+            triggerNode,
+            index);
     RefreshPhysicsWorld();
     return true;
 }
@@ -496,6 +588,33 @@ YAML::Node StageActorCreateService::CreateNPCNode(
     node["scale"][1] = safeScale;
     node["scale"][2] = safeScale;
     node["name"] = name;
+    for (const std::string& talkText : talkTexts) {
+        node["talkTexts"].push_back(talkText);
+    }
+    if (talkTexts.empty()) {
+        node["talkTexts"].push_back("");
+    }
+
+    return node;
+}
+
+YAML::Node
+StageActorCreateService::CreateTutorialTriggerNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::vector<std::string>& talkTexts,
+    const glm::vec3& scale) const
+{
+    YAML::Node node;
+    node["modelPath"] = modelPath;
+    node["currentPlanetNum"] = currentPlanetNum;
+    node["theta"] = 0.0f;
+    node["phi"] = 0.0f;
+    node["height"] = 1.0f;
+    node["scale"][0] = std::max(0.01f, scale.x);
+    node["scale"][1] = std::max(0.01f, scale.y);
+    node["scale"][2] = std::max(0.01f, scale.z);
+
     for (const std::string& talkText : talkTexts) {
         node["talkTexts"].push_back(talkText);
     }

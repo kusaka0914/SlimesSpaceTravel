@@ -15,6 +15,7 @@
 #include "actor/Platform.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/NPCProximityMessageRenderer.h"
@@ -85,6 +86,10 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         mRenderer->TryDrawActors(planet->GetPlatforms());
         mRenderer->TryDrawActors(planet->GetStageObjects());
         mRenderer->TryDrawActors(planet->GetNPCs());
+        if (mRenderer->GetGame()->GetIsDebugEditorShowing()) {
+            mRenderer->TryDrawActors(
+                planet->GetTutorialTriggers());
+        }
         mRenderer->TryDrawActor(planet->GetKey());
         mRenderer->TryDrawActor(planet->GetStar());
 

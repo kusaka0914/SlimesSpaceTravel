@@ -1,6 +1,8 @@
 #include "component/PlatformBehaviorComponents.h"
 
 #include "Game.h"
+#include "Stage.h"
+#include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "component/PlatformMovementComponent.h"
@@ -346,4 +348,108 @@ void PlatformConveyorComponent::SetLocalDirection(const glm::vec3& direction)
 void PlatformConveyorComponent::SetSpeed(float speed)
 {
     mSpeed = std::max(0.0f, speed);
+}
+
+PlatformPressureSwitchComponent::PlatformPressureSwitchComponent(
+    Platform* owner,
+    int updateOrder)
+    : Component(owner, updateOrder),
+      mPlatform(owner)
+{
+}
+
+PlatformPressureSwitchComponent::~PlatformPressureSwitchComponent()
+{
+}
+
+void PlatformPressureSwitchComponent::Update(float deltaTime)
+{
+    (void)deltaTime;
+    if (!mPlatform || IsEditorPreview(mPlatform)) return;
+
+    const bool isPressed =
+        FindPlayerOnPlatform(mPlatform) != nullptr;
+    if (isPressed != mIsPressed) {
+        mIsPressed = isPressed;
+    }
+    ApplyTargetState();
+}
+
+void PlatformPressureSwitchComponent::SetTargetPlatformIds(
+    const std::vector<std::string>& targetPlatformIds)
+{
+    if (!mPlatform) {
+        mTargetPlatformIds.clear();
+        return;
+    }
+
+    ClearTargetRuntimeStates();
+
+    mTargetPlatformIds.clear();
+    for (const std::string& platformId : targetPlatformIds) {
+        if (platformId.empty() ||
+            platformId == mPlatform->GetPlatformId() ||
+            std::find(
+                mTargetPlatformIds.begin(),
+                mTargetPlatformIds.end(),
+                platformId) != mTargetPlatformIds.end()) {
+            continue;
+        }
+        mTargetPlatformIds.emplace_back(platformId);
+    }
+
+    mIsPressed =
+        !IsEditorPreview(mPlatform) &&
+        FindPlayerOnPlatform(mPlatform) != nullptr;
+    ApplyTargetState();
+}
+
+void PlatformPressureSwitchComponent::SetInactiveOpacity(float opacity)
+{
+    mInactiveOpacity = glm::clamp(opacity, 0.0f, 1.0f);
+    ApplyTargetState();
+}
+
+Platform* PlatformPressureSwitchComponent::FindTargetPlatform(
+    const std::string& platformId) const
+{
+    if (!mPlatform || platformId.empty() ||
+        !mPlatform->GetGame() ||
+        !mPlatform->GetGame()->GetCurrentStage()) {
+        return nullptr;
+    }
+
+    for (Planet* planet :
+         mPlatform->GetGame()->GetCurrentStage()->GetPlanets()) {
+        if (!planet) continue;
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (platform && platform != mPlatform &&
+                platform->GetPlatformId() == platformId) {
+                return platform;
+            }
+        }
+    }
+    return nullptr;
+}
+
+void PlatformPressureSwitchComponent::ApplyTargetState()
+{
+    for (const std::string& platformId : mTargetPlatformIds) {
+        Platform* target = FindTargetPlatform(platformId);
+        if (!target) continue;
+        target->SetComponentOpacity(
+            this,
+            mIsPressed ? 1.0f : mInactiveOpacity);
+        target->SetComponentCollisionEnabled(this, mIsPressed);
+    }
+}
+
+void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
+{
+    for (const std::string& platformId : mTargetPlatformIds) {
+        Platform* target = FindTargetPlatform(platformId);
+        if (target) {
+            target->ClearComponentRuntimeState(this);
+        }
+    }
 }

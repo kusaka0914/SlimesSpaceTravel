@@ -177,6 +177,37 @@ particleEffects:
         positionOffset: [0, 0, 0]
         colorStart: [1, 0.62, 0.1, 1]
         colorEnd: [0.95, 0.08, 0.01, 0]
+  landing_dust:
+    emitters:
+      - texture: dust_puff.png
+        blendMode: alpha
+        renderMode: billboard
+        directionMode: hemisphere
+        count: 10
+        lifetime:
+          min: 0.3
+          max: 0.52
+        speed:
+          min: 0.55
+          max: 1.45
+        size:
+          start:
+            min: 0.2
+            max: 0.34
+          endMultiplier: 2.15
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -90
+          max: 90
+        spreadAngleDegrees: 180
+        gravity: 0.18
+        drag: 2.9
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [0.98, 0.96, 0.9, 0.8]
+        colorEnd: [0.7, 0.68, 0.64, 0]
   star_glow:
     emitters:
       - texture: star_magic_glow.png
@@ -268,37 +299,6 @@ particleEffects:
         positionOffset: [0, 0, 0]
         colorStart: [1, 0.95, 0.35, 0.9]
         colorEnd: [0.55, 0.9, 1, 0]
-  landing_dust:
-    emitters:
-      - texture: dust_puff.png
-        blendMode: alpha
-        renderMode: billboard
-        directionMode: hemisphere
-        count: 10
-        lifetime:
-          min: 0.3
-          max: 0.52
-        speed:
-          min: 0.55
-          max: 1.45
-        size:
-          start:
-            min: 0.2
-            max: 0.34
-          endMultiplier: 2.15
-        rotationDegrees:
-          min: 0
-          max: 360
-        angularVelocityDegrees:
-          min: -90
-          max: 90
-        spreadAngleDegrees: 180
-        gravity: 0.18
-        drag: 2.9
-        velocityStretch: 0
-        positionOffset: [0, 0, 0]
-        colorStart: [0.98, 0.96, 0.9, 0.8]
-        colorEnd: [0.7, 0.68, 0.64, 0]
   walk_start_dust:
     emitters:
       - texture: dust_puff.png

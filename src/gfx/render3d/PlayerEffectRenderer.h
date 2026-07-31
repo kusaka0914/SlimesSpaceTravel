@@ -15,6 +15,7 @@ public:
     void DrawEnemyWithEffects(Enemy* enemy, const glm::mat4& viewMat) const;
 
 private:
+    void DrawPlayerCollisionShape(const Player* player) const;
     void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
     void DrawPlayerAttackRange(Player* player) const;
     void DrawEnemyAttackRange(Enemy* enemy) const;

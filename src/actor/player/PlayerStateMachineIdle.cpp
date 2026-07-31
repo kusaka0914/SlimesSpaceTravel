@@ -21,11 +21,16 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
+    if (TryStartAirSlamAttack(
+            player,
+            input,
+            movement,
+            combat,
+            deltaTime)) {
         return;
     }
 
-    if (TryStartCharging(player, input, movement, combat)) {
+    if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
         return;
     }
 
@@ -60,6 +65,15 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
     }
 
     if (TryStartDodging(player, input, movement, combat, status)) {
+        return;
+    }
+
+    if (TryStartAssistAirDodgeAttack(
+            player,
+            input,
+            movement,
+            combat,
+            status)) {
         return;
     }
 
@@ -101,43 +115,36 @@ bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput&
     return true;
 }
 
-bool PlayerStateMachine::TryStartCharging(
+bool PlayerStateMachine::TryStartAirSlamAttack(
     Player& player,
     PlayerInput& input,
     PlayerMovement& movement,
-    PlayerCombat& combat)
+    PlayerCombat& combat,
+    float deltaTime)
 {
+    (void)deltaTime;
+
     const bool hasNormalAttackRequest =
         input.GetBufferedAttackInput() == PlayerAttackInputKind::Normal;
-    const bool canStartCharging =
+    const bool canStartAirSlam =
         !player.GetOnGround() &&
         hasNormalAttackRequest &&
-        input.GetAttackPressed() &&
         !input.GetSpecialAttackPressed() &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
         !combat.GetIsStrongAttacked();
 
-    if (!canStartCharging) {
+    if (!canStartAirSlam) {
         return false;
     }
 
-    // Strongが実際に届く距離にいる空中敵を対象にする。
-    // 正面の攻撃範囲内を優先し、正面にいなければ全方向の最寄りを選ぶ。
-    mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
-        player,
-        combat.GetStrongAttackRange(),
-        combat.GetNormalAttackAngle(),
-        true);
-
-    if (mAttackDirectionTarget) {
-        PlayerTargetingAssist::FaceTarget(
-            player,
-            movement,
-            *mAttackDirectionTarget);
-    }
-
+    mAttackDirectionTarget = nullptr;
+    movement.ClearStrongAttackDirectionOverride();
+    movement.StartAirSlamMovement(player);
+    combat.StartAirSlamAttack();
     input.ConsumeBufferedAttackInput();
-    ChangeState(PlayerActionState::Charging);
-    combat.StartCharging(player);
+    mCoyoteTimeRemaining = 0.0f;
+    ChangeState(
+        PlayerActionState::AirSlamAttacking);
     return true;
 }
 
@@ -277,11 +284,73 @@ bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, Pla
 
     ChangeState(PlayerActionState::Dodging);
 
+    const bool startsInAir = !player.GetOnGround();
     movement.StartDodgeMovement(player, input);
+    if (startsInAir) {
+        combat.StartAirDodgeAttack();
+    } else {
+        combat.EndAirDodgeAttack();
+    }
     status.StartInvincible(movement.GetDodgeDuration());
 
     player.GetGame()->GetAudioSystem()->PlaySE("dodge_se");
 
+    return true;
+}
+
+bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status)
+{
+    const bool hasWideAttackRequest =
+        input.GetBufferedAttackInput() ==
+        PlayerAttackInputKind::Wide;
+    const bool canStartAutoDodge =
+        player.GetGame()->IsAssistControlStyle() &&
+        !player.GetOnGround() &&
+        hasWideAttackRequest &&
+        !combat.CanStartAirAttack() &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        movement.CanDodge(combat) &&
+        combat.CanDodgeDuringAttack() &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (!canStartAutoDodge) {
+        return false;
+    }
+
+    constexpr float targetContactMargin = 1.0f;
+    const float maximumTargetDistance =
+        movement.GetDodgeDistance() +
+        targetContactMargin;
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestAirborneTarget(
+            player,
+            maximumTargetDistance);
+    if (!target ||
+        !movement.StartDodgeMovementTowards(
+            player,
+            target->GetPos())) {
+        return false;
+    }
+
+    PlayerTargetingAssist::FaceTarget(
+        player,
+        movement,
+        *target);
+    input.ConsumeBufferedAttackInput();
+    mAttackDirectionTarget = nullptr;
+
+    ChangeState(PlayerActionState::Dodging);
+    combat.StartAirDodgeAttack();
+    status.StartInvincible(
+        movement.GetDodgeDuration());
+    player.GetGame()
+        ->GetAudioSystem()
+        ->PlaySE("dodge_se");
     return true;
 }
 
@@ -297,6 +366,13 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
     }
 
     if (!player.GetOnGround() && attackInput != PlayerAttackInputKind::Wide) {
+        return false;
+    }
+
+    if (!player.GetOnGround() &&
+        attackInput == PlayerAttackInputKind::Wide &&
+        !combat.CanStartAirAttack()) {
+        input.ConsumeBufferedAttackInput();
         return false;
     }
 

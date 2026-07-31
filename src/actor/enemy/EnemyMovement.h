@@ -18,6 +18,9 @@ public:
                               float deltaTime);
     void MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime);
     void MoveDuringDying(Enemy& enemy, float deltaTime);
+    void ApplyAirDodgePush(
+        Enemy& enemy,
+        const glm::vec3& dodgeDirection);
 
     void LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
     void UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
@@ -25,5 +28,10 @@ public:
     glm::vec3 CalculateCollisionAdjustedPos(Enemy& enemy, const glm::vec3& moveDelta);
 
 private:
+    void UpdateAirDodgePushMovement(
+        Enemy& enemy,
+        float deltaTime);
+
     EnemyGrounding mGrounding;
+    glm::vec3 mAirDodgePushVelocity{0.0f};
 };

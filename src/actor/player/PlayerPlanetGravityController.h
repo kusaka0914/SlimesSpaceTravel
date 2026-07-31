@@ -50,7 +50,7 @@ private:
     // 5.0f: 比較的速い
     static constexpr float gravityTurnSpeed = 4.0f;
 
-    static constexpr float fallbackDelay = 1.0f;
+    static constexpr float fallbackDelay = 2.0f;
 
     bool mIsJumpSwitchingActive = false;
     bool mGroundRayHitThisFrame = false;

@@ -41,9 +41,15 @@ protected:
         const glm::vec3& up) const override;
 
 private:
+    enum class LandingRayResolution {
+        NoHit,
+        Landed,
+        AppliedPlanetFallback
+    };
+
     void JudgeLanding();
 
-    bool TryLandByRay(
+    LandingRayResolution ResolveLandingByRay(
         const glm::vec3& rayOffset,
         const glm::vec3& hitPosCorrection);
 

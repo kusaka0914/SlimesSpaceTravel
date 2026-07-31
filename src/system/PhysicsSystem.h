@@ -13,12 +13,23 @@ class btDiscreteDynamicsWorld;
 class btTriangleMesh;
 class btBvhTriangleMeshShape;
 class btRigidBody;
-class btSphereShape;
+class btConvexShape;
 class btCollisionObject;
 class btCollisionShape;
 
 class Game;
 class Actor;
+
+struct ActorMovementCollisionResult {
+    glm::vec3 resolvedPosition{0.0f};
+    glm::vec3 blockingNormal{0.0f};
+    bool didHitStage = false;
+};
+
+enum class ActorCollisionFilter {
+    AllActors,
+    IgnoreAirborneEnemies
+};
 
 class PhysicsWorldBuilder;
 class StageCollisionBuilder;
@@ -42,14 +53,32 @@ public:
 
     btDiscreteDynamicsWorld* GetBulletWorld() const { return mBulletWorld.get(); }
 
-    glm::vec3 CheckCollision(Actor* actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos);
+    void SetPlayerCollisionWidth(float width);
+    void SetPlayerCollisionHeight(float height);
+    void SetPlayerCollisionDepth(float depth);
+    void SetPlayerCollisionCenterHeight(float centerHeight);
+
+    float GetPlayerCollisionWidth() const { return mPlayerCollisionWidth; }
+    float GetPlayerCollisionHeight() const { return mPlayerCollisionHeight; }
+    float GetPlayerCollisionDepth() const { return mPlayerCollisionDepth; }
+    float GetPlayerCollisionCenterHeight() const { return mPlayerCollisionCenterHeight; }
+
+    ActorMovementCollisionResult ResolveMovementCollision(
+        Actor* actor,
+        const glm::vec3& moveDelta,
+        const glm::vec3& desiredPos,
+        ActorCollisionFilter actorCollisionFilter =
+            ActorCollisionFilter::AllActors);
 
     std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
     std::vector<RayHitActor> PickActorsByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
 
     void SyncKinematicBodies() const;
 
-    std::optional<RayHitActor> CheckFallRespawnBySweep(const glm::vec3& from, const glm::vec3& to) const;
+    std::optional<RayHitActor> CheckFallRespawnBySweep(
+        const Actor* actor,
+        const glm::vec3& from,
+        const glm::vec3& to) const;
 
 private:
     void ClearBulletWorld();
@@ -71,7 +100,11 @@ private:
     std::unique_ptr<btSequentialImpulseConstraintSolver> mBulletSolver;
     std::unique_ptr<btDiscreteDynamicsWorld> mBulletWorld;
 
-    std::unique_ptr<btSphereShape> mPlayerShape;
+    std::unique_ptr<btConvexShape> mPlayerShape;
+    float mPlayerCollisionWidth = 1.6f;
+    float mPlayerCollisionHeight = 0.8f;
+    float mPlayerCollisionDepth = 0.8f;
+    float mPlayerCollisionCenterHeight = 0.45f;
 
     std::vector<std::unique_ptr<btRigidBody>> mBulletRigidBodies;
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>> mBulletTriangleMeshShapes;

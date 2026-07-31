@@ -62,8 +62,11 @@ void SceneSystem::OnConfirmPressed(int playerNum)
         break;
 
     case GameProgressState::SceneState::Opening:
+        mTalkController->TryAdvanceTalkFromConfirm();
+        break;
+
     case GameProgressState::SceneState::Talking:
-        mTalkController->AdvanceTalk();
+        mTalkController->TryAdvanceTalkFromConfirm();
         break;
 
     case GameProgressState::SceneState::Playing:
@@ -77,6 +80,24 @@ void SceneSystem::OnConfirmPressed(int playerNum)
     default:
         break;
     }
+}
+
+bool SceneSystem::IsWaitingForTutorialPlayerAction() const
+{
+    return mTalkController &&
+           mTalkController->IsWaitingForPlayerAction();
+}
+
+bool SceneSystem::IsWaitingForTutorialPlayerSwitch() const
+{
+    return mTalkController &&
+           mTalkController->IsWaitingForPlayerSwitch();
+}
+
+bool SceneSystem::IsWaitingForTutorialPlayerJump() const
+{
+    return mTalkController &&
+           mTalkController->IsWaitingForPlayerJump();
 }
 
 void SceneSystem::OnStartPressed()

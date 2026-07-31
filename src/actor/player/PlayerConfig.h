@@ -14,6 +14,11 @@ struct PlayerConfig {
     float jumpHeight = 1.8367347f;
     float jumpAscentDuration = 0.4f;
     float jumpFallDuration = 0.85f;
+    float groundNormalRayLength = 5.0f;
+    float collisionWidth = 1.6f;
+    float collisionHeight = 0.8f;
+    float collisionDepth = 0.8f;
+    float collisionCenterHeight = 0.45f;
 
     float dodgeDuration = 0.1f;
     float dodgeCooldownTime = 0.3f;
@@ -30,6 +35,9 @@ struct PlayerConfig {
     float strongAttackRange = 6.0f;
     float strongAttack = 50.0f;
     float strongAttackSpeed = 100.0f;
+    float airSlamRiseHeight = 1.0f;
+    float airSlamRiseDurationSeconds = 0.5f;
+    float airSlamHoverDurationSeconds = 0.3f;
 
     float specialAttackCooldown = 30.0f;
     float defaultInvincibleTimer = 2.0f;
@@ -38,8 +46,6 @@ struct PlayerConfig {
     float attackHitDelay = 0.5f;
     float attackCooldown = 0.3f;
     float lastAttackCooldown = 1.0f;
-    float defaultAttackPressTimer = 0.0f;
-    float chargeMoveSpeed = 6.0f;
     float defaultStrongAttackTimer = 0.06f;
     float knockBackSpeed = 0.0f;
 

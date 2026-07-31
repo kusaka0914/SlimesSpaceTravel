@@ -15,6 +15,7 @@
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
 #include "system/MeshLoadSystem.h"
@@ -205,6 +206,58 @@ void ApplyPlatformBehaviorConfigs(
         component->SetSpeed(
             node["speed"] ? node["speed"].as<float>() : 2.0f);
     }
+
+    if (const YAML::Node node = components["pressureSwitch"];
+        node && node.IsMap()) {
+        std::vector<std::string> targetPlatformIds;
+        const YAML::Node targets = node["targets"];
+        if (targets && targets.IsSequence()) {
+            targetPlatformIds.reserve(targets.size());
+            for (const YAML::Node& target : targets) {
+                if (target && target.IsScalar()) {
+                    targetPlatformIds.emplace_back(
+                        target.as<std::string>());
+                }
+            }
+        }
+        PlatformPressureSwitchComponent* component =
+            platform->AddPressureSwitchComponent();
+        component->SetInactiveOpacity(
+            node["inactiveOpacity"]
+                ? node["inactiveOpacity"].as<float>()
+                : 0.2f);
+        component->SetTargetPlatformIds(targetPlatformIds);
+    }
+}
+
+void ApplyTalkPageAdvanceConditions(
+    NPC* npc,
+    const YAML::Node& actorNode)
+{
+    if (!npc || !actorNode["talkAdvanceConditions"] ||
+        !actorNode["talkAdvanceConditions"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& conditionNode :
+         actorNode["talkAdvanceConditions"]) {
+        if (!conditionNode.IsMap() ||
+            !conditionNode["talkIndex"] ||
+            !conditionNode["condition"]) {
+            continue;
+        }
+
+        const int talkIndex =
+            conditionNode["talkIndex"].as<int>();
+        if (talkIndex < 0) {
+            continue;
+        }
+
+        npc->SetTalkAdvanceCondition(
+            static_cast<std::size_t>(talkIndex),
+            ParseTalkPageAdvanceConditionId(
+                conditionNode["condition"].as<std::string>()));
+    }
 }
 
 } // namespace
@@ -234,6 +287,7 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadCrystals(path.c_str());
     LoadStar(path.c_str());
     LoadNPCs(path.c_str());
+    LoadTutorialTriggers(path.c_str());
     LoadPlatforms(path.c_str());
     LoadLegacyMovingPlatforms(path.c_str());
     LoadStageObjects(path.c_str());
@@ -245,22 +299,59 @@ void ActorLoadSystem::LoadPlayers(const char* path)
 {
     YAML::Node root = YAML::LoadFile(path);
 
-    if (!root["players"] || !root["players"].IsSequence()) {
-        return;
-    }
-
     mGame->RemoveAllPlayer();
 
-    const int maxLoadPlayerCount = mGame->GetIsPlayer2Joined() ? 2 : 1;
+    YAML::Node playerNodes = root["players"];
+    if (!playerNodes || !playerNodes.IsSequence() || playerNodes.size() == 0) {
+        playerNodes = YAML::Node(YAML::NodeType::Sequence);
+        YAML::Node defaultPlayer;
+        defaultPlayer["currentPlanetNum"] = 0;
+        playerNodes.push_back(defaultPlayer);
+    }
 
-    int playerNum = 0;
-    for (const YAML::Node& node : root["players"]) {
-        if (playerNum >= maxLoadPlayerCount) {
+    constexpr int requiredPlayerCount = 2;
+    int loadedPlayerCount = 0;
+    for (const YAML::Node& node : playerNodes) {
+        if (loadedPlayerCount >= requiredPlayerCount) {
             break;
         }
 
-        playerNum++;
-        CreatePlayerFromStageNode(node, playerNum);
+        const int playerNum = loadedPlayerCount + 1;
+        if (CreatePlayerFromStageNode(node, playerNum)) {
+            loadedPlayerCount++;
+        }
+    }
+
+    if (loadedPlayerCount >= requiredPlayerCount) {
+        return;
+    }
+
+    const YAML::Node fallbackNode = playerNodes[0];
+    while (loadedPlayerCount < requiredPlayerCount) {
+        const int playerNum = loadedPlayerCount + 1;
+        Player* duplicatedPlayer =
+            CreatePlayerFromStageNode(fallbackNode, playerNum);
+        if (!duplicatedPlayer) {
+            break;
+        }
+
+        const std::vector<Player*>& players = mGame->GetPlayers();
+        Player* firstPlayer = players.empty() ? nullptr : players[0];
+        if (firstPlayer && duplicatedPlayer != firstPlayer) {
+            glm::vec3 separationDirection = firstPlayer->GetLeftVec();
+            const float separationLength = glm::length(separationDirection);
+            if (separationLength > 0.000001f) {
+                separationDirection /= separationLength;
+                constexpr float duplicateSpawnSpacing = 1.0f;
+                duplicatedPlayer->SetPos(
+                    firstPlayer->GetPos() +
+                    separationDirection * duplicateSpawnSpacing);
+                duplicatedPlayer->Initialize();
+                duplicatedPlayer->RefreshFallbackUpVec();
+            }
+        }
+
+        loadedPlayerCount++;
     }
 }
 
@@ -402,6 +493,8 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
                 npc->AddTalkTexts("");
             }
 
+            ApplyTalkPageAdvanceConditions(npc, node);
+
             if (node["proximityMessage"] &&
                 node["proximityMessage"].IsMap()) {
                 const YAML::Node messageNode = node["proximityMessage"];
@@ -438,6 +531,75 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
                          ++talkIndex) {
                         npc->SetTalkProximityMessageText(
                             talkIndex, legacyText);
+                    }
+                }
+
+                if (messageNode["rubies"] &&
+                    messageNode["rubies"].IsSequence()) {
+                    for (const YAML::Node& rubyNode :
+                         messageNode["rubies"]) {
+                        if (!rubyNode.IsMap() ||
+                            !rubyNode["talkIndex"] ||
+                            !rubyNode["segments"] ||
+                            !rubyNode["segments"].IsSequence()) {
+                            continue;
+                        }
+
+                        const int talkIndex =
+                            rubyNode["talkIndex"].as<int>();
+                        if (talkIndex < 0) {
+                            continue;
+                        }
+
+                        std::vector<RubyTextSegment> segments;
+                        for (const YAML::Node& segmentNode :
+                             rubyNode["segments"]) {
+                            if (!segmentNode.IsMap() ||
+                                !segmentNode["text"]) {
+                                continue;
+                            }
+
+                            RubyTextSegment segment;
+                            segment.text =
+                                segmentNode["text"].as<std::string>();
+                            segment.reading =
+                                segmentNode["reading"]
+                                    ? segmentNode["reading"].as<std::string>()
+                                    : std::string();
+                            segment.showsRuby =
+                                segmentNode["ruby"]
+                                    ? segmentNode["ruby"].as<bool>()
+                                    : !segment.reading.empty();
+                            segments.emplace_back(
+                                std::move(segment));
+                        }
+
+                        npc->SetTalkProximityMessageRubySegments(
+                            static_cast<std::size_t>(talkIndex),
+                            std::move(segments));
+                    }
+                }
+
+                for (std::size_t talkIndex = 0;
+                     talkIndex < npc->GetTalkTexts().size();
+                     ++talkIndex) {
+                    const std::string& proximityText =
+                        npc->GetTalkProximityMessageText(talkIndex);
+                    if (proximityText.empty() ||
+                        npc->HasValidTalkProximityMessageRuby(
+                            talkIndex)) {
+                        continue;
+                    }
+
+                    std::vector<RubyTextSegment> generatedSegments;
+                    std::string errorMessage;
+                    if (JapaneseRubyGenerator::Generate(
+                            proximityText,
+                            generatedSegments,
+                            errorMessage)) {
+                        npc->SetTalkProximityMessageRubySegments(
+                            talkIndex,
+                            std::move(generatedSegments));
                     }
                 }
             }
@@ -540,6 +702,174 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
         [](NPC* npc, const YAML::Node&) { npc->SetBaseScale(npc->GetScale()); });
 }
 
+void ActorLoadSystem::LoadTutorialTriggers(const char* path)
+{
+    mActorFactory.LoadActorSequence<TutorialTrigger>(
+        path,
+        "tutorialTriggers",
+        [](Planet* planet) { planet->RemoveAllTutorialTriggers(); },
+        [this](const YAML::Node& node, int index) {
+            return CreateTutorialTriggerFromStageNode(node, index);
+        });
+}
+
+TutorialTrigger* ActorLoadSystem::CreateTutorialTriggerFromStageNode(
+    const YAML::Node& node,
+    int stageYamlIndex)
+{
+    return mActorFactory.CreatePlacedActorFromStageNode<TutorialTrigger>(
+        node,
+        stageYamlIndex,
+        1.0f,
+        glm::vec3(2.0f),
+        "selectField.obj",
+        [](Planet* planet, TutorialTrigger* trigger) {
+            planet->AddTutorialTrigger(trigger);
+        },
+        [](TutorialTrigger* trigger, const YAML::Node& triggerNode) {
+            if (triggerNode["talkTexts"] &&
+                triggerNode["talkTexts"].IsSequence()) {
+                for (const YAML::Node& textNode :
+                     triggerNode["talkTexts"]) {
+                    trigger->AddTalkTexts(
+                        textNode.as<std::string>());
+                }
+            }
+            if (trigger->GetTalkTexts().empty()) {
+                trigger->AddTalkTexts("");
+            }
+
+            ApplyTalkPageAdvanceConditions(
+                trigger,
+                triggerNode);
+
+            if (triggerNode["talkStageClearConditions"] &&
+                triggerNode["talkStageClearConditions"].IsSequence()) {
+                for (const YAML::Node& conditionNode :
+                     triggerNode["talkStageClearConditions"]) {
+                    if (!conditionNode.IsMap() ||
+                        !conditionNode["talkIndex"] ||
+                        !conditionNode["stage"]) {
+                        continue;
+                    }
+
+                    const int talkIndex =
+                        conditionNode["talkIndex"].as<int>();
+                    const int stageNum =
+                        conditionNode["stage"].as<int>();
+                    if (talkIndex < 0 || stageNum < 0) {
+                        continue;
+                    }
+
+                    trigger->SetTalkStageClearCondition(
+                        static_cast<std::size_t>(talkIndex),
+                        stageNum);
+                }
+            }
+
+            if (triggerNode["talkCameraFocus"] &&
+                triggerNode["talkCameraFocus"].IsSequence()) {
+                for (const YAML::Node& focusNode :
+                     triggerNode["talkCameraFocus"]) {
+                    if (!focusNode.IsMap() ||
+                        !focusNode["talkIndex"] ||
+                        !focusNode["sequence"] ||
+                        !focusNode["index"]) {
+                        continue;
+                    }
+
+                    const int talkIndex =
+                        focusNode["talkIndex"].as<int>();
+                    if (talkIndex < 0) {
+                        continue;
+                    }
+
+                    trigger->SetTalkCameraFocusTarget(
+                        static_cast<std::size_t>(talkIndex),
+                        focusNode["sequence"].as<std::string>(),
+                        focusNode["index"].as<int>());
+                }
+            }
+
+            if (triggerNode["talkRubies"] &&
+                triggerNode["talkRubies"].IsSequence()) {
+                for (const YAML::Node& rubyNode :
+                     triggerNode["talkRubies"]) {
+                    if (!rubyNode.IsMap() ||
+                        !rubyNode["talkIndex"] ||
+                        !rubyNode["segments"] ||
+                        !rubyNode["segments"].IsSequence()) {
+                        continue;
+                    }
+
+                    const int talkIndex =
+                        rubyNode["talkIndex"].as<int>();
+                    if (talkIndex < 0) {
+                        continue;
+                    }
+
+                    std::vector<RubyTextSegment> segments;
+                    for (const YAML::Node& segmentNode :
+                         rubyNode["segments"]) {
+                        if (!segmentNode.IsMap() ||
+                            !segmentNode["text"]) {
+                            continue;
+                        }
+
+                        RubyTextSegment segment;
+                        segment.text =
+                            segmentNode["text"].as<std::string>();
+                        segment.reading =
+                            segmentNode["reading"]
+                                ? segmentNode["reading"].as<std::string>()
+                                : std::string();
+                        segment.showsRuby =
+                            segmentNode["ruby"]
+                                ? segmentNode["ruby"].as<bool>()
+                                : !segment.reading.empty();
+                        segments.emplace_back(std::move(segment));
+                    }
+                    trigger->SetTalkRubySegments(
+                        static_cast<std::size_t>(talkIndex),
+                        std::move(segments));
+                }
+            }
+
+            const std::vector<std::string>& talkTexts =
+                trigger->GetTalkTexts();
+            for (std::size_t talkIndex = 0;
+                 talkIndex < talkTexts.size();
+                 ++talkIndex) {
+                if (trigger->HasValidTalkRuby(talkIndex)) {
+                    continue;
+                }
+
+                std::vector<RubyTextSegment> generatedSegments;
+                std::string errorMessage;
+                if (JapaneseRubyGenerator::Generate(
+                        talkTexts[talkIndex],
+                        generatedSegments,
+                        errorMessage)) {
+                    trigger->SetTalkRubySegments(
+                        talkIndex,
+                        std::move(generatedSegments));
+                }
+            }
+        },
+        [](TutorialTrigger* trigger, const YAML::Node& triggerNode) {
+            if ((!triggerNode["scale"] ||
+                 !triggerNode["scale"].IsSequence()) &&
+                triggerNode["radius"]) {
+                const float legacyRadius =
+                    std::max(
+                        0.01f,
+                        triggerNode["radius"].as<float>());
+                trigger->SetScale(
+                    glm::vec3(legacyRadius));
+            }
+        });
+}
+
 Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const
 {
     if (!mGame || stageYamlIndex < 0) {
@@ -583,6 +913,8 @@ Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int sta
             if (Actor* actor = findByIndex(planet->GetCrystals())) return actor;
         } else if (sequenceName == "NPCs") {
             if (Actor* actor = findByIndex(planet->GetNPCs())) return actor;
+        } else if (sequenceName == "tutorialTriggers") {
+            if (Actor* actor = findByIndex(planet->GetTutorialTriggers())) return actor;
         } else if (sequenceName == "boatArrivalPoints") {
             if (Actor* actor = findByIndex(planet->GetBoatArrivalPoints())) return actor;
         } else if (sequenceName == "fallRespawnPoints") {
@@ -846,7 +1178,12 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
     Platform* platform = mActorFactory.CreatePlacedActorFromStageNode<Platform>(
         node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
         [](Planet* planet, Platform* platform) { planet->AddPlatform(platform); },
-        [](Platform* platform, const YAML::Node& node) {
+        [stageYamlIndex](Platform* platform, const YAML::Node& node) {
+            platform->SetPlatformId(
+                node["platformId"]
+                    ? node["platformId"].as<std::string>()
+                    : "legacy_platforms_" +
+                          std::to_string(stageYamlIndex));
             ApplyPlatformMovementConfig(
                 platform,
                 GetMovementComponentNode(node));
@@ -877,7 +1214,12 @@ Platform* ActorLoadSystem::CreateLegacyMovingPlatformFromStageNode(
     Platform* platform = mActorFactory.CreatePlacedActorFromStageNode<Platform>(
         node, stageYamlIndex, 1.0f, glm::vec3(3.0f, 0.5f, 3.0f), "platform.obj",
         [](Planet* planet, Platform* platform) { planet->AddPlatform(platform); },
-        [](Platform* platform, const YAML::Node& node) {
+        [stageYamlIndex](Platform* platform, const YAML::Node& node) {
+            platform->SetPlatformId(
+                node["platformId"]
+                    ? node["platformId"].as<std::string>()
+                    : "legacy_movingPlatforms_" +
+                          std::to_string(stageYamlIndex));
             const YAML::Node componentNode =
                 GetMovementComponentNode(node);
             ApplyPlatformMovementConfig(

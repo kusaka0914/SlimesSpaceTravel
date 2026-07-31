@@ -136,6 +136,35 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.jumpHeight = ReadFloat(playerNode, "jumpHeight", config.jumpHeight);
         config.jumpAscentDuration = ReadFloat(playerNode, "jumpAscentDuration", config.jumpAscentDuration);
         config.jumpFallDuration = ReadFloat(playerNode, "jumpFallDuration", config.jumpFallDuration);
+        config.groundNormalRayLength =
+            ReadFloat(
+                playerNode,
+                "groundNormalRayLength",
+                config.groundNormalRayLength);
+        const float legacyCollisionRadius =
+            ReadFloat(
+                playerNode,
+                "collisionRadius",
+                config.collisionHeight * 0.5f);
+        const float legacyCollisionDiameter =
+            2.0f * legacyCollisionRadius;
+        config.collisionWidth =
+            ReadFloat(playerNode, "collisionWidth", config.collisionWidth);
+        config.collisionHeight =
+            ReadFloat(
+                playerNode,
+                "collisionHeight",
+                legacyCollisionDiameter);
+        config.collisionDepth =
+            ReadFloat(
+                playerNode,
+                "collisionDepth",
+                legacyCollisionDiameter);
+        config.collisionCenterHeight =
+            ReadFloat(
+                playerNode,
+                "collisionCenterHeight",
+                config.collisionCenterHeight);
 
         config.dodgeDuration = ReadFloat(playerNode, "dodgeDuration", config.dodgeDuration);
         config.dodgeCooldownTime = ReadFloat(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);
@@ -152,6 +181,17 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.strongAttackRange = ReadFloat(playerNode, "strongAttackRange", config.strongAttackRange);
         config.strongAttack = ReadFloat(playerNode, "strongAttack", config.strongAttack);
         config.strongAttackSpeed = ReadFloat(playerNode, "strongAttackSpeed", config.strongAttackSpeed);
+        config.airSlamRiseHeight = ReadFloat(playerNode, "airSlamRiseHeight", config.airSlamRiseHeight);
+        config.airSlamRiseDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "airSlamRiseDurationSeconds",
+                config.airSlamRiseDurationSeconds);
+        config.airSlamHoverDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "airSlamHoverDurationSeconds",
+                config.airSlamHoverDurationSeconds);
 
         config.specialAttackCooldown = ReadFloat(playerNode, "specialAttackCooldown", config.specialAttackCooldown);
         config.defaultInvincibleTimer = ReadFloat(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);
@@ -160,8 +200,6 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.attackHitDelay = ReadFloat(playerNode, "attackHitDelay", config.attackHitDelay);
         config.attackCooldown = ReadFloat(playerNode, "attackCooldown", config.attackCooldown);
         config.lastAttackCooldown = ReadFloat(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
-        config.defaultAttackPressTimer = ReadFloat(playerNode, "defaultAttackPressTimer", config.defaultAttackPressTimer);
-        config.chargeMoveSpeed = ReadFloat(playerNode, "chargeMoveSpeed", config.chargeMoveSpeed);
         config.defaultStrongAttackTimer = ReadFloat(playerNode, "defaultStrongAttackTimer", config.defaultStrongAttackTimer);
         config.knockBackSpeed = ReadFloat(playerNode, "knockBackSpeed", config.knockBackSpeed);
 

@@ -67,10 +67,24 @@ void GameWorld::ProcessActorsInput()
     }
 }
 
+void GameWorld::ProcessPlayerInput(Player* player)
+{
+    if (player) {
+        player->ProcessInput();
+    }
+}
+
 void GameWorld::UpdateActors(float deltaTime)
 {
     for (const auto& actorUnique : mActors) {
         actorUnique->Update(deltaTime);
+    }
+}
+
+void GameWorld::UpdatePlayer(Player* player, float deltaTime)
+{
+    if (player) {
+        player->Update(deltaTime);
     }
 }
 

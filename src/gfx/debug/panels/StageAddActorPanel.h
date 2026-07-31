@@ -42,6 +42,17 @@ private:
     float mNPCScale = 1.0f;
     std::string mNPCStatus;
 
+    int mSelectedTutorialTriggerPlanetIndex = -1;
+    std::string mSelectedTutorialTriggerModel =
+        "selectField.obj";
+    std::array<char, 128>
+        mTutorialTriggerModelSearch = {};
+    std::vector<std::array<char, 1024>>
+        mTutorialTriggerTalkTexts;
+    glm::vec3 mTutorialTriggerScale =
+        glm::vec3(2.0f);
+    std::string mTutorialTriggerStatus;
+
     int mSelectedBoatPartsPlanetIndex = -1;
     int mSelectedBoatPartsTypeIndex = 0;
 

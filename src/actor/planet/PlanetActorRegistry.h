@@ -15,6 +15,7 @@ class NPC;
 class Platform;
 class Star;
 class StageObject;
+class TutorialTrigger;
 
 class PlanetActorRegistry {
 public:
@@ -27,6 +28,7 @@ public:
     void AddBoatArrivalPoint(BoatArrivalPoint* point) { mBoatArrivalPoints.emplace_back(point); }
     void AddFallRespawnPoint(FallRespawnPoint* point) { mFallRespawnPoints.emplace_back(point); }
     void AddStageObject(StageObject* stageObject) { mStageObjects.emplace_back(stageObject); }
+    void AddTutorialTrigger(TutorialTrigger* trigger) { mTutorialTriggers.emplace_back(trigger); }
 
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveAllBoat() { mBoats.clear(); }
@@ -46,6 +48,7 @@ public:
     void RemoveAllBoatArrivalPoints() { mBoatArrivalPoints.clear(); }
     void RemoveAllFallRespawnPoints() { mFallRespawnPoints.clear(); }
     void RemoveAllStageObjects() { mStageObjects.clear(); }
+    void RemoveAllTutorialTriggers() { mTutorialTriggers.clear(); }
 
     void SetKey(Key* key) { mKey = key; }
     void SetStar(Star* star) { mStar = star; }
@@ -59,6 +62,7 @@ public:
     const std::vector<BoatArrivalPoint*>& GetBoatArrivalPoints() const { return mBoatArrivalPoints; }
     const std::vector<FallRespawnPoint*>& GetFallRespawnPoints() const { return mFallRespawnPoints; }
     const std::vector<StageObject*>& GetStageObjects() const { return mStageObjects; }
+    const std::vector<TutorialTrigger*>& GetTutorialTriggers() const { return mTutorialTriggers; }
 
     Key* GetKey() const { return mKey; }
     Star* GetStar() const { return mStar; }
@@ -73,6 +77,7 @@ private:
     std::vector<BoatArrivalPoint*> mBoatArrivalPoints;
     std::vector<FallRespawnPoint*> mFallRespawnPoints;
     std::vector<StageObject*> mStageObjects;
+    std::vector<TutorialTrigger*> mTutorialTriggers;
 
     Key* mKey = nullptr;
     Star* mStar = nullptr;

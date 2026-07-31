@@ -15,7 +15,8 @@ enum class StageActorType {
     FallRespawnPoint,
     Key,
     Star,
-    StageObject
+    StageObject,
+    TutorialTrigger
 };
 
 struct StageActorRef {

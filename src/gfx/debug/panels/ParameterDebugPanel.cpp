@@ -7,6 +7,7 @@
 #include "actor/Player.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
+#include "system/PhysicsSystem.h"
 
 #include <cmath>
 #include <exception>
@@ -178,6 +179,73 @@ void ParameterDebugPanel::DrawPlayer()
             }
         }
 
+        PhysicsSystem* physicsSystem = mContext.game->GetPhysicsSystem();
+        if (physicsSystem) {
+            ImGui::SeparatorText("プレイヤー当たり判定");
+
+            float collisionWidth =
+                physicsSystem->GetPlayerCollisionWidth();
+            if (ImGui::DragFloat(
+                    "横幅",
+                    &collisionWidth,
+                    0.01f,
+                    0.1f,
+                    6.0f,
+                    "%.2f")) {
+                physicsSystem->SetPlayerCollisionWidth(collisionWidth);
+            }
+
+            float collisionHeight =
+                physicsSystem->GetPlayerCollisionHeight();
+            if (ImGui::DragFloat(
+                    "高さ",
+                    &collisionHeight,
+                    0.01f,
+                    0.1f,
+                    6.0f,
+                    "%.2f")) {
+                physicsSystem->SetPlayerCollisionHeight(collisionHeight);
+            }
+
+            float collisionDepth =
+                physicsSystem->GetPlayerCollisionDepth();
+            if (ImGui::DragFloat(
+                    "奥行き",
+                    &collisionDepth,
+                    0.01f,
+                    0.1f,
+                    6.0f,
+                    "%.2f")) {
+                physicsSystem->SetPlayerCollisionDepth(collisionDepth);
+            }
+
+            float collisionCenterHeight =
+                physicsSystem->GetPlayerCollisionCenterHeight();
+            if (ImGui::DragFloat(
+                    "足元から球中心までの高さ",
+                    &collisionCenterHeight,
+                    0.01f,
+                    0.0f,
+                    3.0f,
+                    "%.2f")) {
+                physicsSystem->SetPlayerCollisionCenterHeight(
+                    collisionCenterHeight);
+            }
+
+            const float collisionHalfHeight =
+                physicsSystem->GetPlayerCollisionHeight() * 0.5f;
+            const float collisionBottomHeight =
+                collisionCenterHeight - collisionHalfHeight;
+            const float collisionTopHeight =
+                collisionCenterHeight + collisionHalfHeight;
+            ImGui::Text(
+                "足元基準: 下端 %.2f / 上端 %.2f",
+                collisionBottomHeight,
+                collisionTopHeight);
+            ImGui::TextDisabled(
+                "水色の楕円体が実際の判定です。3軸と向きに追従します。");
+        }
+
         ImGui::TreePop();
     }
 
@@ -207,6 +275,23 @@ void ParameterDebugPanel::DrawPlayer()
 
         ImGui::TextDisabled("上昇時間を短くすると素早く上がり、落下時間を長くするとゆっくり落ちます。");
 
+        ImGui::SeparatorText("重力方向判定");
+
+        float groundNormalRayLength =
+            mContext.game->GetGroundNormalRayLength();
+        if (ImGui::DragFloat(
+                "レイの長さ（中央＋周辺4本）",
+                &groundNormalRayLength,
+                0.05f,
+                0.05f,
+                100.0f,
+                "%.2f")) {
+            mContext.game->SetGroundNormalRayLength(
+                groundNormalRayLength);
+        }
+        ImGui::TextDisabled(
+            "プレイヤーを含む全アクターの上方向判定へ即時反映されます。");
+
         float dodgeDuration = player->GetDodgeDuration();
         if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
             dodgeDuration = std::round(dodgeDuration * 100.0f) / 100.0f;
@@ -223,12 +308,6 @@ void ParameterDebugPanel::DrawPlayer()
         if (ImGui::SliderFloat("回避距離", &dodgeDistance, 0.0f, 20.0f, "%.1f")) {
             dodgeDistance = std::round(dodgeDistance * 10.0f) / 10.0f;
             player->SetDodgeDistance(dodgeDistance);
-        }
-
-        float chargeMoveSpeed = player->GetChargeMoveSpeed();
-        if (ImGui::SliderFloat("溜め移動速度", &chargeMoveSpeed, 0.0f, 30.0f, "%.1f")) {
-            chargeMoveSpeed = std::round(chargeMoveSpeed * 10.0f) / 10.0f;
-            player->SetChargeMoveSpeed(chargeMoveSpeed);
         }
 
         float knockBackSpeed = player->GetKnockBackSpeed();
@@ -300,6 +379,37 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetStrongAttackSpeed(strongAttackSpeed);
         }
 
+        ImGui::SeparatorText("空中X攻撃");
+
+        float airSlamRiseHeight = player->GetAirSlamRiseHeight();
+        if (ImGui::DragFloat("上昇高さ", &airSlamRiseHeight, 0.01f, 0.0f, 5.0f, "%.2f")) {
+            player->SetAirSlamRiseHeight(airSlamRiseHeight);
+        }
+
+        float airSlamRiseDurationSeconds = player->GetAirSlamRiseDurationSeconds();
+        if (ImGui::DragFloat(
+                "上昇時間（秒）##空中X",
+                &airSlamRiseDurationSeconds,
+                0.01f,
+                0.05f,
+                3.0f,
+                "%.2f")) {
+            player->SetAirSlamRiseDurationSeconds(
+                airSlamRiseDurationSeconds);
+        }
+
+        float airSlamHoverDurationSeconds = player->GetAirSlamHoverDurationSeconds();
+        if (ImGui::DragFloat(
+                "空中停止時間（秒）",
+                &airSlamHoverDurationSeconds,
+                0.01f,
+                0.0f,
+                3.0f,
+                "%.2f")) {
+            player->SetAirSlamHoverDurationSeconds(
+                airSlamHoverDurationSeconds);
+        }
+
         float defaultStrongAttackTimer = player->GetDefaultStrongAttackTimer();
         if (ImGui::SliderFloat("強攻撃時間", &defaultStrongAttackTimer, 0.0f, 5.0f, "%.2f")) {
             defaultStrongAttackTimer = std::round(defaultStrongAttackTimer * 100.0f) / 100.0f;
@@ -346,12 +456,6 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetLastAttackCooldown(lastAttackCooldown);
         }
 
-        float defaultAttackPressTimer = player->GetDefaultAttackPressTimer();
-        if (ImGui::SliderFloat("攻撃入力受付時間", &defaultAttackPressTimer, 0.0f, 5.0f, "%.2f")) {
-            defaultAttackPressTimer = std::round(defaultAttackPressTimer * 100.0f) / 100.0f;
-            player->SetDefaultAttackPressTimer(defaultAttackPressTimer);
-        }
-
         ImGui::TreePop();
     }
 }
@@ -396,8 +500,10 @@ void ParameterDebugPanel::DrawEnemies()
     }
 
     if (ImGui::TreeNode("共通設定")) {
-        if (normalEnemy) {
-            float knockBackSpeed = normalEnemy->GetKnockBackSpeed();
+        Enemy* commonSettingsEnemy =
+            normalEnemy ? normalEnemy : bossEnemy;
+        if (commonSettingsEnemy) {
+            float knockBackSpeed = commonSettingsEnemy->GetKnockBackSpeed();
             if (ImGui::SliderFloat("ノックバック速度", &knockBackSpeed, 0.0f, 30.0f, "%.1f")) {
                 knockBackSpeed = std::round(knockBackSpeed * 10.0f) / 10.0f;
 
@@ -408,7 +514,7 @@ void ParameterDebugPanel::DrawEnemies()
                 }
             }
 
-            float defaultLaunchedTimer = normalEnemy->GetDefaultLaunchedTimer();
+            float defaultLaunchedTimer = commonSettingsEnemy->GetDefaultLaunchedTimer();
             if (ImGui::SliderFloat("打ち上げ時間", &defaultLaunchedTimer, 0.0f, 10.0f, "%.1f")) {
                 defaultLaunchedTimer = std::round(defaultLaunchedTimer * 10.0f) / 10.0f;
 
@@ -419,7 +525,26 @@ void ParameterDebugPanel::DrawEnemies()
                 }
             }
 
-            float detectionRange = normalEnemy->GetDetectionRange();
+            float launchHeight =
+                commonSettingsEnemy->GetLaunchHeight();
+            if (ImGui::SliderFloat(
+                    "打ち上げ高さ",
+                    &launchHeight,
+                    0.0f,
+                    10.0f,
+                    "%.2f")) {
+                launchHeight =
+                    std::round(launchHeight * 100.0f) /
+                    100.0f;
+
+                for (Enemy* enemy : allEnemies) {
+                    if (enemy) {
+                        enemy->SetLaunchHeight(launchHeight);
+                    }
+                }
+            }
+
+            float detectionRange = commonSettingsEnemy->GetDetectionRange();
             if (ImGui::SliderFloat("検知範囲", &detectionRange, 0.0f, 50.0f, "%.1f")) {
                 detectionRange = std::round(detectionRange * 10.0f) / 10.0f;
 
@@ -686,6 +811,40 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "jumpHeight", player->GetJumpHeight());
     SetYamlSequenceValue(config, sequenceName, index, "jumpAscentDuration", player->GetJumpAscentDuration());
     SetYamlSequenceValue(config, sequenceName, index, "jumpFallDuration", player->GetJumpFallDuration());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "groundNormalRayLength",
+        mContext.game->GetGroundNormalRayLength());
+    PhysicsSystem* physicsSystem = mContext.game->GetPhysicsSystem();
+    if (physicsSystem) {
+        config[sequenceName][index].remove("collisionRadius");
+        SetYamlSequenceValue(
+            config,
+            sequenceName,
+            index,
+            "collisionWidth",
+            physicsSystem->GetPlayerCollisionWidth());
+        SetYamlSequenceValue(
+            config,
+            sequenceName,
+            index,
+            "collisionHeight",
+            physicsSystem->GetPlayerCollisionHeight());
+        SetYamlSequenceValue(
+            config,
+            sequenceName,
+            index,
+            "collisionDepth",
+            physicsSystem->GetPlayerCollisionDepth());
+        SetYamlSequenceValue(
+            config,
+            sequenceName,
+            index,
+            "collisionCenterHeight",
+            physicsSystem->GetPlayerCollisionCenterHeight());
+    }
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDuration", player->GetDodgeDuration());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeCooldownTime", player->GetDodgeCooldownTime());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDistance", player->GetDodgeDistance());
@@ -698,6 +857,19 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "strongAttackRange", player->GetStrongAttackRange());
     SetYamlSequenceValue(config, sequenceName, index, "strongAttack", player->GetStrongAttack());
     SetYamlSequenceValue(config, sequenceName, index, "strongAttackSpeed", player->GetStrongAttackSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "airSlamRiseHeight", player->GetAirSlamRiseHeight());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airSlamRiseDurationSeconds",
+        player->GetAirSlamRiseDurationSeconds());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airSlamHoverDurationSeconds",
+        player->GetAirSlamHoverDurationSeconds());
     SetYamlSequenceValue(config, sequenceName, index, "specialAttackCooldown", player->GetSpecialAttackCooldown());
     SetYamlSequenceValue(config, sequenceName, index, "defaultInvincibleTimer", player->GetDefaultInvincibleTimer());
     SetYamlSequenceValue(config, sequenceName, index, "defaultDamageTimer", player->GetDefaultDamageTimer());
@@ -705,8 +877,6 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
                          player->GetDefaultAttackMotionTimer());
     SetYamlSequenceValue(config, sequenceName, index, "attackCooldown", player->GetAttackCooldown());
     SetYamlSequenceValue(config, sequenceName, index, "lastAttackCooldown", player->GetLastAttackCooldown());
-    SetYamlSequenceValue(config, sequenceName, index, "defaultAttackPressTimer", player->GetDefaultAttackPressTimer());
-    SetYamlSequenceValue(config, sequenceName, index, "chargeMoveSpeed", player->GetChargeMoveSpeed());
     SetYamlSequenceValue(config, sequenceName, index, "defaultStrongAttackTimer",
                          player->GetDefaultStrongAttackTimer());
     SetYamlSequenceValue(config, sequenceName, index, "knockBackSpeed", player->GetKnockBackSpeed());
@@ -735,11 +905,20 @@ void ParameterDebugPanel::SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy)
 
     const std::string sequenceName = "enemies";
 
-    if (normalEnemy) {
-        SetYamlSequenceValue(config, sequenceName, 0, "knockBackSpeed", normalEnemy->GetKnockBackSpeed());
-        SetYamlSequenceValue(config, sequenceName, 0, "defaultLaunchedTimer", normalEnemy->GetDefaultLaunchedTimer());
-        SetYamlSequenceValue(config, sequenceName, 0, "detectionRange", normalEnemy->GetDetectionRange());
+    Enemy* commonSettingsEnemy =
+        normalEnemy ? normalEnemy : bossEnemy;
+    if (commonSettingsEnemy) {
+        SetYamlSequenceValue(config, sequenceName, 0, "knockBackSpeed",
+                             commonSettingsEnemy->GetKnockBackSpeed());
+        SetYamlSequenceValue(config, sequenceName, 0, "defaultLaunchedTimer",
+                             commonSettingsEnemy->GetDefaultLaunchedTimer());
+        SetYamlSequenceValue(config, sequenceName, 0, "launchHeight",
+                             commonSettingsEnemy->GetLaunchHeight());
+        SetYamlSequenceValue(config, sequenceName, 0, "detectionRange",
+                             commonSettingsEnemy->GetDetectionRange());
+    }
 
+    if (normalEnemy) {
         SetYamlSequenceValue(config, sequenceName, 1, "hp", normalEnemy->GetHp());
         SetYamlSequenceValue(config, sequenceName, 1, "modelPath", normalEnemy->GetModelPath());
         SetYamlSequenceValue(config, sequenceName, 1, "scale", normalEnemy->GetScale().x);

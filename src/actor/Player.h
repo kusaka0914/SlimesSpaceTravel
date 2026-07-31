@@ -79,8 +79,6 @@ public:
 
     void SetAttackSpeed(float attackSpeed) { mCombat.SetAttackSpeed(attackSpeed); }
 
-    void SetChargeMoveSpeed(float chargeMoveSpeed) { mMovement.SetChargeMoveSpeed(chargeMoveSpeed); }
-
     void SetHp(float hp) { mStatus.SetHp(hp); }
 
     void SetMaxHp(float maxHp) { mStatus.SetMaxHp(maxHp); }
@@ -90,11 +88,6 @@ public:
     void SetAttackCooldown(float attackCooldown) { mCombat.SetAttackCooldown(attackCooldown); }
 
     void SetLastAttackCooldown(float lastAttackCooldown) { mCombat.SetLastAttackCooldown(lastAttackCooldown); }
-
-    void SetDefaultAttackPressTimer(float defaultAttackPressTimer)
-    {
-        mCombat.SetDefaultAttackPressTimer(defaultAttackPressTimer);
-    }
 
     void SetSpecialAttackCooldown(float specialAttackCooldown)
     {
@@ -148,6 +141,15 @@ public:
     void SetJumpHeight(float jumpHeight) { mMovement.SetJumpHeight(jumpHeight); }
     void SetJumpAscentDuration(float duration) { mMovement.SetJumpAscentDuration(duration); }
     void SetJumpFallDuration(float duration) { mMovement.SetJumpFallDuration(duration); }
+    void SetAirSlamRiseHeight(float riseHeight) { mMovement.SetAirSlamRiseHeight(riseHeight); }
+    void SetAirSlamRiseDurationSeconds(float durationSeconds)
+    {
+        mMovement.SetAirSlamRiseDurationSeconds(durationSeconds);
+    }
+    void SetAirSlamHoverDurationSeconds(float durationSeconds)
+    {
+        mMovement.SetAirSlamHoverDurationSeconds(durationSeconds);
+    }
 
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
 
@@ -193,8 +195,6 @@ public:
 
     float GetAttackSpeed() const { return mCombat.GetAttackSpeed(); }
 
-    float GetChargeMoveSpeed() const { return mMovement.GetChargeMoveSpeed(); }
-
     float GetMaxHp() const { return mStatus.GetMaxHp(); }
 
     float GetDefaultDamageTimer() const { return mStatus.GetDefaultDamageTimer(); }
@@ -202,8 +202,6 @@ public:
     float GetAttackCooldown() const { return mCombat.GetAttackCooldown(); }
 
     float GetLastAttackCooldown() const { return mCombat.GetLastAttackCooldown(); }
-
-    float GetDefaultAttackPressTimer() const { return mCombat.GetDefaultAttackPressTimer(); }
 
     float GetSpecialAttackCooldown() const { return mCombat.GetSpecialAttackCooldown(); }
 
@@ -243,6 +241,9 @@ public:
     float GetJumpHeight() const { return mMovement.GetJumpHeight(); }
     float GetJumpAscentDuration() const { return mMovement.GetJumpAscentDuration(); }
     float GetJumpFallDuration() const { return mMovement.GetJumpFallDuration(); }
+    float GetAirSlamRiseHeight() const { return mMovement.GetAirSlamRiseHeight(); }
+    float GetAirSlamRiseDurationSeconds() const { return mMovement.GetAirSlamRiseDurationSeconds(); }
+    float GetAirSlamHoverDurationSeconds() const { return mMovement.GetAirSlamHoverDurationSeconds(); }
 
     bool WasPlanetGravityFallbackAppliedThisJump() const
     {

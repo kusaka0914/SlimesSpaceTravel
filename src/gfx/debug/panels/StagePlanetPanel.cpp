@@ -14,6 +14,7 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
@@ -577,6 +578,11 @@ void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)
 
     for (NPC* npc : planet->GetNPCs()) {
         updateActor(npc);
+    }
+
+    for (TutorialTrigger* trigger :
+         planet->GetTutorialTriggers()) {
+        updateActor(trigger);
     }
 
     if (Key* key = planet->GetKey()) {

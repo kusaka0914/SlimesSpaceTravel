@@ -20,6 +20,11 @@ public:
     bool AddEnemy(const std::string& type, int currentPlanetNum);
     bool AddNPC(const std::string& modelPath, int currentPlanetNum, const std::string& name,
                 const std::vector<std::string>& talkTexts, float radius, float scale);
+    bool AddTutorialTrigger(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::vector<std::string>& talkTexts,
+        const glm::vec3& scale);
     bool AddCrystal(const std::string& type, int currentPlanetNum);
     bool AddBoatParts(const std::string& type, int currentPlanetNum);
     bool AddBoat(int startPlanetNum, int destPlanetNum, int destStage);
@@ -45,6 +50,11 @@ private:
                              const std::vector<std::string>& talkTexts,
                              float radius,
                              float scale) const;
+    YAML::Node CreateTutorialTriggerNode(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::vector<std::string>& talkTexts,
+        const glm::vec3& scale) const;
     YAML::Node CreateCrystalNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateBoatPartsNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateBoatNode(int startPlanetNum, int destPlanetNum, int destStage) const;

@@ -44,7 +44,9 @@ public:
     void SyncAttackButtonPrev();
 
 private:
+    void ApplyTutorialInputRestriction(Player& player);
     void CaptureAttackInput();
+    void ClearNonControlledPlayerInput();
 
 private:
     bool mDodgePressed = false;

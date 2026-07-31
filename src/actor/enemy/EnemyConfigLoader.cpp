@@ -24,6 +24,7 @@ void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
     config.knockBackSpeed = ReadFloat(enemyNode, "knockBackSpeed", config.knockBackSpeed);
     config.defaultLaunchedTimer = ReadFloat(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
+    config.launchHeight = ReadFloat(enemyNode, "launchHeight", config.launchHeight);
     config.detectionRange = ReadFloat(enemyNode, "detectionRange", config.detectionRange);
 }
 

@@ -11,6 +11,61 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
+namespace {
+constexpr float directionLengthEpsilonSquared = 0.000001f;
+
+bool TryNormalizeDirection(
+    const glm::vec3& direction,
+    glm::vec3& normalizedDirection)
+{
+    const float directionLengthSquared =
+        glm::dot(direction, direction);
+    if (directionLengthSquared <=
+        directionLengthEpsilonSquared) {
+        return false;
+    }
+
+    normalizedDirection =
+        direction /
+        std::sqrt(directionLengthSquared);
+    return true;
+}
+
+bool TryProjectDirectionOntoSurfaceTangent(
+    const glm::vec3& direction,
+    const glm::vec3& upVector,
+    glm::vec3& normalizedTangentialDirection)
+{
+    glm::vec3 normalizedUpDirection;
+    if (!TryNormalizeDirection(
+            upVector,
+            normalizedUpDirection)) {
+        return false;
+    }
+
+    const glm::vec3 tangentialDirection =
+        direction -
+        normalizedUpDirection *
+            glm::dot(
+                direction,
+                normalizedUpDirection);
+    return TryNormalizeDirection(
+        tangentialDirection,
+        normalizedTangentialDirection);
+}
+
+bool TryCalculateTangentialDirectionToPlayer(
+    const Enemy& enemy,
+    const Player& player,
+    glm::vec3& tangentialDirectionToPlayer)
+{
+    return TryProjectDirectionOntoSurfaceTangent(
+        player.GetPos() - enemy.GetPos(),
+        enemy.GetUpVec(),
+        tangentialDirectionToPlayer);
+}
+} // namespace
+
 void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float deltaTime)
 {
     Player* nearestPlayer = status.GetNearestPlayer();
@@ -18,16 +73,38 @@ void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float del
         return;
     }
 
-    glm::vec3 toPlayer = nearestPlayer->GetPos() - enemy.GetPos();
-    if (glm::length(toPlayer) < 1e-6f) {
+    glm::vec3 tangentialDirectionToPlayer;
+    if (!TryCalculateTangentialDirectionToPlayer(
+            enemy,
+            *nearestPlayer,
+            tangentialDirectionToPlayer)) {
         return;
     }
 
-    toPlayer = glm::normalize(toPlayer);
-    constexpr float turnSpeed = 5.0f;
-    const float t = 1.0f - std::exp(-turnSpeed * deltaTime);
+    glm::vec3 currentTangentialFacing;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            enemy.GetFacingForwardVec(),
+            enemy.GetUpVec(),
+            currentTangentialFacing)) {
+        currentTangentialFacing =
+            tangentialDirectionToPlayer;
+    }
 
-    const glm::vec3 facingForward = glm::normalize(glm::mix(enemy.GetFacingForwardVec(), toPlayer, t));
+    constexpr float turnSpeed = 5.0f;
+    const float interpolationRatio =
+        1.0f -
+        std::exp(-turnSpeed * deltaTime);
+    glm::vec3 facingForward;
+    if (!TryNormalizeDirection(
+            glm::mix(
+                currentTangentialFacing,
+                tangentialDirectionToPlayer,
+                interpolationRatio),
+            facingForward)) {
+        facingForward =
+            tangentialDirectionToPlayer;
+    }
+
     enemy.SetFacingForwardForEnemy(facingForward);
     enemy.SetFacingYawForEnemy(enemy.GetGame()->GetMathUtils()->GetYawFromDirection(enemy.GetUpVec(), facingForward) +
                                3.14159265f);
@@ -40,12 +117,14 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
         return;
     }
 
-    const glm::vec3 toPlayer = nearestPlayer->GetPos() - enemy.GetPos();
-    if (glm::length(toPlayer) < 1e-6f) {
+    glm::vec3 facingForward;
+    if (!TryCalculateTangentialDirectionToPlayer(
+            enemy,
+            *nearestPlayer,
+            facingForward)) {
         return;
     }
 
-    const glm::vec3 facingForward = glm::normalize(toPlayer);
     enemy.SetFacingForwardForEnemy(facingForward);
     enemy.SetFacingYawForEnemy(enemy.GetGame()->GetMathUtils()->GetYawFromDirection(enemy.GetUpVec(), facingForward) +
                                3.14159265f);
@@ -53,20 +132,45 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
 
 void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
-    const glm::vec3 moveDelta = enemy.GetFacingForwardVec() * status.GetMoveSpeed() * deltaTime;
+    glm::vec3 tangentialMoveDirection;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            enemy.GetFacingForwardVec(),
+            enemy.GetUpVec(),
+            tangentialMoveDirection)) {
+        return;
+    }
+
+    const glm::vec3 moveDelta =
+        tangentialMoveDirection *
+        status.GetMoveSpeed() *
+        deltaTime;
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
 void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
                                          float deltaTime)
 {
-    glm::vec3 moveDelta;
-    if (stateMachine.IsProgressing(status)) {
-        moveDelta = enemy.GetFacingForwardVec() * status.GetAttackSpeed() * deltaTime;
-    } else {
-        moveDelta = -enemy.GetFacingForwardVec() * status.GetAttackSpeed() * deltaTime;
+    glm::vec3 tangentialAttackDirection;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            enemy.GetFacingForwardVec(),
+            enemy.GetUpVec(),
+            tangentialAttackDirection)) {
+        return;
     }
 
+    glm::vec3 attackDirection;
+    if (stateMachine.IsProgressing(status)) {
+        attackDirection =
+            tangentialAttackDirection;
+    } else {
+        attackDirection =
+            -tangentialAttackDirection;
+    }
+
+    const glm::vec3 moveDelta =
+        attackDirection *
+        status.GetAttackSpeed() *
+        deltaTime;
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
@@ -95,11 +199,95 @@ void EnemyMovement::MoveDuringDying(Enemy& enemy, float deltaTime)
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
+void EnemyMovement::ApplyAirDodgePush(
+    Enemy& enemy,
+    const glm::vec3& dodgeDirection)
+{
+    glm::vec3 tangentialPushDirection;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            dodgeDirection,
+            enemy.GetUpVec(),
+            tangentialPushDirection)) {
+        return;
+    }
+
+    constexpr float airDodgePushSpeed = 6.0f;
+    mAirDodgePushVelocity =
+        tangentialPushDirection *
+        airDodgePushSpeed;
+}
+
+void EnemyMovement::UpdateAirDodgePushMovement(
+    Enemy& enemy,
+    float deltaTime)
+{
+    const float pushSpeed =
+        glm::length(mAirDodgePushVelocity);
+    constexpr float minimumPushSpeed = 0.05f;
+    if (pushSpeed < minimumPushSpeed) {
+        mAirDodgePushVelocity = glm::vec3(0.0f);
+        return;
+    }
+
+    glm::vec3 tangentialPushDirection;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            mAirDodgePushVelocity,
+            enemy.GetUpVec(),
+            tangentialPushDirection)) {
+        mAirDodgePushVelocity = glm::vec3(0.0f);
+        return;
+    }
+
+    const glm::vec3 movementDelta =
+        tangentialPushDirection *
+        pushSpeed *
+        deltaTime;
+    PhysicsSystem* physicsSystem =
+        enemy.GetGame()
+            ? enemy.GetGame()->GetPhysicsSystem()
+            : nullptr;
+    if (!physicsSystem) {
+        return;
+    }
+
+    const ActorMovementCollisionResult collisionResult =
+        physicsSystem->ResolveMovementCollision(
+            &enemy,
+            movementDelta,
+            enemy.GetPos() + movementDelta);
+    enemy.SetPos(collisionResult.resolvedPosition);
+    if (collisionResult.didHitStage) {
+        mAirDodgePushVelocity = glm::vec3(0.0f);
+        return;
+    }
+
+    constexpr float airDodgePushDampingPerSecond = 8.0f;
+    const float dampedPushSpeed =
+        pushSpeed *
+        std::exp(
+            -airDodgePushDampingPerSecond *
+            deltaTime);
+    mAirDodgePushVelocity =
+        tangentialPushDirection *
+        dampedPushSpeed;
+}
+
 void EnemyMovement::LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime)
 {
     enemy.GetGame()->OnEnemyLaunched();
 
-    constexpr float launchSpeed = 5.0f;
+    mAirDodgePushVelocity = glm::vec3(0.0f);
+
+    constexpr float gravityAcceleration = 9.8f;
+    const float launchHeight =
+        std::max(
+            0.0f,
+            status.GetLaunchHeight());
+    const float launchSpeed =
+        std::sqrt(
+            2.0f *
+            gravityAcceleration *
+            launchHeight);
     enemy.AddVelocity(enemy.GetUpVec() * launchSpeed);
     enemy.AddPos(enemy.GetVelocity() * deltaTime);
 
@@ -114,6 +302,10 @@ void EnemyMovement::LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateM
 
 void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime)
 {
+    UpdateAirDodgePushMovement(
+        enemy,
+        deltaTime);
+
     if (status.GetLaunchedTimer() >= 0.0f) {
         status.DecreaseLaunchedTimer(deltaTime);
 
@@ -141,9 +333,14 @@ glm::vec3 EnemyMovement::CalculateCollisionAdjustedPos(Enemy& enemy, const glm::
 {
     glm::vec3 desiredPos = enemy.GetPos() + moveDelta;
 
-    desiredPos = enemy.GetGame()->GetPhysicsSystem()->CheckCollision(&enemy, moveDelta, desiredPos);
+    const ActorMovementCollisionResult collisionResult =
+        enemy.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
+            &enemy,
+            moveDelta,
+            desiredPos);
+    desiredPos = collisionResult.resolvedPosition;
 
-    if (enemy.IsAlive()) {
+    if (enemy.IsAlive() && enemy.IsOnGround()) {
         desiredPos = mGrounding.ClampMoveToGround(enemy, desiredPos);
     }
 

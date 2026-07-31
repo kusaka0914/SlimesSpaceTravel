@@ -14,6 +14,7 @@
 #include "actor/Platform.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
 
 #include <string>
@@ -62,6 +63,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
             {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
             {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
             {StageActorType::StageObject, "stageObjects", "汎用モデル"},
+            {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
         };
 
         const auto& platformTypes = PlatformTypeRegistry::GetDefinitions();
@@ -150,6 +152,21 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
         for (NPC* npc : planet->GetNPCs()) {
             const int yamlIndex = npc ? npc->GetStageYamlIndex() : -1;
             AddInstance(instances, npc, StageActorType::NPC, yamlIndex, "NPCs", MakeIndexedLabel("NPC", yamlIndex));
+        }
+
+        for (TutorialTrigger* trigger :
+             planet->GetTutorialTriggers()) {
+            const int yamlIndex =
+                trigger ? trigger->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                trigger,
+                StageActorType::TutorialTrigger,
+                yamlIndex,
+                "tutorialTriggers",
+                MakeIndexedLabel(
+                    "チュートリアルトリガー",
+                    yamlIndex));
         }
 
         if (Star* star = planet->GetStar()) {

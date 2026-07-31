@@ -10,9 +10,10 @@
 class btDiscreteDynamicsWorld;
 class btCollisionObject;
 class btCollisionShape;
-class btSphereShape;
+class btConvexShape;
 
 class Game;
+class Actor;
 class FallRespawnPoint;
 
 class FallRespawnTriggerSystem {
@@ -27,9 +28,13 @@ public:
                            const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const;
 
     std::optional<PhysicsSystem::RayHitActor>
-    CheckFallRespawnBySweep(btDiscreteDynamicsWorld* world, btSphereShape* playerShape, const glm::vec3& from,
-                            const glm::vec3& to,
-                            const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const;
+    CheckFallRespawnBySweep(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* playerShape,
+        const Actor* actor,
+        const glm::vec3& from,
+        const glm::vec3& to,
+        const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const;
 
 private:
     void CreateTriggerBody(btDiscreteDynamicsWorld* world, FallRespawnPoint* point,

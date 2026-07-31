@@ -25,6 +25,17 @@ enum class NPCProximityMessageMode {
     Always
 };
 
+enum class TalkPageAdvanceCondition {
+    Confirm = 0,
+    PlayerSwitch,
+    Jump
+};
+
+const char* GetTalkPageAdvanceConditionId(
+    TalkPageAdvanceCondition condition);
+TalkPageAdvanceCondition ParseTalkPageAdvanceConditionId(
+    const std::string& conditionId);
+
 class NPC : public CharacterActor {
 public:
     NPC(Game* game);
@@ -40,6 +51,9 @@ public:
         mTalkRubySegments.emplace_back();
         mTalkStageClearConditions.emplace_back(-1);
         mTalkProximityMessageTexts.emplace_back();
+        mTalkProximityMessageRubySegments.emplace_back();
+        mTalkAdvanceConditions.emplace_back(
+            TalkPageAdvanceCondition::Confirm);
     }
     void SetTalkText(std::size_t index, const std::string& talkText)
     {
@@ -72,6 +86,16 @@ public:
                     mTalkProximityMessageTexts.begin() +
                     static_cast<std::ptrdiff_t>(index));
             }
+            if (index < mTalkProximityMessageRubySegments.size()) {
+                mTalkProximityMessageRubySegments.erase(
+                    mTalkProximityMessageRubySegments.begin() +
+                    static_cast<std::ptrdiff_t>(index));
+            }
+            if (index < mTalkAdvanceConditions.size()) {
+                mTalkAdvanceConditions.erase(
+                    mTalkAdvanceConditions.begin() +
+                    static_cast<std::ptrdiff_t>(index));
+            }
         }
     }
     void SetTalkStageClearCondition(std::size_t index, int stageNum)
@@ -99,6 +123,20 @@ public:
         if (index < mTalkCameraFocusTargets.size()) {
             mTalkCameraFocusTargets[index] = std::nullopt;
         }
+    }
+    void SetTalkAdvanceCondition(
+        std::size_t index,
+        TalkPageAdvanceCondition condition)
+    {
+        if (index >= mTalkTexts.size()) {
+            return;
+        }
+        if (mTalkAdvanceConditions.size() < mTalkTexts.size()) {
+            mTalkAdvanceConditions.resize(
+                mTalkTexts.size(),
+                TalkPageAdvanceCondition::Confirm);
+        }
+        mTalkAdvanceConditions[index] = condition;
     }
     void SetTalkRubySegments(std::size_t index, std::vector<RubyTextSegment> segments)
     {
@@ -133,6 +171,14 @@ public:
     void SetTalkProximityMessageText(
         std::size_t index,
         const std::string& text);
+    void SetTalkProximityMessageRubySegments(
+        std::size_t index,
+        std::vector<RubyTextSegment> segments);
+    void SetTalkProximityMessageRubyReading(
+        std::size_t talkIndex,
+        std::size_t segmentIndex,
+        const std::string& reading);
+    void ClearTalkProximityMessageRubySegments(std::size_t index);
     void SetProximityMessageRange(float range);
     void SetProximityMessageHeight(float height);
     void SetProximityMessageScale(float scale);
@@ -150,6 +196,8 @@ public:
     std::vector<std::string> GetResolvedTalkTexts() const;
     const NPCTalkCameraFocusTarget*
     GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const;
+    TalkPageAdvanceCondition
+    GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const;
     const std::vector<RubyTextSegment>&
     GetResolvedTalkRubySegments(std::size_t resolvedIndex) const;
     const NPCTalkCameraFocusTarget* GetTalkCameraFocusTarget(std::size_t index) const
@@ -158,6 +206,13 @@ public:
             return nullptr;
         }
         return &*mTalkCameraFocusTargets[index];
+    }
+    TalkPageAdvanceCondition
+    GetTalkAdvanceCondition(std::size_t index) const
+    {
+        return index < mTalkAdvanceConditions.size()
+                   ? mTalkAdvanceConditions[index]
+                   : TalkPageAdvanceCondition::Confirm;
     }
     const std::vector<RubyTextSegment>& GetTalkRubySegments(std::size_t index) const
     {
@@ -186,15 +241,38 @@ public:
                    : emptyText;
     }
     const std::string& GetResolvedProximityMessageText() const;
+    const std::vector<RubyTextSegment>&
+    GetResolvedProximityMessageRubySegments() const;
+    const std::vector<RubyTextSegment>&
+    GetTalkProximityMessageRubySegments(std::size_t index) const
+    {
+        static const std::vector<RubyTextSegment> emptySegments;
+        return index < mTalkProximityMessageRubySegments.size()
+                   ? mTalkProximityMessageRubySegments[index]
+                   : emptySegments;
+    }
+    bool HasValidTalkProximityMessageRuby(std::size_t index) const
+    {
+        return index < mTalkProximityMessageTexts.size() &&
+               index < mTalkProximityMessageRubySegments.size() &&
+               !mTalkProximityMessageRubySegments[index].empty() &&
+               JoinRubyBaseText(
+                   mTalkProximityMessageRubySegments[index]) ==
+                   mTalkProximityMessageTexts[index];
+    }
     float GetProximityMessageRange() const { return mProximityMessageRange; }
     float GetProximityMessageHeight() const { return mProximityMessageHeight; }
     float GetProximityMessageScale() const { return mProximityMessageScale; }
     bool GetHasTalkedThisVisit() const { return mHasTalkedThisVisit; }
     bool CanStartRegularTalk() const;
     bool ShouldShowProximityMessage() const;
+    virtual bool ShouldUseTalkCamera() const { return true; }
+    virtual bool ShouldFacePlayerDuringTalk() const { return true; }
 
 private:
     std::vector<std::size_t> ResolveTalkIndices() const;
+    std::optional<std::size_t>
+    ResolveProximityMessageTalkIndex() const;
     void LookNearestPlayer(float deltaTime);
     void CheckTalkable();
 
@@ -206,11 +284,14 @@ private:
     std::string mName;
     std::vector<std::string> mTalkTexts;
     std::vector<std::optional<NPCTalkCameraFocusTarget>> mTalkCameraFocusTargets;
+    std::vector<TalkPageAdvanceCondition> mTalkAdvanceConditions;
     std::vector<std::vector<RubyTextSegment>> mTalkRubySegments;
     std::vector<int> mTalkStageClearConditions;
     NPCProximityMessageMode mProximityMessageMode =
         NPCProximityMessageMode::Disabled;
     std::vector<std::string> mTalkProximityMessageTexts;
+    std::vector<std::vector<RubyTextSegment>>
+        mTalkProximityMessageRubySegments;
     float mProximityMessageRange = 3.0f;
     float mProximityMessageHeight = 1.8f;
     float mProximityMessageScale = 1.0f;

@@ -1,6 +1,7 @@
 #include "system/InputSystem.h"
 
 #include "Game.h"
+#include "actor/Player.h"
 #include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
@@ -25,6 +26,7 @@ void InputSystem::ProcessGameInput()
 
     ProcessDebugReloadInput();
     ProcessPlayerJoinInput();
+    ProcessPlayerSwitchInput();
     ProcessSceneConfirmInput();
     ProcessDebugEditorToggleInput();
     ProcessFreeCameraToggleInput();
@@ -106,11 +108,29 @@ void InputSystem::ProcessPlayerJoinInput()
 {
     const bool qPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_Q) == GLFW_PRESS;
     if (qPressed && !mQPressedPrev) {
-        if (mGame->IsGameControllerConnected() && !mGame->GetIsPlayer2Joined() && mGame->GetPlayers().size() < 2) {
+        if (mGame->IsGameControllerConnected() && !mGame->GetIsPlayer2Joined()) {
             mGame->TryCreatePlayer2();
         }
     }
     mQPressedPrev = qPressed;
+}
+
+void InputSystem::ProcessPlayerSwitchInput()
+{
+    constexpr Sint16 triggerPressedThreshold = 16000;
+    SDL_GameController* controller = mGame->GetSdlController();
+    const bool switchPressed =
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_O) == GLFW_PRESS ||
+        (controller &&
+         SDL_GameControllerGetAxis(
+             controller,
+             SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > triggerPressedThreshold);
+
+    if (switchPressed && !mPlayerSwitchPressedPrev) {
+        mGame->SwitchControlledPlayer();
+    }
+
+    mPlayerSwitchPressedPrev = switchPressed;
 }
 
 void InputSystem::ProcessSceneConfirmInput()
@@ -126,12 +146,20 @@ void InputSystem::ProcessSceneConfirmInput()
 
     const bool keyboardConfirmPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_K) == GLFW_PRESS;
 
+    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    const int controlledPlayerNum =
+        controlledPlayer ? controlledPlayer->GetPlayerNum() : 1;
+    const bool isTwoPlayerMode = mGame->GetIsPlayer2Joined();
+
     if (controllerConfirmPressed && !mControllerConfirmPressedPrev) {
-        sceneSystem->OnConfirmPressed(1);
+        const int controllerPlayerNum =
+            isTwoPlayerMode ? 1 : controlledPlayerNum;
+        sceneSystem->OnConfirmPressed(controllerPlayerNum);
     }
 
     if (keyboardConfirmPressed && !mKeyboardConfirmPressedPrev) {
-        const int keyboardPlayerNum = mGame->IsGameControllerConnected() && mGame->GetIsPlayer2Joined() ? 2 : 1;
+        const int keyboardPlayerNum =
+            isTwoPlayerMode ? 2 : controlledPlayerNum;
         sceneSystem->OnConfirmPressed(keyboardPlayerNum);
     }
 

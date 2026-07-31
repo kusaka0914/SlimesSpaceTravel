@@ -168,13 +168,19 @@ void StageCollisionBuilder::SyncKinematicBodies(
         }
 
         Platform* platform = dynamic_cast<Platform*>(actor);
-        if (!platform) {
+        StageObject* stageObject =
+            dynamic_cast<StageObject*>(actor);
+        if (!platform && !stageObject) {
             continue;
         }
 
+        const bool collisionEnabled =
+            platform
+                ? platform->GetCollisionEnabled()
+                : stageObject->GetCollisionEnabled();
         const bool shouldBeInWorld =
-            platform->GetIsActive() &&
-            platform->GetCollisionEnabled();
+            actor->GetIsActive() &&
+            collisionEnabled;
         const bool isInWorld = rigidBody->isInWorld();
 
         if (!shouldBeInWorld) {
@@ -191,7 +197,8 @@ void StageCollisionBuilder::SyncKinematicBodies(
                 static_cast<short>(-1));
         }
 
-        if (!platform->UsesKinematicPhysics()) {
+        if (!platform ||
+            !platform->UsesKinematicPhysics()) {
             continue;
         }
 

@@ -1,11 +1,12 @@
 enemies:
   - type: common
-    knockBackSpeed: 15
+    knockBackSpeed: 8
     defaultLaunchedTimer: 4
+    launchHeight: 2.02
     detectionRange: 10
   - type: normal
     behaviorProfile: legacyMelee
-    hp: 80
+    hp: 100
     modelPath: enemy.obj
     scale: 0.25
     speed: 1
@@ -17,16 +18,16 @@ enemies:
     attackSpeed: 1.5
   - type: normalFixed
     behaviorProfile: legacyMelee
-    hp: 80
+    hp: 400
     modelPath: enemy.obj
-    scale: 0.25
-    speed: 0
-    attack: 1
-    breakCountMax: 1
-    radius: 0.75
-    defaultStandByAttackTimer: 2
+    scale: 1
+    speed: 3
+    attack: 2
+    breakCountMax: 3
+    radius: 1.5
+    defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
-    attackSpeed: 4.5
+    attackSpeed: 9
   - type: bigFixed
     behaviorProfile: legacyMelee
     hp: 80
@@ -51,7 +52,6 @@ enemies:
     defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
     attackSpeed: 9
-
 behaviorProfiles:
   legacyMelee:
     actions:

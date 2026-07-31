@@ -4,6 +4,8 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <string>
+#include <vector>
 
 class Platform;
 
@@ -117,4 +119,35 @@ private:
     Platform* mPlatform = nullptr;
     glm::vec3 mLocalDirection{0.0f, 0.0f, 1.0f};
     float mSpeed = 2.0f;
+};
+
+class PlatformPressureSwitchComponent : public Component {
+public:
+    explicit PlatformPressureSwitchComponent(
+        Platform* owner,
+        int updateOrder = 85);
+    ~PlatformPressureSwitchComponent() override;
+
+    void Update(float deltaTime) override;
+
+    void SetTargetPlatformIds(
+        const std::vector<std::string>& targetPlatformIds);
+    const std::vector<std::string>& GetTargetPlatformIds() const
+    {
+        return mTargetPlatformIds;
+    }
+    void SetInactiveOpacity(float opacity);
+    float GetInactiveOpacity() const { return mInactiveOpacity; }
+    bool GetIsPressed() const { return mIsPressed; }
+
+    void ClearTargetRuntimeStates();
+
+private:
+    Platform* FindTargetPlatform(const std::string& platformId) const;
+    void ApplyTargetState();
+
+    Platform* mPlatform = nullptr;
+    std::vector<std::string> mTargetPlatformIds;
+    float mInactiveOpacity = 0.2f;
+    bool mIsPressed = false;
 };

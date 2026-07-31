@@ -40,6 +40,7 @@ struct EnemyConfig {
 
     float knockBackSpeed = 0.0f;
     float defaultLaunchedTimer = 0.0f;
+    float launchHeight = 1.2755f;
     float detectionRange = 0.0f;
 
     EnemyBehaviorConfig behavior;

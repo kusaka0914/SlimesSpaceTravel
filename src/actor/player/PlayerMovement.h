@@ -19,13 +19,20 @@ public:
 
     void ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding, float deltaTime);
     void ApplyAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
-    void ApplyChargeMovement(Player& player, float deltaTime);
     void ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyKnockBackMovement(Player& player, float deltaTime);
     void ApplyJumpGravity(Player& player, float deltaTime) const;
+    bool UpdateAirSlamMovement(
+        Player& player,
+        const PlayerCombat& combat,
+        float deltaTime);
 
     void StartDodgeMovement(Player& player, const PlayerInput& input);
+    bool StartDodgeMovementTowards(
+        Player& player,
+        const glm::vec3& targetPosition);
     void StartJumpMovement(Player& player, float deltaTime);
+    void StartAirSlamMovement(Player& player);
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
@@ -33,13 +40,17 @@ public:
 
     void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
+    void RestoreAirDodge()
+    {
+        mHasUsedDodge = false;
+        mDodgeCooldownRemaining = 0.0f;
+    }
     void UpdateDodgeCooldown(float deltaTime);
 
     void SetHasUsedDodge(bool hasUsedDodge) { mHasUsedDodge = hasUsedDodge; }
     void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
     void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
-    void SetChargeMoveSpeed(float chargeMoveSpeed) { mChargeMoveSpeed = chargeMoveSpeed; }
     void SetDodgeDuration(float dodgeDuration) { mDodgeDuration = dodgeDuration; }
     void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownDuration = dodgeCooldownTime; }
     void SetDodgeDistance(float dodgeDistance) { mDodgeDistance = dodgeDistance; }
@@ -47,6 +58,9 @@ public:
     void SetJumpHeight(float jumpHeight) { mJumpHeight = jumpHeight; }
     void SetJumpAscentDuration(float duration) { mJumpAscentDuration = duration; }
     void SetJumpFallDuration(float duration) { mJumpFallDuration = duration; }
+    void SetAirSlamRiseHeight(float riseHeight) { mAirSlamRiseHeight = riseHeight; }
+    void SetAirSlamRiseDurationSeconds(float durationSeconds) { mAirSlamRiseDurationSeconds = durationSeconds; }
+    void SetAirSlamHoverDurationSeconds(float durationSeconds) { mAirSlamHoverDurationSeconds = durationSeconds; }
     void SetDodgeCooldown(float dodgeCooldown) { mDodgeCooldownRemaining = dodgeCooldown; }
 
     int GetCurrentPlanetNum() const { return mCurrentPlanetNum; }
@@ -57,16 +71,29 @@ public:
     float GetDodgeCooldownTime() const { return mDodgeCooldownDuration; }
     float GetDodgeDistance() const { return mDodgeDistance; }
     float GetMoveSpeed() const { return mMoveSpeed; }
-    float GetChargeMoveSpeed() const { return mChargeMoveSpeed; }
     float GetKnockBackSpeed() const { return mKnockBackSpeed; }
     float GetJumpHeight() const { return mJumpHeight; }
     float GetJumpAscentDuration() const { return mJumpAscentDuration; }
     float GetJumpFallDuration() const { return mJumpFallDuration; }
+    float GetAirSlamRiseHeight() const { return mAirSlamRiseHeight; }
+    float GetAirSlamRiseDurationSeconds() const { return mAirSlamRiseDurationSeconds; }
+    float GetAirSlamHoverDurationSeconds() const { return mAirSlamHoverDurationSeconds; }
     const glm::vec3& GetForwardVec() const { return mForwardVec; }
+    const glm::vec3& GetDodgeDirection() const { return mDodgeDir; }
 
     void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
 
 private:
+    enum class AirSlamMovementPhase {
+        Rising,
+        Hovering,
+        Falling,
+    };
+
+    void StartDodgeMovementInDirection(
+        Player& player,
+        const glm::vec3& dodgeDirection);
+
     bool mHasUsedDodge = false;
     bool mHasStrongAttackDirectionOverride = false;
 
@@ -79,8 +106,12 @@ private:
     float mDodgeCooldownDuration = 0.3f;
     float mDodgeDistance = 3.0f;
     float mDodgeStartHeight = 0.0f;
+    float mAirSlamRiseHeight = 1.0f;
+    float mAirSlamRiseDurationSeconds = 0.5f;
+    float mAirSlamHoverDurationSeconds = 0.3f;
+    float mAirSlamPhaseRemainingSeconds = 0.0f;
+    AirSlamMovementPhase mAirSlamMovementPhase = AirSlamMovementPhase::Falling;
     float mMoveSpeed = 10.2f;
-    float mChargeMoveSpeed = 6.0f;
     float mKnockBackSpeed = 0.0f;
     // The old 6.0 m/s jump under 9.8 m/s^2 gravity reached about 1.84 m.
     // Durations independently control the faster rise and slower fall.

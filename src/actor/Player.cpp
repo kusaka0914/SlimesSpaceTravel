@@ -6,6 +6,7 @@
 #include "actor/player/PlayerConfig.h"
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
+#include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -43,6 +44,18 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mMovement.SetJumpHeight(config.jumpHeight);
     mMovement.SetJumpAscentDuration(config.jumpAscentDuration);
     mMovement.SetJumpFallDuration(config.jumpFallDuration);
+    if (mGame) {
+        mGame->SetGroundNormalRayLength(config.groundNormalRayLength);
+
+        PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
+        if (physicsSystem) {
+            physicsSystem->SetPlayerCollisionWidth(config.collisionWidth);
+            physicsSystem->SetPlayerCollisionHeight(config.collisionHeight);
+            physicsSystem->SetPlayerCollisionDepth(config.collisionDepth);
+            physicsSystem->SetPlayerCollisionCenterHeight(
+                config.collisionCenterHeight);
+        }
+    }
 
     mMovement.SetDodgeDuration(config.dodgeDuration);
     mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);
@@ -59,6 +72,11 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mCombat.SetStrongAttackRange(config.strongAttackRange);
     mCombat.SetStrongAttack(config.strongAttack);
     mCombat.SetStrongAttackSpeed(config.strongAttackSpeed);
+    mMovement.SetAirSlamRiseHeight(config.airSlamRiseHeight);
+    mMovement.SetAirSlamRiseDurationSeconds(
+        config.airSlamRiseDurationSeconds);
+    mMovement.SetAirSlamHoverDurationSeconds(
+        config.airSlamHoverDurationSeconds);
 
     mCombat.SetSpecialAttackCooldown(config.specialAttackCooldown);
     mStatus.SetDefaultInvincibleTimer(config.defaultInvincibleTimer);
@@ -67,8 +85,6 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mCombat.SetAttackHitDelay(config.attackHitDelay);
     mCombat.SetAttackCooldown(config.attackCooldown);
     mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
-    mCombat.SetDefaultAttackPressTimer(config.defaultAttackPressTimer);
-    mMovement.SetChargeMoveSpeed(config.chargeMoveSpeed);
     mCombat.SetDefaultStrongAttackTimer(config.defaultStrongAttackTimer);
     mMovement.SetKnockBackSpeed(config.knockBackSpeed);
 
@@ -137,6 +153,19 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    PhysicsSystem* physicsSystem =
+        mGame
+            ? mGame->GetPhysicsSystem()
+            : nullptr;
+    if (GetIsActive() && physicsSystem) {
+        const ActorMovementCollisionResult overlapResolution =
+            physicsSystem->ResolveMovementCollision(
+                this,
+                glm::vec3(0.0f),
+                GetPos());
+        SetPos(overlapResolution.resolvedPosition);
+    }
+
     if (mControlLocked) {
         mVelocity = glm::vec3(0.0f);
         mParticleEffectController.UpdateWalking(*this, false);
@@ -220,6 +249,7 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
         return;
 
     case PlayerActionState::StrongAttacking:
+    case PlayerActionState::AirSlamAttacking:
         mAnimationController.RequestAnimation(strongAttackAnimationId);
         return;
 

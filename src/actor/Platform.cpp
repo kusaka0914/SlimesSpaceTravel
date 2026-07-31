@@ -150,6 +150,24 @@ void Platform::RemoveConveyorComponent()
     mConveyorComponent = nullptr;
 }
 
+PlatformPressureSwitchComponent* Platform::AddPressureSwitchComponent()
+{
+    if (mPressureSwitchComponent) return mPressureSwitchComponent;
+    auto component =
+        std::make_unique<PlatformPressureSwitchComponent>(this);
+    mPressureSwitchComponent = component.get();
+    AddComponent(std::move(component));
+    return mPressureSwitchComponent;
+}
+
+void Platform::RemovePressureSwitchComponent()
+{
+    if (!mPressureSwitchComponent) return;
+    mPressureSwitchComponent->ClearTargetRuntimeStates();
+    RemoveComponent(mPressureSwitchComponent);
+    mPressureSwitchComponent = nullptr;
+}
+
 void Platform::SetComponentOpacity(const Component* component, float opacity)
 {
     if (!component) return;
@@ -185,6 +203,10 @@ float Platform::GetRenderOpacity() const
 
 bool Platform::GetCollisionEnabled() const
 {
+    if (GetGame() && GetGame()->GetIsDebugEditorShowing()) {
+        return true;
+    }
+
     for (const auto& [component, enabled] : mComponentCollisionStates) {
         (void)component;
         if (!enabled) return false;

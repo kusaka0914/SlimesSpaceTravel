@@ -46,7 +46,8 @@ PlayerCamera::PlayerCamera(CameraCollisionResolver& collisionResolver)
 }
 
 void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
-                          float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime)
+                          float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime,
+                          int yawPlayerIndex)
 {
     if (players.empty()) {
         return;
@@ -54,14 +55,43 @@ void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, f
 
     ResizeState(players.size());
 
-    if (players[0]) {
-        players[0]->SetCameraYaw(yawDelta);
+    if (yawPlayerIndex >= 0 &&
+        yawPlayerIndex < static_cast<int>(players.size()) &&
+        players[static_cast<std::size_t>(yawPlayerIndex)]) {
+        // Manual camera input must always take priority over the automatic
+        // align-behind transition. Otherwise UpdateCameraForward overwrites
+        // the yaw every frame until the transition happens to complete.
+        constexpr float manualYawEpsilon = 0.000001f;
+        if (std::abs(yawDelta) > manualYawEpsilon) {
+            mStates[static_cast<std::size_t>(yawPlayerIndex)].isAligningBehindPlayer = false;
+        }
+        players[static_cast<std::size_t>(yawPlayerIndex)]->SetCameraYaw(yawDelta);
     }
 
     for (int i = 0; i < static_cast<int>(players.size()); ++i) {
         UpdateState(players[i], i, upSmoothingSpeed, targetSmoothingSpeed, attackTargetSmoothingSpeed,
                     deltaTime);
     }
+}
+
+void PlayerCamera::BeginPlayerSwitchTransition(
+    int fromPlayerIndex,
+    int toPlayerIndex)
+{
+    if (fromPlayerIndex < 0 || toPlayerIndex < 0) {
+        return;
+    }
+
+    const int requiredStateCount =
+        std::max(fromPlayerIndex, toPlayerIndex) + 1;
+    ResizeState(static_cast<std::size_t>(requiredStateCount));
+
+    mStates[static_cast<std::size_t>(toPlayerIndex)] =
+        mStates[static_cast<std::size_t>(fromPlayerIndex)];
+    PlayerCameraState& destinationState =
+        mStates[static_cast<std::size_t>(toPlayerIndex)];
+    destinationState.hasAttackTargetForward = false;
+    destinationState.isAligningBehindPlayer = false;
 }
 
 void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
@@ -229,6 +259,21 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
     }
 
     if (state.isAligningBehindPlayer) {
+        // The player's up direction changes while moving over a sphere.
+        // Keep both directions on the current tangent plane so the completion
+        // dot product can still reach its threshold after that change.
+        glm::vec3 currentForward;
+        glm::vec3 alignTargetForward;
+        if (!TryGetTangentDirection(state.cameraForwardVec, up, currentForward) ||
+            !TryGetTangentDirection(state.alignTargetForwardVec, up, alignTargetForward)) {
+            state.isAligningBehindPlayer = false;
+            state.cameraForwardVec = normalForward;
+            return;
+        }
+
+        state.cameraForwardVec = currentForward;
+        state.alignTargetForwardVec = alignTargetForward;
+
         constexpr float alignSmoothingSpeed = 8.0f;
         state.cameraForwardVec = RotateTowards(
             state.cameraForwardVec, state.alignTargetForwardVec, up, alignSmoothingSpeed, deltaTime);

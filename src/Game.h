@@ -63,7 +63,6 @@ public:
     void OnPlayerDied();
     void OnBoatPartsObtained();
     void OnPlayerApplyDamage(int playerNum);
-    void OnPlayerFinishCharging(int playerNum);
     void OnPlayerAttackHit(int playerNum);
     void OnStrongAttacked(int playerNum);
     void OnPlayerCounter(int playerNum);
@@ -82,14 +81,21 @@ public:
 
     void AddPlayer(Player* player);
     void RemoveAllPlayer();
+    bool SwitchControlledPlayer();
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
+    void SetGroundNormalRayLength(float rayLength)
+    {
+        mGroundNormalRayLength = rayLength > 0.01f ? rayLength : 0.01f;
+    }
 
     GLFWwindow* GetWindow() const { return mWindow; }
     SDL_GameController* GetSdlController() const;
 
     const std::vector<Player*>& GetPlayers() const;
     Player* GetMainPlayer() const;
+    Player* GetControlledPlayer() const;
+    int GetControlledPlayerIndex() const { return mControlledPlayerIndex; }
 
     const std::vector<Stage*>& GetStages() const;
     Stage* GetCurrentStage() const;
@@ -113,6 +119,7 @@ public:
     SequenceSystem* GetSequenceSystem() const { return mSequenceSystem.get(); }
 
     float GetHitStopTimer() const { return mHitStopTimer; }
+    float GetGroundNormalRayLength() const { return mGroundNormalRayLength; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
     bool GetIsDebugMode() const { return mIsDebugMode; }
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
@@ -164,10 +171,12 @@ private:
     std::unique_ptr<StageProgressSystem> mStageProgressSystem;
 
     float mHitStopTimer = -1.0f;
+    float mGroundNormalRayLength = 5.0f;
 
     double mLastTime = 0.0;
 
     bool mIsPlayer2Joined = false;
+    int mControlledPlayerIndex = 0;
     bool mIsDebugEditorShowing = false;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;

@@ -82,7 +82,11 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
         return;
     }
 
-    auto hit = player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(prevPos, player.GetPos());
+    auto hit =
+        player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(
+            &player,
+            prevPos,
+            player.GetPos());
 
     if (!hit || !hit->actor) {
         return;

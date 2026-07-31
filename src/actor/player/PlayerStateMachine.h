@@ -36,10 +36,14 @@ private:
                        float deltaTime);
     void UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status, float deltaTime);
-    void UpdateCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
-                        float deltaTime);
     void UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                PlayerStatus& status, float deltaTime);
+    void UpdateAirSlamAttacking(
+        Player& player,
+        PlayerMovement& movement,
+        PlayerCombat& combat,
+        PlayerStatus& status,
+        float deltaTime);
     void UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                            float deltaTime);
     void UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -52,11 +56,12 @@ private:
 
     bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                     float deltaTime);
-    bool TryStartCharging(
+    bool TryStartAirSlamAttack(
         Player& player,
         PlayerInput& input,
         PlayerMovement& movement,
-        PlayerCombat& combat);
+        PlayerCombat& combat,
+        float deltaTime);
     void ApplyIdleGravity(Player& player, PlayerMovement& movement, PlayerCombat& combat, float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          float deltaTime);
@@ -72,6 +77,12 @@ private:
                                    float deltaTime);
     bool TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status);
+    bool TryStartAssistAirDodgeAttack(
+        Player& player,
+        PlayerInput& input,
+        PlayerMovement& movement,
+        PlayerCombat& combat,
+        PlayerStatus& status);
     bool TryStartAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                         PlayerStatus& status, float deltaTime);
 

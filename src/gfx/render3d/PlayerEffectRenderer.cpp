@@ -7,6 +7,7 @@
 #include "actor/Player.h"
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
+#include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
@@ -15,6 +16,7 @@
 #include <cmath>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <initializer_list>
 
 PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
     : mRenderer(renderer)
@@ -33,6 +35,7 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     }
 
     mRenderer->TryDrawActor(players[0]);
+    DrawPlayerCollisionShape(players[0]);
 
     /*const bool canDrawP1AttackRange =
         players[0]->IsAttacking() || players[0]->GetIsStrongAttacked() || players[0]->GetCanSpecialAttack();
@@ -42,12 +45,13 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
 
     DrawTiredEffect(viewMat, players[0]);
 
-    const bool hasPlayer2 = mRenderer->GetGame()->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
+    const bool hasPlayer2 = players.size() >= 2 && players[1];
     if (!hasPlayer2) {
         return;
     }
 
     mRenderer->TryDrawActor(players[1]);
+    DrawPlayerCollisionShape(players[1]);
 
     /*const bool canDrawP2AttackRange =
         players[1]->IsAttacking() || players[1]->GetIsStrongAttacked() || players[1]->GetCanSpecialAttack();
@@ -56,6 +60,164 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     }*/
 
     DrawTiredEffect(viewMat, players[1]);
+}
+
+void PlayerEffectRenderer::DrawPlayerCollisionShape(
+    const Player* player) const
+{
+    if (!mRenderer || !player || !player->GetIsActive()) {
+        return;
+    }
+
+    Game* game = mRenderer->GetGame();
+    if (!game || !game->GetIsDebugEditorShowing()) {
+        return;
+    }
+
+    const PhysicsSystem* physicsSystem = game->GetPhysicsSystem();
+    if (!physicsSystem) {
+        return;
+    }
+
+    const float collisionWidth =
+        physicsSystem->GetPlayerCollisionWidth();
+    const float collisionHeight =
+        physicsSystem->GetPlayerCollisionHeight();
+    const float collisionDepth =
+        physicsSystem->GetPlayerCollisionDepth();
+    if (collisionWidth <= 0.0f ||
+        collisionHeight <= 0.0f ||
+        collisionDepth <= 0.0f) {
+        return;
+    }
+
+    glm::vec3 up = player->GetUpVec();
+    if (glm::length(up) < 1e-6f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    up = glm::normalize(up);
+
+    glm::vec3 forward = player->GetForwardVec();
+    if (glm::length(forward) < 1e-6f) {
+        const glm::vec3 referenceAxis =
+            std::abs(up.y) < 0.9f
+                ? glm::vec3(0.0f, 1.0f, 0.0f)
+                : glm::vec3(1.0f, 0.0f, 0.0f);
+        forward = glm::cross(up, referenceAxis);
+    }
+    forward = glm::normalize(forward);
+
+    glm::vec3 left = player->GetLeftVec();
+    if (glm::length(left) < 1e-6f) {
+        left = glm::cross(up, forward);
+    }
+    left = glm::normalize(left);
+
+    const glm::vec3 collisionCenter =
+        player->GetPos() +
+        up * physicsSystem->GetPlayerCollisionCenterHeight();
+    const float collisionHalfWidth = collisionWidth * 0.5f;
+    const float collisionHalfHeight = collisionHeight * 0.5f;
+    const float collisionHalfDepth = collisionDepth * 0.5f;
+
+    constexpr int circleSegmentCount = 64;
+    const glm::vec4 collisionColor(0.1f, 0.9f, 1.0f, 0.9f);
+
+    const auto drawEllipse =
+        [this, &collisionColor](
+            const glm::vec3& ellipseCenter,
+            const glm::vec3& firstAxis,
+            const glm::vec3& secondAxis,
+            float firstRadius,
+            float secondRadius) {
+            std::vector<glm::vec3> ellipseVertices;
+            ellipseVertices.reserve(circleSegmentCount);
+
+            for (int segmentIndex = 0;
+                 segmentIndex < circleSegmentCount;
+                 ++segmentIndex) {
+                const float angleRadians =
+                    glm::two_pi<float>() *
+                    static_cast<float>(segmentIndex) /
+                    static_cast<float>(circleSegmentCount);
+                ellipseVertices.push_back(
+                    ellipseCenter +
+                    firstAxis * (std::cos(angleRadians) * firstRadius) +
+                    secondAxis * (std::sin(angleRadians) * secondRadius));
+            }
+
+            mRenderer->DrawAttackRangeVertices(
+                ellipseVertices,
+                GL_LINE_LOOP,
+                collisionColor);
+        };
+
+    const GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    GLfloat previousLineWidth = 1.0f;
+    glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
+
+    glDisable(GL_DEPTH_TEST);
+    glLineWidth(2.0f);
+
+    drawEllipse(
+        collisionCenter,
+        left,
+        up,
+        collisionHalfWidth,
+        collisionHalfHeight);
+    drawEllipse(
+        collisionCenter,
+        left,
+        forward,
+        collisionHalfWidth,
+        collisionHalfDepth);
+    drawEllipse(
+        collisionCenter,
+        up,
+        forward,
+        collisionHalfHeight,
+        collisionHalfDepth);
+
+    constexpr float sectionOffsetRatio = 0.55f;
+    constexpr float sectionRadiusRatio = 0.8351647f;
+
+    for (float directionSign : {-1.0f, 1.0f}) {
+        drawEllipse(
+            collisionCenter +
+                up *
+                    (collisionHalfHeight *
+                     sectionOffsetRatio *
+                     directionSign),
+            left,
+            forward,
+            collisionHalfWidth * sectionRadiusRatio,
+            collisionHalfDepth * sectionRadiusRatio);
+        drawEllipse(
+            collisionCenter +
+                left *
+                    (collisionHalfWidth *
+                     sectionOffsetRatio *
+                     directionSign),
+            up,
+            forward,
+            collisionHalfHeight * sectionRadiusRatio,
+            collisionHalfDepth * sectionRadiusRatio);
+        drawEllipse(
+            collisionCenter +
+                forward *
+                    (collisionHalfDepth *
+                     sectionOffsetRatio *
+                     directionSign),
+            left,
+            up,
+            collisionHalfWidth * sectionRadiusRatio,
+            collisionHalfHeight * sectionRadiusRatio);
+    }
+
+    glLineWidth(previousLineWidth);
+    if (wasDepthTestEnabled == GL_TRUE) {
+        glEnable(GL_DEPTH_TEST);
+    }
 }
 
 void PlayerEffectRenderer::DrawEnemyWithEffects(Enemy* enemy, const glm::mat4& viewMat) const

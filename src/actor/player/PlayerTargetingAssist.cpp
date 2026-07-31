@@ -200,6 +200,42 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     return nearestAnyDirectionTarget;
 }
 
+Enemy* PlayerTargetingAssist::FindNearestAirborneTarget(
+    const Player& player,
+    float maxDistance)
+{
+    Planet* planet = player.GetCurrentPlanet();
+    if (!planet || maxDistance <= 0.0f) {
+        return nullptr;
+    }
+
+    const float maxDistanceSquared =
+        maxDistance * maxDistance;
+    Enemy* nearestTarget = nullptr;
+    float nearestDistanceSquared =
+        std::numeric_limits<float>::max();
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (!IsValidEnemy(player, enemy) ||
+            enemy->IsOnGround()) {
+            continue;
+        }
+
+        const glm::vec3 playerToEnemy =
+            enemy->GetPos() - player.GetPos();
+        const float distanceSquared =
+            glm::dot(playerToEnemy, playerToEnemy);
+        if (distanceSquared > maxDistanceSquared ||
+            distanceSquared >= nearestDistanceSquared) {
+            continue;
+        }
+
+        nearestTarget = enemy;
+        nearestDistanceSquared = distanceSquared;
+    }
+
+    return nearestTarget;
+}
 
 bool PlayerTargetingAssist::FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target)
 {

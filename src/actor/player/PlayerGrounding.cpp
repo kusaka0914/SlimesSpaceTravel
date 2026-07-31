@@ -63,9 +63,26 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
         return;
     }
 
-    const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+    Actor* hitActor =
+        cb.m_collisionObject
+            ? static_cast<Actor*>(
+                  cb.m_collisionObject->getUserPointer())
+            : nullptr;
+    if (hitActor && !hitActor->ShouldAffectGravityDirection()) {
+        player.SetVelocity(glm::vec3(0.0f));
+        player.RefreshFallbackUpVec();
+        player.SetOnGround(false);
+        return;
+    }
 
-    player.SetPos(hitPos);
+    const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+    const ActorMovementCollisionResult collisionResult =
+        player.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
+            &player,
+            glm::vec3(0.0f),
+            hitPos);
+
+    player.SetPos(collisionResult.resolvedPosition);
     player.SetOnGround(true);
     player.SetVelocity(glm::vec3(0.0f));
 }

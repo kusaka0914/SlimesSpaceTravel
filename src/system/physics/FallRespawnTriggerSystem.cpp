@@ -10,6 +10,26 @@
 #include <btBulletDynamicsCommon.h>
 #include <memory>
 
+namespace {
+btTransform CreatePlayerSweepTransform(
+    const Actor& actor,
+    const glm::vec3& position)
+{
+    const glm::quat& actorOrientation = actor.GetOrientation();
+
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(btVector3(position.x, position.y, position.z));
+    transform.setRotation(
+        btQuaternion(
+            actorOrientation.x,
+            actorOrientation.y,
+            actorOrientation.z,
+            actorOrientation.w));
+    return transform;
+}
+} // namespace
+
 FallRespawnTriggerSystem::FallRespawnTriggerSystem(Game* game)
     : mGame(game)
 {
@@ -90,10 +110,14 @@ void FallRespawnTriggerSystem::SyncTriggerBodies(
 }
 
 std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRespawnBySweep(
-    btDiscreteDynamicsWorld* world, btSphereShape* playerShape, const glm::vec3& from, const glm::vec3& to,
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* playerShape,
+    const Actor* actor,
+    const glm::vec3& from,
+    const glm::vec3& to,
     const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const
 {
-    if (!world || !playerShape) {
+    if (!world || !playerShape || !actor) {
         return std::nullopt;
     }
 
@@ -103,13 +127,10 @@ std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRes
 
     SyncTriggerBodies(world, triggerObjects);
 
-    btTransform fromTransform;
-    fromTransform.setIdentity();
-    fromTransform.setOrigin(btVector3(from.x, from.y, from.z));
-
-    btTransform toTransform;
-    toTransform.setIdentity();
-    toTransform.setOrigin(btVector3(to.x, to.y, to.z));
+    const btTransform fromTransform =
+        CreatePlayerSweepTransform(*actor, from);
+    const btTransform toTransform =
+        CreatePlayerSweepTransform(*actor, to);
 
     class FallRespawnSweepCallback : public btCollisionWorld::ClosestConvexResultCallback {
     public:

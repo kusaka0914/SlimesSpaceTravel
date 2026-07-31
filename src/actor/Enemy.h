@@ -26,9 +26,11 @@ public:
     ~Enemy() override;
 
     void UpdateActor(float deltaTime) override;
+    bool ShouldRenderSolidWhite() const override;
 
     void ApplyDamage(float damage, Player* player);
     void ApplyBreak(float deltaTime, bool isAllBreak = false);
+    void ApplyAirDodgePush(const glm::vec3& dodgeDirection);
     void ApplyConfig(const std::string& type);
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
@@ -40,6 +42,7 @@ public:
     void SetHp(float hp) { mStatus.SetHp(hp); }
     void SetMaxHp(float maxHp) { mStatus.SetMaxHp(maxHp); }
     void SetDefaultLaunchedTimer(float defaultLaunchedTimer) { mStatus.SetDefaultLaunchedTimer(defaultLaunchedTimer); }
+    void SetLaunchHeight(float launchHeight) { mStatus.SetLaunchHeight(launchHeight); }
     void SetMoveSpeed(float moveSpeed) { mStatus.SetMoveSpeed(moveSpeed); }
     void SetAttack(float attack) { mStatus.SetAttack(attack); }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
@@ -76,6 +79,7 @@ public:
 
     float GetDefaultStandByAttackTimer() const { return mStatus.GetDefaultStandByAttackTimer(); }
     float GetDefaultLaunchedTimer() const { return mStatus.GetDefaultLaunchedTimer(); }
+    float GetLaunchHeight() const { return mStatus.GetLaunchHeight(); }
     float GetDefaultAttackMotionTimer() const { return mStatus.GetDefaultAttackMotionTimer(); }
 
     LifeState GetLifeState() const { return mStateMachine->GetLifeState(); }

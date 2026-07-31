@@ -14,10 +14,17 @@
 void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding,
                                        PlayerCombat& combat, float deltaTime)
 {
+    const glm::vec3 movementStart = player.GetPos();
     movement.ApplyDodgeMovement(player, combat, grounding, deltaTime);
+    combat.UpdateAirDodgeAttack(
+        player,
+        movement,
+        movementStart,
+        player.GetPos());
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {
+        combat.EndAirDodgeAttack();
         StartIdle();
     }
 }
@@ -25,6 +32,17 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
 void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
+    if (TryStartDodging(
+            player,
+            input,
+            movement,
+            combat,
+            status)) {
+        combat.CancelCurrentAttack();
+        mAttackDirectionTarget = nullptr;
+        return;
+    }
+
     if (combat.HasPendingAttackHit()) {
         const bool hasValidDirectionTarget =
             mAttackDirectionTarget &&
@@ -59,62 +77,6 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     }
 }
 
-void PlayerStateMachine::UpdateCharging(
-    Player& player,
-    PlayerInput& input,
-    PlayerMovement& movement,
-    PlayerCombat& combat,
-    float deltaTime)
-{
-    const bool hasValidChargeTarget =
-        mAttackDirectionTarget &&
-        mAttackDirectionTarget->GetIsActive() &&
-        mAttackDirectionTarget->IsAlive() &&
-        !mAttackDirectionTarget->GetIsDead() &&
-        !mAttackDirectionTarget->IsOnGround() &&
-        mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
-
-    if (hasValidChargeTarget) {
-        // 対象が移動しても、チャージ中は毎フレームその敵へ向き直す。
-        PlayerTargetingAssist::FaceTarget(
-            player,
-            movement,
-            *mAttackDirectionTarget);
-    } else {
-        mAttackDirectionTarget = nullptr;
-    }
-
-    const bool isAttackBtnReleased = !input.GetAttackPressed();
-    if (isAttackBtnReleased) {
-        if (mAttackDirectionTarget) {
-            // 離した瞬間の敵の位置へStrongの突進方向を固定する。
-            movement.StartStrongAttackMovementTowards(
-                player,
-                mAttackDirectionTarget->GetPos());
-        } else {
-            movement.ClearStrongAttackDirectionOverride();
-        }
-
-        ChangeState(PlayerActionState::StrongAttacking);
-        combat.StartStrongAttacking(player, deltaTime);
-        return;
-    }
-
-    if (combat.GetAttackPressTimer() < 0.0f) {
-        return;
-    }
-
-    combat.ReduceAttackPressTimer(deltaTime);
-    if (combat.GetAttackPressTimer() >= 0.0f) {
-        // プレイヤーは敵を向いているため、既存の後退処理で敵と逆方向へ移動する。
-        movement.ApplyChargeMovement(player, deltaTime);
-        return;
-    }
-
-    combat.FinishCharging(player, movement);
-}
-
-
 void PlayerStateMachine::UpdateStrongAttacking(
     Player& player,
     PlayerInput& input,
@@ -132,7 +94,7 @@ void PlayerStateMachine::UpdateStrongAttacking(
         mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
 
     if (hasValidStrongTarget) {
-        // 手動チャージとアシストStrongの両方で、対象方向へ向きと突進方向を維持する。
+        // アシストStrong中は、対象方向へ向きと突進方向を維持する。
         PlayerTargetingAssist::FaceTarget(
             player,
             movement,
@@ -180,6 +142,40 @@ void PlayerStateMachine::UpdateStrongAttacking(
         player.GetGame()->OnStrongAttacked(
             movement.GetPlayerNum());
     }
+}
+
+void PlayerStateMachine::UpdateAirSlamAttacking(
+    Player& player,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status,
+    float deltaTime)
+{
+    const bool didReachGround =
+        movement.UpdateAirSlamMovement(
+            player,
+            combat,
+            deltaTime);
+    if (!didReachGround) {
+        return;
+    }
+
+    const bool didHitEnemy =
+        combat.ResolveAirSlamImpact(
+            player,
+            movement,
+            status,
+            deltaTime);
+    if (didHitEnemy) {
+        player.GetGame()->OnStrongAttacked(
+            movement.GetPlayerNum());
+    }
+
+    combat.ClearStrongAttackHit();
+    mAttackDirectionTarget = nullptr;
+    movement.ClearStrongAttackDirectionOverride();
+    player.SetShouldJudgeLanding(true);
+    StartIdle();
 }
 
 

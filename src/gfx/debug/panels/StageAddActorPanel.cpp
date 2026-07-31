@@ -36,6 +36,12 @@ StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
         mNPCTalkTexts.front().size(),
         "%s",
         "こんにちは");
+    mTutorialTriggerTalkTexts.emplace_back();
+    std::snprintf(
+        mTutorialTriggerTalkTexts.front().data(),
+        mTutorialTriggerTalkTexts.front().size(),
+        "%s",
+        "ここにチュートリアルの内容を入力");
 }
 
 void StageAddActorPanel::Draw()
@@ -369,6 +375,147 @@ void StageAddActorPanel::Draw()
 
             ImGui::TreePop();
         }
+    }
+
+    if (ImGui::TreeNode("チュートリアルトリガー追加")) {
+        const auto& planets =
+            mContext.game->GetCurrentStage()->GetPlanets();
+
+        if (planets.empty()) {
+            ImGui::TextUnformatted(
+                "追加先の惑星がありません");
+        } else {
+            DrawPlanetCombo(
+                "追加先の惑星##tutorialTrigger",
+                mSelectedTutorialTriggerPlanetIndex);
+
+            ImGui::InputTextWithHint(
+                "##tutorialTriggerModelSearch",
+                "箱型モデルを検索",
+                mTutorialTriggerModelSearch.data(),
+                mTutorialTriggerModelSearch.size());
+
+            const std::vector<std::string> modelAssets =
+                StageModelAssets::Collect();
+            const std::string searchText =
+                ToLower(
+                    mTutorialTriggerModelSearch.data());
+            ImGui::BeginChild(
+                "TutorialTriggerModelAssetPicker",
+                ImVec2(0.0f, 180.0f),
+                true);
+            for (const std::string& modelPath :
+                 modelAssets) {
+                if (!searchText.empty() &&
+                    ToLower(modelPath).find(searchText) ==
+                        std::string::npos) {
+                    continue;
+                }
+
+                const bool selected =
+                    modelPath ==
+                    mSelectedTutorialTriggerModel;
+                if (ImGui::Selectable(
+                        modelPath.c_str(),
+                        selected)) {
+                    mSelectedTutorialTriggerModel =
+                        modelPath;
+                }
+            }
+            ImGui::EndChild();
+            ImGui::Text(
+                "選択中のモデル: %s",
+                mSelectedTutorialTriggerModel.empty()
+                    ? "未選択"
+                    : mSelectedTutorialTriggerModel.c_str());
+
+            ImGui::DragFloat3(
+                "初期スケール##tutorialTrigger",
+                &mTutorialTriggerScale.x,
+                0.05f,
+                0.01f,
+                100.0f,
+                "%.2f");
+
+            ImGui::SeparatorText("チュートリアル内容");
+            for (std::size_t talkIndex = 0;
+                 talkIndex <
+                 mTutorialTriggerTalkTexts.size();
+                 ++talkIndex) {
+                const std::string label =
+                    "ページ " +
+                    std::to_string(talkIndex + 1) +
+                    "##newTutorialTriggerTalk" +
+                    std::to_string(talkIndex);
+                ImGui::InputTextMultiline(
+                    label.c_str(),
+                    mTutorialTriggerTalkTexts[talkIndex].data(),
+                    mTutorialTriggerTalkTexts[talkIndex].size(),
+                    ImVec2(-1.0f, 70.0f));
+
+                if (mTutorialTriggerTalkTexts.size() > 1 &&
+                    ImGui::Button(
+                        ("このページを削除##newTutorialTriggerDelete" +
+                         std::to_string(talkIndex))
+                            .c_str())) {
+                    mTutorialTriggerTalkTexts.erase(
+                        mTutorialTriggerTalkTexts.begin() +
+                        static_cast<std::ptrdiff_t>(
+                            talkIndex));
+                    break;
+                }
+            }
+
+            if (ImGui::Button(
+                    "ページを追加##newTutorialTrigger")) {
+                mTutorialTriggerTalkTexts.emplace_back();
+            }
+
+            const bool canAdd =
+                mSelectedTutorialTriggerPlanetIndex >= 0 &&
+                !mSelectedTutorialTriggerModel.empty();
+            if (!canAdd) {
+                ImGui::BeginDisabled();
+            }
+
+            if (ImGui::Button(
+                    "チュートリアルトリガーを追加")) {
+                std::vector<std::string> talkTexts;
+                talkTexts.reserve(
+                    mTutorialTriggerTalkTexts.size());
+                for (const auto& talkText :
+                     mTutorialTriggerTalkTexts) {
+                    talkTexts.emplace_back(
+                        talkText.data());
+                }
+
+                const bool created =
+                    mCreateService.AddTutorialTrigger(
+                        mSelectedTutorialTriggerPlanetIndex,
+                        mSelectedTutorialTriggerModel,
+                        talkTexts,
+                        mTutorialTriggerScale);
+                mTutorialTriggerStatus =
+                    created
+                        ? "チュートリアルトリガーを追加しました"
+                        : "チュートリアルトリガーの追加に失敗しました";
+            }
+
+            if (!canAdd) {
+                ImGui::EndDisabled();
+            }
+
+            if (!mTutorialTriggerStatus.empty()) {
+                ImGui::TextUnformatted(
+                    mTutorialTriggerStatus.c_str());
+            }
+            ImGui::TextDisabled(
+                "箱型モデルを使うと、モデルの位置・回転・スケールと反応範囲が一致します。");
+            ImGui::TextDisabled(
+                "ゲーム中は見えず、衝突しません。内部に入ると一度だけ開始します。");
+        }
+
+        ImGui::TreePop();
     }
 
     if (ImGui::TreeNode("ボートパーツ追加")) {

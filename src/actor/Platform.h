@@ -2,6 +2,7 @@
 
 #include "actor/Actor.h"
 
+#include <string>
 #include <unordered_map>
 
 class Game;
@@ -12,6 +13,7 @@ class PlatformFadeOnStandComponent;
 class PlatformIntervalToggleComponent;
 class PlatformJumpToggleComponent;
 class PlatformMovementComponent;
+class PlatformPressureSwitchComponent;
 class PlatformRotationComponent;
 
 class Platform : public Actor {
@@ -52,6 +54,16 @@ public:
     void RemoveConveyorComponent();
     PlatformConveyorComponent* GetConveyorComponent() const { return mConveyorComponent; }
 
+    PlatformPressureSwitchComponent* AddPressureSwitchComponent();
+    void RemovePressureSwitchComponent();
+    PlatformPressureSwitchComponent* GetPressureSwitchComponent() const
+    {
+        return mPressureSwitchComponent;
+    }
+
+    void SetPlatformId(const std::string& platformId) { mPlatformId = platformId; }
+    const std::string& GetPlatformId() const { return mPlatformId; }
+
     void SetComponentOpacity(const Component* component, float opacity);
     void SetComponentCollisionEnabled(const Component* component, bool enabled);
     void ClearComponentRuntimeState(const Component* component);
@@ -72,6 +84,9 @@ private:
     PlatformDirectionalMovementComponent* mDirectionalMovementComponent = nullptr;
     PlatformRotationComponent* mRotationComponent = nullptr;
     PlatformConveyorComponent* mConveyorComponent = nullptr;
+    PlatformPressureSwitchComponent* mPressureSwitchComponent = nullptr;
+
+    std::string mPlatformId;
 
     std::unordered_map<const Component*, float> mComponentOpacities;
     std::unordered_map<const Component*, bool> mComponentCollisionStates;

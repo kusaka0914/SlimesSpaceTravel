@@ -26,6 +26,9 @@ private:
     void DrawGizmo();
 
     glm::mat4 CreateSelectedActorGizmoMatrix(Actor* actor, ImGuizmo::OPERATION operation) const;
+    glm::mat4 CreateSphereSurfaceTranslationMatrix(Actor* actor) const;
+    bool UsesSphereSurfaceTranslation(Actor* actor) const;
+    void ApplySphereSurfaceTranslation(Actor* actor, const glm::vec3& rawWorldPos);
     void ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4& matrix, ImGuizmo::OPERATION operation);
 
 private:

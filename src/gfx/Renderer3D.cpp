@@ -20,13 +20,44 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <SDL.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <string>
+
+namespace {
+using SDLSurfacePtr =
+    std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>;
+
+struct RenderedRubySegment {
+    SDLSurfacePtr baseSurface{nullptr, SDL_FreeSurface};
+    SDLSurfacePtr rubySurface{nullptr, SDL_FreeSurface};
+    int cellWidth = 0;
+    int scaledRubyWidth = 0;
+    int scaledRubyHeight = 0;
+};
+
+SDLSurfacePtr RenderTextSurface(
+    TTF_Font* font,
+    const std::string& text,
+    const SDL_Color& textColor)
+{
+    if (!font || text.empty()) {
+        return {nullptr, SDL_FreeSurface};
+    }
+    return {
+        TTF_RenderUTF8_Blended(
+            font,
+            text.c_str(),
+            textColor),
+        SDL_FreeSurface};
+}
+} // namespace
 
 Renderer3D::Renderer3D(Game* game)
     : Renderer(game),
@@ -38,6 +69,205 @@ Renderer3D::Renderer3D(Game* game)
 }
 
 Renderer3D::~Renderer3D() = default;
+
+GLuint Renderer3D::CreateRubyTextTextureFor3D(
+    const std::vector<RubyTextSegment>& segments,
+    int& outWidth,
+    int& outHeight,
+    int& outBaseTextHeight,
+    const SDL_Color textColor,
+    float rubyScaleRatio,
+    float rubyGapRatio) const
+{
+    outWidth = 0;
+    outHeight = 0;
+    outBaseTextHeight = 0;
+
+    if (!mFont || segments.empty()) {
+        return 0;
+    }
+
+    const float safeRubyScaleRatio =
+        std::max(rubyScaleRatio, 0.1f);
+    const float rubyOffsetMultiplier =
+        std::max(0.0f, 0.9f + rubyGapRatio);
+
+    std::vector<RenderedRubySegment> renderedSegments;
+    renderedSegments.reserve(segments.size());
+
+    int totalWidth = 0;
+    int maximumRubyHeight = 0;
+    int maximumRubyOffset = 0;
+
+    for (const RubyTextSegment& segment : segments) {
+        RenderedRubySegment renderedSegment;
+        renderedSegment.baseSurface =
+            RenderTextSurface(
+                mFont,
+                segment.text,
+                textColor);
+        if (!renderedSegment.baseSurface) {
+            continue;
+        }
+
+        outBaseTextHeight =
+            std::max(
+                outBaseTextHeight,
+                renderedSegment.baseSurface->h);
+
+        if (segment.showsRuby &&
+            !segment.reading.empty()) {
+            renderedSegment.rubySurface =
+                RenderTextSurface(
+                    mFont,
+                    segment.reading,
+                    textColor);
+        }
+
+        if (renderedSegment.rubySurface) {
+            renderedSegment.scaledRubyWidth =
+                std::max(
+                    1,
+                    static_cast<int>(
+                        std::lround(
+                            renderedSegment.rubySurface->w *
+                            safeRubyScaleRatio)));
+            renderedSegment.scaledRubyHeight =
+                std::max(
+                    1,
+                    static_cast<int>(
+                        std::lround(
+                            renderedSegment.rubySurface->h *
+                            safeRubyScaleRatio)));
+            maximumRubyHeight =
+                std::max(
+                    maximumRubyHeight,
+                    renderedSegment.scaledRubyHeight);
+            maximumRubyOffset =
+                std::max(
+                    maximumRubyOffset,
+                    static_cast<int>(
+                        std::ceil(
+                            renderedSegment.scaledRubyHeight *
+                            rubyOffsetMultiplier)));
+        }
+
+        renderedSegment.cellWidth =
+            std::max(
+                renderedSegment.baseSurface->w,
+                renderedSegment.scaledRubyWidth);
+        totalWidth += renderedSegment.cellWidth;
+        renderedSegments.emplace_back(
+            std::move(renderedSegment));
+    }
+
+    if (renderedSegments.empty() ||
+        totalWidth <= 0 ||
+        outBaseTextHeight <= 0) {
+        return 0;
+    }
+
+    const int baseTextTop = maximumRubyOffset;
+    const int textureHeight =
+        std::max(
+            maximumRubyHeight,
+            baseTextTop + outBaseTextHeight);
+    SDLSurfacePtr combinedSurface(
+        SDL_CreateRGBSurfaceWithFormat(
+            0,
+            totalWidth,
+            textureHeight,
+            32,
+            SDL_PIXELFORMAT_RGBA32),
+        SDL_FreeSurface);
+    if (!combinedSurface) {
+        return 0;
+    }
+
+    SDL_FillRect(
+        combinedSurface.get(),
+        nullptr,
+        SDL_MapRGBA(
+            combinedSurface->format,
+            0,
+            0,
+            0,
+            0));
+
+    int currentX = 0;
+    for (const RenderedRubySegment& segment :
+         renderedSegments) {
+        SDL_SetSurfaceBlendMode(
+            segment.baseSurface.get(),
+            SDL_BLENDMODE_BLEND);
+        SDL_Rect baseDestination{
+            currentX +
+                (segment.cellWidth -
+                 segment.baseSurface->w) /
+                    2,
+            baseTextTop,
+            segment.baseSurface->w,
+            segment.baseSurface->h};
+        SDL_BlitSurface(
+            segment.baseSurface.get(),
+            nullptr,
+            combinedSurface.get(),
+            &baseDestination);
+
+        if (segment.rubySurface) {
+            SDL_SetSurfaceBlendMode(
+                segment.rubySurface.get(),
+                SDL_BLENDMODE_BLEND);
+            const int rubyVerticalOffset =
+                static_cast<int>(
+                    std::lround(
+                        segment.scaledRubyHeight *
+                        rubyOffsetMultiplier));
+            SDL_Rect rubyDestination{
+                currentX +
+                    (segment.cellWidth -
+                     segment.scaledRubyWidth) /
+                        2,
+                baseTextTop - rubyVerticalOffset,
+                segment.scaledRubyWidth,
+                segment.scaledRubyHeight};
+            SDL_BlitScaled(
+                segment.rubySurface.get(),
+                nullptr,
+                combinedSurface.get(),
+                &rubyDestination);
+        }
+
+        currentX += segment.cellWidth;
+    }
+
+    GLuint texture = 0;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        combinedSurface->w,
+        combinedSurface->h,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        combinedSurface->pixels);
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MIN_FILTER,
+        GL_LINEAR);
+    glTexParameteri(
+        GL_TEXTURE_2D,
+        GL_TEXTURE_MAG_FILTER,
+        GL_LINEAR);
+
+    outWidth = combinedSurface->w;
+    outHeight = combinedSurface->h;
+    return texture;
+}
 
 void Renderer3D::Initialize()
 {
@@ -202,6 +432,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     }
 
     const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
+    const bool shouldRenderSolidWhite = actor->ShouldRenderSolidWhite();
     GLuint textureOverride = 0;
     if (!actor->GetTextureOverridePath().empty()) {
         textureOverride =
@@ -236,7 +467,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         glBindVertexArray(actorMesh.VAO);
 
         const GLuint textureID = textureOverride != 0 ? textureOverride : actorMesh.textureID;
-        if (textureID != 0) {
+        if (textureID != 0 && !shouldRenderSolidWhite) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureID);
             glUniform1i(mShader3D->GetLocDiffuseTexture(), 0);
@@ -245,8 +476,12 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
             glUniform1i(useTextureLocation, 0);
         }
 
-        glUniform4f(objectColorLocation, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1],
-                    actorMesh.diffuseColor[2], renderOpacity);
+        if (shouldRenderSolidWhite) {
+            glUniform4f(objectColorLocation, 1.0f, 1.0f, 1.0f, renderOpacity);
+        } else {
+            glUniform4f(objectColorLocation, actorMesh.diffuseColor[0], actorMesh.diffuseColor[1],
+                        actorMesh.diffuseColor[2], renderOpacity);
+        }
         glDrawElements(GL_TRIANGLES, actorMesh.indexCount, GL_UNSIGNED_INT, nullptr);
     }
 
@@ -352,7 +587,7 @@ void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
         return;
     }
 
-    constexpr float outlineScale = 1.06f;
+    constexpr float outlineScale = 1.0f;
 
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, outlineScale);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));

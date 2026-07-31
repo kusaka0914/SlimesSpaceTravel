@@ -8,8 +8,8 @@ playerCamera:
   pitchSensitivityDegrees: 90
   minPitchDegrees: -80
   maxPitchDegrees: 0
-  upSmoothingSpeed: 8
-  targetSmoothingSpeed: 6
+  upSmoothingSpeed: 4.2
+  targetSmoothingSpeed: 3
   attackTargetSmoothingSpeed: 6
   talk:
     distance: 2.9

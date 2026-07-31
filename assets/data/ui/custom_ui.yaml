@@ -962,3 +962,114 @@ elements:
       - 0
       - 0
       - 1
+  - screen: target
+    id: bortParts
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.8912467
+      - 0.061546933
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00013
+    text: すべてのパーツを集めよう
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 0.980695
+      - 1
+      - 0
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy2_copy
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.8409154
+      - 0.38197446
+    sizeRatio:
+      - 0.020000003
+      - 0.020000005
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_zr.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy2_copy
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.8985902
+      - 0.39193696
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.00012999994
+    text: 分身に切り替える
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1

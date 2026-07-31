@@ -121,7 +121,7 @@ default:
     scaleRatio: [0.03, 0.03]
   - id: jewelTexture
     type: texture
-    posRatio: [0.015, 0.05]
+    posRatio: [0.015, 0.0793]
     scaleRatio: [0.06, 0.06]
   - id: talkableTextForGameController
     type: text

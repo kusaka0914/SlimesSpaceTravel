@@ -15,6 +15,7 @@
 #include "actor/Platform.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "system/MeshLoadSystem.h"
 #include "system/physics/StageCollisionBuilder.h"
 
@@ -72,6 +73,16 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
             CreatePickBody(world, npc, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
+        for (TutorialTrigger* trigger :
+             planet->GetTutorialTriggers()) {
+            CreatePickBody(
+                world,
+                trigger,
+                pickObjects,
+                pickShapes,
+                pickTriangleMeshes);
+        }
+
         if (Star* star = planet->GetStar()) {
             CreatePickBody(world, star, pickObjects, pickShapes, pickTriangleMeshes);
         }
@@ -100,7 +111,9 @@ void EditorPickSystem::CreatePickBody(btDiscreteDynamicsWorld* world, Actor* act
     }
 
     const bool useMesh =
-        dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor);
+        dynamic_cast<Platform*>(actor) ||
+        dynamic_cast<StageObject*>(actor) ||
+        dynamic_cast<TutorialTrigger*>(actor);
 
     if (useMesh && CreateMeshPickBody(world, actor, pickObjects, pickShapes, pickTriangleMeshes)) {
         return;

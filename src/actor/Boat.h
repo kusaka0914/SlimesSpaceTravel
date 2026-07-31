@@ -26,6 +26,7 @@ public:
     void RefreshDestination();
 
     bool GetIsMoving() const { return mIsMoving; }
+    bool HasAppeared() const { return mIsActive; }
 
     float GetProgress() const { return mProgress; }
     float GetTravelDuration() const { return mTravelDuration; }

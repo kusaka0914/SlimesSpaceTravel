@@ -11,8 +11,8 @@ enum class PlayerActionState {
     Idle,
     Dodging,
     Attacking,
-    Charging,
     StrongAttacking,
+    AirSlamAttacking,
     KnockedBack,
 };
 

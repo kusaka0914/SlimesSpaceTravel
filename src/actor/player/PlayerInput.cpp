@@ -2,6 +2,7 @@
 
 #include "actor/Player.h"
 #include "actor/player/PlayerMovement.h"
+#include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -10,18 +11,83 @@
 
 void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 {
+    const bool isNonControlledSoloPlayer =
+        !player.GetGame()->GetIsPlayer2Joined() &&
+        player.GetGame()->GetPlayers().size() >= 2 &&
+        player.GetGame()->GetControlledPlayer() != &player;
+    if (isNonControlledSoloPlayer) {
+        ClearNonControlledPlayerInput();
+        return;
+    }
+
     if (mInputAvailableTimer >= 0.0f) {
+        SceneSystem* sceneSystem =
+            player.GetGame()->GetSceneSystem();
+        if (sceneSystem &&
+            sceneSystem->IsWaitingForTutorialPlayerJump()) {
+            mJumpPressed = false;
+            ApplyTutorialInputRestriction(player);
+        }
         return;
     }
 
     ProcessGameController(player, movement);
     ProcessKeyboard(player, movement);
+    ApplyTutorialInputRestriction(player);
     CaptureAttackInput();
+}
+
+void PlayerInput::ClearNonControlledPlayerInput()
+{
+    mMoveForward = 0.0f;
+    mMoveLeft = 0.0f;
+    mCameraYaw = 0.0f;
+    mCameraStickX = 0.0f;
+    mCameraStickY = 0.0f;
+
+    mDodgePressed = false;
+    mJumpPressed = false;
+    mAttackPressed = false;
+    mWideAttackPressed = false;
+    mSpecialAttackPressed = false;
+    mRecoverPressed = false;
+
+    ClearAttackBuffer();
+}
+
+void PlayerInput::ApplyTutorialInputRestriction(Player& player)
+{
+    SceneSystem* sceneSystem =
+        player.GetGame()->GetSceneSystem();
+    if (!sceneSystem ||
+        !sceneSystem->IsWaitingForTutorialPlayerJump()) {
+        return;
+    }
+
+    mMoveForward = 0.0f;
+    mMoveLeft = 0.0f;
+    mCameraYaw = 0.0f;
+
+    mDodgePressed = false;
+    mAttackPressed = false;
+    mWideAttackPressed = false;
+    mSpecialAttackPressed = false;
+    mRecoverPressed = false;
+
+    ClearAttackBuffer();
 }
 
 void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& movement)
 {
-    if (!player.GetGame()->IsGameControllerConnected() || movement.GetPlayerNum() != 1) {
+    if (!player.GetGame()->IsGameControllerConnected()) {
+        return;
+    }
+
+    if (player.GetGame()->GetIsPlayer2Joined()) {
+        if (movement.GetPlayerNum() != 1) {
+            return;
+        }
+    } else if (player.GetGame()->GetControlledPlayer() != &player) {
         return;
     }
 
@@ -53,12 +119,18 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
 {
     const bool isControllerConnected = player.GetGame()->IsGameControllerConnected();
 
-    if (!isControllerConnected && movement.GetPlayerNum() != 1) {
-        return;
-    }
-
-    if (isControllerConnected && movement.GetPlayerNum() != 2) {
-        return;
+    if (player.GetGame()->GetIsPlayer2Joined()) {
+        if (!isControllerConnected && movement.GetPlayerNum() != 1) {
+            return;
+        }
+        if (isControllerConnected && movement.GetPlayerNum() != 2) {
+            return;
+        }
+    } else {
+        if (isControllerConnected ||
+            player.GetGame()->GetControlledPlayer() != &player) {
+            return;
+        }
     }
 
     GLFWwindow* window = player.GetGame()->GetWindow();

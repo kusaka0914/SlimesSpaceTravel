@@ -36,6 +36,14 @@ public:
     void SetIsActive(bool isActive) { mIsActive = isActive; }
     void SetVisibleIfStageCleared(int stageNum);
     void SetHiddenIfStageCleared(int stageNum);
+    void SetHiddenWhenRocketAppears(bool shouldHide)
+    {
+        mHiddenWhenRocketAppears = shouldHide;
+    }
+    void SetShouldAffectGravityDirection(bool shouldAffectGravityDirection)
+    {
+        mShouldAffectGravityDirection = shouldAffectGravityDirection;
+    }
     void RefreshProgressVisibility();
 
     void SetRadius(float radius) { mRadius = radius; }
@@ -62,16 +70,19 @@ public:
         return mIsActive && IsProgressVisibleForCurrentMode();
     }
     virtual float GetRenderOpacity() const { return 1.0f; }
+    virtual bool ShouldRenderSolidWhite() const { return false; }
     int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
     int GetHiddenIfStageCleared() const { return mHiddenIfStageCleared; }
-    bool IsProgressVisibilitySatisfied() const
-    {
-        return mProgressVisibilitySatisfied;
-    }
+    bool ShouldAffectGravityDirection() const { return mShouldAffectGravityDirection; }
+    bool IsProgressVisibilitySatisfied() const;
     bool IsProgressVisibleForCurrentMode() const
     {
-        return mProgressVisibilitySatisfied ||
+        return IsProgressVisibilitySatisfied() ||
                (mGame && mGame->GetIsDebugEditorShowing());
+    }
+    bool ShouldHideWhenRocketAppears() const
+    {
+        return mHiddenWhenRocketAppears;
     }
 
     float GetRadius() const { return mRadius; }
@@ -131,7 +142,9 @@ protected:
 
 protected:
     bool mIsActive;
-    bool mProgressVisibilitySatisfied = true;
+    bool mStageClearVisibilitySatisfied = true;
+    bool mHiddenWhenRocketAppears = false;
+    bool mShouldAffectGravityDirection = true;
     int mVisibleIfStageCleared = -1;
     int mHiddenIfStageCleared = -1;
     bool mIsUpVecInitialized;

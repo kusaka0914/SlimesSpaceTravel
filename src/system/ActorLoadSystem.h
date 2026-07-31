@@ -22,6 +22,7 @@ class BoatArrivalPoint;
 class FallRespawnPoint;
 class Planet;
 class StageObject;
+class TutorialTrigger;
 
 class ActorLoadSystem {
 public:
@@ -44,6 +45,9 @@ public:
     BoatArrivalPoint* CreateBoatArrivalPointFromStageNode(const YAML::Node& node, int stageYamlIndex);
     FallRespawnPoint* CreateFallRespawnPointFromStageNode(const YAML::Node& node, int stageYamlIndex);
     StageObject* CreateStageObjectFromStageNode(const YAML::Node& node, int stageYamlIndex);
+    TutorialTrigger* CreateTutorialTriggerFromStageNode(
+        const YAML::Node& node,
+        int stageYamlIndex);
     Actor* FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const;
 
     void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
@@ -66,6 +70,7 @@ private:
     void LoadBoatArrivalPoints(const char* path);
     void LoadFallRespawnPoints(const char* path);
     void LoadStageObjects(const char* path);
+    void LoadTutorialTriggers(const char* path);
 
 private:
     Game* mGame = nullptr;

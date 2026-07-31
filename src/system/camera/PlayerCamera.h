@@ -25,7 +25,9 @@ public:
     explicit PlayerCamera(CameraCollisionResolver& collisionResolver);
 
     void Update(const std::vector<Player*>& players, float yawDelta, float upSmoothingSpeed,
-                float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime);
+                float targetSmoothingSpeed, float attackTargetSmoothingSpeed, float deltaTime,
+                int yawPlayerIndex = 0);
+    void BeginPlayerSwitchTransition(int fromPlayerIndex, int toPlayerIndex);
     void AlignBehindPlayer(Player* player, int playerIndex);
     void BlendBehindTarget(Player* player, int playerIndex, const glm::vec3& targetPosition, float blend);
 

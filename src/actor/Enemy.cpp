@@ -36,6 +36,7 @@ void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
     SetIsBoss(config.isBoss);
     SetKnockBackSpeed(config.knockBackSpeed);
     SetDefaultLaunchedTimer(config.defaultLaunchedTimer);
+    SetLaunchHeight(config.launchHeight);
     SetDetectionRange(config.detectionRange);
 
     SetHp(config.hp);
@@ -82,6 +83,30 @@ void Enemy::UpdateActor(float deltaTime)
     }
 }
 
+bool Enemy::ShouldRenderSolidWhite() const
+{
+    if (!IsAlive()) {
+        return false;
+    }
+
+    constexpr float recoveryWarningDurationSeconds = 1.5f;
+    const float launchedTimerSeconds = mStatus.GetLaunchedTimer();
+    const bool shouldBlink =
+        launchedTimerSeconds >= 0.0f &&
+        launchedTimerSeconds <= recoveryWarningDurationSeconds;
+    if (!shouldBlink) {
+        return false;
+    }
+
+    constexpr float blinkIntervalSeconds = 0.12f;
+    const float warningElapsedSeconds =
+        recoveryWarningDurationSeconds - launchedTimerSeconds;
+    const int blinkPhase =
+        static_cast<int>(warningElapsedSeconds / blinkIntervalSeconds);
+
+    return (blinkPhase % 2) != 0;
+}
+
 void Enemy::ApplyDamage(float damage, Player* player)
 {
     mDamageHandler->ApplyDamage(*this, mStatus, *mStateMachine, damage, player);
@@ -90,6 +115,20 @@ void Enemy::ApplyDamage(float damage, Player* player)
 void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
 {
     mCombat->ApplyBreak(*this, mStatus, *mMovement, *mStateMachine, deltaTime, isAllBreak);
+}
+
+void Enemy::ApplyAirDodgePush(
+    const glm::vec3& dodgeDirection)
+{
+    if (GetIsBoss() ||
+        IsOnGround() ||
+        !IsAlive()) {
+        return;
+    }
+
+    mMovement->ApplyAirDodgePush(
+        *this,
+        dodgeDirection);
 }
 
 const char* Enemy::GetCurrentBehaviorActionType() const

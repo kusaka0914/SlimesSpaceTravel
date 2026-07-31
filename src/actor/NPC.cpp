@@ -9,6 +9,32 @@
 #include <algorithm>
 #include <cmath>
 
+const char* GetTalkPageAdvanceConditionId(
+    TalkPageAdvanceCondition condition)
+{
+    switch (condition) {
+    case TalkPageAdvanceCondition::PlayerSwitch:
+        return "playerSwitch";
+    case TalkPageAdvanceCondition::Jump:
+        return "jump";
+    case TalkPageAdvanceCondition::Confirm:
+    default:
+        return "confirm";
+    }
+}
+
+TalkPageAdvanceCondition ParseTalkPageAdvanceConditionId(
+    const std::string& conditionId)
+{
+    if (conditionId == "playerSwitch") {
+        return TalkPageAdvanceCondition::PlayerSwitch;
+    }
+    if (conditionId == "jump") {
+        return TalkPageAdvanceCondition::Jump;
+    }
+    return TalkPageAdvanceCondition::Confirm;
+}
+
 NPC::NPC(Game* game)
     : CharacterActor(game),
       mIsTalkable(false)
@@ -82,6 +108,16 @@ NPC::GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const
     return GetTalkCameraFocusTarget(indices[resolvedIndex]);
 }
 
+TalkPageAdvanceCondition
+NPC::GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const
+{
+    const std::vector<std::size_t> indices = ResolveTalkIndices();
+    if (resolvedIndex >= indices.size()) {
+        return TalkPageAdvanceCondition::Confirm;
+    }
+    return GetTalkAdvanceCondition(indices[resolvedIndex]);
+}
+
 const std::vector<RubyTextSegment>&
 NPC::GetResolvedTalkRubySegments(std::size_t resolvedIndex) const
 {
@@ -115,38 +151,107 @@ void NPC::SetTalkProximityMessageText(
         mTalkProximityMessageTexts.resize(mTalkTexts.size());
     }
 
-    std::string& messageText = mTalkProximityMessageTexts[index];
-    messageText = text;
+    std::string sanitizedMessageText = text;
     std::replace(
-        messageText.begin(),
-        messageText.end(),
+        sanitizedMessageText.begin(),
+        sanitizedMessageText.end(),
         '\r',
         ' ');
     std::replace(
-        messageText.begin(),
-        messageText.end(),
+        sanitizedMessageText.begin(),
+        sanitizedMessageText.end(),
         '\n',
         ' ');
 
     std::size_t escapedNewline = std::string::npos;
-    while ((escapedNewline = messageText.find("\\n")) !=
+    while ((escapedNewline = sanitizedMessageText.find("\\n")) !=
            std::string::npos) {
-        messageText.replace(escapedNewline, 2, " ");
+        sanitizedMessageText.replace(escapedNewline, 2, " ");
     }
+
+    std::string& currentMessageText =
+        mTalkProximityMessageTexts[index];
+    if (currentMessageText != sanitizedMessageText &&
+        index < mTalkProximityMessageRubySegments.size()) {
+        mTalkProximityMessageRubySegments[index].clear();
+    }
+    currentMessageText = std::move(sanitizedMessageText);
+}
+
+void NPC::SetTalkProximityMessageRubySegments(
+    std::size_t index,
+    std::vector<RubyTextSegment> segments)
+{
+    if (index >= mTalkTexts.size()) {
+        return;
+    }
+    if (mTalkProximityMessageRubySegments.size() <
+        mTalkTexts.size()) {
+        mTalkProximityMessageRubySegments.resize(
+            mTalkTexts.size());
+    }
+    mTalkProximityMessageRubySegments[index] =
+        std::move(segments);
+}
+
+void NPC::SetTalkProximityMessageRubyReading(
+    std::size_t talkIndex,
+    std::size_t segmentIndex,
+    const std::string& reading)
+{
+    if (talkIndex >=
+            mTalkProximityMessageRubySegments.size() ||
+        segmentIndex >=
+            mTalkProximityMessageRubySegments[talkIndex].size()) {
+        return;
+    }
+    mTalkProximityMessageRubySegments[talkIndex][segmentIndex]
+        .reading = reading;
+}
+
+void NPC::ClearTalkProximityMessageRubySegments(
+    std::size_t index)
+{
+    if (index < mTalkProximityMessageRubySegments.size()) {
+        mTalkProximityMessageRubySegments[index].clear();
+    }
+}
+
+std::optional<std::size_t>
+NPC::ResolveProximityMessageTalkIndex() const
+{
+    const std::vector<std::size_t> indices = ResolveTalkIndices();
+
+    for (auto it = indices.rbegin(); it != indices.rend(); ++it) {
+        if (!GetTalkProximityMessageText(*it).empty()) {
+            return *it;
+        }
+    }
+    return std::nullopt;
 }
 
 const std::string& NPC::GetResolvedProximityMessageText() const
 {
     static const std::string emptyText;
-    const std::vector<std::size_t> indices = ResolveTalkIndices();
-
-    for (auto it = indices.rbegin(); it != indices.rend(); ++it) {
-        const std::string& text = GetTalkProximityMessageText(*it);
-        if (!text.empty()) {
-            return text;
-        }
+    const std::optional<std::size_t> talkIndex =
+        ResolveProximityMessageTalkIndex();
+    if (!talkIndex) {
+        return emptyText;
     }
-    return emptyText;
+    return GetTalkProximityMessageText(*talkIndex);
+}
+
+const std::vector<RubyTextSegment>&
+NPC::GetResolvedProximityMessageRubySegments() const
+{
+    static const std::vector<RubyTextSegment> emptySegments;
+    const std::optional<std::size_t> talkIndex =
+        ResolveProximityMessageTalkIndex();
+    if (!talkIndex ||
+        !HasValidTalkProximityMessageRuby(*talkIndex)) {
+        return emptySegments;
+    }
+    return GetTalkProximityMessageRubySegments(*talkIndex);
 }
 
 void NPC::SetProximityMessageRange(float range)
