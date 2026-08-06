@@ -127,6 +127,9 @@ bool SequenceLibrary::Load()
             GameplaySequence sequence;
             sequence.id = entry.first.as<std::string>();
             const YAML::Node sequenceNode = entry.second;
+            sequence.displayName = sequenceNode["name"]
+                                       ? sequenceNode["name"].as<std::string>()
+                                       : sequence.id;
             sequence.loop = sequenceNode["loop"] ? sequenceNode["loop"].as<bool>() : false;
 
             const YAML::Node clipsNode = sequenceNode["clips"];
@@ -188,6 +191,8 @@ bool SequenceLibrary::Save() const
         for (const std::string& id : GetIds()) {
             const GameplaySequence& sequence = mSequences.at(id);
             emitter << YAML::Key << id << YAML::Value << YAML::BeginMap;
+            emitter << YAML::Key << "name" << YAML::Value
+                    << (sequence.displayName.empty() ? sequence.id : sequence.displayName);
             emitter << YAML::Key << "loop" << YAML::Value << sequence.loop;
             emitter << YAML::Key << "clips" << YAML::Value << YAML::BeginSeq;
 
@@ -263,8 +268,35 @@ bool SequenceLibrary::Create(std::string id)
     }
     GameplaySequence sequence;
     sequence.id = std::move(id);
+    sequence.displayName = sequence.id;
     mSequences[sequence.id] = std::move(sequence);
     return true;
+}
+
+GameplaySequence* SequenceLibrary::Duplicate(std::string_view id)
+{
+    const GameplaySequence* source = Find(id);
+    if (!source) {
+        return nullptr;
+    }
+
+    const std::string baseId = source->id + "_copy";
+    std::string duplicatedId = baseId;
+    int suffix = 2;
+    while (mSequences.contains(duplicatedId)) {
+        duplicatedId = baseId + "_" + std::to_string(suffix);
+        ++suffix;
+    }
+
+    GameplaySequence duplicated = *source;
+    duplicated.id = duplicatedId;
+    duplicated.displayName =
+        (source->displayName.empty() ? source->id : source->displayName) +
+        " コピー";
+
+    const auto [sequenceIt, wasInserted] =
+        mSequences.emplace(duplicatedId, std::move(duplicated));
+    return wasInserted ? &sequenceIt->second : nullptr;
 }
 
 bool SequenceLibrary::Rename(std::string_view currentId, std::string newId)

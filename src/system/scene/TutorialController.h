@@ -25,6 +25,9 @@ public:
         Player* tutorialPlayer = nullptr,
         bool ignoreRepeatPolicy = false);
     bool Preview(const std::string& tutorialId);
+    bool PreviewAtPage(
+        const std::string& tutorialId,
+        std::size_t pageIndex);
     void Stop(bool returnToPlaying = true);
     void TryAdvanceFromConfirm();
 
@@ -45,6 +48,10 @@ public:
     const std::string& GetActiveTutorialId() const
     {
         return mActiveTutorialId;
+    }
+    std::uint64_t GetTutorialSessionSequence() const
+    {
+        return mTutorialSessionSequence;
     }
 
     TutorialLibrary& GetLibrary() { return mLibrary; }
@@ -69,5 +76,6 @@ private:
     Player* mActionPlayerAtPageStart = nullptr;
     int mControlledPlayerIndexAtPageStart = -1;
     std::uint64_t mJumpSequenceAtPageStart = 0;
+    std::uint64_t mTutorialSessionSequence = 0;
     bool mHasJumpStartedOnCurrentPage = false;
 };

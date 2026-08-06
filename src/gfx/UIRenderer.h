@@ -96,6 +96,14 @@ public:
         const std::string& textureName,
         bool flipVertical = false,
         float rotationDegrees = 0.0f);
+    void DrawTextureHandle(
+        float x,
+        float y,
+        float width,
+        float height,
+        GLuint textureHandle,
+        bool flipVertical = false,
+        float rotationDegrees = 0.0f);
 
 private:
     void Initialize();

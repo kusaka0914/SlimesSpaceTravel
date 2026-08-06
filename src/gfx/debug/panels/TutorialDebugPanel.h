@@ -4,6 +4,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 class TutorialController;
 struct TutorialDefinition;
@@ -24,13 +25,27 @@ private:
         TutorialController* controller,
         TutorialLibrary& library);
     void DrawPageEditor(
+        TutorialController* controller,
         TutorialLibrary& library,
         TutorialDefinition& definition,
         std::size_t pageIndex);
     void DrawFocusTargetPicker(TutorialPage& page);
+    void DrawVideoEditor(
+        TutorialController* controller,
+        TutorialDefinition& definition,
+        TutorialPage& page,
+        std::size_t pageIndex);
+    void DrawVideoPlacementOverlay(TutorialLibrary& library);
+    void RefreshVideoAssets();
 
 private:
     std::array<char, 128> mNewTutorialId = {"new_tutorial"};
+    std::array<char, 128> mVideoAssetFilter = {};
+    std::vector<std::string> mVideoAssets;
     std::string mSelectedTutorialId;
+    std::string mPlacementTutorialId;
     std::string mStatusMessage;
+    int mPlacementPageIndex = -1;
+    bool mVideoAssetsScanned = false;
+    bool mIsResizingVideoPlacement = false;
 };

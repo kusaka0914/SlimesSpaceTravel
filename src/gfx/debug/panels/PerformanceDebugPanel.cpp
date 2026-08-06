@@ -9,13 +9,11 @@ PerformanceDebugPanel::PerformanceDebugPanel(DebugEditorContext& context)
 
 void PerformanceDebugPanel::Draw()
 {
-    if (ImGui::CollapsingHeader("パフォーマンス")) {
-        const float fps = ImGui::GetIO().Framerate;
+    const float fps = ImGui::GetIO().Framerate;
 
-        ImGui::Text("FPS: %.1f", fps);
+    ImGui::Text("FPS: %.1f", fps);
 
-        if (fps > 0.0f) {
-            ImGui::Text("フレームタイム: %.3f ms", 1000.0f / fps);
-        }
+    if (fps > 0.0f) {
+        ImGui::Text("フレームタイム: %.3f ms", 1000.0f / fps);
     }
 }

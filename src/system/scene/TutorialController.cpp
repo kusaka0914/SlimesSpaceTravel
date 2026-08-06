@@ -47,6 +47,7 @@ bool TutorialController::TryStart(
         return false;
     }
 
+    ++mTutorialSessionSequence;
     mActiveTutorialId = tutorialId;
     mTutorialPlayer =
         tutorialPlayer
@@ -77,11 +78,30 @@ bool TutorialController::TryStart(
 bool TutorialController::Preview(
     const std::string& tutorialId)
 {
+    return PreviewAtPage(tutorialId, 0);
+}
+
+bool TutorialController::PreviewAtPage(
+    const std::string& tutorialId,
+    std::size_t pageIndex)
+{
+    const TutorialDefinition* definition =
+        mLibrary.Find(tutorialId);
+    if (!definition || pageIndex >= definition->pages.size()) {
+        return false;
+    }
+
     Stop(false);
-    return TryStart(
+    if (!TryStart(
         tutorialId,
         mGame ? mGame->GetControlledPlayer() : nullptr,
-        true);
+        true)) {
+        return false;
+    }
+
+    mUIState->SetTalkUIIndex(static_cast<int>(pageIndex));
+    CaptureCurrentPageActionBaseline();
+    return true;
 }
 
 void TutorialController::Stop(bool returnToPlaying)

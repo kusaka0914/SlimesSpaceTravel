@@ -9,7 +9,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,6 +74,18 @@ bool MatchesFocusTarget(
     return focusTarget.sequenceName == actorRef.sequenceName &&
            focusTarget.yamlIndex == actorRef.yamlIndex;
 }
+
+std::string ToLower(std::string text)
+{
+    std::transform(
+        text.begin(),
+        text.end(),
+        text.begin(),
+        [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+        });
+    return text;
+}
 } // namespace
 
 TutorialDebugPanel::TutorialDebugPanel(
@@ -120,6 +134,7 @@ void TutorialDebugPanel::Draw()
     DrawTutorialList(controller, library);
     ImGui::SameLine();
     DrawTutorialEditor(controller, library);
+    DrawVideoPlacementOverlay(library);
 }
 
 void TutorialDebugPanel::DrawTutorialList(
@@ -270,13 +285,18 @@ void TutorialDebugPanel::DrawTutorialEditor(
     for (std::size_t pageIndex = 0;
          pageIndex < definition->pages.size();
          ++pageIndex) {
-        DrawPageEditor(library, *definition, pageIndex);
+        DrawPageEditor(
+            controller,
+            library,
+            *definition,
+            pageIndex);
     }
 
     ImGui::EndChild();
 }
 
 void TutorialDebugPanel::DrawPageEditor(
+    TutorialController* controller,
     TutorialLibrary& library,
     TutorialDefinition& definition,
     std::size_t pageIndex)
@@ -332,8 +352,17 @@ void TutorialDebugPanel::DrawPageEditor(
         GetAdvanceConditionLabel(page.advanceCondition));
 
     DrawFocusTargetPicker(page);
+    DrawVideoEditor(
+        controller,
+        definition,
+        page,
+        pageIndex);
 
     if (pageIndex > 0 && ImGui::Button("上へ移動")) {
+        if (mPlacementTutorialId == definition.id) {
+            mPlacementTutorialId.clear();
+            mPlacementPageIndex = -1;
+        }
         std::swap(
             definition.pages[pageIndex],
             definition.pages[pageIndex - 1]);
@@ -346,6 +375,10 @@ void TutorialDebugPanel::DrawPageEditor(
     }
     if (pageIndex + 1 < definition.pages.size() &&
         ImGui::Button("下へ移動")) {
+        if (mPlacementTutorialId == definition.id) {
+            mPlacementTutorialId.clear();
+            mPlacementPageIndex = -1;
+        }
         std::swap(
             definition.pages[pageIndex],
             definition.pages[pageIndex + 1]);
@@ -357,6 +390,10 @@ void TutorialDebugPanel::DrawPageEditor(
         ImGui::SameLine();
     }
     if (ImGui::Button("このページを複製")) {
+        if (mPlacementTutorialId == definition.id) {
+            mPlacementTutorialId.clear();
+            mPlacementPageIndex = -1;
+        }
         TutorialPage duplicated = page;
         duplicated.id += "_copy";
         definition.pages.insert(
@@ -368,6 +405,10 @@ void TutorialDebugPanel::DrawPageEditor(
     }
     ImGui::SameLine();
     if (ImGui::Button("このページを削除")) {
+        if (mPlacementTutorialId == definition.id) {
+            mPlacementTutorialId.clear();
+            mPlacementPageIndex = -1;
+        }
         definition.pages.erase(
             definition.pages.begin() + pageIndex);
         ImGui::TreePop();
@@ -377,6 +418,346 @@ void TutorialDebugPanel::DrawPageEditor(
 
     ImGui::TreePop();
     ImGui::PopID();
+}
+
+void TutorialDebugPanel::DrawVideoEditor(
+    TutorialController* controller,
+    TutorialDefinition& definition,
+    TutorialPage& page,
+    std::size_t pageIndex)
+{
+    if (!mVideoAssetsScanned) {
+        RefreshVideoAssets();
+    }
+
+    ImGui::SeparatorText("MP4動画");
+    const std::string videoPreview =
+        page.video.assetPath.empty()
+            ? "使用しない"
+            : page.video.assetPath;
+    if (ImGui::BeginCombo(
+            "動画アセット",
+            videoPreview.c_str())) {
+        if (ImGui::Selectable(
+                "使用しない",
+                page.video.assetPath.empty())) {
+            page.video.assetPath.clear();
+        }
+
+        const std::string filter =
+            ToLower(mVideoAssetFilter.data());
+        for (const std::string& asset : mVideoAssets) {
+            if (!filter.empty() &&
+                ToLower(asset).find(filter) ==
+                    std::string::npos) {
+                continue;
+            }
+            if (ImGui::Selectable(
+                    asset.c_str(),
+                    page.video.assetPath == asset)) {
+                page.video.assetPath = asset;
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::InputTextWithHint(
+        "##tutorialVideoFilter",
+        "動画名で絞り込み",
+        mVideoAssetFilter.data(),
+        mVideoAssetFilter.size());
+    ImGui::SameLine();
+    if (ImGui::Button("動画一覧を更新")) {
+        RefreshVideoAssets();
+    }
+    ImGui::TextDisabled(
+        "MP4はassets/videosへ置くと一覧に表示されます。動画音声は再生しません。");
+
+    if (!page.video.IsEnabled()) {
+        return;
+    }
+
+    const bool inheritsPreviousVideoSettings =
+        pageIndex > 0 &&
+        definition.pages[pageIndex - 1].video.IsEnabled() &&
+        definition.pages[pageIndex - 1].video.assetPath ==
+            page.video.assetPath;
+    if (inheritsPreviousVideoSettings) {
+        ImGui::TextDisabled(
+            "同じ動画のため、前ページの動画設定をすべて自動継承します。");
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+    }
+
+    ImGui::BeginDisabled(inheritsPreviousVideoSettings);
+    ImGui::Checkbox(
+        "ループ再生",
+        &page.video.shouldLoop);
+    ImGui::SameLine();
+    ImGui::Checkbox(
+        "縦横比を維持",
+        &page.video.shouldPreserveAspectRatio);
+    ImGui::SameLine();
+    ImGui::Checkbox(
+        "上下反転",
+        &page.video.shouldFlipVertical);
+
+    ImGui::SeparatorText(
+        "動画配置（すべて画面横幅に対する比率）");
+    ImGui::DragFloat(
+        "動画X",
+        &page.video.xRatio,
+        0.001f,
+        -1.0f,
+        2.0f,
+        "%.4f");
+    ImGui::DragFloat(
+        "動画Y",
+        &page.video.yRatio,
+        0.001f,
+        -1.0f,
+        2.0f,
+        "%.4f");
+    ImGui::DragFloat(
+        "動画幅",
+        &page.video.widthRatio,
+        0.001f,
+        0.001f,
+        2.0f,
+        "%.4f");
+    ImGui::DragFloat(
+        "動画高さ",
+        &page.video.heightRatio,
+        0.001f,
+        0.001f,
+        2.0f,
+        "%.4f");
+    ImGui::SliderFloat(
+        "動画回転",
+        &page.video.rotationDegrees,
+        -180.0f,
+        180.0f,
+        "%.1f°");
+    ImGui::EndDisabled();
+
+    if (ImGui::Button("このページからプレビュー")) {
+        mStatusMessage = controller &&
+                                 controller->PreviewAtPage(
+                                     definition.id,
+                                     pageIndex)
+                             ? "このページからプレビューを開始しました"
+                             : "プレビューを開始できませんでした";
+    }
+    ImGui::SameLine();
+    const bool isEditingPlacement =
+        mPlacementTutorialId == definition.id &&
+        mPlacementPageIndex == static_cast<int>(pageIndex);
+    ImGui::BeginDisabled(inheritsPreviousVideoSettings);
+    if (ImGui::Button(
+            isEditingPlacement
+                ? "画面上の配置調整を終了"
+                : "画面上で配置調整")) {
+        if (isEditingPlacement) {
+            mPlacementTutorialId.clear();
+            mPlacementPageIndex = -1;
+        } else {
+            mPlacementTutorialId = definition.id;
+            mPlacementPageIndex = static_cast<int>(pageIndex);
+            if (controller) {
+                controller->PreviewAtPage(
+                    definition.id,
+                    pageIndex);
+            }
+        }
+    }
+    ImGui::EndDisabled();
+}
+
+void TutorialDebugPanel::DrawVideoPlacementOverlay(
+    TutorialLibrary& library)
+{
+    if (mPlacementTutorialId.empty() ||
+        mPlacementPageIndex < 0) {
+        return;
+    }
+
+    TutorialDefinition* definition =
+        library.Find(mPlacementTutorialId);
+    if (!definition ||
+        mPlacementPageIndex >=
+            static_cast<int>(definition->pages.size())) {
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+        return;
+    }
+
+    TutorialPage& page = definition->pages[
+        static_cast<std::size_t>(mPlacementPageIndex)];
+    const bool inheritsPreviousVideoSettings =
+        mPlacementPageIndex > 0 &&
+        definition->pages[
+            static_cast<std::size_t>(mPlacementPageIndex - 1)]
+                .video.assetPath == page.video.assetPath;
+    if (!page.video.IsEnabled()) {
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+        return;
+    }
+    if (inheritsPreviousVideoSettings) {
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+        return;
+    }
+
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+        return;
+    }
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float horizontalReference = viewport->Size.x;
+    if (horizontalReference <= 0.0f) {
+        return;
+    }
+
+    const ImVec2 overlayPosition(
+        viewport->Pos.x +
+            page.video.xRatio * horizontalReference,
+        viewport->Pos.y +
+            page.video.yRatio * horizontalReference);
+    const ImVec2 overlaySize(
+        std::max(
+            16.0f,
+            page.video.widthRatio * horizontalReference),
+        std::max(
+            16.0f,
+            page.video.heightRatio * horizontalReference));
+
+    ImGui::SetNextWindowPos(overlayPosition);
+    ImGui::SetNextWindowSize(overlaySize);
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    constexpr ImGuiWindowFlags overlayFlags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoBackground |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoBringToFrontOnFocus;
+    ImGui::Begin(
+        "##TutorialVideoPlacementOverlay",
+        nullptr,
+        overlayFlags);
+
+    const ImVec2 contentMin = ImGui::GetWindowPos();
+    const ImVec2 contentSize = ImGui::GetWindowSize();
+    ImGui::SetCursorScreenPos(contentMin);
+    ImGui::InvisibleButton(
+        "##TutorialVideoPlacementDrag",
+        contentSize,
+        ImGuiButtonFlags_MouseButtonLeft);
+
+    constexpr float resizeHandleSize = 18.0f;
+    if (ImGui::IsItemActivated()) {
+        const ImVec2 mousePosition = ImGui::GetMousePos();
+        const float distanceFromRight =
+            contentMin.x + contentSize.x - mousePosition.x;
+        const float distanceFromBottom =
+            contentMin.y + contentSize.y - mousePosition.y;
+        mIsResizingVideoPlacement =
+            distanceFromRight >= 0.0f &&
+            distanceFromRight <= resizeHandleSize &&
+            distanceFromBottom >= 0.0f &&
+            distanceFromBottom <= resizeHandleSize;
+    }
+
+    if (ImGui::IsItemActive() &&
+        ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+        const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+        if (mIsResizingVideoPlacement) {
+            page.video.widthRatio = std::max(
+                0.001f,
+                page.video.widthRatio +
+                    mouseDelta.x / horizontalReference);
+            page.video.heightRatio = std::max(
+                0.001f,
+                page.video.heightRatio +
+                    mouseDelta.y / horizontalReference);
+        } else {
+            page.video.xRatio +=
+                mouseDelta.x / horizontalReference;
+            page.video.yRatio +=
+                mouseDelta.y / horizontalReference;
+        }
+    }
+    if (ImGui::IsItemDeactivated()) {
+        mIsResizingVideoPlacement = false;
+    }
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    const ImVec2 contentMax(
+        contentMin.x + contentSize.x,
+        contentMin.y + contentSize.y);
+    drawList->AddRect(
+        contentMin,
+        contentMax,
+        IM_COL32(255, 170, 35, 255),
+        0.0f,
+        0,
+        3.0f);
+    drawList->AddRectFilled(
+        ImVec2(
+            contentMax.x - resizeHandleSize,
+            contentMax.y - resizeHandleSize),
+        contentMax,
+        IM_COL32(255, 170, 35, 230));
+    drawList->AddText(
+        ImVec2(contentMin.x, contentMin.y - 22.0f),
+        IM_COL32(255, 210, 100, 255),
+        "動画配置: ドラッグで移動 / 右下で拡縮 / ESCで終了");
+
+    ImGui::End();
+}
+
+void TutorialDebugPanel::RefreshVideoAssets()
+{
+    mVideoAssets.clear();
+    mVideoAssetsScanned = true;
+
+    const std::filesystem::path assetsRoot("../assets");
+    const std::filesystem::path videoRoot =
+        assetsRoot / "videos";
+    std::error_code error;
+    if (!std::filesystem::is_directory(videoRoot, error)) {
+        mStatusMessage = "assets/videosが見つかりません";
+        return;
+    }
+
+    for (std::filesystem::recursive_directory_iterator iterator(
+             videoRoot,
+             error),
+         end;
+         iterator != end && !error;
+         iterator.increment(error)) {
+        if (!iterator->is_regular_file(error) ||
+            ToLower(iterator->path().extension().string()) !=
+                ".mp4") {
+            continue;
+        }
+
+        const std::filesystem::path relativePath =
+            std::filesystem::relative(
+                iterator->path(),
+                assetsRoot,
+                error);
+        if (!error) {
+            mVideoAssets.emplace_back(
+                relativePath.generic_string());
+        }
+    }
+
+    std::sort(mVideoAssets.begin(), mVideoAssets.end());
 }
 
 void TutorialDebugPanel::DrawFocusTargetPicker(

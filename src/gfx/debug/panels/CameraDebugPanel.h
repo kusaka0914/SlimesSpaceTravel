@@ -9,13 +9,21 @@ public:
     explicit CameraDebugPanel(DebugEditorContext& context);
 
     void Draw() override;
+    void DrawCinematicSequenceEditor();
 
 private:
+    enum class View {
+        CameraParameters,
+        CinematicSequence,
+    };
+
+    void DrawView(View view);
     void SelectSequence(const std::string& sequenceId);
     void SelectKeyframe(int keyframeIndex);
 
 private:
-    char mSequenceIdBuffer[128] = "new_sequence";
+    char mNewSequenceIdBuffer[128] = "new_sequence";
+    char mRenameSequenceIdBuffer[128] = {};
 
     std::string mSelectedSequenceId;
     std::string mStatusMessage;

@@ -1,5 +1,6 @@
 sequences:
   base_arrival_template:
+    name: 拠点到着時演出
     loop: false
     clips:
       - type: playerControl
@@ -54,6 +55,7 @@ sequences:
           index: 5
         visible: false
   launch_rocket_from_base:
+    name: 各惑星へのロケット出発演出
     loop: false
     clips:
       - type: actorMove

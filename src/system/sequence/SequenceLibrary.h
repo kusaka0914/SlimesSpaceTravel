@@ -18,6 +18,7 @@ public:
     GameplaySequence* FindMutable(std::string_view id);
 
     bool Create(std::string id);
+    GameplaySequence* Duplicate(std::string_view id);
     bool Rename(std::string_view currentId, std::string newId);
     bool Remove(std::string_view id);
     std::vector<std::string> GetIds() const;

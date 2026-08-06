@@ -5,6 +5,7 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "gfx/debug/panels/CameraDebugPanel.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
@@ -13,6 +14,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
@@ -49,29 +51,48 @@ bool SetYamlSequenceValue(YAML::Node& config, const std::string& sequenceName, s
     return true;
 }
 
+std::optional<std::size_t> FindYamlSequenceEntryIndex(
+    const YAML::Node& config,
+    const std::string& sequenceName,
+    const std::string& key,
+    const std::string& expectedValue)
+{
+    const YAML::Node sequence = config[sequenceName];
+    if (!sequence || !sequence.IsSequence()) {
+        return std::nullopt;
+    }
+
+    for (std::size_t index = 0; index < sequence.size(); ++index) {
+        const YAML::Node entry = sequence[index];
+        if (entry[key] &&
+            entry[key].as<std::string>() == expectedValue) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
 } // namespace
 
-ParameterDebugPanel::ParameterDebugPanel(DebugEditorContext& context)
-    : DebugPanel(context)
+ParameterDebugPanel::ParameterDebugPanel(
+    DebugEditorContext& context,
+    CameraDebugPanel& cameraPanel)
+    : DebugPanel(context),
+      mCameraPanel(cameraPanel)
 {
 }
 
 void ParameterDebugPanel::Draw()
 {
-    const char* menus[] = {"プレイヤー", "敵"};
+    const char* menus[] = {"プレイヤー", "敵", "カメラ"};
 
     ImGui::BeginChild("ParameterEditorLeft", ImVec2(160, 0), true);
 
     for (int i = 0; i < IM_ARRAYSIZE(menus); ++i) {
         if (ImGui::Selectable(menus[i], mSelectedMenu == i)) {
             mSelectedMenu = i;
+            mSaveStatusMessage.clear();
         }
-    }
-
-    ImGui::Separator();
-
-    if (ImGui::Button("保存する")) {
-        Save();
     }
 
     ImGui::EndChild();
@@ -86,6 +107,9 @@ void ParameterDebugPanel::Draw()
         break;
     case 1:
         DrawEnemies();
+        break;
+    case 2:
+        mCameraPanel.Draw();
         break;
     default:
         break;
@@ -104,6 +128,17 @@ void ParameterDebugPanel::DrawPlayer()
     if (!player) {
         return;
     }
+
+    if (ImGui::Button("プレイヤー設定を保存")) {
+        mSaveStatusMessage = SavePlayerParameters()
+                                 ? "players.yamlへ保存しました"
+                                 : "プレイヤー設定を保存できませんでした";
+    }
+    if (!mSaveStatusMessage.empty()) {
+        ImGui::SameLine();
+        ImGui::TextUnformatted(mSaveStatusMessage.c_str());
+    }
+    ImGui::Separator();
 
     if (ImGui::TreeNode("基本情報")) {
         Stage* stage = mContext.game->GetCurrentStage();
@@ -136,10 +171,20 @@ void ParameterDebugPanel::DrawPlayer()
             }
         }
 
-        int hp = player->GetHp();
-        if (ImGui::SliderInt("体力", &hp, 1, 100)) {
-            player->SetHp(hp);
+        int initialHp = static_cast<int>(
+            std::round(player->GetMaxHp()));
+        if (ImGui::SliderInt(
+                "初期体力（保存対象）",
+                &initialHp,
+                1,
+                100)) {
+            player->SetMaxHp(static_cast<float>(initialHp));
+            player->SetHp(static_cast<float>(initialHp));
         }
+        ImGui::Text(
+            "現在体力: %.0f / %.0f",
+            player->GetHp(),
+            player->GetMaxHp());
 
         float scale = player->GetScale().x;
         if (ImGui::SliderFloat("スケール", &scale, 0.01f, 5.0f, "%.2f")) {
@@ -499,6 +544,17 @@ void ParameterDebugPanel::DrawEnemies()
         }
     }
 
+    if (ImGui::Button("敵設定を保存")) {
+        mSaveStatusMessage = SaveEnemyParameters()
+                                 ? "enemies.yamlへ保存しました"
+                                 : "敵設定を保存できませんでした";
+    }
+    if (!mSaveStatusMessage.empty()) {
+        ImGui::SameLine();
+        ImGui::TextUnformatted(mSaveStatusMessage.c_str());
+    }
+    ImGui::Separator();
+
     if (ImGui::TreeNode("共通設定")) {
         Enemy* commonSettingsEnemy =
             normalEnemy ? normalEnemy : bossEnemy;
@@ -565,13 +621,22 @@ void ParameterDebugPanel::DrawEnemies()
         ImGui::Text("行動プロファイル: %s", normalEnemy->GetBehaviorProfileName().c_str());
         ImGui::Text("現在の行動: %s", normalEnemy->GetCurrentBehaviorActionType());
 
-        float hp = normalEnemy->GetHp();
-        if (ImGui::SliderFloat("体力##normal", &hp, 1.0f, 999.0f, "%.0f")) {
+        float initialHp = normalEnemy->GetMaxHp();
+        if (ImGui::SliderFloat(
+                "初期体力（保存対象）##normal",
+                &initialHp,
+                1.0f,
+                999.0f,
+                "%.0f")) {
             for (Enemy* enemy : normalEnemies) {
-                enemy->SetHp(hp);
-                enemy->SetMaxHp(hp);
+                enemy->SetMaxHp(initialHp);
+                enemy->SetHp(initialHp);
             }
         }
+        ImGui::Text(
+            "現在体力: %.0f / %.0f",
+            normalEnemy->GetHp(),
+            normalEnemy->GetMaxHp());
 
         float scale = normalEnemy->GetScale().x;
         if (ImGui::SliderFloat("スケール##normal", &scale, 0.01f, 5.0f, "%.2f")) {
@@ -666,11 +731,20 @@ void ParameterDebugPanel::DrawEnemies()
         ImGui::Text("行動プロファイル: %s", bossEnemy->GetBehaviorProfileName().c_str());
         ImGui::Text("現在の行動: %s", bossEnemy->GetCurrentBehaviorActionType());
 
-        float hp = bossEnemy->GetHp();
-        if (ImGui::SliderFloat("体力##boss", &hp, 1.0f, 9999.0f, "%.0f")) {
-            bossEnemy->SetHp(hp);
-            bossEnemy->SetMaxHp(hp);
+        float initialHp = bossEnemy->GetMaxHp();
+        if (ImGui::SliderFloat(
+                "初期体力（保存対象）##boss",
+                &initialHp,
+                1.0f,
+                9999.0f,
+                "%.0f")) {
+            bossEnemy->SetMaxHp(initialHp);
+            bossEnemy->SetHp(initialHp);
         }
+        ImGui::Text(
+            "現在体力: %.0f / %.0f",
+            bossEnemy->GetHp(),
+            bossEnemy->GetMaxHp());
 
         float scale = bossEnemy->GetScale().x;
         if (ImGui::SliderFloat("スケール##boss", &scale, 0.01f, 10.0f, "%.2f")) {
@@ -744,48 +818,50 @@ void ParameterDebugPanel::DrawEnemies()
     }
 }
 
-void ParameterDebugPanel::Save()
+bool ParameterDebugPanel::SavePlayerParameters()
 {
-    if (!mContext.game) {
-        return;
+    if (!mContext.game || mContext.game->GetPlayers().empty()) {
+        return false;
     }
 
-    Player* player = nullptr;
-    if (!mContext.game->GetPlayers().empty()) {
-        player = mContext.game->GetPlayers()[0];
+    return SavePlayerYaml(mContext.game->GetPlayers()[0]);
+}
+
+bool ParameterDebugPanel::SaveEnemyParameters()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
     }
 
     Enemy* normalEnemy = nullptr;
     Enemy* bossEnemy = nullptr;
 
-    if (mContext.game->GetCurrentStage()) {
-        for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-            if (!planet) {
+    for (Planet* planet :
+         mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (!enemy) {
                 continue;
             }
 
-            for (Enemy* enemy : planet->GetEnemies()) {
-                if (!enemy) {
-                    continue;
-                }
-
-                if (enemy->GetIsBoss()) {
-                    bossEnemy = enemy;
-                } else {
-                    normalEnemy = enemy;
-                }
+            if (enemy->GetIsBoss()) {
+                bossEnemy = enemy;
+            } else {
+                normalEnemy = enemy;
             }
         }
     }
 
-    SavePlayerYaml(player);
-    SaveEnemiesYaml(normalEnemy, bossEnemy);
+    return SaveEnemiesYaml(normalEnemy, bossEnemy);
 }
 
-void ParameterDebugPanel::SavePlayerYaml(Player* player)
+bool ParameterDebugPanel::SavePlayerYaml(Player* player)
 {
     if (!player) {
-        return;
+        return false;
     }
 
     const std::string filePath = "../assets/data/actor/players.yaml";
@@ -797,13 +873,18 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
     } catch (const YAML::Exception& e) {
         std::cerr << "Failed to load yaml: " << filePath << std::endl;
         std::cerr << e.what() << std::endl;
-        return;
+        return false;
     }
 
     const std::string sequenceName = "players";
     constexpr std::size_t index = 0;
 
-    SetYamlSequenceValue(config, sequenceName, index, "hp", player->GetHp());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "hp",
+        player->GetMaxHp());
     SetYamlSequenceValue(config, sequenceName, index, "scale", player->GetScale().x);
     SetYamlSequenceValue(config, sequenceName, index, "attack", player->GetAttack());
     SetYamlSequenceValue(config, sequenceName, index, "attackSpeed", player->GetAttackSpeed());
@@ -882,13 +963,15 @@ void ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "knockBackSpeed", player->GetKnockBackSpeed());
     SetYamlSequenceValue(config, sequenceName, index, "modelPath", player->GetModelPath());
 
-    SaveYamlFile(filePath, config);
+    return SaveYamlFile(filePath, config);
 }
 
-void ParameterDebugPanel::SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy)
+bool ParameterDebugPanel::SaveEnemiesYaml(
+    Enemy* normalEnemy,
+    Enemy* bossEnemy)
 {
     if (!normalEnemy && !bossEnemy) {
-        return;
+        return false;
     }
 
     const std::string filePath = "../assets/data/actor/enemies.yaml";
@@ -900,53 +983,81 @@ void ParameterDebugPanel::SaveEnemiesYaml(Enemy* normalEnemy, Enemy* bossEnemy)
     } catch (const YAML::Exception& e) {
         std::cerr << "Failed to load yaml: " << filePath << std::endl;
         std::cerr << e.what() << std::endl;
-        return;
+        return false;
     }
 
     const std::string sequenceName = "enemies";
+    const std::optional<std::size_t> commonIndex =
+        FindYamlSequenceEntryIndex(
+            config,
+            sequenceName,
+            "type",
+            "common");
+    const std::optional<std::size_t> normalIndex =
+        FindYamlSequenceEntryIndex(
+            config,
+            sequenceName,
+            "type",
+            "normal");
+    const std::optional<std::size_t> bossIndex =
+        FindYamlSequenceEntryIndex(
+            config,
+            sequenceName,
+            "type",
+            "boss");
 
     Enemy* commonSettingsEnemy =
         normalEnemy ? normalEnemy : bossEnemy;
-    if (commonSettingsEnemy) {
-        SetYamlSequenceValue(config, sequenceName, 0, "knockBackSpeed",
+    if (commonSettingsEnemy && commonIndex) {
+        SetYamlSequenceValue(config, sequenceName, *commonIndex, "knockBackSpeed",
                              commonSettingsEnemy->GetKnockBackSpeed());
-        SetYamlSequenceValue(config, sequenceName, 0, "defaultLaunchedTimer",
+        SetYamlSequenceValue(config, sequenceName, *commonIndex, "defaultLaunchedTimer",
                              commonSettingsEnemy->GetDefaultLaunchedTimer());
-        SetYamlSequenceValue(config, sequenceName, 0, "launchHeight",
+        SetYamlSequenceValue(config, sequenceName, *commonIndex, "launchHeight",
                              commonSettingsEnemy->GetLaunchHeight());
-        SetYamlSequenceValue(config, sequenceName, 0, "detectionRange",
+        SetYamlSequenceValue(config, sequenceName, *commonIndex, "detectionRange",
                              commonSettingsEnemy->GetDetectionRange());
     }
 
-    if (normalEnemy) {
-        SetYamlSequenceValue(config, sequenceName, 1, "hp", normalEnemy->GetHp());
-        SetYamlSequenceValue(config, sequenceName, 1, "modelPath", normalEnemy->GetModelPath());
-        SetYamlSequenceValue(config, sequenceName, 1, "scale", normalEnemy->GetScale().x);
-        SetYamlSequenceValue(config, sequenceName, 1, "speed", normalEnemy->GetMoveSpeed());
-        SetYamlSequenceValue(config, sequenceName, 1, "attack", normalEnemy->GetAttack());
-        SetYamlSequenceValue(config, sequenceName, 1, "breakCountMax", normalEnemy->GetBreakCountMax());
-        SetYamlSequenceValue(config, sequenceName, 1, "radius", normalEnemy->GetRadius());
-        SetYamlSequenceValue(config, sequenceName, 1, "defaultStandByAttackTimer",
+    if (normalEnemy && normalIndex) {
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "hp", normalEnemy->GetMaxHp());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "modelPath", normalEnemy->GetModelPath());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "scale", normalEnemy->GetScale().x);
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "speed", normalEnemy->GetMoveSpeed());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "attack", normalEnemy->GetAttack());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "breakCountMax", normalEnemy->GetBreakCountMax());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "radius", normalEnemy->GetRadius());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "defaultStandByAttackTimer",
                              normalEnemy->GetDefaultStandByAttackTimer());
-        SetYamlSequenceValue(config, sequenceName, 1, "defaultAttackMotionTimer",
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "defaultAttackMotionTimer",
                              normalEnemy->GetDefaultAttackMotionTimer());
-        SetYamlSequenceValue(config, sequenceName, 1, "attackSpeed", normalEnemy->GetAttackSpeed());
+        SetYamlSequenceValue(config, sequenceName, *normalIndex, "attackSpeed", normalEnemy->GetAttackSpeed());
     }
 
-    if (bossEnemy) {
-        SetYamlSequenceValue(config, sequenceName, 2, "hp", bossEnemy->GetHp());
-        SetYamlSequenceValue(config, sequenceName, 2, "modelPath", bossEnemy->GetModelPath());
-        SetYamlSequenceValue(config, sequenceName, 2, "scale", bossEnemy->GetScale().x);
-        SetYamlSequenceValue(config, sequenceName, 2, "speed", bossEnemy->GetMoveSpeed());
-        SetYamlSequenceValue(config, sequenceName, 2, "attack", bossEnemy->GetAttack());
-        SetYamlSequenceValue(config, sequenceName, 2, "breakCountMax", bossEnemy->GetBreakCountMax());
-        SetYamlSequenceValue(config, sequenceName, 2, "radius", bossEnemy->GetRadius());
-        SetYamlSequenceValue(config, sequenceName, 2, "defaultStandByAttackTimer",
+    if (bossEnemy && bossIndex) {
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "hp", bossEnemy->GetMaxHp());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "modelPath", bossEnemy->GetModelPath());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "scale", bossEnemy->GetScale().x);
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "speed", bossEnemy->GetMoveSpeed());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "attack", bossEnemy->GetAttack());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "breakCountMax", bossEnemy->GetBreakCountMax());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "radius", bossEnemy->GetRadius());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "defaultStandByAttackTimer",
                              bossEnemy->GetDefaultStandByAttackTimer());
-        SetYamlSequenceValue(config, sequenceName, 2, "defaultAttackMotionTimer",
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "defaultAttackMotionTimer",
                              bossEnemy->GetDefaultAttackMotionTimer());
-        SetYamlSequenceValue(config, sequenceName, 2, "attackSpeed", bossEnemy->GetAttackSpeed());
+        SetYamlSequenceValue(config, sequenceName, *bossIndex, "attackSpeed", bossEnemy->GetAttackSpeed());
     }
 
-    SaveYamlFile(filePath, config);
+    const bool hasRequiredEntries =
+        commonIndex.has_value() &&
+        (!normalEnemy || normalIndex.has_value()) &&
+        (!bossEnemy || bossIndex.has_value());
+    if (!hasRequiredEntries) {
+        std::cerr << "Required enemy type was not found in "
+                  << filePath << std::endl;
+        return false;
+    }
+
+    return SaveYamlFile(filePath, config);
 }

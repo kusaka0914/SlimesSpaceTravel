@@ -14,21 +14,87 @@ tutorials:
         controllerText: 戦闘の基本としては敵に近づいてYまたはXで攻撃します！
         keyboardText: 戦闘の基本としては敵に近づいてJまたはKで攻撃します！
         advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.043515503
+          yRatio: 0.20226543
+          widthRatio: 0.246797
+          heightRatio: 0.14265625
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: false
       - id: weak_attack
-        text: "弱攻撃は攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
-        controllerText: "Yは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
-        keyboardText: "Jは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！"
+        text: "弱攻撃は攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
+        controllerText: "Yは弱攻撃で攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
+        keyboardText: "Jは弱攻撃で攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
         advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: strong_attack
-        text: "強攻撃は攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
-        controllerText: "Xは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
-        keyboardText: "Kは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！"
+        text: "強攻撃は攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
+        controllerText: "Xは強攻撃で攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
+        keyboardText: "Kは強攻撃で攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
         advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: combo
-        text: "まずは弱攻撃を3回、または弱攻撃2回から強攻撃のコンボを使って、\n敵に3回攻撃してみましょう！"
+        text: "弱攻撃を3回、または弱攻撃2回から強攻撃のコンボを使って、\n敵に3回攻撃してみましょう！"
         controllerText: "まずはY→Y→YまたはY→Y→Xのコンボを使って、\n敵に3回攻撃してみましょう！"
-        keyboardText: "まずはJ→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃してみましょう！"
+        keyboardText: "J→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃すると敵の頭上のガードを1つ破壊できます。"
         advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
+      - id: launch_tutorial
+        text: "すべてのガードを破壊すると敵が打ち上げられ、\n一方的に攻撃できるようになります。"
+        advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
+      - id: lets_try
+        text: まずはコンボで敵を打ち上げてみましょう！
+        advance: confirm
+        video:
+          asset: videos/battle_basic_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
   - id: enemy_break
     name: ガード破壊と空中攻撃
     repeat: oncePerSession
@@ -36,15 +102,6 @@ tutorials:
     textYRatio: 0.14
     textScaleRatio: 0.000333333
     pages:
-      - id: guard_broken
-        text: "3回攻撃できましたね！\n敵の頭上にあったガードがなくなったことに気づきましたか？"
-        advance: confirm
-      - id: guard_rule
-        text: "というのも、敵に3回攻撃を当てると\nガードを1個破壊することができるのです！"
-        advance: confirm
-      - id: launch_rule
-        text: "全てのガードを破壊することで\n敵を空中に打ち上げることができます！"
-        advance: confirm
       - id: air_attack_types
         text: 空中の敵を攻撃する時は空中弱攻撃と空中回避攻撃を使います。
         advance: confirm
@@ -55,13 +112,13 @@ tutorials:
         text: "そして空中弱攻撃は最大3回しか使えませんが、\n空中回避攻撃を当てると再使用できます。"
         advance: confirm
       - id: summary_air_attack
-        text: "つまり、空中弱攻撃→空中回避攻撃→空中弱攻撃のように繰り返す\nことでpkkp絶え間なく攻撃でき、大ダメージを与えられます。"
+        text: "つまり、空中弱攻撃→空中回避攻撃→空中弱攻撃のように繰り返す\nことで絶え間なく攻撃でき、大ダメージを与えられます。"
         advance: confirm
       - id: air_strong_attack
         text: "そして、打ち上げ解除直前になると敵が白く点滅します！\nそのタイミングで空中強攻撃を放ちましょう！"
         advance: confirm
       - id: recover_from_stun
-        text: "空中強攻撃は超協力ですが、使用後は疲労して動けなくなります。\n弱攻撃を連打することで早く回復できるのでk連打しましょう。"
+        text: "空中強攻撃は超強力ですが、使用後は疲労して動けなくなります。\n弱攻撃を連打することで早く回復できるので連打しましょう。"
         advance: confirm
       - id: break_summary
         text: "ガードを破壊し打ち上げ、空中弱攻撃と空中回避攻撃を繰り返す。\n点滅したら空中強攻撃の流れを覚えて敵を倒していきましょう！"

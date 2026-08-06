@@ -29,6 +29,16 @@ float ReadFloat(
                : fallback;
 }
 
+bool ReadBool(
+    const YAML::Node& node,
+    const char* key,
+    bool fallback)
+{
+    return node[key]
+               ? node[key].as<bool>()
+               : fallback;
+}
+
 std::string NormalizeRequestedId(std::string requestedId)
 {
     for (char& character : requestedId) {
@@ -171,6 +181,44 @@ bool TutorialLibrary::Load()
                                 : -1;
                     }
 
+                    const YAML::Node videoNode = pageNode["video"];
+                    if (videoNode && videoNode.IsMap()) {
+                        page.video.assetPath =
+                            ReadString(videoNode, "asset");
+                        page.video.xRatio = ReadFloat(
+                            videoNode,
+                            "xRatio",
+                            page.video.xRatio);
+                        page.video.yRatio = ReadFloat(
+                            videoNode,
+                            "yRatio",
+                            page.video.yRatio);
+                        page.video.widthRatio = ReadFloat(
+                            videoNode,
+                            "widthRatio",
+                            page.video.widthRatio);
+                        page.video.heightRatio = ReadFloat(
+                            videoNode,
+                            "heightRatio",
+                            page.video.heightRatio);
+                        page.video.rotationDegrees = ReadFloat(
+                            videoNode,
+                            "rotationDegrees",
+                            page.video.rotationDegrees);
+                        page.video.shouldLoop = ReadBool(
+                            videoNode,
+                            "loop",
+                            page.video.shouldLoop);
+                        page.video.shouldPreserveAspectRatio = ReadBool(
+                            videoNode,
+                            "preserveAspectRatio",
+                            page.video.shouldPreserveAspectRatio);
+                        page.video.shouldFlipVertical = ReadBool(
+                            videoNode,
+                            "flipVertical",
+                            page.video.shouldFlipVertical);
+                    }
+
                     RegeneratePageRuby(page);
                     definition.pages.emplace_back(std::move(page));
                 }
@@ -225,6 +273,28 @@ bool TutorialLibrary::Save()
                     page.focusTarget.sequenceName;
                 pageNode["focus"]["index"] =
                     page.focusTarget.yamlIndex;
+            }
+
+
+            if (page.video.IsEnabled()) {
+                pageNode["video"]["asset"] =
+                    page.video.assetPath;
+                pageNode["video"]["xRatio"] =
+                    page.video.xRatio;
+                pageNode["video"]["yRatio"] =
+                    page.video.yRatio;
+                pageNode["video"]["widthRatio"] =
+                    page.video.widthRatio;
+                pageNode["video"]["heightRatio"] =
+                    page.video.heightRatio;
+                pageNode["video"]["rotationDegrees"] =
+                    page.video.rotationDegrees;
+                pageNode["video"]["loop"] =
+                    page.video.shouldLoop;
+                pageNode["video"]["preserveAspectRatio"] =
+                    page.video.shouldPreserveAspectRatio;
+                pageNode["video"]["flipVertical"] =
+                    page.video.shouldFlipVertical;
             }
 
             tutorialNode["pages"].push_back(pageNode);

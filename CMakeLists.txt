@@ -67,7 +67,39 @@ target_link_libraries(game
 )
 
 if (WIN32)
-    target_link_libraries(game windowsapp)
+    target_link_libraries(game
+        windowsapp
+        mfplat
+        mfreadwrite
+        mfuuid
+        ole32
+    )
+
+endif()
+
+if (APPLE)
+    enable_language(OBJCXX)
+    set(CMAKE_OBJCXX_STANDARD 20)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+    set(TUTORIAL_VIDEO_MAC_SOURCE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/video/TutorialVideoPlayerMacBackend.mm
+    )
+    target_sources(game PRIVATE ${TUTORIAL_VIDEO_MAC_SOURCE})
+    set_source_files_properties(
+        ${TUTORIAL_VIDEO_MAC_SOURCE}
+        PROPERTIES COMPILE_FLAGS "-fobjc-arc"
+    )
+
+    find_library(AVFOUNDATION_FRAMEWORK AVFoundation REQUIRED)
+    find_library(COREMEDIA_FRAMEWORK CoreMedia REQUIRED)
+    find_library(COREVIDEO_FRAMEWORK CoreVideo REQUIRED)
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    target_link_libraries(game
+        ${AVFOUNDATION_FRAMEWORK}
+        ${COREMEDIA_FRAMEWORK}
+        ${COREVIDEO_FRAMEWORK}
+        ${FOUNDATION_FRAMEWORK}
+    )
 endif()
 
 set_target_properties(game PROPERTIES

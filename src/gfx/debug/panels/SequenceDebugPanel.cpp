@@ -12,11 +12,25 @@
 #include "system/sequence/SequenceSystem.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <string>
 #include <vector>
 
 namespace {
+template <std::size_t BufferSize>
+bool DrawStringInput(const char* label, std::string& text)
+{
+    std::array<char, BufferSize> buffer = {};
+    std::snprintf(buffer.data(), buffer.size(), "%s", text.c_str());
+    if (!ImGui::InputText(label, buffer.data(), buffer.size())) {
+        return false;
+    }
+
+    text = buffer.data();
+    return true;
+}
+
 struct ActorTargetOption {
     SequenceActorRef ref;
     Actor* actor = nullptr;
@@ -114,9 +128,43 @@ void SequenceDebugPanel::DrawSequenceList(SequenceSystem* system)
         }
     }
 
+    if (ImGui::Button("選択中を複製", ImVec2(-1.0f, 0.0f))) {
+        GameplaySequence* duplicated =
+            system->GetLibrary().Duplicate(mSelectedSequenceId);
+        if (duplicated) {
+            mSelectedSequenceId = duplicated->id;
+            std::snprintf(
+                mRenameSequenceId.data(),
+                mRenameSequenceId.size(),
+                "%s",
+                mSelectedSequenceId.c_str());
+            mSelectedClipIndex = -1;
+            mStatusMessage = "演出シーケンスを複製しました";
+        } else {
+            mStatusMessage = "複製する項目を選択してください";
+        }
+    }
+
+    if (ImGui::Button("選択中を削除", ImVec2(-1.0f, 0.0f))) {
+        if (system->GetActiveSequenceId() == mSelectedSequenceId) {
+            system->Stop(true);
+        }
+        if (system->GetLibrary().Remove(mSelectedSequenceId)) {
+            mSelectedSequenceId.clear();
+            mSelectedClipIndex = -1;
+            mStatusMessage = "演出シーケンスを削除しました";
+        }
+    }
+
     ImGui::Separator();
     for (const std::string& id : system->GetLibrary().GetIds()) {
-        if (ImGui::Selectable(id.c_str(), id == mSelectedSequenceId)) {
+        const GameplaySequence* sequence = system->GetLibrary().Find(id);
+        const std::string displayName =
+            sequence && !sequence->displayName.empty()
+                ? sequence->displayName
+                : id;
+        const std::string label = displayName + "##" + id;
+        if (ImGui::Selectable(label.c_str(), id == mSelectedSequenceId)) {
             mSelectedSequenceId = id;
             std::snprintf(
                 mRenameSequenceId.data(),
@@ -125,6 +173,7 @@ void SequenceDebugPanel::DrawSequenceList(SequenceSystem* system)
                 mSelectedSequenceId.c_str());
             mSelectedClipIndex = -1;
         }
+        ImGui::TextDisabled("ID: %s", id.c_str());
     }
 
     ImGui::EndChild();
@@ -140,6 +189,8 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
         ImGui::EndChild();
         return;
     }
+
+    DrawStringInput<256>("表示名", sequence->displayName);
 
     ImGui::InputText(
         "シーケンスID",
@@ -350,16 +401,36 @@ void SequenceDebugPanel::DrawCameraSequencePicker(SequenceClip& clip)
         return;
     }
 
+    const CinematicSequenceLibrary& cameraSequenceLibrary =
+        mContext.game->GetCameraSystem()->GetCinematicLibrary();
     const std::vector<std::string> ids =
-        mContext.game->GetCameraSystem()->GetCinematicLibrary().GetSequenceIds();
+        cameraSequenceLibrary.GetSequenceIds();
 
-    const char* preview =
-        clip.cameraSequenceId.empty() ? "未設定" : clip.cameraSequenceId.c_str();
-    if (ImGui::BeginCombo("カメラ演出", preview)) {
+    const CinematicSequence* selectedSequence =
+        cameraSequenceLibrary.Find(clip.cameraSequenceId);
+    std::string preview = "未設定";
+    if (selectedSequence) {
+        preview = selectedSequence->displayName.empty()
+                      ? selectedSequence->id
+                      : selectedSequence->displayName;
+    } else if (!clip.cameraSequenceId.empty()) {
+        preview = clip.cameraSequenceId;
+    }
+    if (ImGui::BeginCombo("カメラ演出", preview.c_str())) {
         for (const std::string& id : ids) {
-            if (ImGui::Selectable(id.c_str(), id == clip.cameraSequenceId)) {
+            const CinematicSequence* sequence =
+                cameraSequenceLibrary.Find(id);
+            const std::string displayName =
+                sequence && !sequence->displayName.empty()
+                    ? sequence->displayName
+                    : id;
+            const std::string label = displayName + "##" + id;
+            if (ImGui::Selectable(
+                    label.c_str(),
+                    id == clip.cameraSequenceId)) {
                 clip.cameraSequenceId = id;
             }
+            ImGui::TextDisabled("ID: %s", id.c_str());
         }
         ImGui::EndCombo();
     }

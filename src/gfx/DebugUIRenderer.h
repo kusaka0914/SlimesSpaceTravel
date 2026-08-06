@@ -27,6 +27,10 @@ public:
     void Draw();
 
 private:
+    void DrawBasicInfoTab();
+    void DrawSequenceEditorTab();
+
+private:
     DebugEditorContext mContext;
 
     PerformanceDebugPanel mPerformancePanel;
@@ -46,4 +50,6 @@ private:
     StageDeleteActorPanel mStageDeleteActorPanel;
     StageEditorPanel mStageEditorPanel;
     StageGizmoController mGizmoController;
+
+    int mSelectedSequenceEditorMenu = 0;
 };

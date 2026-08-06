@@ -109,6 +109,9 @@ bool CinematicSequenceLibrary::Load()
             sequence.id = entry.first.as<std::string>();
 
             const YAML::Node sequenceNode = entry.second;
+            sequence.displayName = sequenceNode["name"]
+                                       ? sequenceNode["name"].as<std::string>()
+                                       : sequence.id;
             sequence.loop = sequenceNode["loop"] ? sequenceNode["loop"].as<bool>() : false;
             sequence.endHoldDuration =
                 sequenceNode["endHoldDuration"] ? std::max(0.0f, sequenceNode["endHoldDuration"].as<float>()) : 0.5f;
@@ -158,6 +161,10 @@ bool CinematicSequenceLibrary::Save() const
             const CinematicSequence& sequence = mSequences.at(sequenceId);
 
             emitter << YAML::Key << sequence.id << YAML::Value << YAML::BeginMap;
+            emitter << YAML::Key << "name" << YAML::Value
+                    << (sequence.displayName.empty()
+                            ? sequence.id
+                            : sequence.displayName);
             emitter << YAML::Key << "loop" << YAML::Value << sequence.loop;
             emitter << YAML::Key << "endHoldDuration" << YAML::Value << sequence.endHoldDuration;
             emitter << YAML::Key << "keyframes" << YAML::Value << YAML::BeginSeq;
@@ -220,7 +227,64 @@ bool CinematicSequenceLibrary::Create(std::string sequenceId)
 
     CinematicSequence sequence;
     sequence.id = std::move(sequenceId);
+    sequence.displayName = sequence.id;
     mSequences[sequence.id] = std::move(sequence);
+    return true;
+}
+
+CinematicSequence* CinematicSequenceLibrary::Duplicate(
+    std::string_view sequenceId)
+{
+    const CinematicSequence* source = Find(sequenceId);
+    if (!source) {
+        return nullptr;
+    }
+
+    const std::string baseId = source->id + "_copy";
+    std::string duplicatedId = baseId;
+    int suffix = 2;
+    while (mSequences.contains(duplicatedId)) {
+        duplicatedId = baseId + "_" + std::to_string(suffix);
+        ++suffix;
+    }
+
+    CinematicSequence duplicated = *source;
+    duplicated.id = duplicatedId;
+    duplicated.displayName =
+        (source->displayName.empty()
+             ? source->id
+             : source->displayName) +
+        " コピー";
+
+    const auto [sequenceIt, wasInserted] =
+        mSequences.emplace(duplicatedId, std::move(duplicated));
+    return wasInserted ? &sequenceIt->second : nullptr;
+}
+
+bool CinematicSequenceLibrary::Rename(
+    std::string_view currentSequenceId,
+    std::string newSequenceId)
+{
+    if (newSequenceId.empty()) {
+        return false;
+    }
+
+    const std::string currentId(currentSequenceId);
+    auto sequenceIt = mSequences.find(currentId);
+    if (sequenceIt == mSequences.end()) {
+        return false;
+    }
+    if (currentId == newSequenceId) {
+        return true;
+    }
+    if (mSequences.contains(newSequenceId)) {
+        return false;
+    }
+
+    auto sequenceNode = mSequences.extract(sequenceIt);
+    sequenceNode.key() = newSequenceId;
+    sequenceNode.mapped().id = std::move(newSequenceId);
+    mSequences.insert(std::move(sequenceNode));
     return true;
 }
 

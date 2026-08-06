@@ -946,6 +946,34 @@ void UIRenderer::DrawTexture(
     bool flipVertical,
     float rotationDegrees)
 {
+    const auto textureIt = mTextures.find(textureName);
+    if (textureIt == mTextures.end()) {
+        return;
+    }
+
+    DrawTextureHandle(
+        x,
+        y,
+        width,
+        height,
+        textureIt->second,
+        flipVertical,
+        rotationDegrees);
+}
+
+void UIRenderer::DrawTextureHandle(
+    float x,
+    float y,
+    float width,
+    float height,
+    GLuint textureHandle,
+    bool flipVertical,
+    float rotationDegrees)
+{
+    if (textureHandle == 0) {
+        return;
+    }
+
     glUseProgram(mUIShader->GetShaderProgram());
 
     const glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
@@ -968,12 +996,7 @@ void UIRenderer::DrawTexture(
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glActiveTexture(GL_TEXTURE0);
 
-    auto textureIt = mTextures.find(textureName);
-    if (textureIt == mTextures.end()) {
-        return;
-    }
-
-    glBindTexture(GL_TEXTURE_2D, textureIt->second);
+    glBindTexture(GL_TEXTURE_2D, textureHandle);
 
     mVertexArrays.at(flipVertical ? "quadFlipVertical" : "quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

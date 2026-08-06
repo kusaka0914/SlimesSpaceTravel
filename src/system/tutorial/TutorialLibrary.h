@@ -26,6 +26,20 @@ struct TutorialFocusTarget {
     }
 };
 
+struct TutorialVideoSettings {
+    std::string assetPath;
+    float xRatio = 0.54f;
+    float yRatio = 0.03f;
+    float widthRatio = 0.38f;
+    float heightRatio = 0.21375f;
+    float rotationDegrees = 0.0f;
+    bool shouldLoop = true;
+    bool shouldPreserveAspectRatio = true;
+    bool shouldFlipVertical = true;
+
+    bool IsEnabled() const { return !assetPath.empty(); }
+};
+
 struct TutorialPage {
     std::string id;
     std::string text;
@@ -34,6 +48,7 @@ struct TutorialPage {
     TutorialAdvanceCondition advanceCondition =
         TutorialAdvanceCondition::Confirm;
     TutorialFocusTarget focusTarget;
+    TutorialVideoSettings video;
     std::vector<RubyTextSegment> rubySegments;
     std::vector<RubyTextSegment> controllerRubySegments;
     std::vector<RubyTextSegment> keyboardRubySegments;

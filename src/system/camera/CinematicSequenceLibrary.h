@@ -18,6 +18,10 @@ public:
     CinematicSequence* FindMutable(std::string_view sequenceId);
 
     bool Create(std::string sequenceId);
+    CinematicSequence* Duplicate(std::string_view sequenceId);
+    bool Rename(
+        std::string_view currentSequenceId,
+        std::string newSequenceId);
     bool Remove(std::string_view sequenceId);
 
     std::vector<std::string> GetSequenceIds() const;

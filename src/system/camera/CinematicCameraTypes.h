@@ -27,6 +27,7 @@ struct CinematicCameraKeyframe {
 
 struct CinematicSequence {
     std::string id;
+    std::string displayName;
     bool loop = false;
     float endHoldDuration = 0.5f;
     std::vector<CinematicCameraKeyframe> keyframes;

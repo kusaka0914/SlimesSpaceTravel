@@ -9,11 +9,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.84003747
-      - 0.45066562
+      - 0.8406374
+      - 0.45066553
     sizeRatio:
       - 0.02
-      - 0.02
+      - 0.019999992
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_a.png
@@ -231,11 +231,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.7922965
-      - 0.4501656
+      - 0.79229647
+      - 0.45016557
     sizeRatio:
       - 0.019999992
-      - 0.02
+      - 0.019999998
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_y.png

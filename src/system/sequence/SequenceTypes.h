@@ -44,6 +44,7 @@ struct SequenceClip {
 
 struct GameplaySequence {
     std::string id;
+    std::string displayName;
     bool loop = false;
     std::vector<SequenceClip> clips;
 
