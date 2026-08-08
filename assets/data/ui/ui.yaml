@@ -193,7 +193,7 @@ default:
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.015000003, 0.0793]
+    posRatio: [0.01500001, 0.0793]
     scaleRatio: [0.05999999, 0.06]
     rotationDegrees: 0
   - id: talkableTextForGameController

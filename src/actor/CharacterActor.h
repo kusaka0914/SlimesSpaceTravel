@@ -21,6 +21,10 @@ public:
     void Land(const glm::vec3& hitPos);
     void NotLand();
 
+    static bool IsWalkableGroundNormal(
+        const glm::vec3& hitNormal,
+        const glm::vec3& upDirection);
+
     void SetBaseScale(const glm::vec3& scale);
 
     bool GetOnGround() const { return mOnGround; }

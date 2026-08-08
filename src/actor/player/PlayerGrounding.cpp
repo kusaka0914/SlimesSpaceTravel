@@ -75,12 +75,33 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
         return;
     }
 
+    const glm::vec3 hitNormal(
+        cb.m_hitNormalWorld.x(),
+        cb.m_hitNormalWorld.y(),
+        cb.m_hitNormalWorld.z());
+    if (!player.IsWalkableGroundNormal(hitNormal, up)) {
+        return;
+    }
+
     const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
     const ActorMovementCollisionResult collisionResult =
         player.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
             &player,
-            glm::vec3(0.0f),
+            hitPos - player.GetPos(),
             hitPos);
+
+    if (collisionResult.hasUnresolvedStageOverlap) {
+        return;
+    }
+
+    const bool wasSnapBlockedByNonGround =
+        collisionResult.didHitStage &&
+        !player.IsWalkableGroundNormal(
+            collisionResult.blockingNormal,
+            up);
+    if (wasSnapBlockedByNonGround) {
+        return;
+    }
 
     player.SetPos(collisionResult.resolvedPosition);
     player.SetOnGround(true);

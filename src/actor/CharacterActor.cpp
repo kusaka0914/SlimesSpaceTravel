@@ -9,6 +9,7 @@ constexpr float landingRayLength = 0.2f;
 constexpr float excludedSurfaceDetectionLengthMultiplier = 4.0f;
 constexpr float excludedSurfaceDetectionRayLength =
     landingRayLength * excludedSurfaceDetectionLengthMultiplier;
+constexpr float walkableGroundNormalMinimumUpDot = 0.65f;
 } // namespace
 
 CharacterActor::CharacterActor(Game* game)
@@ -124,6 +125,15 @@ CharacterActor::LandingRayResolution CharacterActor::ResolveLandingByRay(
         return LandingRayResolution::AppliedPlanetFallback;
     }
 
+    const btVector3 bulletHitNormal = rayCallback.m_hitNormalWorld;
+    const glm::vec3 hitNormal(
+        bulletHitNormal.x(),
+        bulletHitNormal.y(),
+        bulletHitNormal.z());
+    if (!IsWalkableGroundNormal(hitNormal, mUpVec)) {
+        return LandingRayResolution::NoHit;
+    }
+
     const btVector3 hitPt = rayCallback.m_hitPointWorld;
     const glm::vec3 hitPos(hitPt.x(), hitPt.y(), hitPt.z());
 
@@ -135,8 +145,30 @@ CharacterActor::LandingRayResolution CharacterActor::ResolveLandingByRay(
         return LandingRayResolution::NoHit;
     }
 
+    PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
+    const glm::vec3 desiredLandingPosition =
+        hitPos +
+        hitPosCorrection;
+    const ActorMovementCollisionResult landingCollision =
+        physicsSystem->ResolveMovementCollision(
+            this,
+            desiredLandingPosition - mPos,
+            desiredLandingPosition);
+    if (landingCollision.hasUnresolvedStageOverlap) {
+        return LandingRayResolution::NoHit;
+    }
+
+    const bool wasLandingMovementBlockedByNonGround =
+        landingCollision.didHitStage &&
+        !IsWalkableGroundNormal(
+            landingCollision.blockingNormal,
+            mUpVec);
+    if (wasLandingMovementBlockedByNonGround) {
+        return LandingRayResolution::NoHit;
+    }
+
     mGroundActor = hitActor;
-    Land(hitPos + hitPosCorrection);
+    Land(landingCollision.resolvedPosition);
     return LandingRayResolution::Landed;
 }
 
@@ -169,6 +201,29 @@ void CharacterActor::Land(const glm::vec3& hitPos)
 void CharacterActor::NotLand()
 {
     mOnGround = false;
+}
+
+bool CharacterActor::IsWalkableGroundNormal(
+    const glm::vec3& hitNormal,
+    const glm::vec3& upDirection)
+{
+    const float hitNormalLength = glm::length(hitNormal);
+    const float upDirectionLength = glm::length(upDirection);
+    if (hitNormalLength < 1e-6f ||
+        upDirectionLength < 1e-6f) {
+        return false;
+    }
+
+    const glm::vec3 normalizedHitNormal =
+        hitNormal /
+        hitNormalLength;
+    const glm::vec3 normalizedUpDirection =
+        upDirection /
+        upDirectionLength;
+    return glm::dot(
+               normalizedHitNormal,
+               normalizedUpDirection) >=
+           walkableGroundNormalMinimumUpDot;
 }
 
 void CharacterActor::ApplyGravity(float deltaTime)

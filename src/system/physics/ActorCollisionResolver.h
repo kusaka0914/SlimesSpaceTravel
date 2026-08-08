@@ -31,6 +31,7 @@ private:
         glm::vec3 position{0.0f};
         glm::vec3 blockingNormal{0.0f};
         bool hadOverlap = false;
+        bool hasRemainingOverlap = false;
     };
 
     std::optional<glm::vec3> CheckConflictActors(

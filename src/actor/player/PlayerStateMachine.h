@@ -62,12 +62,17 @@ private:
         PlayerMovement& movement,
         PlayerCombat& combat,
         float deltaTime);
-    void ApplyIdleGravity(Player& player, PlayerMovement& movement, PlayerCombat& combat, float deltaTime);
+    bool ApplyIdleGravity(
+        Player& player,
+        PlayerInput& input,
+        PlayerMovement& movement,
+        PlayerCombat& combat,
+        float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          float deltaTime);
     bool TryRecover(Player& player, PlayerInput& input, PlayerJewelGauge& jewelGauge, PlayerStatus& status);
     void UpdateIdleMovement(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
-                            PlayerStatus& status, float deltaTime);
+                            PlayerStatus& status, bool wasInputMovementApplied, float deltaTime);
     bool TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
     bool TryReduceTired(PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status);
     bool TryStartContinuousAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);

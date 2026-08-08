@@ -99,9 +99,15 @@ AppliedPlayerMovement MoveWithCollision(
             desiredPosition,
             actorCollisionFilter);
 
-    player.SetPos(collisionResult.resolvedPosition);
+    // A corner can still overlap after the bounded depenetration pass.
+    // Keeping the previous valid position prevents that partial correction from entering the mesh.
+    const glm::vec3 resolvedPosition =
+        collisionResult.hasUnresolvedStageOverlap
+            ? positionBeforeMovement
+            : collisionResult.resolvedPosition;
+    player.SetPos(resolvedPosition);
     return {
-        collisionResult.resolvedPosition - positionBeforeMovement,
+        resolvedPosition - positionBeforeMovement,
         collisionResult.blockingNormal,
         collisionResult.didHitStage};
 }
@@ -157,13 +163,11 @@ AppliedPlayerMovement MoveWithCollisionSubsteps(
     return combinedMovement;
 }
 
-void MoveAirborneVelocityWithCollision(
+void MoveAirborneWithCollision(
     Player& player,
     const glm::vec3& upDirection,
-    float deltaTime)
+    const glm::vec3& requestedMovement)
 {
-    const glm::vec3 requestedMovement =
-        player.GetVelocity() * deltaTime;
     constexpr float maximumAirborneCollisionSubstepDistance = 0.05f;
     const AppliedPlayerMovement appliedMovement =
         MoveWithCollisionSubsteps(
@@ -186,12 +190,10 @@ void MoveAirborneVelocityWithCollision(
     }
 
     if (requestedUpwardDistance < -verticalMovementEpsilon) {
-        constexpr float floorNormalMinimumUpDot = 0.65f;
         const bool didHitFloor =
-            glm::dot(
+            player.IsWalkableGroundNormal(
                 normalizedBlockingNormal,
-                upDirection) >=
-            floorNormalMinimumUpDot;
+                upDirection);
         const bool wasDownwardMovementBlocked =
             appliedUpwardDistance -
                 verticalMovementEpsilon >
@@ -260,8 +262,6 @@ bool MoveAirSlamDownwardUntilFloorCollision(
         static_cast<float>(substepCount);
 
     constexpr float verticalMovementEpsilon = 0.0001f;
-    constexpr float floorNormalMinimumUpDot = 0.65f;
-
     for (int substepIndex = 0;
          substepIndex < substepCount;
          ++substepIndex) {
@@ -289,10 +289,9 @@ bool MoveAirSlamDownwardUntilFloorCollision(
                 appliedMovement.movementDelta,
                 upDirection);
         const bool didHitFloor =
-            glm::dot(
+            player.IsWalkableGroundNormal(
                 normalizedBlockingNormal,
-                upDirection) >=
-            floorNormalMinimumUpDot;
+                upDirection);
         const bool wasDownwardMovementBlocked =
             appliedUpwardDistance -
                 verticalMovementEpsilon >
@@ -443,16 +442,35 @@ void PlayerMovement::UpdateDodgeCooldown(float deltaTime)
 
 void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, float deltaTime)
 {
-    const glm::vec3 forwardMovement = mForwardVec * input.GetMoveForward();
-    const glm::vec3 leftMovement = mLeftVec * input.GetMoveLeft();
+    const glm::vec3 movementDelta =
+        CalculateInputMovementDelta(
+            player,
+            input,
+            deltaTime);
+
+    MoveWithCollision(player, movementDelta);
+}
+
+glm::vec3 PlayerMovement::CalculateInputMovementDelta(
+    const Player& player,
+    const PlayerInput& input,
+    float deltaTime) const
+{
+    const glm::vec3 forwardMovement =
+        mForwardVec * input.GetMoveForward();
+    const glm::vec3 leftMovement =
+        mLeftVec * input.GetMoveLeft();
 
     constexpr float fallbackAirControlMultiplier = 0.3f;
     const float inputMovementMultiplier =
-        player.WasPlanetGravityFallbackAppliedThisJump() ? fallbackAirControlMultiplier : 1.0f;
-    const glm::vec3 movementDelta =
-        (forwardMovement + leftMovement) * mMoveSpeed * inputMovementMultiplier * deltaTime;
-
-    MoveWithCollision(player, movementDelta);
+        player.WasPlanetGravityFallbackAppliedThisJump()
+            ? fallbackAirControlMultiplier
+            : 1.0f;
+    return
+        (forwardMovement + leftMovement) *
+        mMoveSpeed *
+        inputMovementMultiplier *
+        deltaTime;
 }
 
 void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding,
@@ -594,16 +612,41 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
     player.AddVelocity(jumpVelocityDelta);
 
     // ジャンプ開始後は状態更新から即時returnするため、このフレーム分の上昇移動をここで反映する。
-    MoveAirborneVelocityWithCollision(
+    MoveAirborneWithCollision(
         player,
         upDirection,
-        deltaTime);
+        player.GetVelocity() * deltaTime);
 
     player.SetOnGround(false);
     player.SetShouldJudgeLanding(false);
 }
 
 void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime) const
+{
+    ApplyJumpGravityMovement(
+        player,
+        glm::vec3(0.0f),
+        deltaTime);
+}
+
+void PlayerMovement::ApplyJumpGravityAndInputMovement(
+    Player& player,
+    const PlayerInput& input,
+    float deltaTime) const
+{
+    ApplyJumpGravityMovement(
+        player,
+        CalculateInputMovementDelta(
+            player,
+            input,
+            deltaTime),
+        deltaTime);
+}
+
+void PlayerMovement::ApplyJumpGravityMovement(
+    Player& player,
+    const glm::vec3& inputMovementDelta,
+    float deltaTime) const
 {
     if (player.GetOnGround()) {
         player.ApplyGravityToSelf(deltaTime);
@@ -617,10 +660,13 @@ void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime) const
     const float gravityAcceleration = (2.0f * std::max(mJumpHeight, 0.0f)) / (duration * duration);
     player.AddVelocity(
         -upDirection * gravityAcceleration * deltaTime);
-    MoveAirborneVelocityWithCollision(
+    const glm::vec3 requestedMovement =
+        player.GetVelocity() * deltaTime +
+        inputMovementDelta;
+    MoveAirborneWithCollision(
         player,
         upDirection,
-        deltaTime);
+        requestedMovement);
 }
 
 void PlayerMovement::StartAirSlamMovement(Player& player)
@@ -665,10 +711,10 @@ bool PlayerMovement::UpdateAirSlamMovement(
 
     if (mAirSlamMovementPhase ==
         AirSlamMovementPhase::Rising) {
-        MoveAirborneVelocityWithCollision(
+        MoveAirborneWithCollision(
             player,
             upDirection,
-            deltaTime);
+            player.GetVelocity() * deltaTime);
         mAirSlamPhaseRemainingSeconds =
             std::max(
                 0.0f,

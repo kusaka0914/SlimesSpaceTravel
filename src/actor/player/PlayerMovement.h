@@ -22,6 +22,10 @@ public:
     void ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyKnockBackMovement(Player& player, float deltaTime);
     void ApplyJumpGravity(Player& player, float deltaTime) const;
+    void ApplyJumpGravityAndInputMovement(
+        Player& player,
+        const PlayerInput& input,
+        float deltaTime) const;
     bool UpdateAirSlamMovement(
         Player& player,
         const PlayerCombat& combat,
@@ -93,6 +97,14 @@ private:
     void StartDodgeMovementInDirection(
         Player& player,
         const glm::vec3& dodgeDirection);
+    glm::vec3 CalculateInputMovementDelta(
+        const Player& player,
+        const PlayerInput& input,
+        float deltaTime) const;
+    void ApplyJumpGravityMovement(
+        Player& player,
+        const glm::vec3& inputMovementDelta,
+        float deltaTime) const;
 
     bool mHasUsedDodge = false;
     bool mHasStrongAttackDirectionOverride = false;

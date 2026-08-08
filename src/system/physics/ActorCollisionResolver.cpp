@@ -268,6 +268,8 @@ ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
         collisionResult.resolvedPosition,
         collisionCenterHeight);
     collisionResult.resolvedPosition = overlapResolution.position;
+    collisionResult.hasUnresolvedStageOverlap =
+        overlapResolution.hasRemainingOverlap;
 
     if (!overlapResolution.hadOverlap) {
         return collisionResult;
@@ -541,7 +543,7 @@ ActorCollisionResolver::ResolveStageOverlap(
     float collisionCenterHeight) const
 {
     if (!world || !playerShape || !actor) {
-        return {position, glm::vec3(0.0f), false};
+        return {position, glm::vec3(0.0f), false, false};
     }
 
     constexpr int maximumCorrectionCount = 4;
@@ -556,6 +558,7 @@ ActorCollisionResolver::ResolveStageOverlap(
     glm::vec3 mostCeilingFacingNormal(0.0f);
     float minimumNormalUpDot = 1.0f;
     bool hadOverlap = false;
+    bool foundOverlapFreePosition = false;
 
     btCollisionObject playerCollisionObject;
     playerCollisionObject.setCollisionShape(playerShape);
@@ -579,6 +582,7 @@ ActorCollisionResolver::ResolveStageOverlap(
             contactCallback);
 
         if (!contactCallback.HasPenetration()) {
+            foundOverlapFreePosition = true;
             break;
         }
 
@@ -626,8 +630,26 @@ ActorCollisionResolver::ResolveStageOverlap(
             correctionDistance;
     }
 
+    bool hasRemainingOverlap = false;
+    if (!foundOverlapFreePosition) {
+        const glm::vec3 collisionCenter =
+            correctedPosition +
+            actorUp * collisionCenterHeight;
+        playerCollisionObject.setWorldTransform(
+            CreatePlayerCollisionTransform(*actor, collisionCenter));
+
+        DeepestPenetrationContactCallback finalContactCallback(
+            &playerCollisionObject);
+        world->contactTest(
+            &playerCollisionObject,
+            finalContactCallback);
+        hasRemainingOverlap =
+            finalContactCallback.HasPenetration();
+    }
+
     return {
         correctedPosition,
         mostCeilingFacingNormal,
-        hadOverlap};
+        hadOverlap,
+        hasRemainingOverlap};
 }

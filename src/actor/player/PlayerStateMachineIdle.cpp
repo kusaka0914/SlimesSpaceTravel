@@ -34,7 +34,12 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    ApplyIdleGravity(player, movement, combat, deltaTime);
+    const bool wasInputMovementApplied = ApplyIdleGravity(
+        player,
+        input,
+        movement,
+        combat,
+        deltaTime);
 
     if (TryStartJumping(player, input, movement, combat, deltaTime)) {
         return;
@@ -44,7 +49,14 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    UpdateIdleMovement(player, input, movement, combat, status, deltaTime);
+    UpdateIdleMovement(
+        player,
+        input,
+        movement,
+        combat,
+        status,
+        wasInputMovementApplied,
+        deltaTime);
 
     if (TryStartSpecialAttack(input, combat, jewelGauge)) {
         return;
@@ -149,15 +161,32 @@ bool PlayerStateMachine::TryStartAirSlamAttack(
 }
 
 
-void PlayerStateMachine::ApplyIdleGravity(
+bool PlayerStateMachine::ApplyIdleGravity(
     Player& player,
+    PlayerInput& input,
     PlayerMovement& movement,
     PlayerCombat& combat,
     float deltaTime)
 {
-    if (!combat.IsAirAttackFloating()) {
-        movement.ApplyJumpGravity(player, deltaTime);
+    if (combat.IsAirAttackFloating()) {
+        return false;
     }
+
+    const bool canApplyInputMovement =
+        !player.GetOnGround() &&
+        combat.CanMoveDuringAttack() &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (canApplyInputMovement) {
+        movement.ApplyJumpGravityAndInputMovement(
+            player,
+            input,
+            deltaTime);
+        return true;
+    }
+
+    movement.ApplyJumpGravity(player, deltaTime);
+    return false;
 }
 
 bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement,
@@ -195,14 +224,20 @@ bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerJe
 }
 
 void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                            PlayerCombat& combat, PlayerStatus& status, float deltaTime)
+                                            PlayerCombat& combat, PlayerStatus& status,
+                                            bool wasInputMovementApplied, float deltaTime)
 {
     const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
     if (isMoving && !status.IsTired()) {
         movement.UpdateFacingDirectionFromInput(player, input);
     }
 
-    if (combat.CanMoveDuringAttack() && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
+    const bool canApplyInputMovement =
+        combat.CanMoveDuringAttack() &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (canApplyInputMovement &&
+        !wasInputMovementApplied) {
         movement.MoveFromInput(player, input, deltaTime);
     }
 

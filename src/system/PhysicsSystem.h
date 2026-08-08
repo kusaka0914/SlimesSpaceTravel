@@ -24,6 +24,7 @@ struct ActorMovementCollisionResult {
     glm::vec3 resolvedPosition{0.0f};
     glm::vec3 blockingNormal{0.0f};
     bool didHitStage = false;
+    bool hasUnresolvedStageOverlap = false;
 };
 
 enum class ActorCollisionFilter {
