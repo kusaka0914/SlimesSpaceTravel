@@ -56,24 +56,14 @@ void UICanvasEditorController::Update(
 
 void UICanvasEditorController::SetSingleSelection(std::size_t index)
 {
-    mSelectedIndices.clear();
-    mSelectedIndices.insert(index);
-    mPrimarySelectedIndex = static_cast<int>(index);
+    SetSingleSelection(
+        ElementReference{SelectionSource::Custom, index, std::string()});
 }
 
 void UICanvasEditorController::ToggleSelection(std::size_t index)
 {
-    if (mSelectedIndices.contains(index)) {
-        mSelectedIndices.erase(index);
-        if (mPrimarySelectedIndex == static_cast<int>(index)) {
-            mPrimarySelectedIndex =
-                mSelectedIndices.empty() ? -1 : static_cast<int>(*mSelectedIndices.begin());
-        }
-        return;
-    }
-
-    mSelectedIndices.insert(index);
-    mPrimarySelectedIndex = static_cast<int>(index);
+    ToggleSelection(
+        ElementReference{SelectionSource::Custom, index, std::string()});
 }
 
 void UICanvasEditorController::SelectFromList(std::size_t index, bool additive)
@@ -85,26 +75,130 @@ void UICanvasEditorController::SelectFromList(std::size_t index, bool additive)
     }
 }
 
+void UICanvasEditorController::SelectExistingTextureFromList(
+    const std::string& key,
+    bool additive)
+{
+    const ElementReference element{
+        SelectionSource::ExistingTexture,
+        0,
+        key};
+    if (additive) {
+        ToggleSelection(element);
+    } else {
+        SetSingleSelection(element);
+    }
+}
+
+void UICanvasEditorController::SelectExistingTextFromList(
+    const std::string& key,
+    bool additive)
+{
+    const ElementReference element{
+        SelectionSource::ExistingText,
+        0,
+        key};
+    if (additive) {
+        ToggleSelection(element);
+    } else {
+        SetSingleSelection(element);
+    }
+}
+
 void UICanvasEditorController::ClearSelection()
 {
-    mSelectedIndices.clear();
-    mPrimarySelectedIndex = -1;
+    mSelectedElements.clear();
+    mPrimarySelection.reset();
     mHasLastPick = false;
 }
 
 bool UICanvasEditorController::IsSelected(std::size_t index) const
 {
-    return mSelectedIndices.contains(index);
+    return IsSelected(
+        ElementReference{SelectionSource::Custom, index, std::string()});
+}
+
+bool UICanvasEditorController::IsExistingTextureSelected(
+    const std::string& key) const
+{
+    return IsSelected(
+        ElementReference{SelectionSource::ExistingTexture, 0, key});
+}
+
+bool UICanvasEditorController::IsExistingTextSelected(
+    const std::string& key) const
+{
+    return IsSelected(
+        ElementReference{SelectionSource::ExistingText, 0, key});
 }
 
 int UICanvasEditorController::GetPrimarySelectedIndex() const
 {
-    return mPrimarySelectedIndex;
+    if (!mPrimarySelection ||
+        mPrimarySelection->source != SelectionSource::Custom) {
+        return -1;
+    }
+    return static_cast<int>(mPrimarySelection->customIndex);
+}
+
+UICanvasEditorController::SelectionSource
+UICanvasEditorController::GetPrimarySelectionSource() const
+{
+    return mPrimarySelection
+               ? mPrimarySelection->source
+               : SelectionSource::None;
+}
+
+const std::string& UICanvasEditorController::GetPrimaryExistingKey() const
+{
+    static const std::string EmptyKey;
+    return mPrimarySelection ? mPrimarySelection->existingKey : EmptyKey;
 }
 
 std::size_t UICanvasEditorController::GetSelectedCount() const
 {
-    return mSelectedIndices.size();
+    return mSelectedElements.size();
+}
+
+void UICanvasEditorController::SetSingleSelection(
+    const ElementReference& element)
+{
+    mSelectedElements.assign(1, element);
+    mPrimarySelection = element;
+}
+
+void UICanvasEditorController::ToggleSelection(
+    const ElementReference& element)
+{
+    const auto selectedIt = std::find(
+        mSelectedElements.begin(),
+        mSelectedElements.end(),
+        element);
+    if (selectedIt != mSelectedElements.end()) {
+        const bool removedPrimary =
+            mPrimarySelection && *mPrimarySelection == element;
+        mSelectedElements.erase(selectedIt);
+        if (removedPrimary) {
+            if (mSelectedElements.empty()) {
+                mPrimarySelection.reset();
+            } else {
+                mPrimarySelection = mSelectedElements.back();
+            }
+        }
+        return;
+    }
+
+    mSelectedElements.push_back(element);
+    mPrimarySelection = element;
+}
+
+bool UICanvasEditorController::IsSelected(
+    const ElementReference& element) const
+{
+    return std::find(
+               mSelectedElements.begin(),
+               mSelectedElements.end(),
+               element) != mSelectedElements.end();
 }
 
 void UICanvasEditorController::SetOperation(Operation operation)
@@ -124,33 +218,46 @@ bool UICanvasEditorController::DuplicateSelected(
     UILoadSystem* uiLoadSystem,
     std::string& statusMessage)
 {
-    if (!uiLoadSystem || mSelectedIndices.empty()) {
+    if (!uiLoadSystem || mSelectedElements.empty()) {
         return false;
     }
 
     PushUndo(uiLoadSystem);
 
-    std::vector<std::size_t> sourceIndices(mSelectedIndices.begin(), mSelectedIndices.end());
+    std::vector<std::size_t> sourceIndices;
+    for (const ElementReference& element : mSelectedElements) {
+        if (element.source == SelectionSource::Custom) {
+            sourceIndices.push_back(element.customIndex);
+        }
+    }
+    if (sourceIndices.empty()) {
+        mUndoStack.pop_back();
+        statusMessage = "コード連携UIは複製できません";
+        return false;
+    }
     std::sort(sourceIndices.begin(), sourceIndices.end());
 
-    std::unordered_set<std::size_t> duplicatedIndices;
+    std::vector<ElementReference> duplicatedElements;
     for (std::size_t sourceIndex : sourceIndices) {
         const std::optional<std::size_t> duplicatedIndex =
             uiLoadSystem->DuplicateCustomElement(sourceIndex);
         if (duplicatedIndex) {
-            duplicatedIndices.insert(*duplicatedIndex);
+            duplicatedElements.push_back(
+                ElementReference{
+                    SelectionSource::Custom,
+                    *duplicatedIndex,
+                    std::string()});
         }
     }
 
-    if (duplicatedIndices.empty()) {
+    if (duplicatedElements.empty()) {
         mUndoStack.pop_back();
         statusMessage = "要素の複製に失敗しました";
         return false;
     }
 
-    mSelectedIndices = std::move(duplicatedIndices);
-    mPrimarySelectedIndex = static_cast<int>(
-        *std::max_element(mSelectedIndices.begin(), mSelectedIndices.end()));
+    mSelectedElements = std::move(duplicatedElements);
+    mPrimarySelection = mSelectedElements.back();
 
     const bool saved = uiLoadSystem->SaveCustomUI();
     statusMessage =
@@ -162,13 +269,23 @@ bool UICanvasEditorController::DeleteSelected(
     UILoadSystem* uiLoadSystem,
     std::string& statusMessage)
 {
-    if (!uiLoadSystem || mSelectedIndices.empty()) {
+    if (!uiLoadSystem || mSelectedElements.empty()) {
         return false;
     }
 
     PushUndo(uiLoadSystem);
 
-    std::vector<std::size_t> deleteIndices(mSelectedIndices.begin(), mSelectedIndices.end());
+    std::vector<std::size_t> deleteIndices;
+    for (const ElementReference& element : mSelectedElements) {
+        if (element.source == SelectionSource::Custom) {
+            deleteIndices.push_back(element.customIndex);
+        }
+    }
+    if (deleteIndices.empty()) {
+        mUndoStack.pop_back();
+        statusMessage = "コード連携UIは削除できません";
+        return false;
+    }
     std::sort(deleteIndices.rbegin(), deleteIndices.rend());
 
     bool deleted = false;
@@ -197,12 +314,18 @@ bool UICanvasEditorController::RestoreUndo(
         return false;
     }
 
-    uiLoadSystem->GetCustomElements() = std::move(mUndoStack.back());
+    UndoState undoState = std::move(mUndoStack.back());
     mUndoStack.pop_back();
+    uiLoadSystem->GetCustomElements() = std::move(undoState.customElements);
+    uiLoadSystem->GetEditableTextureInfos() = std::move(undoState.textureInfos);
+    uiLoadSystem->GetEditableTextInfos() = std::move(undoState.textInfos);
     uiLoadSystem->ClearCustomVisibilityOverrides();
     ClearSelection();
 
-    const bool saved = uiLoadSystem->SaveCustomUI();
+    const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
+    const bool savedExistingUI =
+        uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
+    const bool saved = savedCustomUI && savedExistingUI;
     statusMessage =
         saved ? "UI編集を元に戻して保存しました" : "UI編集は戻しましたが保存に失敗しました";
     return true;
@@ -215,16 +338,31 @@ void UICanvasEditorController::ValidateSelection(const UILoadSystem* uiLoadSyste
         return;
     }
 
-    const std::size_t elementCount = uiLoadSystem->GetCustomElements().size();
+    const std::size_t customElementCount =
+        uiLoadSystem->GetCustomElements().size();
+    const auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
+    const auto& textInfos = uiLoadSystem->GetEditableTextInfos();
     std::erase_if(
-        mSelectedIndices,
-        [elementCount](std::size_t index) { return index >= elementCount; });
+        mSelectedElements,
+        [&](const ElementReference& element) {
+            switch (element.source) {
+            case SelectionSource::Custom:
+                return element.customIndex >= customElementCount;
+            case SelectionSource::ExistingTexture:
+                return !textureInfos.contains(element.existingKey);
+            case SelectionSource::ExistingText:
+                return !textInfos.contains(element.existingKey);
+            case SelectionSource::None:
+                return true;
+            }
+            return true;
+        });
 
-    if (mPrimarySelectedIndex < 0 ||
-        static_cast<std::size_t>(mPrimarySelectedIndex) >= elementCount ||
-        !mSelectedIndices.contains(static_cast<std::size_t>(mPrimarySelectedIndex))) {
-        mPrimarySelectedIndex =
-            mSelectedIndices.empty() ? -1 : static_cast<int>(*mSelectedIndices.begin());
+    if (mPrimarySelection && !IsSelected(*mPrimarySelection)) {
+        mPrimarySelection.reset();
+    }
+    if (!mPrimarySelection && !mSelectedElements.empty()) {
+        mPrimarySelection = mSelectedElements.back();
     }
 }
 
@@ -275,10 +413,22 @@ void UICanvasEditorController::UpdateCanvasSelection(const UILoadSystem* uiLoadS
     }
 
     const ImVec2 mousePosition = ImGui::GetMousePos();
+    if (mContext.gameViewport.IsValid() && !mIsBoxMouseDown) {
+        const DebugEditorGameViewport& gameViewport =
+            mContext.gameViewport;
+        const bool isInsideGameViewport =
+            mousePosition.x >= gameViewport.x &&
+            mousePosition.x <= gameViewport.x + gameViewport.width &&
+            mousePosition.y >= gameViewport.y &&
+            mousePosition.y <= gameViewport.y + gameViewport.height;
+        if (!isInsideGameViewport) {
+            return;
+        }
+    }
     const bool additive = io.KeyCtrl || io.KeySuper || io.KeyShift;
 
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        const std::vector<std::size_t> hits =
+        const std::vector<ElementReference> hits =
             PickElementsAt(uiLoadSystem, ImGuiToFramebuffer(mousePosition));
 
         if (!hits.empty()) {
@@ -289,7 +439,9 @@ void UICanvasEditorController::UpdateCanvasSelection(const UILoadSystem* uiLoadS
                 constexpr float CycleRadius = 6.0f;
                 if (deltaX * deltaX + deltaY * deltaY <= CycleRadius * CycleRadius) {
                     const auto current =
-                        std::find(hits.begin(), hits.end(), static_cast<std::size_t>(std::max(0, mPrimarySelectedIndex)));
+                        mPrimarySelection
+                            ? std::find(hits.begin(), hits.end(), *mPrimarySelection)
+                            : hits.end();
                     if (current != hits.end()) {
                         hitIndex =
                             (static_cast<std::size_t>(std::distance(hits.begin(), current)) + 1) %
@@ -347,15 +499,9 @@ void UICanvasEditorController::DrawSelectionOverlay(const UILoadSystem* uiLoadSy
     }
 
     ImDrawList* drawList = ImGui::GetForegroundDrawList();
-    const auto& elements = uiLoadSystem->GetCustomElements();
-
-    for (std::size_t index : mSelectedIndices) {
-        if (index >= elements.size()) {
-            continue;
-        }
-
+    for (const ElementReference& element : mSelectedElements) {
         ElementTransform transform;
-        if (!GetElementTransform(elements[index], transform)) {
+        if (!ResolveElementTransform(uiLoadSystem, element, transform)) {
             continue;
         }
 
@@ -376,7 +522,7 @@ void UICanvasEditorController::DrawSelectionOverlay(const UILoadSystem* uiLoadSy
         }
 
         const ImU32 color =
-            static_cast<int>(index) == mPrimarySelectedIndex
+            mPrimarySelection && *mPrimarySelection == element
                 ? IM_COL32(255, 190, 40, 255)
                 : IM_COL32(80, 190, 255, 235);
         for (int corner = 0; corner < 4; ++corner) {
@@ -400,7 +546,7 @@ void UICanvasEditorController::DrawGizmo(
     UILoadSystem* uiLoadSystem,
     std::string& statusMessage)
 {
-    if (!uiLoadSystem || mSelectedIndices.empty() || !mContext.uiRenderer) {
+    if (!uiLoadSystem || mSelectedElements.empty() || !mContext.uiRenderer) {
         mIsUsingGizmo = false;
         return;
     }
@@ -434,15 +580,23 @@ void UICanvasEditorController::DrawGizmo(
             0.1f,
             cameraDistance * 2.0f);
 
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGuizmo::BeginFrame();
     ImGuizmo::SetOrthographic(true);
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-    ImGuizmo::SetRect(
-        viewport->Pos.x,
-        viewport->Pos.y,
-        viewport->Size.x,
-        viewport->Size.y);
+    if (mContext.gameViewport.IsValid()) {
+        ImGuizmo::SetRect(
+            mContext.gameViewport.x,
+            mContext.gameViewport.y,
+            mContext.gameViewport.width,
+            mContext.gameViewport.height);
+    } else {
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGuizmo::SetRect(
+            viewport->Pos.x,
+            viewport->Pos.y,
+            viewport->Size.x,
+            viewport->Size.y);
+    }
 
     ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE_X | ImGuizmo::TRANSLATE_Y;
     ImGuizmo::MODE mode = ImGuizmo::WORLD;
@@ -467,7 +621,9 @@ void UICanvasEditorController::DrawGizmo(
     if (isUsingGizmo) {
         if (!mIsUsingGizmo) {
             PushUndo(uiLoadSystem);
-            mTransformStartElements = uiLoadSystem->GetCustomElements();
+            mTransformStartState.customElements = uiLoadSystem->GetCustomElements();
+            mTransformStartState.textureInfos = uiLoadSystem->GetEditableTextureInfos();
+            mTransformStartState.textInfos = uiLoadSystem->GetEditableTextInfos();
             mTransformStartSelectionMatrix = matrixBeforeManipulation;
             mIsUsingGizmo = true;
         }
@@ -478,23 +634,70 @@ void UICanvasEditorController::DrawGizmo(
 
     if (mIsUsingGizmo) {
         mIsUsingGizmo = false;
-        mTransformStartElements.clear();
-        const bool saved = uiLoadSystem->SaveCustomUI();
+        mTransformStartState = UndoState{};
+        const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
+        const bool savedExistingUI =
+            uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
+        const bool saved = savedCustomUI && savedExistingUI;
         statusMessage =
             saved ? "UIギズモの変更を保存しました" : "UIギズモの変更を保存できませんでした";
     }
 }
 
-bool UICanvasEditorController::GetElementTransform(
-    const UILoadSystem::CustomElement& element,
+bool UICanvasEditorController::ResolveElementTransform(
+    const UILoadSystem* uiLoadSystem,
+    const ElementReference& element,
     ElementTransform& outTransform) const
 {
-    if (!mContext.uiRenderer) {
+    if (!uiLoadSystem || !mContext.uiRenderer) {
         return false;
     }
 
     UIRenderer::CustomElementScreenTransform screenTransform;
-    if (!mContext.uiRenderer->CalculateCustomElementScreenTransform(element, screenTransform)) {
+    switch (element.source) {
+    case SelectionSource::Custom:
+    {
+        const auto& customElements = uiLoadSystem->GetCustomElements();
+        if (element.customIndex >= customElements.size()) {
+            return false;
+        }
+        const UILoadSystem::CustomElement& customElement =
+            customElements[element.customIndex];
+        if (!mContext.uiRenderer->CalculateCustomElementScreenTransform(
+                customElement,
+                screenTransform)) {
+            return false;
+        }
+        outTransform.rotationDegrees = customElement.rotationDegrees;
+        break;
+    }
+    case SelectionSource::ExistingTexture:
+    {
+        const auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
+        const auto textureInfoIt = textureInfos.find(element.existingKey);
+        if (textureInfoIt == textureInfos.end() ||
+            !mContext.uiRenderer->CalculateTextureInfoScreenTransform(
+                textureInfoIt->second,
+                screenTransform)) {
+            return false;
+        }
+        outTransform.rotationDegrees = textureInfoIt->second.rotationDegrees;
+        break;
+    }
+    case SelectionSource::ExistingText:
+    {
+        const auto& textInfos = uiLoadSystem->GetEditableTextInfos();
+        const auto textInfoIt = textInfos.find(element.existingKey);
+        if (textInfoIt == textInfos.end() ||
+            !mContext.uiRenderer->CalculateTextInfoScreenTransform(
+                textInfoIt->second,
+                screenTransform)) {
+            return false;
+        }
+        outTransform.rotationDegrees = textInfoIt->second.rotationDegrees;
+        break;
+    }
+    case SelectionSource::None:
         return false;
     }
 
@@ -502,7 +705,6 @@ bool UICanvasEditorController::GetElementTransform(
     outTransform.size = glm::max(
         screenTransform.size,
         glm::vec2(MinimumElementSizePixels));
-    outTransform.rotationDegrees = element.rotationDegrees;
     return true;
 }
 
@@ -511,22 +713,17 @@ bool UICanvasEditorController::GetSelectionBounds(
     glm::vec2& outMin,
     glm::vec2& outMax) const
 {
-    if (!uiLoadSystem || mSelectedIndices.empty()) {
+    if (!uiLoadSystem || mSelectedElements.empty()) {
         return false;
     }
 
-    const auto& elements = uiLoadSystem->GetCustomElements();
     outMin = glm::vec2(std::numeric_limits<float>::max());
     outMax = glm::vec2(std::numeric_limits<float>::lowest());
     bool hasBounds = false;
 
-    for (std::size_t index : mSelectedIndices) {
-        if (index >= elements.size()) {
-            continue;
-        }
-
+    for (const ElementReference& element : mSelectedElements) {
         ElementTransform transform;
-        if (!GetElementTransform(elements[index], transform)) {
+        if (!ResolveElementTransform(uiLoadSystem, element, transform)) {
             continue;
         }
 
@@ -551,33 +748,67 @@ bool UICanvasEditorController::GetSelectionBounds(
     return hasBounds;
 }
 
-std::vector<std::size_t> UICanvasEditorController::PickElementsAt(
+std::vector<UICanvasEditorController::ElementReference>
+UICanvasEditorController::PickElementsAt(
     const UILoadSystem* uiLoadSystem,
     const glm::vec2& framebufferPoint) const
 {
-    std::vector<std::size_t> hits;
+    std::vector<ElementReference> hits;
     if (!uiLoadSystem) {
         return hits;
     }
 
-    const auto& elements = uiLoadSystem->GetCustomElements();
-    for (std::size_t index = 0; index < elements.size(); ++index) {
-        ElementTransform transform;
-        if (GetElementTransform(elements[index], transform) &&
-            IsPointInsideElement(transform, framebufferPoint)) {
-            hits.push_back(index);
-        }
-    }
+    const auto& customElements = uiLoadSystem->GetCustomElements();
+    const auto& renderedElements =
+        mContext.uiRenderer->GetRenderedUIElements();
+    for (auto renderedIt = renderedElements.rbegin();
+         renderedIt != renderedElements.rend();
+         ++renderedIt) {
+        const UIRenderer::RenderedUIElement& renderedElement = *renderedIt;
 
-    std::stable_sort(
-        hits.begin(),
-        hits.end(),
-        [&elements](std::size_t lhs, std::size_t rhs) {
-            if (elements[lhs].zOrder != elements[rhs].zOrder) {
-                return elements[lhs].zOrder > elements[rhs].zOrder;
+        ElementReference element;
+        switch (renderedElement.source) {
+        case UIRenderer::RenderedUIElementSource::Custom:
+        {
+            const auto customIt = std::find_if(
+                customElements.begin(),
+                customElements.end(),
+                [&](const UILoadSystem::CustomElement& candidate) {
+                    return candidate.screen == renderedElement.screen &&
+                           candidate.id == renderedElement.id;
+                });
+            if (customIt == customElements.end()) {
+                continue;
             }
-            return lhs > rhs;
-        });
+            element.source = SelectionSource::Custom;
+            element.customIndex = static_cast<std::size_t>(
+                std::distance(customElements.begin(), customIt));
+            break;
+        }
+        case UIRenderer::RenderedUIElementSource::CodeBoundTexture:
+            element.source = SelectionSource::ExistingTexture;
+            element.existingKey =
+                renderedElement.screen + "." + renderedElement.id;
+            break;
+        case UIRenderer::RenderedUIElementSource::CodeBoundText:
+            element.source = SelectionSource::ExistingText;
+            element.existingKey =
+                renderedElement.screen + "." + renderedElement.id;
+            break;
+        }
+
+        ElementTransform transform;
+        transform.center = renderedElement.transform.center;
+        transform.size = glm::max(
+            renderedElement.transform.size,
+            glm::vec2(MinimumElementSizePixels));
+        transform.rotationDegrees = renderedElement.rotationDegrees;
+        if (!IsPointInsideElement(transform, framebufferPoint) ||
+            std::find(hits.begin(), hits.end(), element) != hits.end()) {
+            continue;
+        }
+        hits.push_back(std::move(element));
+    }
     return hits;
 }
 
@@ -600,11 +831,21 @@ glm::vec2 UICanvasEditorController::ImGuiToFramebuffer(const ImVec2& point) cons
         return glm::vec2(0.0f);
     }
 
+    if (mContext.gameViewport.IsValid()) {
+        const DebugEditorGameViewport& gameViewport =
+            mContext.gameViewport;
+        return glm::vec2(
+            (point.x - gameViewport.x) /
+                gameViewport.width *
+                static_cast<float>(gameViewport.sourceWidth),
+            (point.y - gameViewport.y) /
+                gameViewport.height *
+                static_cast<float>(gameViewport.sourceHeight));
+    }
+
     ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const float width =
-        std::max(viewport->Size.x, 1.0f);
-    const float height =
-        std::max(viewport->Size.y, 1.0f);
+    const float width = std::max(viewport->Size.x, 1.0f);
+    const float height = std::max(viewport->Size.y, 1.0f);
     return glm::vec2(
         (point.x - viewport->Pos.x) / width *
             static_cast<float>(mContext.uiRenderer->GetFbWidth()),
@@ -618,11 +859,22 @@ ImVec2 UICanvasEditorController::FramebufferToImGui(const glm::vec2& point) cons
         return ImVec2(0.0f, 0.0f);
     }
 
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
     const float framebufferWidth =
         static_cast<float>(std::max(mContext.uiRenderer->GetFbWidth(), 1));
     const float framebufferHeight =
         static_cast<float>(std::max(mContext.uiRenderer->GetFbHeight(), 1));
+
+    if (mContext.gameViewport.IsValid()) {
+        return ImVec2(
+            mContext.gameViewport.x +
+                point.x / framebufferWidth *
+                mContext.gameViewport.width,
+            mContext.gameViewport.y +
+                point.y / framebufferHeight *
+                mContext.gameViewport.height);
+    }
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
     return ImVec2(
         viewport->Pos.x + point.x / framebufferWidth * viewport->Size.x,
         viewport->Pos.y + point.y / framebufferHeight * viewport->Size.y);
@@ -647,18 +899,17 @@ glm::mat4 UICanvasEditorController::CreateElementMatrix(
 glm::mat4 UICanvasEditorController::CreateSelectionMatrix(
     const UILoadSystem* uiLoadSystem) const
 {
-    if (!uiLoadSystem || mSelectedIndices.empty()) {
+    if (!uiLoadSystem || mSelectedElements.empty()) {
         return glm::mat4(1.0f);
     }
 
-    if (mSelectedIndices.size() == 1) {
-        const std::size_t index = *mSelectedIndices.begin();
-        const auto& elements = uiLoadSystem->GetCustomElements();
-        if (index < elements.size()) {
-            ElementTransform transform;
-            if (GetElementTransform(elements[index], transform)) {
-                return CreateElementMatrix(transform);
-            }
+    if (mSelectedElements.size() == 1) {
+        ElementTransform transform;
+        if (ResolveElementTransform(
+                uiLoadSystem,
+                mSelectedElements.front(),
+                transform)) {
+            return CreateElementMatrix(transform);
         }
     }
 
@@ -679,31 +930,85 @@ void UICanvasEditorController::ApplySelectionMatrix(
     UILoadSystem* uiLoadSystem,
     const glm::mat4& selectionMatrix)
 {
-    if (!uiLoadSystem || !mContext.uiRenderer ||
-        mTransformStartElements.empty()) {
+    if (!uiLoadSystem || !mContext.uiRenderer) {
         return;
     }
 
     const float framebufferWidth =
         static_cast<float>(mContext.uiRenderer->GetFbWidth());
-    if (framebufferWidth <= 0.0f) {
+    const float framebufferHeight =
+        static_cast<float>(mContext.uiRenderer->GetFbHeight());
+    if (framebufferWidth <= 0.0f || framebufferHeight <= 0.0f) {
         return;
     }
 
     const glm::mat4 deltaMatrix =
         selectionMatrix * glm::inverse(mTransformStartSelectionMatrix);
     auto& currentElements = uiLoadSystem->GetCustomElements();
+    auto& currentTextureInfos = uiLoadSystem->GetEditableTextureInfos();
+    auto& currentTextInfos = uiLoadSystem->GetEditableTextInfos();
 
-    for (std::size_t index : mSelectedIndices) {
-        if (index >= currentElements.size() ||
-            index >= mTransformStartElements.size()) {
-            continue;
-        }
+    const auto resolveStartTransform =
+        [&](const ElementReference& element,
+            ElementTransform& outTransform) {
+            UIRenderer::CustomElementScreenTransform screenTransform;
+            switch (element.source) {
+            case SelectionSource::Custom:
+                if (element.customIndex >=
+                    mTransformStartState.customElements.size()) {
+                    return false;
+                }
+                if (!mContext.uiRenderer->CalculateCustomElementScreenTransform(
+                        mTransformStartState.customElements[element.customIndex],
+                        screenTransform)) {
+                    return false;
+                }
+                outTransform.rotationDegrees =
+                    mTransformStartState.customElements[element.customIndex]
+                        .rotationDegrees;
+                break;
+            case SelectionSource::ExistingTexture:
+            {
+                const auto originalIt =
+                    mTransformStartState.textureInfos.find(element.existingKey);
+                if (originalIt == mTransformStartState.textureInfos.end() ||
+                    !mContext.uiRenderer->CalculateTextureInfoScreenTransform(
+                        originalIt->second,
+                        screenTransform)) {
+                    return false;
+                }
+                outTransform.rotationDegrees =
+                    originalIt->second.rotationDegrees;
+                break;
+            }
+            case SelectionSource::ExistingText:
+            {
+                const auto originalIt =
+                    mTransformStartState.textInfos.find(element.existingKey);
+                if (originalIt == mTransformStartState.textInfos.end() ||
+                    !mContext.uiRenderer->CalculateTextInfoScreenTransform(
+                        originalIt->second,
+                        screenTransform)) {
+                    return false;
+                }
+                outTransform.rotationDegrees =
+                    originalIt->second.rotationDegrees;
+                break;
+            }
+            case SelectionSource::None:
+                return false;
+            }
 
-        const UILoadSystem::CustomElement& originalElement =
-            mTransformStartElements[index];
+            outTransform.center = screenTransform.center;
+            outTransform.size = glm::max(
+                screenTransform.size,
+                glm::vec2(MinimumElementSizePixels));
+            return true;
+        };
+
+    for (const ElementReference& element : mSelectedElements) {
         ElementTransform originalTransform;
-        if (!GetElementTransform(originalElement, originalTransform)) {
+        if (!resolveStartTransform(element, originalTransform)) {
             continue;
         }
 
@@ -719,37 +1024,104 @@ void UICanvasEditorController::ApplySelectionMatrix(
             rotation,
             scale);
 
-        UILoadSystem::CustomElement& currentElement = currentElements[index];
         const glm::vec2 newCenter(translation[0], translation[1]);
         const glm::vec2 newSize(
             std::max(std::abs(scale[0]), MinimumElementSizePixels),
             std::max(std::abs(scale[1]), MinimumElementSizePixels));
 
-        currentElement.rotationDegrees = NormalizeDegrees(rotation[2]);
+        const float newRotationDegrees = NormalizeDegrees(rotation[2]);
 
-        if (currentElement.type == UILoadSystem::CustomElementType::Text) {
+        if (element.source == SelectionSource::Custom) {
+            if (element.customIndex >= currentElements.size() ||
+                element.customIndex >=
+                    mTransformStartState.customElements.size()) {
+                continue;
+            }
+
+            UILoadSystem::CustomElement& currentElement =
+                currentElements[element.customIndex];
+            const UILoadSystem::CustomElement& originalElement =
+                mTransformStartState.customElements[element.customIndex];
+            currentElement.rotationDegrees = newRotationDegrees;
+
+            if (currentElement.type == UILoadSystem::CustomElementType::Text) {
+                const float scaleX =
+                    newSize.x / std::max(originalTransform.size.x, 1.0f);
+                const float scaleY =
+                    newSize.y / std::max(originalTransform.size.y, 1.0f);
+                const float uniformScale =
+                    std::sqrt(std::max(scaleX * scaleY, 0.0001f));
+                currentElement.textScaleRatio =
+                    std::clamp(
+                        originalElement.textScaleRatio * uniformScale,
+                        0.00005f,
+                        0.003f);
+            } else {
+                currentElement.widthRatio = newSize.x / framebufferWidth;
+                currentElement.heightRatio = newSize.y / framebufferWidth;
+            }
+
+            if (currentElement.centerBased) {
+                currentElement.xRatio = newCenter.x / framebufferWidth;
+                currentElement.yRatio = newCenter.y / framebufferWidth;
+            } else {
+                currentElement.xRatio =
+                    (newCenter.x - newSize.x * 0.5f) / framebufferWidth;
+                currentElement.yRatio =
+                    (newCenter.y - newSize.y * 0.5f) / framebufferWidth;
+            }
+            continue;
+        }
+
+        if (element.source == SelectionSource::ExistingTexture) {
+            const auto currentIt =
+                currentTextureInfos.find(element.existingKey);
+            if (currentIt == currentTextureInfos.end()) {
+                continue;
+            }
+
+            UILoadSystem::TextureInfo& currentTexture = currentIt->second;
+            currentTexture.rotationDegrees = newRotationDegrees;
+            currentTexture.widthRatio = newSize.x / framebufferWidth;
+            currentTexture.heightRatio = newSize.y / framebufferHeight;
+            currentTexture.xRatio =
+                (newCenter.x - newSize.x * 0.5f) / framebufferWidth;
+            currentTexture.yRatio =
+                (newCenter.y - newSize.y * 0.5f) / framebufferHeight;
+            continue;
+        }
+
+        if (element.source == SelectionSource::ExistingText) {
+            const auto currentIt = currentTextInfos.find(element.existingKey);
+            const auto originalIt =
+                mTransformStartState.textInfos.find(element.existingKey);
+            if (currentIt == currentTextInfos.end() ||
+                originalIt == mTransformStartState.textInfos.end()) {
+                continue;
+            }
+
+            UILoadSystem::TextInfo& currentText = currentIt->second;
+            const UILoadSystem::TextInfo& originalText = originalIt->second;
+            currentText.rotationDegrees = newRotationDegrees;
             const float scaleX = newSize.x / std::max(originalTransform.size.x, 1.0f);
             const float scaleY = newSize.y / std::max(originalTransform.size.y, 1.0f);
             const float uniformScale =
                 std::sqrt(std::max(scaleX * scaleY, 0.0001f));
-            currentElement.textScaleRatio =
+            currentText.scaleRatio =
                 std::clamp(
-                    originalElement.textScaleRatio * uniformScale,
+                    originalText.scaleRatio * uniformScale,
                     0.00005f,
-                    0.003f);
-        } else {
-            currentElement.widthRatio = newSize.x / framebufferWidth;
-            currentElement.heightRatio = newSize.y / framebufferWidth;
-        }
+                    0.005f);
 
-        if (currentElement.centerBased) {
-            currentElement.xRatio = newCenter.x / framebufferWidth;
-            currentElement.yRatio = newCenter.y / framebufferWidth;
-        } else {
-            currentElement.xRatio =
-                (newCenter.x - newSize.x * 0.5f) / framebufferWidth;
-            currentElement.yRatio =
-                (newCenter.y - newSize.y * 0.5f) / framebufferWidth;
+            if (currentText.centerBased) {
+                currentText.xRatio = newCenter.x / framebufferWidth;
+                currentText.yRatio = newCenter.y / framebufferHeight;
+            } else {
+                currentText.xRatio =
+                    (newCenter.x - newSize.x * 0.5f) / framebufferWidth;
+                currentText.yRatio =
+                    (newCenter.y - newSize.y * 0.5f) / framebufferHeight;
+            }
         }
     }
 }
@@ -760,7 +1132,11 @@ void UICanvasEditorController::PushUndo(const UILoadSystem* uiLoadSystem)
         return;
     }
 
-    mUndoStack.push_back(uiLoadSystem->GetCustomElements());
+    UndoState undoState;
+    undoState.customElements = uiLoadSystem->GetCustomElements();
+    undoState.textureInfos = uiLoadSystem->GetEditableTextureInfos();
+    undoState.textInfos = uiLoadSystem->GetEditableTextInfos();
+    mUndoStack.push_back(std::move(undoState));
     constexpr std::size_t MaxUndoCount = 20;
     if (mUndoStack.size() > MaxUndoCount) {
         mUndoStack.erase(mUndoStack.begin());
@@ -781,18 +1157,50 @@ void UICanvasEditorController::SelectElementsInBox(
         ClearSelection();
     }
 
-    const auto& elements = uiLoadSystem->GetCustomElements();
-    for (std::size_t index = 0; index < elements.size(); ++index) {
-        ElementTransform transform;
-        if (!GetElementTransform(elements[index], transform)) {
+    const auto& customElements = uiLoadSystem->GetCustomElements();
+    for (const UIRenderer::RenderedUIElement& renderedElement :
+         mContext.uiRenderer->GetRenderedUIElements()) {
+        ElementReference element;
+        switch (renderedElement.source) {
+        case UIRenderer::RenderedUIElementSource::Custom:
+        {
+            const auto customIt = std::find_if(
+                customElements.begin(),
+                customElements.end(),
+                [&](const UILoadSystem::CustomElement& candidate) {
+                    return candidate.screen == renderedElement.screen &&
+                           candidate.id == renderedElement.id;
+                });
+            if (customIt == customElements.end()) {
+                continue;
+            }
+            element.source = SelectionSource::Custom;
+            element.customIndex = static_cast<std::size_t>(
+                std::distance(customElements.begin(), customIt));
+            break;
+        }
+        case UIRenderer::RenderedUIElementSource::CodeBoundTexture:
+            element.source = SelectionSource::ExistingTexture;
+            element.existingKey =
+                renderedElement.screen + "." + renderedElement.id;
+            break;
+        case UIRenderer::RenderedUIElementSource::CodeBoundText:
+            element.source = SelectionSource::ExistingText;
+            element.existingKey =
+                renderedElement.screen + "." + renderedElement.id;
+            break;
+        }
+
+        if (IsSelected(element)) {
             continue;
         }
 
-        const ImVec2 center = FramebufferToImGui(transform.center);
+        const ImVec2 center =
+            FramebufferToImGui(renderedElement.transform.center);
         if (center.x >= rectMin.x && center.x <= rectMax.x &&
             center.y >= rectMin.y && center.y <= rectMax.y) {
-            mSelectedIndices.insert(index);
-            mPrimarySelectedIndex = static_cast<int>(index);
+            mSelectedElements.push_back(element);
+            mPrimarySelection = element;
         }
     }
 }

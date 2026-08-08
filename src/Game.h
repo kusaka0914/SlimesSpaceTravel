@@ -53,6 +53,7 @@ public:
     void TryCreatePlayer2();
     void ToggleDebugEditor();
     void ToggleFreeCameraMode();
+    void SetFreeCameraMode(bool isEnabled);
     void TogglePlayerControlStyle();
 
     void OnBoatStageChangeRequested(int destStage);
@@ -144,6 +145,9 @@ private:
     void UpdateActors(float deltaTime);
 
     void GenerateOutput();
+    void DrawGameFrame();
+    bool EnsureEditorGameRenderTarget(int width, int height);
+    void DestroyEditorGameRenderTarget();
 
     void CreatePlayer2();
     void CheckGameControllerConnected();
@@ -180,6 +184,12 @@ private:
     bool mIsDebugEditorShowing = false;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+
+    unsigned int mEditorGameFramebuffer = 0;
+    unsigned int mEditorGameTexture = 0;
+    unsigned int mEditorGameDepthBuffer = 0;
+    int mEditorGameRenderWidth = 0;
+    int mEditorGameRenderHeight = 0;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
 };

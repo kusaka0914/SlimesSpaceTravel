@@ -25,6 +25,7 @@ public:
         float widthRatio = 0.0f;
         float height = 0.0f;
         float heightRatio = 0.0f;
+        float rotationDegrees = 0.0f;
     };
 
     struct TextInfo {
@@ -36,6 +37,8 @@ public:
         float scaleRatio = 0.0f;
         float rubyScaleRatio = 0.48f;
         float rubyGapRatio = 0.0f;
+        bool centerBased = false;
+        float rotationDegrees = 0.0f;
         std::vector<std::string> texts;
         std::vector<std::vector<RubyTextSegment>> rubySegments;
     };
@@ -43,6 +46,7 @@ public:
     struct CustomElement {
         std::string screen = "custom";
         std::string id = "element";
+        std::string displayName = "element";
         CustomElementType type = CustomElementType::Text;
         bool visibleByDefault = false;
         bool centerBased = false;
@@ -84,14 +88,29 @@ public:
         return (it != mTextInfo.end()) ? &it->second : nullptr;
     }
 
+    std::string FindTextInfoKey(const TextInfo* textInfo) const;
+
     std::unordered_map<std::string, TextureInfo>& GetEditableTextureInfos() { return mTextureInfo; }
+    const std::unordered_map<std::string, TextureInfo>& GetEditableTextureInfos() const { return mTextureInfo; }
 
     std::unordered_map<std::string, TextInfo>& GetEditableTextInfos() { return mTextInfo; }
+    const std::unordered_map<std::string, TextInfo>& GetEditableTextInfos() const { return mTextInfo; }
 
+    bool ReloadUIInfo(const std::string& path = "../assets/data/ui/ui.yaml");
     bool SaveUIInfo(const std::string& path);
+    bool UpdateTextInfoContent(
+        const std::string& mapId,
+        std::size_t textIndex,
+        const std::string& text);
 
     std::vector<CustomElement>& GetCustomElements() { return mCustomElements; }
     const std::vector<CustomElement>& GetCustomElements() const { return mCustomElements; }
+
+    std::string ResolveCustomScreenDisplayName(
+        const std::string& screen) const;
+    void SetCustomScreenDisplayName(
+        const std::string& screen,
+        const std::string& displayName);
 
     std::size_t AddCustomElement(CustomElementType type, const std::string& screen, const std::string& requestedId);
     std::optional<std::size_t> DuplicateCustomElement(std::size_t index);
@@ -119,6 +138,7 @@ private:
     std::unordered_map<std::string, TextureInfo> mTextureInfo;
     std::unordered_map<std::string, TextInfo> mTextInfo;
     std::vector<CustomElement> mCustomElements;
+    std::unordered_map<std::string, std::string> mCustomScreenDisplayNames;
     std::unordered_map<std::string, bool> mCustomElementVisibilityOverrides;
     std::unordered_map<std::string, bool> mCustomScreenVisibilityOverrides;
 };

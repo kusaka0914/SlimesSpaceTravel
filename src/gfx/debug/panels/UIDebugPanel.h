@@ -15,14 +15,24 @@ public:
     void Draw() override;
 
 private:
-    void DrawTextures(UILoadSystem* uiLoadSystem);
-    void DrawTexts(UILoadSystem* uiLoadSystem);
-    void DrawCustomUIEditor(UILoadSystem* uiLoadSystem);
+    enum class SelectedElementSource {
+        None,
+        Custom,
+        ExistingTexture,
+        ExistingText,
+    };
+
+    void DrawUIEditor(UILoadSystem* uiLoadSystem);
     void DrawCanvasToolbar();
-    void DrawCustomElementList(UILoadSystem* uiLoadSystem);
+    void DrawElementList(UILoadSystem* uiLoadSystem);
+    void DrawElementInspector(UILoadSystem* uiLoadSystem);
     void DrawCustomElementInspector(UILoadSystem* uiLoadSystem);
+    void DrawExistingTextureInspector(UILoadSystem* uiLoadSystem);
+    void DrawExistingTextInspector(UILoadSystem* uiLoadSystem);
+    void DrawCodeBoundElementProtection();
     void DrawAssetPicker(UILoadSystem::CustomElement& element);
-    void RefreshTextureAssets();
+    void SaveAllUI(UILoadSystem* uiLoadSystem);
+    void ReloadAllUI(UILoadSystem* uiLoadSystem);
 
     std::string GetDisplayName(const std::string& key) const;
 
@@ -32,7 +42,7 @@ private:
     std::array<char, 128> mNewScreen = {"custom"};
     std::array<char, 128> mNewId = {"element"};
     std::array<char, 128> mAssetFilter = {};
-    std::vector<std::string> mTextureAssets;
+    SelectedElementSource mSelectedElementSource = SelectedElementSource::None;
+    std::string mSelectedExistingElementKey;
     std::string mStatusMessage;
-    bool mTextureAssetsScanned = false;
 };

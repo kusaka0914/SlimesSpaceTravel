@@ -109,7 +109,7 @@ bool PlanetProgressController::CheckIsAllBoatPartsCollected(const PlanetActorReg
 void PlanetProgressController::StartBoatFocus(const PlanetActorRegistry& actorRegistry) const
 {
     for (Boat* boat : actorRegistry.GetBoats()) {
-        if (!boat || !boat->GetIsActive()) {
+        if (!boat || boat->IsDebugDisabled()) {
             continue;
         }
 

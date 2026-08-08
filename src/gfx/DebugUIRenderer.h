@@ -1,6 +1,8 @@
 #pragma once
 
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/panels/AssetBrowserPanel.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
@@ -24,13 +26,38 @@ class DebugUIRenderer {
 public:
     DebugUIRenderer(Game* game, UIRenderer* uiRenderer);
 
-    void Draw();
+    void Draw(
+        unsigned int gameViewTexture,
+        int gameViewWidth,
+        int gameViewHeight);
 
 private:
+    enum class EditorSection {
+        BasicInfo,
+        Parameters,
+        Particles,
+        Sequences,
+        Tutorials,
+        Stage,
+        UserInterface,
+    };
+
     void DrawBasicInfoTab();
     void DrawSequenceEditorTab();
+    void DrawDockedToolPanel(EditorSection section);
+    void DrawDockedAssetBrowser(EditorSection section);
+    void DrawGameViewport(
+        EditorSection section,
+        unsigned int gameViewTexture,
+        int gameViewWidth,
+        int gameViewHeight);
+    void DrawGameViewportToolbar(
+        const ImVec2& toolbarMin,
+        float toolbarWidth);
+    const char* ResolveToolPanelTitle(EditorSection section) const;
 
 private:
+    EditorAssetCatalog mAssetCatalog;
     DebugEditorContext mContext;
 
     PerformanceDebugPanel mPerformancePanel;
@@ -40,6 +67,7 @@ private:
     ParticleEffectDebugPanel mParticleEffectPanel;
     SequenceDebugPanel mSequencePanel;
     TutorialDebugPanel mTutorialPanel;
+    AssetBrowserPanel mAssetBrowserPanel;
 
     StageAddActorPanel mStageAddActorPanel;
     StagePlanetPanel mStagePlanetPanel;
@@ -51,5 +79,6 @@ private:
     StageEditorPanel mStageEditorPanel;
     StageGizmoController mGizmoController;
 
+    EditorSection mActiveSection = EditorSection::BasicInfo;
     int mSelectedSequenceEditorMenu = 0;
 };

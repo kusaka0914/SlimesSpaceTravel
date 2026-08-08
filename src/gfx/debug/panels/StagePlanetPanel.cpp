@@ -15,6 +15,7 @@
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
@@ -22,7 +23,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -37,12 +37,6 @@ std::string ToLower(std::string value)
     return value;
 }
 
-bool IsSupportedTextureExtension(const std::filesystem::path& path)
-{
-    const std::string extension = ToLower(path.extension().string());
-    return extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
-           extension == ".bmp" || extension == ".tga";
-}
 }
 
 StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context)
@@ -268,9 +262,11 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
         return;
     }
 
-    if (!mTextureAssetsScanned) {
-        RefreshTextureAssets();
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
     }
+    mContext.assetCatalog->EnsureScanned();
 
     ImGui::SeparatorText("テクスチャ");
     const std::string& selectedTexture = planet->GetTextureOverridePath();
@@ -288,7 +284,7 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
             mTextureAssetFilter.size());
         ImGui::SameLine();
         if (ImGui::Button(("更新##planetTextureRefresh" + std::to_string(planetIndex)).c_str())) {
-            RefreshTextureAssets();
+            mContext.assetCatalog->Refresh();
         }
 
         if (ImGui::Selectable(
@@ -300,7 +296,8 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
         const std::string assetListId = "PlanetTextureAssetPicker##" + std::to_string(planetIndex);
         ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
         const std::string filter = ToLower(mTextureAssetFilter.data());
-        for (const std::string& asset : mTextureAssets) {
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
             if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
@@ -352,9 +349,11 @@ void StagePlanetPanel::DrawBackTexturePicker(
         return;
     }
 
-    if (!mTextureAssetsScanned) {
-        RefreshTextureAssets();
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
     }
+    mContext.assetCatalog->EnsureScanned();
 
     ImGui::SeparatorText("楕円の裏側テクスチャ");
     ImGui::TextDisabled(
@@ -384,7 +383,7 @@ void StagePlanetPanel::DrawBackTexturePicker(
                 ("更新##planetBackTextureRefresh" +
                  std::to_string(planetIndex))
                     .c_str())) {
-            RefreshTextureAssets();
+            mContext.assetCatalog->Refresh();
         }
 
         if (ImGui::Selectable(
@@ -404,7 +403,8 @@ void StagePlanetPanel::DrawBackTexturePicker(
             true);
         const std::string filter =
             ToLower(mTextureAssetFilter.data());
-        for (const std::string& asset : mTextureAssets) {
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
             if (!filter.empty() &&
                 ToLower(asset).find(filter) == std::string::npos) {
                 continue;
@@ -504,40 +504,6 @@ void StagePlanetPanel::DrawTextureTilingEditor(Planet* planet, std::size_t plane
 
     ImGui::TextDisabled(
         "スケール変更時に自動追従します。横はX/Zの一周方向、縦はY方向です。");
-}
-
-void StagePlanetPanel::RefreshTextureAssets()
-{
-    mTextureAssets.clear();
-    mTextureAssetsScanned = true;
-
-    const std::filesystem::path assetsRoot("../assets");
-    const std::filesystem::path textureRoot = assetsRoot / "textures";
-    std::error_code error;
-    if (!std::filesystem::is_directory(textureRoot, error)) {
-        mTextureAssetStatus = "assets/textures が見つかりません";
-        return;
-    }
-
-    for (std::filesystem::recursive_directory_iterator it(textureRoot, error), end;
-         it != end && !error;
-         it.increment(error)) {
-        if (!it->is_regular_file(error) || !IsSupportedTextureExtension(it->path())) {
-            continue;
-        }
-
-        const std::filesystem::path relative =
-            std::filesystem::relative(it->path(), assetsRoot, error);
-        if (error) {
-            error.clear();
-            continue;
-        }
-
-        mTextureAssets.emplace_back(relative.generic_string());
-    }
-
-    std::sort(mTextureAssets.begin(), mTextureAssets.end());
-    mTextureAssetStatus.clear();
 }
 
 void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)

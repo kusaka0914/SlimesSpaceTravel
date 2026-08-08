@@ -54,6 +54,7 @@ struct ParticleEmitterDefinition {
 };
 
 struct ParticleEffectDefinition {
+    std::string displayName;
     std::vector<ParticleEmitterDefinition> emitters;
 };
 

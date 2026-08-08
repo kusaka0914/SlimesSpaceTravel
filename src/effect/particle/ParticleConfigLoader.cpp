@@ -257,7 +257,8 @@ bool ParticleConfigLoader::Load(
 
         for (const auto& effectEntry : effectsNode) {
             const std::string effectId = effectEntry.first.as<std::string>();
-            const YAML::Node emittersNode = effectEntry.second["emitters"];
+            const YAML::Node effectNode = effectEntry.second;
+            const YAML::Node emittersNode = effectNode["emitters"];
 
             if (!emittersNode || !emittersNode.IsSequence()) {
                 std::cerr << "Particle effect '" << effectId << "' has no emitter sequence.\n";
@@ -265,6 +266,8 @@ bool ParticleConfigLoader::Load(
             }
 
             ParticleEffectDefinition effectDefinition;
+            effectDefinition.displayName =
+                ReadString(effectNode, "name", effectId);
             for (const YAML::Node& emitterNode : emittersNode) {
                 ParticleEmitterDefinition emitterDefinition = ReadEmitterDefinition(emitterNode);
                 if (emitterDefinition.texturePath.empty() || emitterDefinition.count <= 0) {
@@ -314,6 +317,10 @@ bool ParticleConfigLoader::Save(
             const ParticleEffectDefinition& effectDefinition = definitions.at(effectId);
 
             emitter << YAML::Key << effectId << YAML::Value << YAML::BeginMap;
+            emitter << YAML::Key << "name" << YAML::Value
+                    << (effectDefinition.displayName.empty()
+                            ? effectId
+                            : effectDefinition.displayName);
             emitter << YAML::Key << "emitters" << YAML::Value << YAML::BeginSeq;
 
             for (const ParticleEmitterDefinition& emitterDefinition : effectDefinition.emitters) {

@@ -3,7 +3,7 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Planet.h"
-#include "gfx/debug/stage/StageModelAssets.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -50,6 +50,12 @@ void StageAddActorPanel::Draw()
         return;
     }
 
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
+
     if (ImGui::TreeNode("汎用モデル追加")) {
         const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
         if (planets.empty()) {
@@ -62,7 +68,8 @@ void StageAddActorPanel::Draw()
                 mStageObjectSearch.data(),
                 mStageObjectSearch.size());
 
-            const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+            const std::vector<std::string>& modelAssets =
+                mContext.assetCatalog->GetPaths(EditorAssetType::Model);
             const std::string searchText = ToLower(mStageObjectSearch.data());
 
             ImGui::BeginChild("StageObjectAssetPicker", ImVec2(0.0f, 180.0f), true);
@@ -270,7 +277,8 @@ void StageAddActorPanel::Draw()
                 mNPCModelSearch.data(),
                 mNPCModelSearch.size());
 
-            const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+            const std::vector<std::string>& modelAssets =
+                mContext.assetCatalog->GetPaths(EditorAssetType::Model);
             const std::string searchText = ToLower(mNPCModelSearch.data());
 
             ImGui::BeginChild("NPCModelAssetPicker", ImVec2(0.0f, 180.0f), true);
@@ -395,8 +403,8 @@ void StageAddActorPanel::Draw()
                 mTutorialTriggerModelSearch.data(),
                 mTutorialTriggerModelSearch.size());
 
-            const std::vector<std::string> modelAssets =
-                StageModelAssets::Collect();
+            const std::vector<std::string>& modelAssets =
+                mContext.assetCatalog->GetPaths(EditorAssetType::Model);
             const std::string searchText =
                 ToLower(
                     mTutorialTriggerModelSearch.data());

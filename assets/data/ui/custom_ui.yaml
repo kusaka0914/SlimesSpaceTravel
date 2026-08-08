@@ -1,7 +1,13 @@
 coordinateBasis: screenWidth
+screens:
+  operation:
+    name: operation
+  target:
+    name: target
 elements:
   - screen: operation
     id: buttonA
+    name: buttonA
     type: image
     visibleByDefault: false
     centerBased: false
@@ -10,9 +16,9 @@ elements:
     rotationDegrees: 0
     posRatio:
       - 0.8406374
-      - 0.45066553
+      - 0.45066547
     sizeRatio:
-      - 0.02
+      - 0.019999998
       - 0.019999992
     textScaleRatio: 0.0007
     text: New Text
@@ -39,6 +45,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextA
+    name: buttonTextA
     type: text
     visibleByDefault: false
     centerBased: true
@@ -76,6 +83,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB
+    name: buttonB
     type: image
     visibleByDefault: false
     centerBased: false
@@ -113,6 +121,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB
+    name: buttonTextB
     type: text
     visibleByDefault: false
     centerBased: true
@@ -150,6 +159,7 @@ elements:
       - 1
   - screen: operation
     id: buttonX
+    name: buttonX
     type: image
     visibleByDefault: false
     centerBased: false
@@ -187,6 +197,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextX
+    name: buttonTextX
     type: text
     visibleByDefault: false
     centerBased: true
@@ -224,6 +235,7 @@ elements:
       - 1
   - screen: operation
     id: buttonY
+    name: buttonY
     type: image
     visibleByDefault: false
     centerBased: false
@@ -261,6 +273,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextY
+    name: buttonTextY
     type: text
     visibleByDefault: false
     centerBased: true
@@ -298,6 +311,7 @@ elements:
       - 1
   - screen: operation
     id: buttonA_copy
+    name: buttonA_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -335,6 +349,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy
+    name: buttonTextB_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -372,6 +387,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy
+    name: buttonB_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -379,11 +395,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.012634503
+      - 0.012634504
       - 0.47478718
     sizeRatio:
-      - 0.020000007
-      - 0.020000007
+      - 0.020000005
+      - 0.020000005
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_stick_l.png
@@ -409,6 +425,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2
+    name: buttonTextB_copy2
     type: text
     visibleByDefault: false
     centerBased: true
@@ -446,6 +463,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy
+    name: buttonB_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -453,11 +471,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.013493863
-      - 0.49517775
+      - 0.013493861
+      - 0.4951778
     sizeRatio:
       - 0.02
-      - 0.019999996
+      - 0.02
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_stick_r.png
@@ -483,6 +501,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy
+    name: buttonTextB_copy2_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -520,6 +539,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy_copy
+    name: buttonB_copy_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -557,6 +577,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy_copy
+    name: buttonTextB_copy2_copy_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -594,6 +615,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy_copy_copy
+    name: buttonB_copy_copy_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -601,10 +623,10 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.88982165
+      - 0.8898215
       - 0.53556854
     sizeRatio:
-      - 0.019999998
+      - 0.019999996
       - 0.020000001
     textScaleRatio: 0.0007
     text: New Text
@@ -631,6 +653,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy_copy_copy
+    name: buttonTextB_copy2_copy_copy_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -668,6 +691,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy_copy_copy_copy
+    name: buttonB_copy_copy_copy_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -705,6 +729,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy_copy_copy_copy
+    name: buttonTextB_copy2_copy_copy_copy_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -742,6 +767,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy_copy_copy_copy2
+    name: buttonB_copy_copy_copy_copy_copy2
     type: image
     visibleByDefault: false
     centerBased: false
@@ -779,6 +805,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy_copy_copy_copy2
+    name: buttonTextB_copy2_copy_copy_copy_copy2
     type: text
     visibleByDefault: false
     centerBased: true
@@ -816,6 +843,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy_copy_copy_copy_copy
+    name: buttonB_copy_copy_copy_copy_copy_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -853,6 +881,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy_copy_copy_copy_copy
+    name: buttonTextB_copy2_copy_copy_copy_copy_copy
     type: text
     visibleByDefault: false
     centerBased: true
@@ -890,6 +919,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy2
+    name: buttonB_copy_copy2
     type: image
     visibleByDefault: false
     centerBased: false
@@ -927,6 +957,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy2
+    name: buttonTextB_copy2_copy2
     type: text
     visibleByDefault: false
     centerBased: true
@@ -964,6 +995,7 @@ elements:
       - 1
   - screen: target
     id: bortParts
+    name: bortParts
     type: text
     visibleByDefault: false
     centerBased: true
@@ -1001,6 +1033,7 @@ elements:
       - 1
   - screen: operation
     id: buttonB_copy_copy2_copy
+    name: buttonB_copy_copy2_copy
     type: image
     visibleByDefault: false
     centerBased: false
@@ -1038,6 +1071,7 @@ elements:
       - 1
   - screen: operation
     id: buttonTextB_copy2_copy2_copy
+    name: buttonTextB_copy2_copy2_copy
     type: text
     visibleByDefault: false
     centerBased: true

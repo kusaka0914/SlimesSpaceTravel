@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 
+#include <array>
 #include <string>
 
 class ParticleSystem;
@@ -17,9 +18,13 @@ public:
     void Draw() override;
 
 private:
-    void DrawEffectControls(ParticleSystem& particleSystem);
+    void DrawToolbar(ParticleSystem& particleSystem);
+    void DrawEffectList(ParticleSystem& particleSystem);
+    void DrawEffectEditor(ParticleSystem& particleSystem);
     void DrawPreviewControls(ParticleSystem& particleSystem);
-    void DrawEmitterControls(ParticleSystem& particleSystem);
+    void DrawEmitterList(ParticleSystem& particleSystem);
+    void DrawEmitterInspector(ParticleSystem& particleSystem);
+    bool DrawTexturePicker(ParticleEmitterDefinition& emitter);
 
     void SelectEffect(ParticleSystem& particleSystem, const std::string& effectId);
     void SelectEmitter(ParticleSystem& particleSystem, int emitterIndex);
@@ -33,6 +38,7 @@ private:
 private:
     char mNewEffectIdBuffer[128] = "new_effect";
     char mTexturePathBuffer[256] = "spark_dot.png";
+    std::array<char, 128> mTextureAssetFilter = {};
 
     std::string mSelectedEffectId;
     std::string mStatusMessage;

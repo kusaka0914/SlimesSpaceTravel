@@ -96,11 +96,11 @@ void HudRenderer::DrawOperationSupportUI()
     if (isOperationUIShow) {
         const char* operationTextId =
             mGame->IsAssistControlStyle() ? "operationSupportAssistText" : "operationSupportText";
-        mRenderer->DrawTextDependsOnGameController("default", operationTextId, false);
+        mRenderer->DrawTextDependsOnGameController("default", operationTextId);
         return;
     }
 
-    mRenderer->DrawSceneText("default", "operationSupportHiddenText", false, 0);
+    mRenderer->DrawSceneText("default", "operationSupportHiddenText", 0);
 }
 
 void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
@@ -131,7 +131,7 @@ void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
 
 void HudRenderer::DrawTalkableUI(const Player* player, float screenTopY, float uiScale)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "default", "talkableText", true, screenTopY, uiScale);
+    mRenderer->DrawTextDependsOnPlayerInput(player, "default", "talkableText", screenTopY, uiScale);
 }
 
 void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
@@ -142,12 +142,20 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
     }
 
     const std::string remainText = remainPartsTextInfo->texts[0] + std::to_string(remainBoatPartsCount);
-    mRenderer->DrawText(mRenderer->GetFbWidth() - mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
-                        mRenderer->GetFbWidth() * remainPartsTextInfo->yRatio,
-                        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio, remainText, false);
+    mRenderer->DrawTextForElement(
+        "default",
+        "remainPartsText",
+        mRenderer->GetFbWidth() -
+            mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
+        mRenderer->GetFbWidth() * remainPartsTextInfo->yRatio,
+        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio,
+        remainText,
+        remainPartsTextInfo->centerBased,
+        {255, 255, 255, 255},
+        remainPartsTextInfo->rotationDegrees);
 }
 
 void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", false, screenTopY, uiScale);
+    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, uiScale);
 }

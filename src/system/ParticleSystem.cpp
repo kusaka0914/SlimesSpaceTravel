@@ -115,6 +115,7 @@ void ParticleSystem::EmitEmitter(
 bool ParticleSystem::CreateEffect(const std::string& effectId)
 {
     ParticleEffectDefinition definition;
+    definition.displayName = effectId;
     definition.emitters.push_back(CreateDefaultEmitter());
     return CreateEffect(effectId, definition);
 }
@@ -127,7 +128,11 @@ bool ParticleSystem::CreateEffect(
         return false;
     }
 
-    mDefinitions.emplace(effectId, definition);
+    ParticleEffectDefinition definitionToAdd = definition;
+    if (definitionToAdd.displayName.empty()) {
+        definitionToAdd.displayName = effectId;
+    }
+    mDefinitions.emplace(effectId, std::move(definitionToAdd));
     return true;
 }
 

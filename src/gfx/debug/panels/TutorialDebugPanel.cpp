@@ -1,6 +1,7 @@
 #include "gfx/debug/panels/TutorialDebugPanel.h"
 
 #include "Game.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "imgui.h"
 #include "system/SceneSystem.h"
@@ -11,7 +12,6 @@
 #include <array>
 #include <cctype>
 #include <cstdio>
-#include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>
@@ -426,9 +426,11 @@ void TutorialDebugPanel::DrawVideoEditor(
     TutorialPage& page,
     std::size_t pageIndex)
 {
-    if (!mVideoAssetsScanned) {
-        RefreshVideoAssets();
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
     }
+    mContext.assetCatalog->EnsureScanned();
 
     ImGui::SeparatorText("MP4動画");
     const std::string videoPreview =
@@ -446,7 +448,8 @@ void TutorialDebugPanel::DrawVideoEditor(
 
         const std::string filter =
             ToLower(mVideoAssetFilter.data());
-        for (const std::string& asset : mVideoAssets) {
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Video)) {
             if (!filter.empty() &&
                 ToLower(asset).find(filter) ==
                     std::string::npos) {
@@ -468,7 +471,7 @@ void TutorialDebugPanel::DrawVideoEditor(
         mVideoAssetFilter.size());
     ImGui::SameLine();
     if (ImGui::Button("動画一覧を更新")) {
-        RefreshVideoAssets();
+        mContext.assetCatalog->Refresh();
     }
     ImGui::TextDisabled(
         "MP4はassets/videosへ置くと一覧に表示されます。動画音声は再生しません。");
@@ -718,46 +721,6 @@ void TutorialDebugPanel::DrawVideoPlacementOverlay(
         "動画配置: ドラッグで移動 / 右下で拡縮 / ESCで終了");
 
     ImGui::End();
-}
-
-void TutorialDebugPanel::RefreshVideoAssets()
-{
-    mVideoAssets.clear();
-    mVideoAssetsScanned = true;
-
-    const std::filesystem::path assetsRoot("../assets");
-    const std::filesystem::path videoRoot =
-        assetsRoot / "videos";
-    std::error_code error;
-    if (!std::filesystem::is_directory(videoRoot, error)) {
-        mStatusMessage = "assets/videosが見つかりません";
-        return;
-    }
-
-    for (std::filesystem::recursive_directory_iterator iterator(
-             videoRoot,
-             error),
-         end;
-         iterator != end && !error;
-         iterator.increment(error)) {
-        if (!iterator->is_regular_file(error) ||
-            ToLower(iterator->path().extension().string()) !=
-                ".mp4") {
-            continue;
-        }
-
-        const std::filesystem::path relativePath =
-            std::filesystem::relative(
-                iterator->path(),
-                assetsRoot,
-                error);
-        if (!error) {
-            mVideoAssets.emplace_back(
-                relativePath.generic_string());
-        }
-    }
-
-    std::sort(mVideoAssets.begin(), mVideoAssets.end());
 }
 
 void TutorialDebugPanel::DrawFocusTargetPicker(

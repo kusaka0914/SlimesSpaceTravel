@@ -17,7 +17,7 @@ void PauseMenuRenderer::Draw()
     mRenderer->DrawBGFromUIInfo("pauseMenu", "overlayBg", {0.0f, 0.0f, 0.0f, 0.55f});
     mRenderer->DrawBGFromUIInfo("pauseMenu", "panelBg", {0.0f, 0.0f, 0.0f, 0.75f});
 
-    mRenderer->DrawSceneText("pauseMenu", "titleText", true, 0);
+    mRenderer->DrawSceneText("pauseMenu", "titleText", 0);
 
     std::vector<std::string> menuTextIds = {
         "resumeText",
@@ -48,10 +48,17 @@ void PauseMenuRenderer::Draw()
 
         const glm::vec4 color = selected ? glm::vec4(255, 230, 0, 255) : glm::vec4(255, 255, 255, 255);
 
-        mRenderer->DrawText(mRenderer->GetFbWidth() * textInfo->xRatio,
-                            mRenderer->GetFbHeight() * textInfo->yRatio,
-                            mRenderer->GetFbWidth() * textInfo->scaleRatio, text, true, color);
+        mRenderer->DrawTextForElement(
+            "pauseMenu",
+            menuTextIds[i],
+            mRenderer->GetFbWidth() * textInfo->xRatio,
+            mRenderer->GetFbHeight() * textInfo->yRatio,
+            mRenderer->GetFbWidth() * textInfo->scaleRatio,
+            text,
+            textInfo->centerBased,
+            color,
+            textInfo->rotationDegrees);
     }
 
-    mRenderer->DrawTextDependsOnGameController("pauseMenu", "operationText", true);
+    mRenderer->DrawTextDependsOnGameController("pauseMenu", "operationText");
 }

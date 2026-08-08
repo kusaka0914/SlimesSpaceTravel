@@ -14,8 +14,8 @@
 #include "actor/TutorialTrigger.h"
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/stage/StageActorQuery.h"
-#include "gfx/debug/stage/StageModelAssets.h"
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
@@ -31,7 +31,6 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
-#include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 
@@ -46,12 +45,6 @@ std::string ToLower(std::string value)
     return value;
 }
 
-bool IsSupportedTextureExtension(const std::filesystem::path& path)
-{
-    const std::string extension = ToLower(path.extension().string());
-    return extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
-           extension == ".bmp" || extension == ".tga";
-}
 }
 
 StagePlacementPanel::StagePlacementPanel(
@@ -74,6 +67,12 @@ void StagePlacementPanel::Draw()
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
     }
+
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
 
     DrawSelectedActorEditor();
     mRequestOpenPickedActorPlacement = false;
@@ -2036,7 +2035,8 @@ void StagePlacementPanel::DrawPlacementModelPicker(
         mPlacementModelAssetFilter.data(),
         mPlacementModelAssetFilter.size());
 
-    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::vector<std::string>& modelAssets =
+        mContext.assetCatalog->GetPaths(EditorAssetType::Model);
     const std::string filter = ToLower(mPlacementModelAssetFilter.data());
     const std::string listId =
         "PlacedActorModelAssetPicker##" + sequenceName + std::to_string(listIndex);
@@ -2085,7 +2085,8 @@ void StagePlacementPanel::DrawNPCModelPicker(
         mNPCModelAssetFilter.data(),
         mNPCModelAssetFilter.size());
 
-    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::vector<std::string>& modelAssets =
+        mContext.assetCatalog->GetPaths(EditorAssetType::Model);
     const std::string filter = ToLower(mNPCModelAssetFilter.data());
     const std::string listId =
         "PlacedNPCModelAssetPicker##" + sequenceName + std::to_string(listIndex);
@@ -2132,7 +2133,8 @@ void StagePlacementPanel::DrawBoatModelPicker(
         mBoatModelAssetFilter.data(),
         mBoatModelAssetFilter.size());
 
-    const std::vector<std::string> modelAssets = StageModelAssets::Collect();
+    const std::vector<std::string>& modelAssets =
+        mContext.assetCatalog->GetPaths(EditorAssetType::Model);
     const std::string filter = ToLower(mBoatModelAssetFilter.data());
     const std::string listId =
         "PlacedBoatModelAssetPicker##" + sequenceName +
@@ -2166,9 +2168,11 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
         return;
     }
 
-    if (!mTextureAssetsScanned) {
-        RefreshTextureAssets();
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
     }
+    mContext.assetCatalog->EnsureScanned();
 
     ImGui::SeparatorText("テクスチャ");
     const std::string& selectedTexture = actor->GetTextureOverridePath();
@@ -2189,7 +2193,7 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
         ImGui::SameLine();
         if (ImGui::Button(
                 ("更新##actorTextureRefresh" + sequenceName + std::to_string(listIndex)).c_str())) {
-            RefreshTextureAssets();
+            mContext.assetCatalog->Refresh();
         }
 
         if (ImGui::Selectable(
@@ -2202,7 +2206,8 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
             "ActorTextureAssetPicker##" + sequenceName + std::to_string(listIndex);
         ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
         const std::string filter = ToLower(mTextureAssetFilter.data());
-        for (const std::string& asset : mTextureAssets) {
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
             if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
@@ -2244,40 +2249,6 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
                 ImVec2(1.0f, 0.0f));
         }
     }
-}
-
-void StagePlacementPanel::RefreshTextureAssets()
-{
-    mTextureAssets.clear();
-    mTextureAssetsScanned = true;
-
-    const std::filesystem::path assetsRoot("../assets");
-    const std::filesystem::path textureRoot = assetsRoot / "textures";
-    std::error_code error;
-    if (!std::filesystem::is_directory(textureRoot, error)) {
-        mTextureAssetStatus = "assets/textures が見つかりません";
-        return;
-    }
-
-    for (std::filesystem::recursive_directory_iterator it(textureRoot, error), end;
-         it != end && !error;
-         it.increment(error)) {
-        if (!it->is_regular_file(error) || !IsSupportedTextureExtension(it->path())) {
-            continue;
-        }
-
-        const std::filesystem::path relative =
-            std::filesystem::relative(it->path(), assetsRoot, error);
-        if (error) {
-            error.clear();
-            continue;
-        }
-
-        mTextureAssets.emplace_back(relative.generic_string());
-    }
-
-    std::sort(mTextureAssets.begin(), mTextureAssets.end());
-    mTextureAssetStatus.clear();
 }
 
 void StagePlacementPanel::SaveActorsYaml(YAML::Node& config, const ActorGroup& group)

@@ -103,9 +103,10 @@ void UIRenderer::RegisterCustomUITextures()
     }
 }
 
-void UIRenderer::Draw()
+void UIRenderer::DrawGameContent()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    mRenderedUIElements.clear();
     glViewport(0, 0, mFbWidth, mFbHeight);
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -141,15 +142,34 @@ void UIRenderer::Draw()
 
     DrawCustomUI();
 
-    if (mGame->GetIsDebugEditorShowing()) {
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+}
 
-        mDebugUIRenderer->Draw();
-
-        EndImGuiFrame();
+void UIRenderer::DrawDebugEditor(
+    GLuint gameViewTexture,
+    int gameViewWidth,
+    int gameViewHeight)
+{
+    if (!mGame->GetIsDebugEditorShowing()) {
+        return;
     }
+
+    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, mFbWidth, mFbHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    mDebugUIRenderer->Draw(
+        gameViewTexture,
+        gameViewWidth,
+        gameViewHeight);
+    EndImGuiFrame();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -259,6 +279,157 @@ bool UIRenderer::CalculateCustomElementScreenTransform(
     return true;
 }
 
+bool UIRenderer::CalculateTextureInfoScreenTransform(
+    const UILoadSystem::TextureInfo& textureInfo,
+    CustomElementScreenTransform& outTransform) const
+{
+    if (mFbWidth <= 0 || mFbHeight <= 0) {
+        return false;
+    }
+
+    outTransform.size = glm::max(
+        glm::vec2(
+            mFbWidth * textureInfo.widthRatio,
+            mFbHeight * textureInfo.heightRatio),
+        glm::vec2(1.0f));
+    outTransform.center =
+        glm::vec2(
+            mFbWidth * textureInfo.xRatio,
+            mFbHeight * textureInfo.yRatio) +
+        outTransform.size * 0.5f;
+    return true;
+}
+
+bool UIRenderer::CalculateTextInfoScreenTransform(
+    const UILoadSystem::TextInfo& textInfo,
+    CustomElementScreenTransform& outTransform) const
+{
+    if (mFbWidth <= 0 || mFbHeight <= 0) {
+        return false;
+    }
+
+    const std::string text =
+        textInfo.texts.empty() ? std::string("Text") : textInfo.texts.front();
+    std::string firstLine = text;
+    std::string secondLine;
+    const bool hasSecondLine = SplitText(text, firstLine, secondLine);
+    const float textScale = mFbWidth * textInfo.scaleRatio;
+
+    int firstWidth = 0;
+    int firstHeight = 0;
+    MeasureText(firstLine, textScale, firstWidth, firstHeight);
+
+    int secondWidth = 0;
+    int secondHeight = 0;
+    if (hasSecondLine) {
+        MeasureText(secondLine, textScale, secondWidth, secondHeight);
+    }
+
+    outTransform.size = glm::max(
+        glm::vec2(
+            static_cast<float>(std::max(firstWidth, secondWidth)),
+            static_cast<float>(std::max(firstHeight, secondHeight)) +
+                (hasSecondLine ? mFbHeight * 0.0666f : 0.0f)),
+        glm::vec2(1.0f));
+
+    const glm::vec2 position(
+        mFbWidth * textInfo.xRatio,
+        mFbHeight * textInfo.yRatio);
+    outTransform.center =
+        textInfo.centerBased
+            ? position
+            : position + outTransform.size * 0.5f;
+    return true;
+}
+
+void UIRenderer::RecordRenderedUIElement(
+    RenderedUIElementSource source,
+    const std::string& screen,
+    const std::string& id,
+    const glm::vec2& center,
+    const glm::vec2& size,
+    float rotationDegrees)
+{
+    RenderedUIElement renderedElement;
+    renderedElement.source = source;
+    renderedElement.screen = screen;
+    renderedElement.id = id;
+    renderedElement.transform.center = center;
+    renderedElement.transform.size = glm::max(size, glm::vec2(1.0f));
+    renderedElement.rotationDegrees = rotationDegrees;
+    mRenderedUIElements.push_back(std::move(renderedElement));
+}
+
+void UIRenderer::RecordRenderedTextElement(
+    const std::string& screen,
+    const std::string& id,
+    float x,
+    float y,
+    float scale,
+    const std::string& message,
+    bool centerBased,
+    float rotationDegrees)
+{
+    std::string firstLine = message;
+    std::string secondLine;
+    const bool hasSecondLine = SplitText(message, firstLine, secondLine);
+
+    int firstWidth = 0;
+    int firstHeight = 0;
+    MeasureText(firstLine, scale, firstWidth, firstHeight);
+
+    int secondWidth = 0;
+    int secondHeight = 0;
+    if (hasSecondLine) {
+        MeasureText(secondLine, scale, secondWidth, secondHeight);
+    }
+
+    const glm::vec2 size(
+        static_cast<float>(std::max(firstWidth, secondWidth)),
+        static_cast<float>(std::max(firstHeight, secondHeight)) +
+            (hasSecondLine ? mFbHeight * 0.0666f : 0.0f));
+    const glm::vec2 position(x, y);
+    const glm::vec2 center =
+        centerBased ? position : position + size * 0.5f;
+    RecordRenderedUIElement(
+        RenderedUIElementSource::CodeBoundText,
+        screen,
+        id,
+        center,
+        size,
+        rotationDegrees);
+}
+
+void UIRenderer::DrawTextForElement(
+    const std::string& screen,
+    const std::string& id,
+    float x,
+    float y,
+    float scale,
+    const std::string& message,
+    bool centerBased,
+    glm::vec4 color,
+    float rotationDegrees)
+{
+    DrawText(
+        x,
+        y,
+        scale,
+        message,
+        centerBased,
+        color,
+        rotationDegrees);
+    RecordRenderedTextElement(
+        screen,
+        id,
+        x,
+        y,
+        scale,
+        message,
+        centerBased,
+        rotationDegrees);
+}
+
 std::string UIRenderer::GetCustomTextureName(const std::string& assetRelativePath)
 {
     std::string normalizedPath = assetRelativePath;
@@ -310,6 +481,7 @@ void UIRenderer::DrawCustomUI()
         const float topLeftX = element->centerBased ? x - width * 0.5f : x;
         const float topLeftY = element->centerBased ? y - height * 0.5f : y;
 
+        bool rendered = false;
         switch (element->type) {
         case UILoadSystem::CustomElementType::Text:
         {
@@ -346,6 +518,7 @@ void UIRenderer::DrawCustomUI()
                     element->color[3] * 255.0f),
                 element->rotationDegrees,
                 &effect);
+            rendered = true;
             break;
         }
         case UILoadSystem::CustomElementType::Image:
@@ -358,6 +531,7 @@ void UIRenderer::DrawCustomUI()
                     GetCustomTextureName(element->texturePath),
                     element->flipVertical,
                     element->rotationDegrees);
+                rendered = true;
             }
             break;
         case UILoadSystem::CustomElementType::Panel:
@@ -368,7 +542,23 @@ void UIRenderer::DrawCustomUI()
                 height,
                 {element->color[0], element->color[1], element->color[2], element->color[3]},
                 element->rotationDegrees);
+            rendered = true;
             break;
+        }
+
+        if (rendered) {
+            CustomElementScreenTransform screenTransform;
+            if (CalculateCustomElementScreenTransform(
+                    *element,
+                    screenTransform)) {
+                RecordRenderedUIElement(
+                    RenderedUIElementSource::Custom,
+                    element->screen,
+                    element->id,
+                    screenTransform.center,
+                    screenTransform.size,
+                    element->rotationDegrees);
+            }
         }
     }
 }
@@ -387,7 +577,7 @@ void UIRenderer::DrawSkyBox()
     DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
 }
 
-void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, bool isCenterBase, int index,
+void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, int index,
                                glm::vec4 color)
 {
     const auto textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName);
@@ -399,8 +589,16 @@ void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& 
         return;
     }
 
-    DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio,
-             textInfo->texts[index], isCenterBase, color);
+    DrawTextForElement(
+        sceneName,
+        UIName,
+        mFbWidth * textInfo->xRatio,
+        mFbHeight * textInfo->yRatio,
+        mFbWidth * textInfo->scaleRatio,
+        textInfo->texts[index],
+        textInfo->centerBased,
+        color,
+        textInfo->rotationDegrees);
 }
 
 void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
@@ -431,11 +629,31 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
             talkTextInfo->rubyScaleRatio,
             talkTextInfo->rubyGapRatio,
             *rubySegments,
-            talkTextColor);
+            talkTextColor,
+            talkTextInfo->centerBased,
+            talkTextInfo->rotationDegrees);
+        RecordRenderedTextElement(
+            "state",
+            "talkText",
+            x,
+            y,
+            scale,
+            texts[index],
+            talkTextInfo->centerBased,
+            talkTextInfo->rotationDegrees);
         return;
     }
 
-    DrawText(x, y, scale, texts[index], false, talkTextColor);
+    DrawTextForElement(
+        "state",
+        "talkText",
+        x,
+        y,
+        scale,
+        texts[index],
+        talkTextInfo->centerBased,
+        talkTextColor,
+        talkTextInfo->rotationDegrees);
 }
 
 void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
@@ -451,8 +669,31 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
 
     constexpr float textureMarginX = 0.0275f;
     constexpr float textureMarginY = 0.0845f;
-    DrawTexture(mFbWidth * (textInfo->xRatio - textureMarginX), mFbHeight * (textInfo->yRatio - textureMarginY),
-                mFbWidth * talkBgTextureInfo->widthRatio, mFbHeight * talkBgTextureInfo->heightRatio, "textBg");
+    const float backgroundX =
+        mFbWidth * (textInfo->xRatio - textureMarginX);
+    const float backgroundY =
+        mFbHeight * (textInfo->yRatio - textureMarginY);
+    const float backgroundWidth =
+        mFbWidth * talkBgTextureInfo->widthRatio;
+    const float backgroundHeight =
+        mFbHeight * talkBgTextureInfo->heightRatio;
+    DrawTexture(
+        backgroundX,
+        backgroundY,
+        backgroundWidth,
+        backgroundHeight,
+        "textBg",
+        false,
+        talkBgTextureInfo->rotationDegrees);
+    RecordRenderedUIElement(
+        RenderedUIElementSource::CodeBoundTexture,
+        "state",
+        "talkBgTexture",
+        glm::vec2(
+            backgroundX + backgroundWidth * 0.5f,
+            backgroundY + backgroundHeight * 0.5f),
+        glm::vec2(backgroundWidth, backgroundHeight),
+        talkBgTextureInfo->rotationDegrees);
 
     const glm::vec4 talkTextColor{35.0f, 35.0f, 42.0f, 255.0f};
     const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
@@ -460,6 +701,18 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
     if (talkUIIndex < 0 || talkUIIndex >= static_cast<int>(textInfo->texts.size())) {
         return;
     }
+
+    const std::string textInfoKey =
+        mUILoadSystem->FindTextInfoKey(textInfo);
+    const std::size_t keySeparator = textInfoKey.find('.');
+    const std::string screen =
+        keySeparator == std::string::npos
+            ? std::string("state")
+            : textInfoKey.substr(0, keySeparator);
+    const std::string id =
+        keySeparator == std::string::npos
+            ? std::string("talkText")
+            : textInfoKey.substr(keySeparator + 1);
 
     if (talkUIIndex < static_cast<int>(textInfo->rubySegments.size()) &&
         !textInfo->rubySegments[talkUIIndex].empty() &&
@@ -478,17 +731,31 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
             rubyScaleRatio,
             rubyGapRatio,
             textInfo->rubySegments[talkUIIndex],
-            talkTextColor);
+            talkTextColor,
+            textInfo->centerBased,
+            textInfo->rotationDegrees);
+        RecordRenderedTextElement(
+            screen,
+            id,
+            mFbWidth * textInfo->xRatio,
+            mFbHeight * textInfo->yRatio,
+            mFbWidth * textInfo->scaleRatio,
+            textInfo->texts[talkUIIndex],
+            textInfo->centerBased,
+            textInfo->rotationDegrees);
         return;
     }
 
-    DrawText(
+    DrawTextForElement(
+        screen,
+        id,
         mFbWidth * textInfo->xRatio,
         mFbHeight * textInfo->yRatio,
         mFbWidth * textInfo->scaleRatio,
         textInfo->texts[talkUIIndex],
-        false,
-        talkTextColor);
+        textInfo->centerBased,
+        talkTextColor,
+        textInfo->rotationDegrees);
 }
 
 bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)
@@ -507,14 +774,16 @@ bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string
 }
 
 void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
-                                                 bool isCenterBase, float screenTopY, float uiScale)
+                                                 float screenTopY, float uiScale)
 {
     const UILoadSystem::TextInfo* textInfo;
+    std::string resolvedUIName;
     if (mGame->IsGameControllerConnected()) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
+        resolvedUIName = UIName + "ForGameController";
     } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
+        resolvedUIName = UIName + "ForKeyBoard";
     }
+    textInfo = mUILoadSystem->GetTextInfo(sceneName, resolvedUIName);
 
     if (!textInfo) {
         return;
@@ -526,20 +795,31 @@ void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, c
     const float y = screenTopY + screenHeight * textInfo->yRatio;
     const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
 
-    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
+    DrawTextForElement(
+        sceneName,
+        resolvedUIName,
+        x,
+        y,
+        scale,
+        textInfo->texts[0],
+        textInfo->centerBased,
+        {255, 255, 255, 255},
+        textInfo->rotationDegrees);
 }
 
 void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
-                                              const std::string& UIName, bool isCenterBase, float screenTopY,
+                                              const std::string& UIName, float screenTopY,
                                               float uiScale)
 {
     const UILoadSystem::TextInfo* textInfo = nullptr;
+    std::string resolvedUIName;
 
     if (UsesControllerUI(player)) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
+        resolvedUIName = UIName + "ForGameController";
     } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
+        resolvedUIName = UIName + "ForKeyBoard";
     }
+    textInfo = mUILoadSystem->GetTextInfo(sceneName, resolvedUIName);
 
     if (!textInfo) {
         return;
@@ -551,7 +831,16 @@ void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::s
     const float y = screenTopY + screenHeight * textInfo->yRatio;
     const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
 
-    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
+    DrawTextForElement(
+        sceneName,
+        resolvedUIName,
+        x,
+        y,
+        scale,
+        textInfo->texts[0],
+        textInfo->centerBased,
+        {255, 255, 255, 255},
+        textInfo->rotationDegrees);
 }
 
 bool UIRenderer::UsesControllerUI(const Player* player) const
@@ -591,8 +880,18 @@ void UIRenderer::DrawBGFromUIInfo(const std::string& sceneName, const std::strin
         return;
     }
 
-    DrawBG(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
-           mFbHeight * textureInfo->heightRatio, color);
+    const float x = mFbWidth * textureInfo->xRatio;
+    const float y = mFbHeight * textureInfo->yRatio;
+    const float width = mFbWidth * textureInfo->widthRatio;
+    const float height = mFbHeight * textureInfo->heightRatio;
+    DrawBG(x, y, width, height, color, textureInfo->rotationDegrees);
+    RecordRenderedUIElement(
+        RenderedUIElementSource::CodeBoundTexture,
+        sceneName,
+        UIName,
+        glm::vec2(x + width * 0.5f, y + height * 0.5f),
+        glm::vec2(width, height),
+        textureInfo->rotationDegrees);
 }
 
 void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::string& UIName,
@@ -603,8 +902,25 @@ void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::strin
         return;
     }
 
-    DrawTexture(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
-                mFbHeight * textureInfo->heightRatio, textureName);
+    const float x = mFbWidth * textureInfo->xRatio;
+    const float y = mFbHeight * textureInfo->yRatio;
+    const float width = mFbWidth * textureInfo->widthRatio;
+    const float height = mFbHeight * textureInfo->heightRatio;
+    DrawTexture(
+        x,
+        y,
+        width,
+        height,
+        textureName,
+        false,
+        textureInfo->rotationDegrees);
+    RecordRenderedUIElement(
+        RenderedUIElementSource::CodeBoundTexture,
+        sceneName,
+        UIName,
+        glm::vec2(x + width * 0.5f, y + height * 0.5f),
+        glm::vec2(width, height),
+        textureInfo->rotationDegrees);
 }
 
 void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName,
@@ -629,7 +945,23 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
     float currentX = textureX;
 
     while (count > 0) {
-        DrawTexture(currentX, textureY, textureWidth, textureHeight, textureName);
+        DrawTexture(
+            currentX,
+            textureY,
+            textureWidth,
+            textureHeight,
+            textureName,
+            false,
+            textureInfo->rotationDegrees);
+        RecordRenderedUIElement(
+            RenderedUIElementSource::CodeBoundTexture,
+            sceneName,
+            UIName,
+            glm::vec2(
+                currentX + textureWidth * 0.5f,
+                textureY + textureHeight * 0.5f),
+            glm::vec2(textureWidth, textureHeight),
+            textureInfo->rotationDegrees);
         currentX += textureGap;
         count--;
     }
@@ -855,7 +1187,9 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                               float rubyScaleRatio,
                               float rubyGapRatio,
                               const std::vector<RubyTextSegment>& segments,
-                              glm::vec4 color)
+                              glm::vec4 color,
+                              bool centerBased,
+                              float rotationDegrees)
 {
     std::vector<std::vector<RubyTextSegment>> lines(1);
 
@@ -902,6 +1236,34 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
     const float firstLineOffset =
         lines.size() > 1 ? -mFbHeight * 0.0222f : 0.0f;
     const float lineSpacing = mFbHeight * 0.0666f;
+
+    float maximumLineWidth = 0.0f;
+    float maximumBaseHeight = 0.0f;
+    for (const auto& line : lines) {
+        float lineWidth = 0.0f;
+        for (const RubyTextSegment& segment : line) {
+            int baseWidth = 0;
+            int baseHeight = 0;
+            if (MeasureText(segment.text, scale, baseWidth, baseHeight)) {
+                lineWidth += static_cast<float>(baseWidth);
+                maximumBaseHeight =
+                    std::max(maximumBaseHeight, static_cast<float>(baseHeight));
+            }
+        }
+        maximumLineWidth = std::max(maximumLineWidth, lineWidth);
+    }
+    const float totalTextHeight =
+        maximumBaseHeight +
+        (lines.size() > 1
+             ? lineSpacing * static_cast<float>(lines.size() - 1)
+             : 0.0f);
+    const glm::vec2 rotationPivot =
+        centerBased
+            ? glm::vec2(x, y)
+            : glm::vec2(
+                  x + maximumLineWidth * 0.5f,
+                  y + totalTextHeight * 0.5f);
+
     for (std::size_t lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
         float currentX = x;
         const float lineY =
@@ -914,7 +1276,16 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                 continue;
             }
 
-            DrawTextLine(segment.text, currentX, lineY, scale, false, 0.0f, color);
+            DrawTextLine(
+                segment.text,
+                currentX,
+                lineY,
+                scale,
+                false,
+                0.0f,
+                color,
+                rotationDegrees,
+                rotationPivot);
 
             if (segment.showsRuby && !segment.reading.empty()) {
                 const float rubyScale = scale * rubyScaleRatio;
@@ -928,7 +1299,15 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                         static_cast<float>(rubyHeight) *
                             (0.9f + rubyGapRatio);
                     DrawTextLine(
-                        segment.reading, rubyX, rubyY, rubyScale, false, 0.0f, color);
+                        segment.reading,
+                        rubyX,
+                        rubyY,
+                        rubyScale,
+                        false,
+                        0.0f,
+                        color,
+                        rotationDegrees,
+                        rotationPivot);
                 }
             }
 

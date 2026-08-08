@@ -184,6 +184,8 @@ void Game::Shutdown()
 
     SDL_Quit();
 
+    DestroyEditorGameRenderTarget();
+
     if (mWindow) {
         glfwDestroyWindow(mWindow);
         mWindow = nullptr;
@@ -259,7 +261,12 @@ void Game::ToggleDebugEditor()
 
 void Game::ToggleFreeCameraMode()
 {
-    mIsFreeCameraMode = !mIsFreeCameraMode;
+    SetFreeCameraMode(!mIsFreeCameraMode);
+}
+
+void Game::SetFreeCameraMode(bool isEnabled)
+{
+    mIsFreeCameraMode = isEnabled;
 }
 
 void Game::ProcessActorsInput()
@@ -356,6 +363,51 @@ void Game::UpdateActors(float deltaTime)
 
 void Game::GenerateOutput()
 {
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(
+        mWindow,
+        &framebufferWidth,
+        &framebufferHeight);
+
+    const bool shouldRenderEditorGameView =
+        mIsDebugEditorShowing &&
+        EnsureEditorGameRenderTarget(framebufferWidth, framebufferHeight);
+    if (shouldRenderEditorGameView) {
+        glBindFramebuffer(GL_FRAMEBUFFER, mEditorGameFramebuffer);
+        DrawGameFrame();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, framebufferWidth, framebufferHeight);
+        glClearColor(0.035f, 0.035f, 0.045f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mUIRenderer->DrawDebugEditor(
+            mEditorGameTexture,
+            framebufferWidth,
+            framebufferHeight);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        DrawGameFrame();
+        if (mIsDebugEditorShowing) {
+            mUIRenderer->DrawDebugEditor(
+                0,
+                framebufferWidth,
+                framebufferHeight);
+        }
+    }
+
+    glfwSwapBuffers(mWindow);
+}
+
+void Game::DrawGameFrame()
+{
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(
+        mWindow,
+        &framebufferWidth,
+        &framebufferHeight);
+    glViewport(0, 0, framebufferWidth, framebufferHeight);
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -369,10 +421,97 @@ void Game::GenerateOutput()
     mRenderer3D->Draw();
 
     glDisable(GL_DEPTH_TEST);
-    mUIRenderer->Draw();
+    mUIRenderer->DrawGameContent();
     glEnable(GL_DEPTH_TEST);
+}
 
-    glfwSwapBuffers(mWindow);
+bool Game::EnsureEditorGameRenderTarget(int width, int height)
+{
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+
+    if (mEditorGameFramebuffer == 0) {
+        glGenFramebuffers(1, &mEditorGameFramebuffer);
+        glGenTextures(1, &mEditorGameTexture);
+        glGenRenderbuffers(1, &mEditorGameDepthBuffer);
+    }
+
+    const bool sizeChanged =
+        width != mEditorGameRenderWidth ||
+        height != mEditorGameRenderHeight;
+    if (!sizeChanged) {
+        return true;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, mEditorGameFramebuffer);
+
+    glBindTexture(GL_TEXTURE_2D, mEditorGameTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA8,
+        width,
+        height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        nullptr);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D,
+        mEditorGameTexture,
+        0);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, mEditorGameDepthBuffer);
+    glRenderbufferStorage(
+        GL_RENDERBUFFER,
+        GL_DEPTH24_STENCIL8,
+        width,
+        height);
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER,
+        mEditorGameDepthBuffer);
+
+    const bool isComplete =
+        glCheckFramebufferStatus(GL_FRAMEBUFFER) ==
+        GL_FRAMEBUFFER_COMPLETE;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (!isComplete) {
+        DestroyEditorGameRenderTarget();
+        return false;
+    }
+
+    mEditorGameRenderWidth = width;
+    mEditorGameRenderHeight = height;
+    return true;
+}
+
+void Game::DestroyEditorGameRenderTarget()
+{
+    if (mEditorGameDepthBuffer != 0) {
+        glDeleteRenderbuffers(1, &mEditorGameDepthBuffer);
+        mEditorGameDepthBuffer = 0;
+    }
+    if (mEditorGameTexture != 0) {
+        glDeleteTextures(1, &mEditorGameTexture);
+        mEditorGameTexture = 0;
+    }
+    if (mEditorGameFramebuffer != 0) {
+        glDeleteFramebuffers(1, &mEditorGameFramebuffer);
+        mEditorGameFramebuffer = 0;
+    }
+
+    mEditorGameRenderWidth = 0;
+    mEditorGameRenderHeight = 0;
 }
 
 void Game::AddActor(std::unique_ptr<Actor> actor)

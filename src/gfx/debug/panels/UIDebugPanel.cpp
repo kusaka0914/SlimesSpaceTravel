@@ -1,12 +1,13 @@
 #include "gfx/debug/panels/UIDebugPanel.h"
 
 #include "gfx/UIRenderer.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "imgui.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
-#include <filesystem>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -31,6 +32,22 @@ std::string ToLower(std::string value)
     });
     return value;
 }
+
+std::string ExtractScreenId(const std::string& elementKey)
+{
+    const std::size_t separatorIndex = elementKey.find('.');
+    return separatorIndex == std::string::npos
+               ? std::string()
+               : elementKey.substr(0, separatorIndex);
+}
+
+std::string ExtractElementId(const std::string& elementKey)
+{
+    const std::size_t separatorIndex = elementKey.find('.');
+    return separatorIndex == std::string::npos
+               ? elementKey
+               : elementKey.substr(separatorIndex + 1);
+}
 }
 
 UIDebugPanel::UIDebugPanel(DebugEditorContext& context)
@@ -50,51 +67,45 @@ void UIDebugPanel::Draw()
         return;
     }
 
-    if (ImGui::BeginTabBar("UIEditorTabs")) {
-        if (ImGui::BeginTabItem("追加UIエディタ")) {
-            DrawCustomUIEditor(uiLoadSystem);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("既存画像の配置")) {
-            DrawTextures(uiLoadSystem);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("既存テキストの配置")) {
-            DrawTexts(uiLoadSystem);
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
+    DrawUIEditor(uiLoadSystem);
 }
 
-void UIDebugPanel::DrawCustomUIEditor(UILoadSystem* uiLoadSystem)
+void UIDebugPanel::DrawUIEditor(UILoadSystem* uiLoadSystem)
 {
+    switch (mCanvasEditor.GetPrimarySelectionSource()) {
+    case UICanvasEditorController::SelectionSource::Custom:
+        mSelectedElementSource = SelectedElementSource::Custom;
+        mSelectedExistingElementKey.clear();
+        break;
+    case UICanvasEditorController::SelectionSource::ExistingTexture:
+        mSelectedElementSource = SelectedElementSource::ExistingTexture;
+        mSelectedExistingElementKey =
+            mCanvasEditor.GetPrimaryExistingKey();
+        break;
+    case UICanvasEditorController::SelectionSource::ExistingText:
+        mSelectedElementSource = SelectedElementSource::ExistingText;
+        mSelectedExistingElementKey =
+            mCanvasEditor.GetPrimaryExistingKey();
+        break;
+    case UICanvasEditorController::SelectionSource::None:
+        mSelectedElementSource = SelectedElementSource::None;
+        mSelectedExistingElementKey.clear();
+        break;
+    }
+
     bool previewEnabled = mContext.uiRenderer->GetCustomUIPreviewEnabled();
     if (ImGui::Checkbox("エディタ中は全要素をプレビュー", &previewEnabled)) {
         mContext.uiRenderer->SetCustomUIPreviewEnabled(previewEnabled);
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("保存")) {
-        mStatusMessage = uiLoadSystem->SaveCustomUI() ? "custom_ui.yamlへ保存しました" : "保存に失敗しました";
+    if (ImGui::Button("すべて保存")) {
+        SaveAllUI(uiLoadSystem);
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("再読込")) {
-        if (uiLoadSystem->LoadCustomUI()) {
-            mCanvasEditor.ClearSelection();
-            for (const auto& element : uiLoadSystem->GetCustomElements()) {
-                if (element.type == UILoadSystem::CustomElementType::Image) {
-                    mContext.uiRenderer->RegisterCustomUITexture(element.texturePath);
-                }
-            }
-            mStatusMessage = "custom_ui.yamlを再読込しました";
-        } else {
-            mStatusMessage = "再読込に失敗しました";
-        }
+    if (ImGui::Button("すべて再読込")) {
+        ReloadAllUI(uiLoadSystem);
     }
 
     if (!mStatusMessage.empty()) {
@@ -104,9 +115,9 @@ void UIDebugPanel::DrawCustomUIEditor(UILoadSystem* uiLoadSystem)
 
     ImGui::Separator();
     DrawCanvasToolbar();
-    DrawCustomElementList(uiLoadSystem);
+    DrawElementList(uiLoadSystem);
     ImGui::SameLine();
-    DrawCustomElementInspector(uiLoadSystem);
+    DrawElementInspector(uiLoadSystem);
     mCanvasEditor.Update(uiLoadSystem, mStatusMessage);
 }
 
@@ -151,9 +162,9 @@ void UIDebugPanel::DrawCanvasToolbar()
         mCanvasEditor.GetSelectedCount());
 }
 
-void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
+void UIDebugPanel::DrawElementList(UILoadSystem* uiLoadSystem)
 {
-    ImGui::BeginChild("CustomUIElementList", ImVec2(230.0f, 0.0f), true);
+    ImGui::BeginChild("UIElementList", ImVec2(250.0f, 0.0f), true);
     ImGui::TextUnformatted("要素");
 
     const char* elementTypes[] = {"テキスト", "画像", "パネル"};
@@ -166,24 +177,130 @@ void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
         const std::size_t addedIndex =
             uiLoadSystem->AddCustomElement(type, mNewScreen.data(), mNewId.data());
         mCanvasEditor.SetSingleSelection(addedIndex);
+        mSelectedElementSource = SelectedElementSource::Custom;
+        mSelectedExistingElementKey.clear();
         mStatusMessage = "要素を追加しました（保存はまだです）";
     }
 
     ImGui::Separator();
 
-    const auto& elements = uiLoadSystem->GetCustomElements();
-    for (std::size_t i = 0; i < elements.size(); ++i) {
-        const auto& element = elements[i];
-        const std::string label =
-            element.screen + "." + element.id + " [" + UILoadSystem::CustomElementTypeToString(element.type) +
-            "]##custom" + std::to_string(i);
+    struct ScreenElements {
+        std::vector<std::size_t> customIndices;
+        std::vector<std::string> textureKeys;
+        std::vector<std::string> textKeys;
+    };
 
-        if (ImGui::Selectable(label.c_str(), mCanvasEditor.IsSelected(i))) {
-            const ImGuiIO& io = ImGui::GetIO();
-            mCanvasEditor.SelectFromList(
-                i,
-                io.KeyCtrl || io.KeySuper || io.KeyShift);
+    const auto& customElements = uiLoadSystem->GetCustomElements();
+    std::map<std::string, ScreenElements> elementsByScreen;
+    for (std::size_t elementIndex = 0;
+         elementIndex < customElements.size();
+         ++elementIndex) {
+        elementsByScreen[customElements[elementIndex].screen]
+            .customIndices.push_back(elementIndex);
+    }
+    for (const auto& [key, textureInfo] : uiLoadSystem->GetEditableTextureInfos()) {
+        (void)textureInfo;
+        elementsByScreen[ExtractScreenId(key)].textureKeys.push_back(key);
+    }
+    for (const auto& [key, textInfo] : uiLoadSystem->GetEditableTextInfos()) {
+        (void)textInfo;
+        elementsByScreen[ExtractScreenId(key)].textKeys.push_back(key);
+    }
+
+    for (auto& [screen, screenElements] : elementsByScreen) {
+        std::sort(screenElements.textureKeys.begin(), screenElements.textureKeys.end());
+        std::sort(screenElements.textKeys.begin(), screenElements.textKeys.end());
+
+        const std::string screenLabel =
+            uiLoadSystem->ResolveCustomScreenDisplayName(screen) +
+            "##UIScreen:" + screen;
+        if (!ImGui::TreeNodeEx(
+                screenLabel.c_str(),
+                ImGuiTreeNodeFlags_DefaultOpen)) {
+            continue;
         }
+
+        ImGui::TextDisabled("画面ID: %s", screen.c_str());
+        for (const std::size_t elementIndex : screenElements.customIndices) {
+            const UILoadSystem::CustomElement& element =
+                customElements[elementIndex];
+            const std::string displayName =
+                element.displayName.empty()
+                    ? element.id
+                    : element.displayName;
+            const std::string label =
+                displayName + " [" +
+                UILoadSystem::CustomElementTypeToString(element.type) +
+                "]##custom" + std::to_string(elementIndex);
+
+            const bool isSelected = mCanvasEditor.IsSelected(elementIndex);
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
+                const ImGuiIO& io = ImGui::GetIO();
+                mCanvasEditor.SelectFromList(
+                    elementIndex,
+                    io.KeyCtrl || io.KeySuper || io.KeyShift);
+                mSelectedElementSource = SelectedElementSource::Custom;
+                mSelectedExistingElementKey.clear();
+            }
+            ImGui::TextDisabled("ID: %s", element.id.c_str());
+        }
+
+        for (const std::string& key : screenElements.textureKeys) {
+            const std::string label =
+                GetDisplayName(key) + " [image]##existingTexture:" + key;
+            const bool isSelected =
+                mCanvasEditor.IsExistingTextureSelected(key);
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
+                const ImGuiIO& io = ImGui::GetIO();
+                mCanvasEditor.SelectExistingTextureFromList(
+                    key,
+                    io.KeyCtrl || io.KeySuper || io.KeyShift);
+                mSelectedElementSource = SelectedElementSource::ExistingTexture;
+                mSelectedExistingElementKey = key;
+            }
+            ImGui::TextDisabled("ID: %s", ExtractElementId(key).c_str());
+        }
+
+        for (const std::string& key : screenElements.textKeys) {
+            const std::string label =
+                GetDisplayName(key) + " [text]##existingText:" + key;
+            const bool isSelected =
+                mCanvasEditor.IsExistingTextSelected(key);
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
+                const ImGuiIO& io = ImGui::GetIO();
+                mCanvasEditor.SelectExistingTextFromList(
+                    key,
+                    io.KeyCtrl || io.KeySuper || io.KeyShift);
+                mSelectedElementSource = SelectedElementSource::ExistingText;
+                mSelectedExistingElementKey = key;
+            }
+            ImGui::TextDisabled("ID: %s", ExtractElementId(key).c_str());
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::EndChild();
+}
+
+void UIDebugPanel::DrawElementInspector(UILoadSystem* uiLoadSystem)
+{
+    ImGui::BeginChild("UIElementInspector", ImVec2(0.0f, 0.0f), true);
+
+    switch (mSelectedElementSource) {
+    case SelectedElementSource::Custom:
+        DrawCustomElementInspector(uiLoadSystem);
+        break;
+    case SelectedElementSource::ExistingTexture:
+        DrawExistingTextureInspector(uiLoadSystem);
+        break;
+    case SelectedElementSource::ExistingText:
+        DrawExistingTextInspector(uiLoadSystem);
+        break;
+    case SelectedElementSource::None:
+        ImGui::TextWrapped(
+            "左側でテキスト・画像・パネルを追加するか、編集する要素を選んでください。");
+        break;
     }
 
     ImGui::EndChild();
@@ -191,24 +308,45 @@ void UIDebugPanel::DrawCustomElementList(UILoadSystem* uiLoadSystem)
 
 void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
 {
-    ImGui::BeginChild("CustomUIElementInspector", ImVec2(0.0f, 0.0f), true);
 
     auto& elements = uiLoadSystem->GetCustomElements();
     const int selectedElementIndex = mCanvasEditor.GetPrimarySelectedIndex();
     if (selectedElementIndex < 0 ||
         selectedElementIndex >= static_cast<int>(elements.size())) {
         ImGui::TextWrapped("左側でテキスト・画像・パネルを追加するか、編集する要素を選んでください。");
-        ImGui::EndChild();
         return;
     }
 
     auto& element = elements[static_cast<std::size_t>(selectedElementIndex)];
     std::array<char, 128> screenBuffer = {};
+    std::array<char, 128> screenDisplayNameBuffer = {};
     std::array<char, 128> idBuffer = {};
+    std::array<char, 128> displayNameBuffer = {};
     std::array<char, 2048> textBuffer = {};
 
     ImGui::Text("編集: %s.%s", element.screen.c_str(), element.id.c_str());
-    EditString("画面名##selected", element.screen, screenBuffer);
+    ImGui::SeparatorText("名前とID");
+    if (EditString("画面ID##selected", element.screen, screenBuffer)) {
+        uiLoadSystem->SetCustomScreenDisplayName(
+            element.screen,
+            element.screen);
+    }
+
+    std::string screenDisplayName =
+        uiLoadSystem->ResolveCustomScreenDisplayName(element.screen);
+    if (EditString(
+            "画面の表示名##selected",
+            screenDisplayName,
+            screenDisplayNameBuffer)) {
+        uiLoadSystem->SetCustomScreenDisplayName(
+            element.screen,
+            screenDisplayName);
+    }
+
+    EditString(
+        "要素の表示名##selected",
+        element.displayName,
+        displayNameBuffer);
     EditString("ID##selected", element.id, idBuffer);
 
     const bool hasDuplicateKey = std::any_of(
@@ -295,14 +433,154 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
         mCanvasEditor.DeleteSelected(uiLoadSystem, mStatusMessage);
     }
 
-    ImGui::EndChild();
+}
+
+void UIDebugPanel::DrawExistingTextureInspector(UILoadSystem* uiLoadSystem)
+{
+    auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
+    const auto textureInfoIt = textureInfos.find(mSelectedExistingElementKey);
+    if (textureInfoIt == textureInfos.end()) {
+        mSelectedElementSource = SelectedElementSource::None;
+        mSelectedExistingElementKey.clear();
+        ImGui::TextUnformatted("選択した画像UIが見つかりません。");
+        return;
+    }
+
+    UILoadSystem::TextureInfo& textureInfo = textureInfoIt->second;
+    ImGui::Text("編集: %s", mSelectedExistingElementKey.c_str());
+    ImGui::TextDisabled(
+        "ゲームコードと連携して表示されるUIです。");
+    ImGui::SeparatorText("名前とID");
+    ImGui::Text("表示名: %s", GetDisplayName(mSelectedExistingElementKey).c_str());
+    ImGui::Text("画面ID: %s", ExtractScreenId(mSelectedExistingElementKey).c_str());
+    ImGui::Text("要素ID: %s", ExtractElementId(mSelectedExistingElementKey).c_str());
+
+    ImGui::SeparatorText("配置（すべて画面横幅に対する比率）");
+    ImGui::SliderFloat("X", &textureInfo.xRatio, -0.5f, 1.5f, "%.4f");
+    ImGui::SliderFloat("Y", &textureInfo.yRatio, -0.25f, 1.0f, "%.4f");
+    ImGui::SliderFloat("幅", &textureInfo.widthRatio, 0.0f, 1.5f, "%.4f");
+    ImGui::SliderFloat("高さ", &textureInfo.heightRatio, 0.0f, 1.5f, "%.4f");
+    ImGui::SliderFloat(
+        "回転角度",
+        &textureInfo.rotationDegrees,
+        -180.0f,
+        180.0f,
+        "%.1f°");
+
+    ImGui::SeparatorText("表示方式");
+    ImGui::TextWrapped(
+        "画像アセットと表示条件はゲームコードから渡されます。"
+        "配置・拡縮・回転はほかのUIと同じ操作で編集できます。");
+    DrawCodeBoundElementProtection();
+}
+
+void UIDebugPanel::DrawExistingTextInspector(UILoadSystem* uiLoadSystem)
+{
+    auto& textInfos = uiLoadSystem->GetEditableTextInfos();
+    const auto textInfoIt = textInfos.find(mSelectedExistingElementKey);
+    if (textInfoIt == textInfos.end()) {
+        mSelectedElementSource = SelectedElementSource::None;
+        mSelectedExistingElementKey.clear();
+        ImGui::TextUnformatted("選択したテキストUIが見つかりません。");
+        return;
+    }
+
+    UILoadSystem::TextInfo& textInfo = textInfoIt->second;
+    ImGui::Text("編集: %s", mSelectedExistingElementKey.c_str());
+    ImGui::TextDisabled(
+        "ゲームコードと連携して表示されるUIです。");
+    ImGui::SeparatorText("名前とID");
+    ImGui::Text("表示名: %s", GetDisplayName(mSelectedExistingElementKey).c_str());
+    ImGui::Text("画面ID: %s", ExtractScreenId(mSelectedExistingElementKey).c_str());
+    ImGui::Text("要素ID: %s", ExtractElementId(mSelectedExistingElementKey).c_str());
+
+    ImGui::SeparatorText("配置（すべて画面横幅に対する比率）");
+    ImGui::SliderFloat("X", &textInfo.xRatio, -0.5f, 1.5f, "%.4f");
+    ImGui::SliderFloat("Y", &textInfo.yRatio, -0.25f, 1.0f, "%.4f");
+    ImGui::SliderFloat(
+        "文字サイズ",
+        &textInfo.scaleRatio,
+        0.00005f,
+        0.005f,
+        "%.7f");
+    ImGui::Checkbox("中心座標を基準にする", &textInfo.centerBased);
+    ImGui::SliderFloat(
+        "回転角度",
+        &textInfo.rotationDegrees,
+        -180.0f,
+        180.0f,
+        "%.1f°");
+
+    if (mSelectedExistingElementKey == "state.talkText") {
+        ImGui::SliderFloat(
+            "ルビサイズ倍率（全会話）",
+            &textInfo.rubyScaleRatio,
+            0.2f,
+            1.0f,
+            "%.2f");
+        ImGui::SliderFloat(
+            "漢字とルビの間隔（全会話）",
+            &textInfo.rubyGapRatio,
+            -0.5f,
+            2.0f,
+            "%.2f");
+    }
+
+    if (textInfo.texts.empty()) {
+        ImGui::SeparatorText("内容");
+        ImGui::TextDisabled("内容は会話やゲーム状態から動的に設定されます。");
+        DrawCodeBoundElementProtection();
+        return;
+    }
+
+    ImGui::SeparatorText("内容");
+    for (std::size_t textIndex = 0;
+         textIndex < textInfo.texts.size();
+         ++textIndex) {
+        const std::string& text = textInfo.texts[textIndex];
+        std::vector<char> textBuffer(
+            std::max<std::size_t>(4096, text.size() + 1),
+            '\0');
+        std::copy(text.begin(), text.end(), textBuffer.begin());
+
+        const std::string label =
+            "内容 " + std::to_string(textIndex + 1) +
+            "##existingTextContent:" + std::to_string(textIndex);
+        if (ImGui::InputTextMultiline(
+                label.c_str(),
+                textBuffer.data(),
+                textBuffer.size(),
+                ImVec2(-1.0f, 70.0f))) {
+            if (!uiLoadSystem->UpdateTextInfoContent(
+                    mSelectedExistingElementKey,
+                    textIndex,
+                    textBuffer.data())) {
+                mStatusMessage = "テキスト内容の更新に失敗しました";
+            }
+        }
+    }
+    DrawCodeBoundElementProtection();
+}
+
+void UIDebugPanel::DrawCodeBoundElementProtection()
+{
+    ImGui::Separator();
+    ImGui::BeginDisabled();
+    ImGui::Button("この要素を複製");
+    ImGui::SameLine();
+    ImGui::Button("この要素を削除");
+    ImGui::EndDisabled();
+    ImGui::TextDisabled(
+        "ゲームコードがIDを参照するUIのため、複製と削除は保護されています。");
 }
 
 void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
 {
-    if (!mTextureAssetsScanned) {
-        RefreshTextureAssets();
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
     }
+    mContext.assetCatalog->EnsureScanned();
 
     ImGui::SeparatorText("画像アセット");
     ImGui::TextWrapped("選択中: %s", element.texturePath.empty() ? "なし" : element.texturePath.c_str());
@@ -313,13 +591,14 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
         mAssetFilter.size());
     ImGui::SameLine();
     if (ImGui::Button("更新")) {
-        RefreshTextureAssets();
+        mContext.assetCatalog->Refresh();
     }
 
     ImGui::BeginChild("TextureAssetPicker", ImVec2(0.0f, 180.0f), true);
     const std::string filter = ToLower(mAssetFilter.data());
 
-    for (const std::string& asset : mTextureAssets) {
+    for (const std::string& asset :
+         mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
         if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
             continue;
         }
@@ -350,120 +629,36 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
     }
 }
 
-void UIDebugPanel::RefreshTextureAssets()
+void UIDebugPanel::SaveAllUI(UILoadSystem* uiLoadSystem)
 {
-    mTextureAssets.clear();
-    mTextureAssetsScanned = true;
+    const bool savedExistingUI =
+        uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
+    const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
 
-    const std::filesystem::path assetsRoot = "../assets";
-    const std::filesystem::path textureRoot = assetsRoot / "textures";
-    std::error_code error;
-
-    if (!std::filesystem::is_directory(textureRoot, error)) {
-        mStatusMessage = "assets/texturesが見つかりません";
-        return;
-    }
-
-    for (std::filesystem::recursive_directory_iterator it(textureRoot, error), end;
-         it != end && !error;
-         it.increment(error)) {
-        if (!it->is_regular_file(error)) {
-            continue;
-        }
-
-        const std::string extension = ToLower(it->path().extension().string());
-        if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" &&
-            extension != ".bmp" && extension != ".tga") {
-            continue;
-        }
-
-        const std::filesystem::path relative = std::filesystem::relative(it->path(), assetsRoot, error);
-        if (!error) {
-            mTextureAssets.emplace_back(relative.generic_string());
-        }
-    }
-
-    std::sort(mTextureAssets.begin(), mTextureAssets.end());
-    mStatusMessage = std::to_string(mTextureAssets.size()) + "個の画像を検出しました";
+    mStatusMessage = savedExistingUI && savedCustomUI
+                         ? "すべてのUIを保存しました"
+                         : "一部またはすべてのUI保存に失敗しました";
 }
 
-void UIDebugPanel::DrawTextures(UILoadSystem* uiLoadSystem)
+void UIDebugPanel::ReloadAllUI(UILoadSystem* uiLoadSystem)
 {
-    auto& textureInfos = uiLoadSystem->GetEditableTextureInfos();
-    std::vector<std::string> keys;
-    keys.reserve(textureInfos.size());
+    const bool loadedExistingUI = uiLoadSystem->ReloadUIInfo();
+    const bool loadedCustomUI = uiLoadSystem->LoadCustomUI();
 
-    for (const auto& pair : textureInfos) {
-        keys.emplace_back(pair.first);
-    }
-    std::sort(keys.begin(), keys.end());
-
-    if (ImGui::Button("既存UIの配置を保存")) {
-        mStatusMessage =
-            uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml") ? "ui.yamlへ保存しました" : "保存に失敗しました";
-    }
-
-    for (const std::string& key : keys) {
-        auto& info = textureInfos[key];
-        const std::string treeLabel = GetDisplayName(key) + "##" + key;
-
-        if (ImGui::TreeNode(treeLabel.c_str())) {
-            ImGui::Text("ID: %s", key.c_str());
-            ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::SliderFloat("幅比率", &info.widthRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::SliderFloat("高さ比率", &info.heightRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::TreePop();
+    if (loadedCustomUI) {
+        for (const auto& element : uiLoadSystem->GetCustomElements()) {
+            if (element.type == UILoadSystem::CustomElementType::Image) {
+                mContext.uiRenderer->RegisterCustomUITexture(element.texturePath);
+            }
         }
     }
-}
 
-void UIDebugPanel::DrawTexts(UILoadSystem* uiLoadSystem)
-{
-    auto& textInfos = uiLoadSystem->GetEditableTextInfos();
-    std::vector<std::string> keys;
-    keys.reserve(textInfos.size());
-
-    for (const auto& pair : textInfos) {
-        keys.emplace_back(pair.first);
-    }
-    std::sort(keys.begin(), keys.end());
-
-    if (ImGui::Button("既存UIの配置を保存")) {
-        mStatusMessage =
-            uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml") ? "ui.yamlへ保存しました" : "保存に失敗しました";
-    }
-
-    for (const std::string& key : keys) {
-        auto& info = textInfos[key];
-        const std::string treeLabel = GetDisplayName(key) + "##" + key;
-
-        if (ImGui::TreeNode(treeLabel.c_str())) {
-            ImGui::Text("ID: %s", key.c_str());
-            ImGui::SliderFloat("X比率", &info.xRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::SliderFloat("Y比率", &info.yRatio, 0.0f, 1.0f, "%.4f");
-            ImGui::SliderFloat("文字サイズ比率", &info.scaleRatio, 0.0f, 0.005f, "%.7f");
-            if (key == "state.talkText") {
-                ImGui::SliderFloat(
-                    "ルビサイズ倍率（全会話）",
-                    &info.rubyScaleRatio,
-                    0.2f,
-                    1.0f,
-                    "%.2f");
-                ImGui::SliderFloat(
-                    "漢字とルビの間隔（全会話）",
-                    &info.rubyGapRatio,
-                    -0.5f,
-                    2.0f,
-                    "%.2f");
-            }
-
-            for (const std::string& text : info.texts) {
-                ImGui::BulletText("%s", text.c_str());
-            }
-            ImGui::TreePop();
-        }
-    }
+    mCanvasEditor.ClearSelection();
+    mSelectedElementSource = SelectedElementSource::None;
+    mSelectedExistingElementKey.clear();
+    mStatusMessage = loadedExistingUI && loadedCustomUI
+                         ? "すべてのUIを再読込しました"
+                         : "一部またはすべてのUI再読込に失敗しました";
 }
 
 std::string UIDebugPanel::GetDisplayName(const std::string& key) const
@@ -481,5 +676,5 @@ std::string UIDebugPanel::GetDisplayName(const std::string& key) const
     };
 
     const auto it = displayNames.find(key);
-    return it != displayNames.end() ? it->second : key;
+    return it != displayNames.end() ? it->second : ExtractElementId(key);
 }

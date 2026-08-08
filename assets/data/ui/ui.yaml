@@ -3,252 +3,376 @@ title:
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
+    rotationDegrees: 0
   - id: startTextForGameController
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
-    text: [Xを押してください]
+    text:
+      - Xを押してください
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: startTextForKeyBoard
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.000625, 1.0]
-    text: [Kを押してください]
+    text:
+      - Kを押してください
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 opening:
   - id: bgTexture
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
+    rotationDegrees: 0
   - id: openingText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: ["ある草原のど真ん中\nスライムはママと仲良く暮らしていました。", "ママはいつもお仕事で大忙し\nそれでもスライムを愛しているため一生懸命働いていました。", "ある日、スライムはいつものように\nママのお見送りをしていました。"]
+    text:
+      - "ある草原のど真ん中\nスライムはママと仲良く暮らしていました。"
+      - "ママはいつもお仕事で大忙し\nそれでもスライムを愛しているため一生懸命働いていました。"
+      - "ある日、スライムはいつものように\nママのお見送りをしていました。"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: talkWithMotherText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: ["スライム: ママ、いってらっしゃい！", "ママ: いってきます。\nスライム、いい子にしてるんだよ。", "ママ: !?", "ママ: ううっ...", ママが突然倒れこんでしまいました。, "スライム: どうしたの！？ママ！"]
+    text:
+      - "スライム: ママ、いってらっしゃい！"
+      - "ママ: いってきます。\nスライム、いい子にしてるんだよ。"
+      - "ママ: !?"
+      - "ママ: ううっ..."
+      - ママが突然倒れこんでしまいました。
+      - "スライム: どうしたの！？ママ！"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: talkWithDoctorText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: [スライムは急いでドクターを呼びました。, "ドクター: これは、私にはどうしても治せない\nとてもとても複雑な病気だよ。", "ドクター: きっともう目覚めることはないだろう。", "スライム: ほ、ほんとなの、？", スライムは泣き出してしまいました。, "スライム: どうにか治す方法はないの？", "ドクター: ごめんな、普通の方法じゃ治らないんだ。\nただ...", "スライム: ただ...？", "ドクター: 一つだけ方法はあるんだが、\nこれはとても難しい方法なんだ。", "ドクター: この世界の宇宙になんでも願いを叶えてくれる\n星が存在するという話は聞いたことあるかな？", "スライム: 聞いたことないや、、", "ドクター: そうか、もしその星を全て集めて、\nお母さんの病気が治ることを願うことができれば...", "スライム: じゃあ僕が集めてくるよ！", "ドクター: ダメだダメだ！\nおまえさん、宇宙がどれだけ危険なのか分かっているのか！", "スライム: じゃあドクターはママを助けてくれるの？", "ドクター: ...", "スライム: ママを助けられるのは僕しかいない！", "そういうとスライムはすぐに家を飛び出し、\nロケットに乗り込んで宇宙へと旅立ちました。"]
+    text:
+      - スライムは急いでドクターを呼びました。
+      - "ドクター: これは、私にはどうしても治せない\nとてもとても複雑な病気だよ。"
+      - "ドクター: きっともう目覚めることはないだろう。"
+      - "スライム: ほ、ほんとなの、？"
+      - スライムは泣き出してしまいました。
+      - "スライム: どうにか治す方法はないの？"
+      - "ドクター: ごめんな、普通の方法じゃ治らないんだ。\nただ..."
+      - "スライム: ただ...？"
+      - "ドクター: 一つだけ方法はあるんだが、\nこれはとても難しい方法なんだ。"
+      - "ドクター: この世界の宇宙になんでも願いを叶えてくれる\n星が存在するという話は聞いたことあるかな？"
+      - "スライム: 聞いたことないや、、"
+      - "ドクター: そうか、もしその星を全て集めて、\nお母さんの病気が治ることを願うことができれば..."
+      - "スライム: じゃあ僕が集めてくるよ！"
+      - "ドクター: ダメだダメだ！\nおまえさん、宇宙がどれだけ危険なのか分かっているのか！"
+      - "スライム: じゃあドクターはママを助けてくれるの？"
+      - "ドクター: ..."
+      - "スライム: ママを助けられるのは僕しかいない！"
+      - "そういうとスライムはすぐに家を飛び出し、\nロケットに乗り込んで宇宙へと旅立ちました。"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: skipTextForKeyBoard
     type: text
     posRatio: [0.7872, 0.0102]
     scaleRatio: [0.0003, 1.0]
-    text: ["スキップする: Enter"]
+    text:
+      - "スキップする: Enter"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: skipTextForGameController
     type: text
     posRatio: [0.8312, 0.0102]
     scaleRatio: [0.0003, 1.0]
-    text: ["スキップする: +"]
+    text:
+      - "スキップする: +"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
 gameOver:
   - id: gameOverText
     type: text
     posRatio: [0.5, 0.444]
     scaleRatio: [0.000625, 1.0]
-    text: [ゲームオーバー！]
+    text:
+      - ゲームオーバー！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: restartTextForGameController
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
-    text: ["直前からリスタート: X"]
+    text:
+      - "直前からリスタート: X"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: restartTextForKeyBoard
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
-    text: ["直前からリスタート: K"]
+    text:
+      - "直前からリスタート: K"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 default:
   - id: operationSupportTextForGameController
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
+    text:
+      - +:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: operationSupportTextForKeyBoard
     type: text
-    posRatio: [0.0125, 0.9762]
+    posRatio: [0.0125, 0.97619987]
     scaleRatio: [0.00015, 1.0]
-    text: [ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
+    text:
+      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: operationSupportAssistTextForGameController
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 R:回復]
+    text:
+      - +:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 R:回復
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: operationSupportAssistTextForKeyBoard
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復]
+    text:
+      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: operationSupportHiddenText
     type: text
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド表示]
+    text:
+      - +:操作ガイド表示
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: hpTexture
     type: texture
-    posRatio: [0.01875, 0.01875]
-    scaleRatio: [0.03, 0.03]
+    posRatio: [0.018194478, 0.018749999]
+    scaleRatio: [0.029999996, 0.03]
+    rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.015, 0.0793]
-    scaleRatio: [0.06, 0.06]
+    posRatio: [0.015000003, 0.0793]
+    scaleRatio: [0.05999999, 0.06]
+    rotationDegrees: 0
   - id: talkableTextForGameController
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: ["はなす: X"]
+    text:
+      - "はなす: X"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: talkableTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: ["はなす: K"]
+    text:
+      - "はなす: K"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: remainPartsText
     type: text
-    posRatio: [0.2199, 0.015]
-    scaleRatio: [0.0003125, 1.0]
-    text: ["のこりのパーツ数: "]
+    posRatio: [0.22378886, 0.014999998]
+    scaleRatio: [0.00031249996, 1.0]
+    text:
+      - "のこりのパーツ数: "
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
 state:
   - id: stageClearText
     type: text
     posRatio: [0.5, 0.333]
     scaleRatio: [0.000625, 1.0]
-    text: [Thank You For Playing！]
+    text:
+      - Thank You For Playing！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: recommendReduceTiredTextForGameController
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: [Y連打で疲労回復！]
+    text:
+      - Y連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: recommendReduceTiredTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
-    scaleRatio: [0.0003125, 1.0]
-    text: [J連打で疲労回復！]
+    scaleRatio: [0.00031249996, 1.0]
+    text:
+      - J連打で疲労回復！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: loadingText
     type: text
     posRatio: [0.01875, 0.9222]
     scaleRatio: [0.0003125, 1.0]
-    text: [Loading...]
+    text:
+      - Loading...
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: loadingTexture
     type: texture
     posRatio: [0.01875, 0.8555]
     scaleRatio: [0.0625, 0.0755]
+    rotationDegrees: 0
   - id: talkBgTexture
     type: texture
     posRatio: [0.0375, 0.0555]
     scaleRatio: [0.75, 0.25]
+    rotationDegrees: 0
   - id: talkText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
     rubyScaleRatio: 0.36
     rubyGapRatio: -0.46
+    centerBased: false
+    rotationDegrees: 0
 pauseMenu:
   - id: overlayBg
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
+    rotationDegrees: 0
   - id: panelBg
     type: texture
     posRatio: [0.29, 0.18]
     scaleRatio: [0.42, 0.64]
+    rotationDegrees: 0
   - id: titleText
     type: text
     posRatio: [0.5, 0.275]
     scaleRatio: [0.0003801, 1.0]
-    text: [メニュー]
+    text:
+      - メニュー
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: resumeText
     type: text
     posRatio: [0.5, 0.37]
     scaleRatio: [0.0003072, 1.0]
-    text: [ゲームに戻る]
+    text:
+      - ゲームに戻る
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: controlStyleText
     type: text
     posRatio: [0.5, 0.44]
     scaleRatio: [0.0003072, 1.0]
-    text: ["操作モード: "]
+    text:
+      - "操作モード: "
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: returnBaseText
     type: text
     posRatio: [0.5, 0.51]
     scaleRatio: [0.0003072, 1.0]
-    text: [拠点に戻る]
+    text:
+      - 拠点に戻る
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: feedbackText
     type: text
     posRatio: [0.5, 0.58]
     scaleRatio: [0.0003072, 1.0]
-    text: [感想を書く]
+    text:
+      - 感想を書く
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: quitText
     type: text
     posRatio: [0.5, 0.65]
     scaleRatio: [0.0003072, 1.0]
-    text: [ゲーム終了]
+    text:
+      - ゲーム終了
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: operationTextForKeyBoard
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
-    text: [↑↓:選択 Enter:決定 ESC:閉じる]
+    text:
+      - ↑↓:選択 Enter:決定 ESC:閉じる
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: operationTextForGameController
     type: text
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
-    text: [↑↓:選択 A:決定 -:閉じる]
+    text:
+      - ↑↓:選択 A:決定 -:閉じる
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0

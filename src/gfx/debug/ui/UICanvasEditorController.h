@@ -9,7 +9,7 @@
 #include <glm/glm.hpp>
 #include <optional>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 class UICanvasEditorController {
@@ -20,6 +20,13 @@ public:
         Scale,
     };
 
+    enum class SelectionSource {
+        None,
+        Custom,
+        ExistingTexture,
+        ExistingText,
+    };
+
     explicit UICanvasEditorController(DebugEditorContext& context);
 
     void Update(UILoadSystem* uiLoadSystem, std::string& statusMessage);
@@ -27,10 +34,20 @@ public:
     void SetSingleSelection(std::size_t index);
     void ToggleSelection(std::size_t index);
     void SelectFromList(std::size_t index, bool additive);
+    void SelectExistingTextureFromList(
+        const std::string& key,
+        bool additive);
+    void SelectExistingTextFromList(
+        const std::string& key,
+        bool additive);
     void ClearSelection();
 
     bool IsSelected(std::size_t index) const;
+    bool IsExistingTextureSelected(const std::string& key) const;
+    bool IsExistingTextSelected(const std::string& key) const;
     int GetPrimarySelectedIndex() const;
+    SelectionSource GetPrimarySelectionSource() const;
+    const std::string& GetPrimaryExistingKey() const;
     std::size_t GetSelectedCount() const;
 
     void SetOperation(Operation operation);
@@ -47,21 +64,39 @@ private:
         float rotationDegrees = 0.0f;
     };
 
+    struct ElementReference {
+        SelectionSource source = SelectionSource::None;
+        std::size_t customIndex = 0;
+        std::string existingKey;
+
+        bool operator==(const ElementReference& other) const = default;
+    };
+
+    struct UndoState {
+        std::vector<UILoadSystem::CustomElement> customElements;
+        std::unordered_map<std::string, UILoadSystem::TextureInfo> textureInfos;
+        std::unordered_map<std::string, UILoadSystem::TextInfo> textInfos;
+    };
+
     void ValidateSelection(const UILoadSystem* uiLoadSystem);
     void HandleShortcuts(UILoadSystem* uiLoadSystem, std::string& statusMessage);
     void UpdateCanvasSelection(const UILoadSystem* uiLoadSystem);
     void DrawSelectionOverlay(const UILoadSystem* uiLoadSystem) const;
     void DrawGizmo(UILoadSystem* uiLoadSystem, std::string& statusMessage);
 
-    bool GetElementTransform(
-        const UILoadSystem::CustomElement& element,
+    void SetSingleSelection(const ElementReference& element);
+    void ToggleSelection(const ElementReference& element);
+    bool IsSelected(const ElementReference& element) const;
+    bool ResolveElementTransform(
+        const UILoadSystem* uiLoadSystem,
+        const ElementReference& element,
         ElementTransform& outTransform) const;
     bool GetSelectionBounds(
         const UILoadSystem* uiLoadSystem,
         glm::vec2& outMin,
         glm::vec2& outMax) const;
 
-    std::vector<std::size_t> PickElementsAt(
+    std::vector<ElementReference> PickElementsAt(
         const UILoadSystem* uiLoadSystem,
         const glm::vec2& framebufferPoint) const;
     bool IsPointInsideElement(
@@ -86,11 +121,11 @@ private:
 private:
     DebugEditorContext& mContext;
 
-    std::unordered_set<std::size_t> mSelectedIndices;
-    int mPrimarySelectedIndex = -1;
+    std::vector<ElementReference> mSelectedElements;
+    std::optional<ElementReference> mPrimarySelection;
     Operation mOperation = Operation::Translate;
 
-    std::vector<std::vector<UILoadSystem::CustomElement>> mUndoStack;
+    std::vector<UndoState> mUndoStack;
 
     bool mIsBoxMouseDown = false;
     bool mIsBoxSelecting = false;
@@ -103,5 +138,5 @@ private:
     bool mIsUsingGizmo = false;
     glm::mat4 mEditingMatrix = glm::mat4(1.0f);
     glm::mat4 mTransformStartSelectionMatrix = glm::mat4(1.0f);
-    std::vector<UILoadSystem::CustomElement> mTransformStartElements;
+    UndoState mTransformStartState;
 };

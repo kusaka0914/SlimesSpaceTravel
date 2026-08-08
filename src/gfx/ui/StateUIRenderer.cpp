@@ -214,7 +214,7 @@ void StateUIRenderer::DrawActiveTutorialVideo(
 
 void StateUIRenderer::DrawStageClear()
 {
-    mRenderer->DrawSceneText("state", "stageClearText", true, 0);
+    mRenderer->DrawSceneText("state", "stageClearText", 0);
 }
 
 float StateUIRenderer::CalculateAlpha() const
@@ -233,6 +233,6 @@ void StateUIRenderer::DrawFadeInBg(float alpha)
 
 void StateUIRenderer::DrawLoading()
 {
-    mRenderer->DrawSceneText("state", "loadingText", false, 0);
+    mRenderer->DrawSceneText("state", "loadingText", 0);
     mRenderer->DrawSceneTexture("state", "loadingTexture", "slime");
 }

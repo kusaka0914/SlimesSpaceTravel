@@ -1,8 +1,10 @@
 #include "UILoadSystem.h"
 #include "system/text/JapaneseRubyGenerator.h"
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <set>
 
 UILoadSystem::UILoadSystem()
 {
@@ -11,8 +13,29 @@ UILoadSystem::UILoadSystem()
 
 void UILoadSystem::Initialize()
 {
-    LoadUIInfo("../assets/data/ui/ui.yaml");
+    ReloadUIInfo();
     LoadCustomUI();
+}
+
+bool UILoadSystem::ReloadUIInfo(const std::string& path)
+{
+    const auto previousTextureInfo = mTextureInfo;
+    const auto previousTextInfo = mTextInfo;
+
+    mTextureInfo.clear();
+    mTextInfo.clear();
+
+    try {
+        LoadUIInfo(path);
+    } catch (const YAML::Exception& exception) {
+        mTextureInfo = previousTextureInfo;
+        mTextInfo = previousTextInfo;
+        std::cerr << "Failed to load UI yaml: " << path << std::endl;
+        std::cerr << exception.what() << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 void UILoadSystem::LoadUIInfo(const std::string& path)
@@ -46,6 +69,8 @@ void UILoadSystem::LoadTextureInfo(const std::string& screenName, YAML::Node& no
     info.height = node["scale"][1] ? node["scale"][1].as<float>() : 0.0f;
     info.widthRatio = node["scaleRatio"][0] ? node["scaleRatio"][0].as<float>() : 0.0f;
     info.heightRatio = node["scaleRatio"][1] ? node["scaleRatio"][1].as<float>() : 0.0f;
+    info.rotationDegrees =
+        node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
 
     std::string textureId = screenName + "." + node["id"].as<std::string>();
     mTextureInfo[textureId] = info;
@@ -64,6 +89,12 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
         node["rubyScaleRatio"] ? node["rubyScaleRatio"].as<float>() : info.rubyScaleRatio;
     info.rubyGapRatio =
         node["rubyGapRatio"] ? node["rubyGapRatio"].as<float>() : info.rubyGapRatio;
+    info.centerBased =
+        node["centerBased"]
+            ? node["centerBased"].as<bool>()
+            : std::abs(info.xRatio - 0.5f) < 0.0001f;
+    info.rotationDegrees =
+        node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
     if (node["text"]) {
         for (auto text : node["text"]) {
             info.texts.emplace_back(text.as<std::string>());
@@ -118,6 +149,7 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
                 node["posRatio"][1] = info.yRatio;
                 node["scaleRatio"][0] = info.widthRatio;
                 node["scaleRatio"][1] = info.heightRatio;
+                node["rotationDegrees"] = info.rotationDegrees;
             } else if (type == "text") {
                 auto it = mTextInfo.find(mapId);
                 if (it == mTextInfo.end()) {
@@ -131,6 +163,16 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
                 node["scaleRatio"][0] = info.scaleRatio;
                 node["rubyScaleRatio"] = info.rubyScaleRatio;
                 node["rubyGapRatio"] = info.rubyGapRatio;
+                node["centerBased"] = info.centerBased;
+                node["rotationDegrees"] = info.rotationDegrees;
+
+                if (!info.texts.empty()) {
+                    YAML::Node texts(YAML::NodeType::Sequence);
+                    for (const std::string& text : info.texts) {
+                        texts.push_back(text);
+                    }
+                    node["text"] = texts;
+                }
 
                 if (!node["scaleRatio"][1]) {
                     node["scaleRatio"][1] = 1.0f;
@@ -149,6 +191,43 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
     return true;
 }
 
+bool UILoadSystem::UpdateTextInfoContent(
+    const std::string& mapId,
+    std::size_t textIndex,
+    const std::string& text)
+{
+    const auto textInfoIt = mTextInfo.find(mapId);
+    if (textInfoIt == mTextInfo.end() ||
+        textIndex >= textInfoIt->second.texts.size()) {
+        return false;
+    }
+
+    TextInfo& textInfo = textInfoIt->second;
+    textInfo.texts[textIndex] = text;
+    textInfo.rubySegments.resize(textInfo.texts.size());
+
+    std::string errorMessage;
+    JapaneseRubyGenerator::Generate(
+        text,
+        textInfo.rubySegments[textIndex],
+        errorMessage);
+    return true;
+}
+
+std::string UILoadSystem::FindTextInfoKey(const TextInfo* textInfo) const
+{
+    if (!textInfo) {
+        return std::string();
+    }
+
+    for (const auto& [key, candidate] : mTextInfo) {
+        if (&candidate == textInfo) {
+            return key;
+        }
+    }
+    return std::string();
+}
+
 std::size_t UILoadSystem::AddCustomElement(
     CustomElementType type,
     const std::string& screen,
@@ -158,6 +237,8 @@ std::size_t UILoadSystem::AddCustomElement(
     element.type = type;
     element.screen = screen.empty() ? "custom" : screen;
     element.id = MakeUniqueCustomElementId(element.screen, requestedId.empty() ? "element" : requestedId);
+    element.displayName = element.id;
+    mCustomScreenDisplayNames.try_emplace(element.screen, element.screen);
 
     if (type == CustomElementType::Image || type == CustomElementType::Panel) {
         element.centerBased = false;
@@ -180,6 +261,11 @@ std::optional<std::size_t> UILoadSystem::DuplicateCustomElement(std::size_t inde
     CustomElement duplicatedElement = mCustomElements[index];
     duplicatedElement.id =
         MakeUniqueCustomElementId(duplicatedElement.screen, duplicatedElement.id + "_copy");
+    duplicatedElement.displayName =
+        (duplicatedElement.displayName.empty()
+             ? mCustomElements[index].id
+             : duplicatedElement.displayName) +
+        " コピー";
 
     constexpr float DuplicateOffsetRatio = 0.02f;
     duplicatedElement.xRatio =
@@ -211,6 +297,7 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
         root = YAML::LoadFile(path);
     } catch (const YAML::BadFile&) {
         mCustomElements.clear();
+        mCustomScreenDisplayNames.clear();
         return true;
     } catch (const YAML::Exception& e) {
         std::cerr << "Failed to load custom UI yaml: " << path << std::endl;
@@ -219,8 +306,27 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
     }
 
     mCustomElements.clear();
+    mCustomScreenDisplayNames.clear();
     mCustomElementVisibilityOverrides.clear();
     mCustomScreenVisibilityOverrides.clear();
+
+    const YAML::Node screens = root["screens"];
+    if (screens && screens.IsMap()) {
+        for (const auto& screenEntry : screens) {
+            const std::string screenId =
+                screenEntry.first.as<std::string>();
+            const YAML::Node screenNode = screenEntry.second;
+
+            std::string displayName = screenId;
+            if (screenNode.IsScalar()) {
+                displayName = screenNode.as<std::string>();
+            } else if (screenNode["name"]) {
+                displayName = screenNode["name"].as<std::string>();
+            }
+            mCustomScreenDisplayNames[screenId] =
+                displayName.empty() ? screenId : displayName;
+        }
+    }
 
     const YAML::Node elements = root["elements"];
     if (!elements || !elements.IsSequence()) {
@@ -239,6 +345,11 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
         CustomElement element;
         element.screen = node["screen"] ? node["screen"].as<std::string>() : "custom";
         element.id = node["id"].as<std::string>();
+        element.displayName =
+            node["name"] ? node["name"].as<std::string>() : element.id;
+        mCustomScreenDisplayNames.try_emplace(
+            element.screen,
+            element.screen);
         element.type =
             CustomElementTypeFromString(node["type"] ? node["type"].as<std::string>() : std::string("text"));
         element.visibleByDefault = node["visibleByDefault"] ? node["visibleByDefault"].as<bool>() : false;
@@ -309,12 +420,26 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
 bool UILoadSystem::SaveCustomUI(const std::string& path) const
 {
     YAML::Node root;
+    YAML::Node screens(YAML::NodeType::Map);
     YAML::Node elements(YAML::NodeType::Sequence);
+
+    std::set<std::string> usedScreens;
+    for (const CustomElement& element : mCustomElements) {
+        usedScreens.insert(element.screen);
+    }
+    for (const std::string& screen : usedScreens) {
+        screens[screen]["name"] =
+            ResolveCustomScreenDisplayName(screen);
+    }
 
     for (const CustomElement& element : mCustomElements) {
         YAML::Node node;
         node["screen"] = element.screen;
         node["id"] = element.id;
+        node["name"] =
+            element.displayName.empty()
+                ? element.id
+                : element.displayName;
         node["type"] = CustomElementTypeToString(element.type);
         node["visibleByDefault"] = element.visibleByDefault;
         node["centerBased"] = element.centerBased;
@@ -348,6 +473,7 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
     }
 
     root["coordinateBasis"] = "screenWidth";
+    root["screens"] = screens;
     root["elements"] = elements;
 
     std::ofstream file(path);
@@ -358,6 +484,30 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
 
     file << root;
     return true;
+}
+
+std::string UILoadSystem::ResolveCustomScreenDisplayName(
+    const std::string& screen) const
+{
+    const auto found = mCustomScreenDisplayNames.find(screen);
+    if (found == mCustomScreenDisplayNames.end() ||
+        found->second.empty()) {
+        return screen;
+    }
+
+    return found->second;
+}
+
+void UILoadSystem::SetCustomScreenDisplayName(
+    const std::string& screen,
+    const std::string& displayName)
+{
+    if (screen.empty()) {
+        return;
+    }
+
+    mCustomScreenDisplayNames[screen] =
+        displayName.empty() ? screen : displayName;
 }
 
 void UILoadSystem::SetCustomElementVisible(

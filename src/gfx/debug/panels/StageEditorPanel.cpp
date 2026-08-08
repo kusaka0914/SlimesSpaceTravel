@@ -5,6 +5,7 @@
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
 #include "gfx/debug/panels/StagePlacementPanel.h"
 #include "gfx/debug/panels/StagePlanetPanel.h"
+#include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "imgui.h"
@@ -96,49 +97,98 @@ StageEditorPanel::StageEditorPanel(DebugEditorContext& context, StageAddActorPan
 
 void StageEditorPanel::Draw()
 {
-    DrawStageSwitcher();
-    ImGui::Separator();
+    DrawWorkspaceWindows();
+}
 
-    const char* menus[] = {
+void StageEditorPanel::DrawTopBar()
+{
+    DrawStageSwitcher();
+    DrawToolbar();
+}
+
+void StageEditorPanel::DrawToolbar()
+{
+    constexpr const char* menuLabels[] = {
         "クリア状況",
         "追加",
-        "一覧",
         "選択中",
         "プレイヤー",
         "惑星設定",
         "削除",
     };
+    constexpr int menuValues[] = {0, 1, 3, 4, 5, 6};
 
-    ImGui::BeginChild("StageEditorLeft", ImVec2(160, 0), true);
-
-    for (int i = 0; i < IM_ARRAYSIZE(menus); ++i) {
-        if (ImGui::Selectable(menus[i], mSelectedMenu == i)) {
-            mSelectedMenu = i;
+    ImGui::Separator();
+    for (int menuIndex = 0; menuIndex < IM_ARRAYSIZE(menuLabels); ++menuIndex) {
+        if (menuIndex > 0) {
+            ImGui::SameLine();
+        }
+        if (ImGui::Selectable(
+                menuLabels[menuIndex],
+                mSelectedMenu == menuValues[menuIndex],
+                0,
+                ImVec2(92.0f, 0.0f))) {
+            mSelectedMenu = menuValues[menuIndex];
         }
     }
 
-    ImGui::Separator();
-
-    if (ImGui::Button("保存する", ImVec2(-1, 0))) {
+    ImGui::SameLine();
+    if (ImGui::Button("ステージを保存")) {
         mPlanetPanel.Save();
         mPlacementPanel.Save();
     }
+}
 
-    ImGui::EndChild();
+void StageEditorPanel::DrawWorkspaceWindows()
+{
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const ImVec2 workPosition = viewport->WorkPos;
+    const ImVec2 workSize = viewport->WorkSize;
+    const float workspaceTop =
+        workPosition.y + DebugEditorLayout::StageTopBarHeight;
 
-    ImGui::SameLine();
+    const float hierarchyWidth =
+        DebugEditorLayout::CalculateHierarchyWidth(workSize.x);
+    const float inspectorWidth =
+        DebugEditorLayout::CalculateToolPanelWidth(workSize.x);
+    const float workspaceHeight =
+        std::max(120.0f, workPosition.y + workSize.y - workspaceTop);
 
-    ImGui::BeginChild("StageEditorRight", ImVec2(0, 0), true);
+    constexpr ImGuiWindowFlags panelFlags =
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoSavedSettings;
 
+    ImGui::SetNextWindowPos(
+        ImVec2(workPosition.x, workspaceTop),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(hierarchyWidth, workspaceHeight),
+        ImGuiCond_Always);
+    ImGui::Begin("オブジェクト一覧###StageHierarchy", nullptr, panelFlags);
+    mPlacementPanel.DrawObjectList();
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(
+        ImVec2(workPosition.x + workSize.x - inspectorWidth, workspaceTop),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(inspectorWidth, workspaceHeight),
+        ImGuiCond_Always);
+    ImGui::Begin("インスペクター###StageInspector", nullptr, panelFlags);
+    DrawInspector();
+    ImGui::End();
+}
+
+void StageEditorPanel::DrawInspector()
+{
     switch (mSelectedMenu) {
     case 0:
         DrawStageClearProgressEditor();
         break;
     case 1:
         mAddActorPanel.Draw();
-        break;
-    case 2:
-        mPlacementPanel.DrawObjectList();
         break;
     case 3:
         mPlacementPanel.Draw();
@@ -153,10 +203,9 @@ void StageEditorPanel::Draw()
         mDeleteActorPanel.Draw();
         break;
     default:
+        mPlacementPanel.Draw();
         break;
     }
-
-    ImGui::EndChild();
 }
 
 void StageEditorPanel::DrawStageClearProgressEditor()

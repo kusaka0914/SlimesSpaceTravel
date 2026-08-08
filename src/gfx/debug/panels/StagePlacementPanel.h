@@ -55,7 +55,6 @@ private:
     void DrawNPCModelPicker(class NPC* npc, const std::string& sequenceName, std::size_t listIndex);
     void DrawBoatModelPicker(class Boat* boat, const std::string& sequenceName, std::size_t listIndex);
     void DrawTextureOverrideEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
-    void RefreshTextureAssets();
 
     void SaveActorsYaml(YAML::Node& config, const ActorGroup& group);
     void SaveActorCommonYaml(YAML::Node& config, const std::string& sequenceName, Actor* actor);
@@ -75,10 +74,8 @@ private:
     std::array<char, 128> mPlacementModelAssetFilter = {};
     std::array<char, 128> mNPCModelAssetFilter = {};
     std::array<char, 128> mBoatModelAssetFilter = {};
-    std::vector<std::string> mTextureAssets;
     std::string mTextureAssetStatus;
     std::string mRubyGenerationStatus;
     std::string mPlatformTypeChangeStatus;
     std::string mSurfaceAlignmentStatus;
-    bool mTextureAssetsScanned = false;
 };

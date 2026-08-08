@@ -105,24 +105,94 @@ tutorials:
       - id: air_attack_types
         text: 空中の敵を攻撃する時は空中弱攻撃と空中回避攻撃を使います。
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.0435
+          yRatio: 0.2023
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: false
       - id: air_dodge_attack
         text: "空中回避攻撃は、空中で回避して敵にぶつかることで\n自動で攻撃することです。"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: air_weak_attack
         text: "そして空中弱攻撃は最大3回しか使えませんが、\n空中回避攻撃を当てると再使用できます。"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: summary_air_attack
         text: "つまり、空中弱攻撃→空中回避攻撃→空中弱攻撃のように繰り返す\nことで絶え間なく攻撃でき、大ダメージを与えられます。"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: air_strong_attack
         text: "そして、打ち上げ解除直前になると敵が白く点滅します！\nそのタイミングで空中強攻撃を放ちましょう！"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: recover_from_stun
         text: "空中強攻撃は超強力ですが、使用後は疲労して動けなくなります。\n弱攻撃を連打することで早く回復できるので連打しましょう。"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: break_summary
         text: "ガードを破壊し打ち上げ、空中弱攻撃と空中回避攻撃を繰り返す。\n点滅したら空中強攻撃の流れを覚えて敵を倒していきましょう！"
         advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
   - id: jewel_usage
     name: ジュエルの使い方
     repeat: oncePerSession
@@ -177,7 +247,7 @@ tutorials:
         text: "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"
         advance: confirm
   - id: just_dodge
-    name: ジャスト回避
+    name: カウンター突進
     repeat: oncePerSession
     textXRatio: 0.065
     textYRatio: 0.14
@@ -193,14 +263,44 @@ tutorials:
         text: "ボスは体力が多いため、倒すのに苦労すると思います！\nということで新技を伝授します！"
         advance: confirm
       - id: timing
-        text: "敵が攻撃した瞬間に、敵に向かって回避をすることで\nジャスト回避をすることができます！"
+        text: "敵が攻撃した瞬間に、敵に向かって回避をすることで\nカウンター突進をすることができます！"
         advance: confirm
+        video:
+          asset: videos/battle_counter_tutorial.mp4
+          xRatio: 0.0435
+          yRatio: 0.2023
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: false
       - id: reward
-        text: "ジャスト回避が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！"
+        text: "カウンター突進が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！"
         advance: confirm
+        video:
+          asset: videos/battle_counter_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: advice
         text: "回復したいけどジュエルが足りない、\nそんな窮地に立たされた時に狙ってみてください！"
         advance: confirm
+        video:
+          asset: videos/battle_counter_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: finish
         text: さあ、ボスを倒しに行きましょう！
         advance: confirm

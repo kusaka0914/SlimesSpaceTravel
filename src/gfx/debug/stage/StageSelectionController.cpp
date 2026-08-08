@@ -272,9 +272,20 @@ void StageSelectionController::UpdateBoxSelection()
 
     const ImVec2 mousePos(viewport->Pos.x + static_cast<float>(mouseX), viewport->Pos.y + static_cast<float>(mouseY));
 
+    const DebugEditorGameViewport& gameViewport = mContext.gameViewport;
+    const bool isInsideGameViewport =
+        !gameViewport.IsValid() ||
+        (mousePos.x >= gameViewport.x &&
+         mousePos.x <= gameViewport.x + gameViewport.width &&
+         mousePos.y >= gameViewport.y &&
+         mousePos.y <= gameViewport.y + gameViewport.height);
+
     const bool leftPressed = glfwGetMouseButton(mContext.game->GetWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
     if (leftPressed && !mIsBoxSelectMouseDown) {
+        if (!isInsideGameViewport) {
+            return;
+        }
         mIsBoxSelectMouseDown = true;
         mIsBoxSelecting = false;
         mBoxSelectMoved = false;
@@ -407,19 +418,54 @@ bool StageSelectionController::CreateMousePickRay(glm::vec3& outRayFrom, glm::ve
         return false;
     }
 
-    int windowWidth = 0;
-    int windowHeight = 0;
-    glfwGetWindowSize(mContext.game->GetWindow(), &windowWidth, &windowHeight);
-
-    if (windowWidth <= 0 || windowHeight <= 0) {
-        return false;
-    }
-
     double mouseX = 0.0;
     double mouseY = 0.0;
     glfwGetCursorPos(mContext.game->GetWindow(), &mouseX, &mouseY);
 
-    if (mouseX < 0.0 || mouseX > windowWidth || mouseY < 0.0 || mouseY > windowHeight) {
+    ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    float renderWidth = 0.0f;
+    float renderHeight = 0.0f;
+    float renderMouseX = 0.0f;
+    float renderMouseY = 0.0f;
+
+    if (mContext.gameViewport.IsValid()) {
+        const float screenMouseX =
+            mainViewport->Pos.x + static_cast<float>(mouseX);
+        const float screenMouseY =
+            mainViewport->Pos.y + static_cast<float>(mouseY);
+        const DebugEditorGameViewport& editorViewport =
+            mContext.gameViewport;
+        if (screenMouseX < editorViewport.x ||
+            screenMouseX > editorViewport.x + editorViewport.width ||
+            screenMouseY < editorViewport.y ||
+            screenMouseY > editorViewport.y + editorViewport.height) {
+            return false;
+        }
+
+        renderWidth = static_cast<float>(editorViewport.sourceWidth);
+        renderHeight = static_cast<float>(editorViewport.sourceHeight);
+        renderMouseX =
+            (screenMouseX - editorViewport.x) /
+            editorViewport.width * renderWidth;
+        renderMouseY =
+            (screenMouseY - editorViewport.y) /
+            editorViewport.height * renderHeight;
+    } else {
+        int windowWidth = 0;
+        int windowHeight = 0;
+        glfwGetWindowSize(
+            mContext.game->GetWindow(),
+            &windowWidth,
+            &windowHeight);
+        renderWidth = static_cast<float>(windowWidth);
+        renderHeight = static_cast<float>(windowHeight);
+        renderMouseX = static_cast<float>(mouseX);
+        renderMouseY = static_cast<float>(mouseY);
+    }
+
+    if (renderWidth <= 0.0f || renderHeight <= 0.0f ||
+        renderMouseX < 0.0f || renderMouseX > renderWidth ||
+        renderMouseY < 0.0f || renderMouseY > renderHeight) {
         return false;
     }
 
@@ -429,17 +475,17 @@ bool StageSelectionController::CreateMousePickRay(glm::vec3& outRayFrom, glm::ve
     }
 
     int viewIndex = 0;
-    float viewportHeight = static_cast<float>(windowHeight);
-    float localMouseY = static_cast<float>(mouseY);
-    float fovDeg = 60.0f;
+    float viewportHeight = renderHeight;
+    float localMouseY = renderMouseY;
+    float fovDeg =
+        mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
 
     if (mContext.game->GetIsPlayer2Joined() && views.size() >= 2) {
-        viewportHeight = static_cast<float>(windowHeight) * 0.5f;
-        fovDeg = 45.0f;
+        viewportHeight = renderHeight * 0.5f;
 
-        if (mouseY >= viewportHeight) {
+        if (renderMouseY >= viewportHeight) {
             viewIndex = 1;
-            localMouseY = static_cast<float>(mouseY) - viewportHeight;
+            localMouseY = renderMouseY - viewportHeight;
         }
     }
 
@@ -447,10 +493,10 @@ bool StageSelectionController::CreateMousePickRay(glm::vec3& outRayFrom, glm::ve
         return false;
     }
 
-    const float ndcX = static_cast<float>(2.0 * mouseX / windowWidth - 1.0);
+    const float ndcX = 2.0f * renderMouseX / renderWidth - 1.0f;
     const float ndcY = 1.0f - 2.0f * localMouseY / viewportHeight;
 
-    const float aspect = static_cast<float>(windowWidth) / viewportHeight;
+    const float aspect = renderWidth / viewportHeight;
 
     const glm::mat4 view = views[viewIndex];
     const glm::mat4 proj = glm::perspective(glm::radians(fovDeg), aspect, 0.1f, 100.0f);
@@ -484,11 +530,30 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
         return false;
     }
 
-    int windowWidth = 0;
-    int windowHeight = 0;
-    glfwGetWindowSize(mContext.game->GetWindow(), &windowWidth, &windowHeight);
+    float screenWidth = 0.0f;
+    float screenHeight = 0.0f;
+    float screenX = 0.0f;
+    float screenY = 0.0f;
+    if (mContext.gameViewport.IsValid()) {
+        screenWidth = mContext.gameViewport.width;
+        screenHeight = mContext.gameViewport.height;
+        screenX = mContext.gameViewport.x;
+        screenY = mContext.gameViewport.y;
+    } else {
+        int windowWidth = 0;
+        int windowHeight = 0;
+        glfwGetWindowSize(
+            mContext.game->GetWindow(),
+            &windowWidth,
+            &windowHeight);
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        screenWidth = static_cast<float>(windowWidth);
+        screenHeight = static_cast<float>(windowHeight);
+        screenX = viewport->Pos.x;
+        screenY = viewport->Pos.y;
+    }
 
-    if (windowWidth <= 0 || windowHeight <= 0) {
+    if (screenWidth <= 0.0f || screenHeight <= 0.0f) {
         return false;
     }
 
@@ -500,9 +565,15 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const glm::mat4 view = views[0];
 
-    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+    const float aspect = screenWidth / screenHeight;
 
-    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+    const float fieldOfViewDegrees =
+        mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
+    const glm::mat4 projection = glm::perspective(
+        glm::radians(fieldOfViewDegrees),
+        aspect,
+        0.1f,
+        100.0f);
 
     const glm::vec4 clip = projection * view * glm::vec4(worldPos, 1.0f);
 
@@ -516,10 +587,8 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
         return false;
     }
 
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-    outScreenPos.x = viewport->Pos.x + (ndc.x * 0.5f + 0.5f) * static_cast<float>(windowWidth);
-    outScreenPos.y = viewport->Pos.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * static_cast<float>(windowHeight);
+    outScreenPos.x = screenX + (ndc.x * 0.5f + 0.5f) * screenWidth;
+    outScreenPos.y = screenY + (1.0f - (ndc.y * 0.5f + 0.5f)) * screenHeight;
 
     return true;
 }

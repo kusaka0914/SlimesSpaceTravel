@@ -14,7 +14,7 @@ SceneUIRenderer::SceneUIRenderer(Game* game, UIRenderer* renderer)
 void SceneUIRenderer::DrawTitle()
 {
     mRenderer->DrawSceneTexture("title", "bgTexture", "titleBg");
-    mRenderer->DrawTextDependsOnGameController("title", "startText", true);
+    mRenderer->DrawTextDependsOnGameController("title", "startText");
 }
 
 void SceneUIRenderer::DrawOpening()
@@ -32,14 +32,14 @@ void SceneUIRenderer::DrawOpening()
 
 void SceneUIRenderer::DrawSkipUI()
 {
-    mRenderer->DrawTextDependsOnGameController("opening", "skipText", false);
+    mRenderer->DrawTextDependsOnGameController("opening", "skipText");
 }
 
 void SceneUIRenderer::DrawGameOver()
 {
     mRenderer->DrawBG(0.0f, 0.0f, mRenderer->GetFbWidth(), mRenderer->GetFbHeight(), {0.0f, 0.0f, 0.0f, 0.5f});
-    mRenderer->DrawSceneText("gameOver", "gameOverText", true, 0);
-    mRenderer->DrawTextDependsOnGameController("gameOver", "restartText", true);
+    mRenderer->DrawSceneText("gameOver", "gameOverText", 0);
+    mRenderer->DrawTextDependsOnGameController("gameOver", "restartText");
 }
 
 void SceneUIRenderer::DrawOpeningIntro()

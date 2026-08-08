@@ -23,9 +23,23 @@ class PauseMenuRenderer;
 
 class UIRenderer : public Renderer {
 public:
+    enum class RenderedUIElementSource {
+        Custom,
+        CodeBoundTexture,
+        CodeBoundText,
+    };
+
     struct CustomElementScreenTransform {
         glm::vec2 center = glm::vec2(0.0f);
         glm::vec2 size = glm::vec2(0.0f);
+    };
+
+    struct RenderedUIElement {
+        RenderedUIElementSource source = RenderedUIElementSource::Custom;
+        std::string screen;
+        std::string id;
+        CustomElementScreenTransform transform;
+        float rotationDegrees = 0.0f;
     };
 
     struct TextEffect {
@@ -40,7 +54,11 @@ public:
     UIRenderer(Game* game);
     ~UIRenderer();
 
-    void Draw();
+    void DrawGameContent();
+    void DrawDebugEditor(
+        GLuint gameViewTexture,
+        int gameViewWidth,
+        int gameViewHeight);
     void DrawSkyBox();
 
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
@@ -58,14 +76,35 @@ public:
     bool CalculateCustomElementScreenTransform(
         const UILoadSystem::CustomElement& element,
         CustomElementScreenTransform& outTransform) const;
+    bool CalculateTextureInfoScreenTransform(
+        const UILoadSystem::TextureInfo& textureInfo,
+        CustomElementScreenTransform& outTransform) const;
+    bool CalculateTextInfoScreenTransform(
+        const UILoadSystem::TextInfo& textInfo,
+        CustomElementScreenTransform& outTransform) const;
+    const std::vector<RenderedUIElement>& GetRenderedUIElements() const
+    {
+        return mRenderedUIElements;
+    }
 
-    void DrawSceneText(const std::string& sceneName, const std::string& UIName, bool isCenterBase, int index,
+    void DrawTextForElement(
+        const std::string& screen,
+        const std::string& id,
+        float x,
+        float y,
+        float scale,
+        const std::string& message,
+        bool centerBased,
+        glm::vec4 color = {255, 255, 255, 255},
+        float rotationDegrees = 0.0f);
+
+    void DrawSceneText(const std::string& sceneName, const std::string& UIName, int index,
                        glm::vec4 color = {255, 255, 255, 255});
     bool DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName);
-    void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName, bool isCenterBase,
+    void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
                                          float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
-                                      bool isCenterBase, float screenTopY, float uiScale);
+                                      float screenTopY, float uiScale);
     bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
 
@@ -111,6 +150,22 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
+    void RecordRenderedUIElement(
+        RenderedUIElementSource source,
+        const std::string& screen,
+        const std::string& id,
+        const glm::vec2& center,
+        const glm::vec2& size,
+        float rotationDegrees);
+    void RecordRenderedTextElement(
+        const std::string& screen,
+        const std::string& id,
+        float x,
+        float y,
+        float scale,
+        const std::string& message,
+        bool centerBased,
+        float rotationDegrees);
     static std::string GetCustomTextureName(const std::string& assetRelativePath);
 
     void EndImGuiFrame();
@@ -129,7 +184,9 @@ private:
         float outlineWidth = 0.0f);
     void DrawRubyText(float x, float y, float scale, float rubyScaleRatio,
                       float rubyGapRatio,
-                      const std::vector<RubyTextSegment>& segments, glm::vec4 color);
+                      const std::vector<RubyTextSegment>& segments, glm::vec4 color,
+                      bool centerBased = false,
+                      float rotationDegrees = 0.0f);
 
 private:
     std::unique_ptr<UIShader> mUIShaderUnique;
@@ -144,6 +201,8 @@ private:
     std::unique_ptr<HudRenderer> mHudRenderer;
     std::unique_ptr<StateUIRenderer> mStateUIRenderer;
     std::unique_ptr<PauseMenuRenderer> mPauseMenuRenderer;
+
+    std::vector<RenderedUIElement> mRenderedUIElements;
 
     int mFbWidth;
     int mFbHeight;

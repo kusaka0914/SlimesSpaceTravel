@@ -300,24 +300,52 @@ void StageGizmoController::DrawGizmo()
         return;
     }
 
-    int windowWidth = 0;
-    int windowHeight = 0;
-    glfwGetWindowSize(mContext.game->GetWindow(), &windowWidth, &windowHeight);
+    float viewportX = 0.0f;
+    float viewportY = 0.0f;
+    float viewportWidth = 0.0f;
+    float viewportHeight = 0.0f;
+    if (mContext.gameViewport.IsValid()) {
+        viewportX = mContext.gameViewport.x;
+        viewportY = mContext.gameViewport.y;
+        viewportWidth = mContext.gameViewport.width;
+        viewportHeight = mContext.gameViewport.height;
+    } else {
+        int windowWidth = 0;
+        int windowHeight = 0;
+        glfwGetWindowSize(
+            mContext.game->GetWindow(),
+            &windowWidth,
+            &windowHeight);
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        viewportX = viewport->Pos.x;
+        viewportY = viewport->Pos.y;
+        viewportWidth = static_cast<float>(windowWidth);
+        viewportHeight = static_cast<float>(windowHeight);
+    }
 
-    if (windowWidth <= 0 || windowHeight <= 0) {
+    if (viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
         return;
     }
 
     const glm::mat4 view = views[0];
-    const float aspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
-    const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+    const float aspect = viewportWidth / viewportHeight;
+    const float fieldOfViewDegrees =
+        mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
+    const glm::mat4 projection = glm::perspective(
+        glm::radians(fieldOfViewDegrees),
+        aspect,
+        0.1f,
+        100.0f);
 
     ImGuizmo::BeginFrame();
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
 
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGuizmo::SetRect(viewport->Pos.x, viewport->Pos.y, viewport->Size.x, viewport->Size.y);
+    ImGuizmo::SetRect(
+        viewportX,
+        viewportY,
+        viewportWidth,
+        viewportHeight);
 
     const int selectedCount = mSelectionController.GetSelectedActorCount();
     if (selectedCount <= 0) {
