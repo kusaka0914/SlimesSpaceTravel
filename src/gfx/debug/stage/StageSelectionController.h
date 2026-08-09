@@ -44,12 +44,12 @@ public:
 
     glm::vec3 CalculateSelectedActorsCenter() const;
     void MoveSelectedActorsByDelta(const glm::vec3& delta);
+    bool TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
 
 private:
     void UpdateBoxSelection();
     void UpdatePickedActorByMouse();
 
-    bool CreateMousePickRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
     bool WorldToScreenPoint(const glm::vec3& worldPos, ImVec2& outScreenPos) const;
     void SelectActorsInScreenRect(const ImVec2& rectMin, const ImVec2& rectMax, bool addSelection);
 

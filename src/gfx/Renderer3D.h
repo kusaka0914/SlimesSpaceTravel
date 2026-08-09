@@ -89,7 +89,8 @@ private:
 
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
-    void DrawActorSelectionOutline(Actor* actor, bool useOrient) const;
+    void DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const;
+    void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
 
     bool UploadActorSkinningMatrices(const Actor* actor) const;
     void SetSkinningEnabled(bool isEnabled) const;

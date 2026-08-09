@@ -14,6 +14,7 @@ public:
     explicit StagePlanetPanel(DebugEditorContext& context);
 
     void Draw() override;
+    void DrawSelectedPlanet(Planet* selectedPlanet);
     void Save();
 
 private:
@@ -23,6 +24,7 @@ private:
     void UpdateActorsOnPlanetSurface(Planet* planet);
 
 private:
+    Planet* mFocusedPlanet = nullptr;
     std::array<char, 128> mTextureAssetFilter = {};
     std::string mTextureAssetStatus;
 };

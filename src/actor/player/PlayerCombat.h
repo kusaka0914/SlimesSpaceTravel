@@ -42,7 +42,7 @@ public:
     void WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime);
-    void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+    bool UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 

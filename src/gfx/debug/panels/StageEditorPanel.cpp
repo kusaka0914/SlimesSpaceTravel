@@ -1,11 +1,14 @@
 #include "gfx/debug/panels/StageEditorPanel.h"
 
 #include "Game.h"
+#include "actor/Actor.h"
+#include "actor/Planet.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
 #include "gfx/debug/panels/StagePlacementPanel.h"
 #include "gfx/debug/panels/StagePlanetPanel.h"
 #include "gfx/debug/DebugEditorLayout.h"
+#include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "imgui.h"
@@ -102,21 +105,18 @@ void StageEditorPanel::Draw()
 
 void StageEditorPanel::DrawTopBar()
 {
-    DrawStageSwitcher();
     DrawToolbar();
 }
 
 void StageEditorPanel::DrawToolbar()
 {
     constexpr const char* menuLabels[] = {
-        "クリア状況",
+        "デバッグ状態",
         "追加",
         "選択中",
-        "プレイヤー",
-        "惑星設定",
         "削除",
     };
-    constexpr int menuValues[] = {0, 1, 3, 4, 5, 6};
+    constexpr int menuValues[] = {0, 1, 3, 6};
 
     ImGui::Separator();
     for (int menuIndex = 0; menuIndex < IM_ARRAYSIZE(menuLabels); ++menuIndex) {
@@ -129,6 +129,13 @@ void StageEditorPanel::DrawToolbar()
                 0,
                 ImVec2(92.0f, 0.0f))) {
             mSelectedMenu = menuValues[menuIndex];
+        }
+    }
+
+    if (mAddActorPanel.IsPlacementActive()) {
+        ImGui::SameLine();
+        if (ImGui::Button("追加解除##topBar")) {
+            mAddActorPanel.CancelPlacement();
         }
     }
 
@@ -150,7 +157,9 @@ void StageEditorPanel::DrawWorkspaceWindows()
     const float hierarchyWidth =
         DebugEditorLayout::CalculateHierarchyWidth(workSize.x);
     const float inspectorWidth =
-        DebugEditorLayout::CalculateToolPanelWidth(workSize.x);
+        mContext.layout.rightPanelWidth > 0.0f
+            ? mContext.layout.rightPanelWidth
+            : DebugEditorLayout::CalculateToolPanelWidth(workSize.x);
     const float workspaceHeight =
         std::max(120.0f, workPosition.y + workSize.y - workspaceTop);
 
@@ -185,19 +194,22 @@ void StageEditorPanel::DrawInspector()
 {
     switch (mSelectedMenu) {
     case 0:
+        DrawStageSwitcher();
         DrawStageClearProgressEditor();
         break;
     case 1:
         mAddActorPanel.Draw();
         break;
     case 3:
-        mPlacementPanel.Draw();
-        break;
-    case 4:
-        mPlacementPanel.DrawPlayerSpawn();
-        break;
-    case 5:
-        mPlanetPanel.Draw();
+        if (Planet* selectedPlanet = dynamic_cast<Planet*>(
+                mSelectionController.GetSingleSelectedActor())) {
+            mPlanetPanel.DrawSelectedPlanet(selectedPlanet);
+            ImGui::SeparatorText("プレイヤースポーン");
+            mPlacementPanel.DrawPlayerSpawn();
+        } else {
+            DrawDuplicatePlacementControls();
+            mPlacementPanel.Draw();
+        }
         break;
     case 6:
         mDeleteActorPanel.Draw();
@@ -205,6 +217,68 @@ void StageEditorPanel::DrawInspector()
     default:
         mPlacementPanel.Draw();
         break;
+    }
+}
+
+void StageEditorPanel::DrawDuplicatePlacementControls()
+{
+    ImGui::SeparatorText("クリック複製");
+
+    if (mAddActorPanel.IsPlacementActive()) {
+        ImGui::TextDisabled(
+            "連続配置中です。ゲーム画面をクリックして配置します。");
+        if (ImGui::Button("配置解除##duplicatePlacement")) {
+            mAddActorPanel.CancelPlacement();
+            mDuplicatePlacementStatus = "連続配置を終了しました";
+        }
+        return;
+    }
+
+    const bool hasSingleSelection =
+        mSelectionController.GetSelectedActorCount() == 1;
+    if (!hasSingleSelection) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button(
+            "選択中の設定で連続配置",
+            ImVec2(-1.0f, 0.0f))) {
+        Actor* selectedActor =
+            mSelectionController.GetSingleSelectedActor();
+        const std::optional<StageActorRef> selectedActorRef =
+            StageActorQuery::FindTargetForActor(
+                mContext.game ? mContext.game->GetCurrentStage() : nullptr,
+                selectedActor);
+
+        if (!selectedActorRef) {
+            mDuplicatePlacementStatus =
+                "選択中オブジェクトの保存データを取得できませんでした";
+        } else {
+            // Capture the current inspector values before the YAML node is
+            // retained as the repeated-placement template.
+            mPlacementPanel.Save();
+            const bool started =
+                mAddActorPanel.BeginDuplicatePlacement(
+                    *selectedActorRef);
+            mDuplicatePlacementStatus =
+                started
+                    ? "ゲーム画面をクリックすると同じ設定で配置できます"
+                    : "選択中オブジェクトの複製準備に失敗しました";
+        }
+    }
+
+    if (!hasSingleSelection) {
+        ImGui::EndDisabled();
+        ImGui::TextDisabled(
+            "複製元にするオブジェクトを1つだけ選択してください。");
+    } else {
+        ImGui::TextDisabled(
+            "モデルやコンポーネントを維持し、位置と所属惑星をクリック先へ変更します。");
+    }
+
+    if (!mDuplicatePlacementStatus.empty()) {
+        ImGui::TextWrapped(
+            "%s", mDuplicatePlacementStatus.c_str());
     }
 }
 
@@ -294,6 +368,7 @@ void StageEditorPanel::DrawStageSwitcher()
         if (mContext.game->DebugChangeStage(
                 selectedOption->stageNumber,
                 selectedOption->path)) {
+            mAddActorPanel.CancelPlacement();
             mSelectionController.Clear();
             mSelectedStageYamlPath = mContext.game->GetCurrentStageYamlPath();
             mStageSwitchStatus = "ステージを切り替えました";

@@ -19,9 +19,15 @@ struct DebugEditorGameViewport {
     }
 };
 
+struct DebugEditorLayoutState {
+    float rightPanelWidth = 0.0f;
+    float assetBrowserHeight = 0.0f;
+};
+
 struct DebugEditorContext {
     Game* game = nullptr;
     UIRenderer* uiRenderer = nullptr;
     EditorAssetCatalog* assetCatalog = nullptr;
     DebugEditorGameViewport gameViewport;
+    DebugEditorLayoutState layout;
 };

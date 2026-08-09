@@ -45,6 +45,13 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
             continue;
         }
 
+        CreatePickBody(
+            world,
+            planet,
+            pickObjects,
+            pickShapes,
+            pickTriangleMeshes);
+
         for (Enemy* enemy : planet->GetEnemies()) {
             CreatePickBody(world, enemy, pickObjects, pickShapes, pickTriangleMeshes);
         }
@@ -111,6 +118,7 @@ void EditorPickSystem::CreatePickBody(btDiscreteDynamicsWorld* world, Actor* act
     }
 
     const bool useMesh =
+        dynamic_cast<Planet*>(actor) ||
         dynamic_cast<Platform*>(actor) ||
         dynamic_cast<StageObject*>(actor) ||
         dynamic_cast<TutorialTrigger*>(actor);
@@ -281,7 +289,7 @@ EditorPickSystem::PickActorsByRay(btDiscreteDynamicsWorld* world, const glm::vec
         }
 
         Actor* actor = static_cast<Actor*>(object->getUserPointer());
-        if (!actor || dynamic_cast<Planet*>(actor)) {
+        if (!actor) {
             continue;
         }
 

@@ -15,6 +15,7 @@
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
@@ -2020,6 +2021,19 @@ void StagePlacementPanel::DrawPlacementModelPicker(
     }
 
     ImGui::TextWrapped("モデル: %s", actor->GetModelPath().c_str());
+    ImGui::Button(
+        ("モデルアセットをここへドロップ##placedActorModelDrop" +
+         sequenceName + std::to_string(listIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        actor->SetModelPath(droppedModelPath);
+        mContext.game->GetMeshLoadSystem()->SetActorMesh(actor);
+        RebuildPhysicsWorldIfNeeded(true);
+    }
 
     const std::string pickerId =
         "##placedActorModelPicker" + sequenceName + std::to_string(listIndex);
@@ -2070,6 +2084,18 @@ void StagePlacementPanel::DrawNPCModelPicker(
     }
 
     ImGui::TextWrapped("モデル: %s", npc->GetModelPath().c_str());
+    ImGui::Button(
+        ("モデルアセットをここへドロップ##placedNPCModelDrop" +
+         sequenceName + std::to_string(listIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        npc->SetModelPath(droppedModelPath);
+        mContext.game->GetMeshLoadSystem()->SetActorMesh(npc);
+    }
 
     const std::string pickerId =
         "##placedNPCModelPicker" + sequenceName + std::to_string(listIndex);
@@ -2118,6 +2144,18 @@ void StagePlacementPanel::DrawBoatModelPicker(
     }
 
     ImGui::TextWrapped("モデル: %s", boat->GetModelPath().c_str());
+    ImGui::Button(
+        ("モデルアセットをここへドロップ##placedBoatModelDrop" +
+         sequenceName + std::to_string(listIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        boat->SetModelPath(droppedModelPath);
+        mContext.game->GetMeshLoadSystem()->SetActorMesh(boat);
+    }
 
     const std::string pickerId =
         "##placedBoatModelPicker" + sequenceName + std::to_string(listIndex);
@@ -2179,6 +2217,26 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
     ImGui::TextWrapped(
         "選択中: %s",
         selectedTexture.empty() ? "モデル標準" : selectedTexture.c_str());
+    ImGui::Button(
+        ("画像アセットをここへドロップ##actorTextureDrop" +
+         sequenceName + std::to_string(listIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        actor->SetTextureOverridePath(droppedTexturePath);
+        if (mContext.game && mContext.game->GetRenderer3D() &&
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                droppedTexturePath) == 0) {
+            mTextureAssetStatus =
+                "テクスチャの読み込みに失敗しました: " +
+                droppedTexturePath;
+        } else {
+            mTextureAssetStatus.clear();
+        }
+    }
 
     const std::string pickerId =
         "##actorTexturePicker" + sequenceName + std::to_string(listIndex);
@@ -2253,6 +2311,12 @@ void StagePlacementPanel::DrawTextureOverrideEditor(
 
 void StagePlacementPanel::SaveActorsYaml(YAML::Node& config, const ActorGroup& group)
 {
+    // 惑星はcenterや表裏テクスチャなど専用の保存形式を持つため、
+    // StagePlanetPanel::Saveへ一元化する。
+    if (group.sequenceName == "planets") {
+        return;
+    }
+
     for (const StageActorInstance& instance : group.actors) {
         SaveActorCommonYaml(config, group.sequenceName, instance.actor);
     }

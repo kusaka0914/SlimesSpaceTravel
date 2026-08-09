@@ -181,6 +181,39 @@ std::vector<PhysicsSystem::RayHitActor> PhysicsSystem::PickActorsByRay(const glm
     return mEditorPickSystem->PickActorsByRay(mBulletWorld.get(), rayFrom, rayTo, mEditorPickObjects);
 }
 
+std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::RaycastStageSurface(
+    const glm::vec3& rayFrom,
+    const glm::vec3& rayTo) const
+{
+    if (!mBulletWorld) {
+        return std::nullopt;
+    }
+
+    SyncKinematicBodies();
+
+    const btVector3 bulletRayFrom(rayFrom.x, rayFrom.y, rayFrom.z);
+    const btVector3 bulletRayTo(rayTo.x, rayTo.y, rayTo.z);
+    btCollisionWorld::ClosestRayResultCallback callback(bulletRayFrom, bulletRayTo);
+    callback.m_collisionFilterGroup = btBroadphaseProxy::DefaultFilter;
+    callback.m_collisionFilterMask = btBroadphaseProxy::DefaultFilter;
+    mBulletWorld->rayTest(bulletRayFrom, bulletRayTo, callback);
+
+    if (!callback.hasHit()) {
+        return std::nullopt;
+    }
+
+    const btVector3& hitPoint = callback.m_hitPointWorld;
+    const btVector3& hitNormal = callback.m_hitNormalWorld;
+    RayHitActor hit;
+    hit.actor = callback.m_collisionObject
+                    ? static_cast<Actor*>(callback.m_collisionObject->getUserPointer())
+                    : nullptr;
+    hit.hitPos = glm::vec3(hitPoint.x(), hitPoint.y(), hitPoint.z());
+    hit.hitNormal = glm::vec3(hitNormal.x(), hitNormal.y(), hitNormal.z());
+    hit.distance = glm::length(hit.hitPos - rayFrom);
+    return hit;
+}
+
 std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep(
     const Actor* actor,
     const glm::vec3& from,

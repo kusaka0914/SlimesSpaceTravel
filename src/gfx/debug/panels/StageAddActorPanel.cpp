@@ -2,14 +2,21 @@
 
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
+#include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageSelectionController.h"
+#include "gfx/debug/stage/StageYamlRepository.h"
+#include "system/PhysicsSystem.h"
 #include "imgui.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -44,6 +51,172 @@ StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
         "ここにチュートリアルの内容を入力");
 }
 
+void StageAddActorPanel::SetSelectionController(
+    StageSelectionController* selectionController)
+{
+    mSelectionController = selectionController;
+}
+
+void StageAddActorPanel::SetPushUndoCallback(
+    std::function<void()> pushUndoCallback)
+{
+    mPushUndoCallback = std::move(pushUndoCallback);
+}
+
+bool StageAddActorPanel::BeginDuplicatePlacement(
+    const StageActorRef& sourceRef)
+{
+    if (!mContext.game ||
+        !mContext.game->GetCurrentStage() ||
+        !mSelectionController ||
+        sourceRef.sequenceName.empty() ||
+        sourceRef.yamlIndex < 0) {
+        return false;
+    }
+
+    YAML::Node stageYaml;
+    if (!StageYamlRepository::LoadCurrentStage(
+            mContext, stageYaml)) {
+        return false;
+    }
+
+    const YAML::Node sourceSequence =
+        stageYaml[sourceRef.sequenceName];
+    if (!sourceSequence ||
+        !sourceSequence.IsSequence() ||
+        sourceRef.yamlIndex >=
+            static_cast<int>(sourceSequence.size())) {
+        return false;
+    }
+
+    const YAML::Node sourceNode =
+        sourceSequence[sourceRef.yamlIndex];
+    if (!sourceNode || !sourceNode.IsMap()) {
+        return false;
+    }
+
+    Actor* sourceActor = StageActorQuery::FindActorByRef(
+        mContext.game->GetCurrentStage(), sourceRef);
+    const int fallbackPlanetIndex =
+        ResolveHitPlanetIndex(sourceActor, 0);
+    const YAML::Node sourceTemplate = YAML::Clone(sourceNode);
+    const std::string displayName =
+        StageActorQuery::GetTypeLabel(sourceRef) +
+        "（選択中の設定）";
+
+    BeginPlacement(
+        displayName,
+        fallbackPlanetIndex,
+        [this, sourceRef, sourceTemplate](
+            int planetIndex,
+            const StageActorPlacement& placement) {
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+
+            return mCreateService.DuplicateActorAtPlacement(
+                sourceRef,
+                sourceTemplate,
+                planetIndex,
+                placement);
+        });
+    return true;
+}
+
+void StageAddActorPanel::BeginPlacement(
+    const std::string& displayName,
+    int fallbackPlanetIndex,
+    std::function<bool(int, const StageActorPlacement&)> placementCreator)
+{
+    mPlacementDisplayName = displayName;
+    mPlacementFallbackPlanetIndex = fallbackPlanetIndex;
+    mPlacementCreator = std::move(placementCreator);
+    mPlacementStatus = "ゲーム画面をクリックして配置してください";
+}
+
+void StageAddActorPanel::CancelPlacement()
+{
+    mPlacementCreator = {};
+    mPlacementDisplayName.clear();
+    mPlacementFallbackPlanetIndex = -1;
+    mPlacementStatus = "連続配置を終了しました";
+}
+
+int StageAddActorPanel::ResolveHitPlanetIndex(
+    Actor* hitActor,
+    int fallbackPlanetIndex) const
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return fallbackPlanetIndex;
+    }
+
+    Planet* hitPlanet = dynamic_cast<Planet*>(hitActor);
+    if (!hitPlanet && hitActor) {
+        hitPlanet = hitActor->GetCurrentPlanet();
+    }
+    if (!hitPlanet) {
+        return fallbackPlanetIndex;
+    }
+
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    const auto planetIt = std::find(planets.begin(), planets.end(), hitPlanet);
+    if (planetIt == planets.end()) {
+        return fallbackPlanetIndex;
+    }
+    return static_cast<int>(std::distance(planets.begin(), planetIt));
+}
+
+void StageAddActorPanel::UpdatePlacement()
+{
+    if (!mPlacementCreator) {
+        return;
+    }
+
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+        CancelPlacement();
+        return;
+    }
+
+    if (ImGui::GetIO().WantCaptureMouse ||
+        !ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        return;
+    }
+
+    if (!mSelectionController || !mContext.game ||
+        !mContext.game->GetPhysicsSystem()) {
+        mPlacementStatus = "配置に必要なシステムを利用できません";
+        return;
+    }
+
+    glm::vec3 rayFrom;
+    glm::vec3 rayTo;
+    if (!mSelectionController->TryCreateMouseRay(rayFrom, rayTo)) {
+        return;
+    }
+
+    const std::optional<PhysicsSystem::RayHitActor> hit =
+        mContext.game->GetPhysicsSystem()->RaycastStageSurface(rayFrom, rayTo);
+    if (!hit) {
+        mPlacementStatus = "配置できる惑星・足場・ステージモデルに当たりませんでした";
+        return;
+    }
+
+    const int planetIndex =
+        ResolveHitPlanetIndex(hit->actor, mPlacementFallbackPlanetIndex);
+    if (planetIndex < 0) {
+        mPlacementStatus = "クリックした面の所属惑星を特定できませんでした";
+        return;
+    }
+
+    StageActorPlacement placement;
+    placement.worldPosition = hit->hitPos;
+    placement.surfaceNormal = hit->hitNormal;
+    const bool created = mPlacementCreator(planetIndex, placement);
+    mPlacementStatus = created
+                           ? mPlacementDisplayName + "を配置しました。続けてクリックできます"
+                           : mPlacementDisplayName + "の配置に失敗しました";
+}
+
 void StageAddActorPanel::Draw()
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -55,6 +228,21 @@ void StageAddActorPanel::Draw()
         return;
     }
     mContext.assetCatalog->EnsureScanned();
+
+    if (mPlacementCreator) {
+        ImGui::SeparatorText("連続配置中");
+        ImGui::Text("配置対象: %s", mPlacementDisplayName.c_str());
+        ImGui::TextWrapped("ゲーム画面をクリックするたびに追加します。");
+        if (ImGui::Button("追加解除") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            CancelPlacement();
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("ESCでも解除");
+        if (!mPlacementStatus.empty()) {
+            ImGui::TextWrapped("%s", mPlacementStatus.c_str());
+        }
+        ImGui::Separator();
+    }
 
     if (ImGui::TreeNode("汎用モデル追加")) {
         const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
@@ -86,6 +274,17 @@ void StageAddActorPanel::Draw()
             }
             ImGui::EndChild();
 
+            ImGui::Button(
+                "モデルアセットをここへドロップ##newStageObjectModel",
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedStageObjectModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedStageObjectModelPath)) {
+                mSelectedStageObjectModel =
+                    droppedStageObjectModelPath;
+            }
+
             ImGui::Text(
                 "選択中: %s",
                 mSelectedStageObjectModel.empty()
@@ -101,12 +300,18 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("選択したモデルをステージに追加")) {
-                const bool created = mCreateService.AddStageObject(
+                const std::string modelPath = mSelectedStageObjectModel;
+                const bool collisionEnabled = mStageObjectCollisionEnabled;
+                BeginPlacement(
+                    "ステージモデル",
                     mSelectedStageObjectPlanetIndex,
-                    mSelectedStageObjectModel,
-                    mStageObjectCollisionEnabled);
-                mStageObjectStatus =
-                    created ? "モデルを追加しました" : "モデルの追加に失敗しました";
+                    [this, modelPath, collisionEnabled](
+                        int planetIndex,
+                        const StageActorPlacement& placement) {
+                        return mCreateService.AddStageObject(
+                            planetIndex, modelPath, collisionEnabled, &placement);
+                    });
+                mStageObjectStatus = "ゲーム画面をクリックして配置してください";
             }
 
             if (!canAdd) {
@@ -128,10 +333,30 @@ void StageAddActorPanel::Draw()
         const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
         const char* planetModels[] = {"planet.obj", "planet_2.obj", "planet_3.obj"};
 
-        ImGui::Combo("惑星モデル", &mSelectedPlanetModelIndex, planetModelLabels, IM_ARRAYSIZE(planetModelLabels));
+        if (ImGui::Combo(
+                "惑星モデル",
+                &mSelectedPlanetModelIndex,
+                planetModelLabels,
+                IM_ARRAYSIZE(planetModelLabels))) {
+            mSelectedPlanetModelPath =
+                planetModels[mSelectedPlanetModelIndex];
+        }
+
+        ImGui::Button(
+            "モデルアセットをここへドロップ##newPlanetModel",
+            ImVec2(-1.0f, 0.0f));
+        std::string droppedPlanetModelPath;
+        if (EditorAssetDragDrop::AcceptPath(
+                EditorAssetType::Model,
+                droppedPlanetModelPath)) {
+            mSelectedPlanetModelPath = droppedPlanetModelPath;
+        }
+        ImGui::TextWrapped(
+            "選択中: %s",
+            mSelectedPlanetModelPath.c_str());
 
         if (ImGui::Button("惑星を追加")) {
-            mCreateService.AddPlanet(planetModels[mSelectedPlanetModelIndex]);
+            mCreateService.AddPlanet(mSelectedPlanetModelPath);
         }
 
         ImGui::TreePop();
@@ -161,7 +386,13 @@ void StageAddActorPanel::Draw()
         }
 
         if (ImGui::Button("敵を追加")) {
-            mCreateService.AddEnemy(enemyTypes[mSelectedEnemyTypeIndex], mSelectedEnemyPlanetIndex);
+            const std::string enemyType = enemyTypes[mSelectedEnemyTypeIndex];
+            BeginPlacement(
+                "敵",
+                mSelectedEnemyPlanetIndex,
+                [this, enemyType](int planetIndex, const StageActorPlacement& placement) {
+                    return mCreateService.AddEnemy(enemyType, planetIndex, &placement);
+                });
         }
 
         if (!canAddEnemy) {
@@ -183,8 +414,27 @@ void StageAddActorPanel::Draw()
             const char* platformModelLabels[] = {"通常足場", "カーブ足場", "細い足場"};
             const char* platformModels[] = {"platform.obj", "curvePlatform.obj", "platform_thin.obj"};
 
-            ImGui::Combo("モデル##platform", &mSelectedPlatformModelIndex, platformModelLabels,
-                         IM_ARRAYSIZE(platformModelLabels));
+            if (ImGui::Combo(
+                    "モデル##platform",
+                    &mSelectedPlatformModelIndex,
+                    platformModelLabels,
+                    IM_ARRAYSIZE(platformModelLabels))) {
+                mSelectedPlatformModelPath =
+                    platformModels[mSelectedPlatformModelIndex];
+            }
+            ImGui::Button(
+                "モデルアセットをここへドロップ##newPlatformModel",
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedPlatformModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedPlatformModelPath)) {
+                mSelectedPlatformModelPath =
+                    droppedPlatformModelPath;
+            }
+            ImGui::TextWrapped(
+                "選択中: %s",
+                mSelectedPlatformModelPath.c_str());
 
             ImGui::SliderFloat("スケールX##platform", &mPlatformScale.x, 0.1f, 30.0f, "%.2f");
             ImGui::SliderFloat("スケールY##platform", &mPlatformScale.y, 0.1f, 30.0f, "%.2f");
@@ -198,20 +448,27 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("足場を追加")) {
-                mCreateService.AddPlatform(mSelectedPlatformPlanetIndex, platformModels[mSelectedPlatformModelIndex],
-                                           mPlatformScale);
+                const std::string modelPath = mSelectedPlatformModelPath;
+                const glm::vec3 scale = mPlatformScale;
+                BeginPlacement(
+                    "足場",
+                    mSelectedPlatformPlanetIndex,
+                    [this, modelPath, scale](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddPlatform(planetIndex, modelPath, scale, &placement);
+                    });
             }
 
             if (ImGui::Button("乗ると動く足場を追加")) {
-                const bool created =
-                    mCreateService.AddRideMovingPlatform(
-                        mSelectedPlatformPlanetIndex,
-                        platformModels[mSelectedPlatformModelIndex],
-                        mPlatformScale);
-                mRideMovingPlatformStatus =
-                    created
-                        ? "乗降式の動く足場を追加しました"
-                        : "動く足場の追加に失敗しました";
+                const std::string modelPath = mSelectedPlatformModelPath;
+                const glm::vec3 scale = mPlatformScale;
+                BeginPlacement(
+                    "乗ると動く足場",
+                    mSelectedPlatformPlanetIndex,
+                    [this, modelPath, scale](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddRideMovingPlatform(
+                            planetIndex, modelPath, scale, &placement);
+                    });
+                mRideMovingPlatformStatus = "ゲーム画面をクリックして配置してください";
             }
 
             if (!canAddPlatform) {
@@ -251,7 +508,13 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("クリスタルを追加")) {
-                mCreateService.AddCrystal(crystalTypes[mSelectedCrystalTypeIndex], mSelectedCrystalPlanetIndex);
+                const std::string crystalType = crystalTypes[mSelectedCrystalTypeIndex];
+                BeginPlacement(
+                    "クリスタル",
+                    mSelectedCrystalPlanetIndex,
+                    [this, crystalType](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddCrystal(crystalType, planetIndex, &placement);
+                    });
             }
 
             if (!canAddCrystal) {
@@ -294,6 +557,16 @@ void StageAddActorPanel::Draw()
                 }
             }
             ImGui::EndChild();
+
+            ImGui::Button(
+                "モデルアセットをここへドロップ##newNPCModel",
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedNPCModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedNPCModelPath)) {
+                mSelectedNPCModel = droppedNPCModelPath;
+            }
 
             ImGui::Text(
                 "選択中のモデル: %s",
@@ -362,15 +635,20 @@ void StageAddActorPanel::Draw()
                     talkTexts.emplace_back(talkText.data());
                 }
 
-                const bool created = mCreateService.AddNPC(
-                    mSelectedNPCModel,
+                const std::string modelPath = mSelectedNPCModel;
+                const std::string name = mNPCName.data();
+                const float talkRadius = mNPCTalkRadius;
+                const float scale = mNPCScale;
+                BeginPlacement(
+                    "NPC",
                     mSelectedNPCPlanetIndex,
-                    mNPCName.data(),
-                    talkTexts,
-                    mNPCTalkRadius,
-                    mNPCScale);
-                mNPCStatus =
-                    created ? "NPCを追加しました" : "NPCの追加に失敗しました";
+                    [this, modelPath, name, talkTexts, talkRadius, scale](
+                        int planetIndex,
+                        const StageActorPlacement& placement) {
+                        return mCreateService.AddNPC(
+                            modelPath, planetIndex, name, talkTexts, talkRadius, scale, &placement);
+                    });
+                mNPCStatus = "ゲーム画面をクリックして配置してください";
             }
 
             if (!canAddNPC) {
@@ -431,6 +709,16 @@ void StageAddActorPanel::Draw()
                 }
             }
             ImGui::EndChild();
+            ImGui::Button(
+                "モデルアセットをここへドロップ##newTutorialTriggerModel",
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedTutorialTriggerModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedTutorialTriggerModelPath)) {
+                mSelectedTutorialTriggerModel =
+                    droppedTutorialTriggerModelPath;
+            }
             ImGui::Text(
                 "選択中のモデル: %s",
                 mSelectedTutorialTriggerModel.empty()
@@ -497,16 +785,18 @@ void StageAddActorPanel::Draw()
                         talkText.data());
                 }
 
-                const bool created =
-                    mCreateService.AddTutorialTrigger(
-                        mSelectedTutorialTriggerPlanetIndex,
-                        mSelectedTutorialTriggerModel,
-                        talkTexts,
-                        mTutorialTriggerScale);
-                mTutorialTriggerStatus =
-                    created
-                        ? "チュートリアルトリガーを追加しました"
-                        : "チュートリアルトリガーの追加に失敗しました";
+                const std::string modelPath = mSelectedTutorialTriggerModel;
+                const glm::vec3 scale = mTutorialTriggerScale;
+                BeginPlacement(
+                    "チュートリアルトリガー",
+                    mSelectedTutorialTriggerPlanetIndex,
+                    [this, modelPath, talkTexts, scale](
+                        int planetIndex,
+                        const StageActorPlacement& placement) {
+                        return mCreateService.AddTutorialTrigger(
+                            planetIndex, modelPath, talkTexts, scale, &placement);
+                    });
+                mTutorialTriggerStatus = "ゲーム画面をクリックして配置してください";
             }
 
             if (!canAdd) {
@@ -549,7 +839,13 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("ボートパーツを追加")) {
-                mCreateService.AddBoatParts(boatPartsTypes[mSelectedBoatPartsTypeIndex], mSelectedBoatPartsPlanetIndex);
+                const std::string boatPartsType = boatPartsTypes[mSelectedBoatPartsTypeIndex];
+                BeginPlacement(
+                    "ボートパーツ",
+                    mSelectedBoatPartsPlanetIndex,
+                    [this, boatPartsType](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddBoatParts(boatPartsType, planetIndex, &placement);
+                    });
             }
 
             if (!canAddBoatParts) {
@@ -580,8 +876,17 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("ボートを追加")) {
-                mCreateService.AddBoat(mSelectedBoatStartPlanetIndex, mSelectedBoatDestPlanetIndex,
-                                       mSelectedBoatDestStage);
+                const int destinationPlanetIndex = mSelectedBoatDestPlanetIndex;
+                const int destinationStage = mSelectedBoatDestStage;
+                BeginPlacement(
+                    "ボート",
+                    mSelectedBoatStartPlanetIndex,
+                    [this, destinationPlanetIndex, destinationStage](
+                        int startPlanetIndex,
+                        const StageActorPlacement& placement) {
+                        return mCreateService.AddBoat(
+                            startPlanetIndex, destinationPlanetIndex, destinationStage, &placement);
+                    });
             }
 
             if (!canAddBoat) {
@@ -609,7 +914,12 @@ void StageAddActorPanel::Draw()
             }
 
             if (ImGui::Button("星を追加")) {
-                mCreateService.AddStar(mSelectedStarPlanetIndex);
+                BeginPlacement(
+                    "星",
+                    mSelectedStarPlanetIndex,
+                    [this](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddStar(planetIndex, &placement);
+                    });
             }
 
             if (!canAddStar) {

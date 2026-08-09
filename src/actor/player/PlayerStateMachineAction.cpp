@@ -225,7 +225,11 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
 }
 
 void PlayerStateMachine::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                                   PlayerStatus& status, float deltaTime)
+                                                    PlayerStatus& status, float deltaTime)
 {
-    combat.UpdateContinuousAttacking(player, movement, status, deltaTime);
+    const bool didAttack =
+        combat.UpdateContinuousAttacking(player, movement, status, deltaTime);
+    if (didAttack) {
+        player.RequestNextWeakAttackAnimation();
+    }
 }

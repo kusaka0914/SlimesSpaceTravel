@@ -31,6 +31,11 @@
 #include <string>
 
 namespace {
+constexpr float EditorSelectionRed = 1.0f;
+constexpr float EditorSelectionGreen = 0.45f;
+constexpr float EditorSelectionBlue = 0.0f;
+constexpr float EditorSelectionAlpha = 1.0f;
+
 using SDLSurfacePtr =
     std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>;
 
@@ -404,8 +409,10 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     SetSkinningEnabled(false);
 
-    if (actor->GetIsEditorSelected()) {
-        DrawActorSelectionOutline(actor, useOrient);
+    const bool isSelected = actor->GetIsEditorSelected();
+    const bool isPlanet = dynamic_cast<const Planet*>(actor) != nullptr;
+    if (isSelected && !isPlanet) {
+        DrawActorSelectionUnderlay(actor, useOrient);
     }
 
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
@@ -494,6 +501,10 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     glUniform2f(mShader3D->GetLocTextureTiling(), 1.0f, 1.0f);
     glActiveTexture(GL_TEXTURE0);
+
+    if (isSelected && isPlanet) {
+        DrawActorSelectionOverlay(actor, useOrient);
+    }
 }
 
 GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)
@@ -576,7 +587,9 @@ glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float
     return glm::translate(glm::mat4(1.0f), actor->GetPos()) * glm::scale(glm::mat4(1.0f), scale);
 }
 
-void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
+void Renderer3D::DrawActorSelectionUnderlay(
+    Actor* actor,
+    bool useOrient) const
 {
     if (!actor || !actor->GetIsActive() || !mShader3D) {
         return;
@@ -587,19 +600,74 @@ void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
         return;
     }
 
-    constexpr float outlineScale = 1.0f;
+    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
+    glUniformMatrix4fv(
+        mShader3D->GetLocModel(),
+        1,
+        GL_FALSE,
+        glm::value_ptr(model));
 
-    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, outlineScale);
+    glUniform1i(mShader3D->GetLocUseTexture(), 0);
+    glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
+    glUniform4f(
+        mShader3D->GetLocObjectColor(),
+        EditorSelectionRed,
+        EditorSelectionGreen,
+        EditorSelectionBlue,
+        EditorSelectionAlpha);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    const bool hasUploadedSkinningMatrices =
+        UploadActorSkinningMatrices(actor);
+    for (const LoadedMesh& actorMesh : *actorMeshes) {
+        SetSkinningEnabled(
+            hasUploadedSkinningMatrices &&
+            actorMesh.hasBoneInfluences);
+        glBindVertexArray(actorMesh.VAO);
+        glDrawElements(
+            GL_TRIANGLES,
+            actorMesh.indexCount,
+            GL_UNSIGNED_INT,
+            nullptr);
+    }
+
+    SetSkinningEnabled(false);
+    glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
+}
+
+void Renderer3D::DrawActorSelectionOverlay(Actor* actor, bool useOrient) const
+{
+    if (!actor || !actor->GetIsActive() || !mShader3D) {
+        return;
+    }
+
+    const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
+    if (!actorMeshes || actorMeshes->empty()) {
+        return;
+    }
+
+    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
     const GLint objectColorLocation = mShader3D->GetLocObjectColor();
     const GLint useTextureLocation = mShader3D->GetLocUseTexture();
 
     glUniform1i(useTextureLocation, 0);
-    glUniform4f(objectColorLocation, 1.0f, 0.45f, 0.0f, 1.0f);
+    glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
+    glUniform4f(
+        objectColorLocation,
+        EditorSelectionRed,
+        EditorSelectionGreen,
+        EditorSelectionBlue,
+        EditorSelectionAlpha);
 
+    StartTransparentDraw();
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
 
     const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
     for (const LoadedMesh& actorMesh : *actorMeshes) {
@@ -609,8 +677,10 @@ void Renderer3D::DrawActorSelectionOutline(Actor* actor, bool useOrient) const
     }
 
     SetSkinningEnabled(false);
+    glDepthFunc(GL_LESS);
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
+    EndTransparentDraw();
 }
 
 bool Renderer3D::UploadActorSkinningMatrices(const Actor* actor) const

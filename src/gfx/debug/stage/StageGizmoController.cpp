@@ -405,6 +405,12 @@ void StageGizmoController::DrawGizmo()
         return;
     }
 
+    // 惑星移動時には所属アクターも追従させる必要がある。現状はその処理を持つ
+    // 惑星設定パネルからのみ変形し、汎用ギズモによる不完全な変更を防ぐ。
+    if (dynamic_cast<Planet*>(selectedActor)) {
+        return;
+    }
+
     if (!mIsUsingTransformGizmo) {
         mEditingGizmoMatrix =
             UsesSphereSurfaceTranslation(selectedActor)

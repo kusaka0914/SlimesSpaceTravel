@@ -73,6 +73,8 @@ public:
 
     std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
     std::vector<RayHitActor> PickActorsByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
+    std::optional<RayHitActor> RaycastStageSurface(const glm::vec3& rayFrom,
+                                                   const glm::vec3& rayTo) const;
 
     void SyncKinematicBodies() const;
 

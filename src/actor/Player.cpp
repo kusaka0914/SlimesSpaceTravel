@@ -168,6 +168,7 @@ void Player::UpdateActor(float deltaTime)
 
     if (mControlLocked) {
         mVelocity = glm::vec3(0.0f);
+        mParticleEffectController.UpdateSpecialCharging(*this, false, deltaTime);
         mParticleEffectController.UpdateWalking(*this, false);
         mAnimationController.RequestAnimation(idleAnimationId, false);
         mAnimationController.Update(deltaTime);
@@ -217,6 +218,10 @@ void Player::UpdateActor(float deltaTime)
     if (didLand) {
         mParticleEffectController.EmitLanding(*this, landingSpeed);
     }
+    const bool isSpecialChargeActive =
+        mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
+    mParticleEffectController.UpdateSpecialCharging(
+        *this, isSpecialChargeActive, deltaTime);
     mParticleEffectController.UpdateWalking(*this, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
@@ -237,11 +242,7 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
 
     case PlayerActionState::Attacking:
         if (mCombat.GetAttackKind() == PlayerAttackKind::Wide) {
-            const std::string_view weakAttackAnimationId =
-                mUseSecondAttackAnimationNext ? secondAttackAnimationId : attackAnimationId;
-
-            mAnimationController.RequestAnimation(weakAttackAnimationId);
-            mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
+            RequestNextWeakAttackAnimation();
             return;
         }
 
@@ -256,6 +257,16 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
     default:
         return;
     }
+}
+
+void Player::RequestNextWeakAttackAnimation()
+{
+    const std::string_view weakAttackAnimationId =
+        mUseSecondAttackAnimationNext
+            ? secondAttackAnimationId
+            : attackAnimationId;
+    mAnimationController.RequestAnimation(weakAttackAnimationId);
+    mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
 }
 
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)

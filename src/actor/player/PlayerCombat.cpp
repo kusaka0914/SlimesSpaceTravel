@@ -216,7 +216,7 @@ void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement,
     mAttackCooldownRemaining = 1.0f;
 }
 
-void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status,
+bool PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                              float deltaTime)
 {
     mAttackKind = PlayerAttackKind::Wide;
@@ -227,11 +227,14 @@ void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
     mContinuousAttackingTimer -= deltaTime;
     mContinuousAttackingCooldown -= deltaTime;
 
-    if (mContinuousAttackingCooldown <= 0.0f) {
-        mContinuousAttackingCooldown = 0.25f;
-        Attack(player, movement, status, deltaTime);
-        mAttackMoveLockRemaining = 0.0f;
+    if (mContinuousAttackingCooldown > 0.0f) {
+        return false;
     }
+
+    mContinuousAttackingCooldown = 0.25f;
+    Attack(player, movement, status, deltaTime);
+    mAttackMoveLockRemaining = 0.0f;
+    return true;
 }
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)

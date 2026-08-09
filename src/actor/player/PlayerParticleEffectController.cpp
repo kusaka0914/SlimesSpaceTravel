@@ -14,6 +14,8 @@ constexpr float minimumLandingEffectSpeed = 1.0f;
 
 constexpr const char* walkStartEffectId = "walk_start_dust";
 constexpr const char* landingEffectId = "landing_dust";
+constexpr const char* specialChargeEffectId = "player_special_charge";
+constexpr float specialChargeEmissionIntervalSeconds = 0.12f;
 
 glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
 {
@@ -42,6 +44,32 @@ void PlayerParticleEffectController::UpdateWalking(Player& player, bool isWalkin
     mWasWalking = isWalking;
 }
 
+void PlayerParticleEffectController::UpdateSpecialCharging(
+    Player& player,
+    bool isCharging,
+    float deltaTime)
+{
+    if (!isCharging) {
+        mWasSpecialCharging = false;
+        mSpecialChargeEmissionTimerSeconds = 0.0f;
+        return;
+    }
+
+    if (!mWasSpecialCharging) {
+        mSpecialChargeEmissionTimerSeconds = 0.0f;
+    } else {
+        mSpecialChargeEmissionTimerSeconds -= deltaTime;
+    }
+    mWasSpecialCharging = true;
+
+    if (mSpecialChargeEmissionTimerSeconds > 0.0f) {
+        return;
+    }
+
+    EmitSpecialCharge(player);
+    mSpecialChargeEmissionTimerSeconds = specialChargeEmissionIntervalSeconds;
+}
+
 void PlayerParticleEffectController::EmitLanding(Player& player, float landingSpeed)
 {
     if (landingSpeed < minimumLandingEffectSpeed) {
@@ -68,6 +96,26 @@ void PlayerParticleEffectController::EmitLanding(Player& player, float landingSp
 void PlayerParticleEffectController::Reset()
 {
     mWasWalking = false;
+    mWasSpecialCharging = false;
+    mSpecialChargeEmissionTimerSeconds = 0.0f;
+}
+
+void PlayerParticleEffectController::EmitSpecialCharge(Player& player)
+{
+    ParticleSystem* particleSystem = GetParticleSystem(player);
+    if (!particleSystem) {
+        return;
+    }
+
+    const glm::vec3 upDirection =
+        SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    ParticleSpawnContext context;
+    context.position = player.GetPos() + upDirection * 0.18f;
+    context.normal = upDirection;
+    context.direction = upDirection;
+    context.scale = 1.0f;
+    particleSystem->Emit(specialChargeEffectId, context);
 }
 
 void PlayerParticleEffectController::EmitWalkStart(Player& player)

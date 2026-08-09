@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "imgui.h"
 #include "system/SceneSystem.h"
@@ -462,6 +463,16 @@ void TutorialDebugPanel::DrawVideoEditor(
             }
         }
         ImGui::EndCombo();
+    }
+
+    ImGui::Button(
+        "動画アセットをここへドロップ##tutorialVideoDrop",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedVideoPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Video,
+            droppedVideoPath)) {
+        page.video.assetPath = droppedVideoPath;
     }
 
     ImGui::InputTextWithHint(

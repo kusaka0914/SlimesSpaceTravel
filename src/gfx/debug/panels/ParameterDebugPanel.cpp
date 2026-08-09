@@ -5,6 +5,8 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
@@ -219,6 +221,18 @@ void ParameterDebugPanel::DrawPlayer()
         if (ImGui::Combo("モデル", &selectedModelIndex, modelSelects, IM_ARRAYSIZE(playerModels))) {
             player->SetModelPath(playerModels[selectedModelIndex]);
 
+            if (mContext.game->GetMeshLoadSystem()) {
+                mContext.game->GetMeshLoadSystem()->SetActorMesh(player);
+            }
+        }
+        ImGui::Button(
+            "モデルアセットをここへドロップ##playerModelDrop",
+            ImVec2(-1.0f, 0.0f));
+        std::string droppedPlayerModelPath;
+        if (EditorAssetDragDrop::AcceptPath(
+                EditorAssetType::Model,
+                droppedPlayerModelPath)) {
+            player->SetModelPath(droppedPlayerModelPath);
             if (mContext.game->GetMeshLoadSystem()) {
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(player);
             }
@@ -723,6 +737,20 @@ void ParameterDebugPanel::DrawEnemies()
                 }
             }
         }
+        ImGui::Button(
+            "モデルアセットをここへドロップ##normalEnemyModelDrop",
+            ImVec2(-1.0f, 0.0f));
+        std::string droppedNormalEnemyModelPath;
+        if (EditorAssetDragDrop::AcceptPath(
+                EditorAssetType::Model,
+                droppedNormalEnemyModelPath)) {
+            for (Enemy* enemy : normalEnemies) {
+                enemy->SetModelPath(droppedNormalEnemyModelPath);
+                if (mContext.game->GetMeshLoadSystem()) {
+                    mContext.game->GetMeshLoadSystem()->SetActorMesh(enemy);
+                }
+            }
+        }
 
         ImGui::TreePop();
     }
@@ -809,6 +837,18 @@ void ParameterDebugPanel::DrawEnemies()
         if (ImGui::Combo("モデル", &selectedModelIndex, modelSelects, IM_ARRAYSIZE(enemyModels))) {
             bossEnemy->SetModelPath(enemyModels[selectedModelIndex]);
 
+            if (mContext.game->GetMeshLoadSystem()) {
+                mContext.game->GetMeshLoadSystem()->SetActorMesh(bossEnemy);
+            }
+        }
+        ImGui::Button(
+            "モデルアセットをここへドロップ##bossEnemyModelDrop",
+            ImVec2(-1.0f, 0.0f));
+        std::string droppedBossModelPath;
+        if (EditorAssetDragDrop::AcceptPath(
+                EditorAssetType::Model,
+                droppedBossModelPath)) {
+            bossEnemy->SetModelPath(droppedBossModelPath);
             if (mContext.game->GetMeshLoadSystem()) {
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(bossEnemy);
             }

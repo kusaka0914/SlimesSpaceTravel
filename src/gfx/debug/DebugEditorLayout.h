@@ -4,7 +4,7 @@
 
 namespace DebugEditorLayout {
 constexpr float StandardTopBarHeight = 72.0f;
-constexpr float StageTopBarHeight = 178.0f;
+constexpr float StageTopBarHeight = 112.0f;
 constexpr float GameViewportToolbarHeight = 38.0f;
 
 inline float CalculateTopBarHeight(bool showsStageTools)

@@ -3,11 +3,13 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "system/ActorLoadSystem.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <unordered_set>
 
@@ -26,11 +28,22 @@ std::string CreateUniquePlatformId(const YAML::Node& config)
                 if (!node || !node.IsMap()) {
                     continue;
                 }
-                if (node["platformId"]) {
+
+                if (node["platformId"] && node["platformId"].IsScalar()) {
                     usedIds.insert(node["platformId"].as<std::string>());
                 }
-                const YAML::Node targets =
-                    node["components"]["pressureSwitch"]["targets"];
+
+                const YAML::Node components = node["components"];
+                if (!components || !components.IsMap()) {
+                    continue;
+                }
+
+                const YAML::Node pressureSwitch = components["pressureSwitch"];
+                if (!pressureSwitch || !pressureSwitch.IsMap()) {
+                    continue;
+                }
+
+                const YAML::Node targets = pressureSwitch["targets"];
                 if (targets && targets.IsSequence()) {
                     for (const YAML::Node& target : targets) {
                         if (target && target.IsScalar()) {
@@ -49,6 +62,64 @@ std::string CreateUniquePlatformId(const YAML::Node& config)
             return candidate;
         }
     }
+}
+
+bool TryReadVec3(
+    const YAML::Node& node,
+    const char* key,
+    glm::vec3& outValue)
+{
+    const YAML::Node value = node[key];
+    if (!value || !value.IsSequence() || value.size() < 3) {
+        return false;
+    }
+
+    try {
+        outValue = glm::vec3(
+            value[0].as<float>(),
+            value[1].as<float>(),
+            value[2].as<float>());
+        return true;
+    } catch (const YAML::Exception&) {
+        return false;
+    }
+}
+
+void ShiftVec3IfPresent(
+    YAML::Node node,
+    const char* key,
+    const glm::vec3& offset)
+{
+    glm::vec3 value;
+    if (!TryReadVec3(node, key, value)) {
+        return;
+    }
+
+    value += offset;
+    node[key][0] = value.x;
+    node[key][1] = value.y;
+    node[key][2] = value.z;
+}
+
+void ShiftPlatformMovementEndpoints(
+    YAML::Node& platformNode,
+    const glm::vec3& offset)
+{
+    ShiftVec3IfPresent(platformNode, "startLocalPos", offset);
+    ShiftVec3IfPresent(platformNode, "endLocalPos", offset);
+
+    const YAML::Node components = platformNode["components"];
+    if (!components || !components.IsMap()) {
+        return;
+    }
+
+    YAML::Node movement = components["movement"];
+    if (!movement || !movement.IsMap()) {
+        return;
+    }
+
+    ShiftVec3IfPresent(movement, "startLocalPos", offset);
+    ShiftVec3IfPresent(movement, "endLocalPos", offset);
 }
 
 } // namespace
@@ -86,6 +157,46 @@ void StageActorCreateService::RefreshPhysicsWorld() const
     }
 }
 
+void StageActorCreateService::ApplyPlacementToNode(
+    YAML::Node& node,
+    int planetIndex,
+    const StageActorPlacement* placement) const
+{
+    if (!placement || !IsValidPlanetIndex(planetIndex, "placement")) {
+        return;
+    }
+
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    const Planet* planet = planets[planetIndex];
+    if (!planet) {
+        return;
+    }
+
+    const glm::vec3 localPosition = placement->worldPosition - planet->GetPos();
+    node["pos"][0] = localPosition.x;
+    node["pos"][1] = localPosition.y;
+    node["pos"][2] = localPosition.z;
+
+    const float localDistance = glm::length(localPosition);
+    if (localDistance > 1e-6f) {
+        const glm::vec3 radialDirection = localPosition / localDistance;
+        node["theta"] = std::atan2(radialDirection.z, radialDirection.x);
+        node["phi"] = std::asin(std::clamp(radialDirection.y, -1.0f, 1.0f));
+        node["height"] = localDistance - planet->GetRadius();
+    }
+
+    glm::vec3 surfaceNormal = placement->surfaceNormal;
+    if (glm::length(surfaceNormal) < 1e-6f) {
+        surfaceNormal = localDistance > 1e-6f
+                            ? localPosition / localDistance
+                            : glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    surfaceNormal = glm::normalize(surfaceNormal);
+    node["upVec"][0] = surfaceNormal.x;
+    node["upVec"][1] = surfaceNormal.y;
+    node["upVec"][2] = surfaceNormal.z;
+}
+
 void StageActorCreateService::EnsureSequence(YAML::Node& config, const std::string& sequenceName) const
 {
     if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
@@ -93,7 +204,148 @@ void StageActorCreateService::EnsureSequence(YAML::Node& config, const std::stri
     }
 }
 
-bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale)
+bool StageActorCreateService::DuplicateActorAtPlacement(
+    const StageActorRef& sourceRef,
+    const YAML::Node& sourceNode,
+    int targetPlanetIndex,
+    const StageActorPlacement& placement)
+{
+    if (!CanCreateActor() ||
+        !sourceNode ||
+        !sourceNode.IsMap() ||
+        sourceRef.sequenceName.empty() ||
+        !IsValidPlanetIndex(targetPlanetIndex, "duplicated actor")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, sourceRef.sequenceName);
+
+    YAML::Node duplicatedNode = YAML::Clone(sourceNode);
+    glm::vec3 previousLocalPosition(0.0f);
+    const bool hadPreviousLocalPosition =
+        TryReadVec3(duplicatedNode, "pos", previousLocalPosition);
+
+    if (sourceRef.type == StageActorType::Boat) {
+        duplicatedNode["startPlanet"] = targetPlanetIndex;
+        duplicatedNode.remove("currentPlanetNum");
+    } else {
+        duplicatedNode["currentPlanetNum"] = targetPlanetIndex;
+    }
+
+    ApplyPlacementToNode(
+        duplicatedNode,
+        targetPlanetIndex,
+        &placement);
+
+    // A saved quaternion includes the old surface normal. Keeping local Euler
+    // rotation while rebuilding from the clicked normal preserves the authored
+    // facing without tilting the copy toward its previous planet position.
+    duplicatedNode.remove("rotationQuat");
+
+    if (sourceRef.type == StageActorType::Platform) {
+        duplicatedNode["platformId"] =
+            CreateUniquePlatformId(config);
+
+        glm::vec3 newLocalPosition(0.0f);
+        if (hadPreviousLocalPosition &&
+            TryReadVec3(duplicatedNode, "pos", newLocalPosition)) {
+            ShiftPlatformMovementEndpoints(
+                duplicatedNode,
+                newLocalPosition - previousLocalPosition);
+        }
+    }
+
+    YAML::Node targetSequence = config[sourceRef.sequenceName];
+    const int newYamlIndex =
+        static_cast<int>(targetSequence.size());
+    targetSequence.push_back(duplicatedNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    if (!CreateActorFromStageNode(
+            sourceRef,
+            duplicatedNode,
+            newYamlIndex)) {
+        return false;
+    }
+
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::CreateActorFromStageNode(
+    const StageActorRef& actorRef,
+    const YAML::Node& actorNode,
+    int stageYamlIndex) const
+{
+    ActorLoadSystem* actorLoadSystem =
+        mContext.game ? mContext.game->GetActorLoadSystem() : nullptr;
+    if (!actorLoadSystem) {
+        return false;
+    }
+
+    switch (actorRef.type) {
+    case StageActorType::Enemy:
+        return actorLoadSystem->CreateEnemyFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::Platform: {
+        Platform* platform =
+            actorRef.sequenceName == "movingPlatforms"
+                ? actorLoadSystem->CreateLegacyMovingPlatformFromStageNode(
+                      actorNode, stageYamlIndex)
+                : actorLoadSystem->CreatePlatformFromStageNode(
+                      actorNode, stageYamlIndex);
+        if (!platform) {
+            return false;
+        }
+        platform->SetStageSequenceName(actorRef.sequenceName);
+        return true;
+    }
+    case StageActorType::Crystal:
+        return actorLoadSystem->CreateCrystalFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::NPC:
+        return actorLoadSystem->CreateNPCFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::BoatParts:
+        return actorLoadSystem->CreateBoatPartsFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::Boat:
+        return actorLoadSystem->CreateBoatFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::BoatArrivalPoint:
+        return actorLoadSystem->CreateBoatArrivalPointFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::FallRespawnPoint:
+        return actorLoadSystem->CreateFallRespawnPointFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::Key:
+        return actorLoadSystem->CreateKeyFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::Star:
+        return actorLoadSystem->CreateStarFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::StageObject:
+        return actorLoadSystem->CreateStageObjectFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::TutorialTrigger:
+        return actorLoadSystem->CreateTutorialTriggerFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    }
+
+    return false;
+}
+
+bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::string& modelPath,
+                                          const glm::vec3& scale,
+                                          const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -113,6 +365,7 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
 
     const int index = static_cast<int>(config["platforms"].size());
     YAML::Node platformNode = CreatePlatformNode(currentPlanetNum, modelPath, scale);
+    ApplyPlacementToNode(platformNode, currentPlanetNum, placement);
     platformNode["platformId"] = CreateUniquePlatformId(config);
 
     config["platforms"].push_back(platformNode);
@@ -129,7 +382,8 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
 bool StageActorCreateService::AddRideMovingPlatform(
     int currentPlanetNum,
     const std::string& modelPath,
-    const glm::vec3& scale)
+    const glm::vec3& scale,
+    const StageActorPlacement* placement)
 {
     if (!CanCreateActor() ||
         !IsValidPlanetIndex(currentPlanetNum, "ride moving platform")) {
@@ -145,6 +399,7 @@ bool StageActorCreateService::AddRideMovingPlatform(
     const int index = static_cast<int>(config["platforms"].size());
     YAML::Node platformNode =
         CreateRideMovingPlatformNode(currentPlanetNum, modelPath, scale);
+    ApplyPlacementToNode(platformNode, currentPlanetNum, placement);
     platformNode["platformId"] = CreateUniquePlatformId(config);
     config["platforms"].push_back(platformNode);
 
@@ -186,7 +441,8 @@ bool StageActorCreateService::AddPlanet(const std::string& modelPath)
     return true;
 }
 
-bool StageActorCreateService::AddEnemy(const std::string& type, int currentPlanetNum)
+bool StageActorCreateService::AddEnemy(const std::string& type, int currentPlanetNum,
+                                       const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -206,6 +462,7 @@ bool StageActorCreateService::AddEnemy(const std::string& type, int currentPlane
 
     const int index = static_cast<int>(config["enemies"].size());
     YAML::Node enemyNode = CreateEnemyNode(type, currentPlanetNum);
+    ApplyPlacementToNode(enemyNode, currentPlanetNum, placement);
 
     config["enemies"].push_back(enemyNode);
 
@@ -224,7 +481,8 @@ bool StageActorCreateService::AddNPC(
     const std::string& name,
     const std::vector<std::string>& talkTexts,
     float radius,
-    float scale)
+    float scale,
+    const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -251,6 +509,7 @@ bool StageActorCreateService::AddNPC(
             talkTexts,
             radius,
             scale);
+    ApplyPlacementToNode(npcNode, currentPlanetNum, placement);
 
     config["NPCs"].push_back(npcNode);
 
@@ -267,7 +526,8 @@ bool StageActorCreateService::AddTutorialTrigger(
     int currentPlanetNum,
     const std::string& modelPath,
     const std::vector<std::string>& talkTexts,
-    const glm::vec3& scale)
+    const glm::vec3& scale,
+    const StageActorPlacement* placement)
 {
     if (!CanCreateActor() || modelPath.empty() ||
         !IsValidPlanetIndex(
@@ -293,6 +553,7 @@ bool StageActorCreateService::AddTutorialTrigger(
             modelPath,
             talkTexts,
             scale);
+    ApplyPlacementToNode(triggerNode, currentPlanetNum, placement);
     config["tutorialTriggers"].push_back(triggerNode);
 
     if (!StageYamlRepository::SaveCurrentStage(
@@ -310,7 +571,8 @@ bool StageActorCreateService::AddTutorialTrigger(
     return true;
 }
 
-bool StageActorCreateService::AddCrystal(const std::string& type, int currentPlanetNum)
+bool StageActorCreateService::AddCrystal(const std::string& type, int currentPlanetNum,
+                                         const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -330,6 +592,7 @@ bool StageActorCreateService::AddCrystal(const std::string& type, int currentPla
 
     const int index = static_cast<int>(config["crystals"].size());
     YAML::Node crystalNode = CreateCrystalNode(type, currentPlanetNum);
+    ApplyPlacementToNode(crystalNode, currentPlanetNum, placement);
 
     config["crystals"].push_back(crystalNode);
 
@@ -342,7 +605,8 @@ bool StageActorCreateService::AddCrystal(const std::string& type, int currentPla
     return true;
 }
 
-bool StageActorCreateService::AddBoatParts(const std::string& type, int currentPlanetNum)
+bool StageActorCreateService::AddBoatParts(const std::string& type, int currentPlanetNum,
+                                           const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -362,6 +626,7 @@ bool StageActorCreateService::AddBoatParts(const std::string& type, int currentP
 
     const int index = static_cast<int>(config["boatParts"].size());
     YAML::Node partNode = CreateBoatPartsNode(type, currentPlanetNum);
+    ApplyPlacementToNode(partNode, currentPlanetNum, placement);
 
     config["boatParts"].push_back(partNode);
 
@@ -374,7 +639,8 @@ bool StageActorCreateService::AddBoatParts(const std::string& type, int currentP
     return true;
 }
 
-bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int destStage)
+bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int destStage,
+                                      const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -398,6 +664,7 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
 
     const int index = static_cast<int>(config["boats"].size());
     YAML::Node boatNode = CreateBoatNode(startPlanetNum, destPlanetNum, destStage);
+    ApplyPlacementToNode(boatNode, startPlanetNum, placement);
 
     config["boats"].push_back(boatNode);
 
@@ -410,7 +677,7 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
     return true;
 }
 
-bool StageActorCreateService::AddStar(int currentPlanetNum)
+bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
         return false;
@@ -430,6 +697,7 @@ bool StageActorCreateService::AddStar(int currentPlanetNum)
 
     const int index = static_cast<int>(config["star"].size());
     YAML::Node starNode = CreateStarNode(currentPlanetNum);
+    ApplyPlacementToNode(starNode, currentPlanetNum, placement);
 
     config["star"].push_back(starNode);
 
@@ -445,7 +713,8 @@ bool StageActorCreateService::AddStar(int currentPlanetNum)
 bool StageActorCreateService::AddStageObject(
     int currentPlanetNum,
     const std::string& modelPath,
-    bool collisionEnabled)
+    bool collisionEnabled,
+    const StageActorPlacement* placement)
 {
     if (!CanCreateActor() || modelPath.empty()) {
         return false;
@@ -465,6 +734,7 @@ bool StageActorCreateService::AddStageObject(
     const int index = static_cast<int>(config["stageObjects"].size());
     YAML::Node stageObjectNode =
         CreateStageObjectNode(currentPlanetNum, modelPath, collisionEnabled);
+    ApplyPlacementToNode(stageObjectNode, currentPlanetNum, placement);
     config["stageObjects"].push_back(stageObjectNode);
 
     if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {

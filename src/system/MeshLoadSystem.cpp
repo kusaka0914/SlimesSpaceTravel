@@ -52,12 +52,7 @@ void MeshLoadSystem::CreateLoadedModels()
 
 void MeshLoadSystem::RegisterModel(const std::string& modelPath)
 {
-    if (modelPath.empty() || mLoadedModels.contains(modelPath)) {
-        return;
-    }
-
-    const std::string resolvedPath = ResolveModelFilePath(modelPath);
-    mLoadedModels.emplace(modelPath, LoadModelFromFile(resolvedPath.c_str()));
+    ResolveLoadedModel(modelPath);
 }
 
 void MeshLoadSystem::SetActorMesh(Actor* actor)
@@ -66,7 +61,8 @@ void MeshLoadSystem::SetActorMesh(Actor* actor)
         return;
     }
 
-    LoadedModel* loadedModel = FindOrLoadModel(actor->GetModelPath());
+    const LoadedModel* loadedModel =
+        ResolveLoadedModel(actor->GetModelPath());
     actor->SetLoadedModel(loadedModel);
 }
 
@@ -87,7 +83,8 @@ const LoadedModel* MeshLoadSystem::FindLoadedModel(const std::string& modelPath)
     return loadedModelIt != mLoadedModels.end() ? &loadedModelIt->second : nullptr;
 }
 
-LoadedModel* MeshLoadSystem::FindOrLoadModel(const std::string& modelPath)
+const LoadedModel* MeshLoadSystem::ResolveLoadedModel(
+    const std::string& modelPath)
 {
     if (modelPath.empty()) {
         return nullptr;

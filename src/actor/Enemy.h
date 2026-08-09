@@ -31,6 +31,7 @@ public:
     void ApplyDamage(float damage, Player* player);
     void ApplyBreak(float deltaTime, bool isAllBreak = false);
     void ApplyAirDodgePush(const glm::vec3& dodgeDirection);
+    void DefeatImmediately();
     void ApplyConfig(const std::string& type);
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }

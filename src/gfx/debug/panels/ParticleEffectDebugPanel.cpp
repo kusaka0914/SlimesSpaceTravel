@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "actor/Player.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "imgui.h"
 #include "system/ParticleSystem.h"
 
@@ -738,24 +739,40 @@ bool ParticleEffectDebugPanel::DrawTexturePicker(
         changed = true;
     }
 
-    if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* payload =
-                ImGui::AcceptDragDropPayload("EDITOR_TEXTURE_ASSET")) {
-            const std::string_view assetPath(
-                static_cast<const char*>(payload->Data));
-            std::string particleTexturePath;
-            if (TryResolveParticleTexturePath(
-                    assetPath,
-                    particleTexturePath)) {
-                emitter.texturePath = particleTexturePath;
-                SyncTexturePathBuffer(emitter);
-                changed = true;
-            } else {
-                mStatusMessage =
-                    "particlesフォルダー内の画像を選択してください";
-            }
+    std::string droppedTextureAssetPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTextureAssetPath)) {
+        std::string particleTexturePath;
+        if (TryResolveParticleTexturePath(
+                droppedTextureAssetPath,
+                particleTexturePath)) {
+            emitter.texturePath = particleTexturePath;
+            SyncTexturePathBuffer(emitter);
+            changed = true;
+        } else {
+            mStatusMessage =
+                "particlesフォルダー内の画像を選択してください";
         }
-        ImGui::EndDragDropTarget();
+    }
+
+    ImGui::Button(
+        "画像アセットをここへドロップ##particleTextureDrop",
+        ImVec2(-1.0f, 0.0f));
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTextureAssetPath)) {
+        std::string particleTexturePath;
+        if (TryResolveParticleTexturePath(
+                droppedTextureAssetPath,
+                particleTexturePath)) {
+            emitter.texturePath = particleTexturePath;
+            SyncTexturePathBuffer(emitter);
+            changed = true;
+        } else {
+            mStatusMessage =
+                "particlesフォルダー内の画像を選択してください";
+        }
     }
 
     if (mContext.assetCatalog) {

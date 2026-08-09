@@ -53,6 +53,7 @@ public:
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
     void SetControlLocked(bool locked) { mControlLocked = locked; }
+    void RequestNextWeakAttackAnimation();
 
     bool IsInvincible() const { return mStatus.IsInvincible(); }
 

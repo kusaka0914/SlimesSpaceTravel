@@ -2,6 +2,7 @@
 
 #include "gfx/UIRenderer.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -584,6 +585,19 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
 
     ImGui::SeparatorText("画像アセット");
     ImGui::TextWrapped("選択中: %s", element.texturePath.empty() ? "なし" : element.texturePath.c_str());
+    ImGui::Button("画像アセットをここへドロップ##customUITexture", ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        element.texturePath = droppedTexturePath;
+        element.flipVertical = droppedTexturePath != "textures/guard.png";
+        if (!mContext.uiRenderer->RegisterCustomUITexture(
+                droppedTexturePath)) {
+            mStatusMessage =
+                "画像の読み込みに失敗しました: " + droppedTexturePath;
+        }
+    }
     ImGui::InputTextWithHint(
         "##assetFilter",
         "ファイル名で絞り込み",

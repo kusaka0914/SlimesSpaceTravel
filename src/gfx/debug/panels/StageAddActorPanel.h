@@ -2,31 +2,53 @@
 
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
+#include "gfx/debug/stage/StageEditorTypes.h"
 
 #include <array>
+#include <functional>
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
+
+class StageSelectionController;
+class Actor;
 
 class StageAddActorPanel : public DebugPanel {
 public:
     explicit StageAddActorPanel(DebugEditorContext& context);
 
     void Draw() override;
+    void UpdatePlacement();
+    void SetSelectionController(StageSelectionController* selectionController);
+    void SetPushUndoCallback(std::function<void()> pushUndoCallback);
+    bool BeginDuplicatePlacement(const StageActorRef& sourceRef);
+    bool IsPlacementActive() const { return static_cast<bool>(mPlacementCreator); }
+    void CancelPlacement();
 
 private:
     void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
+    void BeginPlacement(const std::string& displayName, int fallbackPlanetIndex,
+                        std::function<bool(int, const StageActorPlacement&)> placementCreator);
+    int ResolveHitPlanetIndex(Actor* hitActor, int fallbackPlanetIndex) const;
 
 private:
     StageActorCreateService mCreateService;
+    StageSelectionController* mSelectionController = nullptr;
+    std::function<void()> mPushUndoCallback;
+    std::function<bool(int, const StageActorPlacement&)> mPlacementCreator;
+    std::string mPlacementDisplayName;
+    std::string mPlacementStatus;
+    int mPlacementFallbackPlanetIndex = -1;
 
     int mSelectedPlanetModelIndex = 0;
+    std::string mSelectedPlanetModelPath = "planet.obj";
 
     int mSelectedEnemyTypeIndex = 0;
     int mSelectedEnemyPlanetIndex = -1;
 
     int mSelectedPlatformPlanetIndex = -1;
     int mSelectedPlatformModelIndex = 0;
+    std::string mSelectedPlatformModelPath = "platform.obj";
     glm::vec3 mPlatformScale = glm::vec3(1.0f, 1.0f, 1.0f);
     std::string mRideMovingPlatformStatus;
 

@@ -5,6 +5,7 @@
 class Actor;
 
 enum class StageActorType {
+    Planet,
     Enemy,
     Platform,
     Crystal,

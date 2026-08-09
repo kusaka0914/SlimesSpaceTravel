@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "actor/Actor.h"
+#include "actor/Planet.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
@@ -101,6 +102,24 @@ void StageSelectionController::SetSingleSelection(Actor* actor, const StageActor
 
 void StageSelectionController::ToggleSelection(Actor* actor, const StageActorRef& actorRef)
 {
+    // 惑星は所属オブジェクトを多数持つため、通常オブジェクトとの複数選択には
+    // 混ぜない。惑星をクリックした場合は常に単独選択として扱う。
+    if (dynamic_cast<Planet*>(actor)) {
+        SetSingleSelection(actor, actorRef);
+        return;
+    }
+
+    const bool hasSelectedPlanet = std::any_of(
+        mSelectedKeys.begin(),
+        mSelectedKeys.end(),
+        [](const std::string& selectedKey) {
+            return selectedKey.rfind("planets:", 0) == 0;
+        });
+    if (hasSelectedPlanet) {
+        mSelectedKeys.clear();
+        ClearPickedActor();
+    }
+
     const std::string key = MakeKey(actorRef);
 
     if (mSelectedKeys.contains(key)) {
@@ -352,7 +371,7 @@ void StageSelectionController::UpdatePickedActorByMouse()
     glm::vec3 rayFrom;
     glm::vec3 rayTo;
 
-    if (!CreateMousePickRay(rayFrom, rayTo)) {
+    if (!TryCreateMouseRay(rayFrom, rayTo)) {
         return;
     }
 
@@ -412,7 +431,7 @@ void StageSelectionController::UpdatePickedActorByMouse()
     }
 }
 
-bool StageSelectionController::CreateMousePickRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const
+bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const
 {
     if (!mContext.game || !mContext.game->GetWindow() || !mContext.game->GetCameraSystem()) {
         return false;
@@ -609,7 +628,8 @@ void StageSelectionController::SelectActorsInScreenRect(const ImVec2& rectMin, c
     for (const StageActorInstance& instance : instances) {
         Actor* actor = instance.actor;
 
-        if (!actor || !actor->GetIsActive()) {
+        if (!actor || !actor->GetIsActive() ||
+            dynamic_cast<Planet*>(actor)) {
             continue;
         }
 

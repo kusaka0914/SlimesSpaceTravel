@@ -25,12 +25,12 @@ public:
                                      std::vector<unsigned int>& outIndices);
 
     const LoadedModel* FindLoadedModel(const std::string& modelPath) const;
+    const LoadedModel* ResolveLoadedModel(const std::string& modelPath);
 
 private:
     void CreateLoadedModels();
     void RegisterModel(const std::string& modelPath);
 
-    LoadedModel* FindOrLoadModel(const std::string& modelPath);
     std::string ResolveModelFilePath(const std::string& modelPath) const;
 
 private:

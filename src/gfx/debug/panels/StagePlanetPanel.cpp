@@ -16,6 +16,7 @@
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
@@ -52,6 +53,9 @@ void StagePlanetPanel::Draw()
 
     const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
 
+    if (mFocusedPlanet) {
+        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    }
     if (!ImGui::TreeNode("惑星")) {
         return;
     }
@@ -60,12 +64,15 @@ void StagePlanetPanel::Draw()
 
     for (std::size_t i = 0; i < planets.size(); ++i) {
         Planet* planet = planets[i];
-        if (!planet) {
+        if (!planet || (mFocusedPlanet && planet != mFocusedPlanet)) {
             continue;
         }
 
         const std::string treeLabel = "惑星 " + std::to_string(i) + "##planet" + std::to_string(i);
 
+        if (mFocusedPlanet) {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+        }
         if (ImGui::TreeNode(treeLabel.c_str())) {
             glm::vec3 center = planet->GetPos();
             const glm::vec3 previousScale = planet->GetScale();
@@ -147,6 +154,23 @@ void StagePlanetPanel::Draw()
                     mContext.game->GetMeshLoadSystem()->SetActorMesh(planet);
                 }
             }
+            ImGui::Button(
+                ("モデルアセットをここへドロップ##planetModelDrop" +
+                 std::to_string(i))
+                    .c_str(),
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedModelPath)) {
+                planet->SetModelPath(droppedModelPath);
+                if (mContext.game->GetMeshLoadSystem()) {
+                    mContext.game->GetMeshLoadSystem()->SetActorMesh(planet);
+                }
+            }
+            ImGui::TextWrapped(
+                "選択中: %s",
+                planet->GetModelPath().c_str());
 
             DrawTexturePicker(planet, i);
             if (planet->GetPlanetShape() ==
@@ -192,6 +216,17 @@ void StagePlanetPanel::Draw()
     }
 
     ImGui::TreePop();
+}
+
+void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
+{
+    if (!selectedPlanet) {
+        return;
+    }
+
+    mFocusedPlanet = selectedPlanet;
+    Draw();
+    mFocusedPlanet = nullptr;
 }
 
 void StagePlanetPanel::Save()
@@ -273,6 +308,26 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
     ImGui::TextWrapped(
         "選択中: %s",
         selectedTexture.empty() ? "モデル標準" : selectedTexture.c_str());
+    ImGui::Button(
+        ("画像アセットをここへドロップ##planetTextureDrop" +
+         std::to_string(planetIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        planet->SetTextureOverridePath(droppedTexturePath);
+        if (mContext.game && mContext.game->GetRenderer3D() &&
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                droppedTexturePath) == 0) {
+            mTextureAssetStatus =
+                "テクスチャの読み込みに失敗しました: " +
+                droppedTexturePath;
+        } else {
+            mTextureAssetStatus.clear();
+        }
+    }
 
     const std::string pickerId = "##planetTexturePicker" + std::to_string(planetIndex);
     if (ImGui::TreeNode(("テクスチャを選ぶ" + pickerId).c_str())) {
@@ -366,6 +421,26 @@ void StagePlanetPanel::DrawBackTexturePicker(
         selectedTexture.empty()
             ? "表側と同じ"
             : selectedTexture.c_str());
+    ImGui::Button(
+        ("画像アセットをここへドロップ##planetBackTextureDrop" +
+         std::to_string(planetIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        planet->SetBackTextureOverridePath(droppedTexturePath);
+        if (mContext.game && mContext.game->GetRenderer3D() &&
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                droppedTexturePath) == 0) {
+            mTextureAssetStatus =
+                "裏側テクスチャの読み込みに失敗しました: " +
+                droppedTexturePath;
+        } else {
+            mTextureAssetStatus.clear();
+        }
+    }
 
     const std::string pickerId =
         "##planetBackTexturePicker" + std::to_string(planetIndex);

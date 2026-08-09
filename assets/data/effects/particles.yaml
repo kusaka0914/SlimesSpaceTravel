@@ -1,5 +1,6 @@
 particleEffects:
   attack_hit:
+    name: attack_hit
     emitters:
       - texture: spark_core.png
         blendMode: additive
@@ -89,6 +90,7 @@ particleEffects:
         colorStart: [1, 0.58, 0.1, 0.95]
         colorEnd: [1, 0.12, 0.01, 0]
   enemy_defeat:
+    name: enemy_defeat
     emitters:
       - texture: spark_core.png
         blendMode: additive
@@ -178,6 +180,7 @@ particleEffects:
         colorStart: [1, 0.62, 0.1, 1]
         colorEnd: [0.95, 0.08, 0.01, 0]
   landing_dust:
+    name: landing_dust
     emitters:
       - texture: dust_puff.png
         blendMode: alpha
@@ -208,7 +211,40 @@ particleEffects:
         positionOffset: [0, 0, 0]
         colorStart: [0.98, 0.96, 0.9, 0.8]
         colorEnd: [0.7, 0.68, 0.64, 0]
+  player_special_charge:
+    name: プレイヤー溜めオーラ
+    emitters:
+      - texture: player_charge_aura.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.22
+          max: 0.28
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 1.39
+            max: 1.39
+          endMultiplier: 1.4
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: 110
+          max: 160
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [0.7, 0.92, 1, 0.82]
+        colorEnd: [0.22, 0.65, 1, 0]
   star_glow:
+    name: star_glow
     emitters:
       - texture: star_magic_glow.png
         blendMode: additive
@@ -240,6 +276,7 @@ particleEffects:
         colorStart: [1, 1, 0.8, 0.32]
         colorEnd: [1, 0.72, 0.15, 0]
   star_sparkle:
+    name: star_sparkle
     emitters:
       - texture: spark_streak.png
         blendMode: additive
@@ -300,6 +337,7 @@ particleEffects:
         colorStart: [1, 0.95, 0.35, 0.9]
         colorEnd: [0.55, 0.9, 1, 0]
   walk_start_dust:
+    name: walk_start_dust
     emitters:
       - texture: dust_puff.png
         blendMode: alpha

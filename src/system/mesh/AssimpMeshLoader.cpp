@@ -365,6 +365,30 @@ LoadedModel AssimpMeshLoader::LoadModelFromFile(const char* path) const
             continue;
         }
 
+        for (unsigned int vertexIndex = 0;
+             vertexIndex < sourceMesh->mNumVertices;
+             ++vertexIndex) {
+            const aiVector3D& sourcePosition =
+                sourceMesh->mVertices[vertexIndex];
+            const glm::vec3 position(
+                sourcePosition.x,
+                sourcePosition.y,
+                sourcePosition.z);
+            if (!loadedModel.hasBounds) {
+                loadedModel.boundsMinimum = position;
+                loadedModel.boundsMaximum = position;
+                loadedModel.hasBounds = true;
+                continue;
+            }
+
+            loadedModel.boundsMinimum = glm::min(
+                loadedModel.boundsMinimum,
+                position);
+            loadedModel.boundsMaximum = glm::max(
+                loadedModel.boundsMaximum,
+                position);
+        }
+
         loadedModel.meshes.emplace_back(CreateGpuMesh(*scene, *sourceMesh, path, mTextureLoader,
                                                       loadedModel.skeletalAnimation, didExceedBoneLimit));
     }

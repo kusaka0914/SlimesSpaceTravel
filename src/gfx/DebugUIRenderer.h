@@ -54,6 +54,8 @@ private:
     void DrawGameViewportToolbar(
         const ImVec2& toolbarMin,
         float toolbarWidth);
+    void ResolveResizableLayout(EditorSection section);
+    void DrawLayoutResizeHandles(EditorSection section);
     const char* ResolveToolPanelTitle(EditorSection section) const;
 
 private:

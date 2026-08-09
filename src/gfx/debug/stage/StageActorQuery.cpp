@@ -53,6 +53,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
 {
     static const std::vector<StageActorTypeInfo> typeInfos = [] {
         std::vector<StageActorTypeInfo> result = {
+            {StageActorType::Planet, "planets", "惑星"},
             {StageActorType::Enemy, "enemies", "敵"},
             {StageActorType::Key, "keys", "キー"},
             {StageActorType::Boat, "boats", "ボート"},
@@ -91,10 +92,21 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
 
     const std::vector<Planet*> planets = stage->GetPlanets();
 
-    for (Planet* planet : planets) {
+    for (std::size_t planetIndex = 0;
+         planetIndex < planets.size();
+         ++planetIndex) {
+        Planet* planet = planets[planetIndex];
         if (!planet) {
             continue;
         }
+
+        AddInstance(
+            instances,
+            planet,
+            StageActorType::Planet,
+            static_cast<int>(planetIndex),
+            "planets",
+            MakeIndexedLabel("惑星", static_cast<int>(planetIndex)));
 
         for (Enemy* enemy : planet->GetEnemies()) {
             const int yamlIndex = enemy ? enemy->GetStageYamlIndex() : -1;
@@ -203,6 +215,11 @@ std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
     std::vector<StageActorRef> targets;
 
     for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
+        // 惑星の削除や複製では所属オブジェクトの参照更新が必要になるため、
+        // 汎用の一括編集対象には含めず、惑星専用UIへ委ねる。
+        if (instance.ref.type == StageActorType::Planet) {
+            continue;
+        }
         targets.emplace_back(instance.ref);
     }
 
@@ -248,6 +265,10 @@ std::string StageActorQuery::MakeKey(const StageActorRef& target)
 
 std::string StageActorQuery::GetSequenceName(StageActorType type)
 {
+    if (type == StageActorType::Planet) {
+        return "planets";
+    }
+
     for (const StageActorTypeInfo& info : GetTypeInfos()) {
         if (info.type == type) {
             return info.sequenceName;
@@ -259,6 +280,10 @@ std::string StageActorQuery::GetSequenceName(StageActorType type)
 
 const char* StageActorQuery::GetTypeLabel(StageActorType type)
 {
+    if (type == StageActorType::Planet) {
+        return "惑星";
+    }
+
     for (const StageActorTypeInfo& info : GetTypeInfos()) {
         if (info.type == type) {
             return info.displayName.c_str();

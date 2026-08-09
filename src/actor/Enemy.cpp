@@ -112,6 +112,16 @@ void Enemy::ApplyDamage(float damage, Player* player)
     mDamageHandler->ApplyDamage(*this, mStatus, *mStateMachine, damage, player);
 }
 
+void Enemy::DefeatImmediately()
+{
+    if (GetIsDead()) {
+        return;
+    }
+
+    mStatus.SetHpZero();
+    mStateMachine->FinishDying(*this, mStatus);
+}
+
 void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
 {
     mCombat->ApplyBreak(*this, mStatus, *mMovement, *mStateMachine, deltaTime, isAllBreak);

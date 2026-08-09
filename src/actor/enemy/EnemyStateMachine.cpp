@@ -193,6 +193,26 @@ void EmitEnemyDefeatEffect(Enemy& enemy, const EnemyStatus& status)
     particleSystem->Emit("enemy_defeat", context);
 }
 
+void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
+{
+    Planet* planet = defeatedBoss.GetCurrentPlanet();
+    if (!planet) {
+        return;
+    }
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (!enemy ||
+            enemy == &defeatedBoss ||
+            enemy->GetIsBoss() ||
+            !enemy->GetIsActive() ||
+            enemy->GetIsDead()) {
+            continue;
+        }
+
+        enemy->DefeatImmediately();
+    }
+}
+
 } // namespace
 
 EnemyStateMachine::EnemyStateMachine()
@@ -365,6 +385,7 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 
     if (status.GetIsBoss()) {
         enemy.SetVelocity(glm::vec3(0.0f));
+        DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
 
         Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
