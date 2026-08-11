@@ -20,12 +20,14 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <utility>
 
 namespace {
 std::string ToLower(std::string value)
@@ -75,6 +77,7 @@ void StagePlanetPanel::Draw()
         }
         if (ImGui::TreeNode(treeLabel.c_str())) {
             glm::vec3 center = planet->GetPos();
+            const glm::vec3 previousCenter = center;
             const glm::vec3 previousScale = planet->GetScale();
             glm::vec3 scale = previousScale;
 
@@ -101,7 +104,11 @@ void StagePlanetPanel::Draw()
 
             if (centerChanged) {
                 planet->SetPos(center);
-                UpdateActorsOnPlanetSurface(planet);
+                StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
+                    planet,
+                    center - previousCenter);
+                planet->CaptureEditorAuthoredPosition();
+                mHasPendingTransformEdit = true;
             }
 
             if (scaleChanged) {
@@ -118,7 +125,15 @@ void StagePlanetPanel::Draw()
 
                 planet->SetRadius(scale.x);
 
-                UpdateActorsOnPlanetSurface(planet);
+                StageActorPlanetBindingService::
+                    ReprojectSurfaceActorsAfterPlanetScale(planet);
+                planet->CaptureEditorAuthoredScale();
+                mHasPendingTransformEdit = true;
+            }
+
+            if (mHasPendingTransformEdit && !ImGui::IsAnyItemActive()) {
+                SaveEditorAuthoredTransforms();
+                mHasPendingTransformEdit = false;
             }
 
             const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
@@ -219,14 +234,51 @@ void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
 
 void StagePlanetPanel::Save()
 {
+    SaveYaml(false);
+}
+
+void StagePlanetPanel::SaveEditorAuthoredTransforms()
+{
+    if (mSaveDependentActorTransformsCallback) {
+        mSaveDependentActorTransformsCallback();
+    }
+
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
+    }
+
+    std::vector<Planet*> editedPlanets;
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (planet && planet->FindEditorAuthoredTransform()) {
+            editedPlanets.emplace_back(planet);
+        }
+    }
+
+    if (editedPlanets.empty() || !SaveYaml(true)) {
+        return;
+    }
+
+    for (Planet* planet : editedPlanets) {
+        planet->ClearEditorAuthoredTransform();
+    }
+}
+
+void StagePlanetPanel::SetSaveDependentActorTransformsCallback(
+    std::function<void()> callback)
+{
+    mSaveDependentActorTransformsCallback = std::move(callback);
+}
+
+bool StagePlanetPanel::SaveYaml(bool shouldSaveEditorTransform)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
     }
 
     YAML::Node config;
 
     if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
-        return;
+        return false;
     }
 
     const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
@@ -237,16 +289,27 @@ void StagePlanetPanel::Save()
             continue;
         }
 
-        const glm::vec3 center = planet->GetPos();
-        const glm::vec3 scale = planet->GetScale();
+        const EditorAuthoredTransform* editorTransform =
+            shouldSaveEditorTransform
+            ? planet->FindEditorAuthoredTransform()
+            : nullptr;
+        if (editorTransform && editorTransform->hasPosition) {
+            const glm::vec3& center = editorTransform->localPosition;
+            config["planets"][i]["center"][0] = center.x;
+            config["planets"][i]["center"][1] = center.y;
+            config["planets"][i]["center"][2] = center.z;
+        }
+        if (editorTransform && editorTransform->hasScale) {
+            const glm::vec3& scale = editorTransform->scale;
+            config["planets"][i]["scale"][0] = scale.x;
+            config["planets"][i]["scale"][1] = scale.y;
+            config["planets"][i]["scale"][2] = scale.z;
+        }
 
-        config["planets"][i]["center"][0] = center.x;
-        config["planets"][i]["center"][1] = center.y;
-        config["planets"][i]["center"][2] = center.z;
+        if (shouldSaveEditorTransform) {
+            continue;
+        }
 
-        config["planets"][i]["scale"][0] = scale.x;
-        config["planets"][i]["scale"][1] = scale.y;
-        config["planets"][i]["scale"][2] = scale.z;
         config["planets"][i].remove("shape");
 
         config["planets"][i]["model"] = planet->GetModelPath();
@@ -277,7 +340,7 @@ void StagePlanetPanel::Save()
             planet->GetRocketSpawnCondition();
     }
 
-    StageYamlRepository::SaveCurrentStage(mContext, config);
+    return StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
 void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex)
@@ -568,58 +631,4 @@ void StagePlanetPanel::DrawTextureTilingEditor(Planet* planet, std::size_t plane
 
     ImGui::TextDisabled(
         "スケール変更時に自動追従します。横はX/Zの一周方向、縦はY方向です。");
-}
-
-void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)
-{
-    if (!planet || !mContext.game) {
-        return;
-    }
-
-    auto updateActor = [planet](Actor* actor) {
-        if (!actor) {
-            return;
-        }
-
-        const glm::vec3 newPos = planet->CalculateSurfacePos(actor->GetTheta(), actor->GetPhi(), actor->GetHeight());
-
-        actor->SetPos(newPos);
-    };
-
-    if (!mContext.game->GetPlayers().empty()) {
-        updateActor(mContext.game->GetPlayers()[0]);
-    }
-
-    for (Enemy* enemy : planet->GetEnemies()) {
-        updateActor(enemy);
-    }
-
-    for (Crystal* crystal : planet->GetCrystals()) {
-        updateActor(crystal);
-    }
-
-    for (Boat* boat : planet->GetBoats()) {
-        updateActor(boat);
-    }
-
-    for (BoatParts* part : planet->GetBoatParts()) {
-        updateActor(part);
-    }
-
-    for (NPC* npc : planet->GetNPCs()) {
-        updateActor(npc);
-    }
-
-    for (TutorialTrigger* trigger :
-         planet->GetTutorialTriggers()) {
-        updateActor(trigger);
-    }
-
-    if (Key* key = planet->GetKey()) {
-        updateActor(key);
-    }
-
-    if (Star* star = planet->GetStar()) {
-        updateActor(star);
-    }
 }

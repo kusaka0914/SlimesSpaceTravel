@@ -19,6 +19,7 @@
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
 #include "system/MeshLoadSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 #include "system/text/JapaneseRubyGenerator.h"
 
 #include <glm/glm.hpp>
@@ -326,6 +327,12 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadStageObjects(path.c_str());
     LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
+
+    // Older stage YAML can contain a stale or omitted currentPlanetNum. The
+    // world-space placement remains authoritative, so reconcile ownership
+    // only after every category and planet has finished loading.
+    StageActorPlanetBindingService::RefreshNearestPlanetBindings(
+        mGame->GetCurrentStage());
 }
 
 void ActorLoadSystem::LoadPlayers(const char* path)

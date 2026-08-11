@@ -5,9 +5,12 @@ players:
     attackSpeed: 3
     moveSpeed: 4
     maximumStepHeight: 0.3
-    jumpHeight: 1.8367347
+    jumpHeight: 1.84
     jumpAscentDuration: 0.4
-    jumpFallDuration: 0.5
+    jumpFallDuration: 0.6
+    jumpApexHoverDurationSeconds: 0.1
+    airWeakAttackPostHoverDurationSeconds: 0.3
+    airDodgePostHoverDurationSeconds: 0.1
     groundNormalRayLength: 40
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.4
@@ -32,7 +35,7 @@ players:
     attackCooldown: 0.39
     lastAttackCooldown: 1
     defaultStrongAttackTimer: 0.06
-    knockBackSpeed: 4
+    knockBackSpeed: 1
     modelPath: slime_attack_test.fbx
     animations:
       idle:

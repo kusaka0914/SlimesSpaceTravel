@@ -20,5 +20,8 @@ public:
         const glm::vec3& movementEnd) const;
 
 private:
+    bool IsGroundedEnemyWithinAirAttackHeight(
+        const Player& player,
+        const Enemy& enemy) const;
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange, float attackAngle) const;
 };

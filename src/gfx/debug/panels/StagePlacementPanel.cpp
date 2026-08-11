@@ -23,6 +23,7 @@
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 #include "system/scene/TutorialController.h"
 #include "system/text/JapaneseRubyGenerator.h"
 #include "system/tutorial/TutorialLibrary.h"
@@ -262,6 +263,46 @@ void StagePlacementPanel::Save()
     StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
+void StagePlacementPanel::SaveEditorAuthoredTransforms()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return;
+    }
+
+    std::vector<Actor*> savedActors;
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(
+            mContext.game->GetCurrentStage());
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor ||
+            !instance.actor->FindEditorAuthoredTransform() ||
+            instance.ref.type == StageActorType::Planet) {
+            continue;
+        }
+
+        SaveActorCommonYaml(
+            config,
+            instance.ref.sequenceName,
+            instance.actor,
+            true);
+        savedActors.emplace_back(instance.actor);
+    }
+
+    if (savedActors.empty() ||
+        !StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return;
+    }
+
+    for (Actor* actor : savedActors) {
+        actor->ClearEditorAuthoredTransform();
+    }
+}
+
 std::vector<StagePlacementPanel::ActorGroup> StagePlacementPanel::CollectActorGroups() const
 {
     std::vector<ActorGroup> groups;
@@ -407,8 +448,9 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         surfaceRotation.z = 0.0f;
         actor->SetEditorRotation(surfaceRotation);
         ApplyActorEditorRotation(actor);
+        actor->CaptureEditorAuthoredRotation();
 
-        Save();
+        SaveEditorAuthoredTransforms();
         RebuildPhysicsWorldIfNeeded(true);
         mSurfaceAlignmentStatus =
             isEllipsePlanet
@@ -1382,15 +1424,19 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     float height = actor->GetHeight();
 
     bool placementChanged = false;
+    bool placementEditFinished = false;
 
     placementChanged |= ImGui::DragFloat(("theta##" + sequenceName + std::to_string(listIndex)).c_str(), &theta, 0.001f,
                                          -3.141593f, 3.141593f, "%.6f");
+    placementEditFinished |= ImGui::IsItemDeactivatedAfterEdit();
 
     placementChanged |= ImGui::DragFloat(("phi##" + sequenceName + std::to_string(listIndex)).c_str(), &phi, 0.001f,
                                          -1.570796f, 1.570796f, "%.6f");
+    placementEditFinished |= ImGui::IsItemDeactivatedAfterEdit();
 
     placementChanged |= ImGui::DragFloat(("height##" + sequenceName + std::to_string(listIndex)).c_str(), &height,
                                          0.01f, -10.0f, 10.0f, "%.3f");
+    placementEditFinished |= ImGui::IsItemDeactivatedAfterEdit();
 
     if (placementChanged) {
         theta = std::round(theta * 1000000.0f) / 1000000.0f;
@@ -1439,7 +1485,6 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
         if (Platform* platform = dynamic_cast<Platform*>(actor);
             platform && platform->GetMovementComponent() &&
-            platform->GetMovementComponent()->GetMoveOnPlayer() &&
             mContext.game && mContext.game->GetIsDebugEditorShowing()) {
             platform->GetMovementComponent()->SetEditorPreviewLocalPos(localPos);
         }
@@ -1548,6 +1593,23 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
 
         ImGui::TextDisabled(
             "X/Zスケール変更時に自動追従します。手動で微調整することもできます。");
+    }
+
+    if (placementChanged || posChanged) {
+        StageActorPlanetBindingService::RefreshNearestPlanetBinding(
+            mContext.game ? mContext.game->GetCurrentStage() : nullptr,
+            actor);
+        actor->CaptureEditorAuthoredPosition();
+    }
+    if (rotationChanged) {
+        actor->CaptureEditorAuthoredRotation();
+    }
+    if (scaleChanged) {
+        actor->CaptureEditorAuthoredScale();
+    }
+
+    if (placementEditFinished || physicsRebuildRequired) {
+        SaveEditorAuthoredTransforms();
     }
 
     RebuildPhysicsWorldIfNeeded(physicsRebuildRequired);
@@ -2499,11 +2561,19 @@ void StagePlacementPanel::SaveActorsYaml(YAML::Node& config, const ActorGroup& g
     }
 
     for (const StageActorInstance& instance : group.actors) {
-        SaveActorCommonYaml(config, group.sequenceName, instance.actor);
+        SaveActorCommonYaml(
+            config,
+            group.sequenceName,
+            instance.actor,
+            false);
     }
 }
 
-void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::string& sequenceName, Actor* actor)
+void StagePlacementPanel::SaveActorCommonYaml(
+    YAML::Node& config,
+    const std::string& sequenceName,
+    Actor* actor,
+    bool shouldSaveEditorTransform)
 {
     if (!actor) {
         return;
@@ -2522,6 +2592,42 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
 
     if (yamlIndex >= config[sequenceName].size()) {
         return;
+    }
+
+    Stage* stage = mContext.game
+        ? mContext.game->GetCurrentStage()
+        : nullptr;
+    const std::vector<Planet*> planets =
+        stage ? stage->GetPlanets() : std::vector<Planet*>();
+    const auto findPlanetIndex =
+        [&planets](const Planet* target) {
+            for (int planetIndex = 0;
+                 planetIndex < static_cast<int>(planets.size());
+                 ++planetIndex) {
+                if (planets[planetIndex] == target) {
+                    return planetIndex;
+                }
+            }
+            return -1;
+        };
+
+    const EditorAuthoredTransform* editorTransform =
+        shouldSaveEditorTransform
+        ? actor->FindEditorAuthoredTransform()
+        : nullptr;
+    Planet* authoredPlanet =
+        editorTransform && editorTransform->hasPosition
+        ? editorTransform->planet
+        : actor->GetCurrentPlanet();
+
+    if (editorTransform && editorTransform->hasPosition &&
+        !dynamic_cast<const Boat*>(actor)) {
+        const int currentPlanetIndex =
+            findPlanetIndex(authoredPlanet);
+        if (currentPlanetIndex >= 0) {
+            config[sequenceName][yamlIndex]["currentPlanetNum"] =
+                currentPlanetIndex;
+        }
     }
 
     if (actor->IsDebugDisabled()) {
@@ -2562,48 +2668,82 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             false;
     }
 
-    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "theta", actor->GetTheta());
-    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "phi", actor->GetPhi());
-    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "height", actor->GetHeight());
+    if (editorTransform && editorTransform->hasPosition) {
+        StageYamlRepository::SetSequenceValue(
+            config,
+            sequenceName,
+            yamlIndex,
+            "theta",
+            editorTransform->theta);
+        StageYamlRepository::SetSequenceValue(
+            config,
+            sequenceName,
+            yamlIndex,
+            "phi",
+            editorTransform->phi);
+        StageYamlRepository::SetSequenceValue(
+            config,
+            sequenceName,
+            yamlIndex,
+            "height",
+            editorTransform->height);
 
-    glm::vec3 localPos = actor->GetPos();
-    if (actor->GetCurrentPlanet()) {
-        localPos -= actor->GetCurrentPlanet()->GetPos();
+        glm::vec3 localPosition = editorTransform->localPosition;
+        localPosition.x = std::round(localPosition.x * 100.0f) / 100.0f;
+        localPosition.y = std::round(localPosition.y * 100.0f) / 100.0f;
+        localPosition.z = std::round(localPosition.z * 100.0f) / 100.0f;
+
+        StageYamlRepository::SetSequenceValue(
+            config,
+            sequenceName,
+            yamlIndex,
+            "pos",
+            YAML::Node(YAML::NodeType::Sequence));
+        config[sequenceName][yamlIndex]["pos"][0] = localPosition.x;
+        config[sequenceName][yamlIndex]["pos"][1] = localPosition.y;
+        config[sequenceName][yamlIndex]["pos"][2] = localPosition.z;
+
     }
 
-    localPos.x = std::round(localPos.x * 100.0f) / 100.0f;
-    localPos.y = std::round(localPos.y * 100.0f) / 100.0f;
-    localPos.z = std::round(localPos.z * 100.0f) / 100.0f;
+    if (editorTransform && editorTransform->hasRotation) {
+        config[sequenceName][yamlIndex]["facingYaw"] =
+            editorTransform->facingYaw;
+        config[sequenceName][yamlIndex]["rotation"][0] =
+            editorTransform->editorRotation.x;
+        config[sequenceName][yamlIndex]["rotation"][1] =
+            editorTransform->editorRotation.y;
+        config[sequenceName][yamlIndex]["rotation"][2] =
+            editorTransform->editorRotation.z;
 
-    StageYamlRepository::SetSequenceValue(config, sequenceName, yamlIndex, "pos", YAML::Node(YAML::NodeType::Sequence));
-    config[sequenceName][yamlIndex]["pos"][0] = localPos.x;
-    config[sequenceName][yamlIndex]["pos"][1] = localPos.y;
-    config[sequenceName][yamlIndex]["pos"][2] = localPos.z;
+        config[sequenceName][yamlIndex]["rotationQuat"][0] =
+            editorTransform->orientation.w;
+        config[sequenceName][yamlIndex]["rotationQuat"][1] =
+            editorTransform->orientation.x;
+        config[sequenceName][yamlIndex]["rotationQuat"][2] =
+            editorTransform->orientation.y;
+        config[sequenceName][yamlIndex]["rotationQuat"][3] =
+            editorTransform->orientation.z;
 
-    const glm::vec3 rotation = actor->GetEditorRotation();
+        config[sequenceName][yamlIndex]["upVec"][0] =
+            editorTransform->upDirection.x;
+        config[sequenceName][yamlIndex]["upVec"][1] =
+            editorTransform->upDirection.y;
+        config[sequenceName][yamlIndex]["upVec"][2] =
+            editorTransform->upDirection.z;
+    }
 
-    config[sequenceName][yamlIndex]["facingYaw"] = actor->GetFacingYaw();
-    config[sequenceName][yamlIndex]["rotation"][0] = rotation.x;
-    config[sequenceName][yamlIndex]["rotation"][1] = rotation.y;
-    config[sequenceName][yamlIndex]["rotation"][2] = rotation.z;
+    if (editorTransform && editorTransform->hasScale) {
+        config[sequenceName][yamlIndex]["scale"][0] =
+            editorTransform->scale.x;
+        config[sequenceName][yamlIndex]["scale"][1] =
+            editorTransform->scale.y;
+        config[sequenceName][yamlIndex]["scale"][2] =
+            editorTransform->scale.z;
+    }
 
-    const glm::quat orientation = actor->GetOrientation();
-    config[sequenceName][yamlIndex]["rotationQuat"][0] = orientation.w;
-    config[sequenceName][yamlIndex]["rotationQuat"][1] = orientation.x;
-    config[sequenceName][yamlIndex]["rotationQuat"][2] = orientation.y;
-    config[sequenceName][yamlIndex]["rotationQuat"][3] = orientation.z;
-
-    const glm::vec3 scale = actor->GetScale();
-
-    config[sequenceName][yamlIndex]["scale"][0] = scale.x;
-    config[sequenceName][yamlIndex]["scale"][1] = scale.y;
-    config[sequenceName][yamlIndex]["scale"][2] = scale.z;
-
-    const glm::vec3 upVec = actor->GetUpVec();
-
-    config[sequenceName][yamlIndex]["upVec"][0] = upVec.x;
-    config[sequenceName][yamlIndex]["upVec"][1] = upVec.y;
-    config[sequenceName][yamlIndex]["upVec"][2] = upVec.z;
+    if (shouldSaveEditorTransform) {
+        return;
+    }
 
     if (dynamic_cast<const Platform*>(actor) || dynamic_cast<const StageObject*>(actor)) {
         config[sequenceName][yamlIndex]["modelPath"] = actor->GetModelPath();
@@ -2654,11 +2794,15 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             movementNode["moveOnPlayer"] = movement->GetMoveOnPlayer();
             movementNode["returnDelay"] = movement->GetReturnDelay();
 
+            if (editorTransform && editorTransform->hasPosition) {
+                config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
+
             // プレビュー中に到着地点へ表示していても、通常の配置位置は
             // 必ず出発地点として保存する。
             config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
             config[sequenceName][yamlIndex]["pos"][1] = startLocalPos.y;
             config[sequenceName][yamlIndex]["pos"][2] = startLocalPos.z;
+            }
         }
 
         YAML::Node platformNode = config[sequenceName][yamlIndex];
@@ -2778,22 +2922,10 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
     }
 
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
-        Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
-        const std::vector<Planet*> planets =
-            stage ? stage->GetPlanets() : std::vector<Planet*>();
-
-        const auto findPlanetIndex =
-            [&planets](const Planet* target) {
-                for (int index = 0; index < static_cast<int>(planets.size()); ++index) {
-                    if (planets[index] == target) {
-                        return index;
-                    }
-                }
-                return -1;
-            };
-
-        config[sequenceName][yamlIndex]["startPlanet"] =
-            findPlanetIndex(boat->GetCurrentPlanet());
+        if (editorTransform && editorTransform->hasPosition) {
+            config[sequenceName][yamlIndex]["startPlanet"] =
+                findPlanetIndex(authoredPlanet);
+        }
         config[sequenceName][yamlIndex]["destPlanet"] =
             findPlanetIndex(boat->GetDestPlanet());
         config[sequenceName][yamlIndex]["destStage"] = boat->GetDestStage();

@@ -56,6 +56,18 @@ int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
 {
     return node[key] ? node[key].as<int>() : defaultValue;
 }
+
+int FindShortestScaleAxisIndex(const glm::vec3& absoluteScale)
+{
+    int shortestAxisIndex = 0;
+    if (absoluteScale.y < absoluteScale[shortestAxisIndex]) {
+        shortestAxisIndex = 1;
+    }
+    if (absoluteScale.z < absoluteScale[shortestAxisIndex]) {
+        shortestAxisIndex = 2;
+    }
+    return shortestAxisIndex;
+}
 } // namespace
 
 void Planet::ApplyConfig(const YAML::Node& node)
@@ -138,14 +150,8 @@ glm::vec3 Planet::CalculateEllipseVerticalDirection(
     const glm::vec3& worldPosition) const
 {
     const glm::vec3 absoluteScale = glm::abs(GetScale());
-
-    int verticalAxisIndex = 0;
-    if (absoluteScale.y < absoluteScale[verticalAxisIndex]) {
-        verticalAxisIndex = 1;
-    }
-    if (absoluteScale.z < absoluteScale[verticalAxisIndex]) {
-        verticalAxisIndex = 2;
-    }
+    const int verticalAxisIndex =
+        FindShortestScaleAxisIndex(absoluteScale);
 
     glm::vec3 verticalAxis(0.0f);
     verticalAxis[verticalAxisIndex] = 1.0f;
@@ -156,6 +162,68 @@ glm::vec3 Planet::CalculateEllipseVerticalDirection(
     return verticalOffset < -centerPlaneEpsilon
         ? -verticalAxis
         : verticalAxis;
+}
+
+Planet::EllipseSurfaceFace Planet::ResolveEllipseSurfaceFace(
+    const glm::vec3& worldPosition) const
+{
+    constexpr float minimumAxisRadius = 0.001f;
+    constexpr float sideRegionHalfWidthRatio = 0.2f;
+
+    const glm::vec3 absoluteScale = glm::abs(GetScale());
+    const int verticalAxisIndex =
+        FindShortestScaleAxisIndex(absoluteScale);
+    const float verticalAxisRadius =
+        std::max(
+            absoluteScale[verticalAxisIndex],
+            minimumAxisRadius);
+    const float normalizedVerticalOffset =
+        (worldPosition[verticalAxisIndex] -
+         GetPos()[verticalAxisIndex]) /
+        verticalAxisRadius;
+
+    if (normalizedVerticalOffset >
+        sideRegionHalfWidthRatio) {
+        return EllipseSurfaceFace::Front;
+    }
+    if (normalizedVerticalOffset <
+        -sideRegionHalfWidthRatio) {
+        return EllipseSurfaceFace::Back;
+    }
+    return EllipseSurfaceFace::Side;
+}
+
+Planet::EllipseSurfaceFace
+Planet::ResolveEllipseSurfaceHemisphere(
+    const glm::vec3& worldPosition) const
+{
+    const glm::vec3 absoluteScale = glm::abs(GetScale());
+    const int verticalAxisIndex =
+        FindShortestScaleAxisIndex(absoluteScale);
+    const float verticalOffset =
+        worldPosition[verticalAxisIndex] -
+        GetPos()[verticalAxisIndex];
+    return verticalOffset >= 0.0f
+        ? EllipseSurfaceFace::Front
+        : EllipseSurfaceFace::Back;
+}
+
+bool Planet::ArePositionsOnSameSurfaceFace(
+    const glm::vec3& firstWorldPosition,
+    const glm::vec3& secondWorldPosition) const
+{
+    if (GetPlanetShape() != PlanetShape::Ellipse) {
+        return true;
+    }
+
+    // The side region is still used to keep enemy movement away from an
+    // ellipse edge. Interaction filtering only needs to prevent attacks and
+    // targeting through the planet, so positions on the same hemisphere stay
+    // related even when knockback moves one actor into the side region.
+    return ResolveEllipseSurfaceHemisphere(
+               firstWorldPosition) ==
+           ResolveEllipseSurfaceHemisphere(
+               secondWorldPosition);
 }
 
 Planet::EllipseSurfaceProjection

@@ -8,6 +8,7 @@
 #include "component/PlatformMovementComponent.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 #include "utils/MathUtils.h"
 
 #include <GLFW/glfw3.h>
@@ -182,7 +183,6 @@ void StageGizmoController::ApplyPlanetSurfaceTranslation(
 
         if (Platform* platform = dynamic_cast<Platform*>(actor);
             platform && platform->GetMovementComponent() &&
-            platform->GetMovementComponent()->GetMoveOnPlayer() &&
             platform->GetCurrentPlanet()) {
             platform->GetMovementComponent()->SetEditorPreviewLocalPos(
                 rawWorldPos - platform->GetCurrentPlanet()->GetPos());
@@ -237,8 +237,7 @@ void StageGizmoController::ApplyPlanetSurfaceTranslation(
         newRadius - planet->GetRadius());
 
     if (Platform* platform = dynamic_cast<Platform*>(actor);
-        platform && platform->GetMovementComponent() &&
-        platform->GetMovementComponent()->GetMoveOnPlayer()) {
+        platform && platform->GetMovementComponent()) {
         platform->GetMovementComponent()->SetEditorPreviewLocalPos(
             newPos - planet->GetPos());
     }
@@ -291,11 +290,20 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
     if (operation == ImGuizmo::TRANSLATE) {
         const glm::vec3 worldPos(
             translation[0], translation[1], translation[2]);
+
+        if (Planet* planet = dynamic_cast<Planet*>(actor)) {
+            const glm::vec3 previousCenter = planet->GetPos();
+            planet->SetPos(worldPos);
+            StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
+                planet,
+                worldPos - previousCenter);
+            return;
+        }
+
         actor->SetPos(worldPos);
 
         if (Platform* platform = dynamic_cast<Platform*>(actor);
             platform && platform->GetMovementComponent() &&
-            platform->GetMovementComponent()->GetMoveOnPlayer() &&
             platform->GetCurrentPlanet()) {
             platform->GetMovementComponent()->SetEditorPreviewLocalPos(
                 worldPos - platform->GetCurrentPlanet()->GetPos());
@@ -305,7 +313,24 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
 
     if (operation == ImGuizmo::SCALE) {
         const glm::vec3 previousScale = actor->GetScale();
-        const glm::vec3 actorScale(scale[0], scale[1], scale[2]);
+        const glm::vec3 actorScale = glm::max(
+            glm::vec3(scale[0], scale[1], scale[2]),
+            glm::vec3(0.1f));
+
+        if (Planet* planet = dynamic_cast<Planet*>(actor)) {
+            planet->SetScale(actorScale);
+            planet->SetRadius(actorScale.x);
+            planet->SetTextureTiling(
+                glm::vec2(
+                    std::max(
+                        1.0f,
+                        std::sqrt(std::abs(actorScale.x * actorScale.z))),
+                    std::max(1.0f, std::abs(actorScale.y))));
+            StageActorPlanetBindingService::
+                ReprojectSurfaceActorsAfterPlanetScale(planet);
+            return;
+        }
+
         actor->SetScale(actorScale);
 
         const bool horizontalScaleChanged =
@@ -445,7 +470,8 @@ void StageGizmoController::DrawGizmo()
 
     // 惑星移動時には所属アクターも追従させる必要がある。現状はその処理を持つ
     // 惑星設定パネルからのみ変形し、汎用ギズモによる不完全な変更を防ぐ。
-    if (dynamic_cast<Planet*>(selectedActor)) {
+    Planet* selectedPlanet = dynamic_cast<Planet*>(selectedActor);
+    if (selectedPlanet && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
         return;
     }
 
@@ -486,6 +512,23 @@ void StageGizmoController::DrawGizmo()
                 selectedActor,
                 mEditingGizmoMatrix,
                 mCurrentGizmoOperation);
+        }
+
+        if (!selectedPlanet) {
+            StageActorPlanetBindingService::RefreshNearestPlanetBinding(
+                mContext.game->GetCurrentStage(),
+                selectedActor);
+            if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
+                selectedActor->CaptureEditorAuthoredPosition();
+            } else if (mCurrentGizmoOperation == ImGuizmo::ROTATE) {
+                selectedActor->CaptureEditorAuthoredRotation();
+            } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
+                selectedActor->CaptureEditorAuthoredScale();
+            }
+        } else if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) {
+            selectedPlanet->CaptureEditorAuthoredPosition();
+        } else if (mCurrentGizmoOperation == ImGuizmo::SCALE) {
+            selectedPlanet->CaptureEditorAuthoredScale();
         }
     } else {
         if (mIsUsingTransformGizmo) {

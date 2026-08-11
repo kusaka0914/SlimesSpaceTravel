@@ -19,14 +19,13 @@ constexpr float attackDodgeCancelDelaySeconds = 0.5f;
 bool PlayerCombat::IsAttacking() const
 {
     return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f ||
-           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f ||
+           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f ||
            mHasPendingAttackHit;
 }
 
 void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
                                    PlayerStatus& status, float deltaTime)
 {
-    (void)movement;
     (void)status;
     (void)deltaTime;
 
@@ -35,14 +34,17 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
             return;
         }
 
+        ResetGroundAttackCombo();
         ++mAirAttackCount;
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
         mAttackCooldownRemaining = mAttackCooldown;
         mAttack = mWideAttack;
-        mAirAttackFloatingTimer = 0.5f;
         mIsAirAttacking = true;
+        movement.CancelJumpApexHover();
+        movement.CancelAirborneActionHover();
+        movement.StopAirborneVerticalMovement(player);
         mAttackDodgeLockRemaining =
             attackDodgeCancelDelaySeconds;
 
@@ -240,11 +242,15 @@ bool PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
     mAttackMoveLockRemaining = 0.6f;
+
+    if (!player.GetOnGround()) {
+        ResetGroundAttackCombo();
+        return;
+    }
+
     mComboKeepTimer = mAttackMoveLockRemaining + 1.0f;
 
-    if (player.GetOnGround()) {
-        mAttackMotionTimer = mDefaultAttackMotionTimer;
-    }
+    mAttackMotionTimer = mDefaultAttackMotionTimer;
 
     mAttackComboIndex++;
 
@@ -323,7 +329,6 @@ void PlayerCombat::CancelCurrentAttack()
 {
     ClearPendingAttackHit();
     mAttackMotionTimer = -1.0f;
-    mAirAttackFloatingTimer = -1.0f;
     mAttackMoveLockRemaining = 0.0f;
     mAttackDodgeLockRemaining = 0.0f;
     mIsAirAttacking = false;
@@ -395,13 +400,6 @@ void PlayerCombat::EndAirDodgeAttack()
     mAirDodgeHitEnemies.clear();
 }
 
-void PlayerCombat::UpdateAirAttackFloatingTimer(float deltaTime)
-{
-    if (mAirAttackFloatingTimer > 0.0f) {
-        mAirAttackFloatingTimer -= deltaTime;
-    }
-}
-
 void PlayerCombat::UpdateAttackCooldown(float deltaTime)
 {
     if (mAttackCooldownRemaining >= 0.0f) {
@@ -433,7 +431,7 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
         return;
     }
 
-    mAttackComboIndex = 0;
+    ResetGroundAttackCombo();
 }
 
 bool PlayerCombat::CanAcceptMovementInput() const

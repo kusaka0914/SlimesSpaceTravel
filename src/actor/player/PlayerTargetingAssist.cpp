@@ -32,8 +32,17 @@ glm::vec3 ProjectOntoTangentPlane(const glm::vec3& direction, const glm::vec3& u
 
 bool IsValidEnemy(const Player& player, const Enemy* enemy)
 {
-    return enemy && enemy->GetIsActive() && enemy->IsAlive() && !enemy->GetIsDead() &&
-           enemy->GetCurrentPlanet() == player.GetCurrentPlanet();
+    const Planet* planet = player.GetCurrentPlanet();
+    return
+        enemy &&
+        planet &&
+        enemy->GetIsActive() &&
+        enemy->IsAlive() &&
+        !enemy->GetIsDead() &&
+        enemy->GetCurrentPlanet() == planet &&
+        planet->ArePositionsOnSameSurfaceFace(
+            player.GetPos(),
+            enemy->GetPos());
 }
 } // namespace
 

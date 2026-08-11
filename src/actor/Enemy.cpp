@@ -2,6 +2,7 @@
 
 #include "CharacterActor.h"
 #include "Game.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCombat.h"
 #include "actor/enemy/EnemyConfig.h"
@@ -12,6 +13,46 @@
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
+
+#include <limits>
+
+namespace {
+Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
+{
+    Game* game = enemy.GetGame();
+    Planet* planet = enemy.GetCurrentPlanet();
+    if (!game || !planet) {
+        return nullptr;
+    }
+
+    Player* nearestPlayer = nullptr;
+    float nearestDistanceSquared =
+        std::numeric_limits<float>::max();
+    for (Player* player : game->GetPlayers()) {
+        if (!player ||
+            !player->GetIsActive() ||
+            !player->IsAlive() ||
+            player->GetCurrentPlanet() != planet ||
+            !planet->ArePositionsOnSameSurfaceFace(
+                enemy.GetPos(),
+                player->GetPos())) {
+            continue;
+        }
+
+        const glm::vec3 enemyToPlayer =
+            player->GetPos() - enemy.GetPos();
+        const float distanceSquared =
+            glm::dot(enemyToPlayer, enemyToPlayer);
+        if (distanceSquared >= nearestDistanceSquared) {
+            continue;
+        }
+
+        nearestDistanceSquared = distanceSquared;
+        nearestPlayer = player;
+    }
+    return nearestPlayer;
+}
+} // namespace
 
 Enemy::Enemy(Game* game)
     : CharacterActor(game),
@@ -66,7 +107,8 @@ void Enemy::UpdateActor(float deltaTime)
         return;
     }
 
-    mStatus.SetNearestPlayer(GetGame()->FindNearestPlayer(this));
+    mStatus.SetNearestPlayer(
+        FindNearestPlayerOnSameSurfaceFace(*this));
 
     switch (mStateMachine->GetLifeState()) {
     case LifeState::Alive:

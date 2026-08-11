@@ -15,6 +15,9 @@ struct PlayerConfig {
     float jumpHeight = 1.8367347f;
     float jumpAscentDuration = 0.4f;
     float jumpFallDuration = 0.85f;
+    float jumpApexHoverDurationSeconds = 0.5f;
+    float airWeakAttackPostHoverDurationSeconds = 0.2f;
+    float airDodgePostHoverDurationSeconds = 0.2f;
     float groundNormalRayLength = 5.0f;
     float collisionWidth = 1.6f;
     float collisionHeight = 0.8f;

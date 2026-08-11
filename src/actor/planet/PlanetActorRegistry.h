@@ -31,24 +31,28 @@ public:
     void AddTutorialTrigger(TutorialTrigger* trigger) { mTutorialTriggers.emplace_back(trigger); }
 
     void RemoveAllEnemy() { mEnemies.clear(); }
+    void RemoveEnemy(Enemy* enemy) { RemovePointer(mEnemies, enemy); }
     void RemoveAllBoat() { mBoats.clear(); }
-    void RemoveBoat(Boat* boat)
-    {
-        mBoats.erase(
-            std::remove(mBoats.begin(), mBoats.end(), boat),
-            mBoats.end());
-    }
+    void RemoveBoat(Boat* boat) { RemovePointer(mBoats, boat); }
     void RemoveAllBoatParts() { mBoatParts.clear(); }
+    void RemoveBoatParts(BoatParts* boatParts) { RemovePointer(mBoatParts, boatParts); }
     void RemoveAllCrystals() { mCrystals.clear(); }
+    void RemoveCrystal(Crystal* crystal) { RemovePointer(mCrystals, crystal); }
     void RemoveAllNPCs() { mNPCs.clear(); }
+    void RemoveNPC(NPC* npc) { RemovePointer(mNPCs, npc); }
     void RemoveAllPlatforms();
+    void RemovePlatform(Platform* platform) { RemovePointer(mPlatforms, platform); }
     void RemovePlatformsByStageSequence(const std::string& sequenceName);
     void RemoveKey() { mKey = nullptr; }
     void RemoveStar() { mStar = nullptr; }
     void RemoveAllBoatArrivalPoints() { mBoatArrivalPoints.clear(); }
+    void RemoveBoatArrivalPoint(BoatArrivalPoint* point) { RemovePointer(mBoatArrivalPoints, point); }
     void RemoveAllFallRespawnPoints() { mFallRespawnPoints.clear(); }
+    void RemoveFallRespawnPoint(FallRespawnPoint* point) { RemovePointer(mFallRespawnPoints, point); }
     void RemoveAllStageObjects() { mStageObjects.clear(); }
+    void RemoveStageObject(StageObject* stageObject) { RemovePointer(mStageObjects, stageObject); }
     void RemoveAllTutorialTriggers() { mTutorialTriggers.clear(); }
+    void RemoveTutorialTrigger(TutorialTrigger* trigger) { RemovePointer(mTutorialTriggers, trigger); }
 
     void SetKey(Key* key) { mKey = key; }
     void SetStar(Star* star) { mStar = star; }
@@ -68,6 +72,14 @@ public:
     Star* GetStar() const { return mStar; }
 
 private:
+    template <class TActor>
+    static void RemovePointer(std::vector<TActor*>& actors, TActor* actor)
+    {
+        actors.erase(
+            std::remove(actors.begin(), actors.end(), actor),
+            actors.end());
+    }
+
     std::vector<Enemy*> mEnemies;
     std::vector<Boat*> mBoats;
     std::vector<BoatParts*> mBoatParts;

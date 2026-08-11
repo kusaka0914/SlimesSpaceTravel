@@ -264,6 +264,14 @@ void EnemyStateMachine::UpdateIdle(Enemy& enemy, EnemyStatus& status, EnemyComba
 void EnemyStateMachine::UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
                                         float deltaTime)
 {
+    if (!combat.IsPlayerInRange(
+            enemy,
+            status.GetNearestPlayer(),
+            status.GetDetectionRange())) {
+        StartIdle(enemy);
+        return;
+    }
+
     movement.UpdateFacingVec(enemy, status, deltaTime);
     movement.MoveToPlayer(enemy, status, deltaTime);
     TryStartPreparingAttack(enemy, status, combat);
@@ -282,6 +290,11 @@ void EnemyStateMachine::TryStartPreparingAttack(Enemy& enemy, EnemyStatus& statu
 void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
                                                float deltaTime)
 {
+    if (!status.GetNearestPlayer()) {
+        StartIdle(enemy);
+        return;
+    }
+
     if (!status.GetIsJustBeforeAttack()) {
         movement.UpdateFacingVec(enemy, status, deltaTime);
     }
@@ -301,6 +314,11 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
 void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
                                          float deltaTime)
 {
+    if (!status.GetNearestPlayer()) {
+        StartIdle(enemy);
+        return;
+    }
+
     movement.MoveDuringAttacking(enemy, status, *this, deltaTime);
     combat.TryApplyAttack(enemy, status, *this, deltaTime);
 

@@ -1,8 +1,10 @@
 #include "gfx/debug/panels/StageEditorPanel.h"
 
 #include "Game.h"
+#include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
+#include "actor/Player.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
 #include "gfx/debug/panels/StagePlacementPanel.h"
@@ -195,6 +197,7 @@ void StageEditorPanel::DrawInspector()
     switch (mSelectedMenu) {
     case 0:
         DrawStageSwitcher();
+        DrawPlayerPlanetDebugMover();
         DrawStageClearProgressEditor();
         break;
     case 1:
@@ -280,6 +283,68 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
         ImGui::TextWrapped(
             "%s", mDuplicatePlacementStatus.c_str());
     }
+}
+
+void StageEditorPanel::DrawPlayerPlanetDebugMover()
+{
+    if (!mContext.game ||
+        mContext.game->GetPlayers().empty()) {
+        return;
+    }
+
+    Player* player = mContext.game->GetPlayers().front();
+    Stage* stage = mContext.game->GetCurrentStage();
+    if (!player || !stage) {
+        return;
+    }
+
+    const std::vector<Planet*>& planets =
+        stage->GetPlanets();
+    const int currentPlanetIndex =
+        player->GetCurrentPlanetNum();
+    const bool hasValidCurrentPlanet =
+        currentPlanetIndex >= 0 &&
+        currentPlanetIndex <
+            static_cast<int>(planets.size());
+    const std::string preview =
+        hasValidCurrentPlanet
+            ? "惑星 " + std::to_string(currentPlanetIndex)
+            : "未設定";
+
+    ImGui::SeparatorText("プレイヤー所属惑星");
+    ImGui::TextDisabled(
+        "選択した惑星へプレイヤーをデバッグ移動します。");
+    if (!ImGui::BeginCombo(
+            "現在の惑星##stageDebugPlayerPlanet",
+            preview.c_str())) {
+        return;
+    }
+
+    for (int planetIndex = 0;
+         planetIndex < static_cast<int>(planets.size());
+         ++planetIndex) {
+        Planet* planet = planets[planetIndex];
+        if (!planet) {
+            continue;
+        }
+
+        const std::string label =
+            "惑星 " + std::to_string(planetIndex);
+        const bool isSelected =
+            planetIndex == currentPlanetIndex;
+        if (ImGui::Selectable(
+                label.c_str(),
+                isSelected)) {
+            player->DebugMoveToPlanet(
+                planet,
+                planetIndex);
+        }
+
+        if (isSelected) {
+            ImGui::SetItemDefaultFocus();
+        }
+    }
+    ImGui::EndCombo();
 }
 
 void StageEditorPanel::DrawStageClearProgressEditor()

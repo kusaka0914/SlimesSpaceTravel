@@ -24,7 +24,15 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {
+        const bool didFinishAirDodge =
+            combat.IsAirDodgeAttackActive() &&
+            !player.GetOnGround();
         combat.EndAirDodgeAttack();
+        if (didFinishAirDodge) {
+            movement.StopAirborneVerticalMovement(player);
+            movement.StartAirborneActionHover(
+                movement.GetAirDodgePostHoverDurationSeconds());
+        }
         StartIdle();
     }
 }
@@ -32,6 +40,10 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
 void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
+    if (!player.GetOnGround()) {
+        movement.StopAirborneVerticalMovement(player);
+    }
+
     if (TryStartDodging(
             player,
             input,
@@ -73,6 +85,12 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
         mAttackDirectionTarget = nullptr;
+        if (!player.GetOnGround() &&
+            combat.IsAirAttacking()) {
+            movement.StopAirborneVerticalMovement(player);
+            movement.StartAirborneActionHover(
+                movement.GetAirWeakAttackPostHoverDurationSeconds());
+        }
         StartIdle();
     }
 }

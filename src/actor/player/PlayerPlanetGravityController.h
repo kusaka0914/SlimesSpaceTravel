@@ -14,7 +14,7 @@ class PlayerPlanetGravityController {
 public:
     void Update(Player& player, PlayerMovement& movement, float deltaTime);
 
-    void OnJumpStarted();
+    void OnJumpStarted(const Player& player);
 
     void OnGroundRayCastSucceeded();
 
@@ -75,6 +75,7 @@ private:
     bool mFallbackAppliedThisJump = false;
     bool mFallbackGravityActive = false;
     float mNoGroundRayDuration = 0.0f;
+    float mEllipseJumpStartSurfaceDistance = 0.0f;
 
     // Actor::UpdateUpVecによる毎フレームの書き換えに影響されないよう、
     // 補間中の上方向をこのクラスで保持する。

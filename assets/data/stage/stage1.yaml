@@ -10,22 +10,22 @@ planets:
     textureSideBlendWidth: 0.05
     stageNum: 0
   - center: [32, 50.6, 0]
-    scale: [1, 4, 4]
+    scale: [1, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
     rocketSpawnCondition: AllEnemiesDead
     textureTiling:
-      - 2
-      - 4
+      - 2.4494898
+      - 6
     textureSideBlendWidth: 0.05
     stageNum: 1
   - center: [64, 0, 0]
-    scale: [4, 4, 4]
+    scale: [2, 8, 8]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
     textureTiling:
       - 4
-      - 4
+      - 8
     textureSideBlendWidth: 0.05
     rocketSpawnCondition: ""
     stageNum: 2
@@ -56,10 +56,10 @@ enemies:
     height: 1
     currentPlanetNum: 1
     pos:
-      - -0.89
+      - -0.95
       - -1.09
       - 1.28
-    facingYaw: 9.313225e-09
+    facingYaw: 4.3888573e-08
     rotation:
       - 0
       - 0
@@ -69,41 +69,14 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.9929788
-      - -0.07630509
-      - 0.090391986
+      - -0.9987646
+      - -0.03163071
+      - 0.038324885
     rotationQuat:
-      - 0.6787825
-      - 0.030741176
-      - 0.03319409
-      - 0.7329444
-  - type: normal
-    theta: -1.88965
-    phi: -0.998213
-    height: 1
-    currentPlanetNum: 1
-    pos:
-      - 0.67
-      - -1.8
-      - -1.1
-    facingYaw: 2.8668523
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
-    upVec:
-      - -0.98625064
-      - 0.14270715
-      - 0.08333342
-    rotationQuat:
-      - -0.13047984
-      - -0.65210843
-      - 0.74453247
-      - -0.058318876
+      - 0.6956976
+      - 0.01333618
+      - 0.01376519
+      - 0.71807903
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -111,23 +84,23 @@ enemies:
     phi: 0.16523086
     height: -0.048152924
     pos:
-      - -3.89
-      - 0.65
-      - 0.25
+      - -1.97
+      - 0.69
+      - 0.23
     upVec:
-      - -0.98481953
-      - 0.16135737
-      - 0.06398782
+      - -0.9997238
+      - 0.022286238
+      - 0.0074651567
     facingYaw: -1.1617934
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.62542033
-      - -0.33471188
-      - 0.43534824
-      - 0.5543368
+      - 0.59623516
+      - -0.3814596
+      - 0.3945209
+      - 0.5859569
     scale:
       - 0.25
       - 0.25
@@ -139,23 +112,23 @@ enemies:
     phi: -0.017718242
     height: -0.04906273
     pos:
-      - -3.95
-      - -0.07
-      - 0.05
+      - -1.97
+      - -0.04
+      - 0.02
     upVec:
-      - -0.99974036
-      - -0.01919156
-      - 0.012288872
-    facingYaw: 1.7931316
+      - -0.99999833
+      - -0.0013091565
+      - 0.0013185373
+    facingYaw: 1.7931314
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.4406057
-      - 0.56033456
-      - -0.5443077
-      - 0.44229057
+      - 0.44151956
+      - 0.55303514
+      - -0.55173
+      - 0.44136915
     scale:
       - 0.25
       - 0.25
@@ -167,23 +140,23 @@ enemies:
     phi: -0.6786418
     height: -0.041601896
     pos:
-      - -1.22
-      - 0.91
-      - 3.64
+      - 1.95
+      - -1.25
+      - -0.13
     upVec:
-      - -0.3101033
-      - 0.22983961
-      - 0.9225019
-    facingYaw: 1.9628173
+      - -0.9992295
+      - 0.039048634
+      - 0.003951281
+    facingYaw: 1.9628183
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.6204393
-      - 0.58631116
-      - -0.479557
-      - -0.20327197
+      - -0.40178466
+      - -0.5770043
+      - 0.59840906
+      - -0.3841116
     scale:
       - 0.25
       - 0.25
@@ -195,23 +168,23 @@ enemies:
     phi: 0.50990236
     height: -0.045827866
     pos:
-      - -3.74
-      - 0.84
-      - 0.97
+      - 1.96
+      - 0.9
+      - 0
     upVec:
-      - -0.94710904
-      - 0.20596905
-      - 0.24609189
-    facingYaw: -0.5153941
+      - -0.9995952
+      - -0.028420707
+      - -0.0013196067
+    facingYaw: -0.51539433
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.7272699
-      - -0.06532182
-      - 0.27214533
-      - 0.6266965
+      - 0.67409176
+      - -0.18319686
+      - 0.17717244
+      - 0.6932887
     scale:
       - 0.25
       - 0.25
@@ -223,23 +196,23 @@ enemies:
     phi: 0.7062486
     height: -0.040724277
     pos:
-      - -1.58
-      - -0.65
-      - 3.56
+      - -2.66
+      - 1.41
+      - -1.28
     upVec:
-      - 0.40473625
-      - 0.16134606
-      - -0.9000867
-    facingYaw: -0.29560274
+      - 0.9935958
+      - 0.082868144
+      - -0.07681482
+    facingYaw: -0.2956027
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.64977556
-      - -0.36486834
-      - 0.39807633
-      - -0.5349748
+      - 0.7235118
+      - 0.071659595
+      - 0.1340327
+      - -0.67337275
     scale:
       - 0.25
       - 0.25
@@ -251,23 +224,23 @@ enemies:
     phi: 0.8450763
     height: -0.03715849
     pos:
-      - -3.87
-      - 0.11
-      - 0.78
+      - 1.94
+      - 1.51
+      - -0.45
     upVec:
-      - -0.9793135
-      - 0.029659918
-      - 0.20016366
-    facingYaw: 0.54205763
+      - -0.998768
+      - -0.04718931
+      - 0.015353235
+    facingYaw: 0.54205805
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.7067748
-      - 0.25503802
-      - -0.12369054
-      - 0.64817107
+      - 0.666491
+      - 0.19882406
+      - -0.17942998
+      - 0.69574684
     scale:
       - 0.25
       - 0.25
@@ -278,10 +251,10 @@ enemies:
     height: 0.62964475
     currentPlanetNum: 1
     pos:
-      - -0.93
-      - 0.17
-      - -1.33
-    facingYaw: 2.2700988e-09
+      - -0.98
+      - 0.51
+      - -0.52
+    facingYaw: -2.4330799e-08
     rotation:
       - 0
       - 0
@@ -291,24 +264,24 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.9958253
-      - 0.0106636565
-      - -0.090655535
+      - -0.99979424
+      - 0.014326261
+      - -0.014363487
     rotationQuat:
-      - 0.7101503
-      - -0.032255936
-      - -0.031912375
-      - 0.7025865
+      - 0.71213603
+      - -0.0051146504
+      - -0.00504187
+      - 0.7020048
   - type: normal
     theta: 2.2557383
     phi: 0.8845734
     height: 1.140594
     currentPlanetNum: 1
     pos:
-      - -0.86
-      - 1.66
-      - 1.05
-    facingYaw: 8.381902e-09
+      - -0.93
+      - 1.67
+      - 1.06
+    facingYaw: 1.1874363e-08
     rotation:
       - 0
       - 0
@@ -318,24 +291,24 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.98993766
-      - 0.11834904
-      - 0.077569455
+      - -0.99832666
+      - 0.04881763
+      - 0.030995684
     rotationQuat:
-      - 0.74733573
-      - 0.029028948
-      - 0.025765188
-      - 0.663312
+      - 0.7240819
+      - 0.011224407
+      - 0.010688943
+      - 0.68953985
   - type: normal
     theta: -2.6610897
     phi: -1.1275616
     height: 1.2215185
     currentPlanetNum: 1
     pos:
-      - -0.84
-      - -2.01
-      - -0.44
-    facingYaw: -9.313225e-09
+      - -0.93
+      - -2.03
+      - -0.45
+    facingYaw: -2.788147e-08
     rotation:
       - 0
       - 0
@@ -345,14 +318,264 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.9888823
-      - -0.14485039
-      - -0.033617016
+      - -0.99803257
+      - -0.061037548
+      - -0.014335948
     rotationQuat:
-      - 0.65376836
-      - -0.010991982
-      - -0.012719365
-      - 0.7565081
+      - 0.68516713
+      - -0.0049115224
+      - -0.005221057
+      - 0.72835064
+  - editorName: 新しいボス敵
+    type: boss
+    currentPlanetNum: 2
+    theta: -2.6614773
+    phi: 0.7273158
+    height: 0.86870074
+    pos:
+      - -1.89
+      - 2.05
+      - -0.92
+    upVec:
+      - -0.99742687
+      - 0.065764174
+      - -0.028544383
+    facingYaw: -0
+    rotation:
+      - 0
+      - 0
+      - 0
+    rotationQuat:
+      - 0.7299226
+      - -0.010419716
+      - -0.009755327
+      - 0.6833808
+    scale:
+      - 1
+      - 1
+      - 1
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: -2.2476387
+    phi: -0.22460341
+    height: 1.0756726
+    pos:
+      - -1.88
+      - -0.69
+      - -2.34
+    upVec:
+      - -0.99670243
+      - -0.02235247
+      - -0.0780048
+    facingYaw: -7.4505806e-07
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.6986022
+      - -0.027288998
+      - -0.027907323
+      - 0.71444494
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: 2.3455756
+    phi: 0.47833443
+    height: 1.0322585
+    pos:
+      - -1.88
+      - 1.4
+      - 1.92
+    upVec:
+      - -0.99680495
+      - 0.04672224
+      - 0.06478463
+    facingYaw: 8.940697e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.72309095
+      - 0.02344725
+      - 0.02237391
+      - 0.68999213
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: -1.9738017
+    phi: -0.025376037
+    height: 2.3432698
+    pos:
+      - -1.7
+      - -0.11
+      - -3.98
+    upVec:
+      - -0.98936903
+      - -0.0035081678
+      - -0.1453844
+    facingYaw: -3.3527613e-07
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.7039747
+      - -0.051446892
+      - -0.0516294
+      - 0.70647526
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: -2.0377023
+    phi: -0.29834467
+    height: 2.0642343
+    pos:
+      - -1.75
+      - -1.19
+      - -3.47
+    upVec:
+      - -0.99157155
+      - -0.043208554
+      - -0.12214332
+    facingYaw: -5.3644175e-07
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.6902481
+      - -0.042313196
+      - -0.0441968
+      - 0.7209812
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: 2.1157463
+    phi: 0.765724
+    height: 2.4936323
+    pos:
+      - -1.68
+      - 3.11
+      - 2.77
+    upVec:
+      - -0.9883772
+      - 0.11373068
+      - 0.10087539
+    facingYaw: 5.9604645e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.74547696
+      - 0.037696302
+      - 0.033607367
+      - 0.6646154
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 2
+    theta: 2.076993
+    phi: 0.5051576
+    height: 2.1068387
+    pos:
+      - -1.74
+      - 1.99
+      - 3.14
+    upVec:
+      - -0.99108964
+      - 0.07130121
+      - 0.11250568
+    facingYaw: 8.940696e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    rotationQuat:
+      - 0.73087436
+      - 0.041244715
+      - 0.038384017
+      - 0.6801825
+  - type: normal
+    theta: -1.910462
+    phi: -0.72552204
+    height: 1.8449967
+    currentPlanetNum: 1
+    pos:
+      - -0.87
+      - -1.93
+      - -2.05
+    facingYaw: -3.0267984e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99591464
+      - -0.061168917
+      - -0.06642723
+    rotationQuat:
+      - 0.6847113
+      - -0.022766886
+      - -0.02420811
+      - 0.72805643
+  - type: normal
+    theta: -1.9766507
+    phi: 0.083511606
+    height: 1.3380375
+    currentPlanetNum: 1
+    pos:
+      - -0.92
+      - 0.2
+      - -2.14
+    facingYaw: 1.0826625e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9978073
+      - 0.0065546436
+      - -0.0658599
+    rotationQuat:
+      - 0.7090403
+      - -0.02337403
+      - -0.023220997
+      - 0.70439786
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -362,7 +585,7 @@ keys:
       - 0.95
       - -0.56
       - 0
-    facingYaw: 1.9070283e-08
+    facingYaw: 1.8377248e-08
     rotation:
       - 0
       - 0
@@ -372,14 +595,14 @@ keys:
       - 2
       - 2
     upVec:
-      - 0.99939716
-      - -0.034650523
-      - 0.002198365
+      - 0.9998886
+      - -0.014856123
+      - 0.0014670104
     rotationQuat:
-      - -0.69474757
-      - -0.00076364836
-      - 0.0007905978
-      - 0.7192529
+      - -0.70183444
+      - -0.000514793
+      - 0.00052251155
+      - 0.7123397
 crystals: []
 boats:
   - startPlanet: 2
@@ -388,24 +611,24 @@ boats:
     theta: -2.617722
     phi: -0.07098
     height: -0.05191207
-    facingYaw: -3.837049e-07
+    facingYaw: -1.8253922e-07
     pos:
-      - -3.41
-      - -0.28
-      - -1.97
+      - -1.68
+      - -0.14
+      - -0.97
     upVec:
-      - -0.8639382
-      - -0.06447747
-      - -0.49945304
+      - 0.999446
+      - 0.0039598737
+      - 0.033046503
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0.6571603
-      - -0.17586336
-      - -0.1894772
-      - 0.7080331
+      - 0.7084094
+      - 0.01170849
+      - -0.011662064
+      - -0.70560825
     scale:
       - 0.8
       - 0.8
@@ -420,14 +643,14 @@ boats:
   - startPlanet: 0
     destPlanet: 3
     destStage: 0
-    theta: -0.2811235
-    phi: 0.46101713
-    height: 5.8449664
+    theta: -0.023540327
+    phi: 0.042714715
+    height: 14.146238
     facingYaw: 1.7763568e-15
     pos:
-      - 6.87
-      - 3.49
-      - -1.95
+      - 7.29
+      - 3.3
+      - -1.91
     upVec:
       - 1
       - -2.3841858e-07
@@ -452,15 +675,15 @@ boats:
       - 1
       - 1
     travelSpeed: 5
-  - startPlanet: 0
-    destPlanet: 2
+  - startPlanet: 3
+    destPlanet: 1
     destStage: 0
-    theta: 0.09555491
-    phi: -0.010301268
-    height: 42.238445
+    theta: 0.54062873
+    phi: -0.05604329
+    height: 5.283442
     facingYaw: 1.7763568e-15
     pos:
-      - 44.03
+      - 7.03
       - -0.46
       - 4.22
     upVec:
@@ -493,24 +716,24 @@ boats:
     theta: 0.562086
     phi: -0.40084076
     height: 0.24231267
-    facingYaw: -4.889443e-09
+    facingYaw: -1.67347e-08
     pos:
       - 0.97
       - -0.48
       - 0.61
     upVec:
-      - 0.99877495
-      - -0.02881211
-      - 0.040230587
+      - 0.99973696
+      - -0.014351349
+      - 0.017892009
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - -0.6966963
-      - -0.014019926
-      - 0.014430194
-      - 0.71708405
+      - -0.70198566
+      - -0.006280475
+      - 0.006371267
+      - 0.71213496
     scale:
       - 0.8
       - 0.8
@@ -569,10 +792,10 @@ star:
     currentPlanetNum: 2
     modelPath: star.obj
     pos:
-      - 5.15
+      - 3.15
       - 0
       - 0
-    facingYaw: -1.5708005
+    facingYaw: -1.5708017
     rotation:
       - 0
       - 1.5707964
@@ -582,14 +805,14 @@ star:
       - 0.3
       - 0.3
     upVec:
-      - 0.9999231
-      - 0.008745689
-      - 0.008794893
+      - 0.99999523
+      - -0.002183844
+      - -0.0021971734
     rotationQuat:
-      - 0.50436497
-      - 0.50001323
-      - 0.49998885
-      - -0.4955945
+      - -0.49890226
+      - -0.4999981
+      - -0.5000047
+      - 0.5010927
 NPCs:
   - theta: -0.5460176
     phi: 1.1324955
@@ -602,10 +825,10 @@ NPCs:
       - そこに行ってみたらどうだ？
       - 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！
     pos:
-      - 1.46
-      - -3.74
-      - 3.8
-    facingYaw: 5.519162
+      - 1.42
+      - -3.56
+      - 4.21
+    facingYaw: 2.296081
     rotation:
       - 0
       - 0
@@ -615,16 +838,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.9756088
-      - -0.15151495
-      - 0.15884207
+      - 0.97210854
+      - -0.14747725
+      - 0.18236095
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.62433106
-      - -0.33030456
-      - -0.18561584
-      - 0.6831225
+      - -0.20302449
+      - 0.66413116
+      - 0.62051785
+      - 0.3642367
     talkRubies:
       - talkIndex: 0
         segments:
@@ -762,6 +985,7 @@ NPCs:
       - talkIndex: 3
         sequence: boatParts
         index: 1
+    currentPlanetNum: 0
   - theta: -2.8827639
     phi: -0.505858
     height: -0.081878185
@@ -771,10 +995,10 @@ NPCs:
       - これはクリスタル！\n攻撃して壊せるよ！
       - 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！
     pos:
-      - -1.97
-      - 0.4
-      - -0.14
-    facingYaw: 0.582124
+      - -1.65
+      - -0.93
+      - -0.43
+    facingYaw: 3.714745
     rotation:
       - 0
       - 0
@@ -784,16 +1008,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.99990076
-      - 0.013526147
-      - -0.003954304
+      - -0.99954635
+      - -0.021297064
+      - -0.021297064
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - 0.68153155
-      - 0.2001925
-      - -0.20561574
-      - 0.6731715
+      - -0.20502561
+      - 0.68752205
+      - -0.66881686
+      - -0.19483826
     talkRubies:
       - talkIndex: 0
         segments:
@@ -863,6 +1087,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    currentPlanetNum: 0
   - theta: 0.34281576
     phi: -0.6170447
     height: -0.08532429
@@ -873,10 +1098,10 @@ NPCs:
       - 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！
       - "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"
     pos:
-      - -4.91
-      - -0.75
-      - -1.51
-    facingYaw: 1.2619503
+      - 1.53
+      - -1.11
+      - 0.52
+    facingYaw: 3.7687054
     rotation:
       - 0
       - 0
@@ -886,16 +1111,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - -0.99723196
-      - 0.034769297
-      - -0.06572279
+      - -1
+      - 2.3841858e-07
+      - 2.9802322e-08
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - 0.56702906
-      - 0.39049476
-      - -0.44256377
-      - 0.5745687
+      - 0.21810253
+      - -0.6726301
+      - 0.6726302
+      - 0.21810248
     talkRubies:
       - talkIndex: 0
         segments:
@@ -1041,6 +1266,7 @@ NPCs:
             reading: ふく
           - text: しよう！
             ruby: false
+    currentPlanetNum: 0
   - theta: -0.63021153
     phi: 0.5423254
     height: -0.08914423
@@ -1049,10 +1275,10 @@ NPCs:
     talkTexts:
       - ""
     pos:
-      - 1.81
-      - -3.17
-      - 0.52
-    facingYaw: 5.117767
+      - 3.18
+      - -2.58
+      - 2.8
+    facingYaw: 2.4558797
     rotation:
       - 0
       - 0.7317284
@@ -1062,16 +1288,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.9940937
-      - -0.10718004
-      - 0.017036153
+      - 1
+      - -1.1920928e-07
+      - 0
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.56134206
-      - -0.4141745
-      - -0.36236045
-      - 0.61810154
+      - -0.2377142
+      - 0.66595197
+      - 0.66595185
+      - 0.23771423
     proximityMessage:
       mode: always
       variants:
@@ -1106,6 +1332,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    currentPlanetNum: 0
   - theta: -2.0017486
     phi: 0.9669449
     height: 0.10700321
@@ -1115,9 +1342,9 @@ NPCs:
       - 緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜
     pos:
       - -1.6
-      - 1.72
-      - -1.13
-    facingYaw: 6.2168207
+      - 1.8
+      - -1.12
+    facingYaw: 2.369056
     rotation:
       - 0
       - 0
@@ -1127,16 +1354,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.9973417
-      - -0.06692198
-      - 0.028826244
+      - 0.99752754
+      - -0.06669819
+      - 0.022140888
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.68292886
-      - -0.034069326
-      - -0.012135322
-      - 0.7295891
+      - -0.24984653
+      - 0.673614
+      - 0.6357889
+      - 0.2821228
     talkRubies:
       - talkIndex: 0
         segments:
@@ -1188,18 +1415,19 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
-  - theta: -0.22626798
-    phi: -0.75514007
-    height: 3.571107
+    currentPlanetNum: 0
+  - theta: -3.0652385
+    phi: -0.31153828
+    height: 16.111404
     type: spaceSlime
     name: JumpTutorialNPC
     talkTexts:
       - ""
     pos:
-      - 38.71
-      - -3.53
-      - 1.85
-    facingYaw: 5.761712
+      - 2.6
+      - -4.88
+      - 1.22
+    facingYaw: 3.2535706
     rotation:
       - 0
       - 0.7317284
@@ -1209,16 +1437,16 @@ NPCs:
       - 0.25
       - 0.25
     upVec:
-      - 0.9898179
-      - -0.1255204
-      - 0.06712074
+      - 1
+      - -1.1920928e-07
+      - 0
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - -0.6449222
-      - -0.2147543
-      - -0.14599718
-      - 0.7187773
+      - 0.039569486
+      - 0.7059988
+      - 0.7059988
+      - -0.03956949
     proximityMessage:
       mode: always
       variants:
@@ -1251,6 +1479,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    currentPlanetNum: 3
 platforms:
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1540,7 +1769,7 @@ platforms:
       - 0.660711
     components:
       latchedGroupSwitch:
-        groupId: test
+        groupId: stage1_planet1
         targets:
           - sequence: boats
             index: 1
@@ -1578,14 +1807,14 @@ platforms:
       - 0.66002905
     components:
       latchedGroupSwitch:
-        groupId: test
+        groupId: stage1_planet1
         targets:
           - sequence: boats
             index: 1
-  - currentPlanetNum: 0
-    theta: 1.0494097
-    phi: 0.01994101
-    height: 2.8906236
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
     facingYaw: -0.7851746
     scale:
       - 1
@@ -1597,7 +1826,7 @@ platforms:
       - -1.19209275e-07
       - 0
     pos:
-      - 38.84
+      - 1.84
       - -4.73
       - 0.38
     rotation:
@@ -1613,10 +1842,10 @@ platforms:
       - -0.270525
       - 0.6533118
     platformId: platform_9
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
+  - currentPlanetNum: 3
+    theta: -0.99602073
+    phi: -0.30839428
+    height: 1.2140507
     facingYaw: -0.85060734
     scale:
       - 1.0003359
@@ -1628,7 +1857,7 @@ platforms:
       - -2.3841858e-07
       - -2.9802322e-08
     pos:
-      - 39.85
+      - 2.85
       - -1.67
       - -4.4
     rotation:
@@ -1644,10 +1873,10 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_10
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
+  - currentPlanetNum: 3
+    theta: -0.53696233
+    phi: 0.8425314
+    height: 1.7973293
     facingYaw: -0.85060734
     scale:
       - 1.0003359
@@ -1659,7 +1888,7 @@ platforms:
       - -2.3841858e-07
       - -2.9802322e-08
     pos:
-      - 40.41
+      - 3.41
       - 4.45
       - -2.03
     rotation:
@@ -1675,10 +1904,10 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_11
-  - currentPlanetNum: 0
-    theta: 1.0494097
-    phi: 0.01994101
-    height: 2.8906236
+  - currentPlanetNum: 3
+    theta: -2.9790776
+    phi: 0.60753906
+    height: 4.448301
     facingYaw: -0.7953286
     scale:
       - 0.5569991
@@ -1690,7 +1919,7 @@ platforms:
       - 0.1001963
       - -0.019820899
     pos:
-      - 30.84
+      - -6.16
       - 4.34
       - -1.01
     rotation:
@@ -1712,10 +1941,10 @@ platforms:
         targets:
           - platform_11
     textureOverride: textures/Crystal_MAT_BaseColor.png
-  - currentPlanetNum: 0
-    theta: 1.0494097
-    phi: 0.01994101
-    height: 2.8906236
+  - currentPlanetNum: 3
+    theta: 2.0887835
+    phi: -0.09777949
+    height: 0.34949288
     facingYaw: -0.7851747
     scale:
       - 1
@@ -1727,7 +1956,7 @@ platforms:
       - -1.19209275e-07
       - 0
     pos:
-      - 34.88
+      - -2.12
       - -0.42
       - 3.72
     rotation:
@@ -1743,10 +1972,10 @@ platforms:
       - 0.27052504
       - 0.6533118
     platformId: platform_13
-  - currentPlanetNum: 0
-    theta: -2.334077
-    phi: 0.36538857
-    height: 0.93243814
+  - currentPlanetNum: 3
+    theta: -2.5329742
+    phi: -0.4569789
+    height: 0.9782601
     facingYaw: 0.78517455
     scale:
       - 1
@@ -1758,7 +1987,7 @@ platforms:
       - 0.034769297
       - -0.06572279
     pos:
-      - 34.13
+      - -2.87
       - -1.72
       - -2
     rotation:
@@ -1774,10 +2003,10 @@ platforms:
       - 0.24377498
       - -0.29615185
       - 0.65052986
-  - currentPlanetNum: 0
-    theta: 3.07684
-    phi: 1.0536447
-    height: 1.665479
+  - currentPlanetNum: 3
+    theta: -2.881963
+    phi: 0.79866415
+    height: 2.1158984
     facingYaw: 0.78517467
     scale:
       - 1
@@ -1789,7 +2018,7 @@ platforms:
       - 0.10588895
       - 0.0030532177
     pos:
-      - 33.16
+      - -3.84
       - 4.08
       - -1.02
     rotation:
@@ -1805,10 +2034,10 @@ platforms:
       - 0.25685
       - -0.28354418
       - 0.6173197
-  - currentPlanetNum: 0
-    theta: -0.5523795
-    phi: 0.08754171
-    height: 2.3078227
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
     facingYaw: -0.85060734
     scale:
       - 2.4785843
@@ -1820,7 +2049,7 @@ platforms:
       - -2.3841858e-07
       - -2.9802322e-08
     pos:
-      - 41.04
+      - 4.04
       - 0.46
       - 3.57
     rotation:
@@ -1836,10 +2065,10 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_16
-  - currentPlanetNum: 0
-    theta: 0.038756523
-    phi: 0.37385318
-    height: 5.2564435
+  - currentPlanetNum: 3
+    theta: 0.5492466
+    phi: 0.30622298
+    height: 5.315322
     facingYaw: 0.7285277
     scale:
       - 0.5569991
@@ -1851,7 +2080,7 @@ platforms:
       - -3.576278e-07
       - -8.940695e-08
     pos:
-      - 43.96
+      - 6.96
       - 2.58
       - 4.26
     rotation:
@@ -1873,11 +2102,11 @@ platforms:
         groupId: stage1_planet2
         targets:
           - sequence: boats
-            index: 3
-  - currentPlanetNum: 0
-    theta: -0.28730252
-    phi: 0.12781243
-    height: 5.0965357
+            index: 2
+  - currentPlanetNum: 3
+    theta: 0.40818188
+    phi: 0.1889368
+    height: 5.1148405
     facingYaw: 0.7339227
     scale:
       - 0.5569991
@@ -1889,7 +2118,7 @@ platforms:
       - -3.5762787e-07
       - -8.940697e-08
     pos:
-      - 43.96
+      - 6.96
       - 1.45
       - 3.01
     rotation:
@@ -1911,7 +2140,7 @@ platforms:
         groupId: stage1_planet2
         targets:
           - sequence: boats
-            index: 3
+            index: 2
 stageObjects: []
 tutorialTriggers:
   - currentPlanetNum: 0
@@ -1930,19 +2159,19 @@ tutorialTriggers:
       - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
-      - 4.86
-      - -1.03
-      - 0.64
-    facingYaw: 0.72607136
+      - 4.7
+      - -0.96
+      - 0.57
+    facingYaw: 0.72607154
     rotation:
       - 1.4522733e-09
       - -0.72607154
       - -2.5559308e-07
     rotationQuat:
       - -0.6610197
-      - 0.2511033
-      - 0.25110325
-      - 0.66101986
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
     upVec:
       - 1
       - -2.3841858e-07
@@ -2124,9 +2353,9 @@ tutorialTriggers:
     phi: 0.5252856
     height: 5.6282964
     scale:
-      - 0.66112155
-      - 0.6487986
-      - 0.5896557
+      - 0.41417444
+      - 0.6487984
+      - 0.47100267
     talkTexts:
       - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
       - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
@@ -2135,8 +2364,8 @@ tutorialTriggers:
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
       - -6.41
-      - 3.83
-      - -1.57
+      - 3.81
+      - -1.56
     facingYaw: -0.7980493
     rotation:
       - -0.028390434
@@ -2338,9 +2567,9 @@ tutorialTriggers:
       - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
       - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
     pos:
-      - 7.05
-      - 2.28
-      - -0.91
+      - 6.75
+      - 1.68
+      - -1.09
     facingYaw: 2.311618
     rotation:
       - 3.1415925
@@ -2348,8 +2577,8 @@ tutorialTriggers:
       - 3.1415923
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - -3.5762787e-07
+      - -1.1920929e-07
     modelPath: platform.obj
     talkRubies:
       - talkIndex: 0
@@ -2523,6 +2752,7 @@ tutorialTriggers:
         condition: playerSwitch
     rotationQuat:
       - -0.2850901
-      - 0.64708865
-      - 0.6470885
-      - 0.28509015
+      - 0.6470887
+      - 0.64708847
+      - 0.28509012
+    debugDisabled: true

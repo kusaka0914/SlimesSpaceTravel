@@ -78,7 +78,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             return;
         }
 
-        combat.ResetAttackComboIndex();
+        combat.ResetGroundAttackCombo();
         return;
     }
 
@@ -113,7 +113,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             return;
         }
 
-        combat.ResetAttackComboIndex();
+        combat.ResetGroundAttackCombo();
         player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
 
         for (Enemy* enemy : hitEnemies) {

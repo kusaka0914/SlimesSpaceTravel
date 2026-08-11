@@ -35,6 +35,12 @@ public:
 
     enum class PlanetShape { Normal, Sphere, Ellipse };
 
+    enum class EllipseSurfaceFace {
+        Front,
+        Side,
+        Back,
+    };
+
     Planet(Game* game);
 
     void ApplyConfig(const YAML::Node& node);
@@ -48,6 +54,13 @@ public:
         const glm::vec3& worldPosition) const;
     EllipseSurfaceProjection CalculateEllipseSurfaceProjection(
         const glm::vec3& worldPosition) const;
+    EllipseSurfaceFace ResolveEllipseSurfaceFace(
+        const glm::vec3& worldPosition) const;
+    EllipseSurfaceFace ResolveEllipseSurfaceHemisphere(
+        const glm::vec3& worldPosition) const;
+    bool ArePositionsOnSameSurfaceFace(
+        const glm::vec3& firstWorldPosition,
+        const glm::vec3& secondWorldPosition) const;
 
     void AddEnemy(Enemy* enemy) { mActorRegistry.AddEnemy(enemy); }
     void AddBoat(Boat* boat) { mActorRegistry.AddBoat(boat); }
@@ -61,12 +74,17 @@ public:
     void AddTutorialTrigger(TutorialTrigger* trigger) { mActorRegistry.AddTutorialTrigger(trigger); }
 
     void RemoveAllEnemy() { mActorRegistry.RemoveAllEnemy(); }
+    void RemoveEnemy(Enemy* enemy) { mActorRegistry.RemoveEnemy(enemy); }
     void RemoveAllBoat() { mActorRegistry.RemoveAllBoat(); }
     void RemoveBoat(Boat* boat) { mActorRegistry.RemoveBoat(boat); }
     void RemoveAllBoatParts() { mActorRegistry.RemoveAllBoatParts(); }
+    void RemoveBoatParts(BoatParts* boatParts) { mActorRegistry.RemoveBoatParts(boatParts); }
     void RemoveAllCrystals() { mActorRegistry.RemoveAllCrystals(); }
+    void RemoveCrystal(Crystal* crystal) { mActorRegistry.RemoveCrystal(crystal); }
     void RemoveAllNPCs() { mActorRegistry.RemoveAllNPCs(); }
+    void RemoveNPC(NPC* npc) { mActorRegistry.RemoveNPC(npc); }
     void RemoveAllPlatforms() { mActorRegistry.RemoveAllPlatforms(); }
+    void RemovePlatform(Platform* platform) { mActorRegistry.RemovePlatform(platform); }
     void RemovePlatformsByStageSequence(const std::string& sequenceName)
     {
         mActorRegistry.RemovePlatformsByStageSequence(sequenceName);
@@ -74,9 +92,13 @@ public:
     void RemoveKey() { mActorRegistry.RemoveKey(); }
     void RemoveStar() { mActorRegistry.RemoveStar(); }
     void RemoveAllBoatArrivalPoints() { mActorRegistry.RemoveAllBoatArrivalPoints(); }
+    void RemoveBoatArrivalPoint(BoatArrivalPoint* point) { mActorRegistry.RemoveBoatArrivalPoint(point); }
     void RemoveAllFallRespawnPoints() { mActorRegistry.RemoveAllFallRespawnPoints(); }
+    void RemoveFallRespawnPoint(FallRespawnPoint* point) { mActorRegistry.RemoveFallRespawnPoint(point); }
     void RemoveAllStageObjects() { mActorRegistry.RemoveAllStageObjects(); }
+    void RemoveStageObject(StageObject* stageObject) { mActorRegistry.RemoveStageObject(stageObject); }
     void RemoveAllTutorialTriggers() { mActorRegistry.RemoveAllTutorialTriggers(); }
+    void RemoveTutorialTrigger(TutorialTrigger* trigger) { mActorRegistry.RemoveTutorialTrigger(trigger); }
 
     void SetCurrentStage(Stage* currentStage) { mCurrentStage = currentStage; }
     void SetStageNum(int stageNum) { mStageNum = stageNum; }

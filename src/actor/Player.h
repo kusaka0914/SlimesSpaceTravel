@@ -53,6 +53,7 @@ public:
     void RespawnAtRestartPoint();
     void Restart();
     void RecoverFromFatigue();
+    void SetBaseScale(const glm::vec3& scale);
     void SetSplitForm(bool isSplitForm);
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
@@ -151,6 +152,21 @@ public:
     void SetJumpHeight(float jumpHeight) { mMovement.SetJumpHeight(jumpHeight); }
     void SetJumpAscentDuration(float duration) { mMovement.SetJumpAscentDuration(duration); }
     void SetJumpFallDuration(float duration) { mMovement.SetJumpFallDuration(duration); }
+    void SetJumpApexHoverDurationSeconds(float durationSeconds)
+    {
+        mMovement.SetJumpApexHoverDurationSeconds(durationSeconds);
+    }
+    void SetAirWeakAttackPostHoverDurationSeconds(
+        float durationSeconds)
+    {
+        mMovement.SetAirWeakAttackPostHoverDurationSeconds(
+            durationSeconds);
+    }
+    void SetAirDodgePostHoverDurationSeconds(float durationSeconds)
+    {
+        mMovement.SetAirDodgePostHoverDurationSeconds(
+            durationSeconds);
+    }
     void SetAirSlamRiseHeight(float riseHeight) { mMovement.SetAirSlamRiseHeight(riseHeight); }
     void SetAirSlamRiseDurationSeconds(float durationSeconds)
     {
@@ -261,6 +277,18 @@ public:
     float GetJumpHeight() const { return mMovement.GetJumpHeight(); }
     float GetJumpAscentDuration() const { return mMovement.GetJumpAscentDuration(); }
     float GetJumpFallDuration() const { return mMovement.GetJumpFallDuration(); }
+    float GetJumpApexHoverDurationSeconds() const
+    {
+        return mMovement.GetJumpApexHoverDurationSeconds();
+    }
+    float GetAirWeakAttackPostHoverDurationSeconds() const
+    {
+        return mMovement.GetAirWeakAttackPostHoverDurationSeconds();
+    }
+    float GetAirDodgePostHoverDurationSeconds() const
+    {
+        return mMovement.GetAirDodgePostHoverDurationSeconds();
+    }
     float GetAirSlamRiseHeight() const { return mMovement.GetAirSlamRiseHeight(); }
     float GetAirSlamRiseDurationSeconds() const { return mMovement.GetAirSlamRiseDurationSeconds(); }
     float GetAirSlamHoverDurationSeconds() const { return mMovement.GetAirSlamHoverDurationSeconds(); }

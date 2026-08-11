@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/EnemyStatus.h"
@@ -63,6 +64,31 @@ bool TryCalculateTangentialDirectionToPlayer(
         player.GetPos() - enemy.GetPos(),
         enemy.GetUpVec(),
         tangentialDirectionToPlayer);
+}
+
+bool CanRemainOnCurrentEllipseFace(
+    const Enemy& enemy,
+    const glm::vec3& requestedPosition)
+{
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet ||
+        planet->GetPlanetShape() !=
+            Planet::PlanetShape::Ellipse) {
+        return true;
+    }
+
+    const Planet::EllipseSurfaceFace requestedFace =
+        planet->ResolveEllipseSurfaceFace(
+            requestedPosition);
+    if (requestedFace ==
+        Planet::EllipseSurfaceFace::Side) {
+        return false;
+    }
+
+    const Planet::EllipseSurfaceFace currentHemisphere =
+        planet->ResolveEllipseSurfaceHemisphere(
+            enemy.GetPos());
+    return currentHemisphere == requestedFace;
 }
 } // namespace
 
@@ -150,6 +176,10 @@ void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float 
 void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
                                          float deltaTime)
 {
+    if (status.HasHitAnyPlayer()) {
+        return;
+    }
+
     glm::vec3 tangentialAttackDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
             enemy.GetFacingForwardVec(),
@@ -255,6 +285,13 @@ void EnemyMovement::UpdateAirDodgePushMovement(
             &enemy,
             movementDelta,
             enemy.GetPos() + movementDelta);
+    if (!CanRemainOnCurrentEllipseFace(
+            enemy,
+            collisionResult.resolvedPosition)) {
+        mAirDodgePushVelocity = glm::vec3(0.0f);
+        return;
+    }
+
     enemy.SetPos(collisionResult.resolvedPosition);
     if (collisionResult.didHitStage) {
         mAirDodgePushVelocity = glm::vec3(0.0f);
@@ -340,8 +377,21 @@ glm::vec3 EnemyMovement::CalculateCollisionAdjustedPos(Enemy& enemy, const glm::
             desiredPos);
     desiredPos = collisionResult.resolvedPosition;
 
+    if (!CanRemainOnCurrentEllipseFace(
+            enemy,
+            desiredPos)) {
+        return enemy.GetPos();
+    }
+
     if (enemy.IsAlive() && enemy.IsOnGround()) {
-        desiredPos = mGrounding.ClampMoveToGround(enemy, desiredPos);
+        const glm::vec3 groundedPosition =
+            mGrounding.ClampMoveToGround(enemy, desiredPos);
+        if (!CanRemainOnCurrentEllipseFace(
+                enemy,
+                groundedPosition)) {
+            return enemy.GetPos();
+        }
+        desiredPos = groundedPosition;
     }
 
     return desiredPos;

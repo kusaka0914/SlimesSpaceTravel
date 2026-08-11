@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
@@ -75,13 +76,17 @@ void EnemyCombat::TryApplyFanAttack(Enemy& enemy, EnemyStatus& status, float ran
             continue;
         }
 
-        const glm::vec3 toPlayer = player->GetPos() - enemy.GetPos();
-        const float distance = glm::length(toPlayer);
         const float effectiveRange = range + player->GetRadius();
-
-        if (distance > effectiveRange) {
+        if (!IsPlayerInRange(
+                enemy,
+                player,
+                effectiveRange)) {
             continue;
         }
+
+        const glm::vec3 toPlayer =
+            player->GetPos() - enemy.GetPos();
+        const float distance = glm::length(toPlayer);
 
         const float facingDot =
             distance > 1e-6f ? glm::dot(forward, toPlayer / distance) : 1.0f;
@@ -115,7 +120,14 @@ void EnemyCombat::TryApplyGroundRadialAttack(
 
 bool EnemyCombat::IsPlayerInRange(const Enemy& enemy, Player* player, float range) const
 {
-    if (!player) {
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!player ||
+        !player->GetIsActive() ||
+        !planet ||
+        player->GetCurrentPlanet() != planet ||
+        !planet->ArePositionsOnSameSurfaceFace(
+            enemy.GetPos(),
+            player->GetPos())) {
         return false;
     }
 

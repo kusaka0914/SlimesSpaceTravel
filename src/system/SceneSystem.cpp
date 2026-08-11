@@ -263,8 +263,6 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         return;
     }
 
-    const std::vector<Planet*> planets = currentStage->GetPlanets();
-
     Player* mainPlayer = mGame->GetMainPlayer();
     for (Player* player : mGame->GetPlayers()) {
         if (!player) {
@@ -277,13 +275,6 @@ void SceneSystem::OnBoatArrived(Boat* boat)
             player != mainPlayer;
         if (isInactiveSoloClone) {
             continue;
-        }
-
-        const int nextPlanetIndex = player->GetCurrentPlanetNum() + 1;
-
-        if (nextPlanetIndex >= 0 && nextPlanetIndex < static_cast<int>(planets.size())) {
-            player->SetCurrentPlanetNum(nextPlanetIndex);
-            player->SetCurrentPlanet(planets[nextPlanetIndex]);
         }
 
         player->OnBoatArrived(boat);

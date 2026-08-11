@@ -25,6 +25,7 @@ public:
 private:
     void DrawStageSwitcher();
     void DrawStageClearProgressEditor();
+    void DrawPlayerPlanetDebugMover();
     void DrawWorkspaceWindows();
     void DrawInspector();
     void DrawToolbar();

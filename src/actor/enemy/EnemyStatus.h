@@ -72,6 +72,7 @@ public:
     void ClearIsCountered() { mIsCountered = false; }
 
     void ClearHitPlayers() { mHitPlayers.clear(); }
+    bool HasHitAnyPlayer() const { return !mHitPlayers.empty(); }
     bool HasHitPlayer(Player* player) const { return mHitPlayers.contains(player); }
     void AddHitPlayer(Player* player) { mHitPlayers.insert(player); }
 

@@ -1,6 +1,7 @@
 #include "actor/player/PlayerBoatRide.h"
 
 #include "Game.h"
+#include "Stage.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -71,7 +72,28 @@ void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
 
 void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, PlayerRespawn& respawn, Boat* boat) const
 {
-    player.SetCurrentPlanet(boat->GetDestPlanet());
+    if (!boat || !boat->GetDestPlanet()) {
+        return;
+    }
+
+    Planet* destinationPlanet = boat->GetDestPlanet();
+    player.SetCurrentPlanet(destinationPlanet);
+
+    Stage* currentStage = player.GetGame()
+        ? player.GetGame()->GetCurrentStage()
+        : nullptr;
+    if (currentStage) {
+        const std::vector<Planet*>& planets = currentStage->GetPlanets();
+        for (int planetIndex = 0;
+             planetIndex < static_cast<int>(planets.size());
+             ++planetIndex) {
+            if (planets[planetIndex] == destinationPlanet) {
+                movement.SetCurrentPlanetNum(planetIndex);
+                break;
+            }
+        }
+    }
+
     player.SetPos(boat->GetDestPos());
 
     respawn.SetRestartPos(player.GetPos());

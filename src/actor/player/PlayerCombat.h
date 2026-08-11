@@ -20,7 +20,7 @@ public:
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
-    bool IsAirAttackFloating() const { return mAirAttackFloatingTimer > 0.0f; }
+    bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
     bool CanStartAirAttack() const
     {
@@ -62,7 +62,6 @@ public:
         const glm::vec3& movementEnd);
     void EndAirDodgeAttack();
 
-    void UpdateAirAttackFloatingTimer(float deltaTime);
     void UpdateAttackCooldown(float deltaTime);
     void UpdateAttackMoveLock(PlayerStatus& status, float deltaTime);
     void UpdateAttackDodgeLock(float deltaTime);
@@ -88,7 +87,11 @@ public:
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
     void SetStrongAttackHit(bool value) { mIsStrongAttackHit = value; }
-    void ResetAttackComboIndex() { mAttackComboIndex = 0; }
+    void ResetGroundAttackCombo()
+    {
+        mAttackComboIndex = 0;
+        mComboKeepTimer = -1.0f;
+    }
 
     PlayerAttackKind GetAttackKind() const { return mAttackKind; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
@@ -170,7 +173,6 @@ private:
     float mDefaultAttackMotionTimer = 0.3f;
     float mAttackHitDelay = 0.5f;
     float mAttackHitDelayRemaining = -1.0f;
-    float mAirAttackFloatingTimer = -1.0f;
     float mSpecialAttackCooldown = 30.0f;
     float mStrongAttackTimer = -1.0f;
     float mDefaultStrongAttackTimer = 0.06f;

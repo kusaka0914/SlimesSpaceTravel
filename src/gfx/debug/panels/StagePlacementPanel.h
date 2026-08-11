@@ -25,6 +25,7 @@ public:
     void DrawObjectList();
     void DrawPlayerSpawn();
     void Save();
+    void SaveEditorAuthoredTransforms();
 
     void RequestOpenPickedActorPlacement();
 
@@ -57,7 +58,11 @@ private:
     void DrawTextureOverrideEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
 
     void SaveActorsYaml(YAML::Node& config, const ActorGroup& group);
-    void SaveActorCommonYaml(YAML::Node& config, const std::string& sequenceName, Actor* actor);
+    void SaveActorCommonYaml(
+        YAML::Node& config,
+        const std::string& sequenceName,
+        Actor* actor,
+        bool shouldSaveEditorTransform);
 
     glm::vec3 CalculateActorUpVecFromEditorRotation(Actor* actor, const glm::vec3& rotationRad) const;
     void ApplyActorEditorRotation(Actor* actor);

@@ -27,8 +27,12 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
                         mSelectionController),
       mGizmoController(
           mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
-          [this]() { mStagePlacementPanel.Save(); })
+          [this]() {
+              mStagePlanetPanel.SaveEditorAuthoredTransforms();
+          })
 {
+    mStagePlanetPanel.SetSaveDependentActorTransformsCallback(
+        [this]() { mStagePlacementPanel.SaveEditorAuthoredTransforms(); });
     mStageAddActorPanel.SetSelectionController(&mSelectionController);
     mStageAddActorPanel.SetPushUndoCallback(
         [this]() { mEditCommandController.PushUndo(); });

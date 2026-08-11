@@ -19,11 +19,27 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     }
 
     for (Enemy* enemy : player.GetCurrentPlanet()->GetEnemies()) {
-        if (enemy->GetIsDead()) {
+        if (!enemy ||
+            enemy->GetIsDead() ||
+            !enemy->GetIsActive() ||
+            !player.GetCurrentPlanet()->
+                ArePositionsOnSameSurfaceFace(
+                    player.GetPos(),
+                    enemy->GetPos())) {
             continue;
         }
 
         if (combat.GetAttackKind() == PlayerAttackKind::Strong && enemy->GetOnGround()) {
+            continue;
+        }
+
+        const bool isGroundedEnemyBelowAirAttack =
+            combat.IsAirAttacking() &&
+            enemy->GetOnGround();
+        if (isGroundedEnemyBelowAirAttack &&
+            !IsGroundedEnemyWithinAirAttackHeight(
+                player,
+                *enemy)) {
             continue;
         }
 
@@ -43,6 +59,49 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
     return hitEnemies;
 }
 
+bool PlayerAttackHitDetector::
+IsGroundedEnemyWithinAirAttackHeight(
+    const Player& player,
+    const Enemy& enemy) const
+{
+    const PhysicsSystem* physicsSystem =
+        player.GetGame()
+            ? player.GetGame()->GetPhysicsSystem()
+            : nullptr;
+    if (!physicsSystem) {
+        return false;
+    }
+
+    const glm::vec3 playerUp = player.GetUpVec();
+    const float playerUpLengthSquared =
+        glm::dot(playerUp, playerUp);
+    if (playerUpLengthSquared <= 0.000001f) {
+        return false;
+    }
+
+    const glm::vec3 upDirection =
+        playerUp / std::sqrt(playerUpLengthSquared);
+    const float playerHeightAboveEnemy =
+        glm::dot(
+            player.GetPos() - enemy.GetPos(),
+            upDirection);
+    if (playerHeightAboveEnemy <= 0.0f) {
+        return true;
+    }
+
+    const float scaledPlayerHalfHeight =
+        physicsSystem->GetPlayerCollisionHeight() *
+        player.GetCollisionScaleMultiplier() *
+        0.5f;
+    constexpr float airAttackDownwardReach = 0.35f;
+    const float maximumReachableHeight =
+        std::max(0.0f, enemy.GetRadius()) +
+        scaledPlayerHalfHeight +
+        airAttackDownwardReach;
+    return playerHeightAboveEnemy <=
+           maximumReachableHeight;
+}
+
 std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesInRadius(
     Player& player,
     float range) const
@@ -58,7 +117,10 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesInRadius(
         std::max(0.0f, range);
     for (Enemy* enemy : currentPlanet->GetEnemies()) {
         if (!enemy || enemy->GetIsDead() ||
-            !enemy->GetIsActive()) {
+            !enemy->GetIsActive() ||
+            !currentPlanet->ArePositionsOnSameSurfaceFace(
+                player.GetPos(),
+                enemy->GetPos())) {
             continue;
         }
 
@@ -128,7 +190,10 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
 
     for (Enemy* enemy : currentPlanet->GetEnemies()) {
         if (!enemy || enemy->GetIsDead() ||
-            !enemy->GetIsActive()) {
+            !enemy->GetIsActive() ||
+            !currentPlanet->ArePositionsOnSameSurfaceFace(
+                player.GetPos(),
+                enemy->GetPos())) {
             continue;
         }
 

@@ -143,36 +143,6 @@ void ParameterDebugPanel::DrawPlayer()
     ImGui::Separator();
 
     if (ImGui::TreeNode("基本情報")) {
-        Stage* stage = mContext.game->GetCurrentStage();
-        if (stage) {
-            const std::vector<Planet*>& planets = stage->GetPlanets();
-            const int currentPlanetIndex = player->GetCurrentPlanetNum();
-            const std::string preview =
-                currentPlanetIndex >= 0 && currentPlanetIndex < static_cast<int>(planets.size())
-                    ? "惑星 " + std::to_string(currentPlanetIndex)
-                    : "未設定";
-
-            if (ImGui::BeginCombo("現在の惑星（デバッグ移動）", preview.c_str())) {
-                for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
-                    Planet* planet = planets[planetIndex];
-                    if (!planet) {
-                        continue;
-                    }
-
-                    const std::string label = "惑星 " + std::to_string(planetIndex);
-                    const bool isSelected = planetIndex == currentPlanetIndex;
-                    if (ImGui::Selectable(label.c_str(), isSelected)) {
-                        player->DebugMoveToPlanet(planet, planetIndex);
-                    }
-
-                    if (isSelected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
-        }
-
         int initialHp = static_cast<int>(
             std::round(player->GetMaxHp()));
         if (ImGui::SliderInt(
@@ -188,10 +158,10 @@ void ParameterDebugPanel::DrawPlayer()
             player->GetHp(),
             player->GetMaxHp());
 
-        float scale = player->GetScale().x;
+        float scale = player->GetBaseScale().x;
         if (ImGui::SliderFloat("スケール", &scale, 0.01f, 5.0f, "%.2f")) {
             scale = std::round(scale * 100.0f) / 100.0f;
-            player->SetScale(glm::vec3(scale));
+            player->SetBaseScale(glm::vec3(scale));
         }
 
         int attack = player->GetAttack();
@@ -345,6 +315,45 @@ void ParameterDebugPanel::DrawPlayer()
         float jumpFallDuration = player->GetJumpFallDuration();
         if (ImGui::DragFloat("落下時間（秒）", &jumpFallDuration, 0.01f, 0.05f, 5.0f, "%.2f")) {
             player->SetJumpFallDuration(jumpFallDuration);
+        }
+
+        float jumpApexHoverDurationSeconds =
+            player->GetJumpApexHoverDurationSeconds();
+        if (ImGui::DragFloat(
+                "頂点での空中待機時間（秒）",
+                &jumpApexHoverDurationSeconds,
+                0.01f,
+                0.0f,
+                2.0f,
+                "%.2f")) {
+            player->SetJumpApexHoverDurationSeconds(
+                jumpApexHoverDurationSeconds);
+        }
+
+        float airWeakAttackPostHoverDurationSeconds =
+            player->GetAirWeakAttackPostHoverDurationSeconds();
+        if (ImGui::DragFloat(
+                "空中弱攻撃後の待機時間（秒）",
+                &airWeakAttackPostHoverDurationSeconds,
+                0.01f,
+                0.0f,
+                2.0f,
+                "%.2f")) {
+            player->SetAirWeakAttackPostHoverDurationSeconds(
+                airWeakAttackPostHoverDurationSeconds);
+        }
+
+        float airDodgePostHoverDurationSeconds =
+            player->GetAirDodgePostHoverDurationSeconds();
+        if (ImGui::DragFloat(
+                "空中回避後の待機時間（秒）",
+                &airDodgePostHoverDurationSeconds,
+                0.01f,
+                0.0f,
+                2.0f,
+                "%.2f")) {
+            player->SetAirDodgePostHoverDurationSeconds(
+                airDodgePostHoverDurationSeconds);
         }
 
         ImGui::TextDisabled("上昇時間を短くすると素早く上がり、落下時間を長くするとゆっくり落ちます。");
@@ -940,7 +949,12 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
         index,
         "hp",
         player->GetMaxHp());
-    SetYamlSequenceValue(config, sequenceName, index, "scale", player->GetScale().x);
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "scale",
+        player->GetBaseScale().x);
     SetYamlSequenceValue(config, sequenceName, index, "attack", player->GetAttack());
     SetYamlSequenceValue(config, sequenceName, index, "attackSpeed", player->GetAttackSpeed());
     SetYamlSequenceValue(config, sequenceName, index, "moveSpeed", player->GetMoveSpeed());
@@ -953,6 +967,24 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "jumpHeight", player->GetJumpHeight());
     SetYamlSequenceValue(config, sequenceName, index, "jumpAscentDuration", player->GetJumpAscentDuration());
     SetYamlSequenceValue(config, sequenceName, index, "jumpFallDuration", player->GetJumpFallDuration());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "jumpApexHoverDurationSeconds",
+        player->GetJumpApexHoverDurationSeconds());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airWeakAttackPostHoverDurationSeconds",
+        player->GetAirWeakAttackPostHoverDurationSeconds());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgePostHoverDurationSeconds",
+        player->GetAirDodgePostHoverDurationSeconds());
     SetYamlSequenceValue(
         config,
         sequenceName,

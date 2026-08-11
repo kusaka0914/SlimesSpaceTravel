@@ -16,6 +16,22 @@ class Planet;
 struct LoadedMesh;
 struct LoadedModel;
 
+struct EditorAuthoredTransform {
+    bool hasPosition = false;
+    bool hasRotation = false;
+    bool hasScale = false;
+    Planet* planet = nullptr;
+    glm::vec3 localPosition{0.0f};
+    glm::vec3 editorRotation{0.0f};
+    glm::quat orientation{1.0f, 0.0f, 0.0f, 0.0f};
+    glm::vec3 scale{1.0f};
+    glm::vec3 upDirection{0.0f, 1.0f, 0.0f};
+    float facingYaw = 0.0f;
+    float theta = 0.0f;
+    float phi = 0.0f;
+    float height = 0.0f;
+};
+
 class Actor {
 public:
     explicit Actor(Game* game);
@@ -143,6 +159,27 @@ public:
 
     void SetIsEditorSelected(bool isEditorSelected) { mIsEditorSelected = isEditorSelected; }
 
+    // Captures a transform changed by an editor operation. Runtime movement
+    // intentionally does not call this, so stage saves cannot turn an AI or
+    // animation position into the next spawn position.
+    void CaptureEditorAuthoredPosition();
+    void CaptureEditorAuthoredRotation();
+    void CaptureEditorAuthoredScale();
+    void ClearEditorAuthoredTransform()
+    {
+        mEditorAuthoredTransform = EditorAuthoredTransform{};
+    }
+    const EditorAuthoredTransform* FindEditorAuthoredTransform() const
+    {
+        const bool hasAuthoredTransform =
+            mEditorAuthoredTransform.hasPosition ||
+            mEditorAuthoredTransform.hasRotation ||
+            mEditorAuthoredTransform.hasScale;
+        return hasAuthoredTransform
+            ? &mEditorAuthoredTransform
+            : nullptr;
+    }
+
     bool GetIsEditorSelected() const { return mIsEditorSelected; }
 
 protected:
@@ -195,4 +232,5 @@ protected:
 
     glm::vec3 mEditorRotation{0.0f};
     bool mIsEditorSelected = false;
+    EditorAuthoredTransform mEditorAuthoredTransform;
 };

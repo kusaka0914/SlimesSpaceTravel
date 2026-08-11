@@ -114,13 +114,27 @@ IsEllipseAirborneGravityActive(const Player& player) const
                Planet::PlanetShape::Ellipse;
 }
 
-void PlayerPlanetGravityController::OnJumpStarted()
+void PlayerPlanetGravityController::OnJumpStarted(
+    const Player& player)
 {
     mIsJumpSwitchingActive = true;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
+    mEllipseJumpStartSurfaceDistance = 0.0f;
+
+    const Planet* currentPlanet =
+        player.GetCurrentPlanet();
+    if (currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse) {
+        mEllipseJumpStartSurfaceDistance =
+            currentPlanet
+                ->CalculateEllipseSurfaceProjection(
+                    player.GetPos())
+                .distance;
+    }
 
     // ジャンプ開始時のplayer.GetUpVec()を、
     // 次のUpdateで補間開始方向として保存する。
@@ -143,6 +157,7 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
+    mEllipseJumpStartSurfaceDistance = 0.0f;
     mSmoothedUpInitialized = false;
 
     Planet* landedPlanet = ResolvePlanetFromGroundActor(player.GetGroundActor());
@@ -174,6 +189,7 @@ void PlayerPlanetGravityController::OnRespawned()
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
+    mEllipseJumpStartSurfaceDistance = 0.0f;
     mSmoothedUpInitialized = false;
 }
 
@@ -290,11 +306,16 @@ void PlayerPlanetGravityController::ApplyEllipseSurfaceAttraction(
     }
     directionToSurface /= directionLength;
 
+    // Treat the takeoff surface height as the baseline so a high platform does
+    // not activate extra attraction earlier than the planet surface does.
+    const float attractionStartSurfaceDistance =
+        mEllipseJumpStartSurfaceDistance +
+        ellipseAttractionStartSurfaceDistance;
     const float distanceAttractionAcceleration =
         std::max(
             0.0f,
             projection.distance -
-                ellipseAttractionStartSurfaceDistance) *
+                attractionStartSurfaceDistance) *
         ellipseAttractionPerDistance;
 
     float normalTransitionAcceleration = 0.0f;

@@ -45,6 +45,12 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mMovement.SetJumpHeight(config.jumpHeight);
     mMovement.SetJumpAscentDuration(config.jumpAscentDuration);
     mMovement.SetJumpFallDuration(config.jumpFallDuration);
+    mMovement.SetJumpApexHoverDurationSeconds(
+        config.jumpApexHoverDurationSeconds);
+    mMovement.SetAirWeakAttackPostHoverDurationSeconds(
+        config.airWeakAttackPostHoverDurationSeconds);
+    mMovement.SetAirDodgePostHoverDurationSeconds(
+        config.airDodgePostHoverDurationSeconds);
     if (mGame) {
         mGame->SetGroundNormalRayLength(config.groundNormalRayLength);
 
@@ -205,7 +211,7 @@ void Player::UpdateActor(float deltaTime)
                          deltaTime);
 
     if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
-        mPlanetGravityController.OnJumpStarted();
+        mPlanetGravityController.OnJumpStarted(*this);
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
@@ -260,6 +266,15 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
     }
 }
 
+void Player::SetBaseScale(const glm::vec3& scale)
+{
+    CharacterActor::SetBaseScale(scale);
+
+    if (mIsSplitForm) {
+        SetScale(scale * SplitBodyScaleMultiplier);
+    }
+}
+
 void Player::SetSplitForm(bool isSplitForm)
 {
     mIsSplitForm = isSplitForm;
@@ -302,6 +317,15 @@ void Player::ApplyFallDamageAndRespawn(float damage)
 void Player::OnBoatArrived(Boat* boat)
 {
     mBoatRide.OnBoatArrived(*this, mMovement, mRespawn, boat);
+
+    SetOnGround(false);
+    SetShouldJudgeLanding(true);
+    SetVelocity(glm::vec3(0.0f));
+    mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
+    mGrounding.ResetRayCastTimer();
+    mPlanetGravityController.OnRespawned();
 }
 
 void Player::RespawnAtRestartPoint()
@@ -319,6 +343,8 @@ void Player::RespawnAtRestartPoint()
     mInput.ClearAttackBuffer();
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
     mStateMachine.ClearAttackDirectionTarget();
     mGrounding.ResetRayCastTimer();
     mPlanetGravityController.OnRespawned();
@@ -343,6 +369,8 @@ void Player::OnLanded()
 {
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
     mPlanetGravityController.OnLanded(*this, mMovement);
     mGrounding.OnLanded(*this, mMovement, mCombat);
 }

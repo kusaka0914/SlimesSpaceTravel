@@ -168,7 +168,9 @@ bool PlayerStateMachine::ApplyIdleGravity(
     PlayerCombat& combat,
     float deltaTime)
 {
-    if (combat.IsAirAttackFloating()) {
+    if (movement.UpdateAirborneActionHover(
+            player,
+            deltaTime)) {
         return false;
     }
 

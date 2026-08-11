@@ -3,7 +3,10 @@
 #include "Game.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
+#include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "system/StageActorPlanetBindingService.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 
@@ -263,7 +266,16 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
             continue;
         }
 
+        if (Platform* platform = dynamic_cast<Platform*>(instance.actor);
+            platform && platform->GetMovementComponent()) {
+            platform->GetMovementComponent()->TranslatePath(delta);
+        }
+
         instance.actor->SetPos(instance.actor->GetPos() + delta);
+        StageActorPlanetBindingService::RefreshNearestPlanetBinding(
+            mContext.game->GetCurrentStage(),
+            instance.actor);
+        instance.actor->CaptureEditorAuthoredPosition();
     }
 }
 

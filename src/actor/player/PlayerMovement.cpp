@@ -774,39 +774,14 @@ void PlayerMovement::StartDodgeMovementInDirection(
     const glm::vec3& dodgeDirection,
     DodgeTrajectory trajectory)
 {
+    if (!player.GetOnGround()) {
+        CancelJumpApexHover();
+        CancelAirborneActionHover();
+    }
+
     mDodgeDir = dodgeDirection;
     mDodgeTrajectory = trajectory;
-    mEllipseDodgeNormalSpeed = 0.0f;
-    mEllipseDodgeReturnStartSurfaceDistance = 0.0f;
-    mEllipseDodgeSurfaceAttractionSpeed = 0.0f;
-    if (trajectory == DodgeTrajectory::FollowEllipseSurface) {
-        const Planet* currentPlanet = player.GetCurrentPlanet();
-        if (currentPlanet) {
-            const Planet::EllipseSurfaceProjection projection =
-                currentPlanet->CalculateEllipseSurfaceProjection(
-                    player.GetPos());
-            const glm::vec3 dodgeUpDirection =
-                projection.outwardNormal;
-            mEllipseDodgeNormalSpeed =
-                glm::dot(
-                    player.GetVelocity(),
-                    dodgeUpDirection);
-
-            constexpr float minimumReturnStartSurfaceDistance = 1.25f;
-            constexpr float allowedSurfaceDistanceIncrease = 0.35f;
-            mEllipseDodgeReturnStartSurfaceDistance =
-                std::max(
-                    minimumReturnStartSurfaceDistance,
-                    projection.distance +
-                        allowedSurfaceDistanceIncrease);
-
-            player.SetVelocity(
-                dodgeUpDirection *
-                mEllipseDodgeNormalSpeed);
-        }
-    } else {
-        player.SetVelocity(glm::vec3(0.0f));
-    }
+    player.SetVelocity(glm::vec3(0.0f));
     mDodgeTimer = CalculateDodgeMovementDuration(player.GetOnGround(), mDodgeDuration);
     mDodgeCooldownRemaining = mDodgeCooldownDuration;
     mHasUsedDodge = true;
@@ -836,69 +811,18 @@ glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
         mDodgeDir = normalizedSurfaceTangentDirection;
     }
 
-    constexpr float dodgeGravityMultiplier = 0.35f;
-    const float gravityAcceleration =
-        CalculateAirborneGravityAcceleration(
-            mEllipseDodgeNormalSpeed) *
-        dodgeGravityMultiplier;
-    mEllipseDodgeNormalSpeed -=
-        gravityAcceleration *
-        std::max(0.0f, deltaTime);
-
-    if (projection.isOutside) {
-        constexpr float attractionAccelerationPerDistance = 10.0f;
-        constexpr float normalTransitionAcceleration = 32.0f;
-        constexpr float maximumAttractionAcceleration = 50.0f;
-        constexpr float maximumAttractionSpeed = 14.0f;
-
-        const float distanceAttractionAcceleration =
-            std::max(
-                0.0f,
-                projection.distance -
-                    mEllipseDodgeReturnStartSurfaceDistance) *
-            attractionAccelerationPerDistance;
-        const float normalAlignment = glm::clamp(
-            glm::dot(
-                visualUpDirection,
-                projection.outwardNormal),
-            0.0f,
-            1.0f);
-        const float transitionAttractionAcceleration =
-            (1.0f - normalAlignment) *
-            normalTransitionAcceleration;
-        const float attractionAcceleration = glm::clamp(
-            distanceAttractionAcceleration +
-                transitionAttractionAcceleration,
-            0.0f,
-            maximumAttractionAcceleration);
-        mEllipseDodgeSurfaceAttractionSpeed =
-            std::min(
-                maximumAttractionSpeed,
-                mEllipseDodgeSurfaceAttractionSpeed +
-                    attractionAcceleration *
-                    std::max(0.0f, deltaTime));
-    }
-
-    const glm::vec3 normalVelocity =
-        physicsUpDirection *
-        mEllipseDodgeNormalSpeed;
-    const glm::vec3 surfaceAttractionVelocity =
-        -projection.outwardNormal *
-        mEllipseDodgeSurfaceAttractionSpeed;
-    const glm::vec3 airborneVelocity =
-        normalVelocity +
-        surfaceAttractionVelocity;
-    player.SetVelocity(airborneVelocity);
+    // Air dodge suspends vertical motion on every planet shape. Curving the
+    // dodge direction along an ellipse must not reintroduce fall velocity.
+    player.SetVelocity(glm::vec3(0.0f));
 
     const float surfaceMovementMultiplier =
         CalculateEllipseAirControlMultiplier(
             visualUpDirection,
             physicsUpDirection);
     const glm::vec3 requestedMovement =
-        (mDodgeDir *
-             dodgeSpeed *
-             surfaceMovementMultiplier +
-         airborneVelocity) *
+        mDodgeDir *
+        dodgeSpeed *
+        surfaceMovementMultiplier *
         deltaTime;
     bool wasMovementClamped = false;
     return ClampEllipseAirborneMovementToSurfaceTravelLimit(
@@ -912,6 +836,9 @@ glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
 void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 {
     RecordEllipseAirborneStartSurfaceNormal(player);
+    mCanStartJumpApexHover = true;
+    mJumpApexHoverRemainingSeconds = 0.0f;
+    CancelAirborneActionHover();
 
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
 
@@ -938,7 +865,7 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
     player.SetShouldJudgeLanding(false);
 }
 
-void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime) const
+void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime)
 {
     ApplyJumpGravityMovement(
         player,
@@ -946,10 +873,27 @@ void PlayerMovement::ApplyJumpGravity(Player& player, float deltaTime) const
         deltaTime);
 }
 
+void PlayerMovement::StopAirborneVerticalMovement(
+    Player& player) const
+{
+    if (player.GetOnGround()) {
+        return;
+    }
+
+    const glm::vec3 physicsUpDirection =
+        GetAirbornePhysicsUpDirection(player);
+    const glm::vec3 velocity = player.GetVelocity();
+    const float verticalSpeed =
+        glm::dot(velocity, physicsUpDirection);
+    player.SetVelocity(
+        velocity -
+        physicsUpDirection * verticalSpeed);
+}
+
 void PlayerMovement::ApplyJumpGravityAndInputMovement(
     Player& player,
     const PlayerInput& input,
-    float deltaTime) const
+    float deltaTime)
 {
     ApplyJumpGravityMovement(
         player,
@@ -963,7 +907,7 @@ void PlayerMovement::ApplyJumpGravityAndInputMovement(
 void PlayerMovement::ApplyJumpGravityMovement(
     Player& player,
     const glm::vec3& inputMovementDelta,
-    float deltaTime) const
+    float deltaTime)
 {
     if (player.GetOnGround()) {
         player.ApplyGravityToSelf(deltaTime);
@@ -997,16 +941,41 @@ void PlayerMovement::ApplyJumpGravityMovement(
         player.SetVelocity(velocity);
     }
 
-    const float verticalSpeed =
-        glm::dot(
-            player.GetVelocity(),
-            physicsUpDirection);
-    const float gravityAcceleration =
-        CalculateAirborneGravityAcceleration(verticalSpeed);
-    player.AddVelocity(
-        -physicsUpDirection *
-        gravityAcceleration *
-        deltaTime);
+    if (mJumpApexHoverRemainingSeconds > 0.0f) {
+        StopAirborneVerticalMovement(player);
+        mJumpApexHoverRemainingSeconds =
+            std::max(
+                0.0f,
+                mJumpApexHoverRemainingSeconds -
+                    deltaTime);
+    } else {
+        const float verticalSpeedBeforeGravity =
+            glm::dot(
+                player.GetVelocity(),
+                physicsUpDirection);
+        const float gravityAcceleration =
+            CalculateAirborneGravityAcceleration(
+                verticalSpeedBeforeGravity);
+        player.AddVelocity(
+            -physicsUpDirection *
+            gravityAcceleration *
+            deltaTime);
+
+        const float verticalSpeedAfterGravity =
+            glm::dot(
+                player.GetVelocity(),
+                physicsUpDirection);
+        const bool didReachJumpApex =
+            mCanStartJumpApexHover &&
+            verticalSpeedBeforeGravity > 0.0f &&
+            verticalSpeedAfterGravity <= 0.0f;
+        if (didReachJumpApex) {
+            StopAirborneVerticalMovement(player);
+            mCanStartJumpApexHover = false;
+            mJumpApexHoverRemainingSeconds =
+                mJumpApexHoverDurationSeconds;
+        }
+    }
 
     glm::vec3 adjustedInputMovementDelta =
         inputMovementDelta;
@@ -1066,6 +1035,43 @@ void PlayerMovement::RecordEllipseAirborneStartSurfaceNormal(
 void PlayerMovement::ResetEllipseAirborneSurfaceTravel()
 {
     mHasEllipseAirborneStartSurfaceNormal = false;
+}
+
+void PlayerMovement::CancelJumpApexHover()
+{
+    mCanStartJumpApexHover = false;
+    mJumpApexHoverRemainingSeconds = 0.0f;
+}
+
+void PlayerMovement::StartAirborneActionHover(
+    float durationSeconds)
+{
+    mAirborneActionHoverRemainingSeconds =
+        std::max(0.0f, durationSeconds);
+}
+
+bool PlayerMovement::UpdateAirborneActionHover(
+    Player& player,
+    float deltaTime)
+{
+    if (player.GetOnGround() ||
+        mAirborneActionHoverRemainingSeconds <= 0.0f) {
+        CancelAirborneActionHover();
+        return false;
+    }
+
+    StopAirborneVerticalMovement(player);
+    mAirborneActionHoverRemainingSeconds =
+        std::max(
+            0.0f,
+            mAirborneActionHoverRemainingSeconds -
+                std::max(0.0f, deltaTime));
+    return true;
+}
+
+void PlayerMovement::CancelAirborneActionHover()
+{
+    mAirborneActionHoverRemainingSeconds = 0.0f;
 }
 
 glm::vec3 PlayerMovement::

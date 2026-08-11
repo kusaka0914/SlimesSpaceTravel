@@ -22,11 +22,12 @@ public:
     void ApplyAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyKnockBackMovement(Player& player, float deltaTime);
-    void ApplyJumpGravity(Player& player, float deltaTime) const;
+    void ApplyJumpGravity(Player& player, float deltaTime);
+    void StopAirborneVerticalMovement(Player& player) const;
     void ApplyJumpGravityAndInputMovement(
         Player& player,
         const PlayerInput& input,
-        float deltaTime) const;
+        float deltaTime);
     bool UpdateAirSlamMovement(
         Player& player,
         const PlayerCombat& combat,
@@ -38,6 +39,12 @@ public:
         const glm::vec3& targetPosition);
     void StartJumpMovement(Player& player, float deltaTime);
     void ResetEllipseAirborneSurfaceTravel();
+    void CancelJumpApexHover();
+    void StartAirborneActionHover(float durationSeconds);
+    bool UpdateAirborneActionHover(
+        Player& player,
+        float deltaTime);
+    void CancelAirborneActionHover();
     void StartAirSlamMovement(Player& player);
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
@@ -71,6 +78,29 @@ public:
     void SetJumpHeight(float jumpHeight) { mJumpHeight = jumpHeight; }
     void SetJumpAscentDuration(float duration) { mJumpAscentDuration = duration; }
     void SetJumpFallDuration(float duration) { mJumpFallDuration = duration; }
+    void SetJumpApexHoverDurationSeconds(float durationSeconds)
+    {
+        mJumpApexHoverDurationSeconds =
+            durationSeconds > 0.0f
+                ? durationSeconds
+                : 0.0f;
+    }
+    void SetAirWeakAttackPostHoverDurationSeconds(
+        float durationSeconds)
+    {
+        mAirWeakAttackPostHoverDurationSeconds =
+            durationSeconds > 0.0f
+                ? durationSeconds
+                : 0.0f;
+    }
+    void SetAirDodgePostHoverDurationSeconds(
+        float durationSeconds)
+    {
+        mAirDodgePostHoverDurationSeconds =
+            durationSeconds > 0.0f
+                ? durationSeconds
+                : 0.0f;
+    }
     void SetAirSlamRiseHeight(float riseHeight) { mAirSlamRiseHeight = riseHeight; }
     void SetAirSlamRiseDurationSeconds(float durationSeconds) { mAirSlamRiseDurationSeconds = durationSeconds; }
     void SetAirSlamHoverDurationSeconds(float durationSeconds) { mAirSlamHoverDurationSeconds = durationSeconds; }
@@ -89,6 +119,18 @@ public:
     float GetJumpHeight() const { return mJumpHeight; }
     float GetJumpAscentDuration() const { return mJumpAscentDuration; }
     float GetJumpFallDuration() const { return mJumpFallDuration; }
+    float GetJumpApexHoverDurationSeconds() const
+    {
+        return mJumpApexHoverDurationSeconds;
+    }
+    float GetAirWeakAttackPostHoverDurationSeconds() const
+    {
+        return mAirWeakAttackPostHoverDurationSeconds;
+    }
+    float GetAirDodgePostHoverDurationSeconds() const
+    {
+        return mAirDodgePostHoverDurationSeconds;
+    }
     float GetAirSlamRiseHeight() const { return mAirSlamRiseHeight; }
     float GetAirSlamRiseDurationSeconds() const { return mAirSlamRiseDurationSeconds; }
     float GetAirSlamHoverDurationSeconds() const { return mAirSlamHoverDurationSeconds; }
@@ -129,7 +171,7 @@ private:
     void ApplyJumpGravityMovement(
         Player& player,
         const glm::vec3& inputMovementDelta,
-        float deltaTime) const;
+        float deltaTime);
     void RecordEllipseAirborneStartSurfaceNormal(const Player& player);
     glm::vec3 ClampEllipseAirborneMovementToSurfaceTravelLimit(
         const Planet& planet,
@@ -141,6 +183,7 @@ private:
     bool mHasUsedDodge = false;
     bool mHasStrongAttackDirectionOverride = false;
     bool mHasEllipseAirborneStartSurfaceNormal = false;
+    bool mCanStartJumpApexHover = false;
 
     int mCurrentPlanetNum = 0;
     int mPlayerNum = 1;
@@ -164,6 +207,11 @@ private:
     float mJumpHeight = 1.8367347f;
     float mJumpAscentDuration = 0.4f;
     float mJumpFallDuration = 0.85f;
+    float mJumpApexHoverDurationSeconds = 0.5f;
+    float mJumpApexHoverRemainingSeconds = 0.0f;
+    float mAirWeakAttackPostHoverDurationSeconds = 0.2f;
+    float mAirDodgePostHoverDurationSeconds = 0.2f;
+    float mAirborneActionHoverRemainingSeconds = 0.0f;
 
     glm::vec3 mForwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
@@ -172,8 +220,5 @@ private:
         glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);
     DodgeTrajectory mDodgeTrajectory = DodgeTrajectory::Straight;
-    float mEllipseDodgeNormalSpeed = 0.0f;
-    float mEllipseDodgeReturnStartSurfaceDistance = 0.0f;
-    float mEllipseDodgeSurfaceAttractionSpeed = 0.0f;
     glm::vec3 mStrongAttackDirectionOverride = glm::vec3(0.0f);
 };

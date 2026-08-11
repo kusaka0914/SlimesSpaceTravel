@@ -84,7 +84,6 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
                                      PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
                                      float deltaTime)
 {
-    combat.UpdateAirAttackFloatingTimer(deltaTime);
     movement.UpdateDodgeCooldown(deltaTime);
 
     if (jewelGauge.GetRecoverTimer() >= 0.0f) {

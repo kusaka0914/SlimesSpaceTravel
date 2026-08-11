@@ -29,6 +29,33 @@ Actor::Actor(Game* game)
 
 Actor::~Actor() = default;
 
+void Actor::CaptureEditorAuthoredPosition()
+{
+    mEditorAuthoredTransform.hasPosition = true;
+    mEditorAuthoredTransform.planet = mCurrentPlanet;
+    mEditorAuthoredTransform.localPosition = mCurrentPlanet
+        ? mPos - mCurrentPlanet->GetPos()
+        : mPos;
+    mEditorAuthoredTransform.theta = mTheta;
+    mEditorAuthoredTransform.phi = mPhi;
+    mEditorAuthoredTransform.height = mHeight;
+}
+
+void Actor::CaptureEditorAuthoredRotation()
+{
+    mEditorAuthoredTransform.hasRotation = true;
+    mEditorAuthoredTransform.editorRotation = mEditorRotation;
+    mEditorAuthoredTransform.orientation = mOrientation;
+    mEditorAuthoredTransform.upDirection = mUpVec;
+    mEditorAuthoredTransform.facingYaw = mFacingYaw;
+}
+
+void Actor::CaptureEditorAuthoredScale()
+{
+    mEditorAuthoredTransform.hasScale = true;
+    mEditorAuthoredTransform.scale = mScale;
+}
+
 void Actor::Initialize() {}
 
 void Actor::ProcessInput()

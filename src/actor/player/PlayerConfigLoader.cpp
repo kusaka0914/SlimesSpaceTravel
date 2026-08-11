@@ -141,6 +141,21 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.jumpHeight = ReadFloat(playerNode, "jumpHeight", config.jumpHeight);
         config.jumpAscentDuration = ReadFloat(playerNode, "jumpAscentDuration", config.jumpAscentDuration);
         config.jumpFallDuration = ReadFloat(playerNode, "jumpFallDuration", config.jumpFallDuration);
+        config.jumpApexHoverDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "jumpApexHoverDurationSeconds",
+                config.jumpApexHoverDurationSeconds);
+        config.airWeakAttackPostHoverDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "airWeakAttackPostHoverDurationSeconds",
+                config.airWeakAttackPostHoverDurationSeconds);
+        config.airDodgePostHoverDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "airDodgePostHoverDurationSeconds",
+                config.airDodgePostHoverDurationSeconds);
         config.groundNormalRayLength =
             ReadFloat(
                 playerNode,
