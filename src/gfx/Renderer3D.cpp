@@ -420,7 +420,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     const GLint objectColorLocation = mShader3D->GetLocObjectColor();
     const GLint useTextureLocation = mShader3D->GetLocUseTexture();
-    const glm::vec2 textureTiling = actor->GetTextureTiling();
+    const glm::vec2 textureTiling = actor->GetRenderTextureTiling();
     glUniform2f(
         mShader3D->GetLocTextureTiling(),
         textureTiling.x,
@@ -441,9 +441,12 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     const bool hasUploadedSkinningMatrices = UploadActorSkinningMatrices(actor);
     const bool shouldRenderSolidWhite = actor->ShouldRenderSolidWhite();
     GLuint textureOverride = 0;
-    if (!actor->GetTextureOverridePath().empty()) {
+    const std::string& renderTextureOverridePath =
+        actor->GetRenderTextureOverridePath();
+    if (!renderTextureOverridePath.empty()) {
         textureOverride =
-            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(actor->GetTextureOverridePath());
+            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
+                renderTextureOverridePath);
     }
 
     GLuint backTextureOverride = 0;

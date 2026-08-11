@@ -27,6 +27,7 @@ public:
 
 private:
     void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
+    void DrawBoatArrivalPointCreation();
     void BeginPlacement(const std::string& displayName, int fallbackPlanetIndex,
                         std::function<bool(int, const StageActorPlacement&)> placementCreator);
     int ResolveHitPlanetIndex(Actor* hitActor, int fallbackPlanetIndex) const;
@@ -81,6 +82,11 @@ private:
     int mSelectedBoatStartPlanetIndex = -1;
     int mSelectedBoatDestPlanetIndex = -1;
     int mSelectedBoatDestStage = 0;
+
+    int mSelectedBoatArrivalPointPlanetIndex = -1;
+    std::string mSelectedBoatArrivalPointModel = "platform.obj";
+    std::array<char, 128> mBoatArrivalPointModelSearch = {};
+    glm::vec3 mBoatArrivalPointScale = glm::vec3(0.4f);
 
     int mSelectedStarPlanetIndex = -1;
 

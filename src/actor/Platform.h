@@ -80,6 +80,8 @@ public:
     void SetConveyorFrameDelta(const glm::vec3& delta) { mConveyorFrameDelta = delta; }
 
     float GetRenderOpacity() const override;
+    glm::vec2 GetRenderTextureTiling() const override;
+    const std::string& GetRenderTextureOverridePath() const override;
     bool GetCollisionEnabled() const;
     bool UsesKinematicPhysics() const;
     glm::vec3 GetFrameDelta() const;

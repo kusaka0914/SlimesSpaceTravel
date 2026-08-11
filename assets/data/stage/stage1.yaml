@@ -133,90 +133,6 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -0.083756864
-    phi: -0.6786418
-    height: -0.041601896
-    pos:
-      - 1.95
-      - -1.25
-      - -0.13
-    upVec:
-      - -0.9992295
-      - 0.039048634
-      - 0.003951281
-    facingYaw: 1.9628183
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - -0.40178466
-      - -0.5770043
-      - 0.59840906
-      - -0.3841116
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -0.026081063
-    phi: 0.50990236
-    height: -0.045827866
-    pos:
-      - 1.96
-      - 0.9
-      - 0
-    upVec:
-      - -0.9995952
-      - -0.028420707
-      - -0.0013196067
-    facingYaw: -0.51539433
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.67409176
-      - -0.18319686
-      - 0.17717244
-      - 0.6932887
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -0.34345523
-    phi: 0.8450763
-    height: -0.03715849
-    pos:
-      - 1.94
-      - 1.51
-      - -0.45
-    upVec:
-      - -0.998768
-      - -0.04718931
-      - 0.015353235
-    facingYaw: 0.54205805
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.666491
-      - 0.19882406
-      - -0.17942998
-      - 0.69574684
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
   - type: normal
     theta: -2.1809852
     phi: 0.10503345
@@ -1756,8 +1672,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets:
-          []
+        targets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -2085,8 +2000,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets:
-          []
+        targets: []
 stageObjects: []
 tutorialTriggers:
   - currentPlanetNum: 0
@@ -2701,3 +2615,70 @@ tutorialTriggers:
       - 0.6470887
       - 0.64708847
       - 0.28509012
+boatArrivalPoints:
+  - currentPlanetNum: 3
+    theta: 1.1879112
+    phi: -0.96344066
+    height: 4.1049743
+    facingYaw: 0
+    modelPath: platform.obj
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - 1.51
+      - -6.22
+      - 2.15
+    upVec:
+      - 0.9630306
+      - -0.22487189
+      - 0.14834075
+  - currentPlanetNum: 1
+    theta: 3.1011112
+    phi: -0.39845797
+    height: 0.12297106
+    facingYaw: 0
+    modelPath: platform.obj
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - -1.9550552
+      - -0.8237076
+      - 0.07918674
+    upVec:
+      - -0.9989821
+      - -0.04492308
+      - 0.0040987986
+  - currentPlanetNum: 2
+    theta: 0.4346397
+    phi: 0.39371797
+    height: 0.32635903
+    facingYaw: 0
+    modelPath: platform.obj
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - 1.948616
+      - 0.8924484
+      - 0.9046423
+    upVec:
+      - 0.9992327
+      - 0.027687289
+      - 0.027704984

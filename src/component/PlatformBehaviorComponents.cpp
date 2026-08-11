@@ -679,21 +679,20 @@ void PlatformLatchedGroupSwitchComponent::Update(float deltaTime)
 
     const std::vector<PlatformLatchedGroupSwitchComponent*>
         groupSwitches = CollectGroupSwitches();
-
-    // Every switch records contact before coordinator-only target handling.
-    // This prevents actor update order from dropping a short landing contact
-    // on a non-coordinator switch.
-    LatchEligiblePlayers(groupSwitches);
-
     if (!IsGroupCoordinator(groupSwitches)) {
         return;
     }
 
+    RefreshCurrentPressingPlayers(groupSwitches);
+
     const std::vector<PlatformRevealTarget> groupTargets =
         CollectGroupRevealTargets(groupSwitches);
     if (!GetIsGroupCompleted()) {
-        HideTargets(groupTargets);
-        return;
+        if (!HasRequiredSimultaneousPresses(groupSwitches)) {
+            HideTargets(groupTargets);
+            return;
+        }
+        ActivateGroup(groupSwitches);
     }
 
     if (mHasRevealedTargets) {
@@ -713,7 +712,8 @@ void PlatformLatchedGroupSwitchComponent::SetGroupId(
 
     ClearTargetRuntimeStates();
     mGroupId = groupId;
-    mLatchedPlayer = nullptr;
+    mCurrentPressingPlayer = nullptr;
+    mIsGroupActivated = false;
     mHasRevealedTargets = false;
 }
 
@@ -760,23 +760,12 @@ GetIsGroupCompleted() const
         return false;
     }
 
-    std::vector<const Player*> playersWhoPressedSwitches;
-    for (const PlatformLatchedGroupSwitchComponent* component :
-         groupSwitches) {
-        const Player* player = component
-                                   ? component->mLatchedPlayer
-                                   : nullptr;
-        if (!player ||
-            std::find(
-                playersWhoPressedSwitches.begin(),
-                playersWhoPressedSwitches.end(),
-                player) != playersWhoPressedSwitches.end()) {
-            continue;
-        }
-
-        playersWhoPressedSwitches.emplace_back(player);
-    }
-    return playersWhoPressedSwitches.size() >= RequiredSwitchCount;
+    return std::any_of(
+        groupSwitches.begin(),
+        groupSwitches.end(),
+        [](const PlatformLatchedGroupSwitchComponent* component) {
+            return component && component->mIsGroupActivated;
+        });
 }
 
 void PlatformLatchedGroupSwitchComponent::ClearTargetRuntimeStates()
@@ -890,48 +879,87 @@ bool PlatformLatchedGroupSwitchComponent::IsGroupCoordinator(
            *coordinator == this;
 }
 
-void PlatformLatchedGroupSwitchComponent::LatchEligiblePlayers(
+void PlatformLatchedGroupSwitchComponent::RefreshCurrentPressingPlayers(
     const std::vector<PlatformLatchedGroupSwitchComponent*>&
         groupSwitches)
 {
     for (PlatformLatchedGroupSwitchComponent* component : groupSwitches) {
-        if (!component || component->mLatchedPlayer) {
-            continue;
+        if (component && component->mPlatform) {
+            component->mCurrentPressingPlayer =
+                FindPlayerPressingPlatform(component->mPlatform);
+        } else if (component) {
+            component->mCurrentPressingPlayer = nullptr;
         }
-
-        component->mLatchedPlayer =
-            component->FindEligiblePlayerOnPlatform(groupSwitches);
     }
 }
 
-Player* PlatformLatchedGroupSwitchComponent::FindEligiblePlayerOnPlatform(
+bool PlatformLatchedGroupSwitchComponent::
+HasRequiredSimultaneousPresses(
     const std::vector<PlatformLatchedGroupSwitchComponent*>&
         groupSwitches) const
 {
-    if (!mPlatform || !mPlatform->GetGame()) {
-        return nullptr;
+    if (!mPlatform || !mPlatform->GetGame() ||
+        groupSwitches.size() < RequiredSwitchCount) {
+        return false;
     }
 
-    for (Player* player : mPlatform->GetGame()->GetPlayers()) {
-        if (!player ||
-            !IsPlayerPressingPlatform(*player, *mPlatform)) {
+    const std::vector<Player*>& players =
+        mPlatform->GetGame()->GetPlayers();
+    for (std::size_t firstSwitchIndex = 0;
+         firstSwitchIndex < groupSwitches.size();
+         ++firstSwitchIndex) {
+        const PlatformLatchedGroupSwitchComponent* firstSwitch =
+            groupSwitches[firstSwitchIndex];
+        if (!firstSwitch || !firstSwitch->mPlatform) {
             continue;
         }
 
-        const bool hasPressedAnotherSwitch =
-            std::any_of(
-                groupSwitches.begin(),
-                groupSwitches.end(),
-                [player](
-                    const PlatformLatchedGroupSwitchComponent* component) {
-                    return component &&
-                           component->mLatchedPlayer == player;
-                });
-        if (!hasPressedAnotherSwitch) {
-            return player;
+        for (Player* firstPlayer : players) {
+            if (!firstPlayer ||
+                !IsPlayerPressingPlatform(
+                    *firstPlayer,
+                    *firstSwitch->mPlatform)) {
+                continue;
+            }
+
+            for (std::size_t secondSwitchIndex = firstSwitchIndex + 1;
+                 secondSwitchIndex < groupSwitches.size();
+                 ++secondSwitchIndex) {
+                const PlatformLatchedGroupSwitchComponent* secondSwitch =
+                    groupSwitches[secondSwitchIndex];
+                if (!secondSwitch || !secondSwitch->mPlatform) {
+                    continue;
+                }
+
+                const bool hasDifferentPlayerOnSecondSwitch =
+                    std::any_of(
+                        players.begin(),
+                        players.end(),
+                        [firstPlayer, secondSwitch](Player* secondPlayer) {
+                            return secondPlayer &&
+                                   secondPlayer != firstPlayer &&
+                                   IsPlayerPressingPlatform(
+                                       *secondPlayer,
+                                       *secondSwitch->mPlatform);
+                        });
+                if (hasDifferentPlayerOnSecondSwitch) {
+                    return true;
+                }
+            }
         }
     }
-    return nullptr;
+    return false;
+}
+
+void PlatformLatchedGroupSwitchComponent::ActivateGroup(
+    const std::vector<PlatformLatchedGroupSwitchComponent*>&
+        groupSwitches)
+{
+    for (PlatformLatchedGroupSwitchComponent* component : groupSwitches) {
+        if (component) {
+            component->mIsGroupActivated = true;
+        }
+    }
 }
 
 Actor* PlatformLatchedGroupSwitchComponent::FindTargetActor(

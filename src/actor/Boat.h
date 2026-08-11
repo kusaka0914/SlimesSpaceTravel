@@ -49,6 +49,7 @@ private:
 
     void FinishMoving();
 
+    BoatArrivalPoint* ResolveArrivalPoint() const;
     glm::vec3 CalculateDestPos() const;
 
 private:

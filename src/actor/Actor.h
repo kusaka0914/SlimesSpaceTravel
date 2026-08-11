@@ -127,7 +127,15 @@ public:
     const glm::quat& GetOrientation() const { return mOrientation; }
     const glm::vec3& GetScale() const { return mScale; }
     const glm::vec2& GetTextureTiling() const { return mTextureTiling; }
+    virtual glm::vec2 GetRenderTextureTiling() const
+    {
+        return mTextureTiling;
+    }
     const std::string& GetTextureOverridePath() const { return mTextureOverridePath; }
+    virtual const std::string& GetRenderTextureOverridePath() const
+    {
+        return mTextureOverridePath;
+    }
 
     const std::string& GetModelPath() const { return mModelPath; }
     const LoadedModel* GetLoadedModel() const { return mLoadedModel; }

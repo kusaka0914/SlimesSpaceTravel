@@ -677,6 +677,49 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
     return true;
 }
 
+bool StageActorCreateService::AddBoatArrivalPoint(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const glm::vec3& scale,
+    const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || modelPath.empty() ||
+        !IsValidPlanetIndex(currentPlanetNum, "boat arrival point")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "boatArrivalPoints");
+
+    const int index =
+        static_cast<int>(config["boatArrivalPoints"].size());
+    YAML::Node arrivalPointNode =
+        CreateBoatArrivalPointNode(
+            currentPlanetNum,
+            modelPath,
+            scale);
+    ApplyPlacementToNode(
+        arrivalPointNode,
+        currentPlanetNum,
+        placement);
+    config["boatArrivalPoints"].push_back(arrivalPointNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mContext.game->GetActorLoadSystem()
+        ->CreateBoatArrivalPointFromStageNode(
+            arrivalPointNode,
+            index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
 bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlacement* placement)
 {
     if (!CanCreateActor()) {
@@ -942,6 +985,31 @@ YAML::Node StageActorCreateService::CreateBoatNode(int startPlanetNum, int destP
     node["pos"][0] = initialDistance;
     node["pos"][1] = 0.0f;
     node["pos"][2] = 0.0f;
+
+    return node;
+}
+
+YAML::Node StageActorCreateService::CreateBoatArrivalPointNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const glm::vec3& scale) const
+{
+    YAML::Node node;
+
+    node["currentPlanetNum"] = currentPlanetNum;
+    node["theta"] = 0.0f;
+    node["phi"] = 0.0f;
+    node["height"] = 1.0f;
+    node["facingYaw"] = 0.0f;
+    node["modelPath"] = modelPath;
+
+    node["rotation"][0] = 0.0f;
+    node["rotation"][1] = 0.0f;
+    node["rotation"][2] = 0.0f;
+
+    node["scale"][0] = std::max(0.01f, scale.x);
+    node["scale"][1] = std::max(0.01f, scale.y);
+    node["scale"][2] = std::max(0.01f, scale.z);
 
     return node;
 }

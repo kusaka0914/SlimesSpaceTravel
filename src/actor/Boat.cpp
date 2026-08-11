@@ -88,10 +88,35 @@ void Boat::RefreshDestination()
     }
 }
 
+BoatArrivalPoint* Boat::ResolveArrivalPoint() const
+{
+    if (mArrivalPoint && mArrivalPoint->GetIsActive()) {
+        return mArrivalPoint;
+    }
+
+    if (!mDestPlanet) {
+        return nullptr;
+    }
+
+    BoatArrivalPoint* uniqueArrivalPoint = nullptr;
+    for (BoatArrivalPoint* arrivalPoint :
+         mDestPlanet->GetBoatArrivalPoints()) {
+        if (!arrivalPoint || !arrivalPoint->GetIsActive()) {
+            continue;
+        }
+
+        if (uniqueArrivalPoint) {
+            return nullptr;
+        }
+        uniqueArrivalPoint = arrivalPoint;
+    }
+    return uniqueArrivalPoint;
+}
+
 glm::vec3 Boat::CalculateDestPos() const
 {
-    if (mArrivalPoint) {
-        return mArrivalPoint->GetPos();
+    if (BoatArrivalPoint* arrivalPoint = ResolveArrivalPoint()) {
+        return arrivalPoint->GetPos();
     }
 
     if (!mDestPlanet) {

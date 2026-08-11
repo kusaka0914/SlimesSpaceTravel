@@ -42,6 +42,11 @@ public:
                       const StageActorPlacement* placement = nullptr);
     bool AddBoat(int startPlanetNum, int destPlanetNum, int destStage,
                  const StageActorPlacement* placement = nullptr);
+    bool AddBoatArrivalPoint(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const glm::vec3& scale,
+        const StageActorPlacement* placement = nullptr);
     bool AddStar(int currentPlanetNum, const StageActorPlacement* placement = nullptr);
     bool AddStageObject(int currentPlanetNum, const std::string& modelPath, bool collisionEnabled,
                         const StageActorPlacement* placement = nullptr);
@@ -84,6 +89,10 @@ private:
     YAML::Node CreateCrystalNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateBoatPartsNode(const std::string& type, int currentPlanetNum) const;
     YAML::Node CreateBoatNode(int startPlanetNum, int destPlanetNum, int destStage) const;
+    YAML::Node CreateBoatArrivalPointNode(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const glm::vec3& scale) const;
     YAML::Node CreateStarNode(int currentPlanetNum) const;
     YAML::Node CreateStageObjectNode(int currentPlanetNum, const std::string& modelPath,
                                      bool collisionEnabled) const;

@@ -185,7 +185,10 @@ public:
         return mRevealTargets;
     }
 
-    bool GetIsLatched() const { return mLatchedPlayer != nullptr; }
+    bool GetIsOn() const
+    {
+        return mIsGroupActivated || mCurrentPressingPlayer != nullptr;
+    }
     bool GetIsGroupCompleted() const;
 
     void ClearTargetRuntimeStates();
@@ -200,12 +203,15 @@ private:
     bool IsGroupCoordinator(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;
-    void LatchEligiblePlayers(
+    void RefreshCurrentPressingPlayers(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches);
-    Player* FindEligiblePlayerOnPlatform(
+    bool HasRequiredSimultaneousPresses(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;
+    void ActivateGroup(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches);
     Actor* FindTargetActor(
         const PlatformRevealTarget& target) const;
     void HideTargets(
@@ -219,6 +225,7 @@ private:
     std::string mGroupId;
     std::vector<PlatformRevealTarget> mRevealTargets;
     std::vector<Actor*> mRuntimeTargetActors;
-    Player* mLatchedPlayer = nullptr;
+    Player* mCurrentPressingPlayer = nullptr;
+    bool mIsGroupActivated = false;
     bool mHasRevealedTargets = false;
 };

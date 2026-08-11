@@ -6,6 +6,15 @@
 #include <iostream>
 #include <memory>
 
+namespace {
+
+const std::string pressureSwitchOffTexturePath =
+    "textures/platform_switch_off_red_platform_uv.png";
+const std::string pressureSwitchOnTexturePath =
+    "textures/platform_switch_on_blue_platform_uv.png";
+
+}
+
 Platform::Platform(Game* game)
     : Actor(game)
 {
@@ -224,6 +233,34 @@ float Platform::GetRenderOpacity() const
         opacity = std::min(opacity, componentOpacity);
     }
     return opacity;
+}
+
+glm::vec2 Platform::GetRenderTextureTiling() const
+{
+    if (mPressureSwitchComponent || mLatchedGroupSwitchComponent) {
+        return glm::vec2(1.0f);
+    }
+    return Actor::GetRenderTextureTiling();
+}
+
+const std::string& Platform::GetRenderTextureOverridePath() const
+{
+    const bool hasPressureSwitch = mPressureSwitchComponent != nullptr;
+    const bool hasLatchedGroupSwitch =
+        mLatchedGroupSwitchComponent != nullptr;
+    if (!hasPressureSwitch && !hasLatchedGroupSwitch) {
+        return Actor::GetRenderTextureOverridePath();
+    }
+
+    const bool isPressureSwitchOn =
+        hasPressureSwitch &&
+        mPressureSwitchComponent->GetIsPressed();
+    const bool isLatchedGroupSwitchOn =
+        hasLatchedGroupSwitch &&
+        mLatchedGroupSwitchComponent->GetIsOn();
+    return isPressureSwitchOn || isLatchedGroupSwitchOn
+        ? pressureSwitchOnTexturePath
+        : pressureSwitchOffTexturePath;
 }
 
 bool Platform::GetCollisionEnabled() const

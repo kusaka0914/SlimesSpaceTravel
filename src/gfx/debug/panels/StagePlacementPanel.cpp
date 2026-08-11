@@ -531,6 +531,14 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
     }
 
+    if (dynamic_cast<BoatArrivalPoint*>(actor)) {
+        ImGui::SeparatorText("ロケット到着ポイントのモデル設定");
+        DrawPlacementModelPicker(
+            actor,
+            sequenceName,
+            listIndex);
+    }
+
     if (Platform* movingPlatform = dynamic_cast<Platform*>(actor);
         movingPlatform && movingPlatform->GetMovementComponent()) {
         PlatformMovementComponent* movement =
@@ -1521,7 +1529,8 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     const bool canEditTextureTiling =
         dynamic_cast<Platform*>(actor) != nullptr ||
         dynamic_cast<StageObject*>(actor) != nullptr ||
-        dynamic_cast<Boat*>(actor) != nullptr;
+        dynamic_cast<Boat*>(actor) != nullptr ||
+        dynamic_cast<BoatArrivalPoint*>(actor) != nullptr;
 
     const glm::vec3 previousScale = actor->GetScale();
     glm::vec3 scale = previousScale;
@@ -3024,7 +3033,9 @@ void StagePlacementPanel::SaveActorCommonYaml(
         return;
     }
 
-    if (dynamic_cast<const Platform*>(actor) || dynamic_cast<const StageObject*>(actor)) {
+    if (dynamic_cast<const Platform*>(actor) ||
+        dynamic_cast<const StageObject*>(actor) ||
+        dynamic_cast<const BoatArrivalPoint*>(actor)) {
         config[sequenceName][yamlIndex]["modelPath"] = actor->GetModelPath();
     }
 

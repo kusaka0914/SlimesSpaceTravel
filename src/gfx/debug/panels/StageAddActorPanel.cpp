@@ -229,6 +229,8 @@ void StageAddActorPanel::Draw()
     }
     mContext.assetCatalog->EnsureScanned();
 
+    DrawBoatArrivalPointCreation();
+
     if (mPlacementCreator) {
         ImGui::SeparatorText("連続配置中");
         ImGui::Text("配置対象: %s", mPlacementDisplayName.c_str());
@@ -929,6 +931,117 @@ void StageAddActorPanel::Draw()
             ImGui::TreePop();
         }
     }
+}
+
+void StageAddActorPanel::DrawBoatArrivalPointCreation()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage() ||
+        !mContext.assetCatalog ||
+        !ImGui::TreeNode("ロケット到着ポイント追加")) {
+        return;
+    }
+
+    const auto& planets =
+        mContext.game->GetCurrentStage()->GetPlanets();
+    if (planets.empty()) {
+        ImGui::TextUnformatted(
+            "惑星が存在しないため、ロケット到着ポイントを追加できません");
+        ImGui::TreePop();
+        return;
+    }
+
+    DrawPlanetCombo(
+        "追加先の惑星##boatArrivalPoint",
+        mSelectedBoatArrivalPointPlanetIndex);
+
+    ImGui::InputTextWithHint(
+        "##boatArrivalPointModelSearch",
+        "モデル名を検索",
+        mBoatArrivalPointModelSearch.data(),
+        mBoatArrivalPointModelSearch.size());
+
+    const std::vector<std::string>& modelAssets =
+        mContext.assetCatalog->GetPaths(EditorAssetType::Model);
+    const std::string searchText =
+        ToLower(mBoatArrivalPointModelSearch.data());
+
+    ImGui::BeginChild(
+        "BoatArrivalPointModelAssetPicker",
+        ImVec2(0.0f, 180.0f),
+        true);
+    for (const std::string& modelPath : modelAssets) {
+        if (!searchText.empty() &&
+            ToLower(modelPath).find(searchText) ==
+                std::string::npos) {
+            continue;
+        }
+
+        const bool isSelected =
+            modelPath == mSelectedBoatArrivalPointModel;
+        if (ImGui::Selectable(
+                modelPath.c_str(),
+                isSelected)) {
+            mSelectedBoatArrivalPointModel = modelPath;
+        }
+    }
+    ImGui::EndChild();
+
+    ImGui::Button(
+        "モデルアセットをここへドロップ##newBoatArrivalPointModel",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        mSelectedBoatArrivalPointModel = droppedModelPath;
+    }
+
+    ImGui::TextWrapped(
+        "選択中: %s",
+        mSelectedBoatArrivalPointModel.empty()
+            ? "未選択"
+            : mSelectedBoatArrivalPointModel.c_str());
+    ImGui::DragFloat3(
+        "初期スケール##boatArrivalPoint",
+        &mBoatArrivalPointScale.x,
+        0.01f,
+        0.01f,
+        30.0f,
+        "%.2f");
+
+    const bool canAdd =
+        mSelectedBoatArrivalPointPlanetIndex >= 0 &&
+        !mSelectedBoatArrivalPointModel.empty();
+    if (!canAdd) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button("ロケット到着ポイントを追加")) {
+        const std::string modelPath =
+            mSelectedBoatArrivalPointModel;
+        const glm::vec3 scale =
+            mBoatArrivalPointScale;
+        BeginPlacement(
+            "ロケット到着ポイント",
+            mSelectedBoatArrivalPointPlanetIndex,
+            [this, modelPath, scale](
+                int planetIndex,
+                const StageActorPlacement& placement) {
+                return mCreateService.AddBoatArrivalPoint(
+                    planetIndex,
+                    modelPath,
+                    scale,
+                    &placement);
+            });
+    }
+
+    if (!canAdd) {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::TextDisabled(
+        "追加後は一覧・クリック選択・ギズモ・複製・削除を利用できます。");
+    ImGui::TreePop();
 }
 
 void StageAddActorPanel::DrawPlanetCombo(const char* label, int& selectedPlanetIndex)
