@@ -9,17 +9,17 @@ planets:
       - 8
     textureSideBlendWidth: 0.05
     stageNum: 0
-  - center: [32, 50.6, 0]
-    scale: [1, 6, 6]
+  - center: [44.42074, 50.6, 0]
+    scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
     rocketSpawnCondition: AllEnemiesDead
     textureTiling:
-      - 2.4494898
+      - 3.4641016
       - 6
     textureSideBlendWidth: 0.05
     stageNum: 1
-  - center: [64, 0, 0]
+  - center: [47.9321, 11.178522, 0]
     scale: [2, 8, 8]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -30,9 +30,9 @@ planets:
     rocketSpawnCondition: ""
     stageNum: 2
   - center:
-      - 37
-      - 0
-      - 0
+      - -3.8798537
+      - 43.692368
+      - 4.7683716e-07
     scale:
       - 2
       - 8
@@ -56,9 +56,9 @@ enemies:
     height: 1
     currentPlanetNum: 1
     pos:
-      - -0.95
-      - -1.09
-      - 1.28
+      - -1.83
+      - -1.63
+      - 1.9
     facingYaw: 4.3888573e-08
     rotation:
       - 0
@@ -192,34 +192,6 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
-    theta: -0.88413
-    phi: 0.7062486
-    height: -0.040724277
-    pos:
-      - -2.66
-      - 1.41
-      - -1.28
-    upVec:
-      - 0.9935958
-      - 0.082868144
-      - -0.07681482
-    facingYaw: -0.2956027
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.7235118
-      - 0.071659595
-      - 0.1340327
-      - -0.67337275
-    scale:
-      - 0.25
-      - 0.25
-      - 0.25
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
     theta: -0.34345523
     phi: 0.8450763
     height: -0.03715849
@@ -251,9 +223,9 @@ enemies:
     height: 0.62964475
     currentPlanetNum: 1
     pos:
-      - -0.98
-      - 0.51
-      - -0.52
+      - -2.13
+      - 0.28
+      - -2.14
     facingYaw: -2.4330799e-08
     rotation:
       - 0
@@ -278,9 +250,9 @@ enemies:
     height: 1.140594
     currentPlanetNum: 1
     pos:
-      - -0.93
-      - 1.67
-      - 1.06
+      - -1.89
+      - 2.43
+      - 1.54
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -305,9 +277,9 @@ enemies:
     height: 1.2215185
     currentPlanetNum: 1
     pos:
-      - -0.93
-      - -2.03
-      - -0.45
+      - -1.86
+      - -2.91
+      - -0.64
     facingYaw: -2.788147e-08
     rotation:
       - 0
@@ -528,9 +500,9 @@ enemies:
     height: 1.8449967
     currentPlanetNum: 1
     pos:
-      - -0.87
-      - -1.93
-      - -2.05
+      - -1.59
+      - -2.55
+      - -2.71
     facingYaw: -3.0267984e-08
     rotation:
       - 0
@@ -555,9 +527,9 @@ enemies:
     height: 1.3380375
     currentPlanetNum: 1
     pos:
-      - -0.92
-      - 0.2
-      - -2.14
+      - -1.95
+      - 0.28
+      - -3.06
     facingYaw: 1.0826625e-08
     rotation:
       - 0
@@ -582,8 +554,8 @@ keys:
     phi: -0.530965
     height: 0.1
     pos:
-      - 0.95
-      - -0.56
+      - 1.81
+      - -1.06
       - 0
     facingYaw: 1.8377248e-08
     rotation:
@@ -648,7 +620,7 @@ boats:
     height: 14.146238
     facingYaw: 1.7763568e-15
     pos:
-      - 7.29
+      - 6.81
       - 3.3
       - -1.91
     upVec:
@@ -718,9 +690,9 @@ boats:
     height: 0.24231267
     facingYaw: -1.67347e-08
     pos:
-      - 0.97
-      - -0.48
-      - 0.61
+      - 1.92
+      - -0.2
+      - 0.51
     upVec:
       - 0.99973696
       - -0.014351349
@@ -821,9 +793,9 @@ NPCs:
     name: BoatPartsNPC
     talkTexts:
       - 星を探している？残念だがこの惑星にはそんなものないぞ。
-      - あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。
+      - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。"
       - そこに行ってみたらどうだ？
-      - 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！
+      - 隣の惑星にはロケットで行くんだな！
     pos:
       - 1.42
       - -3.56
@@ -902,7 +874,7 @@ NPCs:
           - text: 持
             ruby: true
             reading: も
-          - text: っている\nでっかいやつがいるって
+          - text: "っている\nでっかいやつがいるって"
             ruby: false
           - text: 噂
             ruby: true
@@ -936,22 +908,7 @@ NPCs:
           - text: 星
             ruby: true
             reading: せい
-          - text: に
-            ruby: false
-          - text: 行
-            ruby: true
-            reading: い
-          - text: くならそこらへんに
-            ruby: false
-          - text: 落
-            ruby: true
-            reading: お
-          - text: ちている\nパーツを
-            ruby: false
-          - text: 拾
-            ruby: true
-            reading: ひろ
-          - text: ってロケットで
+          - text: にはロケットで
             ruby: false
           - text: 行
             ruby: true
@@ -962,16 +919,11 @@ NPCs:
       mode: afterTalk
       variants:
         - talkIndex: 3
-          text: パーツ拾ってロケットで行くんだな！
+          text: ロケットで行くんだな！
       rubies:
         - talkIndex: 3
           segments:
-            - text: パーツ
-              ruby: false
-            - text: 拾
-              ruby: true
-              reading: ひろ
-            - text: ってロケットで
+            - text: ロケットで
               ruby: false
             - text: 行
               ruby: true
@@ -981,10 +933,6 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
-    talkCameraFocus:
-      - talkIndex: 3
-        sequence: boatParts
-        index: 1
     currentPlanetNum: 0
   - theta: -2.8827639
     phi: -0.505858
@@ -1425,8 +1373,8 @@ NPCs:
       - ""
     pos:
       - 2.6
-      - -4.88
-      - 1.22
+      - -4.73
+      - 1.09
     facingYaw: 3.2535706
     rotation:
       - 0
@@ -1809,8 +1757,7 @@ platforms:
       latchedGroupSwitch:
         groupId: stage1_planet1
         targets:
-          - sequence: boats
-            index: 1
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -2118,7 +2065,7 @@ platforms:
       - -3.5762787e-07
       - -8.940697e-08
     pos:
-      - 6.96
+      - 6.92
       - 1.45
       - 3.01
     rotation:
@@ -2139,8 +2086,7 @@ platforms:
       latchedGroupSwitch:
         groupId: stage1_planet2
         targets:
-          - sequence: boats
-            index: 2
+          []
 stageObjects: []
 tutorialTriggers:
   - currentPlanetNum: 0
@@ -2755,4 +2701,3 @@ tutorialTriggers:
       - 0.6470887
       - 0.64708847
       - 0.28509012
-    debugDisabled: true

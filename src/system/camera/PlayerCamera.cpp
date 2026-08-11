@@ -74,24 +74,86 @@ void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, f
     }
 }
 
-void PlayerCamera::BeginPlayerSwitchTransition(
-    int fromPlayerIndex,
-    int toPlayerIndex)
+void PlayerCamera::Reset()
 {
-    if (fromPlayerIndex < 0 || toPlayerIndex < 0) {
+    mStates.clear();
+}
+
+void PlayerCamera::SnapToPlayer(
+    Player* player,
+    int playerIndex)
+{
+    if (!player || playerIndex < 0) {
         return;
     }
 
-    const int requiredStateCount =
-        std::max(fromPlayerIndex, toPlayerIndex) + 1;
-    ResizeState(static_cast<std::size_t>(requiredStateCount));
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
 
-    mStates[static_cast<std::size_t>(toPlayerIndex)] =
-        mStates[static_cast<std::size_t>(fromPlayerIndex)];
-    PlayerCameraState& destinationState =
-        mStates[static_cast<std::size_t>(toPlayerIndex)];
-    destinationState.hasAttackTargetForward = false;
-    destinationState.isAligningBehindPlayer = false;
+    PlayerCameraState& state =
+        mStates[static_cast<std::size_t>(playerIndex)];
+    state.targetPos = player->GetPos();
+
+    const glm::vec3 playerUpDirection = player->GetUpVec();
+    const float upLengthSquared =
+        glm::dot(playerUpDirection, playerUpDirection);
+    state.upVec =
+        upLengthSquared > directionEpsilonSquared
+            ? playerUpDirection / std::sqrt(upLengthSquared)
+            : glm::vec3(0.0f, 1.0f, 0.0f);
+
+    glm::vec3 cameraForwardDirection;
+    if (TryGetTangentDirection(
+            player->GetForwardVec(),
+            state.upVec,
+            cameraForwardDirection)) {
+        state.cameraForwardVec = cameraForwardDirection;
+        state.hasCameraForward = true;
+    } else {
+        state.hasCameraForward = false;
+    }
+
+    state.hasAttackTargetForward = false;
+    state.isAligningBehindPlayer = false;
+}
+
+void PlayerCamera::SnapBehindPlayer(Player* player, int playerIndex)
+{
+    if (!player || playerIndex < 0) {
+        return;
+    }
+
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+
+    PlayerCameraState& state =
+        mStates[static_cast<std::size_t>(playerIndex)];
+    state.targetPos = player->GetPos();
+
+    const glm::vec3 playerUpDirection = player->GetUpVec();
+    const float upLengthSquared =
+        glm::dot(playerUpDirection, playerUpDirection);
+    state.upVec =
+        upLengthSquared > directionEpsilonSquared
+            ? playerUpDirection / std::sqrt(upLengthSquared)
+            : glm::vec3(0.0f, 1.0f, 0.0f);
+
+    glm::vec3 cameraForwardDirection;
+    if (!TryGetTangentDirection(
+            -player->GetFacingForwardVec(),
+            state.upVec,
+            cameraForwardDirection)) {
+        state.hasCameraForward = false;
+        state.hasAttackTargetForward = false;
+        state.isAligningBehindPlayer = false;
+        return;
+    }
+
+    state.cameraForwardVec = cameraForwardDirection;
+    state.hasCameraForward = true;
+    state.hasAttackTargetForward = false;
+    state.isAligningBehindPlayer = false;
+    player->SetCameraForwardDirection(
+        cameraForwardDirection,
+        state.upVec);
 }
 
 void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)

@@ -12,7 +12,7 @@ list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
 add_executable(game ${GAME_SOURCES})
 
 if (MSVC)
-    target_compile_options(game PRIVATE /utf-8)
+    target_compile_options(game PRIVATE /utf-8 /MP)
 endif()
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)

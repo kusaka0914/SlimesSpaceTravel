@@ -28,6 +28,9 @@ public:
     glm::vec3 CalculateCollisionAdjustedPos(Enemy& enemy, const glm::vec3& moveDelta);
 
 private:
+    void ApplyGravityWithContinuousCollision(
+        Enemy& enemy,
+        float deltaTime);
     void UpdateAirDodgePushMovement(
         Enemy& enemy,
         float deltaTime);

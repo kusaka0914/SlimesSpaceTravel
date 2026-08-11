@@ -96,7 +96,7 @@ void CameraSystem::ProcessInput()
 
     if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
         const int playerIndex = GetPrimaryPlayerIndex();
-        mPlayerCamera.AlignBehindPlayer(mGame->GetMainPlayer(), playerIndex);
+        mPlayerCamera.AlignBehindPlayer(mGame->GetControlledPlayer(), playerIndex);
     }
 
     mAlignCameraPressedPrev = alignCameraPressed;
@@ -157,6 +157,7 @@ void CameraSystem::ResetForStageChange()
     mCameraStickY = 0.0f;
     mKeyboardPitchInput = 0.0f;
     mPlayerPitchOffsetsDegrees.clear();
+    mPlayerCamera.Reset();
     mTalkCameraBlend = 0.0f;
     mTalkCameraPlayer = nullptr;
     mHasTalkCameraTarget = false;
@@ -169,6 +170,22 @@ void CameraSystem::ResetForStageChange()
     mTalkPageFocusUpVec = glm::vec3(0.0f, 1.0f, 0.0f);
     mRenderedTalkPageCameraPos = glm::vec3(0.0f);
     mBoatRideCameraTarget = nullptr;
+}
+
+void CameraSystem::SnapBehindControlledPlayer()
+{
+    if (!mGame) {
+        return;
+    }
+
+    Player* controlledPlayer = mGame->GetControlledPlayer();
+    if (!controlledPlayer) {
+        return;
+    }
+
+    mPlayerCamera.SnapBehindPlayer(
+        controlledPlayer,
+        GetPrimaryPlayerIndex());
 }
 
 float CameraSystem::GetFieldOfViewDegrees() const
@@ -428,12 +445,23 @@ void CameraSystem::UpdateTalkCameraAim()
     }
 }
 
-void CameraSystem::BeginPlayerSwitchTransition(
+void CameraSystem::SnapToControlledPlayer(
     int fromPlayerIndex,
     int toPlayerIndex)
 {
-    mPlayerCamera.BeginPlayerSwitchTransition(
-        fromPlayerIndex,
+    if (!mGame || toPlayerIndex < 0) {
+        return;
+    }
+
+    const std::vector<Player*>& players =
+        mGame->GetPlayers();
+    if (toPlayerIndex >= static_cast<int>(players.size()) ||
+        !players[static_cast<std::size_t>(toPlayerIndex)]) {
+        return;
+    }
+
+    mPlayerCamera.SnapToPlayer(
+        players[static_cast<std::size_t>(toPlayerIndex)],
         toPlayerIndex);
 
     const int requiredPitchCount =
@@ -449,8 +477,10 @@ void CameraSystem::BeginPlayerSwitchTransition(
             0.0f);
     }
 
-    mPlayerPitchOffsetsDegrees[static_cast<std::size_t>(toPlayerIndex)] =
-        mPlayerPitchOffsetsDegrees[static_cast<std::size_t>(fromPlayerIndex)];
+    if (fromPlayerIndex >= 0) {
+        mPlayerPitchOffsetsDegrees[static_cast<std::size_t>(toPlayerIndex)] =
+            mPlayerPitchOffsetsDegrees[static_cast<std::size_t>(fromPlayerIndex)];
+    }
 }
 
 void CameraSystem::UpdateTalkPageFocus(float deltaTime)

@@ -162,6 +162,7 @@ private:
     Platform* mPlatform = nullptr;
     std::vector<std::string> mTargetPlatformIds;
     float mInactiveOpacity = 0.2f;
+    float mContactGraceRemainingSeconds = 0.0f;
     bool mIsPressed = false;
 };
 
@@ -199,6 +200,9 @@ private:
     bool IsGroupCoordinator(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;
+    void LatchEligiblePlayers(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches);
     Player* FindEligiblePlayerOnPlatform(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;

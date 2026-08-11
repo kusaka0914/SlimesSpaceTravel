@@ -106,7 +106,6 @@ public:
     const std::string& GetBehaviorProfileName() const;
     bool GetBehaviorAttackPreview(EnemyAttackPreview& preview) const;
 
-    void ApplyGravityForEnemy(float deltaTime) { ApplyGravity(deltaTime); }
     bool IsSteepGroundForEnemy(const glm::vec3& hitNormal, const glm::vec3& up) const
     {
         return CheckDotAngleSteep(hitNormal, up);

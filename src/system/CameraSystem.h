@@ -47,6 +47,7 @@ public:
     bool SavePlayerCameraSettings() const;
     bool ReloadPlayerCameraSettings();
     void ResetForStageChange();
+    void SnapBehindControlledPlayer();
 
     bool GetTalkCameraPreviewEnabled() const { return mTalkCameraPreviewEnabled; }
     void SetTalkCameraPreviewEnabled(bool enabled) { mTalkCameraPreviewEnabled = enabled; }
@@ -71,7 +72,7 @@ public:
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     bool AllowsPlayerInput() const;
-    void BeginPlayerSwitchTransition(int fromPlayerIndex, int toPlayerIndex);
+    void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
     void StartBossDefeatSequence(Enemy* boss, Star* star);
     bool PreviewBossDefeatSequence();
     void StopBossDefeatSequence();

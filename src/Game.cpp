@@ -153,6 +153,10 @@ void Game::ReloadCurrentStage()
     }
 
     mStageFlowController->ReloadCurrentStage(*this);
+
+    if (mCameraSystem) {
+        mCameraSystem->SnapBehindControlledPlayer();
+    }
 }
 
 void Game::ReloadUIData()
@@ -640,7 +644,7 @@ bool Game::SplitPlayer()
     splitPlayer->SetFacingForwardVec(
         mainPlayer->GetFacingForwardVec());
     splitPlayer->SetCameraForwardDirection(
-        mainPlayer->GetFacingForwardVec(),
+        -mainPlayer->GetFacingForwardVec(),
         mainPlayer->GetUpVec());
     splitPlayer->SetCameraYaw(mainPlayer->GetCameraYaw());
     splitPlayer->SetPos(
@@ -715,7 +719,7 @@ bool Game::MergePlayerInto(int targetPlayerIndex)
         mainPlayer->SetFacingForwardVec(
             splitPlayer->GetFacingForwardVec());
         mainPlayer->SetCameraForwardDirection(
-            splitPlayer->GetFacingForwardVec(),
+            -splitPlayer->GetFacingForwardVec(),
             splitPlayer->GetUpVec());
         mainPlayer->SetCameraYaw(splitPlayer->GetCameraYaw());
         mainPlayer->SetPos(splitPlayer->GetPos());
@@ -745,7 +749,7 @@ void Game::SelectControlledPlayer(int playerIndex)
     const int previousPlayerIndex = mControlledPlayerIndex;
     mControlledPlayerIndex = playerIndex;
     if (mCameraSystem) {
-        mCameraSystem->BeginPlayerSwitchTransition(
+        mCameraSystem->SnapToControlledPlayer(
             previousPlayerIndex,
             playerIndex);
     }

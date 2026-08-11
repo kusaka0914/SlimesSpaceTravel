@@ -424,6 +424,15 @@ Player* ActorLoadSystem::CreatePlayerFromStageNode(const YAML::Node& node, int p
     mPlacementLoader.ApplyPlacementFromStageNode(player.get(), node, currentPlanet, playerNum - 1, 0.0f);
     mPlacementLoader.ApplyRotationFromStageNode(player.get(), node);
 
+    // The rendered orientation, gameplay facing, and camera movement basis are
+    // stored separately. Restore them together before the first camera frame.
+    const glm::vec3 playerFacingDirection =
+        -player->Actor::GetForwardVec();
+    player->SetFacingForwardVec(playerFacingDirection);
+    player->SetCameraForwardDirection(
+        -playerFacingDirection,
+        player->GetUpVec());
+
     player->ApplyConfig();
 
     if (node["modelPath"]) {

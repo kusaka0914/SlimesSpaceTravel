@@ -1789,6 +1789,171 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
     return false;
 }
 
+std::vector<std::string>
+StagePlacementPanel::CollectLatchedSwitchGroupIds() const
+{
+    std::vector<std::string> groupIds;
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return groupIds;
+    }
+
+    for (Planet* planet :
+         mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* platform : planet->GetPlatforms()) {
+            PlatformLatchedGroupSwitchComponent* component =
+                platform
+                ? platform->GetLatchedGroupSwitchComponent()
+                : nullptr;
+            if (!component || component->GetGroupId().empty()) {
+                continue;
+            }
+            groupIds.emplace_back(component->GetGroupId());
+        }
+    }
+
+    std::sort(groupIds.begin(), groupIds.end());
+    groupIds.erase(
+        std::unique(groupIds.begin(), groupIds.end()),
+        groupIds.end());
+    return groupIds;
+}
+
+std::vector<Platform*>
+StagePlacementPanel::CollectLatchedSwitchGroupMembers(
+    const std::string& groupId) const
+{
+    std::vector<Platform*> groupMembers;
+    if (groupId.empty() || !mContext.game ||
+        !mContext.game->GetCurrentStage()) {
+        return groupMembers;
+    }
+
+    for (Planet* planet :
+         mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* platform : planet->GetPlatforms()) {
+            PlatformLatchedGroupSwitchComponent* component =
+                platform
+                ? platform->GetLatchedGroupSwitchComponent()
+                : nullptr;
+            if (component && component->GetGroupId() == groupId) {
+                groupMembers.emplace_back(platform);
+            }
+        }
+    }
+
+    std::sort(
+        groupMembers.begin(),
+        groupMembers.end(),
+        [](const Platform* left, const Platform* right) {
+            if (left->GetStageSequenceName() !=
+                right->GetStageSequenceName()) {
+                return left->GetStageSequenceName() <
+                       right->GetStageSequenceName();
+            }
+            if (left->GetStageYamlIndex() !=
+                right->GetStageYamlIndex()) {
+                return left->GetStageYamlIndex() <
+                       right->GetStageYamlIndex();
+            }
+            return left < right;
+        });
+    return groupMembers;
+}
+
+PlatformLatchedGroupSwitchComponent*
+StagePlacementPanel::NormalizeLatchedSwitchGroupConfiguration(
+    const std::string& groupId,
+    bool& wasChanged) const
+{
+    wasChanged = false;
+    const std::vector<Platform*> groupMembers =
+        CollectLatchedSwitchGroupMembers(groupId);
+    if (groupMembers.empty()) {
+        return nullptr;
+    }
+
+    PlatformLatchedGroupSwitchComponent* settingsOwner = nullptr;
+    std::vector<PlatformRevealTarget> combinedTargets;
+    for (Platform* platform : groupMembers) {
+        PlatformLatchedGroupSwitchComponent* component =
+            platform->GetLatchedGroupSwitchComponent();
+        if (!component) {
+            continue;
+        }
+        if (!settingsOwner && !component->GetRevealTargets().empty()) {
+            settingsOwner = component;
+        }
+        for (const PlatformRevealTarget& target :
+             component->GetRevealTargets()) {
+            const bool isAlreadyIncluded = std::any_of(
+                combinedTargets.begin(),
+                combinedTargets.end(),
+                [&target](const PlatformRevealTarget& current) {
+                    return current.sequenceName == target.sequenceName &&
+                           current.yamlIndex == target.yamlIndex;
+                });
+            if (!isAlreadyIncluded) {
+                combinedTargets.emplace_back(target);
+            }
+        }
+    }
+
+    if (!settingsOwner) {
+        settingsOwner =
+            groupMembers.front()->GetLatchedGroupSwitchComponent();
+    }
+    if (!settingsOwner) {
+        return nullptr;
+    }
+
+    const auto hasSameTargets =
+        [](const std::vector<PlatformRevealTarget>& left,
+           const std::vector<PlatformRevealTarget>& right) {
+            if (left.size() != right.size()) {
+                return false;
+            }
+            return std::all_of(
+                left.begin(),
+                left.end(),
+                [&right](const PlatformRevealTarget& target) {
+                    return std::any_of(
+                        right.begin(),
+                        right.end(),
+                        [&target](const PlatformRevealTarget& current) {
+                            return current.sequenceName ==
+                                       target.sequenceName &&
+                                   current.yamlIndex == target.yamlIndex;
+                        });
+                });
+        };
+
+    if (!hasSameTargets(
+            settingsOwner->GetRevealTargets(),
+            combinedTargets)) {
+        settingsOwner->SetRevealTargets(combinedTargets);
+        wasChanged = true;
+    }
+
+    for (Platform* platform : groupMembers) {
+        PlatformLatchedGroupSwitchComponent* component =
+            platform->GetLatchedGroupSwitchComponent();
+        if (!component || component == settingsOwner ||
+            component->GetRevealTargets().empty()) {
+            continue;
+        }
+        component->SetRevealTargets({});
+        wasChanged = true;
+    }
+
+    return settingsOwner;
+}
+
 void StagePlacementPanel::DrawPlatformBehaviorEditors(
     Platform* platform,
     int yamlIndex)
@@ -2047,6 +2212,69 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
         ImGui::TextDisabled(
             "一度押したスイッチは、プレイヤーが離れてもONのままです。");
 
+        const auto preservePreviousGroupSettings =
+            [this, platform, latchedSwitch]() {
+                if (latchedSwitch->GetGroupId().empty() ||
+                    latchedSwitch->GetRevealTargets().empty()) {
+                    return;
+                }
+
+                for (Platform* groupMember :
+                     CollectLatchedSwitchGroupMembers(
+                         latchedSwitch->GetGroupId())) {
+                    if (!groupMember || groupMember == platform) {
+                        continue;
+                    }
+                    PlatformLatchedGroupSwitchComponent* nextOwner =
+                        groupMember->GetLatchedGroupSwitchComponent();
+                    if (!nextOwner) {
+                        continue;
+                    }
+                    nextOwner->SetRevealTargets(
+                        latchedSwitch->GetRevealTargets());
+                    latchedSwitch->SetRevealTargets({});
+                    return;
+                }
+            };
+
+        const std::vector<std::string> existingGroupIds =
+            CollectLatchedSwitchGroupIds();
+        const std::string currentGroupId = latchedSwitch->GetGroupId();
+        const char* currentGroupPreview =
+            currentGroupId.empty()
+            ? "未設定"
+            : currentGroupId.c_str();
+        if (ImGui::BeginCombo(
+                ("既存グループを選択##latchedGroupSelector" +
+                 std::to_string(yamlIndex)).c_str(),
+                currentGroupPreview)) {
+            for (const std::string& groupId : existingGroupIds) {
+                const bool isSelected = groupId == currentGroupId;
+                if (ImGui::Selectable(groupId.c_str(), isSelected) &&
+                    !isSelected) {
+                    if (mPushUndoCallback) {
+                        mPushUndoCallback();
+                    }
+                    preservePreviousGroupSettings();
+                    latchedSwitch->SetGroupId(groupId);
+                    // A joining switch contributes only its press state. The
+                    // selected group's existing reveal settings remain owned
+                    // by its original configuration switch.
+                    latchedSwitch->SetRevealTargets({});
+                    bool groupWasNormalized = false;
+                    NormalizeLatchedSwitchGroupConfiguration(
+                        groupId,
+                        groupWasNormalized);
+                    Save();
+                    RebuildPhysicsWorldIfNeeded(true);
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
         std::array<char, 128> groupIdBuffer = {};
         std::snprintf(
             groupIdBuffer.data(),
@@ -2058,10 +2286,61 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                  std::to_string(yamlIndex)).c_str(),
                 groupIdBuffer.data(),
                 groupIdBuffer.size())) {
+            preservePreviousGroupSettings();
             latchedSwitch->SetGroupId(groupIdBuffer.data());
+        }
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            bool groupWasNormalized = false;
+            NormalizeLatchedSwitchGroupConfiguration(
+                latchedSwitch->GetGroupId(),
+                groupWasNormalized);
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
         }
         ImGui::TextDisabled(
             "対応させる2個の足場へ、同じグループIDを設定してください。");
+
+        bool groupWasNormalized = false;
+        PlatformLatchedGroupSwitchComponent* settingsOwner =
+            NormalizeLatchedSwitchGroupConfiguration(
+                latchedSwitch->GetGroupId(),
+                groupWasNormalized);
+        if (groupWasNormalized) {
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+
+        if (!settingsOwner) {
+            ImGui::TextDisabled(
+                "グループIDを入力するか、既存グループを選択してください。");
+            return;
+        }
+
+        if (settingsOwner != latchedSwitch) {
+            std::string settingsOwnerLabel = "別のスイッチ";
+            for (Platform* groupMember :
+                 CollectLatchedSwitchGroupMembers(
+                     latchedSwitch->GetGroupId())) {
+                if (groupMember->GetLatchedGroupSwitchComponent() ==
+                    settingsOwner) {
+                    settingsOwnerLabel =
+                        groupMember->GetPlatformId().empty()
+                        ? groupMember->GetStageSequenceName() + ":" +
+                              std::to_string(
+                                  groupMember->GetStageYamlIndex())
+                        : groupMember->GetPlatformId();
+                    break;
+                }
+            }
+            ImGui::TextWrapped(
+                "表示対象は設定元スイッチ「%s」で管理されています。"
+                "このスイッチではグループIDだけを設定します。",
+                settingsOwnerLabel.c_str());
+            return;
+        }
+
+        ImGui::TextDisabled(
+            "このスイッチがグループの表示対象を管理します。");
 
         std::vector<PlatformRevealTarget> revealTargets =
             latchedSwitch->GetRevealTargets();

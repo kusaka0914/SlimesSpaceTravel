@@ -11,6 +11,8 @@
 #include <yaml-cpp/yaml.h>
 
 class Actor;
+class Platform;
+class PlatformLatchedGroupSwitchComponent;
 
 class StagePlacementPanel : public DebugPanel {
 public:
@@ -48,6 +50,13 @@ private:
         const std::string& sequenceName,
         std::size_t listIndex);
     void DrawPlatformBehaviorEditors(class Platform* platform, int yamlIndex);
+    std::vector<std::string> CollectLatchedSwitchGroupIds() const;
+    std::vector<Platform*> CollectLatchedSwitchGroupMembers(
+        const std::string& groupId) const;
+    PlatformLatchedGroupSwitchComponent*
+    NormalizeLatchedSwitchGroupConfiguration(
+        const std::string& groupId,
+        bool& wasChanged) const;
     bool ChangePlatformType(
         const std::string& sourceSequenceName,
         std::size_t sourceIndex,
