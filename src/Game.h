@@ -82,7 +82,9 @@ public:
 
     void AddPlayer(Player* player);
     void RemoveAllPlayer();
+    bool TogglePlayerSplit();
     bool SwitchControlledPlayer();
+    Player* MergeSplitPlayerForBoatRide(Player* boardingPlayer);
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
     void SetGroundNormalRayLength(float rayLength)
@@ -122,6 +124,7 @@ public:
     float GetHitStopTimer() const { return mHitStopTimer; }
     float GetGroundNormalRayLength() const { return mGroundNormalRayLength; }
     bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
+    bool GetIsPlayerSplit() const { return mIsPlayerSplit; }
     bool GetIsDebugMode() const { return mIsDebugMode; }
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
@@ -151,6 +154,11 @@ private:
 
     void CreatePlayer2();
     void CheckGameControllerConnected();
+    bool CanChangeSoloPlayerConfiguration() const;
+    bool SplitPlayer();
+    bool MergePlayer();
+    bool MergePlayerInto(int targetPlayerIndex);
+    void SelectControlledPlayer(int playerIndex);
 
 private:
     GLFWwindow* mWindow = nullptr;
@@ -180,6 +188,7 @@ private:
     double mLastTime = 0.0;
 
     bool mIsPlayer2Joined = false;
+    bool mIsPlayerSplit = false;
     int mControlledPlayerIndex = 0;
     bool mIsDebugEditorShowing = false;
     bool mIsFreeCameraMode = false;

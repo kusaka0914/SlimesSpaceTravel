@@ -53,7 +53,8 @@ private:
         int gameViewHeight);
     void DrawGameViewportToolbar(
         const ImVec2& toolbarMin,
-        float toolbarWidth);
+        float toolbarWidth,
+        bool showGizmoTranslationSpace);
     void ResolveResizableLayout(EditorSection section);
     void DrawLayoutResizeHandles(EditorSection section);
     const char* ResolveToolPanelTitle(EditorSection section) const;

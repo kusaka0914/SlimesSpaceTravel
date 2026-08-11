@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class Component;
@@ -44,6 +45,10 @@ public:
     {
         mHiddenWhenRocketAppears = shouldHide;
     }
+    void SetRuntimeActivationEnabled(
+        const Component* source,
+        bool isEnabled);
+    void ClearRuntimeActivationState(const Component* source);
     void SetShouldAffectGravityDirection(bool shouldAffectGravityDirection)
     {
         mShouldAffectGravityDirection = shouldAffectGravityDirection;
@@ -73,7 +78,8 @@ public:
     {
         return mIsActive &&
                !mIsDebugDisabled &&
-               IsProgressVisibleForCurrentMode();
+               IsProgressVisibleForCurrentMode() &&
+               IsRuntimeActivationEnabledForCurrentMode();
     }
     bool IsExplicitlyActive() const { return mIsActive; }
     bool IsDebugDisabled() const { return mIsDebugDisabled; }
@@ -88,6 +94,7 @@ public:
         return IsProgressVisibilitySatisfied() ||
                (mGame && mGame->GetIsDebugEditorShowing());
     }
+    bool IsRuntimeActivationEnabledForCurrentMode() const;
     bool ShouldHideWhenRocketAppears() const
     {
         return mHiddenWhenRocketAppears;
@@ -111,6 +118,7 @@ public:
     const std::vector<LoadedMesh>* GetMeshes() const;
 
     virtual const std::vector<glm::mat4>* GetSkinningMatrices() const { return nullptr; }
+    virtual float GetCollisionScaleMultiplier() const { return 1.0f; }
 
     Game* GetGame() const { return mGame; }
     Planet* GetCurrentPlanet() const { return mCurrentPlanet; }
@@ -145,6 +153,7 @@ protected:
     virtual void OnUpVecUpdateFailed();
     void UpdateFallbackUpVec();
     virtual bool CheckDotAngleSteep(const glm::vec3& hitNormal, const glm::vec3& up) const { return false; }
+    virtual void OnGroundSurfaceDetected() {}
     virtual void OnCastSucceeded() {}
     virtual void OnLoadedModelChanged() {}
 
@@ -180,6 +189,8 @@ protected:
     Game* mGame;
     Planet* mCurrentPlanet;
     std::vector<std::unique_ptr<Component>> mComponents;
+    std::unordered_map<const Component*, bool>
+        mRuntimeActivationStates;
     const LoadedModel* mLoadedModel;
 
     glm::vec3 mEditorRotation{0.0f};

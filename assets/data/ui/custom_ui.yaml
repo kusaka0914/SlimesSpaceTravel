@@ -547,11 +547,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.840525
-      - 0.40111542
+      - 0.84052485
+      - 0.40167087
     sizeRatio:
-      - 0.020000001
-      - 0.020000001
+      - 0.02
+      - 0.02
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_r.png
@@ -585,13 +585,13 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.8712467
-      - 0.41107813
+      - 0.89958
+      - 0.41163358
     sizeRatio:
       - 0.2
       - 0.05625
-    textScaleRatio: 0.00013
-    text: 回復
+    textScaleRatio: 0.00012999999
+    text: カメラリセット
     texture: ""
     shadowEnabled: false
     shadowOffsetXRatio: 0.0015
@@ -623,10 +623,10 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.8898215
-      - 0.53556854
+      - 0.88982165
+      - 0.5355685
     sizeRatio:
-      - 0.019999996
+      - 0.02
       - 0.020000001
     textScaleRatio: 0.0007
     text: New Text
@@ -927,11 +927,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.013884388
-      - 0.45494342
+      - 0.7888842
+      - 0.3821654
     sizeRatio:
-      - 0.020000005
-      - 0.020000005
+      - 0.020000003
+      - 0.020000003
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_zl.png
@@ -965,13 +965,13 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.06687173
-      - 0.46490592
+      - 0.7457604
+      - 0.392128
     sizeRatio:
       - 0.2
       - 0.05625
-    textScaleRatio: 0.00012999996
-    text: カメラリセット
+    textScaleRatio: 0.00012999994
+    text: 操作対象切り替え
     texture: ""
     shadowEnabled: false
     shadowOffsetXRatio: 0.0015
@@ -1041,11 +1041,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.8409154
-      - 0.38197446
+      - 0.8409153
+      - 0.38252994
     sizeRatio:
+      - 0.020000001
       - 0.020000003
-      - 0.020000005
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_zr.png
@@ -1079,13 +1079,89 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.8985902
-      - 0.39193696
+      - 0.889701
+      - 0.39249235
+    sizeRatio:
+      - 0.2
+      - 0.05625
+    textScaleRatio: 0.0001299999
+    text: 分裂・合体
+    texture: ""
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.0005
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonB_copy_copy2_copy2
+    name: buttonB_copy_copy2 コピー
+    type: image
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.7888843
+      - 0.4021654
+    sizeRatio:
+      - 0.020000003
+      - 0.020000003
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_l.png
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: operation
+    id: buttonTextB_copy2_copy2_copy2
+    name: buttonTextB_copy2_copy2 コピー
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.7690939
+      - 0.41212803
     sizeRatio:
       - 0.2
       - 0.05625
     textScaleRatio: 0.00012999994
-    text: 分身に切り替える
+    text: 特殊技
     texture: ""
     shadowEnabled: false
     shadowOffsetXRatio: 0.0015

@@ -2,12 +2,25 @@
 
 #include "component/Component.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
 
+class Actor;
 class Platform;
+class Player;
+
+struct PlatformRevealTarget {
+    std::string sequenceName;
+    int yamlIndex = -1;
+
+    bool IsValid() const
+    {
+        return !sequenceName.empty() && yamlIndex >= 0;
+    }
+};
 
 class PlatformFadeOnStandComponent : public Component {
 public:
@@ -150,4 +163,58 @@ private:
     std::vector<std::string> mTargetPlatformIds;
     float mInactiveOpacity = 0.2f;
     bool mIsPressed = false;
+};
+
+class PlatformLatchedGroupSwitchComponent : public Component {
+public:
+    explicit PlatformLatchedGroupSwitchComponent(
+        Platform* owner,
+        int updateOrder = 86);
+    ~PlatformLatchedGroupSwitchComponent() override;
+
+    void Update(float deltaTime) override;
+
+    void SetGroupId(const std::string& groupId);
+    const std::string& GetGroupId() const { return mGroupId; }
+
+    void SetRevealTargets(
+        const std::vector<PlatformRevealTarget>& revealTargets);
+    const std::vector<PlatformRevealTarget>& GetRevealTargets() const
+    {
+        return mRevealTargets;
+    }
+
+    bool GetIsLatched() const { return mLatchedPlayer != nullptr; }
+    bool GetIsGroupCompleted() const;
+
+    void ClearTargetRuntimeStates();
+
+private:
+    std::vector<PlatformLatchedGroupSwitchComponent*>
+    CollectGroupSwitches() const;
+    std::vector<PlatformRevealTarget>
+    CollectGroupRevealTargets(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches) const;
+    bool IsGroupCoordinator(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches) const;
+    Player* FindEligiblePlayerOnPlatform(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches) const;
+    Actor* FindTargetActor(
+        const PlatformRevealTarget& target) const;
+    void HideTargets(
+        const std::vector<PlatformRevealTarget>& targets);
+    void RevealTargets(
+        const std::vector<PlatformRevealTarget>& targets);
+
+    static constexpr std::size_t RequiredSwitchCount = 2;
+
+    Platform* mPlatform = nullptr;
+    std::string mGroupId;
+    std::vector<PlatformRevealTarget> mRevealTargets;
+    std::vector<Actor*> mRuntimeTargetActors;
+    Player* mLatchedPlayer = nullptr;
+    bool mHasRevealedTargets = false;
 };

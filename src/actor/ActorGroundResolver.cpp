@@ -16,6 +16,7 @@ struct RayHit {
 
 bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, const glm::vec3& offset,
                    const ActorGroundResolver::NormalRejector& shouldRejectNormal,
+                   const ActorGroundResolver::SurfaceDetectedCallback& onSurfaceDetected,
                    const ActorGroundResolver::CastSucceededCallback& onCastSucceeded, RayHit& outHit)
 {
     if (!game || !game->GetPhysicsSystem()) {
@@ -51,6 +52,12 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
         return false;
     }
 
+    // A steep surface is unsuitable for gravity alignment, but still proves
+    // that the player has not fallen into empty space.
+    if (onSurfaceDetected) {
+        onSurfaceDetected();
+    }
+
     const btVector3 hitNormalBt = rayCallback.m_hitNormalWorld;
     glm::vec3 hitNormal(hitNormalBt.x(), hitNormalBt.y(), hitNormalBt.z());
     if (glm::length(hitNormal) < 1e-6f) {
@@ -76,6 +83,7 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
 glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec3& pos, const glm::vec3& upVec,
                                                        const glm::vec3& forwardVec, const glm::vec3& leftVec,
                                                        const NormalRejector& shouldRejectNormal,
+                                                       const SurfaceDetectedCallback& onSurfaceDetected,
                                                        const CastSucceededCallback& onCastSucceeded)
 {
     if (game && game->GetPhysicsSystem()) {
@@ -83,7 +91,8 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
     }
 
     RayHit mainHit;
-    if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal, onCastSucceeded, mainHit)) {
+    if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal,
+                       onSurfaceDetected, onCastSucceeded, mainHit)) {
         return glm::vec3(0.0f);
     }
 
@@ -97,7 +106,8 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
 
     for (const glm::vec3& offset : offsets) {
         RayHit hit;
-        if (!CastGroundRay(game, pos, upVec, offset, shouldRejectNormal, onCastSucceeded, hit)) {
+        if (!CastGroundRay(game, pos, upVec, offset, shouldRejectNormal,
+                           onSurfaceDetected, onCastSucceeded, hit)) {
             continue;
         }
 
@@ -130,14 +140,10 @@ glm::vec3 ActorGroundResolver::CalculateFallbackUpVec(const Planet* currentPlane
 
     const glm::vec3 toActor = actorPos - currentPlanet->GetPos();
 
-    // Ellipseは平たい惑星として扱い、重力のリセット時に中心へ斜めに
-    // 引っ張られないよう、中心からアクターまでの縦方向だけを使用する。
+    // Ellipseは最も薄いスケール軸を縦方向として扱う。これにより、
+    // 惑星の向きが変わっても中心へ斜めに引っ張られない。
     if (currentPlanet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
-        if (std::abs(toActor.y) < 1e-6f) {
-            return glm::vec3(0.0f, 1.0f, 0.0f);
-        }
-
-        return glm::vec3(0.0f, toActor.y > 0.0f ? 1.0f : -1.0f, 0.0f);
+        return currentPlanet->CalculateEllipseVerticalDirection(actorPos);
     }
 
     if (glm::length(toActor) < 1e-6f) {

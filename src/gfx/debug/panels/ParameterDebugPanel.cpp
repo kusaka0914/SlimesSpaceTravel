@@ -315,6 +315,21 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetMoveSpeed(moveSpeed);
         }
 
+        float maximumStepHeight =
+            player->GetMaximumStepHeight();
+        if (ImGui::DragFloat(
+                "乗り越えられる段差高さ",
+                &maximumStepHeight,
+                0.01f,
+                0.0f,
+                2.0f,
+                "%.2f")) {
+            player->SetMaximumStepHeight(
+                maximumStepHeight);
+        }
+        ImGui::TextDisabled(
+            "0にすると段差の自動乗り越えを無効にします。");
+
         ImGui::SeparatorText("ジャンプ");
 
         float jumpHeight = player->GetJumpHeight();
@@ -929,6 +944,12 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "attack", player->GetAttack());
     SetYamlSequenceValue(config, sequenceName, index, "attackSpeed", player->GetAttackSpeed());
     SetYamlSequenceValue(config, sequenceName, index, "moveSpeed", player->GetMoveSpeed());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "maximumStepHeight",
+        player->GetMaximumStepHeight());
     SetYamlSequenceValue(config, sequenceName, index, "jumpHeight", player->GetJumpHeight());
     SetYamlSequenceValue(config, sequenceName, index, "jumpAscentDuration", player->GetJumpAscentDuration());
     SetYamlSequenceValue(config, sequenceName, index, "jumpFallDuration", player->GetJumpFallDuration());

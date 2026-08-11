@@ -31,6 +31,7 @@
 #include "utils/MathUtils.h"
 
 #include <algorithm>
+#include <iterator>
 #include <iostream>
 
 Game::Game()
@@ -38,6 +39,7 @@ Game::Game()
       mHitStopTimer(-1.0f),
       mLastTime(0.0),
       mIsPlayer2Joined(false),
+      mIsPlayerSplit(false),
       mIsDebugEditorShowing(false),
       mIsFreeCameraMode(false),
       mIsDebugMode(false)
@@ -527,18 +529,226 @@ void Game::RemoveActor(Actor* actor)
 void Game::RemoveAllActor()
 {
     mWorld->RemoveAllActors();
+    mIsPlayerSplit = false;
     mControlledPlayerIndex = 0;
 }
 
 void Game::AddPlayer(Player* player)
 {
+    if (!player) {
+        return;
+    }
+
+    const bool isSoloClone =
+        !mIsPlayer2Joined && !mIsPlayerSplit &&
+        !mWorld->GetPlayers().empty();
+    if (isSoloClone) {
+        player->SetIsActive(false);
+        player->SetControlLocked(true);
+    }
+
     mWorld->AddPlayer(player);
 }
 
 void Game::RemoveAllPlayer()
 {
     mWorld->RemoveAllPlayers();
+    mIsPlayerSplit = false;
     mControlledPlayerIndex = 0;
+}
+
+bool Game::TogglePlayerSplit()
+{
+    const bool allowsPlayerSplitToggle =
+        mSceneSystem &&
+        (mSceneSystem->IsPlaying() ||
+         mSceneSystem->IsWaitingForTutorialPlayerSplitMerge());
+    if (!allowsPlayerSplitToggle ||
+        !CanChangeSoloPlayerConfiguration()) {
+        return false;
+    }
+
+    const bool didChangeSplitState =
+        mIsPlayerSplit ? MergePlayer() : SplitPlayer();
+    if (didChangeSplitState && mSceneSystem) {
+        mSceneSystem->OnPlayerSplitMergeSucceeded();
+    }
+    return didChangeSplitState;
+}
+
+bool Game::CanChangeSoloPlayerConfiguration() const
+{
+    const bool isWaitingForTutorialConfigurationAction =
+        mSceneSystem &&
+        (mSceneSystem->IsWaitingForTutorialPlayerSwitch() ||
+         mSceneSystem->IsWaitingForTutorialPlayerSplitMerge());
+    const bool allowsPlayerConfigurationScene =
+        mSceneSystem &&
+        (mSceneSystem->IsPlaying() ||
+         isWaitingForTutorialConfigurationAction);
+    const bool allowsNormalPlayerInput =
+        mCameraSystem &&
+        mCameraSystem->AllowsPlayerInput() &&
+        (!mSequenceSystem ||
+         !mSequenceSystem->LocksPlayerControl());
+    const bool allowsPlayerConfigurationInput =
+        isWaitingForTutorialConfigurationAction ||
+        allowsNormalPlayerInput;
+    return !mIsPlayer2Joined &&
+           GetPlayers().size() >= 2 &&
+           allowsPlayerConfigurationScene &&
+           !GetIsPauseMenuOpen() &&
+           allowsPlayerConfigurationInput;
+}
+
+bool Game::SplitPlayer()
+{
+    const std::vector<Player*>& players = GetPlayers();
+    Player* mainPlayer = players[0];
+    Player* splitPlayer = players[1];
+    if (!mainPlayer || !splitPlayer) {
+        return false;
+    }
+
+    mainPlayer->SetSplitForm(true);
+    splitPlayer->SetSplitForm(true);
+
+    glm::vec3 sideDirection = mainPlayer->GetLeftVec();
+    const float sideDirectionLength = glm::length(sideDirection);
+    if (sideDirectionLength <= 0.000001f) {
+        sideDirection = glm::vec3(1.0f, 0.0f, 0.0f);
+    } else {
+        sideDirection /= sideDirectionLength;
+    }
+
+    const float collisionWidth =
+        mPhysicsSystem
+            ? mPhysicsSystem->GetPlayerCollisionWidth()
+            : 1.6f;
+    constexpr float splitSpawnMargin = 0.1f;
+    const float splitSpawnDistance =
+        collisionWidth * Player::SplitBodyScaleMultiplier +
+        splitSpawnMargin;
+
+    splitPlayer->SetCurrentPlanet(mainPlayer->GetCurrentPlanet());
+    splitPlayer->SetCurrentPlanetNum(mainPlayer->GetCurrentPlanetNum());
+    splitPlayer->SetSphericalPlacement(
+        mainPlayer->GetTheta(),
+        mainPlayer->GetPhi(),
+        mainPlayer->GetHeight());
+    splitPlayer->SetOrientation(mainPlayer->GetOrientation());
+    splitPlayer->SetFacingForwardVec(
+        mainPlayer->GetFacingForwardVec());
+    splitPlayer->SetCameraForwardDirection(
+        mainPlayer->GetFacingForwardVec(),
+        mainPlayer->GetUpVec());
+    splitPlayer->SetCameraYaw(mainPlayer->GetCameraYaw());
+    splitPlayer->SetPos(
+        mainPlayer->GetPos() +
+        sideDirection * splitSpawnDistance);
+    splitPlayer->SetVelocity(glm::vec3(0.0f));
+    splitPlayer->SetOnGround(false);
+    splitPlayer->SetShouldJudgeLanding(true);
+    splitPlayer->RefreshFallbackUpVec();
+    splitPlayer->SetControlLocked(false);
+    splitPlayer->SetIsActive(true);
+
+    mIsPlayerSplit = true;
+    SelectControlledPlayer(1);
+    return true;
+}
+
+bool Game::MergePlayer()
+{
+    return MergePlayerInto(mControlledPlayerIndex);
+}
+
+Player* Game::MergeSplitPlayerForBoatRide(Player* boardingPlayer)
+{
+    if (!boardingPlayer || !mIsPlayerSplit || mIsPlayer2Joined) {
+        return boardingPlayer;
+    }
+
+    const std::vector<Player*>& players = GetPlayers();
+    const auto boardingPlayerIt =
+        std::find(players.begin(), players.end(), boardingPlayer);
+    if (boardingPlayerIt == players.end()) {
+        return boardingPlayer;
+    }
+
+    const int boardingPlayerIndex =
+        static_cast<int>(
+            std::distance(players.begin(), boardingPlayerIt));
+    if (!MergePlayerInto(boardingPlayerIndex)) {
+        return boardingPlayer;
+    }
+
+    return GetMainPlayer();
+}
+
+bool Game::MergePlayerInto(int targetPlayerIndex)
+{
+    const std::vector<Player*>& players = GetPlayers();
+    if (players.size() < 2 ||
+        targetPlayerIndex < 0 ||
+        targetPlayerIndex >= 2) {
+        return false;
+    }
+
+    Player* mainPlayer = players[0];
+    Player* splitPlayer = players[1];
+    if (!mainPlayer || !splitPlayer) {
+        return false;
+    }
+
+    if (targetPlayerIndex == 1) {
+        mainPlayer->SetCurrentPlanet(
+            splitPlayer->GetCurrentPlanet());
+        mainPlayer->SetCurrentPlanetNum(
+            splitPlayer->GetCurrentPlanetNum());
+        mainPlayer->SetSphericalPlacement(
+            splitPlayer->GetTheta(),
+            splitPlayer->GetPhi(),
+            splitPlayer->GetHeight());
+        mainPlayer->SetOrientation(
+            splitPlayer->GetOrientation());
+        mainPlayer->SetFacingForwardVec(
+            splitPlayer->GetFacingForwardVec());
+        mainPlayer->SetCameraForwardDirection(
+            splitPlayer->GetFacingForwardVec(),
+            splitPlayer->GetUpVec());
+        mainPlayer->SetCameraYaw(splitPlayer->GetCameraYaw());
+        mainPlayer->SetPos(splitPlayer->GetPos());
+        mainPlayer->SetVelocity(splitPlayer->GetVelocity());
+        mainPlayer->SetOnGround(splitPlayer->GetOnGround());
+        mainPlayer->SetShouldJudgeLanding(true);
+        mainPlayer->RefreshFallbackUpVec();
+    }
+
+    mainPlayer->SetSplitForm(false);
+    splitPlayer->SetSplitForm(false);
+    splitPlayer->SetVelocity(glm::vec3(0.0f));
+    splitPlayer->SetControlLocked(true);
+    splitPlayer->SetIsActive(false);
+
+    mIsPlayerSplit = false;
+    SelectControlledPlayer(0);
+    return true;
+}
+
+void Game::SelectControlledPlayer(int playerIndex)
+{
+    if (playerIndex == mControlledPlayerIndex) {
+        return;
+    }
+
+    const int previousPlayerIndex = mControlledPlayerIndex;
+    mControlledPlayerIndex = playerIndex;
+    if (mCameraSystem) {
+        mCameraSystem->BeginPlayerSwitchTransition(
+            previousPlayerIndex,
+            playerIndex);
+    }
 }
 
 bool Game::SwitchControlledPlayer()
@@ -548,11 +758,9 @@ bool Game::SwitchControlledPlayer()
         mSceneSystem &&
         (mSceneSystem->IsPlaying() ||
          mSceneSystem->IsWaitingForTutorialPlayerSwitch());
-    if (mIsPlayer2Joined || players.size() < 2 ||
-        !allowsPlayerSwitch ||
-        GetIsPauseMenuOpen() ||
-        !mCameraSystem || !mCameraSystem->AllowsPlayerInput() ||
-        (mSequenceSystem && mSequenceSystem->LocksPlayerControl())) {
+    if (!mIsPlayerSplit || !CanChangeSoloPlayerConfiguration() ||
+        players.size() < 2 ||
+        !allowsPlayerSwitch) {
         return false;
     }
 
@@ -561,7 +769,9 @@ bool Game::SwitchControlledPlayer()
     for (int offset = 1; offset <= static_cast<int>(players.size()); ++offset) {
         const int candidate =
             (previousIndex + offset) % static_cast<int>(players.size());
-        if (players[static_cast<std::size_t>(candidate)]) {
+        Player* candidatePlayer =
+            players[static_cast<std::size_t>(candidate)];
+        if (candidatePlayer && candidatePlayer->GetIsActive()) {
             nextIndex = candidate;
             break;
         }
@@ -571,8 +781,10 @@ bool Game::SwitchControlledPlayer()
         return false;
     }
 
-    mCameraSystem->BeginPlayerSwitchTransition(previousIndex, nextIndex);
-    mControlledPlayerIndex = nextIndex;
+    SelectControlledPlayer(nextIndex);
+    if (mSceneSystem) {
+        mSceneSystem->OnPlayerSwitchSucceeded();
+    }
     return true;
 }
 
@@ -637,6 +849,16 @@ void Game::CreatePlayer2()
         if (!created) {
             return;
         }
+    }
+
+    mIsPlayerSplit = false;
+    for (Player* player : GetPlayers()) {
+        if (!player) {
+            continue;
+        }
+        player->SetSplitForm(false);
+        player->SetControlLocked(false);
+        player->SetIsActive(true);
     }
 
     mIsPlayer2Joined = true;

@@ -262,7 +262,10 @@ void DebugUIRenderer::DrawGameViewport(
         viewport->WorkPos.y + viewport->WorkSize.y - assetBrowserHeight);
     const float availableWidth =
         std::max(1.0f, availableMax.x - availableMin.x);
-    DrawGameViewportToolbar(availableMin, availableWidth);
+    DrawGameViewportToolbar(
+        availableMin,
+        availableWidth,
+        section == EditorSection::Stage);
 
     const ImVec2 gameContentMin(
         availableMin.x,
@@ -318,7 +321,8 @@ void DebugUIRenderer::DrawGameViewport(
 
 void DebugUIRenderer::DrawGameViewportToolbar(
     const ImVec2& toolbarMin,
-    float toolbarWidth)
+    float toolbarWidth,
+    bool showGizmoTranslationSpace)
 {
     constexpr ImGuiWindowFlags toolbarFlags =
         ImGuiWindowFlags_NoDecoration |
@@ -359,6 +363,46 @@ void DebugUIRenderer::DrawGameViewportToolbar(
             ImVec2(90.0f, 26.0f)) &&
         mContext.game) {
         mContext.game->SetFreeCameraMode(false);
+    }
+
+    if (showGizmoTranslationSpace) {
+        const bool usesPlanetSurfaceTranslation =
+            mGizmoController.GetTranslationSpace() ==
+            StageGizmoController::TranslationSpace::PlanetSurface;
+        const bool canChangeTranslationSpace =
+            !mGizmoController.IsUsingTransformGizmo();
+
+        ImGui::SameLine();
+        ImGui::TextDisabled("移動軸:");
+
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!canChangeTranslationSpace);
+        if (ImGui::Selectable(
+                "惑星表面",
+                usesPlanetSurfaceTranslation,
+                0,
+                ImVec2(100.0f, 26.0f))) {
+            mGizmoController.SetTranslationSpace(
+                StageGizmoController::TranslationSpace::PlanetSurface);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Selectable(
+                "ワールド",
+                !usesPlanetSurfaceTranslation,
+                0,
+                ImVec2(90.0f, 26.0f))) {
+            mGizmoController.SetTranslationSpace(
+                StageGizmoController::TranslationSpace::World);
+        }
+        ImGui::EndDisabled();
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip(
+                "惑星表面: 選択物の上・前・横方向\n"
+                "ワールド: XYZ固定方向\n"
+                "複数選択の移動は常にワールド基準です");
+        }
     }
 
     ImGui::SameLine();

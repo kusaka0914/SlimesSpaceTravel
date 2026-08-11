@@ -181,6 +181,46 @@ void CameraDebugPanel::DrawView(View view)
             ImGui::TreePop();
         }
 
+        if (ImGui::TreeNode("ロケット搭乗中カメラ")) {
+            playerCameraChanged |= ImGui::DragFloat(
+                "ロケットとの距離##BoatRideCamera",
+                &playerCameraSettings.boatRideDistance,
+                0.1f,
+                0.5f,
+                100.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "カメラの高さ##BoatRideCamera",
+                &playerCameraSettings.boatRideCameraHeight,
+                0.05f,
+                -50.0f,
+                50.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "注視点の高さ##BoatRideCamera",
+                &playerCameraSettings.boatRideTargetHeight,
+                0.05f,
+                -50.0f,
+                50.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "FOV##BoatRideCamera",
+                &playerCameraSettings.boatRideFieldOfViewDegrees,
+                0.25f,
+                10.0f,
+                120.0f);
+
+            bool previewEnabled =
+                cameraSystem->GetBoatRideCameraPreviewEnabled();
+            if (ImGui::Checkbox(
+                    "ロケット搭乗中カメラをプレビュー",
+                    &previewEnabled)) {
+                cameraSystem->SetBoatRideCameraPreviewEnabled(
+                    previewEnabled);
+            }
+            ImGui::TextDisabled(
+                "現在のステージで最初に見つかったロケットを使用します。");
+
+            ImGui::TreePop();
+        }
+
         if (playerCameraChanged) {
             cameraSystem->SetPlayerCameraSettings(playerCameraSettings);
         }

@@ -49,7 +49,9 @@ void EnemyDamageHandler::ApplyCounter(Enemy& enemy, EnemyStatus& status, EnemySt
     stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
 
     status.ClearIsCountered();
-    status.AddDamage(player->GetAttack() * 2.0f);
+    status.AddDamage(
+        player->CalculateOutgoingAttackDamage(
+            player->GetAttack() * 2.0f));
     status.SetStandByAttackTimer(-1.0f);
 
     if (status.IsHp0()) {

@@ -34,7 +34,8 @@ void Actor::Initialize() {}
 void Actor::ProcessInput()
 {
     if (mIsDebugDisabled ||
-        !IsProgressVisibleForCurrentMode()) {
+        !IsProgressVisibleForCurrentMode() ||
+        !IsRuntimeActivationEnabledForCurrentMode()) {
         return;
     }
     ProcessActor();
@@ -45,7 +46,8 @@ void Actor::ProcessActor() {}
 void Actor::Update(float deltaTime)
 {
     if (mIsDebugDisabled ||
-        !IsProgressVisibleForCurrentMode()) {
+        !IsProgressVisibleForCurrentMode() ||
+        !IsRuntimeActivationEnabledForCurrentMode()) {
         return;
     }
 
@@ -88,6 +90,40 @@ void Actor::RemoveComponent(Component* component)
     if (componentIt != mComponents.end()) {
         mComponents.erase(componentIt);
     }
+}
+
+void Actor::SetRuntimeActivationEnabled(
+    const Component* source,
+    bool isEnabled)
+{
+    if (!source) {
+        return;
+    }
+    mRuntimeActivationStates[source] = isEnabled;
+}
+
+void Actor::ClearRuntimeActivationState(const Component* source)
+{
+    if (!source) {
+        return;
+    }
+    mRuntimeActivationStates.erase(source);
+}
+
+bool Actor::IsRuntimeActivationEnabledForCurrentMode() const
+{
+    if (mGame && mGame->GetIsDebugEditorShowing()) {
+        return true;
+    }
+
+    for (const auto& [source, isEnabled] :
+         mRuntimeActivationStates) {
+        (void)source;
+        if (!isEnabled) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void Actor::SetLoadedModel(const LoadedModel* loadedModel)
@@ -191,6 +227,7 @@ void Actor::UpdateUpVec()
     const glm::vec3 averageUpVec = ActorGroundResolver::CalculateAverageNormal(
         mGame, mPos, mUpVec, mForwardVec, mLeftVec,
         [this](const glm::vec3& hitNormal, const glm::vec3& up) { return CheckDotAngleSteep(hitNormal, up); },
+        [this]() { OnGroundSurfaceDetected(); },
         [this]() { OnCastSucceeded(); });
 
     if (glm::length(averageUpVec) > 1e-6f) {

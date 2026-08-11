@@ -26,3 +26,8 @@ playerCamera:
     starDistance: 6
     starCameraHeight: 1.5
     starTargetHeight: 0.35
+  boatRide:
+    distance: 9
+    cameraHeight: 3
+    targetHeight: 1
+    fieldOfView: 55

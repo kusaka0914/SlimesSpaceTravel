@@ -8,7 +8,8 @@
 enum class TutorialAdvanceCondition {
     Confirm = 0,
     PlayerSwitch,
-    Jump
+    Jump,
+    PlayerSplitMerge
 };
 
 enum class TutorialRepeatPolicy {

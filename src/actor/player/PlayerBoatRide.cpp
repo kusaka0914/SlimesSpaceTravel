@@ -1,5 +1,6 @@
 #include "actor/player/PlayerBoatRide.h"
 
+#include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -53,12 +54,19 @@ bool PlayerBoatRide::IsTouchingBoat(const Player& player, Boat* boat) const
 
 void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
 {
-    if (!player.GetIsActive()) {
+    if (!boat || !player.GetIsActive()) {
         return;
     }
 
+    Player* ridingPlayer = &player;
+    if (Game* game = player.GetGame()) {
+        ridingPlayer = game->MergeSplitPlayerForBoatRide(&player);
+    }
+
     boat->StartTravel();
-    player.SetIsActive(false);
+    if (ridingPlayer) {
+        ridingPlayer->SetIsActive(false);
+    }
 }
 
 void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, PlayerRespawn& respawn, Boat* boat) const

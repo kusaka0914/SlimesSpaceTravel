@@ -36,11 +36,14 @@ public:
     void OnEnemyLaunched();
     void OnStrongAttacked();
     void OnLanded();
+    void OnPlayerSwitchSucceeded();
+    void OnPlayerSplitMergeSucceeded();
 
     bool HasActiveTutorial() const;
     bool IsWaitingForPlayerAction() const;
     bool IsWaitingForPlayerSwitch() const;
     bool IsWaitingForPlayerJump() const;
+    bool IsWaitingForPlayerSplitMerge() const;
 
     const TutorialDefinition* GetActiveDefinition() const;
     const TutorialPage* GetCurrentPage() const;
@@ -74,7 +77,6 @@ private:
     std::string mActiveTutorialId;
     Player* mTutorialPlayer = nullptr;
     Player* mActionPlayerAtPageStart = nullptr;
-    int mControlledPlayerIndexAtPageStart = -1;
     std::uint64_t mJumpSequenceAtPageStart = 0;
     std::uint64_t mTutorialSessionSequence = 0;
     bool mHasJumpStartedOnCurrentPage = false;

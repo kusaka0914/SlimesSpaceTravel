@@ -20,7 +20,8 @@ public:
     void SetDestPlanet(Planet* destPlanet);
     void SetDestStage(int destStage) { mDestStage = destStage; }
     void SetArrivalPoint(BoatArrivalPoint* arrivalPoint);
-    void SetTravelDuration(float travelDuration);
+    void SetTravelSpeed(float travelSpeed);
+    void SetTravelSpeedFromLegacyDuration(float travelDuration);
     void SetDestMargin(float destMargin);
     void SetLaunchSequenceId(const std::string& sequenceId) { mLaunchSequenceId = sequenceId; }
     void RefreshDestination();
@@ -29,7 +30,7 @@ public:
     bool HasAppeared() const { return mIsActive; }
 
     float GetProgress() const { return mProgress; }
-    float GetTravelDuration() const { return mTravelDuration; }
+    float GetTravelSpeed() const { return mTravelSpeed; }
     float GetDestMargin() const { return mDestMargin; }
     int GetDestStage() const { return mDestStage; }
     const glm::vec3& GetDestPos() const { return mDestPos; }
@@ -58,9 +59,10 @@ private:
 
     int mDestStage;
 
-    float mTransitionTimer;
     float mProgress;
-    float mTravelDuration;
+    float mTravelSpeed;
+    float mTravelDistance;
+    float mTravelledDistance;
     float mDestMargin;
 
     glm::vec3 mStartPos;

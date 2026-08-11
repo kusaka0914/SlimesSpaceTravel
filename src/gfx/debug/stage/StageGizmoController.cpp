@@ -89,9 +89,31 @@ glm::mat4 StageGizmoController::CreateSelectedActorGizmoMatrix(
            glm::scale(glm::mat4(1.0f), actor->GetScale());
 }
 
-bool StageGizmoController::UsesSphereSurfaceTranslation(Actor* actor) const
+void StageGizmoController::SetTranslationSpace(
+    TranslationSpace translationSpace)
 {
-    if (!actor || mCurrentGizmoOperation != ImGuizmo::TRANSLATE) {
+    if (mIsUsingTransformGizmo) {
+        return;
+    }
+
+    mTranslationSpace = translationSpace;
+}
+
+bool StageGizmoController::UsesPlanetSurfaceTranslation(Actor* actor) const
+{
+    if (!actor ||
+        mCurrentGizmoOperation != ImGuizmo::TRANSLATE ||
+        mTranslationSpace != TranslationSpace::PlanetSurface) {
+        return false;
+    }
+
+    return actor->GetCurrentPlanet() != nullptr;
+}
+
+bool StageGizmoController::RequiresSphereSurfaceProjection(
+    Actor* actor) const
+{
+    if (!UsesPlanetSurfaceTranslation(actor)) {
         return false;
     }
 
@@ -101,19 +123,27 @@ bool StageGizmoController::UsesSphereSurfaceTranslation(Actor* actor) const
            glm::length(actor->GetPos() - planet->GetPos()) > 1e-6f;
 }
 
-glm::mat4 StageGizmoController::CreateSphereSurfaceTranslationMatrix(Actor* actor) const
+glm::mat4 StageGizmoController::CreatePlanetSurfaceTranslationMatrix(
+    Actor* actor) const
 {
     if (!actor || !actor->GetCurrentPlanet()) {
         return CreateSelectedActorGizmoMatrix(actor, ImGuizmo::TRANSLATE);
     }
 
     Planet* planet = actor->GetCurrentPlanet();
-    const glm::vec3 radial = actor->GetPos() - planet->GetPos();
-    if (glm::length(radial) < 1e-6f) {
-        return CreateSelectedActorGizmoMatrix(actor, ImGuizmo::TRANSLATE);
+    glm::vec3 up = actor->GetUpVec();
+    if (planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+        const glm::vec3 radial = actor->GetPos() - planet->GetPos();
+        if (glm::length(radial) > 1e-6f) {
+            up = glm::normalize(radial);
+        }
     }
 
-    const glm::vec3 up = glm::normalize(radial);
+    if (glm::length(up) < 1e-6f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
 
     glm::vec3 forward = actor->GetForwardVec();
     forward -= up * glm::dot(forward, up);
@@ -139,7 +169,7 @@ glm::mat4 StageGizmoController::CreateSphereSurfaceTranslationMatrix(Actor* acto
            surfaceOrientation;
 }
 
-void StageGizmoController::ApplySphereSurfaceTranslation(
+void StageGizmoController::ApplyPlanetSurfaceTranslation(
     Actor* actor, const glm::vec3& rawWorldPos)
 {
     if (!actor) {
@@ -147,8 +177,16 @@ void StageGizmoController::ApplySphereSurfaceTranslation(
     }
 
     Planet* planet = actor->GetCurrentPlanet();
-    if (!planet || planet->GetPlanetShape() != Planet::PlanetShape::Sphere) {
+    if (!RequiresSphereSurfaceProjection(actor)) {
         actor->SetPos(rawWorldPos);
+
+        if (Platform* platform = dynamic_cast<Platform*>(actor);
+            platform && platform->GetMovementComponent() &&
+            platform->GetMovementComponent()->GetMoveOnPlayer() &&
+            platform->GetCurrentPlanet()) {
+            platform->GetMovementComponent()->SetEditorPreviewLocalPos(
+                rawWorldPos - platform->GetCurrentPlanet()->GetPos());
+        }
         return;
     }
 
@@ -413,17 +451,17 @@ void StageGizmoController::DrawGizmo()
 
     if (!mIsUsingTransformGizmo) {
         mEditingGizmoMatrix =
-            UsesSphereSurfaceTranslation(selectedActor)
-                ? CreateSphereSurfaceTranslationMatrix(selectedActor)
+            UsesPlanetSurfaceTranslation(selectedActor)
+                ? CreatePlanetSurfaceTranslationMatrix(selectedActor)
                 : CreateSelectedActorGizmoMatrix(
                       selectedActor, mCurrentGizmoOperation);
     }
 
-    const bool usesSphereSurfaceTranslation =
-        UsesSphereSurfaceTranslation(selectedActor);
+    const bool usesPlanetSurfaceTranslation =
+        UsesPlanetSurfaceTranslation(selectedActor);
     const ImGuizmo::MODE gizmoMode =
         mCurrentGizmoOperation == ImGuizmo::ROTATE ||
-                usesSphereSurfaceTranslation
+                usesPlanetSurfaceTranslation
             ? ImGuizmo::LOCAL
             : ImGuizmo::WORLD;
     ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(projection), mCurrentGizmoOperation, gizmoMode,
@@ -438,8 +476,8 @@ void StageGizmoController::DrawGizmo()
             mIsUsingTransformGizmo = true;
         }
 
-        if (usesSphereSurfaceTranslation) {
-            ApplySphereSurfaceTranslation(
+        if (usesPlanetSurfaceTranslation) {
+            ApplyPlanetSurfaceTranslation(
                 selectedActor, glm::vec3(mEditingGizmoMatrix[3]));
             mEditingGizmoMatrix[3] =
                 glm::vec4(selectedActor->GetPos(), 1.0f);

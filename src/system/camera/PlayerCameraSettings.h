@@ -31,6 +31,11 @@ struct PlayerCameraSettings {
     float bossDefeatStarCameraHeight = 1.5f;
     float bossDefeatStarTargetHeight = 0.35f;
 
+    float boatRideDistance = 9.0f;
+    float boatRideCameraHeight = 3.0f;
+    float boatRideTargetHeight = 1.0f;
+    float boatRideFieldOfViewDegrees = 55.0f;
+
     void Normalize();
 };
 

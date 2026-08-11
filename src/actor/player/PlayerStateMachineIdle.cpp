@@ -41,11 +41,11 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         combat,
         deltaTime);
 
-    if (TryStartJumping(player, input, movement, combat, deltaTime)) {
+    if (TryRecover(player, input, jewelGauge, status)) {
         return;
     }
 
-    if (TryRecover(player, input, jewelGauge, status)) {
+    if (TryStartJumping(player, input, movement, combat, deltaTime)) {
         return;
     }
 

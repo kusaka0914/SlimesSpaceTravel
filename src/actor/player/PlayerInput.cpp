@@ -112,7 +112,7 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
     mWideAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_Y);
     mDodgePressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_B);
     mSpecialAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    mRecoverPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
 }
 
 void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
@@ -174,7 +174,7 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mWideAttackPressed = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
     mDodgePressed = glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS;
     mSpecialAttackPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
-    mRecoverPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+    mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
 }
 
 void PlayerInput::CaptureAttackInput()

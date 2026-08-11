@@ -59,7 +59,9 @@ void EmitAttackHitEffect(Player& player, const Enemy& enemy, float effectScale)
 
 void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float effectScale)
 {
-    enemy.ApplyDamage(damage, &player);
+    enemy.ApplyDamage(
+        player.CalculateOutgoingAttackDamage(damage),
+        &player);
     EmitAttackHitEffect(player, enemy, effectScale);
 }
 } // namespace

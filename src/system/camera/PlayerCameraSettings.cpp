@@ -47,6 +47,11 @@ void PlayerCameraSettings::Normalize()
     bossDefeatStarDistance = glm::clamp(bossDefeatStarDistance, 0.5f, 50.0f);
     bossDefeatStarCameraHeight = glm::clamp(bossDefeatStarCameraHeight, -20.0f, 20.0f);
     bossDefeatStarTargetHeight = glm::clamp(bossDefeatStarTargetHeight, -20.0f, 20.0f);
+
+    boatRideDistance = glm::clamp(boatRideDistance, 0.5f, 100.0f);
+    boatRideCameraHeight = glm::clamp(boatRideCameraHeight, -50.0f, 50.0f);
+    boatRideTargetHeight = glm::clamp(boatRideTargetHeight, -50.0f, 50.0f);
+    boatRideFieldOfViewDegrees = glm::clamp(boatRideFieldOfViewDegrees, 10.0f, 120.0f);
 }
 
 PlayerCameraSettingsRepository::PlayerCameraSettingsRepository(std::string filePath)
@@ -127,6 +132,18 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
                 ReadFloat(bossDefeatNode, "starTargetHeight", loadedSettings.bossDefeatStarTargetHeight);
         }
 
+        const YAML::Node boatRideNode = cameraNode["boatRide"];
+        if (boatRideNode && boatRideNode.IsMap()) {
+            loadedSettings.boatRideDistance =
+                ReadFloat(boatRideNode, "distance", loadedSettings.boatRideDistance);
+            loadedSettings.boatRideCameraHeight =
+                ReadFloat(boatRideNode, "cameraHeight", loadedSettings.boatRideCameraHeight);
+            loadedSettings.boatRideTargetHeight =
+                ReadFloat(boatRideNode, "targetHeight", loadedSettings.boatRideTargetHeight);
+            loadedSettings.boatRideFieldOfViewDegrees =
+                ReadFloat(boatRideNode, "fieldOfView", loadedSettings.boatRideFieldOfViewDegrees);
+        }
+
         loadedSettings.Normalize();
         settings = loadedSettings;
         return true;
@@ -193,6 +210,17 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
                 << normalizedSettings.bossDefeatStarCameraHeight;
         emitter << YAML::Key << "starTargetHeight" << YAML::Value
                 << normalizedSettings.bossDefeatStarTargetHeight;
+        emitter << YAML::EndMap;
+
+        emitter << YAML::Key << "boatRide" << YAML::Value << YAML::BeginMap;
+        emitter << YAML::Key << "distance" << YAML::Value
+                << normalizedSettings.boatRideDistance;
+        emitter << YAML::Key << "cameraHeight" << YAML::Value
+                << normalizedSettings.boatRideCameraHeight;
+        emitter << YAML::Key << "targetHeight" << YAML::Value
+                << normalizedSettings.boatRideTargetHeight;
+        emitter << YAML::Key << "fieldOfView" << YAML::Value
+                << normalizedSettings.boatRideFieldOfViewDegrees;
         emitter << YAML::EndMap;
 
         emitter << YAML::EndMap;

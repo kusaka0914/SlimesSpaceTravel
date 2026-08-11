@@ -420,6 +420,8 @@ const char* GetTutorialAdvanceConditionId(
         return "playerSwitch";
     case TutorialAdvanceCondition::Jump:
         return "jump";
+    case TutorialAdvanceCondition::PlayerSplitMerge:
+        return "playerSplitMerge";
     case TutorialAdvanceCondition::Confirm:
     default:
         return "confirm";
@@ -434,6 +436,9 @@ TutorialAdvanceCondition ParseTutorialAdvanceConditionId(
     }
     if (conditionId == "jump") {
         return TutorialAdvanceCondition::Jump;
+    }
+    if (conditionId == "playerSplitMerge") {
+        return TutorialAdvanceCondition::PlayerSplitMerge;
     }
     return TutorialAdvanceCondition::Confirm;
 }

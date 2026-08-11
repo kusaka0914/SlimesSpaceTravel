@@ -6,6 +6,7 @@ class Player;
 class PlayerCombat;
 class PlayerGrounding;
 class PlayerInput;
+class Planet;
 
 class PlayerMovement {
 public:
@@ -36,6 +37,7 @@ public:
         Player& player,
         const glm::vec3& targetPosition);
     void StartJumpMovement(Player& player, float deltaTime);
+    void ResetEllipseAirborneSurfaceTravel();
     void StartAirSlamMovement(Player& player);
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
@@ -55,6 +57,13 @@ public:
     void SetCurrentPlanetNum(int currentPlanetNum) { mCurrentPlanetNum = currentPlanetNum; }
     void SetPlayerNum(int playerNum) { mPlayerNum = playerNum; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
+    void SetMaximumStepHeight(float maximumStepHeight)
+    {
+        mMaximumStepHeight =
+            maximumStepHeight > 0.0f
+                ? maximumStepHeight
+                : 0.0f;
+    }
     void SetDodgeDuration(float dodgeDuration) { mDodgeDuration = dodgeDuration; }
     void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownDuration = dodgeCooldownTime; }
     void SetDodgeDistance(float dodgeDistance) { mDodgeDistance = dodgeDistance; }
@@ -75,6 +84,7 @@ public:
     float GetDodgeCooldownTime() const { return mDodgeCooldownDuration; }
     float GetDodgeDistance() const { return mDodgeDistance; }
     float GetMoveSpeed() const { return mMoveSpeed; }
+    float GetMaximumStepHeight() const { return mMaximumStepHeight; }
     float GetKnockBackSpeed() const { return mKnockBackSpeed; }
     float GetJumpHeight() const { return mJumpHeight; }
     float GetJumpAscentDuration() const { return mJumpAscentDuration; }
@@ -88,6 +98,11 @@ public:
     void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
 
 private:
+    enum class DodgeTrajectory {
+        Straight,
+        FollowEllipseSurface,
+    };
+
     enum class AirSlamMovementPhase {
         Rising,
         Hovering,
@@ -96,7 +111,17 @@ private:
 
     void StartDodgeMovementInDirection(
         Player& player,
-        const glm::vec3& dodgeDirection);
+        const glm::vec3& dodgeDirection,
+        DodgeTrajectory trajectory);
+    glm::vec3 CalculateEllipseDodgeMovementDelta(
+        Player& player,
+        const Planet& planet,
+        float dodgeSpeed,
+        float deltaTime);
+    float CalculateAirborneGravityAcceleration(
+        const Player& player) const;
+    float CalculateAirborneGravityAcceleration(
+        float verticalSpeed) const;
     glm::vec3 CalculateInputMovementDelta(
         const Player& player,
         const PlayerInput& input,
@@ -105,9 +130,17 @@ private:
         Player& player,
         const glm::vec3& inputMovementDelta,
         float deltaTime) const;
+    void RecordEllipseAirborneStartSurfaceNormal(const Player& player);
+    glm::vec3 ClampEllipseAirborneMovementToSurfaceTravelLimit(
+        const Planet& planet,
+        const glm::vec3& currentPosition,
+        const glm::vec3& physicsUpDirection,
+        const glm::vec3& requestedMovement,
+        bool& wasMovementClamped) const;
 
     bool mHasUsedDodge = false;
     bool mHasStrongAttackDirectionOverride = false;
+    bool mHasEllipseAirborneStartSurfaceNormal = false;
 
     int mCurrentPlanetNum = 0;
     int mPlayerNum = 1;
@@ -124,6 +157,7 @@ private:
     float mAirSlamPhaseRemainingSeconds = 0.0f;
     AirSlamMovementPhase mAirSlamMovementPhase = AirSlamMovementPhase::Falling;
     float mMoveSpeed = 10.2f;
+    float mMaximumStepHeight = 0.3f;
     float mKnockBackSpeed = 0.0f;
     // The old 6.0 m/s jump under 9.8 m/s^2 gravity reached about 1.84 m.
     // Durations independently control the faster rise and slower fall.
@@ -134,6 +168,12 @@ private:
     glm::vec3 mForwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
     glm::vec3 mKnockBackFrom = glm::vec3(0.0f);
+    glm::vec3 mEllipseAirborneStartSurfaceNormal =
+        glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);
+    DodgeTrajectory mDodgeTrajectory = DodgeTrajectory::Straight;
+    float mEllipseDodgeNormalSpeed = 0.0f;
+    float mEllipseDodgeReturnStartSurfaceDistance = 0.0f;
+    float mEllipseDodgeSurfaceAttractionSpeed = 0.0f;
     glm::vec3 mStrongAttackDirectionOverride = glm::vec3(0.0f);
 };

@@ -18,9 +18,10 @@ Boat::Boat(Game* game)
       mIsMoving(false),
       mIsActivePrev(false),
       mDestStage(0),
-      mTransitionTimer(0.0f),
       mProgress(0.0f),
-      mTravelDuration(3.0f),
+      mTravelSpeed(10.0f),
+      mTravelDistance(0.0f),
+      mTravelledDistance(0.0f),
       mDestMargin(4.0f),
       mStartPos(0.0f),
       mDestPos(0.0f),
@@ -58,9 +59,20 @@ void Boat::SetArrivalPoint(BoatArrivalPoint* arrivalPoint)
     RefreshDestination();
 }
 
-void Boat::SetTravelDuration(float travelDuration)
+void Boat::SetTravelSpeed(float travelSpeed)
 {
-    mTravelDuration = std::max(0.1f, travelDuration);
+    mTravelSpeed = std::max(0.1f, travelSpeed);
+}
+
+void Boat::SetTravelSpeedFromLegacyDuration(float travelDuration)
+{
+    const float safeDuration = std::max(0.1f, travelDuration);
+    const float travelDistance = glm::length(mDestPos - mPos);
+    if (travelDistance <= 0.000001f) {
+        return;
+    }
+
+    SetTravelSpeed(travelDistance / safeDuration);
 }
 
 void Boat::SetDestMargin(float destMargin)
@@ -127,22 +139,25 @@ void Boat::OnShown() const
 
 void Boat::UpdateMoving(float deltaTime)
 {
-    const bool hasArrived = mProgress >= 1.0f;
-    if (hasArrived) {
-        FinishMoving();
-        return;
-    }
-
     UpdateMovement(deltaTime);
+    if (mProgress >= 1.0f) {
+        FinishMoving();
+    }
 }
 
 void Boat::UpdateMovement(float deltaTime)
 {
-    mTransitionTimer += deltaTime;
+    if (mTravelDistance <= 0.000001f) {
+        mProgress = 1.0f;
+        mPos = mDestPos;
+        return;
+    }
 
-    const float t = glm::min(1.0f, mTransitionTimer / mTravelDuration);
-    mProgress = glm::smoothstep(0.0f, 1.0f, t);
-
+    const float travelStep =
+        mTravelSpeed * std::max(0.0f, deltaTime);
+    mTravelledDistance =
+        std::min(mTravelDistance, mTravelledDistance + travelStep);
+    mProgress = mTravelledDistance / mTravelDistance;
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
 }
 
@@ -169,7 +184,8 @@ void Boat::StartTravel()
 
     mStartPos = mPos;
     mDestPos = CalculateDestPos();
-    mTransitionTimer = 0.0f;
+    mTravelDistance = glm::length(mDestPos - mStartPos);
+    mTravelledDistance = 0.0f;
     mProgress = 0.0f;
     mIsMoving = true;
 }

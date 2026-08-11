@@ -141,7 +141,7 @@ default:
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text:
-      - +:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃
+      - +:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 L + A:回復 R:カメラリセット ZL:操作対象切替 ZR:分裂・合体
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: false
@@ -151,7 +151,7 @@ default:
     posRatio: [0.0125, 0.97619987]
     scaleRatio: [0.00015, 1.0]
     text:
-      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃
+      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 N + Space:回復 M:カメラリセット Y:操作対象切替 O:分裂・合体
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: false
@@ -161,7 +161,7 @@ default:
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text:
-      - +:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 R:回復
+      - +:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 L + A:回復 R:カメラリセット ZL:操作対象切替 ZR:分裂・合体
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: false
@@ -171,7 +171,7 @@ default:
     posRatio: [0.0125, 0.9762]
     scaleRatio: [0.00015, 1.0]
     text:
-      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 M:回復
+      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 N + Space:回復 M:カメラリセット Y:操作対象切替 O:分裂・合体
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: false

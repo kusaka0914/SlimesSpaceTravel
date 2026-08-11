@@ -1,6 +1,7 @@
 #include "actor/player/PlayerMovement.h"
 
 #include "Game.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerGrounding.h"
@@ -73,6 +74,37 @@ float CalculateDodgeMovementDuration(bool isOnGround, float baseDodgeDuration)
 
     constexpr float airborneDurationMultiplier = 4.0f;
     return baseDodgeDuration * airborneDurationMultiplier;
+}
+
+glm::vec3 GetAirbornePhysicsUpDirection(const Player& player)
+{
+    const Planet* currentPlanet = player.GetCurrentPlanet();
+    const bool usesEllipseGravity =
+        !player.GetOnGround() &&
+        currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse;
+    if (!usesEllipseGravity) {
+        return GetNormalizedUpDirection(player);
+    }
+
+    return currentPlanet->CalculateEllipseSurfaceProjection(
+        player.GetPos()).outwardNormal;
+}
+
+float CalculateEllipseAirControlMultiplier(
+    const glm::vec3& visualUpDirection,
+    const glm::vec3& physicsUpDirection)
+{
+    const float normalAlignment = glm::clamp(
+        glm::dot(visualUpDirection, physicsUpDirection),
+        0.0f,
+        1.0f);
+    constexpr float minimumAirControlMultiplier = 0.25f;
+    return
+        minimumAirControlMultiplier +
+        (1.0f - minimumAirControlMultiplier) *
+            normalAlignment;
 }
 
 struct AppliedPlayerMovement {
@@ -161,6 +193,110 @@ AppliedPlayerMovement MoveWithCollisionSubsteps(
         player.GetPos() -
         positionBeforeMovement;
     return combinedMovement;
+}
+
+bool TryStepUpFromGround(
+    Player& player,
+    const glm::vec3& positionBeforeMovement,
+    const glm::vec3& normalResolvedPosition,
+    const glm::vec3& movementDelta,
+    float maximumStepHeight)
+{
+    constexpr float movementEpsilon = 0.0001f;
+    if (!player.GetOnGround() ||
+        maximumStepHeight <= movementEpsilon) {
+        return false;
+    }
+
+    const glm::vec3 upDirection =
+        GetNormalizedUpDirection(player);
+    const glm::vec3 horizontalMovement =
+        ProjectOntoPlane(movementDelta, upDirection);
+    glm::vec3 movementDirection;
+    if (!TryNormalizeDirection(
+            horizontalMovement,
+            movementDirection)) {
+        return false;
+    }
+
+    player.SetPos(positionBeforeMovement);
+    const AppliedPlayerMovement upwardMovement =
+        MoveWithCollision(
+            player,
+            upDirection * maximumStepHeight);
+    const float appliedUpwardDistance =
+        glm::dot(
+            upwardMovement.movementDelta,
+            upDirection);
+    const bool hasEnoughHeadClearance =
+        appliedUpwardDistance + movementEpsilon >=
+        maximumStepHeight;
+    if (!hasEnoughHeadClearance) {
+        player.SetPos(normalResolvedPosition);
+        return false;
+    }
+
+    (void)MoveWithCollision(
+        player,
+        horizontalMovement);
+    const float normalForwardDistance =
+        glm::dot(
+            normalResolvedPosition - positionBeforeMovement,
+            movementDirection);
+    const float steppedForwardDistance =
+        glm::dot(
+            player.GetPos() - positionBeforeMovement,
+            movementDirection);
+    const bool movedFartherThanNormalResolution =
+        steppedForwardDistance >
+        normalForwardDistance + movementEpsilon;
+    if (!movedFartherThanNormalResolution) {
+        player.SetPos(normalResolvedPosition);
+        return false;
+    }
+
+    constexpr float stepLandingProbeExtraDistance = 0.05f;
+    const AppliedPlayerMovement downwardMovement =
+        MoveWithCollision(
+            player,
+            -upDirection *
+                (maximumStepHeight +
+                 stepLandingProbeExtraDistance));
+    glm::vec3 landingNormal;
+    const bool hasLandingNormal =
+        TryNormalizeDirection(
+            downwardMovement.blockingNormal,
+            landingNormal);
+    const bool landedOnWalkableSurface =
+        downwardMovement.didHitStage &&
+        hasLandingNormal &&
+        player.IsWalkableGroundNormal(
+            landingNormal,
+            upDirection);
+
+    const float steppedHeight =
+        glm::dot(
+            player.GetPos() - positionBeforeMovement,
+            upDirection);
+    const bool landedAboveStartingSurface =
+        steppedHeight > movementEpsilon;
+    const bool stayedWithinMaximumStepHeight =
+        steppedHeight <=
+        maximumStepHeight + movementEpsilon;
+    if (!landedOnWalkableSurface ||
+        !landedAboveStartingSurface ||
+        !stayedWithinMaximumStepHeight) {
+        player.SetPos(normalResolvedPosition);
+        return false;
+    }
+
+    glm::vec3 velocity = player.GetVelocity();
+    velocity -=
+        upDirection *
+        glm::dot(velocity, upDirection);
+    player.SetVelocity(velocity);
+    player.SetOnGround(true);
+    return true;
 }
 
 void MoveAirborneWithCollision(
@@ -448,7 +584,35 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
             input,
             deltaTime);
 
-    MoveWithCollision(player, movementDelta);
+    const glm::vec3 positionBeforeMovement =
+        player.GetPos();
+    const AppliedPlayerMovement normalMovement =
+        MoveWithCollision(
+            player,
+            movementDelta);
+    if (!normalMovement.didHitStage ||
+        !player.GetOnGround()) {
+        return;
+    }
+
+    glm::vec3 blockingNormal;
+    if (!TryNormalizeDirection(
+            normalMovement.blockingNormal,
+            blockingNormal) ||
+        player.IsWalkableGroundNormal(
+            blockingNormal,
+            GetNormalizedUpDirection(player))) {
+        return;
+    }
+
+    const glm::vec3 normalResolvedPosition =
+        player.GetPos();
+    (void)TryStepUpFromGround(
+        player,
+        positionBeforeMovement,
+        normalResolvedPosition,
+        movementDelta,
+        mMaximumStepHeight);
 }
 
 glm::vec3 PlayerMovement::CalculateInputMovementDelta(
@@ -491,7 +655,23 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
         dodgeSpeed *= reducedSpeedMultiplier;
     }
 
-    const glm::vec3 movementDelta = mDodgeDir * dodgeSpeed * deltaTime;
+    glm::vec3 movementDelta =
+        mDodgeDir * dodgeSpeed * deltaTime;
+    if (!player.GetOnGround() &&
+        mDodgeTrajectory ==
+            DodgeTrajectory::FollowEllipseSurface) {
+        Planet* currentPlanet = player.GetCurrentPlanet();
+        if (currentPlanet &&
+            currentPlanet->GetPlanetShape() ==
+                Planet::PlanetShape::Ellipse) {
+            movementDelta =
+                CalculateEllipseDodgeMovementDelta(
+                    player,
+                    *currentPlanet,
+                    dodgeSpeed,
+                    deltaTime);
+        }
+    }
 
     const ActorCollisionFilter actorCollisionFilter =
         combat.IsAirDodgeAttackActive()
@@ -562,7 +742,13 @@ void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input
         hasMovementInput ? facingDirection : -facingDirection;
     StartDodgeMovementInDirection(
         player,
-        dodgeDirection);
+        dodgeDirection,
+        !player.GetOnGround() &&
+                player.GetCurrentPlanet() &&
+                player.GetCurrentPlanet()->GetPlanetShape() ==
+                    Planet::PlanetShape::Ellipse
+            ? DodgeTrajectory::FollowEllipseSurface
+            : DodgeTrajectory::Straight);
 }
 
 bool PlayerMovement::StartDodgeMovementTowards(
@@ -578,24 +764,155 @@ bool PlayerMovement::StartDodgeMovementTowards(
 
     StartDodgeMovementInDirection(
         player,
-        dodgeDirection);
+        dodgeDirection,
+        DodgeTrajectory::Straight);
     return true;
 }
 
 void PlayerMovement::StartDodgeMovementInDirection(
     Player& player,
-    const glm::vec3& dodgeDirection)
+    const glm::vec3& dodgeDirection,
+    DodgeTrajectory trajectory)
 {
     mDodgeDir = dodgeDirection;
+    mDodgeTrajectory = trajectory;
+    mEllipseDodgeNormalSpeed = 0.0f;
+    mEllipseDodgeReturnStartSurfaceDistance = 0.0f;
+    mEllipseDodgeSurfaceAttractionSpeed = 0.0f;
+    if (trajectory == DodgeTrajectory::FollowEllipseSurface) {
+        const Planet* currentPlanet = player.GetCurrentPlanet();
+        if (currentPlanet) {
+            const Planet::EllipseSurfaceProjection projection =
+                currentPlanet->CalculateEllipseSurfaceProjection(
+                    player.GetPos());
+            const glm::vec3 dodgeUpDirection =
+                projection.outwardNormal;
+            mEllipseDodgeNormalSpeed =
+                glm::dot(
+                    player.GetVelocity(),
+                    dodgeUpDirection);
+
+            constexpr float minimumReturnStartSurfaceDistance = 1.25f;
+            constexpr float allowedSurfaceDistanceIncrease = 0.35f;
+            mEllipseDodgeReturnStartSurfaceDistance =
+                std::max(
+                    minimumReturnStartSurfaceDistance,
+                    projection.distance +
+                        allowedSurfaceDistanceIncrease);
+
+            player.SetVelocity(
+                dodgeUpDirection *
+                mEllipseDodgeNormalSpeed);
+        }
+    } else {
+        player.SetVelocity(glm::vec3(0.0f));
+    }
     mDodgeTimer = CalculateDodgeMovementDuration(player.GetOnGround(), mDodgeDuration);
     mDodgeCooldownRemaining = mDodgeCooldownDuration;
-
-    player.SetVelocity(glm::vec3(0.0f));
     mHasUsedDodge = true;
+}
+
+glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
+    Player& player,
+    const Planet& planet,
+    float dodgeSpeed,
+    float deltaTime)
+{
+    const Planet::EllipseSurfaceProjection projection =
+        planet.CalculateEllipseSurfaceProjection(player.GetPos());
+    const glm::vec3 visualUpDirection =
+        GetNormalizedUpDirection(player);
+    const glm::vec3 physicsUpDirection =
+        projection.outwardNormal;
+
+    const glm::vec3 surfaceTangentDirection =
+        ProjectOntoPlane(
+            mDodgeDir,
+            physicsUpDirection);
+    glm::vec3 normalizedSurfaceTangentDirection;
+    if (TryNormalizeDirection(
+            surfaceTangentDirection,
+            normalizedSurfaceTangentDirection)) {
+        mDodgeDir = normalizedSurfaceTangentDirection;
+    }
+
+    constexpr float dodgeGravityMultiplier = 0.35f;
+    const float gravityAcceleration =
+        CalculateAirborneGravityAcceleration(
+            mEllipseDodgeNormalSpeed) *
+        dodgeGravityMultiplier;
+    mEllipseDodgeNormalSpeed -=
+        gravityAcceleration *
+        std::max(0.0f, deltaTime);
+
+    if (projection.isOutside) {
+        constexpr float attractionAccelerationPerDistance = 10.0f;
+        constexpr float normalTransitionAcceleration = 32.0f;
+        constexpr float maximumAttractionAcceleration = 50.0f;
+        constexpr float maximumAttractionSpeed = 14.0f;
+
+        const float distanceAttractionAcceleration =
+            std::max(
+                0.0f,
+                projection.distance -
+                    mEllipseDodgeReturnStartSurfaceDistance) *
+            attractionAccelerationPerDistance;
+        const float normalAlignment = glm::clamp(
+            glm::dot(
+                visualUpDirection,
+                projection.outwardNormal),
+            0.0f,
+            1.0f);
+        const float transitionAttractionAcceleration =
+            (1.0f - normalAlignment) *
+            normalTransitionAcceleration;
+        const float attractionAcceleration = glm::clamp(
+            distanceAttractionAcceleration +
+                transitionAttractionAcceleration,
+            0.0f,
+            maximumAttractionAcceleration);
+        mEllipseDodgeSurfaceAttractionSpeed =
+            std::min(
+                maximumAttractionSpeed,
+                mEllipseDodgeSurfaceAttractionSpeed +
+                    attractionAcceleration *
+                    std::max(0.0f, deltaTime));
+    }
+
+    const glm::vec3 normalVelocity =
+        physicsUpDirection *
+        mEllipseDodgeNormalSpeed;
+    const glm::vec3 surfaceAttractionVelocity =
+        -projection.outwardNormal *
+        mEllipseDodgeSurfaceAttractionSpeed;
+    const glm::vec3 airborneVelocity =
+        normalVelocity +
+        surfaceAttractionVelocity;
+    player.SetVelocity(airborneVelocity);
+
+    const float surfaceMovementMultiplier =
+        CalculateEllipseAirControlMultiplier(
+            visualUpDirection,
+            physicsUpDirection);
+    const glm::vec3 requestedMovement =
+        (mDodgeDir *
+             dodgeSpeed *
+             surfaceMovementMultiplier +
+         airborneVelocity) *
+        deltaTime;
+    bool wasMovementClamped = false;
+    return ClampEllipseAirborneMovementToSurfaceTravelLimit(
+        planet,
+        player.GetPos(),
+        physicsUpDirection,
+        requestedMovement,
+        wasMovementClamped);
 }
 
 void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 {
+    RecordEllipseAirborneStartSurfaceNormal(player);
+
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
 
     // 足場から落ち始めた直後でも、下向き速度を消して同じ高さのジャンプにする。
@@ -653,20 +970,203 @@ void PlayerMovement::ApplyJumpGravityMovement(
         return;
     }
 
-    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
-    const float verticalSpeed = glm::dot(player.GetVelocity(), upDirection);
-    const float duration =
-        verticalSpeed > 0.0f ? std::max(mJumpAscentDuration, 0.05f) : std::max(mJumpFallDuration, 0.05f);
-    const float gravityAcceleration = (2.0f * std::max(mJumpHeight, 0.0f)) / (duration * duration);
+    const glm::vec3 visualUpDirection =
+        GetNormalizedUpDirection(player);
+    const glm::vec3 physicsUpDirection =
+        GetAirbornePhysicsUpDirection(player);
+    Planet* currentPlanet = player.GetCurrentPlanet();
+    const bool usesEllipseGravity =
+        currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse;
+
+    if (usesEllipseGravity) {
+        glm::vec3 velocity = player.GetVelocity();
+        const float physicsNormalSpeed =
+            glm::dot(velocity, physicsUpDirection);
+        const glm::vec3 tangentialVelocity =
+            velocity -
+            physicsUpDirection * physicsNormalSpeed;
+        const float tangentialVelocityMultiplier =
+            CalculateEllipseAirControlMultiplier(
+                visualUpDirection,
+                physicsUpDirection);
+        velocity =
+            physicsUpDirection * physicsNormalSpeed +
+            tangentialVelocity * tangentialVelocityMultiplier;
+        player.SetVelocity(velocity);
+    }
+
+    const float verticalSpeed =
+        glm::dot(
+            player.GetVelocity(),
+            physicsUpDirection);
+    const float gravityAcceleration =
+        CalculateAirborneGravityAcceleration(verticalSpeed);
     player.AddVelocity(
-        -upDirection * gravityAcceleration * deltaTime);
-    const glm::vec3 requestedMovement =
-        player.GetVelocity() * deltaTime +
+        -physicsUpDirection *
+        gravityAcceleration *
+        deltaTime);
+
+    glm::vec3 adjustedInputMovementDelta =
         inputMovementDelta;
+    if (usesEllipseGravity) {
+        adjustedInputMovementDelta *=
+            CalculateEllipseAirControlMultiplier(
+                visualUpDirection,
+                physicsUpDirection);
+    }
+
+    glm::vec3 requestedMovement =
+        player.GetVelocity() * deltaTime +
+        adjustedInputMovementDelta;
+    if (usesEllipseGravity) {
+        bool wasMovementClamped = false;
+        requestedMovement =
+            ClampEllipseAirborneMovementToSurfaceTravelLimit(
+                *currentPlanet,
+                player.GetPos(),
+                physicsUpDirection,
+                requestedMovement,
+                wasMovementClamped);
+        if (wasMovementClamped) {
+            const float physicsNormalSpeedAfterGravity =
+                glm::dot(
+                    player.GetVelocity(),
+                    physicsUpDirection);
+            player.SetVelocity(
+                physicsUpDirection *
+                physicsNormalSpeedAfterGravity);
+        }
+    }
+
     MoveAirborneWithCollision(
         player,
-        upDirection,
+        physicsUpDirection,
         requestedMovement);
+}
+
+void PlayerMovement::RecordEllipseAirborneStartSurfaceNormal(
+    const Player& player)
+{
+    const Planet* currentPlanet = player.GetCurrentPlanet();
+    mHasEllipseAirborneStartSurfaceNormal =
+        currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse;
+    if (!mHasEllipseAirborneStartSurfaceNormal) {
+        return;
+    }
+
+    mEllipseAirborneStartSurfaceNormal =
+        currentPlanet->CalculateEllipseSurfaceProjection(
+            player.GetPos()).outwardNormal;
+}
+
+void PlayerMovement::ResetEllipseAirborneSurfaceTravel()
+{
+    mHasEllipseAirborneStartSurfaceNormal = false;
+}
+
+glm::vec3 PlayerMovement::
+ClampEllipseAirborneMovementToSurfaceTravelLimit(
+    const Planet& planet,
+    const glm::vec3& currentPosition,
+    const glm::vec3& physicsUpDirection,
+    const glm::vec3& requestedMovement,
+    bool& wasMovementClamped) const
+{
+    wasMovementClamped = false;
+    if (!mHasEllipseAirborneStartSurfaceNormal) {
+        return requestedMovement;
+    }
+
+    constexpr float maximumSurfaceTravelDegrees = 100.0f;
+    const float minimumAllowedNormalDot =
+        std::cos(glm::radians(maximumSurfaceTravelDegrees));
+    const float currentNormalDot = glm::dot(
+        mEllipseAirborneStartSurfaceNormal,
+        planet.CalculateEllipseSurfaceProjection(
+            currentPosition).outwardNormal);
+    const float requiredNormalDot =
+        std::min(
+            currentNormalDot,
+            minimumAllowedNormalDot);
+
+    const glm::vec3 requestedPosition =
+        currentPosition + requestedMovement;
+    const float requestedNormalDot = glm::dot(
+        mEllipseAirborneStartSurfaceNormal,
+        planet.CalculateEllipseSurfaceProjection(
+            requestedPosition).outwardNormal);
+    if (requestedNormalDot >= requiredNormalDot) {
+        return requestedMovement;
+    }
+
+    const glm::vec3 normalMovement =
+        physicsUpDirection *
+        glm::dot(requestedMovement, physicsUpDirection);
+    const glm::vec3 tangentialMovement =
+        requestedMovement - normalMovement;
+    if (glm::length(tangentialMovement) <= 0.000001f) {
+        return requestedMovement;
+    }
+
+    float allowedTangentialMultiplier = 0.0f;
+    float blockedTangentialMultiplier = 1.0f;
+    constexpr int movementLimitSearchIterations = 8;
+    for (int searchIndex = 0;
+         searchIndex < movementLimitSearchIterations;
+         ++searchIndex) {
+        const float candidateTangentialMultiplier =
+            (allowedTangentialMultiplier +
+             blockedTangentialMultiplier) *
+            0.5f;
+        const glm::vec3 candidatePosition =
+            currentPosition +
+            normalMovement +
+            tangentialMovement *
+                candidateTangentialMultiplier;
+        const float candidateNormalDot = glm::dot(
+            mEllipseAirborneStartSurfaceNormal,
+            planet.CalculateEllipseSurfaceProjection(
+                candidatePosition).outwardNormal);
+        if (candidateNormalDot >= requiredNormalDot) {
+            allowedTangentialMultiplier =
+                candidateTangentialMultiplier;
+        } else {
+            blockedTangentialMultiplier =
+                candidateTangentialMultiplier;
+        }
+    }
+
+    wasMovementClamped = true;
+    return
+        normalMovement +
+        tangentialMovement *
+            allowedTangentialMultiplier;
+}
+
+float PlayerMovement::CalculateAirborneGravityAcceleration(
+    const Player& player) const
+{
+    const glm::vec3 upDirection =
+        GetNormalizedUpDirection(player);
+    const float verticalSpeed =
+        glm::dot(player.GetVelocity(), upDirection);
+    return CalculateAirborneGravityAcceleration(verticalSpeed);
+}
+
+float PlayerMovement::CalculateAirborneGravityAcceleration(
+    float verticalSpeed) const
+{
+    const float gravityDuration =
+        verticalSpeed > 0.0f
+            ? std::max(mJumpAscentDuration, 0.05f)
+            : std::max(mJumpFallDuration, 0.05f);
+    return
+        (2.0f * std::max(mJumpHeight, 0.0f)) /
+        (gravityDuration * gravityDuration);
 }
 
 void PlayerMovement::StartAirSlamMovement(Player& player)

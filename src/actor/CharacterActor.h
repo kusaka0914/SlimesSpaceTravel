@@ -26,6 +26,7 @@ public:
         const glm::vec3& upDirection);
 
     void SetBaseScale(const glm::vec3& scale);
+    const glm::vec3& GetBaseScale() const { return mBaseScale; }
 
     bool GetOnGround() const { return mOnGround; }
 

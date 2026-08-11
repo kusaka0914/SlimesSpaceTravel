@@ -101,22 +101,31 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
     ApplyFallDamageAndRespawn(player, status, point->GetDamage());
 }
 
-bool PlayerRespawn::UpdateMissingGroundRayRespawn(Player& player, const PlayerStatus& status, float deltaTime)
+bool PlayerRespawn::UpdateMissingGroundSurfaceRespawn(
+    Player& player,
+    const PlayerStatus& status,
+    float deltaTime)
 {
-    const bool groundRayHitThisFrame = mGroundRayHitThisFrame;
-    mGroundRayHitThisFrame = false;
+    const bool groundSurfaceDetectedThisFrame =
+        mGroundSurfaceDetectedThisFrame;
+    mGroundSurfaceDetectedThisFrame = false;
 
     if (!player.GetIsActive() || !status.IsAlive() || mRespawnFadeRequested) {
         return false;
     }
 
-    if (groundRayHitThisFrame) {
-        mMissingGroundRayDuration = 0.0f;
+    const bool hasGroundSupport =
+        player.GetOnGround() ||
+        groundSurfaceDetectedThisFrame ||
+        player.IsEllipseAirborneGravityActive();
+    if (hasGroundSupport) {
+        mMissingGroundSurfaceDurationSeconds = 0.0f;
         return false;
     }
 
-    mMissingGroundRayDuration += std::max(0.0f, deltaTime);
-    if (mMissingGroundRayDuration < missingGroundRayRespawnDelay) {
+    mMissingGroundSurfaceDurationSeconds += std::max(0.0f, deltaTime);
+    if (mMissingGroundSurfaceDurationSeconds <
+        missingGroundSurfaceRespawnDelaySeconds) {
         return false;
     }
 
@@ -131,7 +140,7 @@ bool PlayerRespawn::UpdateMissingGroundRayRespawn(Player& player, const PlayerSt
 
 void PlayerRespawn::OnRespawnCompleted()
 {
-    mMissingGroundRayDuration = 0.0f;
-    mGroundRayHitThisFrame = false;
+    mMissingGroundSurfaceDurationSeconds = 0.0f;
+    mGroundSurfaceDetectedThisFrame = false;
     mRespawnFadeRequested = false;
 }

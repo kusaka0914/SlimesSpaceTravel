@@ -13,6 +13,7 @@ private:
     void ProcessPauseMenuInput();
     void ProcessDebugReloadInput();
     void ProcessPlayerJoinInput();
+    void ProcessPlayerSplitInput();
     void ProcessPlayerSwitchInput();
     void ProcessSceneConfirmInput();
     void ProcessDebugEditorToggleInput();
@@ -27,6 +28,7 @@ private:
     bool mPPressedPrev = false;
     bool mLPressedPrev = false;
     bool mQPressedPrev = false;
+    bool mPlayerSplitPressedPrev = false;
     bool mPlayerSwitchPressedPrev = false;
     bool mStartPressedPrev = false;
     bool mPauseMenuKeyPressedPrev = false;

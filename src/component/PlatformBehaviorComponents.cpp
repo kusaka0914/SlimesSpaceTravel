@@ -2,10 +2,13 @@
 
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Actor.h"
+#include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "component/PlatformMovementComponent.h"
+#include "system/ActorLoadSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -451,6 +454,320 @@ void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
         Platform* target = FindTargetPlatform(platformId);
         if (target) {
             target->ClearComponentRuntimeState(this);
+        }
+    }
+}
+
+PlatformLatchedGroupSwitchComponent::
+PlatformLatchedGroupSwitchComponent(
+    Platform* owner,
+    int updateOrder)
+    : Component(owner, updateOrder),
+      mPlatform(owner)
+{
+}
+
+PlatformLatchedGroupSwitchComponent::~PlatformLatchedGroupSwitchComponent() =
+    default;
+
+void PlatformLatchedGroupSwitchComponent::Update(float deltaTime)
+{
+    (void)deltaTime;
+    if (!mPlatform || IsEditorPreview(mPlatform) ||
+        mGroupId.empty()) {
+        return;
+    }
+
+    const std::vector<PlatformLatchedGroupSwitchComponent*>
+        groupSwitches = CollectGroupSwitches();
+    if (!mLatchedPlayer) {
+        mLatchedPlayer = FindEligiblePlayerOnPlatform(groupSwitches);
+    }
+
+    if (!IsGroupCoordinator(groupSwitches)) {
+        return;
+    }
+
+    const std::vector<PlatformRevealTarget> groupTargets =
+        CollectGroupRevealTargets(groupSwitches);
+    if (!GetIsGroupCompleted()) {
+        HideTargets(groupTargets);
+        return;
+    }
+
+    if (mHasRevealedTargets) {
+        return;
+    }
+
+    RevealTargets(groupTargets);
+    mHasRevealedTargets = true;
+}
+
+void PlatformLatchedGroupSwitchComponent::SetGroupId(
+    const std::string& groupId)
+{
+    if (mGroupId == groupId) {
+        return;
+    }
+
+    ClearTargetRuntimeStates();
+    mGroupId = groupId;
+    mLatchedPlayer = nullptr;
+    mHasRevealedTargets = false;
+}
+
+void PlatformLatchedGroupSwitchComponent::SetRevealTargets(
+    const std::vector<PlatformRevealTarget>& revealTargets)
+{
+    ClearTargetRuntimeStates();
+    mRevealTargets.clear();
+
+    for (const PlatformRevealTarget& target : revealTargets) {
+        if (!target.IsValid()) {
+            continue;
+        }
+
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.sequenceName ==
+                mPlatform->GetStageSequenceName() &&
+            target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const auto duplicateTarget =
+            std::find_if(
+                mRevealTargets.begin(),
+                mRevealTargets.end(),
+                [&target](const PlatformRevealTarget& current) {
+                    return current.sequenceName ==
+                               target.sequenceName &&
+                           current.yamlIndex == target.yamlIndex;
+                });
+        if (!isOwnerTarget &&
+            duplicateTarget == mRevealTargets.end()) {
+            mRevealTargets.emplace_back(target);
+        }
+    }
+
+    mHasRevealedTargets = false;
+}
+
+bool PlatformLatchedGroupSwitchComponent::
+GetIsGroupCompleted() const
+{
+    const std::vector<PlatformLatchedGroupSwitchComponent*>
+        groupSwitches = CollectGroupSwitches();
+    if (groupSwitches.size() < RequiredSwitchCount) {
+        return false;
+    }
+
+    std::vector<const Player*> playersWhoPressedSwitches;
+    for (const PlatformLatchedGroupSwitchComponent* component :
+         groupSwitches) {
+        const Player* player = component
+                                   ? component->mLatchedPlayer
+                                   : nullptr;
+        if (!player ||
+            std::find(
+                playersWhoPressedSwitches.begin(),
+                playersWhoPressedSwitches.end(),
+                player) != playersWhoPressedSwitches.end()) {
+            continue;
+        }
+
+        playersWhoPressedSwitches.emplace_back(player);
+    }
+    return playersWhoPressedSwitches.size() >= RequiredSwitchCount;
+}
+
+void PlatformLatchedGroupSwitchComponent::ClearTargetRuntimeStates()
+{
+    for (Actor* targetActor : mRuntimeTargetActors) {
+        if (targetActor) {
+            targetActor->ClearRuntimeActivationState(this);
+        }
+    }
+    mRuntimeTargetActors.clear();
+}
+
+std::vector<PlatformLatchedGroupSwitchComponent*>
+PlatformLatchedGroupSwitchComponent::CollectGroupSwitches() const
+{
+    std::vector<PlatformLatchedGroupSwitchComponent*> groupSwitches;
+    if (!mPlatform || mGroupId.empty() ||
+        !mPlatform->GetGame() ||
+        !mPlatform->GetGame()->GetCurrentStage()) {
+        return groupSwitches;
+    }
+
+    for (Planet* planet :
+         mPlatform->GetGame()->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            PlatformLatchedGroupSwitchComponent* component =
+                platform
+                    ? platform->GetLatchedGroupSwitchComponent()
+                    : nullptr;
+            if (!component || platform->IsDebugDisabled() ||
+                component->GetGroupId() != mGroupId) {
+                continue;
+            }
+            groupSwitches.emplace_back(component);
+        }
+    }
+    return groupSwitches;
+}
+
+std::vector<PlatformRevealTarget>
+PlatformLatchedGroupSwitchComponent::CollectGroupRevealTargets(
+    const std::vector<PlatformLatchedGroupSwitchComponent*>&
+        groupSwitches) const
+{
+    std::vector<PlatformRevealTarget> groupTargets;
+    for (const PlatformLatchedGroupSwitchComponent* component :
+         groupSwitches) {
+        if (!component) {
+            continue;
+        }
+
+        for (const PlatformRevealTarget& target :
+             component->GetRevealTargets()) {
+            const auto duplicateTarget =
+                std::find_if(
+                    groupTargets.begin(),
+                    groupTargets.end(),
+                    [&target](const PlatformRevealTarget& current) {
+                        return current.sequenceName ==
+                                   target.sequenceName &&
+                               current.yamlIndex == target.yamlIndex;
+                    });
+            if (duplicateTarget == groupTargets.end()) {
+                groupTargets.emplace_back(target);
+            }
+        }
+    }
+    return groupTargets;
+}
+
+bool PlatformLatchedGroupSwitchComponent::IsGroupCoordinator(
+    const std::vector<PlatformLatchedGroupSwitchComponent*>&
+        groupSwitches) const
+{
+    if (!mPlatform || groupSwitches.empty()) {
+        return false;
+    }
+
+    const auto comesBefore =
+        [](const PlatformLatchedGroupSwitchComponent* left,
+           const PlatformLatchedGroupSwitchComponent* right) {
+            const Platform* leftPlatform =
+                left ? left->mPlatform : nullptr;
+            const Platform* rightPlatform =
+                right ? right->mPlatform : nullptr;
+            if (!leftPlatform || !rightPlatform) {
+                return leftPlatform != nullptr;
+            }
+            if (leftPlatform->GetStageSequenceName() !=
+                rightPlatform->GetStageSequenceName()) {
+                return leftPlatform->GetStageSequenceName() <
+                       rightPlatform->GetStageSequenceName();
+            }
+            if (leftPlatform->GetStageYamlIndex() !=
+                rightPlatform->GetStageYamlIndex()) {
+                return leftPlatform->GetStageYamlIndex() <
+                       rightPlatform->GetStageYamlIndex();
+            }
+            return left < right;
+        };
+    const auto coordinator =
+        std::min_element(
+            groupSwitches.begin(),
+            groupSwitches.end(),
+            comesBefore);
+    return coordinator != groupSwitches.end() &&
+           *coordinator == this;
+}
+
+Player* PlatformLatchedGroupSwitchComponent::FindEligiblePlayerOnPlatform(
+    const std::vector<PlatformLatchedGroupSwitchComponent*>&
+        groupSwitches) const
+{
+    if (!mPlatform || !mPlatform->GetGame()) {
+        return nullptr;
+    }
+
+    for (Player* player : mPlatform->GetGame()->GetPlayers()) {
+        if (!player || !player->GetIsActive() ||
+            !player->GetOnGround() ||
+            player->GetGroundActor() != mPlatform) {
+            continue;
+        }
+
+        const bool hasPressedAnotherSwitch =
+            std::any_of(
+                groupSwitches.begin(),
+                groupSwitches.end(),
+                [player](
+                    const PlatformLatchedGroupSwitchComponent* component) {
+                    return component &&
+                           component->mLatchedPlayer == player;
+                });
+        if (!hasPressedAnotherSwitch) {
+            return player;
+        }
+    }
+    return nullptr;
+}
+
+Actor* PlatformLatchedGroupSwitchComponent::FindTargetActor(
+    const PlatformRevealTarget& target) const
+{
+    if (!mPlatform || !target.IsValid() ||
+        !mPlatform->GetGame() ||
+        !mPlatform->GetGame()->GetActorLoadSystem()) {
+        return nullptr;
+    }
+
+    return mPlatform->GetGame()
+        ->GetActorLoadSystem()
+        ->FindPlacedActor(
+            target.sequenceName,
+            target.yamlIndex);
+}
+
+void PlatformLatchedGroupSwitchComponent::HideTargets(
+    const std::vector<PlatformRevealTarget>& targets)
+{
+    ClearTargetRuntimeStates();
+    for (const PlatformRevealTarget& target : targets) {
+        Actor* targetActor = FindTargetActor(target);
+        if (!targetActor) {
+            continue;
+        }
+
+        targetActor->SetRuntimeActivationEnabled(this, false);
+        mRuntimeTargetActors.emplace_back(targetActor);
+    }
+}
+
+void PlatformLatchedGroupSwitchComponent::RevealTargets(
+    const std::vector<PlatformRevealTarget>& targets)
+{
+    ClearTargetRuntimeStates();
+    for (const PlatformRevealTarget& target : targets) {
+        Actor* targetActor = FindTargetActor(target);
+        if (!targetActor) {
+            continue;
+        }
+
+        const bool wasExplicitlyActive =
+            targetActor->IsExplicitlyActive();
+        targetActor->ClearRuntimeActivationState(this);
+
+        Boat* boat = dynamic_cast<Boat*>(targetActor);
+        if (boat && !wasExplicitlyActive) {
+            boat->StartFocus();
         }
     }
 }

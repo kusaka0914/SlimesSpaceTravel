@@ -50,6 +50,14 @@ public:
 
     bool GetTalkCameraPreviewEnabled() const { return mTalkCameraPreviewEnabled; }
     void SetTalkCameraPreviewEnabled(bool enabled) { mTalkCameraPreviewEnabled = enabled; }
+    bool GetBoatRideCameraPreviewEnabled() const
+    {
+        return mBoatRideCameraPreviewEnabled;
+    }
+    void SetBoatRideCameraPreviewEnabled(bool enabled)
+    {
+        mBoatRideCameraPreviewEnabled = enabled;
+    }
 
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
@@ -85,6 +93,8 @@ private:
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;
+    Boat* FindMovingBoat() const;
+    Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;
 
 private:
@@ -92,6 +102,7 @@ private:
 
     bool mIsTargetFocus = false;
     bool mTalkCameraPreviewEnabled = false;
+    bool mBoatRideCameraPreviewEnabled = false;
     bool mAlignCameraPressedPrev = false;
     bool mBossDefeatSequenceIsPreview = false;
     float mBossDefeatSequenceTimer = -1.0f;
@@ -112,6 +123,7 @@ private:
     glm::vec3 mRenderedTalkPageCameraPos{0.0f};
     Enemy* mDefeatedBoss = nullptr;
     Star* mBossDefeatStar = nullptr;
+    Boat* mBoatRideCameraTarget = nullptr;
 
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;

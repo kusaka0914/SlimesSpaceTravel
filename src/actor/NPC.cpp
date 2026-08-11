@@ -320,6 +320,10 @@ bool NPC::ShouldShowProximityMessage() const
 void NPC::LookNearestPlayer(float deltaTime)
 {
     const Player* nearestPlayer = mGame->FindNearestPlayer(this);
+    if (!nearestPlayer) {
+        return;
+    }
+
     const glm::vec3 toNearestPlayer = glm::normalize(nearestPlayer->GetPos() - mPos);
 
     constexpr float turnSpeed = 5.0f;

@@ -111,6 +111,26 @@ bool SceneSystem::IsWaitingForTutorialPlayerJump() const
             mTalkController->IsWaitingForPlayerJump());
 }
 
+bool SceneSystem::IsWaitingForTutorialPlayerSplitMerge() const
+{
+    return mTutorialController &&
+           mTutorialController->IsWaitingForPlayerSplitMerge();
+}
+
+void SceneSystem::OnPlayerSwitchSucceeded()
+{
+    if (mTutorialController) {
+        mTutorialController->OnPlayerSwitchSucceeded();
+    }
+}
+
+void SceneSystem::OnPlayerSplitMergeSucceeded()
+{
+    if (mTutorialController) {
+        mTutorialController->OnPlayerSplitMergeSucceeded();
+    }
+}
+
 bool SceneSystem::HasActiveTutorial() const
 {
     return mTutorialController &&
@@ -245,7 +265,20 @@ void SceneSystem::OnBoatArrived(Boat* boat)
 
     const std::vector<Planet*> planets = currentStage->GetPlanets();
 
+    Player* mainPlayer = mGame->GetMainPlayer();
     for (Player* player : mGame->GetPlayers()) {
+        if (!player) {
+            continue;
+        }
+
+        const bool isInactiveSoloClone =
+            !mGame->GetIsPlayer2Joined() &&
+            !mGame->GetIsPlayerSplit() &&
+            player != mainPlayer;
+        if (isInactiveSoloClone) {
+            continue;
+        }
+
         const int nextPlanetIndex = player->GetCurrentPlanetNum() + 1;
 
         if (nextPlanetIndex >= 0 && nextPlanetIndex < static_cast<int>(planets.size())) {

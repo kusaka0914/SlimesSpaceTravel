@@ -187,6 +187,26 @@ void TutorialController::OnLanded()
     TryStart("jewel_usage");
 }
 
+void TutorialController::OnPlayerSwitchSucceeded()
+{
+    if (!IsWaitingForPlayerSwitch()) {
+        return;
+    }
+
+    mTutorialPlayer = mGame ? mGame->GetControlledPlayer() : nullptr;
+    AdvancePage();
+}
+
+void TutorialController::OnPlayerSplitMergeSucceeded()
+{
+    if (!IsWaitingForPlayerSplitMerge()) {
+        return;
+    }
+
+    mTutorialPlayer = mGame ? mGame->GetControlledPlayer() : nullptr;
+    AdvancePage();
+}
+
 bool TutorialController::HasActiveTutorial() const
 {
     return GetActiveDefinition() != nullptr;
@@ -213,6 +233,13 @@ bool TutorialController::IsWaitingForPlayerJump() const
     return IsWaitingForPlayerAction() &&
            GetCurrentAdvanceCondition() ==
                TutorialAdvanceCondition::Jump;
+}
+
+bool TutorialController::IsWaitingForPlayerSplitMerge() const
+{
+    return IsWaitingForPlayerAction() &&
+           GetCurrentAdvanceCondition() ==
+               TutorialAdvanceCondition::PlayerSplitMerge;
 }
 
 const TutorialDefinition*
@@ -279,8 +306,6 @@ void TutorialController::CaptureCurrentPageActionBaseline()
 {
     mActionPlayerAtPageStart =
         mGame ? mGame->GetControlledPlayer() : nullptr;
-    mControlledPlayerIndexAtPageStart =
-        mGame ? mGame->GetControlledPlayerIndex() : -1;
     mJumpSequenceAtPageStart =
         mActionPlayerAtPageStart
             ? mActionPlayerAtPageStart->GetJumpSequence()
@@ -292,14 +317,7 @@ bool TutorialController::TryAdvanceFromCompletedAction()
 {
     switch (GetCurrentAdvanceCondition()) {
     case TutorialAdvanceCondition::PlayerSwitch:
-        if (!mGame ||
-            mGame->GetControlledPlayerIndex() ==
-                mControlledPlayerIndexAtPageStart) {
-            return false;
-        }
-        mTutorialPlayer = mGame->GetControlledPlayer();
-        AdvancePage();
-        return true;
+        return false;
 
     case TutorialAdvanceCondition::Jump: {
         Player* controlledPlayer =
@@ -321,6 +339,9 @@ bool TutorialController::TryAdvanceFromCompletedAction()
         AdvancePage();
         return true;
     }
+
+    case TutorialAdvanceCondition::PlayerSplitMerge:
+        return false;
 
     case TutorialAdvanceCondition::Confirm:
     default:

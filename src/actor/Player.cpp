@@ -41,6 +41,7 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mCombat.SetAttackSpeed(config.attackSpeed);
     mCombat.SetAttack(config.attack);
     mMovement.SetMoveSpeed(config.moveSpeed);
+    mMovement.SetMaximumStepHeight(config.maximumStepHeight);
     mMovement.SetJumpHeight(config.jumpHeight);
     mMovement.SetJumpAscentDuration(config.jumpAscentDuration);
     mMovement.SetJumpFallDuration(config.jumpFallDuration);
@@ -175,7 +176,7 @@ void Player::UpdateActor(float deltaTime)
         return;
     }
 
-    if (mRespawn.UpdateMissingGroundRayRespawn(*this, mStatus, deltaTime)) {
+    if (mRespawn.UpdateMissingGroundSurfaceRespawn(*this, mStatus, deltaTime)) {
         mVelocity = glm::vec3(0.0f);
         return;
     }
@@ -259,6 +260,21 @@ void Player::RequestEnteredActionAnimation(PlayerActionState previousState, Play
     }
 }
 
+void Player::SetSplitForm(bool isSplitForm)
+{
+    mIsSplitForm = isSplitForm;
+    const float bodyScaleMultiplier =
+        mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f;
+    SetScale(GetBaseScale() * bodyScaleMultiplier);
+}
+
+float Player::CalculateOutgoingAttackDamage(float baseDamage) const
+{
+    const float attackMultiplier =
+        mIsSplitForm ? SplitAttackMultiplier : 1.0f;
+    return baseDamage * attackMultiplier;
+}
+
 void Player::RequestNextWeakAttackAnimation()
 {
     const std::string_view weakAttackAnimationId =
@@ -302,6 +318,7 @@ void Player::RespawnAtRestartPoint()
 
     mInput.ClearAttackBuffer();
     mMovement.ClearStrongAttackDirectionOverride();
+    mMovement.ResetEllipseAirborneSurfaceTravel();
     mStateMachine.ClearAttackDirectionTarget();
     mGrounding.ResetRayCastTimer();
     mPlanetGravityController.OnRespawned();
@@ -325,6 +342,7 @@ const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
 void Player::OnLanded()
 {
     mMovement.ClearStrongAttackDirectionOverride();
+    mMovement.ResetEllipseAirborneSurfaceTravel();
     mPlanetGravityController.OnLanded(*this, mMovement);
     mGrounding.OnLanded(*this, mMovement, mCombat);
 }
@@ -342,7 +360,11 @@ void Player::OnCastSucceeded()
 {
     mGrounding.OnCastSucceeded();
     mPlanetGravityController.OnGroundRayCastSucceeded();
-    mRespawn.OnGroundRayCastSucceeded();
+}
+
+void Player::OnGroundSurfaceDetected()
+{
+    mRespawn.OnGroundSurfaceDetected();
 }
 
 void Player::OnLoadedModelChanged()

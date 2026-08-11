@@ -9,8 +9,7 @@ Planet::Planet(Game* game)
     : Actor(game),
       mStageNum(0),
       mColor(1.0f),
-      mCurrentStage(nullptr),
-      mPlanetShape(PlanetShape::Normal)
+      mCurrentStage(nullptr)
 {
 }
 
@@ -90,9 +89,6 @@ void Planet::ApplyConfig(const YAML::Node& node)
         ReadVec2(node, "textureTiling", automaticTextureTiling);
     SetTextureTiling(glm::max(textureTiling, glm::vec2(0.01f)));
 
-    const std::string shape = ReadString(node, "shape", "Sphere");
-    SetPlanetShape(shape);
-
     const int stageNum = ReadInt(node, "stageNum", 0);
     SetStageNum(stageNum);
 
@@ -113,6 +109,154 @@ void Planet::OnEnemyDead()
 void Planet::OnBoatPartsObtained()
 {
     mProgressController.OnBoatPartsObtained(mActorRegistry);
+}
+
+Planet::PlanetShape Planet::GetPlanetShape() const
+{
+    constexpr float scaleComparisonEpsilon = 0.0001f;
+
+    const glm::vec3 absoluteScale = glm::abs(GetScale());
+    const bool hasNoScale =
+        absoluteScale.x <= scaleComparisonEpsilon &&
+        absoluteScale.y <= scaleComparisonEpsilon &&
+        absoluteScale.z <= scaleComparisonEpsilon;
+    if (hasNoScale) {
+        return PlanetShape::Normal;
+    }
+
+    const bool hasUniformScale =
+        std::abs(absoluteScale.x - absoluteScale.y) <=
+            scaleComparisonEpsilon &&
+        std::abs(absoluteScale.y - absoluteScale.z) <=
+            scaleComparisonEpsilon;
+    return hasUniformScale
+        ? PlanetShape::Sphere
+        : PlanetShape::Ellipse;
+}
+
+glm::vec3 Planet::CalculateEllipseVerticalDirection(
+    const glm::vec3& worldPosition) const
+{
+    const glm::vec3 absoluteScale = glm::abs(GetScale());
+
+    int verticalAxisIndex = 0;
+    if (absoluteScale.y < absoluteScale[verticalAxisIndex]) {
+        verticalAxisIndex = 1;
+    }
+    if (absoluteScale.z < absoluteScale[verticalAxisIndex]) {
+        verticalAxisIndex = 2;
+    }
+
+    glm::vec3 verticalAxis(0.0f);
+    verticalAxis[verticalAxisIndex] = 1.0f;
+
+    constexpr float centerPlaneEpsilon = 0.000001f;
+    const float verticalOffset =
+        glm::dot(worldPosition - GetPos(), verticalAxis);
+    return verticalOffset < -centerPlaneEpsilon
+        ? -verticalAxis
+        : verticalAxis;
+}
+
+Planet::EllipseSurfaceProjection
+Planet::CalculateEllipseSurfaceProjection(
+    const glm::vec3& worldPosition) const
+{
+    constexpr float minimumRadius = 0.001f;
+    constexpr float positionEpsilon = 0.000001f;
+    constexpr int closestPointIterations = 48;
+
+    const glm::vec3 radii = glm::max(
+        glm::abs(GetScale()),
+        glm::vec3(minimumRadius));
+    const glm::vec3 localPosition = worldPosition - GetPos();
+    const glm::vec3 squaredRadii = radii * radii;
+
+    const float scaledDistanceSquared =
+        localPosition.x * localPosition.x / squaredRadii.x +
+        localPosition.y * localPosition.y / squaredRadii.y +
+        localPosition.z * localPosition.z / squaredRadii.z;
+    const bool isOutside = scaledDistanceSquared >= 1.0f;
+
+    glm::vec3 surfaceLocalPosition(0.0f);
+    if (glm::dot(localPosition, localPosition) <= positionEpsilon) {
+        int shortestAxisIndex = 0;
+        if (radii.y < radii[shortestAxisIndex]) {
+            shortestAxisIndex = 1;
+        }
+        if (radii.z < radii[shortestAxisIndex]) {
+            shortestAxisIndex = 2;
+        }
+        surfaceLocalPosition[shortestAxisIndex] =
+            radii[shortestAxisIndex];
+    } else if (!isOutside) {
+        const float radialScale =
+            1.0f / std::sqrt(
+                std::max(scaledDistanceSquared, positionEpsilon));
+        surfaceLocalPosition = localPosition * radialScale;
+    } else {
+        const auto calculateConstraint =
+            [&localPosition, &squaredRadii](double lambda) {
+                double constraint = 0.0;
+                for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+                    const double radiusSquared =
+                        static_cast<double>(squaredRadii[axisIndex]);
+                    const double coordinate =
+                        static_cast<double>(localPosition[axisIndex]);
+                    const double denominator = lambda + radiusSquared;
+                    constraint +=
+                        radiusSquared * coordinate * coordinate /
+                        (denominator * denominator);
+                }
+                return constraint;
+            };
+
+        double minimumLambda = 0.0;
+        double maximumLambda = static_cast<double>(
+            std::max({squaredRadii.x, squaredRadii.y, squaredRadii.z}));
+        while (calculateConstraint(maximumLambda) > 1.0) {
+            maximumLambda *= 2.0;
+        }
+
+        for (int iteration = 0;
+             iteration < closestPointIterations;
+             ++iteration) {
+            const double middleLambda =
+                (minimumLambda + maximumLambda) * 0.5;
+            if (calculateConstraint(middleLambda) > 1.0) {
+                minimumLambda = middleLambda;
+            } else {
+                maximumLambda = middleLambda;
+            }
+        }
+
+        const double closestPointLambda = maximumLambda;
+        for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+            const double radiusSquared =
+                static_cast<double>(squaredRadii[axisIndex]);
+            surfaceLocalPosition[axisIndex] =
+                static_cast<float>(
+                    radiusSquared *
+                    static_cast<double>(localPosition[axisIndex]) /
+                    (closestPointLambda + radiusSquared));
+        }
+    }
+
+    glm::vec3 outwardNormal =
+        surfaceLocalPosition / squaredRadii;
+    if (glm::length(outwardNormal) <= positionEpsilon) {
+        outwardNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        outwardNormal = glm::normalize(outwardNormal);
+    }
+
+    EllipseSurfaceProjection projection;
+    projection.position = GetPos() + surfaceLocalPosition;
+    projection.outwardNormal = outwardNormal;
+    projection.distance =
+        glm::length(worldPosition - projection.position);
+    projection.isOutside = isOutside;
+    return projection;
 }
 
 bool Planet::HasAppearedRocket() const

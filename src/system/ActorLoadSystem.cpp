@@ -24,6 +24,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+#include <utility>
 #include <yaml-cpp/yaml.h>
 
 namespace {
@@ -227,6 +228,38 @@ void ApplyPlatformBehaviorConfigs(
                 ? node["inactiveOpacity"].as<float>()
                 : 0.2f);
         component->SetTargetPlatformIds(targetPlatformIds);
+    }
+
+    if (const YAML::Node node = components["latchedGroupSwitch"];
+        node && node.IsMap()) {
+        std::vector<PlatformRevealTarget> revealTargets;
+        const YAML::Node targets = node["targets"];
+        if (targets && targets.IsSequence()) {
+            revealTargets.reserve(targets.size());
+            for (const YAML::Node& targetNode : targets) {
+                if (!targetNode || !targetNode.IsMap() ||
+                    !targetNode["sequence"] ||
+                    !targetNode["index"]) {
+                    continue;
+                }
+
+                PlatformRevealTarget target;
+                target.sequenceName =
+                    targetNode["sequence"].as<std::string>();
+                target.yamlIndex = targetNode["index"].as<int>();
+                if (target.IsValid()) {
+                    revealTargets.emplace_back(std::move(target));
+                }
+            }
+        }
+
+        PlatformLatchedGroupSwitchComponent* component =
+            platform->AddLatchedGroupSwitchComponent();
+        component->SetGroupId(
+            node["groupId"]
+                ? node["groupId"].as<std::string>()
+                : std::string());
+        component->SetRevealTargets(revealTargets);
     }
 }
 
@@ -1052,9 +1085,15 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
     const int destStage = node["destStage"] ? node["destStage"].as<int>() : 0;
     boat->SetDestStage(destStage);
 
-    const float travelDuration =
-        node["travelDuration"] ? node["travelDuration"].as<float>() : 3.0f;
-    boat->SetTravelDuration(travelDuration);
+    const bool hasTravelSpeed = static_cast<bool>(node["travelSpeed"]);
+    const float travelSpeed =
+        hasTravelSpeed ? node["travelSpeed"].as<float>() : 10.0f;
+    const bool hasLegacyTravelDuration =
+        static_cast<bool>(node["travelDuration"]);
+    const float legacyTravelDuration =
+        hasLegacyTravelDuration
+            ? node["travelDuration"].as<float>()
+            : 3.0f;
 
     const float destMargin =
         node["destMargin"] ? node["destMargin"].as<float>() : 4.0f;
@@ -1088,6 +1127,13 @@ Boat* ActorLoadSystem::CreateBoatFromStageNode(const YAML::Node& node, int stage
     mPlacementLoader.ApplyScaleFromStageNode(boat.get(), node);
 
     boat->Initialize();
+    if (hasTravelSpeed) {
+        boat->SetTravelSpeed(travelSpeed);
+    } else if (hasLegacyTravelDuration) {
+        // 旧ステージデータは初回保存まで従来の所要時間を維持する。
+        boat->SetTravelSpeedFromLegacyDuration(
+            legacyTravelDuration);
+    }
 
     Boat* boatPtr = boat.get();
     mGame->GetMeshLoadSystem()->SetActorMesh(boatPtr);

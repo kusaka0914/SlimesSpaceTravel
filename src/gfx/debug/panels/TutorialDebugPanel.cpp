@@ -62,6 +62,8 @@ const char* GetAdvanceConditionLabel(
         return "プレイヤー切替が成功したら進む";
     case TutorialAdvanceCondition::Jump:
         return "ジャンプして着地したら進む";
+    case TutorialAdvanceCondition::PlayerSplitMerge:
+        return "分裂または合体が成功したら進む";
     case TutorialAdvanceCondition::Confirm:
     default:
         return "決定入力で進む";
@@ -338,7 +340,8 @@ void TutorialDebugPanel::DrawPageEditor(
     const char* advanceConditionLabels[] = {
         "決定入力で進む",
         "プレイヤー切替が成功したら進む",
-        "ジャンプして着地したら進む"};
+        "ジャンプして着地したら進む",
+        "分裂または合体が成功したら進む"};
     if (ImGui::Combo(
             "次ページへ進む条件",
             &advanceConditionIndex,

@@ -107,7 +107,7 @@ Player* GameWorld::FindNearestPlayer(Actor* actor) const
     float nearestDist = std::numeric_limits<float>::max();
 
     for (Player* player : mPlayers) {
-        if (!player) {
+        if (!player || !player->GetIsActive()) {
             continue;
         }
 

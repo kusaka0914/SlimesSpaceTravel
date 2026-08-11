@@ -11,6 +11,7 @@ struct PlayerConfig {
     float attackSpeed = 5.0f;
     float attack = 10.0f;
     float moveSpeed = 10.2f;
+    float maximumStepHeight = 0.3f;
     float jumpHeight = 1.8367347f;
     float jumpAscentDuration = 0.4f;
     float jumpFallDuration = 0.85f;

@@ -383,12 +383,17 @@ void StagePlacementPanel::DrawSelectedActorEditor()
     }
 
     Planet* surfacePlanet = actor->GetCurrentPlanet();
-    const bool canAlignToSphere =
+    const bool isSpherePlanet =
         surfacePlanet &&
         surfacePlanet->GetPlanetShape() == Planet::PlanetShape::Sphere &&
         glm::length(actor->GetPos() - surfacePlanet->GetPos()) > 1e-6f;
+    const bool isEllipsePlanet =
+        surfacePlanet &&
+        surfacePlanet->GetPlanetShape() == Planet::PlanetShape::Ellipse;
+    const bool canAlignToPlanet =
+        isSpherePlanet || isEllipsePlanet;
 
-    if (!canAlignToSphere) {
+    if (!canAlignToPlanet) {
         ImGui::BeginDisabled();
     }
 
@@ -406,18 +411,22 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         Save();
         RebuildPhysicsWorldIfNeeded(true);
         mSurfaceAlignmentStatus =
-            "Yawを保ったまま、オブジェクトを惑星表面に垂直にしました";
+            isEllipsePlanet
+                ? "Yawを保ったまま、上方向を楕円の最小スケール軸に揃えました"
+                : "Yawを保ったまま、オブジェクトを惑星表面に垂直にしました";
     }
 
-    if (!canAlignToSphere) {
+    if (!canAlignToPlanet) {
         ImGui::EndDisabled();
     }
 
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
         ImGui::SetTooltip(
-            canAlignToSphere
-                ? "オブジェクトの上方向をSphere惑星の中心から外側へ揃えます"
-                : "Sphere型の惑星に属するオブジェクトで使用できます");
+            isSpherePlanet
+                ? "上方向をSphere惑星の中心から外側へ揃えます"
+                : isEllipsePlanet
+                    ? "楕円では上方向を最も薄いスケール軸へ揃えます"
+                    : "SphereまたはEllipse型の惑星に属するオブジェクトで使用できます");
     }
 
     if (!mSurfaceAlignmentStatus.empty()) {
@@ -725,17 +734,17 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             boat->SetDestStage(std::max(0, destStage));
         }
 
-        float travelDuration = boat->GetTravelDuration();
+        float travelSpeed = boat->GetTravelSpeed();
         if (ImGui::DragFloat(
-                ("飛行時間（秒）##boatTravelDuration" +
+                ("飛行速度（ワールド単位/秒）##boatTravelSpeed" +
                  std::to_string(yamlIndex))
                     .c_str(),
-                &travelDuration,
+                &travelSpeed,
                 0.1f,
                 0.1f,
-                60.0f,
+                500.0f,
                 "%.1f")) {
-            boat->SetTravelDuration(travelDuration);
+            boat->SetTravelSpeed(travelSpeed);
         }
 
         float destMargin = boat->GetDestMargin();
@@ -1691,6 +1700,24 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
         RebuildPhysicsWorldIfNeeded(true);
     }
 
+    bool latchedGroupSwitchEnabled =
+        platform->GetLatchedGroupSwitchComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("2個連動・保持スイッチ##platformLatchedGroupSwitchEnabled" +
+             sequenceName + std::to_string(listIndex)).c_str(),
+            &latchedGroupSwitchEnabled)) {
+        if (mPushUndoCallback) {
+            mPushUndoCallback();
+        }
+        if (latchedGroupSwitchEnabled) {
+            platform->AddLatchedGroupSwitchComponent();
+        } else {
+            platform->RemoveLatchedGroupSwitchComponent();
+        }
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
     ImGui::TextDisabled(
         "必要な機能を追加して組み合わせます。移動を有効にすると設定欄が表示されます。");
 
@@ -1948,6 +1975,160 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                 "現在の状態: %s",
                 pressureSwitch->GetIsPressed() ? "ON" : "OFF");
         }
+    }
+
+    if (PlatformLatchedGroupSwitchComponent* latchedSwitch =
+            platform->GetLatchedGroupSwitchComponent()) {
+        ImGui::SeparatorText("2個連動・保持スイッチ");
+        ImGui::TextDisabled(
+            "別々のプレイヤーが同じグループIDのスイッチを1個ずつ押すと、配置物が現れます。");
+        ImGui::TextDisabled(
+            "一度押したスイッチは、プレイヤーが離れてもONのままです。");
+
+        std::array<char, 128> groupIdBuffer = {};
+        std::snprintf(
+            groupIdBuffer.data(),
+            groupIdBuffer.size(),
+            "%s",
+            latchedSwitch->GetGroupId().c_str());
+        if (ImGui::InputText(
+                ("グループID##latchedGroupSwitchId" +
+                 std::to_string(yamlIndex)).c_str(),
+                groupIdBuffer.data(),
+                groupIdBuffer.size())) {
+            latchedSwitch->SetGroupId(groupIdBuffer.data());
+        }
+        ImGui::TextDisabled(
+            "対応させる2個の足場へ、同じグループIDを設定してください。");
+
+        std::vector<PlatformRevealTarget> revealTargets =
+            latchedSwitch->GetRevealTargets();
+        const std::vector<StageActorInstance> instances =
+            StageActorQuery::CollectAllActorInstances(
+                mContext.game->GetCurrentStage());
+
+        if (ImGui::TreeNode(
+                ("出現させる配置物##latchedGroupSwitchTargets" +
+                 std::to_string(yamlIndex)).c_str())) {
+            bool hasCandidate = false;
+            std::vector<PlatformRevealTarget> availableTargets;
+            for (const StageActorInstance& instance : instances) {
+                if (!instance.actor || instance.actor == platform ||
+                    instance.ref.type == StageActorType::Planet) {
+                    continue;
+                }
+
+                hasCandidate = true;
+                PlatformRevealTarget candidate;
+                candidate.sequenceName = instance.ref.sequenceName;
+                candidate.yamlIndex = instance.ref.yamlIndex;
+                availableTargets.emplace_back(candidate);
+
+                const auto selectedTarget =
+                    std::find_if(
+                        revealTargets.begin(),
+                        revealTargets.end(),
+                        [&candidate](
+                            const PlatformRevealTarget& current) {
+                            return current.sequenceName ==
+                                       candidate.sequenceName &&
+                                   current.yamlIndex ==
+                                       candidate.yamlIndex;
+                        });
+                bool isSelected =
+                    selectedTarget != revealTargets.end();
+                const std::string targetLabel =
+                    instance.ref.label + "##latchedRevealTarget_" +
+                    std::to_string(yamlIndex) + "_" +
+                    StageActorQuery::MakeKey(instance.ref);
+                if (!ImGui::Checkbox(
+                        targetLabel.c_str(),
+                        &isSelected)) {
+                    continue;
+                }
+
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                if (isSelected &&
+                    selectedTarget == revealTargets.end()) {
+                    revealTargets.emplace_back(candidate);
+                } else if (!isSelected &&
+                           selectedTarget != revealTargets.end()) {
+                    revealTargets.erase(selectedTarget);
+                }
+                latchedSwitch->SetRevealTargets(revealTargets);
+                Save();
+                RebuildPhysicsWorldIfNeeded(true);
+            }
+
+            std::vector<PlatformRevealTarget> missingTargets;
+            for (const PlatformRevealTarget& configuredTarget :
+                 revealTargets) {
+                const auto availableTarget =
+                    std::find_if(
+                        availableTargets.begin(),
+                        availableTargets.end(),
+                        [&configuredTarget](
+                            const PlatformRevealTarget& current) {
+                            return current.sequenceName ==
+                                       configuredTarget.sequenceName &&
+                                   current.yamlIndex ==
+                                       configuredTarget.yamlIndex;
+                        });
+                if (availableTarget == availableTargets.end()) {
+                    missingTargets.emplace_back(configuredTarget);
+                }
+            }
+
+            for (const PlatformRevealTarget& missingTarget :
+                 missingTargets) {
+                bool keepTarget = true;
+                const std::string missingLabel =
+                    "見つからない対象: " +
+                    missingTarget.sequenceName + ":" +
+                    std::to_string(missingTarget.yamlIndex) +
+                    "##missingLatchedRevealTarget_" +
+                    std::to_string(yamlIndex) + "_" +
+                    missingTarget.sequenceName + "_" +
+                    std::to_string(missingTarget.yamlIndex);
+                if (ImGui::Checkbox(
+                        missingLabel.c_str(),
+                        &keepTarget) &&
+                    !keepTarget) {
+                    if (mPushUndoCallback) {
+                        mPushUndoCallback();
+                    }
+                    revealTargets.erase(
+                        std::remove_if(
+                            revealTargets.begin(),
+                            revealTargets.end(),
+                            [&missingTarget](
+                                const PlatformRevealTarget& current) {
+                                return current.sequenceName ==
+                                           missingTarget.sequenceName &&
+                                       current.yamlIndex ==
+                                           missingTarget.yamlIndex;
+                            }),
+                        revealTargets.end());
+                    latchedSwitch->SetRevealTargets(revealTargets);
+                    Save();
+                    RebuildPhysicsWorldIfNeeded(true);
+                }
+            }
+
+            if (!hasCandidate) {
+                ImGui::TextDisabled(
+                    "対象にできる配置物がありません。");
+            } else if (revealTargets.empty()) {
+                ImGui::TextDisabled(
+                    "出現させる配置物を1つ以上選択してください。");
+            }
+            ImGui::TreePop();
+        }
+
+        ImGui::TextDisabled(
+            "編集モード中はスイッチの記録状態を更新しません。");
     }
 }
 
@@ -2572,6 +2753,24 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
             removeComponentNode("pressureSwitch");
         }
 
+        if (const PlatformLatchedGroupSwitchComponent* component =
+                platform->GetLatchedGroupSwitchComponent()) {
+            YAML::Node node =
+                platformNode["components"]["latchedGroupSwitch"];
+            node["groupId"] = component->GetGroupId();
+            node["targets"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const PlatformRevealTarget& target :
+                 component->GetRevealTargets()) {
+                YAML::Node targetNode;
+                targetNode["sequence"] = target.sequenceName;
+                targetNode["index"] = target.yamlIndex;
+                node["targets"].push_back(targetNode);
+            }
+        } else {
+            removeComponentNode("latchedGroupSwitch");
+        }
+
         if (platformNode["components"] &&
             platformNode["components"].size() == 0) {
             platformNode.remove("components");
@@ -2598,8 +2797,9 @@ void StagePlacementPanel::SaveActorCommonYaml(YAML::Node& config, const std::str
         config[sequenceName][yamlIndex]["destPlanet"] =
             findPlanetIndex(boat->GetDestPlanet());
         config[sequenceName][yamlIndex]["destStage"] = boat->GetDestStage();
-        config[sequenceName][yamlIndex]["travelDuration"] =
-            boat->GetTravelDuration();
+        config[sequenceName][yamlIndex]["travelSpeed"] =
+            boat->GetTravelSpeed();
+        config[sequenceName][yamlIndex].remove("travelDuration");
         config[sequenceName][yamlIndex]["destMargin"] =
             boat->GetDestMargin();
         config[sequenceName][yamlIndex]["launchSequenceId"] =

@@ -1,6 +1,8 @@
 #include "CameraSystem.h"
 
 #include "Game.h"
+#include "Stage.h"
+#include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
 #include "actor/NPC.h"
@@ -84,12 +86,13 @@ void CameraSystem::ProcessInput()
         mKeyboardPitchInput -= 1.0f;
     }
 
-    constexpr Sint16 triggerPressedThreshold = 16000;
     const bool alignCameraPressed =
-        (mGame->GetWindow() && glfwGetKey(mGame->GetWindow(), GLFW_KEY_Y) == GLFW_PRESS) ||
+        (mGame->GetWindow() &&
+         glfwGetKey(mGame->GetWindow(), GLFW_KEY_M) == GLFW_PRESS) ||
         (sdlController &&
-         SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >
-             triggerPressedThreshold);
+         SDL_GameControllerGetButton(
+             sdlController,
+             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER));
 
     if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
         const int playerIndex = GetPrimaryPlayerIndex();
@@ -165,6 +168,7 @@ void CameraSystem::ResetForStageChange()
     mTalkPageFocusTargetPos = glm::vec3(0.0f);
     mTalkPageFocusUpVec = glm::vec3(0.0f, 1.0f, 0.0f);
     mRenderedTalkPageCameraPos = glm::vec3(0.0f);
+    mBoatRideCameraTarget = nullptr;
 }
 
 float CameraSystem::GetFieldOfViewDegrees() const
@@ -179,6 +183,10 @@ float CameraSystem::GetFieldOfViewDegrees() const
 
     if (mBossDefeatSequenceTimer >= 0.0f) {
         return mPlayerCameraSettings.bossDefeatFieldOfViewDegrees;
+    }
+
+    if (ResolveBoatRideCameraTarget()) {
+        return mPlayerCameraSettings.boatRideFieldOfViewDegrees;
     }
 
     const float normalFieldOfView =
@@ -290,7 +298,8 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
 bool CameraSystem::AllowsPlayerInput() const
 {
     return mBossDefeatSequenceTimer < 0.0f && !mCinematicCamera.IsPlaying() &&
-           !(mGame && mGame->GetIsFreeCameraMode()) && !mIsTargetFocus;
+           !(mGame && mGame->GetIsFreeCameraMode()) && !mIsTargetFocus &&
+           !FindMovingBoat();
 }
 
 void CameraSystem::StartBossDefeatSequence(Enemy* boss, Star* star)
@@ -731,6 +740,41 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         }
     }
 
+    Boat* boatRideCameraTarget = ResolveBoatRideCameraTarget();
+    if (boatRideCameraTarget) {
+        if (mBoatRideCameraTarget != boatRideCameraTarget) {
+            const int playerIndex = GetPrimaryPlayerIndex();
+            glm::vec3 cameraPos =
+                mPlayerCamera.GetCameraPos(playerIndex);
+            glm::vec3 up = boatRideCameraTarget->GetUpVec();
+            if (glm::dot(up, up) < 0.000001f) {
+                up = glm::vec3(0.0f, 1.0f, 0.0f);
+            } else {
+                up = glm::normalize(up);
+            }
+            if (glm::dot(cameraPos, cameraPos) < 0.000001f) {
+                cameraPos =
+                    boatRideCameraTarget->GetPos() +
+                    up * mPlayerCameraSettings.boatRideCameraHeight;
+            }
+            mFocusCamera.BeginTransition(
+                cameraPos,
+                boatRideCameraTarget->GetPos() +
+                    up * mPlayerCameraSettings.boatRideTargetHeight,
+                up);
+        }
+
+        mBoatRideCameraTarget = boatRideCameraTarget;
+        views.emplace_back(
+            mFocusCamera.GetCloseFocusView(
+                boatRideCameraTarget,
+                mPlayerCameraSettings.boatRideDistance,
+                mPlayerCameraSettings.boatRideCameraHeight,
+                mPlayerCameraSettings.boatRideTargetHeight));
+        return views;
+    }
+    mBoatRideCameraTarget = nullptr;
+
     const std::vector<Player*>& players = mGame->GetPlayers();
     const int primaryPlayerIndex = GetPrimaryPlayerIndex();
     if (primaryPlayerIndex < 0 ||
@@ -838,6 +882,10 @@ glm::vec3 CameraSystem::GetCameraPos() const
         return mPlayerCamera.GetCameraPos(GetPrimaryPlayerIndex());
     }
 
+    if (ResolveBoatRideCameraTarget()) {
+        return mFocusCamera.GetCameraPos();
+    }
+
     if (mIsTargetFocus) {
         return mFocusCamera.GetCameraPos();
     }
@@ -864,6 +912,55 @@ int CameraSystem::GetPrimaryPlayerIndex() const
     }
 
     return controlledIndex;
+}
+
+Boat* CameraSystem::FindMovingBoat() const
+{
+    Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
+    if (!stage) {
+        return nullptr;
+    }
+
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && boat->GetIsActive() &&
+                boat->GetIsMoving()) {
+                return boat;
+            }
+        }
+    }
+    return nullptr;
+}
+
+Boat* CameraSystem::ResolveBoatRideCameraTarget() const
+{
+    if (Boat* movingBoat = FindMovingBoat()) {
+        return movingBoat;
+    }
+
+    const bool allowsEditorPreview =
+        mGame && mGame->GetIsDebugEditorShowing() &&
+        mBoatRideCameraPreviewEnabled;
+    if (!allowsEditorPreview || !mGame->GetCurrentStage()) {
+        return nullptr;
+    }
+
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && !boat->IsDebugDisabled()) {
+                return boat;
+            }
+        }
+    }
+    return nullptr;
 }
 
 Enemy* CameraSystem::FindBossEnemy(Planet* planet) const

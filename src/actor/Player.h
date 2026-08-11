@@ -37,6 +37,9 @@ public:
 
     explicit Player(Game* game);
 
+    static constexpr float SplitBodyScaleMultiplier = 0.8f;
+    static constexpr float SplitAttackMultiplier = 0.6f;
+
     void ApplyConfig();
 
     void Initialize() override;
@@ -50,6 +53,7 @@ public:
     void RespawnAtRestartPoint();
     void Restart();
     void RecoverFromFatigue();
+    void SetSplitForm(bool isSplitForm);
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
     void SetControlLocked(bool locked) { mControlLocked = locked; }
@@ -77,6 +81,11 @@ public:
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
 
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
+
+    void SetMaximumStepHeight(float maximumStepHeight)
+    {
+        mMovement.SetMaximumStepHeight(maximumStepHeight);
+    }
 
     void SetAttackSpeed(float attackSpeed) { mCombat.SetAttackSpeed(attackSpeed); }
 
@@ -173,6 +182,11 @@ public:
     int GetPlayerNum() const { return mMovement.GetPlayerNum(); }
 
     float GetAttack() const { return mCombat.GetAttack(); }
+    float CalculateOutgoingAttackDamage(float baseDamage) const;
+    float GetCollisionScaleMultiplier() const override
+    {
+        return mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f;
+    }
 
     float GetHp() const { return mStatus.GetHp(); }
 
@@ -191,6 +205,11 @@ public:
     float GetRayCastTimer() const { return mGrounding.GetRayCastTimer(); }
 
     float GetMoveSpeed() const { return mMovement.GetMoveSpeed(); }
+
+    float GetMaximumStepHeight() const
+    {
+        return mMovement.GetMaximumStepHeight();
+    }
 
     float GetCameraYaw() const { return mInput.GetCameraYaw(); }
 
@@ -250,6 +269,11 @@ public:
     {
         return mPlanetGravityController.WasFallbackAppliedThisJump();
     }
+    bool IsEllipseAirborneGravityActive() const
+    {
+        return mPlanetGravityController
+            .IsEllipseAirborneGravityActive(*this);
+    }
 
     ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 
@@ -287,6 +311,7 @@ private:
 
     void OnLanded() override;
     void OnUpVecUpdateFailed() override;
+    void OnGroundSurfaceDetected() override;
     void OnCastSucceeded() override;
     void OnLoadedModelChanged() override;
 
@@ -307,5 +332,6 @@ private:
 
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
+    bool mIsSplitForm = false;
     std::uint64_t mJumpSequence = 0;
 };

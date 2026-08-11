@@ -105,8 +105,6 @@ void StagePlanetPanel::Draw()
             }
 
             if (scaleChanged) {
-                bool isSphere = false;
-
                 scale.x = std::round(scale.x * 100.0f) / 100.0f;
                 scale.y = std::round(scale.y * 100.0f) / 100.0f;
                 scale.z = std::round(scale.z * 100.0f) / 100.0f;
@@ -116,17 +114,7 @@ void StagePlanetPanel::Draw()
                         std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),
                         std::max(1.0f, std::abs(scale.y))));
 
-                if (scale.x == scale.y && scale.y == scale.z && scale.x == scale.z) {
-                    isSphere = true;
-                }
-
                 planet->SetScale(scale);
-
-                if (isSphere) {
-                    planet->SetPlanetShape("Sphere");
-                } else {
-                    planet->SetPlanetShape("Ellipse");
-                }
 
                 planet->SetRadius(scale.x);
 
@@ -259,6 +247,7 @@ void StagePlanetPanel::Save()
         config["planets"][i]["scale"][0] = scale.x;
         config["planets"][i]["scale"][1] = scale.y;
         config["planets"][i]["scale"][2] = scale.z;
+        config["planets"][i].remove("shape");
 
         config["planets"][i]["model"] = planet->GetModelPath();
 

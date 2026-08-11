@@ -12,6 +12,7 @@ class PlatformDirectionalMovementComponent;
 class PlatformFadeOnStandComponent;
 class PlatformIntervalToggleComponent;
 class PlatformJumpToggleComponent;
+class PlatformLatchedGroupSwitchComponent;
 class PlatformMovementComponent;
 class PlatformPressureSwitchComponent;
 class PlatformRotationComponent;
@@ -61,6 +62,15 @@ public:
         return mPressureSwitchComponent;
     }
 
+    PlatformLatchedGroupSwitchComponent*
+    AddLatchedGroupSwitchComponent();
+    void RemoveLatchedGroupSwitchComponent();
+    PlatformLatchedGroupSwitchComponent*
+    GetLatchedGroupSwitchComponent() const
+    {
+        return mLatchedGroupSwitchComponent;
+    }
+
     void SetPlatformId(const std::string& platformId) { mPlatformId = platformId; }
     const std::string& GetPlatformId() const { return mPlatformId; }
 
@@ -85,6 +95,8 @@ private:
     PlatformRotationComponent* mRotationComponent = nullptr;
     PlatformConveyorComponent* mConveyorComponent = nullptr;
     PlatformPressureSwitchComponent* mPressureSwitchComponent = nullptr;
+    PlatformLatchedGroupSwitchComponent*
+        mLatchedGroupSwitchComponent = nullptr;
 
     std::string mPlatformId;
 

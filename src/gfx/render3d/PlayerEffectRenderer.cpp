@@ -8,6 +8,7 @@
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
+#include "system/physics/PlayerCollisionShapeGeometry.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
@@ -15,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <initializer_list>
 
@@ -79,78 +81,100 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
         return;
     }
 
+    const float collisionScaleMultiplier =
+        player->GetCollisionScaleMultiplier();
     const float collisionWidth =
-        physicsSystem->GetPlayerCollisionWidth();
+        physicsSystem->GetPlayerCollisionWidth() *
+        collisionScaleMultiplier;
     const float collisionHeight =
-        physicsSystem->GetPlayerCollisionHeight();
+        physicsSystem->GetPlayerCollisionHeight() *
+        collisionScaleMultiplier;
     const float collisionDepth =
-        physicsSystem->GetPlayerCollisionDepth();
+        physicsSystem->GetPlayerCollisionDepth() *
+        collisionScaleMultiplier;
     if (collisionWidth <= 0.0f ||
         collisionHeight <= 0.0f ||
         collisionDepth <= 0.0f) {
         return;
     }
 
-    glm::vec3 up = player->GetUpVec();
-    if (glm::length(up) < 1e-6f) {
-        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::quat collisionOrientation = player->GetOrientation();
+    if (glm::length(collisionOrientation) < 1e-6f) {
+        collisionOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
     }
-    up = glm::normalize(up);
-
-    glm::vec3 forward = player->GetForwardVec();
-    if (glm::length(forward) < 1e-6f) {
-        const glm::vec3 referenceAxis =
-            std::abs(up.y) < 0.9f
-                ? glm::vec3(0.0f, 1.0f, 0.0f)
-                : glm::vec3(1.0f, 0.0f, 0.0f);
-        forward = glm::cross(up, referenceAxis);
-    }
-    forward = glm::normalize(forward);
-
-    glm::vec3 left = player->GetLeftVec();
-    if (glm::length(left) < 1e-6f) {
-        left = glm::cross(up, forward);
-    }
-    left = glm::normalize(left);
+    collisionOrientation = glm::normalize(collisionOrientation);
 
     const glm::vec3 collisionCenter =
         player->GetPos() +
-        up * physicsSystem->GetPlayerCollisionCenterHeight();
-    const float collisionHalfWidth = collisionWidth * 0.5f;
-    const float collisionHalfHeight = collisionHeight * 0.5f;
-    const float collisionHalfDepth = collisionDepth * 0.5f;
-
-    constexpr int circleSegmentCount = 64;
+        player->GetUpVec() *
+            physicsSystem->GetPlayerCollisionCenterHeight() *
+            collisionScaleMultiplier;
     const glm::vec4 collisionColor(0.1f, 0.9f, 1.0f, 0.9f);
 
-    const auto drawEllipse =
-        [this, &collisionColor](
-            const glm::vec3& ellipseCenter,
-            const glm::vec3& firstAxis,
-            const glm::vec3& secondAxis,
-            float firstRadius,
-            float secondRadius) {
-            std::vector<glm::vec3> ellipseVertices;
-            ellipseVertices.reserve(circleSegmentCount);
-
-            for (int segmentIndex = 0;
-                 segmentIndex < circleSegmentCount;
-                 ++segmentIndex) {
-                const float angleRadians =
-                    glm::two_pi<float>() *
-                    static_cast<float>(segmentIndex) /
-                    static_cast<float>(circleSegmentCount);
-                ellipseVertices.push_back(
-                    ellipseCenter +
-                    firstAxis * (std::cos(angleRadians) * firstRadius) +
-                    secondAxis * (std::sin(angleRadians) * secondRadius));
-            }
-
-            mRenderer->DrawAttackRangeVertices(
-                ellipseVertices,
-                GL_LINE_LOOP,
-                collisionColor);
+    const auto calculateWorldSurfacePoint =
+        [collisionWidth,
+         collisionHeight,
+         collisionDepth,
+         collisionCenter,
+         collisionOrientation](int latitudeIndex, int longitudeIndex) {
+            const glm::vec3 localSurfacePoint =
+                PlayerCollisionShapeGeometry::CalculateLocalSurfacePoint(
+                    collisionWidth,
+                    collisionHeight,
+                    collisionDepth,
+                    latitudeIndex,
+                    longitudeIndex);
+            return collisionCenter + collisionOrientation * localSurfacePoint;
         };
+
+    std::vector<glm::vec3> wireframeVertices;
+    const int latitudeSegmentCount =
+        PlayerCollisionShapeGeometry::LatitudeSegmentCount;
+    const int longitudeSegmentCount =
+        PlayerCollisionShapeGeometry::LongitudeSegmentCount;
+    const int latitudeEdgeCount =
+        (latitudeSegmentCount - 1) * longitudeSegmentCount;
+    const int longitudeEdgeCount =
+        latitudeSegmentCount * longitudeSegmentCount;
+    wireframeVertices.reserve(
+        static_cast<std::size_t>(
+            (latitudeEdgeCount + longitudeEdgeCount) * 2));
+
+    for (int latitudeIndex = 1;
+         latitudeIndex < latitudeSegmentCount;
+         ++latitudeIndex) {
+        for (int longitudeIndex = 0;
+             longitudeIndex < longitudeSegmentCount;
+             ++longitudeIndex) {
+            const int nextLongitudeIndex =
+                (longitudeIndex + 1) % longitudeSegmentCount;
+            wireframeVertices.push_back(
+                calculateWorldSurfacePoint(
+                    latitudeIndex,
+                    longitudeIndex));
+            wireframeVertices.push_back(
+                calculateWorldSurfacePoint(
+                    latitudeIndex,
+                    nextLongitudeIndex));
+        }
+    }
+
+    for (int longitudeIndex = 0;
+         longitudeIndex < longitudeSegmentCount;
+         ++longitudeIndex) {
+        for (int latitudeIndex = 0;
+             latitudeIndex < latitudeSegmentCount;
+             ++latitudeIndex) {
+            wireframeVertices.push_back(
+                calculateWorldSurfacePoint(
+                    latitudeIndex,
+                    longitudeIndex));
+            wireframeVertices.push_back(
+                calculateWorldSurfacePoint(
+                    latitudeIndex + 1,
+                    longitudeIndex));
+        }
+    }
 
     const GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
     GLfloat previousLineWidth = 1.0f;
@@ -159,60 +183,10 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
     glDisable(GL_DEPTH_TEST);
     glLineWidth(2.0f);
 
-    drawEllipse(
-        collisionCenter,
-        left,
-        up,
-        collisionHalfWidth,
-        collisionHalfHeight);
-    drawEllipse(
-        collisionCenter,
-        left,
-        forward,
-        collisionHalfWidth,
-        collisionHalfDepth);
-    drawEllipse(
-        collisionCenter,
-        up,
-        forward,
-        collisionHalfHeight,
-        collisionHalfDepth);
-
-    constexpr float sectionOffsetRatio = 0.55f;
-    constexpr float sectionRadiusRatio = 0.8351647f;
-
-    for (float directionSign : {-1.0f, 1.0f}) {
-        drawEllipse(
-            collisionCenter +
-                up *
-                    (collisionHalfHeight *
-                     sectionOffsetRatio *
-                     directionSign),
-            left,
-            forward,
-            collisionHalfWidth * sectionRadiusRatio,
-            collisionHalfDepth * sectionRadiusRatio);
-        drawEllipse(
-            collisionCenter +
-                left *
-                    (collisionHalfWidth *
-                     sectionOffsetRatio *
-                     directionSign),
-            up,
-            forward,
-            collisionHalfHeight * sectionRadiusRatio,
-            collisionHalfDepth * sectionRadiusRatio);
-        drawEllipse(
-            collisionCenter +
-                forward *
-                    (collisionHalfDepth *
-                     sectionOffsetRatio *
-                     directionSign),
-            left,
-            up,
-            collisionHalfWidth * sectionRadiusRatio,
-            collisionHalfHeight * sectionRadiusRatio);
-    }
+    mRenderer->DrawAttackRangeVertices(
+        wireframeVertices,
+        GL_LINES,
+        collisionColor);
 
     glLineWidth(previousLineWidth);
     if (wasDepthTestEnabled == GL_TRUE) {

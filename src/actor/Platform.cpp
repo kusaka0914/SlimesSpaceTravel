@@ -168,6 +168,31 @@ void Platform::RemovePressureSwitchComponent()
     mPressureSwitchComponent = nullptr;
 }
 
+PlatformLatchedGroupSwitchComponent*
+Platform::AddLatchedGroupSwitchComponent()
+{
+    if (mLatchedGroupSwitchComponent) {
+        return mLatchedGroupSwitchComponent;
+    }
+
+    auto component =
+        std::make_unique<PlatformLatchedGroupSwitchComponent>(this);
+    mLatchedGroupSwitchComponent = component.get();
+    AddComponent(std::move(component));
+    return mLatchedGroupSwitchComponent;
+}
+
+void Platform::RemoveLatchedGroupSwitchComponent()
+{
+    if (!mLatchedGroupSwitchComponent) {
+        return;
+    }
+
+    mLatchedGroupSwitchComponent->ClearTargetRuntimeStates();
+    RemoveComponent(mLatchedGroupSwitchComponent);
+    mLatchedGroupSwitchComponent = nullptr;
+}
+
 void Platform::SetComponentOpacity(const Component* component, float opacity)
 {
     if (!component) return;

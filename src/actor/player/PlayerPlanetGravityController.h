@@ -22,6 +22,7 @@ public:
     void OnRespawned();
 
     bool IsJumpGravityActive() const { return mIsJumpSwitchingActive; }
+    bool IsEllipseAirborneGravityActive(const Player& player) const;
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
 
 private:
@@ -31,7 +32,18 @@ private:
 
     void ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const;
 
-    void SmoothAirborneUpVec(Player& player, float deltaTime);
+    void UpdateEllipseAirborneGravity(
+        Player& player,
+        bool isDodging,
+        float deltaTime);
+    void ApplyEllipseSurfaceAttraction(
+        Player& player,
+        const Planet& planet,
+        float deltaTime) const;
+    void SmoothAirborneUpVec(
+        Player& player,
+        const glm::vec3& targetUp,
+        float deltaTime);
 
     Planet* ResolvePlanetFromGroundActor(Actor* groundActor) const;
 
@@ -49,6 +61,12 @@ private:
     // 3.0f: ふわっと自然
     // 5.0f: 比較的速い
     static constexpr float gravityTurnSpeed = 4.0f;
+    static constexpr float airborneMaximumTurnDegreesPerSecond = 120.0f;
+
+    static constexpr float ellipseAttractionStartSurfaceDistance = 1.25f;
+    static constexpr float ellipseAttractionPerDistance = 10.0f;
+    static constexpr float ellipseNormalTransitionAcceleration = 32.0f;
+    static constexpr float ellipseMaximumAttractionAcceleration = 50.0f;
 
     static constexpr float fallbackDelay = 2.0f;
 

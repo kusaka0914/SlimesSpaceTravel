@@ -14,10 +14,15 @@ glm::quat CreateSurfaceBaseOrientation(Actor* actor)
     glm::vec3 baseUp(0.0f, 1.0f, 0.0f);
     Planet* planet = actor->GetCurrentPlanet();
 
-    if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
-        const glm::vec3 toActor = actor->GetPos() - planet->GetPos();
-        if (glm::length(toActor) > 1e-6f) {
-            baseUp = glm::normalize(toActor);
+    if (planet) {
+        if (planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+            const glm::vec3 toActor = actor->GetPos() - planet->GetPos();
+            if (glm::length(toActor) > 1e-6f) {
+                baseUp = glm::normalize(toActor);
+            }
+        } else if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+            baseUp =
+                planet->CalculateEllipseVerticalDirection(actor->GetPos());
         }
     }
 

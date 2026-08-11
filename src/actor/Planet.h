@@ -24,6 +24,13 @@ class TutorialTrigger;
 
 class Planet : public Actor {
 public:
+    struct EllipseSurfaceProjection {
+        glm::vec3 position{0.0f};
+        glm::vec3 outwardNormal{0.0f, 1.0f, 0.0f};
+        float distance = 0.0f;
+        bool isOutside = true;
+    };
+
     enum class RocketSpawnCondition { AllEnemiesDead, AllBoatPartsCollected, None };
 
     enum class PlanetShape { Normal, Sphere, Ellipse };
@@ -37,6 +44,10 @@ public:
     void OnEnemyDead();
 
     glm::vec3 CalculateSurfacePos(float theta, float phi, float height) const;
+    glm::vec3 CalculateEllipseVerticalDirection(
+        const glm::vec3& worldPosition) const;
+    EllipseSurfaceProjection CalculateEllipseSurfaceProjection(
+        const glm::vec3& worldPosition) const;
 
     void AddEnemy(Enemy* enemy) { mActorRegistry.AddEnemy(enemy); }
     void AddBoat(Boat* boat) { mActorRegistry.AddBoat(boat); }
@@ -91,17 +102,6 @@ public:
     }
     bool HasAppearedRocket() const;
 
-    void SetPlanetShape(const std::string& planetShape)
-    {
-        if (planetShape == "Normal") {
-            mPlanetShape = PlanetShape::Normal;
-        } else if (planetShape == "Sphere") {
-            mPlanetShape = PlanetShape::Sphere;
-        } else if (planetShape == "Ellipse") {
-            mPlanetShape = PlanetShape::Ellipse;
-        }
-    }
-
     Stage* GetCurrentStage() const { return mCurrentStage; }
 
     int GetRemainBoatPartsCount() const { return mProgressController.GetRemainBoatPartsCount(); }
@@ -132,7 +132,7 @@ public:
 
     Key* GetKey() const { return mActorRegistry.GetKey(); }
     Star* GetStar() const { return mActorRegistry.GetStar(); }
-    PlanetShape GetPlanetShape() const { return mPlanetShape; }
+    PlanetShape GetPlanetShape() const;
 
 private:
     int mStageNum;
@@ -144,7 +144,6 @@ private:
     PlanetActorRegistry mActorRegistry;
     PlanetProgressController mProgressController;
 
-    PlanetShape mPlanetShape;
     std::string mBackTextureOverridePath;
     float mTextureSideBlendWidth = 0.05f;
 };

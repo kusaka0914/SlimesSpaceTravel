@@ -43,6 +43,8 @@ public:
     void OnEnemyLaunched();
     void OnStrongAttacked();
     void OnLanded();
+    void OnPlayerSwitchSucceeded();
+    void OnPlayerSplitMergeSucceeded();
     void OnPlayerDied();
 
     bool CanUpdateWorld() const { return IsPlaying() || IsFocusing(); }
@@ -62,6 +64,7 @@ public:
     bool IsWaitingForTutorialPlayerAction() const;
     bool IsWaitingForTutorialPlayerSwitch() const;
     bool IsWaitingForTutorialPlayerJump() const;
+    bool IsWaitingForTutorialPlayerSplitMerge() const;
 
     bool HasActiveTutorial() const;
     bool IsTutorialActive(

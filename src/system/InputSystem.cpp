@@ -26,6 +26,7 @@ void InputSystem::ProcessGameInput()
 
     ProcessDebugReloadInput();
     ProcessPlayerJoinInput();
+    ProcessPlayerSplitInput();
     ProcessPlayerSwitchInput();
     ProcessSceneConfirmInput();
     ProcessDebugEditorToggleInput();
@@ -120,17 +121,36 @@ void InputSystem::ProcessPlayerSwitchInput()
     constexpr Sint16 triggerPressedThreshold = 16000;
     SDL_GameController* controller = mGame->GetSdlController();
     const bool switchPressed =
-        glfwGetKey(mGame->GetWindow(), GLFW_KEY_O) == GLFW_PRESS ||
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_Y) == GLFW_PRESS ||
         (controller &&
          SDL_GameControllerGetAxis(
              controller,
-             SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > triggerPressedThreshold);
+             SDL_CONTROLLER_AXIS_TRIGGERLEFT) > triggerPressedThreshold);
 
     if (switchPressed && !mPlayerSwitchPressedPrev) {
         mGame->SwitchControlledPlayer();
     }
 
     mPlayerSwitchPressedPrev = switchPressed;
+}
+
+void InputSystem::ProcessPlayerSplitInput()
+{
+    constexpr Sint16 triggerPressedThreshold = 16000;
+    SDL_GameController* controller = mGame->GetSdlController();
+    const bool splitPressed =
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_O) == GLFW_PRESS ||
+        (controller &&
+         SDL_GameControllerGetAxis(
+             controller,
+             SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >
+             triggerPressedThreshold);
+
+    if (splitPressed && !mPlayerSplitPressedPrev) {
+        mGame->TogglePlayerSplit();
+    }
+
+    mPlayerSplitPressedPrev = splitPressed;
 }
 
 void InputSystem::ProcessSceneConfirmInput()

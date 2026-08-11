@@ -207,9 +207,9 @@ tutorials:
         text: "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。"
         advance: confirm
       - id: heal
-        text: "回復ボタンを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
-        controllerText: "まずRを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
-        keyboardText: "まずMを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        text: "回復操作をするとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        controllerText: "まずLを押しながらAを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        keyboardText: "まずNを押しながらSpaceを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
         advance: confirm
       - id: automatic_attack
         text: "特殊入力と弱攻撃でジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
@@ -316,18 +316,60 @@ tutorials:
         advance: confirm
         focus:
           sequence: platforms
-          index: 4
+          index: 2
       - id: blocked_route
-        text: "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+        text: "誰かがスイッチに乗ってくれたら\nその間に進めそうだけど...ここには君だけ..."
         advance: confirm
       - id: switch_player
         text: "そうだ！君はスライムだから分裂できるんじゃない？\n操作するスライムを切り替えてみようよ！"
         controllerText: "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
         keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nOを押して分身を作って、切り替えてみようよ！"
-        advance: playerSwitch
+        advance: playerSplitMerge
       - id: switched
-        text: "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+        text: "おっ！分裂できたね！\nちょっと小さくなったけどそっくりだ！"
         advance: confirm
       - id: find_switch
-        text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+        text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗ってみよう！"
+        advance: confirm
+  - id: switch_success
+    name: スイッチ押し成功
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: page_1
+        text: "スイッチ押せたね！\nこれでさっきの足場が見えるようになったはず！"
+        advance: confirm
+      - id: page_2
+        text: ""
+        controllerText: さっそくZLで切り替えて見てみようよ！
+        keyboardText: さっそくYで切り替えて見てみようよ！
+        advance: playerSwitch
+      - id: page_3
+        text: "ナイス切り替え！\nこれで分身がスイッチに乗っている間に進めるよ！"
+        advance: confirm
+      - id: page_4
+        text: さあ！先に進んでみよう！
+        advance: confirm
+  - id: union
+    name: 合体
+    repeat: oncePerSession
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: page_1
+        text: ふぅ～！ようやく登ってこれたね！
+        advance: confirm
+      - id: page_2
+        text: "ってあれ？スイッチが2つあるよ？\n分身を連れてきて一緒に押したいね...！"
+        advance: confirm
+      - id: page_3
+        text: ""
+        controllerText: じゃあもう一度ZRを押して合体してみよう！
+        keyboardText: じゃあもう一度Oを押して合体してみよう！
+        advance: playerSplitMerge
+      - id: page_4
+        text: "ナイス合体！これで1つになれたから\nもう一度分身して、2人でスイッチを押そう！"
         advance: confirm

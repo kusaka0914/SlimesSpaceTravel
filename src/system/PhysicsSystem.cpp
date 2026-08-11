@@ -2,15 +2,16 @@
 
 #include "Game.h"
 #include "Stage.h"
+#include "actor/Actor.h"
 #include "system/physics/ActorCollisionResolver.h"
 #include "system/physics/EditorPickSystem.h"
 #include "system/physics/FallRespawnTriggerSystem.h"
+#include "system/physics/PlayerCollisionShapeGeometry.h"
 #include "system/physics/PhysicsWorldBuilder.h"
 #include "system/physics/StageCollisionBuilder.h"
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
-#include <cmath>
 #include <memory>
 
 PhysicsSystem::PhysicsSystem(Game* game)
@@ -87,38 +88,28 @@ void PhysicsSystem::CreateWorld()
 
 void PhysicsSystem::CreatePlayerShape()
 {
-    constexpr int latitudeSegmentCount = 8;
-    constexpr int longitudeSegmentCount = 16;
-    constexpr float pi = 3.14159265358979323846f;
-
-    const float halfWidth = mPlayerCollisionWidth * 0.5f;
-    const float halfHeight = mPlayerCollisionHeight * 0.5f;
-    const float halfDepth = mPlayerCollisionDepth * 0.5f;
-
     auto ellipsoidShape = std::make_unique<btConvexHullShape>();
     ellipsoidShape->setMargin(0.0f);
 
     for (int latitudeIndex = 0;
-         latitudeIndex <= latitudeSegmentCount;
+         latitudeIndex <= PlayerCollisionShapeGeometry::LatitudeSegmentCount;
          ++latitudeIndex) {
-        const float latitudeRadians =
-            -0.5f * pi +
-            pi * static_cast<float>(latitudeIndex) /
-                static_cast<float>(latitudeSegmentCount);
-        const float heightRatio = std::sin(latitudeRadians);
-        const float ringRadiusRatio = std::cos(latitudeRadians);
-
         for (int longitudeIndex = 0;
-             longitudeIndex < longitudeSegmentCount;
+             longitudeIndex < PlayerCollisionShapeGeometry::LongitudeSegmentCount;
              ++longitudeIndex) {
-            const float longitudeRadians =
-                2.0f * pi * static_cast<float>(longitudeIndex) /
-                static_cast<float>(longitudeSegmentCount);
-            const btVector3 surfacePoint(
-                halfWidth * ringRadiusRatio * std::cos(longitudeRadians),
-                halfHeight * heightRatio,
-                halfDepth * ringRadiusRatio * std::sin(longitudeRadians));
-            ellipsoidShape->addPoint(surfacePoint, false);
+            const glm::vec3 localSurfacePoint =
+                PlayerCollisionShapeGeometry::CalculateLocalSurfacePoint(
+                    mPlayerCollisionWidth,
+                    mPlayerCollisionHeight,
+                    mPlayerCollisionDepth,
+                    latitudeIndex,
+                    longitudeIndex);
+            ellipsoidShape->addPoint(
+                btVector3(
+                    localSurfacePoint.x,
+                    localSurfacePoint.y,
+                    localSurfacePoint.z),
+                false);
         }
     }
 
@@ -219,9 +210,19 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep
     const glm::vec3& from,
     const glm::vec3& to) const
 {
+    if (!mPlayerShape) {
+        return std::nullopt;
+    }
+
+    const float collisionScaleMultiplier =
+        actor ? actor->GetCollisionScaleMultiplier() : 1.0f;
+    btUniformScalingShape scaledPlayerShape(
+        mPlayerShape.get(),
+        collisionScaleMultiplier);
+
     return mFallRespawnTriggerSystem->CheckFallRespawnBySweep(
         mBulletWorld.get(),
-        mPlayerShape.get(),
+        &scaledPlayerShape,
         actor,
         from,
         to,
@@ -238,13 +239,19 @@ ActorMovementCollisionResult PhysicsSystem::ResolveMovementCollision(
         return {desiredPos, glm::vec3(0.0f), false};
     }
 
+    const float collisionScaleMultiplier =
+        actor ? actor->GetCollisionScaleMultiplier() : 1.0f;
+    btUniformScalingShape scaledPlayerShape(
+        mPlayerShape.get(),
+        collisionScaleMultiplier);
+
     SyncKinematicBodies();
     return mActorCollisionResolver->CheckCollision(
         mBulletWorld.get(),
-        mPlayerShape.get(),
+        &scaledPlayerShape,
         actor,
         moveDelta,
         desiredPos,
-        mPlayerCollisionCenterHeight,
+        mPlayerCollisionCenterHeight * collisionScaleMultiplier,
         actorCollisionFilter);
 }
