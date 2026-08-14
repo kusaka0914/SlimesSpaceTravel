@@ -45,7 +45,8 @@ void EnemyFanAttackAction::Enter(EnemyBehaviorContext& context)
 {
     mHasAppliedDamage = false;
 
-    if (context.stateMachine.GetActionState() == EnemyStateMachine::ActionState::PreparingAttack) {
+    if (context.stateMachine.GetActionState() == EnemyStateMachine::ActionState::PreparingAttack &&
+        !context.stateMachine.ShouldPreservePreparationTimer()) {
         context.status.SetStandByAttackTimer(mWindUpDuration);
     }
 }

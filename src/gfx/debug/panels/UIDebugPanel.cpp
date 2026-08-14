@@ -324,6 +324,10 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     std::array<char, 128> idBuffer = {};
     std::array<char, 128> displayNameBuffer = {};
     std::array<char, 2048> textBuffer = {};
+    std::array<char, 2048> keyboardTextBuffer = {};
+    std::array<char, 2048> gameControllerTextBuffer = {};
+    std::array<char, 2048> keyboardModifierTextBuffer = {};
+    std::array<char, 2048> gameControllerModifierTextBuffer = {};
 
     ImGui::Text("編集: %s.%s", element.screen.c_str(), element.id.c_str());
     ImGui::SeparatorText("名前とID");
@@ -371,6 +375,15 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     ImGui::SliderFloat("X", &element.xRatio, -0.5f, 1.5f, "%.4f");
     ImGui::SliderFloat("Y", &element.yRatio, -0.25f, 1.0f, "%.4f");
 
+    ImGui::SeparatorText("入力デバイス別表示");
+    ImGui::Checkbox(
+        "キーボード・ゲームパッドで内容を切り替える",
+        &element.usesInputDeviceVariants);
+    if (element.usesInputDeviceVariants) {
+        ImGui::TextDisabled(
+            "デバイス用の内容が空の場合は共通の内容を表示します。");
+    }
+
     if (element.type == UILoadSystem::CustomElementType::Text) {
         ImGui::SliderFloat("文字サイズ", &element.textScaleRatio, 0.00005f, 0.003f, "%.7f");
         ImGui::ColorEdit4("文字色", element.color.data());
@@ -406,11 +419,70 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
 
         std::snprintf(textBuffer.data(), textBuffer.size(), "%s", element.text.c_str());
         if (ImGui::InputTextMultiline(
-                "内容",
+                "共通テキスト",
                 textBuffer.data(),
                 textBuffer.size(),
                 ImVec2(-1.0f, 90.0f))) {
             element.text = textBuffer.data();
+        }
+        if (element.usesInputDeviceVariants) {
+            std::snprintf(
+                keyboardTextBuffer.data(),
+                keyboardTextBuffer.size(),
+                "%s",
+                element.keyboardText.c_str());
+            if (ImGui::InputTextMultiline(
+                    "キーボード用テキスト",
+                    keyboardTextBuffer.data(),
+                    keyboardTextBuffer.size(),
+                    ImVec2(-1.0f, 70.0f))) {
+                element.keyboardText = keyboardTextBuffer.data();
+            }
+
+            std::snprintf(
+                gameControllerTextBuffer.data(),
+                gameControllerTextBuffer.size(),
+                "%s",
+                element.gameControllerText.c_str());
+            if (ImGui::InputTextMultiline(
+                    "ゲームパッド用テキスト",
+                    gameControllerTextBuffer.data(),
+                    gameControllerTextBuffer.size(),
+                    ImVec2(-1.0f, 70.0f))) {
+                element.gameControllerText =
+                    gameControllerTextBuffer.data();
+            }
+        }
+
+        ImGui::SeparatorText("L系入力を押している間");
+        ImGui::TextDisabled(
+            "デバイス別表示のチェックに関係なく、L/N入力中に使用します。");
+        std::snprintf(
+            keyboardModifierTextBuffer.data(),
+            keyboardModifierTextBuffer.size(),
+            "%s",
+            element.keyboardModifierText.c_str());
+        if (ImGui::InputTextMultiline(
+                "キーボード用（N長押し）",
+                keyboardModifierTextBuffer.data(),
+                keyboardModifierTextBuffer.size(),
+                ImVec2(-1.0f, 70.0f))) {
+            element.keyboardModifierText =
+                keyboardModifierTextBuffer.data();
+        }
+
+        std::snprintf(
+            gameControllerModifierTextBuffer.data(),
+            gameControllerModifierTextBuffer.size(),
+            "%s",
+            element.gameControllerModifierText.c_str());
+        if (ImGui::InputTextMultiline(
+                "ゲームパッド用（L長押し）",
+                gameControllerModifierTextBuffer.data(),
+                gameControllerModifierTextBuffer.size(),
+                ImVec2(-1.0f, 70.0f))) {
+            element.gameControllerModifierText =
+                gameControllerModifierTextBuffer.data();
         }
     } else {
         ImGui::SliderFloat("幅", &element.widthRatio, 0.001f, 1.5f, "%.4f");
@@ -419,8 +491,36 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
         if (element.type == UILoadSystem::CustomElementType::Panel) {
             ImGui::ColorEdit4("色", element.color.data());
         } else {
-            ImGui::Checkbox("画像を上下反転して補正", &element.flipVertical);
-            DrawAssetPicker(element);
+            std::string* editedTexturePath = &element.texturePath;
+            bool* editedFlipVertical = &element.flipVertical;
+            const char* imageSectionLabel = "共通画像アセット";
+            if (element.usesInputDeviceVariants) {
+                const char* variantLabels[] = {
+                    "共通（未設定時の代替）",
+                    "キーボード用",
+                    "ゲームパッド用",
+                };
+                ImGui::Combo(
+                    "編集する画像",
+                    &mSelectedInputDeviceImageVariant,
+                    variantLabels,
+                    IM_ARRAYSIZE(variantLabels));
+                if (mSelectedInputDeviceImageVariant == 1) {
+                    editedTexturePath = &element.keyboardTexturePath;
+                    editedFlipVertical = &element.keyboardFlipVertical;
+                    imageSectionLabel = "キーボード用画像アセット";
+                } else if (mSelectedInputDeviceImageVariant == 2) {
+                    editedTexturePath = &element.gameControllerTexturePath;
+                    editedFlipVertical =
+                        &element.gameControllerFlipVertical;
+                    imageSectionLabel = "ゲームパッド用画像アセット";
+                }
+            }
+            DrawAssetPicker(
+                *editedTexturePath,
+                *editedFlipVertical,
+                "customUITexture",
+                imageSectionLabel);
         }
     }
 
@@ -575,23 +675,29 @@ void UIDebugPanel::DrawCodeBoundElementProtection()
         "ゲームコードがIDを参照するUIのため、複製と削除は保護されています。");
 }
 
-void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
+void UIDebugPanel::DrawAssetPicker(
+    std::string& texturePath,
+    bool& flipVertical,
+    const char* widgetId,
+    const char* sectionLabel)
 {
     if (!mContext.assetCatalog) {
         ImGui::TextDisabled("アセットカタログを利用できません");
         return;
     }
     mContext.assetCatalog->EnsureScanned();
+    ImGui::PushID(widgetId);
 
-    ImGui::SeparatorText("画像アセット");
-    ImGui::TextWrapped("選択中: %s", element.texturePath.empty() ? "なし" : element.texturePath.c_str());
-    ImGui::Button("画像アセットをここへドロップ##customUITexture", ImVec2(-1.0f, 0.0f));
+    ImGui::SeparatorText(sectionLabel);
+    ImGui::Checkbox("画像を上下反転して補正", &flipVertical);
+    ImGui::TextWrapped("選択中: %s", texturePath.empty() ? "なし" : texturePath.c_str());
+    ImGui::Button("画像アセットをここへドロップ", ImVec2(-1.0f, 0.0f));
     std::string droppedTexturePath;
     if (EditorAssetDragDrop::AcceptPath(
             EditorAssetType::Texture,
             droppedTexturePath)) {
-        element.texturePath = droppedTexturePath;
-        element.flipVertical = droppedTexturePath != "textures/guard.png";
+        texturePath = droppedTexturePath;
+        flipVertical = droppedTexturePath != "textures/guard.png";
         if (!mContext.uiRenderer->RegisterCustomUITexture(
                 droppedTexturePath)) {
             mStatusMessage =
@@ -617,9 +723,9 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
             continue;
         }
 
-        if (ImGui::Selectable(asset.c_str(), element.texturePath == asset)) {
-            element.texturePath = asset;
-            element.flipVertical = asset != "textures/guard.png";
+        if (ImGui::Selectable(asset.c_str(), texturePath == asset)) {
+            texturePath = asset;
+            flipVertical = asset != "textures/guard.png";
             if (!mContext.uiRenderer->RegisterCustomUITexture(asset)) {
                 mStatusMessage = "画像の読込に失敗しました: " + asset;
             }
@@ -627,12 +733,12 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
     }
     ImGui::EndChild();
 
-    if (!element.texturePath.empty()) {
-        mContext.uiRenderer->RegisterCustomUITexture(element.texturePath);
-        const GLuint texture = mContext.uiRenderer->GetCustomUITextureHandle(element.texturePath);
+    if (!texturePath.empty()) {
+        mContext.uiRenderer->RegisterCustomUITexture(texturePath);
+        const GLuint texture = mContext.uiRenderer->GetCustomUITextureHandle(texturePath);
         if (texture != 0) {
-            const ImVec2 uv0 = element.flipVertical ? ImVec2(0.0f, 1.0f) : ImVec2(0.0f, 0.0f);
-            const ImVec2 uv1 = element.flipVertical ? ImVec2(1.0f, 0.0f) : ImVec2(1.0f, 1.0f);
+            const ImVec2 uv0 = flipVertical ? ImVec2(0.0f, 1.0f) : ImVec2(0.0f, 0.0f);
+            const ImVec2 uv1 = flipVertical ? ImVec2(1.0f, 0.0f) : ImVec2(1.0f, 1.0f);
             ImGui::TextUnformatted("プレビュー");
             ImGui::Image(
                 static_cast<ImTextureID>(texture),
@@ -641,6 +747,7 @@ void UIDebugPanel::DrawAssetPicker(UILoadSystem::CustomElement& element)
                 uv1);
         }
     }
+    ImGui::PopID();
 }
 
 void UIDebugPanel::SaveAllUI(UILoadSystem* uiLoadSystem)

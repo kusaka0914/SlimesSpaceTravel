@@ -55,6 +55,11 @@ void DebugCamera::ProcessInput()
         return;
     }
 
+    if (mGame->IsEditorKeyboardInputCaptured()) {
+        mWasRotatingWithMouse = false;
+        return;
+    }
+
     GLFWwindow* window = mGame->GetWindow();
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {

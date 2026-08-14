@@ -1,12 +1,25 @@
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
 
 #include "actor/enemy/EnemyConfig.h"
+#include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "actor/enemy/behavior/EnemyBehaviorActionFactory.h"
 
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <string_view>
+
+namespace {
+bool IsAttackAction(const EnemyBehaviorAction& action)
+{
+    const std::string_view actionType = action.GetType();
+    return actionType == "meleeAttack" ||
+           actionType == "tripleChargeAttack" ||
+           actionType == "fanAttack" ||
+           actionType == "radialAttack";
+}
+} // namespace
 
 EnemyBehaviorController::EnemyBehaviorController()
     : mRandomEngine(std::random_device{}())
@@ -62,12 +75,17 @@ void EnemyBehaviorController::Update(Enemy& enemy, EnemyStatus& status, EnemyMov
         return;
     }
 
+    const bool wasUpdatingAttack = IsAttackAction(*mCurrentAction);
     const EnemyBehaviorActionResult result = mCurrentAction->Update(context, deltaTime);
     if (result == EnemyBehaviorActionResult::Running && mCurrentAction->CanContinue(context)) {
         return;
     }
 
     SwitchAction(nullptr, context);
+    if (wasUpdatingAttack &&
+        stateMachine.TryStartPostAttackRetreat(enemy, status)) {
+        return;
+    }
     SwitchAction(SelectAction(context), context);
 }
 

@@ -14,8 +14,22 @@ public:
     void FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus& status);
 
     void MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime);
-    void MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
-                              float deltaTime);
+    bool MoveTowardPlayerQuickly(
+        Enemy& enemy,
+        const EnemyStatus& status,
+        float speed,
+        float stopDistance,
+        float deltaTime);
+    float MoveAwayFromPlayerQuickly(
+        Enemy& enemy,
+        const EnemyStatus& status,
+        float speed,
+        float deltaTime);
+    void MoveDuringAttacking(
+        Enemy& enemy,
+        const EnemyStatus& status,
+        const EnemyStateMachine& stateMachine,
+        float deltaTime);
     void MoveDuringKnockBack(Enemy& enemy, const EnemyStatus& status, float deltaTime);
     void MoveDuringDying(Enemy& enemy, float deltaTime);
     void ApplyAirDodgePush(

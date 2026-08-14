@@ -10,6 +10,8 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -90,6 +92,24 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
                 pickTriangleMeshes);
         }
 
+        for (JewelItem* jewelItem : planet->GetJewelItems()) {
+            CreatePickBody(
+                world,
+                jewelItem,
+                pickObjects,
+                pickShapes,
+                pickTriangleMeshes);
+        }
+
+        for (HazardActor* hazardActor : planet->GetHazardActors()) {
+            CreatePickBody(
+                world,
+                hazardActor,
+                pickObjects,
+                pickShapes,
+                pickTriangleMeshes);
+        }
+
         if (Star* star = planet->GetStar()) {
             CreatePickBody(world, star, pickObjects, pickShapes, pickTriangleMeshes);
         }
@@ -163,15 +183,18 @@ bool EditorPickSystem::CreateMeshPickBody(btDiscreteDynamicsWorld* world, Actor*
     }
 
     const std::string modelPath = "../assets/models/" + actor->GetModelPath();
-    std::vector<float> positions;
-    std::vector<unsigned int> indices;
-
-    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(modelPath.c_str(), positions, indices) ||
-        positions.size() < 9 || indices.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
+            modelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
+        collisionGeometry->indices.size() < 3) {
         return false;
     }
 
-    auto triangleMesh = CreateTriangleMesh(actor->GetScale(), positions, indices);
+    auto triangleMesh = CreateTriangleMesh(
+        actor->GetScale(),
+        collisionGeometry->positions,
+        collisionGeometry->indices);
     if (!triangleMesh) {
         return false;
     }

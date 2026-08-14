@@ -37,6 +37,7 @@ public:
     bool HasBufferedAttackInput() const { return mBufferedAttackInput != PlayerAttackInputKind::None; }
     void ConsumeBufferedAttackInput();
     void ClearAttackBuffer();
+    void SuppressJumpUntilReleased() { mJumpPressedPrev = true; }
 
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }

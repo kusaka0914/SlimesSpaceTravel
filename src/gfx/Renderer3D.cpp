@@ -299,7 +299,8 @@ void Renderer3D::Draw() const
         return;
     }
 
-    if (mGame->GetSceneSystem()->IsTitle()) {
+    if (mGame->GetSceneSystem()->IsTitle() ||
+        mGame->GetSceneSystem()->IsBattleStyleSelection()) {
         return;
     }
 

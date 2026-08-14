@@ -104,9 +104,18 @@ void StagePlanetPanel::Draw()
 
             if (centerChanged) {
                 planet->SetPos(center);
-                StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
-                    planet,
-                    center - previousCenter);
+                if (mContext.planetMoveMode ==
+                    PlanetMoveMode::WithBoundActors) {
+                    StageActorPlanetBindingService::
+                        TranslateActorsBoundToPlanet(
+                            planet,
+                            center - previousCenter);
+                } else {
+                    StageActorPlanetBindingService::
+                        PreserveBoundActorWorldPositionsAfterPlanetMove(
+                            planet,
+                            center - previousCenter);
+                }
                 planet->CaptureEditorAuthoredPosition();
                 mHasPendingTransformEdit = true;
             }
@@ -181,6 +190,33 @@ void StagePlanetPanel::Draw()
                 DrawBackTexturePicker(planet, i);
             }
             DrawTextureTilingEditor(planet, i);
+
+            ImGui::SeparatorText("近接時の重力");
+            bool canAttractNearbyPlayer =
+                planet->CanAttractNearbyPlayer();
+            if (ImGui::Checkbox(
+                    ("近づいたプレイヤーを吸い付ける##planetNearbyGravity" +
+                     std::to_string(i))
+                        .c_str(),
+                    &canAttractNearbyPlayer)) {
+                planet->SetCanAttractNearbyPlayer(
+                    canAttractNearbyPlayer);
+            }
+            ImGui::TextDisabled(
+                "OFFでも、ロケット移動や明示的な所属変更ではこの惑星へ移動できます。");
+
+            bool shouldReactToOverheadGravityRay =
+                planet->ShouldReactToOverheadGravityRay();
+            if (ImGui::Checkbox(
+                    ("頭上重力レイに反応する##planetOverheadGravityRay" +
+                     std::to_string(i))
+                        .c_str(),
+                    &shouldReactToOverheadGravityRay)) {
+                planet->SetShouldReactToOverheadGravityRay(
+                    shouldReactToOverheadGravityRay);
+            }
+            ImGui::TextDisabled(
+                "ONにすると、空中のプレイヤーが頭上からこの惑星を検出した際に、当たった面の法線へ重力方向を切り替えます。");
 
             ImGui::SeparatorText("ロケット出現条件");
             const char* spawnConditionLabels[] = {
@@ -335,6 +371,10 @@ bool StagePlanetPanel::SaveYaml(bool shouldSaveEditorTransform)
         }
         config["planets"][i]["textureSideBlendWidth"] =
             planet->GetTextureSideBlendWidth();
+        config["planets"][i]["canAttractNearbyPlayer"] =
+            planet->CanAttractNearbyPlayer();
+        config["planets"][i]["reactsToOverheadGravityRay"] =
+            planet->ShouldReactToOverheadGravityRay();
 
         config["planets"][i]["rocketSpawnCondition"] =
             planet->GetRocketSpawnCondition();

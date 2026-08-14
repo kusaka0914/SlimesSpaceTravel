@@ -68,9 +68,10 @@ void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float 
 
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,
+                                         bool didHitHazardActor,
                                          float deltaTime) const
 {
-    if (hitEnemies.empty()) {
+    if (hitEnemies.empty() && !didHitHazardActor) {
         combat.StartAfterAttackReaction(player, movement, status);
         player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
 
@@ -79,6 +80,20 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         }
 
         combat.ResetGroundAttackCombo();
+        return;
+    }
+
+    if (hitEnemies.empty()) {
+        player.GetGame()->OnPlayerAttackHit(
+            movement.GetPlayerNum());
+        combat.StartAfterAttackReaction(
+            player,
+            movement,
+            status);
+        player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
+        if (combat.GetAttackComboIndex() == 3) {
+            combat.ResetGroundAttackCombo();
+        }
         return;
     }
 
@@ -152,8 +167,10 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
 {
     (void)deltaTime;
 
-    constexpr float groundedEnemyDamage = 30.0f;
-    constexpr float airborneEnemyDamage = 50.0f;
+    const float groundedEnemyDamage =
+        combat.GetNormalAttack();
+    const float airborneEnemyDamage =
+        combat.GetStrongAttack();
 
     bool didHitEnemy = false;
     for (Enemy* enemy : hitEnemies) {
@@ -229,8 +246,12 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
 }
 
 void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge& jewelGauge,
-                                                const std::vector<Enemy*>& hitEnemies, float deltaTime) const
+                                                const std::vector<Enemy*>& hitEnemies,
+                                                float chargedAttackDamage,
+                                                float deltaTime) const
 {
+    constexpr float counterDamageMultiplier = 2.0f;
+
     for (Enemy* enemy : hitEnemies) {
         if (enemy->GetIsDead()) {
             continue;
@@ -243,12 +264,20 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
         }
 
         if (enemy->GetCanCountered()) {
-            ApplyDamageWithHitEffect(*enemy, 600.0f, player, 1.7f);
+            ApplyDamageWithHitEffect(
+                *enemy,
+                chargedAttackDamage * counterDamageMultiplier,
+                player,
+                1.7f);
             enemy->FlipCanCountered();
             jewelGauge.RestoreFull();
             player.GetGame()->GetAudioSystem()->PlaySE("just_attack_se");
         } else {
-            ApplyDamageWithHitEffect(*enemy, 300.0f, player, 1.45f);
+            ApplyDamageWithHitEffect(
+                *enemy,
+                chargedAttackDamage,
+                player,
+                1.45f);
         }
     }
 }

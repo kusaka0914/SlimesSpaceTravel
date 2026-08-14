@@ -9,6 +9,7 @@ public:
     enum class SceneState {
         None,
         Title,
+        BattleStyleSelection,
         Opening,
         Talking,
         Playing,

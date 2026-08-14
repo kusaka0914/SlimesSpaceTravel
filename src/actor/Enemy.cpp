@@ -79,6 +79,7 @@ void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
     SetDefaultLaunchedTimer(config.defaultLaunchedTimer);
     SetLaunchHeight(config.launchHeight);
     SetDetectionRange(config.detectionRange);
+    SetAttackPreparationRange(config.attackPreparationRange);
 
     SetHp(config.hp);
     SetMaxHp(config.hp);
@@ -96,12 +97,23 @@ void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
     SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
     SetAttackSpeed(config.attackSpeed);
 
+    mStateMachine->ConfigureBossManeuver(config.bossManeuver);
     mBehaviorController->Configure(config.behavior);
 }
 
 void Enemy::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
+
+    if (mStateMachine->IsAlive() &&
+        (mOnGround || !mHasRecordedGroundedTransform)) {
+        mLastGroundedPosition = GetPos();
+        if (glm::length(GetUpVec()) > 0.000001f) {
+            mLastGroundedUpDirection =
+                glm::normalize(GetUpVec());
+        }
+        mHasRecordedGroundedTransform = true;
+    }
 
     if (!GetGame()->GetSceneSystem()->IsPlaying()) {
         return;

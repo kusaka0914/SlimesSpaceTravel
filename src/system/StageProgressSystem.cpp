@@ -14,6 +14,7 @@ StageProgressSystem::StageProgressSystem(std::string savePath)
 bool StageProgressSystem::Load()
 {
     mClearedStages.clear();
+    mShownConversationIds.clear();
 
     YAML::Node root;
     try {
@@ -27,14 +28,23 @@ bool StageProgressSystem::Load()
     }
 
     const YAML::Node clearedStages = root["clearedStages"];
-    if (!clearedStages || !clearedStages.IsSequence()) {
-        return true;
+    if (clearedStages && clearedStages.IsSequence()) {
+        for (const YAML::Node& stageNode : clearedStages) {
+            const int stageNum = stageNode.as<int>();
+            if (stageNum >= 0) {
+                mClearedStages.insert(stageNum);
+            }
+        }
     }
 
-    for (const YAML::Node& stageNode : clearedStages) {
-        const int stageNum = stageNode.as<int>();
-        if (stageNum >= 0) {
-            mClearedStages.insert(stageNum);
+    const YAML::Node shownConversations = root["shownConversations"];
+    if (shownConversations && shownConversations.IsSequence()) {
+        for (const YAML::Node& conversationNode : shownConversations) {
+            const std::string conversationId =
+                conversationNode.as<std::string>();
+            if (!conversationId.empty()) {
+                mShownConversationIds.insert(conversationId);
+            }
         }
     }
 
@@ -58,6 +68,12 @@ bool StageProgressSystem::Save() const
     root["clearedStages"] = YAML::Node(YAML::NodeType::Sequence);
     for (int stageNum : mClearedStages) {
         root["clearedStages"].push_back(stageNum);
+    }
+    root["shownConversations"] =
+        YAML::Node(YAML::NodeType::Sequence);
+    for (const std::string& conversationId :
+         mShownConversationIds) {
+        root["shownConversations"].push_back(conversationId);
     }
 
     std::ofstream file(mSavePath);
@@ -95,6 +111,28 @@ bool StageProgressSystem::SetStageCleared(
         changed = mClearedStages.erase(stageNum) > 0;
     }
 
+    if (changed) {
+        Save();
+    }
+    return changed;
+}
+
+bool StageProgressSystem::HasShownConversation(
+    const std::string& conversationId) const
+{
+    return !conversationId.empty() &&
+           mShownConversationIds.contains(conversationId);
+}
+
+bool StageProgressSystem::MarkConversationShown(
+    const std::string& conversationId)
+{
+    if (conversationId.empty()) {
+        return false;
+    }
+
+    const bool changed =
+        mShownConversationIds.insert(conversationId).second;
     if (changed) {
         Save();
     }

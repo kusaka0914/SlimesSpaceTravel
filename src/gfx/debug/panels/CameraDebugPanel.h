@@ -30,6 +30,8 @@ private:
 
     int mSelectedKeyframeIndex = -1;
     int mEasingIndex = 3;
+    int mTransitionModeIndex = 0;
 
     float mKeyframeTime = 0.0f;
+    float mKeyframeHoldDurationSeconds = 0.0f;
 };

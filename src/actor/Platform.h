@@ -9,6 +9,7 @@ class Game;
 class Component;
 class PlatformConveyorComponent;
 class PlatformDirectionalMovementComponent;
+class PlatformEnemyClearUnlockComponent;
 class PlatformFadeOnStandComponent;
 class PlatformIntervalToggleComponent;
 class PlatformJumpToggleComponent;
@@ -62,6 +63,15 @@ public:
         return mPressureSwitchComponent;
     }
 
+    PlatformEnemyClearUnlockComponent*
+    AddEnemyClearUnlockComponent();
+    void RemoveEnemyClearUnlockComponent();
+    PlatformEnemyClearUnlockComponent*
+    GetEnemyClearUnlockComponent() const
+    {
+        return mEnemyClearUnlockComponent;
+    }
+
     PlatformLatchedGroupSwitchComponent*
     AddLatchedGroupSwitchComponent();
     void RemoveLatchedGroupSwitchComponent();
@@ -97,6 +107,8 @@ private:
     PlatformRotationComponent* mRotationComponent = nullptr;
     PlatformConveyorComponent* mConveyorComponent = nullptr;
     PlatformPressureSwitchComponent* mPressureSwitchComponent = nullptr;
+    PlatformEnemyClearUnlockComponent*
+        mEnemyClearUnlockComponent = nullptr;
     PlatformLatchedGroupSwitchComponent*
         mLatchedGroupSwitchComponent = nullptr;
 

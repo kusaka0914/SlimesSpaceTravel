@@ -26,6 +26,7 @@ public:
     void Draw() override;
     void DrawObjectList();
     void DrawPlayerSpawn();
+    void DrawPlayerDebugMover(Actor* selectedActor);
     void Save();
     void SaveEditorAuthoredTransforms();
 
@@ -44,6 +45,9 @@ private:
     bool SavePlayerSpawnFromCurrentTransform(class Player* player);
     void DrawActorList(const ActorGroup& group);
     void DrawSelectedActorEditor();
+    void DrawBulkTextureOverrideEditor(
+        const std::vector<StageActorInstance>& selectedActors);
+    bool MoveControlledPlayerToSelectedActor(Actor* selectedActor);
     void DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex);
     bool DrawPlatformTypeEditor(
         class Platform* platform,
@@ -92,4 +96,5 @@ private:
     std::string mRubyGenerationStatus;
     std::string mPlatformTypeChangeStatus;
     std::string mSurfaceAlignmentStatus;
+    std::string mPlayerDebugMoveStatus;
 };

@@ -23,8 +23,6 @@ void HudRenderer::DrawDefaultUI()
         return;
     }
 
-    DrawOperationSupportUI();
-
     const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
     const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
     const Player* mainPlayer = mGame->GetMainPlayer();
@@ -80,27 +78,9 @@ void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, flo
         return;
     }
 
-    const NPC* talkableNPC = player->GetTalkableNPC();
-    if (talkableNPC && talkableNPC->GetIsTalkable()) {
-        DrawTalkableUI(player, screenTopY, uiScale);
-    }
-
     if (player->GetIsTired()) {
         DrawRecommendReduceTiredUI(player, screenTopY, uiScale);
     }
-}
-
-void HudRenderer::DrawOperationSupportUI()
-{
-    const bool isOperationUIShow = mGame->GetSceneSystem()->GetUIState()->GetIsOperationUIShow();
-    if (isOperationUIShow) {
-        const char* operationTextId =
-            mGame->IsAssistControlStyle() ? "operationSupportAssistText" : "operationSupportText";
-        mRenderer->DrawTextDependsOnGameController("default", operationTextId);
-        return;
-    }
-
-    mRenderer->DrawSceneText("default", "operationSupportHiddenText", 0);
 }
 
 void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
@@ -129,9 +109,44 @@ void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
     mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
 }
 
-void HudRenderer::DrawTalkableUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::UpdateTalkableUIVisibility(
+    const std::vector<Player*>& players,
+    bool allowsPrompt)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "default", "talkableText", screenTopY, uiScale);
+    constexpr const char* screen = "default";
+    constexpr const char* talkableTextId = "talkableText";
+    constexpr const char* controllerTextureId =
+        "talkableTextureForGameController";
+    constexpr const char* keyboardTextureId =
+        "talkableTextureForKeyboard";
+
+    const Player* promptPlayer = nullptr;
+    if (allowsPrompt) {
+        for (const Player* player : players) {
+            if (mGame->GetSceneSystem()->CanStartTalkWithNPC(player)) {
+                promptPlayer = player;
+                break;
+            }
+        }
+    }
+
+    const bool shouldShowPrompt = promptPlayer != nullptr;
+    const bool usesController =
+        shouldShowPrompt &&
+        mRenderer->UsesControllerUI(promptPlayer);
+
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        talkableTextId,
+        shouldShowPrompt);
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        controllerTextureId,
+        shouldShowPrompt && usesController);
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        keyboardTextureId,
+        shouldShowPrompt && !usesController);
 }
 
 void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)

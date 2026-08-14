@@ -27,7 +27,9 @@ void SortKeyframes(CinematicSequence& sequence)
 }
 } // namespace
 
-bool CinematicCamera::Play(const CinematicSequence& sequence)
+bool CinematicCamera::Play(
+    const CinematicSequence& sequence,
+    bool shouldHoldFinalPose)
 {
     if (sequence.keyframes.empty()) {
         return false;
@@ -35,9 +37,15 @@ bool CinematicCamera::Play(const CinematicSequence& sequence)
 
     mSequence = sequence;
     SortKeyframes(mSequence);
+    for (CinematicCameraKeyframe& keyframe : mSequence.keyframes) {
+        keyframe.holdDurationSeconds =
+            std::max(0.0f, keyframe.holdDurationSeconds);
+    }
 
     mElapsedTime = 0.0f;
     mIsPlaying = true;
+    mShouldHoldFinalPose = shouldHoldFinalPose;
+    mIsHoldingFinalPose = false;
     mHasFinished = false;
 
     EvaluatePose(0.0f);
@@ -47,6 +55,8 @@ bool CinematicCamera::Play(const CinematicSequence& sequence)
 void CinematicCamera::Stop()
 {
     mIsPlaying = false;
+    mShouldHoldFinalPose = false;
+    mIsHoldingFinalPose = false;
     mHasFinished = false;
     mElapsedTime = 0.0f;
 }
@@ -63,6 +73,7 @@ void CinematicCamera::Update(float deltaTime)
     if (duration <= 0.0f) {
         mCurrentPose = mSequence.keyframes.back().pose;
         mIsPlaying = false;
+        mIsHoldingFinalPose = mShouldHoldFinalPose;
         mHasFinished = true;
         return;
     }
@@ -74,6 +85,7 @@ void CinematicCamera::Update(float deltaTime)
             mElapsedTime = duration;
             mCurrentPose = mSequence.keyframes.back().pose;
             mIsPlaying = false;
+            mIsHoldingFinalPose = mShouldHoldFinalPose;
             mHasFinished = true;
             return;
         }
@@ -88,7 +100,15 @@ float CinematicCamera::GetDuration() const
         return 0.0f;
     }
 
-    return mSequence.keyframes.back().time + std::max(0.0f, mSequence.endHoldDuration);
+    float insertedHoldDurationSeconds = 0.0f;
+    for (const CinematicCameraKeyframe& keyframe : mSequence.keyframes) {
+        insertedHoldDurationSeconds +=
+            std::max(0.0f, keyframe.holdDurationSeconds);
+    }
+
+    return mSequence.keyframes.back().time +
+           insertedHoldDurationSeconds +
+           std::max(0.0f, mSequence.endHoldDuration);
 }
 
 glm::mat4 CinematicCamera::GetView() const
@@ -118,35 +138,77 @@ void CinematicCamera::EvaluatePose(float sequenceTime)
         return;
     }
 
-    if (mSequence.keyframes.size() == 1 || sequenceTime <= mSequence.keyframes.front().time) {
+    if (mSequence.keyframes.size() == 1 ||
+        sequenceTime <= mSequence.keyframes.front().time) {
         mCurrentPose = mSequence.keyframes.front().pose;
         return;
     }
 
-    if (sequenceTime >= mSequence.keyframes.back().time) {
-        mCurrentPose = mSequence.keyframes.back().pose;
-        return;
+    float previousHoldDurationSeconds = 0.0f;
+    for (std::size_t startIndex = 0;
+         startIndex + 1 < mSequence.keyframes.size();
+         ++startIndex) {
+        const CinematicCameraKeyframe& start =
+            mSequence.keyframes[startIndex];
+        const CinematicCameraKeyframe& end =
+            mSequence.keyframes[startIndex + 1];
+
+        const float startArrivalTime =
+            start.time + previousHoldDurationSeconds;
+        const float startDepartureTime =
+            startArrivalTime + start.holdDurationSeconds;
+        const float endArrivalTime =
+            end.time +
+            previousHoldDurationSeconds +
+            start.holdDurationSeconds;
+
+        if (sequenceTime <= startDepartureTime) {
+            mCurrentPose = start.pose;
+            return;
+        }
+
+        if (sequenceTime < endArrivalTime) {
+            // A cut belongs to its destination keyframe. The preceding pose is
+            // held until the destination timestamp, then switches at once.
+            if (end.transitionMode == CameraTransitionMode::Cut) {
+                mCurrentPose = start.pose;
+                return;
+            }
+
+            const float segmentDuration =
+                endArrivalTime - startDepartureTime;
+            const float rawProgress =
+                segmentDuration > 0.0f
+                    ? (sequenceTime - startDepartureTime) /
+                          segmentDuration
+                    : 1.0f;
+            const float progress =
+                ApplyEasing(
+                    glm::clamp(rawProgress, 0.0f, 1.0f),
+                    end.easing);
+
+            mCurrentPose.position =
+                glm::mix(start.pose.position, end.pose.position, progress);
+            mCurrentPose.target =
+                glm::mix(start.pose.target, end.pose.target, progress);
+
+            const glm::vec3 mixedUp =
+                glm::mix(start.pose.up, end.pose.up, progress);
+            mCurrentPose.up =
+                SafeNormalize(mixedUp, start.pose.up);
+            mCurrentPose.fieldOfViewDegrees =
+                glm::mix(
+                    start.pose.fieldOfViewDegrees,
+                    end.pose.fieldOfViewDegrees,
+                    progress);
+            return;
+        }
+
+        previousHoldDurationSeconds +=
+            start.holdDurationSeconds;
     }
 
-    const auto endIt = std::upper_bound(
-        mSequence.keyframes.begin(), mSequence.keyframes.end(), sequenceTime,
-        [](float time, const CinematicCameraKeyframe& keyframe) { return time < keyframe.time; });
-
-    const CinematicCameraKeyframe& end = *endIt;
-    const CinematicCameraKeyframe& start = *(endIt - 1);
-
-    const float segmentDuration = end.time - start.time;
-    const float rawProgress = segmentDuration > 0.0f ? (sequenceTime - start.time) / segmentDuration : 1.0f;
-    const float progress = ApplyEasing(glm::clamp(rawProgress, 0.0f, 1.0f), end.easing);
-
-    mCurrentPose.position = glm::mix(start.pose.position, end.pose.position, progress);
-    mCurrentPose.target = glm::mix(start.pose.target, end.pose.target, progress);
-
-    const glm::vec3 mixedUp = glm::mix(start.pose.up, end.pose.up, progress);
-    mCurrentPose.up = SafeNormalize(mixedUp, start.pose.up);
-
-    mCurrentPose.fieldOfViewDegrees =
-        glm::mix(start.pose.fieldOfViewDegrees, end.pose.fieldOfViewDegrees, progress);
+    mCurrentPose = mSequence.keyframes.back().pose;
 }
 
 float CinematicCamera::ApplyEasing(float progress, CameraEasing easing)

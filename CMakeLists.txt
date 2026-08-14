@@ -11,8 +11,13 @@ list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
 
 add_executable(game ${GAME_SOURCES})
 
+add_executable(editor_restart_helper
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/editor_restart_helper/Main.cpp
+)
+
 if (MSVC)
     target_compile_options(game PRIVATE /utf-8 /MP)
+    target_compile_options(editor_restart_helper PRIVATE /utf-8)
 endif()
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)
@@ -103,6 +108,10 @@ if (APPLE)
 endif()
 
 set_target_properties(game PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+set_target_properties(editor_restart_helper PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 

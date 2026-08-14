@@ -30,10 +30,12 @@ public:
     void ProcessInput();
     void Update(float deltaTime);
 
-    bool PlayCinematic(std::string_view sequenceId);
+    bool PlayCinematic(
+        std::string_view sequenceId,
+        bool shouldHoldFinalPose = false);
     void StopCinematic();
 
-    bool IsCinematicPlaying() const { return mCinematicCamera.IsPlaying(); }
+    bool IsCinematicPlaying() const { return mCinematicCamera.IsActive(); }
     bool HasCinematicFinished() const { return mCinematicCamera.HasFinished(); }
 
     float GetCinematicElapsedTime() const { return mCinematicCamera.GetElapsedTime(); }
@@ -106,6 +108,7 @@ private:
     bool mBoatRideCameraPreviewEnabled = false;
     bool mAlignCameraPressedPrev = false;
     bool mBossDefeatSequenceIsPreview = false;
+    bool mBossDefeatSEPlayed = false;
     float mBossDefeatSequenceTimer = -1.0f;
     float mCameraStickX = 0.0f;
     float mCameraStickY = 0.0f;

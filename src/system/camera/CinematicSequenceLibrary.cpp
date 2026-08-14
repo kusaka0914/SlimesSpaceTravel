@@ -62,6 +62,17 @@ CameraEasing ParseEasing(const YAML::Node& node)
     return CameraEasing::EaseInOut;
 }
 
+CameraTransitionMode ParseTransitionMode(const YAML::Node& node)
+{
+    if (!node) {
+        return CameraTransitionMode::Smooth;
+    }
+
+    return NormalizeToken(node.as<std::string>()) == "cut"
+        ? CameraTransitionMode::Cut
+        : CameraTransitionMode::Smooth;
+}
+
 const char* ToString(CameraEasing easing)
 {
     switch (easing) {
@@ -76,6 +87,13 @@ const char* ToString(CameraEasing easing)
     }
 
     return "easeInOut";
+}
+
+const char* ToString(CameraTransitionMode transitionMode)
+{
+    return transitionMode == CameraTransitionMode::Cut
+        ? "cut"
+        : "smooth";
 }
 
 void SortKeyframes(CinematicSequence& sequence)
@@ -121,6 +139,12 @@ bool CinematicSequenceLibrary::Load()
                 for (const YAML::Node& keyframeNode : keyframesNode) {
                     CinematicCameraKeyframe keyframe;
                     keyframe.time = keyframeNode["time"] ? std::max(0.0f, keyframeNode["time"].as<float>()) : 0.0f;
+                    keyframe.holdDurationSeconds =
+                        keyframeNode["holdDuration"]
+                            ? std::max(
+                                  0.0f,
+                                  keyframeNode["holdDuration"].as<float>())
+                            : 0.0f;
                     keyframe.pose.position = ReadVec3(keyframeNode["position"], keyframe.pose.position);
                     keyframe.pose.target = ReadVec3(keyframeNode["target"], keyframe.pose.target);
                     keyframe.pose.up = ReadVec3(keyframeNode["up"], keyframe.pose.up);
@@ -129,6 +153,8 @@ bool CinematicSequenceLibrary::Load()
                             ? glm::clamp(keyframeNode["fieldOfView"].as<float>(), 10.0f, 120.0f)
                             : 60.0f;
                     keyframe.easing = ParseEasing(keyframeNode["easing"]);
+                    keyframe.transitionMode =
+                        ParseTransitionMode(keyframeNode["transition"]);
                     sequence.keyframes.push_back(keyframe);
                 }
             }
@@ -172,6 +198,8 @@ bool CinematicSequenceLibrary::Save() const
             for (const CinematicCameraKeyframe& keyframe : sequence.keyframes) {
                 emitter << YAML::BeginMap;
                 emitter << YAML::Key << "time" << YAML::Value << keyframe.time;
+                emitter << YAML::Key << "holdDuration" << YAML::Value
+                        << keyframe.holdDurationSeconds;
 
                 emitter << YAML::Key << "position" << YAML::Value;
                 WriteVec3(emitter, keyframe.pose.position);
@@ -184,6 +212,8 @@ bool CinematicSequenceLibrary::Save() const
 
                 emitter << YAML::Key << "fieldOfView" << YAML::Value << keyframe.pose.fieldOfViewDegrees;
                 emitter << YAML::Key << "easing" << YAML::Value << ToString(keyframe.easing);
+                emitter << YAML::Key << "transition" << YAML::Value
+                        << ToString(keyframe.transitionMode);
                 emitter << YAML::EndMap;
             }
 

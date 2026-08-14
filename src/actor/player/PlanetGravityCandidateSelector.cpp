@@ -21,6 +21,10 @@ PlanetDistanceCandidate PlanetGravityCandidateSelector::FindNearestPlanet(const 
             continue;
         }
 
+        if (!planet->CanAttractNearbyPlayer()) {
+            continue;
+        }
+
         const float surfaceDistance = CalculateSurfaceDistance(playerPos, *planet);
 
         if (surfaceDistance >= nearest.surfaceDistance) {
@@ -42,15 +46,14 @@ float PlanetGravityCandidateSelector::CalculateSurfaceDistance(const glm::vec3& 
             .distance;
     }
 
+    const float surfaceRadius = CalculateApproximateSurfaceRadius(playerPos, planet);
     const float centerDistance = glm::length(playerPos - planet.GetPos());
 
-    if (centerDistance < 1e-6f) {
-        return 0.0f;
-    }
-
-    const float surfaceRadius = CalculateApproximateSurfaceRadius(playerPos, planet);
-
-    return std::max(0.0f, centerDistance - surfaceRadius);
+    // Overlapping gravity volumes are common when planets are placed above
+    // each other. Clamping an inside point to zero makes every containing
+    // planet equally near, so the first planet in the stage remains selected.
+    // The distance to the actual surface is needed on both sides of the mesh.
+    return std::abs(centerDistance - surfaceRadius);
 }
 
 float PlanetGravityCandidateSelector::CalculateApproximateSurfaceRadius(const glm::vec3& playerPos,

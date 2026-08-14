@@ -17,7 +17,9 @@ enum class StageActorType {
     Key,
     Star,
     StageObject,
-    TutorialTrigger
+    TutorialTrigger,
+    JewelItem,
+    HazardActor
 };
 
 struct StageActorRef {

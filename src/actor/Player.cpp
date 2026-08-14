@@ -53,6 +53,8 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
         config.airDodgePostHoverDurationSeconds);
     if (mGame) {
         mGame->SetGroundNormalRayLength(config.groundNormalRayLength);
+        mGame->SetOverheadGravityRayLength(
+            config.overheadGravityRayLength);
 
         PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
         if (physicsSystem) {
@@ -79,6 +81,18 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mCombat.SetStrongAttackRange(config.strongAttackRange);
     mCombat.SetStrongAttack(config.strongAttack);
     mCombat.SetStrongAttackSpeed(config.strongAttackSpeed);
+    mCombat.SetChargedAttackRange(config.chargedAttackRange);
+    mCombat.SetChargedAttackAngle(config.chargedAttackAngle);
+    mCombat.SetChargedAttackDamage(config.chargedAttackDamage);
+    mCombat.SetChargedAttackChargeDurationSeconds(
+        config.chargedAttackChargeDurationSeconds);
+    mCombat.SetContinuousAttackRange(config.continuousAttackRange);
+    mCombat.SetContinuousAttackAngle(config.continuousAttackAngle);
+    mCombat.SetContinuousAttackDamage(config.continuousAttackDamage);
+    mCombat.SetContinuousAttackIntervalSeconds(
+        config.continuousAttackIntervalSeconds);
+    mCombat.SetContinuousAttackDurationSeconds(
+        config.continuousAttackDurationSeconds);
     mMovement.SetAirSlamRiseHeight(config.airSlamRiseHeight);
     mMovement.SetAirSlamRiseDurationSeconds(
         config.airSlamRiseDurationSeconds);
@@ -104,6 +118,19 @@ void Player::Initialize()
 {
     mRespawn.SetRestartPlanetIndex(mMovement.GetCurrentPlanetNum());
     mRespawn.SetRestartPos(mPos);
+}
+
+bool Player::ShouldRenderSolidWhite() const
+{
+    if (!mStatus.IsAlive() ||
+        !mStatus.ShouldBlinkWhileInvincible()) {
+        return false;
+    }
+
+    constexpr float blinkIntervalSeconds = 0.1f;
+    const int blinkPhase = static_cast<int>(
+        mStatus.GetInvincibleTimer() / blinkIntervalSeconds);
+    return (blinkPhase % 2) == 0;
 }
 
 void Player::RecoverFromFatigue()
@@ -141,16 +168,45 @@ void Player::DebugMoveToPlanet(Planet* planet, int planetIndex)
         return;
     }
 
-    SetCurrentPlanet(planet);
-    mMovement.SetCurrentPlanetNum(planetIndex);
-    SetPos(planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight()));
-    SetVelocity(glm::vec3(0.0f));
-    SetOnGround(false);
-    SetShouldJudgeLanding(true);
-    RefreshFallbackUpVec();
+    DebugMoveToPosition(
+        planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight()),
+        planet,
+        planetIndex);
+}
+
+void Player::DebugMoveToPosition(
+    const glm::vec3& worldPosition,
+    Planet* planet,
+    int planetIndex)
+{
+    if (!planet || planetIndex < 0) {
+        return;
+    }
+
+    constexpr float positionEpsilon = 0.000001f;
+    const glm::vec3 planetOffset = worldPosition - planet->GetPos();
+    const float centerDistance = glm::length(planetOffset);
+    if (centerDistance > positionEpsilon) {
+        const glm::vec3 radialDirection = planetOffset / centerDistance;
+        const float theta =
+            std::atan2(radialDirection.z, radialDirection.x);
+        const float phi =
+            std::asin(glm::clamp(radialDirection.y, -1.0f, 1.0f));
+
+        float height = centerDistance - std::abs(planet->GetRadius());
+        if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+            const Planet::EllipseSurfaceProjection surfaceProjection =
+                planet->CalculateEllipseSurfaceProjection(worldPosition);
+            height = surfaceProjection.isOutside
+                ? surfaceProjection.distance
+                : -surfaceProjection.distance;
+        }
+        SetSphericalPlacement(theta, phi, height);
+    }
 
     mRespawn.SetRestartPlanetIndex(planetIndex);
-    mRespawn.SetRestartPos(GetPos());
+    mRespawn.SetRestartPos(worldPosition);
+    RespawnAtRestartPoint();
 }
 
 void Player::ProcessActor()
@@ -306,6 +362,21 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
                                deltaTime);
 }
 
+void Player::ApplyDamageFromActor(
+    const glm::vec3& damageSourcePosition,
+    float damage)
+{
+    PlayerDamageHandler::ApplyFromActor(
+        *this,
+        mInput,
+        mMovement,
+        mStateMachine,
+        mCombat,
+        mStatus,
+        damageSourcePosition,
+        damage);
+}
+
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
     mRespawn.ApplyFallDamageAndRespawn(*this, mStatus, damage);
@@ -358,6 +429,15 @@ void Player::Restart()
 {
     mStatus.RestoreFullHp();
     RespawnAtRestartPoint();
+}
+
+bool Player::ShouldAcceptLandingSurface(
+    Actor* surfaceActor,
+    const glm::vec3& surfaceNormal) const
+{
+    (void)surfaceActor;
+    return mPlanetGravityController.ShouldAcceptLandingSurface(
+        surfaceNormal);
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const

@@ -97,14 +97,8 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
             continue;
         }
 
-        // PlayerAttackHitDetectorと同じ照準点・角度条件で、
-        // 現在向いている方向の攻撃範囲内か判定する。
-        const glm::vec3 targetPoint =
-            enemy->GetPos() +
-            enemy->GetFacingForwardVec() * (enemy->GetRadius() - 1.0f);
-
         glm::vec3 directionToTarget;
-        if (!TryNormalize(targetPoint - player.GetPos(), directionToTarget)) {
+        if (!TryNormalize(toEnemyCenter, directionToTarget)) {
             directionToTarget = normalizedFacingDirection;
         }
 
@@ -179,12 +173,8 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
             continue;
         }
 
-        const glm::vec3 targetPoint =
-            enemy->GetPos() +
-            enemy->GetFacingForwardVec() * (enemy->GetRadius() - 1.0f);
-
         glm::vec3 directionToTarget;
-        if (!TryNormalize(targetPoint - player.GetPos(), directionToTarget)) {
+        if (!TryNormalize(toEnemyCenter, directionToTarget)) {
             directionToTarget = normalizedFacingDirection;
         }
 
@@ -234,6 +224,82 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTarget(
             enemy->GetPos() - player.GetPos();
         const float distanceSquared =
             glm::dot(playerToEnemy, playerToEnemy);
+        if (distanceSquared > maxDistanceSquared ||
+            distanceSquared >= nearestDistanceSquared) {
+            continue;
+        }
+
+        nearestTarget = enemy;
+        nearestDistanceSquared = distanceSquared;
+    }
+
+    return nearestTarget;
+}
+
+Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTarget(
+    const Player& player,
+    float maxDistance)
+{
+    Planet* planet = player.GetCurrentPlanet();
+    if (!planet || maxDistance <= 0.0f) {
+        return nullptr;
+    }
+
+    const float maxDistanceSquared = maxDistance * maxDistance;
+    Enemy* nearestTarget = nullptr;
+    float nearestDistanceSquared = std::numeric_limits<float>::max();
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (!IsValidEnemy(player, enemy) ||
+            enemy->IsOnGround() ||
+            enemy->GetBreakCount() != 0) {
+            continue;
+        }
+
+        const glm::vec3 playerToEnemy = enemy->GetPos() - player.GetPos();
+        const float distanceSquared = glm::dot(playerToEnemy, playerToEnemy);
+        if (distanceSquared > maxDistanceSquared ||
+            distanceSquared >= nearestDistanceSquared) {
+            continue;
+        }
+
+        nearestTarget = enemy;
+        nearestDistanceSquared = distanceSquared;
+    }
+
+    return nearestTarget;
+}
+
+Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTargetNearRecovery(
+    const Player& player,
+    float maxDistance,
+    float maximumLaunchedTimerSeconds)
+{
+    Planet* planet = player.GetCurrentPlanet();
+    if (!planet || maxDistance <= 0.0f ||
+        maximumLaunchedTimerSeconds < 0.0f) {
+        return nullptr;
+    }
+
+    const float maxDistanceSquared = maxDistance * maxDistance;
+    Enemy* nearestTarget = nullptr;
+    float nearestDistanceSquared = std::numeric_limits<float>::max();
+
+    for (Enemy* enemy : planet->GetEnemies()) {
+        if (!IsValidEnemy(player, enemy) ||
+            enemy->IsOnGround() ||
+            enemy->GetBreakCount() != 0) {
+            continue;
+        }
+
+        const float launchedTimerSeconds = enemy->GetLaunchedTimer();
+        if (launchedTimerSeconds < 0.0f ||
+            launchedTimerSeconds > maximumLaunchedTimerSeconds) {
+            continue;
+        }
+
+        const glm::vec3 playerToEnemy = enemy->GetPos() - player.GetPos();
+        const float distanceSquared = glm::dot(playerToEnemy, playerToEnemy);
         if (distanceSquared > maxDistanceSquared ||
             distanceSquared >= nearestDistanceSquared) {
             continue;

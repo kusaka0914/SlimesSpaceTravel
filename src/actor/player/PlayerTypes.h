@@ -20,6 +20,7 @@ enum class PlayerAttackKind {
     Normal,
     Wide,
     Strong,
+    Charged,
 };
 
 enum class PlayerAttackInputKind {

@@ -37,7 +37,10 @@ void StateUIRenderer::DrawStateUI()
     if (mGame->GetSceneSystem()->IsStageClear()) {
         DrawStageClear();
     }
+}
 
+void StateUIRenderer::DrawTransitionUI()
+{
     const float alpha = CalculateAlpha();
     if (alpha > 0.0f) {
         DrawFadeInBg(alpha);

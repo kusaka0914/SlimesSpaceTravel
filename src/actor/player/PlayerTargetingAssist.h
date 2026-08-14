@@ -19,6 +19,13 @@ public:
     static Enemy* FindNearestAirborneTarget(
         const Player& player,
         float maxDistance);
+    static Enemy* FindNearestBrokenAirborneTarget(
+        const Player& player,
+        float maxDistance);
+    static Enemy* FindNearestBrokenAirborneTargetNearRecovery(
+        const Player& player,
+        float maxDistance,
+        float maximumLaunchedTimerSeconds);
 
     static bool FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target);
 };

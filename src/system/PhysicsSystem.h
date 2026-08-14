@@ -25,6 +25,7 @@ struct ActorMovementCollisionResult {
     glm::vec3 blockingNormal{0.0f};
     bool didHitStage = false;
     bool hasUnresolvedStageOverlap = false;
+    bool didBlockRequestedMovement = false;
 };
 
 enum class ActorCollisionFilter {
@@ -75,6 +76,9 @@ public:
     std::vector<RayHitActor> PickActorsByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
     std::optional<RayHitActor> RaycastStageSurface(const glm::vec3& rayFrom,
                                                    const glm::vec3& rayTo) const;
+    std::vector<RayHitActor> RaycastStageSurfaces(
+        const glm::vec3& rayFrom,
+        const glm::vec3& rayTo) const;
 
     void SyncKinematicBodies() const;
 

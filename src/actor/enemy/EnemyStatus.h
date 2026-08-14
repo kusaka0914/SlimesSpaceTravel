@@ -37,6 +37,10 @@ public:
         mDefaultStandByAttackTimer = defaultStandByAttackTimer;
     }
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
+    void SetAttackPreparationRange(float attackPreparationRange)
+    {
+        mAttackPreparationRange = attackPreparationRange;
+    }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
@@ -90,6 +94,7 @@ public:
     float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2.0f); }
     float GetStandByAttackTimer() const { return mStandByAttackTimer; }
     float GetDetectionRange() const { return mDetectionRange; }
+    float GetAttackPreparationRange() const { return mAttackPreparationRange; }
     float GetMoveSpeed() const { return mMoveSpeed; }
     float GetKnockBackSpeed() const { return mKnockBackSpeed; }
     float GetAttackSpeed() const { return mAttackSpeed; }
@@ -127,6 +132,7 @@ private:
 
     float mAttack;
     float mDetectionRange;
+    float mAttackPreparationRange;
     float mMoveSpeed;
     float mKnockBackSpeed;
     float mAttackSpeed;

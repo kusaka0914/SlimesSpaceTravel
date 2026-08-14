@@ -10,6 +10,8 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -82,6 +84,8 @@ std::unordered_map<Actor*, RegisteredActorInfo> CollectRegisteredActors(
         RecordActors(registeredActors, planet->GetFallRespawnPoints(), planet);
         RecordActors(registeredActors, planet->GetStageObjects(), planet);
         RecordActors(registeredActors, planet->GetTutorialTriggers(), planet);
+        RecordActors(registeredActors, planet->GetJewelItems(), planet);
+        RecordActors(registeredActors, planet->GetHazardActors(), planet);
         RecordActor(registeredActors, planet->GetKey(), planet);
         RecordActor(registeredActors, planet->GetStar(), planet);
     }
@@ -143,6 +147,10 @@ void RemoveActorFromPlanet(Planet& planet, Actor* actor)
 {
     if (TutorialTrigger* trigger = dynamic_cast<TutorialTrigger*>(actor)) {
         planet.RemoveTutorialTrigger(trigger);
+    } else if (HazardActor* hazardActor = dynamic_cast<HazardActor*>(actor)) {
+        planet.RemoveHazardActor(hazardActor);
+    } else if (JewelItem* jewelItem = dynamic_cast<JewelItem*>(actor)) {
+        planet.RemoveJewelItem(jewelItem);
     } else if (Enemy* enemy = dynamic_cast<Enemy*>(actor)) {
         planet.RemoveEnemy(enemy);
     } else if (Boat* boat = dynamic_cast<Boat*>(actor)) {
@@ -179,6 +187,10 @@ void AddActorToPlanet(Planet& planet, Actor* actor)
 {
     if (TutorialTrigger* trigger = dynamic_cast<TutorialTrigger*>(actor)) {
         planet.AddTutorialTrigger(trigger);
+    } else if (HazardActor* hazardActor = dynamic_cast<HazardActor*>(actor)) {
+        planet.AddHazardActor(hazardActor);
+    } else if (JewelItem* jewelItem = dynamic_cast<JewelItem*>(actor)) {
+        planet.AddJewelItem(jewelItem);
     } else if (Enemy* enemy = dynamic_cast<Enemy*>(actor)) {
         planet.AddEnemy(enemy);
     } else if (Boat* boat = dynamic_cast<Boat*>(actor)) {
@@ -290,6 +302,8 @@ std::vector<Actor*> CollectActorsOwnedByPlanet(Planet& planet)
     addActors(planet.GetFallRespawnPoints());
     addActors(planet.GetStageObjects());
     addActors(planet.GetTutorialTriggers());
+    addActors(planet.GetJewelItems());
+    addActors(planet.GetHazardActors());
     if (planet.GetKey()) {
         uniqueActors.insert(planet.GetKey());
     }
@@ -444,6 +458,55 @@ void StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
     }
 }
 
+void StageActorPlanetBindingService::
+PreserveBoundActorWorldPositionsAfterPlanetMove(
+    Planet* planet,
+    const glm::vec3& planetTranslation)
+{
+    if (!planet ||
+        glm::length(planetTranslation) <= 0.000001f) {
+        return;
+    }
+
+    for (Actor* actor : CollectActorsOwnedByPlanet(*planet)) {
+        if (!actor) {
+            continue;
+        }
+
+        UpdateSphericalPlacement(*actor, *planet);
+
+        if (Platform* platform = dynamic_cast<Platform*>(actor)) {
+            PlatformMovementComponent* movement =
+                platform->GetMovementComponent();
+            if (movement) {
+                // The planet moved but the path did not. Subtracting the
+                // planet delta converts both endpoints to the new center.
+                movement->TranslatePath(-planetTranslation);
+            }
+        }
+
+        actor->CaptureEditorAuthoredPosition();
+    }
+
+    Game* game = planet->GetGame();
+    if (game) {
+        for (Player* player : game->GetPlayers()) {
+            if (!player ||
+                player->GetCurrentPlanet() != planet) {
+                continue;
+            }
+
+            UpdateSphericalPlacement(*player, *planet);
+            player->CaptureEditorAuthoredPosition();
+        }
+    }
+
+    Stage* stage = planet->GetCurrentStage();
+    if (stage) {
+        RefreshBoatDestinations(stage->GetPlanets());
+    }
+}
+
 void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(
     Planet* planet)
 {
@@ -481,6 +544,12 @@ void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(
     }
     for (TutorialTrigger* trigger : planet->GetTutorialTriggers()) {
         reprojectActor(trigger);
+    }
+    for (JewelItem* jewelItem : planet->GetJewelItems()) {
+        reprojectActor(jewelItem);
+    }
+    for (HazardActor* hazardActor : planet->GetHazardActors()) {
+        reprojectActor(hazardActor);
     }
     reprojectActor(planet->GetKey());
     reprojectActor(planet->GetStar());

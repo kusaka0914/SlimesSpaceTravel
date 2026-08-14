@@ -60,6 +60,15 @@ public:
         float textScaleRatio = 0.0007f;
         std::string text = "New Text";
         std::string texturePath;
+        bool usesInputDeviceVariants = false;
+        std::string keyboardText;
+        std::string gameControllerText;
+        std::string keyboardModifierText;
+        std::string gameControllerModifierText;
+        std::string keyboardTexturePath;
+        std::string gameControllerTexturePath;
+        bool keyboardFlipVertical = true;
+        bool gameControllerFlipVertical = true;
         std::array<float, 4> color = {1.0f, 1.0f, 1.0f, 1.0f};
         bool shadowEnabled = false;
         float shadowOffsetXRatio = 0.0015f;

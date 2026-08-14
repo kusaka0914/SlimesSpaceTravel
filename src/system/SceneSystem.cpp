@@ -1,7 +1,6 @@
 #include "system/SceneSystem.h"
 
 #include "Game.h"
-#include "Stage.h"
 
 #include "actor/Boat.h"
 #include "actor/NPC.h"
@@ -12,9 +11,12 @@
 #include "system/scene/SceneTransitionController.h"
 #include "system/scene/TalkController.h"
 #include "system/scene/TutorialController.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include <SDL2/SDL_mixer.h>
 #include <glm/glm.hpp>
+
+#include <utility>
 
 SceneSystem::SceneSystem(Game* game)
     : mGame(game),
@@ -47,24 +49,29 @@ void SceneSystem::Update(float deltaTime)
     mTutorialController->Update(deltaTime);
     mTalkController->Update(deltaTime);
     UpdateClearTimer(deltaTime);
+    UpdateForcedArrivalTalk();
 }
 
-void SceneSystem::OnConfirmPressed(int playerNum)
+bool SceneSystem::OnConfirmPressed(int playerNum)
 {
     if (mFadeTimer >= 0.0f) {
-        return;
+        return false;
     }
 
     const auto sceneState = mGameProgressState->GetSceneState();
 
     switch (sceneState) {
     case GameProgressState::SceneState::Title:
-        StartOpening();
-        break;
+        StartBattleStyleSelection();
+        return true;
+
+    case GameProgressState::SceneState::BattleStyleSelection:
+        ConfirmBattleStyleSelection();
+        return true;
 
     case GameProgressState::SceneState::Opening:
         mTalkController->TryAdvanceTalkFromConfirm();
-        break;
+        return true;
 
     case GameProgressState::SceneState::Talking:
         if (mTutorialController->HasActiveTutorial()) {
@@ -72,19 +79,20 @@ void SceneSystem::OnConfirmPressed(int playerNum)
         } else {
             mTalkController->TryAdvanceTalkFromConfirm();
         }
-        break;
+        return true;
 
     case GameProgressState::SceneState::Playing:
-        mTalkController->TryStartTalkWithNPC(playerNum);
-        break;
+        return mTalkController->TryStartTalkWithNPC(playerNum);
 
     case GameProgressState::SceneState::GameOver:
         RestartGame();
-        break;
+        return true;
 
     default:
-        break;
+        return false;
     }
+
+    return false;
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerAction() const
@@ -93,6 +101,12 @@ bool SceneSystem::IsWaitingForTutorialPlayerAction() const
             mTutorialController->IsWaitingForPlayerAction()) ||
            (mTalkController &&
             mTalkController->IsWaitingForPlayerAction());
+}
+
+bool SceneSystem::CanStartTalkWithNPC(const Player* player) const
+{
+    return mTalkController &&
+           mTalkController->CanStartTalkWithNPC(player);
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerSwitch() const
@@ -163,6 +177,66 @@ void SceneSystem::OnStartPressed()
 void SceneSystem::StartOpening()
 {
     mTransitionController->StartOpening();
+}
+
+void SceneSystem::StartBattleStyleSelection()
+{
+    mSelectedBattleStyle = PlayerControlStyle::Assist;
+    mTransitionController->StartBattleStyleSelection();
+}
+
+void SceneSystem::MoveBattleStyleSelection(int direction)
+{
+    if (!IsBattleStyleSelection() || direction == 0) {
+        return;
+    }
+
+    mSelectedBattleStyle =
+        mSelectedBattleStyle == PlayerControlStyle::Assist
+            ? PlayerControlStyle::Standard
+            : PlayerControlStyle::Assist;
+}
+
+void SceneSystem::ConfirmBattleStyleSelection()
+{
+    if (!IsBattleStyleSelection()) {
+        return;
+    }
+
+    mGame->SetPlayerControlStyle(mSelectedBattleStyle);
+    RequestStageChange(1);
+}
+
+void SceneSystem::DebugEnterTitle()
+{
+    ResetForDebugScene(GameProgressState::SceneState::Title);
+}
+
+void SceneSystem::DebugEnterOpening()
+{
+    ResetForDebugScene(GameProgressState::SceneState::Opening);
+}
+
+void SceneSystem::ResetForDebugScene(
+    GameProgressState::SceneState destinationScene)
+{
+    mTransitionController->CancelPendingTransition();
+    if (mTutorialController) {
+        mTutorialController->Stop(false);
+    }
+
+    if (mClearAudioChannel >= 0) {
+        Mix_HaltChannel(mClearAudioChannel);
+    }
+    mClearAudioChannel = -1;
+    mClearTimer = -1.0f;
+    mTalkingNPC = nullptr;
+    mTalkingPlayer = nullptr;
+    mHasPendingForcedArrivalTalk = false;
+    mHasReachedArrivalDestination = false;
+
+    mUIState->StartTalkWith(UIState::TalkWith::Opening);
+    mGameProgressState->SetCurrentSceneState(destinationScene);
 }
 
 void SceneSystem::RestartGame()
@@ -249,10 +323,21 @@ bool SceneSystem::RequestPlayerRespawn(Player* player)
     return true;
 }
 
+bool SceneSystem::RequestFadeAction(
+    std::function<void()> midpointAction,
+    std::function<void()> completionAction)
+{
+    return mTransitionController->RequestFadeAction(
+        std::move(midpointAction),
+        std::move(completionAction));
+}
+
 void SceneSystem::RequestStageChange(int stageNum)
 {
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
+    mHasPendingForcedArrivalTalk = true;
+    mHasReachedArrivalDestination = false;
     mTransitionController->RequestStageChange(stageNum);
 }
 
@@ -280,8 +365,59 @@ void SceneSystem::OnBoatArrived(Boat* boat)
         player->OnBoatArrived(boat);
     }
 
+    mHasPendingForcedArrivalTalk = true;
+    mHasReachedArrivalDestination = true;
+
     mTutorialController->TryStartBattleTutorial();
     mTutorialController->TryStartJustDodgeTutorial();
+}
+
+void SceneSystem::UpdateForcedArrivalTalk()
+{
+    if (!mHasPendingForcedArrivalTalk || !IsPlaying() ||
+        mFadeTimer >= 0.0f || mIsFadeOut) {
+        return;
+    }
+
+    SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+    if (sequenceSystem && sequenceSystem->IsPlaying()) {
+        return;
+    }
+
+    Player* talkingPlayer = mGame->GetControlledPlayer();
+    if (!talkingPlayer || !talkingPlayer->GetIsActive() ||
+        (mHasReachedArrivalDestination &&
+         !talkingPlayer->GetOnGround())) {
+        return;
+    }
+
+    mHasPendingForcedArrivalTalk = false;
+    mHasReachedArrivalDestination = false;
+    NPC* arrivalNPC = FindForcedArrivalTalkNPC();
+    if (arrivalNPC) {
+        StartTalkWithNPC(arrivalNPC, talkingPlayer);
+    }
+}
+
+NPC* SceneSystem::FindForcedArrivalTalkNPC() const
+{
+    Player* controlledPlayer = mGame->GetControlledPlayer();
+    Planet* arrivalPlanet =
+        controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
+    if (!arrivalPlanet) {
+        return nullptr;
+    }
+
+    for (NPC* npc : arrivalPlanet->GetNPCs()) {
+        if (!npc || !npc->GetIsActive() ||
+            !npc->GetForcesTalkOnArrival() ||
+            npc->GetResolvedTalkTexts().empty() ||
+            mGame->HasShownNPCConversation(npc)) {
+            continue;
+        }
+        return npc;
+    }
+    return nullptr;
 }
 
 void SceneSystem::OnStageClear()
@@ -291,9 +427,13 @@ void SceneSystem::OnStageClear()
     Mix_HaltMusic();
 
     if (mGame->GetAudioSystem()) {
-        mGame->GetAudioSystem()->PlaySE("clear_se");
+        mClearAudioChannel =
+            mGame->GetAudioSystem()->PlaySE("clear_se");
+    } else {
+        mClearAudioChannel = -1;
     }
 
+    // 音声を読み込めなかった場合だけ、従来の待ち時間を安全策として使う。
     mClearTimer = 12.0f;
 }
 
@@ -323,12 +463,21 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
         return;
     }
 
-    mClearTimer -= deltaTime;
-
-    if (mClearTimer < 0.0f) {
-        // Stop this timer before requesting the transition so that the fade
-        // timer is not restarted on every frame.
-        mClearTimer = -1.0f;
-        RequestStageChange(0);
+    AudioSystem* audioSystem = mGame->GetAudioSystem();
+    if (mClearAudioChannel >= 0 && audioSystem &&
+        audioSystem->IsSEPlaying(mClearAudioChannel)) {
+        return;
     }
+
+    if (mClearAudioChannel < 0) {
+        mClearTimer -= deltaTime;
+        if (mClearTimer >= 0.0f) {
+            return;
+        }
+    }
+
+    // 遷移要求を毎フレーム繰り返さないよう、先に再生状態をリセットする。
+    mClearTimer = -1.0f;
+    mClearAudioChannel = -1;
+    RequestStageChange(0);
 }

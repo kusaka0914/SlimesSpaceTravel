@@ -42,7 +42,6 @@ private:
         Player& player,
         PlayerMovement& movement,
         PlayerCombat& combat,
-        PlayerStatus& status,
         float deltaTime);
     void UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                            float deltaTime);
@@ -56,6 +55,18 @@ private:
 
     bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                     float deltaTime);
+    bool TryStartAssistBrokenEnemyAirCombo(
+        Player& player,
+        PlayerInput& input,
+        PlayerMovement& movement,
+        PlayerCombat& combat,
+        PlayerStatus& status,
+        float deltaTime);
+    bool TryStartAssistAirSlamAttack(
+        Player& player,
+        PlayerInput& input,
+        PlayerMovement& movement,
+        PlayerCombat& combat);
     bool TryStartAirSlamAttack(
         Player& player,
         PlayerInput& input,

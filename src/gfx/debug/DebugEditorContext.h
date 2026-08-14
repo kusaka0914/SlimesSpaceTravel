@@ -24,10 +24,16 @@ struct DebugEditorLayoutState {
     float assetBrowserHeight = 0.0f;
 };
 
+enum class PlanetMoveMode {
+    WithBoundActors,
+    PlanetOnly,
+};
+
 struct DebugEditorContext {
     Game* game = nullptr;
     UIRenderer* uiRenderer = nullptr;
     EditorAssetCatalog* assetCatalog = nullptr;
     DebugEditorGameViewport gameViewport;
     DebugEditorLayoutState layout;
+    PlanetMoveMode planetMoveMode = PlanetMoveMode::WithBoundActors;
 };

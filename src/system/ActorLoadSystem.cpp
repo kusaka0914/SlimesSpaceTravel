@@ -9,6 +9,8 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -92,6 +94,14 @@ void ApplyPlatformMovementConfig(
         movementNode["returnDelay"]
             ? movementNode["returnDelay"].as<float>()
             : 1.0f);
+    const YAML::Node endpointWaitNode =
+        movementNode["endpointWaitSeconds"]
+            ? movementNode["endpointWaitSeconds"]
+            : movementNode["destinationWaitSeconds"];
+    movement->SetEndpointWaitDurationSeconds(
+        endpointWaitNode
+            ? endpointWaitNode.as<float>()
+            : 0.0f);
 }
 
 YAML::Node GetMovementComponentNode(const YAML::Node& platformNode)
@@ -231,6 +241,11 @@ void ApplyPlatformBehaviorConfigs(
         component->SetTargetPlatformIds(targetPlatformIds);
     }
 
+    if (const YAML::Node node = components["enemyClearUnlock"];
+        node && node.IsMap()) {
+        platform->AddEnemyClearUnlockComponent();
+    }
+
     if (const YAML::Node node = components["latchedGroupSwitch"];
         node && node.IsMap()) {
         std::vector<PlatformRevealTarget> revealTargets;
@@ -322,6 +337,8 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadStar(path.c_str());
     LoadNPCs(path.c_str());
     LoadTutorialTriggers(path.c_str());
+    LoadJewelItems(path.c_str());
+    LoadHazardActors(path.c_str());
     LoadPlatforms(path.c_str());
     LoadLegacyMovingPlatforms(path.c_str());
     LoadStageObjects(path.c_str());
@@ -497,6 +514,10 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
 
             const std::string name = node["name"] ? node["name"].as<std::string>() : "";
             npc->SetName(name);
+
+            npc->SetForcesTalkOnArrival(
+                node["forceTalkOnArrival"] &&
+                node["forceTalkOnArrival"].as<bool>());
 
             if (node["proximityMessage"] &&
                 node["proximityMessage"].IsMap()) {
@@ -969,6 +990,10 @@ Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int sta
             if (Actor* actor = findByIndex(planet->GetNPCs())) return actor;
         } else if (sequenceName == "tutorialTriggers") {
             if (Actor* actor = findByIndex(planet->GetTutorialTriggers())) return actor;
+        } else if (sequenceName == "jewelItems") {
+            if (Actor* actor = findByIndex(planet->GetJewelItems())) return actor;
+        } else if (sequenceName == "hazardActors") {
+            if (Actor* actor = findByIndex(planet->GetHazardActors())) return actor;
         } else if (sequenceName == "boatArrivalPoints") {
             if (Actor* actor = findByIndex(planet->GetBoatArrivalPoints())) return actor;
         } else if (sequenceName == "fallRespawnPoints") {
@@ -1305,6 +1330,71 @@ void ActorLoadSystem::LoadBoatArrivalPoints(const char* path)
     mActorFactory.LoadActorSequence<BoatArrivalPoint>(
         path, "boatArrivalPoints", [](Planet* planet) { planet->RemoveAllBoatArrivalPoints(); },
         [this](const YAML::Node& node, int index) { return CreateBoatArrivalPointFromStageNode(node, index); });
+}
+
+void ActorLoadSystem::LoadJewelItems(const char* path)
+{
+    mActorFactory.LoadActorSequence<JewelItem>(
+        path,
+        "jewelItems",
+        [](Planet* planet) { planet->RemoveAllJewelItems(); },
+        [this](const YAML::Node& node, int index) {
+            return CreateJewelItemFromStageNode(node, index);
+        });
+}
+
+JewelItem* ActorLoadSystem::CreateJewelItemFromStageNode(
+    const YAML::Node& node,
+    int stageYamlIndex)
+{
+    return mActorFactory.CreatePlacedActorFromStageNode<JewelItem>(
+        node,
+        stageYamlIndex,
+        0.15f,
+        glm::vec3(0.22f),
+        "crystal.obj",
+        [](Planet* planet, JewelItem* jewelItem) {
+            planet->AddJewelItem(jewelItem);
+        });
+}
+
+void ActorLoadSystem::LoadHazardActors(const char* path)
+{
+    mActorFactory.LoadActorSequence<HazardActor>(
+        path,
+        "hazardActors",
+        [](Planet* planet) { planet->RemoveAllHazardActors(); },
+        [this](const YAML::Node& node, int index) {
+            return CreateHazardActorFromStageNode(node, index);
+        });
+}
+
+HazardActor* ActorLoadSystem::CreateHazardActorFromStageNode(
+    const YAML::Node& node,
+    int stageYamlIndex)
+{
+    return mActorFactory.CreatePlacedActorFromStageNode<HazardActor>(
+        node,
+        stageYamlIndex,
+        0.75f,
+        glm::vec3(0.75f),
+        "crystal.obj",
+        [](Planet* planet, HazardActor* hazardActor) {
+            planet->AddHazardActor(hazardActor);
+        },
+        [](HazardActor* hazardActor, const YAML::Node& actorNode) {
+            if (actorNode["damage"]) {
+                hazardActor->SetDamage(actorNode["damage"].as<float>());
+            }
+            if (actorNode["triggerRadius"]) {
+                hazardActor->SetTriggerRadius(
+                    actorNode["triggerRadius"].as<float>());
+            }
+            if (actorNode["damageIntervalSeconds"]) {
+                hazardActor->SetDamageIntervalSeconds(
+                    actorNode["damageIntervalSeconds"].as<float>());
+            }
+        });
 }
 
 BoatArrivalPoint* ActorLoadSystem::CreateBoatArrivalPointFromStageNode(const YAML::Node& node, int stageYamlIndex)

@@ -1,7 +1,7 @@
 players:
   - hp: 10
     scale: 0.0025
-    attack: 5
+    attack: 50
     attackSpeed: 3
     moveSpeed: 4
     maximumStepHeight: 0.3
@@ -12,14 +12,15 @@ players:
     airWeakAttackPostHoverDurationSeconds: 0.3
     airDodgePostHoverDurationSeconds: 0.1
     groundNormalRayLength: 40
+    overheadGravityRayLength: 5
     dodgeDuration: 0.1
     dodgeCooldownTime: 0.4
     dodgeDistance: 2
     normalAttackRange: 2
     normalAttackAngle: 6.283
-    normalAttack: 20
+    normalAttack: 10
     wideAttackRange: 2
-    wideAttackAngle: 2.2
+    wideAttackAngle: 6.283
     wideAttack: 5
     strongAttackRange: 2.6
     strongAttack: 50
@@ -27,6 +28,15 @@ players:
     airSlamRiseHeight: 1
     airSlamRiseDurationSeconds: 0.5
     airSlamHoverDurationSeconds: 0.3
+    chargedAttackRange: 2.6
+    chargedAttackAngle: 6.283
+    chargedAttackDamage: 50
+    chargedAttackChargeDurationSeconds: 3
+    continuousAttackRange: 2
+    continuousAttackAngle: 6.283
+    continuousAttackDamage: 2.5
+    continuousAttackIntervalSeconds: 0.25
+    continuousAttackDurationSeconds: 6
     specialAttackCooldown: 30
     defaultInvincibleTimer: 2
     defaultDamageTimer: 1

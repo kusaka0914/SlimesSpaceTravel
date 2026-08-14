@@ -61,6 +61,16 @@ public:
         int gameViewHeight);
     void DrawSkyBox();
 
+    bool SaveDebugEditorSession(
+        const std::string& filePath,
+        std::string& outErrorMessage);
+    bool RestoreDebugEditorSession(
+        const std::string& filePath,
+        std::string& outErrorMessage);
+    void SetEditorRestartStatus(
+        const std::string& message,
+        bool isError);
+
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
     int GetFbWidth() const { return mFbWidth; }
     int GetFbHeight() const { return mFbHeight; }
@@ -150,6 +160,12 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
+    const std::string& ResolveCustomElementText(
+        const UILoadSystem::CustomElement& element) const;
+    const std::string& ResolveCustomElementTexturePath(
+        const UILoadSystem::CustomElement& element) const;
+    bool ResolveCustomElementTextureFlipVertical(
+        const UILoadSystem::CustomElement& element) const;
     void RecordRenderedUIElement(
         RenderedUIElementSource source,
         const std::string& screen,

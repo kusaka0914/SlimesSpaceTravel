@@ -12,6 +12,11 @@ enum class CameraEasing {
     EaseInOut,
 };
 
+enum class CameraTransitionMode {
+    Smooth,
+    Cut,
+};
+
 struct CameraPose {
     glm::vec3 position{0.0f};
     glm::vec3 target{0.0f, 0.0f, 1.0f};
@@ -21,8 +26,10 @@ struct CameraPose {
 
 struct CinematicCameraKeyframe {
     float time = 0.0f;
+    float holdDurationSeconds = 0.0f;
     CameraPose pose;
     CameraEasing easing = CameraEasing::EaseInOut;
+    CameraTransitionMode transitionMode = CameraTransitionMode::Smooth;
 };
 
 struct CinematicSequence {

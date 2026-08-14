@@ -6,6 +6,8 @@
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -20,6 +22,7 @@
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
+#include "system/CameraSystem.h"
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
@@ -45,6 +48,48 @@ std::string ToLower(std::string value)
         value.begin(),
         [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return value;
+}
+
+void SavePlatformMovementPath(
+    YAML::Node platformNode,
+    const std::string& sequenceName,
+    const PlatformMovementComponent& movement,
+    bool shouldUpdateActorStartPosition)
+{
+    YAML::Node movementNode =
+        sequenceName == "movingPlatforms"
+            ? platformNode
+            : platformNode["components"]["movement"];
+
+    const glm::vec3 startLocalPos =
+        movement.GetBaseLocalPos();
+    const glm::vec3 endLocalPos =
+        movement.GetDestinationLocalPos();
+    const glm::vec3 moveOffset = movement.GetMoveOffset();
+
+    movementNode["startLocalPos"][0] = startLocalPos.x;
+    movementNode["startLocalPos"][1] = startLocalPos.y;
+    movementNode["startLocalPos"][2] = startLocalPos.z;
+    movementNode["endLocalPos"][0] = endLocalPos.x;
+    movementNode["endLocalPos"][1] = endLocalPos.y;
+    movementNode["endLocalPos"][2] = endLocalPos.z;
+    movementNode["moveOffset"][0] = moveOffset.x;
+    movementNode["moveOffset"][1] = moveOffset.y;
+    movementNode["moveOffset"][2] = moveOffset.z;
+    movementNode["moveDuration"] = movement.GetMoveDuration();
+    movementNode["moveOnPlayer"] = movement.GetMoveOnPlayer();
+    movementNode["returnDelay"] = movement.GetReturnDelay();
+    movementNode.remove("destinationWaitSeconds");
+    movementNode["endpointWaitSeconds"] =
+        movement.GetEndpointWaitDurationSeconds();
+
+    if (!shouldUpdateActorStartPosition) {
+        return;
+    }
+
+    platformNode["pos"][0] = startLocalPos.x;
+    platformNode["pos"][1] = startLocalPos.y;
+    platformNode["pos"][2] = startLocalPos.z;
 }
 
 }
@@ -114,6 +159,29 @@ void StagePlacementPanel::DrawPlayerSpawn()
     }
 
     DrawPlayerSpawnEditor();
+}
+
+void StagePlacementPanel::DrawPlayerDebugMover(Actor* selectedActor)
+{
+    if (!selectedActor) {
+        return;
+    }
+
+    ImGui::SeparatorText("デバッグ移動");
+    if (ImGui::Button("操作中のプレイヤーをここへ移動")) {
+        mPlayerDebugMoveStatus =
+            MoveControlledPlayerToSelectedActor(selectedActor)
+                ? "プレイヤーを選択位置へ移動しました"
+                : "移動先を決定できませんでした";
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "ステージのスポーン設定は変更しません。\n"
+            "現在のプレイ中だけ、落下時の復帰地点も選択位置へ更新します。");
+    }
+    if (!mPlayerDebugMoveStatus.empty()) {
+        ImGui::TextDisabled("%s", mPlayerDebugMoveStatus.c_str());
+    }
 }
 
 void StagePlacementPanel::DrawPlayerSpawnEditor()
@@ -293,6 +361,22 @@ void StagePlacementPanel::SaveEditorAuthoredTransforms()
         savedActors.emplace_back(instance.actor);
     }
 
+    // Players are not part of StageActorQuery. Only a planet-only edit marks
+    // their position as authored, so normal gameplay movement remains excluded
+    // while their unchanged world spawn survives the moved planet on reload.
+    for (Player* player : mContext.game->GetPlayers()) {
+        if (!player || !player->FindEditorAuthoredTransform()) {
+            continue;
+        }
+
+        SaveActorCommonYaml(
+            config,
+            "players",
+            player,
+            true);
+        savedActors.emplace_back(player);
+    }
+
     if (savedActors.empty() ||
         !StageYamlRepository::SaveCurrentStage(mContext, config)) {
         return;
@@ -398,7 +482,17 @@ void StagePlacementPanel::DrawSelectedActorEditor()
 
     if (selectedCount > 1) {
         ImGui::Text("%d個のオブジェクトを選択中", selectedCount);
-        ImGui::TextDisabled("個別設定を編集するには1個だけ選択してください。");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("選択解除##bulkActorSelection")) {
+            mSelectionController.Clear();
+            return;
+        }
+
+        const std::vector<StageActorInstance> selectedActors =
+            mSelectionController.CollectSelectedActorInstances();
+        DrawBulkTextureOverrideEditor(selectedActors);
+        ImGui::TextDisabled(
+            "変更後は上部の「ステージを保存」で保存してください。");
         return;
     }
 
@@ -422,6 +516,8 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         mSelectionController.Clear();
         return;
     }
+
+    DrawPlayerDebugMover(actor);
 
     Planet* surfacePlanet = actor->GetCurrentPlanet();
     const bool isSpherePlanet =
@@ -488,6 +584,254 @@ void StagePlacementPanel::DrawSelectedActorEditor()
         static_cast<std::size_t>(std::max(0, actorRef->yamlIndex)));
 }
 
+void StagePlacementPanel::DrawBulkTextureOverrideEditor(
+    const std::vector<StageActorInstance>& selectedActors)
+{
+    if (selectedActors.empty()) {
+        ImGui::TextDisabled(
+            "選択中のアクターを現在のステージで取得できません。");
+        return;
+    }
+
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません。");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
+
+    const Actor* firstActor = selectedActors.front().actor;
+    if (!firstActor) {
+        return;
+    }
+
+    const std::string commonTexturePath =
+        firstActor->GetTextureOverridePath();
+    const bool hasMixedTexturePaths = std::any_of(
+        selectedActors.begin() + 1,
+        selectedActors.end(),
+        [&commonTexturePath](const StageActorInstance& instance) {
+            return instance.actor &&
+                   instance.actor->GetTextureOverridePath() !=
+                       commonTexturePath;
+        });
+
+    const char* currentTextureLabel = commonTexturePath.c_str();
+    if (hasMixedTexturePaths) {
+        currentTextureLabel = "複数のテクスチャ";
+    } else if (commonTexturePath.empty()) {
+        currentTextureLabel = "モデル標準";
+    }
+
+    const auto applyTexturePath =
+        [this, &selectedActors](const std::string& texturePath) {
+            if (!texturePath.empty() &&
+                mContext.game &&
+                mContext.game->GetRenderer3D() &&
+                mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                    texturePath) == 0) {
+                mTextureAssetStatus =
+                    "テクスチャの読み込みに失敗しました: " +
+                    texturePath;
+                return;
+            }
+
+            for (const StageActorInstance& instance : selectedActors) {
+                if (instance.actor) {
+                    instance.actor->SetTextureOverridePath(texturePath);
+                }
+            }
+            mTextureAssetStatus.clear();
+        };
+
+    ImGui::SeparatorText("テクスチャ一括変更");
+    ImGui::TextWrapped(
+        "現在: %s",
+        currentTextureLabel);
+
+    ImGui::Button(
+        "画像アセットをここへドロップ##bulkActorTextureDrop",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        applyTexturePath(droppedTexturePath);
+    }
+
+    if (ImGui::TreeNode(
+            "テクスチャを選ぶ##bulkActorTexturePicker")) {
+        ImGui::InputTextWithHint(
+            "##bulkActorTextureFilter",
+            "ファイル名で検索",
+            mTextureAssetFilter.data(),
+            mTextureAssetFilter.size());
+        ImGui::SameLine();
+        if (ImGui::Button("更新##bulkActorTextureRefresh")) {
+            mContext.assetCatalog->Refresh();
+        }
+
+        if (ImGui::Selectable(
+                "モデル標準に戻す##bulkActorTextureDefault",
+                !hasMixedTexturePaths && commonTexturePath.empty())) {
+            applyTexturePath("");
+        }
+
+        ImGui::BeginChild(
+            "BulkActorTextureAssetPicker",
+            ImVec2(0.0f, 180.0f),
+            true);
+        const std::string filter =
+            ToLower(mTextureAssetFilter.data());
+        for (const std::string& texturePath :
+             mContext.assetCatalog->GetPaths(
+                 EditorAssetType::Texture)) {
+            if (!filter.empty() &&
+                ToLower(texturePath).find(filter) ==
+                    std::string::npos) {
+                continue;
+            }
+
+            const bool isSelected =
+                !hasMixedTexturePaths &&
+                commonTexturePath == texturePath;
+            if (ImGui::Selectable(
+                    texturePath.c_str(),
+                    isSelected)) {
+                applyTexturePath(texturePath);
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::TreePop();
+    }
+
+    if (!mTextureAssetStatus.empty()) {
+        ImGui::TextColored(
+            ImVec4(1.0f, 0.35f, 0.25f, 1.0f),
+            "%s",
+            mTextureAssetStatus.c_str());
+    }
+
+    if (!hasMixedTexturePaths &&
+        !commonTexturePath.empty() &&
+        mContext.game &&
+        mContext.game->GetRenderer3D()) {
+        const GLuint texture =
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                commonTexturePath);
+        if (texture != 0) {
+            ImGui::TextUnformatted("プレビュー");
+            ImGui::Image(
+                static_cast<ImTextureID>(texture),
+                ImVec2(128.0f, 128.0f),
+                ImVec2(0.0f, 1.0f),
+                ImVec2(1.0f, 0.0f));
+        }
+    }
+}
+
+bool StagePlacementPanel::MoveControlledPlayerToSelectedActor(
+    Actor* selectedActor)
+{
+    if (!selectedActor || !mContext.game) {
+        return false;
+    }
+
+    Player* controlledPlayer = mContext.game->GetControlledPlayer();
+    Stage* currentStage = mContext.game->GetCurrentStage();
+    PhysicsSystem* physicsSystem = mContext.game->GetPhysicsSystem();
+    if (!controlledPlayer || !currentStage || !physicsSystem) {
+        return false;
+    }
+
+    Planet* destinationPlanet =
+        dynamic_cast<Planet*>(selectedActor)
+            ? static_cast<Planet*>(selectedActor)
+            : selectedActor->GetCurrentPlanet();
+    if (!destinationPlanet) {
+        return false;
+    }
+
+    const std::vector<Planet*>& planets = currentStage->GetPlanets();
+    const auto planetIt =
+        std::find(planets.begin(), planets.end(), destinationPlanet);
+    if (planetIt == planets.end()) {
+        return false;
+    }
+    const int destinationPlanetIndex =
+        static_cast<int>(std::distance(planets.begin(), planetIt));
+
+    glm::vec3 upDirection = selectedActor->GetUpVec();
+    if (Planet* selectedPlanet = dynamic_cast<Planet*>(selectedActor)) {
+        const glm::vec3 playerOffset =
+            controlledPlayer->GetPos() - selectedPlanet->GetPos();
+        if (glm::length(playerOffset) > 0.000001f) {
+            upDirection = glm::normalize(playerOffset);
+        }
+    }
+    if (glm::length(upDirection) <= 0.000001f) {
+        upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        upDirection = glm::normalize(upDirection);
+    }
+
+    const float actorExtent =
+        glm::length(glm::abs(selectedActor->GetScale())) +
+        std::max(0.0f, selectedActor->GetRadius());
+    const float rayDistance = std::max(5.0f, actorExtent * 2.0f);
+    const glm::vec3 rayCenter = selectedActor->GetPos();
+    const glm::vec3 rayFrom = rayCenter + upDirection * rayDistance;
+    const glm::vec3 rayTo = rayCenter - upDirection * rayDistance;
+
+    std::optional<PhysicsSystem::RayHitActor> destinationHit;
+    const bool selectedActorDefinesSurface =
+        dynamic_cast<Planet*>(selectedActor) ||
+        dynamic_cast<Platform*>(selectedActor) ||
+        dynamic_cast<StageObject*>(selectedActor);
+    if (selectedActorDefinesSurface) {
+        const std::vector<PhysicsSystem::RayHitActor> actorHits =
+            physicsSystem->PickActorsByRay(rayFrom, rayTo);
+        const auto selectedActorHit =
+            std::find_if(
+                actorHits.begin(),
+                actorHits.end(),
+                [selectedActor](const PhysicsSystem::RayHitActor& hit) {
+                    return hit.actor == selectedActor;
+                });
+        if (selectedActorHit != actorHits.end()) {
+            destinationHit = *selectedActorHit;
+        }
+    }
+
+    if (!destinationHit) {
+        const float groundSearchStartDistance =
+            std::max(1.0f, selectedActor->GetRadius() + 0.5f);
+        destinationHit = physicsSystem->RaycastStageSurface(
+            rayCenter + upDirection * groundSearchStartDistance,
+            rayTo);
+    }
+
+    glm::vec3 destinationPosition = rayCenter;
+    if (destinationHit) {
+        destinationPosition = destinationHit->hitPos;
+        if (glm::length(destinationHit->hitNormal) > 0.000001f) {
+            upDirection = glm::normalize(destinationHit->hitNormal);
+        }
+    }
+
+    constexpr float surfaceClearance = 0.02f;
+    destinationPosition += upDirection * surfaceClearance;
+
+    controlledPlayer->DebugMoveToPosition(
+        destinationPosition,
+        destinationPlanet,
+        destinationPlanetIndex);
+    if (CameraSystem* cameraSystem = mContext.game->GetCameraSystem()) {
+        cameraSystem->SnapBehindControlledPlayer();
+    }
+    return true;
+}
+
 void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::string& sequenceName, std::size_t listIndex)
 {
     if (!actor) {
@@ -539,10 +883,78 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             listIndex);
     }
 
+    if (dynamic_cast<JewelItem*>(actor)) {
+        ImGui::SeparatorText("ジュエルアイテムの見た目");
+        DrawPlacementModelPicker(actor, sequenceName, listIndex);
+        DrawTextureOverrideEditor(actor, sequenceName, listIndex);
+    }
+
+    if (HazardActor* hazardActor =
+            dynamic_cast<HazardActor*>(actor)) {
+        ImGui::SeparatorText("危険アクター設定");
+        DrawPlacementModelPicker(
+            hazardActor,
+            sequenceName,
+            listIndex);
+        DrawTextureOverrideEditor(
+            hazardActor,
+            sequenceName,
+            listIndex);
+
+        float triggerRadius =
+            hazardActor->GetTriggerRadius();
+        if (ImGui::DragFloat(
+                ("判定半径##hazardActorRadius" +
+                 std::to_string(yamlIndex)).c_str(),
+                &triggerRadius,
+                0.01f,
+                0.01f,
+                100.0f,
+                "%.2f")) {
+            hazardActor->SetTriggerRadius(triggerRadius);
+        }
+
+        float damage = hazardActor->GetDamage();
+        if (ImGui::DragFloat(
+                ("ダメージ##hazardActorDamage" +
+                 std::to_string(yamlIndex)).c_str(),
+                &damage,
+                0.5f,
+                0.0f,
+                1000.0f,
+                "%.1f")) {
+            hazardActor->SetDamage(damage);
+        }
+
+        float damageIntervalSeconds =
+            hazardActor->GetDamageIntervalSeconds();
+        if (ImGui::DragFloat(
+                ("再ダメージ間隔（秒）##hazardActorDamageInterval" +
+                 std::to_string(yamlIndex)).c_str(),
+                &damageIntervalSeconds,
+                0.05f,
+                0.0f,
+                30.0f,
+                "%.2f")) {
+            hazardActor->SetDamageIntervalSeconds(
+                damageIntervalSeconds);
+        }
+    }
+
     if (Platform* movingPlatform = dynamic_cast<Platform*>(actor);
         movingPlatform && movingPlatform->GetMovementComponent()) {
         PlatformMovementComponent* movement =
             movingPlatform->GetMovementComponent();
+
+        const bool requiresEditorDrivenPreviewUpdate =
+            mContext.game &&
+            mContext.game->GetIsFreeCameraMode() &&
+            movement->IsEditorMovementPreviewPlaying();
+        if (requiresEditorDrivenPreviewUpdate) {
+            movement->UpdateEditorMovementPreview(
+                ImGui::GetIO().DeltaTime);
+        }
+
         ImGui::SeparatorText("動く足場設定");
 
         bool moveOnPlayer = movement->GetMoveOnPlayer();
@@ -577,6 +989,21 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 60.0f,
                 "%.1f")) {
             movement->SetMoveDuration(std::max(0.1f, moveDuration));
+        }
+
+        float endpointWaitSeconds =
+            movement->GetEndpointWaitDurationSeconds();
+        if (ImGui::DragFloat(
+                ("両端での待機時間（秒）##movingPlatformEndpointWait" +
+                 std::to_string(yamlIndex))
+                    .c_str(),
+                &endpointWaitSeconds,
+                0.1f,
+                0.0f,
+                60.0f,
+                "%.1f")) {
+            movement->SetEndpointWaitDurationSeconds(
+                endpointWaitSeconds);
         }
 
         Planet* movingPlatformPlanet = movingPlatform->GetCurrentPlanet();
@@ -616,6 +1043,23 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 "%.2f")) {
             movement->SetDestinationLocalPos(
                 endWorldPos - planetCenter);
+        }
+
+        if (movement->IsEditorMovementPreviewPlaying()) {
+            if (ImGui::Button(
+                    ("移動プレビューを停止##movingPlatformPreviewStop" +
+                     std::to_string(yamlIndex))
+                        .c_str())) {
+                movement->StopEditorMovementPreview();
+                movement->SetEditorPreviewPoint(0);
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("開始地点から到着地点へ移動中");
+        } else if (ImGui::Button(
+                       ("開始→到着をプレビュー##movingPlatformPreviewPlay" +
+                        std::to_string(yamlIndex))
+                           .c_str())) {
+            movement->StartEditorMovementPreview();
         }
 
         if (moveOnPlayer) {
@@ -664,6 +1108,25 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     "%.2f")) {
                 movement->SetMoveOffset(moveOffset);
             }
+            const bool previewsStart =
+                movement->GetEditorPreviewPoint() == 0;
+            if (ImGui::RadioButton(
+                    ("開始地点を表示・編集##automaticMovingPlatformPreviewStart" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    previewsStart)) {
+                movement->SetEditorPreviewPoint(0);
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton(
+                    ("到着地点を表示・編集##automaticMovingPlatformPreviewEnd" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    !previewsStart)) {
+                movement->SetEditorPreviewPoint(1);
+            }
+            ImGui::TextDisabled(
+                "選択した地点へ足場を固定し、移動ギズモで調整できます。");
             ImGui::TextDisabled(
                 "従来モードでは出発地点と到着地点の間を自動で往復します。");
         }
@@ -861,6 +1324,35 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     nameBuffer.size())) {
                 npc->SetName(nameBuffer.data());
             }
+
+            bool forcesTalkOnArrival =
+                npc->GetForcesTalkOnArrival();
+            if (ImGui::Checkbox(
+                    ("到着時に未読会話を強制開始##forceTalkOnArrival" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    &forcesTalkOnArrival)) {
+                if (forcesTalkOnArrival) {
+                    Stage* stage = mContext.game->GetCurrentStage();
+                    if (stage) {
+                        for (Planet* planet : stage->GetPlanets()) {
+                            if (!planet) {
+                                continue;
+                            }
+                            for (NPC* otherNPC : planet->GetNPCs()) {
+                                if (otherNPC && otherNPC != npc) {
+                                    otherNPC->SetForcesTalkOnArrival(false);
+                                }
+                            }
+                        }
+                    }
+                }
+                npc->SetForcesTalkOnArrival(forcesTalkOnArrival);
+            }
+            ImGui::TextDisabled(
+                "拠点・惑星への到着演出後、現在のクリア状況に対応する会話が未読なら一度だけ開始します。");
+            ImGui::TextDisabled(
+                "有効にできるNPCはステージ内で1人だけです。到着した惑星に所属する場合だけ開始します。");
 
             float talkRadius = npc->GetRadius();
             if (ImGui::DragFloat(
@@ -1425,6 +1917,19 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             "OFFの物体へ接地判定レイが当たると、接地せず惑星の重力方向へ即座に戻します。");
         ImGui::TextDisabled(
             "見た目と当たり判定には影響しません。");
+
+        bool shouldReactToOverheadGravityRay =
+            actor->ShouldReactToOverheadGravityRay();
+        if (ImGui::Checkbox(
+                ("頭上重力レイに反応する##reactsToOverheadGravityRay" +
+                 sequenceName + std::to_string(yamlIndex))
+                    .c_str(),
+                &shouldReactToOverheadGravityRay)) {
+            actor->SetShouldReactToOverheadGravityRay(
+                shouldReactToOverheadGravityRay);
+        }
+        ImGui::TextDisabled(
+            "ONにすると、空中のプレイヤーが頭上へ飛ばしたレイでこの面を検出し、面法線へ重力方向を切り替えます。");
     }
 
     float theta = actor->GetTheta();
@@ -1766,6 +2271,9 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
             platform->AddPressureSwitchComponent();
         } else {
             platform->RemovePressureSwitchComponent();
+            if (!platform->GetLatchedGroupSwitchComponent()) {
+                platform->RemoveEnemyClearUnlockComponent();
+            }
         }
         Save();
         RebuildPhysicsWorldIfNeeded(true);
@@ -1784,9 +2292,37 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
             platform->AddLatchedGroupSwitchComponent();
         } else {
             platform->RemoveLatchedGroupSwitchComponent();
+            if (!platform->GetPressureSwitchComponent()) {
+                platform->RemoveEnemyClearUnlockComponent();
+            }
         }
         Save();
         RebuildPhysicsWorldIfNeeded(true);
+    }
+
+    const bool hasSwitchComponent =
+        platform->GetPressureSwitchComponent() != nullptr ||
+        platform->GetLatchedGroupSwitchComponent() != nullptr;
+    if (hasSwitchComponent) {
+        bool enemyClearUnlockEnabled =
+            platform->GetEnemyClearUnlockComponent() != nullptr;
+        if (ImGui::Checkbox(
+                ("同じ惑星の敵全滅後に使用可能##platformEnemyClearUnlockEnabled" +
+                 sequenceName + std::to_string(listIndex)).c_str(),
+                &enemyClearUnlockEnabled)) {
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+            if (enemyClearUnlockEnabled) {
+                platform->AddEnemyClearUnlockComponent();
+            } else {
+                platform->RemoveEnemyClearUnlockComponent();
+            }
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+        ImGui::TextDisabled(
+            "ONでは、同じ惑星の敵が全滅するまでこのスイッチを薄く表示し、衝突と起動を無効にします。");
     }
 
     ImGui::TextDisabled(
@@ -2210,6 +2746,20 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             ImGui::Text(
                 "現在の状態: %s",
                 pressureSwitch->GetIsPressed() ? "ON" : "OFF");
+        }
+    }
+
+    if (PlatformEnemyClearUnlockComponent* enemyClearUnlock =
+            platform->GetEnemyClearUnlockComponent()) {
+        ImGui::SeparatorText("敵全滅後に解放");
+        ImGui::TextDisabled(
+            "このスイッチと同じ惑星にいる有効な敵をすべて倒すと、不透明になって使用可能になります。");
+        if (!mContext.game->GetIsDebugEditorShowing()) {
+            ImGui::Text(
+                "現在の状態: %s",
+                enemyClearUnlock->GetIsUnlocked()
+                    ? "使用可能"
+                    : "敵全滅待ち");
         }
     }
 
@@ -2956,6 +3506,14 @@ void StagePlacementPanel::SaveActorCommonYaml(
             false;
     }
 
+    if (actor->ShouldReactToOverheadGravityRay()) {
+        config[sequenceName][yamlIndex]
+              ["reactsToOverheadGravityRay"] = true;
+    } else {
+        config[sequenceName][yamlIndex].remove(
+            "reactsToOverheadGravityRay");
+    }
+
     if (editorTransform && editorTransform->hasPosition) {
         StageYamlRepository::SetSequenceValue(
             config,
@@ -3030,18 +3588,44 @@ void StagePlacementPanel::SaveActorCommonYaml(
     }
 
     if (shouldSaveEditorTransform) {
+        const Platform* platform =
+            dynamic_cast<const Platform*>(actor);
+        const PlatformMovementComponent* movement =
+            platform
+                ? platform->GetMovementComponent()
+                : nullptr;
+        if (movement && editorTransform &&
+            editorTransform->hasPosition) {
+            SavePlatformMovementPath(
+                config[sequenceName][yamlIndex],
+                sequenceName,
+                *movement,
+                true);
+        }
         return;
     }
 
     if (dynamic_cast<const Platform*>(actor) ||
         dynamic_cast<const StageObject*>(actor) ||
-        dynamic_cast<const BoatArrivalPoint*>(actor)) {
+        dynamic_cast<const BoatArrivalPoint*>(actor) ||
+        dynamic_cast<const JewelItem*>(actor) ||
+        dynamic_cast<const HazardActor*>(actor)) {
         config[sequenceName][yamlIndex]["modelPath"] = actor->GetModelPath();
     }
 
     if (const StageObject* stageObject = dynamic_cast<const StageObject*>(actor)) {
         config[sequenceName][yamlIndex]["collision"] =
             stageObject->GetCollisionEnabled();
+    }
+
+    if (const HazardActor* hazardActor =
+            dynamic_cast<const HazardActor*>(actor)) {
+        config[sequenceName][yamlIndex]["triggerRadius"] =
+            hazardActor->GetTriggerRadius();
+        config[sequenceName][yamlIndex]["damage"] =
+            hazardActor->GetDamage();
+        config[sequenceName][yamlIndex]["damageIntervalSeconds"] =
+            hazardActor->GetDamageIntervalSeconds();
     }
 
     if (const Platform* platform = dynamic_cast<const Platform*>(actor)) {
@@ -3083,6 +3667,9 @@ void StagePlacementPanel::SaveActorCommonYaml(
             movementNode["moveDuration"] = movement->GetMoveDuration();
             movementNode["moveOnPlayer"] = movement->GetMoveOnPlayer();
             movementNode["returnDelay"] = movement->GetReturnDelay();
+            movementNode.remove("destinationWaitSeconds");
+            movementNode["endpointWaitSeconds"] =
+                movement->GetEndpointWaitDurationSeconds();
 
             if (editorTransform && editorTransform->hasPosition) {
                 config[sequenceName][yamlIndex]["pos"][0] = startLocalPos.x;
@@ -3187,6 +3774,13 @@ void StagePlacementPanel::SaveActorCommonYaml(
             removeComponentNode("pressureSwitch");
         }
 
+        if (platform->GetEnemyClearUnlockComponent()) {
+            platformNode["components"]["enemyClearUnlock"] =
+                YAML::Node(YAML::NodeType::Map);
+        } else {
+            removeComponentNode("enemyClearUnlock");
+        }
+
         if (const PlatformLatchedGroupSwitchComponent* component =
                 platform->GetLatchedGroupSwitchComponent()) {
             YAML::Node node =
@@ -3261,6 +3855,8 @@ void StagePlacementPanel::SaveActorCommonYaml(
                 npc->GetName();
             config[sequenceName][yamlIndex]["radius"] =
                 npc->GetRadius();
+            config[sequenceName][yamlIndex]["forceTalkOnArrival"] =
+                npc->GetForcesTalkOnArrival();
         }
 
         if (isTutorialTrigger ||
@@ -3440,19 +4036,24 @@ void StagePlacementPanel::SaveActorCommonYaml(
         }
     }
 
-    if (dynamic_cast<const Platform*>(actor) ||
+    const bool supportsTextureTiling =
+        dynamic_cast<const Platform*>(actor) ||
         dynamic_cast<const StageObject*>(actor) ||
-        dynamic_cast<const Boat*>(actor)) {
+        dynamic_cast<const Boat*>(actor) ||
+        dynamic_cast<const BoatArrivalPoint*>(actor) ||
+        dynamic_cast<const JewelItem*>(actor) ||
+        dynamic_cast<const HazardActor*>(actor);
+    if (supportsTextureTiling) {
         const glm::vec2 textureTiling = actor->GetTextureTiling();
         config[sequenceName][yamlIndex]["textureTiling"][0] = textureTiling.x;
         config[sequenceName][yamlIndex]["textureTiling"][1] = textureTiling.y;
+    }
 
-        const std::string& textureOverride = actor->GetTextureOverridePath();
-        if (textureOverride.empty()) {
-            config[sequenceName][yamlIndex].remove("textureOverride");
-        } else {
-            config[sequenceName][yamlIndex]["textureOverride"] = textureOverride;
-        }
+    const std::string& textureOverride = actor->GetTextureOverridePath();
+    if (textureOverride.empty()) {
+        config[sequenceName][yamlIndex].remove("textureOverride");
+    } else {
+        config[sequenceName][yamlIndex]["textureOverride"] = textureOverride;
     }
 }
 

@@ -68,7 +68,6 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
             player,
             movement,
             combat,
-            status,
             deltaTime);
         break;
     case PlayerActionState::KnockedBack:

@@ -1,49 +1,133 @@
 cinematics:
   base_second_sequence:
+    name: base_second_sequence
     loop: false
     endHoldDuration: 0.5
     keyframes:
       - time: 0
+        holdDuration: 0
         position: [0.11434949, 22.338888, 21.057901]
         target: [0.18894827, 22.048058, 20.10404]
         up: [0.028665258, 0.95675725, -0.28947178]
         fieldOfView: 60
         easing: easeInOut
+        transition: smooth
       - time: 4
+        holdDuration: 0
         position: [0.8368539, 10.699432, -1.2634356]
         target: [0.91630214, 10.662878, -2.2596042]
         up: [0.00864015, 0.99931514, -0.035980713]
         fieldOfView: 60
         easing: easeInOut
+        transition: smooth
   base_sequence:
+    name: 拠点初到着演出
     loop: false
     endHoldDuration: 0.5
     keyframes:
       - time: 0
+        holdDuration: 0
         position: [7.1099377, 11.265764, 20.872694]
         target: [6.5499353, 11.121745, 20.056816]
         up: [-0.11190812, 0.9888993, -0.09774944]
         fieldOfView: 60
         easing: easeInOut
+        transition: smooth
       - time: 4
+        holdDuration: 0
         position: [16.065174, 11.664637, 14.655585]
         target: [15.505172, 11.5206175, 13.839707]
         up: [-0.11190812, 0.9888993, -0.09774944]
         fieldOfView: 60
         easing: easeInOut
-  boss_sequence:
+        transition: smooth
+      - time: 4
+        holdDuration: 0
+        position: [0.11434949, 22.338888, 21.057901]
+        target: [0.18894833, 22.048058, 20.10404]
+        up: [0.028665258, 0.95675725, -0.28947178]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+      - time: 8
+        holdDuration: 0
+        position: [0.8368539, 10.699432, -1.2634356]
+        target: [0.91630214, 10.662878, -2.2596042]
+        up: [0.00864015, 0.99931514, -0.035980713]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+  enter_stage1:
+    name: ステージ1開始演出
     loop: false
     endHoldDuration: 0.5
     keyframes:
       - time: 0
-        position: [64.24321, 0.2688266, -13.965152]
-        target: [64.36733, 0.24745746, -12.973115]
-        up: [0.97256374, -0.1956244, -0.1259004]
+        holdDuration: 0
+        position: [7.5719843, -8.550598, 2.5959508]
+        target: [7.1451735, -7.6530857, 2.485025]
+        up: [0.9041086, 0.4206976, -0.074842185]
         fieldOfView: 60
         easing: easeInOut
-      - time: 2
-        position: [65.06469, 0.121905684, -8.938409]
-        target: [65.30504, 0.077133, -7.9687552]
-        up: [0.95053643, -0.19162664, -0.24445838]
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [16.99787, -22.07732, 2.22521]
+        target: [16.440779, -21.251637, 2.1363513]
+        up: [0.8296068, 0.5485042, -0.10438319]
         fieldOfView: 60
         easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [35.593742, 24.249847, -2.4069967]
+        target: [36.25508, 23.512117, -2.2714007]
+        up: [-0.7468019, -0.6644954, 0.027072165]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+      - time: 6
+        holdDuration: 0
+        position: [41.926132, 15.156785, -1.6722455]
+        target: [42.52374, 14.36685, -1.534881]
+        up: [-0.7987165, -0.6014997, 0.015816152]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+  enter_stage2:
+    name: ステージ2開始演出
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        holdDuration: 0
+        position: [-1.2191027, -6.3222437, -39.546925]
+        target: [-0.9577626, -5.821126, -40.3719]
+        up: [0.15133506, -0.86537915, -0.47772035]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [-0.5368403, -18.490368, -17.288496]
+        target: [-0.27550012, -17.98925, -18.11347]
+        up: [0.15133505, -0.8653791, -0.4777203]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [-18.625996, 30.688803, -25.845333]
+        target: [-19.023727, 30.735909, -24.92904]
+        up: [0.03158332, 0.9987923, -0.037637785]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth
+      - time: 6
+        holdDuration: 0
+        position: [-33.446526, 31.579967, -14.632744]
+        target: [-33.844257, 31.627073, -13.716452]
+        up: [0.031583317, 0.99879223, -0.037637785]
+        fieldOfView: 60
+        easing: easeInOut
+        transition: smooth

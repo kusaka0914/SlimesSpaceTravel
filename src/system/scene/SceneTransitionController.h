@@ -13,9 +13,13 @@ public:
 
     void UpdateFade(float deltaTime);
     void StartOpening();
+    void StartBattleStyleSelection();
     void StartFadeIn();
+    void CancelPendingTransition();
     void RequestStageChange(int stageNum);
-    bool RequestFadeAction(std::function<void()> midpointAction);
+    bool RequestFadeAction(
+        std::function<void()> midpointAction,
+        std::function<void()> completionAction = {});
 
 private:
     void ApplySceneChange();
@@ -31,5 +35,6 @@ private:
     int& mNextStageNum;
 
     std::function<void()> mMidpointAction;
+    std::function<void()> mFadeCompletionAction;
     bool mHasPlayedBaseIntroThisSession = false;
 };

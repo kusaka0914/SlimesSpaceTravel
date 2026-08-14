@@ -5,8 +5,9 @@ enemies:
     launchHeight: 2.02
     detectionRange: 10
   - type: normal
+    displayName: 通常敵
     behaviorProfile: legacyMelee
-    hp: 100
+    hp: 60
     modelPath: enemy.obj
     scale: 0.25
     speed: 1
@@ -16,7 +17,21 @@ enemies:
     defaultStandByAttackTimer: 6
     defaultAttackMotionTimer: 3
     attackSpeed: 1.5
+    attackPreparationRange: 1.5
+    attacks:
+      - type: meleeAttack
+        weight: 100
+    isBoss: false
+    preAttackApproachProbabilityPercent: 0
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 0
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 0
   - type: normalFixed
+    displayName: 動かない敵
     behaviorProfile: legacyMelee
     hp: 400
     modelPath: enemy.obj
@@ -28,7 +43,12 @@ enemies:
     defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
     attackSpeed: 9
+    attackPreparationRange: 2.5
+    attacks:
+      - type: meleeAttack
+        weight: 100
   - type: bigFixed
+    displayName: 動かない大きい敵
     behaviorProfile: legacyMelee
     hp: 80
     modelPath: enemy.obj
@@ -40,18 +60,95 @@ enemies:
     defaultStandByAttackTimer: 2
     defaultAttackMotionTimer: 0.5
     attackSpeed: 4.5
+    attackPreparationRange: 2.5
+    attacks:
+      - type: meleeAttack
+        weight: 100
   - type: boss
+    displayName: ボス敵1
+    isBoss: true
     behaviorProfile: bossMelee
     hp: 400
     modelPath: enemy.obj
     scale: 1
     speed: 3
-    attack: 2
+    attack: 1
     breakCountMax: 3
     radius: 1.5
     defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
-    attackSpeed: 9
+    attackSpeed: 5
+    attackPreparationRange: 2.5
+    preAttackApproachProbabilityPercent: 20
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 50
+    postAttackRetreatDelaySeconds: 1
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 20
+    attacks:
+      - type: meleeAttack
+        weight: 100
+  - type: normal_short_interval
+    displayName: 通常敵（間隔短い）
+    behaviorProfile: legacyMelee
+    isBoss: false
+    hp: 40
+    modelPath: enemy.obj
+    scale: 0.25
+    speed: 1
+    attack: 1
+    breakCountMax: 1
+    radius: 0.75
+    defaultStandByAttackTimer: 2
+    defaultAttackMotionTimer: 1
+    attackSpeed: 5
+    attackPreparationRange: 2.25
+    preAttackApproachProbabilityPercent: 0
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 0
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 0
+    attacks:
+      - type: meleeAttack
+        weight: 100
+    postAttackRetreatDelaySeconds: 1
+  - type: boss_2
+    displayName: ボス敵2
+    behaviorProfile: bossMelee
+    isBoss: true
+    hp: 600
+    modelPath: enemy.obj
+    scale: 1
+    speed: 3
+    attack: 1
+    breakCountMax: 3
+    radius: 1.5
+    defaultStandByAttackTimer: 3
+    defaultAttackMotionTimer: 0.5
+    attackSpeed: 5
+    attackPreparationRange: 2.5
+    preAttackApproachProbabilityPercent: 25
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 55
+    postAttackRetreatDelaySeconds: 1
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 25
+    attacks:
+      - type: meleeAttack
+        weight: 67
+      - type: tripleChargeAttack
+        weight: 33
+        chargeCount: 2
+        repeatDelay: 1
 behaviorProfiles:
   legacyMelee:
     actions:

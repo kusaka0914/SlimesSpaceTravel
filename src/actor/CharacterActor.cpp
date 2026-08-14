@@ -130,6 +130,10 @@ CharacterActor::LandingRayResolution CharacterActor::ResolveLandingByRay(
         bulletHitNormal.x(),
         bulletHitNormal.y(),
         bulletHitNormal.z());
+    if (!ShouldAcceptLandingSurface(hitActor, hitNormal)) {
+        return LandingRayResolution::NoHit;
+    }
+
     if (!IsWalkableGroundNormal(hitNormal, mUpVec)) {
         return LandingRayResolution::NoHit;
     }

@@ -21,6 +21,14 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
+    if (TryStartAssistAirSlamAttack(
+            player,
+            input,
+            movement,
+            combat)) {
+        return;
+    }
+
     if (TryStartAirSlamAttack(
             player,
             input,
@@ -31,6 +39,16 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
     }
 
     if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
+        return;
+    }
+
+    if (TryStartAssistBrokenEnemyAirCombo(
+            player,
+            input,
+            movement,
+            combat,
+            status,
+            deltaTime)) {
         return;
     }
 
@@ -90,6 +108,123 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
     }
 
     TryStartAttack(player, input, movement, combat, status, deltaTime);
+}
+
+bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status,
+    float deltaTime)
+{
+    const bool hasWeakAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
+    const bool canStartAirCombo =
+        player.GetGame()->IsAssistControlStyle() &&
+        player.GetOnGround() &&
+        hasWeakAttackRequest &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (!canStartAirCombo) {
+        return false;
+    }
+
+    constexpr float assistAirComboMaximumTargetDistance = 8.0f;
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestBrokenAirborneTarget(
+            player,
+            assistAirComboMaximumTargetDistance);
+    if (!target) {
+        return false;
+    }
+
+    glm::vec3 targetUpDirection = target->GetUpVec();
+    const float targetUpLength = glm::length(targetUpDirection);
+    if (targetUpLength > 0.0001f) {
+        targetUpDirection /= targetUpLength;
+        player.SetUpVec(targetUpDirection);
+    }
+
+    glm::vec3 entryDirection = player.GetPos() - target->GetPos();
+    entryDirection -= targetUpDirection * glm::dot(entryDirection, targetUpDirection);
+    const float entryDirectionLength = glm::length(entryDirection);
+    if (entryDirectionLength > 0.0001f) {
+        entryDirection /= entryDirectionLength;
+    } else {
+        entryDirection = -target->GetFacingForwardVec();
+    }
+
+    constexpr float playerEntryClearance = 0.8f;
+    player.SetPos(
+        target->GetPos() +
+        entryDirection *
+            (std::max(0.0f, target->GetRadius()) +
+             playerEntryClearance));
+    player.SetVelocity(glm::vec3(0.0f));
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
+    player.RefreshFallbackUpVec();
+
+    movement.CancelJumpApexHover();
+    movement.CancelAirborneActionHover();
+    movement.ResetEllipseAirborneSurfaceTravel();
+    combat.PrepareAssistAirCombo();
+
+    mAttackDirectionTarget = target;
+    PlayerTargetingAssist::FaceTarget(player, movement, *target);
+    movement.ClearStrongAttackDirectionOverride();
+    ChangeState(PlayerActionState::Attacking);
+    combat.StartAttacking(
+        player,
+        PlayerAttackInputKind::Wide,
+        movement,
+        status,
+        deltaTime);
+    input.ConsumeBufferedAttackInput();
+    return true;
+}
+
+bool PlayerStateMachine::TryStartAssistAirSlamAttack(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat)
+{
+    const bool hasWeakAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
+    const bool canStartAirSlam =
+        player.GetGame()->IsAssistControlStyle() &&
+        !player.GetOnGround() &&
+        hasWeakAttackRequest &&
+        combat.HasSuccessfulAirDodgeAttack() &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        !combat.GetIsStrongAttacked();
+    if (!canStartAirSlam) {
+        return false;
+    }
+
+    constexpr float assistAirSlamMaximumTargetDistance = 8.0f;
+    constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 0.5f;
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestBrokenAirborneTargetNearRecovery(
+            player,
+            assistAirSlamMaximumTargetDistance,
+            assistAirSlamLaunchedTimerThresholdSeconds);
+    if (!target) {
+        return false;
+    }
+
+    mAttackDirectionTarget = target;
+    PlayerTargetingAssist::FaceTarget(player, movement, *target);
+    movement.ClearStrongAttackDirectionOverride();
+    movement.StartAirSlamMovement(player);
+    combat.StartAirSlamAttack();
+    input.ConsumeBufferedAttackInput();
+    mCoyoteTimeRemaining = 0.0f;
+    ChangeState(PlayerActionState::AirSlamAttacking);
+    return true;
 }
 
 bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
@@ -328,7 +463,8 @@ bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, Pla
     } else {
         combat.EndAirDodgeAttack();
     }
-    status.StartInvincible(movement.GetDodgeDuration());
+    status.StartDodgeInvincibility(
+        movement.GetDodgeDuration());
 
     player.GetGame()->GetAudioSystem()->PlaySE("dodge_se");
 
@@ -383,7 +519,7 @@ bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
 
     ChangeState(PlayerActionState::Dodging);
     combat.StartAirDodgeAttack();
-    status.StartInvincible(
+    status.StartDodgeInvincibility(
         movement.GetDodgeDuration());
     player.GetGame()
         ->GetAudioSystem()

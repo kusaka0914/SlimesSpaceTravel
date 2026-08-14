@@ -338,6 +338,12 @@ bool StageActorCreateService::CreateActorFromStageNode(
     case StageActorType::TutorialTrigger:
         return actorLoadSystem->CreateTutorialTriggerFromStageNode(
                    actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::JewelItem:
+        return actorLoadSystem->CreateJewelItemFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::HazardActor:
+        return actorLoadSystem->CreateHazardActorFromStageNode(
+                   actorNode, stageYamlIndex) != nullptr;
     }
 
     return false;
@@ -753,6 +759,91 @@ bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlac
     return true;
 }
 
+bool StageActorCreateService::AddJewelItem(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::string& texturePath,
+    const glm::vec3& scale,
+    const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || modelPath.empty() ||
+        !IsValidPlanetIndex(currentPlanetNum, "jewel item")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "jewelItems");
+    const int index = static_cast<int>(config["jewelItems"].size());
+    YAML::Node jewelItemNode = CreateJewelItemNode(
+        currentPlanetNum,
+        modelPath,
+        texturePath,
+        scale);
+    ApplyPlacementToNode(jewelItemNode, currentPlanetNum, placement);
+    config["jewelItems"].push_back(jewelItemNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mContext.game->GetActorLoadSystem()->CreateJewelItemFromStageNode(
+        jewelItemNode,
+        index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddHazardActor(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::string& texturePath,
+    const glm::vec3& scale,
+    float triggerRadius,
+    float damage,
+    float damageIntervalSeconds,
+    const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || modelPath.empty() ||
+        !IsValidPlanetIndex(currentPlanetNum, "hazard actor")) {
+        return false;
+    }
+
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    EnsureSequence(config, "hazardActors");
+    const int index =
+        static_cast<int>(config["hazardActors"].size());
+    YAML::Node hazardActorNode = CreateHazardActorNode(
+        currentPlanetNum,
+        modelPath,
+        texturePath,
+        scale,
+        triggerRadius,
+        damage,
+        damageIntervalSeconds);
+    ApplyPlacementToNode(
+        hazardActorNode,
+        currentPlanetNum,
+        placement);
+    config["hazardActors"].push_back(hazardActorNode);
+
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+
+    mContext.game->GetActorLoadSystem()->
+        CreateHazardActorFromStageNode(hazardActorNode, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
 bool StageActorCreateService::AddStageObject(
     int currentPlanetNum,
     const std::string& modelPath,
@@ -825,6 +916,7 @@ YAML::Node StageActorCreateService::CreateRideMovingPlatformNode(
     movement["moveOnPlayer"] = true;
     movement["moveDuration"] = 3.0f;
     movement["returnDelay"] = 1.0f;
+    movement["endpointWaitSeconds"] = 0.0f;
     movement["moveOffset"][0] = 0.0f;
     movement["moveOffset"][1] = 5.0f;
     movement["moveOffset"][2] = 0.0f;
@@ -851,6 +943,8 @@ YAML::Node StageActorCreateService::CreatePlanetNode(int planetIndex, const std:
     node["model"] = modelPath;
     node["shape"] = "Sphere";
     node["stageNum"] = planetIndex;
+    node["canAttractNearbyPlayer"] = true;
+    node["reactsToOverheadGravityRay"] = false;
     node["rocketSpawnCondition"] = "";
 
     return node;
@@ -1022,8 +1116,59 @@ YAML::Node StageActorCreateService::CreateStarNode(int currentPlanetNum) const
     node["theta"] = 0.0f;
     node["phi"] = 0.0f;
     node["height"] = 1.0f;
-    node["isActive"] = true;
+    node["isActive"] = false;
 
+    return node;
+}
+
+YAML::Node StageActorCreateService::CreateJewelItemNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::string& texturePath,
+    const glm::vec3& scale) const
+{
+    YAML::Node node;
+    node["currentPlanetNum"] = currentPlanetNum;
+    node["theta"] = 0.0f;
+    node["phi"] = 0.0f;
+    node["height"] = 0.15f;
+    node["facingYaw"] = 0.0f;
+    node["modelPath"] = modelPath;
+    if (!texturePath.empty()) {
+        node["textureOverride"] = texturePath;
+    }
+    node["scale"][0] = std::max(0.01f, scale.x);
+    node["scale"][1] = std::max(0.01f, scale.y);
+    node["scale"][2] = std::max(0.01f, scale.z);
+    return node;
+}
+
+YAML::Node StageActorCreateService::CreateHazardActorNode(
+    int currentPlanetNum,
+    const std::string& modelPath,
+    const std::string& texturePath,
+    const glm::vec3& scale,
+    float triggerRadius,
+    float damage,
+    float damageIntervalSeconds) const
+{
+    YAML::Node node;
+    node["currentPlanetNum"] = currentPlanetNum;
+    node["theta"] = 0.0f;
+    node["phi"] = 0.0f;
+    node["height"] = 0.75f;
+    node["facingYaw"] = 0.0f;
+    node["modelPath"] = modelPath;
+    if (!texturePath.empty()) {
+        node["textureOverride"] = texturePath;
+    }
+    node["scale"][0] = std::max(0.01f, scale.x);
+    node["scale"][1] = std::max(0.01f, scale.y);
+    node["scale"][2] = std::max(0.01f, scale.z);
+    node["triggerRadius"] = std::max(0.01f, triggerRadius);
+    node["damage"] = std::max(0.0f, damage);
+    node["damageIntervalSeconds"] =
+        std::max(0.0f, damageIntervalSeconds);
     return node;
 }
 

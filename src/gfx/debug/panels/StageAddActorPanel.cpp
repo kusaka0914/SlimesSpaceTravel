@@ -4,6 +4,7 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
+#include "actor/enemy/EnemyPresetRepository.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/stage/StageActorQuery.h"
@@ -230,6 +231,8 @@ void StageAddActorPanel::Draw()
     mContext.assetCatalog->EnsureScanned();
 
     DrawBoatArrivalPointCreation();
+    DrawJewelItemCreation();
+    DrawHazardActorCreation();
 
     if (mPlacementCreator) {
         ImGui::SeparatorText("連続配置中");
@@ -375,10 +378,53 @@ void StageAddActorPanel::Draw()
 
         DrawPlanetCombo("敵の追加先惑星", mSelectedEnemyPlanetIndex);
 
-        const char* enemyTypeLabels[] = {"通常敵", "ボス敵", "動かない敵", "動かない大きい敵"};
-        const char* enemyTypes[] = {"normal", "boss", "normalFixed", "bigFixed"};
+        const std::uint64_t currentPresetRevision =
+            EnemyPresetRepository::GetRevision();
+        if (!mEnemyPresetsLoaded ||
+            mLoadedEnemyPresetRevision != currentPresetRevision) {
+            mEnemyPresetsLoaded = true;
+            mLoadedEnemyPresetRevision = currentPresetRevision;
+            EnemyPresetRepository::Load(
+                "../assets/data/actor/enemies.yaml",
+                mEnemyPresets,
+                mEnemyPresetLoadError);
+        }
+        if (mEnemyPresets.empty()) {
+            ImGui::TextWrapped(
+                "敵プリセットを読み込めません: %s",
+                mEnemyPresetLoadError.c_str());
+            ImGui::TreePop();
+            return;
+        }
 
-        ImGui::Combo("敵タイプ", &mSelectedEnemyTypeIndex, enemyTypeLabels, IM_ARRAYSIZE(enemyTypeLabels));
+        mSelectedEnemyTypeIndex = std::clamp(
+            mSelectedEnemyTypeIndex,
+            0,
+            static_cast<int>(mEnemyPresets.size()) - 1);
+        const EnemyPresetDefinition& selectedEnemyPreset =
+            mEnemyPresets[mSelectedEnemyTypeIndex];
+        if (ImGui::BeginCombo(
+                "敵プリセット",
+                selectedEnemyPreset.displayName.c_str())) {
+            for (std::size_t presetIndex = 0;
+                 presetIndex < mEnemyPresets.size();
+                 ++presetIndex) {
+                const bool isSelected =
+                    static_cast<int>(presetIndex) ==
+                    mSelectedEnemyTypeIndex;
+                const std::string label =
+                    mEnemyPresets[presetIndex].displayName +
+                    " (" + mEnemyPresets[presetIndex].id + ")";
+                if (ImGui::Selectable(label.c_str(), isSelected)) {
+                    mSelectedEnemyTypeIndex =
+                        static_cast<int>(presetIndex);
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
 
         const bool canAddEnemy = mSelectedEnemyPlanetIndex >= 0;
 
@@ -388,7 +434,8 @@ void StageAddActorPanel::Draw()
         }
 
         if (ImGui::Button("敵を追加")) {
-            const std::string enemyType = enemyTypes[mSelectedEnemyTypeIndex];
+            const std::string enemyType =
+                mEnemyPresets[mSelectedEnemyTypeIndex].id;
             BeginPlacement(
                 "敵",
                 mSelectedEnemyPlanetIndex,
@@ -931,6 +978,221 @@ void StageAddActorPanel::Draw()
             ImGui::TreePop();
         }
     }
+}
+
+void StageAddActorPanel::DrawJewelItemCreation()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage() ||
+        !mContext.assetCatalog ||
+        !ImGui::TreeNode("ジュエルアイテム追加")) {
+        return;
+    }
+
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    if (planets.empty()) {
+        ImGui::TextUnformatted(
+            "惑星が存在しないため、ジュエルアイテムを追加できません");
+        ImGui::TreePop();
+        return;
+    }
+
+    DrawPlanetCombo(
+        "追加先の惑星##jewelItem",
+        mSelectedJewelItemPlanetIndex);
+
+    ImGui::Button(
+        "モデルをここへドロップ##newJewelItemModel",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        mSelectedJewelItemModel = droppedModelPath;
+    }
+    ImGui::TextWrapped("モデル: %s", mSelectedJewelItemModel.c_str());
+
+    ImGui::Button(
+        "テクスチャをここへドロップ##newJewelItemTexture",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        mSelectedJewelItemTexture = droppedTexturePath;
+    }
+    ImGui::TextWrapped(
+        "テクスチャ: %s",
+        mSelectedJewelItemTexture.c_str());
+    ImGui::DragFloat3(
+        "初期スケール##jewelItem",
+        &mJewelItemScale.x,
+        0.01f,
+        0.01f,
+        30.0f,
+        "%.2f");
+
+    const bool canAdd =
+        mSelectedJewelItemPlanetIndex >= 0 &&
+        !mSelectedJewelItemModel.empty();
+    if (!canAdd) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button("ジュエルアイテムを追加")) {
+        const std::string modelPath = mSelectedJewelItemModel;
+        const std::string texturePath = mSelectedJewelItemTexture;
+        const glm::vec3 scale = mJewelItemScale;
+        BeginPlacement(
+            "ジュエルアイテム",
+            mSelectedJewelItemPlanetIndex,
+            [this, modelPath, texturePath, scale](
+                int planetIndex,
+                const StageActorPlacement& placement) {
+                return mCreateService.AddJewelItem(
+                    planetIndex,
+                    modelPath,
+                    texturePath,
+                    scale,
+                    &placement);
+            });
+    }
+
+    if (!canAdd) {
+        ImGui::EndDisabled();
+    }
+    ImGui::TextDisabled(
+        "追加解除まで、ゲーム画面をクリックするたびに配置できます。");
+    ImGui::TreePop();
+}
+
+void StageAddActorPanel::DrawHazardActorCreation()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage() ||
+        !mContext.assetCatalog ||
+        !ImGui::TreeNode("危険アクター追加")) {
+        return;
+    }
+
+    const auto& planets =
+        mContext.game->GetCurrentStage()->GetPlanets();
+    if (planets.empty()) {
+        ImGui::TextUnformatted(
+            "惑星が存在しないため、危険アクターを追加できません");
+        ImGui::TreePop();
+        return;
+    }
+
+    DrawPlanetCombo(
+        "追加先の惑星##hazardActor",
+        mSelectedHazardActorPlanetIndex);
+
+    ImGui::Button(
+        "モデルをここへドロップ##newHazardActorModel",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        mSelectedHazardActorModel = droppedModelPath;
+    }
+    ImGui::TextWrapped(
+        "モデル: %s",
+        mSelectedHazardActorModel.c_str());
+
+    ImGui::Button(
+        "テクスチャをここへドロップ##newHazardActorTexture",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        mSelectedHazardActorTexture = droppedTexturePath;
+    }
+    ImGui::TextWrapped(
+        "テクスチャ: %s",
+        mSelectedHazardActorTexture.empty()
+            ? "モデル標準"
+            : mSelectedHazardActorTexture.c_str());
+
+    ImGui::DragFloat3(
+        "初期スケール##hazardActor",
+        &mHazardActorScale.x,
+        0.01f,
+        0.01f,
+        30.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "判定半径##hazardActor",
+        &mHazardActorTriggerRadius,
+        0.01f,
+        0.01f,
+        100.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "ダメージ##hazardActor",
+        &mHazardActorDamage,
+        0.5f,
+        0.0f,
+        1000.0f,
+        "%.1f");
+    ImGui::DragFloat(
+        "再ダメージ間隔（秒）##hazardActor",
+        &mHazardActorDamageIntervalSeconds,
+        0.05f,
+        0.0f,
+        30.0f,
+        "%.2f");
+    ImGui::TextDisabled(
+        "接触時と攻撃を当てた時に同じダメージ・ノックバックを与えます");
+
+    const bool canAdd =
+        mSelectedHazardActorPlanetIndex >= 0 &&
+        !mSelectedHazardActorModel.empty();
+    if (!canAdd) {
+        ImGui::BeginDisabled();
+    }
+
+    if (ImGui::Button("危険アクターを追加")) {
+        const std::string modelPath =
+            mSelectedHazardActorModel;
+        const std::string texturePath =
+            mSelectedHazardActorTexture;
+        const glm::vec3 scale = mHazardActorScale;
+        const float triggerRadius =
+            mHazardActorTriggerRadius;
+        const float damage = mHazardActorDamage;
+        const float damageIntervalSeconds =
+            mHazardActorDamageIntervalSeconds;
+        BeginPlacement(
+            "危険アクター",
+            mSelectedHazardActorPlanetIndex,
+            [this,
+             modelPath,
+             texturePath,
+             scale,
+             triggerRadius,
+             damage,
+             damageIntervalSeconds](
+                int planetIndex,
+                const StageActorPlacement& placement) {
+                return mCreateService.AddHazardActor(
+                    planetIndex,
+                    modelPath,
+                    texturePath,
+                    scale,
+                    triggerRadius,
+                    damage,
+                    damageIntervalSeconds,
+                    &placement);
+            });
+    }
+
+    if (!canAdd) {
+        ImGui::EndDisabled();
+    }
+    ImGui::TextDisabled(
+        "追加解除まで、ゲーム画面をクリックするたびに配置できます");
+    ImGui::TreePop();
 }
 
 void StageAddActorPanel::DrawBoatArrivalPointCreation()

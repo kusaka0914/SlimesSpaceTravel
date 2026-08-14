@@ -4,26 +4,6 @@ title:
     posRatio: [0, 0]
     scaleRatio: [1, 1]
     rotationDegrees: 0
-  - id: startTextForGameController
-    type: text
-    posRatio: [0.5, 0.75]
-    scaleRatio: [0.000625, 1.0]
-    text:
-      - Xを押してください
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: true
-    rotationDegrees: 0
-  - id: startTextForKeyBoard
-    type: text
-    posRatio: [0.5, 0.75]
-    scaleRatio: [0.000625, 1.0]
-    text:
-      - Kを押してください
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: true
-    rotationDegrees: 0
 opening:
   - id: bgTexture
     type: texture
@@ -84,26 +64,6 @@ opening:
     rubyGapRatio: 0
     centerBased: false
     rotationDegrees: 0
-  - id: skipTextForKeyBoard
-    type: text
-    posRatio: [0.7872, 0.0102]
-    scaleRatio: [0.0003, 1.0]
-    text:
-      - "スキップする: Enter"
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
-  - id: skipTextForGameController
-    type: text
-    posRatio: [0.8312, 0.0102]
-    scaleRatio: [0.0003, 1.0]
-    text:
-      - "スキップする: +"
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
 gameOver:
   - id: gameOverText
     type: text
@@ -136,65 +96,15 @@ gameOver:
     centerBased: true
     rotationDegrees: 0
 default:
-  - id: operationSupportTextForGameController
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text:
-      - +:操作ガイド非表示 -:メニュー表示 左スティック:移動 右スティック:カメラ回転 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 L + A:回復 R:カメラリセット ZL:操作対象切替 ZR:分裂・合体
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
-  - id: operationSupportTextForKeyBoard
-    type: text
-    posRatio: [0.0125, 0.97619987]
-    scaleRatio: [0.00015, 1.0]
-    text:
-      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 N + Space:回復 M:カメラリセット Y:操作対象切替 O:分裂・合体
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
-  - id: operationSupportAssistTextForGameController
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text:
-      - +:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃連打でコンボ X:強攻撃/浮いた敵へふっとばし L + Y or X:スペシャル攻撃 L + A:回復 R:カメラリセット ZL:操作対象切替 ZR:分裂・合体
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
-  - id: operationSupportAssistTextForKeyBoard
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text:
-      - ESC:メニュー表示 WASD:移動 矢印キー:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃連打でコンボ K:強攻撃/浮いた敵へふっとばし N + J or K:スペシャル攻撃 N + Space:回復 M:カメラリセット Y:操作対象切替 O:分裂・合体
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
-  - id: operationSupportHiddenText
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text:
-      - +:操作ガイド表示
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: false
-    rotationDegrees: 0
   - id: hpTexture
     type: texture
-    posRatio: [0.018194478, 0.018749999]
+    posRatio: [0.018194482, 0.018749999]
     scaleRatio: [0.029999996, 0.03]
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.01500001, 0.0793]
-    scaleRatio: [0.05999999, 0.06]
+    posRatio: [0.009531784, 0.07929999]
+    scaleRatio: [0.05, 0.050000004]
     rotationDegrees: 0
   - id: talkableTextForGameController
     type: text
@@ -208,7 +118,7 @@ default:
     rotationDegrees: 0
   - id: talkableTextForKeyBoard
     type: text
-    posRatio: [0.5, 0.558]
+    posRatio: [0.5, 0.5738201]
     scaleRatio: [0.0003125, 1.0]
     text:
       - "はなす: K"

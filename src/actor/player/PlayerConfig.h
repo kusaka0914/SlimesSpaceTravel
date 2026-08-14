@@ -19,6 +19,7 @@ struct PlayerConfig {
     float airWeakAttackPostHoverDurationSeconds = 0.2f;
     float airDodgePostHoverDurationSeconds = 0.2f;
     float groundNormalRayLength = 5.0f;
+    float overheadGravityRayLength = 15.0f;
     float collisionWidth = 1.6f;
     float collisionHeight = 0.8f;
     float collisionDepth = 0.8f;
@@ -42,6 +43,17 @@ struct PlayerConfig {
     float airSlamRiseHeight = 1.0f;
     float airSlamRiseDurationSeconds = 0.5f;
     float airSlamHoverDurationSeconds = 0.3f;
+
+    float chargedAttackRange = 2.6f;
+    float chargedAttackAngle = 6.283f;
+    float chargedAttackDamage = 50.0f;
+    float chargedAttackChargeDurationSeconds = 3.0f;
+
+    float continuousAttackRange = 2.0f;
+    float continuousAttackAngle = 6.283f;
+    float continuousAttackDamage = 2.5f;
+    float continuousAttackIntervalSeconds = 0.25f;
+    float continuousAttackDurationSeconds = 6.0f;
 
     float specialAttackCooldown = 30.0f;
     float defaultInvincibleTimer = 2.0f;

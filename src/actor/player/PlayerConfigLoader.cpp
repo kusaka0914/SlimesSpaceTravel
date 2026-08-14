@@ -161,6 +161,11 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
                 playerNode,
                 "groundNormalRayLength",
                 config.groundNormalRayLength);
+        config.overheadGravityRayLength =
+            ReadFloat(
+                playerNode,
+                "overheadGravityRayLength",
+                config.overheadGravityRayLength);
         const float legacyCollisionRadius =
             ReadFloat(
                 playerNode,
@@ -201,6 +206,30 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.strongAttackRange = ReadFloat(playerNode, "strongAttackRange", config.strongAttackRange);
         config.strongAttack = ReadFloat(playerNode, "strongAttack", config.strongAttack);
         config.strongAttackSpeed = ReadFloat(playerNode, "strongAttackSpeed", config.strongAttackSpeed);
+        config.chargedAttackRange = ReadFloat(playerNode, "chargedAttackRange", config.chargedAttackRange);
+        config.chargedAttackAngle = ReadFloat(playerNode, "chargedAttackAngle", config.chargedAttackAngle);
+        config.chargedAttackDamage = ReadFloat(playerNode, "chargedAttackDamage", config.chargedAttackDamage);
+        config.chargedAttackChargeDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "chargedAttackChargeDurationSeconds",
+                config.chargedAttackChargeDurationSeconds);
+        config.continuousAttackRange =
+            ReadFloat(playerNode, "continuousAttackRange", config.continuousAttackRange);
+        config.continuousAttackAngle =
+            ReadFloat(playerNode, "continuousAttackAngle", config.continuousAttackAngle);
+        config.continuousAttackDamage =
+            ReadFloat(playerNode, "continuousAttackDamage", config.continuousAttackDamage);
+        config.continuousAttackIntervalSeconds =
+            ReadFloat(
+                playerNode,
+                "continuousAttackIntervalSeconds",
+                config.continuousAttackIntervalSeconds);
+        config.continuousAttackDurationSeconds =
+            ReadFloat(
+                playerNode,
+                "continuousAttackDurationSeconds",
+                config.continuousAttackDurationSeconds);
         config.airSlamRiseHeight = ReadFloat(playerNode, "airSlamRiseHeight", config.airSlamRiseHeight);
         config.airSlamRiseDurationSeconds =
             ReadFloat(

@@ -7,11 +7,30 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerMovement.h"
+#include "system/PhysicsSystem.h"
 
 #include <cmath>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+namespace {
+glm::vec3 CalculatePlanetTransferUpDirection(
+    const Planet& destinationPlanet,
+    const glm::vec3& playerPosition)
+{
+    if (destinationPlanet.GetPlanetShape() ==
+        Planet::PlanetShape::Ellipse) {
+        return destinationPlanet
+            .CalculateEllipseSurfaceProjection(playerPosition)
+            .outwardNormal;
+    }
+
+    return ActorGroundResolver::CalculateFallbackUpVec(
+        &destinationPlanet,
+        playerPosition);
+}
+} // namespace
 
 void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movement, float deltaTime)
 {
@@ -22,8 +41,38 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
+    // The overhead ray is intentionally evaluated while grounded as well.
+    // A successful hit detaches the player from the current floor, so the
+    // newly selected surface normal can become the gravity direction at once.
+    if (TryActivateOverheadGravityRay(
+            player,
+            movement,
+            deltaTime)) {
+        return;
+    }
+
     // 接地中は着地中の惑星を維持する。
     if (player.GetOnGround()) {
+        Stage* currentStage =
+            player.GetGame()
+                ? player.GetGame()->GetCurrentStage()
+                : nullptr;
+        if (!currentStage) {
+            return;
+        }
+
+        const PlanetDistanceCandidate nearestPlanetCandidate =
+            mCandidateSelector.FindNearestPlanet(
+                player.GetPos(),
+                currentStage->GetPlanets());
+        if (ShouldSwitchPlanet(
+                player,
+                nearestPlanetCandidate)) {
+            ApplyCurrentPlanet(
+                player,
+                movement,
+                nearestPlanetCandidate.planet);
+        }
         return;
     }
 
@@ -49,9 +98,34 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
     }
 
     Planet* currentPlanet = player.GetCurrentPlanet();
+
+    // Use the closest destination surface during planet-to-planet travel.
+    // An ellipse's fixed front/back fallback axis is unsuitable when another
+    // ellipse is directly above its side; the closest surface normal produces
+    // the expected 180-degree turn toward the underside.
+    if (mIsPlanetTransferGravityActive && currentPlanet) {
+        const glm::vec3 targetUp =
+            CalculatePlanetTransferUpDirection(
+                *currentPlanet,
+                player.GetPos());
+        SmoothAirborneUpVec(player, targetUp, deltaTime);
+        return;
+    }
+
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
             Planet::PlanetShape::Ellipse) {
+        if (!mUseEllipseSurfaceGravity) {
+            mUseEllipseSurfaceGravity =
+                ShouldActivateEllipseSurfaceGravity(
+                    player,
+                    *currentPlanet);
+            if (!mUseEllipseSurfaceGravity) {
+                return;
+            }
+            mSmoothedUpInitialized = false;
+        }
+
         UpdateEllipseAirborneGravity(
             player,
             movement.GetDodgeTimer() > 0.0f,
@@ -114,18 +188,93 @@ IsEllipseAirborneGravityActive(const Player& player) const
                Planet::PlanetShape::Ellipse;
 }
 
+bool PlayerPlanetGravityController::
+ShouldUseEllipseSurfaceGravity(const Player& player) const
+{
+    return IsEllipseAirborneGravityActive(player) &&
+           !mIsPlanetTransferGravityActive &&
+           mUseEllipseSurfaceGravity;
+}
+
+glm::vec3 PlayerPlanetGravityController::
+CalculateAirbornePhysicsUpDirection(
+    const Player& player) const
+{
+    if (mIsOverheadGravityRayActive &&
+        glm::length(mOverheadGravityUpDirection) > 0.000001f) {
+        return glm::normalize(mOverheadGravityUpDirection);
+    }
+
+    const Planet* currentPlanet = player.GetCurrentPlanet();
+    if (mIsPlanetTransferGravityActive && currentPlanet) {
+        const glm::vec3 transferUp =
+            CalculatePlanetTransferUpDirection(
+                *currentPlanet,
+                player.GetPos());
+        if (glm::length(transferUp) > 0.000001f) {
+            return glm::normalize(transferUp);
+        }
+    }
+
+    if (ShouldUseEllipseSurfaceGravity(player) && currentPlanet) {
+        return currentPlanet
+            ->CalculateEllipseSurfaceProjection(player.GetPos())
+            .outwardNormal;
+    }
+
+    const glm::vec3 visualUp = player.GetUpVec();
+    if (glm::length(visualUp) > 0.000001f) {
+        return glm::normalize(visualUp);
+    }
+    return glm::vec3(0.0f, 1.0f, 0.0f);
+}
+
+bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
+    const glm::vec3& surfaceNormal) const
+{
+    if (!mIsOverheadGravityRayActive) {
+        return true;
+    }
+
+    // While the visual up direction is turning, the ordinary landing test
+    // still regards the previous floor as walkable. Accept only a surface
+    // that faces the overhead ray's new gravity direction so the old floor
+    // cannot cancel the transition on the following frame.
+    return CharacterActor::IsWalkableGroundNormal(
+        surfaceNormal,
+        mOverheadGravityUpDirection);
+}
+
 void PlayerPlanetGravityController::OnJumpStarted(
     const Player& player)
 {
+    // A grounded overhead-ray transition also changes the player to an
+    // airborne state. Preserve the acquired normal instead of reinitializing
+    // it as an ordinary jump on the same frame.
+    if (mIsOverheadGravityRayActive) {
+        mIsJumpSwitchingActive = true;
+        return;
+    }
+
     mIsJumpSwitchingActive = true;
+    mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
+    mUseEllipseSurfaceGravity = false;
+    mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 
     const Planet* currentPlanet =
         player.GetCurrentPlanet();
+    const Planet* groundPlanet =
+        ResolvePlanetFromGroundActor(
+            player.GetGroundActor());
+    mIsPlanetTransferGravityActive =
+        currentPlanet &&
+        groundPlanet &&
+        currentPlanet != groundPlanet;
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
             Planet::PlanetShape::Ellipse) {
@@ -134,6 +283,12 @@ void PlayerPlanetGravityController::OnJumpStarted(
                 ->CalculateEllipseSurfaceProjection(
                     player.GetPos())
                 .distance;
+        const bool tookOffDirectlyFromPlanet =
+            player.GetGroundActor() == currentPlanet;
+        mUseEllipseSurfaceGravity =
+            tookOffDirectlyFromPlanet ||
+            mEllipseJumpStartSurfaceDistance <=
+                ellipseDetachedTakeoffSurfaceDistance;
     }
 
     // ジャンプ開始時のplayer.GetUpVec()を、
@@ -153,11 +308,15 @@ void PlayerPlanetGravityController::OnGroundRayCastSucceeded()
 void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& movement)
 {
     mIsJumpSwitchingActive = false;
+    mIsPlanetTransferGravityActive = false;
+    mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
+    mUseEllipseSurfaceGravity = false;
+    mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
     Planet* landedPlanet = ResolvePlanetFromGroundActor(player.GetGroundActor());
@@ -185,11 +344,15 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
 void PlayerPlanetGravityController::OnRespawned()
 {
     mIsJumpSwitchingActive = false;
+    mIsPlanetTransferGravityActive = false;
+    mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
+    mUseEllipseSurfaceGravity = false;
+    mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 }
 
@@ -230,6 +393,27 @@ void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovemen
     // 惑星の所属情報は即時に変更する。
     ApplyCurrentPlanet(player, movement, nextPlanet);
 
+    // A ray cast may still hit the planet that the player just left. During
+    // transfer, the newly selected planet remains the gravity source until
+    // landing instead of allowing that stale ray to restore the old direction.
+    mIsPlanetTransferGravityActive = true;
+    mFallbackAppliedThisJump = false;
+    mFallbackGravityActive = false;
+    mNoGroundRayDuration = 0.0f;
+    mSmoothedUpInitialized = false;
+
+    if (nextPlanet->GetPlanetShape() ==
+        Planet::PlanetShape::Ellipse) {
+        const Planet::EllipseSurfaceProjection projection =
+            nextPlanet->CalculateEllipseSurfaceProjection(
+                player.GetPos());
+        mUseEllipseSurfaceGravity = true;
+        mEllipseJumpStartSurfaceDistance = projection.distance;
+    } else {
+        mUseEllipseSurfaceGravity = false;
+        mEllipseJumpStartSurfaceDistance = 0.0f;
+    }
+
     // ここではSetUpVecしない。
     // SmoothAirborneUpVecで少しずつ新しい惑星方向へ回す。
 }
@@ -255,6 +439,94 @@ void PlayerPlanetGravityController::ApplyCurrentPlanet(Player& player, PlayerMov
     }
 
     movement.SetCurrentPlanetNum(planetIndex);
+}
+
+bool PlayerPlanetGravityController::TryActivateOverheadGravityRay(
+    Player& player,
+    PlayerMovement& movement,
+    float deltaTime)
+{
+    if (mIsOverheadGravityRayActive) {
+        SmoothAirborneUpVec(
+            player,
+            mOverheadGravityUpDirection,
+            deltaTime);
+        return true;
+    }
+
+    Game* game = player.GetGame();
+    PhysicsSystem* physicsSystem =
+        game ? game->GetPhysicsSystem() : nullptr;
+    if (!game || !physicsSystem) {
+        return false;
+    }
+
+    const glm::vec3 playerUp = player.GetUpVec();
+    const float playerUpLength = glm::length(playerUp);
+    if (playerUpLength <= 0.000001f) {
+        return false;
+    }
+
+    const glm::vec3 overheadDirection =
+        playerUp / playerUpLength;
+    constexpr float rayStartOffset = 0.2f;
+    const glm::vec3 rayFrom =
+        player.GetPos() + overheadDirection * rayStartOffset;
+    const glm::vec3 rayTo =
+        player.GetPos() +
+        overheadDirection * game->GetOverheadGravityRayLength();
+    const std::vector<PhysicsSystem::RayHitActor> overheadHits =
+        physicsSystem->RaycastStageSurfaces(
+            rayFrom,
+            rayTo);
+
+    for (const PhysicsSystem::RayHitActor& overheadHit : overheadHits) {
+        Actor* hitActor = overheadHit.actor;
+        if (!hitActor ||
+            hitActor == &player ||
+            !hitActor->GetIsActive() ||
+            !hitActor->ShouldReactToOverheadGravityRay()) {
+            continue;
+        }
+
+        const float normalLength =
+            glm::length(overheadHit.hitNormal);
+        if (normalLength <= 0.000001f) {
+            continue;
+        }
+
+        Planet* destinationPlanet =
+            ResolvePlanetFromGroundActor(hitActor);
+        if (destinationPlanet &&
+            destinationPlanet != player.GetCurrentPlanet()) {
+            SwitchToPlanet(
+                player,
+                movement,
+                destinationPlanet);
+        }
+
+        mOverheadGravityUpDirection =
+            overheadHit.hitNormal / normalLength;
+        mIsOverheadGravityRayActive = true;
+        mIsJumpSwitchingActive = true;
+        mFallbackAppliedThisJump = false;
+        mFallbackGravityActive = false;
+        mNoGroundRayDuration = 0.0f;
+        mUseEllipseSurfaceGravity = false;
+        mSmoothedUpInitialized = false;
+
+        if (player.GetOnGround()) {
+            player.NotLand();
+        }
+
+        SmoothAirborneUpVec(
+            player,
+            mOverheadGravityUpDirection,
+            deltaTime);
+        return true;
+    }
+
+    return false;
 }
 
 void PlayerPlanetGravityController::UpdateEllipseAirborneGravity(
@@ -285,6 +557,23 @@ void PlayerPlanetGravityController::UpdateEllipseAirborneGravity(
         player,
         *currentPlanet,
         deltaTime);
+}
+
+bool PlayerPlanetGravityController::ShouldActivateEllipseSurfaceGravity(
+    const Player& player,
+    const Planet& planet) const
+{
+    const Planet::EllipseSurfaceProjection projection =
+        planet.CalculateEllipseSurfaceProjection(player.GetPos());
+    if (projection.distance >
+        ellipseDetachedTakeoffSurfaceDistance) {
+        return false;
+    }
+
+    const glm::vec3 velocity = player.GetVelocity();
+    return glm::dot(
+               velocity,
+               projection.outwardNormal) <= 0.0f;
 }
 
 void PlayerPlanetGravityController::ApplyEllipseSurfaceAttraction(

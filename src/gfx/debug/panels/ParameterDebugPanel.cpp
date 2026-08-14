@@ -12,7 +12,9 @@
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -22,6 +24,31 @@
 #include <yaml-cpp/yaml.h>
 
 namespace {
+
+struct EnemyAttackTypeOption {
+    const char* type;
+    const char* displayName;
+};
+
+constexpr std::array<EnemyAttackTypeOption, 4> enemyAttackTypeOptions = {{
+    {"meleeAttack", "通常近接攻撃"},
+    {"tripleChargeAttack", "連続突進攻撃"},
+    {"fanAttack", "扇形攻撃"},
+    {"radialAttack", "周囲攻撃"},
+}};
+
+const char* FindEnemyAttackDisplayName(const std::string& attackType)
+{
+    const auto foundOption = std::find_if(
+        enemyAttackTypeOptions.begin(),
+        enemyAttackTypeOptions.end(),
+        [&attackType](const EnemyAttackTypeOption& option) {
+            return attackType == option.type;
+        });
+    return foundOption != enemyAttackTypeOptions.end()
+        ? foundOption->displayName
+        : attackType.c_str();
+}
 
 bool SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
@@ -375,6 +402,21 @@ void ParameterDebugPanel::DrawPlayer()
         ImGui::TextDisabled(
             "プレイヤーを含む全アクターの上方向判定へ即時反映されます。");
 
+        float overheadGravityRayLength =
+            mContext.game->GetOverheadGravityRayLength();
+        if (ImGui::DragFloat(
+                "頭上重力レイの長さ",
+                &overheadGravityRayLength,
+                0.05f,
+                0.05f,
+                100.0f,
+                "%.2f")) {
+            mContext.game->SetOverheadGravityRayLength(
+                overheadGravityRayLength);
+        }
+        ImGui::TextDisabled(
+            "「頭上重力レイに反応する」がONのアクターを検出する距離です。");
+
         float dodgeDuration = player->GetDodgeDuration();
         if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
             dodgeDuration = std::round(dodgeDuration * 100.0f) / 100.0f;
@@ -402,67 +444,138 @@ void ParameterDebugPanel::DrawPlayer()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("通常攻撃")) {
+    if (ImGui::TreeNode("強攻撃（K / X）")) {
         float normalAttackRange = player->GetNormalAttackRange();
-        if (ImGui::SliderFloat("通常攻撃範囲", &normalAttackRange, 0.0f, 20.0f, "%.2f")) {
+        if (ImGui::SliderFloat("強攻撃範囲", &normalAttackRange, 0.0f, 20.0f, "%.2f")) {
             normalAttackRange = std::round(normalAttackRange * 100.0f) / 100.0f;
             player->SetNormalAttackRange(normalAttackRange);
         }
 
         float normalAttackAngle = player->GetNormalAttackAngle();
-        if (ImGui::SliderFloat("通常攻撃角度", &normalAttackAngle, 0.0f, 6.283f, "%.3f")) {
+        if (ImGui::SliderFloat("強攻撃角度", &normalAttackAngle, 0.0f, 6.283f, "%.3f")) {
             normalAttackAngle = std::round(normalAttackAngle * 1000.0f) / 1000.0f;
             player->SetNormalAttackAngle(normalAttackAngle);
         }
 
         int normalAttack = player->GetNormalAttack();
-        if (ImGui::SliderInt("通常攻撃力", &normalAttack, 0, 999)) {
+        if (ImGui::SliderInt("強攻撃力", &normalAttack, 0, 999)) {
             player->SetNormalAttack(normalAttack);
         }
 
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("広範囲攻撃")) {
+    if (ImGui::TreeNode("弱攻撃（J / Y）")) {
         float wideAttackRange = player->GetWideAttackRange();
-        if (ImGui::SliderFloat("広範囲攻撃範囲", &wideAttackRange, 0.0f, 20.0f, "%.2f")) {
+        if (ImGui::SliderFloat("弱攻撃範囲", &wideAttackRange, 0.0f, 20.0f, "%.2f")) {
             wideAttackRange = std::round(wideAttackRange * 100.0f) / 100.0f;
             player->SetWideAttackRange(wideAttackRange);
         }
 
         float wideAttackAngle = player->GetWideAttackAngle();
-        if (ImGui::SliderFloat("広範囲攻撃角度", &wideAttackAngle, 0.0f, 6.283f, "%.3f")) {
+        if (ImGui::SliderFloat("弱攻撃角度", &wideAttackAngle, 0.0f, 6.283f, "%.3f")) {
             wideAttackAngle = std::round(wideAttackAngle * 1000.0f) / 1000.0f;
             player->SetWideAttackAngle(wideAttackAngle);
         }
 
         int wideAttack = player->GetWideAttack();
-        if (ImGui::SliderInt("広範囲攻撃力", &wideAttack, 0, 999)) {
+        if (ImGui::SliderInt("弱攻撃力", &wideAttack, 0, 999)) {
             player->SetWideAttack(wideAttack);
         }
 
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("強攻撃")) {
+    if (ImGui::TreeNode("連続攻撃（N + J / L + Y）")) {
+        float attackRange = player->GetContinuousAttackRange();
+        if (ImGui::SliderFloat("連続攻撃範囲", &attackRange, 0.0f, 20.0f, "%.2f")) {
+            player->SetContinuousAttackRange(attackRange);
+        }
+
+        float attackAngle = player->GetContinuousAttackAngle();
+        if (ImGui::SliderFloat("連続攻撃角度", &attackAngle, 0.0f, 6.283f, "%.3f")) {
+            player->SetContinuousAttackAngle(attackAngle);
+        }
+
+        float attackDamage = player->GetContinuousAttackDamage();
+        if (ImGui::DragFloat("連続攻撃力", &attackDamage, 0.1f, 0.0f, 999.0f, "%.1f")) {
+            player->SetContinuousAttackDamage(attackDamage);
+        }
+
+        float attackIntervalSeconds = player->GetContinuousAttackIntervalSeconds();
+        if (ImGui::DragFloat(
+                "攻撃間隔（秒）##連続攻撃",
+                &attackIntervalSeconds,
+                0.01f,
+                0.01f,
+                5.0f,
+                "%.2f")) {
+            player->SetContinuousAttackIntervalSeconds(attackIntervalSeconds);
+        }
+
+        float attackDurationSeconds = player->GetContinuousAttackDurationSeconds();
+        if (ImGui::DragFloat(
+                "継続時間（秒）##連続攻撃",
+                &attackDurationSeconds,
+                0.1f,
+                0.0f,
+                30.0f,
+                "%.1f")) {
+            player->SetContinuousAttackDurationSeconds(attackDurationSeconds);
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("溜め攻撃（N + K / L + X）")) {
+        float attackRange = player->GetChargedAttackRange();
+        if (ImGui::SliderFloat("溜め攻撃範囲", &attackRange, 0.0f, 20.0f, "%.2f")) {
+            player->SetChargedAttackRange(attackRange);
+        }
+
+        float attackAngle = player->GetChargedAttackAngle();
+        if (ImGui::SliderFloat("溜め攻撃角度", &attackAngle, 0.0f, 6.283f, "%.3f")) {
+            player->SetChargedAttackAngle(attackAngle);
+        }
+
+        float attackDamage = player->GetChargedAttackDamage();
+        if (ImGui::DragFloat("溜め攻撃力", &attackDamage, 1.0f, 0.0f, 999.0f, "%.0f")) {
+            player->SetChargedAttackDamage(attackDamage);
+        }
+
+        float chargeDurationSeconds = player->GetChargedAttackChargeDurationSeconds();
+        if (ImGui::DragFloat(
+                "溜め時間（秒）",
+                &chargeDurationSeconds,
+                0.1f,
+                0.1f,
+                10.0f,
+                "%.1f")) {
+            player->SetChargedAttackChargeDurationSeconds(chargeDurationSeconds);
+        }
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("空中強攻撃（空中K / X）")) {
         float strongAttackRange = player->GetStrongAttackRange();
-        if (ImGui::SliderFloat("強攻撃範囲", &strongAttackRange, 0.0f, 20.0f, "%.2f")) {
+        if (ImGui::SliderFloat("空中強攻撃範囲", &strongAttackRange, 0.0f, 20.0f, "%.2f")) {
             strongAttackRange = std::round(strongAttackRange * 100.0f) / 100.0f;
             player->SetStrongAttackRange(strongAttackRange);
         }
 
         int strongAttack = player->GetStrongAttack();
-        if (ImGui::SliderInt("強攻撃力", &strongAttack, 0, 999)) {
+        if (ImGui::SliderInt("対空攻撃力", &strongAttack, 0, 999)) {
             player->SetStrongAttack(strongAttack);
         }
 
         float strongAttackSpeed = player->GetStrongAttackSpeed();
-        if (ImGui::SliderFloat("強攻撃速度", &strongAttackSpeed, 0.0f, 100.0f, "%.1f")) {
+        if (ImGui::SliderFloat("空中強攻撃速度", &strongAttackSpeed, 0.0f, 100.0f, "%.1f")) {
             strongAttackSpeed = std::round(strongAttackSpeed * 10.0f) / 10.0f;
             player->SetStrongAttackSpeed(strongAttackSpeed);
         }
 
-        ImGui::SeparatorText("空中X攻撃");
+        ImGui::SeparatorText("空中強攻撃の移動");
 
         float airSlamRiseHeight = player->GetAirSlamRiseHeight();
         if (ImGui::DragFloat("上昇高さ", &airSlamRiseHeight, 0.01f, 0.0f, 5.0f, "%.2f")) {
@@ -494,7 +607,7 @@ void ParameterDebugPanel::DrawPlayer()
         }
 
         float defaultStrongAttackTimer = player->GetDefaultStrongAttackTimer();
-        if (ImGui::SliderFloat("強攻撃時間", &defaultStrongAttackTimer, 0.0f, 5.0f, "%.2f")) {
+        if (ImGui::SliderFloat("空中強攻撃時間", &defaultStrongAttackTimer, 0.0f, 5.0f, "%.2f")) {
             defaultStrongAttackTimer = std::round(defaultStrongAttackTimer * 100.0f) / 100.0f;
             player->SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
         }
@@ -553,6 +666,9 @@ void ParameterDebugPanel::DrawEnemies()
     if (planets.empty()) {
         return;
     }
+
+    DrawEnemyPresets();
+    ImGui::Separator();
 
     Enemy* normalEnemy = nullptr;
     Enemy* bossEnemy = nullptr;
@@ -891,6 +1007,645 @@ bool ParameterDebugPanel::SavePlayerParameters()
     return SavePlayerYaml(mContext.game->GetPlayers()[0]);
 }
 
+void ParameterDebugPanel::DrawEnemyPresets()
+{
+    if (!mEnemyPresetsLoaded) {
+        ReloadEnemyPresets();
+    }
+
+    if (!ImGui::TreeNodeEx(
+            "敵プリセット",
+            ImGuiTreeNodeFlags_DefaultOpen)) {
+        return;
+    }
+
+    ImGui::TextWrapped(
+        "何度も配置する敵の基準値です。保存すると敵追加の一覧へ自動で反映されます。");
+
+    if (ImGui::Button("再読み込み")) {
+        ReloadEnemyPresets();
+    }
+
+    if (mEnemyPresets.empty()) {
+        ImGui::TextDisabled("編集できる敵プリセットがありません。 ");
+        if (!mEnemyPresetStatusMessage.empty()) {
+            ImGui::TextWrapped(
+                "%s",
+                mEnemyPresetStatusMessage.c_str());
+        }
+        ImGui::TreePop();
+        return;
+    }
+
+    mSelectedEnemyPresetIndex = std::clamp(
+        mSelectedEnemyPresetIndex,
+        0,
+        static_cast<int>(mEnemyPresets.size()) - 1);
+    const EnemyPresetDefinition& selectedPreset =
+        mEnemyPresets[mSelectedEnemyPresetIndex];
+    if (ImGui::BeginCombo(
+            "編集するプリセット",
+            selectedPreset.displayName.c_str())) {
+        for (std::size_t presetIndex = 0;
+             presetIndex < mEnemyPresets.size();
+             ++presetIndex) {
+            const bool isSelected =
+                static_cast<int>(presetIndex) ==
+                mSelectedEnemyPresetIndex;
+            const std::string label =
+                mEnemyPresets[presetIndex].displayName +
+                " (" + mEnemyPresets[presetIndex].id + ")";
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
+                SelectEnemyPreset(static_cast<int>(presetIndex));
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    if (ImGui::Button("選択中を複製")) {
+        DuplicateSelectedEnemyPreset();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("プリセットを保存")) {
+        mEnemyPresetStatusMessage = SaveSelectedEnemyPreset()
+            ? "敵プリセットを保存しました。"
+            : mEnemyPresetStatusMessage;
+    }
+
+    ImGui::InputText(
+        "ID",
+        mEnemyPresetIdBuffer.data(),
+        mEnemyPresetIdBuffer.size());
+    ImGui::TextDisabled("半角英数字、_、-を使用できます。配置済みの敵があるIDは変更に注意してください。");
+    ImGui::InputText(
+        "表示名",
+        mEnemyPresetDisplayNameBuffer.data(),
+        mEnemyPresetDisplayNameBuffer.size());
+    ImGui::Checkbox("ボスとして扱う", &mEditedEnemyPreset.isBoss);
+    ImGui::TextDisabled(
+        "移動と追跡は共通動作です。攻撃構成だけをプリセットごとに保存します。");
+    ImGui::DragFloat(
+        "攻撃準備を始める距離",
+        &mEditedEnemyPreset.attackPreparationRange,
+        0.05f,
+        0.0f,
+        100.0f,
+        "%.2f");
+    ImGui::TextDisabled(
+        "プレイヤーとの距離がこの値以下になると、攻撃待機タイマーを開始します。");
+    DrawEnemyAttackEditor();
+
+    if (ImGui::TreeNodeEx(
+            "ボスの攻撃前後行動",
+            ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::TextDisabled(
+            "ボスとして扱う敵だけが使用します。攻撃本体の抽選確率とは独立しています。");
+        ImGui::SeparatorText("攻撃前の急接近");
+        ImGui::DragFloat(
+            "発生確率 (%)##preAttackApproach",
+            &mEditedEnemyPreset.preAttackApproachProbabilityPercent,
+            0.5f,
+            0.0f,
+            100.0f,
+            "%.1f%%");
+        ImGui::DragFloat(
+            "接近速度##preAttackApproach",
+            &mEditedEnemyPreset.preAttackApproachSpeed,
+            0.1f,
+            0.0f,
+            100.0f,
+            "%.2f");
+        ImGui::DragFloat(
+            "プレイヤー手前の停止距離",
+            &mEditedEnemyPreset.preAttackApproachStopDistance,
+            0.05f,
+            0.0f,
+            100.0f,
+            "%.2f");
+        ImGui::TextDisabled(
+            "攻撃範囲表示の直前に抽選します。接近中は攻撃待機タイマーを停止します。");
+
+        ImGui::SeparatorText("攻撃後の急退避");
+        ImGui::DragFloat(
+            "発生確率 (%)##postAttackRetreat",
+            &mEditedEnemyPreset.postAttackRetreatProbabilityPercent,
+            0.5f,
+            0.0f,
+            100.0f,
+            "%.1f%%");
+        ImGui::DragFloat(
+            "攻撃完了後の待機 (秒)",
+            &mEditedEnemyPreset.postAttackRetreatDelaySeconds,
+            0.05f,
+            0.0f,
+            30.0f,
+            "%.2f");
+        ImGui::DragFloat(
+            "退避速度##postAttackRetreat",
+            &mEditedEnemyPreset.postAttackRetreatSpeed,
+            0.1f,
+            0.0f,
+            100.0f,
+            "%.2f");
+        ImGui::DragFloat(
+            "退避距離",
+            &mEditedEnemyPreset.postAttackRetreatDistance,
+            0.05f,
+            0.0f,
+            100.0f,
+            "%.2f");
+        ImGui::DragFloat(
+            "退避後の停止時間 (秒)",
+            &mEditedEnemyPreset.postRetreatRecoverySeconds,
+            0.05f,
+            0.0f,
+            30.0f,
+            "%.2f");
+        ImGui::DragFloat(
+            "停止後に急接近攻撃する確率 (%)",
+            &mEditedEnemyPreset
+                 .postRetreatFollowupApproachProbabilityPercent,
+            0.5f,
+            0.0f,
+            100.0f,
+            "%.1f%%");
+        ImGui::TextDisabled(
+            "退避後は停止し、通常歩行へ戻るか、準備待ちなしの急接近攻撃へ移ります。");
+        ImGui::TreePop();
+    }
+
+    ImGui::DragFloat(
+        "初期HP",
+        &mEditedEnemyPreset.hp,
+        1.0f,
+        1.0f,
+        99999.0f,
+        "%.0f");
+    ImGui::DragFloat(
+        "スケール",
+        &mEditedEnemyPreset.scale,
+        0.01f,
+        0.01f,
+        100.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "移動速度",
+        &mEditedEnemyPreset.moveSpeed,
+        0.1f,
+        0.0f,
+        100.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "攻撃力",
+        &mEditedEnemyPreset.attack,
+        0.1f,
+        0.0f,
+        99999.0f,
+        "%.1f");
+    ImGui::DragInt(
+        "ブレイク回数",
+        &mEditedEnemyPreset.breakCountMax,
+        0.1f,
+        0,
+        100);
+    ImGui::DragFloat(
+        "当たり半径",
+        &mEditedEnemyPreset.radius,
+        0.01f,
+        0.0f,
+        100.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "攻撃間隔（秒）",
+        &mEditedEnemyPreset.attackIntervalSeconds,
+        0.05f,
+        0.0f,
+        120.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "攻撃モーション時間（秒）",
+        &mEditedEnemyPreset.attackMotionDurationSeconds,
+        0.05f,
+        0.0f,
+        120.0f,
+        "%.2f");
+    ImGui::DragFloat(
+        "攻撃移動速度",
+        &mEditedEnemyPreset.attackSpeed,
+        0.1f,
+        0.0f,
+        100.0f,
+        "%.2f");
+    ImGui::InputText(
+        "モデル",
+        mEnemyModelPathBuffer.data(),
+        mEnemyModelPathBuffer.size());
+    ImGui::Button(
+        "モデルアセットをここへドロップ##enemyPresetModelDrop",
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedModelPath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Model,
+            droppedModelPath)) {
+        std::snprintf(
+            mEnemyModelPathBuffer.data(),
+            mEnemyModelPathBuffer.size(),
+            "%s",
+            droppedModelPath.c_str());
+    }
+
+    if (!mEnemyPresetStatusMessage.empty()) {
+        ImGui::TextWrapped(
+            "%s",
+            mEnemyPresetStatusMessage.c_str());
+    }
+    ImGui::TreePop();
+}
+
+void ParameterDebugPanel::DrawEnemyAttackEditor()
+{
+    ImGui::Separator();
+    ImGui::TextUnformatted("攻撃構成");
+    ImGui::TextDisabled(
+        "各攻撃の確率は常に合計100%%になるよう自動調整されます。");
+
+    mSelectedEnemyAttackTypeIndex = std::clamp(
+        mSelectedEnemyAttackTypeIndex,
+        0,
+        static_cast<int>(enemyAttackTypeOptions.size()) - 1);
+    if (ImGui::BeginCombo(
+            "追加する攻撃",
+            enemyAttackTypeOptions[mSelectedEnemyAttackTypeIndex]
+                .displayName)) {
+        for (std::size_t optionIndex = 0;
+             optionIndex < enemyAttackTypeOptions.size();
+             ++optionIndex) {
+            const bool isSelected =
+                static_cast<int>(optionIndex) ==
+                mSelectedEnemyAttackTypeIndex;
+            if (ImGui::Selectable(
+                    enemyAttackTypeOptions[optionIndex].displayName,
+                    isSelected)) {
+                mSelectedEnemyAttackTypeIndex =
+                    static_cast<int>(optionIndex);
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("攻撃を追加")) {
+        AddEnemyAttack(
+            enemyAttackTypeOptions[mSelectedEnemyAttackTypeIndex].type);
+    }
+
+    std::optional<std::size_t> attackToRemove;
+    for (std::size_t attackIndex = 0;
+         attackIndex < mEditedEnemyPreset.attacks.size();
+         ++attackIndex) {
+        EnemyAttackPresetDefinition& attack =
+            mEditedEnemyPreset.attacks[attackIndex];
+        ImGui::PushID(static_cast<int>(attackIndex));
+
+        const bool isOpen = ImGui::TreeNodeEx(
+            FindEnemyAttackDisplayName(attack.type),
+            ImGuiTreeNodeFlags_DefaultOpen);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("削除")) {
+            attackToRemove = attackIndex;
+        }
+
+        if (isOpen) {
+            float probabilityPercent =
+                attack.selectionProbabilityPercent;
+            if (ImGui::DragFloat(
+                    "選択確率 (%)",
+                    &probabilityPercent,
+                    0.5f,
+                    0.0f,
+                    100.0f,
+                    "%.1f%%")) {
+                SetEnemyAttackProbability(
+                    attackIndex,
+                    probabilityPercent);
+            }
+
+            if (attack.type == "tripleChargeAttack") {
+                ImGui::DragInt(
+                    "突進回数",
+                    &attack.chargeCount,
+                    0.1f,
+                    1,
+                    100);
+                ImGui::DragFloat(
+                    "次の突進まで (秒)",
+                    &attack.repeatDelaySeconds,
+                    0.05f,
+                    0.0f,
+                    30.0f,
+                    "%.2f");
+            } else if (attack.type == "fanAttack") {
+                ImGui::DragFloat(
+                    "攻撃距離",
+                    &attack.range,
+                    0.1f,
+                    0.0f,
+                    100.0f,
+                    "%.2f");
+                ImGui::DragFloat(
+                    "扇形角度 (度)",
+                    &attack.angleDegrees,
+                    1.0f,
+                    0.0f,
+                    360.0f,
+                    "%.1f");
+                ImGui::DragFloat(
+                    "予備動作 (秒)",
+                    &attack.windUpDurationSeconds,
+                    0.05f,
+                    0.0f,
+                    30.0f,
+                    "%.2f");
+                ImGui::DragFloat(
+                    "攻撃継続 (秒)",
+                    &attack.attackDurationSeconds,
+                    0.05f,
+                    0.01f,
+                    30.0f,
+                    "%.2f");
+            } else if (attack.type == "radialAttack") {
+                ImGui::DragFloat(
+                    "攻撃半径",
+                    &attack.range,
+                    0.1f,
+                    0.0f,
+                    100.0f,
+                    "%.2f");
+                ImGui::DragFloat(
+                    "予備動作 (秒)",
+                    &attack.windUpDurationSeconds,
+                    0.05f,
+                    0.0f,
+                    30.0f,
+                    "%.2f");
+                ImGui::DragFloat(
+                    "攻撃継続 (秒)",
+                    &attack.attackDurationSeconds,
+                    0.05f,
+                    0.01f,
+                    30.0f,
+                    "%.2f");
+            }
+
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+
+    if (attackToRemove) {
+        if (mEditedEnemyPreset.attacks.size() <= 1) {
+            mEnemyPresetStatusMessage =
+                "攻撃構成には1つ以上の攻撃が必要です。";
+        } else {
+            mEditedEnemyPreset.attacks.erase(
+                mEditedEnemyPreset.attacks.begin() +
+                static_cast<std::ptrdiff_t>(*attackToRemove));
+            EnemyPresetRepository::NormalizeAttackProbabilities(
+                mEditedEnemyPreset.attacks);
+        }
+    }
+
+    if (!mEditedEnemyPreset.isBoss) {
+        const bool hasBossOnlyAttack = std::any_of(
+            mEditedEnemyPreset.attacks.begin(),
+            mEditedEnemyPreset.attacks.end(),
+            [](const EnemyAttackPresetDefinition& attack) {
+                return attack.type != "meleeAttack";
+            });
+        if (hasBossOnlyAttack) {
+            ImGui::TextWrapped(
+                "連続突進・扇形・周囲攻撃を使うには「ボスとして扱う」を有効にしてください。");
+        }
+    }
+    ImGui::Separator();
+}
+
+void ParameterDebugPanel::AddEnemyAttack(const std::string& attackType)
+{
+    const bool alreadyExists = std::any_of(
+        mEditedEnemyPreset.attacks.begin(),
+        mEditedEnemyPreset.attacks.end(),
+        [&attackType](const EnemyAttackPresetDefinition& attack) {
+            return attack.type == attackType;
+        });
+    if (alreadyExists) {
+        mEnemyPresetStatusMessage =
+            "同じ種類の攻撃は1つのプリセットに重複して追加できません。";
+        return;
+    }
+
+    const std::size_t previousAttackCount =
+        mEditedEnemyPreset.attacks.size();
+    const float newAttackProbability =
+        100.0f / static_cast<float>(previousAttackCount + 1);
+    const float existingProbabilityScale =
+        (100.0f - newAttackProbability) / 100.0f;
+    for (EnemyAttackPresetDefinition& attack :
+         mEditedEnemyPreset.attacks) {
+        attack.selectionProbabilityPercent *=
+            existingProbabilityScale;
+    }
+
+    EnemyAttackPresetDefinition newAttack =
+        EnemyPresetRepository::CreateDefaultAttack(attackType);
+    newAttack.selectionProbabilityPercent = newAttackProbability;
+    mEditedEnemyPreset.attacks.push_back(std::move(newAttack));
+    mEnemyPresetStatusMessage.clear();
+}
+
+void ParameterDebugPanel::SetEnemyAttackProbability(
+    std::size_t attackIndex,
+    float probabilityPercent)
+{
+    if (attackIndex >= mEditedEnemyPreset.attacks.size()) {
+        return;
+    }
+
+    if (mEditedEnemyPreset.attacks.size() == 1) {
+        mEditedEnemyPreset.attacks[attackIndex]
+            .selectionProbabilityPercent = 100.0f;
+        return;
+    }
+
+    const float clampedProbability = std::clamp(
+        probabilityPercent,
+        0.0f,
+        100.0f);
+    float otherProbabilityTotal = 0.0f;
+    for (std::size_t currentIndex = 0;
+         currentIndex < mEditedEnemyPreset.attacks.size();
+         ++currentIndex) {
+        if (currentIndex == attackIndex) {
+            continue;
+        }
+        otherProbabilityTotal += mEditedEnemyPreset.attacks[currentIndex]
+            .selectionProbabilityPercent;
+    }
+
+    const float remainingProbability = 100.0f - clampedProbability;
+    if (otherProbabilityTotal <= 0.0001f) {
+        const float equalProbability =
+            remainingProbability /
+            static_cast<float>(mEditedEnemyPreset.attacks.size() - 1);
+        for (std::size_t currentIndex = 0;
+             currentIndex < mEditedEnemyPreset.attacks.size();
+             ++currentIndex) {
+            if (currentIndex != attackIndex) {
+                mEditedEnemyPreset.attacks[currentIndex]
+                    .selectionProbabilityPercent = equalProbability;
+            }
+        }
+    } else {
+        const float probabilityScale =
+            remainingProbability / otherProbabilityTotal;
+        for (std::size_t currentIndex = 0;
+             currentIndex < mEditedEnemyPreset.attacks.size();
+             ++currentIndex) {
+            if (currentIndex != attackIndex) {
+                mEditedEnemyPreset.attacks[currentIndex]
+                    .selectionProbabilityPercent *= probabilityScale;
+            }
+        }
+    }
+
+    mEditedEnemyPreset.attacks[attackIndex]
+        .selectionProbabilityPercent = clampedProbability;
+}
+
+void ParameterDebugPanel::ReloadEnemyPresets()
+{
+    mEnemyPresetsLoaded = true;
+    std::string loadError;
+    if (!EnemyPresetRepository::Load(
+            "../assets/data/actor/enemies.yaml",
+            mEnemyPresets,
+            loadError)) {
+        mSelectedEnemyPresetIndex = -1;
+        mEnemyPresetStatusMessage = loadError;
+        return;
+    }
+
+    if (mEnemyPresets.empty()) {
+        mSelectedEnemyPresetIndex = -1;
+        mEnemyPresetStatusMessage =
+            "敵プリセットが登録されていません。";
+        return;
+    }
+
+    mEnemyPresetStatusMessage.clear();
+    SelectEnemyPreset(std::clamp(
+        mSelectedEnemyPresetIndex,
+        0,
+        static_cast<int>(mEnemyPresets.size()) - 1));
+}
+
+void ParameterDebugPanel::SelectEnemyPreset(int presetIndex)
+{
+    if (presetIndex < 0 ||
+        presetIndex >= static_cast<int>(mEnemyPresets.size())) {
+        return;
+    }
+
+    mSelectedEnemyPresetIndex = presetIndex;
+    mEditedEnemyPreset = mEnemyPresets[presetIndex];
+    mOriginalEnemyPresetId = mEditedEnemyPreset.id;
+    std::snprintf(
+        mEnemyPresetIdBuffer.data(),
+        mEnemyPresetIdBuffer.size(),
+        "%s",
+        mEditedEnemyPreset.id.c_str());
+    std::snprintf(
+        mEnemyPresetDisplayNameBuffer.data(),
+        mEnemyPresetDisplayNameBuffer.size(),
+        "%s",
+        mEditedEnemyPreset.displayName.c_str());
+    std::snprintf(
+        mEnemyModelPathBuffer.data(),
+        mEnemyModelPathBuffer.size(),
+        "%s",
+        mEditedEnemyPreset.modelPath.c_str());
+}
+
+bool ParameterDebugPanel::SaveSelectedEnemyPreset()
+{
+    mEditedEnemyPreset.id = mEnemyPresetIdBuffer.data();
+    mEditedEnemyPreset.displayName =
+        mEnemyPresetDisplayNameBuffer.data();
+    mEditedEnemyPreset.modelPath = mEnemyModelPathBuffer.data();
+    if (mEditedEnemyPreset.displayName.empty()) {
+        mEditedEnemyPreset.displayName = mEditedEnemyPreset.id;
+    }
+
+    std::string saveError;
+    if (!EnemyPresetRepository::Save(
+            "../assets/data/actor/enemies.yaml",
+            mOriginalEnemyPresetId,
+            mEditedEnemyPreset,
+            saveError)) {
+        mEnemyPresetStatusMessage = saveError;
+        return false;
+    }
+
+    const std::string savedId = mEditedEnemyPreset.id;
+    ReloadEnemyPresets();
+    const auto savedPreset = std::find_if(
+        mEnemyPresets.begin(),
+        mEnemyPresets.end(),
+        [&savedId](const EnemyPresetDefinition& preset) {
+            return preset.id == savedId;
+        });
+    if (savedPreset != mEnemyPresets.end()) {
+        SelectEnemyPreset(static_cast<int>(
+            std::distance(mEnemyPresets.begin(), savedPreset)));
+    }
+    return true;
+}
+
+void ParameterDebugPanel::DuplicateSelectedEnemyPreset()
+{
+    if (mSelectedEnemyPresetIndex < 0 ||
+        mSelectedEnemyPresetIndex >=
+            static_cast<int>(mEnemyPresets.size())) {
+        return;
+    }
+
+    mEditedEnemyPreset =
+        mEnemyPresets[mSelectedEnemyPresetIndex];
+    mEditedEnemyPreset.id =
+        EnemyPresetRepository::CreateUniqueId(
+            mEditedEnemyPreset.id,
+            mEnemyPresets);
+    mEditedEnemyPreset.displayName += " コピー";
+    mOriginalEnemyPresetId.clear();
+    std::snprintf(
+        mEnemyPresetIdBuffer.data(),
+        mEnemyPresetIdBuffer.size(),
+        "%s",
+        mEditedEnemyPreset.id.c_str());
+    std::snprintf(
+        mEnemyPresetDisplayNameBuffer.data(),
+        mEnemyPresetDisplayNameBuffer.size(),
+        "%s",
+        mEditedEnemyPreset.displayName.c_str());
+    mEnemyPresetStatusMessage =
+        "複製内容を編集中です。保存すると新しいプリセットになります。";
+}
+
 bool ParameterDebugPanel::SaveEnemyParameters()
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -991,6 +1746,12 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
         index,
         "groundNormalRayLength",
         mContext.game->GetGroundNormalRayLength());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "overheadGravityRayLength",
+        mContext.game->GetOverheadGravityRayLength());
     PhysicsSystem* physicsSystem = mContext.game->GetPhysicsSystem();
     if (physicsSystem) {
         config[sequenceName][index].remove("collisionRadius");
@@ -1031,6 +1792,30 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "strongAttackRange", player->GetStrongAttackRange());
     SetYamlSequenceValue(config, sequenceName, index, "strongAttack", player->GetStrongAttack());
     SetYamlSequenceValue(config, sequenceName, index, "strongAttackSpeed", player->GetStrongAttackSpeed());
+    SetYamlSequenceValue(config, sequenceName, index, "chargedAttackRange", player->GetChargedAttackRange());
+    SetYamlSequenceValue(config, sequenceName, index, "chargedAttackAngle", player->GetChargedAttackAngle());
+    SetYamlSequenceValue(config, sequenceName, index, "chargedAttackDamage", player->GetChargedAttackDamage());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "chargedAttackChargeDurationSeconds",
+        player->GetChargedAttackChargeDurationSeconds());
+    SetYamlSequenceValue(config, sequenceName, index, "continuousAttackRange", player->GetContinuousAttackRange());
+    SetYamlSequenceValue(config, sequenceName, index, "continuousAttackAngle", player->GetContinuousAttackAngle());
+    SetYamlSequenceValue(config, sequenceName, index, "continuousAttackDamage", player->GetContinuousAttackDamage());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "continuousAttackIntervalSeconds",
+        player->GetContinuousAttackIntervalSeconds());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "continuousAttackDurationSeconds",
+        player->GetContinuousAttackDurationSeconds());
     SetYamlSequenceValue(config, sequenceName, index, "airSlamRiseHeight", player->GetAirSlamRiseHeight());
     SetYamlSequenceValue(
         config,

@@ -558,15 +558,52 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
         return false;
     }
 
-    std::vector<StageActorRef> targets = StageActorQuery::CollectAllTargets(mContext.game->GetCurrentStage());
+    const std::vector<StageActorRef> targets =
+        StageActorQuery::CollectAllTargets(
+            mContext.game->GetCurrentStage(),
+            true);
 
     std::unordered_set<std::string> newSelectedKeys;
-
     bool duplicated = false;
-
     const glm::vec3 duplicateOffset(1.0f, 0.0f, 0.0f);
 
+    std::unordered_map<int, int> duplicatedPlanetIndices;
+    YAML::Node planetSequence = stageYaml["planets"];
+    if (planetSequence && planetSequence.IsSequence()) {
+        for (const StageActorRef& target : targets) {
+            if (target.type != StageActorType::Planet ||
+                !selectedKeys.contains(StageActorQuery::MakeKey(target)) ||
+                target.yamlIndex < 0 ||
+                target.yamlIndex >= static_cast<int>(planetSequence.size())) {
+                continue;
+            }
+
+            YAML::Node duplicatedPlanetNode =
+                YAML::Clone(planetSequence[target.yamlIndex]);
+            OffsetDuplicatedActorNode(
+                duplicatedPlanetNode,
+                duplicateOffset);
+
+            const int duplicatedPlanetIndex =
+                static_cast<int>(planetSequence.size());
+            duplicatedPlanetNode["stageNum"] =
+                duplicatedPlanetIndex;
+            planetSequence.push_back(duplicatedPlanetNode);
+
+            duplicatedPlanetIndices[target.yamlIndex] =
+                duplicatedPlanetIndex;
+            newSelectedKeys.insert(
+                "planets:" +
+                std::to_string(duplicatedPlanetIndex));
+            duplicated = true;
+        }
+    }
+
     for (const StageActorRef& target : targets) {
+        if (target.type == StageActorType::Planet) {
+            continue;
+        }
+
         const std::string key = StageActorQuery::MakeKey(target);
 
         if (!selectedKeys.contains(key)) {
@@ -587,8 +624,64 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
         YAML::Node sourceNode = sequence[target.yamlIndex];
         YAML::Node duplicatedNode = YAML::Clone(sourceNode);
+        bool shouldOffsetActorPosition = true;
 
-        OffsetDuplicatedActorNode(duplicatedNode, duplicateOffset);
+        if (target.type == StageActorType::Boat) {
+            int startPlanetIndex = 0;
+            if (TryReadPlanetIndex(
+                    duplicatedNode,
+                    "startPlanet",
+                    0,
+                    startPlanetIndex)) {
+                const auto duplicatedStartPlanet =
+                    duplicatedPlanetIndices.find(startPlanetIndex);
+                if (duplicatedStartPlanet !=
+                    duplicatedPlanetIndices.end()) {
+                    duplicatedNode["startPlanet"] =
+                        duplicatedStartPlanet->second;
+                    shouldOffsetActorPosition = false;
+                }
+            }
+
+            int destinationPlanetIndex = 0;
+            if (TryReadPlanetIndex(
+                    duplicatedNode,
+                    "destPlanet",
+                    0,
+                    destinationPlanetIndex)) {
+                const auto duplicatedDestinationPlanet =
+                    duplicatedPlanetIndices.find(
+                        destinationPlanetIndex);
+                if (duplicatedDestinationPlanet !=
+                    duplicatedPlanetIndices.end()) {
+                    duplicatedNode["destPlanet"] =
+                        duplicatedDestinationPlanet->second;
+                }
+            }
+        } else {
+            int currentPlanetIndex = 0;
+            if (TryReadPlanetIndex(
+                    duplicatedNode,
+                    "currentPlanetNum",
+                    0,
+                    currentPlanetIndex)) {
+                const auto duplicatedPlanet =
+                    duplicatedPlanetIndices.find(
+                        currentPlanetIndex);
+                if (duplicatedPlanet !=
+                    duplicatedPlanetIndices.end()) {
+                    duplicatedNode["currentPlanetNum"] =
+                        duplicatedPlanet->second;
+                    shouldOffsetActorPosition = false;
+                }
+            }
+        }
+
+        if (shouldOffsetActorPosition) {
+            OffsetDuplicatedActorNode(
+                duplicatedNode,
+                duplicateOffset);
+        }
         if (target.type == StageActorType::Platform) {
             duplicatedNode["platformId"] =
                 CreateUniquePlatformId(stageYaml);
@@ -606,6 +699,8 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
     if (!duplicated) {
         return false;
     }
+
+    RenumberPlanetNodes(stageYaml["planets"]);
 
     PushUndo();
 
@@ -628,19 +723,25 @@ void StageEditCommandController::OffsetDuplicatedActorNode(YAML::Node actorNode,
         return;
     }
 
-    if (actorNode["pos"] && actorNode["pos"].IsSequence() && actorNode["pos"].size() >= 3) {
+    const char* positionKey =
+        actorNode["center"] ? "center" : "pos";
+    if (actorNode[positionKey] &&
+        actorNode[positionKey].IsSequence() &&
+        actorNode[positionKey].size() >= 3) {
         try {
-            const float x = actorNode["pos"][0].as<float>();
-            const float y = actorNode["pos"][1].as<float>();
-            const float z = actorNode["pos"][2].as<float>();
+            const float x = actorNode[positionKey][0].as<float>();
+            const float y = actorNode[positionKey][1].as<float>();
+            const float z = actorNode[positionKey][2].as<float>();
 
-            actorNode["pos"][0] = x + offset.x;
-            actorNode["pos"][1] = y + offset.y;
-            actorNode["pos"][2] = z + offset.z;
+            actorNode[positionKey][0] = x + offset.x;
+            actorNode[positionKey][1] = y + offset.y;
+            actorNode[positionKey][2] = z + offset.z;
 
             return;
-        } catch (const YAML::Exception& e) {
-            std::cerr << "Invalid pos while duplicating. Recreate pos." << std::endl;
+        } catch (const YAML::Exception&) {
+            std::cerr
+                << "Invalid position while duplicating. Recreate position."
+                << std::endl;
         }
     }
 
@@ -648,7 +749,7 @@ void StageEditCommandController::OffsetDuplicatedActorNode(YAML::Node actorNode,
         try {
             const float theta = actorNode["theta"].as<float>();
             actorNode["theta"] = theta + 0.15f;
-        } catch (const YAML::Exception& e) {
+        } catch (const YAML::Exception&) {
             actorNode["theta"] = 0.15f;
         }
     } else {

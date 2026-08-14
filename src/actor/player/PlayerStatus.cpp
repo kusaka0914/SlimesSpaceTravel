@@ -22,7 +22,7 @@ void PlayerStatus::TakeDamage(float damage)
 {
     mHp = std::max(0.0f, mHp - damage);
     StartDamageCooldown();
-    StartInvincible();
+    StartDamageInvincibility();
 }
 
 void PlayerStatus::TakeFallDamage(float damage)
@@ -57,19 +57,22 @@ void PlayerStatus::ReduceDamageCooldown(float deltaTime)
     }
 }
 
-void PlayerStatus::StartInvincible()
+void PlayerStatus::StartDamageInvincibility()
 {
     mInvincibleTimer = mDefaultInvincibleTimer;
+    mShouldBlinkWhileInvincible = true;
 }
 
-void PlayerStatus::StartInvincible(float seconds)
+void PlayerStatus::StartDodgeInvincibility(float seconds)
 {
     mInvincibleTimer = seconds;
+    mShouldBlinkWhileInvincible = false;
 }
 
 void PlayerStatus::ClearInvincible()
 {
     mInvincibleTimer = -1.0f;
+    mShouldBlinkWhileInvincible = false;
 }
 
 void PlayerStatus::StartTired()
@@ -91,6 +94,9 @@ void PlayerStatus::UpdateInvincibleTimer(float deltaTime)
 {
     if (mInvincibleTimer > 0.0f) {
         mInvincibleTimer -= deltaTime;
+    }
+    if (mInvincibleTimer <= 0.0f) {
+        mShouldBlinkWhileInvincible = false;
     }
 }
 

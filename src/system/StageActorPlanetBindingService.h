@@ -19,6 +19,13 @@ public:
         Planet* planet,
         const glm::vec3& translation);
 
+    // Keeps every owned actor at its current world position while rewriting
+    // its planet-local placement for a planet-center edit. This is required
+    // for PlanetOnly editor moves to survive a stage reload.
+    static void PreserveBoundActorWorldPositionsAfterPlanetMove(
+        Planet* planet,
+        const glm::vec3& planetTranslation);
+
     // Reprojects actors whose placement is expressed by spherical coordinates.
     // Platforms and stage geometry retain their authored local coordinates.
     static void ReprojectSurfaceActorsAfterPlanetScale(Planet* planet);

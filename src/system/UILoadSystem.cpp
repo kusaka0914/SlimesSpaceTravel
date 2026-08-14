@@ -378,6 +378,40 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
             node["textScaleRatio"] ? node["textScaleRatio"].as<float>() : element.textScaleRatio;
         element.text = node["text"] ? node["text"].as<std::string>() : element.text;
         element.texturePath = node["texture"] ? node["texture"].as<std::string>() : "";
+        element.usesInputDeviceVariants =
+            node["usesInputDeviceVariants"]
+                ? node["usesInputDeviceVariants"].as<bool>()
+                : false;
+        element.keyboardText =
+            node["keyboardText"] ? node["keyboardText"].as<std::string>() : "";
+        element.gameControllerText =
+            node["gameControllerText"]
+                ? node["gameControllerText"].as<std::string>()
+                : "";
+        element.keyboardModifierText =
+            node["keyboardModifierText"]
+                ? node["keyboardModifierText"].as<std::string>()
+                : "";
+        element.gameControllerModifierText =
+            node["gameControllerModifierText"]
+                ? node["gameControllerModifierText"].as<std::string>()
+                : "";
+        element.keyboardTexturePath =
+            node["keyboardTexture"]
+                ? node["keyboardTexture"].as<std::string>()
+                : "";
+        element.gameControllerTexturePath =
+            node["gameControllerTexture"]
+                ? node["gameControllerTexture"].as<std::string>()
+                : "";
+        element.keyboardFlipVertical =
+            node["keyboardFlipVertical"]
+                ? node["keyboardFlipVertical"].as<bool>()
+                : element.flipVertical;
+        element.gameControllerFlipVertical =
+            node["gameControllerFlipVertical"]
+                ? node["gameControllerFlipVertical"].as<bool>()
+                : element.flipVertical;
         element.shadowEnabled =
             node["shadowEnabled"] ? node["shadowEnabled"].as<bool>() : element.shadowEnabled;
         element.shadowOffsetXRatio =
@@ -453,6 +487,16 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
         node["textScaleRatio"] = element.textScaleRatio;
         node["text"] = element.text;
         node["texture"] = element.texturePath;
+        node["usesInputDeviceVariants"] = element.usesInputDeviceVariants;
+        node["keyboardText"] = element.keyboardText;
+        node["gameControllerText"] = element.gameControllerText;
+        node["keyboardModifierText"] = element.keyboardModifierText;
+        node["gameControllerModifierText"] = element.gameControllerModifierText;
+        node["keyboardTexture"] = element.keyboardTexturePath;
+        node["gameControllerTexture"] = element.gameControllerTexturePath;
+        node["keyboardFlipVertical"] = element.keyboardFlipVertical;
+        node["gameControllerFlipVertical"] =
+            element.gameControllerFlipVertical;
         node["shadowEnabled"] = element.shadowEnabled;
         node["shadowOffsetXRatio"] = element.shadowOffsetXRatio;
         node["shadowOffsetYRatio"] = element.shadowOffsetYRatio;

@@ -41,6 +41,13 @@ protected:
     void ApplyGravity(float deltaTime);
     void ApplyGravity(float deltaTime, float gravityAcceleration);
 
+    virtual bool ShouldAcceptLandingSurface(
+        Actor* surfaceActor,
+        const glm::vec3& surfaceNormal) const
+    {
+        return true;
+    }
+
     bool CheckDotAngleSteep(
         const glm::vec3& hitNormal,
         const glm::vec3& up) const override;

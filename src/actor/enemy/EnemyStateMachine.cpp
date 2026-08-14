@@ -7,6 +7,7 @@
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/enemy/EnemyCombat.h"
+#include "actor/enemy/EnemyConfig.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStatus.h"
 #include "actor/enemy/behavior/EnemyBehaviorController.h"
@@ -15,6 +16,7 @@
 #include "system/ParticleSystem.h"
 #include "utils/MathUtils.h"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
@@ -217,8 +219,44 @@ void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
 
 EnemyStateMachine::EnemyStateMachine()
     : mLifeState(LifeState::Alive),
-      mActionState(ActionState::Idle)
+      mActionState(ActionState::Idle),
+      mManeuverRandomEngine(std::random_device{}())
 {
+}
+
+void EnemyStateMachine::ConfigureBossManeuver(
+    const EnemyBossManeuverConfig& config)
+{
+    mPreAttackApproachProbabilityPercent = std::clamp(
+        config.preAttackApproachProbabilityPercent,
+        0.0f,
+        100.0f);
+    mPreAttackApproachSpeed = std::max(
+        0.0f,
+        config.preAttackApproachSpeed);
+    mPreAttackApproachStopDistance = std::max(
+        0.0f,
+        config.preAttackApproachStopDistance);
+    mPostAttackRetreatProbabilityPercent = std::clamp(
+        config.postAttackRetreatProbabilityPercent,
+        0.0f,
+        100.0f);
+    mPostAttackRetreatDelaySeconds = std::max(
+        0.0f,
+        config.postAttackRetreatDelaySeconds);
+    mPostAttackRetreatSpeed = std::max(
+        0.0f,
+        config.postAttackRetreatSpeed);
+    mPostAttackRetreatDistance = std::max(
+        0.0f,
+        config.postAttackRetreatDistance);
+    mPostRetreatRecoverySeconds = std::max(
+        0.0f,
+        config.postRetreatRecoverySeconds);
+    mPostRetreatFollowupApproachProbabilityPercent = std::clamp(
+        config.postRetreatFollowupApproachProbabilityPercent,
+        0.0f,
+        100.0f);
 }
 
 void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
@@ -231,6 +269,26 @@ void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMove
             movement.UpdateInAir(enemy, status, *this, deltaTime);
         }
 
+        return;
+    }
+
+    if (mActionState == ActionState::PreAttackApproach) {
+        UpdatePreAttackApproach(enemy, status, movement, deltaTime);
+        return;
+    }
+
+    if (mActionState == ActionState::PostAttackRetreatDelay) {
+        UpdatePostAttackRetreatDelay(deltaTime);
+        return;
+    }
+
+    if (mActionState == ActionState::PostAttackRetreat) {
+        UpdatePostAttackRetreat(enemy, status, movement, deltaTime);
+        return;
+    }
+
+    if (mActionState == ActionState::PostRetreatRecovery) {
+        UpdatePostRetreatRecovery(enemy, status, deltaTime);
         return;
     }
 
@@ -279,10 +337,10 @@ void EnemyStateMachine::UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyM
 
 void EnemyStateMachine::TryStartPreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyCombat& combat)
 {
-    constexpr float attackStartRangeMargin = 1.5f;
-    const float attackStartRange = enemy.GetRadius() + attackStartRangeMargin;
-
-    if (combat.IsPlayerInRange(enemy, status.GetNearestPlayer(), attackStartRange)) {
+    if (combat.IsPlayerInRange(
+            enemy,
+            status.GetNearestPlayer(),
+            status.GetAttackPreparationRange())) {
         StartPreparingAttack(enemy, status);
     }
 }
@@ -299,6 +357,22 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
         movement.UpdateFacingVec(enemy, status, deltaTime);
     }
 
+    constexpr float attackPreviewStartSeconds = 1.0f;
+    const bool willReachAttackPreviewTiming =
+        status.GetStandByAttackTimer() - deltaTime <=
+        attackPreviewStartSeconds;
+    if (!mHasEvaluatedPreAttackApproach &&
+        willReachAttackPreviewTiming) {
+        mHasEvaluatedPreAttackApproach = true;
+        if (status.GetIsBoss() &&
+            ShouldTriggerProbability(
+                mPreAttackApproachProbabilityPercent)) {
+            mShouldPreservePreparationTimer = true;
+            mActionState = ActionState::PreAttackApproach;
+            return;
+        }
+    }
+
     status.DecreaseStandByAttackTimer(deltaTime);
 
     if (IsJustBeforeAttack(status)) {
@@ -309,6 +383,37 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
     if (status.GetStandByAttackTimer() <= 0.0f) {
         StartAttacking(enemy, status);
     }
+}
+
+void EnemyStateMachine::UpdatePreAttackApproach(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    float deltaTime)
+{
+    if (!status.GetNearestPlayer()) {
+        StartIdle(enemy);
+        return;
+    }
+
+    movement.FaceNearestPlayerImmediately(enemy, status);
+    const bool hasFinishedApproach =
+        movement.MoveTowardPlayerQuickly(
+            enemy,
+            status,
+            mPreAttackApproachSpeed,
+            mPreAttackApproachStopDistance,
+            deltaTime);
+    if (!hasFinishedApproach) {
+        return;
+    }
+
+    constexpr float attackPreviewStartSeconds = 1.0f;
+    status.SetStandByAttackTimer(
+        std::min(
+            status.GetStandByAttackTimer(),
+            attackPreviewStartSeconds));
+    mActionState = ActionState::PreparingAttack;
 }
 
 void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
@@ -328,7 +433,9 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
     }
 
     status.DecreaseAttackMotionTimer(deltaTime);
-    if (status.GetAttackMotionTimer() <= 0.0f) {
+    const float forwardMovementEndTimer =
+        status.GetDefaultAttackMotionTimer() * 0.5f;
+    if (status.GetAttackMotionTimer() <= forwardMovementEndTimer) {
         StartIdle(enemy);
     }
 }
@@ -343,15 +450,84 @@ void EnemyStateMachine::UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, Ene
     }
 }
 
+void EnemyStateMachine::UpdatePostAttackRetreatDelay(float deltaTime)
+{
+    mPostAttackRetreatDelayRemainingSeconds -= deltaTime;
+    if (mPostAttackRetreatDelayRemainingSeconds <= 0.0f) {
+        mActionState = ActionState::PostAttackRetreat;
+    }
+}
+
+void EnemyStateMachine::UpdatePostAttackRetreat(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    float deltaTime)
+{
+    if (!status.GetNearestPlayer()) {
+        mPostRetreatRecoveryRemainingSeconds =
+            mPostRetreatRecoverySeconds;
+        mActionState = ActionState::PostRetreatRecovery;
+        return;
+    }
+
+    movement.FaceNearestPlayerImmediately(enemy, status);
+    const float movedDistance = movement.MoveAwayFromPlayerQuickly(
+        enemy,
+        status,
+        mPostAttackRetreatSpeed,
+        deltaTime);
+    mPostAttackRetreatRemainingDistance -= movedDistance;
+
+    constexpr float minimumMovementDistance = 0.0001f;
+    if (mPostAttackRetreatRemainingDistance <= 0.0f ||
+        movedDistance <= minimumMovementDistance) {
+        mPostRetreatRecoveryRemainingSeconds =
+            mPostRetreatRecoverySeconds;
+        mActionState = ActionState::PostRetreatRecovery;
+    }
+}
+
+void EnemyStateMachine::UpdatePostRetreatRecovery(
+    Enemy& enemy,
+    EnemyStatus& status,
+    float deltaTime)
+{
+    mPostRetreatRecoveryRemainingSeconds -= deltaTime;
+    if (mPostRetreatRecoveryRemainingSeconds > 0.0f) {
+        return;
+    }
+
+    const bool shouldStartFollowupApproach =
+        status.GetNearestPlayer() &&
+        ShouldTriggerProbability(
+            mPostRetreatFollowupApproachProbabilityPercent);
+    if (!shouldStartFollowupApproach) {
+        StartTracking(enemy);
+        return;
+    }
+
+    // This route intentionally skips the ordinary preparation countdown.
+    // The selected attack starts with only its one-second range preview.
+    constexpr float attackPreviewDurationSeconds = 1.0f;
+    status.SetStandByAttackTimer(attackPreviewDurationSeconds);
+    status.SetIsJustBeforeAttack(false);
+    mHasEvaluatedPreAttackApproach = true;
+    mShouldPreservePreparationTimer = true;
+    mActionState = ActionState::PreAttackApproach;
+}
+
 void EnemyStateMachine::StartIdle(Enemy& enemy)
 {
     (void)enemy;
+    mShouldPreservePreparationTimer = false;
     mActionState = ActionState::Idle;
 }
 
 void EnemyStateMachine::StartTracking(Enemy& enemy)
 {
     (void)enemy;
+    mShouldPreservePreparationTimer = false;
     mActionState = ActionState::Tracking;
 }
 
@@ -359,6 +535,8 @@ void EnemyStateMachine::StartPreparingAttack(Enemy& enemy, EnemyStatus& status)
 {
     (void)enemy;
     mActionState = ActionState::PreparingAttack;
+    mHasEvaluatedPreAttackApproach = false;
+    mShouldPreservePreparationTimer = false;
     status.ResetStandByAttackTimer();
 }
 
@@ -366,12 +544,53 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 {
     (void)enemy;
     mActionState = ActionState::Attacking;
+    mShouldPreservePreparationTimer = false;
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
     status.SetIsJustBeforeAttack(false);
     status.SetCanCounteredTimer(0.1f);
     status.SetCanCountered(true);
     status.ClearHitPlayers();
+}
+
+bool EnemyStateMachine::TryStartPostAttackRetreat(
+    Enemy& enemy,
+    const EnemyStatus& status)
+{
+    (void)enemy;
+    if (!status.GetIsBoss() ||
+        !status.GetNearestPlayer() ||
+        mActionState != ActionState::Idle ||
+        mPostAttackRetreatDistance <= 0.0f ||
+        !ShouldTriggerProbability(
+            mPostAttackRetreatProbabilityPercent)) {
+        return false;
+    }
+
+    mPostAttackRetreatRemainingDistance =
+        mPostAttackRetreatDistance;
+    mPostAttackRetreatDelayRemainingSeconds =
+        mPostAttackRetreatDelaySeconds;
+    mActionState = mPostAttackRetreatDelayRemainingSeconds > 0.0f
+        ? ActionState::PostAttackRetreatDelay
+        : ActionState::PostAttackRetreat;
+    return true;
+}
+
+bool EnemyStateMachine::ShouldTriggerProbability(
+    float probabilityPercent)
+{
+    if (probabilityPercent <= 0.0f) {
+        return false;
+    }
+    if (probabilityPercent >= 100.0f) {
+        return true;
+    }
+
+    std::uniform_real_distribution<float> distribution(
+        0.0f,
+        100.0f);
+    return distribution(mManeuverRandomEngine) < probabilityPercent;
 }
 
 void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer)
@@ -396,6 +615,8 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
     mLifeState = LifeState::Dying;
+    enemy.SetShouldDropJewelOnDeath(
+        !status.GetIsBoss());
     constexpr float normalEnemyDyingDuration = 1.0f;
     constexpr float bossDyingDuration = 3.0f;
     status.SetDyingTimer(status.GetIsBoss() ? bossDyingDuration : normalEnemyDyingDuration);
@@ -406,6 +627,8 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
 
+        enemy.GetGame()->GetAudioSystem()->StopBGM();
+
         Star* star = enemy.GetCurrentPlanet() ? enemy.GetCurrentPlanet()->GetStar() : nullptr;
         CameraSystem* cameraSystem = enemy.GetGame()->GetCameraSystem();
         if (cameraSystem) {
@@ -415,14 +638,18 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         constexpr float dyingKnockBackTimer = 0.5f;
         StartKnockedBack(enemy, status, dyingKnockBackTimer);
         InitializeDyingMovement(enemy, status);
+        enemy.GetGame()->GetAudioSystem()->PlaySE("defeat_se");
     }
-
-    enemy.GetGame()->GetAudioSystem()->PlaySE("defeat_se");
 }
 
 void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
 {
     EmitEnemyDefeatEffect(enemy, status);
+
+    if (enemy.ShouldDropJewelOnDeath()) {
+        enemy.GetGame()->RequestEnemyJewelDrop(enemy);
+        enemy.SetShouldDropJewelOnDeath(false);
+    }
 
     mLifeState = LifeState::Dead;
     enemy.SetIsActive(false);

@@ -21,8 +21,11 @@ public:
 
     void RequestOpenPlacementTab();
     bool ConsumeRequestOpenMainTab();
+    int GetSelectedMenu() const { return mSelectedMenu; }
+    void SetSelectedMenu(int selectedMenu);
 
 private:
+    void DrawDebugSceneSwitcher();
     void DrawStageSwitcher();
     void DrawStageClearProgressEditor();
     void DrawPlayerPlanetDebugMover();

@@ -93,6 +93,14 @@ void Planet::ApplyConfig(const YAML::Node& node)
         node["textureSideBlendWidth"]
             ? node["textureSideBlendWidth"].as<float>()
             : 0.05f);
+    SetCanAttractNearbyPlayer(
+        node["canAttractNearbyPlayer"]
+            ? node["canAttractNearbyPlayer"].as<bool>()
+            : true);
+    SetShouldReactToOverheadGravityRay(
+        node["reactsToOverheadGravityRay"]
+            ? node["reactsToOverheadGravityRay"].as<bool>()
+            : false);
 
     const glm::vec2 automaticTextureTiling(
         std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),

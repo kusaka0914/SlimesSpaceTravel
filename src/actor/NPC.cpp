@@ -69,6 +69,20 @@ void NPC::ApplyConfig(const std::string& type)
 
 std::vector<std::size_t> NPC::ResolveTalkIndices() const
 {
+    const int selectedStageCondition =
+        ResolveTalkStageClearCondition();
+
+    std::vector<std::size_t> resolvedIndices;
+    for (std::size_t index = 0; index < mTalkTexts.size(); ++index) {
+        if (GetTalkStageClearCondition(index) == selectedStageCondition) {
+            resolvedIndices.emplace_back(index);
+        }
+    }
+    return resolvedIndices;
+}
+
+int NPC::ResolveTalkStageClearCondition() const
+{
     int selectedStageCondition = -1;
 
     for (std::size_t index = 0; index < mTalkTexts.size(); ++index) {
@@ -79,14 +93,7 @@ std::vector<std::size_t> NPC::ResolveTalkIndices() const
                 std::max(selectedStageCondition, stageCondition);
         }
     }
-
-    std::vector<std::size_t> resolvedIndices;
-    for (std::size_t index = 0; index < mTalkTexts.size(); ++index) {
-        if (GetTalkStageClearCondition(index) == selectedStageCondition) {
-            resolvedIndices.emplace_back(index);
-        }
-    }
-    return resolvedIndices;
+    return selectedStageCondition;
 }
 
 std::vector<std::string> NPC::GetResolvedTalkTexts() const

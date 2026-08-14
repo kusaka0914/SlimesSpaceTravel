@@ -2,7 +2,13 @@
 
 void Game::TogglePlayerControlStyle()
 {
-    mPlayerControlStyle = IsAssistControlStyle()
-                              ? PlayerControlStyle::Standard
-                              : PlayerControlStyle::Assist;
+    SetPlayerControlStyle(
+        IsAssistControlStyle()
+            ? PlayerControlStyle::Standard
+            : PlayerControlStyle::Assist);
+}
+
+void Game::SetPlayerControlStyle(PlayerControlStyle controlStyle)
+{
+    mPlayerControlStyle = controlStyle;
 }

@@ -21,6 +21,7 @@
 
 class Game;
 class UIRenderer;
+struct EditorSessionState;
 
 class DebugUIRenderer {
 public:
@@ -30,6 +31,16 @@ public:
         unsigned int gameViewTexture,
         int gameViewWidth,
         int gameViewHeight);
+
+    bool SaveEditorSession(
+        const std::string& filePath,
+        std::string& outErrorMessage);
+    bool RestoreEditorSession(
+        const std::string& filePath,
+        std::string& outErrorMessage);
+    void SetBuildRestartStatus(
+        const std::string& message,
+        bool isError);
 
 private:
     enum class EditorSection {
@@ -58,6 +69,10 @@ private:
     void ResolveResizableLayout(EditorSection section);
     void DrawLayoutResizeHandles(EditorSection section);
     const char* ResolveToolPanelTitle(EditorSection section) const;
+    EditorSessionState CaptureEditorSessionState() const;
+    void ApplyEditorSessionState(const EditorSessionState& sessionState);
+    void AlignFreeCameraUpToSelectedActor();
+    void DrawBuildRestartControls();
 
 private:
     EditorAssetCatalog mAssetCatalog;
@@ -84,4 +99,7 @@ private:
 
     EditorSection mActiveSection = EditorSection::BasicInfo;
     int mSelectedSequenceEditorMenu = 0;
+    bool mShouldSelectRestoredSection = false;
+    std::string mBuildRestartStatus;
+    bool mIsBuildRestartStatusError = false;
 };

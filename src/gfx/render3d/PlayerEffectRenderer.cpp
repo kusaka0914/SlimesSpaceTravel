@@ -194,17 +194,19 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
     }
 }
 
-void PlayerEffectRenderer::DrawEnemyWithEffects(Enemy* enemy, const glm::mat4& viewMat) const
+void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat) const
 {
     if (!mRenderer || !enemy || !enemy->GetIsActive()) {
         return;
     }
 
-    mRenderer->DrawActor(enemy, true);
     DrawEnemyGuard(viewMat, enemy);
     DrawEnemyHp(viewMat, enemy);
 
-    if (enemy->GetStandByAttackTimer() > 0.0f && enemy->GetStandByAttackTimer() <= 1.0f) {
+    if (enemy->IsAlive() &&
+        enemy->ShouldDrawAttackPreview() &&
+        enemy->GetStandByAttackTimer() > 0.0f &&
+        enemy->GetStandByAttackTimer() <= 1.0f) {
         EnemyAttackPreview preview;
         if (enemy->GetBehaviorAttackPreview(preview) &&
             (preview.shape == EnemyAttackPreviewShape::Fan ||

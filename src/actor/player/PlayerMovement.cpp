@@ -78,18 +78,7 @@ float CalculateDodgeMovementDuration(bool isOnGround, float baseDodgeDuration)
 
 glm::vec3 GetAirbornePhysicsUpDirection(const Player& player)
 {
-    const Planet* currentPlanet = player.GetCurrentPlanet();
-    const bool usesEllipseGravity =
-        !player.GetOnGround() &&
-        currentPlanet &&
-        currentPlanet->GetPlanetShape() ==
-            Planet::PlanetShape::Ellipse;
-    if (!usesEllipseGravity) {
-        return GetNormalizedUpDirection(player);
-    }
-
-    return currentPlanet->CalculateEllipseSurfaceProjection(
-        player.GetPos()).outwardNormal;
+    return player.CalculateAirbornePhysicsUpDirection();
 }
 
 float CalculateEllipseAirControlMultiplier(
@@ -729,7 +718,12 @@ void PlayerMovement::ApplyKnockBackMovement(Player& player, float deltaTime)
 
 void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input)
 {
-    const bool hasMovementInput = input.GetMoveForward() != 0.0f || input.GetMoveLeft() != 0.0f;
+    const glm::vec3 requestedDodgeDirection =
+        mForwardVec * input.GetMoveForward() +
+        mLeftVec * input.GetMoveLeft();
+    glm::vec3 inputDodgeDirection;
+    const bool hasMovementInput =
+        TryNormalizeDirection(requestedDodgeDirection, inputDodgeDirection);
 
     glm::vec3 facingDirection;
 
@@ -739,14 +733,11 @@ void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input
     }
 
     const glm::vec3 dodgeDirection =
-        hasMovementInput ? facingDirection : -facingDirection;
+        hasMovementInput ? inputDodgeDirection : -facingDirection;
     StartDodgeMovementInDirection(
         player,
         dodgeDirection,
-        !player.GetOnGround() &&
-                player.GetCurrentPlanet() &&
-                player.GetCurrentPlanet()->GetPlanetShape() ==
-                    Planet::PlanetShape::Ellipse
+        player.ShouldUseEllipseSurfaceGravity()
             ? DodgeTrajectory::FollowEllipseSurface
             : DodgeTrajectory::Straight);
 }
@@ -920,9 +911,7 @@ void PlayerMovement::ApplyJumpGravityMovement(
         GetAirbornePhysicsUpDirection(player);
     Planet* currentPlanet = player.GetCurrentPlanet();
     const bool usesEllipseGravity =
-        currentPlanet &&
-        currentPlanet->GetPlanetShape() ==
-            Planet::PlanetShape::Ellipse;
+        player.ShouldUseEllipseSurfaceGravity();
 
     if (usesEllipseGravity) {
         glm::vec3 velocity = player.GetVelocity();

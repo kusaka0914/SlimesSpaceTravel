@@ -28,6 +28,7 @@ protected:
 
 private:
     bool IsInsideModelBounds(const glm::vec3& worldPosition) const;
+    bool RequiresSplitPlayerToStart() const;
 
 private:
     glm::vec3 mLocalBoundsMin{-0.5f};

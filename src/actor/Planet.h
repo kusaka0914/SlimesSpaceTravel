@@ -21,6 +21,8 @@ class BoatArrivalPoint;
 class FallRespawnPoint;
 class StageObject;
 class TutorialTrigger;
+class JewelItem;
+class HazardActor;
 
 class Planet : public Actor {
 public:
@@ -72,6 +74,8 @@ public:
     void AddFallRespawnPoint(FallRespawnPoint* point) { mActorRegistry.AddFallRespawnPoint(point); }
     void AddStageObject(StageObject* stageObject) { mActorRegistry.AddStageObject(stageObject); }
     void AddTutorialTrigger(TutorialTrigger* trigger) { mActorRegistry.AddTutorialTrigger(trigger); }
+    void AddJewelItem(JewelItem* jewelItem) { mActorRegistry.AddJewelItem(jewelItem); }
+    void AddHazardActor(HazardActor* hazardActor) { mActorRegistry.AddHazardActor(hazardActor); }
 
     void RemoveAllEnemy() { mActorRegistry.RemoveAllEnemy(); }
     void RemoveEnemy(Enemy* enemy) { mActorRegistry.RemoveEnemy(enemy); }
@@ -99,6 +103,10 @@ public:
     void RemoveStageObject(StageObject* stageObject) { mActorRegistry.RemoveStageObject(stageObject); }
     void RemoveAllTutorialTriggers() { mActorRegistry.RemoveAllTutorialTriggers(); }
     void RemoveTutorialTrigger(TutorialTrigger* trigger) { mActorRegistry.RemoveTutorialTrigger(trigger); }
+    void RemoveAllJewelItems() { mActorRegistry.RemoveAllJewelItems(); }
+    void RemoveJewelItem(JewelItem* jewelItem) { mActorRegistry.RemoveJewelItem(jewelItem); }
+    void RemoveAllHazardActors() { mActorRegistry.RemoveAllHazardActors(); }
+    void RemoveHazardActor(HazardActor* hazardActor) { mActorRegistry.RemoveHazardActor(hazardActor); }
 
     void SetCurrentStage(Stage* currentStage) { mCurrentStage = currentStage; }
     void SetStageNum(int stageNum) { mStageNum = stageNum; }
@@ -110,6 +118,10 @@ public:
     void SetTextureSideBlendWidth(float width)
     {
         mTextureSideBlendWidth = glm::clamp(width, 0.0f, 0.5f);
+    }
+    void SetCanAttractNearbyPlayer(bool canAttractNearbyPlayer)
+    {
+        mCanAttractNearbyPlayer = canAttractNearbyPlayer;
     }
     void SetKey(Key* key) { mActorRegistry.SetKey(key); }
     void SetStar(Star* star) { mActorRegistry.SetStar(star); }
@@ -137,6 +149,10 @@ public:
     {
         return mTextureSideBlendWidth;
     }
+    bool CanAttractNearbyPlayer() const
+    {
+        return mCanAttractNearbyPlayer;
+    }
 
     const std::vector<Enemy*>& GetEnemies() const { return mActorRegistry.GetEnemies(); }
     const std::vector<Boat*>& GetBoats() const { return mActorRegistry.GetBoats(); }
@@ -150,6 +166,14 @@ public:
     const std::vector<TutorialTrigger*>& GetTutorialTriggers() const
     {
         return mActorRegistry.GetTutorialTriggers();
+    }
+    const std::vector<JewelItem*>& GetJewelItems() const
+    {
+        return mActorRegistry.GetJewelItems();
+    }
+    const std::vector<HazardActor*>& GetHazardActors() const
+    {
+        return mActorRegistry.GetHazardActors();
     }
 
     Key* GetKey() const { return mActorRegistry.GetKey(); }
@@ -168,4 +192,5 @@ private:
 
     std::string mBackTextureOverridePath;
     float mTextureSideBlendWidth = 0.05f;
+    bool mCanAttractNearbyPlayer = true;
 };

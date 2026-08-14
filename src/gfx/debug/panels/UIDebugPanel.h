@@ -30,7 +30,11 @@ private:
     void DrawExistingTextureInspector(UILoadSystem* uiLoadSystem);
     void DrawExistingTextInspector(UILoadSystem* uiLoadSystem);
     void DrawCodeBoundElementProtection();
-    void DrawAssetPicker(UILoadSystem::CustomElement& element);
+    void DrawAssetPicker(
+        std::string& texturePath,
+        bool& flipVertical,
+        const char* widgetId,
+        const char* sectionLabel);
     void SaveAllUI(UILoadSystem* uiLoadSystem);
     void ReloadAllUI(UILoadSystem* uiLoadSystem);
 
@@ -42,6 +46,7 @@ private:
     std::array<char, 128> mNewScreen = {"custom"};
     std::array<char, 128> mNewId = {"element"};
     std::array<char, 128> mAssetFilter = {};
+    int mSelectedInputDeviceImageVariant = 0;
     SelectedElementSource mSelectedElementSource = SelectedElementSource::None;
     std::string mSelectedExistingElementKey;
     std::string mStatusMessage;

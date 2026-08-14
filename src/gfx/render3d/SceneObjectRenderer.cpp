@@ -10,6 +10,8 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -20,6 +22,7 @@
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/NPCProximityMessageRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include <GL/glew.h>
 
@@ -44,7 +47,12 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
     DrawPlanets(planets);
     DrawActorOnPlanets(planets, viewMat);
 
-    if (mPlayerEffectRenderer) {
+    const SequenceSystem* sequenceSystem =
+        mRenderer->GetGame()->GetSequenceSystem();
+    const bool isStageStartCinematicPlaying =
+        sequenceSystem &&
+        sequenceSystem->IsCinematicChainPlaying();
+    if (mPlayerEffectRenderer && !isStageStartCinematicPlaying) {
         mPlayerEffectRenderer->DrawPlayers(viewMat);
     }
 
@@ -74,11 +82,7 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
             continue;
         }
 
-        if (mPlayerEffectRenderer) {
-            for (Enemy* enemy : planet->GetEnemies()) {
-                mPlayerEffectRenderer->DrawEnemyWithEffects(enemy, viewMat);
-            }
-        }
+        mRenderer->TryDrawActors(planet->GetEnemies(), true);
 
         mRenderer->TryDrawActors(planet->GetBoats());
         mRenderer->TryDrawActors(planet->GetBoatParts());
@@ -86,6 +90,8 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         mRenderer->TryDrawActors(planet->GetPlatforms());
         mRenderer->TryDrawActors(planet->GetStageObjects());
         mRenderer->TryDrawActors(planet->GetNPCs());
+        mRenderer->TryDrawActors(planet->GetJewelItems());
+        mRenderer->TryDrawActors(planet->GetHazardActors());
         if (mRenderer->GetGame()->GetIsDebugEditorShowing()) {
             mRenderer->TryDrawActors(
                 planet->GetTutorialTriggers());
@@ -96,6 +102,27 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         if (mRenderer->GetGame()->GetIsDebugMode()) {
             mRenderer->TryDrawActors(planet->GetBoatArrivalPoints());
             mRenderer->TryDrawActors(planet->GetFallRespawnPoints());
+        }
+
+    }
+
+    mRenderer->TryDrawActors(
+        mRenderer->GetGame()->GetRuntimeJewelItems());
+
+    if (!mPlayerEffectRenderer) {
+        return;
+    }
+
+    // Billboards keep depth testing enabled but do not write depth. Drawing
+    // them after every opaque actor lets nearer geometry occlude them without
+    // allowing farther geometry drawn later to overwrite their color.
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat);
         }
     }
 }

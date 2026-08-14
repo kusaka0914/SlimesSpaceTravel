@@ -23,6 +23,11 @@ public:
 
     bool IsJumpGravityActive() const { return mIsJumpSwitchingActive; }
     bool IsEllipseAirborneGravityActive(const Player& player) const;
+    bool ShouldUseEllipseSurfaceGravity(const Player& player) const;
+    glm::vec3 CalculateAirbornePhysicsUpDirection(
+        const Player& player) const;
+    bool ShouldAcceptLandingSurface(
+        const glm::vec3& surfaceNormal) const;
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
 
 private:
@@ -32,10 +37,18 @@ private:
 
     void ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const;
 
+    bool TryActivateOverheadGravityRay(
+        Player& player,
+        PlayerMovement& movement,
+        float deltaTime);
+
     void UpdateEllipseAirborneGravity(
         Player& player,
         bool isDodging,
         float deltaTime);
+    bool ShouldActivateEllipseSurfaceGravity(
+        const Player& player,
+        const Planet& planet) const;
     void ApplyEllipseSurfaceAttraction(
         Player& player,
         const Planet& planet,
@@ -64,6 +77,7 @@ private:
     static constexpr float airborneMaximumTurnDegreesPerSecond = 120.0f;
 
     static constexpr float ellipseAttractionStartSurfaceDistance = 1.25f;
+    static constexpr float ellipseDetachedTakeoffSurfaceDistance = 0.75f;
     static constexpr float ellipseAttractionPerDistance = 10.0f;
     static constexpr float ellipseNormalTransitionAcceleration = 32.0f;
     static constexpr float ellipseMaximumAttractionAcceleration = 50.0f;
@@ -71,11 +85,15 @@ private:
     static constexpr float fallbackDelay = 2.0f;
 
     bool mIsJumpSwitchingActive = false;
+    bool mIsPlanetTransferGravityActive = false;
+    bool mIsOverheadGravityRayActive = false;
     bool mGroundRayHitThisFrame = false;
     bool mFallbackAppliedThisJump = false;
     bool mFallbackGravityActive = false;
     float mNoGroundRayDuration = 0.0f;
     float mEllipseJumpStartSurfaceDistance = 0.0f;
+    bool mUseEllipseSurfaceGravity = false;
+    glm::vec3 mOverheadGravityUpDirection{0.0f, 1.0f, 0.0f};
 
     // Actor::UpdateUpVecによる毎フレームの書き換えに影響されないよう、
     // 補間中の上方向をこのクラスで保持する。

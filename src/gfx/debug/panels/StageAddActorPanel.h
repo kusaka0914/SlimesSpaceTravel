@@ -3,8 +3,10 @@
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
 #include "gfx/debug/stage/StageEditorTypes.h"
+#include "actor/enemy/EnemyPresetRepository.h"
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <glm/glm.hpp>
 #include <string>
@@ -28,6 +30,8 @@ public:
 private:
     void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
     void DrawBoatArrivalPointCreation();
+    void DrawJewelItemCreation();
+    void DrawHazardActorCreation();
     void BeginPlacement(const std::string& displayName, int fallbackPlanetIndex,
                         std::function<bool(int, const StageActorPlacement&)> placementCreator);
     int ResolveHitPlanetIndex(Actor* hitActor, int fallbackPlanetIndex) const;
@@ -46,6 +50,10 @@ private:
 
     int mSelectedEnemyTypeIndex = 0;
     int mSelectedEnemyPlanetIndex = -1;
+    std::vector<EnemyPresetDefinition> mEnemyPresets;
+    std::uint64_t mLoadedEnemyPresetRevision = 0;
+    bool mEnemyPresetsLoaded = false;
+    std::string mEnemyPresetLoadError;
 
     int mSelectedPlatformPlanetIndex = -1;
     int mSelectedPlatformModelIndex = 0;
@@ -89,6 +97,19 @@ private:
     glm::vec3 mBoatArrivalPointScale = glm::vec3(0.4f);
 
     int mSelectedStarPlanetIndex = -1;
+
+    int mSelectedJewelItemPlanetIndex = -1;
+    std::string mSelectedJewelItemModel = "crystal.obj";
+    std::string mSelectedJewelItemTexture = "textures/jewel.png";
+    glm::vec3 mJewelItemScale = glm::vec3(0.22f);
+
+    int mSelectedHazardActorPlanetIndex = -1;
+    std::string mSelectedHazardActorModel = "crystal.obj";
+    std::string mSelectedHazardActorTexture;
+    glm::vec3 mHazardActorScale = glm::vec3(0.75f);
+    float mHazardActorTriggerRadius = 0.75f;
+    float mHazardActorDamage = 1.0f;
+    float mHazardActorDamageIntervalSeconds = 1.0f;
 
     int mSelectedStageObjectPlanetIndex = -1;
     std::string mSelectedStageObjectModel;

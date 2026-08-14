@@ -36,12 +36,19 @@ void SceneTransitionController::UpdateFade(float deltaTime)
         ApplySceneChange();
     } else if (mIsFadeOut) {
         mIsFadeOut = false;
+        if (mFadeCompletionAction) {
+            std::function<void()> completionAction =
+                std::move(mFadeCompletionAction);
+            mFadeCompletionAction = {};
+            completionAction();
+        }
     }
 }
 
 void SceneTransitionController::StartOpening()
 {
     mMidpointAction = {};
+    mFadeCompletionAction = {};
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
     mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Opening);
@@ -50,6 +57,7 @@ void SceneTransitionController::StartOpening()
 void SceneTransitionController::StartFadeIn()
 {
     mMidpointAction = {};
+    mFadeCompletionAction = {};
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
 
@@ -57,9 +65,32 @@ void SceneTransitionController::StartFadeIn()
     mUIState->OnFadeIn();
 }
 
+void SceneTransitionController::StartBattleStyleSelection()
+{
+    mMidpointAction = {};
+    mFadeCompletionAction = {};
+    mFadeTimer = 1.0f;
+    mIsFadeOut = false;
+    mGameProgressState->SetNextSceneState(
+        GameProgressState::SceneState::BattleStyleSelection);
+}
+
+void SceneTransitionController::CancelPendingTransition()
+{
+    mMidpointAction = {};
+    mFadeCompletionAction = {};
+    mFadeTimer = -1.0f;
+    mIsFadeOut = false;
+    mHasPendingStageChange = false;
+    mNextStageNum = -1;
+    mGameProgressState->SetNextSceneState(
+        GameProgressState::SceneState::None);
+}
+
 void SceneTransitionController::RequestStageChange(int stageNum)
 {
     mMidpointAction = {};
+    mFadeCompletionAction = {};
     mNextStageNum = stageNum;
     mHasPendingStageChange = true;
 
@@ -67,13 +98,16 @@ void SceneTransitionController::RequestStageChange(int stageNum)
     mIsFadeOut = false;
 }
 
-bool SceneTransitionController::RequestFadeAction(std::function<void()> midpointAction)
+bool SceneTransitionController::RequestFadeAction(
+    std::function<void()> midpointAction,
+    std::function<void()> completionAction)
 {
     if (!midpointAction || mFadeTimer > -1.0f || mIsFadeOut || mHasPendingStageChange) {
         return false;
     }
 
     mMidpointAction = std::move(midpointAction);
+    mFadeCompletionAction = std::move(completionAction);
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
     return true;
@@ -86,6 +120,13 @@ void SceneTransitionController::ApplySceneChange()
     const auto nextSceneState = mGameProgressState->GetNextSceneState();
 
     switch (nextSceneState) {
+    case GameProgressState::SceneState::BattleStyleSelection:
+        mGameProgressState->SetCurrentSceneState(
+            GameProgressState::SceneState::BattleStyleSelection);
+        mGameProgressState->SetNextSceneState(
+            GameProgressState::SceneState::None);
+        break;
+
     case GameProgressState::SceneState::Opening:
         mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Opening);
         mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
@@ -117,6 +158,17 @@ void SceneTransitionController::ApplySceneChange()
 
         const int destinationStageNum = mNextStageNum;
         const bool shouldPlayBaseArrival = destinationStageNum == 0;
+        const bool shouldPlayStageIntro =
+            mGame->HasStageIntroCinematic(destinationStageNum);
+        const bool shouldPlayBaseIntro =
+            shouldPlayBaseArrival &&
+            !mHasPlayedBaseIntroThisSession;
+        const bool shouldDeferStageMusic =
+            shouldPlayStageIntro;
+
+        if (shouldDeferStageMusic) {
+            mGame->GetAudioSystem()->BeginStageMusicDeferral();
+        }
 
         mGame->ChangeStage(destinationStageNum);
         mNextStageNum = -1;
@@ -127,11 +179,9 @@ void SceneTransitionController::ApplySceneChange()
 
         if (shouldPlayBaseArrival && mGame->GetSequenceSystem()) {
             SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-            const bool shouldPlayBaseIntro = !mHasPlayedBaseIntroThisSession;
-
             if (shouldPlayBaseIntro &&
                 sequenceSystem->PlayCinematicChainThenSequence(
-                    {"base_sequence", "base_second_sequence"},
+                    {"base_sequence"},
                     "base_arrival_template")) {
                 mHasPlayedBaseIntroThisSession = true;
                 if (Player* player = mGame->GetMainPlayer()) {
@@ -140,6 +190,14 @@ void SceneTransitionController::ApplySceneChange()
             } else {
                 sequenceSystem->Play("base_arrival_template");
             }
+        } else if (shouldPlayStageIntro) {
+            mGame->StartStageIntroCinematic(destinationStageNum);
+        }
+
+        if (shouldDeferStageMusic &&
+            (!mGame->GetSequenceSystem() ||
+             !mGame->GetSequenceSystem()->IsCinematicChainPlaying())) {
+            mGame->GetAudioSystem()->ResumeDeferredStageMusic();
         }
     }
 }

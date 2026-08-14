@@ -92,6 +92,10 @@ void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML:
             : true;
     actor->SetShouldAffectGravityDirection(
         shouldAffectGravityDirection);
+    actor->SetShouldReactToOverheadGravityRay(
+        node["reactsToOverheadGravityRay"]
+            ? node["reactsToOverheadGravityRay"].as<bool>()
+            : false);
 
     const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
     const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;

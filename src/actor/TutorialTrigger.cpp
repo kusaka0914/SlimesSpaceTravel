@@ -4,6 +4,8 @@
 #include "actor/Player.h"
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
+#include "system/scene/TutorialController.h"
+#include "system/tutorial/TutorialLibrary.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -67,14 +69,12 @@ void TutorialTrigger::OnLoadedModelChanged()
             modelPath;
     }
 
-    std::vector<float> positions;
-    std::vector<unsigned int> indices;
-    if (!mGame->GetMeshLoadSystem()
-             ->LoadMeshPositionsAndIndices(
-                 modelPath.lexically_normal().string().c_str(),
-                 positions,
-                 indices) ||
-        positions.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()
+            ->ResolveCollisionMeshGeometry(
+                modelPath.lexically_normal().string());
+    if (!collisionGeometry ||
+        collisionGeometry->positions.size() < 3) {
         return;
     }
 
@@ -83,12 +83,12 @@ void TutorialTrigger::OnLoadedModelChanged()
     glm::vec3 boundsMax(
         std::numeric_limits<float>::lowest());
     for (std::size_t index = 0;
-         index + 2 < positions.size();
+         index + 2 < collisionGeometry->positions.size();
          index += 3) {
         const glm::vec3 position(
-            positions[index],
-            positions[index + 1],
-            positions[index + 2]);
+            collisionGeometry->positions[index],
+            collisionGeometry->positions[index + 1],
+            collisionGeometry->positions[index + 2]);
         boundsMin = glm::min(boundsMin, position);
         boundsMax = glm::max(boundsMax, position);
     }
@@ -135,6 +135,46 @@ bool TutorialTrigger::IsInsideModelBounds(
                mLocalBoundsMax.z + boundsEpsilon;
 }
 
+bool TutorialTrigger::RequiresSplitPlayerToStart() const
+{
+    if (!mTutorialId.empty()) {
+        SceneSystem* sceneSystem =
+            mGame ? mGame->GetSceneSystem() : nullptr;
+        TutorialController* tutorialController =
+            sceneSystem
+                ? sceneSystem->GetTutorialController()
+                : nullptr;
+        const TutorialDefinition* definition =
+            tutorialController
+                ? tutorialController->GetLibrary().Find(
+                      mTutorialId)
+                : nullptr;
+        if (!definition) {
+            return false;
+        }
+
+        return std::any_of(
+            definition->pages.begin(),
+            definition->pages.end(),
+            [](const TutorialPage& page) {
+                return page.advanceCondition ==
+                       TutorialAdvanceCondition::PlayerSwitch;
+            });
+    }
+
+    const std::vector<std::string> resolvedTalkTexts =
+        GetResolvedTalkTexts();
+    for (std::size_t pageIndex = 0;
+         pageIndex < resolvedTalkTexts.size();
+         ++pageIndex) {
+        if (GetResolvedTalkAdvanceCondition(pageIndex) ==
+            TalkPageAdvanceCondition::PlayerSwitch) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void TutorialTrigger::UpdateActor(float)
 {
     if (mHasTriggeredThisVisit || !mGame ||
@@ -155,6 +195,11 @@ void TutorialTrigger::UpdateActor(float)
         }
 
         if (!IsInsideModelBounds(player->GetPos())) {
+            continue;
+        }
+
+        if (!mGame->GetIsPlayerSplit() &&
+            RequiresSplitPlayerToStart()) {
             continue;
         }
 

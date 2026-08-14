@@ -18,8 +18,13 @@ public:
 
     void AdjustVolume(int volumeBGM, int volumeSE);
     void TryChangeBGM();
+    void BeginStageMusicDeferral();
+    void ResumeDeferredStageMusic();
     void PlayBGM(const std::string& name);
-    void PlaySE(const std::string& name);
+    void PlayBGMOnce(const std::string& name);
+    void StopBGM();
+    int PlaySE(const std::string& name);
+    bool IsSEPlaying(int channel) const;
 
 private:
     void CreateBGMList();
@@ -32,4 +37,5 @@ private:
 
     std::unordered_map<std::string, Mix_Music*> mBGMList;
     std::unordered_map<std::string, Mix_Chunk*> mSEList;
+    bool mIsStageMusicDeferred = false;
 };

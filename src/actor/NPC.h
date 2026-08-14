@@ -183,6 +183,10 @@ public:
     void SetProximityMessageHeight(float height);
     void SetProximityMessageScale(float scale);
     void MarkTalkCompletedThisVisit() { mHasTalkedThisVisit = true; }
+    void SetForcesTalkOnArrival(bool forcesTalkOnArrival)
+    {
+        mForcesTalkOnArrival = forcesTalkOnArrival;
+    }
 
     bool GetIsTalkable() const { return mIsTalkable; }
     const std::string& GetName() const { return mName; }
@@ -264,6 +268,8 @@ public:
     float GetProximityMessageHeight() const { return mProximityMessageHeight; }
     float GetProximityMessageScale() const { return mProximityMessageScale; }
     bool GetHasTalkedThisVisit() const { return mHasTalkedThisVisit; }
+    bool GetForcesTalkOnArrival() const { return mForcesTalkOnArrival; }
+    int ResolveTalkStageClearCondition() const;
     bool CanStartRegularTalk() const;
     bool ShouldShowProximityMessage() const;
     virtual bool ShouldUseTalkCamera() const { return true; }
@@ -296,4 +302,5 @@ private:
     float mProximityMessageHeight = 1.8f;
     float mProximityMessageScale = 1.0f;
     bool mHasTalkedThisVisit = false;
+    bool mForcesTalkOnArrival = false;
 };

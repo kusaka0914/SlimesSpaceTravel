@@ -55,6 +55,10 @@ public:
         mStatus.SetDefaultStandByAttackTimer(defaultStandByAttackTimer);
     }
     void SetDetectionRange(float detectionRange) { mStatus.SetDetectionRange(detectionRange); }
+    void SetAttackPreparationRange(float attackPreparationRange)
+    {
+        mStatus.SetAttackPreparationRange(attackPreparationRange);
+    }
     void SetKnockBackSpeed(float knockBackSpeed) { mStatus.SetKnockBackSpeed(knockBackSpeed); }
     void SetAttackSpeed(float attackSpeed) { mStatus.SetAttackSpeed(attackSpeed); }
     void FlipCanCountered() { mStatus.FlipCanCountered(); }
@@ -74,12 +78,17 @@ public:
     int GetBreakCountMax() const { return mStatus.GetBreakCountMax(); }
 
     float GetDetectionRange() const { return mStatus.GetDetectionRange(); }
+    float GetAttackPreparationRange() const
+    {
+        return mStatus.GetAttackPreparationRange();
+    }
     float GetMoveSpeed() const { return mStatus.GetMoveSpeed(); }
     float GetKnockBackSpeed() const { return mStatus.GetKnockBackSpeed(); }
     float GetAttackSpeed() const { return mStatus.GetAttackSpeed(); }
 
     float GetDefaultStandByAttackTimer() const { return mStatus.GetDefaultStandByAttackTimer(); }
     float GetDefaultLaunchedTimer() const { return mStatus.GetDefaultLaunchedTimer(); }
+    float GetLaunchedTimer() const { return mStatus.GetLaunchedTimer(); }
     float GetLaunchHeight() const { return mStatus.GetLaunchHeight(); }
     float GetDefaultAttackMotionTimer() const { return mStatus.GetDefaultAttackMotionTimer(); }
 
@@ -93,6 +102,23 @@ public:
     bool IsOnGround() const { return mOnGround; }
     void SetOnGroundForEnemy(bool onGround) { mOnGround = onGround; }
     void SetShouldJudgeLandingForEnemy(bool shouldJudgeLanding) { mShouldJudgeLanding = shouldJudgeLanding; }
+    void SetShouldDropJewelOnDeath(bool shouldDrop)
+    {
+        mShouldDropJewelOnDeath = shouldDrop;
+    }
+    bool ShouldDropJewelOnDeath() const
+    {
+        return mShouldDropJewelOnDeath;
+    }
+
+    const glm::vec3& GetLastGroundedPosition() const
+    {
+        return mLastGroundedPosition;
+    }
+    const glm::vec3& GetLastGroundedUpDirection() const
+    {
+        return mLastGroundedUpDirection;
+    }
 
     const glm::vec3& GetVelocity() const { return mVelocity; }
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
@@ -105,6 +131,11 @@ public:
     const char* GetCurrentBehaviorActionType() const;
     const std::string& GetBehaviorProfileName() const;
     bool GetBehaviorAttackPreview(EnemyAttackPreview& preview) const;
+    bool ShouldDrawAttackPreview() const
+    {
+        return mStateMachine->GetActionState() ==
+            ActionState::PreparingAttack;
+    }
 
     bool IsSteepGroundForEnemy(const glm::vec3& hitNormal, const glm::vec3& up) const
     {
@@ -122,4 +153,8 @@ private:
     std::unique_ptr<EnemyCombat> mCombat;
     std::unique_ptr<EnemyDamageHandler> mDamageHandler;
     std::unique_ptr<EnemyBehaviorController> mBehaviorController;
+    glm::vec3 mLastGroundedPosition{0.0f};
+    glm::vec3 mLastGroundedUpDirection{0.0f, 1.0f, 0.0f};
+    bool mHasRecordedGroundedTransform = false;
+    bool mShouldDropJewelOnDeath = false;
 };

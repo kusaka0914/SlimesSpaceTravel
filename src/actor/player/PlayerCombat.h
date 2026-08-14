@@ -4,6 +4,7 @@
 #include "actor/player/PlayerAttackResolver.h"
 #include "actor/player/PlayerTypes.h"
 
+#include <cstdint>
 #include <vector>
 
 class Player;
@@ -15,6 +16,10 @@ class PlayerStatus;
 class PlayerCombat {
 public:
     bool IsAttacking() const;
+    std::uint64_t GetResolvedAttackSequence() const
+    {
+        return mResolvedAttackSequence;
+    }
     bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
     bool CanMoveDuringAttack() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
@@ -22,6 +27,7 @@ public:
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
     bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
+    bool HasSuccessfulAirDodgeAttack() const { return mHasSuccessfulAirDodgeAttack; }
     bool CanStartAirAttack() const
     {
         return mAirAttackCount < maximumAirAttackCount;
@@ -35,7 +41,6 @@ public:
     bool ResolveAirSlamImpact(
         Player& player,
         PlayerMovement& movement,
-        PlayerStatus& status,
         float deltaTime);
 
     void Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
@@ -54,6 +59,7 @@ public:
     void CancelSpecialAttack();
     void CancelCurrentAttack();
     void OnLanded();
+    void PrepareAssistAirCombo();
     void StartAirDodgeAttack();
     void UpdateAirDodgeAttack(
         Player& player,
@@ -81,6 +87,24 @@ public:
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
+    void SetChargedAttackRange(float chargedAttackRange) { mChargedAttackRange = chargedAttackRange; }
+    void SetChargedAttackAngle(float chargedAttackAngle) { mChargedAttackAngle = chargedAttackAngle; }
+    void SetChargedAttackDamage(float chargedAttackDamage) { mChargedAttackDamage = chargedAttackDamage; }
+    void SetChargedAttackChargeDurationSeconds(float chargeDurationSeconds)
+    {
+        mChargedAttackChargeDurationSeconds = chargeDurationSeconds;
+    }
+    void SetContinuousAttackRange(float continuousAttackRange) { mContinuousAttackRange = continuousAttackRange; }
+    void SetContinuousAttackAngle(float continuousAttackAngle) { mContinuousAttackAngle = continuousAttackAngle; }
+    void SetContinuousAttackDamage(float continuousAttackDamage) { mContinuousAttackDamage = continuousAttackDamage; }
+    void SetContinuousAttackIntervalSeconds(float attackIntervalSeconds)
+    {
+        mContinuousAttackIntervalSeconds = attackIntervalSeconds;
+    }
+    void SetContinuousAttackDurationSeconds(float attackDurationSeconds)
+    {
+        mContinuousAttackDurationSeconds = attackDurationSeconds;
+    }
     void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer) { mDefaultStrongAttackTimer = defaultStrongAttackTimer; }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
     void SetAttackHitDelay(float attackHitDelay) { mAttackHitDelay = attackHitDelay; }
@@ -124,6 +148,15 @@ public:
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
+    float GetChargedAttackRange() const { return mChargedAttackRange; }
+    float GetChargedAttackAngle() const { return mChargedAttackAngle; }
+    float GetChargedAttackDamage() const { return mChargedAttackDamage; }
+    float GetChargedAttackChargeDurationSeconds() const { return mChargedAttackChargeDurationSeconds; }
+    float GetContinuousAttackRange() const { return mContinuousAttackRange; }
+    float GetContinuousAttackAngle() const { return mContinuousAttackAngle; }
+    float GetContinuousAttackDamage() const { return mContinuousAttackDamage; }
+    float GetContinuousAttackIntervalSeconds() const { return mContinuousAttackIntervalSeconds; }
+    float GetContinuousAttackDurationSeconds() const { return mContinuousAttackDurationSeconds; }
     float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
     float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
     float GetAttackHitDelay() const { return mAttackHitDelay; }
@@ -145,6 +178,7 @@ private:
     void StartAttackHitDelay();
     void ClearPendingAttackHit();
     void ConfigureStrongAttack();
+    void StartGroundFinisherCooldown();
 
 private:
     PlayerAttackKind mAttackKind = PlayerAttackKind::Normal;
@@ -156,6 +190,7 @@ private:
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
     bool mIsAirDodgeAttackActive = false;
+    bool mHasSuccessfulAirDodgeAttack = false;
     bool mHasPendingAttackHit = false;
 
     int mAttackComboIndex = 0;
@@ -188,12 +223,23 @@ private:
     float mStrongAttackRange = 6.0f;
     float mStrongAttack = 50.0f;
     float mStrongAttackSpeed = 100.0f;
+    float mChargedAttackRange = 2.6f;
+    float mChargedAttackAngle = 6.283f;
+    float mChargedAttackDamage = 50.0f;
+    float mChargedAttackChargeDurationSeconds = 3.0f;
+    float mContinuousAttackRange = 2.0f;
+    float mContinuousAttackAngle = 6.283f;
+    float mContinuousAttackDamage = 2.5f;
+    float mContinuousAttackIntervalSeconds = 0.25f;
+    float mContinuousAttackDurationSeconds = 6.0f;
     float mSpecialChargingTimer = -1.0f;
     float mContinuousAttackingTimer = -1.0f;
     float mContinuousAttackingCooldown = -1.0f;
 
     std::vector<PlayerRaySegment> mRayCasts;
     std::vector<Enemy*> mAirDodgeHitEnemies;
+
+    std::uint64_t mResolvedAttackSequence = 0;
 
     PlayerAttackHitDetector mHitDetector;
     PlayerAttackResolver mAttackResolver;

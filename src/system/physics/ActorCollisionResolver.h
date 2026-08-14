@@ -25,6 +25,7 @@ private:
     struct StageSweepResolution {
         glm::vec3 position{0.0f};
         glm::vec3 blockingNormal{0.0f};
+        bool didBlockRequestedMovement = false;
     };
 
     struct StageOverlapResolution {

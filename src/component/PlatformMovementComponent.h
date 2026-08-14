@@ -28,19 +28,36 @@ public:
     void SetReturnDelay(float returnDelay);
     float GetReturnDelay() const { return mReturnDelay; }
 
+    void SetEndpointWaitDurationSeconds(
+        float endpointWaitDurationSeconds);
+    float GetEndpointWaitDurationSeconds() const
+    {
+        return mEndpointWaitDurationSeconds;
+    }
+
     glm::vec3 GetDestinationLocalPos() const { return mBaseLocalPos + mMoveOffset; }
     void SetDestinationLocalPos(const glm::vec3& destinationLocalPos)
     {
         mMoveOffset = destinationLocalPos - mBaseLocalPos;
     }
 
-    void SetEditorPreviewPoint(int point) { mEditorPreviewPoint = point == 1 ? 1 : 0; }
+    void SetEditorPreviewPoint(int point);
     int GetEditorPreviewPoint() const { return mEditorPreviewPoint; }
     void SetEditorPreviewLocalPos(const glm::vec3& localPos);
+    void StartEditorMovementPreview();
+    void StopEditorMovementPreview();
+    void UpdateEditorMovementPreview(float deltaTime);
+    bool IsEditorMovementPreviewPlaying() const
+    {
+        return mIsEditorMovementPreviewPlaying;
+    }
 
     const glm::vec3& GetFrameDelta() const { return mFrameDelta; }
 
 private:
+    bool UpdateEditorPreview(float deltaTime);
+    void AdvanceEditorMovementPreview(float deltaTime);
+    void ResetRuntimeMovementAfterEditorPreview();
     void UpdateAutomaticMovement(float deltaTime);
     void UpdatePlayerActivatedMovement(float deltaTime);
     bool HasPlayerOnPlatform() const;
@@ -56,10 +73,15 @@ private:
     float mMoveTimer = 0.0f;
     float mReturnDelay = 1.0f;
     float mReturnDelayTimer = 0.0f;
+    float mEndpointWaitDurationSeconds = 0.0f;
+    float mEndpointWaitElapsedSeconds = 0.0f;
+    float mStartEndpointWaitRemainingSeconds = 0.0f;
     float mTravelProgress = 0.0f;
 
     bool mMoveOnPlayer = false;
     bool mHasBeenActivated = false;
     bool mWasEditorPreviewing = false;
+    bool mIsEditorMovementPreviewPlaying = false;
+    float mEditorMovementPreviewElapsedSeconds = 0.0f;
     int mEditorPreviewPoint = 0;
 };

@@ -37,6 +37,8 @@ void AudioSystem::CreateBGMList()
     AddBGM(basePath + "title.wav", "title_bgm");
     AddBGM(basePath + "opening.wav", "opening_bgm");
     AddBGM(basePath + "base.wav", "base_bgm");
+    AddBGM(basePath + "enter_stage.wav", "enter_stage_bgm");
+    AddBGM(basePath + "silence.wav", "star_wait_bgm");
 }
 
 void AudioSystem::CreateSEList()
@@ -64,13 +66,17 @@ void AudioSystem::CreateSEList()
     AddSE(basePath + "just_dodge.wav", "just_dodge_se");
     AddSE(basePath + "charging.wav", "charging_se");
     AddSE(basePath + "charged.wav", "charged_se");
+    AddSE(basePath + "boss_defeated.wav", "boss_defeated_se");
+    AddSE(basePath + "star_shown.wav", "star_shown_se");
 }
 
 void AudioSystem::Update() {}
 
 void AudioSystem::TryChangeBGM()
 {
-    bool isTitle = mGame->GetSceneSystem()->IsTitle();
+    const bool isTitle =
+        mGame->GetSceneSystem()->IsTitle() ||
+        mGame->GetSceneSystem()->IsBattleStyleSelection();
     if (isTitle) {
         Mix_HaltMusic();
         PlayBGM("title_bgm");
@@ -96,6 +102,10 @@ void AudioSystem::TryChangeBGM()
         return;
     }
 
+    if (mIsStageMusicDeferred) {
+        return;
+    }
+
     int currentPlanetNum = mainPlayer->GetCurrentPlanetNum();
     if (currentPlanetNum == 0) {
         Mix_HaltMusic();
@@ -108,6 +118,22 @@ void AudioSystem::TryChangeBGM()
         PlayBGM("boss_bgm");
         return;
     }
+}
+
+void AudioSystem::BeginStageMusicDeferral()
+{
+    mIsStageMusicDeferred = true;
+    Mix_HaltMusic();
+}
+
+void AudioSystem::ResumeDeferredStageMusic()
+{
+    if (!mIsStageMusicDeferred) {
+        return;
+    }
+
+    mIsStageMusicDeferred = false;
+    TryChangeBGM();
 }
 
 void AudioSystem::Shutdown()
@@ -128,16 +154,38 @@ void AudioSystem::PlayBGM(const std::string& name)
     // std::cerr << "can't find BGM" << std::endl;
 }
 
-void AudioSystem::PlaySE(const std::string& name)
+void AudioSystem::PlayBGMOnce(const std::string& name)
+{
+    const auto musicIterator = mBGMList.find(name);
+    Mix_Music* music =
+        musicIterator != mBGMList.end()
+            ? musicIterator->second
+            : nullptr;
+    if (music) {
+        Mix_PlayMusic(music, 0);
+    }
+}
+
+void AudioSystem::StopBGM()
+{
+    Mix_HaltMusic();
+}
+
+int AudioSystem::PlaySE(const std::string& name)
 {
     auto it = mSEList.find(name);
     Mix_Chunk* SE = (it != mSEList.end()) ? it->second : nullptr;
     if (SE) {
-        Mix_PlayChannel(-1, SE, 0);
-        return;
+        return Mix_PlayChannel(-1, SE, 0);
     }
 
     // std::cerr << "can't find SE" << std::endl;
+    return -1;
+}
+
+bool AudioSystem::IsSEPlaying(int channel) const
+{
+    return channel >= 0 && Mix_Playing(channel) != 0;
 }
 
 void AudioSystem::AddBGM(const std::string& path, const std::string& name)

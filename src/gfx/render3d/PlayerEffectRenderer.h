@@ -12,7 +12,7 @@ public:
     explicit PlayerEffectRenderer(const Renderer3D* renderer);
 
     void DrawPlayers(const glm::mat4& viewMat) const;
-    void DrawEnemyWithEffects(Enemy* enemy, const glm::mat4& viewMat) const;
+    void DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat) const;
 
 private:
     void DrawPlayerCollisionShape(const Player* player) const;

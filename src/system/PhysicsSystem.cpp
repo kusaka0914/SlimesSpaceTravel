@@ -205,6 +205,81 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::RaycastStageSurface(
     return hit;
 }
 
+std::vector<PhysicsSystem::RayHitActor>
+PhysicsSystem::RaycastStageSurfaces(
+    const glm::vec3& rayFrom,
+    const glm::vec3& rayTo) const
+{
+    std::vector<RayHitActor> hits;
+    if (!mBulletWorld) {
+        return hits;
+    }
+
+    SyncKinematicBodies();
+
+    const btVector3 bulletRayFrom(
+        rayFrom.x,
+        rayFrom.y,
+        rayFrom.z);
+    const btVector3 bulletRayTo(
+        rayTo.x,
+        rayTo.y,
+        rayTo.z);
+    btCollisionWorld::AllHitsRayResultCallback callback(
+        bulletRayFrom,
+        bulletRayTo);
+    callback.m_collisionFilterGroup =
+        btBroadphaseProxy::DefaultFilter;
+    callback.m_collisionFilterMask =
+        btBroadphaseProxy::DefaultFilter;
+    mBulletWorld->rayTest(
+        bulletRayFrom,
+        bulletRayTo,
+        callback);
+
+    if (!callback.hasHit()) {
+        return hits;
+    }
+
+    hits.reserve(callback.m_collisionObjects.size());
+    for (int hitIndex = 0;
+         hitIndex < callback.m_collisionObjects.size();
+         ++hitIndex) {
+        const btCollisionObject* collisionObject =
+            callback.m_collisionObjects[hitIndex];
+        if (!collisionObject) {
+            continue;
+        }
+
+        const btVector3& bulletHitPoint =
+            callback.m_hitPointWorld[hitIndex];
+        const btVector3& bulletHitNormal =
+            callback.m_hitNormalWorld[hitIndex];
+
+        RayHitActor hit;
+        hit.actor = static_cast<Actor*>(
+            collisionObject->getUserPointer());
+        hit.hitPos = glm::vec3(
+            bulletHitPoint.x(),
+            bulletHitPoint.y(),
+            bulletHitPoint.z());
+        hit.hitNormal = glm::vec3(
+            bulletHitNormal.x(),
+            bulletHitNormal.y(),
+            bulletHitNormal.z());
+        hit.distance = glm::length(hit.hitPos - rayFrom);
+        hits.emplace_back(hit);
+    }
+
+    std::sort(
+        hits.begin(),
+        hits.end(),
+        [](const RayHitActor& left, const RayHitActor& right) {
+            return left.distance < right.distance;
+        });
+    return hits;
+}
+
 std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep(
     const Actor* actor,
     const glm::vec3& from,

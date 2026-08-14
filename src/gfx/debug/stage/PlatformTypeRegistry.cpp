@@ -30,6 +30,7 @@ std::vector<PlatformTypeDefinition> CreateFallbackDefinitions()
     moving.defaults["moveOnPlayer"] = false;
     moving.defaults["moveDuration"] = 3.0f;
     moving.defaults["returnDelay"] = 1.0f;
+    moving.defaults["endpointWaitSeconds"] = 0.0f;
     moving.defaults["moveOffset"][0] = 4.0f;
     moving.defaults["moveOffset"][1] = 0.0f;
     moving.defaults["moveOffset"][2] = 0.0f;

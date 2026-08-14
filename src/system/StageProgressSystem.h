@@ -14,8 +14,11 @@ public:
     bool IsStageCleared(int stageNum) const;
     bool MarkStageCleared(int stageNum);
     bool SetStageCleared(int stageNum, bool isCleared);
+    bool HasShownConversation(const std::string& conversationId) const;
+    bool MarkConversationShown(const std::string& conversationId);
 
 private:
     std::string mSavePath;
     std::set<int> mClearedStages;
+    std::set<std::string> mShownConversationIds;
 };

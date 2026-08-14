@@ -177,14 +177,14 @@ boats:
   - startPlanet: 0
     destPlanet: 0
     destStage: 5
-    theta: 0
-    phi: 0
-    height: 1
+    theta: 3.1415927
+    phi: -1.5657692
+    height: -0.049877167
     facingYaw: -1.5359126
     pos:
-      - -27.15
-      - -85.43
-      - -36.12
+      - -0.05
+      - -9.95
+      - 0
     rotation:
       - 0.06169799
       - 1.5358474
@@ -209,7 +209,7 @@ boats:
       - -0.694633
       - 0.0069294646
       - 0.7191508
-    visibleIfStageCleared: 4
+    visibleIfStageCleared: 5
   - startPlanet: 0
     destPlanet: 0
     destStage: 1
@@ -478,15 +478,15 @@ NPCs:
             ruby: false
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 1
-      - talkIndex: 3
-        stage: 1
-      - talkIndex: 4
         stage: 2
+      - talkIndex: 3
+        stage: 2
+      - talkIndex: 4
+        stage: 3
       - talkIndex: 5
-        stage: 3
+        stage: 4
       - talkIndex: 6
-        stage: 3
+        stage: 4
     proximityMessage:
       mode: afterTalk
       variants:
@@ -823,9 +823,9 @@ NPCs:
             ruby: false
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 1
+        stage: 2
       - talkIndex: 3
-        stage: 1
+        stage: 2
     proximityMessage:
       mode: afterTalk
       variants:
@@ -913,7 +913,7 @@ NPCs:
         index: 3
     talkStageClearConditions:
       - talkIndex: 0
-        stage: 2
+        stage: 3
     proximityMessage:
       mode: afterTalk
       variants:
@@ -929,7 +929,7 @@ NPCs:
       - 0
       - 0.847712
       - 0
-    visibleIfStageCleared: 1
+    visibleIfStageCleared: 2
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -1027,7 +1027,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -0.61121976
       - -0.025872009
@@ -1166,9 +1166,9 @@ NPCs:
       - 0.99975514
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 4
+        stage: 5
       - talkIndex: 3
-        stage: 4
+        stage: 5
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1288,9 +1288,9 @@ NPCs:
       - 0.4193409
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 4
+        stage: 5
       - talkIndex: 3
-        stage: 4
+        stage: 5
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1419,9 +1419,9 @@ NPCs:
         index: 8
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 4
+        stage: 5
       - talkIndex: 3
-        stage: 4
+        stage: 5
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1529,7 +1529,7 @@ NPCs:
       - -0.6952206
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 4
+        stage: 5
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1672,9 +1672,9 @@ NPCs:
       - 0.68721294
     talkStageClearConditions:
       - talkIndex: 2
-        stage: 4
+        stage: 5
       - talkIndex: 3
-        stage: 4
+        stage: 5
 stageObjects:
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.334428, 5.979225], pos: [0.45, 4.43, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1], rotationQuat: [1, 0, 0, 0]}
@@ -2330,7 +2330,7 @@ stageObjects:
     textureTiling:
       - 27.03856
       - 27.04
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -3.332588e-05
       - 0.038387947
@@ -2362,7 +2362,7 @@ stageObjects:
     textureTiling:
       - 27.03856
       - 27.04
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -3.332588e-05
       - 0.038387947
@@ -2394,7 +2394,7 @@ stageObjects:
     textureTiling:
       - 24.795942
       - 27.04
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -0.7065616
       - -0.02652765
@@ -2426,7 +2426,7 @@ stageObjects:
     textureTiling:
       - 24.795942
       - 27.04
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -0.7065616
       - -0.02652765
@@ -2675,7 +2675,7 @@ stageObjects:
     textureTiling:
       - 24.795942
       - 27.04
-    hiddenIfStageCleared: 3
+    hiddenIfStageCleared: 4
     rotationQuat:
       - -0.7065616
       - -0.02652765
@@ -2723,7 +2723,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    visibleIfStageCleared: 1
+    visibleIfStageCleared: 2
     rotationQuat:
       - 1
       - 0
@@ -2778,7 +2778,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    visibleIfStageCleared: 2
+    visibleIfStageCleared: 3
     rotationQuat:
       - 1
       - 0
@@ -2833,7 +2833,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    visibleIfStageCleared: 2
+    visibleIfStageCleared: 3
     rotationQuat:
       - 1
       - 0
@@ -3063,7 +3063,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
-    visibleIfStageCleared: 4
+    visibleIfStageCleared: 5
     platformId: legacy_platforms_7
   - currentPlanetNum: 0
     theta: 0
@@ -3118,12 +3118,12 @@ platforms:
         moveDuration: 8
         moveOnPlayer: true
         returnDelay: 1
-    visibleIfStageCleared: 4
+    visibleIfStageCleared: 5
     platformId: legacy_platforms_8
-  - currentPlanetNum: 0
-    theta: 0
-    phi: 0
-    height: 1
+  - currentPlanetNum: 1
+    theta: 1.2549485
+    phi: -0.31627074
+    height: 8.0416355
     facingYaw: 3.130676
     rotation:
       - -3.1415815
@@ -3142,9 +3142,9 @@ platforms:
       - -0.00024032593
       - 0.0010485649
     pos:
-      - -21.773817
-      - -81.09139
-      - -19.821388
+      - 5.33
+      - -5.61
+      - 16.3
     rotationQuat:
       - -2.5685844e-05
       - 0.9999783
@@ -3214,7 +3214,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    visibleIfStageCleared: 1
+    visibleIfStageCleared: 2
     rotationQuat:
       - 1
       - 0

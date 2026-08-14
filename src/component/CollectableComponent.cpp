@@ -10,32 +10,36 @@ CollectableComponent::CollectableComponent(Actor* owner, int updateOrder)
 
 void CollectableComponent::Update(float deltaTime)
 {
-    if (mIsObtained || !mOwner || !mOwner->GetIsActive()) {
+    if (mIsObtained || !mOwner || !mOwner->GetIsActive() ||
+        (mOwner->GetGame() &&
+         mOwner->GetGame()->GetIsDebugEditorShowing())) {
         return;
     }
 
-    if (IsCollectablePlayerInPickUpRadius()) {
+    mObtainingPlayer = FindCollectablePlayerInPickUpRadius();
+    if (mObtainingPlayer) {
         mIsObtained = true;
     }
 }
 
-bool CollectableComponent::IsCollectablePlayerInPickUpRadius() const
+Player* CollectableComponent::FindCollectablePlayerInPickUpRadius() const
 {
-    const Player* nearestPlayer = mOwner->GetGame()->FindNearestPlayer(mOwner);
+    Player* nearestPlayer =
+        mOwner->GetGame()->FindNearestPlayer(mOwner);
 
     if (!nearestPlayer) {
-        return false;
+        return nullptr;
     }
 
     if (nearestPlayer->IsAttacking()) {
-        return false;
+        return nullptr;
     }
 
     const float distTo = glm::length(nearestPlayer->GetPos() - mOwner->GetPos());
     constexpr float pickupRadius = 0.8f;
     if (distTo <= pickupRadius) {
-        return true;
+        return nearestPlayer;
     }
 
-    return false;
+    return nullptr;
 }

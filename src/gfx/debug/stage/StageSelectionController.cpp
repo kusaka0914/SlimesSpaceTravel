@@ -94,6 +94,8 @@ void StageSelectionController::ClearSelectedKeys()
 
 void StageSelectionController::SetSingleSelection(Actor* actor, const StageActorRef& actorRef)
 {
+    PrepareActorForEditorSelection(actor);
+
     mPickedActor = actor;
     mPickedActorRef = actorRef;
 
@@ -105,24 +107,6 @@ void StageSelectionController::SetSingleSelection(Actor* actor, const StageActor
 
 void StageSelectionController::ToggleSelection(Actor* actor, const StageActorRef& actorRef)
 {
-    // 惑星は所属オブジェクトを多数持つため、通常オブジェクトとの複数選択には
-    // 混ぜない。惑星をクリックした場合は常に単独選択として扱う。
-    if (dynamic_cast<Planet*>(actor)) {
-        SetSingleSelection(actor, actorRef);
-        return;
-    }
-
-    const bool hasSelectedPlanet = std::any_of(
-        mSelectedKeys.begin(),
-        mSelectedKeys.end(),
-        [](const std::string& selectedKey) {
-            return selectedKey.rfind("planets:", 0) == 0;
-        });
-    if (hasSelectedPlanet) {
-        mSelectedKeys.clear();
-        ClearPickedActor();
-    }
-
     const std::string key = MakeKey(actorRef);
 
     if (mSelectedKeys.contains(key)) {
@@ -136,11 +120,34 @@ void StageSelectionController::ToggleSelection(Actor* actor, const StageActorRef
         return;
     }
 
+    PrepareActorForEditorSelection(actor);
+
     mSelectedKeys.insert(key);
     mPickedActor = actor;
     mPickedActorRef = actorRef;
 
     mRequestOpenPlacement = true;
+}
+
+void StageSelectionController::PrepareActorForEditorSelection(Actor* actor)
+{
+    Platform* platform = dynamic_cast<Platform*>(actor);
+    if (!platform) {
+        return;
+    }
+
+    PlatformMovementComponent* movement =
+        platform->GetMovementComponent();
+    if (!movement) {
+        return;
+    }
+
+    // Free-camera mode pauses actor updates, so a moving platform can still be
+    // left at its last runtime position when selected. Reapply the authored
+    // preview point without deriving or replacing either path endpoint from
+    // that runtime position.
+    movement->SetEditorPreviewPoint(
+        movement->GetEditorPreviewPoint());
 }
 
 void StageSelectionController::AddSelectedKey(const std::string& key)
@@ -216,6 +223,33 @@ Actor* StageSelectionController::GetSingleSelectedActor() const
     return nullptr;
 }
 
+std::vector<StageActorInstance>
+StageSelectionController::CollectSelectedActorInstances() const
+{
+    std::vector<StageActorInstance> selectedInstances;
+    if (!mContext.game || !mContext.game->GetCurrentStage() ||
+        mSelectedKeys.empty()) {
+        return selectedInstances;
+    }
+
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(
+            mContext.game->GetCurrentStage());
+    selectedInstances.reserve(mSelectedKeys.size());
+
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor ||
+            !mSelectedKeys.contains(
+                StageActorQuery::MakeKey(instance.ref))) {
+            continue;
+        }
+
+        selectedInstances.emplace_back(instance);
+    }
+
+    return selectedInstances;
+}
+
 glm::vec3 StageSelectionController::CalculateSelectedActorsCenter() const
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -257,12 +291,55 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
     const std::vector<StageActorInstance> instances =
         StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
+    std::unordered_set<Planet*> selectedPlanets;
+    for (const StageActorInstance& instance : instances) {
+        if (!instance.actor ||
+            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
+        }
+
+        Planet* planet = dynamic_cast<Planet*>(instance.actor);
+        if (!planet) {
+            continue;
+        }
+
+        selectedPlanets.insert(planet);
+        planet->SetPos(planet->GetPos() + delta);
+        if (mContext.planetMoveMode ==
+            PlanetMoveMode::WithBoundActors) {
+            StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
+                planet,
+                delta);
+        } else {
+            StageActorPlanetBindingService::
+                PreserveBoundActorWorldPositionsAfterPlanetMove(
+                    planet,
+                    delta);
+        }
+        planet->CaptureEditorAuthoredPosition();
+    }
+
     for (const StageActorInstance& instance : instances) {
         if (!instance.actor) {
             continue;
         }
 
         if (!mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
+        }
+
+        if (dynamic_cast<Planet*>(instance.actor)) {
+            continue;
+        }
+
+        // 選択惑星の所属物は惑星移動で既に追従している。個別にも選択されて
+        // いる場合に再度deltaを加えると二重移動になるためスキップする。
+        const bool wasMovedWithSelectedPlanet =
+            mContext.planetMoveMode ==
+                PlanetMoveMode::WithBoundActors &&
+            selectedPlanets.contains(
+                instance.actor->GetCurrentPlanet());
+        if (wasMovedWithSelectedPlanet) {
             continue;
         }
 
@@ -640,8 +717,7 @@ void StageSelectionController::SelectActorsInScreenRect(const ImVec2& rectMin, c
     for (const StageActorInstance& instance : instances) {
         Actor* actor = instance.actor;
 
-        if (!actor || !actor->GetIsActive() ||
-            dynamic_cast<Planet*>(actor)) {
+        if (!actor || !actor->GetIsActive()) {
             continue;
         }
 

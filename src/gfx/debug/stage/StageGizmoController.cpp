@@ -294,9 +294,20 @@ void StageGizmoController::ApplyGizmoMatrixToActor(Actor* actor, const glm::mat4
         if (Planet* planet = dynamic_cast<Planet*>(actor)) {
             const glm::vec3 previousCenter = planet->GetPos();
             planet->SetPos(worldPos);
-            StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
-                planet,
-                worldPos - previousCenter);
+            const glm::vec3 planetTranslation =
+                worldPos - previousCenter;
+            if (mContext.planetMoveMode ==
+                PlanetMoveMode::WithBoundActors) {
+                StageActorPlanetBindingService::
+                    TranslateActorsBoundToPlanet(
+                        planet,
+                        planetTranslation);
+            } else {
+                StageActorPlanetBindingService::
+                    PreserveBoundActorWorldPositionsAfterPlanetMove(
+                        planet,
+                        planetTranslation);
+            }
             return;
         }
 
@@ -468,8 +479,8 @@ void StageGizmoController::DrawGizmo()
         return;
     }
 
-    // 惑星移動時には所属アクターも追従させる必要がある。現状はその処理を持つ
-    // 惑星設定パネルからのみ変形し、汎用ギズモによる不完全な変更を防ぐ。
+    // 惑星の回転は所属物との相対姿勢を扱っていないため、現在は無効にする。
+    // 移動とスケールはそれぞれ専用処理で所属物との関係を維持する。
     Planet* selectedPlanet = dynamic_cast<Planet*>(selectedActor);
     if (selectedPlanet && mCurrentGizmoOperation == ImGuizmo::ROTATE) {
         return;

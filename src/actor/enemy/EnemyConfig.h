@@ -21,6 +21,18 @@ struct EnemyBehaviorConfig {
     std::vector<EnemyBehaviorActionConfig> actions;
 };
 
+struct EnemyBossManeuverConfig {
+    float preAttackApproachProbabilityPercent = 0.0f;
+    float preAttackApproachSpeed = 12.0f;
+    float preAttackApproachStopDistance = 2.5f;
+    float postAttackRetreatProbabilityPercent = 0.0f;
+    float postAttackRetreatDelaySeconds = 1.0f;
+    float postAttackRetreatSpeed = 12.0f;
+    float postAttackRetreatDistance = 4.0f;
+    float postRetreatRecoverySeconds = 2.0f;
+    float postRetreatFollowupApproachProbabilityPercent = 0.0f;
+};
+
 struct EnemyConfig {
     bool isBoss = false;
 
@@ -37,6 +49,7 @@ struct EnemyConfig {
     float defaultStandByAttackTimer = 0.0f;
     float defaultAttackMotionTimer = 0.0f;
     float attackSpeed = 0.0f;
+    float attackPreparationRange = 0.0f;
 
     float knockBackSpeed = 0.0f;
     float defaultLaunchedTimer = 0.0f;
@@ -44,4 +57,5 @@ struct EnemyConfig {
     float detectionRange = 0.0f;
 
     EnemyBehaviorConfig behavior;
+    EnemyBossManeuverConfig bossManeuver;
 };

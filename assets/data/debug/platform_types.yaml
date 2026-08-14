@@ -12,4 +12,5 @@ platformTypes:
       moveOnPlayer: false
       moveDuration: 3.0
       returnDelay: 1.0
+      endpointWaitSeconds: 0.0
       moveOffset: [4.0, 0.0, 0.0]

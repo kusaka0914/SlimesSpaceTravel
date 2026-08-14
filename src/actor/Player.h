@@ -45,8 +45,12 @@ public:
     void Initialize() override;
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
+    bool ShouldRenderSolidWhite() const override;
 
     void ApplyDamage(Enemy* enemy, float deltaTime);
+    void ApplyDamageFromActor(
+        const glm::vec3& damageSourcePosition,
+        float damage);
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
@@ -57,7 +61,15 @@ public:
     void SetSplitForm(bool isSplitForm);
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
+    void DebugMoveToPosition(
+        const glm::vec3& worldPosition,
+        Planet* planet,
+        int planetIndex);
     void SetControlLocked(bool locked) { mControlLocked = locked; }
+    void SuppressJumpUntilReleased()
+    {
+        mInput.SuppressJumpUntilReleased();
+    }
     void RequestNextWeakAttackAnimation();
 
     bool IsInvincible() const { return mStatus.IsInvincible(); }
@@ -65,6 +77,10 @@ public:
     bool IsAlive() const { return mStatus.IsAlive(); }
 
     bool IsAttacking() const { return mStateMachine.IsAttackingState() || mCombat.IsAttacking(); }
+    std::uint64_t GetResolvedAttackSequence() const
+    {
+        return mCombat.GetResolvedAttackSequence();
+    }
 
     void SetHasUsedDodge(bool hasUsedDodge) { mMovement.SetHasUsedDodge(hasUsedDodge); }
 
@@ -134,6 +150,42 @@ public:
 
     void SetStrongAttackSpeed(float strongAttackSpeed) { mCombat.SetStrongAttackSpeed(strongAttackSpeed); }
 
+    void SetChargedAttackRange(float chargedAttackRange) { mCombat.SetChargedAttackRange(chargedAttackRange); }
+
+    void SetChargedAttackAngle(float chargedAttackAngle) { mCombat.SetChargedAttackAngle(chargedAttackAngle); }
+
+    void SetChargedAttackDamage(float chargedAttackDamage) { mCombat.SetChargedAttackDamage(chargedAttackDamage); }
+
+    void SetChargedAttackChargeDurationSeconds(float chargeDurationSeconds)
+    {
+        mCombat.SetChargedAttackChargeDurationSeconds(chargeDurationSeconds);
+    }
+
+    void SetContinuousAttackRange(float continuousAttackRange)
+    {
+        mCombat.SetContinuousAttackRange(continuousAttackRange);
+    }
+
+    void SetContinuousAttackAngle(float continuousAttackAngle)
+    {
+        mCombat.SetContinuousAttackAngle(continuousAttackAngle);
+    }
+
+    void SetContinuousAttackDamage(float continuousAttackDamage)
+    {
+        mCombat.SetContinuousAttackDamage(continuousAttackDamage);
+    }
+
+    void SetContinuousAttackIntervalSeconds(float attackIntervalSeconds)
+    {
+        mCombat.SetContinuousAttackIntervalSeconds(attackIntervalSeconds);
+    }
+
+    void SetContinuousAttackDurationSeconds(float attackDurationSeconds)
+    {
+        mCombat.SetContinuousAttackDurationSeconds(attackDurationSeconds);
+    }
+
     void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer)
     {
         mCombat.SetDefaultStrongAttackTimer(defaultStrongAttackTimer);
@@ -194,6 +246,7 @@ public:
     int GetCurrentPlanetNum() const { return mMovement.GetCurrentPlanetNum(); }
 
     int GetJewelCount() const { return mJewelGauge.GetCount(); }
+    void AddJewelFromItem() { mJewelGauge.AddFromItem(1); }
 
     int GetPlayerNum() const { return mMovement.GetPlayerNum(); }
 
@@ -267,6 +320,33 @@ public:
 
     float GetStrongAttackSpeed() const { return mCombat.GetStrongAttackSpeed(); }
 
+    float GetChargedAttackRange() const { return mCombat.GetChargedAttackRange(); }
+
+    float GetChargedAttackAngle() const { return mCombat.GetChargedAttackAngle(); }
+
+    float GetChargedAttackDamage() const { return mCombat.GetChargedAttackDamage(); }
+
+    float GetChargedAttackChargeDurationSeconds() const
+    {
+        return mCombat.GetChargedAttackChargeDurationSeconds();
+    }
+
+    float GetContinuousAttackRange() const { return mCombat.GetContinuousAttackRange(); }
+
+    float GetContinuousAttackAngle() const { return mCombat.GetContinuousAttackAngle(); }
+
+    float GetContinuousAttackDamage() const { return mCombat.GetContinuousAttackDamage(); }
+
+    float GetContinuousAttackIntervalSeconds() const
+    {
+        return mCombat.GetContinuousAttackIntervalSeconds();
+    }
+
+    float GetContinuousAttackDurationSeconds() const
+    {
+        return mCombat.GetContinuousAttackDurationSeconds();
+    }
+
     float GetDefaultStrongAttackTimer() const { return mCombat.GetDefaultStrongAttackTimer(); }
 
     float GetDefaultAttackMotionTimer() const { return mCombat.GetDefaultAttackMotionTimer(); }
@@ -302,6 +382,16 @@ public:
         return mPlanetGravityController
             .IsEllipseAirborneGravityActive(*this);
     }
+    bool ShouldUseEllipseSurfaceGravity() const
+    {
+        return mPlanetGravityController
+            .ShouldUseEllipseSurfaceGravity(*this);
+    }
+    glm::vec3 CalculateAirbornePhysicsUpDirection() const
+    {
+        return mPlanetGravityController
+            .CalculateAirbornePhysicsUpDirection(*this);
+    }
 
     ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 
@@ -336,6 +426,10 @@ public:
 private:
     void ApplyPlayerConfig(const PlayerConfig& config);
     void RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState);
+
+    bool ShouldAcceptLandingSurface(
+        Actor* surfaceActor,
+        const glm::vec3& surfaceNormal) const override;
 
     void OnLanded() override;
     void OnUpVecUpdateFailed() override;

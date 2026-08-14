@@ -11,6 +11,7 @@
 #include "actor/Star.h"
 #include "component/FocusComponent.h"
 #include "system/ActorLoadSystem.h"
+#include "system/AudioSystem.h"
 #include "system/SceneSystem.h"
 #include "system/scene/TutorialController.h"
 #include "system/tutorial/TutorialLibrary.h"
@@ -37,7 +38,18 @@ CameraSystem::CameraSystem(Game* game)
 
 void CameraSystem::ProcessInput()
 {
-    if (!mGame || mCinematicCamera.IsPlaying()) {
+    if (!mGame || mCinematicCamera.IsActive()) {
+        return;
+    }
+
+    if (mGame->IsEditorKeyboardInputCaptured()) {
+        mCameraStickX = 0.0f;
+        mCameraStickY = 0.0f;
+        mKeyboardPitchInput = 0.0f;
+        mAlignCameraPressedPrev = true;
+        if (mGame->GetIsFreeCameraMode()) {
+            mDebugCamera.ProcessInput();
+        }
         return;
     }
 
@@ -79,15 +91,19 @@ void CameraSystem::ProcessInput()
 
     mKeyboardPitchInput = 0.0f;
     GLFWwindow* window = mGame->GetWindow();
-    if (window && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    const bool acceptsKeyboardInput =
+        !mGame->IsEditorKeyboardInputCaptured();
+    if (acceptsKeyboardInput && window &&
+        glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
         mKeyboardPitchInput += 1.0f;
     }
-    if (window && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    if (acceptsKeyboardInput && window &&
+        glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
         mKeyboardPitchInput -= 1.0f;
     }
 
     const bool alignCameraPressed =
-        (mGame->GetWindow() &&
+        (acceptsKeyboardInput && mGame->GetWindow() &&
          glfwGetKey(mGame->GetWindow(), GLFW_KEY_M) == GLFW_PRESS) ||
         (sdlController &&
          SDL_GameControllerGetButton(
@@ -107,10 +123,13 @@ void CameraSystem::Update(float deltaTime)
     UpdateCamera(deltaTime);
 }
 
-bool CameraSystem::PlayCinematic(std::string_view sequenceId)
+bool CameraSystem::PlayCinematic(
+    std::string_view sequenceId,
+    bool shouldHoldFinalPose)
 {
     const CinematicSequence* sequence = mCinematicLibrary.Find(sequenceId);
-    return sequence && mCinematicCamera.Play(*sequence);
+    return sequence &&
+           mCinematicCamera.Play(*sequence, shouldHoldFinalPose);
 }
 
 void CameraSystem::StopCinematic()
@@ -190,7 +209,7 @@ void CameraSystem::SnapBehindControlledPlayer()
 
 float CameraSystem::GetFieldOfViewDegrees() const
 {
-    if (mCinematicCamera.IsPlaying()) {
+    if (mCinematicCamera.IsActive()) {
         return glm::clamp(mCinematicCamera.GetPose().fieldOfViewDegrees, 10.0f, 120.0f);
     }
 
@@ -224,7 +243,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
     UpdateTalkCameraTransition(deltaTime);
     UpdateBossDefeatSequence(deltaTime);
 
-    if (mCinematicCamera.IsPlaying()) {
+    if (mCinematicCamera.IsActive()) {
         mCinematicCamera.Update(deltaTime);
         return;
     }
@@ -314,7 +333,7 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
 
 bool CameraSystem::AllowsPlayerInput() const
 {
-    return mBossDefeatSequenceTimer < 0.0f && !mCinematicCamera.IsPlaying() &&
+    return mBossDefeatSequenceTimer < 0.0f && !mCinematicCamera.IsActive() &&
            !(mGame && mGame->GetIsFreeCameraMode()) && !mIsTargetFocus &&
            !FindMovingBoat();
 }
@@ -328,6 +347,7 @@ void CameraSystem::StartBossDefeatSequence(Enemy* boss, Star* star)
     mDefeatedBoss = boss;
     mBossDefeatStar = star;
     mBossDefeatSequenceIsPreview = false;
+    mBossDefeatSEPlayed = false;
     mBossDefeatSequenceTimer = 0.0f;
     mCameraStickX = 0.0f;
 
@@ -358,6 +378,7 @@ void CameraSystem::StopBossDefeatSequence()
 {
     mBossDefeatSequenceTimer = -1.0f;
     mBossDefeatSequenceIsPreview = false;
+    mBossDefeatSEPlayed = false;
     mDefeatedBoss = nullptr;
     mBossDefeatStar = nullptr;
 }
@@ -370,15 +391,34 @@ void CameraSystem::UpdateBossDefeatSequence(float deltaTime)
 
     mBossDefeatSequenceTimer += std::max(0.0f, deltaTime);
 
+    constexpr float defeatSEDelaySeconds = 0.5f;
+    if (!mBossDefeatSequenceIsPreview &&
+        !mBossDefeatSEPlayed &&
+        mBossDefeatSequenceTimer >= defeatSEDelaySeconds) {
+        if (mGame && mGame->GetAudioSystem()) {
+            mGame->GetAudioSystem()->PlaySE(
+                "boss_defeated_se");
+        }
+        mBossDefeatSEPlayed = true;
+    }
+
     constexpr float starRevealTime = 4.0f;
     if (!mBossDefeatSequenceIsPreview && mBossDefeatStar &&
         mBossDefeatSequenceTimer >= starRevealTime && !mBossDefeatStar->GetIsActive()) {
         mBossDefeatStar->SetIsActive(true);
+        if (mGame && mGame->GetAudioSystem()) {
+            mGame->GetAudioSystem()->PlaySE("star_shown_se");
+        }
     }
 
     constexpr float sequenceDuration = 7.0f;
     if (mBossDefeatSequenceTimer < sequenceDuration) {
         return;
+    }
+
+    if (!mBossDefeatSequenceIsPreview && mGame &&
+        mGame->GetAudioSystem()) {
+        mGame->GetAudioSystem()->PlayBGM("star_wait_bgm");
     }
 
     StopBossDefeatSequence();
@@ -741,7 +781,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    if (mCinematicCamera.IsPlaying()) {
+    if (mCinematicCamera.IsActive()) {
         views.emplace_back(mCinematicCamera.GetView());
         return views;
     }
@@ -896,7 +936,7 @@ glm::vec3 CameraSystem::GetCameraPos() const
         return glm::vec3(0.0f);
     }
 
-    if (mCinematicCamera.IsPlaying()) {
+    if (mCinematicCamera.IsActive()) {
         return mCinematicCamera.GetPose().position;
     }
 

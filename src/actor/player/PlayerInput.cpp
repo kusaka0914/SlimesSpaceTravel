@@ -117,9 +117,10 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
 
 void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
 {
-    const bool isControllerConnected = player.GetGame()->IsGameControllerConnected();
+    Game* game = player.GetGame();
+    const bool isControllerConnected = game->IsGameControllerConnected();
 
-    if (player.GetGame()->GetIsPlayer2Joined()) {
+    if (game->GetIsPlayer2Joined()) {
         if (!isControllerConnected && movement.GetPlayerNum() != 1) {
             return;
         }
@@ -128,16 +129,26 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         }
     } else {
         if (isControllerConnected ||
-            player.GetGame()->GetControlledPlayer() != &player) {
+            game->GetControlledPlayer() != &player) {
             return;
         }
     }
 
-    GLFWwindow* window = player.GetGame()->GetWindow();
-
     mMoveForward = 0.0f;
     mMoveLeft = 0.0f;
     mCameraYaw = 0.0f;
+    mJumpPressed = false;
+    mAttackPressed = false;
+    mWideAttackPressed = false;
+    mDodgePressed = false;
+    mSpecialAttackPressed = false;
+    mRecoverPressed = false;
+
+    if (game->IsEditorKeyboardInputCaptured()) {
+        return;
+    }
+
+    GLFWwindow* window = game->GetWindow();
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         mMoveForward -= 1.0f;

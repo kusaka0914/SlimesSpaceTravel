@@ -5,12 +5,15 @@
 
 #include "actor/Actor.h"
 #include "actor/Enemy.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
 #include "state/GameProgressState.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
+#include "system/EditorBuildRestartService.h"
+#include "system/EnemyJewelDropSystem.h"
 #include "system/CameraSystem.h"
 #include "system/GameWorld.h"
 #include "system/GamepadRumbleService.h"
@@ -27,12 +30,27 @@
 
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
+#include "imgui.h"
 
 #include "utils/MathUtils.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
 #include <iostream>
+
+namespace {
+constexpr float playerMergeMaximumDistanceWorldUnits = 1.25f;
+
+std::string BuildStageIntroCinematicId(int stageNum)
+{
+    if (stageNum <= 0) {
+        return {};
+    }
+
+    return "enter_stage" + std::to_string(stageNum);
+}
+}
 
 Game::Game()
     : mWindow(nullptr),
@@ -48,7 +66,10 @@ Game::Game()
 
 Game::~Game() = default;
 
-bool Game::Initialize(bool isDebugMode)
+bool Game::Initialize(
+    bool isDebugMode,
+    const std::string& editorSessionPath,
+    const std::string& editorRestartErrorLogPath)
 {
     if (!InitializeGLFW()) {
         return false;
@@ -57,7 +78,7 @@ bool Game::Initialize(bool isDebugMode)
     CreateGameSystems();
     InitializeGameController();
 
-    constexpr int stageCount = 5;
+    constexpr int stageCount = 6;
     CreateStages(stageCount);
 
     if (isDebugMode) {
@@ -68,6 +89,9 @@ bool Game::Initialize(bool isDebugMode)
     }
 
     ReloadCurrentStage();
+    RestoreDebugEditorSessionAtStartup(
+        editorSessionPath,
+        editorRestartErrorLogPath);
 
     mLastTime = glfwGetTime();
     glEnable(GL_DEPTH_TEST);
@@ -116,6 +140,9 @@ void Game::CreateGameSystems()
     mStageProgressSystem = std::make_unique<StageProgressSystem>();
     mStageProgressSystem->Load();
     mGamepadRumbleService = std::make_unique<GamepadRumbleService>();
+    mEditorBuildRestartService = std::make_unique<EditorBuildRestartService>();
+    mEnemyJewelDropSystem =
+        std::make_unique<EnemyJewelDropSystem>(this);
 
     mAudioSystem = std::make_unique<AudioSystem>(this);
     mUIRenderer = std::make_unique<UIRenderer>(this);
@@ -180,6 +207,8 @@ void Game::RunLoop()
 
 void Game::Shutdown()
 {
+    SavePersistentDebugEditorSession();
+
     if (mGamepadRumbleService) {
         mGamepadRumbleService->Shutdown();
     }
@@ -198,6 +227,80 @@ void Game::Shutdown()
     }
 
     glfwTerminate();
+}
+
+void Game::RestoreDebugEditorSessionAtStartup(
+    const std::string& editorSessionPath,
+    const std::string& editorRestartErrorLogPath)
+{
+    if (!mIsDebugMode || !mEditorBuildRestartService || !mUIRenderer) {
+        return;
+    }
+
+    const bool hasExplicitRestartSession = !editorSessionPath.empty();
+    std::filesystem::path sessionFilePath = editorSessionPath;
+    if (!hasExplicitRestartSession) {
+        std::string pathErrorMessage;
+        if (!mEditorBuildRestartService->ResolvePersistentDebugSessionFilePath(
+                sessionFilePath,
+                pathErrorMessage)) {
+            std::cerr << pathErrorMessage << std::endl;
+            return;
+        }
+
+        std::error_code existsError;
+        if (!std::filesystem::is_regular_file(sessionFilePath, existsError)) {
+            return;
+        }
+    }
+
+    std::string restoreErrorMessage;
+    if (!mUIRenderer->RestoreDebugEditorSession(
+            sessionFilePath.string(),
+            restoreErrorMessage)) {
+        std::cerr << restoreErrorMessage << std::endl;
+        mIsDebugEditorShowing = true;
+        mUIRenderer->SetEditorRestartStatus(restoreErrorMessage, true);
+        return;
+    }
+
+    if (!editorRestartErrorLogPath.empty()) {
+        mUIRenderer->SetEditorRestartStatus(
+            "Build failed. See log: " + editorRestartErrorLogPath,
+            true);
+        return;
+    }
+
+    if (hasExplicitRestartSession) {
+        mUIRenderer->SetEditorRestartStatus(
+            "Build completed. The editor session was restored.",
+            false);
+        std::error_code removeError;
+        std::filesystem::remove(sessionFilePath, removeError);
+        return;
+    }
+
+    mUIRenderer->SetEditorRestartStatus(
+        "The previous debug session was restored.",
+        false);
+}
+
+void Game::SavePersistentDebugEditorSession()
+{
+    if (!mIsDebugMode || !mEditorBuildRestartService || !mUIRenderer) {
+        return;
+    }
+
+    std::filesystem::path sessionFilePath;
+    std::string saveErrorMessage;
+    if (!mEditorBuildRestartService->ResolvePersistentDebugSessionFilePath(
+            sessionFilePath,
+            saveErrorMessage) ||
+        !mUIRenderer->SaveDebugEditorSession(
+            sessionFilePath.string(),
+            saveErrorMessage)) {
+        std::cerr << saveErrorMessage << std::endl;
+    }
 }
 
 void Game::ProcessInput()
@@ -261,8 +364,19 @@ void Game::ToggleDebugEditor()
 {
     mIsDebugEditorShowing = !mIsDebugEditorShowing;
     if (mPhysicsSystem) {
-        mPhysicsSystem->Initialize();
+        // Opening the editor changes progress/runtime visibility, but not mesh
+        // geometry. Reusing existing bodies avoids reparsing every stage model.
+        mPhysicsSystem->SyncKinematicBodies();
     }
+}
+
+bool Game::IsEditorKeyboardInputCaptured() const
+{
+    if (!mIsDebugEditorShowing || !ImGui::GetCurrentContext()) {
+        return false;
+    }
+
+    return ImGui::GetIO().WantTextInput;
 }
 
 void Game::ToggleFreeCameraMode()
@@ -275,6 +389,37 @@ void Game::SetFreeCameraMode(bool isEnabled)
     mIsFreeCameraMode = isEnabled;
 }
 
+bool Game::RequestEditorBuildAndRestart(std::string& outErrorMessage)
+{
+    outErrorMessage.clear();
+    if (!mEditorBuildRestartService || !mUIRenderer || !mWindow) {
+        outErrorMessage = "The editor build restart service is not available.";
+        return false;
+    }
+
+    std::filesystem::path sessionFilePath;
+    if (!mEditorBuildRestartService->ResolveSessionFilePath(
+            sessionFilePath,
+            outErrorMessage)) {
+        return false;
+    }
+
+    if (!mUIRenderer->SaveDebugEditorSession(
+            sessionFilePath.string(),
+            outErrorMessage)) {
+        return false;
+    }
+
+    if (!mEditorBuildRestartService->LaunchBuildAndRestartHelper(
+            sessionFilePath,
+            outErrorMessage)) {
+        return false;
+    }
+
+    glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+    return true;
+}
+
 void Game::ProcessActorsInput()
 {
     const bool isWaitingForTutorialPlayerJump =
@@ -282,6 +427,7 @@ void Game::ProcessActorsInput()
     const bool allowsPlayerControl =
         (mSceneSystem->IsPlaying() ||
          isWaitingForTutorialPlayerJump) &&
+        !IsEditorKeyboardInputCaptured() &&
         mCameraSystem->AllowsPlayerInput() &&
         (!mSequenceSystem || !mSequenceSystem->LocksPlayerControl());
 
@@ -365,6 +511,9 @@ void Game::UpdateGame()
 void Game::UpdateActors(float deltaTime)
 {
     mWorld->UpdateActors(deltaTime);
+    if (mEnemyJewelDropSystem) {
+        mEnemyJewelDropSystem->SpawnPendingDrops();
+    }
 }
 
 void Game::GenerateOutput()
@@ -532,9 +681,30 @@ void Game::RemoveActor(Actor* actor)
 
 void Game::RemoveAllActor()
 {
+    if (mEnemyJewelDropSystem) {
+        mEnemyJewelDropSystem->ClearRuntimeDrops();
+    }
     mWorld->RemoveAllActors();
     mIsPlayerSplit = false;
     mControlledPlayerIndex = 0;
+}
+
+void Game::RequestEnemyJewelDrop(
+    const Enemy& defeatedEnemy)
+{
+    if (mEnemyJewelDropSystem) {
+        mEnemyJewelDropSystem->RequestDrop(
+            defeatedEnemy);
+    }
+}
+
+const std::vector<JewelItem*>&
+Game::GetRuntimeJewelItems() const
+{
+    static const std::vector<JewelItem*> emptyItems;
+    return mEnemyJewelDropSystem
+        ? mEnemyJewelDropSystem->GetRuntimeItems()
+        : emptyItems;
 }
 
 void Game::AddPlayer(Player* player)
@@ -617,23 +787,6 @@ bool Game::SplitPlayer()
     mainPlayer->SetSplitForm(true);
     splitPlayer->SetSplitForm(true);
 
-    glm::vec3 sideDirection = mainPlayer->GetLeftVec();
-    const float sideDirectionLength = glm::length(sideDirection);
-    if (sideDirectionLength <= 0.000001f) {
-        sideDirection = glm::vec3(1.0f, 0.0f, 0.0f);
-    } else {
-        sideDirection /= sideDirectionLength;
-    }
-
-    const float collisionWidth =
-        mPhysicsSystem
-            ? mPhysicsSystem->GetPlayerCollisionWidth()
-            : 1.6f;
-    constexpr float splitSpawnMargin = 0.1f;
-    const float splitSpawnDistance =
-        collisionWidth * Player::SplitBodyScaleMultiplier +
-        splitSpawnMargin;
-
     splitPlayer->SetCurrentPlanet(mainPlayer->GetCurrentPlanet());
     splitPlayer->SetCurrentPlanetNum(mainPlayer->GetCurrentPlanetNum());
     splitPlayer->SetSphericalPlacement(
@@ -647,12 +800,10 @@ bool Game::SplitPlayer()
         -mainPlayer->GetFacingForwardVec(),
         mainPlayer->GetUpVec());
     splitPlayer->SetCameraYaw(mainPlayer->GetCameraYaw());
-    splitPlayer->SetPos(
-        mainPlayer->GetPos() +
-        sideDirection * splitSpawnDistance);
-    splitPlayer->SetVelocity(glm::vec3(0.0f));
-    splitPlayer->SetOnGround(false);
-    splitPlayer->SetShouldJudgeLanding(true);
+    splitPlayer->SetPos(mainPlayer->GetPos());
+    splitPlayer->SetVelocity(mainPlayer->GetVelocity());
+    splitPlayer->SetOnGround(mainPlayer->GetOnGround());
+    splitPlayer->SetShouldJudgeLanding(!mainPlayer->GetOnGround());
     splitPlayer->RefreshFallbackUpVec();
     splitPlayer->SetControlLocked(false);
     splitPlayer->SetIsActive(true);
@@ -664,7 +815,31 @@ bool Game::SplitPlayer()
 
 bool Game::MergePlayer()
 {
+    if (!AreSplitPlayersCloseEnoughToMerge()) {
+        return false;
+    }
+
     return MergePlayerInto(mControlledPlayerIndex);
+}
+
+bool Game::AreSplitPlayersCloseEnoughToMerge() const
+{
+    const std::vector<Player*>& players = GetPlayers();
+    if (players.size() < 2) {
+        return false;
+    }
+
+    const Player* mainPlayer = players[0];
+    const Player* splitPlayer = players[1];
+    if (!mainPlayer || !splitPlayer ||
+        !mainPlayer->GetIsActive() ||
+        !splitPlayer->GetIsActive()) {
+        return false;
+    }
+
+    const float playerDistance =
+        glm::length(mainPlayer->GetPos() - splitPlayer->GetPos());
+    return playerDistance <= playerMergeMaximumDistanceWorldUnits;
 }
 
 Player* Game::MergeSplitPlayerForBoatRide(Player* boardingPlayer)
@@ -802,9 +977,118 @@ void Game::ChangeStage(int stageNum)
     mStageFlowController->ChangeStage(*mWorld, stageNum);
 }
 
+bool Game::HasStageIntroCinematic(int stageNum) const
+{
+    if (!mCameraSystem) {
+        return false;
+    }
+
+    const std::string cinematicId =
+        BuildStageIntroCinematicId(stageNum);
+    if (cinematicId.empty()) {
+        return false;
+    }
+
+    return mCameraSystem->GetCinematicLibrary().Find(cinematicId) != nullptr;
+}
+
+bool Game::StartStageIntroCinematic(int stageNum)
+{
+    if (!mSequenceSystem || !mAudioSystem ||
+        !HasStageIntroCinematic(stageNum)) {
+        return false;
+    }
+
+    const std::string cinematicId =
+        BuildStageIntroCinematicId(stageNum);
+    if (!mSequenceSystem->PlayCinematicChain({cinematicId})) {
+        return false;
+    }
+
+    mAudioSystem->PlayBGMOnce("enter_stage_bgm");
+    return true;
+}
+
 bool Game::DebugChangeStage(int stageNum, const std::string& yamlPath)
 {
-    if (yamlPath.empty() || stageNum < 0 || stageNum >= static_cast<int>(GetStages().size())) {
+    if (!LoadDebugStage(stageNum, yamlPath)) {
+        return false;
+    }
+
+    const bool isBaseStageYaml =
+        yamlPath.ends_with("/stage0.yaml") || yamlPath.ends_with("\\stage0.yaml");
+    if (isBaseStageYaml && mSequenceSystem) {
+        if (mSequenceSystem->PlayCinematicChainThenSequence(
+                {"base_sequence"},
+                "base_arrival_template")) {
+            if (Player* player = GetMainPlayer()) {
+                player->SetIsActive(false);
+            }
+        } else {
+            mSequenceSystem->Play("base_arrival_template");
+        }
+    } else if (HasStageIntroCinematic(stageNum)) {
+        mAudioSystem->BeginStageMusicDeferral();
+        if (!StartStageIntroCinematic(stageNum)) {
+            mAudioSystem->ResumeDeferredStageMusic();
+        }
+    }
+
+    return true;
+}
+
+bool Game::DebugEnterTitle()
+{
+    if (!PrepareInitialSceneForDebug()) {
+        return false;
+    }
+
+    mSceneSystem->DebugEnterTitle();
+    mAudioSystem->TryChangeBGM();
+    return true;
+}
+
+bool Game::DebugEnterOpening()
+{
+    if (!PrepareInitialSceneForDebug()) {
+        return false;
+    }
+
+    mSceneSystem->DebugEnterOpening();
+    mAudioSystem->TryChangeBGM();
+    return true;
+}
+
+bool Game::PrepareInitialSceneForDebug()
+{
+    if (!mIsDebugMode) {
+        return false;
+    }
+
+    constexpr int InitialStageNumber = 0;
+    constexpr const char* InitialStageYamlPath =
+        "../assets/data/stage/house.yaml";
+    if (!LoadDebugStage(
+            InitialStageNumber,
+            InitialStageYamlPath)) {
+        return false;
+    }
+
+    ClosePauseMenu();
+    SetFreeCameraMode(false);
+    return true;
+}
+
+bool Game::RestoreDebugEditorStage(int stageNum, const std::string& yamlPath)
+{
+    return LoadDebugStage(stageNum, yamlPath);
+}
+
+bool Game::LoadDebugStage(int stageNum, const std::string& yamlPath)
+{
+    if (yamlPath.empty() ||
+        stageNum < 0 ||
+        stageNum >= static_cast<int>(GetStages().size())) {
         return false;
     }
 
@@ -815,21 +1099,6 @@ bool Game::DebugChangeStage(int stageNum, const std::string& yamlPath)
     mStageFlowController->SetCurrentStageYamlPath(yamlPath);
     mSceneSystem->StartPlayingScene();
     ReloadCurrentStage();
-
-    const bool isBaseStageYaml =
-        yamlPath.ends_with("/stage0.yaml") || yamlPath.ends_with("\\stage0.yaml");
-    if (isBaseStageYaml && mSequenceSystem) {
-        if (mSequenceSystem->PlayCinematicChainThenSequence(
-                {"base_sequence", "base_second_sequence"},
-                "base_arrival_template")) {
-            if (Player* player = GetMainPlayer()) {
-                player->SetIsActive(false);
-            }
-        } else {
-            mSequenceSystem->Play("base_arrival_template");
-        }
-    }
-
     return true;
 }
 
@@ -917,6 +1186,37 @@ void Game::SetStageCleared(int stageNum, bool isCleared)
     }
 }
 
+bool Game::HasShownNPCConversation(const NPC* npc) const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasShownConversation(
+               BuildNPCConversationId(npc));
+}
+
+void Game::MarkNPCConversationShown(const NPC* npc)
+{
+    if (!mStageProgressSystem) {
+        return;
+    }
+
+    mStageProgressSystem->MarkConversationShown(
+        BuildNPCConversationId(npc));
+}
+
+std::string Game::BuildNPCConversationId(const NPC* npc) const
+{
+    if (!npc || npc->GetStageYamlIndex() < 0) {
+        return {};
+    }
+
+    return GetCurrentStageYamlPath() + "|" +
+           npc->GetStageSequenceName() + ":" +
+           std::to_string(npc->GetStageYamlIndex()) +
+           "|clear:" +
+           std::to_string(
+               npc->ResolveTalkStageClearCondition());
+}
+
 void Game::OnEnemyLaunched()
 {
     mAudioSystem->PlaySE("break_se");
@@ -992,6 +1292,7 @@ void Game::OnStrongAttacked(int playerNum)
 
 void Game::OnPlayerCounter(int playerNum)
 {
+    mHitStopTimer = 0.3f;
     VibrateControllerForPlayer(playerNum, 25000, 0, 500);
 }
 

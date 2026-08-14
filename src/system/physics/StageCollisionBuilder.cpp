@@ -59,23 +59,25 @@ void StageCollisionBuilder::CreateStaticMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !actor->GetIsActive() || !world || !mGame ||
+    if (!actor || !actor->IsExplicitlyActive() || actor->IsDebugDisabled() || !world || !mGame ||
         !mGame->GetMeshLoadSystem()) {
         return;
     }
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
-
-    std::vector<float> pos;
-    std::vector<unsigned int> idx;
-
-    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
-        idx.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
+            actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
+        collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
+    auto triangleMesh = CreateTriangleMesh(
+        actorScale,
+        collisionGeometry->positions,
+        collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;
@@ -106,23 +108,25 @@ void StageCollisionBuilder::CreateKinematicMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !actor->GetIsActive() || !world || !mGame ||
+    if (!actor || !actor->IsExplicitlyActive() || actor->IsDebugDisabled() || !world || !mGame ||
         !mGame->GetMeshLoadSystem()) {
         return;
     }
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
-
-    std::vector<float> pos;
-    std::vector<unsigned int> idx;
-
-    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
-        idx.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
+            actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
+        collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
+    auto triangleMesh = CreateTriangleMesh(
+        actorScale,
+        collisionGeometry->positions,
+        collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;

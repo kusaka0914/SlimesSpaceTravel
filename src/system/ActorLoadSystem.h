@@ -23,6 +23,8 @@ class FallRespawnPoint;
 class Planet;
 class StageObject;
 class TutorialTrigger;
+class JewelItem;
+class HazardActor;
 
 class ActorLoadSystem {
 public:
@@ -48,6 +50,12 @@ public:
     TutorialTrigger* CreateTutorialTriggerFromStageNode(
         const YAML::Node& node,
         int stageYamlIndex);
+    JewelItem* CreateJewelItemFromStageNode(
+        const YAML::Node& node,
+        int stageYamlIndex);
+    HazardActor* CreateHazardActorFromStageNode(
+        const YAML::Node& node,
+        int stageYamlIndex);
     Actor* FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const;
 
     void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
@@ -71,6 +79,8 @@ private:
     void LoadFallRespawnPoints(const char* path);
     void LoadStageObjects(const char* path);
     void LoadTutorialTriggers(const char* path);
+    void LoadJewelItems(const char* path);
+    void LoadHazardActors(const char* path);
 
 private:
     Game* mGame = nullptr;

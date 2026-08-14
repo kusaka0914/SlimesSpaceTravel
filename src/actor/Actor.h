@@ -69,6 +69,12 @@ public:
     {
         mShouldAffectGravityDirection = shouldAffectGravityDirection;
     }
+    void SetShouldReactToOverheadGravityRay(
+        bool shouldReactToOverheadGravityRay)
+    {
+        mShouldReactToOverheadGravityRay =
+            shouldReactToOverheadGravityRay;
+    }
     void RefreshProgressVisibility();
 
     void SetRadius(float radius) { mRadius = radius; }
@@ -104,6 +110,10 @@ public:
     int GetVisibleIfStageCleared() const { return mVisibleIfStageCleared; }
     int GetHiddenIfStageCleared() const { return mHiddenIfStageCleared; }
     bool ShouldAffectGravityDirection() const { return mShouldAffectGravityDirection; }
+    bool ShouldReactToOverheadGravityRay() const
+    {
+        return mShouldReactToOverheadGravityRay;
+    }
     bool IsProgressVisibilitySatisfied() const;
     bool IsProgressVisibleForCurrentMode() const
     {
@@ -208,6 +218,7 @@ protected:
     bool mStageClearVisibilitySatisfied = true;
     bool mHiddenWhenRocketAppears = false;
     bool mShouldAffectGravityDirection = true;
+    bool mShouldReactToOverheadGravityRay = false;
     int mVisibleIfStageCleared = -1;
     int mHiddenIfStageCleared = -1;
     bool mIsUpVecInitialized;

@@ -14,7 +14,6 @@ SceneUIRenderer::SceneUIRenderer(Game* game, UIRenderer* renderer)
 void SceneUIRenderer::DrawTitle()
 {
     mRenderer->DrawSceneTexture("title", "bgTexture", "titleBg");
-    mRenderer->DrawTextDependsOnGameController("title", "startText");
 }
 
 void SceneUIRenderer::DrawOpening()
@@ -27,12 +26,6 @@ void SceneUIRenderer::DrawOpening()
         DrawOpeningTalkWithDoctor();
     }
 
-    DrawSkipUI();
-}
-
-void SceneUIRenderer::DrawSkipUI()
-{
-    mRenderer->DrawTextDependsOnGameController("opening", "skipText");
 }
 
 void SceneUIRenderer::DrawGameOver()

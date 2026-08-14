@@ -6,6 +6,7 @@
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
+#include "system/InputSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -122,6 +123,7 @@ void TalkController::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
     mUIState->SetCurrentTalkWith(UIState::TalkWith::NPC);
     mUIState->SetTalkUIIndex(0);
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
+    mGame->MarkNPCConversationShown(talkingNPC);
     CaptureCurrentPageActionBaseline();
     mGame->GetAudioSystem()->PlaySE("message_se");
 }
@@ -222,7 +224,7 @@ bool TalkController::IsWaitingForPlayerJump() const
                TalkPageAdvanceCondition::Jump;
 }
 
-void TalkController::TryStartTalkWithNPC(int playerNum)
+bool TalkController::TryStartTalkWithNPC(int playerNum)
 {
     const std::vector<Player*>& players = mGame->GetPlayers();
 
@@ -235,17 +237,32 @@ void TalkController::TryStartTalkWithNPC(int playerNum)
             continue;
         }
 
-        NPC* talkableNPC = player->GetTalkableNPC();
-        if (!talkableNPC) {
-            return;
+        if (!CanStartTalkWithNPC(player)) {
+            return false;
         }
 
-        if (!talkableNPC->GetIsTalkable() ||
-            !talkableNPC->CanStartRegularTalk()) {
-            return;
-        }
-
-        StartTalkWithNPC(talkableNPC, player);
-        return;
+        StartTalkWithNPC(player->GetTalkableNPC(), player);
+        return true;
     }
+
+    return false;
+}
+
+bool TalkController::CanStartTalkWithNPC(
+    const Player* player) const
+{
+    if (!player) {
+        return false;
+    }
+
+    NPC* talkableNPC = player->GetTalkableNPC();
+    if (!talkableNPC ||
+        !talkableNPC->GetIsTalkable() ||
+        !talkableNPC->CanStartRegularTalk()) {
+        return false;
+    }
+
+    const InputSystem* inputSystem = mGame->GetInputSystem();
+    return !inputSystem ||
+           !inputSystem->IsMovementInputPressedForPlayer(player);
 }

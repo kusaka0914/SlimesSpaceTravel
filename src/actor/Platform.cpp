@@ -177,6 +177,31 @@ void Platform::RemovePressureSwitchComponent()
     mPressureSwitchComponent = nullptr;
 }
 
+PlatformEnemyClearUnlockComponent*
+Platform::AddEnemyClearUnlockComponent()
+{
+    if (mEnemyClearUnlockComponent) {
+        return mEnemyClearUnlockComponent;
+    }
+
+    auto component =
+        std::make_unique<PlatformEnemyClearUnlockComponent>(this);
+    mEnemyClearUnlockComponent = component.get();
+    AddComponent(std::move(component));
+    return mEnemyClearUnlockComponent;
+}
+
+void Platform::RemoveEnemyClearUnlockComponent()
+{
+    if (!mEnemyClearUnlockComponent) {
+        return;
+    }
+
+    ClearComponentRuntimeState(mEnemyClearUnlockComponent);
+    RemoveComponent(mEnemyClearUnlockComponent);
+    mEnemyClearUnlockComponent = nullptr;
+}
+
 PlatformLatchedGroupSwitchComponent*
 Platform::AddLatchedGroupSwitchComponent()
 {

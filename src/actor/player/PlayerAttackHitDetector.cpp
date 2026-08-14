@@ -44,10 +44,12 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
         }
 
         const glm::vec3 enemyPos = enemy->GetPos();
+        const glm::vec3 playerToEnemy = enemyPos - player.GetPos();
+        const float dist = glm::length(playerToEnemy);
         const glm::vec3 toEnemy =
-            glm::normalize((enemyPos + enemy->GetFacingForwardVec() * (enemy->GetRadius() - 1.0f)) - player.GetPos());
-
-        const float dist = glm::length(enemyPos - player.GetPos());
+            dist > 0.000001f
+                ? playerToEnemy / dist
+                : player.GetFacingForwardVec();
         const float dot = glm::dot(player.GetFacingForwardVec(), toEnemy);
         const float effectiveRange = combat.GetAttackRange() + enemy->GetRadius();
 

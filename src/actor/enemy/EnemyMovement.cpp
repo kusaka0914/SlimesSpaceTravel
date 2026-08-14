@@ -239,10 +239,86 @@ void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float 
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
 }
 
-void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status, const EnemyStateMachine& stateMachine,
-                                         float deltaTime)
+bool EnemyMovement::MoveTowardPlayerQuickly(
+    Enemy& enemy,
+    const EnemyStatus& status,
+    float speed,
+    float stopDistance,
+    float deltaTime)
 {
-    if (status.HasHitAnyPlayer()) {
+    Player* nearestPlayer = status.GetNearestPlayer();
+    if (!nearestPlayer) {
+        return true;
+    }
+
+    const float distanceToPlayer = glm::length(
+        nearestPlayer->GetPos() - enemy.GetPos());
+    const float clampedStopDistance = std::max(0.0f, stopDistance);
+    if (distanceToPlayer <= clampedStopDistance) {
+        return true;
+    }
+
+    glm::vec3 moveDirection;
+    if (!TryCalculateTangentialDirectionToPlayer(
+            enemy,
+            *nearestPlayer,
+            moveDirection)) {
+        return true;
+    }
+
+    const float requestedMoveDistance = std::min(
+        std::max(0.0f, speed) * deltaTime,
+        distanceToPlayer - clampedStopDistance);
+    const glm::vec3 previousPosition = enemy.GetPos();
+    enemy.SetPos(CalculateCollisionAdjustedPos(
+        enemy,
+        moveDirection * requestedMoveDistance));
+
+    constexpr float minimumMovementDistance = 0.0001f;
+    const float actualMovementDistance = glm::length(
+        enemy.GetPos() - previousPosition);
+    const float remainingDistance = glm::length(
+        nearestPlayer->GetPos() - enemy.GetPos());
+    return remainingDistance <= clampedStopDistance + 0.01f ||
+           actualMovementDistance <= minimumMovementDistance;
+}
+
+float EnemyMovement::MoveAwayFromPlayerQuickly(
+    Enemy& enemy,
+    const EnemyStatus& status,
+    float speed,
+    float deltaTime)
+{
+    Player* nearestPlayer = status.GetNearestPlayer();
+    if (!nearestPlayer) {
+        return 0.0f;
+    }
+
+    glm::vec3 directionToPlayer;
+    if (!TryCalculateTangentialDirectionToPlayer(
+            enemy,
+            *nearestPlayer,
+            directionToPlayer)) {
+        return 0.0f;
+    }
+
+    const glm::vec3 previousPosition = enemy.GetPos();
+    const glm::vec3 requestedMovement =
+        -directionToPlayer * std::max(0.0f, speed) * deltaTime;
+    enemy.SetPos(CalculateCollisionAdjustedPos(
+        enemy,
+        requestedMovement));
+    return glm::length(enemy.GetPos() - previousPosition);
+}
+
+void EnemyMovement::MoveDuringAttacking(
+    Enemy& enemy,
+    const EnemyStatus& status,
+    const EnemyStateMachine& stateMachine,
+    float deltaTime)
+{
+    if (status.HasHitAnyPlayer() ||
+        !stateMachine.IsProgressing(status)) {
         return;
     }
 
@@ -254,17 +330,8 @@ void EnemyMovement::MoveDuringAttacking(Enemy& enemy, const EnemyStatus& status,
         return;
     }
 
-    glm::vec3 attackDirection;
-    if (stateMachine.IsProgressing(status)) {
-        attackDirection =
-            tangentialAttackDirection;
-    } else {
-        attackDirection =
-            -tangentialAttackDirection;
-    }
-
     const glm::vec3 moveDelta =
-        attackDirection *
+        tangentialAttackDirection *
         status.GetAttackSpeed() *
         deltaTime;
     enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));

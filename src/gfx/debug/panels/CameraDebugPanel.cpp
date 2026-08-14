@@ -16,6 +16,7 @@
 
 namespace {
 constexpr const char* easingLabels[] = {"Linear", "Ease In", "Ease Out", "Ease In Out"};
+constexpr const char* transitionModeLabels[] = {"滑らか", "瞬時切り替え（カット）"};
 
 template <std::size_t BufferSize>
 bool DrawStringInput(const char* label, std::string& text)
@@ -58,6 +59,18 @@ int ToEasingIndex(CameraEasing easing)
     }
 
     return 3;
+}
+
+CameraTransitionMode ToTransitionMode(int transitionModeIndex)
+{
+    return transitionModeIndex == 1
+        ? CameraTransitionMode::Cut
+        : CameraTransitionMode::Smooth;
+}
+
+int ToTransitionModeIndex(CameraTransitionMode transitionMode)
+{
+    return transitionMode == CameraTransitionMode::Cut ? 1 : 0;
 }
 
 void SortKeyframes(CinematicSequence& sequence)
@@ -426,8 +439,19 @@ void CameraDebugPanel::DrawView(View view)
             const CinematicCameraKeyframe& keyframe = sequence->keyframes[index];
 
             char label[128];
-            std::snprintf(label, sizeof(label), "%02d  時間 %.2f秒  FOV %.1f", index, keyframe.time,
-                          keyframe.pose.fieldOfViewDegrees);
+            const char* transitionLabel =
+                keyframe.transitionMode == CameraTransitionMode::Cut
+                    ? " [カット]"
+                    : "";
+            std::snprintf(
+                label,
+                sizeof(label),
+                "%02d%s  時間 %.2f秒  待機 %.2f秒  FOV %.1f",
+                index,
+                transitionLabel,
+                keyframe.time,
+                keyframe.holdDurationSeconds,
+                keyframe.pose.fieldOfViewDegrees);
 
             if (ImGui::Selectable(label, index == mSelectedKeyframeIndex)) {
                 SelectKeyframe(index);
@@ -435,13 +459,38 @@ void CameraDebugPanel::DrawView(View view)
         }
 
         ImGui::DragFloat("キーフレーム時間", &mKeyframeTime, 0.05f, 0.0f, 999.0f);
+        ImGui::DragFloat(
+            "到着後の待機時間（秒）",
+            &mKeyframeHoldDurationSeconds,
+            0.05f,
+            0.0f,
+            999.0f);
+        ImGui::Combo(
+            "遷移方式",
+            &mTransitionModeIndex,
+            transitionModeLabels,
+            IM_ARRAYSIZE(transitionModeLabels));
+        const bool isCutTransition =
+            ToTransitionMode(mTransitionModeIndex) ==
+            CameraTransitionMode::Cut;
+        if (isCutTransition) {
+            ImGui::BeginDisabled();
+        }
         ImGui::Combo("補間", &mEasingIndex, easingLabels, IM_ARRAYSIZE(easingLabels));
+        if (isCutTransition) {
+            ImGui::EndDisabled();
+            ImGui::TextDisabled("カットでは指定時刻まで前のカメラを保持し、瞬時に切り替えます");
+        }
 
         if (ImGui::Button("現在のカメラを追加")) {
             CinematicCameraKeyframe keyframe;
             keyframe.time = std::max(0.0f, mKeyframeTime);
+            keyframe.holdDurationSeconds =
+                std::max(0.0f, mKeyframeHoldDurationSeconds);
             keyframe.pose = cameraSystem->GetDebugCameraPose();
             keyframe.easing = ToEasing(mEasingIndex);
+            keyframe.transitionMode =
+                ToTransitionMode(mTransitionModeIndex);
 
             sequence->keyframes.push_back(keyframe);
             SortKeyframes(*sequence);
@@ -460,8 +509,12 @@ void CameraDebugPanel::DrawView(View view)
         if (ImGui::Button("選択中を上書き") && hasSelectedKeyframe) {
             CinematicCameraKeyframe& keyframe = sequence->keyframes[mSelectedKeyframeIndex];
             keyframe.time = std::max(0.0f, mKeyframeTime);
+            keyframe.holdDurationSeconds =
+                std::max(0.0f, mKeyframeHoldDurationSeconds);
             keyframe.pose = cameraSystem->GetDebugCameraPose();
             keyframe.easing = ToEasing(mEasingIndex);
+            keyframe.transitionMode =
+                ToTransitionMode(mTransitionModeIndex);
 
             SortKeyframes(*sequence);
             mSelectedKeyframeIndex = -1;
@@ -534,7 +587,11 @@ void CameraDebugPanel::SelectKeyframe(int keyframeIndex)
 
     const CinematicCameraKeyframe& keyframe = sequence->keyframes[keyframeIndex];
     mKeyframeTime = keyframe.time;
+    mKeyframeHoldDurationSeconds =
+        keyframe.holdDurationSeconds;
     mEasingIndex = ToEasingIndex(keyframe.easing);
+    mTransitionModeIndex =
+        ToTransitionModeIndex(keyframe.transitionMode);
 
     cameraSystem->SetDebugCameraPose(keyframe.pose);
 

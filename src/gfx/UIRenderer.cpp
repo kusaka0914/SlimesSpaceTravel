@@ -13,6 +13,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "system/SceneSystem.h"
+#include "system/sequence/SequenceSystem.h"
 #include <algorithm>
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
@@ -97,10 +98,80 @@ void UIRenderer::RegisterCustomUITextures()
     }
 
     for (const UILoadSystem::CustomElement& element : mUILoadSystem->GetCustomElements()) {
-        if (element.type == UILoadSystem::CustomElementType::Image && !element.texturePath.empty()) {
-            RegisterCustomUITexture(element.texturePath);
+        if (element.type != UILoadSystem::CustomElementType::Image) {
+            continue;
+        }
+
+        RegisterCustomUITexture(element.texturePath);
+        RegisterCustomUITexture(element.keyboardTexturePath);
+        RegisterCustomUITexture(element.gameControllerTexturePath);
+    }
+}
+
+const std::string& UIRenderer::ResolveCustomElementText(
+    const UILoadSystem::CustomElement& element) const
+{
+    const bool usesGameController =
+        mGame->GetLastUsedInputDevice() ==
+        InputDeviceType::GameController;
+    if (mGame->IsInputModifierHeld()) {
+        const std::string& modifierText =
+            usesGameController
+                ? element.gameControllerModifierText
+                : element.keyboardModifierText;
+        if (!modifierText.empty()) {
+            return modifierText;
         }
     }
+
+    if (!element.usesInputDeviceVariants) {
+        return element.text;
+    }
+
+    const std::string& deviceText =
+        usesGameController
+            ? element.gameControllerText
+            : element.keyboardText;
+    return deviceText.empty() ? element.text : deviceText;
+}
+
+const std::string& UIRenderer::ResolveCustomElementTexturePath(
+    const UILoadSystem::CustomElement& element) const
+{
+    if (!element.usesInputDeviceVariants) {
+        return element.texturePath;
+    }
+
+    const bool usesGameController =
+        mGame->GetLastUsedInputDevice() ==
+        InputDeviceType::GameController;
+    const std::string& deviceTexturePath =
+        usesGameController
+            ? element.gameControllerTexturePath
+            : element.keyboardTexturePath;
+    return deviceTexturePath.empty()
+               ? element.texturePath
+               : deviceTexturePath;
+}
+
+bool UIRenderer::ResolveCustomElementTextureFlipVertical(
+    const UILoadSystem::CustomElement& element) const
+{
+    if (!element.usesInputDeviceVariants) {
+        return element.flipVertical;
+    }
+
+    const bool usesGameController =
+        mGame->GetLastUsedInputDevice() ==
+        InputDeviceType::GameController;
+    if (usesGameController &&
+        !element.gameControllerTexturePath.empty()) {
+        return element.gameControllerFlipVertical;
+    }
+    if (!usesGameController && !element.keyboardTexturePath.empty()) {
+        return element.keyboardFlipVertical;
+    }
+    return element.flipVertical;
 }
 
 void UIRenderer::DrawGameContent()
@@ -114,33 +185,47 @@ void UIRenderer::DrawGameContent()
     glDepthMask(GL_FALSE);
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+    const bool isStartCinematicPlaying =
+        sequenceSystem &&
+        sequenceSystem->IsCinematicChainPlaying();
 
-    if (sceneSystem->IsTitle()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsTitle()) {
         mSceneUIRenderer->DrawTitle();
     }
 
-    if (sceneSystem->IsOpening()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsOpening()) {
         mSceneUIRenderer->DrawOpening();
     }
 
-    if (sceneSystem->IsGameOver()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsGameOver()) {
         mSceneUIRenderer->DrawGameOver();
     }
 
     const bool shouldDrawDefaultUI =
-        sceneSystem->IsPlaying() ||
-        sceneSystem->IsTutorialActive("jewel_usage");
+        !isStartCinematicPlaying &&
+        (sceneSystem->IsPlaying() ||
+         sceneSystem->IsTutorialActive("jewel_usage"));
+    mHudRenderer->UpdateTalkableUIVisibility(
+        mGame->GetPlayers(),
+        shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
     }
 
-    mStateUIRenderer->DrawStateUI();
+    if (!isStartCinematicPlaying) {
+        mStateUIRenderer->DrawStateUI();
+    }
 
-    if (mGame->GetIsPauseMenuOpen()) {
+    mStateUIRenderer->DrawTransitionUI();
+
+    if (!isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
-    DrawCustomUI();
+    if (!isStartCinematicPlaying) {
+        DrawCustomUI();
+    }
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -173,6 +258,43 @@ void UIRenderer::DrawDebugEditor(
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+}
+
+bool UIRenderer::SaveDebugEditorSession(
+    const std::string& filePath,
+    std::string& outErrorMessage)
+{
+    if (!mDebugUIRenderer) {
+        outErrorMessage = "The debug editor is not initialized.";
+        return false;
+    }
+
+    return mDebugUIRenderer->SaveEditorSession(
+        filePath,
+        outErrorMessage);
+}
+
+bool UIRenderer::RestoreDebugEditorSession(
+    const std::string& filePath,
+    std::string& outErrorMessage)
+{
+    if (!mDebugUIRenderer) {
+        outErrorMessage = "The debug editor is not initialized.";
+        return false;
+    }
+
+    return mDebugUIRenderer->RestoreEditorSession(
+        filePath,
+        outErrorMessage);
+}
+
+void UIRenderer::SetEditorRestartStatus(
+    const std::string& message,
+    bool isError)
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->SetBuildRestartStatus(message, isError);
+    }
 }
 
 void UIRenderer::SetCustomUIElementVisible(
@@ -244,9 +366,10 @@ bool UIRenderer::CalculateCustomElementScreenTransform(
     float height = mFbWidth * element.heightRatio;
 
     if (element.type == UILoadSystem::CustomElementType::Text) {
-        std::string firstLine = element.text;
+        const std::string& resolvedText = ResolveCustomElementText(element);
+        std::string firstLine = resolvedText;
         std::string secondLine;
-        const bool hasSecondLine = SplitText(element.text, firstLine, secondLine);
+        const bool hasSecondLine = SplitText(resolvedText, firstLine, secondLine);
         const float textScale = mFbWidth * element.textScaleRatio;
 
         int firstWidth = 0;
@@ -459,17 +582,39 @@ void UIRenderer::DrawCustomUI()
         });
 
     const bool previewAll = mCustomUIPreviewEnabled && mGame->GetIsDebugEditorShowing();
-    const bool isPlaying = mGame->GetSceneSystem()->IsPlaying();
+    const SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    const bool isPlaying = sceneSystem->IsPlaying();
+    const bool isTitle = sceneSystem->IsTitle();
+    const bool isOpening = sceneSystem->IsOpening();
+    const bool isBattleStyleSelection =
+        sceneSystem->IsBattleStyleSelection();
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
         if (!element) {
             continue;
         }
 
-        const bool visibleInGame =
-            element->screen == "operation"
-                ? isPlaying
-                : mUILoadSystem->IsCustomElementVisible(*element);
+        bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
+        if (element->screen == "operation") {
+            visibleInGame = isPlaying;
+        } else if (element->screen == "title") {
+            visibleInGame = isTitle;
+        } else if (element->screen == "opening") {
+            visibleInGame = isOpening;
+        } else if (element->screen == "battleStyleSelection") {
+            visibleInGame = isBattleStyleSelection;
+            if (element->id == "easySelection") {
+                visibleInGame =
+                    visibleInGame &&
+                    sceneSystem->GetSelectedBattleStyle() ==
+                        PlayerControlStyle::Assist;
+            } else if (element->id == "normalSelection") {
+                visibleInGame =
+                    visibleInGame &&
+                    sceneSystem->GetSelectedBattleStyle() ==
+                        PlayerControlStyle::Standard;
+            }
+        }
         if (!previewAll && !visibleInGame) {
             continue;
         }
@@ -485,6 +630,8 @@ void UIRenderer::DrawCustomUI()
         switch (element->type) {
         case UILoadSystem::CustomElementType::Text:
         {
+            const std::string& resolvedText =
+                ResolveCustomElementText(*element);
             TextEffect effect;
             effect.shadowEnabled = element->shadowEnabled;
             effect.shadowOffset =
@@ -509,7 +656,7 @@ void UIRenderer::DrawCustomUI()
                 x,
                 y,
                 mFbWidth * element->textScaleRatio,
-                element->text,
+                resolvedText,
                 element->centerBased,
                 glm::vec4(
                     element->color[0] * 255.0f,
@@ -522,18 +669,24 @@ void UIRenderer::DrawCustomUI()
             break;
         }
         case UILoadSystem::CustomElementType::Image:
-            if (RegisterCustomUITexture(element->texturePath)) {
+        {
+            const std::string& resolvedTexturePath =
+                ResolveCustomElementTexturePath(*element);
+            const bool flipVertical =
+                ResolveCustomElementTextureFlipVertical(*element);
+            if (RegisterCustomUITexture(resolvedTexturePath)) {
                 DrawTexture(
                     topLeftX,
                     topLeftY,
                     width,
                     height,
-                    GetCustomTextureName(element->texturePath),
-                    element->flipVertical,
+                    GetCustomTextureName(resolvedTexturePath),
+                    flipVertical,
                     element->rotationDegrees);
                 rendered = true;
             }
             break;
+        }
         case UILoadSystem::CustomElementType::Panel:
             DrawBG(
                 topLeftX,

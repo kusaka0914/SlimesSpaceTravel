@@ -196,6 +196,7 @@ void StageEditorPanel::DrawInspector()
 {
     switch (mSelectedMenu) {
     case 0:
+        DrawDebugSceneSwitcher();
         DrawStageSwitcher();
         DrawPlayerPlanetDebugMover();
         DrawStageClearProgressEditor();
@@ -206,6 +207,7 @@ void StageEditorPanel::DrawInspector()
     case 3:
         if (Planet* selectedPlanet = dynamic_cast<Planet*>(
                 mSelectionController.GetSingleSelectedActor())) {
+            mPlacementPanel.DrawPlayerDebugMover(selectedPlanet);
             mPlanetPanel.DrawSelectedPlanet(selectedPlanet);
             ImGui::SeparatorText("プレイヤースポーン");
             mPlacementPanel.DrawPlayerSpawn();
@@ -283,6 +285,42 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
         ImGui::TextWrapped(
             "%s", mDuplicatePlacementStatus.c_str());
     }
+}
+
+void StageEditorPanel::DrawDebugSceneSwitcher()
+{
+    if (!mContext.game) {
+        return;
+    }
+
+    ImGui::SeparatorText("ゲーム画面へ移動");
+    if (ImGui::Button("タイトルへ移動")) {
+        if (mContext.game->DebugEnterTitle()) {
+            mAddActorPanel.CancelPlacement();
+            mSelectionController.Clear();
+            mSelectedStageYamlPath =
+                mContext.game->GetCurrentStageYamlPath();
+            mStageSwitchStatus = "タイトルへ移動しました";
+        } else {
+            mStageSwitchStatus = "タイトルへの移動に失敗しました";
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("オープニングへ移動")) {
+        if (mContext.game->DebugEnterOpening()) {
+            mAddActorPanel.CancelPlacement();
+            mSelectionController.Clear();
+            mSelectedStageYamlPath =
+                mContext.game->GetCurrentStageYamlPath();
+            mStageSwitchStatus = "オープニングへ移動しました";
+        } else {
+            mStageSwitchStatus = "オープニングへの移動に失敗しました";
+        }
+    }
+
+    ImGui::TextDisabled(
+        "ステージ0のhouse.yamlを読み込みます。保存していない現在の編集内容は失われます。");
 }
 
 void StageEditorPanel::DrawPlayerPlanetDebugMover()
@@ -461,4 +499,19 @@ bool StageEditorPanel::ConsumeRequestOpenMainTab()
     const bool result = mRequestOpenMainTab;
     mRequestOpenMainTab = false;
     return result;
+}
+
+void StageEditorPanel::SetSelectedMenu(int selectedMenu)
+{
+    switch (selectedMenu) {
+    case 0:
+    case 1:
+    case 3:
+    case 6:
+        mSelectedMenu = selectedMenu;
+        break;
+    default:
+        mSelectedMenu = 3;
+        break;
+    }
 }

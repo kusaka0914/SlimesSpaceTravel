@@ -71,10 +71,41 @@ LoadedModel MeshLoadSystem::LoadModelFromFile(const char* path)
     return mAssimpMeshLoader.LoadModelFromFile(path);
 }
 
-bool MeshLoadSystem::LoadMeshPositionsAndIndices(const char* path, std::vector<float>& outPositions,
-                                                 std::vector<unsigned int>& outIndices)
+const CollisionMeshGeometry* MeshLoadSystem::ResolveCollisionMeshGeometry(
+    const std::string& modelFilePath)
 {
-    return mCollisionDataLoader.LoadMeshPositionsAndIndices(path, outPositions, outIndices);
+    if (modelFilePath.empty()) {
+        return nullptr;
+    }
+
+    const std::string normalizedPath =
+        std::filesystem::path(modelFilePath)
+            .lexically_normal()
+            .generic_string();
+    const auto cachedGeometry =
+        mCollisionMeshGeometryByPath.find(normalizedPath);
+    if (cachedGeometry != mCollisionMeshGeometryByPath.end()) {
+        return &cachedGeometry->second;
+    }
+    if (mFailedCollisionMeshPaths.contains(normalizedPath)) {
+        return nullptr;
+    }
+
+    CollisionMeshGeometry geometry;
+    if (!mCollisionDataLoader.LoadMeshPositionsAndIndices(
+            normalizedPath.c_str(),
+            geometry.positions,
+            geometry.indices)) {
+        mFailedCollisionMeshPaths.insert(normalizedPath);
+        return nullptr;
+    }
+
+    auto [insertedGeometry, wasInserted] =
+        mCollisionMeshGeometryByPath.emplace(
+            normalizedPath,
+            std::move(geometry));
+    (void)wasInserted;
+    return &insertedGeometry->second;
 }
 
 const LoadedModel* MeshLoadSystem::FindLoadedModel(const std::string& modelPath) const

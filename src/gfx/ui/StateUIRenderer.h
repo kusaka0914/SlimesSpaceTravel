@@ -15,6 +15,7 @@ public:
     ~StateUIRenderer();
 
     void DrawStateUI();
+    void DrawTransitionUI();
 
 private:
     void DrawActiveTutorial();

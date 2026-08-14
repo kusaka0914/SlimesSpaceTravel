@@ -15,7 +15,6 @@ private:
     void DrawOpeningIntro();
     void DrawOpeningTalkWithMother();
     void DrawOpeningTalkWithDoctor();
-    void DrawSkipUI();
 
 private:
     Game* mGame;

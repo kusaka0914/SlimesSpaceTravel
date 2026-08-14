@@ -3,6 +3,7 @@
 #include "Component.h"
 
 class Actor;
+class Player;
 
 class CollectableComponent : public Component {
 public:
@@ -10,10 +11,12 @@ public:
 
     void Update(float deltaTime) override;
     bool GetIsObtained() const { return mIsObtained; }
+    Player* GetObtainingPlayer() const { return mObtainingPlayer; }
 
 private:
-    bool IsCollectablePlayerInPickUpRadius() const;
+    Player* FindCollectablePlayerInPickUpRadius() const;
 
 private:
     bool mIsObtained;
+    Player* mObtainingPlayer = nullptr;
 };

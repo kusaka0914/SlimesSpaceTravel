@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 class Actor;
 
@@ -41,12 +42,14 @@ public:
 
     int GetSelectedActorCount() const;
     Actor* GetSingleSelectedActor() const;
+    std::vector<StageActorInstance> CollectSelectedActorInstances() const;
 
     glm::vec3 CalculateSelectedActorsCenter() const;
     void MoveSelectedActorsByDelta(const glm::vec3& delta);
     bool TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
 
 private:
+    void PrepareActorForEditorSelection(Actor* actor);
     void UpdateBoxSelection();
     void UpdatePickedActorByMouse();
 

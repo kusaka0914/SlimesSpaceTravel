@@ -11,6 +11,7 @@ EnemyStatus::EnemyStatus()
       mCanCountered(false),
       mAttack(20.0f),
       mDetectionRange(6.0f),
+      mAttackPreparationRange(2.25f),
       mMoveSpeed(2.0f),
       mKnockBackSpeed(5.0f),
       mAttackSpeed(1.5f),

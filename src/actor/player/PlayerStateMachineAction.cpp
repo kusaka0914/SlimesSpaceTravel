@@ -166,7 +166,6 @@ void PlayerStateMachine::UpdateAirSlamAttacking(
     Player& player,
     PlayerMovement& movement,
     PlayerCombat& combat,
-    PlayerStatus& status,
     float deltaTime)
 {
     const bool didReachGround =
@@ -182,7 +181,6 @@ void PlayerStateMachine::UpdateAirSlamAttacking(
         combat.ResolveAirSlamImpact(
             player,
             movement,
-            status,
             deltaTime);
     if (didHitEnemy) {
         player.GetGame()->OnStrongAttacked(
@@ -213,27 +211,39 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
                                                      float deltaTime)
 {
     const float specialChargingTimerPrev = combat.GetSpecialChargingTimer();
+    const float chargeDurationSeconds =
+        combat.GetChargedAttackChargeDurationSeconds();
+    const float firstJewelConsumptionTimeSeconds =
+        chargeDurationSeconds * (2.0f / 3.0f);
+    const float secondJewelConsumptionTimeSeconds =
+        chargeDurationSeconds * (1.0f / 3.0f);
 
     combat.ReduceSpecialChargingTimer(deltaTime);
 
-    if (specialChargingTimerPrev >= 2.0f && combat.GetSpecialChargingTimer() <= 2.0f) {
+    const float specialChargingTimer =
+        combat.GetSpecialChargingTimer();
+    if (specialChargingTimerPrev >= firstJewelConsumptionTimeSeconds &&
+        specialChargingTimer < firstJewelConsumptionTimeSeconds) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 10000, 0, 1000);
         jewelGauge.Consume(1);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 1.0f && combat.GetSpecialChargingTimer() <= 1.0f) {
+    }
+    if (specialChargingTimerPrev >= secondJewelConsumptionTimeSeconds &&
+        specialChargingTimer < secondJewelConsumptionTimeSeconds) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 20000, 0, 1000);
         jewelGauge.Consume(1);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 0.0f && combat.GetSpecialChargingTimer() <= 0.0f) {
+    }
+    if (specialChargingTimerPrev >= 0.0f && specialChargingTimer < 0.0f) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 30000, 0, 1000);
         player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
     }
 
-    if (combat.GetSpecialChargingTimer() <= 0.0f) {
+    if (specialChargingTimer <= 0.0f) {
         combat.SetCanSpecialAttack(true);
     }
 
-    if (combat.GetSpecialChargingTimer() <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
+    if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
     }
 

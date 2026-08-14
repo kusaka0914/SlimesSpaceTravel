@@ -7,12 +7,12 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: introduction
-        text: "この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！"
+        text: "ここは敵が多そう...\nそうだ！敵の倒し方を教えるね！"
         advance: confirm
       - id: attack_buttons
-        text: 戦闘の基本としては敵に近づいて攻撃します！
-        controllerText: 戦闘の基本としては敵に近づいてYまたはXで攻撃します！
-        keyboardText: 戦闘の基本としては敵に近づいてJまたはKで攻撃します！
+        text: まずは敵に近づいて攻撃します！
+        controllerText: 敵に近づいて、YまたはXで攻撃できるよ！
+        keyboardText: 敵に近づいて、JまたはKで攻撃できるよ！
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -26,8 +26,8 @@ tutorials:
           flipVertical: false
       - id: weak_attack
         text: "弱攻撃は攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
-        controllerText: "Yは弱攻撃で攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
-        keyboardText: "Jは弱攻撃で攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
+        controllerText: "Yは攻撃力が低いけど、\n3回まで連続攻撃できるよ！"
+        keyboardText: "Jは攻撃力が低いけど、\n3回まで連続攻撃できるよ！"
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -41,8 +41,8 @@ tutorials:
           flipVertical: true
       - id: strong_attack
         text: "強攻撃は攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
-        controllerText: "Xは強攻撃で攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
-        keyboardText: "Kは強攻撃で攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
+        controllerText: "Xは攻撃力が高いけど、\n攻撃後に少し動けなくなるんだ...！"
+        keyboardText: "Kは攻撃力が高いけど、\n攻撃後に少し動けなくなるんだ...！"
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -55,9 +55,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: combo
-        text: "弱攻撃を3回、または弱攻撃2回から強攻撃のコンボを使って、\n敵に3回攻撃してみましょう！"
-        controllerText: "まずはY→Y→YまたはY→Y→Xのコンボを使って、\n敵に3回攻撃してみましょう！"
-        keyboardText: "J→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃すると敵の頭上のガードを1つ破壊できます。"
+        text: "敵を連続で3回攻撃すると、\n敵の頭上のガードを1つ破壊できるんだ！"
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -70,7 +68,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: launch_tutorial
-        text: "すべてのガードを破壊すると敵が打ち上げられ、\n一方的に攻撃できるようになります。"
+        text: "すべてのガードを破壊すると敵が打ち上げられて、\n一方的に攻撃できるようになるよ！"
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -84,6 +82,8 @@ tutorials:
           flipVertical: true
       - id: lets_try
         text: まずはコンボで敵を打ち上げてみましょう！
+        controllerText: "まずはY→Y→YまたはY→Y→Xのコンボを使って、\nガードを壊してみよう！"
+        keyboardText: "まずはJ→J→JまたはJ→J→Kのコンボを使って、\nガードを壊してみよう！"
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -103,7 +103,9 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: air_attack_types
-        text: 空中の敵を攻撃する時は空中弱攻撃と空中回避攻撃を使います。
+        text: ""
+        controllerText: 空中の敵を攻撃する時は空中でYとBを使うよ！
+        keyboardText: 空中の敵を攻撃する時は空中でJとUを使うよ！
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -115,21 +117,10 @@ tutorials:
           loop: true
           preserveAspectRatio: true
           flipVertical: false
-      - id: air_dodge_attack
-        text: "空中回避攻撃は、空中で回避して敵にぶつかることで\n自動で攻撃することです。"
-        advance: confirm
-        video:
-          asset: videos/battle_air_tutorial.mp4
-          xRatio: 0.54
-          yRatio: 0.03
-          widthRatio: 0.38
-          heightRatio: 0.21375
-          rotationDegrees: 0
-          loop: true
-          preserveAspectRatio: true
-          flipVertical: true
       - id: air_weak_attack
-        text: "そして空中弱攻撃は最大3回しか使えませんが、\n空中回避攻撃を当てると再使用できます。"
+        text: ""
+        controllerText: "空中でも3回しかYで攻撃できないけど、\nBの回避で敵にぶつかるとまた攻撃できるようになるよ！"
+        keyboardText: "空中でも3回しかJで攻撃できないけど、\nUの回避で敵にぶつかるとまた攻撃できるようになるよ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -142,7 +133,9 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: summary_air_attack
-        text: "つまり、空中弱攻撃→空中回避攻撃→空中弱攻撃のように繰り返す\nことで絶え間なく攻撃でき、大ダメージを与えられます。"
+        text: ""
+        controllerText: "つまり、Y→Y→Y→B→Y→Y→Y→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
+        keyboardText: "つまり、J→J→J→U→J→J→J→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -155,20 +148,9 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: air_strong_attack
-        text: "そして、打ち上げ解除直前になると敵が白く点滅します！\nそのタイミングで空中強攻撃を放ちましょう！"
-        advance: confirm
-        video:
-          asset: videos/battle_air_tutorial.mp4
-          xRatio: 0.54
-          yRatio: 0.03
-          widthRatio: 0.38
-          heightRatio: 0.21375
-          rotationDegrees: 0
-          loop: true
-          preserveAspectRatio: true
-          flipVertical: true
-      - id: recover_from_stun
-        text: "空中強攻撃は超強力ですが、使用後は疲労して動けなくなります。\n弱攻撃を連打することで早く回復できるので連打しましょう。"
+        text: ""
+        controllerText: "そして、敵が白く点滅した時に空中でXを押すと、\n一番強い攻撃が出せるよ！"
+        keyboardText: "そして、敵が白く点滅した時に空中でKを押すと、\n一番強い攻撃が出せるよ！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -181,7 +163,9 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: break_summary
-        text: "ガードを破壊し打ち上げ、空中弱攻撃と空中回避攻撃を繰り返す。\n点滅したら空中強攻撃の流れを覚えて敵を倒していきましょう！"
+        text: ""
+        controllerText: "ガードを壊して打ち上げる！空中でY→Y→Y→Bを繰り返す！\n点滅したらX！これでどんどん敵を倒していこう！"
+        keyboardText: "ガードを壊して打ち上げる！空中でJ→J→J→Uを繰り返す！\n点滅したらK！これでどんどん敵を倒していこう！"
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -201,50 +185,39 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: introduction
-        text: "ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？"
+        text: "ちょっと失礼！左上の青いジュエル、\n何に使うんだろうって気にならない？"
         advance: confirm
       - id: generation
-        text: "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。"
+        text: "ジュエルは30秒に1個作られて、自然に増えるのは2個まで！\n敵が落とすジュエルを拾えば10個まで持てるよ！"
+        advance: confirm
+      - id: summary
+        text: "ジュエルを1個使うと、回復か連続攻撃ができて、\n2個使うと溜め攻撃ができるよ！"
         advance: confirm
       - id: heal
-        text: "回復操作をするとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
-        controllerText: "まずLを押しながらAを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
-        keyboardText: "まずNを押しながらSpaceを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。"
+        text: ""
+        controllerText: Lを押しながらAで体力を1回復できるよ！
+        keyboardText: Nを押しながらSpaceで体力を1回復できるよ！
         advance: confirm
       - id: automatic_attack
         text: "特殊入力と弱攻撃でジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
-        controllerText: "またLを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
-        keyboardText: "またNを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
-        advance: confirm
-      - id: automatic_attack_warning
-        text: "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！"
+        controllerText: "Lを押しながらYで連続攻撃できて、\n自分の前の敵を自動で攻撃できるよ！"
+        keyboardText: "Nを押しながらJで連続攻撃できて、\n自分の前の敵を自動で攻撃できるよ！"
         advance: confirm
       - id: charge_start
         text: "特殊入力と強攻撃でジュエルを2個消費して、\n溜め状態になります！"
-        controllerText: "そしてLを押しながらXでジュエルを2個消費して、\n溜め状態になります！"
-        keyboardText: "そしてNを押しながらKでジュエルを2個消費して、\n溜め状態になります！"
-        advance: confirm
-      - id: charge_release_buttons
-        text: 溜め状態中はボタンを離したままで大丈夫ですよ！
-        controllerText: 溜め状態中はLもXも離したままで大丈夫ですよ！
-        keyboardText: 溜め状態中はNもKも離したままで大丈夫ですよ！
-        advance: confirm
-      - id: charge_warning
-        text: "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！"
+        controllerText: "Lを押しながらXで溜め状態になるよ！溜めてると\n動けないから回避でよけないといけないんだ！"
+        keyboardText: "Nを押しながらKで溜め状態になるよ！溜めてると\n動けないから回避でよけないといけないんだ！"
         advance: confirm
       - id: charged_attack
         text: "溜まったら強攻撃を押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
-        controllerText: "溜まったらXを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
-        keyboardText: "溜まったらKを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
+        controllerText: "溜まったら敵に近づいてXを押して！\nガードを全て壊して大ダメージを与えられるよ！"
+        keyboardText: "溜まったら敵に近づいてKを押して！\nガードを全て壊して大ダメージを与えられるよ！"
         advance: confirm
       - id: counter_bonus
-        text: "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！"
-        advance: confirm
-      - id: jewel_summary
-        text: "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！"
+        text: "これは難しいけど...敵が攻撃する時に溜め攻撃を当てると\nダメージが2倍になってジュエルが全回復するよ！"
         advance: confirm
       - id: finish
-        text: "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"
+        text: "これまで学んだことを活かして\n全ての敵を倒してみよう！"
         advance: confirm
   - id: just_dodge
     name: カウンター突進
@@ -254,16 +227,13 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: arrival
-        text: さあ、ここが最後の惑星です！
-        advance: confirm
-      - id: boss
-        text: この惑星にはとても大きなボスがいます。
+        text: "さあ、ここが最後の惑星だよ！\nここには大きなボスがいるんだ...！"
         advance: confirm
       - id: introduction
-        text: "ボスは体力が多いため、倒すのに苦労すると思います！\nということで新技を伝授します！"
+        text: "ボスは体力もガードも多いんだ...！\nだから新しい技を教えるね！"
         advance: confirm
       - id: timing
-        text: "敵が攻撃した瞬間に、敵に向かって回避をすることで\nカウンター突進をすることができます！"
+        text: "敵が攻撃する時に、敵に向かって回避をすると\n突進して敵のガードを1つ壊せるんだ！"
         advance: confirm
         video:
           asset: videos/battle_counter_tutorial.mp4
@@ -276,20 +246,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: false
       - id: reward
-        text: "カウンター突進が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！"
-        advance: confirm
-        video:
-          asset: videos/battle_counter_tutorial.mp4
-          xRatio: 0.54
-          yRatio: 0.03
-          widthRatio: 0.38
-          heightRatio: 0.21375
-          rotationDegrees: 0
-          loop: true
-          preserveAspectRatio: true
-          flipVertical: true
-      - id: advice
-        text: "回復したいけどジュエルが足りない、\nそんな窮地に立たされた時に狙ってみてください！"
+        text: "この時ジュエルも1個回復するから、\n回復したいけどジュエルがない時におすすめ！"
         advance: confirm
         video:
           asset: videos/battle_counter_tutorial.mp4
@@ -302,7 +259,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: finish
-        text: さあ、ボスを倒しに行きましょう！
+        text: "さあ、これまでやってきたことを使って、\nボスを倒しに行こう！"
         advance: confirm
   - id: split_switch
     name: 分身とスイッチ
@@ -323,7 +280,7 @@ tutorials:
       - id: switch_player
         text: "そうだ！君はスライムだから分裂できるんじゃない？\n操作するスライムを切り替えてみようよ！"
         controllerText: "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
-        keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nOを押して分身を作って、切り替えてみようよ！"
+        keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nIを押して分身を作って、切り替えてみようよ！"
         advance: playerSplitMerge
       - id: switched
         text: "おっ！分裂できたね！\nちょっと小さくなったけどそっくりだ！"
@@ -368,7 +325,7 @@ tutorials:
       - id: page_3
         text: ""
         controllerText: じゃあもう一度ZRを押して合体してみよう！
-        keyboardText: じゃあもう一度Oを押して合体してみよう！
+        keyboardText: じゃあもう一度Iを押して合体してみよう！
         advance: playerSplitMerge
       - id: page_4
         text: "ナイス合体！これで1つになれたから\nもう一度分身して、2人でスイッチを押そう！"

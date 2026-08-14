@@ -48,6 +48,21 @@ public:
         const glm::vec3& scale,
         const StageActorPlacement* placement = nullptr);
     bool AddStar(int currentPlanetNum, const StageActorPlacement* placement = nullptr);
+    bool AddJewelItem(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::string& texturePath,
+        const glm::vec3& scale,
+        const StageActorPlacement* placement = nullptr);
+    bool AddHazardActor(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::string& texturePath,
+        const glm::vec3& scale,
+        float triggerRadius,
+        float damage,
+        float damageIntervalSeconds,
+        const StageActorPlacement* placement = nullptr);
     bool AddStageObject(int currentPlanetNum, const std::string& modelPath, bool collisionEnabled,
                         const StageActorPlacement* placement = nullptr);
     bool DuplicateActorAtPlacement(
@@ -94,6 +109,19 @@ private:
         const std::string& modelPath,
         const glm::vec3& scale) const;
     YAML::Node CreateStarNode(int currentPlanetNum) const;
+    YAML::Node CreateJewelItemNode(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::string& texturePath,
+        const glm::vec3& scale) const;
+    YAML::Node CreateHazardActorNode(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const std::string& texturePath,
+        const glm::vec3& scale,
+        float triggerRadius,
+        float damage,
+        float damageIntervalSeconds) const;
     YAML::Node CreateStageObjectNode(int currentPlanetNum, const std::string& modelPath,
                                      bool collisionEnabled) const;
 

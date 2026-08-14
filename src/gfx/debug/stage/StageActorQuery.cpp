@@ -9,6 +9,8 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -65,6 +67,8 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
             {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
             {StageActorType::StageObject, "stageObjects", "汎用モデル"},
             {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
+            {StageActorType::JewelItem, "jewelItems", "ジュエルアイテム"},
+            {StageActorType::HazardActor, "hazardActors", "危険アクター"},
         };
 
         const auto& platformTypes = PlatformTypeRegistry::GetDefinitions();
@@ -181,6 +185,30 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
                     yamlIndex));
         }
 
+        for (JewelItem* jewelItem : planet->GetJewelItems()) {
+            const int yamlIndex =
+                jewelItem ? jewelItem->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                jewelItem,
+                StageActorType::JewelItem,
+                yamlIndex,
+                "jewelItems",
+                MakeIndexedLabel("ジュエルアイテム", yamlIndex));
+        }
+
+        for (HazardActor* hazardActor : planet->GetHazardActors()) {
+            const int yamlIndex =
+                hazardActor ? hazardActor->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                hazardActor,
+                StageActorType::HazardActor,
+                yamlIndex,
+                "hazardActors",
+                MakeIndexedLabel("危険アクター", yamlIndex));
+        }
+
         if (Star* star = planet->GetStar()) {
             const int yamlIndex = star->GetStageYamlIndex();
             AddInstance(instances, star, StageActorType::Star, yamlIndex, "star", MakeIndexedLabel("星", yamlIndex));
@@ -210,14 +238,17 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
     return instances;
 }
 
-std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
+std::vector<StageActorRef> StageActorQuery::CollectAllTargets(
+    Stage* stage,
+    bool includePlanets)
 {
     std::vector<StageActorRef> targets;
 
     for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
-        // 惑星の削除や複製では所属オブジェクトの参照更新が必要になるため、
-        // 汎用の一括編集対象には含めず、惑星専用UIへ委ねる。
-        if (instance.ref.type == StageActorType::Planet) {
+        // 惑星削除は所属アクターの参照更新が必要なため、通常の削除対象には
+        // 含めない。複製処理だけが明示的に惑星を要求する。
+        if (!includePlanets &&
+            instance.ref.type == StageActorType::Planet) {
             continue;
         }
         targets.emplace_back(instance.ref);

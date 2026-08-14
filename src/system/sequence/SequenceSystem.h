@@ -18,12 +18,18 @@ public:
     void Update(float deltaTime);
 
     bool Play(const std::string& sequenceId, bool preview = false);
+    bool PlayCinematicChain(
+        const std::vector<std::string>& cinematicSequenceIds);
     bool PlayCinematicChainThenSequence(const std::vector<std::string>& cinematicSequenceIds,
                                         const std::string& gameplaySequenceId);
     void Stop(bool restorePreviewState = true);
 
     bool IsPlaying() const { return mIsPlaying || mIsCinematicChainPlaying; }
     bool IsPreviewing() const { return mIsPreview; }
+    bool IsCinematicChainPlaying() const
+    {
+        return mIsCinematicChainPlaying;
+    }
     bool HasPreviewSnapshot() const { return !mPreviewSnapshots.empty(); }
     bool LocksPlayerControl() const { return mLocksPlayerControl; }
 
@@ -52,7 +58,13 @@ private:
     void ApplyMovementClips(const GameplaySequence& sequence, float time);
     void ApplyEventClips(const GameplaySequence& sequence, float previousTime, float time);
     void ApplyEventClip(const SequenceClip& clip);
+    bool StartCinematicChain(
+        const std::vector<std::string>& cinematicSequenceIds,
+        const std::string& gameplaySequenceId);
     void UpdateCinematicChain();
+    void RequestCinematicReturnFade();
+    void FinishCinematicChainAtFadeMidpoint(
+        std::size_t cinematicChainGeneration);
     void ClearCinematicChain();
 
     static float ApplyEasing(float t, SequenceEasing easing);
@@ -74,6 +86,8 @@ private:
     std::size_t mCinematicSequenceIndex = 0;
     std::string mGameplaySequenceAfterCinematics;
     bool mIsCinematicChainPlaying = false;
+    bool mIsCinematicReturnFadeRequested = false;
+    std::size_t mCinematicChainGeneration = 0;
 
     std::unordered_map<Actor*, ActorSnapshot> mPreviewSnapshots;
 };

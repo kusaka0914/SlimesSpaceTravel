@@ -257,6 +257,8 @@ ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
             collisionResult.blockingNormal =
                 sweepResolution->blockingNormal;
             collisionResult.didHitStage = true;
+            collisionResult.didBlockRequestedMovement =
+                sweepResolution->didBlockRequestedMovement;
         }
     }
 
@@ -488,6 +490,12 @@ ActorCollisionResolver::CheckConflictWall(
     const glm::vec3 posAfterHit = currentPos + moveDelta * allowFrac;
     const glm::vec3 hitNormGlm(sweepCallback.m_hitNormalWorld.x(), sweepCallback.m_hitNormalWorld.y(),
                                sweepCallback.m_hitNormalWorld.z());
+    constexpr float blockingDirectionDotThreshold = -0.05f;
+    const glm::vec3 requestedMovementDirection =
+        glm::normalize(moveDelta);
+    const bool didBlockRequestedMovement =
+        glm::dot(hitNormGlm, requestedMovementDirection) <
+        blockingDirectionDotThreshold;
 
     const glm::vec3 blocked = moveDelta * (1.0f - allowFrac);
     const glm::vec3 slideVec = blocked - hitNormGlm * glm::dot(blocked, hitNormGlm);
@@ -518,7 +526,8 @@ ActorCollisionResolver::CheckConflictWall(
         if (!slideCallback.hasHit()) {
             return StageSweepResolution{
                 slideStartPosition + slideVec,
-                hitNormGlm};
+                hitNormGlm,
+                didBlockRequestedMovement};
         }
 
         const float slideAllow = std::max(0.0f, slideCallback.m_closestHitFraction - 0.01f);
@@ -528,10 +537,14 @@ ActorCollisionResolver::CheckConflictWall(
             slideCallback.m_hitNormalWorld.z());
         return StageSweepResolution{
             slideStartPosition + slideVec * slideAllow,
-            slideHitNormal};
+            slideHitNormal,
+            didBlockRequestedMovement};
     }
 
-    return StageSweepResolution{posAfterHit, hitNormGlm};
+    return StageSweepResolution{
+        posAfterHit,
+        hitNormGlm,
+        didBlockRequestedMovement};
 }
 
 ActorCollisionResolver::StageOverlapResolution
