@@ -35,6 +35,10 @@ public:
     void ApplyConfig(const std::string& type);
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
+    void SetIsNormalHitKnockBackEnabled(bool isEnabled)
+    {
+        mStatus.SetIsNormalHitKnockBackEnabled(isEnabled);
+    }
     void SetIsStrongAttacked(bool isStrongAttacked) { mStatus.SetIsStrongAttacked(isStrongAttacked); }
 
     void SetBreakCount(int breakCount) { mStatus.SetBreakCount(breakCount); }
@@ -65,6 +69,10 @@ public:
 
     bool GetIsDead() const { return mStateMachine->IsDead(); }
     bool GetIsBoss() const { return mStatus.GetIsBoss(); }
+    bool IsNormalHitKnockBackEnabled() const
+    {
+        return mStatus.IsNormalHitKnockBackEnabled();
+    }
     bool GetCanCountered() const { return mStatus.GetCanCountered(); }
 
     int GetBreakCount() const { return mStatus.GetBreakCount(); }
@@ -142,7 +150,12 @@ public:
         return CheckDotAngleSteep(hitNormal, up);
     }
 
+protected:
+    float ResolveMinimumUpdateIntervalSeconds() const override;
+    bool ShouldUpdateUpVecEveryFrame() const override;
+
 private:
+    bool CanUseReducedUpdateRate() const;
     void ApplyEnemyConfig(const EnemyConfig& config);
 
 private:

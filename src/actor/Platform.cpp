@@ -8,10 +8,18 @@
 
 namespace {
 
-const std::string pressureSwitchOffTexturePath =
-    "textures/platform_switch_off_red_platform_uv.png";
-const std::string pressureSwitchOnTexturePath =
-    "textures/platform_switch_on_blue_platform_uv.png";
+const std::string holdSwitchOffTexturePath =
+    "textures/platform_switch_hold_off_red_platform_uv.png";
+const std::string holdSwitchOnTexturePath =
+    "textures/platform_switch_hold_on_blue_platform_uv.png";
+const std::string latchedSwitchOffTexturePath =
+    "textures/platform_switch_latched_off_red_platform_uv.png";
+const std::string latchedSwitchOnTexturePath =
+    "textures/platform_switch_latched_on_blue_platform_uv.png";
+const std::string twoPlayerSwitchOffTexturePath =
+    "textures/platform_switch_two_player_off_red_platform_uv.png";
+const std::string twoPlayerSwitchOnTexturePath =
+    "textures/platform_switch_two_player_on_blue_platform_uv.png";
 
 }
 
@@ -270,22 +278,27 @@ glm::vec2 Platform::GetRenderTextureTiling() const
 
 const std::string& Platform::GetRenderTextureOverridePath() const
 {
-    const bool hasPressureSwitch = mPressureSwitchComponent != nullptr;
-    const bool hasLatchedGroupSwitch =
-        mLatchedGroupSwitchComponent != nullptr;
-    if (!hasPressureSwitch && !hasLatchedGroupSwitch) {
+    if (mLatchedGroupSwitchComponent) {
+        return mLatchedGroupSwitchComponent->GetIsOn()
+            ? twoPlayerSwitchOnTexturePath
+            : twoPlayerSwitchOffTexturePath;
+    }
+
+    if (!mPressureSwitchComponent) {
         return Actor::GetRenderTextureOverridePath();
     }
 
-    const bool isPressureSwitchOn =
-        hasPressureSwitch &&
-        mPressureSwitchComponent->GetIsPressed();
-    const bool isLatchedGroupSwitchOn =
-        hasLatchedGroupSwitch &&
-        mLatchedGroupSwitchComponent->GetIsOn();
-    return isPressureSwitchOn || isLatchedGroupSwitchOn
-        ? pressureSwitchOnTexturePath
-        : pressureSwitchOffTexturePath;
+    const bool shouldRemainOnAfterPressed =
+        mPressureSwitchComponent->ShouldRemainOnAfterPressed();
+    if (shouldRemainOnAfterPressed) {
+        return mPressureSwitchComponent->GetIsPressed()
+            ? latchedSwitchOnTexturePath
+            : latchedSwitchOffTexturePath;
+    }
+
+    return mPressureSwitchComponent->GetIsPressed()
+        ? holdSwitchOnTexturePath
+        : holdSwitchOffTexturePath;
 }
 
 bool Platform::GetCollisionEnabled() const

@@ -36,6 +36,10 @@ void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
     config.isBoss = ReadBool(enemyNode, "isBoss", config.isBoss);
+    config.isNormalHitKnockBackEnabled = ReadBool(
+        enemyNode,
+        "normalHitKnockBackEnabled",
+        config.isNormalHitKnockBackEnabled);
     config.hp = ReadFloat(enemyNode, "hp", config.hp);
     config.scale = ReadFloat(enemyNode, "scale", config.scale);
     config.moveSpeed = ReadFloat(enemyNode, "speed", config.moveSpeed);

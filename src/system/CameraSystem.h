@@ -96,6 +96,7 @@ private:
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;
+    Boat* FindFocusingBoat() const;
     Boat* FindMovingBoat() const;
     Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;

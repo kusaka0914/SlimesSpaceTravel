@@ -232,13 +232,38 @@ void ApplyPlatformBehaviorConfigs(
                 }
             }
         }
+        std::vector<PlatformRevealTarget> targetEnemyRefs;
+        const YAML::Node enemyTargets = node["enemyTargets"];
+        if (enemyTargets && enemyTargets.IsSequence()) {
+            targetEnemyRefs.reserve(enemyTargets.size());
+            for (const YAML::Node& targetNode : enemyTargets) {
+                if (!targetNode || !targetNode.IsMap() ||
+                    !targetNode["sequence"] ||
+                    !targetNode["index"]) {
+                    continue;
+                }
+
+                PlatformRevealTarget target;
+                target.sequenceName =
+                    targetNode["sequence"].as<std::string>();
+                target.yamlIndex = targetNode["index"].as<int>();
+                if (target.IsValid()) {
+                    targetEnemyRefs.emplace_back(std::move(target));
+                }
+            }
+        }
         PlatformPressureSwitchComponent* component =
             platform->AddPressureSwitchComponent();
+        component->SetShouldRemainOnAfterPressed(
+            node["remainsOnAfterPressed"]
+                ? node["remainsOnAfterPressed"].as<bool>()
+                : false);
         component->SetInactiveOpacity(
             node["inactiveOpacity"]
                 ? node["inactiveOpacity"].as<float>()
                 : 0.2f);
         component->SetTargetPlatformIds(targetPlatformIds);
+        component->SetTargetEnemyRefs(targetEnemyRefs);
     }
 
     if (const YAML::Node node = components["enemyClearUnlock"];

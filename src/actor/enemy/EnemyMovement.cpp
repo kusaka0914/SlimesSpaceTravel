@@ -78,6 +78,13 @@ bool IsWithinCurrentEllipseFaceMovementArea(
         return true;
     }
 
+    // The front/back restriction describes movement on the ellipse itself.
+    // Applying it while an enemy stands on a separate platform can reject
+    // every horizontal position on that platform and freeze attack movement.
+    if (enemy.GetGroundActor() != planet) {
+        return true;
+    }
+
     const Planet::EllipseSurfaceProjection surfaceProjection =
         planet->CalculateEllipseSurfaceProjection(
             requestedPosition);
@@ -478,7 +485,7 @@ void EnemyMovement::LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateM
     enemy.SetShouldJudgeLandingForEnemy(false);
     enemy.GetGame()->SetHitStopTimer(0.3f);
 
-    stateMachine.StartIdle(enemy);
+    stateMachine.StartLaunched(enemy);
 }
 
 void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime)

@@ -7,6 +7,7 @@
 #include <SDL_ttf.h>
 #include <glm/glm.hpp>
 
+#include <array>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -64,6 +65,7 @@ public:
 
     void TryDrawActor(Actor* actor, bool useOrient = true) const;
     void DrawActor(Actor* actor, bool useOrient = true) const;
+    bool IsActorInsideView(const Actor* actor) const;
 
     template <class ActorType> void TryDrawActors(const std::vector<ActorType*>& actors, bool useOrient = true) const
     {
@@ -86,6 +88,7 @@ public:
 private:
     void InitializeAttackRangeBuffer();
     void InitializeRenderModules();
+    void UpdateViewFrustum(const glm::mat4& viewProjectionMatrix) const;
 
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
@@ -109,4 +112,6 @@ private:
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
     std::unordered_set<std::string> mFailedTextureOverrides;
+    mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
+    mutable bool mHasValidViewFrustum = false;
 };

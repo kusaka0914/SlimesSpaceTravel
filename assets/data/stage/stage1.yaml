@@ -9,6 +9,8 @@ planets:
       - 8
     textureSideBlendWidth: 0.05
     stageNum: 0
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center: [44.42074, 50.6, 0]
     scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
@@ -19,6 +21,8 @@ planets:
       - 6
     textureSideBlendWidth: 0.05
     stageNum: 1
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center: [47.9321, 11.178522, 0]
     scale: [2, 8, 8]
     color: [0.0, 1.0, 0.0, 1.0]
@@ -29,6 +33,8 @@ planets:
     textureSideBlendWidth: 0.05
     rocketSpawnCondition: ""
     stageNum: 2
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center:
       - -3.8798537
       - 43.692368
@@ -49,6 +55,8 @@ planets:
       - 4
       - 8
     textureSideBlendWidth: 0.05
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
 enemies:
   - type: normal
     theta: 2.272954
@@ -536,9 +544,9 @@ boats:
     height: 14.146238
     facingYaw: 1.7763568e-15
     pos:
-      - 6.81
-      - 3.3
-      - -1.91
+      - 9.13
+      - 3.95
+      - -0.87
     upVec:
       - 1
       - -2.3841858e-07
@@ -571,9 +579,9 @@ boats:
     height: 5.283442
     facingYaw: 1.7763568e-15
     pos:
-      - 7.03
-      - -0.46
-      - 4.22
+      - 10.31
+      - -1.38
+      - 3.44
     upVec:
       - 1
       - -2.3841858e-07
@@ -635,25 +643,25 @@ boats:
       - 1
 boatParts: []
 players:
-  - pos: [1.0908272, -4.352653, 4.902502]
+  - pos: [1.1971725, -4.632353, 4.246785]
     currentPlanetNum: 0
-    theta: 1.3518587
-    phi: -0.71408075
-    height: 4.646053
-    facingYaw: 5.5267353
+    theta: 1.2960258
+    phi: -0.80972266
+    height: 4.3974295
+    facingYaw: 5.468004
     rotation:
       - 0
-      - 5.5267353
+      - 5.468004
       - 0
     upVec:
-      - 0.937842
-      - -0.22762087
-      - 0.2619945
+      - 0.9506044
+      - -0.2282197
+      - 0.21039721
     rotationQuat:
-      - -0.6077544
-      - -0.3636475
-      - -0.12970775
-      - 0.69395316
+      - -0.59812033
+      - -0.3696813
+      - -0.16775629
+      - 0.6909744
   - pos: [-1.9945179, 7.6850224, -0.06215492]
     currentPlanetNum: 0
     theta: -3.1104398
@@ -850,6 +858,7 @@ NPCs:
       height: 1.8
       scale: 1
     currentPlanetNum: 0
+    forceTalkOnArrival: true
   - theta: -2.8827639
     phi: -0.505858
     height: -0.081878185
@@ -952,6 +961,7 @@ NPCs:
       height: 1.8
       scale: 1
     currentPlanetNum: 0
+    forceTalkOnArrival: false
   - theta: 0.34281576
     phi: -0.6170447
     height: -0.08532429
@@ -1131,6 +1141,7 @@ NPCs:
           - text: しよう！
             ruby: false
     currentPlanetNum: 0
+    forceTalkOnArrival: false
   - theta: -0.63021153
     phi: 0.5423254
     height: -0.08914423
@@ -1197,6 +1208,7 @@ NPCs:
       height: 1.8
       scale: 1
     currentPlanetNum: 0
+    forceTalkOnArrival: false
   - theta: -2.0017486
     phi: 0.9669449
     height: 0.10700321
@@ -1280,6 +1292,7 @@ NPCs:
       height: 1.8
       scale: 1
     currentPlanetNum: 0
+    forceTalkOnArrival: false
   - theta: -3.0652385
     phi: -0.31153828
     height: 16.111404
@@ -1344,6 +1357,7 @@ NPCs:
       height: 1.8
       scale: 1
     currentPlanetNum: 3
+    forceTalkOnArrival: false
 platforms:
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1474,6 +1488,7 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_1
+        remainsOnAfterPressed: false
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1574,7 +1589,7 @@ platforms:
     height: 2.3078227
     facingYaw: -0.85060734
     scale:
-      - 2.4785843
+      - 1.1776116
       - 2.9901476
       - 3.2790415
     modelPath: platform.obj
@@ -1584,8 +1599,8 @@ platforms:
       - -2.9802322e-08
     pos:
       - 3.76
-      - 2.14
-      - -0.98
+      - 1.04
+      - -0.01
     rotation:
       - -2.9541619e-08
       - 0.8506076
@@ -1614,9 +1629,9 @@ platforms:
       - -3.576278e-07
       - -8.940695e-08
     pos:
-      - 6.68
-      - 2.86
-      - 0.12
+      - 7.64
+      - 2.6
+      - -2.4
     rotation:
       - -1.1008687e-07
       - -0.72852767
@@ -1652,9 +1667,9 @@ platforms:
       - -3.5762787e-07
       - -8.940697e-08
     pos:
-      - 6.68
-      - 1.21
-      - -1.7
+      - 7.66
+      - 1.18
+      - -3.96
     rotation:
       - -8.9444114e-08
       - -0.7339227
@@ -1689,8 +1704,8 @@ platforms:
       - 0
     pos:
       - 1.84
-      - -4.73
-      - 0.38
+      - -4.6
+      - 0.27
     rotation:
       - 6.689822e-09
       - 0.7851746
@@ -1802,6 +1817,7 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_11
+        remainsOnAfterPressed: false
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -1927,6 +1943,7 @@ platforms:
       - -0.2917504
       - 0.6441132
     platformId: platform_16
+    affectsGravityDirection: false
   - currentPlanetNum: 3
     theta: 0.5492466
     phi: 0.30622298
@@ -1942,9 +1959,9 @@ platforms:
       - -3.576278e-07
       - -8.940695e-08
     pos:
-      - 6.96
-      - 2.58
-      - 4.26
+      - 8.21
+      - 2.29
+      - 3.93
     rotation:
       - -1.1008687e-07
       - -0.72852767
@@ -1980,9 +1997,9 @@ platforms:
       - -3.5762787e-07
       - -8.940697e-08
     pos:
-      - 6.92
-      - 1.09
-      - 2.61
+      - 9.2
+      - 0.55
+      - 5.58
     rotation:
       - -8.9444114e-08
       - -0.7339227
@@ -2001,6 +2018,428 @@ platforms:
       latchedGroupSwitch:
         groupId: stage1_planet2
         targets: []
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.6499327
+      - 3.9134552
+      - 1.7202996
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 4.89
+      - 4.16
+      - -0.66
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_19
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.6499327
+      - 2.9901476
+      - 1.7202994
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 4.75
+      - 2.02
+      - -3.17
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_20
+  - currentPlanetNum: 0
+    theta: -0.28730252
+    phi: 0.12781243
+    height: 5.0965357
+    facingYaw: 0.7339227
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.5762787e-07
+      - -8.940697e-08
+    pos:
+      - 6.68
+      - 2.59
+      - 1.79
+    rotation:
+      - -8.9444114e-08
+      - -0.7339227
+      - -3.487566e-07
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_21
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.6600288
+      - 0.25369638
+      - 0.25369623
+      - 0.66002905
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_22
+          - platform_23
+          - platform_24
+          - platform_25
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 2.4387145
+    scale:
+      - 0.51021504
+      - 0.29901484
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.99983
+      - 0.014071824
+      - -0.011923702
+    pos:
+      - 7.53
+      - 3.2
+      - -4.24
+    rotation:
+      - -3.125965
+      - -0.7028181
+      - -0.024174964
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.2411934
+      - -0.6577261
+      - 0.6699714
+      - -0.24568368
+    platformId: platform_22
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -2.438845
+    scale:
+      - 0.51021504
+      - 0.29901484
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.99956554
+      - -0.022487164
+      - 0.019054621
+    pos:
+      - 2.09
+      - 5.3
+      - -5.99
+    rotation:
+      - 3.1166222
+      - 0.70259434
+      - 3.1029615
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - 0.24701056
+      - 0.6735897
+      - 0.65402
+      - -0.23983434
+    platformId: platform_23
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 2.4387074
+    scale:
+      - 0.51021504
+      - 0.29901484
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.99984455
+      - 0.013454199
+      - -0.011400163
+    pos:
+      - 2.2
+      - 5.27
+      - -5.96
+    rotation:
+      - -3.1266513
+      - -0.70283055
+      - -0.023113726
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.2412929
+      - -0.6579973
+      - 0.66970503
+      - -0.24558596
+    platformId: platform_24
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 0.6858318
+    scale:
+      - 0.51021504
+      - 0.29901484
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.99978936
+      - 0.01565963
+      - -0.013269603
+    pos:
+      - -3.2
+      - 5.1
+      - -6.12
+    rotation:
+      - -0.0171464
+      - -0.68575966
+      - -3.1150723
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - 0.67268246
+      - -0.24033244
+      - -0.23521927
+      - -0.65909827
+    platformId: platform_25
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
+    scale:
+      - 1.24
+      - 2.99
+      - 1.42
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 5.32
+      - 2.4
+      - 3.87
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_26
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
+    scale:
+      - 1.24
+      - 2.99
+      - 1.42
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 6.32
+      - 0.52
+      - 5.52
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_27
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
+    scale:
+      - 1.24
+      - 2.99
+      - 1.4577267
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 7.34
+      - -1.37
+      - 3.37
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_28
+    affectsGravityDirection: false
+  - currentPlanetNum: 3
+    theta: 0.5492466
+    phi: 0.30622298
+    height: 5.315322
+    facingYaw: 0.7285277
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.576278e-07
+      - -8.940695e-08
+    pos:
+      - 6.94
+      - 0.44
+      - 1.86
+    rotation:
+      - -1.1008687e-07
+      - -0.72852767
+      - -2.1318682e-07
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_29
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.6607108
+      - 0.251915
+      - 0.2519149
+      - 0.660711
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_30
+          - platform_31
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: -0.7851746
+    scale:
+      - 0.3089877
+      - 0.44090968
+      - 0.2576997
+    modelPath: curvePlatform.obj
+    upVec:
+      - 1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - 2.08
+      - -4
+      - 0.87
+    rotation:
+      - 6.689822e-09
+      - 0.7851746
+      - -6.174248e-08
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.6533117
+      - -0.27052504
+      - -0.270525
+      - 0.6533118
+    platformId: platform_30
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: 0.81265366
+    scale:
+      - 0.3089877
+      - 0.39799264
+      - 0.22065791
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.999503
+      - -0.022295475
+      - -0.022285432
+    pos:
+      - 10.01
+      - -2.48
+      - 2.4
+    rotation:
+      - -0.032408442
+      - -0.81239134
+      - -3.0957594
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6390611
+      - 0.2754001
+      - -0.28364265
+      - 0.6597746
+    platformId: platform_31
 stageObjects: []
 tutorialTriggers:
   - currentPlanetNum: 0
@@ -2615,6 +3054,7 @@ tutorialTriggers:
       - 0.6470887
       - 0.64708847
       - 0.28509012
+    debugDisabled: true
 boatArrivalPoints:
   - currentPlanetNum: 3
     theta: 1.1879112
@@ -2631,13 +3071,16 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - 1.51
-      - -6.22
-      - 2.15
+      - 2.95
+      - -6.69
+      - 2.31
     upVec:
       - 0.9630306
       - -0.22487189
       - 0.14834075
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 1
     theta: 3.1011112
     phi: -0.39845797
@@ -2660,6 +3103,9 @@ boatArrivalPoints:
       - -0.9989821
       - -0.04492308
       - 0.0040987986
+    textureTiling:
+      - 1
+      - 1
   - currentPlanetNum: 2
     theta: 0.4346397
     phi: 0.39371797
@@ -2682,3 +3128,6 @@ boatArrivalPoints:
       - 0.9992327
       - 0.027687289
       - 0.027704984
+    textureTiling:
+      - 1
+      - 1

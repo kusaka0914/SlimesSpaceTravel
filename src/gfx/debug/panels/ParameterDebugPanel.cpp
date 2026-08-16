@@ -1085,6 +1085,9 @@ void ParameterDebugPanel::DrawEnemyPresets()
         mEnemyPresetDisplayNameBuffer.data(),
         mEnemyPresetDisplayNameBuffer.size());
     ImGui::Checkbox("ボスとして扱う", &mEditedEnemyPreset.isBoss);
+    ImGui::Checkbox(
+        "通常攻撃でノックバックする",
+        &mEditedEnemyPreset.isNormalHitKnockBackEnabled);
     ImGui::TextDisabled(
         "移動と追跡は共通動作です。攻撃構成だけをプリセットごとに保存します。");
     ImGui::DragFloat(

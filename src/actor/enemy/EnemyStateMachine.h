@@ -1,5 +1,7 @@
 #pragma once
 
+#include "actor/enemy/EnemyAttackGeometry.h"
+
 #include <random>
 
 class Enemy;
@@ -22,6 +24,7 @@ public:
         PostAttackRetreatDelay,
         PostAttackRetreat,
         PostRetreatRecovery,
+        Launched,
         KnockedBack,
     };
 
@@ -59,6 +62,7 @@ public:
     void StartPreparingAttack(Enemy& enemy, EnemyStatus& status);
     void StartAttacking(Enemy& enemy, EnemyStatus& status);
     bool TryStartPostAttackRetreat(Enemy& enemy, const EnemyStatus& status);
+    void StartLaunched(Enemy& enemy);
     void StartKnockedBack(Enemy& enemy, EnemyStatus& status, float knockBackTimer);
     void StartDying(Enemy& enemy, EnemyStatus& status);
 
@@ -80,6 +84,10 @@ public:
     bool IsAlive() const { return mLifeState == LifeState::Alive; }
     bool IsDead() const { return mLifeState == LifeState::Dead; }
     bool IsAlive(const Enemy& enemy) const;
+    const EnemyAttackFrame& GetActiveAttackFrame() const
+    {
+        return mActiveAttackFrame;
+    }
 
 private:
     bool ShouldTriggerProbability(float probabilityPercent);
@@ -100,5 +108,6 @@ private:
     float mPostRetreatFollowupApproachProbabilityPercent = 0.0f;
     bool mHasEvaluatedPreAttackApproach = false;
     bool mShouldPreservePreparationTimer = false;
+    EnemyAttackFrame mActiveAttackFrame;
     std::mt19937 mManeuverRandomEngine;
 };

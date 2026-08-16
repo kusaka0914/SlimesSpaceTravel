@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
+#include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
 #include "system/physics/EditorPickSystem.h"
 #include "system/physics/FallRespawnTriggerSystem.h"
@@ -12,7 +13,131 @@
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h>
+#include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
+#include <BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h>
+#include <cmath>
+#include <glm/gtc/quaternion.hpp>
 #include <memory>
+
+namespace {
+constexpr float minimumModelHalfExtent = 0.001f;
+
+btTransform CreateActorCollisionTransform(
+    const Actor& actor,
+    const glm::vec3& collisionCenter)
+{
+    const glm::quat& orientation = actor.GetOrientation();
+
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(
+        btVector3(
+            collisionCenter.x,
+            collisionCenter.y,
+            collisionCenter.z));
+    transform.setRotation(
+        btQuaternion(
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w));
+    return transform;
+}
+
+btTransform CreateModelBoundsTransform(
+    const Actor& actor,
+    const glm::vec3& actorPosition,
+    const glm::vec3& scaledLocalBoundsCenter)
+{
+    glm::vec3 modelForwardAxis =
+        -actor.GetForwardVec();
+    glm::vec3 modelUpAxis =
+        actor.GetUpVec();
+    glm::vec3 modelLateralAxis =
+        actor.GetLeftVec();
+    if (glm::length(modelForwardAxis) <= 0.000001f ||
+        glm::length(modelUpAxis) <= 0.000001f ||
+        glm::length(modelLateralAxis) <= 0.000001f) {
+        return CreateActorCollisionTransform(
+            actor,
+            actorPosition);
+    }
+
+    modelForwardAxis = glm::normalize(modelForwardAxis);
+    modelUpAxis = glm::normalize(modelUpAxis);
+    modelLateralAxis = glm::normalize(modelLateralAxis);
+
+    // Rendering mirrors the model Z axis in addition to rotating its axes.
+    // A box is symmetric around its center, so the equivalent proper rotation
+    // uses +left for the box axis and applies the mirror only to the center.
+    const glm::vec3 correctedLocalBoundsCenter(
+        scaledLocalBoundsCenter.x,
+        scaledLocalBoundsCenter.y,
+        -scaledLocalBoundsCenter.z);
+    const glm::vec3 worldBoundsCenter =
+        actorPosition +
+        modelForwardAxis * correctedLocalBoundsCenter.x +
+        modelUpAxis * correctedLocalBoundsCenter.y +
+        modelLateralAxis * correctedLocalBoundsCenter.z;
+
+    glm::mat3 modelBoundsOrientation(1.0f);
+    modelBoundsOrientation[0] = modelForwardAxis;
+    modelBoundsOrientation[1] = modelUpAxis;
+    modelBoundsOrientation[2] = modelLateralAxis;
+    const glm::quat orientation =
+        glm::normalize(
+            glm::quat_cast(modelBoundsOrientation));
+
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(
+        btVector3(
+            worldBoundsCenter.x,
+            worldBoundsCenter.y,
+            worldBoundsCenter.z));
+    transform.setRotation(
+        btQuaternion(
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w));
+    return transform;
+}
+
+class AnyCollisionContactCallback final
+    : public btCollisionWorld::ContactResultCallback {
+public:
+    btScalar addSingleResult(
+        btManifoldPoint& contactPoint,
+        const btCollisionObjectWrapper* object0Wrapper,
+        int partId0,
+        int triangleIndex0,
+        const btCollisionObjectWrapper* object1Wrapper,
+        int partId1,
+        int triangleIndex1) override
+    {
+        (void)object0Wrapper;
+        (void)partId0;
+        (void)triangleIndex0;
+        (void)object1Wrapper;
+        (void)partId1;
+        (void)triangleIndex1;
+
+        constexpr float contactDistanceTolerance = 0.001f;
+        if (contactPoint.getDistance() <=
+            contactDistanceTolerance) {
+            mHasContact = true;
+        }
+        return 0.0f;
+    }
+
+    bool HasContact() const { return mHasContact; }
+
+private:
+    bool mHasContact = false;
+};
+} // namespace
 
 PhysicsSystem::PhysicsSystem(Game* game)
     : mGame(game)
@@ -302,6 +427,126 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep
         from,
         to,
         mFallRespawnTriggerObjects);
+}
+
+bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
+    const Actor& movingActor,
+    const glm::vec3& movementStart,
+    const Actor& targetActor) const
+{
+    const LoadedModel* movingModel =
+        movingActor.GetLoadedModel();
+    if (!mBulletWorld ||
+        !mPlayerShape ||
+        !movingModel ||
+        !movingModel->hasBounds) {
+        return false;
+    }
+
+    const glm::vec3 movingScale =
+        glm::abs(movingActor.GetScale());
+    const glm::vec3 localBoundsSize =
+        movingModel->boundsMaximum -
+        movingModel->boundsMinimum;
+    const glm::vec3 scaledHalfExtents =
+        glm::max(
+            localBoundsSize * movingScale * 0.5f,
+            glm::vec3(minimumModelHalfExtent));
+    const glm::vec3 scaledLocalBoundsCenter =
+        (movingModel->boundsMinimum +
+         movingModel->boundsMaximum) *
+        0.5f * movingActor.GetScale();
+
+    btBoxShape movingModelShape(
+        btVector3(
+            scaledHalfExtents.x,
+            scaledHalfExtents.y,
+            scaledHalfExtents.z));
+    movingModelShape.setMargin(0.0f);
+
+    const float targetCollisionScale =
+        targetActor.GetCollisionScaleMultiplier();
+    btUniformScalingShape targetCollisionShape(
+        mPlayerShape.get(),
+        targetCollisionScale);
+
+    const btTransform movingFromTransform =
+        CreateModelBoundsTransform(
+            movingActor,
+            movementStart,
+            scaledLocalBoundsCenter);
+    const btTransform movingToTransform =
+        CreateModelBoundsTransform(
+            movingActor,
+            movingActor.GetPos(),
+            scaledLocalBoundsCenter);
+
+    glm::vec3 targetUpDirection =
+        targetActor.GetUpVec();
+    const float targetUpLengthSquared =
+        glm::dot(
+            targetUpDirection,
+            targetUpDirection);
+    if (targetUpLengthSquared <= 0.000001f) {
+        targetUpDirection =
+            glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        targetUpDirection /=
+            std::sqrt(targetUpLengthSquared);
+    }
+    const glm::vec3 targetCollisionCenter =
+        targetActor.GetPos() +
+        targetUpDirection *
+            mPlayerCollisionCenterHeight *
+            targetCollisionScale;
+    const btTransform targetTransform =
+        CreateActorCollisionTransform(
+            targetActor,
+            targetCollisionCenter);
+
+    btCollisionObject movingCollisionObject;
+    movingCollisionObject.setCollisionShape(
+        &movingModelShape);
+    movingCollisionObject.setWorldTransform(
+        movingToTransform);
+
+    btCollisionObject targetCollisionObject;
+    targetCollisionObject.setCollisionShape(
+        &targetCollisionShape);
+    targetCollisionObject.setWorldTransform(
+        targetTransform);
+
+    AnyCollisionContactCallback contactCallback;
+    mBulletWorld->contactPairTest(
+        &movingCollisionObject,
+        &targetCollisionObject,
+        contactCallback);
+    if (contactCallback.HasContact()) {
+        return true;
+    }
+
+    const btVector3 movementDelta =
+        movingToTransform.getOrigin() -
+        movingFromTransform.getOrigin();
+    if (movementDelta.length2() <= 0.000001f) {
+        return false;
+    }
+
+    btVoronoiSimplexSolver simplexSolver;
+    btGjkEpaPenetrationDepthSolver penetrationDepthSolver;
+    btContinuousConvexCollision collisionCast(
+        &movingModelShape,
+        &targetCollisionShape,
+        &simplexSolver,
+        &penetrationDepthSolver);
+    btConvexCast::CastResult castResult;
+    castResult.m_allowedPenetration = 0.0f;
+    return collisionCast.calcTimeOfImpact(
+        movingFromTransform,
+        movingToTransform,
+        targetTransform,
+        targetTransform,
+        castResult);
 }
 
 ActorMovementCollisionResult PhysicsSystem::ResolveMovementCollision(

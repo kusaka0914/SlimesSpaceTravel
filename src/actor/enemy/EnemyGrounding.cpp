@@ -16,7 +16,8 @@
 // Keeps enemies from walking past valid ground on curved stages or small platforms.
 glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3& desiredPos) const
 {
-    const glm::vec3 move = desiredPos - enemy.GetPos();
+    const glm::vec3 currentPos = enemy.GetPos();
+    const glm::vec3 move = desiredPos - currentPos;
     const float moveLength = glm::length(move);
 
     if (moveLength < 1e-6f) {
@@ -25,17 +26,42 @@ glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3&
 
     constexpr float checkStep = 0.25f;
     const int checkCount = std::max(1, static_cast<int>(std::ceil(moveLength / checkStep)));
-    glm::vec3 lastSafePos = enemy.GetPos();
+    float lastSafeRatio = 0.0f;
 
     for (int i = 1; i <= checkCount; ++i) {
-        const float t = static_cast<float>(i) / static_cast<float>(checkCount);
-        const glm::vec3 checkPos = glm::mix(enemy.GetPos(), desiredPos, t);
+        const float checkRatio =
+            static_cast<float>(i) /
+            static_cast<float>(checkCount);
+        const glm::vec3 checkPos =
+            glm::mix(currentPos, desiredPos, checkRatio);
 
         if (!HasGroundBelow(enemy, checkPos)) {
-            return lastSafePos;
+            // A fast attack can cross an edge within one frame. Returning the
+            // previous sample would cancel that entire frame and make the
+            // enemy appear frozen, so find the last supported position inside
+            // this sample interval instead.
+            float safeRatio = lastSafeRatio;
+            float unsupportedRatio = checkRatio;
+            constexpr int edgeSearchIterations = 10;
+            for (int iteration = 0;
+                 iteration < edgeSearchIterations;
+                 ++iteration) {
+                const float middleRatio =
+                    (safeRatio + unsupportedRatio) * 0.5f;
+                const glm::vec3 middlePos =
+                    glm::mix(currentPos, desiredPos, middleRatio);
+
+                if (HasGroundBelow(enemy, middlePos)) {
+                    safeRatio = middleRatio;
+                } else {
+                    unsupportedRatio = middleRatio;
+                }
+            }
+
+            return glm::mix(currentPos, desiredPos, safeRatio);
         }
 
-        lastSafePos = checkPos;
+        lastSafeRatio = checkRatio;
     }
 
     return desiredPos;

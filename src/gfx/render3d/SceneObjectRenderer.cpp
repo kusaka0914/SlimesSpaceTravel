@@ -82,7 +82,11 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
             continue;
         }
 
-        mRenderer->TryDrawActors(planet->GetEnemies(), true);
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (mRenderer->IsActorInsideView(enemy)) {
+                mRenderer->TryDrawActor(enemy, true);
+            }
+        }
 
         mRenderer->TryDrawActors(planet->GetBoats());
         mRenderer->TryDrawActors(planet->GetBoatParts());

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "actor/player/PlanetGravityCandidateSelector.h"
-
 #include <glm/glm.hpp>
 
 class Actor;
@@ -14,7 +12,12 @@ class PlayerPlanetGravityController {
 public:
     void Update(Player& player, PlayerMovement& movement, float deltaTime);
 
-    void OnJumpStarted(const Player& player);
+    void OnJumpStarted(
+        Player& player,
+        PlayerMovement& movement);
+
+    void RestartFallbackDelayForAirborneAction(
+        const Player& player);
 
     void OnGroundRayCastSucceeded();
 
@@ -31,8 +34,6 @@ public:
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
 
 private:
-    bool ShouldSwitchPlanet(const Player& player, const PlanetDistanceCandidate& candidate) const;
-
     void SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet);
 
     void ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const;
@@ -59,16 +60,13 @@ private:
         float deltaTime);
 
     Planet* ResolvePlanetFromGroundActor(Actor* groundActor) const;
+    Planet* ResolveFallbackPlanet(const Player& player) const;
 
     int FindPlanetIndex(const Stage& stage, const Planet* planet) const;
 
 private:
     // 惑星間の境界付近で判定が細かく反転するのを防ぐ。
-    static constexpr float switchDistanceMargin = 0.3f;
-
     // 接地Actorから惑星を特定できなかった場合の補助検索距離。
-    static constexpr float landedPlanetSearchDistance = 2.0f;
-
     // 新しい惑星方向へ向きを変える速さ。
     // 2.0f: ゆっくり
     // 3.0f: ふわっと自然
@@ -85,7 +83,6 @@ private:
     static constexpr float fallbackDelay = 2.0f;
 
     bool mIsJumpSwitchingActive = false;
-    bool mIsPlanetTransferGravityActive = false;
     bool mIsOverheadGravityRayActive = false;
     bool mGroundRayHitThisFrame = false;
     bool mFallbackAppliedThisJump = false;
@@ -93,6 +90,7 @@ private:
     float mNoGroundRayDuration = 0.0f;
     float mEllipseJumpStartSurfaceDistance = 0.0f;
     bool mUseEllipseSurfaceGravity = false;
+    Planet* mLastLandedPlanet = nullptr;
     glm::vec3 mOverheadGravityUpDirection{0.0f, 1.0f, 0.0f};
 
     // Actor::UpdateUpVecによる毎フレームの書き換えに影響されないよう、
@@ -100,5 +98,4 @@ private:
     bool mSmoothedUpInitialized = false;
     glm::vec3 mSmoothedUpVec{0.0f, 1.0f, 0.0f};
 
-    PlanetGravityCandidateSelector mCandidateSelector;
 };

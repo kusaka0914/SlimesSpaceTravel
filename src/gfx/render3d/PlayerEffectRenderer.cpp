@@ -5,6 +5,7 @@
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyAttackGeometry.h"
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
@@ -196,12 +197,27 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
 
 void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat) const
 {
-    if (!mRenderer || !enemy || !enemy->GetIsActive()) {
+    if (!mRenderer ||
+        !enemy ||
+        !enemy->GetIsActive() ||
+        !mRenderer->IsActorInsideView(enemy)) {
         return;
     }
 
-    DrawEnemyGuard(viewMat, enemy);
-    DrawEnemyHp(viewMat, enemy);
+    Game* game = mRenderer->GetGame();
+    const Player* controlledPlayer =
+        game ? game->GetControlledPlayer() : nullptr;
+    const Planet* playerPlanet =
+        controlledPlayer
+            ? controlledPlayer->GetCurrentPlanet()
+            : nullptr;
+    const bool isEnemyOnPlayerPlanet =
+        playerPlanet &&
+        enemy->GetCurrentPlanet() == playerPlanet;
+    if (isEnemyOnPlayerPlanet) {
+        DrawEnemyGuard(viewMat, enemy);
+        DrawEnemyHp(viewMat, enemy);
+    }
 
     if (enemy->IsAlive() &&
         enemy->ShouldDrawAttackPreview() &&
@@ -324,11 +340,13 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
         return;
     }
 
+    const EnemyAttackFrame attackFrame =
+        ResolveEnemyAttackFrame(*enemy);
     DrawFanAttackRange(
-        enemy->GetPos(),
-        glm::normalize(enemy->GetUpVec()),
-        glm::normalize(enemy->GetFacingForwardVec()),
-        glm::normalize(enemy->GetLeftVec()),
+        attackFrame.origin,
+        attackFrame.up,
+        attackFrame.forward,
+        attackFrame.left,
         range,
         angleRadians,
         0.56f);
@@ -391,53 +409,82 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
         return;
     }
 
-    const glm::vec3 center = enemy->GetPos();
-    const glm::vec3 up = enemy->GetUpVec();
-    const glm::vec3 forward = glm::normalize(enemy->GetFacingForwardVec());
-    const glm::vec3 left = glm::normalize(enemy->GetLeftVec());
-    const float enemyRadius = enemy->GetRadius() * enemy->GetScale().x;
-    const glm::vec3 start = center + forward * enemy->GetRadius();
-    const glm::vec3 end = start + forward * enemyAttackRange;
-
-    std::vector<glm::vec3> fanVertices;
-    fanVertices.reserve(4);
+    const EnemyAttackFrame attackFrame =
+        ResolveEnemyAttackFrame(*enemy);
+    const EnemyMeleeAttackPreviewArea previewArea =
+        CalculateEnemyMeleeAttackPreviewArea(*enemy);
+    if (previewArea.forwardLength <= 0.0f ||
+        previewArea.halfWidth <= 0.0f) {
+        return;
+    }
 
     constexpr float yOffset = 0.56f;
-
-    fanVertices.emplace_back(start + left * enemyRadius + up * yOffset);
-    fanVertices.emplace_back(start + -left * enemyRadius + up * yOffset);
-    fanVertices.emplace_back(end + left * enemyRadius + up * yOffset);
-    fanVertices.emplace_back(end + -left * enemyRadius + up * yOffset);
-
-    mRenderer->DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
-
-    std::vector<glm::vec3> leftEdgeVertices;
     constexpr float thickness = 0.08f;
+    const glm::vec3 start =
+        attackFrame.origin +
+        attackFrame.up * yOffset;
+    const glm::vec3 end =
+        start +
+        attackFrame.forward *
+            previewArea.forwardLength;
+    const float innerHalfWidth =
+        std::max(
+            0.0f,
+            previewArea.halfWidth - thickness);
 
-    leftEdgeVertices.emplace_back(start + left * enemyRadius + up * yOffset);
-    leftEdgeVertices.emplace_back(start + left * (enemyRadius - thickness) + up * yOffset);
-    leftEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
-    leftEdgeVertices.emplace_back(end + left * (enemyRadius - thickness) + up * yOffset);
+    const std::vector<glm::vec3> fillVertices{
+        start + attackFrame.left * previewArea.halfWidth,
+        start - attackFrame.left * previewArea.halfWidth,
+        end + attackFrame.left * previewArea.halfWidth,
+        end - attackFrame.left * previewArea.halfWidth};
+    mRenderer->DrawAttackRangeVertices(
+        fillVertices,
+        GL_TRIANGLE_STRIP,
+        glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
 
-    mRenderer->DrawAttackRangeVertices(leftEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    const std::vector<glm::vec3> leftEdgeVertices{
+        start + attackFrame.left * previewArea.halfWidth,
+        start + attackFrame.left * innerHalfWidth,
+        end + attackFrame.left * previewArea.halfWidth,
+        end + attackFrame.left * innerHalfWidth};
+    mRenderer->DrawAttackRangeVertices(
+        leftEdgeVertices,
+        GL_TRIANGLE_STRIP,
+        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 
-    std::vector<glm::vec3> rightEdgeVertices;
+    const std::vector<glm::vec3> rightEdgeVertices{
+        start - attackFrame.left * previewArea.halfWidth,
+        start - attackFrame.left * innerHalfWidth,
+        end - attackFrame.left * previewArea.halfWidth,
+        end - attackFrame.left * innerHalfWidth};
+    mRenderer->DrawAttackRangeVertices(
+        rightEdgeVertices,
+        GL_TRIANGLE_STRIP,
+        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 
-    rightEdgeVertices.emplace_back(start - left * enemyRadius + up * yOffset);
-    rightEdgeVertices.emplace_back(start - left * (enemyRadius - thickness) + up * yOffset);
-    rightEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
-    rightEdgeVertices.emplace_back(end - left * (enemyRadius - thickness) + up * yOffset);
+    const glm::vec3 innerStart =
+        start + attackFrame.forward * thickness;
+    const std::vector<glm::vec3> startEdgeVertices{
+        start + attackFrame.left * previewArea.halfWidth,
+        start - attackFrame.left * previewArea.halfWidth,
+        innerStart + attackFrame.left * previewArea.halfWidth,
+        innerStart - attackFrame.left * previewArea.halfWidth};
+    mRenderer->DrawAttackRangeVertices(
+        startEdgeVertices,
+        GL_TRIANGLE_STRIP,
+        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 
-    mRenderer->DrawAttackRangeVertices(rightEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
-
-    std::vector<glm::vec3> frontEdgeVertices;
-
-    frontEdgeVertices.emplace_back(end + left * enemyRadius + up * yOffset);
-    frontEdgeVertices.emplace_back(end - forward * thickness + left * enemyRadius + up * yOffset);
-    frontEdgeVertices.emplace_back(end - left * enemyRadius + up * yOffset);
-    frontEdgeVertices.emplace_back(end - forward * thickness - left * enemyRadius + up * yOffset);
-
-    mRenderer->DrawAttackRangeVertices(frontEdgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    const glm::vec3 innerEnd =
+        end - attackFrame.forward * thickness;
+    const std::vector<glm::vec3> endEdgeVertices{
+        end + attackFrame.left * previewArea.halfWidth,
+        innerEnd + attackFrame.left * previewArea.halfWidth,
+        end - attackFrame.left * previewArea.halfWidth,
+        innerEnd - attackFrame.left * previewArea.halfWidth};
+    mRenderer->DrawAttackRangeVertices(
+        endEdgeVertices,
+        GL_TRIANGLE_STRIP,
+        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
 }
 
 void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const

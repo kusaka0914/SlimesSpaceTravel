@@ -250,7 +250,7 @@ void PlatformFadeOnStandComponent::Update(float deltaTime)
 
     const float safeDeltaTime = std::max(0.0f, deltaTime);
 
-    if (mWaitingToReappear) {
+    if (mFadePhase == FadePhase::WaitingToReappear) {
         mHiddenTimer += safeDeltaTime;
         mOpacity = 0.0f;
         mCollisionEnabled = false;
@@ -261,7 +261,7 @@ void PlatformFadeOnStandComponent::Update(float deltaTime)
             return;
         }
 
-        mWaitingToReappear = false;
+        mFadePhase = FadePhase::Visible;
         mHiddenTimer = 0.0f;
         mOpacity = 1.0f;
         mCollisionEnabled = true;
@@ -270,8 +270,12 @@ void PlatformFadeOnStandComponent::Update(float deltaTime)
         return;
     }
 
-    const bool occupied = FindPlayerOnPlatform(mPlatform) != nullptr;
-    if (occupied) {
+    if (mFadePhase == FadePhase::Visible &&
+        FindPlayerOnPlatform(mPlatform)) {
+        mFadePhase = FadePhase::FadingOut;
+    }
+
+    if (mFadePhase == FadePhase::FadingOut) {
         const float step =
             safeDeltaTime / std::max(0.05f, mFadeOutDuration);
         mOpacity = glm::clamp(mOpacity - step, 0.0f, 1.0f);
@@ -280,10 +284,11 @@ void PlatformFadeOnStandComponent::Update(float deltaTime)
         mCollisionEnabled = true;
     }
 
-    if (occupied && mOpacity <= 0.001f) {
+    if (mFadePhase == FadePhase::FadingOut &&
+        mOpacity <= 0.001f) {
         mOpacity = 0.0f;
         mCollisionEnabled = false;
-        mWaitingToReappear = true;
+        mFadePhase = FadePhase::WaitingToReappear;
         mHiddenTimer = 0.0f;
     }
 
@@ -629,6 +634,9 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     if (hasCurrentContact) {
         mContactGraceRemainingSeconds =
             pressureSwitchContactReleaseGraceSeconds;
+        if (mShouldRemainOnAfterPressed) {
+            mHasLatchedOn = true;
+        }
     } else {
         mContactGraceRemainingSeconds =
             std::max(
@@ -638,7 +646,7 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     }
 
     const bool isPressed =
-        hasCurrentContact ||
+        mHasLatchedOn || hasCurrentContact ||
         mContactGraceRemainingSeconds > 0.0f;
     if (isPressed != mIsPressed) {
         mIsPressed = isPressed;
@@ -672,7 +680,10 @@ void PlatformPressureSwitchComponent::SetTargetPlatformIds(
     const bool hasCurrentContact =
         !IsEditorPreview(mPlatform) &&
         FindPlayerPressingPlatform(mPlatform) != nullptr;
-    mIsPressed = hasCurrentContact;
+    if (hasCurrentContact && mShouldRemainOnAfterPressed) {
+        mHasLatchedOn = true;
+    }
+    mIsPressed = mHasLatchedOn || hasCurrentContact;
     mContactGraceRemainingSeconds =
         hasCurrentContact
             ? pressureSwitchContactReleaseGraceSeconds
@@ -680,9 +691,61 @@ void PlatformPressureSwitchComponent::SetTargetPlatformIds(
     ApplyTargetState();
 }
 
+void PlatformPressureSwitchComponent::SetTargetEnemyRefs(
+    const std::vector<PlatformRevealTarget>& targetEnemyRefs)
+{
+    ClearTargetRuntimeStates();
+    mTargetEnemyRefs.clear();
+
+    for (const PlatformRevealTarget& target : targetEnemyRefs) {
+        if (!target.IsValid()) {
+            continue;
+        }
+
+        const bool isDuplicate = std::any_of(
+            mTargetEnemyRefs.begin(),
+            mTargetEnemyRefs.end(),
+            [&target](const PlatformRevealTarget& current) {
+                return current.sequenceName == target.sequenceName &&
+                       current.yamlIndex == target.yamlIndex;
+            });
+        if (!isDuplicate) {
+            mTargetEnemyRefs.emplace_back(target);
+        }
+    }
+
+    ApplyTargetState();
+}
+
 void PlatformPressureSwitchComponent::SetInactiveOpacity(float opacity)
 {
     mInactiveOpacity = glm::clamp(opacity, 0.0f, 1.0f);
+    ApplyTargetState();
+}
+
+void PlatformPressureSwitchComponent::SetShouldRemainOnAfterPressed(
+    bool shouldRemainOnAfterPressed)
+{
+    if (mShouldRemainOnAfterPressed == shouldRemainOnAfterPressed) {
+        return;
+    }
+
+    mShouldRemainOnAfterPressed = shouldRemainOnAfterPressed;
+    if (!mShouldRemainOnAfterPressed) {
+        mHasLatchedOn = false;
+    }
+
+    const bool hasCurrentContact =
+        mPlatform && !IsEditorPreview(mPlatform) &&
+        FindPlayerPressingPlatform(mPlatform) != nullptr;
+    if (hasCurrentContact && mShouldRemainOnAfterPressed) {
+        mHasLatchedOn = true;
+    }
+    mIsPressed = mHasLatchedOn || hasCurrentContact;
+    mContactGraceRemainingSeconds =
+        hasCurrentContact
+            ? pressureSwitchContactReleaseGraceSeconds
+            : 0.0f;
     ApplyTargetState();
 }
 
@@ -709,6 +772,22 @@ Platform* PlatformPressureSwitchComponent::FindTargetPlatform(
     return nullptr;
 }
 
+Actor* PlatformPressureSwitchComponent::FindTargetActor(
+    const PlatformRevealTarget& target) const
+{
+    if (!mPlatform || !target.IsValid() ||
+        !mPlatform->GetGame() ||
+        !mPlatform->GetGame()->GetActorLoadSystem()) {
+        return nullptr;
+    }
+
+    return mPlatform->GetGame()
+        ->GetActorLoadSystem()
+        ->FindPlacedActor(
+            target.sequenceName,
+            target.yamlIndex);
+}
+
 void PlatformPressureSwitchComponent::ApplyTargetState()
 {
     for (const std::string& platformId : mTargetPlatformIds) {
@@ -719,6 +798,17 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
             mIsPressed ? 1.0f : mInactiveOpacity);
         target->SetComponentCollisionEnabled(this, mIsPressed);
     }
+
+    for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
+        Actor* targetActor = FindTargetActor(targetRef);
+        if (!dynamic_cast<Enemy*>(targetActor)) {
+            continue;
+        }
+
+        // Enemy targets are intentionally not faded. Runtime deactivation
+        // removes them from rendering, updates, targeting, and collisions.
+        targetActor->SetRuntimeActivationEnabled(this, mIsPressed);
+    }
 }
 
 void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
@@ -727,6 +817,13 @@ void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
         Platform* target = FindTargetPlatform(platformId);
         if (target) {
             target->ClearComponentRuntimeState(this);
+        }
+    }
+
+    for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
+        Actor* targetActor = FindTargetActor(targetRef);
+        if (targetActor) {
+            targetActor->ClearRuntimeActivationState(this);
         }
     }
 }

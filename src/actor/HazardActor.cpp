@@ -8,6 +8,11 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+namespace {
+constexpr float kMinimumTriggerHalfExtent = 0.0001f;
+}
 
 HazardActor::HazardActor(Game* game)
     : Actor(game)
@@ -26,6 +31,14 @@ void HazardActor::SetTriggerRadius(float triggerRadius)
 {
     mTriggerRadius = std::max(0.01f, triggerRadius);
     SetRadius(mTriggerRadius);
+}
+
+glm::vec3 HazardActor::CalculateScaledTriggerHalfExtents() const
+{
+    const glm::vec3 absoluteScale = glm::abs(GetScale());
+    return glm::max(
+        absoluteScale * mTriggerRadius,
+        glm::vec3(kMinimumTriggerHalfExtent));
 }
 
 void HazardActor::SetDamageIntervalSeconds(
@@ -120,12 +133,17 @@ bool HazardActor::IsPlayerTouching(const Player& player) const
               player.GetCollisionScaleMultiplier()
         : std::max(0.1f, player.GetRadius());
 
-    const float contactDistance =
-        mTriggerRadius + playerRadius;
-    const glm::vec3 playerOffset =
+    const glm::vec3 worldPlayerOffset =
         player.GetPos() - GetPos();
-    return glm::dot(playerOffset, playerOffset) <=
-           contactDistance * contactDistance;
+    const glm::vec3 localPlayerOffset =
+        glm::inverse(GetOrientation()) * worldPlayerOffset;
+    const glm::vec3 contactHalfExtents =
+        CalculateScaledTriggerHalfExtents() +
+        glm::vec3(playerRadius);
+    const glm::vec3 normalizedOffset =
+        localPlayerOffset / contactHalfExtents;
+
+    return glm::dot(normalizedOffset, normalizedOffset) <= 1.0f;
 }
 
 bool HazardActor::IsWithinPlayerAttack(
@@ -134,8 +152,10 @@ bool HazardActor::IsWithinPlayerAttack(
     const glm::vec3 playerToActor =
         GetPos() - player.GetPos();
     const float distance = glm::length(playerToActor);
+    const float scaledTriggerRadius =
+        CalculateTriggerRadiusAlongWorldDirection(playerToActor);
     const float attackReach =
-        player.GetAttackRange() + mTriggerRadius;
+        player.GetAttackRange() + scaledTriggerRadius;
     if (distance > attackReach) {
         return false;
     }
@@ -152,4 +172,29 @@ bool HazardActor::IsWithinPlayerAttack(
     const float facingThreshold =
         std::cos(player.GetAttackAngle() * 0.5f);
     return facingDot >= facingThreshold;
+}
+
+float HazardActor::CalculateTriggerRadiusAlongWorldDirection(
+    const glm::vec3& worldDirection) const
+{
+    const float directionLength = glm::length(worldDirection);
+    if (directionLength <= 0.000001f) {
+        return 0.0f;
+    }
+
+    const glm::vec3 localDirection =
+        glm::inverse(GetOrientation()) *
+        (worldDirection / directionLength);
+    const glm::vec3 triggerHalfExtents =
+        CalculateScaledTriggerHalfExtents();
+    const glm::vec3 directionByHalfExtent =
+        localDirection / triggerHalfExtents;
+    const float inverseRadiusSquared = glm::dot(
+        directionByHalfExtent,
+        directionByHalfExtent);
+    if (inverseRadiusSquared <= 0.000001f) {
+        return 0.0f;
+    }
+
+    return 1.0f / std::sqrt(inverseRadiusSquared);
 }

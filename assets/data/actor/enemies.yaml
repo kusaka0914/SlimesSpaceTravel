@@ -95,7 +95,7 @@ enemies:
     displayName: 通常敵（間隔短い）
     behaviorProfile: legacyMelee
     isBoss: false
-    hp: 40
+    hp: 15
     modelPath: enemy.obj
     scale: 0.25
     speed: 1
@@ -149,6 +149,76 @@ enemies:
         weight: 33
         chargeCount: 2
         repeatDelay: 1
+  - type: boss_weak
+    displayName: 弱いボス敵
+    behaviorProfile: bossMelee
+    isBoss: false
+    hp: 200
+    modelPath: enemy.obj
+    scale: 0.5
+    speed: 1
+    attack: 1
+    breakCountMax: 3
+    radius: 0.75
+    defaultStandByAttackTimer: 3
+    defaultAttackMotionTimer: 0.5
+    attackSpeed: 5
+    attackPreparationRange: 2.5
+    preAttackApproachProbabilityPercent: 25
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 55
+    postAttackRetreatDelaySeconds: 1
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 25
+    attacks:
+      - type: meleeAttack
+        weight: 67
+      - type: tripleChargeAttack
+        weight: 33
+        chargeCount: 3
+        repeatDelay: 1
+    normalHitKnockBackEnabled: false
+  - type: boss_3
+    displayName: ボス敵3
+    behaviorProfile: bossMelee
+    isBoss: true
+    normalHitKnockBackEnabled: false
+    hp: 800
+    modelPath: enemy.obj
+    scale: 1
+    speed: 3
+    attack: 1
+    breakCountMax: 4
+    radius: 1.5
+    defaultStandByAttackTimer: 3
+    defaultAttackMotionTimer: 0.5
+    attackSpeed: 5
+    attackPreparationRange: 2.5
+    preAttackApproachProbabilityPercent: 30
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 60
+    postAttackRetreatDelaySeconds: 1
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 4
+    postRetreatRecoverySeconds: 2
+    postRetreatFollowupApproachProbabilityPercent: 30
+    attacks:
+      - type: meleeAttack
+        weight: 13.875
+      - type: tripleChargeAttack
+        weight: 50
+        chargeCount: 2
+        repeatDelay: 1
+      - type: fanAttack
+        weight: 36.125
+        range: 5
+        angleDegrees: 30
+        windUpDuration: 2
+        attackDuration: 0.5
 behaviorProfiles:
   legacyMelee:
     actions:

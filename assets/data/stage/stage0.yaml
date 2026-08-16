@@ -2,7 +2,6 @@ planets:
   - center: [0, 0, 0]
     scale: [30, 3, 30]
     color: [1.0, 1.0, 1.0, 1.0]
-    shape: Ellipse
     model: planet_3.obj
     textureOverride: textures/planet.png
     textureTiling:
@@ -11,6 +10,8 @@ planets:
     rocketSpawnCondition: ""
     backTextureOverride: textures/planet_dry.png
     textureSideBlendWidth: 0.05
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center:
       - -27.1
       - -75.48
@@ -25,7 +26,6 @@ planets:
       - 1
       - 1
     model: planet.obj
-    shape: Sphere
     stageNum: 1
     rocketSpawnCondition: ""
     textureTiling:
@@ -33,11 +33,13 @@ planets:
       - 10
     textureSideBlendWidth: 0.05
     textureOverride: textures/planet_moon.png
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
 boats:
   - theta: -1.570796
     phi: 0.811034
     height: 3.793
-    destStage: 1
+    destStage: 4
     facingYaw: -1.6000001
     pos:
       - 1.4
@@ -57,7 +59,6 @@ boats:
       - 0
     startPlanet: 0
     destPlanet: 0
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -69,9 +70,10 @@ boats:
       - 0
       - 0.71735615
       - 0
+    travelSpeed: 0.69957227
   - startPlanet: 0
     destPlanet: 0
-    destStage: 1
+    destStage: 2
     theta: 0
     phi: 0
     height: 1
@@ -92,7 +94,6 @@ boats:
       - -0.07845921
       - 0.9969173
       - 0
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -104,9 +105,10 @@ boats:
       - -0.028241191
       - 0.7187852
       - 0.0272722
+    travelSpeed: 5.9266663
   - startPlanet: 0
     destPlanet: 0
-    destStage: 2
+    destStage: 3
     theta: 0
     phi: 0
     height: 1
@@ -127,7 +129,6 @@ boats:
       - 0.033396665
       - 0.9994407
       - -0.0017385667
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -139,9 +140,10 @@ boats:
       - 0.011409699
       - 0.71924955
       - -0.012226486
+    travelSpeed: 5.733228
   - startPlanet: 0
     destPlanet: 0
-    destStage: 4
+    destStage: 5
     theta: 0
     phi: 0
     height: 1
@@ -162,7 +164,6 @@ boats:
       - 0.007386752
       - -0.99997276
       - -1.1052669e-05
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -174,17 +175,18 @@ boats:
       - -0.6946618
       - -0.0025696573
       - 0.71932703
+    travelSpeed: 6.5957127
   - startPlanet: 0
     destPlanet: 0
-    destStage: 5
-    theta: 3.1415927
-    phi: -1.5657692
-    height: -0.049877167
+    destStage: 6
+    theta: 0.81694776
+    phi: -0.72369015
+    height: 4.7013407
     facingYaw: -1.5359126
     pos:
-      - -0.05
-      - -9.95
-      - 0
+      - 0.07
+      - -10.06
+      - 0.03
     rotation:
       - 0.06169799
       - 1.5358474
@@ -197,7 +199,6 @@ boats:
       - -0.032779902
       - -0.9993858
       - -0.012397026
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -210,6 +211,7 @@ boats:
       - 0.0069294646
       - 0.7191508
     visibleIfStageCleared: 5
+    travelSpeed: 8.0166235
   - startPlanet: 0
     destPlanet: 0
     destStage: 1
@@ -233,7 +235,6 @@ boats:
       - -0.00058960234
       - 0.9999394
       - 0.010997062
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
@@ -245,6 +246,7 @@ boats:
       - 0.0036075858
       - 0.7193301
       - 0.004160167
+    travelSpeed: 2.1456282
 players:
   - currentPlanetNum: 0
     theta: 1.570679
@@ -498,6 +500,62 @@ NPCs:
           text: エレベーター使ってみたら～？
         - talkIndex: 6
           text: 裏側に行くなら気を付けて...！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: あの
+              ruby: false
+            - text: 子
+              ruby: true
+              reading: こ
+            - text: に
+              ruby: false
+            - text: 聞
+              ruby: true
+              reading: き
+            - text: いてみて～！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: くかなぁ～？
+              ruby: false
+        - talkIndex: 4
+          segments:
+            - text: エレベーター
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: ってみたら～？
+              ruby: false
+        - talkIndex: 6
+          segments:
+            - text: 裏
+              ruby: true
+              reading: うら
+            - text: 側
+              ruby: true
+              reading: がわ
+            - text: に
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: くなら
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: を
+              ruby: false
+            - text: 付
+              ruby: true
+              reading: つ
+            - text: けて...！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -506,6 +564,7 @@ NPCs:
       - -0.00036701324
       - 0.9996407
       - 0.026307682
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -513,7 +572,7 @@ NPCs:
     type: spaceSlime
     name: BaseGuideNPC
     talkTexts:
-      - 惑星マルッコイ行きのロケットはこの上だよ！
+      - 他の惑星に行くロケットはこの上だよ！
       - ジャンプで階段をのぼってね！
     pos:
       - -9.92
@@ -541,18 +600,23 @@ NPCs:
     talkRubies:
       - talkIndex: 0
         segments:
+          - text: 他
+            ruby: true
+            reading: た
+          - text: の
+            ruby: false
           - text: 惑
             ruby: true
             reading: わく
           - text: 星
             ruby: true
             reading: せい
-          - text: マルッコイ
+          - text: に
             ruby: false
           - text: 行
             ruby: true
-            reading: ゆ
-          - text: きのロケットはこの
+            reading: い
+          - text: くロケットはこの
             ruby: false
           - text: 上
             ruby: true
@@ -578,6 +642,37 @@ NPCs:
           text: ジャンプで階段登って！
         - talkIndex: 1
           text: ジャンプで階段登って！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -586,6 +681,7 @@ NPCs:
       - -0.02448142
       - 0.9208719
       - 0.009001648
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
@@ -651,6 +747,7 @@ NPCs:
       - 0.04009162
       - 0.00075390557
       - 0.99919474
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -704,6 +801,37 @@ NPCs:
           text: 行ける方法ないかなぁ～
         - talkIndex: 1
           text: 行ける方法ないかなぁ～
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: 行
+              ruby: true
+              reading: い
+            - text: ける
+              ruby: false
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 法
+              ruby: true
+              reading: ほう
+            - text: ないかなぁ～
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 行
+              ruby: true
+              reading: い
+            - text: ける
+              ruby: false
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 法
+              ruby: true
+              reading: ほう
+            - text: ないかなぁ～
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -712,6 +840,7 @@ NPCs:
       - -0.0003457526
       - 0.91818684
       - -0.0008012735
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -837,6 +966,32 @@ NPCs:
           text: 使わないでねっ？
         - talkIndex: 3
           text: 使わないでねっ？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ビッグになるんだね！
+              ruby: false
+        - talkIndex: 2
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -845,6 +1000,7 @@ NPCs:
       - 0.00954343
       - -0.2242665
       - 0.01307737
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -921,6 +1077,20 @@ NPCs:
           text: エレベーター使っていいよ～！
         - talkIndex: 1
           text: エレベーターどこ～？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: エレベーター
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: っていいよ～！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: エレベーターどこ～？
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -930,6 +1100,7 @@ NPCs:
       - 0.847712
       - 0
     visibleIfStageCleared: 2
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: -1.695151
     phi: 0.915979
@@ -1024,6 +1195,25 @@ NPCs:
       variants:
         - talkIndex: 1
           text: 工事終わるまで待って～！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: 工
+              ruby: true
+              reading: こう
+            - text: 事
+              ruby: true
+              reading: じ
+            - text: 終
+              ruby: true
+              reading: お
+            - text: わるまで
+              ruby: false
+            - text: 待
+              ruby: true
+              reading: ま
+            - text: って～！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1033,6 +1223,7 @@ NPCs:
       - -0.025872009
       - 0.79036474
       - 0.032629717
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1156,6 +1347,41 @@ NPCs:
           text: 自分で探しな！
         - talkIndex: 3
           text: すまないな！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: で
+              ruby: false
+            - text: 探
+              ruby: true
+              reading: さが
+            - text: しな！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: すまないな！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1169,6 +1395,7 @@ NPCs:
         stage: 5
       - talkIndex: 3
         stage: 5
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1278,6 +1505,52 @@ NPCs:
           text: 絶対家の上に乗るなよ！
         - talkIndex: 3
           text: 高かったのに...シクシク...
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 絶
+              ruby: true
+              reading: ぜっ
+            - text: 対
+              ruby: true
+              reading: たい
+            - text: 家
+              ruby: true
+              reading: いえ
+            - text: の
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: うえ
+            - text: に
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: るなよ！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: かったのに...シクシク...
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1291,6 +1564,7 @@ NPCs:
         stage: 5
       - talkIndex: 3
         stage: 5
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1396,6 +1670,38 @@ NPCs:
           text: 月には何があるんだろうなぁ...
         - talkIndex: 3
           text: あんなのあったか？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 月
+              ruby: true
+              reading: つき
+            - text: には
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なに
+            - text: があるんだろうなぁ...
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: あんなのあったか？
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1422,6 +1728,7 @@ NPCs:
         stage: 5
       - talkIndex: 3
         stage: 5
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1519,6 +1826,30 @@ NPCs:
           text: ゆっくりしてってよ...ジュルリ
         - talkIndex: 2
           text: さぁ...こっちにきなさい...グヘヘpwayuuuyuuudkkkp
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ゆっくりしてってよ...ジュルリ
+              ruby: false
+        - talkIndex: 2
+          segments:
+            - text: さぁ...こっちにきなさい...グヘヘpwayuuuyuuudkkkp
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1530,6 +1861,7 @@ NPCs:
     talkStageClearConditions:
       - talkIndex: 2
         stage: 5
+    forceTalkOnArrival: false
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -1662,6 +1994,45 @@ NPCs:
           text: ここのやつらには気をつけろよ...フフフ
         - talkIndex: 3
           text: お前のこと認めるぜ！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ここのやつらには
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: をつけろよ...フフフ
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: お
+              ruby: false
+            - text: 前
+              ruby: true
+              reading: まえ
+            - text: のこと
+              ruby: false
+            - text: 認
+              ruby: true
+              reading: みと
+            - text: めるぜ！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1675,6 +2046,7 @@ NPCs:
         stage: 5
       - talkIndex: 3
         stage: 5
+    forceTalkOnArrival: false
 stageObjects:
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.334428, 5.979225], pos: [0.45, 4.43, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1], rotationQuat: [1, 0, 0, 0]}
@@ -2682,7 +3054,7 @@ stageObjects:
       - 0.706609
       - 0.02776089
 platforms:
-  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1}}, platformId: legacy_platforms_0}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1, endpointWaitSeconds: 0}}, platformId: legacy_platforms_0}
   - currentPlanetNum: 0
     theta: 0
     phi: 0
@@ -2737,6 +3109,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_1
   - currentPlanetNum: 0
     theta: 0
@@ -2792,6 +3165,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_2
   - currentPlanetNum: 0
     theta: 0
@@ -2847,6 +3221,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_3
   - currentPlanetNum: 0
     theta: 0
@@ -2901,6 +3276,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_4
   - currentPlanetNum: 0
     theta: 0
@@ -2955,6 +3331,7 @@ platforms:
         moveDuration: 10
         moveOnPlayer: false
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_5
   - currentPlanetNum: 0
     theta: 0
@@ -3009,6 +3386,7 @@ platforms:
         moveDuration: 10
         moveOnPlayer: false
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_6
   - currentPlanetNum: 0
     theta: 0
@@ -3063,6 +3441,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     visibleIfStageCleared: 5
     platformId: legacy_platforms_7
   - currentPlanetNum: 0
@@ -3118,6 +3497,7 @@ platforms:
         moveDuration: 8
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     visibleIfStageCleared: 5
     platformId: legacy_platforms_8
   - currentPlanetNum: 1
@@ -3173,6 +3553,7 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_9
   - currentPlanetNum: 0
     theta: 0
@@ -3228,4 +3609,5 @@ platforms:
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1
+        endpointWaitSeconds: 0
     platformId: legacy_platforms_10

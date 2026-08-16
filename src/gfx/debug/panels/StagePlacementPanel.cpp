@@ -6,6 +6,7 @@
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
+#include "actor/Enemy.h"
 #include "actor/JewelItem.h"
 #include "actor/HazardActor.h"
 #include "actor/NPC.h"
@@ -904,7 +905,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         float triggerRadius =
             hazardActor->GetTriggerRadius();
         if (ImGui::DragFloat(
-                ("判定半径##hazardActorRadius" +
+                ("基準判定半径（スケール1）##hazardActorRadius" +
                  std::to_string(yamlIndex)).c_str(),
                 &triggerRadius,
                 0.01f,
@@ -913,6 +914,8 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 "%.2f")) {
             hazardActor->SetTriggerRadius(triggerRadius);
         }
+        ImGui::TextDisabled(
+            "判定はアクターの各軸スケールと回転に追従します。");
 
         float damage = hazardActor->GetDamage();
         if (ImGui::DragFloat(
@@ -2263,7 +2266,7 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
     bool pressureSwitchEnabled =
         platform->GetPressureSwitchComponent() != nullptr;
     if (ImGui::Checkbox(
-            ("乗っている間、対象足場を表示##platformPressureSwitchEnabled" +
+            ("1人用スイッチ##platformPressureSwitchEnabled" +
              sequenceName + std::to_string(listIndex)).c_str(),
             &pressureSwitchEnabled)) {
         if (mPushUndoCallback) mPushUndoCallback();
@@ -2637,9 +2640,25 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
 
     if (PlatformPressureSwitchComponent* pressureSwitch =
             platform->GetPressureSwitchComponent()) {
-        ImGui::SeparatorText("感圧スイッチ");
+        ImGui::SeparatorText("1人用スイッチ");
         ImGui::TextDisabled(
-            "プレイヤーがこの足場に乗っている間だけ、選択した足場を表示します。");
+            "プレイヤーがこの足場に乗ると、選択した足場や敵を表示します。");
+
+        bool shouldRemainOnAfterPressed =
+            pressureSwitch->ShouldRemainOnAfterPressed();
+        if (ImGui::Checkbox(
+                ("一度乗ったら離れてもONを保持##pressureSwitchRemainsOn" +
+                 std::to_string(yamlIndex)).c_str(),
+                &shouldRemainOnAfterPressed)) {
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+            pressureSwitch->SetShouldRemainOnAfterPressed(
+                shouldRemainOnAfterPressed);
+            Save();
+        }
+        ImGui::TextDisabled(
+            "OFFの場合は乗っている間だけON、ONの場合はステージを出るまで保持します。");
 
         float inactiveOpacity =
             pressureSwitch->GetInactiveOpacity();
@@ -2653,10 +2672,12 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             pressureSwitch->SetInactiveOpacity(inactiveOpacity);
         }
         ImGui::TextDisabled(
-            "OFF時は薄く表示されますが、当たり判定はありません。");
+            "OFF時の足場は薄く表示され、敵は完全に停止・非表示になります。");
 
         std::vector<std::string> targetIds =
             pressureSwitch->GetTargetPlatformIds();
+        std::vector<PlatformRevealTarget> targetEnemyRefs =
+            pressureSwitch->GetTargetEnemyRefs();
         std::vector<std::string> candidateIds;
         bool hasCandidate = false;
 
@@ -2734,12 +2755,102 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             }
         }
 
+        std::vector<PlatformRevealTarget> availableEnemyRefs;
+        for (const StageActorInstance& instance : instances) {
+            if (!dynamic_cast<Enemy*>(instance.actor)) {
+                continue;
+            }
+
+            hasCandidate = true;
+            PlatformRevealTarget candidate;
+            candidate.sequenceName = instance.ref.sequenceName;
+            candidate.yamlIndex = instance.ref.yamlIndex;
+            availableEnemyRefs.emplace_back(candidate);
+
+            const auto targetIt = std::find_if(
+                targetEnemyRefs.begin(),
+                targetEnemyRefs.end(),
+                [&candidate](const PlatformRevealTarget& current) {
+                    return current.sequenceName == candidate.sequenceName &&
+                           current.yamlIndex == candidate.yamlIndex;
+                });
+            bool selected = targetIt != targetEnemyRefs.end();
+            const std::string label =
+                instance.ref.label + "##pressureSwitchEnemyTarget_" +
+                platform->GetPlatformId() + "_" +
+                StageActorQuery::MakeKey(instance.ref);
+            if (!ImGui::Checkbox(label.c_str(), &selected)) {
+                continue;
+            }
+
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+            if (selected && targetIt == targetEnemyRefs.end()) {
+                targetEnemyRefs.emplace_back(candidate);
+            } else if (!selected && targetIt != targetEnemyRefs.end()) {
+                targetEnemyRefs.erase(targetIt);
+            }
+            pressureSwitch->SetTargetEnemyRefs(targetEnemyRefs);
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+
+        std::vector<PlatformRevealTarget> missingEnemyRefs;
+        for (const PlatformRevealTarget& configuredTarget :
+             targetEnemyRefs) {
+            const bool isAvailable = std::any_of(
+                availableEnemyRefs.begin(),
+                availableEnemyRefs.end(),
+                [&configuredTarget](const PlatformRevealTarget& current) {
+                    return current.sequenceName ==
+                               configuredTarget.sequenceName &&
+                           current.yamlIndex ==
+                               configuredTarget.yamlIndex;
+                });
+            if (!isAvailable) {
+                missingEnemyRefs.emplace_back(configuredTarget);
+            }
+        }
+        for (const PlatformRevealTarget& missingTarget : missingEnemyRefs) {
+            bool keepTarget = true;
+            const std::string label =
+                "見つからない敵: " + missingTarget.sequenceName + ":" +
+                std::to_string(missingTarget.yamlIndex) +
+                "##missingPressureSwitchEnemyTarget_" +
+                platform->GetPlatformId() + "_" +
+                missingTarget.sequenceName + "_" +
+                std::to_string(missingTarget.yamlIndex);
+            if (!ImGui::Checkbox(label.c_str(), &keepTarget) ||
+                keepTarget) {
+                continue;
+            }
+
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+            targetEnemyRefs.erase(
+                std::remove_if(
+                    targetEnemyRefs.begin(),
+                    targetEnemyRefs.end(),
+                    [&missingTarget](const PlatformRevealTarget& current) {
+                        return current.sequenceName ==
+                                   missingTarget.sequenceName &&
+                               current.yamlIndex ==
+                                   missingTarget.yamlIndex;
+                    }),
+                targetEnemyRefs.end());
+            pressureSwitch->SetTargetEnemyRefs(targetEnemyRefs);
+            Save();
+            RebuildPhysicsWorldIfNeeded(true);
+        }
+
         if (!hasCandidate) {
             ImGui::TextDisabled(
-                "対象にできる別の足場がありません。");
-        } else if (targetIds.empty()) {
+                "対象にできる別の足場や敵がありません。");
+        } else if (targetIds.empty() && targetEnemyRefs.empty()) {
             ImGui::TextDisabled(
-                "表示する対象足場を1つ以上選択してください。");
+                "表示する足場または敵を1つ以上選択してください。");
         }
 
         if (!mContext.game->GetIsDebugEditorShowing()) {
@@ -3762,6 +3873,8 @@ void StagePlacementPanel::SaveActorCommonYaml(
                 platform->GetPressureSwitchComponent()) {
             YAML::Node node =
                 platformNode["components"]["pressureSwitch"];
+            node["remainsOnAfterPressed"] =
+                component->ShouldRemainOnAfterPressed();
             node["inactiveOpacity"] =
                 component->GetInactiveOpacity();
             node["targets"] =
@@ -3769,6 +3882,15 @@ void StagePlacementPanel::SaveActorCommonYaml(
             for (const std::string& targetId :
                  component->GetTargetPlatformIds()) {
                 node["targets"].push_back(targetId);
+            }
+            node["enemyTargets"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const PlatformRevealTarget& target :
+                 component->GetTargetEnemyRefs()) {
+                YAML::Node targetNode;
+                targetNode["sequence"] = target.sequenceName;
+                targetNode["index"] = target.yamlIndex;
+                node["enemyTargets"].push_back(targetNode);
             }
         } else {
             removeComponentNode("pressureSwitch");

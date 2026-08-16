@@ -250,6 +250,15 @@ void Player::UpdateActor(float deltaTime)
     CharacterActor::UpdateActor(deltaTime);
 
     const bool didLand = !wasOnGroundBeforeLandingCheck && GetOnGround();
+    const bool didWalkOffGround =
+        wasOnGroundBeforeLandingCheck && !GetOnGround();
+    if (didWalkOffGround) {
+        // Jump input starts airborne gravity in the state machine below, but
+        // simply walking off an edge bypasses that transition.
+        mPlanetGravityController.OnJumpStarted(
+            *this,
+            mMovement);
+    }
 
     float landingSpeed = 0.0f;
     const float upLengthSquared = glm::dot(upBeforeLandingCheck, upBeforeLandingCheck);
@@ -267,7 +276,9 @@ void Player::UpdateActor(float deltaTime)
                          deltaTime);
 
     if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
-        mPlanetGravityController.OnJumpStarted(*this);
+        mPlanetGravityController.OnJumpStarted(
+            *this,
+            mMovement);
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();

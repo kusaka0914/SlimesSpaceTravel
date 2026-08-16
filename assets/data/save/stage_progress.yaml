@@ -2,4 +2,16 @@ clearedStages:
   - 1
   - 2
 shownConversations:
-  []
+  - ../assets/data/stage/stage0.yaml|NPCs:0|clear:-1
+  - ../assets/data/stage/stage0.yaml|NPCs:0|clear:2
+  - ../assets/data/stage/stage0.yaml|NPCs:1|clear:-1
+  - ../assets/data/stage/stage0.yaml|NPCs:4|clear:-1
+  - ../assets/data/stage/stage0.yaml|NPCs:4|clear:2
+  - ../assets/data/stage/stage0.yaml|NPCs:6|clear:-1
+  - ../assets/data/stage/stage1.yaml|NPCs:0|clear:-1
+  - ../assets/data/stage/stage3.yaml|:0|clear:-1
+  - ../assets/data/stage/stage3.yaml|:1|clear:-1
+  - ../assets/data/stage/stage3.yaml|:2|clear:-1
+  - ../assets/data/stage/stage3.yaml|NPCs:0|clear:-1
+  - ../assets/data/stage/stage3.yaml|NPCs:1|clear:-1
+  - ../assets/data/stage/stage3.yaml|NPCs:2|clear:-1

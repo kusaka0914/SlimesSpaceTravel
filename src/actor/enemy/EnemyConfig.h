@@ -35,6 +35,7 @@ struct EnemyBossManeuverConfig {
 
 struct EnemyConfig {
     bool isBoss = false;
+    bool isNormalHitKnockBackEnabled = true;
 
     float hp = 80.0f;
     float scale = 0.25f;

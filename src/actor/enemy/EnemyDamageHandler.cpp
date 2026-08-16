@@ -32,7 +32,9 @@ void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemySta
         return;
     }
 
-    if (!status.GetIsBoss() && enemy.IsOnGround()) {
+    if (status.IsNormalHitKnockBackEnabled() &&
+        !status.GetIsBoss() &&
+        enemy.IsOnGround()) {
         constexpr float knockBackTimer = 0.04f;
         stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
     }

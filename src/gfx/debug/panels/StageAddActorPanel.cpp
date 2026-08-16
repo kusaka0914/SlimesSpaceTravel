@@ -1122,12 +1122,14 @@ void StageAddActorPanel::DrawHazardActorCreation()
         30.0f,
         "%.2f");
     ImGui::DragFloat(
-        "判定半径##hazardActor",
+        "基準判定半径（スケール1）##hazardActor",
         &mHazardActorTriggerRadius,
         0.01f,
         0.01f,
         100.0f,
         "%.2f");
+    ImGui::TextDisabled(
+        "判定はアクターの各軸スケールと回転に追従します。");
     ImGui::DragFloat(
         "ダメージ##hazardActor",
         &mHazardActorDamage,

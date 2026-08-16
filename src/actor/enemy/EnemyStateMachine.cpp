@@ -262,6 +262,11 @@ void EnemyStateMachine::ConfigureBossManeuver(
 void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
                                      EnemyBehaviorController& behaviorController, float deltaTime)
 {
+    if (mActionState == ActionState::Launched) {
+        movement.UpdateInAir(enemy, status, *this, deltaTime);
+        return;
+    }
+
     if (mActionState == ActionState::KnockedBack) {
         UpdateKnockedBack(enemy, status, movement, deltaTime);
 
@@ -424,8 +429,22 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
-    movement.MoveDuringAttacking(enemy, status, *this, deltaTime);
-    combat.TryApplyAttack(enemy, status, *this, deltaTime);
+    const glm::vec3 attackMovementStart =
+        enemy.GetPos();
+    movement.MoveDuringAttacking(
+        enemy,
+        status,
+        *this,
+        deltaTime);
+    combat.TryApplyAttack(
+        enemy,
+        status,
+        *this,
+        attackMovementStart,
+        deltaTime);
+    if (mActionState != ActionState::Attacking) {
+        return;
+    }
 
     status.DecreaseCanCounteredTimer(deltaTime);
     if (status.GetCanCounteredTimer() <= 0.0f) {
@@ -542,8 +561,8 @@ void EnemyStateMachine::StartPreparingAttack(Enemy& enemy, EnemyStatus& status)
 
 void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
 {
-    (void)enemy;
     mActionState = ActionState::Attacking;
+    mActiveAttackFrame = ResolveEnemyAttackFrame(enemy);
     mShouldPreservePreparationTimer = false;
     status.ResetAttackMotionTimer();
     status.ClearIsHit();
@@ -557,8 +576,8 @@ bool EnemyStateMachine::TryStartPostAttackRetreat(
     Enemy& enemy,
     const EnemyStatus& status)
 {
-    (void)enemy;
     if (!status.GetIsBoss() ||
+        !enemy.IsOnGround() ||
         !status.GetNearestPlayer() ||
         mActionState != ActionState::Idle ||
         mPostAttackRetreatDistance <= 0.0f ||
@@ -575,6 +594,16 @@ bool EnemyStateMachine::TryStartPostAttackRetreat(
         ? ActionState::PostAttackRetreatDelay
         : ActionState::PostAttackRetreat;
     return true;
+}
+
+void EnemyStateMachine::StartLaunched(Enemy& enemy)
+{
+    (void)enemy;
+    mActionState = ActionState::Launched;
+    mShouldPreservePreparationTimer = false;
+    mPostAttackRetreatDelayRemainingSeconds = 0.0f;
+    mPostAttackRetreatRemainingDistance = 0.0f;
+    mPostRetreatRecoveryRemainingSeconds = 0.0f;
 }
 
 bool EnemyStateMachine::ShouldTriggerProbability(

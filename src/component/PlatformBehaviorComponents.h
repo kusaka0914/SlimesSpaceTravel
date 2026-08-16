@@ -33,13 +33,19 @@ public:
     float GetReappearDelay() const { return mReappearDelay; }
 
 private:
+    enum class FadePhase {
+        Visible,
+        FadingOut,
+        WaitingToReappear,
+    };
+
     Platform* mPlatform = nullptr;
     float mOpacity = 1.0f;
     float mFadeOutDuration = 1.0f;
     float mReappearDelay = 2.0f;
     float mHiddenTimer = 0.0f;
     bool mCollisionEnabled = true;
-    bool mWaitingToReappear = false;
+    FadePhase mFadePhase = FadePhase::Visible;
 };
 
 class PlatformJumpToggleComponent : public Component {
@@ -169,20 +175,36 @@ public:
     {
         return mTargetPlatformIds;
     }
+    void SetTargetEnemyRefs(
+        const std::vector<PlatformRevealTarget>& targetEnemyRefs);
+    const std::vector<PlatformRevealTarget>& GetTargetEnemyRefs() const
+    {
+        return mTargetEnemyRefs;
+    }
     void SetInactiveOpacity(float opacity);
     float GetInactiveOpacity() const { return mInactiveOpacity; }
+    void SetShouldRemainOnAfterPressed(
+        bool shouldRemainOnAfterPressed);
+    bool ShouldRemainOnAfterPressed() const
+    {
+        return mShouldRemainOnAfterPressed;
+    }
     bool GetIsPressed() const { return mIsPressed; }
 
     void ClearTargetRuntimeStates();
 
 private:
     Platform* FindTargetPlatform(const std::string& platformId) const;
+    Actor* FindTargetActor(const PlatformRevealTarget& target) const;
     void ApplyTargetState();
 
     Platform* mPlatform = nullptr;
     std::vector<std::string> mTargetPlatformIds;
+    std::vector<PlatformRevealTarget> mTargetEnemyRefs;
     float mInactiveOpacity = 0.2f;
     float mContactGraceRemainingSeconds = 0.0f;
+    bool mShouldRemainOnAfterPressed = false;
+    bool mHasLatchedOn = false;
     bool mIsPressed = false;
 };
 

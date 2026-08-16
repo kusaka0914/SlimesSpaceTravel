@@ -320,12 +320,83 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
     }
 
     glUseProgram(mShader3D->GetShaderProgram());
+    UpdateViewFrustum(projMat * viewMat);
     SetUniforms(viewMat, projMat, cameraPos);
     mSceneObjectRenderer->DrawSceneObjects(viewMat);
 
     if (mParticleRenderer) {
         mParticleRenderer->Draw(viewMat, projMat);
     }
+}
+
+void Renderer3D::UpdateViewFrustum(
+    const glm::mat4& viewProjectionMatrix) const
+{
+    const glm::vec4 firstRow(
+        viewProjectionMatrix[0][0],
+        viewProjectionMatrix[1][0],
+        viewProjectionMatrix[2][0],
+        viewProjectionMatrix[3][0]);
+    const glm::vec4 secondRow(
+        viewProjectionMatrix[0][1],
+        viewProjectionMatrix[1][1],
+        viewProjectionMatrix[2][1],
+        viewProjectionMatrix[3][1]);
+    const glm::vec4 thirdRow(
+        viewProjectionMatrix[0][2],
+        viewProjectionMatrix[1][2],
+        viewProjectionMatrix[2][2],
+        viewProjectionMatrix[3][2]);
+    const glm::vec4 fourthRow(
+        viewProjectionMatrix[0][3],
+        viewProjectionMatrix[1][3],
+        viewProjectionMatrix[2][3],
+        viewProjectionMatrix[3][3]);
+
+    mViewFrustumPlanes = {
+        fourthRow + firstRow,
+        fourthRow - firstRow,
+        fourthRow + secondRow,
+        fourthRow - secondRow,
+        fourthRow + thirdRow,
+        fourthRow - thirdRow,
+    };
+
+    mHasValidViewFrustum = true;
+    for (glm::vec4& plane : mViewFrustumPlanes) {
+        const float normalLength = glm::length(glm::vec3(plane));
+        if (normalLength <= 0.000001f) {
+            mHasValidViewFrustum = false;
+            return;
+        }
+        plane /= normalLength;
+    }
+}
+
+bool Renderer3D::IsActorInsideView(const Actor* actor) const
+{
+    if (!actor || !mHasValidViewFrustum) {
+        return true;
+    }
+
+    const glm::vec3 absoluteScale = glm::abs(actor->GetScale());
+    const float maximumScale =
+        std::max(
+            absoluteScale.x,
+            std::max(absoluteScale.y, absoluteScale.z));
+    const float boundingRadius =
+        std::max(0.5f, actor->GetRadius() * maximumScale) + 1.0f;
+
+    for (const glm::vec4& plane : mViewFrustumPlanes) {
+        const float signedDistance =
+            glm::dot(glm::vec3(plane), actor->GetPos()) +
+            plane.w;
+        if (signedDistance < -boundingRadius) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void Renderer3D::InitializeAttackRangeBuffer()

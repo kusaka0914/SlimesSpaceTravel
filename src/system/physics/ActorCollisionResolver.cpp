@@ -299,7 +299,8 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
         return std::nullopt;
     }
 
-    std::vector<Enemy*> enemies = actor->GetCurrentPlanet()->GetEnemies();
+    const std::vector<Enemy*>& enemies =
+        actor->GetCurrentPlanet()->GetEnemies();
 
     for (Enemy* enemy : enemies) {
         if (enemy == actor) {
@@ -323,7 +324,8 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
         }
     }
 
-    std::vector<Crystal*> crystals = actor->GetCurrentPlanet()->GetCrystals();
+    const std::vector<Crystal*>& crystals =
+        actor->GetCurrentPlanet()->GetCrystals();
     for (Crystal* crystal : crystals) {
         if (crystal == actor) {
             continue;
@@ -338,7 +340,8 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
         }
     }
 
-    std::vector<NPC*> npcs = actor->GetCurrentPlanet()->GetNPCs();
+    const std::vector<NPC*>& npcs =
+        actor->GetCurrentPlanet()->GetNPCs();
     for (NPC* npc : npcs) {
         if (npc == actor) {
             continue;
@@ -374,13 +377,17 @@ ActorCollisionResolver::CheckConflictActor(
         desiredPos -
         blockingActorPosition;
 
-    const float distanceToBlockingActor =
-        glm::length(
-            fromBlockingActorToDesiredPosition);
     const float blockingRadius =
         blockingActor->GetRadius();
+    if (blockingRadius <= 0.0f) {
+        return std::nullopt;
+    }
 
-    if (distanceToBlockingActor >= blockingRadius) {
+    const float distanceSquared =
+        glm::dot(
+            fromBlockingActorToDesiredPosition,
+            fromBlockingActorToDesiredPosition);
+    if (distanceSquared >= blockingRadius * blockingRadius) {
         return std::nullopt;
     }
 

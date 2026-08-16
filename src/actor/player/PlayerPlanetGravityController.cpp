@@ -14,24 +14,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-namespace {
-glm::vec3 CalculatePlanetTransferUpDirection(
-    const Planet& destinationPlanet,
-    const glm::vec3& playerPosition)
-{
-    if (destinationPlanet.GetPlanetShape() ==
-        Planet::PlanetShape::Ellipse) {
-        return destinationPlanet
-            .CalculateEllipseSurfaceProjection(playerPosition)
-            .outwardNormal;
-    }
-
-    return ActorGroundResolver::CalculateFallbackUpVec(
-        &destinationPlanet,
-        playerPosition);
-}
-} // namespace
-
 void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movement, float deltaTime)
 {
     const bool groundRayHitThisFrame = mGroundRayHitThisFrame;
@@ -51,28 +33,9 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    // 接地中は着地中の惑星を維持する。
+    // Planet ownership changes only when landing is confirmed. Proximity
+    // alone must not select a planet the player has never touched.
     if (player.GetOnGround()) {
-        Stage* currentStage =
-            player.GetGame()
-                ? player.GetGame()->GetCurrentStage()
-                : nullptr;
-        if (!currentStage) {
-            return;
-        }
-
-        const PlanetDistanceCandidate nearestPlanetCandidate =
-            mCandidateSelector.FindNearestPlanet(
-                player.GetPos(),
-                currentStage->GetPlanets());
-        if (ShouldSwitchPlanet(
-                player,
-                nearestPlanetCandidate)) {
-            ApplyCurrentPlanet(
-                player,
-                movement,
-                nearestPlanetCandidate.planet);
-        }
         return;
     }
 
@@ -81,36 +44,10 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    Stage* currentStage = player.GetGame() ? player.GetGame()->GetCurrentStage() : nullptr;
-
-    if (!currentStage) {
-        return;
-    }
-
     // 現在の惑星を含む全惑星から、
     // プレイヤーとの表面距離が最も短い惑星を取得する。
-    const PlanetDistanceCandidate candidate =
-        mCandidateSelector.FindNearestPlanet(player.GetPos(), currentStage->GetPlanets());
-
     // 別の惑星の方が明確に近くなったら所属惑星を変更する。
-    if (ShouldSwitchPlanet(player, candidate)) {
-        SwitchToPlanet(player, movement, candidate.planet);
-    }
-
     Planet* currentPlanet = player.GetCurrentPlanet();
-
-    // Use the closest destination surface during planet-to-planet travel.
-    // An ellipse's fixed front/back fallback axis is unsuitable when another
-    // ellipse is directly above its side; the closest surface normal produces
-    // the expected 180-degree turn toward the underside.
-    if (mIsPlanetTransferGravityActive && currentPlanet) {
-        const glm::vec3 targetUp =
-            CalculatePlanetTransferUpDirection(
-                *currentPlanet,
-                player.GetPos());
-        SmoothAirborneUpVec(player, targetUp, deltaTime);
-        return;
-    }
 
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
@@ -121,7 +58,40 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
                     player,
                     *currentPlanet);
             if (!mUseEllipseSurfaceGravity) {
-                return;
+                mNoGroundRayDuration +=
+                    std::max(0.0f, deltaTime);
+                if (mNoGroundRayDuration < fallbackDelay) {
+                    return;
+                }
+
+                // A high platform can start outside the normal ellipse
+                // activation distance. Waiting for proximity alone can leave
+                // the player falling forever when the old up direction does
+                // not lead back to the ellipse.
+                Planet* fallbackPlanet =
+                    ResolveFallbackPlanet(player);
+                if (fallbackPlanet &&
+                    fallbackPlanet != currentPlanet) {
+                    ApplyCurrentPlanet(
+                        player,
+                        movement,
+                        fallbackPlanet);
+                    currentPlanet = fallbackPlanet;
+                }
+
+                mFallbackAppliedThisJump = true;
+                mFallbackGravityActive = true;
+                player.SetVelocity(glm::vec3(0.0f));
+
+                if (!currentPlanet ||
+                    currentPlanet->GetPlanetShape() !=
+                        Planet::PlanetShape::Ellipse) {
+                    player.RefreshFallbackUpVec();
+                    mSmoothedUpInitialized = false;
+                    return;
+                }
+
+                mUseEllipseSurfaceGravity = true;
             }
             mSmoothedUpInitialized = false;
         }
@@ -154,8 +124,17 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         mFallbackAppliedThisJump = true;
         mFallbackGravityActive = true;
 
-        // Preserve the old behavior at the end of the grace period: apply the
-        // current planet's default gravity direction once.
+        // Apply the last confirmed landing planet's default gravity direction
+        // once at the end of the grace period.
+        Planet* fallbackPlanet = ResolveFallbackPlanet(player);
+        if (fallbackPlanet &&
+            fallbackPlanet != player.GetCurrentPlanet()) {
+            ApplyCurrentPlanet(
+                player,
+                movement,
+                fallbackPlanet);
+        }
+
         player.RefreshFallbackUpVec();
         player.SetVelocity(glm::vec3(0.0f));
         mSmoothedUpVec = player.GetUpVec();
@@ -171,7 +150,7 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
     if (mFallbackGravityActive) {
         const glm::vec3 targetUp =
             ActorGroundResolver::CalculateFallbackUpVec(
-                player.GetCurrentPlanet(),
+                ResolveFallbackPlanet(player),
                 player.GetPos());
         SmoothAirborneUpVec(player, targetUp, deltaTime);
     }
@@ -192,7 +171,6 @@ bool PlayerPlanetGravityController::
 ShouldUseEllipseSurfaceGravity(const Player& player) const
 {
     return IsEllipseAirborneGravityActive(player) &&
-           !mIsPlanetTransferGravityActive &&
            mUseEllipseSurfaceGravity;
 }
 
@@ -206,15 +184,6 @@ CalculateAirbornePhysicsUpDirection(
     }
 
     const Planet* currentPlanet = player.GetCurrentPlanet();
-    if (mIsPlanetTransferGravityActive && currentPlanet) {
-        const glm::vec3 transferUp =
-            CalculatePlanetTransferUpDirection(
-                *currentPlanet,
-                player.GetPos());
-        if (glm::length(transferUp) > 0.000001f) {
-            return glm::normalize(transferUp);
-        }
-    }
 
     if (ShouldUseEllipseSurfaceGravity(player) && currentPlanet) {
         return currentPlanet
@@ -246,14 +215,30 @@ bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
 }
 
 void PlayerPlanetGravityController::OnJumpStarted(
-    const Player& player)
+    Player& player,
+    PlayerMovement& movement)
 {
+    // The platform's owning planet is placement metadata, not proof that the
+    // player landed on that planet. Keep the last direct planet landing.
+    if (!mLastLandedPlanet) {
+        mLastLandedPlanet = player.GetCurrentPlanet();
+    }
+
     // A grounded overhead-ray transition also changes the player to an
     // airborne state. Preserve the acquired normal instead of reinitializing
     // it as an ordinary jump on the same frame.
     if (mIsOverheadGravityRayActive) {
         mIsJumpSwitchingActive = true;
         return;
+    }
+
+    Planet* fallbackPlanet = ResolveFallbackPlanet(player);
+    if (fallbackPlanet &&
+        fallbackPlanet != player.GetCurrentPlanet()) {
+        ApplyCurrentPlanet(
+            player,
+            movement,
+            fallbackPlanet);
     }
 
     mIsJumpSwitchingActive = true;
@@ -268,13 +253,6 @@ void PlayerPlanetGravityController::OnJumpStarted(
 
     const Planet* currentPlanet =
         player.GetCurrentPlanet();
-    const Planet* groundPlanet =
-        ResolvePlanetFromGroundActor(
-            player.GetGroundActor());
-    mIsPlanetTransferGravityActive =
-        currentPlanet &&
-        groundPlanet &&
-        currentPlanet != groundPlanet;
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
             Planet::PlanetShape::Ellipse) {
@@ -296,6 +274,35 @@ void PlayerPlanetGravityController::OnJumpStarted(
     mSmoothedUpInitialized = false;
 }
 
+void PlayerPlanetGravityController::
+RestartFallbackDelayForAirborneAction(
+    const Player& player)
+{
+    if (!mIsJumpSwitchingActive || player.GetOnGround()) {
+        return;
+    }
+
+    mNoGroundRayDuration = 0.0f;
+    if (!mFallbackAppliedThisJump) {
+        return;
+    }
+
+    mFallbackAppliedThisJump = false;
+    mFallbackGravityActive = false;
+
+    const Planet* currentPlanet = player.GetCurrentPlanet();
+    if (currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse) {
+        mUseEllipseSurfaceGravity =
+            ShouldActivateEllipseSurfaceGravity(
+                player,
+                *currentPlanet);
+    }
+
+    mSmoothedUpInitialized = false;
+}
+
 void PlayerPlanetGravityController::OnGroundRayCastSucceeded()
 {
     if (!mIsJumpSwitchingActive) {
@@ -308,7 +315,6 @@ void PlayerPlanetGravityController::OnGroundRayCastSucceeded()
 void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& movement)
 {
     mIsJumpSwitchingActive = false;
-    mIsPlanetTransferGravityActive = false;
     mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
@@ -319,32 +325,21 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
-    Planet* landedPlanet = ResolvePlanetFromGroundActor(player.GetGroundActor());
-
-    Stage* currentStage = player.GetGame() ? player.GetGame()->GetCurrentStage() : nullptr;
-
-    // 接地対象Actorから惑星を取得できなかった場合は、
-    // 着地点に最も近い惑星を補助的に使用する。
-    if (!landedPlanet && currentStage) {
-        const PlanetDistanceCandidate candidate =
-            mCandidateSelector.FindNearestPlanet(player.GetPos(), currentStage->GetPlanets());
-
-        if (candidate.planet && candidate.surfaceDistance <= landedPlanetSearchDistance) {
-            landedPlanet = candidate.planet;
-        }
-    }
-
+    // A platform landing must not replace the fallback destination with the
+    // platform's owning planet. Only direct contact with a planet counts.
+    Planet* landedPlanet =
+        dynamic_cast<Planet*>(player.GetGroundActor());
     if (!landedPlanet) {
         return;
     }
 
+    mLastLandedPlanet = landedPlanet;
     ApplyCurrentPlanet(player, movement, landedPlanet);
 }
 
 void PlayerPlanetGravityController::OnRespawned()
 {
     mIsJumpSwitchingActive = false;
-    mIsPlanetTransferGravityActive = false;
     mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
     mFallbackAppliedThisJump = false;
@@ -352,34 +347,13 @@ void PlayerPlanetGravityController::OnRespawned()
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
+    mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 }
 
-bool PlayerPlanetGravityController::ShouldSwitchPlanet(const Player& player,
-                                                       const PlanetDistanceCandidate& candidate) const
-{
-    Planet* currentPlanet = player.GetCurrentPlanet();
-
-    if (!candidate.planet) {
-        return false;
-    }
-
-    if (!currentPlanet) {
-        return true;
-    }
-
-    if (candidate.planet == currentPlanet) {
-        return false;
-    }
-
-    const float currentSurfaceDistance = mCandidateSelector.CalculateSurfaceDistance(player.GetPos(), *currentPlanet);
-
     // 候補惑星の方が現在惑星よりも明確に近い場合だけ
     // currentPlanetを切り替える。
-    return candidate.surfaceDistance + switchDistanceMargin < currentSurfaceDistance;
-}
-
 void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet)
 {
     if (!nextPlanet) {
@@ -393,10 +367,6 @@ void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovemen
     // 惑星の所属情報は即時に変更する。
     ApplyCurrentPlanet(player, movement, nextPlanet);
 
-    // A ray cast may still hit the planet that the player just left. During
-    // transfer, the newly selected planet remains the gravity source until
-    // landing instead of allowing that stale ray to restore the old direction.
-    mIsPlanetTransferGravityActive = true;
     mFallbackAppliedThisJump = false;
     mFallbackGravityActive = false;
     mNoGroundRayDuration = 0.0f;
@@ -539,9 +509,10 @@ void PlayerPlanetGravityController::UpdateEllipseAirborneGravity(
         return;
     }
 
-    mNoGroundRayDuration = 0.0f;
-    mFallbackAppliedThisJump = false;
-    mFallbackGravityActive = false;
+    if (!mFallbackGravityActive) {
+        mNoGroundRayDuration = 0.0f;
+        mFallbackAppliedThisJump = false;
+    }
 
     const Planet::EllipseSurfaceProjection projection =
         currentPlanet->CalculateEllipseSurfaceProjection(
@@ -738,6 +709,23 @@ Planet* PlayerPlanetGravityController::ResolvePlanetFromGroundActor(Actor* groun
 
     // 惑星に属している足場や移動床へ着地した場合。
     return groundActor->GetCurrentPlanet();
+}
+
+Planet* PlayerPlanetGravityController::ResolveFallbackPlanet(
+    const Player& player) const
+{
+    const Stage* currentStage =
+        player.GetGame()
+            ? player.GetGame()->GetCurrentStage()
+            : nullptr;
+    if (mLastLandedPlanet && currentStage &&
+        FindPlanetIndex(
+            *currentStage,
+            mLastLandedPlanet) >= 0) {
+        return mLastLandedPlanet;
+    }
+
+    return player.GetCurrentPlanet();
 }
 
 int PlayerPlanetGravityController::FindPlanetIndex(const Stage& stage, const Planet* planet) const

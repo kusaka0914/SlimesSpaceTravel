@@ -5,7 +5,6 @@
 #include <vector>
 
 class Actor;
-class Boat;
 class Game;
 
 class FocusCamera {
@@ -18,8 +17,6 @@ public:
     void BeginTransition(const glm::vec3& cameraPos, const glm::vec3& targetPos, const glm::vec3& upVec);
     glm::mat4 GetTargetCameraView(Actor* targetActor);
     std::vector<glm::mat4> GetOpeningViews() const;
-    std::vector<glm::mat4> GetBoatFocusViews(const std::vector<Boat*>& boats) const;
-
     const glm::vec3& GetCameraPos() const { return mCameraPos; }
 
 private:

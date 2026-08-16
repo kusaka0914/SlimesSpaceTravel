@@ -21,6 +21,7 @@ struct EnemyPresetDefinition {
     std::string displayName;
     std::string behaviorProfile = "legacyMelee";
     bool isBoss = false;
+    bool isNormalHitKnockBackEnabled = true;
 
     float hp = 80.0f;
     std::string modelPath = "enemy.obj";

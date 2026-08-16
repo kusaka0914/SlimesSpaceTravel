@@ -73,8 +73,18 @@ EnemyBehaviorActionResult EnemyFanAttackAction::Update(
 
     if (!mHasAppliedDamage) {
         context.combat.TryApplyFanAttack(
-            context.enemy, context.status, mRange, mAngleRadians, deltaTime);
+            context.enemy,
+            context.status,
+            context.stateMachine,
+            mRange,
+            mAngleRadians,
+            deltaTime);
         mHasAppliedDamage = true;
+
+        if (context.stateMachine.GetActionState() !=
+            EnemyStateMachine::ActionState::Attacking) {
+            return EnemyBehaviorActionResult::Finished;
+        }
     }
 
     context.status.DecreaseCanCounteredTimer(deltaTime);

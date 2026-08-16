@@ -2,9 +2,7 @@
 
 #include "Game.h"
 #include "actor/Actor.h"
-#include "actor/Boat.h"
 #include "actor/Player.h"
-#include "component/FocusComponent.h"
 #include "system/SceneSystem.h"
 
 #include <cmath>
@@ -43,7 +41,6 @@ glm::mat4 FocusCamera::GetFocusView(Actor* focusActor) const
 
     return glm::lookAt(cameraPos, ownerPos, upVec);
 }
-
 glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance, float cameraHeight,
                                          float targetHeight)
 {
@@ -167,27 +164,6 @@ std::vector<glm::mat4> FocusCamera::GetOpeningViews() const
             glm::lookAt(glm::vec3(3.0f, 4.0f, 1.0f), glm::vec3(-4.0f, 2.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         views.emplace_back(talkWithDoctorView);
-        return views;
-    }
-
-    return views;
-}
-
-std::vector<glm::mat4> FocusCamera::GetBoatFocusViews(const std::vector<Boat*>& boats) const
-{
-    std::vector<glm::mat4> views;
-
-    for (Boat* boat : boats) {
-        if (!boat || !boat->GetIsActive()) {
-            continue;
-        }
-
-        FocusComponent* focusComponent = boat->GetFocusComponent();
-        if (!focusComponent || focusComponent->GetFocusTimer() < 0.0f) {
-            continue;
-        }
-
-        views.emplace_back(GetFocusView(boat));
         return views;
     }
 

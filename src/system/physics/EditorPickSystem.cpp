@@ -156,7 +156,17 @@ void EditorPickSystem::CreateSpherePickBody(btDiscreteDynamicsWorld* world, Acto
 {
     const glm::vec3 scale = actor->GetScale();
     const float maxScale = std::max(scale.x, std::max(scale.y, scale.z));
-    const float radius = std::max({actor->GetRadius(), maxScale * 0.5f, 0.5f});
+    float radius = std::max({actor->GetRadius(), maxScale * 0.5f, 0.5f});
+    if (const HazardActor* hazardActor =
+            dynamic_cast<const HazardActor*>(actor)) {
+        const glm::vec3 triggerHalfExtents =
+            hazardActor->CalculateScaledTriggerHalfExtents();
+        radius = std::max({
+            triggerHalfExtents.x,
+            triggerHalfExtents.y,
+            triggerHalfExtents.z,
+            0.5f});
+    }
 
     auto shape = std::make_unique<btSphereShape>(radius);
     auto object = std::make_unique<btCollisionObject>();

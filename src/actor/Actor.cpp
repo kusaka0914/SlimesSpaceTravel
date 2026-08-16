@@ -75,7 +75,26 @@ void Actor::Update(float deltaTime)
     if (mIsDebugDisabled ||
         !IsProgressVisibleForCurrentMode() ||
         !IsRuntimeActivationEnabledForCurrentMode()) {
+        mDeferredUpdateSeconds = 0.0f;
         return;
+    }
+
+    float actorUpdateDeltaTime = deltaTime;
+    const float minimumUpdateIntervalSeconds =
+        std::max(0.0f, ResolveMinimumUpdateIntervalSeconds());
+    if (minimumUpdateIntervalSeconds > 0.0f) {
+        mDeferredUpdateSeconds += deltaTime;
+        if (mDeferredUpdateSeconds < minimumUpdateIntervalSeconds) {
+            return;
+        }
+
+        actorUpdateDeltaTime = mDeferredUpdateSeconds;
+        mDeferredUpdateSeconds = 0.0f;
+    }
+    else {
+        // A nearby actor must resume on the current frame instead of applying
+        // time accumulated while it was outside the gameplay area.
+        mDeferredUpdateSeconds = 0.0f;
     }
 
     UpdateUpVec();
@@ -83,11 +102,11 @@ void Actor::Update(float deltaTime)
         UpdateDirectionVectors();
     }
 
-    UpdateActor(deltaTime);
+    UpdateActor(actorUpdateDeltaTime);
 
     for (auto& component : mComponents) {
         Component* componentPtr = component.get();
-        componentPtr->Update(deltaTime);
+        componentPtr->Update(actorUpdateDeltaTime);
     }
 }
 

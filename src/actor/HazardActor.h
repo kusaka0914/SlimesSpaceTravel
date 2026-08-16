@@ -20,6 +20,7 @@ public:
 
     float GetDamage() const { return mDamage; }
     float GetTriggerRadius() const { return mTriggerRadius; }
+    glm::vec3 CalculateScaledTriggerHalfExtents() const;
     float GetDamageIntervalSeconds() const
     {
         return mDamageIntervalSeconds;
@@ -29,9 +30,11 @@ private:
     bool IsPlayerOnSamePlanetSurface(const Player& player) const;
     bool IsPlayerTouching(const Player& player) const;
     bool IsWithinPlayerAttack(const Player& player) const;
+    float CalculateTriggerRadiusAlongWorldDirection(
+        const glm::vec3& worldDirection) const;
 
     float mDamage = 1.0f;
-    float mTriggerRadius = 0.75f;
+    float mTriggerRadius = 1.0f;
     float mDamageIntervalSeconds = 1.0f;
     std::unordered_map<const Player*, std::uint64_t>
         mHandledAttackSequences;

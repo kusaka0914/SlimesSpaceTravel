@@ -87,6 +87,11 @@ public:
         const glm::vec3& from,
         const glm::vec3& to) const;
 
+    bool DoesActorModelSweepOverlapActorCollision(
+        const Actor& movingActor,
+        const glm::vec3& movementStart,
+        const Actor& targetActor) const;
+
 private:
     void ClearBulletWorld();
     void CreateWorld();

@@ -290,7 +290,7 @@ tutorials:
         advance: confirm
   - id: switch_success
     name: スイッチ押し成功
-    repeat: oncePerSession
+    repeat: everyRequest
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -311,7 +311,7 @@ tutorials:
         advance: confirm
   - id: union
     name: 合体
-    repeat: oncePerSession
+    repeat: everyRequest
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333

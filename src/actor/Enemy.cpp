@@ -14,9 +14,15 @@
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace {
+constexpr float dormantEnemyUpdateIntervalSeconds = 0.25f;
+constexpr float minimumFullRateDistance = 30.0f;
+constexpr float fullRateDistanceMargin = 5.0f;
+constexpr float groundedPositionEpsilon = 0.0001f;
+
 Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
 {
     Game* game = enemy.GetGame();
@@ -66,6 +72,69 @@ Enemy::Enemy(Game* game)
 
 Enemy::~Enemy() = default;
 
+float Enemy::ResolveMinimumUpdateIntervalSeconds() const
+{
+    return CanUseReducedUpdateRate()
+        ? dormantEnemyUpdateIntervalSeconds
+        : 0.0f;
+}
+
+bool Enemy::CanUseReducedUpdateRate() const
+{
+    Game* game = GetGame();
+    Planet* planet = GetCurrentPlanet();
+    if (!game ||
+        !planet ||
+        !mStateMachine->IsAlive() ||
+        mStateMachine->GetActionState() != ActionState::Idle ||
+        !mOnGround ||
+        !mHasRecordedGroundedTransform ||
+        GetGroundActor() != planet ||
+        GetIsEditorSelected()) {
+        return false;
+    }
+
+    const float fullRateDistance =
+        std::max(
+            minimumFullRateDistance,
+            GetDetectionRange() + fullRateDistanceMargin);
+    const float fullRateDistanceSquared =
+        fullRateDistance * fullRateDistance;
+
+    for (Player* player : game->GetPlayers()) {
+        if (!player ||
+            !player->GetIsActive() ||
+            !player->IsAlive() ||
+            player->GetCurrentPlanet() != planet) {
+            continue;
+        }
+
+        const glm::vec3 enemyToPlayer =
+            player->GetPos() - GetPos();
+        const float distanceSquared =
+            glm::dot(enemyToPlayer, enemyToPlayer);
+        if (distanceSquared <= fullRateDistanceSquared) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Enemy::ShouldUpdateUpVecEveryFrame() const
+{
+    if (!mHasRecordedGroundedTransform ||
+        !mOnGround ||
+        GetGroundActor() != GetCurrentPlanet()) {
+        return true;
+    }
+
+    const glm::vec3 positionChange =
+        GetPos() - mLastGroundedPosition;
+    return glm::dot(positionChange, positionChange) >
+        groundedPositionEpsilon * groundedPositionEpsilon;
+}
+
 void Enemy::ApplyConfig(const std::string& type)
 {
     const EnemyConfig config = EnemyConfigLoader::Load("../assets/data/actor/enemies.yaml", type);
@@ -75,6 +144,8 @@ void Enemy::ApplyConfig(const std::string& type)
 void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
+    SetIsNormalHitKnockBackEnabled(
+        config.isNormalHitKnockBackEnabled);
     SetKnockBackSpeed(config.knockBackSpeed);
     SetDefaultLaunchedTimer(config.defaultLaunchedTimer);
     SetLaunchHeight(config.launchHeight);

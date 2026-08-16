@@ -203,6 +203,10 @@ public:
 protected:
     void UpdateDirectionVectors();
     void UpdateOrientationFromDirectionVectors();
+    virtual float ResolveMinimumUpdateIntervalSeconds() const
+    {
+        return 0.0f;
+    }
     virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }
     virtual bool ShouldRebuildDirectionVectorsEveryFrame() const { return true; }
     virtual void OnUpVecUpdateFailed();
@@ -252,4 +256,7 @@ protected:
     glm::vec3 mEditorRotation{0.0f};
     bool mIsEditorSelected = false;
     EditorAuthoredTransform mEditorAuthoredTransform;
+
+private:
+    float mDeferredUpdateSeconds = 0.0f;
 };

@@ -883,12 +883,9 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    const std::vector<Boat*> boats = currentPlanet->GetBoats();
-    if (!boats.empty()) {
-        views = mFocusCamera.GetBoatFocusViews(boats);
-        if (!views.empty()) {
-            return views;
-        }
+    if (Boat* focusingBoat = FindFocusingBoat()) {
+        views.emplace_back(mFocusCamera.GetFocusView(focusingBoat));
+        return views;
     }
 
     Key* key = currentPlanet->GetKey();
@@ -982,6 +979,34 @@ int CameraSystem::GetPrimaryPlayerIndex() const
     }
 
     return controlledIndex;
+}
+
+Boat* CameraSystem::FindFocusingBoat() const
+{
+    Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
+    if (!stage) {
+        return nullptr;
+    }
+
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (!boat || !boat->GetIsActive()) {
+                continue;
+            }
+
+            FocusComponent* focusComponent =
+                boat->GetFocusComponent();
+            if (focusComponent &&
+                focusComponent->GetFocusTimer() >= 0.0f) {
+                return boat;
+            }
+        }
+    }
+    return nullptr;
 }
 
 Boat* CameraSystem::FindMovingBoat() const

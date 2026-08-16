@@ -766,6 +766,7 @@ void PlayerMovement::StartDodgeMovementInDirection(
     DodgeTrajectory trajectory)
 {
     if (!player.GetOnGround()) {
+        player.RestartAirborneGravityFallbackDelay();
         CancelJumpApexHover();
         CancelAirborneActionHover();
     }
@@ -1166,6 +1167,8 @@ float PlayerMovement::CalculateAirborneGravityAcceleration(
 
 void PlayerMovement::StartAirSlamMovement(Player& player)
 {
+    player.RestartAirborneGravityFallbackDelay();
+
     const glm::vec3 upDirection =
         GetNormalizedUpDirection(player);
 

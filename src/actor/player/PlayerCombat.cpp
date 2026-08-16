@@ -36,6 +36,7 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
             return;
         }
 
+        player.RestartAirborneGravityFallbackDelay();
         ResetGroundAttackCombo();
         ++mAirAttackCount;
         mAttackKind = PlayerAttackKind::Wide;

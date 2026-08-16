@@ -13,6 +13,10 @@ public:
     EnemyStatus();
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
+    void SetIsNormalHitKnockBackEnabled(bool isEnabled)
+    {
+        mIsNormalHitKnockBackEnabled = isEnabled;
+    }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
@@ -81,6 +85,10 @@ public:
     void AddHitPlayer(Player* player) { mHitPlayers.insert(player); }
 
     bool GetIsBoss() const { return mIsBoss; }
+    bool IsNormalHitKnockBackEnabled() const
+    {
+        return mIsNormalHitKnockBackEnabled;
+    }
     bool GetCanCountered() const { return mCanCountered; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
@@ -125,6 +133,7 @@ private:
 
     bool mIsCountered;
     bool mIsBoss;
+    bool mIsNormalHitKnockBackEnabled = true;
     bool mIsHit;
     bool mIsStrongAttacked;
     bool mIsJustBeforeAttack;

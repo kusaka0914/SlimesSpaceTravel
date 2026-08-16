@@ -392,6 +392,11 @@ public:
         return mPlanetGravityController
             .CalculateAirbornePhysicsUpDirection(*this);
     }
+    void RestartAirborneGravityFallbackDelay()
+    {
+        mPlanetGravityController
+            .RestartFallbackDelayForAirborneAction(*this);
+    }
 
     ActionState GetActionState() const { return mStateMachine.GetActionState(); }
 

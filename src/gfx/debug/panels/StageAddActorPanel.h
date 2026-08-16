@@ -107,7 +107,7 @@ private:
     std::string mSelectedHazardActorModel = "crystal.obj";
     std::string mSelectedHazardActorTexture;
     glm::vec3 mHazardActorScale = glm::vec3(0.75f);
-    float mHazardActorTriggerRadius = 0.75f;
+    float mHazardActorTriggerRadius = 1.0f;
     float mHazardActorDamage = 1.0f;
     float mHazardActorDamageIntervalSeconds = 1.0f;
 
