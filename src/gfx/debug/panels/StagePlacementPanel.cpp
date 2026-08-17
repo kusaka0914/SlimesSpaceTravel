@@ -2263,6 +2263,21 @@ bool StagePlacementPanel::DrawPlatformTypeEditor(
         RebuildPhysicsWorldIfNeeded(true);
     }
 
+    bool adhesionEnabled = platform->GetAdhesionComponent() != nullptr;
+    if (ImGui::Checkbox(
+            ("触れたらくっつく##platformAdhesionEnabled" + sequenceName +
+             std::to_string(listIndex)).c_str(),
+            &adhesionEnabled)) {
+        if (mPushUndoCallback) mPushUndoCallback();
+        if (adhesionEnabled) {
+            platform->AddAdhesionComponent();
+        } else {
+            platform->RemoveAdhesionComponent();
+        }
+        Save();
+        RebuildPhysicsWorldIfNeeded(true);
+    }
+
     bool pressureSwitchEnabled =
         platform->GetPressureSwitchComponent() != nullptr;
     if (ImGui::Checkbox(
@@ -3867,6 +3882,13 @@ void StagePlacementPanel::SaveActorCommonYaml(
             node["speed"] = component->GetSpeed();
         } else {
             removeComponentNode("conveyor");
+        }
+
+        if (platform->GetAdhesionComponent()) {
+            platformNode["components"]["adhesion"] =
+                YAML::Node(YAML::NodeType::Map);
+        } else {
+            removeComponentNode("adhesion");
         }
 
         if (const PlatformPressureSwitchComponent* component =

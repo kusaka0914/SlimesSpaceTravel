@@ -229,9 +229,9 @@ enemies:
     phi: 0.7273158
     height: 0.86870074
     pos:
-      - -1.89
-      - -1.31
-      - -0.55
+      - -1.53
+      - 2.44
+      - 4.31
     upVec:
       - -0.9736072
       - -0.21065426
@@ -247,9 +247,9 @@ enemies:
       - -0.44319585
       - 0.5985045
     scale:
-      - 1
-      - 1
-      - 1
+      - 1.5
+      - 2
+      - 1.5
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -369,9 +369,9 @@ enemies:
     phi: 0.765724
     height: 2.4936323
     pos:
-      - -1.93
-      - -0.1
-      - 2.1
+      - -1.84
+      - 1.08
+      - -8.98
     upVec:
       - -0.98837733
       - 0.113730565
@@ -1489,6 +1489,8 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
+        enemyTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1687,7 +1689,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets: []
+        targets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1818,6 +1821,8 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
+        enemyTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -2017,7 +2022,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
+        targets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2121,6 +2127,8 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
+        enemyTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2378,6 +2386,8 @@ platforms:
         targets:
           - platform_30
           - platform_31
+        enemyTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925

@@ -3,12 +3,23 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/player/PlayerCombat.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+
+namespace {
+constexpr float geometryEpsilon = 0.000001f;
+using EnemyCollisionGeometry::CalculateClosestPoint;
+using EnemyCollisionGeometry::CalculateSupportDistance;
+using EnemyCollisionGeometry::CreateCandidatePoints;
+using EnemyCollisionGeometry::DoesSegmentIntersectExpandedBounds;
+using EnemyCollisionGeometry::ModelBounds;
+using EnemyCollisionGeometry::TryCreateModelBounds;
+}
 
 std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, const PlayerCombat& combat) const
 {
@@ -43,17 +54,11 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, cons
             continue;
         }
 
-        const glm::vec3 enemyPos = enemy->GetPos();
-        const glm::vec3 playerToEnemy = enemyPos - player.GetPos();
-        const float dist = glm::length(playerToEnemy);
-        const glm::vec3 toEnemy =
-            dist > 0.000001f
-                ? playerToEnemy / dist
-                : player.GetFacingForwardVec();
-        const float dot = glm::dot(player.GetFacingForwardVec(), toEnemy);
-        const float effectiveRange = combat.GetAttackRange() + enemy->GetRadius();
-
-        if (IsEnemyHitByAttack(dist, dot, effectiveRange, combat.GetAttackAngle())) {
+        if (IsEnemyModelHitByAttack(
+                player,
+                *enemy,
+                combat.GetAttackRange(),
+                combat.GetAttackAngle())) {
             hitEnemies.push_back(enemy);
         }
     }
@@ -96,8 +101,18 @@ IsGroundedEnemyWithinAirAttackHeight(
         player.GetCollisionScaleMultiplier() *
         0.5f;
     constexpr float airAttackDownwardReach = 0.35f;
+    ModelBounds enemyBounds;
+    const float enemyModelTopOffset =
+        TryCreateModelBounds(enemy, enemyBounds)
+            ? glm::dot(
+                  enemyBounds.center - enemy.GetPos(),
+                  upDirection) +
+                CalculateSupportDistance(
+                    enemyBounds,
+                    upDirection)
+            : std::max(0.0f, enemy.GetRadius());
     const float maximumReachableHeight =
-        std::max(0.0f, enemy.GetRadius()) +
+        enemyModelTopOffset +
         scaledPlayerHalfHeight +
         airAttackDownwardReach;
     return playerHeightAboveEnemy <=
@@ -126,13 +141,10 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesInRadius(
             continue;
         }
 
-        const float effectiveRange =
-            safeRange +
-            std::max(0.0f, enemy->GetRadius());
-        const glm::vec3 playerToEnemy =
-            enemy->GetPos() - player.GetPos();
-        if (glm::dot(playerToEnemy, playerToEnemy) <=
-            effectiveRange * effectiveRange) {
+        if (IsEnemyModelWithinRadius(
+                player,
+                *enemy,
+                safeRange)) {
             hitEnemies.emplace_back(enemy);
         }
     }
@@ -199,20 +211,34 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
             continue;
         }
 
-        float positionOnSegment = 0.0f;
-        if (scaledMovementLengthSquared > 0.000001f) {
-            const glm::vec3 scaledEnemyOffset =
-                scaleVerticalDistanceForHitTest(
-                    enemy->GetPos() - movementStart);
-            positionOnSegment =
-                glm::dot(
-                    scaledEnemyOffset,
-                    scaledMovement) /
-                scaledMovementLengthSquared;
-            positionOnSegment =
-                std::clamp(positionOnSegment, 0.0f, 1.0f);
+        ModelBounds enemyBounds;
+        if (TryCreateModelBounds(*enemy, enemyBounds)) {
+            if (DoesAirDodgePathTouchEnemyModel(
+                    player,
+                    *enemy,
+                    movementStart,
+                    movementEnd)) {
+                hitEnemies.emplace_back(enemy);
+            }
+            continue;
         }
 
+        // モデルの境界情報がない古いアセットだけ、従来の半径判定に戻す。
+        if (scaledMovementLengthSquared <= geometryEpsilon) {
+            continue;
+        }
+
+        float positionOnSegment = 0.0f;
+        const glm::vec3 scaledEnemyOffset =
+            scaleVerticalDistanceForHitTest(
+                enemy->GetPos() - movementStart);
+        positionOnSegment =
+            glm::dot(
+                scaledEnemyOffset,
+                scaledMovement) /
+            scaledMovementLengthSquared;
+        positionOnSegment =
+            std::clamp(positionOnSegment, 0.0f, 1.0f);
         const glm::vec3 closestPlayerPosition =
             movementStart + movement * positionOnSegment;
         const float contactDistance =
@@ -222,15 +248,131 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
             enemy->GetPos() - closestPlayerPosition;
         const glm::vec3 scaledPlayerToEnemy =
             scaleVerticalDistanceForHitTest(playerToEnemy);
-        if (glm::dot(
-                scaledPlayerToEnemy,
-                scaledPlayerToEnemy) <=
+        if (glm::dot(scaledPlayerToEnemy, scaledPlayerToEnemy) <=
             contactDistance * contactDistance) {
             hitEnemies.emplace_back(enemy);
         }
     }
 
     return hitEnemies;
+}
+
+bool PlayerAttackHitDetector::IsEnemyModelHitByAttack(
+    const Player& player,
+    const Enemy& enemy,
+    float attackRange,
+    float attackAngle) const
+{
+    ModelBounds enemyBounds;
+    if (!TryCreateModelBounds(enemy, enemyBounds)) {
+        const glm::vec3 playerToEnemy =
+            enemy.GetPos() - player.GetPos();
+        const float distance = glm::length(playerToEnemy);
+        const glm::vec3 facingDirection =
+            glm::normalize(player.GetFacingForwardVec());
+        const glm::vec3 directionToEnemy =
+            distance > geometryEpsilon
+                ? playerToEnemy / distance
+                : facingDirection;
+        return IsEnemyHitByAttack(
+            distance,
+            glm::dot(facingDirection, directionToEnemy),
+            attackRange + enemy.GetRadius(),
+            attackAngle);
+    }
+
+    const glm::vec3 facingDirection =
+        glm::normalize(player.GetFacingForwardVec());
+    const std::array<glm::vec3, 9> candidatePoints =
+        CreateCandidatePoints(
+            enemyBounds,
+            player.GetPos());
+    const float facingThreshold =
+        std::cos(attackAngle * 0.5f);
+
+    for (const glm::vec3& candidatePoint : candidatePoints) {
+        const glm::vec3 playerToCandidate =
+            candidatePoint - player.GetPos();
+        const float distance = glm::length(playerToCandidate);
+        const glm::vec3 directionToCandidate =
+            distance > geometryEpsilon
+                ? playerToCandidate / distance
+                : facingDirection;
+        if (distance <= attackRange &&
+            glm::dot(facingDirection, directionToCandidate) >=
+                facingThreshold) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool PlayerAttackHitDetector::IsEnemyModelWithinRadius(
+    const Player& player,
+    const Enemy& enemy,
+    float range) const
+{
+    ModelBounds enemyBounds;
+    if (!TryCreateModelBounds(enemy, enemyBounds)) {
+        const glm::vec3 playerToEnemy =
+            enemy.GetPos() - player.GetPos();
+        const float effectiveRange =
+            range + std::max(0.0f, enemy.GetRadius());
+        return glm::dot(playerToEnemy, playerToEnemy) <=
+            effectiveRange * effectiveRange;
+    }
+
+    const glm::vec3 closestPoint =
+        CalculateClosestPoint(
+            enemyBounds,
+            player.GetPos());
+    const glm::vec3 playerToClosestPoint =
+        closestPoint - player.GetPos();
+    return glm::dot(playerToClosestPoint, playerToClosestPoint) <=
+        range * range;
+}
+
+bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
+    const Player& player,
+    const Enemy& enemy,
+    const glm::vec3& movementStart,
+    const glm::vec3& movementEnd) const
+{
+    ModelBounds enemyBounds;
+    if (!TryCreateModelBounds(enemy, enemyBounds)) {
+        return false;
+    }
+
+    const PhysicsSystem* physicsSystem =
+        player.GetGame()
+            ? player.GetGame()->GetPhysicsSystem()
+            : nullptr;
+    if (!physicsSystem) {
+        return false;
+    }
+
+    const float horizontalCollisionRadius =
+        0.5f *
+        std::max(
+            physicsSystem->GetPlayerCollisionWidth(),
+            physicsSystem->GetPlayerCollisionDepth()) *
+        player.GetCollisionScaleMultiplier();
+    const float verticalCollisionHalfHeight =
+        0.5f *
+        physicsSystem->GetPlayerCollisionHeight() *
+        player.GetCollisionScaleMultiplier();
+    constexpr float airDodgeVerticalReachMultiplier = 2.0f;
+    const glm::vec3 expansion(
+        horizontalCollisionRadius,
+        verticalCollisionHalfHeight *
+            airDodgeVerticalReachMultiplier,
+        horizontalCollisionRadius);
+    return DoesSegmentIntersectExpandedBounds(
+        enemyBounds,
+        movementStart,
+        movementEnd,
+        expansion);
 }
 
 bool PlayerAttackHitDetector::IsEnemyHitByAttack(float dist, float dot, float effectiveRange, float attackAngle) const

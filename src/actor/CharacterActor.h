@@ -5,6 +5,7 @@
 #include <btBulletDynamicsCommon.h>
 
 class Game;
+class Platform;
 
 class CharacterActor : public Actor {
 public:
@@ -31,6 +32,11 @@ public:
     bool GetOnGround() const { return mOnGround; }
 
     Actor* GetGroundActor() const { return mGroundActor; }
+
+    void AttachToPlatform(Platform* platform);
+    void DetachFromPlatform();
+    bool IsAttachedToPlatform() const { return mAttachedPlatform != nullptr; }
+    Platform* GetAttachedPlatform() const { return mAttachedPlatform; }
 
     const glm::vec3& GetFacingForwardVec() const
     {
@@ -89,4 +95,5 @@ protected:
 
 private:
     Actor* mGroundActor = nullptr;
+    Platform* mAttachedPlatform = nullptr;
 };

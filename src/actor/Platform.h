@@ -8,6 +8,7 @@
 class Game;
 class Component;
 class PlatformConveyorComponent;
+class PlatformAdhesionComponent;
 class PlatformDirectionalMovementComponent;
 class PlatformEnemyClearUnlockComponent;
 class PlatformFadeOnStandComponent;
@@ -55,6 +56,13 @@ public:
     PlatformConveyorComponent* AddConveyorComponent();
     void RemoveConveyorComponent();
     PlatformConveyorComponent* GetConveyorComponent() const { return mConveyorComponent; }
+
+    PlatformAdhesionComponent* AddAdhesionComponent();
+    void RemoveAdhesionComponent();
+    PlatformAdhesionComponent* GetAdhesionComponent() const
+    {
+        return mAdhesionComponent;
+    }
 
     PlatformPressureSwitchComponent* AddPressureSwitchComponent();
     void RemovePressureSwitchComponent();
@@ -106,6 +114,7 @@ private:
     PlatformDirectionalMovementComponent* mDirectionalMovementComponent = nullptr;
     PlatformRotationComponent* mRotationComponent = nullptr;
     PlatformConveyorComponent* mConveyorComponent = nullptr;
+    PlatformAdhesionComponent* mAdhesionComponent = nullptr;
     PlatformPressureSwitchComponent* mPressureSwitchComponent = nullptr;
     PlatformEnemyClearUnlockComponent*
         mEnemyClearUnlockComponent = nullptr;

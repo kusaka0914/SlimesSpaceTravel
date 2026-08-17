@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Enemy.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
@@ -186,8 +187,22 @@ void EmitEnemyDefeatEffect(Enemy& enemy, const EnemyStatus& status)
 
     const glm::vec3 upDirection = GetNormalizedUpDirection(enemy);
 
+    EnemyCollisionGeometry::ModelBounds enemyBounds;
+    const glm::vec3 effectPosition =
+        EnemyCollisionGeometry::TryCreateModelBounds(
+            enemy,
+            enemyBounds)
+            ? enemyBounds.center +
+                  upDirection *
+                      EnemyCollisionGeometry::CalculateSupportDistance(
+                          enemyBounds,
+                          upDirection) *
+                      0.5f
+            : enemy.GetPos() +
+                  upDirection * enemy.GetRadius() * 0.5f;
+
     ParticleSpawnContext context;
-    context.position = enemy.GetPos() + upDirection * enemy.GetRadius() * 0.5f;
+    context.position = effectPosition;
     context.normal = upDirection;
     context.direction = upDirection;
     context.scale = status.GetIsBoss() ? 1.8f : 1.0f;

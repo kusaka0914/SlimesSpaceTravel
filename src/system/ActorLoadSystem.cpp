@@ -219,6 +219,11 @@ void ApplyPlatformBehaviorConfigs(
             node["speed"] ? node["speed"].as<float>() : 2.0f);
     }
 
+    if (const YAML::Node node = components["adhesion"];
+        node && node.IsMap()) {
+        platform->AddAdhesionComponent();
+    }
+
     if (const YAML::Node node = components["pressureSwitch"];
         node && node.IsMap()) {
         std::vector<std::string> targetPlatformIds;

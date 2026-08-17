@@ -70,11 +70,11 @@ enemies:
     behaviorProfile: bossMelee
     hp: 400
     modelPath: enemy.obj
-    scale: 1
+    scale: 10
     speed: 3
     attack: 1
     breakCountMax: 3
-    radius: 1.5
+    radius: 2
     defaultStandByAttackTimer: 3
     defaultAttackMotionTimer: 0.5
     attackSpeed: 5
@@ -91,6 +91,7 @@ enemies:
     attacks:
       - type: meleeAttack
         weight: 100
+    normalHitKnockBackEnabled: true
   - type: normal_short_interval
     displayName: 通常敵（間隔短い）
     behaviorProfile: legacyMelee

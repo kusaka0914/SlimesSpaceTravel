@@ -3,6 +3,7 @@
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/player/PlayerMovement.h"
 
 #include <cmath>
@@ -44,6 +45,23 @@ bool IsValidEnemy(const Player& player, const Enemy* enemy)
             player.GetPos(),
             enemy->GetPos());
 }
+
+float CalculateDistanceSquaredToEnemySurface(
+    const Player& player,
+    const Enemy& enemy)
+{
+    EnemyCollisionGeometry::ModelBounds modelBounds;
+    const glm::vec3 closestPoint =
+        EnemyCollisionGeometry::TryCreateModelBounds(
+            enemy,
+            modelBounds)
+            ? EnemyCollisionGeometry::CalculateClosestPoint(
+                  modelBounds,
+                  player.GetPos())
+            : enemy.GetPos();
+    const glm::vec3 offset = closestPoint - player.GetPos();
+    return glm::dot(offset, offset);
+}
 } // namespace
 
 Enemy* PlayerTargetingAssist::FindAttackTarget(
@@ -79,7 +97,11 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
         }
 
         const glm::vec3 toEnemyCenter = enemy->GetPos() - player.GetPos();
-        const float distanceSquared = glm::dot(toEnemyCenter, toEnemyCenter);
+        const float distanceSquared =
+            CalculateDistanceSquaredToEnemySurface(player, *enemy);
+        if (distanceSquared > attackRange * attackRange) {
+            continue;
+        }
 
         // PlayerAttackHitDetectorと同じ距離条件を使う。
         const float effectiveRange = attackRange + enemy->GetRadius();
@@ -159,7 +181,8 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
         }
 
         const glm::vec3 toEnemyCenter = enemy->GetPos() - player.GetPos();
-        const float distanceSquared = glm::dot(toEnemyCenter, toEnemyCenter);
+        const float distanceSquared =
+            CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > maxDistanceSquared) {
             continue;
         }
@@ -220,10 +243,8 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTarget(
             continue;
         }
 
-        const glm::vec3 playerToEnemy =
-            enemy->GetPos() - player.GetPos();
         const float distanceSquared =
-            glm::dot(playerToEnemy, playerToEnemy);
+            CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > maxDistanceSquared ||
             distanceSquared >= nearestDistanceSquared) {
             continue;
@@ -256,8 +277,8 @@ Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTarget(
             continue;
         }
 
-        const glm::vec3 playerToEnemy = enemy->GetPos() - player.GetPos();
-        const float distanceSquared = glm::dot(playerToEnemy, playerToEnemy);
+        const float distanceSquared =
+            CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > maxDistanceSquared ||
             distanceSquared >= nearestDistanceSquared) {
             continue;
@@ -298,8 +319,8 @@ Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTargetNearRecovery(
             continue;
         }
 
-        const glm::vec3 playerToEnemy = enemy->GetPos() - player.GetPos();
-        const float distanceSquared = glm::dot(playerToEnemy, playerToEnemy);
+        const float distanceSquared =
+            CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > maxDistanceSquared ||
             distanceSquared >= nearestDistanceSquared) {
             continue;

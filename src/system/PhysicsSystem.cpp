@@ -432,7 +432,8 @@ std::optional<PhysicsSystem::RayHitActor> PhysicsSystem::CheckFallRespawnBySweep
 bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
     const Actor& movingActor,
     const glm::vec3& movementStart,
-    const Actor& targetActor) const
+    const Actor& targetActor,
+    float contactTolerance) const
 {
     const LoadedModel* movingModel =
         movingActor.GetLoadedModel();
@@ -462,7 +463,7 @@ bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
             scaledHalfExtents.x,
             scaledHalfExtents.y,
             scaledHalfExtents.z));
-    movingModelShape.setMargin(0.0f);
+    movingModelShape.setMargin(std::max(0.0f, contactTolerance));
 
     const float targetCollisionScale =
         targetActor.GetCollisionScaleMultiplier();

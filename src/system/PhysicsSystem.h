@@ -90,7 +90,8 @@ public:
     bool DoesActorModelSweepOverlapActorCollision(
         const Actor& movingActor,
         const glm::vec3& movementStart,
-        const Actor& targetActor) const;
+        const Actor& targetActor,
+        float contactTolerance = 0.0f) const;
 
 private:
     void ClearBulletWorld();

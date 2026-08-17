@@ -11,7 +11,7 @@ planets:
     stageNum: 0
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/slimePlatform.png
   - center: [1002, 0, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
@@ -82,7 +82,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [33.625343, 2.7211722e-06, -22.481262]
+  - center: [33.623703, 2.7211722e-06, -22.480217]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -168,9 +168,9 @@ enemies:
     phi: -1.1391091
     height: -3.835722
     pos:
-      - -1.04
-      - -1.91
-      - -2.44
+      - -0.11
+      - -1.79
+      - -2.57
     upVec:
       - 0.015585067
       - -0.99860823
@@ -456,7 +456,7 @@ players:
 star:
   - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.51, -2.72, 0.47], upVec: [0.02592474, -0.9992376, 0.029190011]}
 NPCs:
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["しってる～？\n分身してるときは攻撃力も半分になっちゃうんだ～！", "だから敵と戦うときは合体したほうがいいよ～！\n2人で戦うならいいけどね～！"], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: "しってる～？\n", ruby: false}, {text: 分, ruby: true, reading: ぶん}, {text: 身, ruby: true, reading: しん}, {text: してるときは, ruby: false}, {text: 攻, ruby: true, reading: こう}, {text: 撃, ruby: true, reading: げき}, {text: 力, ruby: true, reading: りょく}, {text: も, ruby: false}, {text: 半, ruby: true, reading: はん}, {text: 分, ruby: true, reading: ぶん}, {text: になっちゃうんだ～！, ruby: false}]}, {talkIndex: 1, segments: [{text: だから, ruby: false}, {text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: "したほうがいいよ～！\n2", ruby: false}, {text: 人, ruby: true, reading: ひと}, {text: で, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うならいいけどね～！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 敵と戦うときは合体したほうがいいよ～！}], rubies: [{talkIndex: 1, segments: [{text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: したほうがいいよ～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
+  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: -1.59115, phi: 0.8946725, height: -3.539135, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [表から見えなくても、裏から見えることもあるよ！, ほら！あのスイッチとか！], pos: [-0.03, 1.92, -1.54], upVec: [2.2551054e-05, 0.9958164, -0.09137756], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}, {talkIndex: 1, segments: [{text: ほら！あのスイッチとか！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 表から見えなくても、裏から見えることもあるよ！}], rubies: [{talkIndex: 1, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 1, sequence: platforms, index: 46}]}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: 2.0152936, phi: -0.31607372, height: -1.5378351, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.26], name: 新しいNPC, talkTexts: [そこの足場、乗ったら動くんだけど消えちゃうんだよね..., 消えるちょっと前にジャンプしたらいけないかな？], pos: [-1.83, -1.39, 3.82], upVec: [-0.14265211, -0.9456535, 0.29221565], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: そこの, ruby: false}, {text: 足, ruby: true, reading: あし}, {text: 場, ruby: true, reading: ば}, {text: 、, ruby: false}, {text: 乗, ruby: true, reading: の}, {text: ったら, ruby: false}, {text: 動, ruby: true, reading: うご}, {text: くんだけど, ruby: false}, {text: 消, ruby: true, reading: き}, {text: えちゃうんだよね..., ruby: false}]}, {talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプしたらいけないかな？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 消えるちょっと前にジャンプ！}], rubies: [{talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 41}]}
 platforms:
@@ -494,45 +494,43 @@ platforms:
     textureOverride: textures/roadTex.png
   - currentPlanetNum: 0
     pos:
-      - 4.27
-      - -0.84
-      - 7.82
+      - 4.21
+      - -2.52
+      - 7.7
     theta: -2.424334
     phi: -1.090234
     height: 2.7
-    facingYaw: -1.0698878
+    facingYaw: 1.5651671
     rotation:
-      - 0
-      - 1.0698878
-      - 0
+      - -1.5677408
+      - -0.49728552
+      - -0.006362838
     scale:
       - 1
       - 0.2
       - 1
     modelPath: platform.obj
     upVec:
-      - 0
-      - -1
-      - 0
+      - -0.47704923
+      - -2.0146372e-05
+      - -0.8788767
     platformId: platform_24
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
+      - 0.1759278
+      - 0.17209867
+      - -0.68486446
+      - 0.6858514
+    textureOverride: textures/slimePlatform.png
     components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
+      adhesion: {}
   - currentPlanetNum: 0
     pos:
-      - 5.23
-      - -0.86
-      - 9.55
+      - 4.78
+      - -3.33
+      - 8.73
     theta: -2.424334
     phi: -1.090234
     height: 2.7
@@ -560,10 +558,6 @@ platforms:
       - 0
       - 0.86029726
     textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 0
     pos:
       - 6.2
@@ -597,14 +591,13 @@ platforms:
       - 0.86029726
     textureOverride: textures/glass.png
     components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
+      jumpToggle:
+        initiallyVisible: true
   - currentPlanetNum: 0
     pos:
-      - 5.43
+      - 7.16
       - -0.9
-      - 13.88
+      - 12.93
     theta: -2.424334
     phi: -1.090234
     height: 2.7
@@ -633,14 +626,13 @@ platforms:
       - 0.86029726
     textureOverride: textures/glass.png
     components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
+      jumpToggle:
+        initiallyVisible: true
   - currentPlanetNum: 0
     pos:
-      - 4.68
+      - 6.36
       - -0.89
-      - 16.57
+      - 15.65
     theta: 1.2956716
     phi: -0.051661205
     height: 11.2492695
@@ -669,9 +661,8 @@ platforms:
       - 0.86029726
     textureOverride: textures/glass.png
     components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
+      jumpToggle:
+        initiallyVisible: true
   - currentPlanetNum: 0
     pos:
       - 4.34
@@ -1200,8 +1191,7 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-      enemyClearUnlock:
-        {}
+      enemyClearUnlock: {}
   - currentPlanetNum: 2
     pos:
       - -5.04
@@ -1407,10 +1397,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet1
-        targets:
-          []
-      enemyClearUnlock:
-        {}
+        targets: []
+      enemyClearUnlock: {}
     rotationQuat:
       - -0.010605924
       - 0.48201528
@@ -2315,8 +2303,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet2
-        targets:
-          []
+        targets: []
     rotationQuat:
       - 0.90604794
       - -0.012187039
@@ -2665,8 +2652,7 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets:
-          []
+        targets: []
         enemyTargets:
           - sequence: enemies
             index: 6
@@ -2833,6 +2819,270 @@ platforms:
         moveOnPlayer: true
         returnDelay: 1
         endpointWaitSeconds: 0
+  - currentPlanetNum: 0
+    pos:
+      - 5.62
+      - -4.92
+      - 10.28
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 1.5651671
+    rotation:
+      - -1.5677408
+      - -0.49728552
+      - -0.006362838
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.47704923
+      - -2.0146372e-05
+      - -0.8788767
+    platformId: platform_3
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.1759278
+      - 0.17209867
+      - -0.68486446
+      - 0.6858514
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 0
+    pos:
+      - 7.82
+      - -5.73
+      - 14.43
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_4
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/glass.png
+  - currentPlanetNum: 0
+    pos:
+      - 7.04
+      - -7.64
+      - 18.27
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: -1.5616175
+    rotation:
+      - -1.5679882
+      - 0.29689866
+      - -0.0040836763
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.29254088
+      - -0.0040029287
+      - -0.9562447
+    platformId: platform_5
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.10300732
+      - -0.10615684
+      - -0.69813186
+      - 0.7005228
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 5
+    pos:
+      - -17.83
+      - -7.91
+      - -2.76
+    theta: -3.0511444
+    phi: -0.27876619
+    height: 15.096397
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_6
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/glass.png
+  - currentPlanetNum: 5
+    pos:
+      - -20.92
+      - -10.5
+      - 2.25
+    theta: 3.131431
+    phi: -0.34997317
+    height: 17.162998
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_7
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/glass.png
+  - currentPlanetNum: 5
+    pos:
+      - -14.71
+      - -10.02
+      - -1.53
+    theta: -3.0437431
+    phi: -0.3634489
+    height: 15.969482
+    facingYaw: 1.5679911
+    rotation:
+      - -1.5615144
+      - -1.2773015
+      - -0.0137904035
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.9572345
+      - 0.0039187674
+      - -0.28928688
+    platformId: platform_8
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.42347732
+      - -0.41956055
+      - 0.56800205
+      - -0.56745887
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 5
+    pos:
+      - -14.97
+      - -7.91
+      - -1.08
+    theta: -3.0511444
+    phi: -0.27876619
+    height: 15.096397
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_10
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/glass.png
+  - currentPlanetNum: 0
+    pos:
+      - 1.17
+      - -2.98
+      - 1.74
+    theta: -2.424334
+    phi: -1.090234
+    height: 2.7
+    facingYaw: 0.49731398
+    rotation:
+      - -0.0048498185
+      - -0.49730903
+      - -0.01063641
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.012949611
+      - -0.99990714
+      - -0.004262341
+    platformId: platform_11
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.005751362
+      - 0.24608338
+      - -0.0036590947
+      - 0.9692247
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []

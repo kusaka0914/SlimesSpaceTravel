@@ -3,9 +3,11 @@
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/player/PlayerConfig.h"
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
+#include "component/PlatformBehaviorComponents.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -216,11 +218,26 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    if (GetIsActive() && GetCurrentPlanet() && !IsAttachedToPlatform()) {
+        for (Platform* platform : GetCurrentPlanet()->GetPlatforms()) {
+            if (!platform) {
+                continue;
+            }
+
+            PlatformAdhesionComponent* adhesionComponent =
+                platform->GetAdhesionComponent();
+            if (adhesionComponent &&
+                adhesionComponent->TryAttachPlayerIfTouching(*this)) {
+                break;
+            }
+        }
+    }
+
     PhysicsSystem* physicsSystem =
         mGame
             ? mGame->GetPhysicsSystem()
             : nullptr;
-    if (GetIsActive() && physicsSystem) {
+    if (GetIsActive() && physicsSystem && !IsAttachedToPlatform()) {
         const ActorMovementCollisionResult overlapResolution =
             physicsSystem->ResolveMovementCollision(
                 this,
@@ -287,6 +304,7 @@ void Player::UpdateActor(float deltaTime)
     const bool hasMovementInput = std::abs(mInput.GetMoveForward()) > movementInputDeadZone ||
                                   std::abs(mInput.GetMoveLeft()) > movementInputDeadZone;
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
+                            !IsAttachedToPlatform() &&
                             hasMovementInput;
 
     if (didLand) {

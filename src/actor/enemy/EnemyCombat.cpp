@@ -29,7 +29,9 @@ void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& m
 
     enemy.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
 
-    if (status.IsBreakCountEmpty()) {
+    // 空中の敵を再度打ち上げると、ガード破壊のたびに浮き直してしまう。
+    // ガード数は減らすが、打ち上げ開始は地上にいる敵だけに限定する。
+    if (status.IsBreakCountEmpty() && enemy.IsOnGround()) {
         movement.LaunchIntoAir(enemy, status, stateMachine, deltaTime);
         return;
     }

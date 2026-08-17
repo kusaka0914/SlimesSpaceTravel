@@ -2,6 +2,7 @@
 
 #include "actor/Enemy.h"
 #include "actor/Player.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
@@ -42,11 +43,29 @@ void EmitAttackHitEffect(Player& player, const Enemy& enemy, float effectScale)
         enemy.GetUpVec(),
         glm::vec3(0.0f, 1.0f, 0.0f));
 
-    const float enemyRadius = std::max(0.1f, enemy.GetRadius());
+    EnemyCollisionGeometry::ModelBounds enemyBounds;
     const glm::vec3 hitPosition =
-        enemy.GetPos() +
-        enemyUp * enemyRadius * 0.55f +
-        hitNormal * enemyRadius * 0.90f;
+        EnemyCollisionGeometry::TryCreateModelBounds(
+            enemy,
+            enemyBounds)
+            ? enemyBounds.center +
+                  enemyUp *
+                      EnemyCollisionGeometry::CalculateSupportDistance(
+                          enemyBounds,
+                          enemyUp) *
+                      0.55f +
+                  hitNormal *
+                      EnemyCollisionGeometry::CalculateSupportDistance(
+                          enemyBounds,
+                          hitNormal) *
+                      0.90f
+            : enemy.GetPos() +
+                  enemyUp *
+                      std::max(0.1f, enemy.GetRadius()) *
+                      0.55f +
+                  hitNormal *
+                      std::max(0.1f, enemy.GetRadius()) *
+                      0.90f;
 
     ParticleSpawnContext context;
     context.position = hitPosition;
@@ -114,8 +133,20 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             }
 
             if (isHit) {
+                const bool shouldBreakEnemies =
+                    combat.RegisterAirWeakAttackHit();
                 movement.RestoreAirDodge();
-                player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
+                player.GetGame()->GetAudioSystem()->PlaySE(
+                    shouldBreakEnemies
+                        ? "destroy_se"
+                        : "attack_se");
+                if (shouldBreakEnemies) {
+                    for (Enemy* enemy : hitEnemies) {
+                        if (enemy && !enemy->GetIsDead()) {
+                            enemy->ApplyBreak(deltaTime);
+                        }
+                    }
+                }
             } else {
                 player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
             }

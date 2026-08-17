@@ -2,10 +2,12 @@
 
 #include "Game.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerGrounding.h"
 #include "actor/player/PlayerInput.h"
+#include "component/PlatformBehaviorComponents.h"
 #include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
 
@@ -102,6 +104,31 @@ struct AppliedPlayerMovement {
     bool didHitStage = false;
 };
 
+void TryAttachToAdhesionPlatformAlongMovement(
+    Player& player,
+    const glm::vec3& movementStart)
+{
+    Planet* currentPlanet = player.GetCurrentPlanet();
+    if (!currentPlanet || player.IsAttachedToPlatform()) {
+        return;
+    }
+
+    for (Platform* platform : currentPlanet->GetPlatforms()) {
+        if (!platform) {
+            continue;
+        }
+
+        PlatformAdhesionComponent* adhesionComponent =
+            platform->GetAdhesionComponent();
+        if (adhesionComponent &&
+            adhesionComponent->TryAttachPlayerAlongMovement(
+                player,
+                movementStart)) {
+            return;
+        }
+    }
+}
+
 AppliedPlayerMovement MoveWithCollision(
     Player& player,
     const glm::vec3& movementDelta,
@@ -127,8 +154,13 @@ AppliedPlayerMovement MoveWithCollision(
             ? positionBeforeMovement
             : collisionResult.resolvedPosition;
     player.SetPos(resolvedPosition);
+    TryAttachToAdhesionPlatformAlongMovement(
+        player,
+        positionBeforeMovement);
+
+    const glm::vec3 finalPosition = player.GetPos();
     return {
-        resolvedPosition - positionBeforeMovement,
+        finalPosition - positionBeforeMovement,
         collisionResult.blockingNormal,
         collisionResult.didHitStage};
 }
@@ -169,6 +201,13 @@ AppliedPlayerMovement MoveWithCollisionSubsteps(
                 player,
                 substepMovement,
                 actorCollisionFilter);
+        if (player.IsAttachedToPlatform()) {
+            combinedMovement.blockingNormal =
+                appliedSubstep.blockingNormal;
+            combinedMovement.didHitStage =
+                appliedSubstep.didHitStage;
+            break;
+        }
         if (!appliedSubstep.didHitStage) {
             continue;
         }
@@ -213,6 +252,9 @@ bool TryStepUpFromGround(
         MoveWithCollision(
             player,
             upDirection * maximumStepHeight);
+    if (player.IsAttachedToPlatform()) {
+        return true;
+    }
     const float appliedUpwardDistance =
         glm::dot(
             upwardMovement.movementDelta,
@@ -228,6 +270,9 @@ bool TryStepUpFromGround(
     (void)MoveWithCollision(
         player,
         horizontalMovement);
+    if (player.IsAttachedToPlatform()) {
+        return true;
+    }
     const float normalForwardDistance =
         glm::dot(
             normalResolvedPosition - positionBeforeMovement,
@@ -251,6 +296,9 @@ bool TryStepUpFromGround(
             -upDirection *
                 (maximumStepHeight +
                  stepLandingProbeExtraDistance));
+    if (player.IsAttachedToPlatform()) {
+        return true;
+    }
     glm::vec3 landingNormal;
     const bool hasLandingNormal =
         TryNormalizeDirection(
@@ -299,6 +347,9 @@ void MoveAirborneWithCollision(
             player,
             requestedMovement,
             maximumAirborneCollisionSubstepDistance);
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
 
     const float requestedUpwardDistance =
         glm::dot(requestedMovement, upDirection);
@@ -394,6 +445,9 @@ bool MoveAirSlamDownwardUntilFloorCollision(
             MoveWithCollision(
                 player,
                 substepMovement);
+        if (player.IsAttachedToPlatform()) {
+            return true;
+        }
         if (!appliedMovement.didHitStage) {
             continue;
         }
@@ -567,6 +621,10 @@ void PlayerMovement::UpdateDodgeCooldown(float deltaTime)
 
 void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const glm::vec3 movementDelta =
         CalculateInputMovementDelta(
             player,
@@ -579,6 +637,9 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
         MoveWithCollision(
             player,
             movementDelta);
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
     if (!normalMovement.didHitStage ||
         !player.GetOnGround()) {
         return;
@@ -629,6 +690,10 @@ glm::vec3 PlayerMovement::CalculateInputMovementDelta(
 void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding,
                                          float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const float dodgeMovementDuration = CalculateDodgeMovementDuration(player.GetOnGround(), mDodgeDuration);
 
     if (dodgeMovementDuration <= 0.0f) {
@@ -674,6 +739,9 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
         movementDelta,
         maximumDodgeCollisionSubstepDistance,
         actorCollisionFilter);
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
 
     if (!player.GetOnGround()) {
         return;
@@ -687,6 +755,10 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
 
 void PlayerMovement::ApplyAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const glm::vec3 movementDelta = player.GetFacingForwardVec() * combat.GetAttackSpeed() * deltaTime;
 
     MoveWithCollision(player, movementDelta);
@@ -694,6 +766,10 @@ void PlayerMovement::ApplyAttackMovement(Player& player, const PlayerCombat& com
 
 void PlayerMovement::ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const glm::vec3 attackDirection =
         mHasStrongAttackDirectionOverride ? mStrongAttackDirectionOverride : player.GetFacingForwardVec();
     const glm::vec3 movementDelta = attackDirection * combat.GetStrongAttackSpeed() * deltaTime;
@@ -703,6 +779,10 @@ void PlayerMovement::ApplyStrongAttackMovement(Player& player, const PlayerComba
 
 void PlayerMovement::ApplyKnockBackMovement(Player& player, float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const glm::vec3 awayFromKnockBackOrigin = player.GetPos() - mKnockBackFrom;
 
     glm::vec3 knockBackDirection;
@@ -827,6 +907,7 @@ glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
 
 void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 {
+    player.DetachFromPlatform();
     RecordEllipseAirborneStartSurfaceNormal(player);
     mCanStartJumpApexHover = true;
     mJumpApexHoverRemainingSeconds = 0.0f;
@@ -901,6 +982,11 @@ void PlayerMovement::ApplyJumpGravityMovement(
     const glm::vec3& inputMovementDelta,
     float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        player.SetVelocity(glm::vec3(0.0f));
+        return;
+    }
+
     if (player.GetOnGround()) {
         player.ApplyGravityToSelf(deltaTime);
         return;

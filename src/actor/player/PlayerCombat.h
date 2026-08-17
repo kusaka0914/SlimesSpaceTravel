@@ -60,6 +60,8 @@ public:
     void CancelCurrentAttack();
     void OnLanded();
     void PrepareAssistAirCombo();
+    bool RegisterAirWeakAttackHit();
+    void ResetAirWeakAttackHitCount();
     void StartAirDodgeAttack();
     void UpdateAirDodgeAttack(
         Player& player,
@@ -174,6 +176,7 @@ public:
 
 private:
     static constexpr int maximumAirAttackCount = 3;
+    static constexpr int airWeakAttackHitsForBreak = 3;
 
     void StartAttackHitDelay();
     void ClearPendingAttackHit();
@@ -195,6 +198,7 @@ private:
 
     int mAttackComboIndex = 0;
     int mAirAttackCount = 0;
+    int mAirWeakAttackHitCount = 0;
 
     float mAttackStartHeight = 0.0f;
     float mAttack = 10.0f;

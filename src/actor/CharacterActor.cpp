@@ -25,11 +25,44 @@ void CharacterActor::UpdateActor(float deltaTime)
 {
     ApplyGroundActorTransformMovement();
 
+    if (mAttachedPlatform) {
+        mVelocity = glm::vec3(0.0f);
+        ApplyGroundActorConveyorMovement();
+        return;
+    }
+
     if (mShouldJudgeLanding) {
         JudgeLanding();
     }
 
     ApplyGroundActorConveyorMovement();
+}
+
+void CharacterActor::AttachToPlatform(Platform* platform)
+{
+    if (!platform) {
+        return;
+    }
+
+    mAttachedPlatform = platform;
+    mGroundActor = platform;
+    mOnGround = true;
+    mShouldJudgeLanding = false;
+    mVelocity = glm::vec3(0.0f);
+}
+
+void CharacterActor::DetachFromPlatform()
+{
+    if (!mAttachedPlatform) {
+        return;
+    }
+
+    if (mGroundActor == mAttachedPlatform) {
+        mGroundActor = nullptr;
+    }
+    mAttachedPlatform = nullptr;
+    mOnGround = false;
+    mShouldJudgeLanding = true;
 }
 
 void CharacterActor::JudgeLanding()

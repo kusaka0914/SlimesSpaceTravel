@@ -539,6 +539,175 @@ void PlatformConveyorComponent::SetSpeed(float speed)
     mSpeed = std::max(0.0f, speed);
 }
 
+PlatformAdhesionComponent::PlatformAdhesionComponent(
+    Platform* owner,
+    int updateOrder)
+    : Component(owner, updateOrder),
+      mPlatform(owner)
+{
+}
+
+PlatformAdhesionComponent::~PlatformAdhesionComponent()
+{
+    ReleaseAttachedPlayers();
+}
+
+bool PlatformAdhesionComponent::DidPlayerMovementTouchPlatform(
+    const Player& player,
+    const glm::vec3& movementStart) const
+{
+    if (!mPlatform || !mPlatform->GetGame() || !player.GetIsActive()) {
+        return false;
+    }
+
+    if (player.GetCurrentPlanet() != mPlatform->GetCurrentPlanet()) {
+        return false;
+    }
+
+    PhysicsSystem* physicsSystem =
+        mPlatform->GetGame()->GetPhysicsSystem();
+    if (!physicsSystem) {
+        return false;
+    }
+
+    // Keep the player fixed at its current position and sweep the platform
+    // through the equivalent relative movement. This catches a contact that
+    // happened between frames even when the final positions do not overlap.
+    const glm::vec3 playerMovement =
+        player.GetPos() - movementStart;
+    const glm::vec3 platformMovementStart =
+        mPlatform->GetPos() -
+        mPlatform->GetFrameDelta() +
+        playerMovement;
+    constexpr float platformContactTolerance = 0.05f;
+    return physicsSystem->DoesActorModelSweepOverlapActorCollision(
+        *mPlatform,
+        platformMovementStart,
+        player,
+        platformContactTolerance);
+}
+
+bool PlatformAdhesionComponent::TryAttachPlayerIfTouching(Player& player)
+{
+    return TryAttachPlayerAlongMovement(
+        player,
+        player.GetPos());
+}
+
+bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
+    Player& player,
+    const glm::vec3& movementStart)
+{
+    if (!mPlatform || !mPlatform->GetGame() ||
+        !player.GetIsActive()) {
+        return false;
+    }
+
+    const bool isTouching =
+        DidPlayerMovementTouchPlatform(
+            player,
+            movementStart);
+    const bool wasAttachedLastFrame =
+        mAttachedPlayers.contains(&player);
+    const bool isAttachedNow =
+        player.GetAttachedPlatform() == mPlatform;
+    if (!isTouching) {
+        mDetachedPlayersAwaitingSeparation.erase(&player);
+        if (isAttachedNow) {
+            player.DetachFromPlatform();
+        }
+        return false;
+    }
+
+    // A jump deliberately detaches the player. Keep the player detached
+    // until they leave the platform bounds so the same contact does not
+    // immediately attach them again on the next frame.
+    if (wasAttachedLastFrame && !isAttachedNow) {
+        mDetachedPlayersAwaitingSeparation.insert(&player);
+    }
+    if (mDetachedPlayersAwaitingSeparation.contains(&player)) {
+        return false;
+    }
+
+    Platform* attachedPlatform = player.GetAttachedPlatform();
+    if (attachedPlatform && attachedPlatform != mPlatform) {
+        return false;
+    }
+
+    if (!isAttachedNow) {
+        player.AttachToPlatform(mPlatform);
+
+        PhysicsSystem* physicsSystem =
+            mPlatform->GetGame()->GetPhysicsSystem();
+        if (physicsSystem) {
+            const ActorMovementCollisionResult correctedPosition =
+                physicsSystem->ResolveMovementCollision(
+                    &player,
+                    glm::vec3(0.0f),
+                    player.GetPos());
+            player.SetPos(correctedPosition.resolvedPosition);
+        }
+    }
+    return true;
+}
+
+void PlatformAdhesionComponent::Update(float deltaTime)
+{
+    (void)deltaTime;
+    if (!mPlatform || !mPlatform->GetGame()) {
+        return;
+    }
+
+    std::unordered_set<Player*> attachedPlayersThisFrame;
+    for (Player* player : mPlatform->GetGame()->GetPlayers()) {
+        if (!player || !player->GetIsActive()) {
+            continue;
+        }
+
+        const bool wasAttachedLastFrame =
+            mAttachedPlayers.contains(player);
+        const bool isAttachedNow =
+            player->GetAttachedPlatform() == mPlatform;
+        if (wasAttachedLastFrame && isAttachedNow) {
+            // The platform has already moved this frame, while the player
+            // follows it in CharacterActor::UpdateActor. Do not test the old
+            // player position against the new platform position here; doing
+            // so would detach the player before the follow movement runs.
+            attachedPlayersThisFrame.insert(player);
+            continue;
+        }
+
+        if (TryAttachPlayerIfTouching(*player)) {
+            attachedPlayersThisFrame.insert(player);
+        }
+    }
+
+    mAttachedPlayers = std::move(attachedPlayersThisFrame);
+}
+
+void PlatformAdhesionComponent::ReleaseAttachedPlayers()
+{
+    const std::vector<Player*>* activePlayers = nullptr;
+    if (mPlatform && mPlatform->GetGame()) {
+        activePlayers = &mPlatform->GetGame()->GetPlayers();
+    }
+
+    for (Player* player : mAttachedPlayers) {
+        const bool isKnownPlayer =
+            activePlayers &&
+            std::find(
+                activePlayers->begin(),
+                activePlayers->end(),
+                player) != activePlayers->end();
+        if (isKnownPlayer &&
+            player->GetAttachedPlatform() == mPlatform) {
+            player->DetachFromPlatform();
+        }
+    }
+    mAttachedPlayers.clear();
+    mDetachedPlayersAwaitingSeparation.clear();
+}
+
 PlatformEnemyClearUnlockComponent::
 PlatformEnemyClearUnlockComponent(
     Platform* owner,

@@ -6,6 +6,7 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -17,6 +18,7 @@ namespace {
 constexpr float collisionSkinWidth = 0.005f;
 constexpr float overheadContactMaximumUpDot = -0.5f;
 constexpr float overheadPlatformPushDistance = 0.15f;
+constexpr float modelCollisionEpsilon = 0.000001f;
 
 bool TryNormalizeDirection(
     const glm::vec3& direction,
@@ -376,6 +378,71 @@ ActorCollisionResolver::CheckConflictActor(
     const glm::vec3 fromBlockingActorToDesiredPosition =
         desiredPos -
         blockingActorPosition;
+
+    if (Enemy* blockingEnemy = dynamic_cast<Enemy*>(blockingActor)) {
+        EnemyCollisionGeometry::ModelBounds enemyBounds;
+        if (EnemyCollisionGeometry::TryCreateModelBounds(
+                *blockingEnemy,
+                enemyBounds)) {
+            const float movingActorCollisionRadius =
+                std::max(
+                    0.0f,
+                    movingActor->GetRadius() *
+                        movingActor->GetCollisionScaleMultiplier());
+            const glm::vec3 expandedHalfExtents =
+                enemyBounds.halfExtents +
+                glm::vec3(movingActorCollisionRadius);
+            const glm::vec3 localOffset =
+                desiredPos - enemyBounds.center;
+            glm::vec3 localPosition(0.0f);
+            for (glm::length_t axisIndex = 0;
+                 axisIndex < enemyBounds.axes.size();
+                 ++axisIndex) {
+                localPosition[axisIndex] = glm::dot(
+                    localOffset,
+                    enemyBounds.axes[axisIndex]);
+                if (std::abs(localPosition[axisIndex]) >
+                    expandedHalfExtents[axisIndex]) {
+                    return std::nullopt;
+                }
+            }
+
+            glm::length_t nearestFaceAxis = 0;
+            float nearestFacePenetration =
+                expandedHalfExtents.x -
+                std::abs(localPosition.x);
+            for (glm::length_t axisIndex = 1;
+                 axisIndex < enemyBounds.axes.size();
+                 ++axisIndex) {
+                const float facePenetration =
+                    expandedHalfExtents[axisIndex] -
+                    std::abs(localPosition[axisIndex]);
+                if (facePenetration < nearestFacePenetration) {
+                    nearestFaceAxis = axisIndex;
+                    nearestFacePenetration = facePenetration;
+                }
+            }
+
+            float outwardSign =
+                localPosition[nearestFaceAxis] >= 0.0f
+                    ? 1.0f
+                    : -1.0f;
+            if (std::abs(localPosition[nearestFaceAxis]) <=
+                modelCollisionEpsilon) {
+                const float axisDirection = glm::dot(
+                    fromBlockingActorToDesiredPosition,
+                    enemyBounds.axes[nearestFaceAxis]);
+                outwardSign = axisDirection >= 0.0f ? 1.0f : -1.0f;
+            }
+
+            const glm::vec3 outwardDirection =
+                enemyBounds.axes[nearestFaceAxis] *
+                outwardSign;
+            return desiredPos +
+                outwardDirection *
+                    (nearestFacePenetration + collisionSkinWidth);
+        }
+    }
 
     const float blockingRadius =
         blockingActor->GetRadius();

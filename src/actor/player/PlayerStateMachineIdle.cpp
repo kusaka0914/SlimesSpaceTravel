@@ -1,6 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
 #include "actor/Enemy.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerInput.h"
@@ -18,6 +19,14 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
                                     PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime)
 {
     if (!player.GetIsActive()) {
+        return;
+    }
+
+    if (player.IsAttachedToPlatform()) {
+        // Adhesive platforms allow only the explicit jump escape. Skipping
+        // the rest of the idle actions prevents assist attacks or dodges from
+        // moving the player away from the first contact point.
+        TryStartJumping(player, input, movement, combat, deltaTime);
         return;
     }
 
@@ -156,11 +165,26 @@ bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
         entryDirection = -target->GetFacingForwardVec();
     }
 
+    EnemyCollisionGeometry::ModelBounds targetBounds;
+    const bool hasTargetModelBounds =
+        EnemyCollisionGeometry::TryCreateModelBounds(
+            *target,
+            targetBounds);
+    const float targetSurfaceDistance =
+        hasTargetModelBounds
+            ? EnemyCollisionGeometry::CalculateSupportDistance(
+                  targetBounds,
+                  entryDirection)
+            : std::max(0.0f, target->GetRadius());
+    const glm::vec3 targetCollisionCenter =
+        hasTargetModelBounds
+            ? targetBounds.center
+            : target->GetPos();
     constexpr float playerEntryClearance = 0.8f;
     player.SetPos(
-        target->GetPos() +
+        targetCollisionCenter +
         entryDirection *
-            (std::max(0.0f, target->GetRadius()) +
+            (targetSurfaceDistance +
              playerEntryClearance));
     player.SetVelocity(glm::vec3(0.0f));
     player.SetOnGround(false);
@@ -364,6 +388,10 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
                                             PlayerCombat& combat, PlayerStatus& status,
                                             bool wasInputMovementApplied, float deltaTime)
 {
+    if (player.IsAttachedToPlatform()) {
+        return;
+    }
+
     const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
     if (isMoving && !status.IsTired()) {
         movement.UpdateFacingDirectionFromInput(player, input);
@@ -554,15 +582,24 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
         isNormalAttack ? combat.GetNormalAttackRange() : combat.GetWideAttackRange();
     const float attackAngle =
         isNormalAttack ? combat.GetNormalAttackAngle() : combat.GetWideAttackAngle();
-    const bool requireAirborneTarget = !player.GetOnGround();
+    if (player.GetGame()->IsAssistControlStyle()) {
+        const bool requireAirborneTarget = !player.GetOnGround();
 
-    // まず現在向いている攻撃範囲内の最寄りを選び、
-    // そこに敵がいない場合だけ全方向の最寄りへ振り向く。
-    mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
-        player, attackRange, attackAngle, requireAirborneTarget);
+        // 敵への自動方向転換はアシスト操作時だけ行う。
+        mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
+            player,
+            attackRange,
+            attackAngle,
+            requireAirborneTarget);
 
-    if (mAttackDirectionTarget) {
-        PlayerTargetingAssist::FaceTarget(player, movement, *mAttackDirectionTarget);
+        if (mAttackDirectionTarget) {
+            PlayerTargetingAssist::FaceTarget(
+                player,
+                movement,
+                *mAttackDirectionTarget);
+        }
+    } else {
+        mAttackDirectionTarget = nullptr;
     }
 
     movement.ClearStrongAttackDirectionOverride();

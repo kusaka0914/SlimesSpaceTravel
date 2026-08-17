@@ -16,6 +16,7 @@
 namespace {
 constexpr double damageTiredChance = 0.10;
 constexpr float chargedAttackFailureLockDurationSeconds = 20.0f;
+constexpr float airborneDamageMultiplier = 2.0f;
 
 bool ShouldStartRandomDamageTiredLock()
 {
@@ -50,7 +51,11 @@ void ApplyDamageAndKnockBack(
             chargedAttackFailureLockDurationSeconds);
     }
 
-    status.TakeDamage(damage);
+    const float appliedDamage =
+        player.GetOnGround()
+            ? damage
+            : damage * airborneDamageMultiplier;
+    status.TakeDamage(appliedDamage);
     movement.StartKnockBack(damageSourcePosition);
     movement.ClearStrongAttackDirectionOverride();
     stateMachine.ClearAttackDirectionTarget();
@@ -73,7 +78,11 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
         return;
     }
 
-    if (stateMachine.IsDodging() && enemy->GetCanCountered()) {
+    const bool canPerformJustDodgeCounter =
+        stateMachine.IsDodging() &&
+        !combat.IsAirDodgeAttackActive() &&
+        enemy->GetCanCountered();
+    if (canPerformJustDodgeCounter) {
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 
         enemy->ApplyBreak(deltaTime);

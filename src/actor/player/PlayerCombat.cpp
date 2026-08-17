@@ -16,6 +16,8 @@
 
 namespace {
 constexpr float attackDodgeCancelDelaySeconds = 0.5f;
+constexpr float airWeakAttackDamageMultiplier = 2.0f;
+constexpr float airDodgeAttackDamageMultiplier = 0.5f;
 }
 
 bool PlayerCombat::IsAttacking() const
@@ -43,7 +45,9 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
         mAttackCooldownRemaining = mAttackCooldown;
-        mAttack = mWideAttack;
+        mAttack =
+            mWideAttack *
+            airWeakAttackDamageMultiplier;
         mIsAirAttacking = true;
         movement.CancelJumpApexHover();
         movement.CancelAirborneActionHover();
@@ -387,6 +391,7 @@ void PlayerCombat::OnLanded()
     mIsCharged = false;
     mIsAirAttacking = false;
     mAirAttackCount = 0;
+    ResetAirWeakAttackHitCount();
     mHasSuccessfulAirDodgeAttack = false;
     EndAirDodgeAttack();
 }
@@ -394,8 +399,25 @@ void PlayerCombat::OnLanded()
 void PlayerCombat::PrepareAssistAirCombo()
 {
     mAirAttackCount = 0;
+    ResetAirWeakAttackHitCount();
     mHasSuccessfulAirDodgeAttack = false;
     mIsAirAttacking = false;
+}
+
+bool PlayerCombat::RegisterAirWeakAttackHit()
+{
+    ++mAirWeakAttackHitCount;
+    if (mAirWeakAttackHitCount < airWeakAttackHitsForBreak) {
+        return false;
+    }
+
+    ResetAirWeakAttackHitCount();
+    return true;
+}
+
+void PlayerCombat::ResetAirWeakAttackHitCount()
+{
+    mAirWeakAttackHitCount = 0;
 }
 
 void PlayerCombat::StartAirDodgeAttack()
@@ -435,9 +457,10 @@ void PlayerCombat::UpdateAirDodgeAttack(
         newlyHitEnemies.emplace_back(enemy);
     }
 
-    constexpr float airDodgeDamageMultiplier = 2.0f;
     const float airDodgeDamage =
-        mWideAttack * airDodgeDamageMultiplier;
+        mWideAttack *
+        airWeakAttackDamageMultiplier *
+        airDodgeAttackDamageMultiplier;
     const bool didHitEnemy =
         mAttackResolver.ResolveAirDodgeAttack(
             player,
@@ -446,7 +469,11 @@ void PlayerCombat::UpdateAirDodgeAttack(
             airDodgeDamage);
     if (didHitEnemy) {
         mAirAttackCount = 0;
+        ResetAirWeakAttackHitCount();
         mHasSuccessfulAirDodgeAttack = true;
+        // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
+        // 外した場合は現在の回避を最後にして、着地まで再使用できない。
+        movement.RestoreAirDodge();
     }
 }
 

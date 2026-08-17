@@ -167,6 +167,29 @@ void Platform::RemoveConveyorComponent()
     mConveyorComponent = nullptr;
 }
 
+PlatformAdhesionComponent* Platform::AddAdhesionComponent()
+{
+    if (mAdhesionComponent) {
+        return mAdhesionComponent;
+    }
+
+    auto component = std::make_unique<PlatformAdhesionComponent>(this);
+    mAdhesionComponent = component.get();
+    AddComponent(std::move(component));
+    return mAdhesionComponent;
+}
+
+void Platform::RemoveAdhesionComponent()
+{
+    if (!mAdhesionComponent) {
+        return;
+    }
+
+    mAdhesionComponent->ReleaseAttachedPlayers();
+    RemoveComponent(mAdhesionComponent);
+    mAdhesionComponent = nullptr;
+}
+
 PlatformPressureSwitchComponent* Platform::AddPressureSwitchComponent()
 {
     if (mPressureSwitchComponent) return mPressureSwitchComponent;

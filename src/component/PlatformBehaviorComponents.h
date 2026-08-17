@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class Actor;
@@ -138,6 +139,31 @@ private:
     Platform* mPlatform = nullptr;
     glm::vec3 mLocalDirection{0.0f, 0.0f, 1.0f};
     float mSpeed = 2.0f;
+};
+
+// Keeps a player attached to this platform after contact from any direction.
+// The player owns the attachment state so movement and rotation use the same
+// transform delta path as ordinary platform grounding.
+class PlatformAdhesionComponent : public Component {
+public:
+    explicit PlatformAdhesionComponent(Platform* owner, int updateOrder = 90);
+    ~PlatformAdhesionComponent() override;
+
+    void Update(float deltaTime) override;
+    bool TryAttachPlayerIfTouching(Player& player);
+    bool TryAttachPlayerAlongMovement(
+        Player& player,
+        const glm::vec3& movementStart);
+    void ReleaseAttachedPlayers();
+
+private:
+    bool DidPlayerMovementTouchPlatform(
+        const Player& player,
+        const glm::vec3& movementStart) const;
+
+    Platform* mPlatform = nullptr;
+    std::unordered_set<Player*> mAttachedPlayers;
+    std::unordered_set<Player*> mDetachedPlayersAwaitingSeparation;
 };
 
 class PlatformEnemyClearUnlockComponent : public Component {
