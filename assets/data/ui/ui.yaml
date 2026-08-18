@@ -218,7 +218,7 @@ pauseMenu:
     rotationDegrees: 0
   - id: resumeText
     type: text
-    posRatio: [0.5, 0.37]
+    posRatio: [0.50094587, 0.37]
     scaleRatio: [0.0003072, 1.0]
     text:
       - ゲームに戻る

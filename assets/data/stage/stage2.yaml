@@ -1270,21 +1270,21 @@ boats:
     textureTiling:
       - 1
       - 1
-  - startPlanet: 4
+  - startPlanet: 7
     destPlanet: 8
     destStage: 0
-    theta: 2.9962213
-    phi: 0.36652458
-    height: 11.28708
+    theta: 1.4313221
+    phi: 0.47497046
+    height: -2.3609774
     facingYaw: 0
     pos:
-      - 0.19
-      - 1.55
-      - 3.16
+      - 0.4499054
+      - 1.6641693
+      - 3.2047794
     upVec:
-      - -0.009550109
-      - 0.9657855
-      - 0.2591664
+      - 0.028689997
+      - 0.976998
+      - 0.21130991
     travelSpeed: 10
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
@@ -1814,6 +1814,7 @@ platforms:
           - platform_5
           - platform_7
         remainsOnAfterPressed: false
+        enemyTargets: []
   - currentPlanetNum: 6
     pos:
       - -0.02
@@ -1848,6 +1849,7 @@ platforms:
           - platform_39
           - platform_3
         remainsOnAfterPressed: true
+        enemyTargets: []
       enemyClearUnlock: {}
   - currentPlanetNum: 7
     pos:
@@ -2244,6 +2246,7 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
+        enemyTargets: []
   - currentPlanetNum: 4
     pos:
       - -8.612755

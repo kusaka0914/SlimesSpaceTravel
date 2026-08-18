@@ -135,6 +135,18 @@ bool Enemy::ShouldUpdateUpVecEveryFrame() const
         groundedPositionEpsilon * groundedPositionEpsilon;
 }
 
+bool Enemy::ShouldAcceptLandingSurface(
+    Actor* surfaceActor,
+    const glm::vec3& surfaceNormal) const
+{
+    (void)surfaceNormal;
+
+    // Enemies must not establish a grounded state on another enemy. They
+    // remain airborne and the collision resolver moves them sideways until
+    // they can land on actual stage geometry.
+    return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
+}
+
 void Enemy::ApplyConfig(const std::string& type)
 {
     const EnemyConfig config = EnemyConfigLoader::Load("../assets/data/actor/enemies.yaml", type);

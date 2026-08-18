@@ -108,25 +108,10 @@ void TryAttachToAdhesionPlatformAlongMovement(
     Player& player,
     const glm::vec3& movementStart)
 {
-    Planet* currentPlanet = player.GetCurrentPlanet();
-    if (!currentPlanet || player.IsAttachedToPlatform()) {
-        return;
-    }
-
-    for (Platform* platform : currentPlanet->GetPlatforms()) {
-        if (!platform) {
-            continue;
-        }
-
-        PlatformAdhesionComponent* adhesionComponent =
-            platform->GetAdhesionComponent();
-        if (adhesionComponent &&
-            adhesionComponent->TryAttachPlayerAlongMovement(
-                player,
-                movementStart)) {
-            return;
-        }
-    }
+    PlatformAdhesionComponent::
+        TryAttachPlayerToAnyPlatformAlongMovement(
+            player,
+            movementStart);
 }
 
 AppliedPlayerMovement MoveWithCollision(

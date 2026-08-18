@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -150,6 +151,9 @@ public:
     ~PlatformAdhesionComponent() override;
 
     void Update(float deltaTime) override;
+    static bool TryAttachPlayerToAnyPlatformAlongMovement(
+        Player& player,
+        const glm::vec3& movementStart);
     bool TryAttachPlayerIfTouching(Player& player);
     bool TryAttachPlayerAlongMovement(
         Player& player,
@@ -163,7 +167,8 @@ private:
 
     Platform* mPlatform = nullptr;
     std::unordered_set<Player*> mAttachedPlayers;
-    std::unordered_set<Player*> mDetachedPlayersAwaitingSeparation;
+    std::unordered_map<Player*, float>
+        mPlayerReattachmentCooldownSeconds;
 };
 
 class PlatformEnemyClearUnlockComponent : public Component {
@@ -207,6 +212,12 @@ public:
     {
         return mTargetEnemyRefs;
     }
+    void SetHideTargets(
+        const std::vector<PlatformRevealTarget>& hideTargets);
+    const std::vector<PlatformRevealTarget>& GetHideTargets() const
+    {
+        return mHideTargets;
+    }
     void SetInactiveOpacity(float opacity);
     float GetInactiveOpacity() const { return mInactiveOpacity; }
     void SetShouldRemainOnAfterPressed(
@@ -227,6 +238,7 @@ private:
     Platform* mPlatform = nullptr;
     std::vector<std::string> mTargetPlatformIds;
     std::vector<PlatformRevealTarget> mTargetEnemyRefs;
+    std::vector<PlatformRevealTarget> mHideTargets;
     float mInactiveOpacity = 0.2f;
     float mContactGraceRemainingSeconds = 0.0f;
     bool mShouldRemainOnAfterPressed = false;
@@ -252,6 +264,12 @@ public:
     {
         return mRevealTargets;
     }
+    void SetHideTargets(
+        const std::vector<PlatformRevealTarget>& hideTargets);
+    const std::vector<PlatformRevealTarget>& GetHideTargets() const
+    {
+        return mHideTargets;
+    }
 
     bool GetIsOn() const
     {
@@ -268,6 +286,10 @@ private:
     CollectGroupRevealTargets(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;
+    std::vector<PlatformRevealTarget>
+    CollectGroupHideTargets(
+        const std::vector<PlatformLatchedGroupSwitchComponent*>&
+            groupSwitches) const;
     bool IsGroupCoordinator(
         const std::vector<PlatformLatchedGroupSwitchComponent*>&
             groupSwitches) const;
@@ -282,18 +304,19 @@ private:
             groupSwitches);
     Actor* FindTargetActor(
         const PlatformRevealTarget& target) const;
-    void HideTargets(
-        const std::vector<PlatformRevealTarget>& targets);
-    void RevealTargets(
-        const std::vector<PlatformRevealTarget>& targets);
+    void ApplyGroupTargetState(
+        const std::vector<PlatformRevealTarget>& revealTargets,
+        const std::vector<PlatformRevealTarget>& hideTargets,
+        bool isGroupActivated);
 
     static constexpr std::size_t RequiredSwitchCount = 2;
 
     Platform* mPlatform = nullptr;
     std::string mGroupId;
     std::vector<PlatformRevealTarget> mRevealTargets;
+    std::vector<PlatformRevealTarget> mHideTargets;
     std::vector<Actor*> mRuntimeTargetActors;
     Player* mCurrentPressingPlayer = nullptr;
     bool mIsGroupActivated = false;
-    bool mHasRevealedTargets = false;
+    bool mHasAppliedActivatedTargetState = false;
 };

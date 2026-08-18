@@ -9,7 +9,7 @@
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
-#include "system/physics/PlayerCollisionShapeGeometry.h"
+#include "system/physics/EllipsoidCollisionShapeGeometry.h"
 #include "utils/MathUtils.h"
 
 #include <GL/glew.h>
@@ -119,7 +119,7 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
          collisionCenter,
          collisionOrientation](int latitudeIndex, int longitudeIndex) {
             const glm::vec3 localSurfacePoint =
-                PlayerCollisionShapeGeometry::CalculateLocalSurfacePoint(
+                EllipsoidCollisionShapeGeometry::CalculateLocalSurfacePoint(
                     collisionWidth,
                     collisionHeight,
                     collisionDepth,
@@ -130,9 +130,9 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
 
     std::vector<glm::vec3> wireframeVertices;
     const int latitudeSegmentCount =
-        PlayerCollisionShapeGeometry::LatitudeSegmentCount;
+        EllipsoidCollisionShapeGeometry::LatitudeSegmentCount;
     const int longitudeSegmentCount =
-        PlayerCollisionShapeGeometry::LongitudeSegmentCount;
+        EllipsoidCollisionShapeGeometry::LongitudeSegmentCount;
     const int latitudeEdgeCount =
         (latitudeSegmentCount - 1) * longitudeSegmentCount;
     const int longitudeEdgeCount =

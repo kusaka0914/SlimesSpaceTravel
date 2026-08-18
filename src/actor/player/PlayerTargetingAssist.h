@@ -16,15 +16,10 @@ public:
         const Player& player,
         float maxDistance,
         float attackAngle);
-    static Enemy* FindNearestAirborneTarget(
+    static Enemy* FindNearestAirborneTargetOnCurrentPlanet(
+        const Player& player);
+    static Enemy* FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
         const Player& player,
-        float maxDistance);
-    static Enemy* FindNearestBrokenAirborneTarget(
-        const Player& player,
-        float maxDistance);
-    static Enemy* FindNearestBrokenAirborneTargetNearRecovery(
-        const Player& player,
-        float maxDistance,
         float maximumLaunchedTimerSeconds);
 
     static bool FaceTarget(Player& player, PlayerMovement& movement, const Enemy& target);

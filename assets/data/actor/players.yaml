@@ -69,7 +69,7 @@ players:
       jump:
         clip: Jump
         mode: oneShot
-    collisionWidth: 0.77
+    collisionWidth: 0.97
     collisionHeight: 0.26
-    collisionDepth: 0.97
+    collisionDepth: 0.77
     collisionCenterHeight: 0.15

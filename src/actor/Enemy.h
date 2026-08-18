@@ -151,6 +151,10 @@ public:
     }
 
 protected:
+    bool ShouldAcceptLandingSurface(
+        Actor* surfaceActor,
+        const glm::vec3& surfaceNormal) const override;
+
     float ResolveMinimumUpdateIntervalSeconds() const override;
     bool ShouldUpdateUpVecEveryFrame() const override;
 

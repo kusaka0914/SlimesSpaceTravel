@@ -57,6 +57,7 @@ public:
     void RespawnAtRestartPoint();
     void Restart();
     void RecoverFromFatigue();
+    void OnAttachedToAdhesivePlatform();
     void SetBaseScale(const glm::vec3& scale);
     void SetSplitForm(bool isSplitForm);
     void MoveToCurrentPlanetOrigin();

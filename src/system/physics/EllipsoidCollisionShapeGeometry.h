@@ -2,7 +2,9 @@
 
 #include <glm/glm.hpp>
 
-namespace PlayerCollisionShapeGeometry {
+class btConvexHullShape;
+
+namespace EllipsoidCollisionShapeGeometry {
 
 inline constexpr int LatitudeSegmentCount = 8;
 inline constexpr int LongitudeSegmentCount = 16;
@@ -14,4 +16,8 @@ glm::vec3 CalculateLocalSurfacePoint(
     int latitudeIndex,
     int longitudeIndex);
 
-} // namespace PlayerCollisionShapeGeometry
+void AddSurfacePoints(
+    btConvexHullShape& shape,
+    const glm::vec3& dimensions);
+
+} // namespace EllipsoidCollisionShapeGeometry

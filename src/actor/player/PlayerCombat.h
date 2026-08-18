@@ -27,7 +27,6 @@ public:
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
     bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
-    bool HasSuccessfulAirDodgeAttack() const { return mHasSuccessfulAirDodgeAttack; }
     bool CanStartAirAttack() const
     {
         return mAirAttackCount < maximumAirAttackCount;
@@ -193,7 +192,6 @@ private:
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
     bool mIsAirDodgeAttackActive = false;
-    bool mHasSuccessfulAirDodgeAttack = false;
     bool mHasPendingAttackHit = false;
 
     int mAttackComboIndex = 0;

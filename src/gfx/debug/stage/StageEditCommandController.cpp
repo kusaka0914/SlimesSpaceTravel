@@ -245,6 +245,127 @@ void RemoveActorsOnDeletedPlanet(
 
     stageYaml[sequenceName] = remainingActors;
 }
+
+bool IsDeletedActorIndex(
+    const std::vector<int>& deletedIndices,
+    int actorIndex)
+{
+    return std::binary_search(
+        deletedIndices.begin(),
+        deletedIndices.end(),
+        actorIndex);
+}
+
+int CalculateActorIndexAfterDeletion(
+    const std::vector<int>& deletedIndices,
+    int actorIndex)
+{
+    const auto firstDeletedIndexAfterActor = std::lower_bound(
+        deletedIndices.begin(),
+        deletedIndices.end(),
+        actorIndex);
+    return actorIndex - static_cast<int>(
+        std::distance(
+            deletedIndices.begin(),
+            firstDeletedIndexAfterActor));
+}
+
+void UpdateRevealTargetReferencesAfterActorDeletion(
+    YAML::Node targetNodes,
+    const std::unordered_map<std::string, std::vector<int>>&
+        deletedIndicesBySequence)
+{
+    if (!targetNodes || !targetNodes.IsSequence()) {
+        return;
+    }
+
+    YAML::Node remainingTargetNodes(YAML::NodeType::Sequence);
+    for (const YAML::Node& sourceTargetNode : targetNodes) {
+        if (!sourceTargetNode.IsMap() ||
+            !sourceTargetNode["sequence"] ||
+            !sourceTargetNode["index"]) {
+            remainingTargetNodes.push_back(sourceTargetNode);
+            continue;
+        }
+
+        std::string targetSequenceName;
+        int targetActorIndex = -1;
+        try {
+            targetSequenceName =
+                sourceTargetNode["sequence"].as<std::string>();
+            targetActorIndex = sourceTargetNode["index"].as<int>();
+        } catch (const YAML::Exception&) {
+            remainingTargetNodes.push_back(sourceTargetNode);
+            continue;
+        }
+
+        const auto deletedIndices =
+            deletedIndicesBySequence.find(targetSequenceName);
+        if (deletedIndices == deletedIndicesBySequence.end()) {
+            remainingTargetNodes.push_back(sourceTargetNode);
+            continue;
+        }
+
+        if (IsDeletedActorIndex(
+                deletedIndices->second,
+                targetActorIndex)) {
+            continue;
+        }
+
+        YAML::Node targetNode = YAML::Clone(sourceTargetNode);
+        targetNode["index"] = CalculateActorIndexAfterDeletion(
+            deletedIndices->second,
+            targetActorIndex);
+        remainingTargetNodes.push_back(targetNode);
+    }
+
+    targetNodes = remainingTargetNodes;
+}
+
+void UpdateSwitchTargetReferencesAfterActorDeletion(
+    YAML::Node& stageYaml,
+    const std::unordered_map<std::string, std::vector<int>>&
+        deletedIndicesBySequence)
+{
+    if (!stageYaml || !stageYaml.IsMap()) {
+        return;
+    }
+
+    for (const auto& entry : stageYaml) {
+        YAML::Node actorNodes = entry.second;
+        if (!actorNodes || !actorNodes.IsSequence()) {
+            continue;
+        }
+
+        for (YAML::Node actorNode : actorNodes) {
+            YAML::Node components = actorNode["components"];
+            if (!components || !components.IsMap()) {
+                continue;
+            }
+
+            YAML::Node pressureSwitch = components["pressureSwitch"];
+            if (pressureSwitch && pressureSwitch.IsMap()) {
+                UpdateRevealTargetReferencesAfterActorDeletion(
+                    pressureSwitch["enemyTargets"],
+                    deletedIndicesBySequence);
+                UpdateRevealTargetReferencesAfterActorDeletion(
+                    pressureSwitch["hideTargets"],
+                    deletedIndicesBySequence);
+            }
+
+            YAML::Node latchedGroupSwitch =
+                components["latchedGroupSwitch"];
+            if (latchedGroupSwitch && latchedGroupSwitch.IsMap()) {
+                UpdateRevealTargetReferencesAfterActorDeletion(
+                    latchedGroupSwitch["targets"],
+                    deletedIndicesBySequence);
+                UpdateRevealTargetReferencesAfterActorDeletion(
+                    latchedGroupSwitch["hideTargets"],
+                    deletedIndicesBySequence);
+            }
+        }
+    }
+}
 }
 
 StageEditCommandController::StageEditCommandController(DebugEditorContext& context,
@@ -447,12 +568,21 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
 
     PushUndo();
 
-    for (auto& pair : deleteIndicesBySequence) {
-        const std::string sequenceName = pair.first;
-        std::vector<int>& indices = pair.second;
-
+    for (auto& deletionEntry : deleteIndicesBySequence) {
+        std::vector<int>& indices = deletionEntry.second;
         std::sort(indices.begin(), indices.end());
         indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+    }
+
+    // Switch target references currently use a sequence name plus YAML index.
+    // Keep references to surviving actors valid before sequence entries shift.
+    UpdateSwitchTargetReferencesAfterActorDeletion(
+        config,
+        deleteIndicesBySequence);
+
+    for (auto& deletionEntry : deleteIndicesBySequence) {
+        const std::string& sequenceName = deletionEntry.first;
+        std::vector<int>& indices = deletionEntry.second;
 
         std::sort(indices.rbegin(), indices.rend());
 

@@ -140,11 +140,9 @@ bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
         return false;
     }
 
-    constexpr float assistAirComboMaximumTargetDistance = 8.0f;
     Enemy* target =
-        PlayerTargetingAssist::FindNearestBrokenAirborneTarget(
-            player,
-            assistAirComboMaximumTargetDistance);
+        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+            player);
     if (!target) {
         return false;
     }
@@ -216,25 +214,28 @@ bool PlayerStateMachine::TryStartAssistAirSlamAttack(
     PlayerMovement& movement,
     PlayerCombat& combat)
 {
-    const bool hasWeakAttackRequest =
+    const bool hasBufferedWeakAttackRequest =
         input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
+    // Assist air-slam timing is driven by the enemy's landing timer. A rapid
+    // weak-attack sequence can otherwise let the short input buffer expire
+    // before that timer reaches its trigger window.
+    const bool hasWeakAttackRequest =
+        hasBufferedWeakAttackRequest ||
+        input.GetWideAttackPressed();
     const bool canStartAirSlam =
         player.GetGame()->IsAssistControlStyle() &&
         !player.GetOnGround() &&
         hasWeakAttackRequest &&
-        combat.HasSuccessfulAirDodgeAttack() &&
         combat.GetAttackCooldownRemaining() <= 0.0f &&
         !combat.GetIsStrongAttacked();
     if (!canStartAirSlam) {
         return false;
     }
 
-    constexpr float assistAirSlamMaximumTargetDistance = 8.0f;
-    constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 0.5f;
+    constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 1.0f;
     Enemy* target =
-        PlayerTargetingAssist::FindNearestBrokenAirborneTargetNearRecovery(
+        PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
             player,
-            assistAirSlamMaximumTargetDistance,
             assistAirSlamLaunchedTimerThresholdSeconds);
     if (!target) {
         return false;
@@ -523,14 +524,9 @@ bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
         return false;
     }
 
-    constexpr float targetContactMargin = 1.0f;
-    const float maximumTargetDistance =
-        movement.GetDodgeDistance() +
-        targetContactMargin;
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTarget(
-            player,
-            maximumTargetDistance);
+        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+            player);
     if (!target ||
         !movement.StartDodgeMovementTowards(
             player,

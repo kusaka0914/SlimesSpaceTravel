@@ -2443,13 +2443,16 @@ StagePlacementPanel::NormalizeLatchedSwitchGroupConfiguration(
 
     PlatformLatchedGroupSwitchComponent* settingsOwner = nullptr;
     std::vector<PlatformRevealTarget> combinedTargets;
+    std::vector<PlatformRevealTarget> combinedHideTargets;
     for (Platform* platform : groupMembers) {
         PlatformLatchedGroupSwitchComponent* component =
             platform->GetLatchedGroupSwitchComponent();
         if (!component) {
             continue;
         }
-        if (!settingsOwner && !component->GetRevealTargets().empty()) {
+        if (!settingsOwner &&
+            (!component->GetRevealTargets().empty() ||
+             !component->GetHideTargets().empty())) {
             settingsOwner = component;
         }
         for (const PlatformRevealTarget& target :
@@ -2463,6 +2466,19 @@ StagePlacementPanel::NormalizeLatchedSwitchGroupConfiguration(
                 });
             if (!isAlreadyIncluded) {
                 combinedTargets.emplace_back(target);
+            }
+        }
+        for (const PlatformRevealTarget& target :
+             component->GetHideTargets()) {
+            const bool isAlreadyIncluded = std::any_of(
+                combinedHideTargets.begin(),
+                combinedHideTargets.end(),
+                [&target](const PlatformRevealTarget& current) {
+                    return current.sequenceName == target.sequenceName &&
+                           current.yamlIndex == target.yamlIndex;
+                });
+            if (!isAlreadyIncluded) {
+                combinedHideTargets.emplace_back(target);
             }
         }
     }
@@ -2502,16 +2518,27 @@ StagePlacementPanel::NormalizeLatchedSwitchGroupConfiguration(
         settingsOwner->SetRevealTargets(combinedTargets);
         wasChanged = true;
     }
+    if (!hasSameTargets(
+            settingsOwner->GetHideTargets(),
+            combinedHideTargets)) {
+        settingsOwner->SetHideTargets(combinedHideTargets);
+        wasChanged = true;
+    }
 
     for (Platform* platform : groupMembers) {
         PlatformLatchedGroupSwitchComponent* component =
             platform->GetLatchedGroupSwitchComponent();
-        if (!component || component == settingsOwner ||
-            component->GetRevealTargets().empty()) {
+        if (!component || component == settingsOwner) {
             continue;
         }
-        component->SetRevealTargets({});
-        wasChanged = true;
+        if (!component->GetRevealTargets().empty()) {
+            component->SetRevealTargets({});
+            wasChanged = true;
+        }
+        if (!component->GetHideTargets().empty()) {
+            component->SetHideTargets({});
+            wasChanged = true;
+        }
     }
 
     return settingsOwner;
@@ -2522,6 +2549,126 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
     int yamlIndex)
 {
     if (!platform) return;
+
+    const auto drawSwitchActorTargets =
+        [this, platform, yamlIndex](
+            const char* visibleLabel,
+            const char* idPrefix,
+            std::vector<PlatformRevealTarget> targets,
+            const auto& setTargets) {
+            const std::string treeLabel =
+                std::string(visibleLabel) + "##" + idPrefix +
+                std::to_string(yamlIndex);
+            if (!ImGui::TreeNode(treeLabel.c_str())) {
+                return;
+            }
+
+            const std::vector<StageActorInstance> instances =
+                StageActorQuery::CollectAllActorInstances(
+                    mContext.game->GetCurrentStage());
+            bool hasCandidate = false;
+            std::vector<PlatformRevealTarget> availableTargets;
+            for (const StageActorInstance& instance : instances) {
+                if (!instance.actor || instance.actor == platform ||
+                    instance.ref.type == StageActorType::Planet) {
+                    continue;
+                }
+
+                hasCandidate = true;
+                PlatformRevealTarget candidate;
+                candidate.sequenceName = instance.ref.sequenceName;
+                candidate.yamlIndex = instance.ref.yamlIndex;
+                availableTargets.emplace_back(candidate);
+
+                const auto selectedTarget = std::find_if(
+                    targets.begin(),
+                    targets.end(),
+                    [&candidate](const PlatformRevealTarget& current) {
+                        return current.sequenceName == candidate.sequenceName &&
+                               current.yamlIndex == candidate.yamlIndex;
+                    });
+                bool isSelected = selectedTarget != targets.end();
+                const std::string targetLabel =
+                    instance.ref.label + "##" + idPrefix + "_" +
+                    std::to_string(yamlIndex) + "_" +
+                    StageActorQuery::MakeKey(instance.ref);
+                if (!ImGui::Checkbox(targetLabel.c_str(), &isSelected)) {
+                    continue;
+                }
+
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                if (isSelected && selectedTarget == targets.end()) {
+                    targets.emplace_back(candidate);
+                } else if (!isSelected &&
+                           selectedTarget != targets.end()) {
+                    targets.erase(selectedTarget);
+                }
+                setTargets(targets);
+                Save();
+                RebuildPhysicsWorldIfNeeded(true);
+            }
+
+            std::vector<PlatformRevealTarget> missingTargets;
+            for (const PlatformRevealTarget& configuredTarget : targets) {
+                const bool isAvailable = std::any_of(
+                    availableTargets.begin(),
+                    availableTargets.end(),
+                    [&configuredTarget](
+                        const PlatformRevealTarget& current) {
+                        return current.sequenceName ==
+                                   configuredTarget.sequenceName &&
+                               current.yamlIndex ==
+                                   configuredTarget.yamlIndex;
+                    });
+                if (!isAvailable) {
+                    missingTargets.emplace_back(configuredTarget);
+                }
+            }
+
+            for (const PlatformRevealTarget& missingTarget :
+                 missingTargets) {
+                bool keepTarget = true;
+                const std::string missingLabel =
+                    "見つからない対象: " + missingTarget.sequenceName +
+                    ":" + std::to_string(missingTarget.yamlIndex) +
+                    "##missing_" + idPrefix + "_" +
+                    std::to_string(yamlIndex) + "_" +
+                    missingTarget.sequenceName + "_" +
+                    std::to_string(missingTarget.yamlIndex);
+                if (!ImGui::Checkbox(missingLabel.c_str(), &keepTarget) ||
+                    keepTarget) {
+                    continue;
+                }
+
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                targets.erase(
+                    std::remove_if(
+                        targets.begin(),
+                        targets.end(),
+                        [&missingTarget](
+                            const PlatformRevealTarget& current) {
+                            return current.sequenceName ==
+                                       missingTarget.sequenceName &&
+                                   current.yamlIndex ==
+                                       missingTarget.yamlIndex;
+                        }),
+                    targets.end());
+                setTargets(targets);
+                Save();
+                RebuildPhysicsWorldIfNeeded(true);
+            }
+
+            if (!hasCandidate) {
+                ImGui::TextDisabled("対象にできる配置物がありません。");
+            } else if (targets.empty()) {
+                ImGui::TextDisabled("対象を1つ以上選択してください。");
+            }
+            ImGui::TreePop();
+        };
 
     if (PlatformFadeOnStandComponent* fade =
             platform->GetFadeOnStandComponent()) {
@@ -2657,7 +2804,7 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             platform->GetPressureSwitchComponent()) {
         ImGui::SeparatorText("1人用スイッチ");
         ImGui::TextDisabled(
-            "プレイヤーがこの足場に乗ると、選択した足場や敵を表示します。");
+            "ONにしたとき、配置物の表示と非表示を同時に切り替えられます。");
 
         bool shouldRemainOnAfterPressed =
             pressureSwitch->ShouldRemainOnAfterPressed();
@@ -2699,6 +2846,7 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
         const std::vector<StageActorInstance> instances =
             StageActorQuery::CollectAllActorInstances(
                 mContext.game->GetCurrentStage());
+        ImGui::SeparatorText("ONで表示する足場・敵");
         for (const StageActorInstance& instance : instances) {
             Platform* target =
                 dynamic_cast<Platform*>(instance.actor);
@@ -2868,6 +3016,15 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                 "表示する足場または敵を1つ以上選択してください。");
         }
 
+        drawSwitchActorTargets(
+            "ONで非表示にする配置物",
+            "pressureSwitchHideTargets",
+            pressureSwitch->GetHideTargets(),
+            [pressureSwitch](
+                const std::vector<PlatformRevealTarget>& targets) {
+                pressureSwitch->SetHideTargets(targets);
+            });
+
         if (!mContext.game->GetIsDebugEditorShowing()) {
             ImGui::Text(
                 "現在の状態: %s",
@@ -2893,14 +3050,15 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             platform->GetLatchedGroupSwitchComponent()) {
         ImGui::SeparatorText("2個連動・保持スイッチ");
         ImGui::TextDisabled(
-            "別々のプレイヤーが同じグループIDのスイッチを1個ずつ押すと、配置物が現れます。");
+            "別々のプレイヤーが同じグループIDのスイッチを1個ずつ押すと、配置物の表示状態が切り替わります。");
         ImGui::TextDisabled(
             "一度押したスイッチは、プレイヤーが離れてもONのままです。");
 
         const auto preservePreviousGroupSettings =
             [this, platform, latchedSwitch]() {
                 if (latchedSwitch->GetGroupId().empty() ||
-                    latchedSwitch->GetRevealTargets().empty()) {
+                    (latchedSwitch->GetRevealTargets().empty() &&
+                     latchedSwitch->GetHideTargets().empty())) {
                     return;
                 }
 
@@ -2917,7 +3075,10 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                     }
                     nextOwner->SetRevealTargets(
                         latchedSwitch->GetRevealTargets());
+                    nextOwner->SetHideTargets(
+                        latchedSwitch->GetHideTargets());
                     latchedSwitch->SetRevealTargets({});
+                    latchedSwitch->SetHideTargets({});
                     return;
                 }
             };
@@ -2946,6 +3107,7 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                     // selected group's existing reveal settings remain owned
                     // by its original configuration switch.
                     latchedSwitch->SetRevealTargets({});
+                    latchedSwitch->SetHideTargets({});
                     bool groupWasNormalized = false;
                     NormalizeLatchedSwitchGroupConfiguration(
                         groupId,
@@ -3018,14 +3180,14 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                 }
             }
             ImGui::TextWrapped(
-                "表示対象は設定元スイッチ「%s」で管理されています。"
+                "表示・非表示対象は設定元スイッチ「%s」で管理されています。"
                 "このスイッチではグループIDだけを設定します。",
                 settingsOwnerLabel.c_str());
             return;
         }
 
         ImGui::TextDisabled(
-            "このスイッチがグループの表示対象を管理します。");
+            "このスイッチがグループの表示・非表示対象を管理します。");
 
         std::vector<PlatformRevealTarget> revealTargets =
             latchedSwitch->GetRevealTargets();
@@ -3152,6 +3314,15 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
             }
             ImGui::TreePop();
         }
+
+        drawSwitchActorTargets(
+            "ONで非表示にする配置物",
+            "latchedGroupSwitchHideTargets",
+            latchedSwitch->GetHideTargets(),
+            [latchedSwitch](
+                const std::vector<PlatformRevealTarget>& targets) {
+                latchedSwitch->SetHideTargets(targets);
+            });
 
         ImGui::TextDisabled(
             "編集モード中はスイッチの記録状態を更新しません。");
@@ -3914,6 +4085,15 @@ void StagePlacementPanel::SaveActorCommonYaml(
                 targetNode["index"] = target.yamlIndex;
                 node["enemyTargets"].push_back(targetNode);
             }
+            node["hideTargets"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const PlatformRevealTarget& target :
+                 component->GetHideTargets()) {
+                YAML::Node targetNode;
+                targetNode["sequence"] = target.sequenceName;
+                targetNode["index"] = target.yamlIndex;
+                node["hideTargets"].push_back(targetNode);
+            }
         } else {
             removeComponentNode("pressureSwitch");
         }
@@ -3938,6 +4118,15 @@ void StagePlacementPanel::SaveActorCommonYaml(
                 targetNode["sequence"] = target.sequenceName;
                 targetNode["index"] = target.yamlIndex;
                 node["targets"].push_back(targetNode);
+            }
+            node["hideTargets"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const PlatformRevealTarget& target :
+                 component->GetHideTargets()) {
+                YAML::Node targetNode;
+                targetNode["sequence"] = target.sequenceName;
+                targetNode["index"] = target.yamlIndex;
+                node["hideTargets"].push_back(targetNode);
             }
         } else {
             removeComponentNode("latchedGroupSwitch");

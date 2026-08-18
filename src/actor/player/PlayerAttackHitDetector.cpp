@@ -172,7 +172,8 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
         0.5f *
         std::max(
             physicsSystem->GetPlayerCollisionWidth(),
-            physicsSystem->GetPlayerCollisionDepth());
+            physicsSystem->GetPlayerCollisionDepth()) *
+        player.GetCollisionScaleMultiplier();
     const glm::vec3 playerUp = player.GetUpVec();
     const float playerUpLengthSquared =
         glm::dot(playerUp, playerUp);
@@ -352,22 +353,50 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
         return false;
     }
 
+    const float collisionScaleMultiplier =
+        player.GetCollisionScaleMultiplier();
     const float horizontalCollisionRadius =
         0.5f *
         std::max(
             physicsSystem->GetPlayerCollisionWidth(),
             physicsSystem->GetPlayerCollisionDepth()) *
-        player.GetCollisionScaleMultiplier();
+        collisionScaleMultiplier;
     const float verticalCollisionHalfHeight =
         0.5f *
         physicsSystem->GetPlayerCollisionHeight() *
-        player.GetCollisionScaleMultiplier();
+        collisionScaleMultiplier;
     constexpr float airDodgeVerticalReachMultiplier = 2.0f;
-    const glm::vec3 expansion(
-        horizontalCollisionRadius,
+    glm::vec3 playerUpDirection = player.GetUpVec();
+    const float playerUpLength = glm::length(playerUpDirection);
+    if (playerUpLength <= geometryEpsilon) {
+        return false;
+    }
+    playerUpDirection /= playerUpLength;
+
+    const float verticalCollisionReach =
         verticalCollisionHalfHeight *
-            airDodgeVerticalReachMultiplier,
-        horizontalCollisionRadius);
+        airDodgeVerticalReachMultiplier;
+    glm::vec3 expansion(0.0f);
+    for (glm::length_t axisIndex = 0;
+         axisIndex < enemyBounds.axes.size();
+         ++axisIndex) {
+        const glm::vec3 targetAxis = enemyBounds.axes[axisIndex];
+        const float verticalAxisAlignment = glm::clamp(
+            std::abs(glm::dot(targetAxis, playerUpDirection)),
+            0.0f,
+            1.0f);
+        const float horizontalAxisAlignment = std::sqrt(
+            std::max(
+                0.0f,
+                1.0f - verticalAxisAlignment * verticalAxisAlignment));
+
+        // The target bounds use their own local axes. Project the player's
+        // upright air-dodge range onto those axes instead of treating their
+        // X/Y/Z components as world-space directions.
+        expansion[axisIndex] =
+            horizontalCollisionRadius * horizontalAxisAlignment +
+            verticalCollisionReach * verticalAxisAlignment;
+    }
     return DoesSegmentIntersectExpandedBounds(
         enemyBounds,
         movementStart,

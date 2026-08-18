@@ -46,6 +46,41 @@ bool IsValidEnemy(const Player& player, const Enemy* enemy)
             enemy->GetPos());
 }
 
+bool IsActiveAirborneEnemyOnCurrentPlanet(
+    const Player& player,
+    const Enemy* enemy)
+{
+    const Planet* planet = player.GetCurrentPlanet();
+    return
+        enemy &&
+        planet &&
+        enemy->GetIsActive() &&
+        enemy->IsAlive() &&
+        !enemy->GetIsDead() &&
+        !enemy->IsOnGround() &&
+        enemy->GetCurrentPlanet() == planet;
+}
+
+bool IsAirborneEnemyNearRecovery(
+    const Enemy& enemy,
+    float maximumLaunchedTimerSeconds)
+{
+    const float launchedTimerSeconds = enemy.GetLaunchedTimer();
+    if (launchedTimerSeconds >= 0.0f) {
+        return launchedTimerSeconds <= maximumLaunchedTimerSeconds;
+    }
+
+    glm::vec3 upDirection;
+    if (!TryNormalize(enemy.GetUpVec(), upDirection)) {
+        return false;
+    }
+
+    // The launched timer is cleared before the enemy physically lands. Keep
+    // the target eligible while it is descending so a current player action
+    // cannot make the assist miss the one-second trigger window.
+    return glm::dot(enemy.GetVelocity(), upDirection) <= 0.0f;
+}
+
 float CalculateDistanceSquaredToEnemySurface(
     const Player& player,
     const Enemy& enemy)
@@ -222,31 +257,28 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     return nearestAnyDirectionTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestAirborneTarget(
-    const Player& player,
-    float maxDistance)
+Enemy* PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+    const Player& player)
 {
     Planet* planet = player.GetCurrentPlanet();
-    if (!planet || maxDistance <= 0.0f) {
+    if (!planet) {
         return nullptr;
     }
 
-    const float maxDistanceSquared =
-        maxDistance * maxDistance;
     Enemy* nearestTarget = nullptr;
     float nearestDistanceSquared =
         std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsValidEnemy(player, enemy) ||
-            enemy->IsOnGround()) {
+        if (!IsActiveAirborneEnemyOnCurrentPlanet(
+                player,
+                enemy)) {
             continue;
         }
 
         const float distanceSquared =
             CalculateDistanceSquaredToEnemySurface(player, *enemy);
-        if (distanceSquared > maxDistanceSquared ||
-            distanceSquared >= nearestDistanceSquared) {
+        if (distanceSquared >= nearestDistanceSquared) {
             continue;
         }
 
@@ -257,72 +289,32 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTarget(
     return nearestTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTarget(
+Enemy* PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
     const Player& player,
-    float maxDistance)
-{
-    Planet* planet = player.GetCurrentPlanet();
-    if (!planet || maxDistance <= 0.0f) {
-        return nullptr;
-    }
-
-    const float maxDistanceSquared = maxDistance * maxDistance;
-    Enemy* nearestTarget = nullptr;
-    float nearestDistanceSquared = std::numeric_limits<float>::max();
-
-    for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsValidEnemy(player, enemy) ||
-            enemy->IsOnGround() ||
-            enemy->GetBreakCount() != 0) {
-            continue;
-        }
-
-        const float distanceSquared =
-            CalculateDistanceSquaredToEnemySurface(player, *enemy);
-        if (distanceSquared > maxDistanceSquared ||
-            distanceSquared >= nearestDistanceSquared) {
-            continue;
-        }
-
-        nearestTarget = enemy;
-        nearestDistanceSquared = distanceSquared;
-    }
-
-    return nearestTarget;
-}
-
-Enemy* PlayerTargetingAssist::FindNearestBrokenAirborneTargetNearRecovery(
-    const Player& player,
-    float maxDistance,
     float maximumLaunchedTimerSeconds)
 {
     Planet* planet = player.GetCurrentPlanet();
-    if (!planet || maxDistance <= 0.0f ||
+    if (!planet ||
         maximumLaunchedTimerSeconds < 0.0f) {
         return nullptr;
     }
 
-    const float maxDistanceSquared = maxDistance * maxDistance;
     Enemy* nearestTarget = nullptr;
     float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsValidEnemy(player, enemy) ||
-            enemy->IsOnGround() ||
-            enemy->GetBreakCount() != 0) {
-            continue;
-        }
-
-        const float launchedTimerSeconds = enemy->GetLaunchedTimer();
-        if (launchedTimerSeconds < 0.0f ||
-            launchedTimerSeconds > maximumLaunchedTimerSeconds) {
+        if (!IsActiveAirborneEnemyOnCurrentPlanet(
+                player,
+                enemy) ||
+            !IsAirborneEnemyNearRecovery(
+                *enemy,
+                maximumLaunchedTimerSeconds)) {
             continue;
         }
 
         const float distanceSquared =
             CalculateDistanceSquaredToEnemySurface(player, *enemy);
-        if (distanceSquared > maxDistanceSquared ||
-            distanceSquared >= nearestDistanceSquared) {
+        if (distanceSquared >= nearestDistanceSquared) {
             continue;
         }
 

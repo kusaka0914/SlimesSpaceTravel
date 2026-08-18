@@ -102,7 +102,6 @@ void PlayerCombat::ConfigureStrongAttack()
 void PlayerCombat::StartAirSlamAttack()
 {
     ConfigureStrongAttack();
-    mHasSuccessfulAirDodgeAttack = false;
     mIsAssistStrongAttack = false;
     mIsStrongAttacked = true;
     mIsCharged = true;
@@ -392,7 +391,6 @@ void PlayerCombat::OnLanded()
     mIsAirAttacking = false;
     mAirAttackCount = 0;
     ResetAirWeakAttackHitCount();
-    mHasSuccessfulAirDodgeAttack = false;
     EndAirDodgeAttack();
 }
 
@@ -400,7 +398,6 @@ void PlayerCombat::PrepareAssistAirCombo()
 {
     mAirAttackCount = 0;
     ResetAirWeakAttackHitCount();
-    mHasSuccessfulAirDodgeAttack = false;
     mIsAirAttacking = false;
 }
 
@@ -423,7 +420,6 @@ void PlayerCombat::ResetAirWeakAttackHitCount()
 void PlayerCombat::StartAirDodgeAttack()
 {
     mIsAirDodgeAttackActive = true;
-    mHasSuccessfulAirDodgeAttack = false;
     mAirDodgeHitEnemies.clear();
 }
 
@@ -470,7 +466,6 @@ void PlayerCombat::UpdateAirDodgeAttack(
     if (didHitEnemy) {
         mAirAttackCount = 0;
         ResetAirWeakAttackHitCount();
-        mHasSuccessfulAirDodgeAttack = true;
         // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
         // 外した場合は現在の回避を最後にして、着地まで再使用できない。
         movement.RestoreAirDodge();

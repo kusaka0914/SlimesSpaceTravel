@@ -6,11 +6,16 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
 #include "system/PhysicsSystem.h"
+#include "system/physics/ActorModelEllipsoidShapeCache.h"
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h>
+#include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
+#include <BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h>
 #include <cmath>
 #include <vector>
 
@@ -19,6 +24,9 @@ constexpr float collisionSkinWidth = 0.005f;
 constexpr float overheadContactMaximumUpDot = -0.5f;
 constexpr float overheadPlatformPushDistance = 0.15f;
 constexpr float modelCollisionEpsilon = 0.000001f;
+constexpr float enemyTopSurfaceMinimumUpDot = 0.45f;
+constexpr float enemyTopSlideFromFallRatio = 0.5f;
+constexpr float enemyTopMaximumSlideDistance = 0.06f;
 
 bool TryNormalizeDirection(
     const glm::vec3& direction,
@@ -83,6 +91,82 @@ glm::vec3 CalculateTangentialPushDirection(
         glm::cross(
             normalizedUpDirection,
             fallbackReferenceAxis));
+}
+
+glm::vec3 CalculateOutwardSweepNormal(
+    const btVector3& bulletSweepNormal,
+    const glm::vec3& movingCollisionCenter,
+    const glm::vec3& blockingCollisionCenter)
+{
+    glm::vec3 outwardDirection(0.0f);
+    TryNormalizeDirection(
+        movingCollisionCenter - blockingCollisionCenter,
+        outwardDirection);
+
+    glm::vec3 sweepNormal(
+        bulletSweepNormal.x(),
+        bulletSweepNormal.y(),
+        bulletSweepNormal.z());
+    if (!TryNormalizeDirection(sweepNormal, sweepNormal)) {
+        return outwardDirection;
+    }
+
+    if (glm::dot(sweepNormal, outwardDirection) < 0.0f) {
+        sweepNormal = -sweepNormal;
+    }
+    return sweepNormal;
+}
+
+glm::vec3 CalculateSurfaceSlideDelta(
+    const glm::vec3& remainingMovement,
+    const glm::vec3& outwardCollisionNormal)
+{
+    const float inwardMovementDistance =
+        glm::dot(
+            remainingMovement,
+            outwardCollisionNormal);
+    if (inwardMovementDistance >= 0.0f) {
+        return remainingMovement;
+    }
+
+    return remainingMovement -
+           outwardCollisionNormal * inwardMovementDistance;
+}
+
+glm::vec3 CalculateAutomaticEnemyTopSlide(
+    const Actor& movingActor,
+    const Actor& blockingEnemy,
+    const glm::vec3& requestedMovement,
+    const glm::vec3& movingActorUp,
+    const glm::vec3& outwardCollisionNormal,
+    const glm::vec3& surfaceSlideDelta)
+{
+    const bool isOnEnemyTopSurface =
+        glm::dot(outwardCollisionNormal, movingActorUp) >=
+        enemyTopSurfaceMinimumUpDot;
+    const bool alreadySlidingAlongSurface =
+        glm::length(surfaceSlideDelta) > modelCollisionEpsilon;
+    if (!isOnEnemyTopSurface || alreadySlidingAlongSurface) {
+        return glm::vec3(0.0f);
+    }
+
+    const float requestedDownwardDistance =
+        std::max(
+            0.0f,
+            -glm::dot(requestedMovement, movingActorUp));
+    const float automaticSlideDistance =
+        std::min(
+            requestedDownwardDistance *
+                enemyTopSlideFromFallRatio,
+            enemyTopMaximumSlideDistance);
+    if (automaticSlideDistance <= modelCollisionEpsilon) {
+        return glm::vec3(0.0f);
+    }
+
+    return CalculateTangentialPushDirection(
+               movingActor,
+               blockingEnemy) *
+           automaticSlideDistance;
 }
 
 btTransform CreatePlayerCollisionTransform(
@@ -206,6 +290,149 @@ private:
     float mPenetrationDepth = 0.0f;
     glm::vec3 mOutwardNormal{0.0f};
 };
+
+std::optional<glm::vec3> ResolveMovementAgainstEnemyEllipsoid(
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* movingActorShape,
+    Actor& movingActor,
+    const glm::vec3& desiredPosition,
+    float collisionCenterHeight,
+    Enemy& blockingEnemy,
+    btConvexShape* enemyEllipsoidShape,
+    const glm::vec3& enemyScaledLocalBoundsCenter)
+{
+    if (!world || !movingActorShape || !enemyEllipsoidShape) {
+        return std::nullopt;
+    }
+
+    glm::vec3 movingActorUp;
+    if (!TryNormalizeDirection(
+            movingActor.GetUpVec(),
+            movingActorUp)) {
+        movingActorUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+
+    const glm::vec3 movementStart = movingActor.GetPos();
+    const glm::vec3 movementDelta =
+        desiredPosition - movementStart;
+    const glm::vec3 collisionCenterOffset =
+        movingActorUp * collisionCenterHeight;
+    const btTransform movingFromTransform =
+        CreatePlayerCollisionTransform(
+            movingActor,
+            movementStart + collisionCenterOffset);
+    const btTransform movingToTransform =
+        CreatePlayerCollisionTransform(
+            movingActor,
+            desiredPosition + collisionCenterOffset);
+    const btTransform enemyTransform =
+        ActorModelEllipsoidShapeCache::CreateWorldTransform(
+            blockingEnemy,
+            blockingEnemy.GetPos(),
+            enemyScaledLocalBoundsCenter);
+
+    if (glm::length(movementDelta) > modelCollisionEpsilon) {
+        btVoronoiSimplexSolver simplexSolver;
+        btGjkEpaPenetrationDepthSolver penetrationDepthSolver;
+        btContinuousConvexCollision collisionCast(
+            movingActorShape,
+            enemyEllipsoidShape,
+            &simplexSolver,
+            &penetrationDepthSolver);
+        btConvexCast::CastResult castResult;
+        castResult.m_allowedPenetration = 0.0f;
+        if (collisionCast.calcTimeOfImpact(
+                movingFromTransform,
+                movingToTransform,
+                enemyTransform,
+                enemyTransform,
+                castResult)) {
+            const float movementLength =
+                glm::length(movementDelta);
+            const float skinFraction =
+                collisionSkinWidth / movementLength;
+            const float allowedMovementFraction =
+                std::max(
+                    0.0f,
+                    static_cast<float>(castResult.m_fraction) -
+                        skinFraction);
+            const glm::vec3 collisionPosition =
+                movementStart +
+                movementDelta * allowedMovementFraction;
+            const glm::vec3 collisionCenter =
+                collisionPosition + collisionCenterOffset;
+            const btVector3& bulletEnemyCenter =
+                enemyTransform.getOrigin();
+            const glm::vec3 enemyCollisionCenter(
+                bulletEnemyCenter.x(),
+                bulletEnemyCenter.y(),
+                bulletEnemyCenter.z());
+            const glm::vec3 outwardCollisionNormal =
+                CalculateOutwardSweepNormal(
+                    castResult.m_normal,
+                    collisionCenter,
+                    enemyCollisionCenter);
+            if (glm::length(outwardCollisionNormal) <=
+                modelCollisionEpsilon) {
+                return collisionPosition;
+            }
+
+            const glm::vec3 remainingMovement =
+                movementDelta *
+                (1.0f - allowedMovementFraction);
+            const glm::vec3 surfaceSlideDelta =
+                CalculateSurfaceSlideDelta(
+                    remainingMovement,
+                    outwardCollisionNormal);
+            const glm::vec3 automaticTopSlide =
+                CalculateAutomaticEnemyTopSlide(
+                    movingActor,
+                    blockingEnemy,
+                    movementDelta,
+                    movingActorUp,
+                    outwardCollisionNormal,
+                    surfaceSlideDelta);
+            return collisionPosition +
+                   outwardCollisionNormal * collisionSkinWidth +
+                   surfaceSlideDelta +
+                   automaticTopSlide;
+        }
+    }
+
+    btCollisionObject movingCollisionObject;
+    movingCollisionObject.setCollisionShape(movingActorShape);
+    movingCollisionObject.setWorldTransform(movingToTransform);
+
+    btCollisionObject enemyCollisionObject;
+    enemyCollisionObject.setCollisionShape(enemyEllipsoidShape);
+    enemyCollisionObject.setWorldTransform(enemyTransform);
+
+    DeepestPenetrationContactCallback contactCallback(
+        &movingCollisionObject);
+    world->contactPairTest(
+        &movingCollisionObject,
+        &enemyCollisionObject,
+        contactCallback);
+    if (!contactCallback.HasPenetration()) {
+        return std::nullopt;
+    }
+
+    const glm::vec3& outwardCollisionNormal =
+        contactCallback.GetOutwardNormal();
+    const glm::vec3 automaticTopSlide =
+        CalculateAutomaticEnemyTopSlide(
+            movingActor,
+            blockingEnemy,
+            movementDelta,
+            movingActorUp,
+            outwardCollisionNormal,
+            glm::vec3(0.0f));
+    return desiredPosition +
+           outwardCollisionNormal *
+               (contactCallback.GetPenetrationDepth() +
+                collisionSkinWidth) +
+           automaticTopSlide;
+}
 } // namespace
 
 ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
@@ -225,8 +452,11 @@ ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
     glm::vec3 stageMovementDelta = moveDelta;
     if (auto conflictPosition =
             CheckConflictActors(
+                world,
+                playerShape,
                 actor,
                 actorResolvedDesiredPosition,
+                collisionCenterHeight,
                 actorCollisionFilter)) {
         actorResolvedDesiredPosition = *conflictPosition;
         stageMovementDelta +=
@@ -293,8 +523,11 @@ ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
 }
 
 std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* movingActorShape,
     Actor* actor,
     const glm::vec3& desiredPos,
+    float collisionCenterHeight,
     ActorCollisionFilter actorCollisionFilter) const
 {
     if (!actor || !actor->GetCurrentPlanet()) {
@@ -319,9 +552,12 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
 
         if (auto conflictPos =
                 CheckConflictActor(
+                    world,
+                    movingActorShape,
                     actor,
                     enemy,
-                    desiredPos)) {
+                    desiredPos,
+                    collisionCenterHeight)) {
             return *conflictPos;
         }
     }
@@ -335,9 +571,12 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
 
         if (auto conflictPos =
                 CheckConflictActor(
+                    world,
+                    movingActorShape,
                     actor,
                     crystal,
-                    desiredPos)) {
+                    desiredPos,
+                    collisionCenterHeight)) {
             return *conflictPos;
         }
     }
@@ -351,9 +590,12 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
 
         if (auto conflictPos =
                 CheckConflictActor(
+                    world,
+                    movingActorShape,
                     actor,
                     npc,
-                    desiredPos)) {
+                    desiredPos,
+                    collisionCenterHeight)) {
             return *conflictPos;
         }
     }
@@ -363,9 +605,12 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
 
 std::optional<glm::vec3>
 ActorCollisionResolver::CheckConflictActor(
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* movingActorShape,
     Actor* movingActor,
     Actor* blockingActor,
-    const glm::vec3& desiredPos) const
+    const glm::vec3& desiredPos,
+    float collisionCenterHeight) const
 {
     if (!movingActor ||
         !blockingActor ||
@@ -380,6 +625,32 @@ ActorCollisionResolver::CheckConflictActor(
         blockingActorPosition;
 
     if (Enemy* blockingEnemy = dynamic_cast<Enemy*>(blockingActor)) {
+        PhysicsSystem* physicsSystem =
+            movingActor->GetGame()
+                ? movingActor->GetGame()->GetPhysicsSystem()
+                : nullptr;
+        const ResolvedActorModelEllipsoidShape enemyEllipsoid =
+            physicsSystem
+                ? physicsSystem->ResolveActorModelEllipsoidShape(
+                      *blockingEnemy)
+                : ResolvedActorModelEllipsoidShape{};
+        const bool canUsePlayerCollisionShape =
+            dynamic_cast<Player*>(movingActor) != nullptr;
+        if (enemyEllipsoid.shape &&
+            world &&
+            movingActorShape &&
+            canUsePlayerCollisionShape) {
+            return ResolveMovementAgainstEnemyEllipsoid(
+                world,
+                movingActorShape,
+                *movingActor,
+                desiredPos,
+                collisionCenterHeight,
+                *blockingEnemy,
+                enemyEllipsoid.shape,
+                enemyEllipsoid.scaledLocalBoundsCenter);
+        }
+
         EnemyCollisionGeometry::ModelBounds enemyBounds;
         if (EnemyCollisionGeometry::TryCreateModelBounds(
                 *blockingEnemy,
@@ -438,9 +709,27 @@ ActorCollisionResolver::CheckConflictActor(
             const glm::vec3 outwardDirection =
                 enemyBounds.axes[nearestFaceAxis] *
                 outwardSign;
+            glm::vec3 movingActorUp;
+            if (!TryNormalizeDirection(
+                    movingActor->GetUpVec(),
+                    movingActorUp)) {
+                movingActorUp = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
+
+            const glm::vec3 requestedMovement =
+                desiredPos - movingActor->GetPos();
+            const glm::vec3 automaticTopSlide =
+                CalculateAutomaticEnemyTopSlide(
+                    *movingActor,
+                    *blockingEnemy,
+                    requestedMovement,
+                    movingActorUp,
+                    outwardDirection,
+                    glm::vec3(0.0f));
             return desiredPos +
                 outwardDirection *
-                    (nearestFacePenetration + collisionSkinWidth);
+                    (nearestFacePenetration + collisionSkinWidth) +
+                automaticTopSlide;
         }
     }
 

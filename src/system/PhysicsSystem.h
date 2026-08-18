@@ -38,6 +38,8 @@ class StageCollisionBuilder;
 class EditorPickSystem;
 class FallRespawnTriggerSystem;
 class ActorCollisionResolver;
+class ActorModelEllipsoidShapeCache;
+struct ResolvedActorModelEllipsoidShape;
 
 class PhysicsSystem {
 public:
@@ -91,7 +93,16 @@ public:
         const Actor& movingActor,
         const glm::vec3& movementStart,
         const Actor& targetActor,
-        float contactTolerance = 0.0f) const;
+        const glm::vec3& movingModelHalfExtentPadding =
+            glm::vec3(0.0f)) const;
+
+    bool DoesActorEllipsoidModelSweepOverlapActorCollision(
+        const Actor& movingActor,
+        const glm::vec3& movementStart,
+        const Actor& targetActor) const;
+
+    ResolvedActorModelEllipsoidShape ResolveActorModelEllipsoidShape(
+        const Actor& actor) const;
 
 private:
     void ClearBulletWorld();
@@ -106,6 +117,8 @@ private:
     std::unique_ptr<EditorPickSystem> mEditorPickSystem;
     std::unique_ptr<FallRespawnTriggerSystem> mFallRespawnTriggerSystem;
     std::unique_ptr<ActorCollisionResolver> mActorCollisionResolver;
+    std::unique_ptr<ActorModelEllipsoidShapeCache>
+        mActorModelEllipsoidShapeCache;
 
     std::unique_ptr<btDefaultCollisionConfiguration> mBulletCollisionConfig;
     std::unique_ptr<btCollisionDispatcher> mBulletDispatcher;

@@ -36,13 +36,19 @@ private:
     };
 
     std::optional<glm::vec3> CheckConflictActors(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* movingActorShape,
         Actor* actor,
         const glm::vec3& desiredPos,
+        float collisionCenterHeight,
         ActorCollisionFilter actorCollisionFilter) const;
     std::optional<glm::vec3> CheckConflictActor(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* movingActorShape,
         Actor* movingActor,
         Actor* blockingActor,
-        const glm::vec3& desiredPos) const;
+        const glm::vec3& desiredPos,
+        float collisionCenterHeight) const;
     std::optional<StageSweepResolution> CheckConflictWall(
         btDiscreteDynamicsWorld* world,
         btConvexShape* playerShape,

@@ -145,6 +145,24 @@ void Player::RecoverFromFatigue()
     mStateMachine.ChangeState(PlayerActionState::Idle);
 }
 
+void Player::OnAttachedToAdhesivePlatform()
+{
+    // Adhesion is a stable support point even when it is a wall or ceiling.
+    // Restore the same airborne action availability as a landing without
+    // emitting a separate gameplay landing event.
+    mMovement.ClearStrongAttackDirectionOverride();
+    mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
+    mMovement.RestoreAirDodge();
+    mPlanetGravityController.OnLanded(*this, mMovement);
+
+    mCombat.CancelCurrentAttack();
+    mCombat.OnLanded();
+    mStateMachine.ClearAttackDirectionTarget();
+    mStateMachine.ChangeState(PlayerActionState::Idle);
+}
+
 void Player::MoveToCurrentPlanetOrigin()
 {
     Planet* planet = GetCurrentPlanet();
@@ -218,19 +236,11 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
-    if (GetIsActive() && GetCurrentPlanet() && !IsAttachedToPlatform()) {
-        for (Platform* platform : GetCurrentPlanet()->GetPlatforms()) {
-            if (!platform) {
-                continue;
-            }
-
-            PlatformAdhesionComponent* adhesionComponent =
-                platform->GetAdhesionComponent();
-            if (adhesionComponent &&
-                adhesionComponent->TryAttachPlayerIfTouching(*this)) {
-                break;
-            }
-        }
+    if (GetIsActive() && !IsAttachedToPlatform()) {
+        PlatformAdhesionComponent::
+            TryAttachPlayerToAnyPlatformAlongMovement(
+                *this,
+                GetPos());
     }
 
     PhysicsSystem* physicsSystem =
@@ -460,13 +470,15 @@ void Player::Restart()
     RespawnAtRestartPoint();
 }
 
-bool Player::ShouldAcceptLandingSurface(
-    Actor* surfaceActor,
-    const glm::vec3& surfaceNormal) const
+bool Player::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& surfaceNormal) const
 {
-    (void)surfaceActor;
-    return mPlanetGravityController.ShouldAcceptLandingSurface(
-        surfaceNormal);
+    Platform* platform = dynamic_cast<Platform*>(surfaceActor);
+
+    if (platform && platform->GetAdhesionComponent()) {
+        return false;
+    }
+
+    return mPlanetGravityController.ShouldAcceptLandingSurface(surfaceNormal);
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const

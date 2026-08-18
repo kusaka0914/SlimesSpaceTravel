@@ -82,7 +82,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [33.625343, 2.7211722e-06, -22.481262]
+  - center: [33.625282, 9.581447e-06, -22.481247]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -95,7 +95,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [71.45567, 4.7683716e-06, 23.639893]
+  - center: [71.45571, -9.047985e-05, 23.639824]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -403,9 +403,9 @@ boatArrivalPoints:
       - 1
       - 1
   - currentPlanetNum: 6
-    theta: 2.9062576
-    phi: -1.510325
-    height: 2.2516387
+    theta: 2.9060497
+    phi: -1.5103772
+    height: 2.2516327
     facingYaw: 0
     modelPath: platform.obj
     rotation:
@@ -1200,8 +1200,7 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-      enemyClearUnlock:
-        {}
+      enemyClearUnlock: {}
   - currentPlanetNum: 2
     pos:
       - -5.04
@@ -1407,10 +1406,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet1
-        targets:
-          []
-      enemyClearUnlock:
-        {}
+        targets: []
+      enemyClearUnlock: {}
     rotationQuat:
       - -0.010605924
       - 0.48201528
@@ -1421,9 +1418,9 @@ platforms:
       - 5.71
       - -0.87
       - 1.68
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
+    theta: 0.28614634
+    phi: -0.14514114
+    height: 0.3518225
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -1453,9 +1450,9 @@ platforms:
       - 9.701599
       - -0.090623885
       - 5.509245
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
+    theta: 0.031689465
+    phi: -0.023269238
+    height: 4.855345
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -1506,9 +1503,9 @@ platforms:
       - 15.163773
       - 0.3304502
       - 0.52733994
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
+    theta: 0.3945289
+    phi: 0.042963285
+    height: 9.217444
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -1559,9 +1556,9 @@ platforms:
       - 18.270546
       - 1.3224912
       - 7.1383514
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
+    theta: 0.108731374
+    phi: 0.059687298
+    height: 13.54445
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -1665,9 +1662,9 @@ platforms:
       - 22.81334
       - 1.5943127
       - 2.28129
-    theta: 0.11149379
-    phi: -0.15978983
-    height: 18.2922
+    theta: 0.10463543
+    phi: -0.027374335
+    height: 17.335732
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -1856,9 +1853,9 @@ platforms:
       - 24.739738
       - 1.9327557
       - 2.6940727
-    theta: 0.11149379
-    phi: -0.15978983
-    height: 18.2922
+    theta: 0.11343659
+    phi: -0.011107922
+    height: 19.294561
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2315,8 +2312,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet2
-        targets:
-          []
+        targets: []
     rotationQuat:
       - 0.90604794
       - -0.012187039
@@ -2665,8 +2661,7 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets:
-          []
+        targets: []
         enemyTargets:
           - sequence: enemies
             index: 6

@@ -78,12 +78,11 @@ bool IsWithinCurrentEllipseFaceMovementArea(
         return true;
     }
 
-    // The front/back restriction describes movement on the ellipse itself.
-    // Applying it while an enemy stands on a separate platform can reject
-    // every horizontal position on that platform and freeze attack movement.
-    if (enemy.GetGroundActor() != planet) {
-        return true;
-    }
+    // This restriction belongs to the enemy's assigned planet, not to its
+    // current landing actor. During an attack, resolving an overlap with
+    // another enemy can temporarily change the landing actor. Basing the
+    // decision on that transient state allowed the collision correction to
+    // push enemies through the front/back boundary.
 
     const Planet::EllipseSurfaceProjection surfaceProjection =
         planet->CalculateEllipseSurfaceProjection(
@@ -112,11 +111,15 @@ bool IsWithinCurrentEllipseFaceMovementArea(
     const Planet::EllipseSurfaceFace currentHemisphere =
         planet->ResolveEllipseSurfaceHemisphere(
             enemy.GetPos());
-    constexpr float sideBoundarySafetyRatio = 0.25f;
+    // Keep enemies near the center of their assigned face. A value of 0.45
+    // still allowed enemies to reach the visibly curved shoulder of this
+    // ellipse, especially after enemy-to-enemy collision correction. 0.85
+    // stops them before that shoulder while retaining a useful combat area.
+    constexpr float faceInteriorBoundaryRatio = 0.45f;
     return currentHemisphere ==
                Planet::EllipseSurfaceFace::Front
-        ? projectedVerticalRatio >= sideBoundarySafetyRatio
-        : projectedVerticalRatio <= -sideBoundarySafetyRatio;
+        ? projectedVerticalRatio >= faceInteriorBoundaryRatio
+        : projectedVerticalRatio <= -faceInteriorBoundaryRatio;
 }
 
 glm::vec3 ClampToCurrentEllipseFaceMovementArea(
@@ -561,7 +564,11 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
             &enemy,
             movementDelta,
             enemy.GetPos() + movementDelta);
-    enemy.SetPos(collisionResult.resolvedPosition);
+    const glm::vec3 faceConstrainedPosition =
+        ClampToCurrentEllipseFaceMovementArea(
+            enemy,
+            collisionResult.resolvedPosition);
+    enemy.SetPos(faceConstrainedPosition);
 
     const bool isMovingTowardGround =
         glm::dot(velocity, upDirection) <= 0.0f;
@@ -573,7 +580,7 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
             upDirection);
     if (hitWalkableGround) {
         enemy.SetShouldJudgeLandingForEnemy(true);
-        enemy.Land(collisionResult.resolvedPosition);
+        enemy.Land(faceConstrainedPosition);
         return;
     }
 

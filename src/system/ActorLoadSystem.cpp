@@ -132,6 +132,32 @@ glm::vec3 ReadComponentVec3(
         node[key][2].as<float>());
 }
 
+std::vector<PlatformRevealTarget> ReadSwitchActorTargets(
+    const YAML::Node& targetsNode)
+{
+    std::vector<PlatformRevealTarget> targets;
+    if (!targetsNode || !targetsNode.IsSequence()) {
+        return targets;
+    }
+
+    targets.reserve(targetsNode.size());
+    for (const YAML::Node& targetNode : targetsNode) {
+        if (!targetNode || !targetNode.IsMap() ||
+            !targetNode["sequence"] || !targetNode["index"]) {
+            continue;
+        }
+
+        PlatformRevealTarget target;
+        target.sequenceName =
+            targetNode["sequence"].as<std::string>();
+        target.yamlIndex = targetNode["index"].as<int>();
+        if (target.IsValid()) {
+            targets.emplace_back(std::move(target));
+        }
+    }
+    return targets;
+}
+
 void ApplyPlatformBehaviorConfigs(
     Platform* platform,
     const YAML::Node& platformNode)
@@ -237,26 +263,10 @@ void ApplyPlatformBehaviorConfigs(
                 }
             }
         }
-        std::vector<PlatformRevealTarget> targetEnemyRefs;
-        const YAML::Node enemyTargets = node["enemyTargets"];
-        if (enemyTargets && enemyTargets.IsSequence()) {
-            targetEnemyRefs.reserve(enemyTargets.size());
-            for (const YAML::Node& targetNode : enemyTargets) {
-                if (!targetNode || !targetNode.IsMap() ||
-                    !targetNode["sequence"] ||
-                    !targetNode["index"]) {
-                    continue;
-                }
-
-                PlatformRevealTarget target;
-                target.sequenceName =
-                    targetNode["sequence"].as<std::string>();
-                target.yamlIndex = targetNode["index"].as<int>();
-                if (target.IsValid()) {
-                    targetEnemyRefs.emplace_back(std::move(target));
-                }
-            }
-        }
+        const std::vector<PlatformRevealTarget> targetEnemyRefs =
+            ReadSwitchActorTargets(node["enemyTargets"]);
+        const std::vector<PlatformRevealTarget> hideTargets =
+            ReadSwitchActorTargets(node["hideTargets"]);
         PlatformPressureSwitchComponent* component =
             platform->AddPressureSwitchComponent();
         component->SetShouldRemainOnAfterPressed(
@@ -269,6 +279,7 @@ void ApplyPlatformBehaviorConfigs(
                 : 0.2f);
         component->SetTargetPlatformIds(targetPlatformIds);
         component->SetTargetEnemyRefs(targetEnemyRefs);
+        component->SetHideTargets(hideTargets);
     }
 
     if (const YAML::Node node = components["enemyClearUnlock"];
@@ -278,26 +289,10 @@ void ApplyPlatformBehaviorConfigs(
 
     if (const YAML::Node node = components["latchedGroupSwitch"];
         node && node.IsMap()) {
-        std::vector<PlatformRevealTarget> revealTargets;
-        const YAML::Node targets = node["targets"];
-        if (targets && targets.IsSequence()) {
-            revealTargets.reserve(targets.size());
-            for (const YAML::Node& targetNode : targets) {
-                if (!targetNode || !targetNode.IsMap() ||
-                    !targetNode["sequence"] ||
-                    !targetNode["index"]) {
-                    continue;
-                }
-
-                PlatformRevealTarget target;
-                target.sequenceName =
-                    targetNode["sequence"].as<std::string>();
-                target.yamlIndex = targetNode["index"].as<int>();
-                if (target.IsValid()) {
-                    revealTargets.emplace_back(std::move(target));
-                }
-            }
-        }
+        const std::vector<PlatformRevealTarget> revealTargets =
+            ReadSwitchActorTargets(node["targets"]);
+        const std::vector<PlatformRevealTarget> hideTargets =
+            ReadSwitchActorTargets(node["hideTargets"]);
 
         PlatformLatchedGroupSwitchComponent* component =
             platform->AddLatchedGroupSwitchComponent();
@@ -306,6 +301,7 @@ void ApplyPlatformBehaviorConfigs(
                 ? node["groupId"].as<std::string>()
                 : std::string());
         component->SetRevealTargets(revealTargets);
+        component->SetHideTargets(hideTargets);
     }
 }
 

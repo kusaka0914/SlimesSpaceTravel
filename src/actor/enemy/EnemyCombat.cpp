@@ -90,7 +90,7 @@ void EnemyCombat::TryApplyAttack(
         }
 
         if (!physicsSystem->
-                DoesActorModelSweepOverlapActorCollision(
+                DoesActorEllipsoidModelSweepOverlapActorCollision(
                     enemy,
                     movementStart,
                     *player)) {

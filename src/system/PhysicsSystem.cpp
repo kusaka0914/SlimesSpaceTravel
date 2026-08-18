@@ -5,9 +5,10 @@
 #include "actor/Actor.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
+#include "system/physics/ActorModelEllipsoidShapeCache.h"
 #include "system/physics/EditorPickSystem.h"
+#include "system/physics/EllipsoidCollisionShapeGeometry.h"
 #include "system/physics/FallRespawnTriggerSystem.h"
-#include "system/physics/PlayerCollisionShapeGeometry.h"
 #include "system/physics/PhysicsWorldBuilder.h"
 #include "system/physics/StageCollisionBuilder.h"
 
@@ -137,6 +138,59 @@ public:
 private:
     bool mHasContact = false;
 };
+
+bool DoesConvexShapeSweepOverlapActorCollision(
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* movingShape,
+    const btTransform& movingFromTransform,
+    const btTransform& movingToTransform,
+    btConvexShape* targetShape,
+    const btTransform& targetTransform)
+{
+    if (!world || !movingShape || !targetShape) {
+        return false;
+    }
+
+    btCollisionObject movingCollisionObject;
+    movingCollisionObject.setCollisionShape(movingShape);
+    movingCollisionObject.setWorldTransform(movingToTransform);
+
+    btCollisionObject targetCollisionObject;
+    targetCollisionObject.setCollisionShape(targetShape);
+    targetCollisionObject.setWorldTransform(targetTransform);
+
+    AnyCollisionContactCallback contactCallback;
+    world->contactPairTest(
+        &movingCollisionObject,
+        &targetCollisionObject,
+        contactCallback);
+    if (contactCallback.HasContact()) {
+        return true;
+    }
+
+    const btVector3 movementDelta =
+        movingToTransform.getOrigin() -
+        movingFromTransform.getOrigin();
+    if (movementDelta.length2() <= 0.000001f) {
+        return false;
+    }
+
+    btVoronoiSimplexSolver simplexSolver;
+    btGjkEpaPenetrationDepthSolver penetrationDepthSolver;
+    btContinuousConvexCollision collisionCast(
+        movingShape,
+        targetShape,
+        &simplexSolver,
+        &penetrationDepthSolver);
+    btConvexCast::CastResult castResult;
+    castResult.m_allowedPenetration = 0.0f;
+    return collisionCast.calcTimeOfImpact(
+        movingFromTransform,
+        movingToTransform,
+        targetTransform,
+        targetTransform,
+        castResult);
+}
 } // namespace
 
 PhysicsSystem::PhysicsSystem(Game* game)
@@ -147,6 +201,8 @@ PhysicsSystem::PhysicsSystem(Game* game)
     mEditorPickSystem = std::make_unique<EditorPickSystem>(mGame);
     mFallRespawnTriggerSystem = std::make_unique<FallRespawnTriggerSystem>(mGame);
     mActorCollisionResolver = std::make_unique<ActorCollisionResolver>();
+    mActorModelEllipsoidShapeCache =
+        std::make_unique<ActorModelEllipsoidShapeCache>();
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -215,30 +271,12 @@ void PhysicsSystem::CreatePlayerShape()
 {
     auto ellipsoidShape = std::make_unique<btConvexHullShape>();
     ellipsoidShape->setMargin(0.0f);
-
-    for (int latitudeIndex = 0;
-         latitudeIndex <= PlayerCollisionShapeGeometry::LatitudeSegmentCount;
-         ++latitudeIndex) {
-        for (int longitudeIndex = 0;
-             longitudeIndex < PlayerCollisionShapeGeometry::LongitudeSegmentCount;
-             ++longitudeIndex) {
-            const glm::vec3 localSurfacePoint =
-                PlayerCollisionShapeGeometry::CalculateLocalSurfacePoint(
-                    mPlayerCollisionWidth,
-                    mPlayerCollisionHeight,
-                    mPlayerCollisionDepth,
-                    latitudeIndex,
-                    longitudeIndex);
-            ellipsoidShape->addPoint(
-                btVector3(
-                    localSurfacePoint.x,
-                    localSurfacePoint.y,
-                    localSurfacePoint.z),
-                false);
-        }
-    }
-
-    ellipsoidShape->recalcLocalAabb();
+    EllipsoidCollisionShapeGeometry::AddSurfacePoints(
+        *ellipsoidShape,
+        glm::vec3(
+            mPlayerCollisionWidth,
+            mPlayerCollisionHeight,
+            mPlayerCollisionDepth));
     mPlayerShape = std::move(ellipsoidShape);
 }
 
@@ -433,7 +471,7 @@ bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
     const Actor& movingActor,
     const glm::vec3& movementStart,
     const Actor& targetActor,
-    float contactTolerance) const
+    const glm::vec3& movingModelHalfExtentPadding) const
 {
     const LoadedModel* movingModel =
         movingActor.GetLoadedModel();
@@ -451,7 +489,10 @@ bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
         movingModel->boundsMinimum;
     const glm::vec3 scaledHalfExtents =
         glm::max(
-            localBoundsSize * movingScale * 0.5f,
+            localBoundsSize * movingScale * 0.5f +
+                glm::max(
+                    movingModelHalfExtentPadding,
+                    glm::vec3(0.0f)),
             glm::vec3(minimumModelHalfExtent));
     const glm::vec3 scaledLocalBoundsCenter =
         (movingModel->boundsMinimum +
@@ -463,7 +504,7 @@ bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
             scaledHalfExtents.x,
             scaledHalfExtents.y,
             scaledHalfExtents.z));
-    movingModelShape.setMargin(std::max(0.0f, contactTolerance));
+    movingModelShape.setMargin(0.0f);
 
     const float targetCollisionScale =
         targetActor.GetCollisionScaleMultiplier();
@@ -505,49 +546,80 @@ bool PhysicsSystem::DoesActorModelSweepOverlapActorCollision(
             targetActor,
             targetCollisionCenter);
 
-    btCollisionObject movingCollisionObject;
-    movingCollisionObject.setCollisionShape(
-        &movingModelShape);
-    movingCollisionObject.setWorldTransform(
-        movingToTransform);
-
-    btCollisionObject targetCollisionObject;
-    targetCollisionObject.setCollisionShape(
-        &targetCollisionShape);
-    targetCollisionObject.setWorldTransform(
-        targetTransform);
-
-    AnyCollisionContactCallback contactCallback;
-    mBulletWorld->contactPairTest(
-        &movingCollisionObject,
-        &targetCollisionObject,
-        contactCallback);
-    if (contactCallback.HasContact()) {
-        return true;
-    }
-
-    const btVector3 movementDelta =
-        movingToTransform.getOrigin() -
-        movingFromTransform.getOrigin();
-    if (movementDelta.length2() <= 0.000001f) {
-        return false;
-    }
-
-    btVoronoiSimplexSolver simplexSolver;
-    btGjkEpaPenetrationDepthSolver penetrationDepthSolver;
-    btContinuousConvexCollision collisionCast(
+    return DoesConvexShapeSweepOverlapActorCollision(
+        mBulletWorld.get(),
         &movingModelShape,
-        &targetCollisionShape,
-        &simplexSolver,
-        &penetrationDepthSolver);
-    btConvexCast::CastResult castResult;
-    castResult.m_allowedPenetration = 0.0f;
-    return collisionCast.calcTimeOfImpact(
         movingFromTransform,
         movingToTransform,
-        targetTransform,
-        targetTransform,
-        castResult);
+        &targetCollisionShape,
+        targetTransform);
+}
+
+bool PhysicsSystem::DoesActorEllipsoidModelSweepOverlapActorCollision(
+    const Actor& movingActor,
+    const glm::vec3& movementStart,
+    const Actor& targetActor) const
+{
+    const ResolvedActorModelEllipsoidShape movingEllipsoid =
+        ResolveActorModelEllipsoidShape(movingActor);
+    if (!movingEllipsoid.shape || !mBulletWorld || !mPlayerShape) {
+        return DoesActorModelSweepOverlapActorCollision(
+            movingActor,
+            movementStart,
+            targetActor);
+    }
+
+    const float targetCollisionScale =
+        targetActor.GetCollisionScaleMultiplier();
+    btUniformScalingShape targetCollisionShape(
+        mPlayerShape.get(),
+        targetCollisionScale);
+
+    glm::vec3 targetUpDirection = targetActor.GetUpVec();
+    const float targetUpLengthSquared =
+        glm::dot(targetUpDirection, targetUpDirection);
+    if (targetUpLengthSquared <= 0.000001f) {
+        targetUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        targetUpDirection /= std::sqrt(targetUpLengthSquared);
+    }
+    const glm::vec3 targetCollisionCenter =
+        targetActor.GetPos() +
+        targetUpDirection *
+            mPlayerCollisionCenterHeight *
+            targetCollisionScale;
+
+    const btTransform movingFromTransform =
+        ActorModelEllipsoidShapeCache::CreateWorldTransform(
+            movingActor,
+            movementStart,
+            movingEllipsoid.scaledLocalBoundsCenter);
+    const btTransform movingToTransform =
+        ActorModelEllipsoidShapeCache::CreateWorldTransform(
+            movingActor,
+            movingActor.GetPos(),
+            movingEllipsoid.scaledLocalBoundsCenter);
+    const btTransform targetTransform =
+        CreateActorCollisionTransform(
+            targetActor,
+            targetCollisionCenter);
+
+    return DoesConvexShapeSweepOverlapActorCollision(
+        mBulletWorld.get(),
+        movingEllipsoid.shape,
+        movingFromTransform,
+        movingToTransform,
+        &targetCollisionShape,
+        targetTransform);
+}
+
+ResolvedActorModelEllipsoidShape
+PhysicsSystem::ResolveActorModelEllipsoidShape(
+    const Actor& actor) const
+{
+    return mActorModelEllipsoidShapeCache
+        ? mActorModelEllipsoidShapeCache->Resolve(actor)
+        : ResolvedActorModelEllipsoidShape{};
 }
 
 ActorMovementCollisionResult PhysicsSystem::ResolveMovementCollision(

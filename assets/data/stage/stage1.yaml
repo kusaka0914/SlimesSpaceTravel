@@ -1489,8 +1489,7 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
+        enemyTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1689,8 +1688,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets:
-          []
+        targets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1821,8 +1819,7 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
+        enemyTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -2022,8 +2019,7 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets:
-          []
+        targets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2127,8 +2123,7 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets:
-          []
+        enemyTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2386,8 +2381,7 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets:
-          []
+        enemyTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925

@@ -1,5 +1,5 @@
 planets:
-  - center: [3.9521134, 2.8908253e-06, -42.231804]
+  - center: [3.9521134, 2.861023e-06, -42.231804]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -47,9 +47,9 @@ planets:
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
   - center:
-      - 74.800674
-      - -65.617065
-      - 105.06653
+      - 143.41046
+      - -123.311844
+      - 14.976649
     scale:
       - 6
       - 2
@@ -69,7 +69,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: true
     textureOverride: textures/planet_dry.png
-  - center: [-9.542546, -0.7502558, -6.2830496]
+  - center: [19.429688, -10.0000925, -6.4869986]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -82,7 +82,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [33.623703, 2.7211722e-06, -22.480217]
+  - center: [17.49217, -10.373857, 23.618912]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -95,7 +95,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [71.45567, 4.7683716e-06, 23.639893]
+  - center: [143.14241, -79.75258, -12.338093]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -108,7 +108,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [72.29005, -10.886061, 24.783268]
+  - center: [114.13836, -61.6463, 22.748716]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -134,7 +134,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [92.17921, -10.889513, 51.84949]
+  - center: [144.25893, -61.28863, -13.180363]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -147,7 +147,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [63.800888, -17.549217, 67.0844]
+  - center: [130.07812, -69.372, 2.366063]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -160,195 +160,199 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
+  - center: [51.56816, -10.373858, -3.752574]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 11
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [17.617432, -23.16952, 30.323849]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 12
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [58.556873, -23.096169, -4.2667246]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 13
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [71.96534, -23.169527, 21.770802]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 14
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [45.077354, -33.92349, 26.927721]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 15
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [111.01259, -81.4061, 21.935722]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 16
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [164.49812, -71.951126, 32.53486]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 17
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
+  - center: [112.80155, -83.90859, -8.595412]
+    scale: [6, 2, 6]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 6
+      - 2
+    textureSideBlendWidth: 0.05
+    stageNum: 18
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/planet_dry.png
 enemies:
   - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 5
-    theta: -1.1302073
-    phi: -1.1391091
-    height: -3.835722
+    type: boss_weak_2
+    currentPlanetNum: 14
+    theta: -0.12498715
+    phi: 0.6007501
+    height: -0.015034583
     pos:
-      - -0.11
-      - -1.79
-      - -2.57
+      - 2.55
+      - 1.79
+      - -0.35
     upVec:
-      - 0.015585067
-      - -0.99860823
-      - -0.050387006
+      - 0.16014953
+      - 0.9868532
+      - -0.021749029
   - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 5
-    theta: -0.28321463
-    phi: -0.5889735
-    height: 0.19926593
+    type: boss_weak_2
+    currentPlanetNum: 14
+    theta: 2.6346216
+    phi: 1.0003401
+    height: -0.01873557
     pos:
-      - 2.76
-      - -1.74
-      - -0.81
+      - -1.13
+      - 1.94
+      - 0.58
     upVec:
-      - 0.015585067
-      - -0.99860823
-      - -0.050387006
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 9
-    theta: 0.9056238
-    phi: -0.44521698
-    height: -0.033457488
-    pos:
-      - 2.1
-      - -1.63
-      - 2.68
-    upVec:
-      - 0.14016801
-      - -0.97451514
-      - 0.17513797
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 9
-    theta: -0.70755756
-    phi: -0.56671315
-    height: -0.025331108
-    pos:
-      - 2.1
-      - -1.76
-      - -1.79
-    upVec:
-      - 0.13122854
-      - -0.9851838
-      - -0.11041753
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 9
-    theta: 2.452909
-    phi: -0.3752081
-    height: -0.045446694
-    pos:
-      - -2.96
-      - -1.51
-      - 2.44
-    upVec:
-      - -0.2078789
-      - -0.9623884
-      - 0.17491467
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 9
-    theta: -2.3462622
-    phi: -0.4514565
-    height: -0.03139722
-    pos:
-      - -2.36
-      - -1.63
-      - -2.4
-    upVec:
-      - -0.15665975
-      - -0.97451323
-      - -0.16056684
-  - editorName: 新しい通常敵
-    type: boss_2
-    currentPlanetNum: 8
-    theta: 1.8925469
-    phi: -0.38243663
-    height: 0.08198632
-    pos:
-      - -1.25
-      - -1.59
-      - 3.75
-    upVec:
-      - 0.007192102
-      - -0.9998895
-      - -0.013012775
-    scale:
-      - 1
-      - 1
-      - 1
-    facingYaw: 3.1415927
-    rotation:
-      - -3.1285796
-      - -1.193257e-09
-      - -3.1344
-    rotationQuat:
-      - -0.006506484
-      - 0.9999724
-      - 0.0035963028
-      - -2.3399336e-05
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 3
-    theta: -2.5457957
-    phi: 0.6398731
-    height: -0.063421726
-    pos:
-      - -2.71
-      - -1.75
-      - -0.21
-    upVec:
-      - 0.009882688
-      - -0.98265374
-      - -0.18518667
-    facingYaw: 0.25928816
-    rotation:
-      - -0.19254787
-      - -0.25470284
-      - 0.059139866
-    rotationQuat:
-      - -0.016987102
-      - 0.12918304
-      - -0.09156749
-      - 0.9872379
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 3
-    theta: -1.0338916
-    phi: 0.24017069
-    height: -0.07503176
-    pos:
-      - 3.69
-      - -1.66
-      - -0.63
-    upVec:
-      - 0.41413948
-      - -0.91004515
-      - 0.01750464
-    facingYaw: -0.04134367
-    rotation:
-      - 0.017520502
-      - 0.041337334
-      - 0.42779103
-    rotationQuat:
-      - -0.21203785
-      - -0.022054547
-      - 0.004171858
-      - 0.9770037
+      - -0.06817446
+      - 0.9971046
+      - 0.03368495
   - editorName: 新しい通常敵
     type: boss_3
-    currentPlanetNum: 3
-    theta: -1.3543861
-    phi: -0.7818879
-    height: -0.058241367
+    currentPlanetNum: 9
+    theta: 0.26643562
+    phi: 0.47595197
+    height: -2.365269
     pos:
-      - -0.14
-      - -0.75
-      - -5.43
+      - 3.1167603
+      - 1.6653786
+      - 0.8506403
     upVec:
-      - 0
-      - -1
-      - 0
-    facingYaw: -0
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0
-      - 0
-      - 0
-      - 1
+      - 0.20620294
+      - 0.9769979
+      - 0.054365788
+  - editorName: 新しい通常敵
+    type: boss_4
+    currentPlanetNum: 3
+    theta: 3.1185122
+    phi: -1.3402011
+    height: -3.962565
+    pos:
+      - -0.46554565
+      - -1.9835052
+      - 0.010746956
+    upVec:
+      - -0.033766415
+      - -0.9994245
+      - -0.0032607447
     scale:
       - 1.5
       - 2
       - 1.5
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 3
+    theta: -3.043983
+    phi: -0.37481675
+    height: -1.8700633
+    pos:
+      - -3.8249207
+      - -1.5119781
+      - -0.37453938
+    upVec:
+      - -0.27067086
+      - -0.96238965
+      - -0.023312468
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 3
+    theta: 0.08777509
+    phi: -0.50569075
+    height: -2.4917142
+    pos:
+      - 3.057373
+      - -1.6994553
+      - 0.2690525
+    upVec:
+      - 0.20166963
+      - -0.9792996
+      - 0.017371692
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -373,14 +377,12 @@ keys:
       - 2
 crystals:
   - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
-boats:
-  - {startPlanet: 2, destPlanet: 6, destStage: 0, theta: 1.5434555, phi: 1.0447507, height: 19.727118, facingYaw: 0, pos: [0.48, 17.06, 10.52], upVec: [0, -1, 0], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
-  - {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -3.0091338, phi: -1.1927763, height: -3.8784285, facingYaw: 0, pos: [-0.78, -1.97, -0.1], upVec: [-0.043304242, -0.9989078, -0.017552216], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
+boats: [{startPlanet: 14, destPlanet: 7, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}, {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}]
 boatArrivalPoints:
   - currentPlanetNum: 3
-    theta: -2.338376
-    phi: 1.1998559
-    height: 3.9942913
+    theta: -0.10222459
+    phi: 1.4848428
+    height: 2.5538335
     facingYaw: 0
     modelPath: platform.obj
     rotation:
@@ -402,10 +404,10 @@ boatArrivalPoints:
     textureTiling:
       - 1
       - 1
-  - currentPlanetNum: 6
-    theta: 2.9062576
-    phi: -1.510325
-    height: 2.2516387
+  - currentPlanetNum: 7
+    theta: 1.9565785
+    phi: 1.2204417
+    height: -3.8981276
     facingYaw: 0
     modelPath: platform.obj
     rotation:
@@ -417,48 +419,137 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - -0.25
-      - -4.25
-      - 0.06
+      - -0.35
+      - 5.83
+      - 0.59
     upVec:
-      - -0.025092775
-      - -0.99968386
-      - -0.0016069963
+      - -0.021276452
+      - 0.99900126
+      - 0.039292976
     textureTiling:
       - 1
       - 1
 boatParts: []
 players:
   - pos:
-      - 0.7319901
-      - -1.907393
-      - 1.4565926
+      - 1.2152369
+      - -1.8454633
+      - 1.7954826
     currentPlanetNum: 0
-    theta: 1.1051221
-    phi: -0.8636022
-    height: -3.4908926
-    facingYaw: 3.626681
+    theta: 0.9757904
+    phi: -0.7051892
+    height: -3.1528447
+    facingYaw: 3.5963097
     rotation:
       - 0
-      - 3.626681
+      - 3.5963097
       - 0
     upVec:
-      - 0.04355123
-      - -0.9950416
-      - 0.089417994
+      - 0.07471662
+      - -0.99111396
+      - 0.11004798
     rotationQuat:
-      - 0.04868045
-      - 0.9697606
-      - 0.010460966
-      - -0.23892507
+      - 0.06211687
+      - 0.97256356
+      - 0.024176806
+      - -0.2228836
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.51, -2.72, 0.47], upVec: [0.02592474, -0.9992376, 0.029190011]}
+  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011]}
 NPCs:
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: -1.59115, phi: 0.8946725, height: -3.539135, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [表から見えなくても、裏から見えることもあるよ！, ほら！あのスイッチとか！], pos: [-0.03, 1.92, -1.54], upVec: [2.2551054e-05, 0.9958164, -0.09137756], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}, {talkIndex: 1, segments: [{text: ほら！あのスイッチとか！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 表から見えなくても、裏から見えることもあるよ！}], rubies: [{talkIndex: 1, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 1, sequence: platforms, index: 46}]}
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: 2.0152936, phi: -0.31607372, height: -1.5378351, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.26], name: 新しいNPC, talkTexts: [そこの足場、乗ったら動くんだけど消えちゃうんだよね..., 消えるちょっと前にジャンプしたらいけないかな？], pos: [-1.83, -1.39, 3.82], upVec: [-0.14265211, -0.9456535, 0.29221565], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: そこの, ruby: false}, {text: 足, ruby: true, reading: あし}, {text: 場, ruby: true, reading: ば}, {text: 、, ruby: false}, {text: 乗, ruby: true, reading: の}, {text: ったら, ruby: false}, {text: 動, ruby: true, reading: うご}, {text: くんだけど, ruby: false}, {text: 消, ruby: true, reading: き}, {text: えちゃうんだよね..., ruby: false}]}, {talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプしたらいけないかな？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 消えるちょっと前にジャンプ！}], rubies: [{talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 41}]}
+  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 1}]}
+  - modelPath: spaceSlime.obj
+    currentPlanetNum: 7
+    theta: -0.38903543
+    phi: -0.4184866
+    height: -2.0963895
+    facingYaw: 0
+    radius: 0.75
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    name: 新しいNPC
+    talkTexts:
+      - "うへぇ...あのスライム腐ってるよ...！\n見るからにやばそう...！"
+      - "腐ったスライムは消えちゃうから\nずっとくっつかないように気を付けて！"
+    pos:
+      - 1.76
+      - -2.04
+      - -0.38
+    upVec:
+      - 0.22967792
+      - -0.9689252
+      - -0.09182664
+    forceTalkOnArrival: false
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: うへぇ...あのスライム
+            ruby: false
+          - text: 腐
+            ruby: true
+            reading: くさ
+          - text: "ってるよ...！\n"
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: るからにやばそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 腐
+            ruby: true
+            reading: くさ
+          - text: ったスライムは
+            ruby: false
+          - text: 消
+            ruby: true
+            reading: き
+          - text: "えちゃうから\nずっとくっつかないように"
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: を
+            ruby: false
+          - text: 付
+            ruby: true
+            reading: つ
+          - text: けて！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: 消えちゃうから気を付けて！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: 消
+              ruby: true
+              reading: き
+            - text: えちゃうから
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: を
+              ruby: false
+            - text: 付
+              ruby: true
+              reading: つ
+            - text: けて！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 67
 platforms:
   - currentPlanetNum: 0
     pos:
@@ -558,303 +649,18 @@ platforms:
       - 0
       - 0.86029726
     textureOverride: textures/glass.png
-  - currentPlanetNum: 0
-    pos:
-      - 6.2
-      - -0.9
-      - 11.22
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_35
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      jumpToggle:
-        initiallyVisible: true
-  - currentPlanetNum: 0
-    pos:
-      - 7.16
-      - -0.9
-      - 12.93
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_36
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      jumpToggle:
-        initiallyVisible: true
-  - currentPlanetNum: 0
-    pos:
-      - 6.36
-      - -0.89
-      - 15.65
-    theta: 1.2956716
-    phi: -0.051661205
-    height: 11.2492695
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_37
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      jumpToggle:
-        initiallyVisible: true
-  - currentPlanetNum: 0
-    pos:
-      - 4.34
-      - -0.89
-      - 21.91
-    theta: 1.2458067
-    phi: -0.040951032
-    height: 15.749912
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_38
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 5
     pos:
-      - -22.93
-      - -0.89
-      - 3.11
-    theta: 3.053962
-    phi: -0.0435655
-    height: 14.446676
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_39
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - 19.52
-      - -0.15
-      - -10.39
-    theta: -0.48911718
-    phi: -0.0067842775
-    height: 16.110275
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_41
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -19.3
-      - -0.89
-      - 7.37
-    theta: 2.7943358
-    phi: -0.05005313
-    height: 11.798068
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_42
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -11.37
+      - 0.46
       - -1.04
-      - 9.35
-    theta: 2.305034
-    phi: -0.07579594
-    height: 7.7591777
-    facingYaw: -1.223589
+      - -5.72
+    theta: -1.4901774
+    phi: -0.17921409
+    height: 0.3378943
+    facingYaw: 1.5243433
     rotation:
       - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_43
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -4.51
-      - -1.04
-      - 4.41
-    theta: -2.760749
-    phi: -0.17518698
-    height: 0.42385375
-    facingYaw: 0.78051764
-    rotation:
-      - 0
-      - -0.78051794
+      - -1.5243437
       - 0
     scale:
       - 1
@@ -871,483 +677,22 @@ platforms:
       - 1
     rotationQuat:
       - 0
-      - 0.3804278
+      - 0.6904939
       - 0
-      - 0.9248106
+      - 0.72333825
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 5
-    pos:
-      - -10.71
-      - -1.04
-      - 11.2
-    theta: 2.305034
-    phi: -0.07579594
-    height: 7.7591777
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_1
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -10.04
-      - -1.04
-      - 13.07
-    theta: 2.305034
-    phi: -0.07579594
-    height: 7.7591777
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_2
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -11.16
-      - -1.04
-      - 15.63
-    theta: 2.305034
-    phi: -0.07579594
-    height: 7.7591777
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_9
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 5
-    pos:
-      - -12.35
-      - -1.04
-      - 18.14
-    theta: 2.305034
-    phi: -0.07579594
-    height: 7.7591777
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_12
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 2
-    pos:
-      - -3.91
-      - 17.26
-      - -1.77
-    theta: -2.7158093
-    phi: 1.3272758
-    height: 17.784472
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_25
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 2
-    pos:
-      - -3.2
-      - 17.26
-      - 0.11
-    theta: 3.1075485
-    phi: 1.387633
-    height: 17.553368
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_26
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 2
-    pos:
-      - -1.85
-      - 17.26
-      - 4.47
-    theta: 1.9624041
-    phi: 1.2976744
-    height: 17.924128
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_27
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 2
-    pos:
-      - -0.07
-      - 17.26
-      - 9.79
-    theta: 1.5780756
-    phi: 1.0550157
-    height: 19.841486
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1.9929239
-      - 0.2
-      - 1.9736934
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_28
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/roadTex.png
-  - currentPlanetNum: 5
-    theta: 3.0561287
-    phi: 1.4787316
-    height: -0.17981753
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    pos:
-      - -0.17
-      - 1.82
-      - 0.01
-    upVec:
-      - 0.0064687924
-      - 0.99968386
-      - 0.024296943
-    platformId: platform_29
-    textureTiling:
-      - 1
-      - 1
-    components:
-      latchedGroupSwitch:
-        groupId: stage3_planet1
-        targets:
-          - sequence: boats
-            index: 0
-      enemyClearUnlock: {}
-  - currentPlanetNum: 2
-    pos:
-      - -5.04
-      - 17.26
-      - 0.73
-    theta: 2.997849
-    phi: 1.2841365
-    height: 17.994013
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_30
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 4
     pos:
-      - 21.2
-      - -0.29
-      - 3.56
-    theta: 0.16647978
-    phi: -0.013491075
-    height: 15.496987
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_31
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - 18.25
-      - -0.29
-      - 10.82
-    theta: 0.5353084
-    phi: -0.013668761
-    height: 15.217585
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_32
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - 10.26
-      - -0.29
-      - 7.38
-    theta: 0.62371874
-    phi: -0.022983314
-    height: 6.6439686
-    facingYaw: -1.223589
-    rotation:
-      - 0
-      - 1.223589
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_33
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.57433736
-      - 0
-      - 0.8186187
-    textureOverride: textures/glass.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - 4.61
+      - -2.04
       - -1.2
-      - 3.38
-    theta: -0.035191104
-    phi: -0.012190688
-    height: 17.768538
-    facingYaw: 2.5369005
+      - -4.8
+    theta: -1.9728149
+    phi: -0.22418831
+    height: 0.2066687
+    facingYaw: 2.0718088
     rotation:
       - 3.1415927
-      - -0.60469216
+      - -1.0697842
       - 3.1415927
     scale:
       - 1
@@ -1364,1461 +709,55 @@ platforms:
       - 1
     rotationQuat:
       - 0
-      - 0.95464057
+      - 0.8603237
       - 0
-      - 0.2977607
+      - 0.50974804
     textureOverride: textures/roadTex.png
   - currentPlanetNum: 4
-    theta: -0.36364982
-    phi: -1.4238278
-    height: -3.989914
-    facingYaw: 1.006014
+    theta: 1.3438675
+    phi: -1.4718757
+    height: -0.16974749
+    facingYaw: -1.0055428
     rotation:
-      - 0.0030024222
-      - -1.0060118
-      - 0.02255928
+      - 0.0719518
+      - 1.0043702
+      - 0.11132281
     scale:
       - 1
       - 0.2
       - 1
     modelPath: platform.obj
     pos:
-      - 0.06
-      - -1.83
-      - 0.22
+      - -0.08
+      - 1.81
+      - 0.42
     upVec:
-      - 0.025092773
-      - -0.99968386
-      - 0.0016069952
+      - -0.05051878
+      - 0.9979778
+      - 0.038577445
     platformId: platform_45
     textureTiling:
       - 1
       - 1
     components:
-      latchedGroupSwitch:
-        groupId: stage3_planet1
-        targets: []
-      enemyClearUnlock: {}
-    rotationQuat:
-      - -0.010605924
-      - 0.48201528
-      - 0.00675254
-      - 0.8760726
-  - currentPlanetNum: 6
-    pos:
-      - 5.71
-      - -0.87
-      - 1.68
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_46
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-  - currentPlanetNum: 6
-    pos:
-      - 9.701599
-      - -0.090623885
-      - 5.509245
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_47
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 9.701599
-          - -0.090623885
-          - 5.509245
-        endLocalPos:
-          - 11.01503
-          - -0.27672234
-          - -0.42892647
-        moveOffset:
-          - 1.3134308
-          - -0.18609846
-          - -5.9381714
-        moveDuration: 6
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 0
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 6
-    pos:
-      - 15.163773
-      - 0.3304502
-      - 0.52733994
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_48
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 15.163773
-          - 0.3304502
-          - 0.52733994
-        endLocalPos:
-          - 13.858627
-          - 0.7015537
-          - 6.635706
-        moveOffset:
-          - -1.3051453
-          - 0.3711035
-          - 6.108366
-        moveDuration: 6
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 0
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 6
-    pos:
-      - 18.270546
-      - 1.3224912
-      - 7.1383514
-    theta: 0.29858714
-    phi: -0.32166588
-    height: -1.5705748
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_49
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 18.270546
-          - 1.3224912
-          - 7.1383514
-        endLocalPos:
-          - 19.54766
-          - 1.141538
-          - 1.3644009
-        moveOffset:
-          - 1.2771149
-          - -0.18095315
-          - -5.7739506
-        moveDuration: 6
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 0
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 9
-    pos:
-      - 2.6340942
-      - 4.241405
-      - -21.31169
-    theta: -1.4478215
-    phi: 0.19500482
-    height: 16.021503
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_50
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 2.6340942
-          - 4.241405
-          - -21.31169
-        endLocalPos:
-          - 1.761589
-          - 9.3204155
-          - -21.663855
-        moveOffset:
-          - -0.8725052
-          - 5.0790105
-          - -0.35216522
-        moveDuration: 4
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 6
-    pos:
-      - 22.81334
-      - 1.5943127
-      - 2.28129
-    theta: 0.11149379
-    phi: -0.15978983
-    height: 18.2922
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_51
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 22.81334
-          - 1.5943127
-          - 2.28129
-        endLocalPos:
-          - 23.364975
-          - -1.6177378
-          - 2.5039902
-        moveOffset:
-          - 0.55163574
-          - -3.2120504
-          - 0.22270012
-        moveDuration: 4
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - 21.604126
-      - 3.6186714
-      - -0.18282127
-    theta: 0.13926421
-    phi: 0.17394787
-    height: 14.275144
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_52
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 21.604126
-          - 3.6186714
-          - -0.18282127
-        endLocalPos:
-          - 16.439835
-          - 3.2757716
-          - 7.666031
-        moveOffset:
-          - -5.1642914
-          - -0.3428998
-          - 7.848852
-        moveDuration: 6
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - 7.9503403
-      - -0.2434597
-      - 1.9532185
-    theta: 0.19812016
-    phi: 0.15339243
-    height: 3.412509
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_53
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 7.9503403
-          - -0.2434597
-          - 1.9532185
-        endLocalPos:
-          - 13.808952
-          - 1.9912853
-          - -1.8644028
-        moveOffset:
-          - 5.858612
-          - 2.234745
-          - -3.8176212
-        moveDuration: 6
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - 5.62
-      - -0.81
-      - 1.42
-    theta: 0.24748965
-    phi: -0.13883759
-    height: 0.20017649
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_54
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-  - currentPlanetNum: 6
-    pos:
-      - 24.739738
-      - 1.9327557
-      - 2.6940727
-    theta: 0.11149379
-    phi: -0.15978983
-    height: 18.2922
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_55
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 24.739738
-          - 1.9327557
-          - 2.6940727
-        endLocalPos:
-          - 25.301163
-          - -1.2516086
-          - 2.937006
-        moveOffset:
-          - 0.56142426
-          - -3.1843643
-          - 0.24293327
-        moveDuration: 4
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 9
-    pos:
-      - 4.492264
-      - 4.6121325
-      - -20.915127
-    theta: -1.3592253
-    phi: 0.21234918
-    height: 16.040848
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_56
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 4.492264
-          - 4.6121325
-          - -20.915127
-        endLocalPos:
-          - 3.6364899
-          - 9.674372
-          - -21.263287
-        moveOffset:
-          - -0.8557739
-          - 5.062239
-          - -0.3481598
-        moveDuration: 4
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - 12.28
-      - 2.87
-      - 3.95
-    theta: 0.31120953
-    phi: 0.21892096
-    height: 7.4243636
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_57
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - 12.72
-      - 2.81
-      - 2.05
-    theta: 0.15978974
-    phi: 0.21473503
-    height: 7.388829
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_58
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 7
-    pos:
-      - -0.56
-      - -0.95
-      - 5.65
-    theta: 1.6695882
-    phi: -0.16578585
-    height: 0.22813411
-    facingYaw: 1.3500854
-    rotation:
-      - 0.2049785
-      - -1.3455229
-      - -0.13267292
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.067144774
-      - -0.9967067
-      - 0.04546675
-    platformId: platform_59
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.012042072
-      - 0.6238188
-      - 0.038750634
-      - 0.7805149
-  - currentPlanetNum: 7
-    pos:
-      - -1.0508041
-      - -0.8725996
-      - 7.971897
-    theta: 1.8021188
-    phi: -0.043149874
-    height: 15.608343
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_64
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      movement:
-        startLocalPos:
-          - -1.0508041
-          - -0.8725996
-          - 7.971897
-        endLocalPos:
-          - -3.3475266
-          - -0.88869
-          - 18.716373
-        moveOffset:
-          - -2.2967224
-          - -0.016090393
-          - 10.744476
-        moveDuration: 10
-        moveOnPlayer: true
-        returnDelay: 1
-        endpointWaitSeconds: 0
-      fadeOnStand:
-        fadeOutDuration: 2
-        reappearDelay: 0.5
-  - currentPlanetNum: 10
-    pos:
-      - 1.19
-      - -1.22
-      - -5.16
-    theta: -1.3436956
-    phi: -0.22641325
-    height: 0.24051386
-    facingYaw: 1.3500854
-    rotation:
-      - 0.2049785
-      - -1.3455229
-      - -0.13267292
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.067144774
-      - -0.9967067
-      - 0.04546675
-    platformId: platform_60
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.012042072
-      - 0.6238188
-      - 0.038750634
-      - 0.7805149
-  - currentPlanetNum: 10
-    pos:
-      - 4.23
-      - 5.83
-      - -19.66
-    theta: -1.3587523
-    phi: 0.2821955
-    height: 15.217612
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_61
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    pos:
-      - 3.82
-      - 5.85
-      - -17.71
-    theta: -1.3582239
-    phi: 0.31235296
-    height: 13.390331
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_62
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    pos:
-      - 3.54
-      - 4.45
-      - -15.72
-    theta: -1.3491545
-    phi: 0.26947764
-    height: 10.994947
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_63
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    theta: 2.9482517
-    phi: 1.4583528
-    height: -0.18597966
-    facingYaw: 1.006014
-    rotation:
-      - 0.0030024222
-      - -1.0060118
-      - 0.02255928
-    scale:
-      - 0.9999998
-      - 0.20000006
-      - 1
-    modelPath: platform.obj
-    pos:
-      - -0.33
-      - 4.73
-      - 0.05
-    upVec:
-      - -0.025092775
-      - 0.99968386
-      - 0.0016069963
-    platformId: platform_65
-    textureTiling:
-      - 1
-      - 1
-    components:
-      latchedGroupSwitch:
-        groupId: stage3_planet2
-        targets:
-          - sequence: boats
-            index: 1
-  - currentPlanetNum: 9
-    theta: -2.7891998
-    phi: 1.454875
-    height: -0.16963394
-    facingYaw: -0.87080425
-    rotation:
-      - 0.010595245
-      - 0.87077665
-      - 0.08057303
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    pos:
-      - -0.2
-      - 1.83
-      - -0.07
-    upVec:
-      - -0.07240424
-      - 0.997352
-      - 0.006825676
-    platformId: platform_66
-    textureTiling:
-      - 1
-      - 1
-    components:
-      latchedGroupSwitch:
-        groupId: stage3_planet2
-        targets: []
-    rotationQuat:
-      - 0.90604794
-      - -0.012187039
-      - 0.42160785
-      - 0.034285128
-  - currentPlanetNum: 8
-    pos:
-      - 5.54
-      - -1
-      - 1.6
-    theta: 0.28115788
-    phi: -0.17170943
-    height: 0.32283768
-    facingYaw: -0.22155459
-    rotation:
-      - 0.04662037
-      - 0.2213217
-      - 0.07750612
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.06714477
-      - -0.9967067
-      - 0.04546674
-    platformId: platform_67
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.035923824
-      - -0.11121974
-      - 0.018870648
-      - 0.99296707
-  - currentPlanetNum: 9
-    pos:
-      - -5.46
-      - -1.2
-      - -1.64
-    theta: -2.849204
-    phi: -0.20742537
-    height: 0.44223577
-    facingYaw: -0.22155459
-    rotation:
-      - 0.04662037
-      - 0.2213217
-      - 0.07750612
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.06714477
-      - -0.9967067
-      - 0.04546674
-    platformId: platform_68
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.035923824
-      - -0.11121974
-      - 0.018870648
-      - 0.99296707
-  - currentPlanetNum: 10
-    pos:
-      - 2.57
-      - 3.35
-      - -12.02
-    theta: -1.3599662
-    phi: 0.2661202
-    height: 7.053711
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.20000008
-      - 0.30968353
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_70
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    pos:
-      - 1.78
-      - 1.46
-      - -10.14
-    theta: -1.3967942
-    phi: 0.14093477
-    height: 4.5054765
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.20000008
-      - 0.30968353
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_71
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    pos:
-      - 2.11
-      - -0.27
-      - -8.1
-    theta: -1.3156874
-    phi: -0.032163285
-    height: 2.3828292
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.20000008
-      - 0.30968353
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_72
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 10
-    theta: 2.9482517
-    phi: 1.4583528
-    height: -0.18597966
-    facingYaw: 1.006014
-    rotation:
-      - 0.0030024222
-      - -1.0060118
-      - 0.02255928
-    scale:
-      - 2.2616398
-      - 0.9487983
-      - 2.6600015
-    modelPath: platform.obj
-    pos:
-      - -0.16
-      - 2.41
-      - 0.15
-    upVec:
-      - -0.025092775
-      - 0.99968386
-      - 0.0016069963
-    platformId: platform_69
-    textureTiling:
-      - 1
-      - 1
-  - currentPlanetNum: 10
-    theta: 2.9482517
-    phi: 1.4583528
-    height: -0.18597966
-    facingYaw: 1.006014
-    rotation:
-      - 0.0030024222
-      - -1.0060118
-      - 0.02255928
-    scale:
-      - 1.3922185
-      - 1.1082168
-      - 1.4574959
-    modelPath: platform.obj
-    pos:
-      - -0.17
-      - 3.77
-      - 0.14
-    upVec:
-      - -0.025092775
-      - 0.99968386
-      - 0.0016069963
-    platformId: platform_73
-    textureTiling:
-      - 1.3922185
-      - 1.4574959
-  - currentPlanetNum: 10
-    pos:
-      - 8.255482
-      - 6.157938
-      - -16.73182
-    theta: -1.1149082
-    phi: 0.31593
-    height: 14.16301
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_74
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 0.5
-      movement:
-        startLocalPos:
-          - 8.255482
-          - 6.157938
-          - -16.73182
-        endLocalPos:
-          - 18.949528
-          - 6.713298
-          - -15.266819
-        moveOffset:
-          - 10.694046
-          - 0.55535984
-          - 1.4650002
-        moveDuration: 10
-        moveOnPlayer: true
-        returnDelay: 1
-        endpointWaitSeconds: 0
-  - currentPlanetNum: 10
-    pos:
-      - 0.16
-      - 5.41
-      - -20.64
-    theta: -1.3587523
-    phi: 0.2821955
-    height: 15.217612
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_75
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 8
-    theta: 2.2655315
-    phi: -1.4847095
-    height: -0.18988076
-    facingYaw: -1.7981571
-    rotation:
-      - 3.0363793
-      - 1.3422153
-      - 3.0309753
-    scale:
-      - 0.9999998
-      - 0.20000006
-      - 1
-    modelPath: platform.obj
-    pos:
-      - -0.1
-      - -1.81
-      - 0.12
-    upVec:
-      - -0.008118832
-      - -0.99968386
-      - 0.02379699
-    platformId: platform_76
-    textureTiling:
-      - 1
-      - 1
-    components:
       pressureSwitch:
-        remainsOnAfterPressed: true
+        remainsOnAfterPressed: false
         inactiveOpacity: 0.2
-        targets: []
-        enemyTargets:
-          - sequence: enemies
-            index: 6
+        targets:
+          - platform_12
+          - platform_11
+          - platform_30
+          - platform_31
+          - platform_32
+          - platform_14
+          - platform_35
+        enemyTargets: []
+        hideTargets: []
     rotationQuat:
-      - 0.006787314
-      - 0.78266186
-      - -0.010583496
-      - -0.6223202
-  - currentPlanetNum: 8
-    pos:
-      - 19.25
-      - 0.27
-      - 0.96
-    theta: 0.0498288
-    phi: 0.013996344
-    height: 13.276533
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_77
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 8
-    pos:
-      - 14.49
-      - -0.01
-      - 5.43
-    theta: 0.3585438
-    phi: -0.00066031143
-    height: 9.474013
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_78
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 8
-    pos:
-      - 11.89
-      - -0.48
-      - -0.31
-    theta: -0.026066542
-    phi: -0.04035275
-    height: 5.9115896
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_79
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/glass.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 9
-    pos:
-      - -8.658394
-      - -0.19618225
-      - -4.887207
-    theta: -2.7887225
-    phi: -0.14385812
-    height: 14.4044695
-    facingYaw: -0.190757
-    rotation:
-      - 0.034461867
-      - 0.19064651
-      - 0.081924036
-    scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.075276725
-      - -0.9965887
-      - 0.033830784
-    platformId: platform_80
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.039120045
-      - -0.095787376
-      - 0.013240419
-      - 0.99454474
-    components:
-      movement:
-        startLocalPos:
-          - -8.658394
-          - -0.19618225
-          - -4.887207
-        endLocalPos:
-          - -18.979279
-          - -2.9048395
-          - -6.446747
-        moveOffset:
-          - -10.320885
-          - -2.7086573
-          - -1.5595398
-        moveDuration: 3
-        moveOnPlayer: true
-        returnDelay: 1
-        endpointWaitSeconds: 0
+      - 0.87557226
+      - 0.0047174157
+      - 0.48203954
+      - 0.031446144
   - currentPlanetNum: 0
     pos:
       - 5.62
@@ -2885,48 +824,48 @@ platforms:
       - 0
       - 0.86029726
     textureOverride: textures/glass.png
-  - currentPlanetNum: 0
+  - currentPlanetNum: 4
     pos:
-      - 7.04
-      - -7.64
-      - 18.27
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: -1.5616175
+      - -8.44
+      - 2.36
+      - -17.47
+    theta: -2.0207305
+    phi: 0.121022746
+    height: 13.601635
+    facingYaw: -1.561079
     rotation:
-      - -1.5679882
-      - 0.29689866
-      - -0.0040836763
+      - -1.568002
+      - 0.28000286
+      - 3.1374595
     scale:
       - 1
       - 0.2
       - 1
     modelPath: platform.obj
     upVec:
-      - 0.29254088
-      - -0.0040029287
-      - -0.9562447
+      - 0.2763434
+      - -0.003936529
+      - -0.96105087
     platformId: platform_5
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - -0.10300732
-      - -0.10615684
-      - -0.69813186
-      - 0.7005228
+      - -0.097085744
+      - -0.10025537
+      - -0.69900364
+      - 0.70136803
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
-      - -17.83
-      - -7.91
-      - -2.76
-    theta: -3.0511444
-    phi: -0.27876619
-    height: 15.096397
+      - -3.64
+      - 2.09
+      - -18.75
+    theta: -1.7624763
+    phi: 0.10896922
+    height: 13.261418
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -2951,14 +890,14 @@ platforms:
       - 0
       - 0.86029726
     textureOverride: textures/glass.png
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
-      - -20.92
-      - -10.5
-      - 2.25
-    theta: 3.131431
-    phi: -0.34997317
-    height: 17.162998
+      - -6.73
+      - -0.5
+      - -13.74
+    theta: -2.026114
+    phi: -0.032661878
+    height: 9.3154545
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -2978,53 +917,53 @@ platforms:
       - 1
       - 1
     rotationQuat:
-      - -0
+      - 0
       - -0.50979275
       - 0
       - 0.86029726
     textureOverride: textures/glass.png
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
-      - -14.71
-      - -10.02
-      - -1.53
-    theta: -3.0437431
-    phi: -0.3634489
-    height: 15.969482
+      - -0.52
+      - 0.29
+      - -17.52
+    theta: -1.6004287
+    phi: 0.016540071
+    height: 11.535024
     facingYaw: 1.5679911
     rotation:
-      - -1.5615144
-      - -1.2773015
-      - -0.0137904035
+      - -1.5615141
+      - -1.2773019
+      - -0.013790715
     scale:
       - 1
       - 0.2
       - 1
     modelPath: platform.obj
     upVec:
-      - -0.9572345
-      - 0.0039187674
-      - -0.28928688
+      - -0.9572344
+      - 0.0039186473
+      - -0.28928685
     platformId: platform_8
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - -0.42347732
+      - -0.42347735
       - -0.41956055
       - 0.56800205
-      - -0.56745887
+      - -0.5674589
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
-      - -14.97
-      - -7.91
-      - -1.08
-    theta: -3.0511444
-    phi: -0.27876619
-    height: 15.096397
+      - -6.4659386
+      - -2.8411713
+      - -13.159434
+    theta: -1.8925434
+    phi: -0.51506084
+    height: 2.5948246
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -3039,98 +978,3808 @@ platforms:
       - 0
       - -1
       - 0
+    platformId: platform_13
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - -6.4659386
+          - -2.8411713
+          - -13.159434
+        endLocalPos:
+          - -2.1960697
+          - -3.4546852
+          - -5.1442175
+        moveOffset:
+          - 4.269869
+          - -0.61351395
+          - 8.015217
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 4
+    pos:
+      - -0.59
+      - -1.2
+      - 5.23
+    theta: -1.9728149
+    phi: -0.22418831
+    height: 0.2066687
+    facingYaw: 1.4852458
+    rotation:
+      - 0
+      - -1.4852464
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_1
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.6762225
+      - 0
+      - 0.7366975
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 4
+    pos:
+      - -3.3451176
+      - -4.1690454
+      - 6.2741766
+    theta: 2.060616
+    phi: -0.53031945
+    height: 3.7018778
+    facingYaw: -1.6422952
+    rotation:
+      - 3.050798
+      - 1.4990027
+      - 2.9690056
+    scale:
+      - 0.2
+      - 3.45
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.08193124
+      - -0.99661684
+      - 0.006503936
+    platformId: platform_2
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.02555894
+      - 0.7312181
+      - -0.032223586
+      - -0.6809027
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - -3.3451176
+          - -4.1690454
+          - 6.2741766
+        endLocalPos:
+          - -3.9707422
+          - -4.059861
+          - 15.1079235
+        moveOffset:
+          - -0.62562466
+          - 0.109184265
+          - 8.833747
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 5
+    pos:
+      - 2.5820198
+      - -4.0448656
+      - -11.834109
+    theta: -1.3559784
+    phi: -0.32229742
+    height: 7.2209344
+    facingYaw: -1.6422952
+    rotation:
+      - 3.050798
+      - 1.4990027
+      - 2.9690056
+    scale:
+      - 0.2
+      - 3.45
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.08193124
+      - -0.99661684
+      - 0.006503936
+    platformId: platform_9
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.02555894
+      - 0.7312181
+      - -0.032223586
+      - -0.6809027
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 2.5820198
+          - -4.0448656
+          - -11.834109
+        endLocalPos:
+          - 2.9237328
+          - -4.104432
+          - -16.657192
+        moveOffset:
+          - 0.34171295
+          - -0.059566498
+          - -4.823083
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 4
+    pos:
+      - 5.36
+      - -1.2
+      - 0.57
+    theta: -1.9728149
+    phi: -0.22418831
+    height: 0.2066687
+    facingYaw: 3.0360096
+    rotation:
+      - 3.1415927
+      - -0.1055831
+      - 3.1415927
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
     platformId: platform_10
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - -0
-      - -0.50979275
       - 0
-      - 0.86029726
-    textureOverride: textures/glass.png
-  - currentPlanetNum: 0
+      - 0.99860686
+      - 0
+      - 0.05276703
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 5
     pos:
-      - 1.17
-      - -2.98
-      - 1.74
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: 0.49731398
+      - -3.4920263
+      - -3.8587875
+      - 0.35801888
+    theta: -1.9493304
+    phi: -1.3891811
+    height: 2.1065695
+    facingYaw: 0.00011344392
     rotation:
-      - -0.0048498185
-      - -0.49730903
-      - -0.01063641
+      - -0.0714349
+      - -0.00011315569
+      - -1.6431822
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999998
+    modelPath: platform.obj
+    upVec:
+      - -0.994837
+      - 0.0721463
+      - -0.071374156
+    platformId: platform_12
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.73176473
+      - -0.026109332
+      - -0.024361849
+      - 0.68062115
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - -3.4920263
+          - -3.8587875
+          - 0.35801888
+        endLocalPos:
+          - 2.9611301
+          - -4.3275185
+          - 0.90898895
+        moveOffset:
+          - 6.4531565
+          - -0.46873093
+          - 0.5509701
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 11
+    pos:
+      - -6.39
+      - -0.83
+      - -0.64
+    theta: -3.0420945
+    phi: -0.1281182
+    height: 0.7071477
+    facingYaw: 3.0360096
+    rotation:
+      - 3.1415927
+      - -0.1055831
+      - 3.1415927
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_15
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.99860686
+      - 0
+      - 0.05276703
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 5
+    pos:
+      - 3.452015
+      - -5.4309435
+      - -1.4312668
+    theta: -1.5989201
+    phi: -0.9194474
+    height: 7.614301
+    facingYaw: -3.136268
+    rotation:
+      - 3.0526903
+      - 0.005303765
+      - -1.6435696
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.99344873
+      - -0.071952224
+      - 0.08878419
+    platformId: platform_14
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.034347504
+      - 0.73155606
+      - 0.6803265
+      - 0.02831724
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 3.452015
+          - -5.4309435
+          - -1.4312668
+        endLocalPos:
+          - -3.621292
+          - -5.368681
+          - -2.4339046
+        moveOffset:
+          - -7.073307
+          - 0.062262535
+          - -1.0026379
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 4
+    pos:
+      - 9.070469
+      - -2.8357582
+      - 3.1587937
+    theta: -1.8925434
+    phi: -0.51506084
+    height: 2.5948246
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021238343
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 6
+    modelPath: platform.obj
+    upVec:
+      - 0.092728764
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_17
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.47708583
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 4
+    pos:
+      - 12.61
+      - -2.84
+      - -0.46
+    theta: -1.8925434
+    phi: -0.51506084
+    height: 2.5948246
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021238343
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 6
+    modelPath: platform.obj
+    upVec:
+      - 0.092728764
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_16
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.47708583
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 4
+    pos:
+      - 15.65
+      - -2.82
+      - 3.68
+    theta: 0.2243134
+    phi: -0.16576347
+    height: 11.218654
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021238343
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 6
+    modelPath: platform.obj
+    upVec:
+      - 0.092728764
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_18
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.47708583
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 11
+    pos:
+      - -12.07
+      - -2.46
+      - -2.59
+    theta: -2.9301882
+    phi: -0.1967234
+    height: 6.761276
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021238343
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 6
+    modelPath: platform.obj
+    upVec:
+      - 0.092728764
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_19
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.47708583
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 11
+    pos:
+      - -1.99
+      - -3.67
+      - 2.24
+    theta: -2.9301882
+    phi: -0.1967234
+    height: 6.761276
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021237747
+      - -1.5696335
     scale:
       - 1
       - 0.2
       - 1
     modelPath: platform.obj
     upVec:
-      - -0.012949611
-      - -0.99990714
-      - -0.004262341
+      - 0.09272879
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_20
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.4770858
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 11
+    pos:
+      - 0.26
+      - -5.67
+      - 0.34
+    theta: -2.9301882
+    phi: -0.1967234
+    height: 6.761276
+    facingYaw: -3.13946
+    rotation:
+      - 3.0506947
+      - 0.002123756
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.99587077
+      - 0.0013508201
+      - 0.09077273
+    platformId: platform_21
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.032858074
+      - 0.70593125
+      - 0.7068209
+      - 0.03139526
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 11
+    pos:
+      - -1.45
+      - -6.96
+      - -2.89
+    theta: -2.0370429
+    phi: -1.1916519
+    height: 6.3366737
+    facingYaw: -3.1186934
+    rotation:
+      - -1.6636561
+      - 0.0021238343
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.092728764
+      - -0.0020067692
+      - -0.9956894
+    platformId: platform_22
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.47542197
+      - 0.5228695
+      - 0.5224658
+      - -0.47708583
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 13
+    pos:
+      - -6.31
+      - 2.38
+      - 0.8
+    theta: 3.0152879
+    phi: 0.35818166
+    height: 1.7877554
+    facingYaw: -3.13946
+    rotation:
+      - 3.0506947
+      - 0.002123756
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.99587077
+      - 0.0013508201
+      - 0.09077273
+    platformId: platform_25
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.032858074
+      - 0.70593125
+      - 0.7068209
+      - 0.03139526
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 13
+    pos:
+      - -6.42
+      - -0.82
+      - -0.01
+    theta: -3.1355844
+    phi: -0.07945742
+    height: 0.76081085
+    facingYaw: 3.0360096
+    rotation:
+      - 3.1415927
+      - -0.1055831
+      - 3.1415927
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_26
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.99860686
+      - 0
+      - 0.05276703
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 13
+    pos:
+      - -11.38
+      - 4.16
+      - 0.24
+    theta: 3.1201391
+    phi: 0.31767514
+    height: 6.438094
+    facingYaw: -3.13946
+    rotation:
+      - 3.0506947
+      - 0.002123756
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.99587077
+      - 0.0013508201
+      - 0.09077273
+    platformId: platform_27
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.032858074
+      - 0.70593125
+      - 0.7068209
+      - 0.03139526
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 13
+    pos:
+      - -11.34
+      - 0.21
+      - 0.26
+    theta: 3.1188416
+    phi: -0.08523621
+    height: 5.421991
+    facingYaw: -3.13946
+    rotation:
+      - 3.0506947
+      - 0.002123756
+      - -1.5696335
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.99587077
+      - 0.0013508201
+      - 0.09077273
+    platformId: platform_28
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.032858074
+      - 0.70593125
+      - 0.7068209
+      - 0.03139526
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 12
+    theta: 0.7853982
+    phi: -1.5017326
+    height: -0.15984868
+    facingYaw: 1.0043706
+    rotation:
+      - 0.04432961
+      - -1.0039254
+      - -0.029281659
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - 0.09
+      - -1.84
+      - 0.09
+    upVec:
+      - 0.008118828
+      - -0.99968386
+      - 0.023796987
+    platformId: platform_29
+    textureTiling:
+      - 1
+      - 1
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_20
+        enemyTargets: []
+        hideTargets: []
+    rotationQuat:
+      - 0.00216861
+      - 0.48126176
+      - 0.012384471
+      - 0.8764868
+  - currentPlanetNum: 12
+    pos:
+      - -3.8414173
+      - 5.020048
+      - -6.296425
+    theta: -2.2311935
+    phi: 0.6652852
+    height: 4.1492486
+    facingYaw: 0.00011344392
+    rotation:
+      - -0.0714349
+      - -0.00011315569
+      - -1.6431822
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999998
+    modelPath: platform.obj
+    upVec:
+      - -0.994837
+      - 0.0721463
+      - -0.071374156
     platformId: platform_11
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 0.005751362
-      - 0.24608338
-      - -0.0036590947
-      - 0.9692247
+      - 0.73176473
+      - -0.026109332
+      - -0.024361849
+      - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
+      movement:
+        startLocalPos:
+          - -3.8414173
+          - 5.020048
+          - -6.296425
+        endLocalPos:
+          - 2.5893784
+          - 5.0287666
+          - -5.836941
+        moveOffset:
+          - 6.4307957
+          - 0.008718491
+          - 0.4594841
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 12
+    pos:
+      - 3.0180779
+      - 3.3445683
+      - -8.204704
+    theta: -1.2183112
+    phi: 0.36539748
+    height: 4.0795646
+    facingYaw: -3.136268
+    rotation:
+      - 3.0526903
+      - 0.005303765
+      - -1.6435696
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.99344873
+      - -0.071952224
+      - 0.08878419
+    platformId: platform_30
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.034347504
+      - 0.73155606
+      - 0.6803265
+      - 0.02831724
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 3.0180779
+          - 3.3445683
+          - -8.204704
+        endLocalPos:
+          - -4.045208
+          - 3.3303776
+          - -9.1170635
+        moveOffset:
+          - -7.063286
+          - -0.014190674
+          - -0.91235924
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 12
+    pos:
+      - -3.9248466
+      - 1.7472553
+      - -6.1693516
+    theta: -2.2444415
+    phi: 0.2664492
+    height: 1.3216394
+    facingYaw: 0.00011344392
+    rotation:
+      - -0.0714349
+      - -0.00011315569
+      - -1.6431822
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999998
+    modelPath: platform.obj
+    upVec:
+      - -0.994837
+      - 0.0721463
+      - -0.071374156
+    platformId: platform_31
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.73176473
+      - -0.026109332
+      - -0.024361849
+      - 0.68062115
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - -3.9248466
+          - 1.7472553
+          - -6.1693516
+        endLocalPos:
+          - 2.3487015
+          - 1.6659317
+          - -5.881668
+        moveOffset:
+          - 6.273548
+          - -0.08132362
+          - 0.2876835
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 12
+    pos:
+      - 2.8745995
+      - -0.11512184
+      - -8.265202
+    theta: -1.2360868
+    phi: -0.013154787
+    height: 2.7527602
+    facingYaw: -3.136268
+    rotation:
+      - 3.0526903
+      - 0.005303765
+      - -1.6435696
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.99344873
+      - -0.071952224
+      - 0.08878419
+    platformId: platform_32
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.034347504
+      - 0.73155606
+      - 0.6803265
+      - 0.02831724
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 2.8745995
+          - -0.11512184
+          - -8.265202
+        endLocalPos:
+          - -4.293064
+          - -0.06945801
+          - -9.098991
+        moveOffset:
+          - -7.1676636
+          - 0.045663834
+          - -0.8337898
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 12
+    pos:
+      - 0.78
+      - -0.35
+      - -6.63
+    theta: -1.4541637
+    phi: -0.052405685
+    height: 0.7172946
+    facingYaw: -3.1362607
+    rotation:
+      - 3.0389051
+      - 0.005303765
+      - -1.6435695
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.9921389
+      - -0.07178389
+      - 0.10250558
+    platformId: platform_35
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.03938886
+      - 0.73130196
+      - 0.6801152
+      - 0.033005647
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 14
+    theta: 2.6548862
+    phi: -0.68459296
+    height: -0.28713816
+    facingYaw: -2.6046164
+    rotation:
+      - 3.0750103
+      - 0.53600186
+      - 2.9968843
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - -1.81
+      - -1.67
+      - 0.96
+    upVec:
+      - -0.11026083
+      - -0.99225533
+      - 0.057202376
+    platformId: platform_33
+    textureTiling:
+      - 1
+      - 1
+    components:
+      latchedGroupSwitch:
+        groupId: stage4_planet1
+        targets:
+          - sequence: boats
+            index: 0
+        hideTargets: []
+      enemyClearUnlock: {}
+    rotationQuat:
+      - 0.012880463
+      - 0.9618834
+      - -0.060880855
+      - -0.26628536
+  - currentPlanetNum: 14
+    theta: -0.5161105
+    phi: -0.71821254
+    height: -0.2411385
+    facingYaw: -2.623059
+    rotation:
+      - -3.071335
+      - 0.517471
+      - -3.0081253
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - 1.53
+      - -1.73
+      - -0.91
+    upVec:
+      - 0.098325394
+      - -0.99328256
+      - -0.06100872
+    platformId: platform_36
+    textureTiling:
+      - 1
+      - 1
+    components:
+      latchedGroupSwitch:
+        groupId: stage4_planet1
+        targets: []
+        hideTargets: []
+      enemyClearUnlock: {}
+    rotationQuat:
+      - -0.016825747
+      - 0.96456665
+      - 0.055458646
+      - -0.25739545
+  - currentPlanetNum: 13
+    pos:
+      - 3.14
+      - -1.04
+      - 5.39
+    theta: -3.1355844
+    phi: -0.07945742
+    height: 0.76081085
+    facingYaw: -1.0775696
+    rotation:
+      - 0
+      - 1.0775697
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077296
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_38
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - -0.51309335
+      - 0
+      - 0.8583328
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 13
+    pos:
+      - 9.215168
+      - -2.8388786
+      - 5.313068
+    theta: 2.1110291
+    phi: 0.64107394
+    height: 5.549898
+    facingYaw: 0.020585269
+    rotation:
+      - -1.0874705
+      - -0.009567645
+      - 1.4803365
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - -0.46206114
+      - 0.050418615
+      - -0.88541377
+    platformId: platform_39
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.633533
+      - -0.37921247
+      - -0.35191658
+      - 0.5753161
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 9.215168
+          - -2.8388786
+          - 5.313068
+        endLocalPos:
+          - 4.3205833
+          - -2.8150558
+          - 7.750409
+        moveOffset:
+          - -4.8945847
+          - 0.023822784
+          - 2.4373412
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 13
+    pos:
+      - 11.34396
+      - -5.9590607
+      - 6.151141
+    theta: 0.62649184
+    phi: -0.3436597
+    height: 11.815132
+    facingYaw: 3.13077
+    rotation:
+      - -2.6551962
+      - -0.009567571
+      - 1.4803365
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.88081264
+      - -0.075405605
+      - -0.4674219
+    platformId: platform_41
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.18093102
+      - 0.71584225
+      - 0.65540916
+      - -0.15897375
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+      movement:
+        startLocalPos:
+          - 11.34396
+          - -5.9590607
+          - 6.151141
+        endLocalPos:
+          - 12.2759285
+          - -5.748543
+          - 7.7319794
+        moveOffset:
+          - 0.9319687
+          - 0.21051788
+          - 1.5808382
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+  - currentPlanetNum: 14
+    pos:
+      - -6.087761
+      - -6.6304455
+      - -13.170036
+    theta: -2.0059135
+    phi: -0.30134565
+    height: 9.72272
+    facingYaw: -0.12567776
+    rotation:
+      - 1.182363
+      - 0.047814824
+      - -1.5702372
+    scale:
+      - 1
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - 0.37876362
+      - -0.04402411
+      - 0.9244458
+    platformId: platform_42
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.5776765
+      - -0.40812886
+      - 0.3798392
+      - 0.59619033
+    textureOverride: textures/slimePlatform.png
+    components:
+      movement:
+        startLocalPos:
+          - -6.087761
+          - -6.6304455
+          - -13.170036
+        endLocalPos:
+          - -1.307106
+          - -6.5984135
+          - -15.0279255
+        moveOffset:
+          - 4.780655
+          - 0.032032013
+          - -1.8578892
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+      adhesion: {}
+  - currentPlanetNum: 14
+    pos:
+      - -2.74
+      - -0.91
+      - -5.59
+    theta: -2.0104358
+    phi: -0.03150892
+    height: 8.499056
+    facingYaw: -1.0775696
+    rotation:
+      - 0
+      - 1.0775697
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_43
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.51309335
+      - 0
+      - 0.8583328
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 13
+    pos:
+      - 2.5813293
+      - -6.344654
+      - 11.786264
+    theta: 1.355189
+    phi: -0.48410958
+    height: 8.556717
+    facingYaw: -3.090215
+    rotation:
+      - 2.7666872
+      - 0.047814794
+      - 1.5713556
+    scale:
+      - 1
+      - 0.2
+      - 1.4
+    modelPath: platform.obj
+    upVec:
+      - -0.93053234
+      - -0.018022893
+      - 0.36576602
+    platformId: platform_37
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.115170635
+      - 0.69786465
+      - -0.6911761
+      - -0.14831169
+    textureOverride: textures/slimePlatform.png
+    components:
+      movement:
+        startLocalPos:
+          - 2.5813293
+          - -6.344654
+          - 11.786264
+        endLocalPos:
+          - 6.8373985
+          - -1.9594955
+          - 21.973457
+        moveOffset:
+          - 4.256069
+          - 4.3851585
+          - 10.187193
+        moveDuration: 5
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 2
+      adhesion: {}
+  - currentPlanetNum: 12
+    pos:
+      - 8.34
+      - -2.34
+      - 2.16
+    theta: -1.4541637
+    phi: -0.052405685
+    height: 0.7172946
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_81
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 12
+    pos:
+      - 5.26
+      - -1.3
+      - -0.51
+    theta: -0.2544203
+    phi: -0.066155136
+    height: 7.7847123
+    facingYaw: 0.19330059
+    rotation:
+      - 0
+      - -0.19330059
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_82
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.09649989
+      - 0
+      - 0.995333
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 12
+    pos:
+      - 11.55
+      - -7.5
+      - 1.49
+    theta: -1.4541637
+    phi: -0.052405685
+    height: 0.7172946
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_83
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 12
+    pos:
+      - 7.26
+      - -5.93
+      - -2.88
+    theta: -1.4541637
+    phi: -0.052405685
+    height: 0.7172946
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_84
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 12
+    pos:
+      - 10.53
+      - -9.25
+      - -3.55
+    theta: -1.4541637
+    phi: -0.052405685
+    height: 0.7172946
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_85
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 15
+    pos:
+      - -12.02
+      - -2.44
+      - 4.16
+    theta: 2.8319921
+    phi: 0.2088652
+    height: 9.863807
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_86
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 15
+    pos:
+      - -12.95
+      - -0.95
+      - -0.76
+    theta: -3.131936
+    phi: 0.09409493
+    height: 10.036453
+    facingYaw: -3.1361706
+    rotation:
+      - -2.9322252
+      - 0.0053037354
+      - -1.6435697
+    scale:
+      - 0.2
+      - 0.7927241
+      - 0.9999999
+    modelPath: platform.obj
+    upVec:
+      - 0.97549343
+      - -0.072220795
+      - -0.20783824
+    platformId: platform_87
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.07473038
+      - 0.7285393
+      - 0.6769823
+      - -0.07308185
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 15
+    pos:
+      - -6.15
+      - -0.94
+      - 0.96
+    theta: 3.0201976
+    phi: -0.08933255
+    height: 11.359624
+    facingYaw: 0.19330059
+    rotation:
+      - 0
+      - -0.19330059
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_88
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.09649989
+      - 0
+      - 0.995333
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 14
+    pos:
+      - -5.28
+      - 1.29
+      - 1.12
+    theta: -2.0104358
+    phi: -0.03150892
+    height: 8.499056
+    facingYaw: 0.23017433
+    rotation:
+      - 0
+      - -0.23017432
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_89
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.11483327
+      - 0
+      - 0.9933848
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 15
+    pos:
+      - 5.82
+      - 1.08
+      - -1.19
+    theta: 3.0201976
+    phi: -0.08933255
+    height: 11.359624
+    facingYaw: 0.19330059
+    rotation:
+      - 0
+      - -0.19330059
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_90
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0
+      - 0.09649989
+      - 0
+      - 0.995333
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 15
+    pos:
+      - 8.57
+      - 3.55
+      - -5.07
+    theta: -3.131936
+    phi: 0.09409493
+    height: 10.036453
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000008
+      - 0.7927242
+      - 1.8222064
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_91
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 15
+    pos:
+      - 11.54
+      - 5.33
+      - -7.32
+    theta: -3.131936
+    phi: 0.09409493
+    height: 10.036453
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000008
+      - 0.7927242
+      - 1.8222064
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_92
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 14
+    pos:
+      - -12.11
+      - -3.58
+      - 3.65
+    theta: -3.0253508
+    phi: -0.35878325
+    height: 9.818555
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000008
+      - 0.7927242
+      - 1.8222064
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_93
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 14
+    pos:
+      - -8.56
+      - -1.99
+      - 6.58
+    theta: -3.0253508
+    phi: -0.35878325
+    height: 9.818555
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000008
+      - 0.7927242
+      - 1.8222064
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_94
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 14
+    pos:
+      - -8.92
+      - 0.26
+      - -0.65
+    theta: -3.0253508
+    phi: -0.35878325
+    height: 9.818555
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000008
+      - 0.7927242
+      - 1.8222064
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_95
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 14
+    pos:
+      - -11.09
+      - 1.2
+      - 0.03
+    theta: -3.0253508
+    phi: -0.35878325
+    height: 9.818555
+    facingYaw: -3.115893
+    rotation:
+      - 1.7786162
+      - 0.0053037354
+      - 1.4980229
+    scale:
+      - 0.20000009
+      - 0.79272425
+      - 0.7975579
+    modelPath: platform.obj
+    upVec:
+      - 0.2061584
+      - -0.009826064
+      - 0.9784694
+    platformId: platform_96
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.46275207
+      - 0.5676395
+      - 0.53004485
+      - 0.42743236
+    textureOverride: textures/slimePlatform.png
+    components:
+      adhesion: {}
+  - currentPlanetNum: 7
+    pos:
+      - 2.4
+      - -1.77
+      - -3.49
+    theta: -0.968387
+    phi: -0.39612573
+    height: 0.33758202
+    facingYaw: 0.80017734
+    rotation:
+      - 0.09760381
+      - -0.79779285
+      - -0.22029392
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_46
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.08234125
+      - 0.39052966
+      - 0.0020362432
+      - 0.91689825
+  - currentPlanetNum: 7
+    pos:
+      - 7.03
+      - -3.87
+      - -5.16
+    theta: -0.63318044
+    phi: -0.41781232
+    height: 4.433522
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_47
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 7
+    pos:
+      - 4.94
+      - -6.05
+      - -10.34
+    theta: -1.1251013
+    phi: -0.48585492
+    height: 7.913151
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_48
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 10
+    pos:
+      - -5.21
+      - 0.57
+      - 12.55
+    theta: 1.9639606
+    phi: 0.04192836
+    height: 7.6063
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_49
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 10
+    pos:
+      - -8.72
+      - -0.33
+      - 5.34
+    theta: 2.591872
+    phi: -0.03227514
+    height: 4.232218
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_50
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 10
+    pos:
+      - -4.51
+      - -0.77
+      - 4.01
+    theta: 2.4142869
+    phi: -0.12697887
+    height: 0.3426168
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_51
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 7
+    pos:
+      - 3.95
+      - -4.51
+      - -5.5
+    theta: -0.9479721
+    phi: -0.5877124
+    height: 3.838852
+    facingYaw: -0.05978259
+    rotation:
+      - 0.8347342
+      - 0.04016284
+      - -1.7295642
+    scale:
+      - 2.7752302
+      - 0.20000002
+      - 2.3998997
+    modelPath: platform.obj
+    upVec:
+      - -0.6582261
+      - 0.13552855
+      - 0.7405204
+    platformId: platform_52
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+    rotationQuat:
+      - 0.7007739
+      - 0.2964845
+      - 0.27691203
+      - 0.58679867
+  - currentPlanetNum: 10
+    pos:
+      - -3.11
+      - -2.78
+      - 7.47
+    theta: 1.9647573
+    phi: -0.33100352
+    height: 3.2171755
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_54
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 10
+    pos:
+      - -7.17
+      - -5.78
+      - 6.97
+    theta: 2.3700047
+    phi: -0.5242564
+    height: 6.704403
+    facingYaw: -3.0827177
+    rotation:
+      - -2.3209515
+      - 0.040163048
+      - -1.729564
+    scale:
+      - 0.8000001
+      - 0.20000002
+      - 1.4801847
+    modelPath: platform.obj
+    upVec:
+      - 0.6685337
+      - -0.13679135
+      - -0.73099315
+    platformId: platform_55
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - -0.2915391
+      - 0.70284563
+      - 0.58873534
+      - -0.2727704
+  - currentPlanetNum: 16
+    pos:
+      - 9.59
+      - 5.65
+      - -10
+    theta: -0.80643636
+    phi: 0.3920147
+    height: 9.590085
+    facingYaw: -3.0827177
+    rotation:
+      - -2.3209515
+      - 0.040163048
+      - -1.729564
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.6685337
+      - -0.13679135
+      - -0.73099315
+    platformId: platform_56
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - -0.2915391
+      - 0.70284563
+      - 0.58873534
+      - -0.2727704
+  - currentPlanetNum: 16
+    pos:
+      - 6.51
+      - 3.71
+      - -10.75
+    theta: -0.76154816
+    phi: 0.3201419
+    height: 9.618533
+    facingYaw: -3.0866613
+    rotation:
+      - 2.3902965
+      - 0.040163048
+      - -1.729564
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.72594637
+      - -0.088478796
+      - 0.6820362
+    platformId: platform_57
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29123878
+      - 0.70297015
+      - 0.609049
+      - 0.2237685
+  - currentPlanetNum: 16
+    pos:
+      - 8.8
+      - 2.4
+      - -6.02
+    theta: -0.76154816
+    phi: 0.3201419
+    height: 9.618533
+    facingYaw: -3.0866613
+    rotation:
+      - 2.3902965
+      - 0.040163048
+      - -1.729564
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.72594637
+      - -0.088478796
+      - 0.6820362
+    platformId: platform_58
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29123878
+      - 0.70297015
+      - 0.609049
+      - 0.2237685
+  - currentPlanetNum: 16
+    pos:
+      - 8.68
+      - -0.32
+      - -9.77
+    theta: -0.809971
+    phi: 0.38733432
+    height: 9.60098
+    facingYaw: -3.0827177
+    rotation:
+      - -2.3209515
+      - 0.040163048
+      - -1.729564
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.6685337
+      - -0.13679135
+      - -0.73099315
+    platformId: platform_59
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - -0.2915391
+      - 0.70284563
+      - 0.58873534
+      - -0.2727704
+  - currentPlanetNum: 16
+    pos:
+      - 3.99
+      - 1.06
+      - -4.53
+    theta: -0.9685251
+    phi: -0.39602283
+    height: 0.33454347
+    facingYaw: 0.8015995
+    rotation:
+      - -0.059364505
+      - -0.8007185
+      - -0.0017440388
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.044331063
+      - -0.9981626
+      - -0.04130477
+    platformId: platform_60
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.012369637
+      - 0.38955352
+      - -0.027670706
+      - 0.920505
+  - currentPlanetNum: 10
+    pos:
+      - -3.7
+      - 1.39
+      - 4.41
+    theta: 2.2682345
+    phi: 0.23704971
+    height: 0.6273011
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_61
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 10
+    pos:
+      - -6.8
+      - 1.77
+      - 3.54
+    theta: 2.6613228
+    phi: 0.22702631
+    height: 2.244758
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_62
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 10
+    pos:
+      - 3.58
+      - -1.45
+      - -4.26
+    theta: -0.8712594
+    phi: -0.25477508
+    height: 0.5766257
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_63
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 10
+    pos:
+      - 4.5
+      - 0.79
+      - -3.97
+    theta: -0.7223796
+    phi: 0.13081698
+    height: 0.33549827
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_64
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 10
+    pos:
+      - 1.9012299
+      - -3.3049698
+      - -5.4741755
+    theta: -1.1177378
+    phi: -0.42103148
+    height: 3.8791366
+    facingYaw: -0.0544771
+    rotation:
+      - -0.7423086
+      - 0.0401629
+      - -1.7295641
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.73193294
+      - 0.08970559
+      - -0.6754458
+    platformId: platform_65
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - 1.9012299
+          - -3.3049698
+          - -5.4741755
+        endLocalPos:
+          - 6.297226
+          - -4.208359
+          - -10.357728
+        moveOffset:
+          - 4.395996
+          - -0.903389
+          - -4.8835526
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.70427185
+      - -0.28807676
+      - -0.22102928
+      - 0.61004835
+  - currentPlanetNum: 6
+    pos:
+      - -7.225418
+      - 4.0064545
+      - 4.4931006
+    theta: 2.20168
+    phi: 0.43290627
+    height: 3.7893631
+    facingYaw: -0.06728575
+    rotation:
+      - 0.93188906
+      - 0.04016293
+      - 1.4120286
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.5837228
+      - 0.12610541
+      - 0.8021005
+    platformId: platform_66
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -7.225418
+          - 4.0064545
+          - 4.4931006
+        endLocalPos:
+          - -4.012924
+          - 3.5923843
+          - 6.9564414
+        moveOffset:
+          - 3.212494
+          - -0.41407013
+          - 2.4633408
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.68555045
+      - 0.33016315
+      - 0.3050794
+      - 0.5726601
+  - currentPlanetNum: 6
+    pos:
+      - -9.270798
+      - 2.007393
+      - 5.6853814
+    theta: 2.1823964
+    phi: 0.15152718
+    height: 4.8525414
+    facingYaw: -0.058647938
+    rotation:
+      - 0.8170234
+      - 0.04016281
+      - 1.4120286
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.6711583
+      - 0.13711095
+      - 0.72852397
+    platformId: platform_67
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -9.270798
+          - 2.007393
+          - 5.6853814
+        endLocalPos:
+          - -5.2306824
+          - 1.5151901
+          - 9.500034
+        moveOffset:
+          - 4.0401154
+          - -0.49220276
+          - 3.814653
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.7033718
+      - 0.29026735
+      - 0.27170494
+      - 0.5892278
+  - currentPlanetNum: 6
+    pos:
+      - -4.60347
+      - 0.8505478
+      - 5.921544
+    theta: 2.2563062
+    phi: -0.13287185
+    height: 1.9594014
+    facingYaw: -0.058647998
+    rotation:
+      - 0.81702334
+      - 0.04016284
+      - 1.4120286
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.6711583
+      - 0.13711095
+      - 0.7285239
+    platformId: platform_68
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -4.60347
+          - 0.8505478
+          - 5.921544
+        endLocalPos:
+          - -4.9873047
+          - -1.5468063
+          - 6.019053
+        moveOffset:
+          - -0.38383484
+          - -2.3973541
+          - 0.09750891
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.7033718
+      - 0.29026732
+      - 0.27170494
+      - 0.5892278
+  - currentPlanetNum: 6
+    pos:
+      - -4.58
+      - -0.79
+      - 3.94
+    theta: 2.4311712
+    phi: -0.1300241
+    height: 0.3633667
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_69
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 10
+    pos:
+      - -4.9
+      - -0.64
+      - -4.22
+    theta: -2.4301362
+    phi: -0.09870186
+    height: 0.62679535
+    facingYaw: 2.388763
+    rotation:
+      - 3.0484
+      - -0.75066054
+      - 3.0549407
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940663
+      - -0.9864316
+      - 0.06804744
+    platformId: platform_71
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.059156463
+      - 0.9277651
+      - -0.057312634
+      - 0.36396128
+  - currentPlanetNum: 10
+    pos:
+      - 5.28
+      - 0.63
+      - 3.95
+    theta: 0.64185435
+    phi: 0.095196925
+    height: 0.7427916
+    facingYaw: 2.388763
+    rotation:
+      - 3.0484
+      - -0.75066054
+      - 3.0549407
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940663
+      - -0.9864316
+      - 0.06804744
+    platformId: platform_72
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.059156463
+      - 0.9277651
+      - -0.057312634
+      - 0.36396128
+  - currentPlanetNum: 16
+    theta: 2.7390785
+    phi: -1.441263
+    height: -3.9939206
+    facingYaw: 1.0043706
+    rotation:
+      - 0.04432961
+      - -1.0039254
+      - -0.029281659
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - -0.24
+      - -1.89
+      - 0.1
+    upVec:
+      - -0.016606584
+      - -0.99968386
+      - 0.018880635
+    platformId: platform_73
+    textureTiling:
+      - 1
+      - 1
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_71
+        enemyTargets: []
+        hideTargets: []
+  - currentPlanetNum: 9
+    theta: 0.38880372
+    phi: 1.455409
+    height: -0.008628606
+    facingYaw: 0.8114424
+    rotation:
+      - -0.0023342175
+      - -0.81144106
+      - -0.023402479
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - -0.09
+      - 1.81
+      - 0.85
+    upVec:
+      - 0.025092773
+      - 0.99968386
+      - -0.0016069999
+    platformId: platform_74
+    textureTiling:
+      - 1
+      - 1
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets: []
+        enemyTargets:
+          - sequence: enemies
+            index: 2
+        hideTargets: []
+    rotationQuat:
+      - 0.91874933
+      - -0.005690434
+      - -0.39464107
+      - -0.0112116635
+  - currentPlanetNum: 6
+    theta: -2.8632922
+    phi: -1.4926751
+    height: -0.13974632
+    facingYaw: 1.0043706
+    rotation:
+      - 0.04432961
+      - -1.0039254
+      - -0.029281659
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - -0.14
+      - -1.86
+      - -0.04
+    upVec:
+      - -0.019971855
+      - -0.9996839
+      - -0.015274263
+    platformId: platform_75
+    textureTiling:
+      - 1
+      - 1
+    components:
+      latchedGroupSwitch:
+        groupId: stage4_planet2
+        targets:
+          - sequence: boats
+            index: 1
+        hideTargets: []
+  - currentPlanetNum: 18
+    theta: -2.5535913
+    phi: -1.4614891
+    height: -0.027584532
+    facingYaw: 0.849876
+    rotation:
+      - 0.02211481
+      - -0.8497547
+      - -0.021154765
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - 0.24
+      - -1.84
+      - 0.69
+    upVec:
+      - -0.004542246
+      - -0.9998832
+      - 0.0145982895
+    platformId: platform_76
+    textureTiling:
+      - 1
+      - 1
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_72
+        enemyTargets: []
+        hideTargets: []
+    rotationQuat:
+      - 0.0050785583
+      - 0.41226733
+      - 0.0057137697
+      - 0.9110309
+  - currentPlanetNum: 17
+    theta: 1.9478718
+    phi: 0.9483011
+    height: -0.09244482
+    facingYaw: 1.0040025
+    rotation:
+      - -0.03353942
+      - -1.0037482
+      - 0.04678206
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - -0.58
+      - 1.84
+      - -0.14
+    upVec:
+      - -0.01848478
+      - 0.99966687
+      - -0.018012151
+    platformId: platform_77
+    textureTiling:
+      - 1
+      - 1
+    components:
+      latchedGroupSwitch:
+        groupId: stage4_planet2
+        targets: []
+        hideTargets: []
+    rotationQuat:
+      - 0.87650824
+      - -0.0034469082
+      - -0.4812138
+      - 0.012436951
+  - currentPlanetNum: 10
+    pos:
+      - -4.99
+      - -3.2
+      - -6.03
+    theta: -2.2520769
+    phi: -0.33483854
+    height: 2.9515796
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.79992765
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_53
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 10
+    pos:
+      - -10.03
+      - -3.98
+      - -3.51
+    theta: -2.8048136
+    phi: -0.3585051
+    height: 5.938317
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_78
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 10
+    pos:
+      - -8.59
+      - -5.6
+      - -8.73
+    theta: -2.3478334
+    phi: -0.42895895
+    height: 8.210591
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_79
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 6.73
+      - 7.45
+      - 7.63
+    theta: 0.8479871
+    phi: 0.6317388
+    height: 8.125738
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_80
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 11.3
+      - 4.78
+      - 6.01
+    theta: 0.49655312
+    phi: 0.354824
+    height: 8.703256
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_98
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 6.21
+      - 3.28
+      - 7.77
+    theta: 0.89135236
+    phi: 0.34983245
+    height: 5.203125
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_99
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 6.94
+      - 1.17
+      - 2.75
+    theta: 0.41629207
+    phi: 0.15510313
+    height: 2.6753628
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_100
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 5.7
+      - -0.82
+      - 8.06
+    theta: 0.9530188
+    phi: -0.06626248
+    height: 3.9222665
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_101
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 0.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 18
+    pos:
+      - 4.17
+      - -1.13
+      - 4.33
+    theta: 0.8042197
+    phi: -0.18279055
+    height: 0.5672159
+    facingYaw: 2.3901114
+    rotation:
+      - -3.0842834
+      - -0.7506618
+      - 3.0549407
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.047477324
+      - -0.9979938
+      - -0.041883852
+    platformId: platform_102
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - -0.010760327
+      - 0.9295866
+      - -0.029787743
+      - 0.3672406
+  - currentPlanetNum: 10
+    pos:
+      - 17.01
+      - -0.59
+      - 14.94
+    theta: 0.72070765
+    phi: -0.026022121
+    height: 16.644085
+    facingYaw: -1.6437278
+    rotation:
+      - 1.637678
+      - 0.7408997
+      - -0.10675163
+    scale:
+      - 0.15637651
+      - 0.3110268
+      - 13.136483
+    modelPath: platform.obj
+    upVec:
+      - -0.6624886
+      - 0.13820606
+      - 0.7362119
+    platformId: platform_103
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 2
+        reappearDelay: 1
+    rotationQuat:
+      - 0.29800677
+      - -0.21062128
+      - 0.6930332
+      - 0.6217199
+  - currentPlanetNum: 10
+    pos:
+      - 12.6
+      - 2.19
+      - 10.55
+    theta: 0.69688886
+    phi: 0.13245408
+    height: 10.651039
+    facingYaw: -2.3994431
+    rotation:
+      - -3.0707965
+      - 0.7409004
+      - 3.0348408
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.15375453
+      - 0.9867296
+      - -0.052194122
+    platformId: platform_105
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.359533
+      - 0.06249473
+      - 0.92957026
+      - -0.052245624
+  - currentPlanetNum: 17
+    pos:
+      - -13.79
+      - 3.73
+      - -18.58
+    theta: -2.2816386
+    phi: 0.171863
+    height: 17.310314
+    facingYaw: -2.3994431
+    rotation:
+      - -3.0707965
+      - 0.7409004
+      - 3.0348408
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.80000013
+    modelPath: platform.obj
+    upVec:
+      - 0.15375453
+      - 0.9867296
+      - -0.052194122
+    platformId: platform_106
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.359533
+      - 0.06249473
+      - 0.92957026
+      - -0.052245624
+  - currentPlanetNum: 17
+    pos:
+      - -14.79
+      - 4.23
+      - -7.72
+    theta: -2.5770793
+    phi: 0.21100356
+    height: 10.977955
+    facingYaw: -2.3994431
+    rotation:
+      - -3.0707965
+      - 0.7409004
+      - 3.0348408
+    scale:
+      - 0.8
+      - 0.2
+      - 0.8
+    modelPath: platform.obj
+    upVec:
+      - 0.15375453
+      - 0.9867296
+      - -0.052194122
+    platformId: platform_107
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1.5
+        reappearDelay: 2
+    rotationQuat:
+      - 0.359533
+      - 0.06249473
+      - 0.92957026
+      - -0.052245624
+  - currentPlanetNum: 17
+    pos:
+      - -3.91
+      - 1.36
+      - -3.44
+    theta: -2.4830346
+    phi: 0.20777543
+    height: 0.12982139
+    facingYaw: 2.3908415
+    rotation:
+      - -3.1225197
+      - -0.75066054
+      - -0.08665195
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.07356737
+      - -0.99719274
+      - -0.013945993
+    platformId: platform_108
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.007012614
+      - 0.92962265
+      - -0.03680293
+      - 0.36660346
+  - currentPlanetNum: 10
+    pos:
+      - 5.5085754
+      - 2.4688568
+      - -8.820646
+    theta: -0.5372842
+    phi: 0.13309292
+    height: 6.886905
+    facingYaw: -0.06728575
+    rotation:
+      - 0.93188906
+      - 0.04016293
+      - 1.4120286
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.5837228
+      - 0.12610541
+      - 0.8021005
+    platformId: platform_97
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - 5.5085754
+          - 2.4688568
+          - -8.820646
+        endLocalPos:
+          - 9.880585
+          - 1.9207306
+          - -5.0889773
+        moveOffset:
+          - 4.3720093
+          - -0.5481262
+          - 3.731669
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.68555045
+      - 0.33016315
+      - 0.3050794
+      - 0.5726601
+  - currentPlanetNum: 10
+    pos:
+      - 3.996811
+      - 3.960167
+      - -10.111275
+    theta: -1.3779076
+    phi: 0.22076386
+    height: 7.652732
+    facingYaw: -3.092021
+    rotation:
+      - 2.5148945
+      - 0.04016278
+      - 1.4120288
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - 0.80350435
+      - -0.10480513
+      - 0.5860007
+    platformId: platform_104
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - 3.996811
+          - 3.960167
+          - -10.111275
+        endLocalPos:
+          - 1.3681488
+          - 4.527397
+          - -6.5151324
+        moveOffset:
+          - -2.628662
+          - 0.5672302
+          - 3.5961423
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.24690762
+      - 0.71973854
+      - 0.621799
+      - 0.18541583
+  - currentPlanetNum: 9
+    pos:
+      - -3.8770294
+      - -2.713543
+      - 9.881453
+    theta: 1.9791461
+    phi: -0.2016108
+    height: 6.6758714
+    facingYaw: -0.06728575
+    rotation:
+      - 0.93188906
+      - 0.04016293
+      - 1.4120286
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - -0.5837228
+      - 0.12610541
+      - 0.8021005
+    platformId: platform_109
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -3.8770294
+          - -2.713543
+          - 9.881453
+        endLocalPos:
+          - -8.247818
+          - -2.1651993
+          - 6.158342
+        moveOffset:
+          - -4.3707886
+          - 0.54834366
+          - -3.7231107
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.68555045
+      - 0.33016315
+      - 0.3050794
+      - 0.5726601
+  - currentPlanetNum: 9
+    pos:
+      - -2.3343964
+      - -1.0434608
+      - 10.753288
+    theta: 1.7815541
+    phi: -0.07446071
+    height: 5.046366
+    facingYaw: -3.092021
+    rotation:
+      - 2.5148945
+      - 0.04016278
+      - 1.4120288
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - 0.80350435
+      - -0.10480513
+      - 0.5860007
+    platformId: platform_110
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -2.3343964
+          - -1.0434608
+          - 10.753288
+        endLocalPos:
+          - -4.8450317
+          - 0.46017075
+          - 14.533389
+        moveOffset:
+          - -2.5106354
+          - 1.5036316
+          - 3.7801008
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.24690762
+      - 0.71973854
+      - 0.621799
+      - 0.18541583
+  - currentPlanetNum: 9
+    pos:
+      - -3.63
+      - 1.41
+      - 4.29
+    theta: 2.1707115
+    phi: 0.0013442275
+    height: 7.414462
+    facingYaw: 0.811233
+    rotation:
+      - 0.09872686
+      - -0.8087952
+      - -0.22185445
+    scale:
+      - 1
+      - 0.2
+      - 1.5077295
+    modelPath: platform.obj
+    upVec:
+      - -0.14940666
+      - -0.9864316
+      - 0.06804745
+    platformId: platform_111
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.082351245
+      - 0.39559212
+      - 0.0015810479
+      - 0.9147255
+  - currentPlanetNum: 9
+    pos:
+      - -6.4560547
+      - 3.5101624
+      - 6.7989655
+    theta: 1.7815541
+    phi: -0.07446071
+    height: 5.046366
+    facingYaw: -3.092021
+    rotation:
+      - 2.5148945
+      - 0.04016278
+      - 1.4120288
+    scale:
+      - 0.8000001
+      - 0.2
+      - 0.7963011
+    modelPath: platform.obj
+    upVec:
+      - 0.80350435
+      - -0.10480513
+      - 0.5860007
+    platformId: platform_112
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/rottenSlimePlatform.png
+    components:
+      adhesion: {}
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+      movement:
+        startLocalPos:
+          - -6.4560547
+          - 3.5101624
+          - 6.7989655
+        endLocalPos:
+          - -6.9712677
+          - 0.29195023
+          - 6.929936
+        moveOffset:
+          - -0.515213
+          - -3.2182121
+          - 0.13097048
+        moveDuration: 4
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    rotationQuat:
+      - 0.24690762
+      - 0.71973854
+      - 0.621799
+      - 0.18541583
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []
 jewelItems:
-  - currentPlanetNum: 8
-    theta: -0.50607413
-    phi: -0.81901765
-    height: 0.13188274
-    facingYaw: 0
-    modelPath: crystal.obj
-    textureOverride: textures/jewel.png
-    scale:
-      - 0.22
-      - 0.22
-      - 0.22
-    pos:
-      - 1.66
-      - -2.03
-      - -0.92
-    upVec:
-      - -0.037348043
-      - -0.98685366
-      - -0.15724199
-    textureTiling:
-      - 1
-      - 1
-  - currentPlanetNum: 8
-    theta: 2.571836
-    phi: -0.75369096
-    height: 0.28741908
-    facingYaw: 0
-    modelPath: crystal.obj
-    textureOverride: textures/jewel.png
-    scale:
-      - 0.22
-      - 0.22
-      - 0.22
-    pos:
-      - -1.92
-      - -2.14
-      - 1.23
-    upVec:
-      - 0.15407652
-      - -0.9868507
-      - -0.048849728
-    textureTiling:
-      - 1
-      - 1
   - currentPlanetNum: 0
     theta: 0.2674415
     phi: 1.5286353

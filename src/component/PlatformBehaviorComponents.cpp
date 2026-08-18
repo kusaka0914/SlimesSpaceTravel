@@ -21,6 +21,7 @@
 namespace {
 
 constexpr float pressureSwitchContactReleaseGraceSeconds = 0.15f;
+constexpr float adhesionReattachmentCooldownSeconds = 1.25f;
 
 bool IsEditorPreview(const Platform* platform)
 {
@@ -556,11 +557,9 @@ bool PlatformAdhesionComponent::DidPlayerMovementTouchPlatform(
     const Player& player,
     const glm::vec3& movementStart) const
 {
-    if (!mPlatform || !mPlatform->GetGame() || !player.GetIsActive()) {
-        return false;
-    }
-
-    if (player.GetCurrentPlanet() != mPlatform->GetCurrentPlanet()) {
+    if (!mPlatform || !mPlatform->GetGame() ||
+        !mPlatform->GetCollisionEnabled() ||
+        !player.GetIsActive()) {
         return false;
     }
 
@@ -579,12 +578,18 @@ bool PlatformAdhesionComponent::DidPlayerMovementTouchPlatform(
         mPlatform->GetPos() -
         mPlatform->GetFrameDelta() +
         playerMovement;
-    constexpr float platformContactTolerance = 0.05f;
+    // The player collision is narrower than the visible slime near its lower
+    // edge. Expand only the platform footprint enough to catch visible edge
+    // and diagonal contacts without pulling the player from far above it.
+    const glm::vec3 platformContactPadding(
+        0.12f,
+        0.05f,
+        0.12f);
     return physicsSystem->DoesActorModelSweepOverlapActorCollision(
         *mPlatform,
         platformMovementStart,
         player,
-        platformContactTolerance);
+        platformContactPadding);
 }
 
 bool PlatformAdhesionComponent::TryAttachPlayerIfTouching(Player& player)
@@ -594,16 +599,57 @@ bool PlatformAdhesionComponent::TryAttachPlayerIfTouching(Player& player)
         player.GetPos());
 }
 
+bool PlatformAdhesionComponent::TryAttachPlayerToAnyPlatformAlongMovement(
+    Player& player,
+    const glm::vec3& movementStart)
+{
+    Game* game = player.GetGame();
+    Stage* currentStage = game ? game->GetCurrentStage() : nullptr;
+    if (!currentStage || player.IsAttachedToPlatform()) {
+        return false;
+    }
+
+    // Adhesion is determined by physical contact, not by the planet used for
+    // airborne gravity fallback. This also lets a player move directly from a
+    // platform belonging to one planet onto an adhesive platform belonging to
+    // another planet.
+    for (Planet* planet : currentStage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform || !platform->GetIsActive() ||
+                !platform->GetCollisionEnabled()) {
+                continue;
+            }
+
+            PlatformAdhesionComponent* adhesionComponent =
+                platform->GetAdhesionComponent();
+            if (adhesionComponent &&
+                adhesionComponent->TryAttachPlayerAlongMovement(
+                    player,
+                    movementStart)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
     Player& player,
     const glm::vec3& movementStart)
 {
     if (!mPlatform || !mPlatform->GetGame() ||
+        !mPlatform->GetIsActive() ||
+        !mPlatform->GetCollisionEnabled() ||
         !player.GetIsActive()) {
         return false;
     }
 
-    const bool isTouching =
+    const bool didTouchDuringMovement =
         DidPlayerMovementTouchPlatform(
             player,
             movementStart);
@@ -611,21 +657,22 @@ bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
         mAttachedPlayers.contains(&player);
     const bool isAttachedNow =
         player.GetAttachedPlatform() == mPlatform;
-    if (!isTouching) {
-        mDetachedPlayersAwaitingSeparation.erase(&player);
-        if (isAttachedNow) {
-            player.DetachFromPlatform();
-        }
+    if (wasAttachedLastFrame && !isAttachedNow) {
+        // The cooldown belongs to this component, so jumping from one
+        // adhesive platform never prevents attaching to a different one.
+        mPlayerReattachmentCooldownSeconds.try_emplace(
+            &player,
+            adhesionReattachmentCooldownSeconds);
+    }
+
+    if (mPlayerReattachmentCooldownSeconds.contains(&player)) {
         return false;
     }
 
-    // A jump deliberately detaches the player. Keep the player detached
-    // until they leave the platform bounds so the same contact does not
-    // immediately attach them again on the next frame.
-    if (wasAttachedLastFrame && !isAttachedNow) {
-        mDetachedPlayersAwaitingSeparation.insert(&player);
-    }
-    if (mDetachedPlayersAwaitingSeparation.contains(&player)) {
+    if (!didTouchDuringMovement) {
+        if (isAttachedNow) {
+            player.DetachFromPlatform();
+        }
         return false;
     }
 
@@ -636,6 +683,7 @@ bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
 
     if (!isAttachedNow) {
         player.AttachToPlatform(mPlatform);
+        player.OnAttachedToAdhesivePlatform();
 
         PhysicsSystem* physicsSystem =
             mPlatform->GetGame()->GetPhysicsSystem();
@@ -653,9 +701,26 @@ bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
 
 void PlatformAdhesionComponent::Update(float deltaTime)
 {
-    (void)deltaTime;
     if (!mPlatform || !mPlatform->GetGame()) {
         return;
+    }
+
+    if (!mPlatform->GetCollisionEnabled()) {
+        ReleaseAttachedPlayers();
+        return;
+    }
+
+    for (auto cooldownIt =
+             mPlayerReattachmentCooldownSeconds.begin();
+         cooldownIt !=
+             mPlayerReattachmentCooldownSeconds.end();) {
+        cooldownIt->second -= deltaTime;
+        if (cooldownIt->second <= 0.0f) {
+            cooldownIt =
+                mPlayerReattachmentCooldownSeconds.erase(cooldownIt);
+        } else {
+            ++cooldownIt;
+        }
     }
 
     std::unordered_set<Player*> attachedPlayersThisFrame;
@@ -705,7 +770,7 @@ void PlatformAdhesionComponent::ReleaseAttachedPlayers()
         }
     }
     mAttachedPlayers.clear();
-    mDetachedPlayersAwaitingSeparation.clear();
+    mPlayerReattachmentCooldownSeconds.clear();
 }
 
 PlatformEnemyClearUnlockComponent::
@@ -886,6 +951,36 @@ void PlatformPressureSwitchComponent::SetTargetEnemyRefs(
     ApplyTargetState();
 }
 
+void PlatformPressureSwitchComponent::SetHideTargets(
+    const std::vector<PlatformRevealTarget>& hideTargets)
+{
+    ClearTargetRuntimeStates();
+    mHideTargets.clear();
+
+    for (const PlatformRevealTarget& target : hideTargets) {
+        if (!target.IsValid()) {
+            continue;
+        }
+
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.sequenceName == mPlatform->GetStageSequenceName() &&
+            target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isDuplicate = std::any_of(
+            mHideTargets.begin(),
+            mHideTargets.end(),
+            [&target](const PlatformRevealTarget& current) {
+                return current.sequenceName == target.sequenceName &&
+                       current.yamlIndex == target.yamlIndex;
+            });
+        if (!isOwnerTarget && !isDuplicate) {
+            mHideTargets.emplace_back(target);
+        }
+    }
+
+    ApplyTargetState();
+}
+
 void PlatformPressureSwitchComponent::SetInactiveOpacity(float opacity)
 {
     mInactiveOpacity = glm::clamp(opacity, 0.0f, 1.0f);
@@ -978,6 +1073,19 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
         // removes them from rendering, updates, targeting, and collisions.
         targetActor->SetRuntimeActivationEnabled(this, mIsPressed);
     }
+
+    for (const PlatformRevealTarget& targetRef : mHideTargets) {
+        Actor* targetActor = FindTargetActor(targetRef);
+        if (!targetActor) {
+            continue;
+        }
+
+        if (mIsPressed) {
+            targetActor->SetRuntimeActivationEnabled(this, false);
+        } else {
+            targetActor->ClearRuntimeActivationState(this);
+        }
+    }
 }
 
 void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
@@ -990,6 +1098,13 @@ void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
     }
 
     for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
+        Actor* targetActor = FindTargetActor(targetRef);
+        if (targetActor) {
+            targetActor->ClearRuntimeActivationState(this);
+        }
+    }
+
+    for (const PlatformRevealTarget& targetRef : mHideTargets) {
         Actor* targetActor = FindTargetActor(targetRef);
         if (targetActor) {
             targetActor->ClearRuntimeActivationState(this);
@@ -1027,20 +1142,25 @@ void PlatformLatchedGroupSwitchComponent::Update(float deltaTime)
 
     const std::vector<PlatformRevealTarget> groupTargets =
         CollectGroupRevealTargets(groupSwitches);
+    const std::vector<PlatformRevealTarget> groupHideTargets =
+        CollectGroupHideTargets(groupSwitches);
     if (!GetIsGroupCompleted()) {
         if (!HasRequiredSimultaneousPresses(groupSwitches)) {
-            HideTargets(groupTargets);
+            ApplyGroupTargetState(
+                groupTargets,
+                groupHideTargets,
+                false);
             return;
         }
         ActivateGroup(groupSwitches);
     }
 
-    if (mHasRevealedTargets) {
+    if (mHasAppliedActivatedTargetState) {
         return;
     }
 
-    RevealTargets(groupTargets);
-    mHasRevealedTargets = true;
+    ApplyGroupTargetState(groupTargets, groupHideTargets, true);
+    mHasAppliedActivatedTargetState = true;
 }
 
 void PlatformLatchedGroupSwitchComponent::SetGroupId(
@@ -1054,7 +1174,7 @@ void PlatformLatchedGroupSwitchComponent::SetGroupId(
     mGroupId = groupId;
     mCurrentPressingPlayer = nullptr;
     mIsGroupActivated = false;
-    mHasRevealedTargets = false;
+    mHasAppliedActivatedTargetState = false;
 }
 
 void PlatformLatchedGroupSwitchComponent::SetRevealTargets(
@@ -1088,7 +1208,37 @@ void PlatformLatchedGroupSwitchComponent::SetRevealTargets(
         }
     }
 
-    mHasRevealedTargets = false;
+    mHasAppliedActivatedTargetState = false;
+}
+
+void PlatformLatchedGroupSwitchComponent::SetHideTargets(
+    const std::vector<PlatformRevealTarget>& hideTargets)
+{
+    ClearTargetRuntimeStates();
+    mHideTargets.clear();
+
+    for (const PlatformRevealTarget& target : hideTargets) {
+        if (!target.IsValid()) {
+            continue;
+        }
+
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.sequenceName == mPlatform->GetStageSequenceName() &&
+            target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isDuplicate = std::any_of(
+            mHideTargets.begin(),
+            mHideTargets.end(),
+            [&target](const PlatformRevealTarget& current) {
+                return current.sequenceName == target.sequenceName &&
+                       current.yamlIndex == target.yamlIndex;
+            });
+        if (!isOwnerTarget && !isDuplicate) {
+            mHideTargets.emplace_back(target);
+        }
+    }
+
+    mHasAppliedActivatedTargetState = false;
 }
 
 bool PlatformLatchedGroupSwitchComponent::
@@ -1173,6 +1323,35 @@ PlatformLatchedGroupSwitchComponent::CollectGroupRevealTargets(
                                current.yamlIndex == target.yamlIndex;
                     });
             if (duplicateTarget == groupTargets.end()) {
+                groupTargets.emplace_back(target);
+            }
+        }
+    }
+    return groupTargets;
+}
+
+std::vector<PlatformRevealTarget>
+PlatformLatchedGroupSwitchComponent::CollectGroupHideTargets(
+    const std::vector<PlatformLatchedGroupSwitchComponent*>&
+        groupSwitches) const
+{
+    std::vector<PlatformRevealTarget> groupTargets;
+    for (const PlatformLatchedGroupSwitchComponent* component :
+         groupSwitches) {
+        if (!component) {
+            continue;
+        }
+
+        for (const PlatformRevealTarget& target :
+             component->GetHideTargets()) {
+            const bool isDuplicate = std::any_of(
+                groupTargets.begin(),
+                groupTargets.end(),
+                [&target](const PlatformRevealTarget& current) {
+                    return current.sequenceName == target.sequenceName &&
+                           current.yamlIndex == target.yamlIndex;
+                });
+            if (!isDuplicate) {
                 groupTargets.emplace_back(target);
             }
         }
@@ -1318,38 +1497,44 @@ Actor* PlatformLatchedGroupSwitchComponent::FindTargetActor(
             target.yamlIndex);
 }
 
-void PlatformLatchedGroupSwitchComponent::HideTargets(
-    const std::vector<PlatformRevealTarget>& targets)
+void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
+    const std::vector<PlatformRevealTarget>& revealTargets,
+    const std::vector<PlatformRevealTarget>& hideTargets,
+    bool isGroupActivated)
 {
     ClearTargetRuntimeStates();
-    for (const PlatformRevealTarget& target : targets) {
+    for (const PlatformRevealTarget& target : revealTargets) {
         Actor* targetActor = FindTargetActor(target);
         if (!targetActor) {
             continue;
         }
 
-        targetActor->SetRuntimeActivationEnabled(this, false);
-        mRuntimeTargetActors.emplace_back(targetActor);
+        if (isGroupActivated) {
+            const bool wasExplicitlyActive =
+                targetActor->IsExplicitlyActive();
+            targetActor->ClearRuntimeActivationState(this);
+
+            Boat* boat = dynamic_cast<Boat*>(targetActor);
+            if (boat && !wasExplicitlyActive) {
+                boat->StartFocus();
+            }
+        } else {
+            targetActor->SetRuntimeActivationEnabled(this, false);
+            mRuntimeTargetActors.emplace_back(targetActor);
+        }
     }
-}
 
-void PlatformLatchedGroupSwitchComponent::RevealTargets(
-    const std::vector<PlatformRevealTarget>& targets)
-{
-    ClearTargetRuntimeStates();
-    for (const PlatformRevealTarget& target : targets) {
+    for (const PlatformRevealTarget& target : hideTargets) {
         Actor* targetActor = FindTargetActor(target);
         if (!targetActor) {
             continue;
         }
 
-        const bool wasExplicitlyActive =
-            targetActor->IsExplicitlyActive();
-        targetActor->ClearRuntimeActivationState(this);
-
-        Boat* boat = dynamic_cast<Boat*>(targetActor);
-        if (boat && !wasExplicitlyActive) {
-            boat->StartFocus();
+        if (isGroupActivated) {
+            targetActor->SetRuntimeActivationEnabled(this, false);
+            mRuntimeTargetActors.emplace_back(targetActor);
+        } else {
+            targetActor->ClearRuntimeActivationState(this);
         }
     }
 }
