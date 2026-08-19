@@ -59,6 +59,16 @@ public:
         GLuint gameViewTexture,
         int gameViewWidth,
         int gameViewHeight);
+    void DrawUGCPlaytestReturnButton();
+    void DrawUGCWorkBrowser();
+    bool CompleteUGCVerification(const std::string& workFileName);
+    void UndoUGCEdit();
+    void RedoUGCEdit();
+    void ToggleUGCEraser();
+    void SelectUGCEditorMode();
+    void ZoomUGCEditor(float distanceMultiplier);
+    void ChangeUGCEditLayer(int layerDelta);
+    void MoveUGCSelectionByGrid(int gridX, int gridZ);
     void DrawSkyBox();
 
     bool SaveDebugEditorSession(
@@ -222,5 +232,5 @@ private:
 
     int mFbWidth;
     int mFbHeight;
-    bool mCustomUIPreviewEnabled = true;
+    bool mCustomUIPreviewEnabled = false;
 };

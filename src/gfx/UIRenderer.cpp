@@ -15,6 +15,7 @@
 #include "system/SceneSystem.h"
 #include "system/sequence/SequenceSystem.h"
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -202,8 +203,13 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawGameOver();
     }
 
+    // UGC editing has its own product UI.  The in-game HUD and authored
+    // custom UI would otherwise sit on top of the editor canvas.
+    const bool isUGCEditing =
+        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool shouldDrawDefaultUI =
         !isStartCinematicPlaying &&
+        !isUGCEditing &&
         (sceneSystem->IsPlaying() ||
          sceneSystem->IsTutorialActive("jewel_usage"));
     mHudRenderer->UpdateTalkableUIVisibility(
@@ -217,15 +223,17 @@ void UIRenderer::DrawGameContent()
         mStateUIRenderer->DrawStateUI();
     }
 
-    mStateUIRenderer->DrawTransitionUI();
+    if (!isStartCinematicPlaying && !isUGCEditing) {
+        DrawCustomUI();
+    }
 
     if (!isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
-    if (!isStartCinematicPlaying) {
-        DrawCustomUI();
-    }
+    // This is the final UI layer.  Every scene/menu/custom UI is therefore
+    // behind the fade rather than appearing in front of it.
+    mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -250,14 +258,118 @@ void UIRenderer::DrawDebugEditor(
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    mDebugUIRenderer->Draw(
-        gameViewTexture,
-        gameViewWidth,
-        gameViewHeight);
+    if (mGame->GetIsUGCMode()) {
+        mDebugUIRenderer->DrawUGCEditor(
+            gameViewTexture,
+            gameViewWidth,
+            gameViewHeight);
+    } else {
+        mDebugUIRenderer->Draw(
+            gameViewTexture,
+            gameViewWidth,
+            gameViewHeight);
+    }
     EndImGuiFrame();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::DrawUGCPlaytestReturnButton()
+{
+    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, mFbWidth, mFbHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::SetNextWindowPos(ImVec2(16.0f, 16.0f), ImGuiCond_Always);
+    constexpr ImGuiWindowFlags windowFlags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings;
+    ImGui::Begin(
+        "UGCプレイテスト###UGCPlaytestReturn",
+        nullptr,
+        windowFlags);
+    ImGui::TextUnformatted("－ボタンでも作る画面へ戻れます");
+    if (ImGui::Button("作る画面へ戻る", ImVec2(180.0f, 42.0f))) {
+        mGame->ReturnToUGCEditor();
+    }
+    ImGui::End();
+    EndImGuiFrame();
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::DrawUGCWorkBrowser()
+{
+    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, mFbWidth, mFbHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    mDebugUIRenderer->DrawUGCWorkBrowser();
+    EndImGuiFrame();
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+}
+
+bool UIRenderer::CompleteUGCVerification(
+    const std::string& workFileName)
+{
+    return mDebugUIRenderer &&
+        mDebugUIRenderer->CompleteUGCVerification(workFileName);
+}
+
+void UIRenderer::UndoUGCEdit()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCUndo();
+}
+
+void UIRenderer::RedoUGCEdit()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCRedo();
+}
+
+void UIRenderer::ToggleUGCEraser()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCEraserToggle();
+}
+
+void UIRenderer::SelectUGCEditorMode()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCSelectionMode();
+}
+
+void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->HandleUGCZoom(distanceMultiplier);
+    }
+}
+
+void UIRenderer::ChangeUGCEditLayer(int layerDelta)
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->HandleUGCLayerChange(layerDelta);
+    }
+}
+
+void UIRenderer::MoveUGCSelectionByGrid(int gridX, int gridZ)
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->HandleUGCSelectionGridMove(gridX, gridZ);
+    }
 }
 
 bool UIRenderer::SaveDebugEditorSession(
@@ -588,6 +700,9 @@ void UIRenderer::DrawCustomUI()
     const bool isOpening = sceneSystem->IsOpening();
     const bool isBattleStyleSelection =
         sceneSystem->IsBattleStyleSelection();
+    const bool isTalkOrTutorial =
+        sceneSystem->IsTalkWithNPC() ||
+        sceneSystem->HasActiveTutorial();
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
         if (!element) {
@@ -603,17 +718,28 @@ void UIRenderer::DrawCustomUI()
             visibleInGame = isOpening;
         } else if (element->screen == "battleStyleSelection") {
             visibleInGame = isBattleStyleSelection;
+            const bool isAssistStyle =
+                sceneSystem->GetSelectedBattleStyle() ==
+                PlayerControlStyle::Assist;
             if (element->id == "easySelection") {
                 visibleInGame =
                     visibleInGame &&
-                    sceneSystem->GetSelectedBattleStyle() ==
-                        PlayerControlStyle::Assist;
+                    isAssistStyle;
             } else if (element->id == "normalSelection") {
                 visibleInGame =
                     visibleInGame &&
-                    sceneSystem->GetSelectedBattleStyle() ==
-                        PlayerControlStyle::Standard;
+                    !isAssistStyle;
+            } else if (element->id == "easyDescription") {
+                // These are separate editable UI elements.  Only the
+                // explanation for the currently selected style is shown.
+                visibleInGame = visibleInGame && isAssistStyle;
+            } else if (element->id == "normalDescription") {
+                visibleInGame = visibleInGame && !isAssistStyle;
             }
+        } else if (element->screen == "talk") {
+            // This authored screen is shared by NPC conversations and every
+            // tutorial page, so its placement can be adjusted in the UI editor.
+            visibleInGame = isTalkOrTutorial;
         }
         if (!previewAll && !visibleInGame) {
             continue;
@@ -652,17 +778,29 @@ void UIRenderer::DrawCustomUI()
                     element->outlineColor[2] * 255.0f,
                     element->outlineColor[3] * 255.0f);
 
+            glm::vec4 textColor(
+                element->color[0] * 255.0f,
+                element->color[1] * 255.0f,
+                element->color[2] * 255.0f,
+                element->color[3] * 255.0f);
+            if (element->screen == "title") {
+                constexpr std::array<const char*, 3> titleMenuIds = {
+                    "startGame", "createStage", "playCreatedStage"};
+                for (int index = 0; index < static_cast<int>(titleMenuIds.size()); ++index) {
+                    if (element->id == titleMenuIds[index] &&
+                        mGame->GetTitleMenuSelection() == index) {
+                        textColor = glm::vec4(255.0f, 225.0f, 45.0f, 255.0f);
+                        break;
+                    }
+                }
+            }
             DrawText(
                 x,
                 y,
                 mFbWidth * element->textScaleRatio,
                 resolvedText,
                 element->centerBased,
-                glm::vec4(
-                    element->color[0] * 255.0f,
-                    element->color[1] * 255.0f,
-                    element->color[2] * 255.0f,
-                    element->color[3] * 255.0f),
+                textColor,
                 element->rotationDegrees,
                 &effect);
             rendered = true;

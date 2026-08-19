@@ -4,7 +4,9 @@
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include <glm/glm.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,7 +55,9 @@ public:
     void Shutdown();
 
     void LoadData(bool isLoadPlayer);
-    void ReloadCurrentStage();
+    // The UGC editor only needs a visual stage rebuild. Collision is rebuilt
+    // when playtesting starts, not for every painted cell.
+    void ReloadCurrentStage(bool rebuildPhysics = true);
     void ReloadUIData();
     void ChangeStage(int stageNum);
     bool HasStageIntroCinematic(int stageNum) const;
@@ -61,14 +65,39 @@ public:
     bool DebugChangeStage(int stageNum, const std::string& yamlPath);
     bool DebugEnterTitle();
     bool DebugEnterOpening();
+    bool StartUGCMode();
+    void OpenUGCWorkBrowser();
+    void CloseUGCWorkBrowser();
+    void MoveTitleMenuSelection(int delta);
+    void ExecuteTitleMenuSelection();
+    int GetTitleMenuSelection() const { return mTitleMenuSelection; }
+    bool GetIsUGCWorkBrowserShowing() const
+    {
+        return mIsUGCWorkBrowserShowing;
+    }
+    void StartUGCPlaytest();
+    void UndoUGCEdit();
+    void RedoUGCEdit();
+    void ToggleUGCEraser();
+    void SelectUGCEditorMode();
+    void ZoomUGCEditor(float distanceMultiplier);
+    void ChangeUGCEditLayer(int layerDelta);
+    void MoveUGCSelectionByGrid(int gridX, int gridZ);
+    void StartUGCClearVerification(const std::string& workFileName);
+    void ReturnToUGCEditor();
+    void ExitUGCMode();
     bool RestoreDebugEditorStage(int stageNum, const std::string& yamlPath);
     void TogglePauseMenu();
     void ClosePauseMenu();
+    bool CanOpenPauseMenu() const;
     void MovePauseMenuSelection(int delta);
     void ExecutePauseMenuItem();
     void OpenFeedbackForm();
     void ReturnToBase();
     void TryCreatePlayer2();
+    void ReturnToSinglePlayer();
+    bool CanStartTwoPlayerFromPauseMenu() const;
+    bool CanReturnToBaseFromPauseMenu() const;
     void ToggleDebugEditor();
     void ToggleFreeCameraMode();
     void SetFreeCameraMode(bool isEnabled);
@@ -106,7 +135,6 @@ public:
     void RemoveAllPlayer();
     bool TogglePlayerSplit();
     bool SwitchControlledPlayer();
-    Player* MergeSplitPlayerForBoatRide(Player* boardingPlayer);
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
     void SetGroundNormalRayLength(float rayLength)
@@ -133,6 +161,63 @@ public:
     int GetCurrentStageNum() const;
     const std::string& GetCurrentStageYamlPath() const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
+    bool GetIsUGCMode() const { return mIsUGCMode; }
+    bool GetIsUGCOrthographicView() const
+    {
+        return mIsUGCOrthographicView;
+    }
+    void SetIsUGCOrthographicView(bool isOrthographic)
+    {
+        mIsUGCOrthographicView = isOrthographic;
+    }
+    float GetUGCOrthographicHalfHeight() const
+    {
+        return mUGCOrthographicHalfHeight;
+    }
+    unsigned int GetUGCPreviewTexture() const
+    {
+        return mUGCPreviewTexture;
+    }
+    void SetUGCPreviewRenderSize(int width, int height);
+    void AdjustUGCPreviewYaw(float yawDeltaRadians);
+    float GetUGCPreviewYawRadians() const
+    {
+        return mUGCPreviewYawRadians;
+    }
+    float GetUGCPreviewFocusY() const { return mUGCPreviewFocusY; }
+    void SetUGCPreviewEditLayer(int gridLayer)
+    {
+        mUGCPreviewEditLayer = gridLayer;
+    }
+    int GetUGCPreviewEditLayer() const { return mUGCPreviewEditLayer; }
+    void SetUGCPlatformPlacementPreview(
+        const std::optional<glm::vec3>& position)
+    {
+        mUGCPlatformPlacementPreviewPosition = position;
+    }
+    const std::optional<glm::vec3>& GetUGCPlatformPlacementPreview() const
+    {
+        return mUGCPlatformPlacementPreviewPosition;
+    }
+    void SetUGCPlacementModelPreview(
+        const std::optional<glm::vec3>& position,
+        const std::string& modelPath = "",
+        const glm::vec3& scale = glm::vec3(1.0f));
+    Actor* GetUGCPlacementModelPreview() const
+    {
+        return mUGCPlacementModelPreviewActor.get();
+    }
+    void SetUGCOrthographicHalfHeight(float halfHeight)
+    {
+        mUGCOrthographicHalfHeight =
+            halfHeight > 0.1f ? halfHeight : 0.1f;
+    }
+    float GetUGCGridSize() const { return mUGCGridSize; }
+    float GetLastDeltaTime() const { return mLastDeltaTime; }
+    void SetUGCGridSize(float gridSize)
+    {
+        mUGCGridSize = gridSize > 0.01f ? gridSize : 0.01f;
+    }
     bool IsEditorKeyboardInputCaptured() const;
     bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const;
@@ -194,6 +279,10 @@ private:
     void DrawGameFrame();
     bool EnsureEditorGameRenderTarget(int width, int height);
     void DestroyEditorGameRenderTarget();
+    bool EnsureUGCPreviewRenderTarget();
+    void DestroyUGCPreviewRenderTarget();
+    void DrawUGCPreviewFrame();
+    void ProcessPendingUGCClearCompletion();
 
     void CreatePlayer2();
     void CheckGameControllerConnected();
@@ -240,11 +329,20 @@ private:
     float mOverheadGravityRayLength = 15.0f;
 
     double mLastTime = 0.0;
+    float mLastDeltaTime = 0.0f;
 
     bool mIsPlayer2Joined = false;
     bool mIsPlayerSplit = false;
     int mControlledPlayerIndex = 0;
     bool mIsDebugEditorShowing = false;
+    bool mIsUGCMode = false;
+    int mTitleMenuSelection = 0;
+    std::string mUGCVerificationWorkFileName;
+    bool mIsUGCClearCompletionPending = false;
+    bool mIsUGCWorkBrowserShowing = false;
+    float mUGCGridSize = 1.0f;
+    bool mIsUGCOrthographicView = false;
+    float mUGCOrthographicHalfHeight = 20.0f;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
 
@@ -253,6 +351,19 @@ private:
     unsigned int mEditorGameDepthBuffer = 0;
     int mEditorGameRenderWidth = 0;
     int mEditorGameRenderHeight = 0;
+    unsigned int mUGCPreviewFramebuffer = 0;
+    unsigned int mUGCPreviewTexture = 0;
+    unsigned int mUGCPreviewDepthBuffer = 0;
+    int mUGCPreviewRenderWidth = 0;
+    int mUGCPreviewRenderHeight = 0;
+    int mRequestedUGCPreviewRenderWidth = 960;
+    int mRequestedUGCPreviewRenderHeight = 540;
+    int mUGCPreviewEditLayer = 0;
+    std::optional<glm::vec3> mUGCPlatformPlacementPreviewPosition;
+    std::unique_ptr<Actor> mUGCPlacementModelPreviewActor;
+    float mUGCPreviewYawRadians = 0.0f;
+    float mUGCPreviewFocusY = 0.0f;
+    bool mHasUGCPreviewFocusY = false;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;

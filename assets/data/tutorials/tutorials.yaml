@@ -8,11 +8,105 @@ tutorials:
     pages:
       - id: introduction
         text: "ここは敵が多そう...\nそうだ！敵の倒し方を教えるね！"
+        ruby:
+          common:
+            - text: ここは
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 多
+              ruby: true
+              reading: おお
+            - text: "そう...\nそうだ！"
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: の
+              ruby: false
+            - text: 倒
+              ruby: true
+              reading: たお
+            - text: し
+              ruby: false
+            - text: 方
+              ruby: true
+              reading: かた
+            - text: を
+              ruby: false
+            - text: 教
+              ruby: true
+              reading: おし
+            - text: えるね！
+              ruby: false
         advance: confirm
       - id: attack_buttons
         text: まずは敵に近づいて攻撃します！
         controllerText: 敵に近づいて、YまたはXで攻撃できるよ！
         keyboardText: 敵に近づいて、JまたはKで攻撃できるよ！
+        ruby:
+          common:
+            - text: まずは
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 近
+              ruby: true
+              reading: ちか
+            - text: づいて
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: します！
+              ruby: false
+          controller:
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 近
+              ruby: true
+              reading: ちか
+            - text: づいて、YまたはXで
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
+          keyboard:
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 近
+              ruby: true
+              reading: ちか
+            - text: づいて、JまたはKで
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -28,6 +122,154 @@ tutorials:
         text: "弱攻撃は攻撃力が低く、範囲も狭いですが、\n一定方向に連続して攻撃することができます！"
         controllerText: "Yは攻撃力が低いけど、\n3回まで連続攻撃できるよ！"
         keyboardText: "Jは攻撃力が低いけど、\n3回まで連続攻撃できるよ！"
+        ruby:
+          common:
+            - text: 弱
+              ruby: true
+              reading: じゃく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: は
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 低
+              ruby: true
+              reading: ひく
+            - text: く、
+              ruby: false
+            - text: 範
+              ruby: true
+              reading: はん
+            - text: 囲
+              ruby: true
+              reading: い
+            - text: も
+              ruby: false
+            - text: 狭
+              ruby: true
+              reading: せま
+            - text: "いですが、\n"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 定
+              ruby: true
+              reading: てい
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 向
+              ruby: true
+              reading: こう
+            - text: に
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: して
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: することができます！
+              ruby: false
+          controller:
+            - text: Yは
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 低
+              ruby: true
+              reading: ひく
+            - text: "いけど、\n3"
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: まで
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
+          keyboard:
+            - text: Jは
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 低
+              ruby: true
+              reading: ひく
+            - text: "いけど、\n3"
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: まで
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -43,6 +285,155 @@ tutorials:
         text: "強攻撃は攻撃後の隙が大きいですが\n攻撃力が高く、全方向に攻撃することができます！"
         controllerText: "Xは攻撃力が高いけど、\n攻撃後に少し動けなくなるんだ...！"
         keyboardText: "Kは攻撃力が高いけど、\n攻撃後に少し動けなくなるんだ...！"
+        ruby:
+          common:
+            - text: 強
+              ruby: true
+              reading: きょう
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: は
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: の
+              ruby: false
+            - text: 隙
+              ruby: true
+              reading: すき
+            - text: が
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: おお
+            - text: "きいですが\n"
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: く、
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: ぜん
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 向
+              ruby: true
+              reading: こう
+            - text: に
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: することができます！
+              ruby: false
+          controller:
+            - text: Xは
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: "いけど、\n"
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: に
+              ruby: false
+            - text: 少
+              ruby: true
+              reading: すこ
+            - text: し
+              ruby: false
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: けなくなるんだ...！
+              ruby: false
+          keyboard:
+            - text: Kは
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: が
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: "いけど、\n"
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: に
+              ruby: false
+            - text: 少
+              ruby: true
+              reading: すこ
+            - text: し
+              ruby: false
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: けなくなるんだ...！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -56,6 +447,53 @@ tutorials:
           flipVertical: true
       - id: combo
         text: "敵を連続で3回攻撃すると、\n敵の頭上のガードを1つ破壊できるんだ！"
+        ruby:
+          common:
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: で3
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "すると、\n"
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: の
+              ruby: false
+            - text: 頭
+              ruby: true
+              reading: ず
+            - text: 上
+              ruby: true
+              reading: じょう
+            - text: のガードを1つ
+              ruby: false
+            - text: 破
+              ruby: true
+              reading: は
+            - text: 壊
+              ruby: true
+              reading: かい
+            - text: できるんだ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -69,6 +507,52 @@ tutorials:
           flipVertical: true
       - id: launch_tutorial
         text: "すべてのガードを破壊すると敵が打ち上げられて、\n一方的に攻撃できるようになるよ！"
+        ruby:
+          common:
+            - text: すべてのガードを
+              ruby: false
+            - text: 破
+              ruby: true
+              reading: は
+            - text: 壊
+              ruby: true
+              reading: かい
+            - text: すると
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 打
+              ruby: true
+              reading: う
+            - text: ち
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: あ
+            - text: "げられて、\n"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 方
+              ruby: true
+              reading: ぽう
+            - text: 的
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるようになるよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -84,6 +568,51 @@ tutorials:
         text: まずはコンボで敵を打ち上げてみましょう！
         controllerText: "まずはY→Y→YまたはY→Y→Xのコンボを使って、\nガードを壊してみよう！"
         keyboardText: "まずはJ→J→JまたはJ→J→Kのコンボを使って、\nガードを壊してみよう！"
+        ruby:
+          common:
+            - text: まずはコンボで
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 打
+              ruby: true
+              reading: う
+            - text: ち
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: あ
+            - text: げてみましょう！
+              ruby: false
+          controller:
+            - text: まずはY→Y→YまたはY→Y→Xのコンボを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: "って、\nガードを"
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: してみよう！
+              ruby: false
+          keyboard:
+            - text: まずはJ→J→JまたはJ→J→Kのコンボを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: "って、\nガードを"
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: してみよう！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_basic_tutorial.mp4
@@ -106,6 +635,87 @@ tutorials:
         text: ""
         controllerText: 空中の敵を攻撃する時は空中でYとBを使うよ！
         keyboardText: 空中の敵を攻撃する時は空中でJとUを使うよ！
+        ruby:
+          controller:
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: の
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: する
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: は
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でYとBを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うよ！
+              ruby: false
+          keyboard:
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: の
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: する
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: は
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でJとUを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -121,6 +731,93 @@ tutorials:
         text: ""
         controllerText: "空中でも3回しかYで攻撃できないけど、\nBの回避で敵にぶつかるとまた攻撃できるようになるよ！"
         keyboardText: "空中でも3回しかJで攻撃できないけど、\nUの回避で敵にぶつかるとまた攻撃できるようになるよ！"
+        ruby:
+          controller:
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でも3
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: しかYで
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "できないけど、\nBの"
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: で
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: にぶつかるとまた
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるようになるよ！
+              ruby: false
+          keyboard:
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でも3
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: しかJで
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "できないけど、\nUの"
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: で
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: にぶつかるとまた
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるようになるよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -136,6 +833,85 @@ tutorials:
         text: ""
         controllerText: "つまり、Y→Y→Y→B→Y→Y→Y→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
         keyboardText: "つまり、J→J→J→U→J→J→J→...を繰り返すと、\n何度も攻撃できて、大ダメージを与えられるんだ！"
+        ruby:
+          controller:
+            - text: つまり、Y→Y→Y→B→Y→Y→Y→...を
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 返
+              ruby: true
+              reading: かえ
+            - text: "すと、\n"
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なん
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: も
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できて、
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: ダメージを
+              ruby: false
+            - text: 与
+              ruby: true
+              reading: あた
+            - text: えられるんだ！
+              ruby: false
+          keyboard:
+            - text: つまり、J→J→J→U→J→J→J→...を
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 返
+              ruby: true
+              reading: かえ
+            - text: "すと、\n"
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なん
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: も
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できて、
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: ダメージを
+              ruby: false
+            - text: 与
+              ruby: true
+              reading: あた
+            - text: えられるんだ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -151,6 +927,133 @@ tutorials:
         text: ""
         controllerText: "そして、敵が白く点滅した時に空中でXを押すと、\n一番強い攻撃が出せるよ！"
         keyboardText: "そして、敵が白く点滅した時に空中でKを押すと、\n一番強い攻撃が出せるよ！"
+        ruby:
+          controller:
+            - text: そして、
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 白
+              ruby: true
+              reading: しろ
+            - text: く
+              ruby: false
+            - text: 点
+              ruby: true
+              reading: てん
+            - text: 滅
+              ruby: true
+              reading: めつ
+            - text: した
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: に
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でXを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "すと、\n"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 番
+              ruby: true
+              reading: ばん
+            - text: 強
+              ruby: true
+              reading: つよ
+            - text: い
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: が
+              ruby: false
+            - text: 出
+              ruby: true
+              reading: だ
+            - text: せるよ！
+              ruby: false
+          keyboard:
+            - text: そして、
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 白
+              ruby: true
+              reading: しろ
+            - text: く
+              ruby: false
+            - text: 点
+              ruby: true
+              reading: てん
+            - text: 滅
+              ruby: true
+              reading: めつ
+            - text: した
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: に
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でKを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "すと、\n"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 番
+              ruby: true
+              reading: ばん
+            - text: 強
+              ruby: true
+              reading: つよ
+            - text: い
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: が
+              ruby: false
+            - text: 出
+              ruby: true
+              reading: だ
+            - text: せるよ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -166,6 +1069,115 @@ tutorials:
         text: ""
         controllerText: "ガードを壊して打ち上げる！空中でY→Y→Y→Bを繰り返す！\n点滅したらX！これでどんどん敵を倒していこう！"
         keyboardText: "ガードを壊して打ち上げる！空中でJ→J→J→Uを繰り返す！\n点滅したらK！これでどんどん敵を倒していこう！"
+        ruby:
+          controller:
+            - text: ガードを
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: して
+              ruby: false
+            - text: 打
+              ruby: true
+              reading: う
+            - text: ち
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: あ
+            - text: げる！
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でY→Y→Y→Bを
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 返
+              ruby: true
+              reading: かえ
+            - text: "す！\n"
+              ruby: false
+            - text: 点
+              ruby: true
+              reading: てん
+            - text: 滅
+              ruby: true
+              reading: めつ
+            - text: したらX！これでどんどん
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 倒
+              ruby: true
+              reading: たお
+            - text: していこう！
+              ruby: false
+          keyboard:
+            - text: ガードを
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: して
+              ruby: false
+            - text: 打
+              ruby: true
+              reading: う
+            - text: ち
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: あ
+            - text: げる！
+              ruby: false
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: でJ→J→J→Uを
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 返
+              ruby: true
+              reading: かえ
+            - text: "す！\n"
+              ruby: false
+            - text: 点
+              ruby: true
+              reading: てん
+            - text: 滅
+              ruby: true
+              reading: めつ
+            - text: したらK！これでどんどん
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 倒
+              ruby: true
+              reading: たお
+            - text: していこう！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_air_tutorial.mp4
@@ -186,38 +1198,825 @@ tutorials:
     pages:
       - id: introduction
         text: "ちょっと失礼！左上の青いジュエル、\n何に使うんだろうって気にならない？"
+        ruby:
+          common:
+            - text: ちょっと
+              ruby: false
+            - text: 失
+              ruby: true
+              reading: しつ
+            - text: 礼
+              ruby: true
+              reading: れい
+            - text: ！
+              ruby: false
+            - text: 左
+              ruby: true
+              reading: ひだり
+            - text: 上
+              ruby: true
+              reading: うえ
+            - text: の
+              ruby: false
+            - text: 青
+              ruby: true
+              reading: あお
+            - text: "いジュエル、\n"
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なに
+            - text: に
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うんだろうって
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: にならない？
+              ruby: false
         advance: confirm
       - id: generation
         text: "ジュエルは30秒に1個作られて、自然に増えるのは2個まで！\n敵が落とすジュエルを拾えば10個まで持てるよ！"
+        ruby:
+          common:
+            - text: ジュエルは30
+              ruby: false
+            - text: 秒
+              ruby: true
+              reading: びょう
+            - text: に1
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 作
+              ruby: true
+              reading: つく
+            - text: られて、
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: し
+            - text: 然
+              ruby: true
+              reading: ぜん
+            - text: に
+              ruby: false
+            - text: 増
+              ruby: true
+              reading: ふ
+            - text: えるのは2
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: "まで！\n"
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 落
+              ruby: true
+              reading: お
+            - text: とすジュエルを
+              ruby: false
+            - text: 拾
+              ruby: true
+              reading: ひろ
+            - text: えば10
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: まで
+              ruby: false
+            - text: 持
+              ruby: true
+              reading: も
+            - text: てるよ！
+              ruby: false
         advance: confirm
       - id: summary
         text: "ジュエルを1個使うと、回復か連続攻撃ができて、\n2個使うと溜め攻撃ができるよ！"
+        ruby:
+          common:
+            - text: ジュエルを1
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うと、
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: か
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "ができて、\n2"
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うと
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: ができるよ！
+              ruby: false
         advance: confirm
       - id: heal
         text: ""
         controllerText: Lを押しながらAで体力を1回復できるよ！
         keyboardText: Nを押しながらSpaceで体力を1回復できるよ！
+        ruby:
+          controller:
+            - text: Lを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらAで
+              ruby: false
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: を1
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: できるよ！
+              ruby: false
+          keyboard:
+            - text: Nを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらSpaceで
+              ruby: false
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: を1
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: できるよ！
+              ruby: false
         advance: confirm
       - id: automatic_attack
         text: "特殊入力と弱攻撃でジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。"
         controllerText: "Lを押しながらYで連続攻撃できて、\n自分の前の敵を自動で攻撃できるよ！"
         keyboardText: "Nを押しながらJで連続攻撃できて、\n自分の前の敵を自動で攻撃できるよ！"
+        ruby:
+          common:
+            - text: 特
+              ruby: true
+              reading: とく
+            - text: 殊
+              ruby: true
+              reading: しゅ
+            - text: 入
+              ruby: true
+              reading: にゅう
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: と
+              ruby: false
+            - text: 弱
+              ruby: true
+              reading: じゃく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: でジュエルを1
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 消
+              ruby: true
+              reading: しょう
+            - text: 費
+              ruby: true
+              reading: ひ
+            - text: "して、\n"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 定
+              ruby: true
+              reading: てい
+            - text: 時
+              ruby: true
+              reading: じ
+            - text: 間
+              ruby: true
+              reading: かん
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: の
+              ruby: false
+            - text: 前
+              ruby: true
+              reading: まえ
+            - text: にいる
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: で
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 動
+              ruby: true
+              reading: どう
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: します。
+              ruby: false
+          controller:
+            - text: Lを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらYで
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "できて、\n"
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: の
+              ruby: false
+            - text: 前
+              ruby: true
+              reading: まえ
+            - text: の
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 動
+              ruby: true
+              reading: どう
+            - text: で
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
+          keyboard:
+            - text: Nを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらJで
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: れん
+            - text: 続
+              ruby: true
+              reading: ぞく
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: "できて、\n"
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: の
+              ruby: false
+            - text: 前
+              ruby: true
+              reading: まえ
+            - text: の
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 動
+              ruby: true
+              reading: どう
+            - text: で
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: できるよ！
+              ruby: false
         advance: confirm
       - id: charge_start
         text: "特殊入力と強攻撃でジュエルを2個消費して、\n溜め状態になります！"
         controllerText: "Lを押しながらXで溜め状態になるよ！溜めてると\n動けないから回避でよけないといけないんだ！"
         keyboardText: "Nを押しながらKで溜め状態になるよ！溜めてると\n動けないから回避でよけないといけないんだ！"
+        ruby:
+          common:
+            - text: 特
+              ruby: true
+              reading: とく
+            - text: 殊
+              ruby: true
+              reading: しゅ
+            - text: 入
+              ruby: true
+              reading: にゅう
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: と
+              ruby: false
+            - text: 強
+              ruby: true
+              reading: きょう
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: でジュエルを2
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 消
+              ruby: true
+              reading: しょう
+            - text: 費
+              ruby: true
+              reading: ひ
+            - text: "して、\n"
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 状
+              ruby: true
+              reading: じょう
+            - text: 態
+              ruby: true
+              reading: たい
+            - text: になります！
+              ruby: false
+          controller:
+            - text: Lを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらXで
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 状
+              ruby: true
+              reading: じょう
+            - text: 態
+              ruby: true
+              reading: たい
+            - text: になるよ！
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: "めてると\n"
+              ruby: false
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: けないから
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: でよけないといけないんだ！
+              ruby: false
+          keyboard:
+            - text: Nを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: しながらKで
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 状
+              ruby: true
+              reading: じょう
+            - text: 態
+              ruby: true
+              reading: たい
+            - text: になるよ！
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: "めてると\n"
+              ruby: false
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: けないから
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: でよけないといけないんだ！
+              ruby: false
         advance: confirm
       - id: charged_attack
         text: "溜まったら強攻撃を押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！"
         controllerText: "溜まったら敵に近づいてXを押して！\nガードを全て壊して大ダメージを与えられるよ！"
         keyboardText: "溜まったら敵に近づいてKを押して！\nガードを全て壊して大ダメージを与えられるよ！"
+        ruby:
+          common:
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: まったら
+              ruby: false
+            - text: 強
+              ruby: true
+              reading: きょう
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: を
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: すことで
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: のガードを
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: すべ
+            - text: て
+              ruby: false
+            - text: 破
+              ruby: true
+              reading: は
+            - text: 壊
+              ruby: true
+              reading: かい
+            - text: "し、\n"
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: ダメージを
+              ruby: false
+            - text: 与
+              ruby: true
+              reading: あた
+            - text: える
+              ruby: false
+            - text: 地
+              ruby: true
+              reading: ち
+            - text: 上
+              ruby: true
+              reading: じょう
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: を
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 出
+              ruby: true
+              reading: だ
+            - text: せます！
+              ruby: false
+          controller:
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: まったら
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 近
+              ruby: true
+              reading: ちか
+            - text: づいてXを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "して！\nガードを"
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: すべ
+            - text: て
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: して
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: ダメージを
+              ruby: false
+            - text: 与
+              ruby: true
+              reading: あた
+            - text: えられるよ！
+              ruby: false
+          keyboard:
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: まったら
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 近
+              ruby: true
+              reading: ちか
+            - text: づいてKを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "して！\nガードを"
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: すべ
+            - text: て
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: して
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: ダメージを
+              ruby: false
+            - text: 与
+              ruby: true
+              reading: あた
+            - text: えられるよ！
+              ruby: false
         advance: confirm
       - id: counter_bonus
         text: "これは難しいけど...敵が攻撃する時に溜め攻撃を当てると\nダメージが2倍になってジュエルが全回復するよ！"
+        ruby:
+          common:
+            - text: これは
+              ruby: false
+            - text: 難
+              ruby: true
+              reading: むずか
+            - text: しいけど...
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: する
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: に
+              ruby: false
+            - text: 溜
+              ruby: true
+              reading: た
+            - text: め
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: を
+              ruby: false
+            - text: 当
+              ruby: true
+              reading: あ
+            - text: "てると\nダメージが2"
+              ruby: false
+            - text: 倍
+              ruby: true
+              reading: ばい
+            - text: になってジュエルが
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: ぜん
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: するよ！
+              ruby: false
         advance: confirm
       - id: finish
         text: "これまで学んだことを活かして\n全ての敵を倒してみよう！"
+        ruby:
+          common:
+            - text: これまで
+              ruby: false
+            - text: 学
+              ruby: true
+              reading: まな
+            - text: んだことを
+              ruby: false
+            - text: 活
+              ruby: true
+              reading: い
+            - text: "かして\n"
+              ruby: false
+            - text: 全
+              ruby: true
+              reading: すべ
+            - text: ての
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 倒
+              ruby: true
+              reading: たお
+            - text: してみよう！
+              ruby: false
         advance: confirm
   - id: just_dodge
     name: カウンター突進
@@ -228,12 +2027,125 @@ tutorials:
     pages:
       - id: arrival
         text: "さあ、ここが最後の惑星だよ！\nここには大きなボスがいるんだ...！"
+        ruby:
+          common:
+            - text: さあ、ここが
+              ruby: false
+            - text: 最
+              ruby: true
+              reading: さい
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: の
+              ruby: false
+            - text: 惑
+              ruby: true
+              reading: わく
+            - text: 星
+              ruby: true
+              reading: せい
+            - text: "だよ！\nここには"
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: おお
+            - text: きなボスがいるんだ...！
+              ruby: false
         advance: confirm
       - id: introduction
         text: "ボスは体力もガードも多いんだ...！\nだから新しい技を教えるね！"
+        ruby:
+          common:
+            - text: ボスは
+              ruby: false
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: 力
+              ruby: true
+              reading: りょく
+            - text: もガードも
+              ruby: false
+            - text: 多
+              ruby: true
+              reading: おお
+            - text: "いんだ...！\nだから"
+              ruby: false
+            - text: 新
+              ruby: true
+              reading: あたら
+            - text: しい
+              ruby: false
+            - text: 技
+              ruby: true
+              reading: わざ
+            - text: を
+              ruby: false
+            - text: 教
+              ruby: true
+              reading: おし
+            - text: えるね！
+              ruby: false
         advance: confirm
       - id: timing
         text: "敵が攻撃する時に、敵に向かって回避をすると\n突進して敵のガードを1つ壊せるんだ！"
+        ruby:
+          common:
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: が
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: する
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: に、
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: に
+              ruby: false
+            - text: 向
+              ruby: true
+              reading: む
+            - text: かって
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: "をすると\n"
+              ruby: false
+            - text: 突
+              ruby: true
+              reading: とっ
+            - text: 進
+              ruby: true
+              reading: しん
+            - text: して
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: のガードを1つ
+              ruby: false
+            - text: 壊
+              ruby: true
+              reading: こわ
+            - text: せるんだ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_counter_tutorial.mp4
@@ -247,6 +2159,39 @@ tutorials:
           flipVertical: false
       - id: reward
         text: "この時ジュエルも1個回復するから、\n回復したいけどジュエルがない時におすすめ！"
+        ruby:
+          common:
+            - text: この
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: ジュエルも1
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: "するから、\n"
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: したいけどジュエルがない
+              ruby: false
+            - text: 時
+              ruby: true
+              reading: とき
+            - text: におすすめ！
+              ruby: false
         advance: confirm
         video:
           asset: videos/battle_counter_tutorial.mp4
@@ -260,6 +2205,25 @@ tutorials:
           flipVertical: true
       - id: finish
         text: "さあ、これまでやってきたことを使って、\nボスを倒しに行こう！"
+        ruby:
+          common:
+            - text: さあ、これまでやってきたことを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: "って、\nボスを"
+              ruby: false
+            - text: 倒
+              ruby: true
+              reading: たお
+            - text: しに
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: こう！
+              ruby: false
         advance: confirm
   - id: split_switch
     name: 分身とスイッチ
@@ -270,23 +2234,248 @@ tutorials:
     pages:
       - id: transparent_platform
         text: "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+        ruby:
+          common:
+            - text: あれれ...この
+              ruby: false
+            - text: 足
+              ruby: true
+              reading: あし
+            - text: 場
+              ruby: true
+              reading: ば
+            - text: 、
+              ruby: false
+            - text: 透
+              ruby: true
+              reading: とう
+            - text: 明
+              ruby: true
+              reading: めい
+            - text: "だよ...！\nこのままでは"
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: れなさそう...！
+              ruby: false
         advance: confirm
         focus:
           sequence: platforms
           index: 2
       - id: blocked_route
         text: "誰かがスイッチに乗ってくれたら\nその間に進めそうだけど...ここには君だけ..."
+        ruby:
+          common:
+            - text: 誰
+              ruby: true
+              reading: だれ
+            - text: かがスイッチに
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: "ってくれたら\nその"
+              ruby: false
+            - text: 間
+              ruby: true
+              reading: あいだ
+            - text: に
+              ruby: false
+            - text: 進
+              ruby: true
+              reading: すす
+            - text: めそうだけど...ここには
+              ruby: false
+            - text: 君
+              ruby: true
+              reading: きみ
+            - text: だけ...
+              ruby: false
         advance: confirm
       - id: switch_player
         text: "そうだ！君はスライムだから分裂できるんじゃない？\n操作するスライムを切り替えてみようよ！"
         controllerText: "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
         keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nIを押して分身を作って、切り替えてみようよ！"
+        ruby:
+          common:
+            - text: そうだ！
+              ruby: false
+            - text: 君
+              ruby: true
+              reading: きみ
+            - text: はスライムだから
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 裂
+              ruby: true
+              reading: れつ
+            - text: "できるんじゃない？\n"
+              ruby: false
+            - text: 操
+              ruby: true
+              reading: そう
+            - text: 作
+              ruby: true
+              reading: さ
+            - text: するスライムを
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えてみようよ！
+              ruby: false
+          controller:
+            - text: そうだ！
+              ruby: false
+            - text: 君
+              ruby: true
+              reading: きみ
+            - text: はスライムだから
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 裂
+              ruby: true
+              reading: れつ
+            - text: "できるんじゃない？\nZRを"
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: して
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: を
+              ruby: false
+            - text: 作
+              ruby: true
+              reading: つく
+            - text: って、
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えてみようよ！
+              ruby: false
+          keyboard:
+            - text: そうだ！
+              ruby: false
+            - text: 君
+              ruby: true
+              reading: きみ
+            - text: はスライムだから
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 裂
+              ruby: true
+              reading: れつ
+            - text: "できるんじゃない？\nIを"
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: して
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: を
+              ruby: false
+            - text: 作
+              ruby: true
+              reading: つく
+            - text: って、
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えてみようよ！
+              ruby: false
         advance: playerSplitMerge
       - id: switched
         text: "おっ！分裂できたね！\nちょっと小さくなったけどそっくりだ！"
+        ruby:
+          common:
+            - text: おっ！
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 裂
+              ruby: true
+              reading: れつ
+            - text: "できたね！\nちょっと"
+              ruby: false
+            - text: 小
+              ruby: true
+              reading: ちい
+            - text: さくなったけどそっくりだ！
+              ruby: false
         advance: confirm
       - id: find_switch
         text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗ってみよう！"
+        ruby:
+          common:
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: も
+              ruby: false
+            - text: 同
+              ruby: true
+              reading: どう
+            - text: 様
+              ruby: true
+              reading: よう
+            - text: に
+              ruby: false
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: "かすことができるから\nまずはスイッチを"
+              ruby: false
+            - text: 探
+              ruby: true
+              reading: さが
+            - text: し、
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: ってみよう！
+              ruby: false
         advance: confirm
   - id: switch_success
     name: スイッチ押し成功
@@ -297,17 +2486,127 @@ tutorials:
     pages:
       - id: page_1
         text: "スイッチ押せたね！\nこれでさっきの足場が見えるようになったはず！"
+        ruby:
+          common:
+            - text: スイッチ
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "せたね！\nこれでさっきの"
+              ruby: false
+            - text: 足
+              ruby: true
+              reading: あし
+            - text: 場
+              ruby: true
+              reading: ば
+            - text: が
+              ruby: false
+            - text: 見
+              ruby: true
+              reading: み
+            - text: えるようになったはず！
+              ruby: false
         advance: confirm
       - id: page_2
         text: ""
         controllerText: さっそくZLで切り替えて見てみようよ！
         keyboardText: さっそくYで切り替えて見てみようよ！
+        ruby:
+          controller:
+            - text: さっそくZLで
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えて
+              ruby: false
+            - text: 見
+              ruby: true
+              reading: み
+            - text: てみようよ！
+              ruby: false
+          keyboard:
+            - text: さっそくYで
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えて
+              ruby: false
+            - text: 見
+              ruby: true
+              reading: み
+            - text: てみようよ！
+              ruby: false
         advance: playerSwitch
       - id: page_3
         text: "ナイス切り替え！\nこれで分身がスイッチに乗っている間に進めるよ！"
+        ruby:
+          common:
+            - text: ナイス
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: "え！\nこれで"
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: がスイッチに
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: っている
+              ruby: false
+            - text: 間
+              ruby: true
+              reading: あいだ
+            - text: に
+              ruby: false
+            - text: 進
+              ruby: true
+              reading: すす
+            - text: めるよ！
+              ruby: false
         advance: confirm
       - id: page_4
         text: さあ！先に進んでみよう！
+        ruby:
+          common:
+            - text: さあ！
+              ruby: false
+            - text: 先
+              ruby: true
+              reading: さき
+            - text: に
+              ruby: false
+            - text: 進
+              ruby: true
+              reading: すす
+            - text: んでみよう！
+              ruby: false
         advance: confirm
   - id: union
     name: 合体
@@ -318,15 +2617,139 @@ tutorials:
     pages:
       - id: page_1
         text: ふぅ～！ようやく登ってこれたね！
+        ruby:
+          common:
+            - text: ふぅ～！ようやく
+              ruby: false
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: ってこれたね！
+              ruby: false
         advance: confirm
       - id: page_2
         text: "ってあれ？スイッチが2つあるよ？\n分身を連れてきて一緒に押したいね...！"
+        ruby:
+          common:
+            - text: "ってあれ？スイッチが2つあるよ？\n"
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: を
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: つ
+            - text: れてきて
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 緒
+              ruby: true
+              reading: しょ
+            - text: に
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: したいね...！
+              ruby: false
         advance: confirm
       - id: page_3
         text: ""
         controllerText: じゃあもう一度ZRを押して合体してみよう！
         keyboardText: じゃあもう一度Iを押して合体してみよう！
+        ruby:
+          controller:
+            - text: じゃあもう
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: ZRを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: して
+              ruby: false
+            - text: 合
+              ruby: true
+              reading: がっ
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: してみよう！
+              ruby: false
+          keyboard:
+            - text: じゃあもう
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: Iを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: して
+              ruby: false
+            - text: 合
+              ruby: true
+              reading: がっ
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: してみよう！
+              ruby: false
         advance: playerSplitMerge
       - id: page_4
         text: "ナイス合体！これで1つになれたから\nもう一度分身して、2人でスイッチを押そう！"
+        ruby:
+          common:
+            - text: ナイス
+              ruby: false
+            - text: 合
+              ruby: true
+              reading: がっ
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: "！これで1つになれたから\nもう"
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: して、2
+              ruby: false
+            - text: 人
+              ruby: true
+              reading: ひと
+            - text: でスイッチを
+              ruby: false
+            - text: 押
+              ruby: true
+              reading: お
+            - text: そう！
+              ruby: false
         advance: confirm

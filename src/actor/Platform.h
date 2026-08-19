@@ -92,6 +92,14 @@ public:
     void SetPlatformId(const std::string& platformId) { mPlatformId = platformId; }
     const std::string& GetPlatformId() const { return mPlatformId; }
 
+    void SetUGCGeneratedLayer(int gridLayer)
+    {
+        mIsUGCGenerated = true;
+        mUGCGridLayer = gridLayer;
+    }
+    bool GetIsUGCGenerated() const { return mIsUGCGenerated; }
+    int GetUGCGridLayer() const { return mUGCGridLayer; }
+
     void SetComponentOpacity(const Component* component, float opacity);
     void SetComponentCollisionEnabled(const Component* component, bool enabled);
     void ClearComponentRuntimeState(const Component* component);
@@ -122,6 +130,8 @@ private:
         mLatchedGroupSwitchComponent = nullptr;
 
     std::string mPlatformId;
+    bool mIsUGCGenerated = false;
+    int mUGCGridLayer = 0;
 
     std::unordered_map<const Component*, float> mComponentOpacities;
     std::unordered_map<const Component*, bool> mComponentCollisionStates;

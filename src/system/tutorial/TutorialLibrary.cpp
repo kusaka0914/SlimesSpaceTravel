@@ -74,6 +74,55 @@ void GenerateRuby(
         outSegments,
         errorMessage);
 }
+
+bool LoadRubySegments(
+    const YAML::Node& node,
+    const std::string& baseText,
+    std::vector<RubyTextSegment>& outSegments)
+{
+    if (!node || !node.IsSequence() || baseText.empty()) {
+        return false;
+    }
+
+    std::vector<RubyTextSegment> loadedSegments;
+    for (const YAML::Node& segmentNode : node) {
+        if (!segmentNode.IsMap() || !segmentNode["text"]) {
+            return false;
+        }
+        RubyTextSegment segment;
+        segment.text = segmentNode["text"].as<std::string>();
+        segment.reading =
+            segmentNode["reading"]
+                ? segmentNode["reading"].as<std::string>()
+                : std::string();
+        segment.showsRuby =
+            segmentNode["ruby"]
+                ? segmentNode["ruby"].as<bool>()
+                : !segment.reading.empty();
+        loadedSegments.emplace_back(std::move(segment));
+    }
+
+    if (JoinRubyBaseText(loadedSegments) != baseText) {
+        return false;
+    }
+    outSegments = std::move(loadedSegments);
+    return true;
+}
+
+YAML::Node SaveRubySegments(const std::vector<RubyTextSegment>& segments)
+{
+    YAML::Node node(YAML::NodeType::Sequence);
+    for (const RubyTextSegment& segment : segments) {
+        YAML::Node segmentNode;
+        segmentNode["text"] = segment.text;
+        segmentNode["ruby"] = segment.showsRuby;
+        if (segment.showsRuby) {
+            segmentNode["reading"] = segment.reading;
+        }
+        node.push_back(segmentNode);
+    }
+    return node;
+}
 }
 
 const std::string& TutorialPage::ResolveText(
@@ -220,6 +269,21 @@ bool TutorialLibrary::Load()
                     }
 
                     RegeneratePageRuby(page);
+                    const YAML::Node rubyNode = pageNode["ruby"];
+                    if (rubyNode && rubyNode.IsMap()) {
+                        LoadRubySegments(
+                            rubyNode["common"],
+                            page.text,
+                            page.rubySegments);
+                        LoadRubySegments(
+                            rubyNode["controller"],
+                            page.controllerText,
+                            page.controllerRubySegments);
+                        LoadRubySegments(
+                            rubyNode["keyboard"],
+                            page.keyboardText,
+                            page.keyboardRubySegments);
+                    }
                     definition.pages.emplace_back(std::move(page));
                 }
             }
@@ -263,6 +327,23 @@ bool TutorialLibrary::Save()
             if (!page.keyboardText.empty()) {
                 pageNode["keyboardText"] =
                     page.keyboardText;
+            }
+            if (!page.text.empty() &&
+                JoinRubyBaseText(page.rubySegments) == page.text) {
+                pageNode["ruby"]["common"] =
+                    SaveRubySegments(page.rubySegments);
+            }
+            if (!page.controllerText.empty() &&
+                JoinRubyBaseText(page.controllerRubySegments) ==
+                    page.controllerText) {
+                pageNode["ruby"]["controller"] =
+                    SaveRubySegments(page.controllerRubySegments);
+            }
+            if (!page.keyboardText.empty() &&
+                JoinRubyBaseText(page.keyboardRubySegments) ==
+                    page.keyboardText) {
+                pageNode["ruby"]["keyboard"] =
+                    SaveRubySegments(page.keyboardRubySegments);
             }
             pageNode["advance"] =
                 GetTutorialAdvanceConditionId(

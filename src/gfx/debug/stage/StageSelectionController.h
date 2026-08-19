@@ -2,6 +2,7 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/stage/StageEditorTypes.h"
+#include "system/PhysicsSystem.h"
 
 #include "imgui.h"
 
@@ -20,6 +21,7 @@ public:
     void Update();
     void DrawBoxSelectionRect() const;
     void ApplyEditorSelectionFlags();
+    void SetUGCEditLayer(int gridLayer) { mUGCEditLayer = gridLayer; }
 
     bool ConsumeRequestOpenPlacement();
 
@@ -47,11 +49,19 @@ public:
     glm::vec3 CalculateSelectedActorsCenter() const;
     void MoveSelectedActorsByDelta(const glm::vec3& delta);
     bool TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
+    bool TryWorldToScreenPoint(
+        const glm::vec3& worldPos,
+        ImVec2& outScreenPos) const
+    {
+        return WorldToScreenPoint(worldPos, outScreenPos);
+    }
 
 private:
     void PrepareActorForEditorSelection(Actor* actor);
     void UpdateBoxSelection();
     void UpdatePickedActorByMouse();
+    std::vector<PhysicsSystem::RayHitActor> CollectUGCScreenPickHits(
+        const ImVec2& clickPosition) const;
 
     bool WorldToScreenPoint(const glm::vec3& worldPos, ImVec2& outScreenPos) const;
     void SelectActorsInScreenRect(const ImVec2& rectMin, const ImVec2& rectMax, bool addSelection);
@@ -79,4 +89,5 @@ private:
     ImVec2 mBoxSelectStart = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectEnd = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectMouseDownPos = ImVec2(0.0f, 0.0f);
+    int mUGCEditLayer = 0;
 };

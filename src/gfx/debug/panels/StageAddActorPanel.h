@@ -9,11 +9,20 @@
 #include <cstdint>
 #include <functional>
 #include <glm/glm.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
 class StageSelectionController;
 class Actor;
+
+enum class UGCPresetKind {
+    NormalPlatform,
+    NormalEnemy,
+    EllipsePlanet,
+    PressureSwitch,
+    GoalStar,
+};
 
 class StageAddActorPanel : public DebugPanel {
 public:
@@ -23,8 +32,25 @@ public:
     void UpdatePlacement();
     void SetSelectionController(StageSelectionController* selectionController);
     void SetPushUndoCallback(std::function<void()> pushUndoCallback);
+    void SetUGCEditLayer(int gridLayer) { mUGCEditLayer = gridLayer; }
+    void SetUGCPlatformFootprintSideLength(int sideLength)
+    {
+        mUGCPlatformFootprintSideLength = sideLength;
+    }
     bool BeginDuplicatePlacement(const StageActorRef& sourceRef);
+    bool ActivateUGCPreset(UGCPresetKind presetKind);
+    bool TryEraseUGCPlatformCell();
+    bool TryTranslateUGCPlatformCells(
+        const StageActorRef& actorRef,
+        const glm::vec3& worldDelta);
+    bool TryTranslateUGCPlatformCells(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
     bool IsPlacementActive() const { return static_cast<bool>(mPlacementCreator); }
+    const std::optional<glm::vec3>& GetPlacementPreviewPosition() const
+    {
+        return mPlacementPreviewPosition;
+    }
     void CancelPlacement();
 
 private:
@@ -33,8 +59,16 @@ private:
     void DrawJewelItemCreation();
     void DrawHazardActorCreation();
     void BeginPlacement(const std::string& displayName, int fallbackPlanetIndex,
-                        std::function<bool(int, const StageActorPlacement&)> placementCreator);
+                        std::function<bool(int, const StageActorPlacement&)> placementCreator,
+                        bool snapToGridIntersections = true,
+                        bool continuousPlacement = false,
+                        bool autoStackUGCPlatforms = false,
+                        bool showUGCPlatformPreview = false);
     int ResolveHitPlanetIndex(Actor* hitActor, int fallbackPlanetIndex) const;
+    bool TryCreateUGCFallbackPlacement(
+        const glm::vec3& rayFrom,
+        const glm::vec3& rayTo,
+        StageActorPlacement& outPlacement) const;
 
 private:
     StageActorCreateService mCreateService;
@@ -44,6 +78,19 @@ private:
     std::string mPlacementDisplayName;
     std::string mPlacementStatus;
     int mPlacementFallbackPlanetIndex = -1;
+    bool mSnapPlacementToGridIntersections = true;
+    bool mIsContinuousPlacement = false;
+    bool mAutoStackUGCPlatforms = false;
+    bool mShowUGCPlatformPreview = false;
+    std::string mUGCPlacementPreviewModelPath;
+    glm::vec3 mUGCPlacementPreviewModelScale{1.0f};
+    bool mIsContinuousPlacementStrokeActive = false;
+    std::optional<int> mUGCContinuousPlacementLayer;
+    std::optional<glm::ivec3> mLastPaintedUGCCell;
+    std::optional<glm::vec3> mPlacementPreviewPosition;
+    int mUGCEditLayer = 0;
+    int mUGCPlatformFootprintSideLength = 1;
+    std::optional<glm::ivec3> mLastErasedUGCCell;
 
     int mSelectedPlanetModelIndex = 0;
     std::string mSelectedPlanetModelPath = "planet.obj";

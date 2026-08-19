@@ -3,10 +3,12 @@
 #include "actor/Actor.h"
 #include <glm/glm.hpp>
 #include <string>
+#include <vector>
 
 class Game;
 class FocusComponent;
 class BoatArrivalPoint;
+class Player;
 
 class Boat : public Actor {
 public:
@@ -16,6 +18,8 @@ public:
 
     void StartTravel();
     void StartFocus();
+    void BoardPlayer(Player* player);
+    bool HasBoardedPlayer(const Player* player) const;
 
     void SetDestPlanet(Planet* destPlanet);
     void SetDestStage(int destStage) { mDestStage = destStage; }
@@ -73,4 +77,5 @@ private:
 
     FocusComponent* mFocusComponent;
     BoatArrivalPoint* mArrivalPoint;
+    std::vector<Player*> mBoardedPlayers;
 };

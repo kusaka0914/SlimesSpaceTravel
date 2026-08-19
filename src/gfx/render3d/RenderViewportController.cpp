@@ -3,6 +3,7 @@
 #include "gfx/Renderer3D.h"
 #include "Game.h"
 #include "system/CameraSystem.h"
+#include "system/camera/CameraProjection.h"
 
 #include <GL/glew.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,7 +40,8 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
 
     const float aspect = fbWidth / fbHeight;
     const float fieldOfViewDegrees = cameraSystem->GetFieldOfViewDegrees();
-    const glm::mat4 proj = glm::perspective(glm::radians(fieldOfViewDegrees), aspect, 0.1f, 100.0f);
+    const glm::mat4 proj = CalculateCameraProjection(
+        *mGame, aspect, fieldOfViewDegrees);
 
     std::vector<glm::mat4> views = cameraSystem->GetViews();
     if (views.empty()) {

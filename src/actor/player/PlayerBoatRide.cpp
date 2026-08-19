@@ -59,15 +59,23 @@ void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
         return;
     }
 
-    Player* ridingPlayer = &player;
-    if (Game* game = player.GetGame()) {
-        ridingPlayer = game->MergeSplitPlayerForBoatRide(&player);
+    Game* game = player.GetGame();
+    boat->BoardPlayer(&player);
+    // A boarded split slime waits inside the rocket.  The rocket launches
+    // only once both split slimes have boarded, instead of merging them.
+    player.SetIsActive(false);
+
+    const bool waitsForBothPlayers =
+        game && (game->GetIsPlayerSplit() || game->GetIsPlayer2Joined());
+    if (waitsForBothPlayers) {
+        for (Player* passenger : game->GetPlayers()) {
+            if (!boat->HasBoardedPlayer(passenger)) {
+                return;
+            }
+        }
     }
 
     boat->StartTravel();
-    if (ridingPlayer) {
-        ridingPlayer->SetIsActive(false);
-    }
 }
 
 void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, PlayerRespawn& respawn, Boat* boat) const

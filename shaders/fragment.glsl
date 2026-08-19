@@ -23,6 +23,7 @@ uniform float rimStrength;
 uniform float rimPower;
 uniform float toonLevels;
 uniform float toonStrength;
+uniform vec3 colorMultiplier;
 
 void main()
 {
@@ -59,6 +60,7 @@ void main()
     vec3 lighting = ambient + diffuseLight + rimLight;
     vec3 finalColor = baseColor.rgb * lighting;
     finalColor = pow(finalColor, vec3(1.0 / 2.2));
+    finalColor *= colorMultiplier;
 
     fragColor = vec4(finalColor, baseColor.a);
 }

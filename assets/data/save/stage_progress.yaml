@@ -1,5 +1,5 @@
 clearedStages:
-  - 2
+  - 1
 shownConversations:
   - ../assets/data/stage/stage0.yaml|NPCs:0|clear:-1
   - ../assets/data/stage/stage0.yaml|NPCs:0|clear:2

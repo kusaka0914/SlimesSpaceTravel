@@ -1302,6 +1302,13 @@ Platform* ActorLoadSystem::CreatePlatformFromStageNode(const YAML::Node& node, i
                     ? node["platformId"].as<std::string>()
                     : "legacy_platforms_" +
                           std::to_string(stageYamlIndex));
+            if (node["ugcGeneratedPlatform"] &&
+                node["ugcGeneratedPlatform"].as<bool>(false)) {
+                platform->SetUGCGeneratedLayer(
+                    node["ugcGridLayer"]
+                        ? node["ugcGridLayer"].as<int>()
+                        : 0);
+            }
             ApplyPlatformMovementConfig(
                 platform,
                 GetMovementComponentNode(node));

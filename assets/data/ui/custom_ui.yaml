@@ -8,36 +8,38 @@ screens:
     name: opening
   operation:
     name: operation
+  talk:
+    name: 会話・チュートリアル
   target:
     name: target
   title:
-    name: title
+    name: タイトル画面
 elements:
-  - screen: battleStyleSelection
-    id: background
-    name: 背景
-    type: panel
+  - screen: talk
+    id: continueButton
+    name: つづけるボタン
+    type: image
     visibleByDefault: false
     centerBased: false
     flipVertical: false
-    zOrder: 0
+    zOrder: 20
     rotationDegrees: 0
     posRatio:
-      - 0
-      - 0
+      - 0.71240175
+      - 0.11240226
     sizeRatio:
-      - 1
-      - 0.5625
+      - 0.05
+      - 0.05
     textScaleRatio: 0.0007
-    text: New Text
-    texture: ""
-    usesInputDeviceVariants: false
+    text: ""
+    texture: textures/Inputs/switch_button_a.png
+    usesInputDeviceVariants: true
     keyboardText: ""
     gameControllerText: ""
     keyboardModifierText: ""
     gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_space.png
+    gameControllerTexture: textures/Inputs/switch_button_a.png
     keyboardFlipVertical: false
     gameControllerFlipVertical: false
     shadowEnabled: false
@@ -46,9 +48,150 @@ elements:
     outlineEnabled: false
     outlineWidthRatio: 0.001
     color:
-      - 0.025
-      - 0.055
-      - 0.12
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: title
+    id: startGame
+    name: ゲームをはじめる
+    type: text
+    visibleByDefault: true
+    centerBased: true
+    flipVertical: true
+    zOrder: 10
+    rotationDegrees: 0
+    posRatio:
+      - 0.5
+      - 0.411
+    sizeRatio:
+      - 0.5
+      - 0.06
+    textScaleRatio: 0.0003073
+    text: ゲームをはじめる
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: title
+    id: createStage
+    name: ステージをつくる
+    type: text
+    visibleByDefault: true
+    centerBased: true
+    flipVertical: true
+    zOrder: 10
+    rotationDegrees: 0
+    posRatio:
+      - 0.5
+      - 0.453
+    sizeRatio:
+      - 0.5
+      - 0.06
+    textScaleRatio: 0.0003073
+    text: ステージをつくる
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: title
+    id: playCreatedStage
+    name: つくったステージであそぶ
+    type: text
+    visibleByDefault: true
+    centerBased: true
+    flipVertical: true
+    zOrder: 10
+    rotationDegrees: 0
+    posRatio:
+      - 0.5
+      - 0.495
+    sizeRatio:
+      - 0.5
+      - 0.06
+    textScaleRatio: 0.0003073
+    text: つくったステージであそぶ
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
       - 1
     shadowColor:
       - 0
@@ -70,13 +213,13 @@ elements:
     zOrder: 3
     rotationDegrees: 0
     posRatio:
-      - 0.5
-      - 0.07
+      - 0.50000006
+      - 0.18086712
     sizeRatio:
       - 0.5
       - 0.06
-    textScaleRatio: 0.00065
-    text: 戦闘スタイルを選んでください
+    textScaleRatio: 0.0002747999
+    text: どちらの操作スタイルであそびますか？
     texture: ""
     usesInputDeviceVariants: false
     keyboardText: ""
@@ -117,11 +260,11 @@ elements:
     zOrder: 1
     rotationDegrees: 0
     posRatio:
-      - 0.065
-      - 0.1575
+      - 0.2842363
+      - 0.234
     sizeRatio:
-      - 0.405
-      - 0.2925
+      - 0.18452784
+      - 0.044976797
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -164,11 +307,11 @@ elements:
     zOrder: 2
     rotationDegrees: 0
     posRatio:
-      - 0.075
-      - 0.1675
+      - 0.2876411
+      - 0.23683846
     sizeRatio:
-      - 0.385
-      - 0.2725
+      - 0.1777183
+      - 0.03918953
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -211,13 +354,13 @@ elements:
     zOrder: 3
     rotationDegrees: 0
     posRatio:
-      - 0.2675
-      - 0.225
+      - 0.3765002
+      - 0.25649837
     sizeRatio:
       - 0.3
       - 0.06
-    textScaleRatio: 0.00075
-    text: ラクラク
+    textScaleRatio: 0.00025779993
+    text: らくらく
     texture: ""
     usesInputDeviceVariants: false
     keyboardText: ""
@@ -235,8 +378,8 @@ elements:
     outlineWidthRatio: 0.001
     color:
       - 1
-      - 0.9
-      - 0.35
+      - 1
+      - 1
       - 1
     shadowColor:
       - 0
@@ -250,7 +393,7 @@ elements:
       - 1
   - screen: battleStyleSelection
     id: easyDescription
-    name: ラクラク説明
+    name: ラクラク用説明文
     type: text
     visibleByDefault: false
     centerBased: true
@@ -258,248 +401,13 @@ elements:
     zOrder: 3
     rotationDegrees: 0
     posRatio:
-      - 0.2675
-      - 0.32
+      - 0.5218326
+      - 0.3726614
     sizeRatio:
       - 0.34
       - 0.1
-    textScaleRatio: 0.00032
-    text: "弱攻撃を連打するだけでコンボを楽しめます。\nゲームに不慣れな方におすすめです。"
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: true
-    gameControllerFlipVertical: true
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: true
-    outlineWidthRatio: 0.00065
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: battleStyleSelection
-    id: normalSelection
-    name: ノーマル選択表示
-    type: panel
-    visibleByDefault: false
-    centerBased: false
-    flipVertical: false
-    zOrder: 1
-    rotationDegrees: 0
-    posRatio:
-      - 0.53
-      - 0.1575
-    sizeRatio:
-      - 0.405
-      - 0.2925
-    textScaleRatio: 0.0007
-    text: New Text
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: false
-    gameControllerFlipVertical: false
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: false
-    outlineWidthRatio: 0.001
-    color:
-      - 1
-      - 0.72
-      - 0.08
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: battleStyleSelection
-    id: normalCard
-    name: ノーマル説明背景
-    type: panel
-    visibleByDefault: false
-    centerBased: false
-    flipVertical: false
-    zOrder: 2
-    rotationDegrees: 0
-    posRatio:
-      - 0.54
-      - 0.1675
-    sizeRatio:
-      - 0.385
-      - 0.2725
-    textScaleRatio: 0.0007
-    text: New Text
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: false
-    gameControllerFlipVertical: false
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: false
-    outlineWidthRatio: 0.001
-    color:
-      - 0.22
-      - 0.12
-      - 0.28
-      - 0.98
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: battleStyleSelection
-    id: normalTitle
-    name: ノーマル見出し
-    type: text
-    visibleByDefault: false
-    centerBased: true
-    flipVertical: true
-    zOrder: 3
-    rotationDegrees: 0
-    posRatio:
-      - 0.7325
-      - 0.225
-    sizeRatio:
-      - 0.3
-      - 0.06
-    textScaleRatio: 0.00075
-    text: ノーマル
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: true
-    gameControllerFlipVertical: true
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: true
-    outlineWidthRatio: 0.001
-    color:
-      - 0.75
-      - 0.9
-      - 1
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: battleStyleSelection
-    id: normalDescription
-    name: ノーマル説明
-    type: text
-    visibleByDefault: false
-    centerBased: true
-    flipVertical: true
-    zOrder: 3
-    rotationDegrees: 0
-    posRatio:
-      - 0.7325
-      - 0.32
-    sizeRatio:
-      - 0.34
-      - 0.1
-    textScaleRatio: 0.00032
-    text: "自分で技を使い分けて戦うスタイルです。\nゲームに慣れ、緊張感のある戦闘がしたい方におすすめです。"
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: true
-    gameControllerFlipVertical: true
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: true
-    outlineWidthRatio: 0.00065
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: battleStyleSelection
-    id: operationText
-    name: 選択方法
-    type: text
-    visibleByDefault: false
-    centerBased: true
-    flipVertical: true
-    zOrder: 3
-    rotationDegrees: 0
-    posRatio:
-      - 0.5
-      - 0.505
-    sizeRatio:
-      - 0.6
-      - 0.04
-    textScaleRatio: 0.00028
-    text: 左右で選択　ジャンプボタンで決定
+    textScaleRatio: 0.00025779998
+    text: "1ボタン連打でコンボでき、敵を倒しやすくなります。\n戦いをらくにしたい方におすすめです。"
     texture: ""
     usesInputDeviceVariants: false
     keyboardText: ""
@@ -1752,100 +1660,6 @@ elements:
       - 0
       - 0
       - 1
-  - screen: title
-    id: startTexture
-    name: タイトルスタートボタン画像
-    type: image
-    visibleByDefault: false
-    centerBased: false
-    flipVertical: false
-    zOrder: 0
-    rotationDegrees: 0
-    posRatio:
-      - 0.29915014
-      - 0.37347102
-    sizeRatio:
-      - 0.1
-      - 0.1
-    textScaleRatio: 0.0007
-    text: New Text
-    texture: textures/Inputs/switch_button_a.png
-    usesInputDeviceVariants: true
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: textures/Inputs/Keyboard/keyboard_space.png
-    gameControllerTexture: textures/Inputs/switch_button_a.png
-    keyboardFlipVertical: false
-    gameControllerFlipVertical: false
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: false
-    outlineWidthRatio: 0.001
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: title
-    id: startText
-    name: タイトルスタートテキスト
-    type: text
-    visibleByDefault: false
-    centerBased: true
-    flipVertical: true
-    zOrder: 0
-    rotationDegrees: 0
-    posRatio:
-      - 0.55880105
-      - 0.42215934
-    sizeRatio:
-      - 0.2
-      - 0.05625
-    textScaleRatio: 0.0005747
-    text: をおしてください
-    texture: ""
-    usesInputDeviceVariants: false
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: ""
-    gameControllerTexture: ""
-    keyboardFlipVertical: true
-    gameControllerFlipVertical: true
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: true
-    outlineWidthRatio: 0.00184
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
   - screen: opening
     id: skipTexture
     name: オープニングスキップボタン画像
@@ -1925,6 +1739,194 @@ elements:
     shadowOffsetYRatio: 0.0015
     outlineEnabled: true
     outlineWidthRatio: 0.00122
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: battleStyleSelection
+    id: normalSelection
+    name: こまかく選択表示
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.53274083
+      - 0.2339629
+    sizeRatio:
+      - 0.18450001
+      - 0.04500001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 0.72
+      - 0.08
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: battleStyleSelection
+    id: easyCard_copy
+    name: こまかく説明背景
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: false
+    zOrder: 2
+    rotationDegrees: 0
+    posRatio:
+      - 0.53631675
+      - 0.2368629
+    sizeRatio:
+      - 0.17771827
+      - 0.03918952
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0.09
+      - 0.22
+      - 0.38
+      - 0.98
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: battleStyleSelection
+    id: easyTitle_copy
+    name: こまかく見出し
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 3
+    rotationDegrees: 0
+    posRatio:
+      - 0.6251757
+      - 0.25637466
+    sizeRatio:
+      - 0.3
+      - 0.06
+    textScaleRatio: 0.0002577999
+    text: こまかく
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: battleStyleSelection
+    id: normalDescription
+    name: こまかく用説明文
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 3
+    rotationDegrees: 0
+    posRatio:
+      - 0.5218326
+      - 0.3726614
+    sizeRatio:
+      - 0.34
+      - 0.1
+    textScaleRatio: 0.00025779998
+    text: "ボタンごとに違うわざを使え、自分でコンボして戦います。\nアクションをじっくり楽しみたい方におすすめです。"
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.00065
     color:
       - 1
       - 1

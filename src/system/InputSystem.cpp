@@ -2,14 +2,19 @@
 
 #include "Game.h"
 #include "actor/Player.h"
+#include "system/CameraSystem.h"
 #include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include "imgui.h"
 
 #include <cstdlib>
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <glm/geometric.hpp>
+#include <glm/vec2.hpp>
 
 namespace {
 constexpr int controllerMovementDeadZone =
@@ -182,6 +187,13 @@ void InputSystem::ProcessGameInput()
     }
 
     UpdateLastUsedInputDevice();
+    ProcessUGCEditorCursorInput();
+    const bool isUGCEditorActive =
+        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+    if (isUGCEditorActive) {
+        ProcessUGCEditorCommandInput();
+        return;
+    }
     ProcessPauseToggleInput();
 
     const bool wasPauseMenuOpen = mGame->GetIsPauseMenuOpen();
@@ -193,9 +205,16 @@ void InputSystem::ProcessGameInput()
     ProcessPlayerJoinInput();
     ProcessPlayerSplitInput();
     ProcessPlayerSwitchInput();
+    const bool wasTitleMenuActive =
+        mGame->GetSceneSystem() &&
+        mGame->GetSceneSystem()->IsTitle() &&
+        !mGame->GetIsUGCWorkBrowserShowing();
+    ProcessUGCModeInput();
+    ProcessTitleMenuInput();
     ProcessBattleStyleSelectionInput();
     // ポーズ決定もAを使うため、そのフレームの入力を会話開始へ流さない。
-    ProcessSceneConfirmInput(!wasPauseMenuOpen);
+    ProcessSceneConfirmInput(
+        !wasPauseMenuOpen && !isUGCEditorActive && !wasTitleMenuActive);
     ProcessDebugEditorToggleInput();
     ProcessFreeCameraToggleInput();
     ProcessStartInput();
@@ -211,13 +230,345 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mPlayerSplitPressedPrev = true;
     mPlayerSwitchPressedPrev = true;
     mBattleStyleDirectionPressedPrev = true;
+    mTitleMenuDirectionPressedPrev = true;
+    mTitleMenuConfirmPressedPrev = true;
+    mUGCModePressedPrev = true;
+    mUGCWorkBrowserPressedPrev = true;
     mStartPressedPrev = true;
     mPauseMenuKeyPressedPrev = true;
     mPauseMenuUpPressedPrev = true;
     mPauseMenuDownPressedPrev = true;
     mPauseMenuConfirmPressedPrev = true;
     mControllerConfirmPressedPrev = true;
+    mUGCEditorUndoPressedPrev = true;
+    mUGCEditorRedoPressedPrev = true;
+    mUGCEditorEraserPressedPrev = true;
+    mUGCEditorZoomInPressedPrev = true;
+    mUGCEditorZoomOutPressedPrev = true;
+    mUGCEditorLayerDownPressedPrev = true;
+    mUGCEditorLayerUpPressedPrev = true;
+    mUGCEditorPlayPressedPrev = true;
+    mUGCEditorSelectionPressedPrev = true;
     mKeyboardConfirmPressedPrev = true;
+}
+
+void InputSystem::ProcessUGCModeInput()
+{
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    if (!sceneSystem || !sceneSystem->IsTitle()) {
+        mUGCModePressedPrev = false;
+        mUGCWorkBrowserPressedPrev = false;
+        return;
+    }
+
+    if (mGame->GetIsUGCWorkBrowserShowing()) {
+        mUGCModePressedPrev = false;
+        mUGCWorkBrowserPressedPrev = false;
+        return;
+    }
+
+    const bool keyboardPressed =
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_C) == GLFW_PRESS;
+    const bool controllerPressed =
+        mGame->GetSdlController() &&
+        SDL_GameControllerGetButton(
+            mGame->GetSdlController(),
+            SDL_CONTROLLER_BUTTON_X);
+    const bool ugcModePressed = keyboardPressed || controllerPressed;
+
+    if (ugcModePressed && !mUGCModePressedPrev) {
+        mGame->StartUGCMode();
+    }
+    mUGCModePressedPrev = ugcModePressed;
+
+    const bool browserKeyboardPressed =
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_V) == GLFW_PRESS;
+    const bool browserControllerPressed =
+        mGame->GetSdlController() &&
+        SDL_GameControllerGetButton(
+            mGame->GetSdlController(),
+            SDL_CONTROLLER_BUTTON_Y);
+    const bool browserPressed =
+        browserKeyboardPressed || browserControllerPressed;
+    if (browserPressed && !mUGCWorkBrowserPressedPrev) {
+        mGame->OpenUGCWorkBrowser();
+    }
+    mUGCWorkBrowserPressedPrev = browserPressed;
+}
+
+void InputSystem::ProcessTitleMenuInput()
+{
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    if (!sceneSystem || !sceneSystem->IsTitle() ||
+        mGame->GetIsUGCWorkBrowserShowing()) {
+        mTitleMenuDirectionPressedPrev = false;
+        mTitleMenuConfirmPressedPrev = false;
+        return;
+    }
+
+    GLFWwindow* window = mGame->GetWindow();
+    SDL_GameController* controller = mGame->GetSdlController();
+    constexpr Sint16 directionThreshold = 16000;
+    const bool upPressed =
+        glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS ||
+        (controller &&
+         (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+          SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold));
+    const bool downPressed =
+        glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS ||
+        (controller &&
+         (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+          SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold));
+    const bool directionPressed = upPressed || downPressed;
+    if (directionPressed && !mTitleMenuDirectionPressedPrev) {
+        mGame->MoveTitleMenuSelection(upPressed ? -1 : 1);
+    }
+    mTitleMenuDirectionPressedPrev = directionPressed;
+
+    const bool confirmPressed =
+        (controller && SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) ||
+        glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
+    if (confirmPressed && !mTitleMenuConfirmPressedPrev) {
+        mGame->ExecuteTitleMenuSelection();
+    }
+    mTitleMenuConfirmPressedPrev = confirmPressed;
+}
+
+void InputSystem::ProcessUGCEditorCursorInput()
+{
+    const bool isUGCEditorActive =
+        mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing() &&
+        mGame->GetSdlController();
+    if (!isUGCEditorActive) {
+        if (mUGCEditorControllerClickPressedPrev &&
+            ImGui::GetCurrentContext()) {
+            const bool isPhysicalLeftMousePressed =
+                glfwGetMouseButton(
+                    mGame->GetWindow(), GLFW_MOUSE_BUTTON_LEFT) ==
+                GLFW_PRESS;
+            ImGui::GetIO().AddMouseButtonEvent(
+                ImGuiMouseButton_Left,
+                isPhysicalLeftMousePressed);
+        }
+        mUGCEditorControllerClickPressedPrev = false;
+        return;
+    }
+
+    SDL_GameController* controller = mGame->GetSdlController();
+    const bool isControllerClickPressed =
+        SDL_GameControllerGetButton(
+            controller, SDL_CONTROLLER_BUTTON_A) != 0;
+    if (isControllerClickPressed !=
+            mUGCEditorControllerClickPressedPrev &&
+        ImGui::GetCurrentContext()) {
+        const bool isPhysicalLeftMousePressed =
+            glfwGetMouseButton(
+                mGame->GetWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        ImGui::GetIO().AddMouseButtonEvent(
+            ImGuiMouseButton_Left,
+            isControllerClickPressed || isPhysicalLeftMousePressed);
+    }
+    mUGCEditorControllerClickPressedPrev = isControllerClickPressed;
+
+    constexpr float axisScale = 1.0f / 32767.0f;
+    constexpr float deadZone = 0.2f;
+    float previewTurnInput =
+        SDL_GameControllerGetAxis(
+            controller, SDL_CONTROLLER_AXIS_RIGHTX) * axisScale;
+    if (std::abs(previewTurnInput) < deadZone) {
+        previewTurnInput = 0.0f;
+    }
+    if (previewTurnInput != 0.0f) {
+        constexpr float previewTurnRadiansPerSecond = 1.8f;
+        const float deltaTime = std::max(
+            0.001f, mGame->GetLastDeltaTime());
+        mGame->AdjustUGCPreviewYaw(
+            -previewTurnInput * previewTurnRadiansPerSecond * deltaTime);
+    }
+
+    if (!mGame->GetCameraSystem()) {
+        return;
+    }
+
+    float horizontalInput =
+        SDL_GameControllerGetAxis(
+            controller, SDL_CONTROLLER_AXIS_LEFTX) * axisScale;
+    float verticalInput =
+        SDL_GameControllerGetAxis(
+            controller, SDL_CONTROLLER_AXIS_LEFTY) * axisScale;
+    if (std::abs(horizontalInput) < deadZone) {
+        horizontalInput = 0.0f;
+    }
+    if (std::abs(verticalInput) < deadZone) {
+        verticalInput = 0.0f;
+    }
+    if (horizontalInput == 0.0f && verticalInput == 0.0f) {
+        return;
+    }
+
+    GLFWwindow* window = mGame->GetWindow();
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+    double cursorX = 0.0;
+    double cursorY = 0.0;
+    glfwGetCursorPos(window, &cursorX, &cursorY);
+
+    constexpr float normalCursorSpeedPixelsPerSecond = 650.0f;
+    const float deltaTime = std::max(
+        0.001f, mGame->GetLastDeltaTime());
+    cursorX += horizontalInput *
+        normalCursorSpeedPixelsPerSecond * deltaTime;
+    cursorY += verticalInput *
+        normalCursorSpeedPixelsPerSecond * deltaTime;
+    cursorX = std::clamp(
+        cursorX, 0.0, static_cast<double>(windowWidth - 1));
+    cursorY = std::clamp(
+        cursorY, 0.0, static_cast<double>(windowHeight - 1));
+    glfwSetCursorPos(window, cursorX, cursorY);
+
+    constexpr float edgeScrollAreaPixels = 24.0f;
+    glm::vec2 edgeScrollDirection(0.0f);
+    if (cursorX <= edgeScrollAreaPixels && horizontalInput < 0.0f) {
+        edgeScrollDirection.x = -1.0f;
+    } else if (cursorX >= windowWidth - edgeScrollAreaPixels &&
+               horizontalInput > 0.0f) {
+        edgeScrollDirection.x = 1.0f;
+    }
+    if (cursorY <= edgeScrollAreaPixels && verticalInput < 0.0f) {
+        edgeScrollDirection.y = 1.0f;
+    } else if (cursorY >= windowHeight - edgeScrollAreaPixels &&
+               verticalInput > 0.0f) {
+        edgeScrollDirection.y = -1.0f;
+    }
+    if (edgeScrollDirection == glm::vec2(0.0f)) {
+        return;
+    }
+
+    CameraPose cameraPose =
+        mGame->GetCameraSystem()->GetDebugCameraPose();
+    const glm::vec3 forward = glm::normalize(
+        cameraPose.target - cameraPose.position);
+    const glm::vec3 right = glm::normalize(
+        glm::cross(forward, cameraPose.up));
+    constexpr float normalViewScrollWorldUnitsPerSecond = 10.0f;
+    const glm::vec3 viewMovement =
+        (right * edgeScrollDirection.x +
+         cameraPose.up * edgeScrollDirection.y) *
+        normalViewScrollWorldUnitsPerSecond * deltaTime;
+    cameraPose.position += viewMovement;
+    cameraPose.target += viewMovement;
+    mGame->GetCameraSystem()->SetDebugCameraPose(cameraPose);
+}
+
+void InputSystem::ProcessUGCEditorCommandInput()
+{
+    SDL_GameController* controller = mGame->GetSdlController();
+    if (!controller) {
+        mUGCEditorUndoPressedPrev = false;
+        mUGCEditorRedoPressedPrev = false;
+        mUGCEditorEraserPressedPrev = false;
+        mUGCEditorZoomInPressedPrev = false;
+        mUGCEditorZoomOutPressedPrev = false;
+        mUGCEditorLayerDownPressedPrev = false;
+        mUGCEditorLayerUpPressedPrev = false;
+        mUGCEditorPlayPressedPrev = false;
+        mUGCEditorSelectionPressedPrev = false;
+        mUGCEditorDpadLeftPressedPrev = false;
+        mUGCEditorDpadRightPressedPrev = false;
+        mUGCEditorDpadUpPressedPrev = false;
+        mUGCEditorDpadDownPressedPrev = false;
+        return;
+    }
+
+    const bool undoPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_B) != 0;
+    const bool redoPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_Y) != 0;
+    const bool eraserPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_X) != 0;
+    const bool zoomInPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) != 0;
+    const bool zoomOutPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) != 0;
+    constexpr Sint16 triggerPressedThreshold = 16000;
+    const bool layerDownPressed = SDL_GameControllerGetAxis(
+        controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >
+        triggerPressedThreshold;
+    const bool layerUpPressed = SDL_GameControllerGetAxis(
+        controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >
+        triggerPressedThreshold;
+    const bool playPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_BACK) != 0;
+    const bool selectionPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_START) != 0;
+    const bool dpadLeftPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT) != 0;
+    const bool dpadRightPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) != 0;
+    const bool dpadUpPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_DPAD_UP) != 0;
+    const bool dpadDownPressed = SDL_GameControllerGetButton(
+        controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN) != 0;
+
+    if (undoPressed && !mUGCEditorUndoPressedPrev) {
+        mGame->UndoUGCEdit();
+    }
+    if (redoPressed && !mUGCEditorRedoPressedPrev) {
+        mGame->RedoUGCEdit();
+    }
+    if (eraserPressed && !mUGCEditorEraserPressedPrev) {
+        mGame->ToggleUGCEraser();
+    }
+    if (zoomInPressed && !mUGCEditorZoomInPressedPrev) {
+        mGame->ZoomUGCEditor(0.8f);
+    }
+    if (zoomOutPressed && !mUGCEditorZoomOutPressedPrev) {
+        mGame->ZoomUGCEditor(1.25f);
+    }
+    if (layerDownPressed && !mUGCEditorLayerDownPressedPrev) {
+        mGame->ChangeUGCEditLayer(-1);
+    }
+    if (layerUpPressed && !mUGCEditorLayerUpPressedPrev) {
+        mGame->ChangeUGCEditLayer(1);
+    }
+    if (selectionPressed && !mUGCEditorSelectionPressedPrev) {
+        mGame->SelectUGCEditorMode();
+    }
+    if (playPressed && !mUGCEditorPlayPressedPrev) {
+        mGame->StartUGCPlaytest();
+    }
+    if (dpadLeftPressed && !mUGCEditorDpadLeftPressedPrev) {
+        mGame->MoveUGCSelectionByGrid(-1, 0);
+    }
+    if (dpadRightPressed && !mUGCEditorDpadRightPressedPrev) {
+        mGame->MoveUGCSelectionByGrid(1, 0);
+    }
+    if (dpadUpPressed && !mUGCEditorDpadUpPressedPrev) {
+        mGame->MoveUGCSelectionByGrid(0, -1);
+    }
+    if (dpadDownPressed && !mUGCEditorDpadDownPressedPrev) {
+        mGame->MoveUGCSelectionByGrid(0, 1);
+    }
+
+    mUGCEditorUndoPressedPrev = undoPressed;
+    mUGCEditorRedoPressedPrev = redoPressed;
+    mUGCEditorEraserPressedPrev = eraserPressed;
+    mUGCEditorZoomInPressedPrev = zoomInPressed;
+    mUGCEditorZoomOutPressedPrev = zoomOutPressed;
+    mUGCEditorLayerDownPressedPrev = layerDownPressed;
+    mUGCEditorLayerUpPressedPrev = layerUpPressed;
+    mUGCEditorPlayPressedPrev = playPressed;
+    mUGCEditorSelectionPressedPrev = selectionPressed;
+    mUGCEditorDpadLeftPressedPrev = dpadLeftPressed;
+    mUGCEditorDpadRightPressedPrev = dpadRightPressed;
+    mUGCEditorDpadUpPressedPrev = dpadUpPressed;
+    mUGCEditorDpadDownPressedPrev = dpadDownPressed;
+    // Prevent held minus/plus buttons from triggering their normal game
+    // actions on the frame after leaving the editor.
+    mPauseMenuKeyPressedPrev = playPressed;
+    mStartPressedPrev = selectionPressed;
 }
 
 void InputSystem::ProcessPauseToggleInput()
@@ -227,13 +578,25 @@ void InputSystem::ProcessPauseToggleInput()
         return;
     }
 
+    const bool escapePressed =
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS;
+    const bool controllerBackPressed =
+        mGame->GetSdlController() &&
+        SDL_GameControllerGetButton(
+            mGame->GetSdlController(), SDL_CONTROLLER_BUTTON_BACK);
+
+    if (controllerBackPressed && !mPauseMenuKeyPressedPrev &&
+        mGame->GetIsUGCMode() && !mGame->GetIsDebugEditorShowing()) {
+        mGame->ReturnToUGCEditor();
+        mPauseMenuKeyPressedPrev = true;
+        return;
+    }
+
     const bool pauseMenuKeyPressed =
-        glfwGetKey(mGame->GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS ||
-        (mGame->GetSdlController() &&
-         SDL_GameControllerGetButton(mGame->GetSdlController(), SDL_CONTROLLER_BUTTON_BACK));
+        escapePressed || controllerBackPressed;
 
     if (pauseMenuKeyPressed && !mPauseMenuKeyPressedPrev &&
-        (sceneSystem->IsPlaying() || sceneSystem->IsFocusing() || mGame->GetIsPauseMenuOpen())) {
+        (mGame->GetIsPauseMenuOpen() || mGame->CanOpenPauseMenu())) {
         mGame->TogglePauseMenu();
     }
 

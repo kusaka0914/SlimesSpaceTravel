@@ -31,6 +31,14 @@ std::string ToLower(std::string value)
     return value;
 }
 
+StageActorPlacement CreateUGCWorldUpPlacement(
+    const StageActorPlacement& surfacePlacement)
+{
+    StageActorPlacement worldUpPlacement = surfacePlacement;
+    worldUpPlacement.surfaceNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+    return worldUpPlacement;
+}
+
 }
 
 StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
@@ -62,6 +70,176 @@ void StageAddActorPanel::SetPushUndoCallback(
     std::function<void()> pushUndoCallback)
 {
     mPushUndoCallback = std::move(pushUndoCallback);
+}
+
+bool StageAddActorPanel::ActivateUGCPreset(UGCPresetKind presetKind)
+{
+    switch (presetKind) {
+    case UGCPresetKind::NormalPlatform:
+        if (!mCreateService.RefreshUGCPlatformCells()) {
+            return false;
+        }
+        if (mSelectionController) {
+            mSelectionController->Clear();
+        }
+        BeginPlacement(
+            "通常足場",
+            0,
+            [this](int planetIndex, const StageActorPlacement& placement) {
+                const StageActorPlacement worldUpPlacement =
+                    CreateUGCWorldUpPlacement(placement);
+                const float gridSize =
+                    mContext.game->GetUGCGridSize();
+                const bool added = mCreateService.AddUGCPlatformCell(
+                    planetIndex,
+                    worldUpPlacement,
+                    gridSize,
+                    mUGCPlatformFootprintSideLength);
+                if (added && mSelectionController) {
+                    mSelectionController->Clear();
+                }
+                return added;
+            },
+            true,
+            true,
+            false,
+            true);
+        mUGCPlacementPreviewModelPath = "platform.obj";
+        mUGCPlacementPreviewModelScale = glm::vec3(1.0f);
+        return true;
+    case UGCPresetKind::NormalEnemy:
+        BeginPlacement(
+            "通常敵",
+            0,
+            [this](int planetIndex, const StageActorPlacement& placement) {
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                const StageActorPlacement worldUpPlacement =
+                    CreateUGCWorldUpPlacement(placement);
+                return mCreateService.AddEnemy(
+                    "normal",
+                    planetIndex,
+                    &worldUpPlacement);
+            });
+        mUGCPlacementPreviewModelPath = "enemy.obj";
+        mUGCPlacementPreviewModelScale = glm::vec3(0.25f);
+        return true;
+    case UGCPresetKind::EllipsePlanet:
+        CancelPlacement();
+        if (mPushUndoCallback) {
+            mPushUndoCallback();
+        }
+        return mCreateService.AddEllipsePlanet("planet.obj");
+    case UGCPresetKind::PressureSwitch:
+        BeginPlacement(
+            "スイッチ",
+            0,
+            [this](int planetIndex, const StageActorPlacement& placement) {
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                const StageActorPlacement worldUpPlacement =
+                    CreateUGCWorldUpPlacement(placement);
+                return mCreateService.AddPressureSwitchPlatform(
+                    planetIndex,
+                    "platform.obj",
+                    glm::vec3(0.75f, 0.2f, 0.75f),
+                    &worldUpPlacement);
+            });
+        mUGCPlacementPreviewModelPath = "platform.obj";
+        mUGCPlacementPreviewModelScale = glm::vec3(0.75f, 0.2f, 0.75f);
+        return true;
+    case UGCPresetKind::GoalStar:
+        BeginPlacement(
+            "ゴールの星",
+            0,
+            [this](int planetIndex, const StageActorPlacement& placement) {
+                if (mPushUndoCallback) {
+                    mPushUndoCallback();
+                }
+                return mCreateService.AddStar(planetIndex, &placement);
+            });
+        mUGCPlacementPreviewModelPath = "star.obj";
+        mUGCPlacementPreviewModelScale = glm::vec3(0.3f);
+        return true;
+    }
+
+    return false;
+}
+
+bool StageAddActorPanel::TryEraseUGCPlatformCell()
+{
+    if (!mSelectionController ||
+        !mContext.game ||
+        !mContext.game->GetCurrentStage() ||
+        !mContext.game->GetPhysicsSystem()) {
+        return false;
+    }
+
+    glm::vec3 rayFrom;
+    glm::vec3 rayTo;
+    if (!mSelectionController->TryCreateMouseRay(rayFrom, rayTo)) {
+        return false;
+    }
+
+    StageActorPlacement placement;
+    if (!TryCreateUGCFallbackPlacement(rayFrom, rayTo, placement)) {
+        return false;
+    }
+
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        mLastErasedUGCCell.reset();
+        return false;
+    }
+    const float gridSize = mContext.game->GetUGCGridSize();
+    int eraseLayer = mUGCEditLayer;
+    if (!mCreateService.ResolveUGCPlatformLayerAtGridPosition(
+            0,
+            placement.worldPosition,
+            gridSize,
+            mUGCEditLayer,
+            eraseLayer)) {
+        return false;
+    }
+
+    const glm::ivec3 erasedCell(
+        static_cast<int>(std::floor(placement.worldPosition.x / gridSize)),
+        eraseLayer,
+        static_cast<int>(std::floor(placement.worldPosition.z / gridSize)));
+    if (mLastErasedUGCCell && *mLastErasedUGCCell == erasedCell) {
+        return false;
+    }
+
+    if (mPushUndoCallback) {
+        mPushUndoCallback();
+    }
+    const bool removed = mCreateService.RemoveUGCPlatformCellAtGridPosition(
+        0,
+        placement.worldPosition,
+        gridSize,
+        eraseLayer);
+    if (removed) {
+        mLastErasedUGCCell = erasedCell;
+        mSelectionController->Clear();
+    }
+    return removed;
+}
+
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(
+    const StageActorRef& actorRef,
+    const glm::vec3& worldDelta)
+{
+    return mCreateService.TranslateUGCPlatformCells(
+        actorRef, worldDelta);
+}
+
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mCreateService.TranslateUGCPlatformCells(
+        actorRefs, worldDelta);
 }
 
 bool StageAddActorPanel::BeginDuplicatePlacement(
@@ -127,11 +305,26 @@ bool StageAddActorPanel::BeginDuplicatePlacement(
 void StageAddActorPanel::BeginPlacement(
     const std::string& displayName,
     int fallbackPlanetIndex,
-    std::function<bool(int, const StageActorPlacement&)> placementCreator)
+    std::function<bool(int, const StageActorPlacement&)> placementCreator,
+    bool snapToGridIntersections,
+    bool continuousPlacement,
+    bool autoStackUGCPlatforms,
+    bool showUGCPlatformPreview)
 {
     mPlacementDisplayName = displayName;
     mPlacementFallbackPlanetIndex = fallbackPlanetIndex;
     mPlacementCreator = std::move(placementCreator);
+    mSnapPlacementToGridIntersections = snapToGridIntersections;
+    mIsContinuousPlacement = continuousPlacement;
+    mAutoStackUGCPlatforms = autoStackUGCPlatforms;
+    mShowUGCPlatformPreview = showUGCPlatformPreview ||
+        (mContext.game && mContext.game->GetIsUGCMode());
+    mUGCPlacementPreviewModelPath.clear();
+    mUGCPlacementPreviewModelScale = glm::vec3(1.0f);
+    mIsContinuousPlacementStrokeActive = false;
+    mUGCContinuousPlacementLayer.reset();
+    mLastPaintedUGCCell.reset();
+    mPlacementPreviewPosition.reset();
     mPlacementStatus = "ゲーム画面をクリックして配置してください";
 }
 
@@ -140,6 +333,19 @@ void StageAddActorPanel::CancelPlacement()
     mPlacementCreator = {};
     mPlacementDisplayName.clear();
     mPlacementFallbackPlanetIndex = -1;
+    mSnapPlacementToGridIntersections = true;
+    mIsContinuousPlacement = false;
+    mAutoStackUGCPlatforms = false;
+    mShowUGCPlatformPreview = false;
+    mUGCPlacementPreviewModelPath.clear();
+    mIsContinuousPlacementStrokeActive = false;
+    mUGCContinuousPlacementLayer.reset();
+    mLastPaintedUGCCell.reset();
+    mPlacementPreviewPosition.reset();
+    if (mContext.game) {
+        mContext.game->SetUGCPlatformPlacementPreview(std::nullopt);
+        mContext.game->SetUGCPlacementModelPreview(std::nullopt);
+    }
     mPlacementStatus = "連続配置を終了しました";
 }
 
@@ -167,19 +373,93 @@ int StageAddActorPanel::ResolveHitPlanetIndex(
     return static_cast<int>(std::distance(planets.begin(), planetIt));
 }
 
+bool StageAddActorPanel::TryCreateUGCFallbackPlacement(
+    const glm::vec3& rayFrom,
+    const glm::vec3& rayTo,
+    StageActorPlacement& outPlacement) const
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
+    }
+
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    if (planets.empty() || !planets.front()) {
+        return false;
+    }
+
+    const glm::vec3 rayDelta = rayTo - rayFrom;
+    constexpr float parallelEpsilon = 0.00001f;
+    float rayParameter = -1.0f;
+
+    const float buildPlaneY =
+        static_cast<float>(mUGCEditLayer) *
+        mContext.game->GetUGCGridSize();
+    // The UGC build plane is always the floor selected by the child. It does
+    // not jump to whichever overlapping platform the mouse ray hits first.
+    if (std::abs(rayDelta.y) > parallelEpsilon) {
+        rayParameter =
+            (buildPlaneY - rayFrom.y) / rayDelta.y;
+    }
+
+    if (rayParameter < 0.0f || rayParameter > 1.0f) {
+        // A side view ray can be parallel to the horizontal build plane. Use
+        // a camera-facing plane through the same planet center so every view
+        // still has a deterministic free-space placement point.
+        const glm::vec3 buildPlaneCenter(
+            planets.front()->GetPos().x,
+            buildPlaneY,
+            planets.front()->GetPos().z);
+        glm::vec3 viewPlaneNormal = rayFrom - buildPlaneCenter;
+        const float normalLength = glm::length(viewPlaneNormal);
+        if (normalLength <= parallelEpsilon) {
+            return false;
+        }
+        viewPlaneNormal /= normalLength;
+
+        const float denominator = glm::dot(rayDelta, viewPlaneNormal);
+        if (std::abs(denominator) <= parallelEpsilon) {
+            return false;
+        }
+        rayParameter = glm::dot(
+            buildPlaneCenter - rayFrom,
+            viewPlaneNormal) / denominator;
+    }
+
+    if (rayParameter < 0.0f || rayParameter > 1.0f) {
+        return false;
+    }
+
+    outPlacement.worldPosition = rayFrom + rayDelta * rayParameter;
+    outPlacement.surfaceNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+    return true;
+}
+
 void StageAddActorPanel::UpdatePlacement()
 {
     if (!mPlacementCreator) {
         return;
     }
 
+    // The ghost is refreshed every frame so it never remains after the
+    // pointer leaves a valid build area.
+    mContext.game->SetUGCPlatformPlacementPreview(std::nullopt);
+    mContext.game->SetUGCPlacementModelPreview(std::nullopt);
+
     if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         CancelPlacement();
         return;
     }
 
-    if (ImGui::GetIO().WantCaptureMouse ||
-        !ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    const bool isMouseDown =
+        ImGui::IsMouseDown(ImGuiMouseButton_Left);
+    if (!isMouseDown) {
+        mIsContinuousPlacementStrokeActive = false;
+        mUGCContinuousPlacementLayer.reset();
+        mLastPaintedUGCCell.reset();
+    }
+
+    if (ImGui::GetIO().WantCaptureMouse) {
+        mPlacementPreviewPosition.reset();
         return;
     }
 
@@ -195,23 +475,128 @@ void StageAddActorPanel::UpdatePlacement()
         return;
     }
 
-    const std::optional<PhysicsSystem::RayHitActor> hit =
-        mContext.game->GetPhysicsSystem()->RaycastStageSurface(rayFrom, rayTo);
-    if (!hit) {
-        mPlacementStatus = "配置できる惑星・足場・ステージモデルに当たりませんでした";
-        return;
+    StageActorPlacement placement;
+    int planetIndex = mPlacementFallbackPlanetIndex;
+    if (mContext.game->GetIsUGCMode()) {
+        planetIndex = 0;
+        if (!TryCreateUGCFallbackPlacement(rayFrom, rayTo, placement)) {
+            mPlacementStatus = "クリック位置に配置点を作れませんでした";
+            return;
+        }
+    } else {
+        const std::optional<PhysicsSystem::RayHitActor> hit =
+            mContext.game->GetPhysicsSystem()->RaycastStageSurface(
+                rayFrom, rayTo);
+        if (!hit) {
+            mPlacementStatus =
+                "配置できる惑星・足場・ステージモデルに当たりませんでした";
+            return;
+        }
+        planetIndex = ResolveHitPlanetIndex(
+            hit->actor,
+            mPlacementFallbackPlanetIndex);
+        placement.worldPosition = hit->hitPos;
+        placement.surfaceNormal = hit->hitNormal;
     }
 
-    const int planetIndex =
-        ResolveHitPlanetIndex(hit->actor, mPlacementFallbackPlanetIndex);
     if (planetIndex < 0) {
         mPlacementStatus = "クリックした面の所属惑星を特定できませんでした";
         return;
     }
 
-    StageActorPlacement placement;
-    placement.worldPosition = hit->hitPos;
-    placement.surfaceNormal = hit->hitNormal;
+    if (mContext.game->GetIsUGCMode() &&
+        mSnapPlacementToGridIntersections) {
+        const float gridSize = mContext.game->GetUGCGridSize();
+        placement.worldPosition.x =
+            std::round(placement.worldPosition.x / gridSize) * gridSize;
+        placement.worldPosition.y =
+            static_cast<float>(mUGCEditLayer) * gridSize;
+        placement.worldPosition.z =
+            std::round(placement.worldPosition.z / gridSize) * gridSize;
+    }
+
+    if (mContext.game->GetIsUGCMode() && mAutoStackUGCPlatforms) {
+        const float gridSize = mContext.game->GetUGCGridSize();
+        const int placementLayer = mUGCContinuousPlacementLayer
+            ? *mUGCContinuousPlacementLayer
+            : mCreateService.ResolveUGCPlatformPlacementLayerAtGridPosition(
+                planetIndex,
+                placement.worldPosition,
+                gridSize,
+                mUGCEditLayer);
+        if (isMouseDown && !mUGCContinuousPlacementLayer) {
+            mUGCContinuousPlacementLayer = placementLayer;
+        }
+        placement.worldPosition.y =
+            static_cast<float>(placementLayer) * gridSize;
+    }
+
+    glm::vec3 previewPosition = placement.worldPosition;
+    if (mContext.game->GetIsUGCMode() && mShowUGCPlatformPreview) {
+        // A cell is stored from its lower grid corner, but the generated
+        // platform is centred within that cell. Preview the final result,
+        // rather than the raw mouse intersection.
+        const float gridSize = mContext.game->GetUGCGridSize();
+        glm::vec3 previewModelScale = mUGCPlacementPreviewModelScale;
+        if (mPlacementDisplayName == "通常足場") {
+            const float footprintSideLength =
+                static_cast<float>(mUGCPlatformFootprintSideLength);
+            // The clicked square is the footprint's lower-right square.
+            // Match the rebuilt UGC platform's centre and model scale.
+            previewPosition.x =
+                (std::floor(placement.worldPosition.x / gridSize) +
+                 1.0f - footprintSideLength * 0.5f) * gridSize;
+            previewPosition.z =
+                (std::floor(placement.worldPosition.z / gridSize) +
+                 1.0f - footprintSideLength * 0.5f) * gridSize;
+            previewModelScale = glm::vec3(
+                footprintSideLength * gridSize * 0.5f,
+                0.1f * gridSize,
+                footprintSideLength * gridSize * 0.5f);
+        } else {
+            previewPosition.x =
+                (std::floor(placement.worldPosition.x / gridSize) + 0.5f) *
+                gridSize;
+            previewPosition.z =
+                (std::floor(placement.worldPosition.z / gridSize) + 0.5f) *
+                gridSize;
+        }
+        mContext.game->SetUGCPlatformPlacementPreview(previewPosition);
+        mContext.game->SetUGCPlacementModelPreview(
+            previewPosition,
+            mUGCPlacementPreviewModelPath,
+            previewModelScale);
+    }
+    mPlacementPreviewPosition = previewPosition;
+    const bool placementInputTriggered = mIsContinuousPlacement
+        ? isMouseDown
+        : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    if (!placementInputTriggered) {
+        return;
+    }
+
+    if (mIsContinuousPlacement) {
+        const float gridSize = mContext.game->GetUGCGridSize();
+        const glm::ivec3 paintedCell(
+            static_cast<int>(std::floor(
+                placement.worldPosition.x / gridSize)),
+            static_cast<int>(std::round(
+                placement.worldPosition.y / gridSize)),
+            static_cast<int>(std::floor(
+                placement.worldPosition.z / gridSize)));
+        if (mLastPaintedUGCCell &&
+            *mLastPaintedUGCCell == paintedCell) {
+            return;
+        }
+        if (!mIsContinuousPlacementStrokeActive) {
+            if (mPushUndoCallback) {
+                mPushUndoCallback();
+            }
+            mIsContinuousPlacementStrokeActive = true;
+        }
+        mLastPaintedUGCCell = paintedCell;
+    }
+
     const bool created = mPlacementCreator(planetIndex, placement);
     mPlacementStatus = created
                            ? mPlacementDisplayName + "を配置しました。続けてクリックできます"

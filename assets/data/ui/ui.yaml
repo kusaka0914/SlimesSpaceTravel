@@ -203,65 +203,75 @@ pauseMenu:
     rotationDegrees: 0
   - id: panelBg
     type: texture
-    posRatio: [0.29, 0.18]
-    scaleRatio: [0.42, 0.64]
+    posRatio: [0.29000002, 0.21826096]
+    scaleRatio: [0.41999993, 0.563478]
     rotationDegrees: 0
   - id: titleText
     type: text
-    posRatio: [0.5, 0.275]
+    posRatio: [0.50000006, 0.275]
     scaleRatio: [0.0003801, 1.0]
     text:
-      - メニュー
+      - ""
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
   - id: resumeText
     type: text
-    posRatio: [0.50094587, 0.37]
+    posRatio: [0.5009458, 0.3196028]
     scaleRatio: [0.0003072, 1.0]
     text:
-      - ゲームに戻る
+      - ゲームにもどる
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
   - id: controlStyleText
     type: text
-    posRatio: [0.5, 0.44]
+    posRatio: [0.49999994, 0.3925688]
     scaleRatio: [0.0003072, 1.0]
     text:
-      - "操作モード: "
+      - "操作スタイル: "
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: twoPlayerText
+    type: text
+    posRatio: [0.4999999, 0.46796587]
+    scaleRatio: [0.00030719998, 1.0]
+    text:
+      - 2人であそぶ
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
   - id: returnBaseText
     type: text
-    posRatio: [0.5, 0.51]
-    scaleRatio: [0.0003072, 1.0]
+    posRatio: [0.49999994, 0.5376902]
+    scaleRatio: [0.00030719998, 1.0]
     text:
-      - 拠点に戻る
+      - 拠点にもどる
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
   - id: feedbackText
     type: text
-    posRatio: [0.5, 0.58]
-    scaleRatio: [0.0003072, 1.0]
+    posRatio: [0.49999994, 0.6114665]
+    scaleRatio: [0.00030719987, 1.0]
     text:
-      - 感想を書く
+      - 感想をかく
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
   - id: quitText
     type: text
-    posRatio: [0.5, 0.65]
-    scaleRatio: [0.0003072, 1.0]
+    posRatio: [0.49999985, 0.68038064]
+    scaleRatio: [0.00030719995, 1.0]
     text:
-      - ゲーム終了
+      - 保存してゲームをやめる
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -271,7 +281,7 @@ pauseMenu:
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text:
-      - ↑↓:選択 Enter:決定 ESC:閉じる
+      - ""
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -281,7 +291,7 @@ pauseMenu:
     posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
     text:
-      - ↑↓:選択 A:決定 -:閉じる
+      - ""
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

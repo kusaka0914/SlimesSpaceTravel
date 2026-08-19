@@ -22,6 +22,7 @@ void PauseMenuRenderer::Draw()
     std::vector<std::string> menuTextIds = {
         "resumeText",
         "controlStyleText",
+        "twoPlayerText",
         "returnBaseText",
         "feedbackText",
         "quitText",
@@ -36,17 +37,29 @@ void PauseMenuRenderer::Draw()
             continue;
         }
 
-        const bool selected = selectedIndex == i;
+        const bool isTwoPlayerEntry = menuTextIds[i] == "twoPlayerText";
+        const bool isReturnBaseEntry = menuTextIds[i] == "returnBaseText";
+        const bool enabled =
+            (!isTwoPlayerEntry || mGame->CanStartTwoPlayerFromPauseMenu()) &&
+            (!isReturnBaseEntry || mGame->CanReturnToBaseFromPauseMenu());
+        const bool selected = enabled && selectedIndex == i;
 
         std::string label = textInfo->texts[0];
         if (menuTextIds[i] == "controlStyleText") {
             label += mGame->IsAssistControlStyle() ? "アシスト" : "スタンダード";
         }
+        if (isTwoPlayerEntry && mGame->GetIsPlayer2Joined()) {
+            label = "1人であそぶ";
+        }
 
         std::string text = selected ? "> " : "  ";
         text += label;
 
-        const glm::vec4 color = selected ? glm::vec4(255, 230, 0, 255) : glm::vec4(255, 255, 255, 255);
+        const glm::vec4 color = !enabled
+                                    ? glm::vec4(125, 125, 125, 255)
+                                    : selected
+                                          ? glm::vec4(255, 230, 0, 255)
+                                          : glm::vec4(255, 255, 255, 255);
 
         mRenderer->DrawTextForElement(
             "pauseMenu",

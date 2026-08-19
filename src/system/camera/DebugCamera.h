@@ -42,6 +42,7 @@ private:
     glm::vec3 mCameraPos{0.0f};
     glm::vec3 mForwardVec{0.0f, 0.0f, 1.0f};
     glm::vec3 mUpVec{0.0f, 1.0f, 0.0f};
+    glm::vec3 mUGCTarget{0.0f, 0.0f, 1.0f};
 
     float mFieldOfViewDegrees = 60.0f;
 };

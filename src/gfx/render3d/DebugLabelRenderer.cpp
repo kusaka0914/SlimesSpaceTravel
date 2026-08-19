@@ -36,15 +36,17 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
         return;
     }
 
+    // The UGC editor is a direct-manipulation view. Actor names obscure the
+    // pieces children are trying to place, so it intentionally has no labels.
+    if (mRenderer->GetGame()->GetIsUGCMode()) {
+        return;
+    }
+
     const std::vector<Planet*>& planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
     for (Planet* planet : planets) {
         if (!planet) {
             continue;
-        }
-
-        for (Platform* platform : planet->GetPlatforms()) {
-            DrawDebugLabel(viewMat, platform, "足場 " + std::to_string(platform->GetStageYamlIndex()));
         }
 
         for (NPC* npc : planet->GetNPCs()) {

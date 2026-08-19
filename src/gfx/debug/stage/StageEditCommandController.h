@@ -17,6 +17,7 @@ public:
 
     void PushUndo();
     bool RestoreUndo();
+    bool RestoreRedo();
 
     bool DeleteSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
     bool DeletePlanet(int planetIndex);
@@ -36,6 +37,7 @@ private:
     StageSelectionController& mSelectionController;
 
     std::vector<std::string> mUndoStack;
+    std::vector<std::string> mRedoStack;
 
     bool mZPressedPrev = false;
     bool mDPressedPrev = false;

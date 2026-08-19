@@ -233,6 +233,11 @@ void PhysicsSystem::Initialize()
     CreateWorld();
 }
 
+void PhysicsSystem::ClearForEditorStageRebuild()
+{
+    ClearBulletWorld();
+}
+
 void PhysicsSystem::ClearBulletWorld()
 {
     mWorldBuilder->RemoveObjectsFromWorld(mBulletWorld.get(), mFallRespawnTriggerObjects, mEditorPickObjects,

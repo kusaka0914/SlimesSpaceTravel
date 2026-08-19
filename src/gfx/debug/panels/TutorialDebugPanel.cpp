@@ -335,6 +335,57 @@ void TutorialDebugPanel::DrawPageEditor(
         library.RegeneratePageRuby(page);
     }
 
+    const auto drawRubyReadingEditor = [](
+                                          const char* label,
+                                          std::vector<RubyTextSegment>& segments) {
+        if (segments.empty() || !ImGui::TreeNode(label)) {
+            return;
+        }
+
+        for (std::size_t segmentIndex = 0;
+             segmentIndex < segments.size();
+             ++segmentIndex) {
+            RubyTextSegment& segment = segments[segmentIndex];
+            if (!segment.showsRuby) {
+                continue;
+            }
+
+            ImGui::Text("「%s」", segment.text.c_str());
+            ImGui::SameLine();
+            std::array<char, 256> readingBuffer = {};
+            std::snprintf(
+                readingBuffer.data(),
+                readingBuffer.size(),
+                "%s",
+                segment.reading.c_str());
+            const std::string inputId =
+                "##tutorialRubyReading" +
+                std::to_string(segmentIndex);
+            if (ImGui::InputText(
+                    inputId.c_str(),
+                    readingBuffer.data(),
+                    readingBuffer.size())) {
+                segment.reading = readingBuffer.data();
+                segment.showsRuby = !segment.reading.empty();
+            }
+        }
+        ImGui::TreePop();
+    };
+
+    ImGui::TextDisabled(
+        "ルビは本文変更時に自動生成されます。必要な箇所だけ読みを修正できます。");
+    drawRubyReadingEditor("共通テキストのルビを修正", page.rubySegments);
+    if (!page.controllerText.empty()) {
+        drawRubyReadingEditor(
+            "ゲームパッド用テキストのルビを修正",
+            page.controllerRubySegments);
+    }
+    if (!page.keyboardText.empty()) {
+        drawRubyReadingEditor(
+            "キーボード用テキストのルビを修正",
+            page.keyboardRubySegments);
+    }
+
     int advanceConditionIndex =
         static_cast<int>(page.advanceCondition);
     const char* advanceConditionLabels[] = {

@@ -10,7 +10,7 @@ public:
     StageFlowController();
 
     void LoadData(Game& game, bool isLoadPlayer);
-    void ReloadCurrentStage(Game& game);
+    void ReloadCurrentStage(Game& game, bool rebuildPhysics = true);
     void ChangeStage(GameWorld& world, int stageNum);
     void ReturnToBase(Game& game);
 

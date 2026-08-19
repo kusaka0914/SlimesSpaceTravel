@@ -19,12 +19,49 @@ public:
 
     bool AddPlatform(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale,
                      const StageActorPlacement* placement = nullptr);
+    bool AddUGCPlatformCell(
+        int currentPlanetNum,
+        const StageActorPlacement& placement,
+        float gridSize,
+        int footprintSideLength = 1);
+    bool RefreshUGCPlatformCells();
+    bool TranslateUGCPlatformCells(
+        const StageActorRef& generatedPlatformRef,
+        const glm::vec3& worldDelta);
+    bool TranslateUGCPlatformCells(
+        const std::vector<StageActorRef>& generatedPlatformRefs,
+        const glm::vec3& worldDelta);
+    bool RemoveUGCPlatformCell(
+        const StageActorRef& generatedPlatformRef,
+        const glm::vec3& hitPosition);
+    bool RemoveUGCPlatformCellAtGridPosition(
+        int planetIndex,
+        const glm::vec3& worldPosition,
+        float gridSize,
+        int gridLayer);
+    bool ResolveUGCPlatformLayerAtGridPosition(
+        int planetIndex,
+        const glm::vec3& worldPosition,
+        float gridSize,
+        int preferredGridLayer,
+        int& outGridLayer) const;
+    int ResolveUGCPlatformPlacementLayerAtGridPosition(
+        int planetIndex,
+        const glm::vec3& worldPosition,
+        float gridSize,
+        int emptyColumnGridLayer) const;
+    bool AddPressureSwitchPlatform(
+        int currentPlanetNum,
+        const std::string& modelPath,
+        const glm::vec3& scale,
+        const StageActorPlacement* placement = nullptr);
     bool AddRideMovingPlatform(
         int currentPlanetNum,
         const std::string& modelPath,
         const glm::vec3& scale,
         const StageActorPlacement* placement = nullptr);
     bool AddPlanet(const std::string& modelPath);
+    bool AddEllipsePlanet(const std::string& modelPath);
     bool AddEnemy(const std::string& type, int currentPlanetNum,
                   const StageActorPlacement* placement = nullptr);
     bool AddNPC(const std::string& modelPath, int currentPlanetNum, const std::string& name,
@@ -85,6 +122,7 @@ private:
     void EnsureSequence(YAML::Node& config, const std::string& sequenceName) const;
 
     YAML::Node CreatePlatformNode(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale) const;
+    bool RebuildUGCPlatformNodes(YAML::Node& config) const;
     YAML::Node CreateRideMovingPlatformNode(
         int currentPlanetNum,
         const std::string& modelPath,

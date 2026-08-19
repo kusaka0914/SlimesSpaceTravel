@@ -6,9 +6,11 @@
 #include "actor/Platform.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageYamlRepository.h"
 #include "system/StageActorPlanetBindingService.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/camera/CameraProjection.h"
 
 #include "ImGuizmo.h"
 
@@ -16,6 +18,8 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 StageSelectionController::StageSelectionController(DebugEditorContext& context)
@@ -362,6 +366,13 @@ void StageSelectionController::UpdateBoxSelection()
         return;
     }
 
+    if (mContext.game->GetIsUGCMode()) {
+        mIsBoxSelectMouseDown = false;
+        mIsBoxSelecting = false;
+        mBoxSelectMoved = false;
+        return;
+    }
+
     ImGuiIO& io = ImGui::GetIO();
 
     if (io.WantCaptureMouse) {
@@ -464,8 +475,81 @@ void StageSelectionController::UpdatePickedActorByMouse()
         return;
     }
 
-    const std::vector<PhysicsSystem::RayHitActor> hits =
+    std::vector<PhysicsSystem::RayHitActor> rawHits =
         mContext.game->GetPhysicsSystem()->PickActorsByRay(rayFrom, rayTo);
+    if (rawHits.empty() && mContext.game->GetIsUGCMode()) {
+        rawHits = CollectUGCScreenPickHits(ImGui::GetMousePos());
+    }
+
+    std::vector<PhysicsSystem::RayHitActor> hits;
+    if (mContext.game->GetIsUGCMode()) {
+        YAML::Node stageYaml;
+        StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
+        const float gridSize = mContext.game->GetUGCGridSize();
+        struct LayeredHit {
+            PhysicsSystem::RayHitActor hit;
+            int layer = 0;
+        };
+        std::vector<LayeredHit> allLayerObjectHits;
+        std::vector<PhysicsSystem::RayHitActor> currentLayerPlanetHits;
+        std::unordered_set<Actor*> seenObjectActors;
+        std::unordered_set<Actor*> seenCurrentLayerActors;
+        for (const PhysicsSystem::RayHitActor& hit : rawHits) {
+            if (!hit.actor) {
+                continue;
+            }
+            const std::optional<StageActorRef> hitRef =
+                StageActorQuery::FindTargetForActor(
+                    mContext.game->GetCurrentStage(), hit.actor);
+            if (!hitRef) {
+                continue;
+            }
+
+            int actorLayer = static_cast<int>(std::round(
+                hit.actor->GetPos().y / gridSize));
+            const YAML::Node sequence = stageYaml[hitRef->sequenceName];
+            if (sequence && sequence.IsSequence() &&
+                hitRef->yamlIndex >= 0 &&
+                hitRef->yamlIndex < static_cast<int>(sequence.size())) {
+                const YAML::Node actorNode = sequence[hitRef->yamlIndex];
+                if (actorNode["ugcGeneratedPlatform"] &&
+                    actorNode["ugcGeneratedPlatform"].as<bool>(false)) {
+                    actorLayer = actorNode["ugcGridLayer"].as<int>(actorLayer);
+                }
+            }
+            const bool isPlanet = dynamic_cast<Planet*>(hit.actor) != nullptr;
+            if (!isPlanet && seenObjectActors.insert(hit.actor).second) {
+                allLayerObjectHits.push_back({hit, actorLayer});
+            }
+            if (actorLayer == mUGCEditLayer &&
+                seenCurrentLayerActors.insert(hit.actor).second) {
+                if (isPlanet) {
+                    currentLayerPlanetHits.push_back(hit);
+                } else {
+                    hits.push_back(hit);
+                }
+            }
+        }
+
+        // Prefer the floor the child is editing. If that floor is empty,
+        // select the highest object in the column so clicking a visible stack
+        // never appears to do nothing.
+        if (hits.empty() && !allLayerObjectHits.empty()) {
+            int highestLayer = allLayerObjectHits.front().layer;
+            for (const LayeredHit& layeredHit : allLayerObjectHits) {
+                highestLayer = std::max(highestLayer, layeredHit.layer);
+            }
+            for (const LayeredHit& layeredHit : allLayerObjectHits) {
+                if (layeredHit.layer == highestLayer) {
+                    hits.push_back(layeredHit.hit);
+                }
+            }
+        } else if (hits.empty() && allLayerObjectHits.empty()) {
+            hits = std::move(currentLayerPlanetHits);
+        }
+    } else {
+        hits = rawHits;
+    }
 
     if (hits.empty()) {
         if (!io.KeyShift) {
@@ -515,9 +599,80 @@ void StageSelectionController::UpdatePickedActorByMouse()
 
     if (io.KeyShift) {
         ToggleSelection(hitActor, *target);
+    } else if (mContext.game->GetIsUGCMode() && IsSelected(*target)) {
+        // Pressing an already-selected object starts a group drag in UGC.
+        // Keep the selection set intact while making this the picked object.
+        PrepareActorForEditorSelection(hitActor);
+        mPickedActor = hitActor;
+        mPickedActorRef = *target;
     } else {
         SetSingleSelection(hitActor, *target);
     }
+}
+
+std::vector<PhysicsSystem::RayHitActor>
+StageSelectionController::CollectUGCScreenPickHits(
+    const ImVec2& clickPosition) const
+{
+    std::vector<PhysicsSystem::RayHitActor> hits;
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return hits;
+    }
+
+    const std::vector<StageActorInstance> instances =
+        StageActorQuery::CollectAllActorInstances(
+            mContext.game->GetCurrentStage());
+    for (const StageActorInstance& instance : instances) {
+        Actor* actor = instance.actor;
+        if (!actor || !actor->GetIsActive()) {
+            continue;
+        }
+
+        ImVec2 screenPosition;
+        if (!WorldToScreenPoint(actor->GetPos(), screenPosition)) {
+            continue;
+        }
+
+        const glm::vec3 absoluteScale = glm::abs(actor->GetScale());
+        const float worldRadius = std::max(
+            0.5f,
+            actor->GetRadius() * std::max(
+                absoluteScale.x,
+                std::max(absoluteScale.y, absoluteScale.z)));
+        ImVec2 radiusPoint;
+        float screenRadius = 22.0f;
+        if (WorldToScreenPoint(
+                actor->GetPos() + glm::vec3(worldRadius, 0.0f, 0.0f),
+                radiusPoint)) {
+            const float radiusX = radiusPoint.x - screenPosition.x;
+            const float radiusY = radiusPoint.y - screenPosition.y;
+            screenRadius = glm::clamp(
+                std::sqrt(radiusX * radiusX + radiusY * radiusY),
+                22.0f,
+                180.0f);
+        }
+
+        const float deltaX = clickPosition.x - screenPosition.x;
+        const float deltaY = clickPosition.y - screenPosition.y;
+        const float distanceSquared = deltaX * deltaX + deltaY * deltaY;
+        if (distanceSquared > screenRadius * screenRadius) {
+            continue;
+        }
+
+        PhysicsSystem::RayHitActor hit;
+        hit.actor = actor;
+        hit.hitPos = actor->GetPos();
+        hit.distance = std::sqrt(distanceSquared);
+        hits.emplace_back(hit);
+    }
+
+    std::sort(
+        hits.begin(), hits.end(),
+        [](const PhysicsSystem::RayHitActor& left,
+           const PhysicsSystem::RayHitActor& right) {
+            return left.distance < right.distance;
+        });
+    return hits;
 }
 
 bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const
@@ -607,27 +762,24 @@ bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec
     const float aspect = renderWidth / viewportHeight;
 
     const glm::mat4 view = views[viewIndex];
-    const glm::mat4 proj = glm::perspective(glm::radians(fovDeg), aspect, 0.1f, 100.0f);
+    const glm::mat4 projection = CalculateCameraProjection(
+        *mContext.game, aspect, fovDeg);
+    const glm::mat4 inverseViewProjection =
+        glm::inverse(projection * view);
 
-    const glm::mat4 invView = glm::inverse(view);
-    const glm::mat4 invProj = glm::inverse(proj);
-
-    glm::vec4 rayClip(ndcX, ndcY, -1.0f, 1.0f);
-
-    glm::vec4 rayEye = invProj * rayClip;
-    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-
-    glm::vec4 rayWorld = invView * rayEye;
-
-    glm::vec3 rayDir = glm::vec3(rayWorld);
-    if (glm::length(rayDir) < 1e-6f) {
+    glm::vec4 nearPoint = inverseViewProjection *
+        glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
+    glm::vec4 farPoint = inverseViewProjection *
+        glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
+    if (std::abs(nearPoint.w) < 0.000001f ||
+        std::abs(farPoint.w) < 0.000001f) {
         return false;
     }
+    nearPoint /= nearPoint.w;
+    farPoint /= farPoint.w;
 
-    rayDir = glm::normalize(rayDir);
-
-    outRayFrom = glm::vec3(invView[3]);
-    outRayTo = outRayFrom + rayDir * 1000.0f;
+    outRayFrom = glm::vec3(nearPoint);
+    outRayTo = glm::vec3(farPoint);
 
     return true;
 }
@@ -677,11 +829,8 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const float fieldOfViewDegrees =
         mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
-    const glm::mat4 projection = glm::perspective(
-        glm::radians(fieldOfViewDegrees),
-        aspect,
-        0.1f,
-        100.0f);
+    const glm::mat4 projection = CalculateCameraProjection(
+        *mContext.game, aspect, fieldOfViewDegrees);
 
     const glm::vec4 clip = projection * view * glm::vec4(worldPos, 1.0f);
 
@@ -691,7 +840,12 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const glm::vec3 ndc = glm::vec3(clip) / clip.w;
 
-    if (ndc.x < -1.0f || ndc.x > 1.0f || ndc.y < -1.0f || ndc.y > 1.0f || ndc.z < -1.0f || ndc.z > 1.0f) {
+    // Editor overlays need projected positions outside the viewport so long
+    // lines and box-selection candidates can be clipped by the caller. Only
+    // reject invalid projections or points behind the camera here.
+    if (!std::isfinite(ndc.x) ||
+        !std::isfinite(ndc.y) ||
+        !std::isfinite(ndc.z)) {
         return false;
     }
 

@@ -36,7 +36,12 @@ public:
     void Initialize();
     void Draw() const;
 
-    void DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
+    void DrawScene(
+        const glm::mat4& viewMat,
+        const glm::mat4& projMat,
+        const glm::vec3& cameraPos,
+        bool emphasizeUGCLayers = false,
+        int ugcEditLayer = 0) const;
 
     Game* GetGame() const { return mGame; }
     Shader3D* GetShader3D() const { return mShader3D; }
@@ -65,6 +70,7 @@ public:
 
     void TryDrawActor(Actor* actor, bool useOrient = true) const;
     void DrawActor(Actor* actor, bool useOrient = true) const;
+    void DrawUGCPlacementPreviewActor(Actor* actor) const;
     bool IsActorInsideView(const Actor* actor) const;
 
     template <class ActorType> void TryDrawActors(const std::vector<ActorType*>& actors, bool useOrient = true) const
@@ -93,6 +99,11 @@ private:
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
     void DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const;
+    void DrawActorOutlineUnderlay(
+        Actor* actor,
+        bool useOrient,
+        const glm::vec4& color,
+        float scaleMultiplier) const;
     void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
 
     bool UploadActorSkinningMatrices(const Actor* actor) const;
@@ -114,4 +125,7 @@ private:
     std::unordered_set<std::string> mFailedTextureOverrides;
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;
+    mutable bool mEmphasizeUGCLayers = false;
+    mutable int mUGCEditLayer = 0;
+    mutable float mActorOpacityMultiplier = 1.0f;
 };

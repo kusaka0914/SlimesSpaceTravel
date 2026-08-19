@@ -26,6 +26,7 @@ public:
     {
         return mLocTextureSideBlendWidth;
     }
+    int GetLocColorMultiplier() const { return mLocColorMultiplier; }
 
 private:
     int mLocLightPos;
@@ -42,4 +43,5 @@ private:
     int mLocUseBackTexture;
     int mLocBackTexture;
     int mLocTextureSideBlendWidth;
+    int mLocColorMultiplier;
 };

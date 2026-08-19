@@ -54,6 +54,9 @@ public:
     ~PhysicsSystem();
 
     void Initialize();
+    // Used while rebuilding the editor's visual stage. The editor does not
+    // need collision bodies, but stale bodies must not outlive their actors.
+    void ClearForEditorStageRebuild();
 
     btDiscreteDynamicsWorld* GetBulletWorld() const { return mBulletWorld.get(); }
 

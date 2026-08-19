@@ -257,6 +257,13 @@ void SceneSystem::StartPlayingScene()
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
 
+    // Stage changes already request this explicitly, but direct stage starts
+    // (debug/editor reloads and restart flows) previously skipped it. Queue
+    // the same check here so an NPC configured for arrival always gets a
+    // chance to start its unread conversation after the scene is ready.
+    mHasPendingForcedArrivalTalk = true;
+    mHasReachedArrivalDestination = false;
+
     for (Player* player : mGame->GetPlayers()) {
         player->SetInputAvailableTimer(0.15f);
     }

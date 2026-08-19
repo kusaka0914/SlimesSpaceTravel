@@ -18,10 +18,14 @@ void StageFlowController::LoadData(Game& game, bool isLoadPlayer)
     game.GetActorLoadSystem()->LoadData(isLoadPlayer);
 }
 
-void StageFlowController::ReloadCurrentStage(Game& game)
+void StageFlowController::ReloadCurrentStage(
+    Game& game,
+    bool rebuildPhysics)
 {
     LoadData(game, true);
-    game.GetPhysicsSystem()->Initialize();
+    if (rebuildPhysics) {
+        game.GetPhysicsSystem()->Initialize();
+    }
     game.GetAudioSystem()->TryChangeBGM();
 }
 

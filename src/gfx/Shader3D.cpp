@@ -36,4 +36,6 @@ void Shader3D::Initialize()
         glGetUniformLocation(mShaderProgram, "backTexture");
     mLocTextureSideBlendWidth =
         glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
+    mLocColorMultiplier =
+        glGetUniformLocation(mShaderProgram, "colorMultiplier");
 }

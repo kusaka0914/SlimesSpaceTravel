@@ -246,6 +246,34 @@ void RemoveActorsOnDeletedPlanet(
     stageYaml[sequenceName] = remainingActors;
 }
 
+void RemoveUGCPlatformCellsOnDeletedPlanet(
+    YAML::Node& stageYaml,
+    int deletedPlanetIndex)
+{
+    const YAML::Node cells = stageYaml["ugcPlatformCells"];
+    if (!cells || !cells.IsSequence()) {
+        return;
+    }
+
+    YAML::Node remainingCells(YAML::NodeType::Sequence);
+    for (const YAML::Node& sourceCell : cells) {
+        if (!sourceCell.IsMap() || !sourceCell["planetIndex"]) {
+            remainingCells.push_back(YAML::Clone(sourceCell));
+            continue;
+        }
+        const int planetIndex = sourceCell["planetIndex"].as<int>(0);
+        if (planetIndex == deletedPlanetIndex) {
+            continue;
+        }
+        YAML::Node cell = YAML::Clone(sourceCell);
+        if (planetIndex > deletedPlanetIndex) {
+            cell["planetIndex"] = planetIndex - 1;
+        }
+        remainingCells.push_back(cell);
+    }
+    stageYaml["ugcPlatformCells"] = remainingCells;
+}
+
 bool IsDeletedActorIndex(
     const std::vector<int>& deletedIndices,
     int actorIndex)
@@ -505,6 +533,17 @@ void StageEditCommandController::PushUndo()
     }
 
     mUndoStack.push_back(yamlText);
+    mRedoStack.clear();
+
+    if (mContext.game->GetIsUGCMode()) {
+        YAML::Node stageYaml;
+        if (StageYamlRepository::LoadCurrentStage(
+                mContext, stageYaml)) {
+            stageYaml["ugcMetadata"]["isClearVerified"] = false;
+            StageYamlRepository::SaveCurrentStage(
+                mContext, stageYaml);
+        }
+    }
 
     constexpr std::size_t maxUndoCount = 20;
     if (mUndoStack.size() > maxUndoCount) {
@@ -518,6 +557,11 @@ bool StageEditCommandController::RestoreUndo()
         return false;
     }
 
+    std::string currentYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(
+            mContext, currentYamlText)) {
+        return false;
+    }
     const std::string yamlText = mUndoStack.back();
 
     if (!StageYamlRepository::WriteCurrentStageTextAtomically(mContext, yamlText)) {
@@ -525,6 +569,7 @@ bool StageEditCommandController::RestoreUndo()
     }
 
     mUndoStack.pop_back();
+    mRedoStack.push_back(currentYamlText);
 
     mSelectionController.Clear();
 
@@ -602,6 +647,30 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
     return true;
 }
 
+bool StageEditCommandController::RestoreRedo()
+{
+    if (!mContext.game || mRedoStack.empty()) {
+        return false;
+    }
+
+    std::string currentYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(
+            mContext, currentYamlText)) {
+        return false;
+    }
+    const std::string yamlText = mRedoStack.back();
+    if (!StageYamlRepository::WriteCurrentStageTextAtomically(
+            mContext, yamlText)) {
+        return false;
+    }
+
+    mRedoStack.pop_back();
+    mUndoStack.push_back(currentYamlText);
+    mSelectionController.Clear();
+    mContext.game->ReloadCurrentStage();
+    return true;
+}
+
 bool StageEditCommandController::DeletePlanet(int planetIndex)
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -660,6 +729,9 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
             sequenceName,
             planetIndex);
     }
+    RemoveUGCPlatformCellsOnDeletedPlanet(
+        stageYaml,
+        planetIndex);
 
     if (!StageYamlRepository::SaveCurrentStage(
             mContext,

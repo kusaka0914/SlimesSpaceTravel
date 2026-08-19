@@ -564,7 +564,7 @@ NPCs:
       - -0.00036701324
       - 0.9996407
       - 0.026307682
-    forceTalkOnArrival: false
+    forceTalkOnArrival: true
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003

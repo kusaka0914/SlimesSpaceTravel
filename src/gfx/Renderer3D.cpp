@@ -4,6 +4,7 @@
 #include "VertexArray.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "animation/SkeletalAnimationConstants.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
@@ -61,6 +62,65 @@ SDLSurfacePtr RenderTextSurface(
             text.c_str(),
             textColor),
         SDL_FreeSurface};
+}
+
+std::vector<glm::vec3> CreateUGCPlacementGhostFaces(
+    const glm::vec3& center,
+    float gridSize)
+{
+    const float halfWidth = gridSize * 0.5f;
+    const float halfHeight = gridSize * 0.1f;
+    const glm::vec3 corners[] = {
+        {center.x - halfWidth, center.y - halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y - halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y - halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y - halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y + halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y + halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y + halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y + halfHeight, center.z + halfWidth},
+    };
+    constexpr int indices[] = {
+        0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+        0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5,
+        2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7,
+    };
+    std::vector<glm::vec3> vertices;
+    vertices.reserve(36);
+    for (const int index : indices) {
+        vertices.push_back(corners[index]);
+    }
+    return vertices;
+}
+
+std::vector<glm::vec3> CreateUGCPlacementGhostEdges(
+    const glm::vec3& center,
+    float gridSize)
+{
+    const float halfWidth = gridSize * 0.5f;
+    const float halfHeight = gridSize * 0.1f;
+    const glm::vec3 corners[] = {
+        {center.x - halfWidth, center.y - halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y - halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y - halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y - halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y + halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y + halfHeight, center.z - halfWidth},
+        {center.x + halfWidth, center.y + halfHeight, center.z + halfWidth},
+        {center.x - halfWidth, center.y + halfHeight, center.z + halfWidth},
+    };
+    constexpr int edges[][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7},
+    };
+    std::vector<glm::vec3> vertices;
+    vertices.reserve(24);
+    for (const auto& edge : edges) {
+        vertices.push_back(corners[edge[0]]);
+        vertices.push_back(corners[edge[1]]);
+    }
+    return vertices;
 }
 } // namespace
 
@@ -313,20 +373,64 @@ void Renderer3D::Draw() const
                                               static_cast<float>(framebufferHeight));
 }
 
-void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
+void Renderer3D::DrawScene(
+    const glm::mat4& viewMat,
+    const glm::mat4& projMat,
+    const glm::vec3& cameraPos,
+    bool emphasizeUGCLayers,
+    int ugcEditLayer) const
 {
     if (!mSceneObjectRenderer || !mShader3D) {
         return;
     }
 
+    // The top/side UGC editor keeps every floor visible as a map. The floor
+    // being edited is bright while the rest are dimmed, matching the inset
+    // preview without changing the normal playtest render.
+    if (!emphasizeUGCLayers && mGame &&
+        mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing()) {
+        emphasizeUGCLayers = true;
+        ugcEditLayer = mGame->GetUGCPreviewEditLayer();
+    }
+
     glUseProgram(mShader3D->GetShaderProgram());
+    mEmphasizeUGCLayers = emphasizeUGCLayers;
+    mUGCEditLayer = ugcEditLayer;
     UpdateViewFrustum(projMat * viewMat);
     SetUniforms(viewMat, projMat, cameraPos);
     mSceneObjectRenderer->DrawSceneObjects(viewMat);
 
+    if (mGame && mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing()) {
+        const std::optional<glm::vec3>& placementPreview =
+            mGame->GetUGCPlatformPlacementPreview();
+        if (placementPreview) {
+            Actor* placementPreviewActor =
+                mGame->GetUGCPlacementModelPreview();
+            if (placementPreviewActor) {
+                DrawUGCPlacementPreviewActor(placementPreviewActor);
+            } else {
+                const float gridSize = mGame->GetUGCGridSize();
+                DrawAttackRangeVertices(
+                    CreateUGCPlacementGhostFaces(*placementPreview, gridSize),
+                    GL_TRIANGLES,
+                    glm::vec4(0.25f, 0.95f, 0.68f, 0.32f));
+                DrawAttackRangeVertices(
+                    CreateUGCPlacementGhostEdges(*placementPreview, gridSize),
+                    GL_LINES,
+                    glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
+            }
+            // Restore the normal scene material state for renderers that
+            // run after the ghost.
+            SetUniforms(viewMat, projMat, cameraPos);
+        }
+    }
+
     if (mParticleRenderer) {
         mParticleRenderer->Draw(viewMat, projMat);
     }
+    mEmphasizeUGCLayers = false;
 }
 
 void Renderer3D::UpdateViewFrustum(
@@ -446,6 +550,11 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     glUniform1i(mShader3D->GetLocBackTexture(), 1);
     glUniform1f(mShader3D->GetLocTextureSideBlendWidth(), 0.05f);
+    glUniform3f(
+        mShader3D->GetLocColorMultiplier(),
+        1.0f,
+        1.0f,
+        1.0f);
     SetSkinningEnabled(false);
 }
 
@@ -472,6 +581,17 @@ void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
     DrawActor(actor, useOrient);
 }
 
+void Renderer3D::DrawUGCPlacementPreviewActor(Actor* actor) const
+{
+    if (!actor) {
+        return;
+    }
+
+    mActorOpacityMultiplier = 0.42f;
+    DrawActor(actor);
+    mActorOpacityMultiplier = 1.0f;
+}
+
 void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 {
     if (!actor || !mShader3D ||
@@ -483,9 +603,33 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     const bool isSelected = actor->GetIsEditorSelected();
     const bool isPlanet = dynamic_cast<const Planet*>(actor) != nullptr;
+    const Platform* platform = dynamic_cast<const Platform*>(actor);
+    const bool isGeneratedUGCPlatform =
+        mEmphasizeUGCLayers && platform && platform->GetIsUGCGenerated();
+    const bool isOnCurrentUGCLayer =
+        isGeneratedUGCPlatform &&
+        platform->GetUGCGridLayer() == mUGCEditLayer;
     if (isSelected && !isPlanet) {
         DrawActorSelectionUnderlay(actor, useOrient);
+    } else if (isOnCurrentUGCLayer) {
+        DrawActorOutlineUnderlay(
+            actor,
+            useOrient,
+            glm::vec4(1.0f, 0.78f, 0.16f, 1.0f),
+            1.045f);
     }
+
+    float layerBrightness = 1.0f;
+    if (isGeneratedUGCPlatform && !isOnCurrentUGCLayer) {
+        const int layerDistance = std::abs(
+            platform->GetUGCGridLayer() - mUGCEditLayer);
+        layerBrightness = layerDistance == 1 ? 0.45f : 0.22f;
+    }
+    glUniform3f(
+        mShader3D->GetLocColorMultiplier(),
+        layerBrightness,
+        layerBrightness,
+        layerBrightness);
 
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
@@ -500,11 +644,16 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
 
     const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
     if (!actorMeshes || actorMeshes->empty()) {
+        glUniform3f(
+            mShader3D->GetLocColorMultiplier(),
+            1.0f,
+            1.0f,
+            1.0f);
         return;
     }
 
     const float renderOpacity =
-        glm::clamp(actor->GetRenderOpacity(), 0.0f, 1.0f);
+        glm::clamp(actor->GetRenderOpacity() * mActorOpacityMultiplier, 0.0f, 1.0f);
     const bool transparent = renderOpacity < 0.999f;
     if (transparent) {
         StartTransparentDraw();
@@ -580,6 +729,11 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     if (isSelected && isPlanet) {
         DrawActorSelectionOverlay(actor, useOrient);
     }
+    glUniform3f(
+        mShader3D->GetLocColorMultiplier(),
+        1.0f,
+        1.0f,
+        1.0f);
 }
 
 GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)
@@ -666,16 +820,41 @@ void Renderer3D::DrawActorSelectionUnderlay(
     Actor* actor,
     bool useOrient) const
 {
+    DrawActorOutlineUnderlay(
+        actor,
+        useOrient,
+        glm::vec4(
+            EditorSelectionRed,
+            EditorSelectionGreen,
+            EditorSelectionBlue,
+            EditorSelectionAlpha),
+        1.0f);
+}
+
+void Renderer3D::DrawActorOutlineUnderlay(
+    Actor* actor,
+    bool useOrient,
+    const glm::vec4& color,
+    float scaleMultiplier) const
+{
     if (!actor || !actor->GetIsActive() || !mShader3D) {
         return;
     }
 
     const std::vector<LoadedMesh>* actorMeshes = actor->GetMeshes();
     if (!actorMeshes || actorMeshes->empty()) {
+        glUniform3f(
+            mShader3D->GetLocColorMultiplier(),
+            1.0f,
+            1.0f,
+            1.0f);
         return;
     }
 
-    const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
+    const glm::mat4 model = CreateActorModelMatrix(
+        actor,
+        useOrient,
+        scaleMultiplier);
     glUniformMatrix4fv(
         mShader3D->GetLocModel(),
         1,
@@ -684,12 +863,17 @@ void Renderer3D::DrawActorSelectionUnderlay(
 
     glUniform1i(mShader3D->GetLocUseTexture(), 0);
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
+    glUniform3f(
+        mShader3D->GetLocColorMultiplier(),
+        1.0f,
+        1.0f,
+        1.0f);
     glUniform4f(
         mShader3D->GetLocObjectColor(),
-        EditorSelectionRed,
-        EditorSelectionGreen,
-        EditorSelectionBlue,
-        EditorSelectionAlpha);
+        color.r,
+        color.g,
+        color.b,
+        color.a);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);

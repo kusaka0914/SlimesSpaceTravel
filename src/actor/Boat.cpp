@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
+#include "actor/Player.h"
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
 #include "system/sequence/SequenceSystem.h"
@@ -155,6 +156,20 @@ void Boat::UpdateActor(float deltaTime)
 void Boat::StartFocus()
 {
     mFocusComponent->StartFocus();
+}
+
+void Boat::BoardPlayer(Player* player)
+{
+    if (!player || HasBoardedPlayer(player)) {
+        return;
+    }
+
+    mBoardedPlayers.push_back(player);
+}
+
+bool Boat::HasBoardedPlayer(const Player* player) const
+{
+    return player && std::find(mBoardedPlayers.begin(), mBoardedPlayers.end(), player) != mBoardedPlayers.end();
 }
 
 void Boat::OnShown() const

@@ -3,6 +3,7 @@
 #include "Game.h"
 
 #include <GLFW/glfw3.h>
+#include <SDL.h>
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
@@ -52,6 +53,25 @@ void DebugCamera::ProcessInput()
     mFastMove = false;
 
     if (!mGame || !mGame->GetWindow()) {
+        return;
+    }
+
+    if (mGame->GetIsUGCMode()) {
+        GLFWwindow* window = mGame->GetWindow();
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            mMoveRight -= 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            mMoveRight += 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            mMoveUp += 1.0f;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            mMoveUp -= 1.0f;
+        }
+
+        mWasRotatingWithMouse = false;
         return;
     }
 
@@ -141,8 +161,18 @@ void DebugCamera::Update(float deltaTime)
     constexpr float baseMoveSpeed = 10.0f;
     const float moveSpeed = mFastMove ? baseMoveSpeed * 4.0f : baseMoveSpeed;
 
-    mCameraPos +=
-        (mForwardVec * mMoveForward + right * mMoveRight + mUpVec * mMoveUp) * moveSpeed * deltaTime;
+    const glm::vec3 movementDelta =
+        (mForwardVec * mMoveForward +
+         right * mMoveRight +
+         mUpVec * mMoveUp) *
+        moveSpeed * deltaTime;
+    mCameraPos += movementDelta;
+    if (mGame && mGame->GetIsUGCMode()) {
+        // Screen-space panning must keep the current viewing angle. Moving
+        // only the camera would make the next zoom aim back at the stage
+        // center and visibly tilt fixed top/side views.
+        mUGCTarget += movementDelta;
+    }
 }
 
 glm::mat4 DebugCamera::GetView() const
@@ -154,7 +184,9 @@ CameraPose DebugCamera::GetPose() const
 {
     CameraPose pose;
     pose.position = mCameraPos;
-    pose.target = mCameraPos + mForwardVec;
+    pose.target = mGame && mGame->GetIsUGCMode()
+        ? mUGCTarget
+        : mCameraPos + mForwardVec;
     pose.up = mUpVec;
     pose.fieldOfViewDegrees = mFieldOfViewDegrees;
     return pose;
@@ -169,6 +201,9 @@ void DebugCamera::SetPose(const CameraPose& pose)
     mCameraPos = pose.position;
     mForwardVec = forward;
     mUpVec = SafeNormalize(glm::cross(right, forward), requestedUp);
+    if (mGame && mGame->GetIsUGCMode()) {
+        mUGCTarget = pose.target;
+    }
     SetFieldOfViewDegrees(pose.fieldOfViewDegrees);
 }
 
