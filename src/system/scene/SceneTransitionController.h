@@ -13,6 +13,7 @@ public:
 
     void UpdateFade(float deltaTime);
     void StartOpening();
+    void StartEnding();
     void StartBattleStyleSelection();
     void StartFadeIn();
     void CancelPendingTransition();
@@ -36,5 +37,4 @@ private:
 
     std::function<void()> mMidpointAction;
     std::function<void()> mFadeCompletionAction;
-    bool mHasPlayedBaseIntroThisSession = false;
 };

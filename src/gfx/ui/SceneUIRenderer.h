@@ -9,6 +9,8 @@ public:
 
     void DrawTitle();
     void DrawOpening();
+    void DrawEnding();
+    void DrawCredits();
     void DrawGameOver();
 
 private:

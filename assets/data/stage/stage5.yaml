@@ -69,7 +69,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: true
     textureOverride: textures/planet_dry.png
-  - center: [19.429688, -10.0000925, -6.4869986]
+  - center: [37.06623, 0.21254694, 17.973852]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -81,7 +81,7 @@ planets:
     stageNum: 4
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [17.49217, -10.373857, 23.618912]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -94,7 +94,7 @@ planets:
     stageNum: 5
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [143.14241, -79.75258, -12.338093]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -133,7 +133,7 @@ planets:
     stageNum: 8
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [144.25893, -61.28863, -13.180363]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -172,7 +172,7 @@ planets:
     stageNum: 11
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [17.617432, -23.16952, 30.323849]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -185,7 +185,7 @@ planets:
     stageNum: 12
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [58.556873, -23.096169, -4.2667246]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -198,7 +198,7 @@ planets:
     stageNum: 13
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [71.96534, -23.169527, 21.770802]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -211,7 +211,7 @@ planets:
     stageNum: 14
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [45.077354, -33.92349, 26.927721]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -224,7 +224,7 @@ planets:
     stageNum: 15
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
+    textureOverride: textures/blackPlatform.png
   - center: [111.01259, -81.4061, 21.935722]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -273,13 +273,13 @@ boatArrivalPoints: []
 boatParts: []
 players:
   - pos:
-      - 1.2152369
-      - -1.8454633
-      - 1.7954826
-    currentPlanetNum: 0
-    theta: 0.9757904
-    phi: -0.7051892
-    height: -3.1528447
+      - -1.2
+      - -2.18
+      - -0.12
+    currentPlanetNum: 4
+    theta: -3.040424
+    phi: -1.0632011
+    height: 0.21601944
     facingYaw: 3.5963097
     rotation:
       - 0
@@ -299,7 +299,7 @@ players:
 star:
   - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011]}
 NPCs:
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 1}]}
+  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [""], pos: [-0.06, -1.42, 4.14], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, proximityMessage: {mode: always, variants: [{talkIndex: 0, text: 回避上手く使って急いで～！}], rubies: [{talkIndex: 0, segments: [{text: 回, ruby: true, reading: かい}, {text: 避, ruby: true, reading: ひ}, {text: 上手, ruby: true, reading: うま}, {text: く, ruby: false}, {text: 使, ruby: true, reading: つか}, {text: って, ruby: false}, {text: 急, ruby: true, reading: いそ}, {text: いで～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
 platforms:
   - currentPlanetNum: 0
     pos:
@@ -369,14 +369,14 @@ platforms:
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
-  - currentPlanetNum: 4
+  - currentPlanetNum: 0
     pos:
-      - -6.62
-      - 9.03
-      - -12.18
-    theta: -1.8193293
-    phi: 0.4648573
-    height: 14.873798
+      - 9.49
+      - -0.97
+      - 24.71
+    theta: 1.2042401
+    phi: -0.036630332
+    height: 20.493801
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -392,6 +392,114 @@ platforms:
       - -1
       - 0
     platformId: platform_2
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/roadTex.png
+    components:
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+  - currentPlanetNum: 2
+    pos:
+      - 1.93
+      - 17.33
+      - -9.59
+    theta: -1.3721642
+    phi: 1.0570494
+    height: 19.898638
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1.8080014
+      - 0.2
+      - 6.0764112
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_3
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/roadTex.png
+    components:
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+  - currentPlanetNum: 4
+    pos:
+      - -12.14
+      - -1.18
+      - -14.18
+    theta: -2.278805
+    phi: -0.06309386
+    height: 12.714915
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1.8080014
+      - 0.2
+      - 6.0764112
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_4
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0
+      - -0.50979275
+      - 0
+      - 0.86029726
+    textureOverride: textures/roadTex.png
+    components:
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
+  - currentPlanetNum: 4
+    pos:
+      - -4.76
+      - -1.18
+      - -8.11
+    theta: -2.1014035
+    phi: -0.124783516
+    height: 3.5669017
+    facingYaw: -1.0698878
+    rotation:
+      - 0
+      - 1.0698878
+      - 0
+    scale:
+      - 1.8080014
+      - 0.2
+      - 6.0764112
+    modelPath: platform.obj
+    upVec:
+      - 0
+      - -1
+      - 0
+    platformId: platform_5
     textureTiling:
       - 1
       - 1

@@ -14,7 +14,7 @@ public:
                     float deltaTime, bool isAllBreak = false);
 
     void TryApplyAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine,
-                        const glm::vec3& movementStart, float deltaTime);
+                        float deltaTime);
     void TryApplyFanAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine,
                            float range, float angleRadians,
                            float deltaTime);

@@ -245,6 +245,10 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
 
     if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
+        // The charged attack stays in the charging state, so it does not
+        // enter StrongAttacking automatically. Explicitly play the same
+        // one-shot animation used by a regular strong attack.
+        player.RequestStrongAttackAnimation();
     }
 
     if (input.GetAttackPressed() && !input.GetAttackPressedPrev()) {

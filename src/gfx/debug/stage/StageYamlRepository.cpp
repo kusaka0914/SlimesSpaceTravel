@@ -1,7 +1,10 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 
 #include "Game.h"
+#include "Stage.h"
+#include "actor/Planet.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -35,13 +38,31 @@ bool StageYamlRepository::LoadCurrentStage(DebugEditorContext& context, YAML::No
     return true;
 }
 
-bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, const YAML::Node& config)
+bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::Node config)
 {
     const std::string filePath = GetCurrentStageYamlPath(context);
 
     if (filePath.empty()) {
         std::cerr << "Current stage yaml path is empty" << std::endl;
         return false;
+    }
+
+    // Actor creation writes the stage YAML immediately.  A planet moved by
+    // the gizmo may not have gone through the planet inspector's Save button
+    // yet, so preserve its authored center before that write replaces the
+    // file with stale coordinates.
+    if (context.game && context.game->GetCurrentStage() &&
+        config["planets"] && config["planets"].IsSequence()) {
+        const auto& planets = context.game->GetCurrentStage()->GetPlanets();
+        const std::size_t count = std::min(planets.size(), config["planets"].size());
+        for (std::size_t index = 0; index < count; ++index) {
+            const Planet* planet = planets[index];
+            if (!planet) continue;
+            const glm::vec3 center = planet->GetPos();
+            config["planets"][index]["center"][0] = center.x;
+            config["planets"][index]["center"][1] = center.y;
+            config["planets"][index]["center"][2] = center.z;
+        }
     }
 
     return SaveYamlFile(filePath, config);

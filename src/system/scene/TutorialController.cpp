@@ -34,7 +34,9 @@ bool TutorialController::TryStart(
 {
     const TutorialDefinition* definition =
         mLibrary.Find(tutorialId);
-    if (!definition || definition->pages.empty() ||
+    if (!definition ||
+        definition->GetPagesForControlStyle(
+            mGame && mGame->IsAssistControlStyle()).empty() ||
         !mGame || !mGameProgressState || !mUIState) {
         return false;
     }
@@ -87,7 +89,9 @@ bool TutorialController::PreviewAtPage(
 {
     const TutorialDefinition* definition =
         mLibrary.Find(tutorialId);
-    if (!definition || pageIndex >= definition->pages.size()) {
+    if (!definition ||
+        pageIndex >= definition->GetPagesForControlStyle(
+                         mGame && mGame->IsAssistControlStyle()).size()) {
         return false;
     }
 
@@ -163,6 +167,11 @@ void TutorialController::OnEnemyLaunched()
     }
 
     mGameProgressState->SetIsFirstBreak(true);
+    // Assist style teaches launching as part of Y/J mashing, so it does not
+    // need the separate guard-break / aerial-attack tutorial.
+    if (mGame && mGame->IsAssistControlStyle()) {
+        return;
+    }
     TryStart("enemy_break");
 }
 
@@ -259,11 +268,14 @@ const TutorialPage* TutorialController::GetCurrentPage() const
     }
 
     const int pageIndex = mUIState->GetTalkUIIndex();
+    const std::vector<TutorialPage>& pages =
+        definition->GetPagesForControlStyle(
+            mGame && mGame->IsAssistControlStyle());
     if (pageIndex < 0 ||
-        pageIndex >= static_cast<int>(definition->pages.size())) {
+        pageIndex >= static_cast<int>(pages.size())) {
         return nullptr;
     }
-    return &definition->pages[
+    return &pages[
         static_cast<std::size_t>(pageIndex)];
 }
 
@@ -277,8 +289,9 @@ void TutorialController::AdvancePage()
     const TutorialDefinition* definition =
         GetActiveDefinition();
     if (!definition ||
-        mUIState->GetTalkUIIndex() >=
-            static_cast<int>(definition->pages.size())) {
+        mUIState->GetTalkUIIndex() >= static_cast<int>(
+            definition->GetPagesForControlStyle(
+                mGame && mGame->IsAssistControlStyle()).size())) {
         FinishActiveTutorial();
         return;
     }

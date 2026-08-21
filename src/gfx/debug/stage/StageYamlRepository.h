@@ -12,7 +12,7 @@ public:
     static std::string GetCurrentStageYamlPath(DebugEditorContext& context);
 
     static bool LoadCurrentStage(DebugEditorContext& context, YAML::Node& outConfig);
-    static bool SaveCurrentStage(DebugEditorContext& context, const YAML::Node& config);
+    static bool SaveCurrentStage(DebugEditorContext& context, YAML::Node config);
 
     static bool ReadCurrentStageText(DebugEditorContext& context, std::string& outYamlText);
     static bool WriteCurrentStageTextAtomically(DebugEditorContext& context, const std::string& yamlText);

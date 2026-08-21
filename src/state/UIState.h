@@ -6,7 +6,7 @@ class Game;
 
 class UIState {
 public:
-    enum class TalkWith { None, Opening, Mother, Doctor, NPC };
+    enum class TalkWith { None, Opening, Mother, Doctor, Ending, NPC };
 
     UIState(Game* game);
     void IncTalkUIIndex() { mTalkUIIndex++; }

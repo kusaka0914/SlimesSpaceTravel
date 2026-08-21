@@ -28,11 +28,13 @@ private:
         TutorialController* controller,
         TutorialLibrary& library,
         TutorialDefinition& definition,
+        std::vector<TutorialPage>& pages,
         std::size_t pageIndex);
     void DrawFocusTargetPicker(TutorialPage& page);
     void DrawVideoEditor(
         TutorialController* controller,
         TutorialDefinition& definition,
+        std::vector<TutorialPage>& pages,
         TutorialPage& page,
         std::size_t pageIndex);
     void DrawVideoPlacementOverlay(TutorialLibrary& library);
@@ -45,4 +47,6 @@ private:
     std::string mStatusMessage;
     int mPlacementPageIndex = -1;
     bool mIsResizingVideoPlacement = false;
+    bool mEditingAssistPages = false;
+    bool mPlacementUsesAssistPages = false;
 };

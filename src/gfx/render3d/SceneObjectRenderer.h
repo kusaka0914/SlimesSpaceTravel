@@ -6,6 +6,7 @@
 class DebugLabelRenderer;
 class NPCProximityMessageRenderer;
 class Planet;
+class Player;
 class PlayerEffectRenderer;
 class Renderer3D;
 
@@ -15,11 +16,14 @@ public:
                         const DebugLabelRenderer* debugLabelRenderer,
                         const NPCProximityMessageRenderer* npcProximityMessageRenderer);
 
-    void DrawSceneObjects(const glm::mat4& viewMat) const;
+    void DrawSceneObjects(const glm::mat4& viewMat, const Player* viewportPlayer) const;
 
 private:
     void DrawPlanets(const std::vector<Planet*>& planets) const;
-    void DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat) const;
+    void DrawActorOnPlanets(
+        const std::vector<Planet*>& planets,
+        const glm::mat4& viewMat,
+        const Player* viewportPlayer) const;
 
 private:
     const Renderer3D* mRenderer;

@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <memory>
+#include <cstddef>
 #include <string>
 
 class Game;
@@ -28,6 +29,7 @@ public:
 
     void RestartGame();
     void StartOpening();
+    void StartEnding();
     void StartBattleStyleSelection();
     void MoveBattleStyleSelection(int direction);
     void ConfirmBattleStyleSelection();
@@ -35,6 +37,14 @@ public:
     void DebugEnterOpening();
     void StartPlayingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
+    bool StartOpeningAfterTalkPage(
+        NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
+        std::size_t sourceTalkPageIndex);
+    void FinishOpeningStory();
+    bool StartEndingAfterTalkPage(NPC* talkingNPC, std::size_t sourceTalkPageIndex);
+    void FinishEndingStory();
+    void StartCredits();
+    void FinishCredits();
     bool TryStartTutorial(
         const std::string& tutorialId,
         Player* tutorialPlayer = nullptr);
@@ -65,6 +75,8 @@ public:
                GameProgressState::SceneState::BattleStyleSelection;
     }
     bool IsOpening() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening; }
+    bool IsEnding() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Ending; }
+    bool IsCredits() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Credits; }
     bool IsTalking() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Talking; }
     bool IsPlaying() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Playing; }
     bool IsFocusing() const { return mGameProgressState->GetSceneState() == GameProgressState::SceneState::Focusing; }
@@ -90,6 +102,7 @@ public:
     float GetFadeTimer() const { return mFadeTimer; }
     UIState::TalkWith GetCurrentTalkWith() const { return mUIState->GetCurrentTalkWith(); }
     int GetTalkUIIndex() const { return mUIState->GetTalkUIIndex(); }
+    float GetCreditsElapsed() const { return mCreditsElapsed; }
     PlayerControlStyle GetSelectedBattleStyle() const
     {
         return mSelectedBattleStyle;
@@ -135,4 +148,15 @@ private:
     PlayerControlStyle mSelectedBattleStyle = PlayerControlStyle::Assist;
     bool mHasPendingForcedArrivalTalk = false;
     bool mHasReachedArrivalDestination = false;
+    bool mSuppressForcedArrivalTalkOnce = false;
+    NPC* mOpeningResumeNPC = nullptr;
+    Player* mOpeningResumePlayer = nullptr;
+    int mOpeningResumeTalkPageIndex = -1;
+    bool mHasOpeningResume = false;
+    int mOpeningReturnStageNum = -1;
+    int mOpeningResumePlayerIndex = 0;
+    std::string mOpeningReturnStageYamlPath;
+    std::string mOpeningResumeNPCConversationId;
+    bool mIsFinishingOpeningStory = false;
+    float mCreditsElapsed = 0.0f;
 };

@@ -11,8 +11,43 @@
 #include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 
+#include <array>
 #include <cmath>
 #include <glm/glm.hpp>
+
+namespace {
+std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
+    const Player& player,
+    const PhysicsSystem& physicsSystem)
+{
+    const glm::vec3 up = glm::normalize(player.GetUpVec());
+    glm::vec3 forward = player.GetFacingForwardVec();
+    forward -= up * glm::dot(forward, up);
+    if (glm::dot(forward, forward) < 0.000001f) {
+        forward = player.GetForwardVec();
+        forward -= up * glm::dot(forward, up);
+    }
+    forward = glm::normalize(forward);
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+    const float scale = player.GetCollisionScaleMultiplier();
+    const float halfForward =
+        physicsSystem.GetPlayerCollisionDepth() * scale * 0.5f;
+    const float halfSide =
+        physicsSystem.GetPlayerCollisionWidth() * scale * 0.5f;
+    const glm::vec3 position = player.GetPos();
+
+    return {
+        position,
+        position + forward * halfForward,
+        position - forward * halfForward,
+        position + left * halfSide,
+        position - left * halfSide,
+        position + forward * halfForward + left * halfSide,
+        position + forward * halfForward - left * halfSide,
+        position - forward * halfForward + left * halfSide,
+        position - forward * halfForward - left * halfSide};
+}
+} // namespace
 
 void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyStateMachine& stateMachine,
                              float deltaTime, bool isAllBreak)
@@ -41,7 +76,6 @@ void EnemyCombat::TryApplyAttack(
     Enemy& enemy,
     EnemyStatus& status,
     const EnemyStateMachine& stateMachine,
-    const glm::vec3& movementStart,
     float deltaTime)
 {
     if (!stateMachine.IsProgressing(status)) {
@@ -50,11 +84,10 @@ void EnemyCombat::TryApplyAttack(
 
     const EnemyAttackFrame& attackFrame =
         stateMachine.GetActiveAttackFrame();
-    PhysicsSystem* physicsSystem =
-        enemy.GetGame()->GetPhysicsSystem();
-    if (!physicsSystem) {
-        return;
-    }
+    const EnemyMeleeAttackPreviewArea attackArea =
+        CalculateEnemyMeleeAttackPreviewArea(enemy);
+    const Planet* planet = enemy.GetCurrentPlanet();
+    PhysicsSystem* physicsSystem = enemy.GetGame()->GetPhysicsSystem();
 
     for (Player* player : enemy.GetGame()->GetPlayers()) {
         if (!player) {
@@ -73,27 +106,30 @@ void EnemyCombat::TryApplyAttack(
             continue;
         }
 
-        const glm::vec3 movementStartToPlayer =
-            player->GetPos() - movementStart;
-        const glm::vec3 planarPlayerOffset =
-            movementStartToPlayer -
-            attackFrame.up *
-                glm::dot(
-                    movementStartToPlayer,
-                    attackFrame.up);
-        constexpr float minimumForwardDistance = 0.0001f;
-        if (glm::dot(
-                planarPlayerOffset,
-                attackFrame.forward) <=
-            minimumForwardDistance) {
-            continue;
+        bool isInsideAttack = false;
+        if (planet && planet->GetPlanetShape() ==
+                          Planet::PlanetShape::Sphere &&
+            physicsSystem) {
+            for (const glm::vec3& samplePosition :
+                 GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
+                if (IsPositionInsideSphereSurfaceMeleeAttack(
+                        *planet,
+                        attackFrame,
+                        samplePosition,
+                        attackArea.forwardLength,
+                        attackArea.halfWidth)) {
+                    isInsideAttack = true;
+                    break;
+                }
+            }
+        } else {
+            isInsideAttack = IsPositionInsideMeleeAttack(
+                attackFrame,
+                player->GetPos(),
+                attackArea.forwardLength,
+                attackArea.halfWidth);
         }
-
-        if (!physicsSystem->
-                DoesActorEllipsoidModelSweepOverlapActorCollision(
-                    enemy,
-                    movementStart,
-                    *player)) {
+        if (!isInsideAttack) {
             continue;
         }
 
@@ -122,11 +158,35 @@ void EnemyCombat::TryApplyFanAttack(
             continue;
         }
 
-        if (!IsPositionInsideFanAttack(
+        const Planet* planet = enemy.GetCurrentPlanet();
+        bool isInsideAttack = false;
+        if (planet && planet->GetPlanetShape() ==
+                          Planet::PlanetShape::Sphere) {
+            PhysicsSystem* physicsSystem =
+                enemy.GetGame()->GetPhysicsSystem();
+            if (physicsSystem) {
+                for (const glm::vec3& samplePosition :
+                     GetPlayerSurfaceCollisionSamples(
+                         *player, *physicsSystem)) {
+                    if (IsPositionInsideSphereSurfaceFanAttack(
+                            *planet,
+                            attackFrame,
+                            samplePosition,
+                            range,
+                            angleRadians)) {
+                        isInsideAttack = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            isInsideAttack = IsPositionInsideFanAttack(
                 attackFrame,
                 player->GetPos(),
                 range,
-                angleRadians)) {
+                angleRadians);
+        }
+        if (!isInsideAttack) {
             continue;
         }
 
@@ -155,10 +215,33 @@ void EnemyCombat::TryApplyGroundRadialAttack(
             continue;
         }
 
-        if (!IsPositionInsideRadialAttack(
+        const Planet* planet = enemy.GetCurrentPlanet();
+        bool isInsideAttack = false;
+        if (planet && planet->GetPlanetShape() ==
+                          Planet::PlanetShape::Sphere) {
+            PhysicsSystem* physicsSystem =
+                enemy.GetGame()->GetPhysicsSystem();
+            if (physicsSystem) {
+                for (const glm::vec3& samplePosition :
+                     GetPlayerSurfaceCollisionSamples(
+                         *player, *physicsSystem)) {
+                    if (IsPositionInsideSphereSurfaceRadialAttack(
+                            *planet,
+                            attackFrame,
+                            samplePosition,
+                            range)) {
+                        isInsideAttack = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            isInsideAttack = IsPositionInsideRadialAttack(
                 attackFrame,
                 player->GetPos(),
-                range)) {
+                range);
+        }
+        if (!isInsideAttack) {
             continue;
         }
 

@@ -177,6 +177,13 @@ void UIDebugPanel::DrawElementList(UILoadSystem* uiLoadSystem)
         const auto type = static_cast<UILoadSystem::CustomElementType>(mNewElementType);
         const std::size_t addedIndex =
             uiLoadSystem->AddCustomElement(type, mNewScreen.data(), mNewId.data());
+        UILoadSystem::CustomElement& addedElement =
+            uiLoadSystem->GetCustomElements()[addedIndex];
+        if (addedElement.screen == "ugc") {
+            // UGC has no generic HUD pass. New authored elements should be
+            // immediately visible on the stage-creation canvas.
+            addedElement.visibleByDefault = true;
+        }
         mCanvasEditor.SetSingleSelection(addedIndex);
         mSelectedElementSource = SelectedElementSource::Custom;
         mSelectedExistingElementKey.clear();

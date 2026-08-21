@@ -378,7 +378,8 @@ void Renderer3D::DrawScene(
     const glm::mat4& projMat,
     const glm::vec3& cameraPos,
     bool emphasizeUGCLayers,
-    int ugcEditLayer) const
+    int ugcEditLayer,
+    const Player* viewportPlayer) const
 {
     if (!mSceneObjectRenderer || !mShader3D) {
         return;
@@ -399,7 +400,7 @@ void Renderer3D::DrawScene(
     mUGCEditLayer = ugcEditLayer;
     UpdateViewFrustum(projMat * viewMat);
     SetUniforms(viewMat, projMat, cameraPos);
-    mSceneObjectRenderer->DrawSceneObjects(viewMat);
+    mSceneObjectRenderer->DrawSceneObjects(viewMat, viewportPlayer);
 
     if (mGame && mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing()) {

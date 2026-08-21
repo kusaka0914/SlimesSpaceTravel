@@ -20,6 +20,7 @@ class SceneUIRenderer;
 class HudRenderer;
 class StateUIRenderer;
 class PauseMenuRenderer;
+struct ImVec2;
 
 class UIRenderer : public Renderer {
 public:
@@ -106,6 +107,14 @@ public:
     {
         return mRenderedUIElements;
     }
+    void RecordCustomUIElementForEditor(
+        const UILoadSystem::CustomElement& element);
+    // UGC editor controls are Dear ImGui windows, which are drawn after the
+    // game view. Positive z-order authored elements therefore need this
+    // foreground pass instead of the normal game-view UI pass.
+    void DrawUGCForegroundCustomUI(
+        const ImVec2& viewportMin,
+        const ImVec2& viewportSize);
 
     void DrawTextForElement(
         const std::string& screen,
@@ -170,6 +179,13 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
+    void DrawCustomElement(
+        const UILoadSystem::CustomElement& element,
+        float viewportTopY = 0.0f,
+        float viewportScale = 1.0f,
+        bool centerTalkPrompt = false,
+        float contentScale = -1.0f,
+        const Player* inputPlayer = nullptr);
     const std::string& ResolveCustomElementText(
         const UILoadSystem::CustomElement& element) const;
     const std::string& ResolveCustomElementTexturePath(

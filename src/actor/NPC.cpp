@@ -125,6 +125,32 @@ NPC::GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const
     return GetTalkAdvanceCondition(indices[resolvedIndex]);
 }
 
+bool NPC::GetResolvedTalkStartsOpeningAfterPage(
+    std::size_t resolvedIndex) const
+{
+    const std::optional<std::size_t> sourceIndex =
+        GetResolvedTalkSourceIndex(resolvedIndex);
+    return sourceIndex && GetTalkStartsOpeningAfterPage(*sourceIndex);
+}
+
+bool NPC::GetResolvedTalkStartsEndingAfterPage(
+    std::size_t resolvedIndex) const
+{
+    const std::optional<std::size_t> sourceIndex =
+        GetResolvedTalkSourceIndex(resolvedIndex);
+    return sourceIndex && GetTalkStartsEndingAfterPage(*sourceIndex);
+}
+
+std::optional<std::size_t> NPC::GetResolvedTalkSourceIndex(
+    std::size_t resolvedIndex) const
+{
+    const std::vector<std::size_t> indices = ResolveTalkIndices();
+    if (resolvedIndex >= indices.size()) {
+        return std::nullopt;
+    }
+    return indices[resolvedIndex];
+}
+
 const std::vector<RubyTextSegment>&
 NPC::GetResolvedTalkRubySegments(std::size_t resolvedIndex) const
 {

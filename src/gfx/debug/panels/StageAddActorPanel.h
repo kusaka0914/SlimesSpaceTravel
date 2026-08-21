@@ -22,6 +22,10 @@ enum class UGCPresetKind {
     EllipsePlanet,
     PressureSwitch,
     GoalStar,
+    MovingPlatform,
+    FadingPlatform,
+    AdhesivePlatform,
+    TwoPlayerSwitch,
 };
 
 class StageAddActorPanel : public DebugPanel {

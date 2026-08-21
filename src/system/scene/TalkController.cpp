@@ -7,6 +7,7 @@
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
 #include "system/InputSystem.h"
+#include "system/SceneSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -106,9 +107,36 @@ void TalkController::TryAdvanceTalkFromConfirm()
 
 void TalkController::AdvanceTalkPage()
 {
+    const int talkPageIndex = mUIState->GetTalkUIIndex();
+    const std::optional<std::size_t> sourceTalkPageIndex =
+        mTalkingNPC && talkPageIndex >= 0
+            ? mTalkingNPC->GetResolvedTalkSourceIndex(
+                  static_cast<std::size_t>(talkPageIndex))
+            : std::nullopt;
+    const bool startsOpening =
+        mTalkingNPC && talkPageIndex >= 0 &&
+        mTalkingNPC->GetResolvedTalkStartsOpeningAfterPage(
+            static_cast<std::size_t>(talkPageIndex));
+    const bool startsEnding =
+        mTalkingNPC && talkPageIndex >= 0 &&
+        mTalkingNPC->GetResolvedTalkStartsEndingAfterPage(
+            static_cast<std::size_t>(talkPageIndex));
+
     mUIState->IncTalkUIIndex();
     CaptureCurrentPageActionBaseline();
     mGame->GetAudioSystem()->PlaySE("message_se");
+
+    if (startsEnding && sourceTalkPageIndex &&
+        mGame->GetSceneSystem()->StartEndingAfterTalkPage(
+            mTalkingNPC, *sourceTalkPageIndex)) {
+        return;
+    }
+
+    if (startsOpening && sourceTalkPageIndex) {
+        mGame->GetSceneSystem()->StartOpeningAfterTalkPage(
+            mTalkingNPC, mTalkingPlayer, talkPageIndex + 1,
+            *sourceTalkPageIndex);
+    }
 }
 
 void TalkController::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
@@ -126,6 +154,21 @@ void TalkController::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
     mGame->MarkNPCConversationShown(talkingNPC);
     CaptureCurrentPageActionBaseline();
     mGame->GetAudioSystem()->PlaySE("message_se");
+}
+
+void TalkController::ResumeTalkWithNPC(
+    NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex)
+{
+    if (!talkingNPC || !talkingPlayer || talkPageIndex < 0) {
+        return;
+    }
+
+    mTalkingNPC = talkingNPC;
+    mTalkingPlayer = talkingPlayer;
+    mUIState->SetCurrentTalkWith(UIState::TalkWith::NPC);
+    mUIState->SetTalkUIIndex(talkPageIndex);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
+    CaptureCurrentPageActionBaseline();
 }
 
 TalkPageAdvanceCondition

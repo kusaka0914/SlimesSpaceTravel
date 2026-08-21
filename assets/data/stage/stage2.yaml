@@ -153,12 +153,12 @@ planets:
     textureOverride: textures/stoneTex.png
   - center:
       - -69.785904
-      - 60.278454
+      - 59.27107
       - 1.6954904
     scale:
-      - 6
-      - 2
-      - 6
+      - 4
+      - 4
+      - 4
     color:
       - 1
       - 1
@@ -168,8 +168,8 @@ planets:
     stageNum: 8
     rocketSpawnCondition: ""
     textureTiling:
-      - 6
-      - 2
+      - 4
+      - 4
     textureSideBlendWidth: 0.05
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: true
@@ -511,27 +511,31 @@ enemies:
   - editorName: 新しい通常敵
     type: boss_2
     currentPlanetNum: 8
-    theta: -2.442603
-    phi: 0.90841407
-    height: -3.5608666
+    theta: -2.2492232
+    phi: 1.4082104
+    height: -0.07112956
     pos:
-      - -0.1
-      - 2.05
-      - -0.02
+      - -0.4
+      - 3.88
+      - -0.5
     upVec:
       - -0.069719896
       - 0.99574804
       - -0.060209222
+    scale:
+      - 1.5
+      - 2
+      - 1.5
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -0.9773078
-    phi: 0.38804337
-    height: -1.9404078
+    theta: -0.97730863
+    phi: 1.2240452
+    height: 1.6098146
     pos:
-      - 3.42
-      - 1.51
-      - -2.09
+      - 1.07
+      - 4.06
+      - -1.58
     upVec:
       - 0.15368797
       - 0.9623922
@@ -539,13 +543,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -1.8217039
-    phi: 0.23424888
-    height: -1.0380368
+    theta: -1.821705
+    phi: 1.063551
+    height: 1.9309173
     pos:
-      - -0.75
-      - 1.63
-      - -3.56
+      - -0.72
+      - 3.97
+      - -2.79
     upVec:
       - -0.10730955
       - 0.9070795
@@ -553,13 +557,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -2.6776652
-    phi: 0.2545004
-    height: -1.163496
+    theta: -2.6776648
+    phi: 1.085922
+    height: 1.8896184
     pos:
-      - -3.7
-      - 1.62
-      - -0.1
+      - -2.45
+      - 4
+      - -1.23
     upVec:
       - -0.36256707
       - 0.91499513
@@ -567,13 +571,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: 0.47329742
-    phi: 0.45130625
-    height: -2.2539744
+    theta: 0.47329637
+    phi: 1.2804269
+    height: 1.4878769
     pos:
-      - 3.39
-      - 1.49
-      - 2.46
+      - 1.4
+      - 4.05
+      - 0.72
     upVec:
       - 0.19912246
       - 0.974513
@@ -581,13 +585,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: 1.7614661
-    phi: 0.4642604
-    height: -2.3130064
+    theta: 1.7614666
+    phi: 1.2911129
+    height: 1.4643149
     pos:
-      - -0.23
-      - 1.54
-      - 4.16
+      - -0.29
+      - 4.04
+      - 1.48
     upVec:
       - -0.041063346
       - 0.9745144
@@ -595,13 +599,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: 2.8257728
-    phi: 0.29743835
-    height: -1.4265728
+    theta: 2.8257732
+    phi: 1.1325992
+    height: 1.7986999
     pos:
-      - -3.83
-      - 1.41
-      - 2.3
+      - -2.34
+      - 4.04
+      - 0.76
     upVec:
       - -0.3238814
       - 0.94051903
@@ -609,13 +613,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -2.2610981
-    phi: 0.24315192
-    height: -1.0930514
+    theta: -2.2610986
+    phi: 1.0733826
+    height: 1.913053
     pos:
-      - -2.76
-      - 1.68
-      - -2.32
+      - -1.8
+      - 3.99
+      - -2.18
     upVec:
       - -0.2710415
       - 0.9070801
@@ -623,13 +627,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -1.2730368
-    phi: 0.24421757
-    height: -1.0996346
+    theta: -1.2730356
+    phi: 1.0745579
+    height: 1.9108996
     pos:
-      - 1.25
-      - 1.7
-      - -3.43
+      - 0.83
+      - 3.99
+      - -2.69
     upVec:
       - 0.121828586
       - 0.9150095
@@ -637,13 +641,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: -0.24562192
-    phi: 0.40170673
-    height: -2.0115955
+    theta: -0.24562153
+    phi: 1.2367933
+    height: 1.5825734
     pos:
-      - 4.2
-      - 1.47
-      - 0.11
+      - 1.78
+      - 4.06
+      - -0.45
     upVec:
       - 0.250752
       - 0.9657906
@@ -651,13 +655,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: 1.0722038
-    phi: 0.49662542
-    height: -2.4541173
+    theta: 1.0722028
+    phi: 1.316695
+    height: 1.4067874
     pos:
-      - 1.88
-      - 1.57
-      - 3.66
+      - 0.65
+      - 4.02
+      - 1.19
     upVec:
       - 0.0975993
       - 0.97929925
@@ -665,13 +669,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 8
-    theta: 2.3250153
-    phi: 0.35218337
-    height: -1.7456064
+    theta: 2.3250155
+    phi: 1.1892579
+    height: 1.6829066
     pos:
-      - -2.34
-      - 1.35
-      - 3.83
+      - -1.45
+      - 4.06
+      - 1.54
     upVec:
       - -0.20247558
       - 0.9547144
@@ -1251,14 +1255,14 @@ boats:
   - startPlanet: 2
     destPlanet: 5
     destStage: 0
-    theta: 0.94938004
-    phi: 1.0812931
-    height: -0.112389125
+    theta: 0.6915144
+    phi: 1.3364358
+    height: 4.3783894
     facingYaw: 0
     pos:
-      - 0.58
-      - 1.72
-      - 2.73
+      - -0.01
+      - 2.11
+      - 0.08
     upVec:
       - -0.10340866
       - 0.9718245
@@ -1313,9 +1317,9 @@ boatArrivalPoints:
       - 1
       - 1
   - currentPlanetNum: 8
-    theta: 1.8245873
-    phi: -1.5222254
-    height: -4.004742
+    theta: 1.9225653
+    phi: -1.5355315
+    height: 1.8296475
     facingYaw: 0
     modelPath: platform.obj
     rotation:
@@ -1327,9 +1331,9 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - -0.04
-      - -4.25
-      - 0.12
+      - -0.07
+      - -5.83
+      - 0.19
     upVec:
       - -0.015274263
       - -0.9996839
@@ -1362,14 +1366,14 @@ players:
     currentPlanetNum: 0
 star:
   - currentPlanetNum: 8
-    theta: 1.1382393
-    phi: 1.4920923
-    height: -4.002277
+    theta: -2.0097907
+    phi: 1.5707964
+    height: -2.9948845
     isActive: false
     pos:
-      - 0.09
-      - 3.35
-      - 0.17
+      - -0
+      - 1.01
+      - -0
     upVec:
       - 0.018880635
       - 0.99968386
@@ -1416,10 +1420,10 @@ platforms:
     theta: -2.424334
     phi: -1.090234
     height: 2.7
-    facingYaw: -1.0698878
+    facingYaw: 0.5070938
     rotation:
       - 0
-      - 1.0698878
+      - -0.5070938
       - 0
     scale:
       - 1
@@ -1435,16 +1439,17 @@ platforms:
       - 1
       - 1
     rotationQuat:
-      - -0
-      - -0.50979275
       - 0
-      - 0.86029726
+      - 0.25083902
+      - 0
+      - 0.96802884
     components:
       latchedGroupSwitch:
         groupId: stage2_planet1
         targets:
           - sequence: boats
             index: 1
+        hideTargets: []
   - currentPlanetNum: 2
     pos:
       - 4.16
@@ -1512,6 +1517,7 @@ platforms:
       latchedGroupSwitch:
         groupId: stage2_planet1
         targets: []
+        hideTargets: []
   - currentPlanetNum: 5
     pos:
       - -13.229219
@@ -1815,6 +1821,7 @@ platforms:
           - platform_7
         remainsOnAfterPressed: false
         enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 6
     pos:
       - -0.02
@@ -1850,6 +1857,7 @@ platforms:
           - platform_3
         remainsOnAfterPressed: true
         enemyTargets: []
+        hideTargets: []
       enemyClearUnlock: {}
   - currentPlanetNum: 7
     pos:
@@ -2065,6 +2073,7 @@ platforms:
         targets:
           - sequence: boats
             index: 2
+        hideTargets: []
   - currentPlanetNum: 7
     pos:
       - 1.95
@@ -2095,6 +2104,7 @@ platforms:
       latchedGroupSwitch:
         groupId: stage2_planet2
         targets: []
+        hideTargets: []
   - currentPlanetNum: 0
     pos:
       - -3.16
@@ -2217,10 +2227,10 @@ platforms:
     theta: -2.424334
     phi: -1.090234
     height: 2.7
-    facingYaw: -1.0698878
+    facingYaw: 0.5135795
     rotation:
       - 0
-      - 1.0698878
+      - -0.5135795
       - 0
     scale:
       - 1
@@ -2236,10 +2246,10 @@ platforms:
       - 1
       - 1
     rotationQuat:
-      - -0
-      - -0.50979275
       - 0
-      - 0.86029726
+      - 0.25397688
+      - 0
+      - 0.9672103
     components:
       pressureSwitch:
         inactiveOpacity: 0.2
@@ -2247,6 +2257,7 @@ platforms:
           - platform_1
         remainsOnAfterPressed: false
         enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 4
     pos:
       - -8.612755

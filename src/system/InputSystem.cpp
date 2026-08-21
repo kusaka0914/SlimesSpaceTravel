@@ -187,9 +187,14 @@ void InputSystem::ProcessGameInput()
     }
 
     UpdateLastUsedInputDevice();
+    // UGC editor input normally returns early below.  Toggle handling must
+    // happen first so P can also close/open the editor while creating.
+    ProcessDebugEditorToggleInput();
     ProcessUGCEditorCursorInput();
     const bool isUGCEditorActive =
-        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+        mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing() &&
+        !mGame->GetIsUGCDebugEditorShowing();
     if (isUGCEditorActive) {
         ProcessUGCEditorCommandInput();
         return;
@@ -215,7 +220,6 @@ void InputSystem::ProcessGameInput()
     // ポーズ決定もAを使うため、そのフレームの入力を会話開始へ流さない。
     ProcessSceneConfirmInput(
         !wasPauseMenuOpen && !isUGCEditorActive && !wasTitleMenuActive);
-    ProcessDebugEditorToggleInput();
     ProcessFreeCameraToggleInput();
     ProcessStartInput();
 }
@@ -339,6 +343,7 @@ void InputSystem::ProcessUGCEditorCursorInput()
     const bool isUGCEditorActive =
         mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing() &&
+        !mGame->GetIsUGCDebugEditorShowing() &&
         mGame->GetSdlController();
     if (!isUGCEditorActive) {
         if (mUGCEditorControllerClickPressedPrev &&
@@ -853,7 +858,8 @@ void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
 void InputSystem::ProcessDebugEditorToggleInput()
 {
     const bool pPressed = glfwGetKey(mGame->GetWindow(), GLFW_KEY_P) == GLFW_PRESS;
-    if (mGame->GetIsDebugMode() && pPressed && !mPPressedPrev) {
+    if ((mGame->GetIsDebugMode() || mGame->GetIsUGCMode()) &&
+        pPressed && !mPPressedPrev) {
         mGame->ToggleDebugEditor();
     }
     mPPressedPrev = pPressed;

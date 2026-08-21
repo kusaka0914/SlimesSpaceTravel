@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
+#include "system/UILoadSystem.h"
 
 SceneUIRenderer::SceneUIRenderer(Game* game, UIRenderer* renderer)
     : mGame(game),
@@ -26,6 +27,38 @@ void SceneUIRenderer::DrawOpening()
         DrawOpeningTalkWithDoctor();
     }
 
+}
+
+void SceneUIRenderer::DrawEnding()
+{
+    mRenderer->DrawSceneTexture("ending", "bgTexture", "ending");
+    if (mRenderer->DrawSceneTalkUI("ending", "endingText")) {
+        return;
+    }
+    mGame->GetSceneSystem()->FinishEndingStory();
+}
+
+void SceneUIRenderer::DrawCredits()
+{
+    mRenderer->DrawSceneTexture("credits", "bgTexture", "credits");
+    const UILoadSystem::TextInfo* textInfo =
+        mRenderer->GetUILoadSystem()->GetTextInfo("credits", "creditsText");
+    if (!textInfo || textInfo->texts.empty()) {
+        return;
+    }
+
+    const float elapsed =
+        mGame->GetSceneSystem()->GetCreditsElapsed();
+    const float scrollY =
+        mRenderer->GetFbHeight() * (1.15f - elapsed * 0.055f);
+    mRenderer->DrawText(
+        mRenderer->GetFbWidth() * textInfo->xRatio,
+        scrollY,
+        mRenderer->GetFbWidth() * textInfo->scaleRatio,
+        textInfo->texts.front(),
+        textInfo->centerBased,
+        {255.0f, 255.0f, 255.0f, 255.0f},
+        textInfo->rotationDegrees);
 }
 
 void SceneUIRenderer::DrawGameOver()
@@ -73,6 +106,6 @@ void SceneUIRenderer::DrawOpeningTalkWithDoctor()
 
     const bool isFinishTalk = talkUIIndex >= static_cast<int>(talkTexts.size());
     if (isFinishTalk) {
-        mGame->GetSceneSystem()->StartFadeIn();
+        mGame->GetSceneSystem()->FinishOpeningStory();
     }
 }

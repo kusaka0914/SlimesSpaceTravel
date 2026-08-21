@@ -4,6 +4,8 @@ screens:
     name: 戦闘スタイル選択
   default:
     name: default
+  multiplayer:
+    name: マルチプレイ
   opening:
     name: opening
   operation:
@@ -14,7 +16,291 @@ screens:
     name: target
   title:
     name: タイトル画面
+  ugc:
+    name: ステージ作成
 elements:
+  - screen: ugc
+    id: presetTools
+    name: 配置物選択
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.40624994
+      - 0
+    sizeRatio:
+      - 0.18749999
+      - 0.040999997
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menu
+    name: メニュー
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.95214635
+      - 0.0577586
+    sizeRatio:
+      - 0.025999993
+      - 0.026000002
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: quickTools
+    name: 消しゴム・戻す・やり直す
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.9510685
+      - 0.0872586
+    sizeRatio:
+      - 0.025999997
+      - 0.07800002
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: keyboardTools
+    name: 段・ズーム操作
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.056698244
+    sizeRatio:
+      - 0.025999999
+      - 0.10499998
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: play
+    name: テストプレイ
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.5444371
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: preview
+    name: 3Dプレビュー
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.66
+      - 0.39
+    sizeRatio:
+      - 0.32
+      - 0.18
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0
+      - 0
+      - 0
+      - 0
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
   - screen: talk
     id: continueButton
     name: つづけるボタン
@@ -1660,6 +1946,100 @@ elements:
       - 0
       - 0
       - 1
+  - screen: multiplayer
+    id: multiplayerTalkIconAnchor
+    name: マルチプレイ：会話アイコン位置
+    type: panel
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.5
+      - 0.15
+    sizeRatio:
+      - 0.18
+      - 0.045
+    textScaleRatio: 0.0007
+    text: ""
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0.2
+      - 0.6
+      - 1
+      - 0.2
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: multiplayer
+    id: multiplayerTalkTextAnchor
+    name: マルチプレイ：はなす文字位置
+    type: panel
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: false
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.5388178
+      - 0.15
+    sizeRatio:
+      - 0.18
+      - 0.045
+    textScaleRatio: 0.0007
+    text: ""
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 0.2
+      - 1
+      - 0.5
+      - 0.2
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
   - screen: opening
     id: skipTexture
     name: オープニングスキップボタン画像
@@ -1927,6 +2307,852 @@ elements:
     shadowOffsetYRatio: 0.0015
     outlineEnabled: true
     outlineWidthRatio: 0.00065
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetPlatform
+    name: 足場
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.40624994
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetEnemy
+    name: 敵
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.43724993
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetPlanet
+    name: 惑星
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.46824995
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetSwitch
+    name: スイッチ
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.49924994
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetGoal
+    name: ゴール
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.53024995
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: eraser
+    name: 消しゴム
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.9510685
+      - 0.100239396
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: undo
+    name: 1つ戻す
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.9510685
+      - 0.13023938
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: redo
+    name: やり直す
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.9510685
+      - 0.16023938
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: layerUp
+    name: 上のだん
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.056698244
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: layerDown
+    name: 下のだん
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.08669824
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: zoomIn
+    name: 近づく
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.11669824
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: zoomOut
+    name: 遠ざかる
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.14669825
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2
+    name: menuIcon2
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.96908253
+      - 0.07691193
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: previewView
+    name: 下から見る
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.00625
+      - 0.17669824
+    sizeRatio:
+      - 0.025999999
+      - 0.025999999
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetMoving
+    name: 移動足場
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.56125
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetFading
+    name: 消える足場
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.59224993
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetAdhesive
+    name: くっつき足場
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.62324995
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: presetTwoPlayer
+    name: 2人用スイッチ
+    type: panel
+    visibleByDefault: false
+    centerBased: false
+    flipVertical: true
+    zOrder: 0
+    rotationDegrees: 0
+    posRatio:
+      - 0.6542499
+      - 0
+    sizeRatio:
+      - 0.026
+      - 0.026
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
     color:
       - 1
       - 1

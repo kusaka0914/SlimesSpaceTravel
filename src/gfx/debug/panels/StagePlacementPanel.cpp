@@ -1578,6 +1578,34 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     ImGui::TextDisabled("この会話は未クリア時の通常会話に含まれます。");
                 }
 
+                bool startsOpeningAfterPage =
+                    npc->GetTalkStartsOpeningAfterPage(talkIndex);
+                if (ImGui::Checkbox(
+                        ("このページの後にオープニングを再生##npcTalkOpeningAfter" +
+                         std::to_string(yamlIndex) + "_" +
+                         std::to_string(talkIndex))
+                            .c_str(),
+                        &startsOpeningAfterPage)) {
+                    npc->SetTalkStartsOpeningAfterPage(
+                        talkIndex, startsOpeningAfterPage);
+                }
+                ImGui::TextDisabled(
+                    "ストーリー終了後、フェードを挟んで次の会話ページへ戻ります。");
+
+                bool startsEndingAfterPage =
+                    npc->GetTalkStartsEndingAfterPage(talkIndex);
+                if (ImGui::Checkbox(
+                        ("全ての星を集めた後、このページの後にエンディングを再生##npcTalkEndingAfter" +
+                         std::to_string(yamlIndex) + "_" +
+                         std::to_string(talkIndex))
+                            .c_str(),
+                        &startsEndingAfterPage)) {
+                    npc->SetTalkStartsEndingAfterPage(
+                        talkIndex, startsEndingAfterPage);
+                }
+                ImGui::TextDisabled(
+                    "ステージ1〜5を全てクリア済みのときだけ有効です。終了後はエンドロールへ進みます。");
+
                 if (isTutorialTrigger) {
                     constexpr const char* advanceConditionLabels[] = {"決定ボタンで進む", "分身切替成功で進む",
                                                                       "ジャンプ後の着地で進む"};
@@ -4334,6 +4362,45 @@ void StagePlacementPanel::SaveActorCommonYaml(
         } else {
             config[sequenceName][yamlIndex].remove(
                 "talkAdvanceConditions");
+        }
+
+        YAML::Node talkOpeningAfterPages(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            if (!npc->GetTalkStartsOpeningAfterPage(talkIndex)) {
+                continue;
+            }
+
+            YAML::Node pageNode(YAML::NodeType::Map);
+            pageNode["talkIndex"] = static_cast<int>(talkIndex);
+            talkOpeningAfterPages.push_back(pageNode);
+        }
+        if (talkOpeningAfterPages.size() > 0) {
+            config[sequenceName][yamlIndex]["talkOpeningAfterPages"] =
+                talkOpeningAfterPages;
+        } else {
+            config[sequenceName][yamlIndex].remove(
+                "talkOpeningAfterPages");
+        }
+
+        YAML::Node talkEndingAfterPages(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0;
+             talkIndex < npc->GetTalkTexts().size();
+             ++talkIndex) {
+            if (!npc->GetTalkStartsEndingAfterPage(talkIndex)) {
+                continue;
+            }
+            YAML::Node pageNode(YAML::NodeType::Map);
+            pageNode["talkIndex"] = static_cast<int>(talkIndex);
+            talkEndingAfterPages.push_back(pageNode);
+        }
+        if (talkEndingAfterPages.size() > 0) {
+            config[sequenceName][yamlIndex]["talkEndingAfterPages"] =
+                talkEndingAfterPages;
+        } else {
+            config[sequenceName][yamlIndex].remove(
+                "talkEndingAfterPages");
         }
 
         YAML::Node talkRubies(YAML::NodeType::Sequence);

@@ -335,6 +335,51 @@ void ApplyTalkPageAdvanceConditions(
     }
 }
 
+void ApplyTalkOpeningAfterPages(
+    NPC* npc,
+    const YAML::Node& actorNode)
+{
+    if (!npc || !actorNode["talkOpeningAfterPages"] ||
+        !actorNode["talkOpeningAfterPages"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& pageNode :
+         actorNode["talkOpeningAfterPages"]) {
+        if (!pageNode.IsMap() || !pageNode["talkIndex"]) {
+            continue;
+        }
+
+        const int talkIndex = pageNode["talkIndex"].as<int>();
+        if (talkIndex >= 0) {
+            npc->SetTalkStartsOpeningAfterPage(
+                static_cast<std::size_t>(talkIndex), true);
+        }
+    }
+}
+
+void ApplyTalkEndingAfterPages(
+    NPC* npc,
+    const YAML::Node& actorNode)
+{
+    if (!npc || !actorNode["talkEndingAfterPages"] ||
+        !actorNode["talkEndingAfterPages"].IsSequence()) {
+        return;
+    }
+
+    for (const YAML::Node& pageNode :
+         actorNode["talkEndingAfterPages"]) {
+        if (!pageNode.IsMap() || !pageNode["talkIndex"]) {
+            continue;
+        }
+        const int talkIndex = pageNode["talkIndex"].as<int>();
+        if (talkIndex >= 0) {
+            npc->SetTalkStartsEndingAfterPage(
+                static_cast<std::size_t>(talkIndex), true);
+        }
+    }
+}
+
 } // namespace
 
 ActorLoadSystem::ActorLoadSystem(Game* game)
@@ -590,6 +635,8 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
             }
 
             ApplyTalkPageAdvanceConditions(npc, node);
+            ApplyTalkOpeningAfterPages(npc, node);
+            ApplyTalkEndingAfterPages(npc, node);
 
             if (node["proximityMessage"] &&
                 node["proximityMessage"].IsMap()) {

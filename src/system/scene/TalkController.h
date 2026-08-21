@@ -17,6 +17,8 @@ public:
     void Update(float deltaTime);
     void TryAdvanceTalkFromConfirm();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
+    void ResumeTalkWithNPC(
+        NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex);
     bool TryStartTalkWithNPC(int playerNum);
     bool CanStartTalkWithNPC(const Player* player) const;
 

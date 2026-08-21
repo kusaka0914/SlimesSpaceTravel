@@ -1,5 +1,5 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
+  - center: [0, 0, 0]
     scale: [4.0, 1.0, 4.0]
     color: [1.0, 1.0, 1.0, 1.0]
     model: planet.obj
@@ -38,34 +38,6 @@ players:
     upVec: [0.0, 1.0, 0.0]
 platforms:
   - currentPlanetNum: 0
-    theta: -1.8925469
-    phi: 0.24778347
-    height: 12.309507
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.75
-      - 0.2
-      - 0.75
-    modelPath: platform.obj
-    pos:
-      - -4
-      - 4
-      - -15
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_10
-    components:
-      pressureSwitch:
-        remainsOnAfterPressed: false
-        inactiveOpacity: 0.25
-        targets: [platform_9]
-  - currentPlanetNum: 0
     theta: 0
     phi: 0
     height: 1
@@ -100,24 +72,25 @@ platforms:
     textureTiling:
       - 2
       - 2
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
-    theta: -1.8925469
-    phi: 0.105021425
-    height: 5.5393925
+    theta: 0.015871683
+    phi: 0
+    height: 27.503967
     facingYaw: 0
     rotation:
       - 0
       - 0
       - 0
     scale:
-      - 1
+      - 0.5
       - 0.1
-      - 1
+      - 1.5
     modelPath: platform.obj
     pos:
-      - -3
-      - 1
-      - -9
+      - 31.5
+      - 0
+      - 0.5
     upVec:
       - 0
       - 1
@@ -125,34 +98,35 @@ platforms:
     platformId: platform_2
     ugcGeneratedPlatform: true
     ugcGridSize: 1
-    ugcGridLayer: 1
+    ugcGridLayer: 0
     ugcCellMin:
-      - -4
-      - -10
+      - 30
+      - 0
     ugcCellMax:
-      - -3
-      - -9
+      - 32
+      - 0
     textureTiling:
-      - 2
-      - 2
+      - 1
+      - 3
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
-    theta: -1.5707964
-    phi: 0.32175055
-    height: -0.8377223
+    theta: -0.015623729
+    phi: 0
+    height: 28.003906
     facingYaw: 0
     rotation:
       - 0
       - 0
       - 0
     scale:
-      - 3
+      - 0.5
       - 0.1
       - 1
     modelPath: platform.obj
     pos:
+      - 32
       - 0
-      - 1
-      - -3
+      - -0.5
     upVec:
       - 0
       - 1
@@ -160,34 +134,35 @@ platforms:
     platformId: platform_3
     ugcGeneratedPlatform: true
     ugcGridSize: 1
-    ugcGridLayer: 1
+    ugcGridLayer: 0
     ugcCellMin:
+      - 31
       - -1
-      - -6
     ugcCellMax:
-      - 0
+      - 32
       - -1
     textureTiling:
-      - 6
+      - 1
       - 2
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
-    theta: -1.4056476
-    phi: 0.16294147
-    height: 8.328828
+    theta: -1.5707964
+    phi: 0.38050637
+    height: -1.3074176
     facingYaw: 0
     rotation:
       - 0
       - 0
       - 0
     scale:
-      - 1
+      - 2.5
       - 0.1
       - 1
     modelPath: platform.obj
     pos:
-      - 2
-      - 2
-      - -12
+      - 0
+      - 1
+      - -2.5
     upVec:
       - 0
       - 1
@@ -195,156 +170,17 @@ platforms:
     platformId: platform_4
     ugcGeneratedPlatform: true
     ugcGridSize: 1
-    ugcGridLayer: 2
+    ugcGridLayer: 1
     ugcCellMin:
-      - 1
-      - -13
-    ugcCellMax:
-      - 2
-      - -12
-    textureTiling:
-      - 2
-      - 2
-  - currentPlanetNum: 0
-    theta: -1.3961241
-    phi: 0.22769545
-    height: 4.8600225
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.5
-      - 0.1
-      - 0.5
-    modelPath: platform.obj
-    pos:
-      - 1.5
-      - 2
-      - -8.5
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_5
-    ugcGeneratedPlatform: true
-    ugcGridSize: 1
-    ugcGridLayer: 2
-    ugcCellMin:
-      - 1
-      - -9
-    ugcCellMax:
-      - 1
-      - -9
-    textureTiling:
-      - 1
-      - 1
-  - currentPlanetNum: 0
-    theta: -1.4056476
-    phi: 0.24177468
-    height: 8.529964
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 1
-      - 0.1
-      - 1
-    modelPath: platform.obj
-    pos:
-      - 2
-      - 3
-      - -12
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_6
-    ugcGeneratedPlatform: true
-    ugcGridSize: 1
-    ugcGridLayer: 3
-    ugcCellMin:
-      - 1
-      - -13
-    ugcCellMax:
-      - 2
-      - -12
-    textureTiling:
-      - 2
-      - 2
-  - currentPlanetNum: 0
-    theta: -1.3961241
-    phi: 0.33450896
-    height: 5.1378336
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.5
-      - 0.1
-      - 0.5
-    modelPath: platform.obj
-    pos:
-      - 1.5
-      - 3
-      - -8.5
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_7
-    ugcGeneratedPlatform: true
-    ugcGridSize: 1
-    ugcGridLayer: 3
-    ugcCellMin:
-      - 1
-      - -9
-    ugcCellMax:
-      - 1
-      - -9
-    textureTiling:
-      - 1
-      - 1
-  - currentPlanetNum: 0
-    theta: -1.8313987
-    phi: 0.25217748
-    height: 12.0312195
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 1
-      - 0.1
-      - 1
-    modelPath: platform.obj
-    pos:
-      - -4
-      - 4
-      - -15
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_8
-    ugcGeneratedPlatform: true
-    ugcGridSize: 1
-    ugcGridLayer: 4
-    ugcCellMin:
+      - -1
       - -5
-      - -16
     ugcCellMax:
-      - -4
-      - -15
+      - 0
+      - -1
     textureTiling:
+      - 5
       - 2
-      - 2
+    ugcPlatformBehavior: normal
 enemies: []
 ugcPlatformCells:
   - planetIndex: 0
@@ -362,30 +198,6 @@ ugcPlatformCells:
   - planetIndex: 0
     gridSize: 1
     gridPosition:
-      - -1
-      - 1
-      - -5
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 1
-      - -5
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 1
-      - -4
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 1
-      - -4
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
       - 0
       - 1
       - -3
@@ -423,146 +235,84 @@ ugcPlatformCells:
     gridSize: 1
     gridPosition:
       - -1
+      - 0
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 0
+      - 0
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 0
+      - 0
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 0
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 31
+      - 0
+      - 0
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 31
+      - 0
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 32
+      - 0
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 32
+      - 0
+      - 0
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 30
+      - 0
+      - 0
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
       - 1
-      - -6
+      - -4
+    behavior: normal
   - planetIndex: 0
     gridSize: 1
     gridPosition:
       - 0
       - 1
-      - -6
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -3
-      - 1
-      - -9
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -3
-      - 1
-      - -10
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
       - -4
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
       - 1
-      - -9
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -4
-      - 1
-      - -10
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 2
-      - -12
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 2
-      - -13
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 2
-      - -12
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 2
-      - -13
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
       - -5
-      - 4
-      - -16
+    behavior: normal
   - planetIndex: 0
     gridSize: 1
     gridPosition:
-      - -4
-      - 4
-      - -16
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -4
-      - 4
-      - -15
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
+      - -1
+      - 1
       - -5
-      - 4
-      - -15
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 0
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 0
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -13
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -13
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -12
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -12
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -9
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 2
-      - -9
+    behavior: normal
 ugcMetadata:
   isClearVerified: false
   displayName: 新しいステージ2

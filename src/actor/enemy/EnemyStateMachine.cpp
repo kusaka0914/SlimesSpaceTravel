@@ -148,6 +148,53 @@ void StageBossDefeatActors(Enemy& boss)
         }
     }
 
+    // During a two-player boss defeat, both players watch one shared full
+    // screen sequence.  Move 2P beside 1P on the boss planet so that the
+    // split-screen can safely resume when the sequence ends.
+    if (boss.GetGame()->GetIsPlayer2Joined()) {
+        const std::vector<Player*>& players = boss.GetGame()->GetPlayers();
+        if (players.size() >= 2 && players[1]) {
+            Player* player2 = players[1];
+            player2->RecoverFromFatigue();
+            player2->SetCurrentPlanet(planet);
+
+            if (Stage* currentStage = boss.GetGame()->GetCurrentStage()) {
+                const std::vector<Planet*>& planets = currentStage->GetPlanets();
+                for (int planetIndex = 0;
+                     planetIndex < static_cast<int>(planets.size());
+                     ++planetIndex) {
+                    if (planets[planetIndex] == planet) {
+                        player2->SetCurrentPlanetNum(planetIndex);
+                        break;
+                    }
+                }
+            }
+
+            constexpr float player2Phi = 0.28f;
+            player2->SetSphericalPlacement(playerTheta, player2Phi, player2->GetHeight());
+            player2->SetPos(planet->CalculateSurfacePos(
+                playerTheta, player2Phi, player2->GetHeight()));
+            player2->SetVelocity(glm::vec3(0.0f));
+            player2->SetOnGround(false);
+            player2->SetShouldJudgeLanding(true);
+            player2->RefreshFallbackUpVec();
+
+            glm::vec3 player2FacingBoss = boss.GetPos() - player2->GetPos();
+            player2FacingBoss -= player2->GetUpVec() *
+                glm::dot(player2FacingBoss, player2->GetUpVec());
+            if (glm::length(player2FacingBoss) > directionEpsilon) {
+                player2FacingBoss = glm::normalize(player2FacingBoss);
+                player2->SetFacingForwardVec(player2FacingBoss);
+                if (mathUtils) {
+                    player2->SetFacingYaw(
+                        mathUtils->GetYawFromDirection(
+                            player2->GetUpVec(), player2FacingBoss) +
+                        glm::pi<float>());
+                }
+            }
+        }
+    }
+
     glm::vec3 facingPlayer = player->GetPos() - boss.GetPos();
     facingPlayer -= boss.GetUpVec() * glm::dot(facingPlayer, boss.GetUpVec());
     if (glm::length(facingPlayer) > directionEpsilon) {
@@ -444,18 +491,12 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
-    const glm::vec3 attackMovementStart =
-        enemy.GetPos();
-    movement.MoveDuringAttacking(
-        enemy,
-        status,
-        *this,
-        deltaTime);
+    // Normal attacks remain at their wind-up position. The hit test uses the
+    // fixed melee warning area instead of sweeping the enemy model forward.
     combat.TryApplyAttack(
         enemy,
         status,
         *this,
-        attackMovementStart,
         deltaTime);
     if (mActionState != ActionState::Attacking) {
         return;
@@ -670,6 +711,10 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         enemy.SetVelocity(glm::vec3(0.0f));
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
+
+        // The shared boss-defeat framing assumes both players are standing
+        // on a surface rather than frozen partway through a jump.
+        enemy.GetGame()->ForcePlayersGroundedForCinematic();
 
         enemy.GetGame()->GetAudioSystem()->StopBGM();
 

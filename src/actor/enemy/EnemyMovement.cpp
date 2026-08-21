@@ -234,6 +234,9 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
 
 void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
+    // Same simple chase model as the stg branch: update facing first, then
+    // advance at a fixed speed in that facing direction. The tangent
+    // projection keeps it valid on the current planet surface.
     glm::vec3 tangentialMoveDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
             enemy.GetFacingForwardVec(),
@@ -430,7 +433,8 @@ void EnemyMovement::UpdateAirDodgePushMovement(
         physicsSystem->ResolveMovementCollision(
             &enemy,
             movementDelta,
-            enemy.GetPos() + movementDelta);
+            enemy.GetPos() + movementDelta,
+            ActorCollisionFilter::StopAtEnemies);
     const glm::vec3 faceConstrainedPosition =
         ClampToCurrentEllipseFaceMovementArea(
             enemy,
@@ -563,7 +567,8 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
         physicsSystem->ResolveMovementCollision(
             &enemy,
             movementDelta,
-            enemy.GetPos() + movementDelta);
+            enemy.GetPos() + movementDelta,
+            ActorCollisionFilter::StopAtEnemies);
     const glm::vec3 faceConstrainedPosition =
         ClampToCurrentEllipseFaceMovementArea(
             enemy,
@@ -614,7 +619,8 @@ glm::vec3 EnemyMovement::CalculateCollisionAdjustedPos(Enemy& enemy, const glm::
         enemy.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
             &enemy,
             moveDelta,
-            desiredPos);
+            desiredPos,
+            ActorCollisionFilter::AllActors);
     desiredPos = collisionResult.resolvedPosition;
 
     desiredPos =

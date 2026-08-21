@@ -17,6 +17,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
 #include <BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace {
@@ -27,6 +28,7 @@ constexpr float modelCollisionEpsilon = 0.000001f;
 constexpr float enemyTopSurfaceMinimumUpDot = 0.45f;
 constexpr float enemyTopSlideFromFallRatio = 0.5f;
 constexpr float enemyTopMaximumSlideDistance = 0.06f;
+constexpr float enemyStopContactBuffer = 0.01f;
 
 bool TryNormalizeDirection(
     const glm::vec3& direction,
@@ -167,6 +169,64 @@ glm::vec3 CalculateAutomaticEnemyTopSlide(
                movingActor,
                blockingEnemy) *
            automaticSlideDistance;
+}
+
+float CalculateExpandedBoundsClearance(
+    const EnemyCollisionGeometry::ModelBounds& bounds,
+    const glm::vec3& position,
+    const glm::vec3& expansion)
+{
+    const glm::vec3 offset = position - bounds.center;
+    float clearance = -std::numeric_limits<float>::max();
+    for (glm::length_t axisIndex = 0;
+         axisIndex < bounds.axes.size();
+         ++axisIndex) {
+        const float expandedExtent =
+            bounds.halfExtents[axisIndex] +
+            expansion[axisIndex];
+        clearance = std::max(
+            clearance,
+            std::abs(glm::dot(offset, bounds.axes[axisIndex])) -
+                expandedExtent);
+    }
+    return clearance;
+}
+
+bool ShouldStopBeforeEnemy(
+    const EnemyCollisionGeometry::ModelBounds& blockingBounds,
+    const glm::vec3& movementStart,
+    const glm::vec3& movementEnd,
+    const glm::vec3& expansion)
+{
+    const float startClearance =
+        CalculateExpandedBoundsClearance(
+            blockingBounds,
+            movementStart,
+            expansion);
+    const float endClearance =
+        CalculateExpandedBoundsClearance(
+            blockingBounds,
+            movementEnd,
+            expansion);
+
+    constexpr float clearanceEpsilon = 0.000001f;
+    const bool startsOverlapping =
+        startClearance <= clearanceEpsilon;
+    if (startsOverlapping) {
+        // Do not trap an enemy that was spawned overlapping or was moved by
+        // an external platform. Only permit steps that strictly reduce the
+        // existing overlap; sideways or deeper movement remains blocked.
+        return endClearance <=
+            startClearance + clearanceEpsilon;
+    }
+
+    // Testing the complete segment prevents a fast attack from entering or
+    // passing through another enemy between two frame positions.
+    return EnemyCollisionGeometry::DoesSegmentIntersectExpandedBounds(
+        blockingBounds,
+        movementStart,
+        movementEnd,
+        expansion);
 }
 
 btTransform CreatePlayerCollisionTransform(
@@ -550,6 +610,36 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
             continue;
         }
 
+        if (actorCollisionFilter ==
+            ActorCollisionFilter::StopAtEnemies) {
+            EnemyCollisionGeometry::ModelBounds enemyBounds;
+            if (EnemyCollisionGeometry::TryCreateModelBounds(
+                    *enemy,
+                    enemyBounds)) {
+                const float movingActorCollisionRadius =
+                    std::max(
+                        0.0f,
+                        actor->GetRadius() *
+                            actor->GetCollisionScaleMultiplier());
+                const glm::vec3 collisionExpansion(
+                    movingActorCollisionRadius +
+                    collisionSkinWidth +
+                    enemyStopContactBuffer);
+                if (ShouldStopBeforeEnemy(
+                        enemyBounds,
+                        actor->GetPos(),
+                        desiredPos,
+                        collisionExpansion)) {
+                    return actor->GetPos();
+                }
+
+                // The swept bounds test above already covers the requested
+                // position. Avoid the endpoint depenetration path so an
+                // enemy that starts overlapped can move outward.
+                continue;
+            }
+        }
+
         if (auto conflictPos =
                 CheckConflictActor(
                     world,
@@ -558,6 +648,13 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
                     enemy,
                     desiredPos,
                     collisionCenterHeight)) {
+            if (actorCollisionFilter ==
+                ActorCollisionFilter::StopAtEnemies) {
+                // Enemy movement is kinematic. Returning its current
+                // position blocks this step without applying a separation
+                // impulse to either enemy.
+                return actor->GetPos();
+            }
             return *conflictPos;
         }
     }

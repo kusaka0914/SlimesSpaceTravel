@@ -1,6 +1,7 @@
 #include "actor/enemy/EnemyAttackGeometry.h"
 
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "Game.h"
 #include "actor/Player.h"
 #include "system/PhysicsSystem.h"
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace {
 constexpr float directionLengthEpsilonSquared = 0.000001f;
@@ -38,6 +40,45 @@ glm::vec3 ProjectOntoAttackPlane(
     return direction -
         upDirection *
             glm::dot(direction, upDirection);
+}
+
+bool TryGetSpherePreviewPlaneOffset(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    glm::vec3& planeOffset)
+{
+    if (planet.GetPlanetShape() != Planet::PlanetShape::Sphere) {
+        return false;
+    }
+
+    constexpr float previewSurfaceOffset = 0.56f;
+    constexpr float denominatorEpsilon = 0.0001f;
+    const glm::vec3 planeOrigin =
+        attackFrame.origin + attackFrame.up * previewSurfaceOffset;
+    const glm::vec3 fromPlanetToOrigin =
+        planeOrigin - planet.GetPos();
+    const glm::vec3 fromPlanetToPosition =
+        position - planet.GetPos();
+    const float planeRadius = glm::length(fromPlanetToOrigin);
+    const float positionRadius = glm::length(fromPlanetToPosition);
+    if (planeRadius <= denominatorEpsilon ||
+        positionRadius <= denominatorEpsilon) {
+        return false;
+    }
+
+    const glm::vec3 planeNormal = fromPlanetToOrigin / planeRadius;
+    const glm::vec3 positionDirection =
+        fromPlanetToPosition / positionRadius;
+    const float denominator = glm::dot(positionDirection, planeNormal);
+    // The back half cannot appear in the projected preview area.
+    if (denominator <= denominatorEpsilon) {
+        return false;
+    }
+
+    planeOffset = planeRadius *
+        (positionDirection / denominator - planeNormal);
+    return true;
 }
 } // namespace
 
@@ -150,6 +191,30 @@ EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
     return previewArea;
 }
 
+bool IsPositionInsideMeleeAttack(
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float forwardLength,
+    float halfWidth)
+{
+    if (forwardLength <= 0.0f || halfWidth < 0.0f) {
+        return false;
+    }
+
+    const glm::vec3 planarOffset =
+        ProjectOntoAttackPlane(
+            position - attackFrame.origin,
+            attackFrame.up);
+    const float forwardDistance =
+        glm::dot(planarOffset, attackFrame.forward);
+    const float sidewaysDistance =
+        glm::dot(planarOffset, attackFrame.left);
+    return forwardDistance > rangeComparisonTolerance &&
+           forwardDistance <= forwardLength + rangeComparisonTolerance &&
+           std::abs(sidewaysDistance) <=
+               halfWidth + rangeComparisonTolerance;
+}
+
 bool IsPositionInsideFanAttack(
     const EnemyAttackFrame& attackFrame,
     const glm::vec3& position,
@@ -208,4 +273,66 @@ bool IsPositionInsideRadialAttack(
         range + rangeComparisonTolerance;
     return glm::dot(planarOffset, planarOffset) <=
         toleratedRange * toleratedRange;
+}
+
+bool IsPositionInsideSphereSurfaceMeleeAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float forwardLength,
+    float halfWidth)
+{
+    glm::vec3 planeOffset;
+    if (!TryGetSpherePreviewPlaneOffset(
+            planet, attackFrame, position, planeOffset)) {
+        return false;
+    }
+
+    return IsPositionInsideMeleeAttack(
+        attackFrame,
+        attackFrame.origin + planeOffset,
+        forwardLength,
+        halfWidth);
+}
+
+bool IsPositionInsideSphereSurfaceFanAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range,
+    float angleRadians)
+{
+    glm::vec3 planeOffset;
+    if (!TryGetSpherePreviewPlaneOffset(
+            planet, attackFrame, position, planeOffset)) {
+        return false;
+    }
+
+    const float distanceSquared = glm::dot(planeOffset, planeOffset);
+    const float toleratedRange = range + rangeComparisonTolerance;
+    if (distanceSquared > toleratedRange * toleratedRange) {
+        return false;
+    }
+    if (distanceSquared <= directionLengthEpsilonSquared) {
+        return true;
+    }
+
+    const glm::vec3 direction = planeOffset / std::sqrt(distanceSquared);
+    return glm::dot(attackFrame.forward, direction) +
+               rangeComparisonTolerance >=
+           std::cos(angleRadians * 0.5f);
+}
+
+bool IsPositionInsideSphereSurfaceRadialAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range)
+{
+    return IsPositionInsideSphereSurfaceFanAttack(
+        planet,
+        attackFrame,
+        position,
+        range,
+        glm::two_pi<float>());
 }

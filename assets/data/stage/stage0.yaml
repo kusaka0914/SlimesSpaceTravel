@@ -286,9 +286,9 @@ NPCs:
       - "工事が終わって裏側に行けるようになったよ...！\nでも..."
       - 裏側はこことは雰囲気が違うから気を付けて...！
     pos:
-      - -0.05
-      - 2.63
-      - 13.85
+      - -0.03
+      - 2.58
+      - 14.88
     facingYaw: 3.1313503
     rotation:
       - -1.8871484
@@ -565,6 +565,10 @@ NPCs:
       - 0.9996407
       - 0.026307682
     forceTalkOnArrival: true
+    talkEndingAfterPages:
+      - talkIndex: 6
+    talkOpeningAfterPages:
+      - talkIndex: 0
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003

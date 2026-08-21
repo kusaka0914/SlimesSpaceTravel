@@ -30,8 +30,8 @@ void HudRenderer::DrawDefaultUI()
     if (!isTwoPlayer) {
         DrawPlayerPromptUI(mainPlayer, 0.0f, 1.0f);
     } else {
-        DrawPlayerPromptUI(players[0], 0.0f, 0.5f);
-        DrawPlayerPromptUI(players[1], halfHeight, 0.5f);
+        DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
+        DrawPlayerPromptUI(players[1], halfHeight, 1.0f);
     }
 
     if (mGame->IsInBase()) {
@@ -120,10 +120,14 @@ void HudRenderer::UpdateTalkableUIVisibility(
     constexpr const char* keyboardTextureId =
         "talkableTextureForKeyboard";
 
+    const SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    const bool hasModalConversation =
+        sceneSystem &&
+        (sceneSystem->IsTalkWithNPC() || sceneSystem->HasActiveTutorial());
     const Player* promptPlayer = nullptr;
-    if (allowsPrompt) {
+    if (allowsPrompt && !hasModalConversation) {
         for (const Player* player : players) {
-            if (mGame->GetSceneSystem()->CanStartTalkWithNPC(player)) {
+            if (sceneSystem && sceneSystem->CanStartTalkWithNPC(player)) {
                 promptPlayer = player;
                 break;
             }

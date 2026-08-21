@@ -41,7 +41,8 @@ public:
         const glm::mat4& projMat,
         const glm::vec3& cameraPos,
         bool emphasizeUGCLayers = false,
-        int ugcEditLayer = 0) const;
+        int ugcEditLayer = 0,
+        const Player* viewportPlayer = nullptr) const;
 
     Game* GetGame() const { return mGame; }
     Shader3D* GetShader3D() const { return mShader3D; }

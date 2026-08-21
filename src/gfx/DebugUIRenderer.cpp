@@ -6,6 +6,7 @@
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/Star.h"
 #include "actor/Platform.h"
 #include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/session/EditorSessionState.h"
@@ -449,6 +450,10 @@ void DebugUIRenderer::Draw(
         gameViewWidth,
         gameViewHeight);
 
+    if (mContext.game && mContext.game->GetIsUGCMode()) {
+        RegisterUGCUIEditorElements();
+    }
+
     if (activeSection == EditorSection::Stage) {
         mStageAddActorPanel.UpdatePlacement();
         const bool isPlacingActor = mStageAddActorPanel.IsPlacementActive();
@@ -479,6 +484,461 @@ void DebugUIRenderer::Draw(
 
     DrawDockedAssetBrowser(activeSection);
     DrawLayoutResizeHandles(activeSection);
+
+    if (mContext.game && mContext.game->GetIsUGCMode()) {
+        DrawUGCDebugEditorOverlay();
+    }
+}
+
+void DebugUIRenderer::RegisterUGCUIEditorElements()
+{
+    if (!mContext.uiRenderer) {
+        return;
+    }
+
+    UILoadSystem* uiLoadSystem =
+        mContext.uiRenderer->GetUILoadSystem();
+    if (!uiLoadSystem) {
+        return;
+    }
+
+    // Older projects stored each toolbar as one invisible panel.  Keep those
+    // panels as migration anchors, but create editable entries for every
+    // actual button so a click selects the eraser/undo/etc. individually.
+    const auto findElement = [&](const std::string& id)
+        -> const UILoadSystem::CustomElement* {
+        const auto& elements = uiLoadSystem->GetCustomElements();
+        const auto it = std::find_if(
+            elements.begin(), elements.end(),
+            [&](const UILoadSystem::CustomElement& element) {
+                return element.screen == "ugc" && element.id == id;
+            });
+        return it == elements.end() ? nullptr : &*it;
+    };
+    const auto ensureButtonElement =
+        [&](const char* id,
+            const char* displayName,
+            float xRatio,
+            float yRatio) {
+            if (findElement(id)) {
+                return;
+            }
+
+            const std::size_t index = uiLoadSystem->AddCustomElement(
+                UILoadSystem::CustomElementType::Panel, "ugc", id);
+            UILoadSystem::CustomElement& element =
+                uiLoadSystem->GetCustomElements()[index];
+            element.displayName = displayName;
+            element.visibleByDefault = false;
+            element.xRatio = xRatio;
+            element.yRatio = yRatio;
+            element.widthRatio = 0.026f;
+            element.heightRatio = 0.026f;
+        };
+
+    const UILoadSystem::CustomElement* presetTools =
+        findElement("presetTools");
+    const float presetX = presetTools ? presetTools->xRatio : 0.40625f;
+    const float presetY = presetTools ? presetTools->yRatio : 0.0f;
+    ensureButtonElement("presetPlatform", "足場", presetX, presetY);
+    ensureButtonElement("presetEnemy", "敵", presetX + 0.031f, presetY);
+    ensureButtonElement("presetPlanet", "惑星", presetX + 0.062f, presetY);
+    ensureButtonElement("presetSwitch", "スイッチ", presetX + 0.093f, presetY);
+    ensureButtonElement("presetGoal", "ゴール", presetX + 0.124f, presetY);
+    ensureButtonElement("presetMoving", "移動足場", presetX + 0.155f, presetY);
+    ensureButtonElement("presetFading", "消える足場", presetX + 0.186f, presetY);
+    ensureButtonElement("presetAdhesive", "くっつき足場", presetX + 0.217f, presetY);
+    ensureButtonElement("presetTwoPlayer", "2人用スイッチ", presetX + 0.248f, presetY);
+
+    const UILoadSystem::CustomElement* quickTools =
+        findElement("quickTools");
+    const float quickX = quickTools ? quickTools->xRatio : 0.951f;
+    const float quickY = quickTools ? quickTools->yRatio : 0.087f;
+    ensureButtonElement("eraser", "消しゴム", quickX, quickY);
+    ensureButtonElement("undo", "1つ戻す", quickX, quickY + 0.030f);
+    ensureButtonElement("redo", "やり直す", quickX, quickY + 0.060f);
+
+    const UILoadSystem::CustomElement* keyboardTools =
+        findElement("keyboardTools");
+    const float keyboardX = keyboardTools ? keyboardTools->xRatio : 0.00625f;
+    const float keyboardY = keyboardTools ? keyboardTools->yRatio : 0.057f;
+    ensureButtonElement("layerUp", "上のだん", keyboardX, keyboardY);
+    ensureButtonElement("layerDown", "下のだん", keyboardX, keyboardY + 0.030f);
+    ensureButtonElement("zoomIn", "近づく", keyboardX, keyboardY + 0.060f);
+    ensureButtonElement("zoomOut", "遠ざかる", keyboardX, keyboardY + 0.090f);
+    ensureButtonElement("previewView", "下から見る", keyboardX, keyboardY + 0.120f);
+
+    const auto isLegacyToolbarPanel = [](const std::string& id) {
+        return id == "presetTools" || id == "quickTools" ||
+               id == "keyboardTools";
+    };
+    std::vector<const UILoadSystem::CustomElement*> editableElements;
+    for (const UILoadSystem::CustomElement& element :
+         uiLoadSystem->GetCustomElements()) {
+        if (element.screen == "ugc" && !isLegacyToolbarPanel(element.id)) {
+            editableElements.push_back(&element);
+        }
+    }
+    std::stable_sort(
+        editableElements.begin(), editableElements.end(),
+        [](const UILoadSystem::CustomElement* left,
+           const UILoadSystem::CustomElement* right) {
+            return left->zOrder < right->zOrder;
+        });
+    for (const UILoadSystem::CustomElement* element : editableElements) {
+        mContext.uiRenderer->RecordCustomUIElementForEditor(*element);
+    }
+}
+
+void DebugUIRenderer::DrawUGCDebugEditorOverlay()
+{
+    if (!mContext.gameViewport.IsValid()) {
+        return;
+    }
+
+    const ImVec2 viewportMin(
+        mContext.gameViewport.x,
+        mContext.gameViewport.y);
+    const ImVec2 viewportMax(
+        mContext.gameViewport.x + mContext.gameViewport.width,
+        mContext.gameViewport.y + mContext.gameViewport.height);
+    const ImVec2 viewportSize(
+        viewportMax.x - viewportMin.x,
+        viewportMax.y - viewportMin.y);
+
+    const bool isAdjustingUGCUI =
+        mActiveSection == EditorSection::UserInterface;
+    const ImGuiWindowFlags overlayFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoBackground |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        (isAdjustingUGCUI ? ImGuiWindowFlags_NoInputs : 0);
+
+    struct UGCControlLayout {
+        ImVec2 position;
+        ImVec2 size;
+    };
+    const auto resolveUGCControlLayout =
+        [&](const char* id,
+            const ImVec2& fallbackPosition,
+            const ImVec2& fallbackSize = ImVec2(52.0f, 52.0f)) {
+            if (!mContext.uiRenderer ||
+                !mContext.uiRenderer->GetUILoadSystem()) {
+                return UGCControlLayout{fallbackPosition, fallbackSize};
+            }
+            for (const UILoadSystem::CustomElement& element :
+                 mContext.uiRenderer->GetUILoadSystem()->
+                     GetCustomElements()) {
+                if (element.screen == "ugc" && element.id == id) {
+                    return UGCControlLayout{
+                        ImVec2(
+                            viewportMin.x +
+                                viewportSize.x * element.xRatio,
+                            viewportMin.y +
+                                viewportSize.x * element.yRatio),
+                        ImVec2(
+                            std::max(1.0f,
+                                viewportSize.x * element.widthRatio),
+                            std::max(1.0f,
+                                viewportSize.x * element.heightRatio))};
+                }
+            }
+            return UGCControlLayout{fallbackPosition, fallbackSize};
+        };
+    const auto getUGCControlZOrder = [&](const char* id) {
+        if (!mContext.uiRenderer || !mContext.uiRenderer->GetUILoadSystem()) {
+            return 0;
+        }
+        for (const UILoadSystem::CustomElement& element :
+             mContext.uiRenderer->GetUILoadSystem()->GetCustomElements()) {
+            if (element.screen == "ugc" && element.id == id) {
+                return element.zOrder;
+            }
+        }
+        return 0;
+    };
+
+    const auto drawActionIcon = [&]
+        (const char* id,
+         const char* texturePath,
+         const char* tooltip,
+         const ImVec2& size = ImVec2(52.0f, 52.0f)) {
+        ImGui::PushID(id);
+        const bool hasTexture =
+            mContext.uiRenderer &&
+            mContext.uiRenderer->RegisterCustomUITexture(texturePath);
+        const GLuint texture = hasTexture
+            ? mContext.uiRenderer->GetCustomUITextureHandle(texturePath)
+            : 0;
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(1, 1, 1, 0.18f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(1, 1, 1, 0.32f));
+        const bool clicked = texture != 0
+            ? ImGui::ImageButton(
+                  "##ugcDebugActionIcon",
+                  static_cast<ImTextureID>(texture),
+                  size,
+                  ImVec2(0.0f, 1.0f),
+                  ImVec2(1.0f, 0.0f))
+            : ImGui::Button(tooltip, size);
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", tooltip);
+        }
+        ImGui::PopID();
+        return clicked;
+    };
+
+    struct PresetButton {
+        const char* label;
+        const char* modelPath;
+        UGCPresetKind kind;
+    };
+    constexpr std::array<PresetButton, 9> presetButtons = {{
+        {"足場", "platform.obj", UGCPresetKind::NormalPlatform},
+        {"敵", "enemy.obj", UGCPresetKind::NormalEnemy},
+        {"惑星", "planet.obj", UGCPresetKind::EllipsePlanet},
+        {"スイッチ", "platform.obj", UGCPresetKind::PressureSwitch},
+        {"ゴール", "star.obj", UGCPresetKind::GoalStar},
+        {"移動足場", "platform.obj", UGCPresetKind::MovingPlatform},
+        {"消える足場", "platform.obj", UGCPresetKind::FadingPlatform},
+        {"くっつき足場", "platform.obj", UGCPresetKind::AdhesivePlatform},
+        {"2人用スイッチ", "platform.obj", UGCPresetKind::TwoPlayerSwitch},
+    }};
+    if (mUGCModelThumbnailRenderer) {
+        mUGCModelThumbnailRenderer->BeginFrame();
+    }
+    constexpr float presetIconSize = 52.0f;
+    constexpr float presetSlotWidth = 62.0f;
+    constexpr std::array<const char*, 9> presetIds = {{
+        "presetPlatform", "presetEnemy", "presetPlanet", "presetSwitch", "presetGoal",
+        "presetMoving", "presetFading", "presetAdhesive", "presetTwoPlayer",
+    }};
+    std::array<std::size_t, 9> presetDrawOrder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    std::stable_sort(
+        presetDrawOrder.begin(), presetDrawOrder.end(),
+        [&](std::size_t left, std::size_t right) {
+            return getUGCControlZOrder(presetIds[left]) <
+                   getUGCControlZOrder(presetIds[right]);
+        });
+    for (const std::size_t presetIndex : presetDrawOrder) {
+        const PresetButton& preset = presetButtons[presetIndex];
+        const UGCControlLayout layout = resolveUGCControlLayout(
+            presetIds[presetIndex],
+            ImVec2(
+                viewportMin.x +
+                    std::max(
+                        6.0f,
+                        (viewportSize.x -
+                         presetSlotWidth * presetButtons.size()) * 0.5f) +
+                    presetSlotWidth * static_cast<float>(presetIndex),
+                viewportMin.y + 6.0f),
+            ImVec2(presetIconSize, presetIconSize));
+        const std::string windowId =
+            std::string("###UGCDebugPreset_") + presetIds[presetIndex];
+        ImGui::SetNextWindowPos(layout.position, ImGuiCond_Always);
+        ImGui::Begin(windowId.c_str(), nullptr, overlayFlags);
+        ImGui::PushID(preset.label);
+        const GLuint thumbnail = mUGCModelThumbnailRenderer
+            ? mUGCModelThumbnailRenderer->ResolveThumbnail(preset.modelPath)
+            : 0;
+        const bool isActive = mActiveUGCPresetKind == preset.kind;
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f);
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FrameBorderSize,
+            isActive ? 3.0f : 1.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            isActive
+                ? ImVec4(1.0f, 0.79f, 0.18f, 1.0f)
+                : ImVec4(0.96f, 0.98f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(1.0f, 0.88f, 0.40f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(1.0f, 0.72f, 0.08f, 1.0f));
+        const bool clicked = thumbnail != 0
+            ? ImGui::ImageButton(
+                  "##ugcDebugPresetIcon",
+                  static_cast<ImTextureID>(thumbnail),
+                  layout.size,
+                  ImVec2(0.0f, 1.0f),
+                  ImVec2(1.0f, 0.0f))
+            : ImGui::Button(
+                preset.label,
+                layout.size);
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", preset.label);
+        }
+        if (clicked) {
+            mIsUGCEraserMode = false;
+            if (mStageAddActorPanel.ActivateUGCPreset(preset.kind)) {
+                mActiveUGCPresetKind = preset.kind;
+                mUGCStatus = std::string(preset.label) + "を選びました";
+            } else {
+                mUGCStatus = std::string(preset.label) +
+                    "を選べませんでした";
+            }
+        }
+        ImGui::PopID();
+        ImGui::End();
+    }
+
+    const UGCControlLayout menuLayout = resolveUGCControlLayout(
+        "menu", ImVec2(viewportMax.x - 60.0f, viewportMin.y + 6.0f));
+    ImGui::SetNextWindowPos(
+        menuLayout.position,
+        ImGuiCond_Always);
+    ImGui::Begin("###UGCDebugMenu", nullptr, overlayFlags);
+    if (drawActionIcon(
+            "menu",
+            "textures/ugc_ui/editor_action_menu.png",
+            "メニュー",
+            menuLayout.size)) {
+        ImGui::OpenPopup("メニュー###UGCDebugProductMenu");
+    }
+    if (ImGui::BeginPopup("メニュー###UGCDebugProductMenu")) {
+        if (ImGui::MenuItem("保存・開く")) {
+            ImGui::OpenPopup("作品管理###UGCWorkManagement");
+        }
+        if (ImGui::MenuItem("完成チェック")) {
+            YAML::Node stageYaml;
+            const bool loaded =
+                StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
+            const YAML::Node stars =
+                loaded ? stageYaml["star"] : YAML::Node();
+            if (!stars || !stars.IsSequence() || stars.size() == 0) {
+                mUGCStatus = "完成チェックにはゴールを置いてください";
+            } else if (!SaveCurrentUGCWork(mUGCWorkName.data())) {
+                mUGCStatus = "下書きを保存できませんでした: " +
+                    mUGCWorkSaveError;
+            } else {
+                mContext.game->StartUGCClearVerification(
+                    MakeSafeUGCFileName(mUGCWorkName.data()) + ".yaml");
+            }
+        }
+        if (ImGui::MenuItem("タイトルへ戻る")) {
+            mContext.game->ExitUGCMode();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::End();
+
+    const auto drawUGCActionControl =
+        [&](const char* id,
+            const char* texturePath,
+            const char* tooltip,
+            const ImVec2& fallbackPosition) {
+            const UGCControlLayout layout = resolveUGCControlLayout(
+                id, fallbackPosition);
+            const std::string windowId =
+                std::string("###UGCDebugAction_") + id;
+            ImGui::SetNextWindowPos(layout.position, ImGuiCond_Always);
+            ImGui::Begin(windowId.c_str(), nullptr, overlayFlags);
+            const bool clicked =
+                drawActionIcon(id, texturePath, tooltip, layout.size);
+            ImGui::End();
+            return clicked;
+        };
+
+    // Each button lives in its own ImGui window.  Draw those windows in
+    // z-order so a larger value is actually in front when buttons overlap.
+    struct ActionControl {
+        const char* id;
+        const char* texturePath;
+        const char* tooltip;
+        ImVec2 fallbackPosition;
+    };
+    std::vector<ActionControl> actionControls = {
+        {"eraser", "textures/ugc_ui/editor_action_eraser.png",
+         mIsUGCEraserMode ? "消しゴム：ON" : "消しゴム",
+         ImVec2(viewportMax.x - 60.0f, viewportMin.y + 64.0f)},
+        {"undo", "textures/ugc_ui/editor_action_undo.png", "1つ戻す",
+         ImVec2(viewportMax.x - 60.0f, viewportMin.y + 122.0f)},
+        {"redo", "textures/ugc_ui/editor_action_redo.png", "やり直す",
+         ImVec2(viewportMax.x - 60.0f, viewportMin.y + 180.0f)},
+        {"layerUp", "textures/ugc_ui/editor_action_layer_up.png", "上のだん",
+         ImVec2(viewportMin.x + 6.0f, viewportMin.y + 68.0f)},
+        {"layerDown", "textures/ugc_ui/editor_action_layer_down.png", "下のだん",
+         ImVec2(viewportMin.x + 6.0f, viewportMin.y + 126.0f)},
+        {"zoomIn", "textures/ugc_ui/editor_action_zoom_in.png", "近づく",
+         ImVec2(viewportMin.x + 6.0f, viewportMin.y + 184.0f)},
+        {"zoomOut", "textures/ugc_ui/editor_action_zoom_out.png", "遠ざかる",
+         ImVec2(viewportMin.x + 6.0f, viewportMin.y + 242.0f)},
+        {"previewView", "textures/ugc_ui/editor_action_zoom_out.png",
+         mContext.game->GetIsUGCPreviewViewedFromBelow()
+             ? "上から見る" : "下から見る",
+         ImVec2(viewportMin.x + 6.0f, viewportMin.y + 300.0f)},
+    };
+    std::stable_sort(
+        actionControls.begin(), actionControls.end(),
+        [&](const ActionControl& left, const ActionControl& right) {
+            return getUGCControlZOrder(left.id) <
+                   getUGCControlZOrder(right.id);
+        });
+    for (const ActionControl& control : actionControls) {
+        if (!drawUGCActionControl(
+                control.id, control.texturePath, control.tooltip,
+                control.fallbackPosition)) {
+            continue;
+        }
+        if (std::strcmp(control.id, "eraser") == 0) {
+            HandleUGCEraserToggle();
+        } else if (std::strcmp(control.id, "undo") == 0) {
+            HandleUGCUndo();
+        } else if (std::strcmp(control.id, "redo") == 0) {
+            HandleUGCRedo();
+        } else if (std::strcmp(control.id, "layerUp") == 0) {
+            HandleUGCLayerChange(1);
+        } else if (std::strcmp(control.id, "layerDown") == 0) {
+            HandleUGCLayerChange(-1);
+        } else if (std::strcmp(control.id, "zoomIn") == 0) {
+            HandleUGCZoom(0.85f);
+        } else if (std::strcmp(control.id, "zoomOut") == 0) {
+            HandleUGCZoom(1.18f);
+        } else if (std::strcmp(control.id, "previewView") == 0) {
+            mContext.game->ToggleUGCPreviewVerticalView();
+        }
+    }
+
+    const UGCControlLayout playLayout = resolveUGCControlLayout(
+        "play", ImVec2(viewportMin.x + 6.0f, viewportMax.y - 60.0f));
+    ImGui::SetNextWindowPos(
+        playLayout.position,
+        ImGuiCond_Always);
+    ImGui::Begin("###UGCDebugPlay", nullptr, overlayFlags);
+    if (drawActionIcon(
+            "play",
+            "textures/ugc_ui/editor_action_play.png",
+            "遊ぶ",
+            playLayout.size)) {
+        mContext.game->StartUGCPlaytest();
+        ImGui::End();
+        return;
+    }
+    ImGui::End();
+
+    DrawUGCGridOverlay();
+    DrawUGCStackBadges();
+    DrawUGCPlacementPreview();
+    DrawUGCPreviewOverlay();
+    DrawUGCWorkManagement();
 }
 
 void DebugUIRenderer::RefreshUGCWorkList()
@@ -886,6 +1346,28 @@ void DebugUIRenderer::DrawUGCEditor(
 {
     const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
     constexpr float topBarHeight = 104.0f;
+    const ImVec2 gameViewportMin(
+        mainViewport->WorkPos.x,
+        mainViewport->WorkPos.y);
+    const ImVec2 gameViewportMax(
+        mainViewport->WorkPos.x + mainViewport->WorkSize.x,
+        mainViewport->WorkPos.y + mainViewport->WorkSize.y);
+    const auto resolveUGCAnchor = [&](const char* id, const ImVec2& fallback) {
+        if (!mContext.uiRenderer || !mContext.uiRenderer->GetUILoadSystem()) {
+            return fallback;
+        }
+        for (const UILoadSystem::CustomElement& element :
+             mContext.uiRenderer->GetUILoadSystem()->GetCustomElements()) {
+            if (element.screen == "ugc" && element.id == id) {
+                return ImVec2(
+                    mainViewport->WorkPos.x +
+                        mainViewport->WorkSize.x * element.xRatio,
+                    mainViewport->WorkPos.y +
+                        mainViewport->WorkSize.x * element.yRatio);
+            }
+        }
+        return fallback;
+    };
     if (mUGCModelThumbnailRenderer) {
         mUGCModelThumbnailRenderer->BeginFrame();
     }
@@ -899,9 +1381,12 @@ void DebugUIRenderer::DrawUGCEditor(
         ImGuiWindowFlags_NoSavedSettings |
         ImGuiWindowFlags_NoScrollbar;
 
-    ImGui::SetNextWindowPos(mainViewport->WorkPos, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(
+        resolveUGCAnchor("presetTools", mainViewport->WorkPos),
+        ImGuiCond_Always);
+    constexpr float presetToolbarWidth = 720.0f;
     ImGui::SetNextWindowSize(
-        ImVec2(mainViewport->WorkSize.x, topBarHeight),
+        ImVec2(presetToolbarWidth, topBarHeight),
         ImGuiCond_Always);
     ImGui::Begin("###UGCTopBar", nullptr, fixedWindowFlags);
     struct PresetButton {
@@ -909,17 +1394,22 @@ void DebugUIRenderer::DrawUGCEditor(
         const char* modelPath;
         UGCPresetKind kind;
     };
-    constexpr std::array<PresetButton, 5> presetButtons = {{
+    constexpr std::array<PresetButton, 9> presetButtons = {{
         {"足場", "platform.obj", UGCPresetKind::NormalPlatform},
         {"敵", "enemy.obj", UGCPresetKind::NormalEnemy},
         {"惑星", "planet.obj", UGCPresetKind::EllipsePlanet},
         {"スイッチ", "platform.obj", UGCPresetKind::PressureSwitch},
         {"ゴール", "star.obj", UGCPresetKind::GoalStar},
+        {"移動足場", "platform.obj", UGCPresetKind::MovingPlatform},
+        {"消える足場", "platform.obj", UGCPresetKind::FadingPlatform},
+        {"くっつき足場", "platform.obj", UGCPresetKind::AdhesivePlatform},
+        {"2人用スイッチ", "platform.obj", UGCPresetKind::TwoPlayerSwitch},
     }};
-    constexpr float itemButtonWidth = 96.0f;
+    constexpr float itemButtonWidth = 80.0f;
     ImGui::SetCursorPosX(std::max(
-        8.0f,
-        (mainViewport->WorkSize.x - itemButtonWidth * presetButtons.size()) * 0.5f));
+        0.0f,
+        (presetToolbarWidth -
+         itemButtonWidth * presetButtons.size()) * 0.5f));
     for (const PresetButton& preset : presetButtons) {
         ImGui::PushID(preset.label);
         const GLuint thumbnail = mUGCModelThumbnailRenderer
@@ -938,10 +1428,10 @@ void DebugUIRenderer::DrawUGCEditor(
             ? ImGui::ImageButton(
                   "##presetIcon",
                   static_cast<ImTextureID>(thumbnail),
-                  ImVec2(72.0f, 72.0f),
+                  ImVec2(60.0f, 60.0f),
                   ImVec2(0.0f, 1.0f),
                   ImVec2(1.0f, 0.0f))
-            : ImGui::Button(preset.label, ImVec2(72.0f, 72.0f));
+            : ImGui::Button(preset.label, ImVec2(60.0f, 60.0f));
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
         if (ImGui::IsItemHovered()) {
@@ -958,8 +1448,13 @@ void DebugUIRenderer::DrawUGCEditor(
         ImGui::SameLine();
     }
     ImGui::NewLine();
-    if (mActiveUGCPresetKind == UGCPresetKind::NormalPlatform) {
-        ImGui::SetCursorPosX((mainViewport->WorkSize.x - 220.0f) * 0.5f);
+    const bool usesUGCPlatformFootprint =
+        mActiveUGCPresetKind == UGCPresetKind::NormalPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::MovingPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::FadingPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::AdhesivePlatform;
+    if (usesUGCPlatformFootprint) {
+        ImGui::SetCursorPosX((presetToolbarWidth - 220.0f) * 0.5f);
         ImGui::TextUnformatted("大きさ"); ImGui::SameLine();
         const int sizes[] = {1, 2, 3}; const char* labels[] = {"1マス", "4マス", "9マス"};
         for (int index = 0; index < 3; ++index) {
@@ -972,13 +1467,6 @@ void DebugUIRenderer::DrawUGCEditor(
     }
     DrawUGCWorkManagement();
     ImGui::End();
-
-    const ImVec2 gameViewportMin(
-        mainViewport->WorkPos.x,
-        mainViewport->WorkPos.y);
-    const ImVec2 gameViewportMax(
-        mainViewport->WorkPos.x + mainViewport->WorkSize.x,
-        mainViewport->WorkPos.y + mainViewport->WorkSize.y);
 
     constexpr ImGuiWindowFlags floatingButtonFlags =
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground |
@@ -1014,7 +1502,7 @@ void DebugUIRenderer::DrawUGCEditor(
         return clicked;
     };
     ImGui::SetNextWindowPos(
-        ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f),
+        resolveUGCAnchor("quickTools", ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f)),
         ImGuiCond_Always);
     ImGui::Begin("###UGCQuickTools", nullptr, floatingButtonFlags);
     if (drawActionIcon("eraser", "textures/ugc_ui/editor_action_eraser.png", mIsUGCEraserMode ? "消しゴム：ON" : "消しゴム")) {
@@ -1024,8 +1512,37 @@ void DebugUIRenderer::DrawUGCEditor(
     if (drawActionIcon("redo", "textures/ugc_ui/editor_action_redo.png", "やり直す")) HandleUGCRedo();
     ImGui::End();
 
+    // Controller users have button shortcuts; keyboard and mouse users need
+    // the equivalent editor actions on screen as well.
     ImGui::SetNextWindowPos(
-        ImVec2(gameViewportMin.x + 16.0f, gameViewportMax.y - 74.0f),
+        resolveUGCAnchor("keyboardTools", ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f)),
+        ImGuiCond_Always);
+    ImGui::Begin("###UGCKeyboardTools", nullptr, floatingButtonFlags);
+    if (drawActionIcon("layerUp", "textures/ugc_ui/editor_action_layer_up.png", "上のだん")) {
+        HandleUGCLayerChange(1);
+    }
+    if (drawActionIcon("layerDown", "textures/ugc_ui/editor_action_layer_down.png", "下のだん")) {
+        HandleUGCLayerChange(-1);
+    }
+    ImGui::Dummy(ImVec2(0.0f, 8.0f));
+    if (drawActionIcon("zoomIn", "textures/ugc_ui/editor_action_zoom_in.png", "近づく")) {
+        HandleUGCZoom(0.85f);
+    }
+    if (drawActionIcon("zoomOut", "textures/ugc_ui/editor_action_zoom_out.png", "遠ざかる")) {
+        HandleUGCZoom(1.18f);
+    }
+    if (drawActionIcon(
+            "previewView",
+            "textures/ugc_ui/editor_action_zoom_out.png",
+            mContext.game->GetIsUGCPreviewViewedFromBelow()
+                ? "上から見る"
+                : "下から見る")) {
+        mContext.game->ToggleUGCPreviewVerticalView();
+    }
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(
+        resolveUGCAnchor("play", ImVec2(gameViewportMin.x + 16.0f, gameViewportMax.y - 74.0f)),
         ImGuiCond_Always);
     ImGui::Begin("###UGCPlay", nullptr, floatingButtonFlags);
     if (drawActionIcon("play", "textures/ugc_ui/editor_action_play.png", "遊ぶ")) {
@@ -1038,7 +1555,7 @@ void DebugUIRenderer::DrawUGCEditor(
     ImGui::SetNextWindowPos(
         // Keep the menu with the edit actions: it is the first button above
         // eraser, undo and redo instead of floating beside the 3D preview.
-        ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 32.0f),
+        resolveUGCAnchor("menu", ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 32.0f)),
         ImGuiCond_Always);
     ImGui::Begin("###UGCMenu", nullptr, floatingButtonFlags);
     if (drawActionIcon("menu", "textures/ugc_ui/editor_action_menu.png", "メニュー")) {
@@ -1086,7 +1603,8 @@ void DebugUIRenderer::DrawUGCEditor(
         mStageAddActorPanel.UpdatePlacement();
     } else {
         mSelectionController.Update();
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (!mIsUGCEraserMode &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
             SyncUGCEditLayerToPickedActor();
         }
         if (!mIsUGCEraserMode) {
@@ -1094,8 +1612,62 @@ void DebugUIRenderer::DrawUGCEditor(
         }
         if (mIsUGCEraserMode &&
             ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            if (mStageAddActorPanel.TryEraseUGCPlatformCell()) {
+            const auto tryDeletePickedActorOnCurrentLayer = [&]() {
+                if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+                    !mContext.game) {
+                    return false;
+                }
+
+                Actor* pickedActor = mSelectionController.GetPickedActor();
+                const std::optional<StageActorRef>& pickedRef =
+                    mSelectionController.GetPickedActorRef();
+                if (!pickedActor || !pickedRef ||
+                    dynamic_cast<Planet*>(pickedActor) != nullptr) {
+                    return false;
+                }
+
+                // Generated UGC platforms are erased cell-by-cell below.
+                // All other placed actors (enemy, star, switches, etc.) take
+                // priority when they belong to the currently edited layer.
+                Platform* pickedPlatform = dynamic_cast<Platform*>(pickedActor);
+                if (pickedPlatform && pickedPlatform->GetIsUGCGenerated()) {
+                    return false;
+                }
+                const float gridSize = mContext.game->GetUGCGridSize();
+                const int actorLayer = static_cast<int>(std::round(
+                    pickedActor->GetPos().y / gridSize));
+                if (actorLayer != mUGCEditLayer) {
+                    return false;
+                }
+
+                return mEditCommandController.DeleteSelectedKeys({
+                    StageActorQuery::MakeKey(*pickedRef)});
+            };
+
+            const auto tryDeletePickedActorAsHighestFallback = [&]() {
+                if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    return false;
+                }
+                Actor* pickedActor = mSelectionController.GetPickedActor();
+                const std::optional<StageActorRef>& pickedRef =
+                    mSelectionController.GetPickedActorRef();
+                Platform* pickedPlatform =
+                    dynamic_cast<Platform*>(pickedActor);
+                if (!pickedActor || !pickedRef ||
+                    dynamic_cast<Planet*>(pickedActor) != nullptr ||
+                    (pickedPlatform && pickedPlatform->GetIsUGCGenerated())) {
+                    return false;
+                }
+                return mEditCommandController.DeleteSelectedKeys({
+                    StageActorQuery::MakeKey(*pickedRef)});
+            };
+
+            if (tryDeletePickedActorOnCurrentLayer()) {
+                mUGCStatus = "今のだんのものを消しました";
+            } else if (mStageAddActorPanel.TryEraseUGCPlatformCell()) {
                 mUGCStatus = "足場を1マス消しました";
+            } else if (tryDeletePickedActorAsHighestFallback()) {
+                mUGCStatus = "いちばん上のものを消しました";
             } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
                        !mSelectionController.GetSelectedKeys().empty()) {
                 const std::optional<StageActorRef>& selectedRef =
@@ -1117,6 +1689,13 @@ void DebugUIRenderer::DrawUGCEditor(
     }
     DrawUGCPlanetDeleteConfirmation();
     mSelectionController.ApplyEditorSelectionFlags();
+    if (mContext.uiRenderer) {
+        mContext.uiRenderer->DrawUGCForegroundCustomUI(
+            gameViewportMin,
+            ImVec2(
+                gameViewportMax.x - gameViewportMin.x,
+                gameViewportMax.y - gameViewportMin.y));
+    }
 }
 
 void DebugUIRenderer::DrawUGCPlanetDeleteConfirmation()
@@ -1338,12 +1917,56 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
         1.0f,
         mContext.gameViewport.width * 0.5f);
     const float minimumPreviewWidth = std::min(180.0f, maximumPreviewWidth);
-    mUGCPreviewWidth = glm::clamp(
+    if (!mHasInitializedUGCPreviewWidth) {
+        // Start large enough to inspect the stage, while keeping room for a
+        // user to enlarge it up to the half-screen limit.
+        mUGCPreviewWidth = glm::clamp(
+            maximumPreviewWidth * (2.0f / 3.0f),
+            minimumPreviewWidth,
+            maximumPreviewWidth);
+        mUGCPreviewResizeStartWidth = mUGCPreviewWidth;
+        mHasInitializedUGCPreviewWidth = true;
+    }
+    UILoadSystem::CustomElement* previewElement = nullptr;
+    if (mContext.uiRenderer &&
+        mContext.uiRenderer->GetUILoadSystem()) {
+        for (UILoadSystem::CustomElement& element :
+             mContext.uiRenderer->GetUILoadSystem()->GetCustomElements()) {
+            if (element.screen == "ugc" && element.id == "preview") {
+                previewElement = &element;
+                break;
+            }
+        }
+    }
+
+    float previewWidth = glm::clamp(
         mUGCPreviewWidth,
         minimumPreviewWidth,
         maximumPreviewWidth);
-    const float previewWidth = mUGCPreviewWidth;
-    const float previewHeight = previewWidth * 9.0f / 16.0f;
+    float previewHeight = previewWidth * 9.0f / 16.0f;
+    ImVec2 previewMin(
+        mContext.gameViewport.x +
+            mContext.gameViewport.width - previewWidth - 14.0f,
+        mContext.gameViewport.y +
+            mContext.gameViewport.height - previewHeight - 14.0f);
+    if (previewElement) {
+        previewWidth = std::max(
+            1.0f,
+            mContext.gameViewport.width *
+                previewElement->widthRatio);
+        previewHeight = std::max(
+            1.0f,
+            mContext.gameViewport.width *
+                previewElement->heightRatio);
+        previewMin = ImVec2(
+            mContext.gameViewport.x +
+                mContext.gameViewport.width *
+                    previewElement->xRatio,
+            mContext.gameViewport.y +
+                mContext.gameViewport.width *
+                    previewElement->yRatio);
+    }
+    mUGCPreviewWidth = previewWidth;
     const ImVec2 framebufferScale = ImGui::GetIO().DisplayFramebufferScale;
     constexpr float previewQualityScale = 1.5f;
     mContext.game->SetUGCPreviewRenderSize(
@@ -1352,12 +1975,10 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
         static_cast<int>(std::ceil(
             previewHeight * framebufferScale.y * previewQualityScale)));
     const ImVec2 previewMax(
-        mContext.gameViewport.x + mContext.gameViewport.width - 14.0f,
-        mContext.gameViewport.y + mContext.gameViewport.height - 14.0f);
-    const ImVec2 previewMin(
-        previewMax.x - previewWidth,
-        previewMax.y - previewHeight);
-
+        previewMin.x + previewWidth,
+        previewMin.y + previewHeight);
+    const bool isAdjustingUGCUI =
+        mActiveSection == EditorSection::UserInterface;
     ImDrawList* drawList = ImGui::GetForegroundDrawList();
     drawList->AddRectFilled(
         ImVec2(previewMin.x - 4.0f, previewMin.y - 24.0f),
@@ -1387,12 +2008,13 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
     ImGui::SetNextWindowSize(
         ImVec2(resizeHandleSize, resizeHandleSize),
         ImGuiCond_Always);
-    constexpr ImGuiWindowFlags resizeWindowFlags =
+    const ImGuiWindowFlags resizeWindowFlags =
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoBackground;
+        ImGuiWindowFlags_NoBackground |
+        (isAdjustingUGCUI ? ImGuiWindowFlags_NoInputs : 0);
     ImGui::Begin(
         "3Dプレビューサイズ変更###UGCPreviewResize",
         nullptr,
@@ -1404,13 +2026,20 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
     if (ImGui::IsItemActivated()) {
         mUGCPreviewResizeStartWidth = mUGCPreviewWidth;
     }
-    if (ImGui::IsItemActive()) {
+    if (ImGui::IsItemActive() && !isAdjustingUGCUI) {
         const float horizontalDrag =
             ImGui::GetMouseDragDelta(ImGuiMouseButton_Left).x;
         mUGCPreviewWidth = glm::clamp(
             mUGCPreviewResizeStartWidth - horizontalDrag,
             minimumPreviewWidth,
             maximumPreviewWidth);
+        if (previewElement) {
+            previewElement->widthRatio =
+                mUGCPreviewWidth /
+                std::max(mContext.gameViewport.width, 1.0f);
+            previewElement->heightRatio =
+                previewElement->widthRatio * 9.0f / 16.0f;
+        }
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
     } else if (ImGui::IsItemHovered()) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
@@ -1492,7 +2121,9 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
     const glm::vec3 previewDirection = glm::normalize(glm::vec3(
         basePreviewDirection.x * previewYawCosine +
             basePreviewDirection.z * previewYawSine,
-        basePreviewDirection.y,
+        mContext.game->GetIsUGCPreviewViewedFromBelow()
+            ? -basePreviewDirection.y
+            : basePreviewDirection.y,
         -basePreviewDirection.x * previewYawSine +
             basePreviewDirection.z * previewYawCosine));
     constexpr float previewFieldOfViewDegrees = 55.0f;
@@ -1506,10 +2137,14 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
     previewTarget.y = mContext.game->GetUGCPreviewFocusY();
     const glm::vec3 previewPosition =
         previewTarget + previewDirection * previewDistance;
+    const glm::vec3 previewUp =
+        mContext.game->GetIsUGCPreviewViewedFromBelow()
+            ? glm::vec3(0.0f, -1.0f, 0.0f)
+            : glm::vec3(0.0f, 1.0f, 0.0f);
     const glm::mat4 view = glm::lookAt(
         previewPosition,
         previewTarget,
-        glm::vec3(0.0f, 1.0f, 0.0f));
+        previewUp);
     const glm::mat4 projection = glm::perspective(
         glm::radians(previewFieldOfViewDegrees),
         16.0f / 9.0f,
@@ -2822,6 +3457,7 @@ void DebugUIRenderer::DrawSequenceEditorTab()
     constexpr const char* menus[] = {
         "演出シーケンス",
         "カメラシーケンス",
+        "星獲得",
     };
 
     ImGui::BeginChild("SequenceEditorLeft", ImVec2(160.0f, 0.0f), true);
@@ -2844,9 +3480,56 @@ void DebugUIRenderer::DrawSequenceEditorTab()
     case 1:
         mCameraPanel.DrawCinematicSequenceEditor();
         break;
+    case 2:
+        DrawStarCollectionEditor();
+        break;
     default:
         break;
     }
 
     ImGui::EndChild();
+}
+
+void DebugUIRenderer::DrawStarCollectionEditor()
+{
+    if (!mContext.game) {
+        return;
+    }
+
+    Star* star = nullptr;
+    if (Stage* stage = mContext.game->GetCurrentStage()) {
+        for (Planet* planet : stage->GetPlanets()) {
+            if (planet && planet->GetStar()) {
+                star = planet->GetStar();
+                break;
+            }
+        }
+    }
+    if (!star) {
+        ImGui::TextUnformatted("現在のステージに星がありません。");
+        return;
+    }
+
+    Star::CollectionAnimationSettings settings = star->GetCollectionAnimationSettings();
+    ImGui::TextUnformatted("星獲得演出（カメラは現在のまま）");
+    ImGui::DragFloat("周回時間", &settings.orbitDuration, 0.01f, 0.05f, 10.0f, "%.2f 秒");
+    ImGui::DragFloat("周回開始半径", &settings.orbitStartRadius, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("周回中の横回転速度", &settings.orbitSpinDegreesPerSecond,
+                     5.0f, -3600.0f, 3600.0f, "%.0f 度/秒");
+    ImGui::DragFloat("真上の高さ", &settings.finalHeight, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("真上で待つ時間", &settings.waitAbovePlayerDuration, 0.01f, 0.0f, 5.0f, "%.2f 秒");
+    ImGui::DragFloat("落下時間", &settings.fallDuration, 0.01f, 0.05f, 10.0f, "%.2f 秒");
+    star->SetCollectionAnimationSettings(settings);
+
+    if (ImGui::Button("プレビュー再生")) {
+        star->StartCollectionPreview(mContext.game->GetMainPlayer());
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("stars.yamlへ保存")) {
+        const bool saved = star->SaveCollectionAnimationSettings();
+        mBuildRestartStatus = saved
+            ? "星獲得演出を保存しました"
+            : "星獲得演出を保存できませんでした";
+        mIsBuildRestartStatusError = !saved;
+    }
 }

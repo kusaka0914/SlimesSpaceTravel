@@ -56,6 +56,7 @@ public:
     void OnBoatArrived(Boat* boat);
     void RespawnAtRestartPoint();
     void Restart();
+    void ForceGroundedForCinematic();
     void RecoverFromFatigue();
     void OnAttachedToAdhesivePlatform();
     void SetBaseScale(const glm::vec3& scale);
@@ -72,6 +73,7 @@ public:
         mInput.SuppressJumpUntilReleased();
     }
     void RequestNextWeakAttackAnimation();
+    void RequestStrongAttackAnimation();
 
     bool IsInvincible() const { return mStatus.IsInvincible(); }
 

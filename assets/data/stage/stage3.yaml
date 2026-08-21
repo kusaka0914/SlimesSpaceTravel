@@ -51,9 +51,9 @@ planets:
       - -65.617065
       - 105.06653
     scale:
-      - 6
-      - 2
-      - 6
+      - 4
+      - 4
+      - 4
     color:
       - 1
       - 1
@@ -63,8 +63,8 @@ planets:
     stageNum: 3
     rocketSpawnCondition: ""
     textureTiling:
-      - 6
-      - 6
+      - 4
+      - 4
     textureSideBlendWidth: 0.05
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: true
@@ -276,75 +276,75 @@ enemies:
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 3
-    theta: -2.5457957
-    phi: 0.6398731
-    height: -0.063421726
+    theta: 3.11572
+    phi: -0.72307354
+    height: -0.04772663
     pos:
-      - -2.71
-      - -1.75
-      - -0.21
+      - -2.96
+      - -2.62
+      - 0.08
     upVec:
-      - 0.009882688
-      - -0.98265374
-      - -0.18518667
-    facingYaw: 0.25928816
+      - -0.7495235
+      - -0.66169345
+      - 0.01939705
+    facingYaw: 0.25470278
     rotation:
-      - -0.19254787
+      - 0
       - -0.25470284
-      - 0.059139866
+      - 0
     rotationQuat:
-      - -0.016987102
-      - 0.12918304
-      - -0.09156749
-      - 0.9872379
+      - 0.40898043
+      - 0.119723186
+      - -0.04345444
+      - 0.9036111
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 3
-    theta: -1.0338916
-    phi: 0.24017069
-    height: -0.07503176
+    theta: -0.10142881
+    phi: -0.38285
+    height: -0.021321535
     pos:
-      - 3.69
-      - -1.66
-      - -0.63
+      - 3.67
+      - -1.49
+      - -0.37
     upVec:
-      - 0.41413948
-      - -0.91004515
-      - 0.01750464
-    facingYaw: -0.04134367
+      - 0.922835
+      - -0.3735697
+      - -0.09392211
+    facingYaw: -0.041337334
     rotation:
-      - 0.017520502
+      - 0
       - 0.041337334
-      - 0.42779103
+      - 0
     rotationQuat:
-      - -0.21203785
-      - -0.022054547
-      - 0.004171858
-      - 0.9770037
+      - -0.557372
+      - 0.009151867
+      - -0.050514497
+      - 0.8286743
   - editorName: 新しい通常敵
     type: boss_3
     currentPlanetNum: 3
-    theta: -1.3543861
-    phi: -0.7818879
-    height: -0.058241367
+    theta: 0.4692854
+    phi: -1.3203049
+    height: -0.008003712
     pos:
-      - -0.14
-      - -0.75
-      - -5.43
+      - 0.88
+      - -3.87
+      - 0.45
     upVec:
-      - 0
-      - -1
-      - 0
-    facingYaw: -0
+      - 0.22108878
+      - -0.96878994
+      - 0.11209723
+    facingYaw: -7.4505797e-09
     rotation:
       - 0
       - 0
       - 0
     rotationQuat:
-      - 0
-      - 0
-      - 0
-      - 1
+      - -0.111772746
+      - -0.0062845144
+      - 0.055784266
+      - 0.9921469
     scale:
       - 1.5
       - 2
@@ -454,7 +454,7 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.51, -2.72, 0.47], upVec: [0.02592474, -0.9992376, 0.029190011]}
+  - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.02, -0.08, 0.02], upVec: [0.02592474, -0.9992376, 0.029190011]}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["しってる～？\n分身してるときは攻撃力も半分になっちゃうんだ～！", "だから敵と戦うときは合体したほうがいいよ～！\n2人で戦うならいいけどね～！"], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: "しってる～？\n", ruby: false}, {text: 分, ruby: true, reading: ぶん}, {text: 身, ruby: true, reading: しん}, {text: してるときは, ruby: false}, {text: 攻, ruby: true, reading: こう}, {text: 撃, ruby: true, reading: げき}, {text: 力, ruby: true, reading: りょく}, {text: も, ruby: false}, {text: 半, ruby: true, reading: はん}, {text: 分, ruby: true, reading: ぶん}, {text: になっちゃうんだ～！, ruby: false}]}, {talkIndex: 1, segments: [{text: だから, ruby: false}, {text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: "したほうがいいよ～！\n2", ruby: false}, {text: 人, ruby: true, reading: ひと}, {text: で, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うならいいけどね～！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 敵と戦うときは合体したほうがいいよ～！}], rubies: [{talkIndex: 1, segments: [{text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: したほうがいいよ～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: -1.59115, phi: 0.8946725, height: -3.539135, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [表から見えなくても、裏から見えることもあるよ！, ほら！あのスイッチとか！], pos: [-0.03, 1.92, -1.54], upVec: [2.2551054e-05, 0.9958164, -0.09137756], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}, {talkIndex: 1, segments: [{text: ほら！あのスイッチとか！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 表から見えなくても、裏から見えることもあるよ！}], rubies: [{talkIndex: 1, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 1, sequence: platforms, index: 46}]}
@@ -1200,7 +1200,10 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-      enemyClearUnlock: {}
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
   - currentPlanetNum: 2
     pos:
       - -5.04
@@ -1406,8 +1409,12 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet1
-        targets: []
-      enemyClearUnlock: {}
+        targets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
     rotationQuat:
       - -0.010605924
       - 0.48201528
@@ -2283,6 +2290,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
+        hideTargets:
+          []
   - currentPlanetNum: 9
     theta: -2.7891998
     phi: 1.454875
@@ -2312,7 +2321,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet2
-        targets: []
+        targets:
+          []
+        hideTargets:
+          []
     rotationQuat:
       - 0.90604794
       - -0.012187039
@@ -2661,10 +2673,13 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets: []
+        targets:
+          []
         enemyTargets:
           - sequence: enemies
             index: 6
+        hideTargets:
+          []
     rotationQuat:
       - 0.006787314
       - 0.78266186

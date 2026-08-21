@@ -30,7 +30,10 @@ struct ActorMovementCollisionResult {
 
 enum class ActorCollisionFilter {
     AllActors,
-    IgnoreAirborneEnemies
+    IgnoreAirborneEnemies,
+    // Keep enemy contact solid, but do not apply the separation push that
+    // makes groups of moving enemies jitter against one another.
+    StopAtEnemies
 };
 
 class PhysicsWorldBuilder;

@@ -23,7 +23,9 @@ public:
         int currentPlanetNum,
         const StageActorPlacement& placement,
         float gridSize,
-        int footprintSideLength = 1);
+        int footprintSideLength = 1,
+        const std::string& behavior = "normal",
+        const glm::ivec3& movementDeltaCells = glm::ivec3(0));
     bool RefreshUGCPlatformCells();
     bool TranslateUGCPlatformCells(
         const StageActorRef& generatedPlatformRef,
@@ -60,6 +62,23 @@ public:
         const std::string& modelPath,
         const glm::vec3& scale,
         const StageActorPlacement* placement = nullptr);
+    bool AddMovingPlatform(
+        int currentPlanetNum,
+        const StageActorPlacement& startPlacement,
+        const StageActorPlacement& endPlacement,
+        const glm::vec3& scale);
+    bool AddFadingPlatform(
+        int currentPlanetNum,
+        const glm::vec3& scale,
+        const StageActorPlacement* placement = nullptr);
+    bool AddAdhesivePlatform(
+        int currentPlanetNum,
+        const glm::vec3& scale,
+        const StageActorPlacement* placement = nullptr);
+    bool AddTwoPlayerSwitchPair(
+        int currentPlanetNum,
+        const StageActorPlacement& firstPlacement,
+        const StageActorPlacement& secondPlacement);
     bool AddPlanet(const std::string& modelPath);
     bool AddEllipsePlanet(const std::string& modelPath);
     bool AddEnemy(const std::string& type, int currentPlanetNum,

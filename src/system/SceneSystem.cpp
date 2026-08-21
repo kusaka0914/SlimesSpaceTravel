@@ -1,6 +1,7 @@
 #include "system/SceneSystem.h"
 
 #include "Game.h"
+#include "Stage.h"
 
 #include "actor/Boat.h"
 #include "actor/NPC.h"
@@ -46,6 +47,12 @@ void SceneSystem::CreateControllers()
 void SceneSystem::Update(float deltaTime)
 {
     mTransitionController->UpdateFade(deltaTime);
+    if (IsCredits() && mFadeTimer < 0.0f) {
+        mCreditsElapsed += deltaTime;
+        if (mCreditsElapsed >= 24.0f) {
+            FinishCredits();
+        }
+    }
     mTutorialController->Update(deltaTime);
     mTalkController->Update(deltaTime);
     UpdateClearTimer(deltaTime);
@@ -73,13 +80,29 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
         mTalkController->TryAdvanceTalkFromConfirm();
         return true;
 
+    case GameProgressState::SceneState::Ending:
+        mUIState->IncTalkUIIndex();
+        return true;
+
+    case GameProgressState::SceneState::Credits:
+        FinishCredits();
+        return true;
+
     case GameProgressState::SceneState::Talking:
+    {
+        // In local multiplayer, only the player who initiated the NPC talk
+        // (or tutorial) may advance its pages.
+        const Player* talkingPlayer = GetTalkingPlayer();
+        if (talkingPlayer && talkingPlayer->GetPlayerNum() != playerNum) {
+            return false;
+        }
         if (mTutorialController->HasActiveTutorial()) {
             mTutorialController->TryAdvanceFromConfirm();
         } else {
             mTalkController->TryAdvanceTalkFromConfirm();
         }
         return true;
+    }
 
     case GameProgressState::SceneState::Playing:
         return mTalkController->TryStartTalkWithNPC(playerNum);
@@ -162,7 +185,12 @@ bool SceneSystem::IsTutorialActive(
 void SceneSystem::OnStartPressed()
 {
     if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
-        StartFadeIn();
+        // Start normally skips the title-opening into gameplay.  An opening
+        // launched from an NPC conversation must instead return to that
+        // conversation, so do not let the skip start a base arrival flow.
+        if (!mHasOpeningResume) {
+            StartFadeIn();
+        }
         return;
     }
 
@@ -177,6 +205,11 @@ void SceneSystem::OnStartPressed()
 void SceneSystem::StartOpening()
 {
     mTransitionController->StartOpening();
+}
+
+void SceneSystem::StartEnding()
+{
+    mTransitionController->StartEnding();
 }
 
 void SceneSystem::StartBattleStyleSelection()
@@ -204,7 +237,9 @@ void SceneSystem::ConfirmBattleStyleSelection()
     }
 
     mGame->SetPlayerControlStyle(mSelectedBattleStyle);
-    RequestStageChange(1);
+    // A save that has already cleared stage 1 resumes from the base.  A new
+    // save starts from stage 1 as before.
+    RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
 }
 
 void SceneSystem::DebugEnterTitle()
@@ -256,12 +291,14 @@ void SceneSystem::StartPlayingScene()
 
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
+    mIsFinishingOpeningStory = false;
 
     // Stage changes already request this explicitly, but direct stage starts
     // (debug/editor reloads and restart flows) previously skipped it. Queue
     // the same check here so an NPC configured for arrival always gets a
     // chance to start its unread conversation after the scene is ready.
-    mHasPendingForcedArrivalTalk = true;
+    mHasPendingForcedArrivalTalk = !mSuppressForcedArrivalTalkOnce;
+    mSuppressForcedArrivalTalkOnce = false;
     mHasReachedArrivalDestination = false;
 
     for (Player* player : mGame->GetPlayers()) {
@@ -277,6 +314,157 @@ void SceneSystem::StartFocusingScene()
 void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
 {
     mTalkController->StartTalkWithNPC(talkingNPC, talkingPlayer);
+}
+
+bool SceneSystem::StartOpeningAfterTalkPage(
+    NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
+    std::size_t sourceTalkPageIndex)
+{
+    if (!talkingNPC || !talkingPlayer || resumeTalkPageIndex < 0 ||
+        !mGame ||
+        mGame->HasCompletedNPCOpeningTrigger(
+            talkingNPC, sourceTalkPageIndex)) {
+        return false;
+    }
+
+    mOpeningReturnStageNum = mGame->GetCurrentStageNum();
+    mOpeningReturnStageYamlPath = mGame->GetCurrentStageYamlPath();
+    mOpeningResumeNPCConversationId =
+        mGame->GetNPCConversationId(talkingNPC);
+    mOpeningResumePlayerIndex = 0;
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    for (std::size_t index = 0; index < players.size(); ++index) {
+        if (players[index] == talkingPlayer) {
+            mOpeningResumePlayerIndex = static_cast<int>(index);
+            break;
+        }
+    }
+
+    // This must happen before loading house.yaml, because loading destroys
+    // the current stage's NPC instances.
+    mGame->MarkNPCOpeningTriggerCompleted(
+        talkingNPC, sourceTalkPageIndex);
+
+    // The story is authored against the house scene, not the interactive
+    // base (stage0.yaml).  Swap it while the screen is fading; the base is
+    // restored before the NPC conversation continues.
+    if (!mGame->LoadStageForScene(0, "../assets/data/stage/house.yaml")) {
+        return false;
+    }
+
+    mOpeningResumeNPC = nullptr;
+    mOpeningResumePlayer = nullptr;
+    mOpeningResumeTalkPageIndex = resumeTalkPageIndex;
+    mHasOpeningResume = true;
+    mIsFinishingOpeningStory = false;
+    mUIState->StartTalkWith(UIState::TalkWith::Opening);
+    StartOpening();
+    return true;
+}
+
+void SceneSystem::FinishOpeningStory()
+{
+    // The opening renderer invokes this every frame after its final page.
+    // Keep the first transition request intact; otherwise the next frame
+    // overwrites the NPC-resume fade with the normal stage-0 arrival flow.
+    if (mIsFinishingOpeningStory) {
+        return;
+    }
+    mIsFinishingOpeningStory = true;
+
+    if (!mHasOpeningResume || mOpeningReturnStageNum < 0 ||
+        mOpeningReturnStageYamlPath.empty() ||
+        mOpeningResumeNPCConversationId.empty() ||
+        mOpeningResumeTalkPageIndex < 0) {
+        mIsFinishingOpeningStory = false;
+        StartFadeIn();
+        return;
+    }
+
+    const int resumeTalkPageIndex = mOpeningResumeTalkPageIndex;
+    const int returnStageNum = mOpeningReturnStageNum;
+    const int resumePlayerIndex = mOpeningResumePlayerIndex;
+    const std::string returnStageYamlPath = mOpeningReturnStageYamlPath;
+    const std::string resumeNPCConversationId =
+        mOpeningResumeNPCConversationId;
+    mOpeningResumeNPC = nullptr;
+    mOpeningResumePlayer = nullptr;
+    mOpeningResumeTalkPageIndex = -1;
+    mOpeningReturnStageNum = -1;
+    mOpeningReturnStageYamlPath.clear();
+    mOpeningResumeNPCConversationId.clear();
+    mHasOpeningResume = false;
+    mSuppressForcedArrivalTalkOnce = true;
+
+    if (!RequestFadeAction([this, returnStageNum, returnStageYamlPath,
+                            resumeNPCConversationId, resumePlayerIndex,
+                            resumeTalkPageIndex]() {
+        if (!mGame->LoadStageForScene(returnStageNum, returnStageYamlPath)) {
+            mIsFinishingOpeningStory = false;
+            StartPlayingScene();
+            return;
+        }
+
+        NPC* resumeNPC =
+            mGame->FindNPCByConversationId(resumeNPCConversationId);
+        const std::vector<Player*>& players = mGame->GetPlayers();
+        Player* resumePlayer =
+            resumePlayerIndex >= 0 &&
+                    resumePlayerIndex < static_cast<int>(players.size())
+                ? players[resumePlayerIndex]
+                : mGame->GetMainPlayer();
+        if (!resumeNPC || !resumePlayer || !resumeNPC->GetIsActive() ||
+            !resumePlayer->GetIsActive()) {
+            mIsFinishingOpeningStory = false;
+            StartPlayingScene();
+            return;
+        }
+        mIsFinishingOpeningStory = false;
+        mTalkController->ResumeTalkWithNPC(
+            resumeNPC, resumePlayer, resumeTalkPageIndex);
+    })) {
+        mIsFinishingOpeningStory = false;
+    }
+}
+
+bool SceneSystem::StartEndingAfterTalkPage(
+    NPC* talkingNPC, std::size_t sourceTalkPageIndex)
+{
+    if (!talkingNPC || !mGame ||
+        !mGame->AreAllMainStagesCleared() ||
+        mGame->HasCompletedNPCEndingTrigger(
+            talkingNPC, sourceTalkPageIndex)) {
+        return false;
+    }
+
+    mGame->MarkNPCEndingTriggerCompleted(
+        talkingNPC, sourceTalkPageIndex);
+    mUIState->StartTalkWith(UIState::TalkWith::Ending);
+    StartEnding();
+    return true;
+}
+
+void SceneSystem::FinishEndingStory()
+{
+    RequestFadeAction([this]() { StartCredits(); });
+}
+
+void SceneSystem::StartCredits()
+{
+    mUIState->FinishTalkWith();
+    mCreditsElapsed = 0.0f;
+    mGameProgressState->SetCurrentSceneState(
+        GameProgressState::SceneState::Credits);
+}
+
+void SceneSystem::FinishCredits()
+{
+    RequestFadeAction([this]() {
+        mCreditsElapsed = 0.0f;
+        mUIState->FinishTalkWith();
+        mGameProgressState->SetCurrentSceneState(
+            GameProgressState::SceneState::Title);
+    });
 }
 
 bool SceneSystem::TryStartTutorial(
@@ -343,8 +531,16 @@ void SceneSystem::RequestStageChange(int stageNum)
 {
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
+    mOpeningResumeNPC = nullptr;
+    mOpeningResumePlayer = nullptr;
+    mOpeningResumeTalkPageIndex = -1;
+    mHasOpeningResume = false;
+    mOpeningReturnStageNum = -1;
+    mOpeningReturnStageYamlPath.clear();
+    mOpeningResumeNPCConversationId.clear();
     mHasPendingForcedArrivalTalk = true;
     mHasReachedArrivalDestination = false;
+    mSuppressForcedArrivalTalkOnce = false;
     mTransitionController->RequestStageChange(stageNum);
 }
 
@@ -411,18 +607,37 @@ NPC* SceneSystem::FindForcedArrivalTalkNPC() const
     Player* controlledPlayer = mGame->GetControlledPlayer();
     Planet* arrivalPlanet =
         controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
-    if (!arrivalPlanet) {
+    const auto findInPlanet = [this](Planet* planet) -> NPC* {
+        if (!planet) {
+            return nullptr;
+        }
+        for (NPC* npc : planet->GetNPCs()) {
+            if (npc && npc->GetIsActive() &&
+                npc->GetForcesTalkOnArrival() &&
+                !npc->GetResolvedTalkTexts().empty() &&
+                !mGame->HasShownNPCConversation(npc)) {
+                return npc;
+            }
+        }
         return nullptr;
+    };
+
+    if (NPC* arrivalNPC = findInPlanet(arrivalPlanet)) {
+        return arrivalNPC;
     }
 
-    for (NPC* npc : arrivalPlanet->GetNPCs()) {
-        if (!npc || !npc->GetIsActive() ||
-            !npc->GetForcesTalkOnArrival() ||
-            npc->GetResolvedTalkTexts().empty() ||
-            mGame->HasShownNPCConversation(npc)) {
-            continue;
+    // During a stage-start cinematic the player can briefly have no resolved
+    // current planet.  Fall back to the stage-wide configured NPC instead of
+    // losing the one-shot arrival conversation in that frame.
+    Stage* stage = mGame->GetCurrentStage();
+    if (stage) {
+        for (Planet* planet : stage->GetPlanets()) {
+            if (planet != arrivalPlanet) {
+                if (NPC* arrivalNPC = findInPlanet(planet)) {
+                    return arrivalNPC;
+                }
+            }
         }
-        return npc;
     }
     return nullptr;
 }

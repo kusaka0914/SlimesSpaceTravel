@@ -102,17 +102,31 @@ void CameraSystem::ProcessInput()
         mKeyboardPitchInput -= 1.0f;
     }
 
-    const bool alignCameraPressed =
+    const bool keyboardAlignCameraPressed =
         (acceptsKeyboardInput && mGame->GetWindow() &&
-         glfwGetKey(mGame->GetWindow(), GLFW_KEY_M) == GLFW_PRESS) ||
-        (sdlController &&
-         SDL_GameControllerGetButton(
-             sdlController,
-             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER));
+         glfwGetKey(mGame->GetWindow(), GLFW_KEY_M) == GLFW_PRESS);
+    const bool controllerAlignCameraPressed =
+        sdlController &&
+        SDL_GameControllerGetButton(
+            sdlController,
+            SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    const bool alignCameraPressed =
+        keyboardAlignCameraPressed || controllerAlignCameraPressed;
 
     if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
-        const int playerIndex = GetPrimaryPlayerIndex();
-        mPlayerCamera.AlignBehindPlayer(mGame->GetControlledPlayer(), playerIndex);
+        int playerIndex = GetPrimaryPlayerIndex();
+        if (mGame->GetIsPlayer2Joined()) {
+            // Controller is player 1 and the keyboard is player 2 in local
+            // multiplayer.  Reset the camera belonging to the input source.
+            playerIndex = keyboardAlignCameraPressed ? 1 : 0;
+        }
+        const std::vector<Player*>& players = mGame->GetPlayers();
+        if (playerIndex >= 0 &&
+            playerIndex < static_cast<int>(players.size()) &&
+            players[static_cast<std::size_t>(playerIndex)]) {
+            mPlayerCamera.AlignBehindPlayer(
+                players[static_cast<std::size_t>(playerIndex)], playerIndex);
+        }
     }
 
     mAlignCameraPressedPrev = alignCameraPressed;

@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <limits>
 
 UIRenderer::UIRenderer(Game* game)
     : Renderer(game),
@@ -199,14 +200,24 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawOpening();
     }
 
+    if (!isStartCinematicPlaying && sceneSystem->IsEnding()) {
+        mSceneUIRenderer->DrawEnding();
+    }
+
+    if (!isStartCinematicPlaying && sceneSystem->IsCredits()) {
+        mSceneUIRenderer->DrawCredits();
+    }
+
     if (!isStartCinematicPlaying && sceneSystem->IsGameOver()) {
         mSceneUIRenderer->DrawGameOver();
     }
 
-    // UGC editing has its own product UI.  The in-game HUD and authored
-    // custom UI would otherwise sit on top of the editor canvas.
+    // UGC editing has its own product UI. The in-game HUD and authored
+    // operation guide must stay hidden in both the product editor and the
+    // ordinary debug editor opened on top of it.
     const bool isUGCEditing =
-        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+        mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing();
     const bool shouldDrawDefaultUI =
         !isStartCinematicPlaying &&
         !isUGCEditing &&
@@ -223,7 +234,7 @@ void UIRenderer::DrawGameContent()
         mStateUIRenderer->DrawStateUI();
     }
 
-    if (!isStartCinematicPlaying && !isUGCEditing) {
+    if (!isStartCinematicPlaying) {
         DrawCustomUI();
     }
 
@@ -258,7 +269,8 @@ void UIRenderer::DrawDebugEditor(
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    if (mGame->GetIsUGCMode()) {
+    if (mGame->GetIsUGCMode() &&
+        !mGame->GetIsUGCDebugEditorShowing()) {
         mDebugUIRenderer->DrawUGCEditor(
             gameViewTexture,
             gameViewWidth,
@@ -270,6 +282,11 @@ void UIRenderer::DrawDebugEditor(
             gameViewHeight);
     }
     EndImGuiFrame();
+
+    // The editor is drawn after the game view and its UI. Draw the transition
+    // once more on the default framebuffer so the editor itself is covered
+    // during a fade instead of suddenly appearing in front of it.
+    mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -595,6 +612,25 @@ void UIRenderer::RecordRenderedUIElement(
     mRenderedUIElements.push_back(std::move(renderedElement));
 }
 
+void UIRenderer::RecordCustomUIElementForEditor(
+    const UILoadSystem::CustomElement& element)
+{
+    CustomElementScreenTransform screenTransform;
+    if (!CalculateCustomElementScreenTransform(
+            element,
+            screenTransform)) {
+        return;
+    }
+
+    RecordRenderedUIElement(
+        RenderedUIElementSource::Custom,
+        element.screen,
+        element.id,
+        screenTransform.center,
+        screenTransform.size,
+        element.rotationDegrees);
+}
+
 void UIRenderer::RecordRenderedTextElement(
     const std::string& screen,
     const std::string& id,
@@ -672,11 +708,183 @@ std::string UIRenderer::GetCustomTextureName(const std::string& assetRelativePat
     return "custom-ui:" + normalizedPath;
 }
 
+void UIRenderer::DrawCustomElement(
+    const UILoadSystem::CustomElement& element,
+    float viewportTopY,
+    float viewportScale,
+    bool centerTalkPrompt,
+    float contentScale,
+    const Player* inputPlayer)
+{
+    if (contentScale < 0.0f) {
+        contentScale = viewportScale;
+    }
+    float x = mFbWidth * element.xRatio;
+    float y = viewportTopY +
+              mFbWidth * element.yRatio * viewportScale;
+    const float width = mFbWidth * element.widthRatio * contentScale;
+    const float height = mFbWidth * element.heightRatio * contentScale;
+
+    if (centerTalkPrompt) {
+        float centerX = static_cast<float>(mFbWidth) * 0.5f;
+        float centerY = viewportTopY +
+                        static_cast<float>(mFbHeight) * 0.25f;
+        float iconCenterX = centerX;
+        float iconCenterY = centerY;
+        float textCenterX = centerX;
+        float textCenterY = centerY;
+        for (const UILoadSystem::CustomElement& candidate :
+             mUILoadSystem->GetCustomElements()) {
+            if (candidate.id == "multiplayerTalkIconAnchor") {
+                iconCenterX = mFbWidth * candidate.xRatio;
+                iconCenterY = viewportTopY + mFbWidth * candidate.yRatio;
+            } else if (candidate.id == "multiplayerTalkTextAnchor") {
+                textCenterX = mFbWidth * candidate.xRatio;
+                textCenterY = viewportTopY + mFbWidth * candidate.yRatio;
+            }
+        }
+        if (element.type == UILoadSystem::CustomElementType::Image) {
+            x = iconCenterX - width * 0.5f;
+            y = iconCenterY - height * 0.5f;
+        } else if (element.type == UILoadSystem::CustomElementType::Text) {
+            x = textCenterX;
+            y = textCenterY;
+        }
+    }
+
+    const float topLeftX = element.centerBased ? x - width * 0.5f : x;
+    const float topLeftY = element.centerBased ? y - height * 0.5f : y;
+
+    switch (element.type) {
+    case UILoadSystem::CustomElementType::Text:
+    {
+        std::string resolvedText = ResolveCustomElementText(element);
+        if (inputPlayer && element.usesInputDeviceVariants) {
+            const bool usesController = UsesControllerUI(inputPlayer);
+            if (mGame->IsInputModifierHeld()) {
+                const std::string& modifierText =
+                    usesController
+                        ? element.gameControllerModifierText
+                        : element.keyboardModifierText;
+                if (!modifierText.empty()) {
+                    resolvedText = modifierText;
+                }
+            } else {
+                const std::string& deviceText =
+                    usesController
+                        ? element.gameControllerText
+                        : element.keyboardText;
+                if (!deviceText.empty()) {
+                    resolvedText = deviceText;
+                }
+            }
+        }
+        glm::vec4 textColor(
+            element.color[0] * 255.0f,
+            element.color[1] * 255.0f,
+            element.color[2] * 255.0f,
+            element.color[3] * 255.0f);
+        if (element.screen == "title") {
+            constexpr std::array<const char*, 3> titleMenuIds = {
+                "startGame", "createStage", "playCreatedStage"};
+            for (int index = 0;
+                 index < static_cast<int>(titleMenuIds.size()); ++index) {
+                if (element.id == titleMenuIds[index] &&
+                    mGame->GetTitleMenuSelection() == index) {
+                    textColor = glm::vec4(255.0f, 225.0f, 45.0f, 255.0f);
+                    break;
+                }
+            }
+        }
+        TextEffect effect;
+        effect.shadowEnabled = element.shadowEnabled;
+        effect.shadowOffset =
+            static_cast<float>(mFbWidth) * contentScale *
+            glm::vec2(element.shadowOffsetXRatio, element.shadowOffsetYRatio);
+        effect.shadowColor = glm::vec4(
+            element.shadowColor[0] * 255.0f,
+            element.shadowColor[1] * 255.0f,
+            element.shadowColor[2] * 255.0f,
+            element.shadowColor[3] * 255.0f);
+        effect.outlineEnabled = element.outlineEnabled;
+        effect.outlineWidth =
+            mFbWidth * element.outlineWidthRatio * contentScale;
+        effect.outlineColor = glm::vec4(
+            element.outlineColor[0] * 255.0f,
+            element.outlineColor[1] * 255.0f,
+            element.outlineColor[2] * 255.0f,
+            element.outlineColor[3] * 255.0f);
+        DrawText(
+            x,
+            y,
+            mFbWidth * element.textScaleRatio * contentScale,
+            resolvedText,
+            element.centerBased,
+            textColor,
+            element.rotationDegrees,
+            &effect);
+        break;
+    }
+    case UILoadSystem::CustomElementType::Image:
+    {
+        std::string texturePath = ResolveCustomElementTexturePath(element);
+        bool flipVertical = ResolveCustomElementTextureFlipVertical(element);
+        if (inputPlayer && element.usesInputDeviceVariants) {
+            const bool usesController = UsesControllerUI(inputPlayer);
+            const std::string& deviceTexturePath =
+                usesController
+                    ? element.gameControllerTexturePath
+                    : element.keyboardTexturePath;
+            if (!deviceTexturePath.empty()) {
+                texturePath = deviceTexturePath;
+                flipVertical = usesController
+                    ? element.gameControllerFlipVertical
+                    : element.keyboardFlipVertical;
+            }
+        }
+        if (RegisterCustomUITexture(texturePath)) {
+            DrawTexture(
+                topLeftX,
+                topLeftY,
+                width,
+                height,
+                GetCustomTextureName(texturePath),
+                flipVertical,
+                element.rotationDegrees);
+        }
+        break;
+    }
+    case UILoadSystem::CustomElementType::Panel:
+        DrawBG(
+            topLeftX,
+            topLeftY,
+            width,
+            height,
+            {element.color[0], element.color[1], element.color[2],
+             element.color[3]},
+            element.rotationDegrees);
+        break;
+    }
+}
+
 void UIRenderer::DrawCustomUI()
 {
     if (!mUILoadSystem) {
         return;
     }
+
+    const bool isUGCEditing =
+        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+    const auto isBuiltInUGCEditorElement = [](const std::string& id) {
+        return id == "presetTools" || id == "menu" ||
+               id == "quickTools" || id == "keyboardTools" ||
+               id == "play" || id == "preview" ||
+               id == "presetPlatform" || id == "presetEnemy" ||
+               id == "presetPlanet" || id == "presetSwitch" ||
+               id == "presetGoal" || id == "eraser" || id == "undo" ||
+               id == "redo" || id == "layerUp" || id == "layerDown" ||
+               id == "zoomIn" || id == "zoomOut";
+    };
 
     const auto& elements = mUILoadSystem->GetCustomElements();
     std::vector<const UILoadSystem::CustomElement*> sortedElements;
@@ -703,9 +911,98 @@ void UIRenderer::DrawCustomUI()
     const bool isTalkOrTutorial =
         sceneSystem->IsTalkWithNPC() ||
         sceneSystem->HasActiveTutorial();
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    const bool isTwoPlayer =
+        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+
+    const auto isTalkPromptElement = [](const std::string& id) {
+        return id == "talkableText" ||
+               id == "talkableTextureForGameController" ||
+               id == "talkableTextureForKeyboard";
+    };
+
+    // The operation guide is authored as one group near the lower-right of
+    // a full screen.  In split-screen it keeps its physical size, then the
+    // whole group is moved only as far as needed to fit its half-height view.
+    // This avoids maintaining a second set of hand-tuned coordinates.
+    const auto getOperationGuideVerticalOffset = [&]() {
+        if (!isTwoPlayer) {
+            return 0.0f;
+        }
+
+        // The guide retains the single-player spacing as well as its size.
+        // It is translated as one block afterwards, rather than squeezing
+        // its Y positions into half the height.
+        constexpr float positionScale = 1.0f;
+        constexpr float viewportPadding = 12.0f;
+        float minY = std::numeric_limits<float>::max();
+        float maxY = std::numeric_limits<float>::lowest();
+        for (const UILoadSystem::CustomElement* candidate : sortedElements) {
+            if (!candidate || candidate->screen != "operation") {
+                continue;
+            }
+
+            float height = mFbWidth * candidate->heightRatio;
+            if (candidate->type == UILoadSystem::CustomElementType::Text) {
+                const std::string resolvedText =
+                    ResolveCustomElementText(*candidate);
+                std::string firstLine;
+                std::string secondLine;
+                const bool hasSecondLine =
+                    SplitText(resolvedText, firstLine, secondLine);
+                int firstWidth = 0;
+                int firstHeight = 0;
+                MeasureText(
+                    firstLine,
+                    mFbWidth * candidate->textScaleRatio,
+                    firstWidth,
+                    firstHeight);
+                height = static_cast<float>(firstHeight);
+                if (hasSecondLine) {
+                    int secondWidth = 0;
+                    int secondHeight = 0;
+                    MeasureText(
+                        secondLine,
+                        mFbWidth * candidate->textScaleRatio,
+                        secondWidth,
+                        secondHeight);
+                    height += static_cast<float>(secondHeight) +
+                              mFbHeight * 0.0666f;
+                }
+            }
+
+            const float y = mFbWidth * candidate->yRatio * positionScale;
+            const float top = candidate->centerBased ? y - height * 0.5f : y;
+            minY = std::min(minY, top);
+            maxY = std::max(maxY, top + height);
+        }
+
+        if (minY > maxY) {
+            return 0.0f;
+        }
+
+        const float viewportHeight = mFbHeight * 0.5f;
+        float offset = 0.0f;
+        if (maxY > viewportHeight - viewportPadding) {
+            offset = viewportHeight - viewportPadding - maxY;
+        }
+        if (minY + offset < viewportPadding) {
+            offset += viewportPadding - (minY + offset);
+        }
+        return offset;
+    };
+    const float operationGuideVerticalOffset =
+        getOperationGuideVerticalOffset();
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
         if (!element) {
+            continue;
+        }
+
+        if (isUGCEditing &&
+            (element->screen != "ugc" ||
+             isBuiltInUGCEditorElement(element->id) ||
+             element->zOrder > 0)) {
             continue;
         }
 
@@ -741,115 +1038,154 @@ void UIRenderer::DrawCustomUI()
             // tutorial page, so its placement can be adjusted in the UI editor.
             visibleInGame = isTalkOrTutorial;
         }
+        if (isTalkOrTutorial && element->screen == "default" &&
+            isTalkPromptElement(element->id)) {
+            // A conversation/tutorial owns the interaction input while it is
+            // displayed, so neither player's proximity prompt may remain.
+            visibleInGame = false;
+        }
+        if (isTwoPlayer && !isTalkOrTutorial &&
+            element->screen == "default" &&
+            isTalkPromptElement(element->id)) {
+            // Do this before the normal global visibility check: player 1
+            // and player 2 may use different input-device prompt images.
+            for (std::size_t index = 0; index < 2; ++index) {
+                const Player* player = players[index];
+                if (!player || !sceneSystem->CanStartTalkWithNPC(player)) {
+                    continue;
+                }
+
+                const bool usesController = UsesControllerUI(player);
+                const bool isCorrectPromptTexture =
+                    element->id == "talkableText" ||
+                    (usesController &&
+                     element->id == "talkableTextureForGameController") ||
+                    (!usesController &&
+                     element->id == "talkableTextureForKeyboard");
+                if (isCorrectPromptTexture) {
+                    DrawCustomElement(
+                        *element,
+                        static_cast<float>(mFbHeight) *
+                            (index == 0 ? 0.0f : 0.5f),
+                        0.5f,
+                        true,
+                        1.0f);
+                }
+            }
+            continue;
+        }
+
         if (!previewAll && !visibleInGame) {
             continue;
         }
 
-        const float x = mFbWidth * element->xRatio;
-        const float y = mFbWidth * element->yRatio;
-        const float width = mFbWidth * element->widthRatio;
-        const float height = mFbWidth * element->heightRatio;
-        const float topLeftX = element->centerBased ? x - width * 0.5f : x;
-        const float topLeftY = element->centerBased ? y - height * 0.5f : y;
-
-        bool rendered = false;
-        switch (element->type) {
-        case UILoadSystem::CustomElementType::Text:
-        {
-            const std::string& resolvedText =
-                ResolveCustomElementText(*element);
-            TextEffect effect;
-            effect.shadowEnabled = element->shadowEnabled;
-            effect.shadowOffset =
-                static_cast<float>(mFbWidth) *
-                glm::vec2(element->shadowOffsetXRatio, element->shadowOffsetYRatio);
-            effect.shadowColor =
-                glm::vec4(
-                    element->shadowColor[0] * 255.0f,
-                    element->shadowColor[1] * 255.0f,
-                    element->shadowColor[2] * 255.0f,
-                    element->shadowColor[3] * 255.0f);
-            effect.outlineEnabled = element->outlineEnabled;
-            effect.outlineWidth = mFbWidth * element->outlineWidthRatio;
-            effect.outlineColor =
-                glm::vec4(
-                    element->outlineColor[0] * 255.0f,
-                    element->outlineColor[1] * 255.0f,
-                    element->outlineColor[2] * 255.0f,
-                    element->outlineColor[3] * 255.0f);
-
-            glm::vec4 textColor(
-                element->color[0] * 255.0f,
-                element->color[1] * 255.0f,
-                element->color[2] * 255.0f,
-                element->color[3] * 255.0f);
-            if (element->screen == "title") {
-                constexpr std::array<const char*, 3> titleMenuIds = {
-                    "startGame", "createStage", "playCreatedStage"};
-                for (int index = 0; index < static_cast<int>(titleMenuIds.size()); ++index) {
-                    if (element->id == titleMenuIds[index] &&
-                        mGame->GetTitleMenuSelection() == index) {
-                        textColor = glm::vec4(255.0f, 225.0f, 45.0f, 255.0f);
-                        break;
-                    }
-                }
-            }
-            DrawText(
-                x,
-                y,
-                mFbWidth * element->textScaleRatio,
-                resolvedText,
-                element->centerBased,
-                textColor,
-                element->rotationDegrees,
-                &effect);
-            rendered = true;
-            break;
+        if (isTwoPlayer && element->screen == "operation") {
+            // Keep its single-player physical size and right-edge anchoring.
+            // The shared vertical offset keeps the whole authored group in
+            // each player's half-height viewport.
+            DrawCustomElement(
+                *element,
+                operationGuideVerticalOffset,
+                1.0f,
+                false,
+                1.0f,
+                players[0]);
+            DrawCustomElement(
+                *element,
+                static_cast<float>(mFbHeight) * 0.5f +
+                    operationGuideVerticalOffset,
+                1.0f,
+                false,
+                1.0f,
+                players[1]);
+            continue;
         }
-        case UILoadSystem::CustomElementType::Image:
-        {
-            const std::string& resolvedTexturePath =
-                ResolveCustomElementTexturePath(*element);
-            const bool flipVertical =
-                ResolveCustomElementTextureFlipVertical(*element);
-            if (RegisterCustomUITexture(resolvedTexturePath)) {
-                DrawTexture(
-                    topLeftX,
-                    topLeftY,
-                    width,
-                    height,
-                    GetCustomTextureName(resolvedTexturePath),
-                    flipVertical,
-                    element->rotationDegrees);
-                rendered = true;
-            }
-            break;
-        }
-        case UILoadSystem::CustomElementType::Panel:
-            DrawBG(
-                topLeftX,
-                topLeftY,
-                width,
-                height,
-                {element->color[0], element->color[1], element->color[2], element->color[3]},
+
+        DrawCustomElement(*element);
+        CustomElementScreenTransform screenTransform;
+        if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
+            RecordRenderedUIElement(
+                RenderedUIElementSource::Custom,
+                element->screen,
+                element->id,
+                screenTransform.center,
+                screenTransform.size,
                 element->rotationDegrees);
-            rendered = true;
-            break;
         }
+    }
+}
 
-        if (rendered) {
-            CustomElementScreenTransform screenTransform;
-            if (CalculateCustomElementScreenTransform(
-                    *element,
-                    screenTransform)) {
-                RecordRenderedUIElement(
-                    RenderedUIElementSource::Custom,
-                    element->screen,
-                    element->id,
-                    screenTransform.center,
-                    screenTransform.size,
-                    element->rotationDegrees);
+void UIRenderer::DrawUGCForegroundCustomUI(
+    const ImVec2& viewportMin,
+    const ImVec2& viewportSize)
+{
+    if (!mUILoadSystem) {
+        return;
+    }
+
+    const auto isBuiltInUGCEditorElement = [](const std::string& id) {
+        return id == "presetTools" || id == "menu" ||
+               id == "quickTools" || id == "keyboardTools" ||
+               id == "play" || id == "preview" ||
+               id == "presetPlatform" || id == "presetEnemy" ||
+               id == "presetPlanet" || id == "presetSwitch" ||
+               id == "presetGoal" || id == "eraser" || id == "undo" ||
+               id == "redo" || id == "layerUp" || id == "layerDown" ||
+               id == "zoomIn" || id == "zoomOut" || id == "previewView";
+    };
+
+    std::vector<const UILoadSystem::CustomElement*> elements;
+    for (const UILoadSystem::CustomElement& element :
+         mUILoadSystem->GetCustomElements()) {
+        if (element.screen == "ugc" && element.zOrder > 0 &&
+            !isBuiltInUGCEditorElement(element.id) &&
+            mUILoadSystem->IsCustomElementVisible(element)) {
+            elements.push_back(&element);
+        }
+    }
+    std::stable_sort(
+        elements.begin(), elements.end(),
+        [](const UILoadSystem::CustomElement* left,
+           const UILoadSystem::CustomElement* right) {
+            return left->zOrder < right->zOrder;
+        });
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    for (const UILoadSystem::CustomElement* element : elements) {
+        const float width = viewportSize.x * element->widthRatio;
+        const float height = viewportSize.x * element->heightRatio;
+        float x = viewportMin.x + viewportSize.x * element->xRatio;
+        float y = viewportMin.y + viewportSize.x * element->yRatio;
+        if (element->centerBased) {
+            x -= width * 0.5f;
+            y -= height * 0.5f;
+        }
+        const ImVec2 min(x, y);
+        const ImVec2 max(x + width, y + height);
+        const ImU32 color = IM_COL32(
+            static_cast<int>(element->color[0] * 255.0f),
+            static_cast<int>(element->color[1] * 255.0f),
+            static_cast<int>(element->color[2] * 255.0f),
+            static_cast<int>(element->color[3] * 255.0f));
+
+        if (element->type == UILoadSystem::CustomElementType::Panel) {
+            drawList->AddRectFilled(min, max, color);
+        } else if (element->type == UILoadSystem::CustomElementType::Image) {
+            const std::string& texturePath =
+                ResolveCustomElementTexturePath(*element);
+            if (RegisterCustomUITexture(texturePath)) {
+                const GLuint texture = GetCustomUITextureHandle(texturePath);
+                const bool flipVertical =
+                    ResolveCustomElementTextureFlipVertical(*element);
+                drawList->AddImage(
+                    static_cast<ImTextureID>(texture), min, max,
+                    ImVec2(0.0f, flipVertical ? 1.0f : 0.0f),
+                    ImVec2(1.0f, flipVertical ? 0.0f : 1.0f), color);
             }
+        } else {
+            drawList->AddText(
+                ImVec2(x, y), color,
+                ResolveCustomElementText(*element).c_str());
         }
     }
 }

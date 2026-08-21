@@ -109,6 +109,7 @@ public:
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
     void OnStarObtained();
+    void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();
     void RequestEnemyJewelDrop(const Enemy& defeatedEnemy);
     void OnLanded();
@@ -160,8 +161,17 @@ public:
     Stage* GetCurrentStage() const;
     int GetCurrentStageNum() const;
     const std::string& GetCurrentStageYamlPath() const;
+    bool LoadStageForScene(int stageNum, const std::string& yamlPath);
+    std::string GetNPCConversationId(const NPC* npc) const;
+    NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     bool GetIsUGCMode() const { return mIsUGCMode; }
+    // While creating a stage, P opens the ordinary debug editor on top of
+    // the product UGC editor instead of switching to playtest.
+    bool GetIsUGCDebugEditorShowing() const
+    {
+        return mIsUGCDebugEditorShowing;
+    }
     bool GetIsUGCOrthographicView() const
     {
         return mIsUGCOrthographicView;
@@ -183,6 +193,14 @@ public:
     float GetUGCPreviewYawRadians() const
     {
         return mUGCPreviewYawRadians;
+    }
+    void ToggleUGCPreviewVerticalView()
+    {
+        mIsUGCPreviewViewedFromBelow = !mIsUGCPreviewViewedFromBelow;
+    }
+    bool GetIsUGCPreviewViewedFromBelow() const
+    {
+        return mIsUGCPreviewViewedFromBelow;
     }
     float GetUGCPreviewFocusY() const { return mUGCPreviewFocusY; }
     void SetUGCPreviewEditLayer(int gridLayer)
@@ -254,6 +272,17 @@ public:
     void SetStageCleared(int stageNum, bool isCleared);
     bool HasShownNPCConversation(const NPC* npc) const;
     void MarkNPCConversationShown(const NPC* npc);
+    bool HasSeenBaseIntro() const;
+    void MarkBaseIntroSeen();
+    bool HasCompletedNPCOpeningTrigger(
+        const NPC* npc, std::size_t talkPageIndex) const;
+    void MarkNPCOpeningTriggerCompleted(
+        const NPC* npc, std::size_t talkPageIndex);
+    bool AreAllMainStagesCleared() const;
+    bool HasCompletedNPCEndingTrigger(
+        const NPC* npc, std::size_t talkPageIndex) const;
+    void MarkNPCEndingTriggerCompleted(
+        const NPC* npc, std::size_t talkPageIndex);
     bool IsGameControllerConnected() const;
     InputDeviceType GetLastUsedInputDevice() const { return mLastUsedInputDevice; }
     void RecordInputDeviceUsage(InputDeviceType inputDevice)
@@ -299,6 +328,10 @@ private:
         const std::string& editorRestartErrorLogPath);
     void SavePersistentDebugEditorSession();
     std::string BuildNPCConversationId(const NPC* npc) const;
+    std::string BuildNPCOpeningTriggerId(
+        const NPC* npc, std::size_t talkPageIndex) const;
+    std::string BuildNPCEndingTriggerId(
+        const NPC* npc, std::size_t talkPageIndex) const;
 
 private:
     GLFWwindow* mWindow = nullptr;
@@ -336,6 +369,7 @@ private:
     int mControlledPlayerIndex = 0;
     bool mIsDebugEditorShowing = false;
     bool mIsUGCMode = false;
+    bool mIsUGCDebugEditorShowing = false;
     int mTitleMenuSelection = 0;
     std::string mUGCVerificationWorkFileName;
     bool mIsUGCClearCompletionPending = false;
@@ -364,6 +398,7 @@ private:
     float mUGCPreviewYawRadians = 0.0f;
     float mUGCPreviewFocusY = 0.0f;
     bool mHasUGCPreviewFocusY = false;
+    bool mIsUGCPreviewViewedFromBelow = false;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;

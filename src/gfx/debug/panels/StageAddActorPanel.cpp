@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,6 +38,16 @@ StageActorPlacement CreateUGCWorldUpPlacement(
     StageActorPlacement worldUpPlacement = surfacePlacement;
     worldUpPlacement.surfaceNormal = glm::vec3(0.0f, 1.0f, 0.0f);
     return worldUpPlacement;
+}
+
+glm::vec3 CreateUGCPlatformScale(float gridSize, int footprintSideLength)
+{
+    const float sideLength = static_cast<float>(
+        std::clamp(footprintSideLength, 1, 3));
+    return glm::vec3(
+        sideLength * gridSize * 0.5f,
+        0.1f * gridSize,
+        sideLength * gridSize * 0.5f);
 }
 
 }
@@ -163,6 +174,112 @@ bool StageAddActorPanel::ActivateUGCPreset(UGCPresetKind presetKind)
         mUGCPlacementPreviewModelPath = "star.obj";
         mUGCPlacementPreviewModelScale = glm::vec3(0.3f);
         return true;
+    case UGCPresetKind::MovingPlatform:
+    {
+        if (!mCreateService.RefreshUGCPlatformCells()) {
+            return false;
+        }
+        if (mSelectionController) {
+            mSelectionController->Clear();
+        }
+        auto startPlacement = std::make_shared<std::optional<StageActorPlacement>>();
+        BeginPlacement(
+            "移動足場：出発点",
+            0,
+            [this, startPlacement](int planetIndex, const StageActorPlacement& placement) {
+                if (!*startPlacement) {
+                    const float gridSize = mContext.game->GetUGCGridSize();
+                    *startPlacement = CreateUGCWorldUpPlacement(placement);
+                    mPlacementDisplayName = "移動足場：到着点";
+                    mPlacementStatus = "到着点をクリックしてください";
+                    return true;
+                }
+                if (mPushUndoCallback) mPushUndoCallback();
+                const float gridSize = mContext.game->GetUGCGridSize();
+                const glm::ivec3 startCell(
+                    static_cast<int>(std::floor(
+                        (*startPlacement)->worldPosition.x / gridSize)),
+                    static_cast<int>(std::round(
+                        (*startPlacement)->worldPosition.y / gridSize)),
+                    static_cast<int>(std::floor(
+                        (*startPlacement)->worldPosition.z / gridSize)));
+                const glm::ivec3 endCell(
+                    static_cast<int>(std::floor(placement.worldPosition.x / gridSize)),
+                    static_cast<int>(std::round(placement.worldPosition.y / gridSize)),
+                    static_cast<int>(std::floor(placement.worldPosition.z / gridSize)));
+                const bool created = mCreateService.AddUGCPlatformCell(
+                    planetIndex, **startPlacement, gridSize,
+                    mUGCPlatformFootprintSideLength, "moving",
+                    endCell - startCell);
+                if (created) {
+                    *startPlacement = std::nullopt;
+                    mPlacementDisplayName = "移動足場：出発点";
+                    if (mSelectionController) {
+                        mSelectionController->Clear();
+                    }
+                }
+                return created;
+            });
+        mUGCPlacementPreviewModelPath = "platform.obj";
+        mUGCPlacementPreviewModelScale = CreateUGCPlatformScale(
+            mContext.game->GetUGCGridSize(),
+            mUGCPlatformFootprintSideLength);
+        return true;
+    }
+    case UGCPresetKind::FadingPlatform:
+    case UGCPresetKind::AdhesivePlatform:
+    {
+        if (!mCreateService.RefreshUGCPlatformCells()) {
+            return false;
+        }
+        if (mSelectionController) {
+            mSelectionController->Clear();
+        }
+        const bool fading = presetKind == UGCPresetKind::FadingPlatform;
+        BeginPlacement(
+            fading ? "消える足場" : "くっつき足場",
+            0,
+            [this, fading](int planetIndex, const StageActorPlacement& placement) {
+                const float gridSize = mContext.game->GetUGCGridSize();
+                const bool added = mCreateService.AddUGCPlatformCell(
+                    planetIndex, CreateUGCWorldUpPlacement(placement),
+                    gridSize, mUGCPlatformFootprintSideLength,
+                    fading ? "fading" : "adhesive");
+                if (added && mSelectionController) {
+                    mSelectionController->Clear();
+                }
+                return added;
+            }, true, true, false, true);
+        mUGCPlacementPreviewModelPath = "platform.obj";
+        mUGCPlacementPreviewModelScale = CreateUGCPlatformScale(
+            mContext.game->GetUGCGridSize(),
+            mUGCPlatformFootprintSideLength);
+        return true;
+    }
+    case UGCPresetKind::TwoPlayerSwitch:
+    {
+        auto firstPlacement = std::make_shared<std::optional<StageActorPlacement>>();
+        BeginPlacement(
+            "2人用スイッチ：1つ目",
+            0,
+            [this, firstPlacement](int planetIndex, const StageActorPlacement& placement) {
+                if (!*firstPlacement) {
+                    *firstPlacement = CreateUGCWorldUpPlacement(placement);
+                    mPlacementDisplayName = "2人用スイッチ：2つ目";
+                    mPlacementStatus = "もう1つのスイッチをクリックしてください";
+                    return true;
+                }
+                if (mPushUndoCallback) mPushUndoCallback();
+                const bool created = mCreateService.AddTwoPlayerSwitchPair(
+                    planetIndex, **firstPlacement,
+                    CreateUGCWorldUpPlacement(placement));
+                if (created) *firstPlacement = std::nullopt;
+                return created;
+            });
+        mUGCPlacementPreviewModelPath = "platform.obj";
+        mUGCPlacementPreviewModelScale = glm::vec3(0.75f, 0.2f, 0.75f);
+        return true;
+    }
     }
 
     return false;
@@ -538,7 +655,13 @@ void StageAddActorPanel::UpdatePlacement()
         // rather than the raw mouse intersection.
         const float gridSize = mContext.game->GetUGCGridSize();
         glm::vec3 previewModelScale = mUGCPlacementPreviewModelScale;
-        if (mPlacementDisplayName == "通常足場") {
+        const bool usesPlatformFootprint =
+            mPlacementDisplayName == "通常足場" ||
+            mPlacementDisplayName == "消える足場" ||
+            mPlacementDisplayName == "くっつき足場" ||
+            mPlacementDisplayName == "移動足場：出発点" ||
+            mPlacementDisplayName == "移動足場：到着点";
+        if (usesPlatformFootprint) {
             const float footprintSideLength =
                 static_cast<float>(mUGCPlatformFootprintSideLength);
             // The clicked square is the footprint's lower-right square.
@@ -560,6 +683,12 @@ void StageAddActorPanel::UpdatePlacement()
             previewPosition.z =
                 (std::floor(placement.worldPosition.z / gridSize) + 0.5f) *
                 gridSize;
+
+            // Point actors use their authored origin as their actual
+            // position.  Give the creator the same centred position used by
+            // the ghost so enemy/switch/star placement cannot drift by half
+            // a grid cell from the preview.
+            placement.worldPosition = previewPosition;
         }
         mContext.game->SetUGCPlatformPlacementPreview(previewPosition);
         mContext.game->SetUGCPlacementModelPreview(

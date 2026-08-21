@@ -134,6 +134,8 @@ struct UGCPlatformCell {
     int planetIndex = 0;
     float gridSize = 1.0f;
     glm::ivec3 gridPosition{0};
+    std::string behavior = "normal";
+    glm::ivec3 movementDeltaCells{0};
 };
 
 bool TryReadUGCPlatformCell(
@@ -156,6 +158,17 @@ bool TryReadUGCPlatformCell(
             node["gridPosition"][0].as<int>(),
             node["gridPosition"][1].as<int>(),
             node["gridPosition"][2].as<int>());
+        if (node["behavior"] && node["behavior"].IsScalar()) {
+            outCell.behavior = node["behavior"].as<std::string>();
+        }
+        if (node["movementDeltaCells"] &&
+            node["movementDeltaCells"].IsSequence() &&
+            node["movementDeltaCells"].size() >= 3) {
+            outCell.movementDeltaCells = glm::ivec3(
+                node["movementDeltaCells"][0].as<int>(),
+                node["movementDeltaCells"][1].as<int>(),
+                node["movementDeltaCells"][2].as<int>());
+        }
         return true;
     } catch (const YAML::Exception&) {
         return false;
@@ -170,6 +183,12 @@ YAML::Node CreateUGCPlatformCellNode(const UGCPlatformCell& cell)
     node["gridPosition"][0] = cell.gridPosition.x;
     node["gridPosition"][1] = cell.gridPosition.y;
     node["gridPosition"][2] = cell.gridPosition.z;
+    node["behavior"] = cell.behavior;
+    if (cell.behavior == "moving") {
+        node["movementDeltaCells"][0] = cell.movementDeltaCells.x;
+        node["movementDeltaCells"][1] = cell.movementDeltaCells.y;
+        node["movementDeltaCells"][2] = cell.movementDeltaCells.z;
+    }
     return node;
 }
 
@@ -448,7 +467,9 @@ bool StageActorCreateService::AddUGCPlatformCell(
     int currentPlanetNum,
     const StageActorPlacement& placement,
     float gridSize,
-    int footprintSideLength)
+    int footprintSideLength,
+    const std::string& behavior,
+    const glm::ivec3& movementDeltaCells)
 {
     if (!CanCreateActor() ||
         !IsValidPlanetIndex(currentPlanetNum, "UGC platform cell")) {
@@ -466,6 +487,8 @@ bool StageActorCreateService::AddUGCPlatformCell(
             placement.worldPosition.y / safeGridSize)),
         static_cast<int>(std::floor(
             placement.worldPosition.z / safeGridSize)));
+    newCell.behavior = behavior;
+    newCell.movementDeltaCells = movementDeltaCells;
 
     YAML::Node config;
     if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
@@ -877,7 +900,7 @@ bool StageActorCreateService::RebuildUGCPlatformNodes(
     }
     config["platforms"] = preservedPlatforms;
 
-    using GroupKey = std::tuple<int, int, int>;
+    using GroupKey = std::tuple<int, int, int, std::string, int, int, int>;
     std::map<GroupKey, std::set<std::pair<int, int>>> groupedCells;
     const YAML::Node cells = config[UGCPlatformCellsKey];
     if (cells && cells.IsSequence()) {
@@ -890,13 +913,17 @@ bool StageActorCreateService::RebuildUGCPlatformNodes(
             const int gridSizeMicrounits =
                 static_cast<int>(std::round(cell.gridSize * 10000.0f));
             groupedCells[{cell.planetIndex, gridSizeMicrounits,
-                          cell.gridPosition.y}]
+                          cell.gridPosition.y, cell.behavior,
+                          cell.movementDeltaCells.x,
+                          cell.movementDeltaCells.y,
+                          cell.movementDeltaCells.z}]
                 .insert({cell.gridPosition.x, cell.gridPosition.z});
         }
     }
 
     for (auto& [groupKey, remainingCells] : groupedCells) {
-        const auto [planetIndex, gridSizeMicrounits, gridLayer] = groupKey;
+        const auto [planetIndex, gridSizeMicrounits, gridLayer, behavior,
+                    movementDeltaX, movementDeltaY, movementDeltaZ] = groupKey;
         const float gridSize =
             static_cast<float>(gridSizeMicrounits) / 10000.0f;
 
@@ -959,6 +986,32 @@ bool StageActorCreateService::RebuildUGCPlatformNodes(
             platformNode["ugcCellMax"][1] = endZ;
             platformNode["textureTiling"][0] = depthInCells;
             platformNode["textureTiling"][1] = widthInCells;
+            platformNode["ugcPlatformBehavior"] = behavior;
+            if (behavior == "fading") {
+                platformNode["components"]["fadeOnStand"]["fadeOutDuration"] = 1.0f;
+                platformNode["components"]["fadeOnStand"]["reappearDelay"] = 2.0f;
+            } else if (behavior == "adhesive") {
+                platformNode["components"]["adhesion"] =
+                    YAML::Node(YAML::NodeType::Map);
+            } else if (behavior == "moving") {
+                const glm::vec3 startLocal =
+                    worldPosition - mContext.game->GetCurrentStage()
+                        ->GetPlanets()[planetIndex]->GetPos();
+                const glm::vec3 movementDelta(
+                    static_cast<float>(movementDeltaX) * gridSize,
+                    static_cast<float>(movementDeltaY) * gridSize,
+                    static_cast<float>(movementDeltaZ) * gridSize);
+                YAML::Node movement = platformNode["components"]["movement"];
+                for (int axis = 0; axis < 3; ++axis) {
+                    movement["startLocalPos"][axis] = startLocal[axis];
+                    movement["endLocalPos"][axis] = startLocal[axis] + movementDelta[axis];
+                    movement["moveOffset"][axis] = movementDelta[axis];
+                }
+                movement["moveDuration"] = 3.0f;
+                movement["moveOnPlayer"] = false;
+                movement["returnDelay"] = 0.0f;
+                movement["endpointWaitSeconds"] = 0.5f;
+            }
             config["platforms"].push_back(platformNode);
         }
     }
@@ -1037,6 +1090,130 @@ bool StageActorCreateService::AddRideMovingPlatform(
 
     mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(
         platformNode, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddMovingPlatform(
+    int currentPlanetNum,
+    const StageActorPlacement& startPlacement,
+    const StageActorPlacement& endPlacement,
+    const glm::vec3& scale)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "moving platform")) {
+        return false;
+    }
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) return false;
+    EnsureSequence(config, "platforms");
+    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    const Planet* planet = planets[currentPlanetNum];
+    if (!planet) return false;
+
+    YAML::Node node = CreatePlatformNode(currentPlanetNum, "platform.obj", scale);
+    ApplyPlacementToNode(node, currentPlanetNum, &startPlacement);
+    node["platformId"] = CreateUniquePlatformId(config);
+    const glm::vec3 startLocal = startPlacement.worldPosition - planet->GetPos();
+    const glm::vec3 endLocal = endPlacement.worldPosition - planet->GetPos();
+    YAML::Node movement = node["components"]["movement"];
+    for (int axis = 0; axis < 3; ++axis) {
+        movement["startLocalPos"][axis] = startLocal[axis];
+        movement["endLocalPos"][axis] = endLocal[axis];
+        movement["moveOffset"][axis] = endLocal[axis] - startLocal[axis];
+    }
+    movement["moveDuration"] = 3.0f;
+    movement["moveOnPlayer"] = false;
+    movement["returnDelay"] = 0.0f;
+    movement["endpointWaitSeconds"] = 0.5f;
+    const int index = static_cast<int>(config["platforms"].size());
+    config["platforms"].push_back(node);
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) return false;
+    mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(node, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddFadingPlatform(
+    int currentPlanetNum, const glm::vec3& scale,
+    const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "fading platform")) return false;
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) return false;
+    EnsureSequence(config, "platforms");
+    YAML::Node node = CreatePlatformNode(currentPlanetNum, "platform.obj", scale);
+    ApplyPlacementToNode(node, currentPlanetNum, placement);
+    node["platformId"] = CreateUniquePlatformId(config);
+    node["components"]["fadeOnStand"]["fadeOutDuration"] = 1.0f;
+    node["components"]["fadeOnStand"]["reappearDelay"] = 2.0f;
+    const int index = static_cast<int>(config["platforms"].size());
+    config["platforms"].push_back(node);
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) return false;
+    mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(node, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddAdhesivePlatform(
+    int currentPlanetNum, const glm::vec3& scale,
+    const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "adhesive platform")) return false;
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) return false;
+    EnsureSequence(config, "platforms");
+    YAML::Node node = CreatePlatformNode(currentPlanetNum, "platform.obj", scale);
+    ApplyPlacementToNode(node, currentPlanetNum, placement);
+    node["platformId"] = CreateUniquePlatformId(config);
+    node["components"]["adhesion"] = YAML::Node(YAML::NodeType::Map);
+    const int index = static_cast<int>(config["platforms"].size());
+    config["platforms"].push_back(node);
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) return false;
+    mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(node, index);
+    RefreshPhysicsWorld();
+    return true;
+}
+
+bool StageActorCreateService::AddTwoPlayerSwitchPair(
+    int currentPlanetNum,
+    const StageActorPlacement& firstPlacement,
+    const StageActorPlacement& secondPlacement)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "two-player switch")) return false;
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) return false;
+    EnsureSequence(config, "platforms");
+    for (const YAML::Node& node : config["platforms"]) {
+        const YAML::Node group = node["components"]["latchedGroupSwitch"];
+        if (group && group["groupId"] && group["groupId"].as<std::string>() == "ugc_two_player_pair") {
+            return false;
+        }
+    }
+    for (const StageActorPlacement* placement : {&firstPlacement, &secondPlacement}) {
+        YAML::Node node = CreatePlatformNode(currentPlanetNum, "platform.obj", glm::vec3(0.75f, 0.2f, 0.75f));
+        ApplyPlacementToNode(node, currentPlanetNum, placement);
+        node["platformId"] = CreateUniquePlatformId(config);
+        YAML::Node group = node["components"]["latchedGroupSwitch"];
+        group["groupId"] = "ugc_two_player_pair";
+        group["targets"] = YAML::Node(YAML::NodeType::Sequence);
+        group["hideTargets"] = YAML::Node(YAML::NodeType::Sequence);
+        config["platforms"].push_back(node);
+    }
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) return false;
+
+    // Do not reload the whole stage from the placement callback: that destroys
+    // the editor's current selection/placement state while it is still being
+    // used.  Both switches are created before the next game update, so the
+    // group component always observes a complete pair.
+    const int firstIndex = static_cast<int>(config["platforms"].size()) - 2;
+    const YAML::Node firstNode = config["platforms"][firstIndex];
+    const YAML::Node secondNode = config["platforms"][firstIndex + 1];
+    if (!mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(
+            firstNode, firstIndex) ||
+        !mContext.game->GetActorLoadSystem()->CreatePlatformFromStageNode(
+            secondNode, firstIndex + 1)) {
+        return false;
+    }
     RefreshPhysicsWorld();
     return true;
 }

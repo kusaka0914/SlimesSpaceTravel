@@ -276,22 +276,40 @@ void TutorialDebugPanel::DrawTutorialEditor(
     }
 
     ImGui::Separator();
+    if (definition->usesAssistPages) {
+        ImGui::TextUnformatted("編集する操作スタイル");
+        ImGui::SameLine();
+        if (ImGui::Button(
+                mEditingAssistPages ? "こまかく" : "● こまかく")) {
+            mEditingAssistPages = false;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(
+                mEditingAssistPages ? "● らくらく" : "らくらく")) {
+            mEditingAssistPages = true;
+        }
+    } else {
+        mEditingAssistPages = false;
+    }
+    std::vector<TutorialPage>& pages =
+        mEditingAssistPages ? definition->assistPages : definition->pages;
     if (ImGui::Button("ページを追加")) {
         TutorialPage page;
         page.id = "page_" +
-                  std::to_string(definition->pages.size() + 1);
+                  std::to_string(pages.size() + 1);
         page.text = "新しいページ";
         library.RegeneratePageRuby(page);
-        definition->pages.emplace_back(std::move(page));
+        pages.emplace_back(std::move(page));
     }
 
     for (std::size_t pageIndex = 0;
-         pageIndex < definition->pages.size();
+         pageIndex < pages.size();
          ++pageIndex) {
         DrawPageEditor(
             controller,
             library,
             *definition,
+            pages,
             pageIndex);
     }
 
@@ -302,9 +320,10 @@ void TutorialDebugPanel::DrawPageEditor(
     TutorialController* controller,
     TutorialLibrary& library,
     TutorialDefinition& definition,
+    std::vector<TutorialPage>& pages,
     std::size_t pageIndex)
 {
-    TutorialPage& page = definition.pages[pageIndex];
+    TutorialPage& page = pages[pageIndex];
     ImGui::PushID(static_cast<int>(pageIndex));
 
     const std::string headerLabel =
@@ -410,6 +429,7 @@ void TutorialDebugPanel::DrawPageEditor(
     DrawVideoEditor(
         controller,
         definition,
+        pages,
         page,
         pageIndex);
 
@@ -419,8 +439,8 @@ void TutorialDebugPanel::DrawPageEditor(
             mPlacementPageIndex = -1;
         }
         std::swap(
-            definition.pages[pageIndex],
-            definition.pages[pageIndex - 1]);
+            pages[pageIndex],
+            pages[pageIndex - 1]);
         ImGui::TreePop();
         ImGui::PopID();
         return;
@@ -428,20 +448,20 @@ void TutorialDebugPanel::DrawPageEditor(
     if (pageIndex > 0) {
         ImGui::SameLine();
     }
-    if (pageIndex + 1 < definition.pages.size() &&
+    if (pageIndex + 1 < pages.size() &&
         ImGui::Button("下へ移動")) {
         if (mPlacementTutorialId == definition.id) {
             mPlacementTutorialId.clear();
             mPlacementPageIndex = -1;
         }
         std::swap(
-            definition.pages[pageIndex],
-            definition.pages[pageIndex + 1]);
+            pages[pageIndex],
+            pages[pageIndex + 1]);
         ImGui::TreePop();
         ImGui::PopID();
         return;
     }
-    if (pageIndex + 1 < definition.pages.size()) {
+    if (pageIndex + 1 < pages.size()) {
         ImGui::SameLine();
     }
     if (ImGui::Button("このページを複製")) {
@@ -451,8 +471,8 @@ void TutorialDebugPanel::DrawPageEditor(
         }
         TutorialPage duplicated = page;
         duplicated.id += "_copy";
-        definition.pages.insert(
-            definition.pages.begin() + pageIndex + 1,
+        pages.insert(
+            pages.begin() + pageIndex + 1,
             std::move(duplicated));
         ImGui::TreePop();
         ImGui::PopID();
@@ -464,8 +484,7 @@ void TutorialDebugPanel::DrawPageEditor(
             mPlacementTutorialId.clear();
             mPlacementPageIndex = -1;
         }
-        definition.pages.erase(
-            definition.pages.begin() + pageIndex);
+        pages.erase(pages.begin() + pageIndex);
         ImGui::TreePop();
         ImGui::PopID();
         return;
@@ -478,6 +497,7 @@ void TutorialDebugPanel::DrawPageEditor(
 void TutorialDebugPanel::DrawVideoEditor(
     TutorialController* controller,
     TutorialDefinition& definition,
+    std::vector<TutorialPage>& pages,
     TutorialPage& page,
     std::size_t pageIndex)
 {
@@ -547,8 +567,8 @@ void TutorialDebugPanel::DrawVideoEditor(
 
     const bool inheritsPreviousVideoSettings =
         pageIndex > 0 &&
-        definition.pages[pageIndex - 1].video.IsEnabled() &&
-        definition.pages[pageIndex - 1].video.assetPath ==
+        pages[pageIndex - 1].video.IsEnabled() &&
+        pages[pageIndex - 1].video.assetPath ==
             page.video.assetPath;
     if (inheritsPreviousVideoSettings) {
         ImGui::TextDisabled(
@@ -631,6 +651,7 @@ void TutorialDebugPanel::DrawVideoEditor(
         } else {
             mPlacementTutorialId = definition.id;
             mPlacementPageIndex = static_cast<int>(pageIndex);
+            mPlacementUsesAssistPages = mEditingAssistPages;
             if (controller) {
                 controller->PreviewAtPage(
                     definition.id,
@@ -651,19 +672,27 @@ void TutorialDebugPanel::DrawVideoPlacementOverlay(
 
     TutorialDefinition* definition =
         library.Find(mPlacementTutorialId);
-    if (!definition ||
-        mPlacementPageIndex >=
-            static_cast<int>(definition->pages.size())) {
+    if (!definition) {
         mPlacementTutorialId.clear();
         mPlacementPageIndex = -1;
         return;
     }
 
-    TutorialPage& page = definition->pages[
+    std::vector<TutorialPage>& pages =
+        mPlacementUsesAssistPages
+            ? definition->assistPages
+            : definition->pages;
+    if (mPlacementPageIndex >= static_cast<int>(pages.size())) {
+        mPlacementTutorialId.clear();
+        mPlacementPageIndex = -1;
+        return;
+    }
+
+    TutorialPage& page = pages[
         static_cast<std::size_t>(mPlacementPageIndex)];
     const bool inheritsPreviousVideoSettings =
         mPlacementPageIndex > 0 &&
-        definition->pages[
+        pages[
             static_cast<std::size_t>(mPlacementPageIndex - 1)]
                 .video.assetPath == page.video.assetPath;
     if (!page.video.IsEnabled()) {

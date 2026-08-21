@@ -395,6 +395,11 @@ void Player::RequestNextWeakAttackAnimation()
     mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
 }
 
+void Player::RequestStrongAttackAnimation()
+{
+    mAnimationController.RequestAnimation(strongAttackAnimationId);
+}
+
 void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
     PlayerDamageHandler::Apply(*this, mInput, mMovement, mStateMachine, mCombat, mJewelGauge, mStatus, enemy,
@@ -468,6 +473,38 @@ void Player::Restart()
 {
     mStatus.RestoreFullHp();
     RespawnAtRestartPoint();
+}
+
+void Player::ForceGroundedForCinematic()
+{
+    if (GetOnGround()) {
+        return;
+    }
+
+    // Prefer the actual collision surface below the player, so platforms are
+    // preserved. A planet-surface fallback guarantees that a cinematic never
+    // begins with the player suspended in midair.
+    mGrounding.SnapToGround(*this, 20.0f, 100.0f);
+    if (!GetOnGround() && GetCurrentPlanet()) {
+        SetPos(GetCurrentPlanet()->CalculateSurfacePos(
+            GetTheta(), GetPhi(), GetHeight()));
+        RefreshFallbackUpVec();
+        SetOnGround(true);
+    }
+
+    if (!GetOnGround()) {
+        return;
+    }
+
+    SetVelocity(glm::vec3(0.0f));
+    mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
+    mMovement.ClearStrongAttackDirectionOverride();
+    mStateMachine.ClearAttackDirectionTarget();
+    mStateMachine.ChangeState(PlayerActionState::Idle);
+    mCombat.CancelSpecialAttack();
+    mAnimationController.ResetToAnimation(idleAnimationId);
 }
 
 bool Player::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& surfaceNormal) const

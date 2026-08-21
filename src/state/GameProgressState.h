@@ -11,6 +11,8 @@ public:
         Title,
         BattleStyleSelection,
         Opening,
+        Ending,
+        Credits,
         Talking,
         Playing,
         Focusing,

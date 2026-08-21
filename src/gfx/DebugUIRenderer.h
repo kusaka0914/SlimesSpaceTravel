@@ -72,6 +72,7 @@ private:
 
     void DrawBasicInfoTab();
     void DrawSequenceEditorTab();
+    void DrawStarCollectionEditor();
     void DrawDockedToolPanel(EditorSection section);
     void DrawDockedAssetBrowser(EditorSection section);
     void DrawGameViewport(
@@ -96,6 +97,8 @@ private:
         int gameViewHeight,
         const ImVec2& viewportMin,
         const ImVec2& viewportMax);
+    void DrawUGCDebugEditorOverlay();
+    void RegisterUGCUIEditorElements();
     void DrawUGCTransformControls();
     void SetUGCFixedView(const glm::vec3& viewDirection);
     void AdjustUGCViewDistance(float distanceMultiplier);
@@ -174,6 +177,7 @@ private:
     std::vector<StageActorRef> mUGCSelectionDragActorRefs;
     float mUGCPreviewWidth = 420.0f;
     float mUGCPreviewResizeStartWidth = 420.0f;
+    bool mHasInitializedUGCPreviewWidth = false;
     std::array<char, 96> mUGCWorkName{"新しいステージ"};
     std::vector<std::string> mUGCWorkFileNames;
     int mSelectedUGCWorkIndex = -1;

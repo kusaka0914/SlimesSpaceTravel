@@ -54,6 +54,8 @@ public:
         mTalkProximityMessageRubySegments.emplace_back();
         mTalkAdvanceConditions.emplace_back(
             TalkPageAdvanceCondition::Confirm);
+        mTalkStartsOpeningAfterPages.emplace_back(false);
+        mTalkStartsEndingAfterPages.emplace_back(false);
     }
     void SetTalkText(std::size_t index, const std::string& talkText)
     {
@@ -94,6 +96,16 @@ public:
             if (index < mTalkAdvanceConditions.size()) {
                 mTalkAdvanceConditions.erase(
                     mTalkAdvanceConditions.begin() +
+                    static_cast<std::ptrdiff_t>(index));
+            }
+            if (index < mTalkStartsOpeningAfterPages.size()) {
+                mTalkStartsOpeningAfterPages.erase(
+                    mTalkStartsOpeningAfterPages.begin() +
+                    static_cast<std::ptrdiff_t>(index));
+            }
+            if (index < mTalkStartsEndingAfterPages.size()) {
+                mTalkStartsEndingAfterPages.erase(
+                    mTalkStartsEndingAfterPages.begin() +
                     static_cast<std::ptrdiff_t>(index));
             }
         }
@@ -137,6 +149,26 @@ public:
                 TalkPageAdvanceCondition::Confirm);
         }
         mTalkAdvanceConditions[index] = condition;
+    }
+    void SetTalkStartsOpeningAfterPage(std::size_t index, bool enabled)
+    {
+        if (index >= mTalkTexts.size()) {
+            return;
+        }
+        if (mTalkStartsOpeningAfterPages.size() < mTalkTexts.size()) {
+            mTalkStartsOpeningAfterPages.resize(mTalkTexts.size(), false);
+        }
+        mTalkStartsOpeningAfterPages[index] = enabled;
+    }
+    void SetTalkStartsEndingAfterPage(std::size_t index, bool enabled)
+    {
+        if (index >= mTalkTexts.size()) {
+            return;
+        }
+        if (mTalkStartsEndingAfterPages.size() < mTalkTexts.size()) {
+            mTalkStartsEndingAfterPages.resize(mTalkTexts.size(), false);
+        }
+        mTalkStartsEndingAfterPages[index] = enabled;
     }
     void SetTalkRubySegments(std::size_t index, std::vector<RubyTextSegment> segments)
     {
@@ -202,6 +234,12 @@ public:
     GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const;
     TalkPageAdvanceCondition
     GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const;
+    bool GetResolvedTalkStartsOpeningAfterPage(
+        std::size_t resolvedIndex) const;
+    bool GetResolvedTalkStartsEndingAfterPage(
+        std::size_t resolvedIndex) const;
+    std::optional<std::size_t> GetResolvedTalkSourceIndex(
+        std::size_t resolvedIndex) const;
     const std::vector<RubyTextSegment>&
     GetResolvedTalkRubySegments(std::size_t resolvedIndex) const;
     const NPCTalkCameraFocusTarget* GetTalkCameraFocusTarget(std::size_t index) const
@@ -217,6 +255,16 @@ public:
         return index < mTalkAdvanceConditions.size()
                    ? mTalkAdvanceConditions[index]
                    : TalkPageAdvanceCondition::Confirm;
+    }
+    bool GetTalkStartsOpeningAfterPage(std::size_t index) const
+    {
+        return index < mTalkStartsOpeningAfterPages.size() &&
+               mTalkStartsOpeningAfterPages[index];
+    }
+    bool GetTalkStartsEndingAfterPage(std::size_t index) const
+    {
+        return index < mTalkStartsEndingAfterPages.size() &&
+               mTalkStartsEndingAfterPages[index];
     }
     const std::vector<RubyTextSegment>& GetTalkRubySegments(std::size_t index) const
     {
@@ -291,6 +339,8 @@ private:
     std::vector<std::string> mTalkTexts;
     std::vector<std::optional<NPCTalkCameraFocusTarget>> mTalkCameraFocusTargets;
     std::vector<TalkPageAdvanceCondition> mTalkAdvanceConditions;
+    std::vector<bool> mTalkStartsOpeningAfterPages;
+    std::vector<bool> mTalkStartsEndingAfterPages;
     std::vector<std::vector<RubyTextSegment>> mTalkRubySegments;
     std::vector<int> mTalkStageClearConditions;
     NPCProximityMessageMode mProximityMessageMode =

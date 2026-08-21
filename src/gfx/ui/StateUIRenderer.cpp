@@ -95,14 +95,17 @@ void StateUIRenderer::DrawActiveTutorial()
 
     const bool usesController =
         mGame->IsGameControllerConnected();
+    const std::vector<TutorialPage>& pages =
+        definition->GetPagesForControlStyle(
+            mGame->IsAssistControlStyle());
     UILoadSystem::TextInfo textInfo;
     textInfo.xRatio = definition->textXRatio;
     textInfo.yRatio = definition->textYRatio;
     textInfo.scaleRatio = definition->textScaleRatio;
-    textInfo.texts.reserve(definition->pages.size());
-    textInfo.rubySegments.reserve(definition->pages.size());
+    textInfo.texts.reserve(pages.size());
+    textInfo.rubySegments.reserve(pages.size());
 
-    for (const TutorialPage& page : definition->pages) {
+    for (const TutorialPage& page : pages) {
         textInfo.texts.emplace_back(
             page.ResolveText(usesController));
         textInfo.rubySegments.emplace_back(
@@ -131,11 +134,11 @@ void StateUIRenderer::DrawActiveTutorial()
          videoPageIndex > 0;
          --videoPageIndex) {
         const TutorialVideoSettings& currentVideoSettings =
-            definition->pages[
+            pages[
                 static_cast<std::size_t>(videoPageIndex)]
                 .video;
         const TutorialVideoSettings& previousVideoSettings =
-            definition->pages[
+            pages[
                 static_cast<std::size_t>(videoPageIndex - 1)]
                 .video;
         const bool usesSameVideoAsPreviousPage =

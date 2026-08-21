@@ -188,6 +188,35 @@ void Game::ReloadCurrentStage(bool rebuildPhysics)
 
     mStageFlowController->ReloadCurrentStage(*this, rebuildPhysics);
 
+    if (mIsPlayer2Joined) {
+        const std::vector<Player*>& players = GetPlayers();
+        if (players.size() >= 2 && players[0] && players[1]) {
+            Player* firstPlayer = players[0];
+            Player* secondPlayer = players[1];
+            // A multiplayer stage always begins with both players at the
+            // stage's player-1 spawn. They can immediately walk apart after
+            // the arrival/start sequence has finished.
+            secondPlayer->SetCurrentPlanet(firstPlayer->GetCurrentPlanet());
+            secondPlayer->SetCurrentPlanetNum(firstPlayer->GetCurrentPlanetNum());
+            secondPlayer->SetSphericalPlacement(
+                firstPlayer->GetTheta(),
+                firstPlayer->GetPhi(),
+                firstPlayer->GetHeight());
+            secondPlayer->SetOrientation(firstPlayer->GetOrientation());
+            secondPlayer->SetFacingForwardVec(
+                firstPlayer->GetFacingForwardVec());
+            secondPlayer->SetCameraForwardDirection(
+                -firstPlayer->GetFacingForwardVec(),
+                firstPlayer->GetUpVec());
+            secondPlayer->SetCameraYaw(firstPlayer->GetCameraYaw());
+            secondPlayer->SetPos(firstPlayer->GetPos());
+            secondPlayer->SetVelocity(glm::vec3(0.0f));
+            secondPlayer->SetOnGround(firstPlayer->GetOnGround());
+            secondPlayer->SetShouldJudgeLanding(!firstPlayer->GetOnGround());
+            secondPlayer->RefreshFallbackUpVec();
+        }
+    }
+
     if (mCameraSystem) {
         mCameraSystem->SnapBehindControlledPlayer();
     }
@@ -394,7 +423,11 @@ void Game::ReturnToSinglePlayer()
 
 bool Game::CanStartTwoPlayerFromPauseMenu() const
 {
-    return IsStageCleared(1);
+    // Two-player mode uses one game controller and one keyboard.  The menu
+    // must not advertise it as selectable until both the progress condition
+    // and the required controller are available.
+    return mIsPlayer2Joined ||
+           (IsStageCleared(1) && IsGameControllerConnected());
 }
 
 bool Game::CanReturnToBaseFromPauseMenu() const
@@ -404,11 +437,15 @@ bool Game::CanReturnToBaseFromPauseMenu() const
 
 void Game::ToggleDebugEditor()
 {
-    mIsDebugEditorShowing = !mIsDebugEditorShowing;
     if (mIsUGCMode) {
-        SetFreeCameraMode(mIsDebugEditorShowing);
-        mIsUGCOrthographicView = mIsDebugEditorShowing;
+        // The UGC editor itself is always visible while editing.  P should
+        // toggle the regular debug editor, not hide the UGC editor and enter
+        // its playtest view.
+        mIsUGCDebugEditorShowing = !mIsUGCDebugEditorShowing;
+        return;
     }
+
+    mIsDebugEditorShowing = !mIsDebugEditorShowing;
     if (mPhysicsSystem) {
         // Opening the editor changes progress/runtime visibility, but not mesh
         // geometry. Reusing existing bodies avoids reparsing every stage model.
@@ -516,6 +553,11 @@ void Game::UpdateGame()
         return;
     }
 
+    // Transitions must continue even while the stage editor uses its free
+    // camera.  Otherwise the fade reaches the midpoint, loads UGC, and never
+    // advances to the reveal phase.
+    mSceneSystem->Update(deltaTime);
+
     if (mIsFreeCameraMode) {
         if (mSequenceSystem) {
             mSequenceSystem->Update(deltaTime);
@@ -524,11 +566,9 @@ void Game::UpdateGame()
         return;
     }
 
-    mSceneSystem->Update(deltaTime);
-
     bool cameraUpdated = false;
     const bool shouldUpdateEntireWorld =
-        mSceneSystem->CanUpdateWorld();
+        mSceneSystem->CanUpdateWorld() || mSceneSystem->IsStageClear();
     const bool shouldUpdateTutorialPlayer =
         mSceneSystem->IsWaitingForTutorialPlayerJump();
 
@@ -843,7 +883,9 @@ void Game::DrawUGCPreviewFrame()
     const glm::vec3 previewDirection = glm::normalize(glm::vec3(
         basePreviewDirection.x * previewYawCosine +
             basePreviewDirection.z * previewYawSine,
-        basePreviewDirection.y,
+        mIsUGCPreviewViewedFromBelow
+            ? -basePreviewDirection.y
+            : basePreviewDirection.y,
         -basePreviewDirection.x * previewYawSine +
             basePreviewDirection.z * previewYawCosine));
     constexpr float previewFieldOfViewDegrees = 55.0f;
@@ -858,8 +900,11 @@ void Game::DrawUGCPreviewFrame()
         editorViewDistance * 0.45f, 3.0f, 100.0f);
     const glm::vec3 previewPosition =
         previewTarget + previewDirection * previewDistance;
+    const glm::vec3 previewUp = mIsUGCPreviewViewedFromBelow
+        ? glm::vec3(0.0f, -1.0f, 0.0f)
+        : glm::vec3(0.0f, 1.0f, 0.0f);
     const glm::mat4 view = glm::lookAt(
-        previewPosition, previewTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+        previewPosition, previewTarget, previewUp);
     const glm::mat4 projection = glm::perspective(
         glm::radians(previewFieldOfViewDegrees),
         static_cast<float>(previewWidth) / previewHeight,
@@ -1238,9 +1283,10 @@ bool Game::DebugChangeStage(int stageNum, const std::string& yamlPath)
     const bool isBaseStageYaml =
         yamlPath.ends_with("/stage0.yaml") || yamlPath.ends_with("\\stage0.yaml");
     if (isBaseStageYaml && mSequenceSystem) {
-        if (mSequenceSystem->PlayCinematicChainThenSequence(
-                {"base_sequence"},
-                "base_arrival_template")) {
+        if (!HasSeenBaseIntro() &&
+            mSequenceSystem->PlayCinematicChainThenSequence(
+                {"base_sequence"}, "base_arrival_template")) {
+            MarkBaseIntroSeen();
             if (Player* player = GetMainPlayer()) {
                 player->SetIsActive(false);
             }
@@ -1293,10 +1339,16 @@ bool Game::StartUGCMode()
     ClosePauseMenu();
     mIsUGCWorkBrowserShowing = false;
     mIsUGCMode = true;
+    mIsUGCDebugEditorShowing = false;
     mIsUGCOrthographicView = true;
     mUGCOrthographicHalfHeight = 20.0f;
     mIsDebugEditorShowing = true;
     SetFreeCameraMode(true);
+
+    // The title renderer intentionally has no 3D world.  UGC is loaded at
+    // the fade midpoint, so switch to the play scene before the editor frame
+    // is rendered or the editor canvas would be left black.
+    mSceneSystem->StartPlayingScene();
 
     if (mCameraSystem) {
         CameraPose pose;
@@ -1340,7 +1392,9 @@ void Game::ExecuteTitleMenuSelection()
         mSceneSystem->StartBattleStyleSelection();
         break;
     case 1:
-        StartUGCMode();
+        // Keep the title on screen until the fade is fully opaque, then
+        // replace the scene and reveal the stage editor from black.
+        mSceneSystem->RequestFadeAction([this]() { StartUGCMode(); });
         break;
     case 2:
         OpenUGCWorkBrowser();
@@ -1361,6 +1415,7 @@ void Game::StartUGCPlaytest()
         return;
     }
     mIsDebugEditorShowing = false;
+    mIsUGCDebugEditorShowing = false;
     mIsUGCOrthographicView = false;
     SetFreeCameraMode(false);
     ReloadCurrentStage();
@@ -1424,6 +1479,7 @@ void Game::ReturnToUGCEditor()
     mIsUGCClearCompletionPending = false;
     ReloadCurrentStage();
     mIsDebugEditorShowing = true;
+    mIsUGCDebugEditorShowing = false;
     mIsUGCOrthographicView = true;
     SetFreeCameraMode(true);
 }
@@ -1431,6 +1487,7 @@ void Game::ReturnToUGCEditor()
 void Game::ExitUGCMode()
 {
     mIsUGCMode = false;
+    mIsUGCDebugEditorShowing = false;
     mIsUGCClearCompletionPending = false;
     mIsUGCWorkBrowserShowing = false;
     mIsUGCOrthographicView = false;
@@ -1555,6 +1612,15 @@ void Game::OnStarObtained()
     mSceneSystem->OnStageClear();
 }
 
+void Game::ForcePlayersGroundedForCinematic()
+{
+    for (Player* player : GetPlayers()) {
+        if (player && player->GetIsActive()) {
+            player->ForceGroundedForCinematic();
+        }
+    }
+}
+
 void Game::ProcessPendingUGCClearCompletion()
 {
     if (!mIsUGCClearCompletionPending) {
@@ -1618,6 +1684,67 @@ void Game::MarkNPCConversationShown(const NPC* npc)
         BuildNPCConversationId(npc));
 }
 
+bool Game::HasSeenBaseIntro() const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasShownConversation(
+               "cinematic:base_intro");
+}
+
+void Game::MarkBaseIntroSeen()
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->MarkConversationShown(
+            "cinematic:base_intro");
+    }
+}
+
+bool Game::HasCompletedNPCOpeningTrigger(
+    const NPC* npc, std::size_t talkPageIndex) const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasShownConversation(
+               BuildNPCOpeningTriggerId(npc, talkPageIndex));
+}
+
+void Game::MarkNPCOpeningTriggerCompleted(
+    const NPC* npc, std::size_t talkPageIndex)
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->MarkConversationShown(
+            BuildNPCOpeningTriggerId(npc, talkPageIndex));
+    }
+}
+
+bool Game::AreAllMainStagesCleared() const
+{
+    constexpr int firstMainStage = 1;
+    constexpr int lastMainStage = 5;
+    for (int stageNum = firstMainStage; stageNum <= lastMainStage; ++stageNum) {
+        if (!IsStageCleared(stageNum)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Game::HasCompletedNPCEndingTrigger(
+    const NPC* npc, std::size_t talkPageIndex) const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasShownConversation(
+               BuildNPCEndingTriggerId(npc, talkPageIndex));
+}
+
+void Game::MarkNPCEndingTriggerCompleted(
+    const NPC* npc, std::size_t talkPageIndex)
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->MarkConversationShown(
+            BuildNPCEndingTriggerId(npc, talkPageIndex));
+    }
+}
+
 std::string Game::BuildNPCConversationId(const NPC* npc) const
 {
     if (!npc || npc->GetStageYamlIndex() < 0) {
@@ -1630,6 +1757,26 @@ std::string Game::BuildNPCConversationId(const NPC* npc) const
            "|clear:" +
            std::to_string(
                npc->ResolveTalkStageClearCondition());
+}
+
+std::string Game::BuildNPCOpeningTriggerId(
+    const NPC* npc, std::size_t talkPageIndex) const
+{
+    const std::string conversationId = BuildNPCConversationId(npc);
+    return conversationId.empty()
+               ? std::string()
+               : conversationId + "|opening:" +
+                     std::to_string(talkPageIndex);
+}
+
+std::string Game::BuildNPCEndingTriggerId(
+    const NPC* npc, std::size_t talkPageIndex) const
+{
+    const std::string conversationId = BuildNPCConversationId(npc);
+    return conversationId.empty()
+               ? std::string()
+               : conversationId + "|ending:" +
+                     std::to_string(talkPageIndex);
 }
 
 void Game::OnEnemyLaunched()
@@ -1667,6 +1814,12 @@ Player* Game::FindNearestPlayer(Actor* actor) const
 
 void Game::FinishGame()
 {
+    // Stage progress is also saved as soon as it changes, but save once more
+    // when leaving from the pause menu so the menu action has a clear commit
+    // point as well.
+    if (mStageProgressSystem) {
+        mStageProgressSystem->Save();
+    }
     glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
 }
 
@@ -1766,6 +1919,48 @@ int Game::GetCurrentStageNum() const
 const std::string& Game::GetCurrentStageYamlPath() const
 {
     return mStageFlowController->GetCurrentStageYamlPath();
+}
+
+bool Game::LoadStageForScene(int stageNum, const std::string& yamlPath)
+{
+    if (yamlPath.empty() || stageNum < 0 ||
+        stageNum >= static_cast<int>(GetStages().size()) ||
+        !mWorld->ChangeStage(stageNum)) {
+        return false;
+    }
+
+    mStageFlowController->SetCurrentStageYamlPath(yamlPath);
+    ReloadCurrentStage();
+    return true;
+}
+
+std::string Game::GetNPCConversationId(const NPC* npc) const
+{
+    return BuildNPCConversationId(npc);
+}
+
+NPC* Game::FindNPCByConversationId(const std::string& conversationId) const
+{
+    if (conversationId.empty()) {
+        return nullptr;
+    }
+
+    Stage* stage = GetCurrentStage();
+    if (!stage) {
+        return nullptr;
+    }
+
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (NPC* npc : planet->GetNPCs()) {
+            if (npc && BuildNPCConversationId(npc) == conversationId) {
+                return npc;
+            }
+        }
+    }
+    return nullptr;
 }
 
 bool Game::GetIsPauseMenuOpen() const

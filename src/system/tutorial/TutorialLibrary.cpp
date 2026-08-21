@@ -75,6 +75,25 @@ void GenerateRuby(
         errorMessage);
 }
 
+TutorialPage CreateAssistBattlePage(
+    const std::string& id,
+    const std::string& controllerText,
+    const std::string& keyboardText)
+{
+    TutorialPage page;
+    page.id = id;
+    page.text = controllerText;
+    page.controllerText = controllerText;
+    page.keyboardText = keyboardText;
+    page.video.assetPath = "videos/battle_basic_tutorial.mp4";
+    GenerateRuby(page.text, page.rubySegments);
+    GenerateRuby(
+        page.controllerText,
+        page.controllerRubySegments);
+    GenerateRuby(page.keyboardText, page.keyboardRubySegments);
+    return page;
+}
+
 bool LoadRubySegments(
     const YAML::Node& node,
     const std::string& baseText,
@@ -194,8 +213,14 @@ bool TutorialLibrary::Load()
                 tutorialNode,
                 "textScaleRatio",
                 definition.textScaleRatio);
+            definition.usesAssistPages = ReadBool(
+                tutorialNode,
+                "usesAssistPages",
+                false);
 
-            const YAML::Node pages = tutorialNode["pages"];
+            const auto loadPages = [this](
+                                       const YAML::Node& pages,
+                                       std::vector<TutorialPage>& target) {
             if (pages && pages.IsSequence()) {
                 for (std::size_t pageIndex = 0;
                      pageIndex < pages.size();
@@ -284,7 +309,31 @@ bool TutorialLibrary::Load()
                             page.keyboardText,
                             page.keyboardRubySegments);
                     }
-                    definition.pages.emplace_back(std::move(page));
+                    target.emplace_back(std::move(page));
+                }
+            }
+            };
+
+            loadPages(tutorialNode["pages"], definition.pages);
+            loadPages(
+                tutorialNode["assistPages"],
+                definition.assistPages);
+
+            // Seed the original battle tutorial once, then keep the pages as
+            // ordinary YAML data that can be edited in the debug editor.
+            if (definition.id == "battle_basic" &&
+                definition.usesAssistPages) {
+                if (definition.assistPages.empty()) {
+                    definition.assistPages.emplace_back(
+                        CreateAssistBattlePage(
+                            "assist_repeat_attack",
+                            "敵に近づいて、Yを連打しよう！",
+                            "敵に近づいて、Jを連打しよう！"));
+                    definition.assistPages.emplace_back(
+                        CreateAssistBattlePage(
+                            "assist_launch",
+                            "Yを連打するだけで、敵を打ち上げられるよ！",
+                            "Jを連打するだけで、敵を打ち上げられるよ！"));
                 }
             }
 
@@ -313,6 +362,9 @@ bool TutorialLibrary::Save()
         tutorialNode["textYRatio"] = definition.textYRatio;
         tutorialNode["textScaleRatio"] =
             definition.textScaleRatio;
+        if (definition.usesAssistPages) {
+            tutorialNode["usesAssistPages"] = true;
+        }
         tutorialNode["pages"] =
             YAML::Node(YAML::NodeType::Sequence);
 
@@ -379,6 +431,59 @@ bool TutorialLibrary::Save()
             }
 
             tutorialNode["pages"].push_back(pageNode);
+        }
+
+        if (definition.usesAssistPages) {
+            tutorialNode["assistPages"] =
+                YAML::Node(YAML::NodeType::Sequence);
+            for (const TutorialPage& page : definition.assistPages) {
+                YAML::Node pageNode;
+                pageNode["id"] = page.id;
+                pageNode["text"] = page.text;
+                if (!page.controllerText.empty()) {
+                    pageNode["controllerText"] = page.controllerText;
+                }
+                if (!page.keyboardText.empty()) {
+                    pageNode["keyboardText"] = page.keyboardText;
+                }
+                if (!page.text.empty() &&
+                    JoinRubyBaseText(page.rubySegments) == page.text) {
+                    pageNode["ruby"]["common"] =
+                        SaveRubySegments(page.rubySegments);
+                }
+                if (!page.controllerText.empty() &&
+                    JoinRubyBaseText(page.controllerRubySegments) ==
+                        page.controllerText) {
+                    pageNode["ruby"]["controller"] =
+                        SaveRubySegments(page.controllerRubySegments);
+                }
+                if (!page.keyboardText.empty() &&
+                    JoinRubyBaseText(page.keyboardRubySegments) ==
+                        page.keyboardText) {
+                    pageNode["ruby"]["keyboard"] =
+                        SaveRubySegments(page.keyboardRubySegments);
+                }
+                pageNode["advance"] = GetTutorialAdvanceConditionId(
+                    page.advanceCondition);
+                if (page.focusTarget.IsValid()) {
+                    pageNode["focus"]["sequence"] =
+                        page.focusTarget.sequenceName;
+                    pageNode["focus"]["index"] =
+                        page.focusTarget.yamlIndex;
+                }
+                if (page.video.IsEnabled()) {
+                    pageNode["video"]["asset"] = page.video.assetPath;
+                    pageNode["video"]["xRatio"] = page.video.xRatio;
+                    pageNode["video"]["yRatio"] = page.video.yRatio;
+                    pageNode["video"]["widthRatio"] = page.video.widthRatio;
+                    pageNode["video"]["heightRatio"] = page.video.heightRatio;
+                    pageNode["video"]["rotationDegrees"] = page.video.rotationDegrees;
+                    pageNode["video"]["loop"] = page.video.shouldLoop;
+                    pageNode["video"]["preserveAspectRatio"] = page.video.shouldPreserveAspectRatio;
+                    pageNode["video"]["flipVertical"] = page.video.shouldFlipVertical;
+                }
+                tutorialNode["assistPages"].push_back(pageNode);
+            }
         }
 
         root["tutorials"].push_back(tutorialNode);

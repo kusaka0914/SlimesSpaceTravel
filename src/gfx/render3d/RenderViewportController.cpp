@@ -49,11 +49,19 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
     }
 
     const glm::vec3 cameraPos = cameraSystem->GetCameraPos();
-    mRenderer->DrawScene(views[0], proj, cameraPos);
+    mRenderer->DrawScene(
+        views[0], proj, cameraPos, false, 0, mGame->GetControlledPlayer());
 }
 
 void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const
 {
+    // A boss defeat is a shared event.  It deliberately uses the same full
+    // screen focus shot as a rocket ride instead of keeping two small views.
+    if (mGame->GetCameraSystem()->IsBossDefeatSequencePlaying()) {
+        DrawGameScreenForSinglePerson(fbWidth, fbHeight);
+        return;
+    }
+
     std::vector<glm::mat4> views = mGame->GetCameraSystem()->GetViews();
 
     if (views.size() < 2) {
@@ -70,8 +78,12 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
     const glm::vec3 p2CameraPos = mGame->GetCameraSystem()->GetPlayerCameraPos(1);
 
     glViewport(0, static_cast<GLint>(halfHeight), static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(halfHeight));
-    mRenderer->DrawScene(views[0], proj, p1CameraPos);
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    const Player* player1 = players.empty() ? nullptr : players[0];
+    const Player* player2 = players.size() < 2 ? nullptr : players[1];
+
+    mRenderer->DrawScene(views[0], proj, p1CameraPos, false, 0, player1);
 
     glViewport(0, 0, static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(halfHeight));
-    mRenderer->DrawScene(views[1], proj, p2CameraPos);
+    mRenderer->DrawScene(views[1], proj, p2CameraPos, false, 0, player2);
 }

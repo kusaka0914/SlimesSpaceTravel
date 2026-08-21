@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyAttackGeometry.h"
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
@@ -20,6 +21,31 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <initializer_list>
+
+namespace {
+bool ShouldFollowSphereSurface(const Planet* planet)
+{
+    return planet && planet->GetPlanetShape() ==
+                         Planet::PlanetShape::Sphere;
+}
+
+glm::vec3 ProjectOntoSphereSurface(
+    const Planet* planet,
+    float surfaceRadius,
+    const glm::vec3& position)
+{
+    if (!ShouldFollowSphereSurface(planet)) {
+        return position;
+    }
+
+    const glm::vec3 fromCenter = position - planet->GetPos();
+    if (glm::dot(fromCenter, fromCenter) < 0.000001f) {
+        return position;
+    }
+    return planet->GetPos() +
+           glm::normalize(fromCenter) * surfaceRadius;
+}
+} // namespace
 
 PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
     : mRenderer(renderer)
@@ -195,7 +221,10 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(
     }
 }
 
-void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat) const
+void PlayerEffectRenderer::DrawEnemyEffects(
+    Enemy* enemy,
+    const glm::mat4& viewMat,
+    const Player* viewportPlayer) const
 {
     if (!mRenderer ||
         !enemy ||
@@ -205,8 +234,9 @@ void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewM
     }
 
     Game* game = mRenderer->GetGame();
-    const Player* controlledPlayer =
-        game ? game->GetControlledPlayer() : nullptr;
+    const Player* controlledPlayer = viewportPlayer
+        ? viewportPlayer
+        : (game ? game->GetControlledPlayer() : nullptr);
     const Planet* playerPlanet =
         controlledPlayer
             ? controlledPlayer->GetCurrentPlanet()
@@ -324,6 +354,7 @@ void PlayerEffectRenderer::DrawPlayerAttackRange(Player* player) const
     }
 
     DrawFanAttackRange(
+        player->GetCurrentPlanet(),
         player->GetPos(),
         glm::normalize(player->GetUpVec()),
         glm::normalize(player->GetFacingForwardVec()),
@@ -343,6 +374,7 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
     const EnemyAttackFrame attackFrame =
         ResolveEnemyAttackFrame(*enemy);
     DrawFanAttackRange(
+        enemy->GetCurrentPlanet(),
         attackFrame.origin,
         attackFrame.up,
         attackFrame.forward,
@@ -353,7 +385,7 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
 }
 
 void PlayerEffectRenderer::DrawFanAttackRange(
-    const glm::vec3& center, const glm::vec3& up, const glm::vec3& forward,
+    const Planet* planet, const glm::vec3& center, const glm::vec3& up, const glm::vec3& forward,
     const glm::vec3& left, float range, float angleRadians, float yOffset) const
 {
     if (!mRenderer || range <= 0.0f || angleRadians <= 0.0f) {
@@ -362,18 +394,27 @@ void PlayerEffectRenderer::DrawFanAttackRange(
 
     constexpr int segments = 48;
     const float halfAngle = angleRadians * 0.5f;
+    const float surfaceRadius =
+        ShouldFollowSphereSurface(planet)
+            ? glm::length(center + up * yOffset - planet->GetPos())
+            : 0.0f;
+    const auto surfacePoint = [planet, surfaceRadius](
+                                  const glm::vec3& point) {
+        return ProjectOntoSphereSurface(planet, surfaceRadius, point);
+    };
 
     std::vector<glm::vec3> fanVertices;
     fanVertices.reserve(segments + 2);
 
-    fanVertices.emplace_back(center + up * yOffset);
+    fanVertices.emplace_back(surfacePoint(center + up * yOffset));
 
     for (int i = 0; i <= segments; i++) {
         const float t = static_cast<float>(i) / static_cast<float>(segments);
         const float angle = glm::mix(-halfAngle, halfAngle, t);
 
         glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
-        fanVertices.emplace_back(center + dir * range + up * yOffset);
+        fanVertices.emplace_back(
+            surfacePoint(center + dir * range + up * yOffset));
     }
 
     mRenderer->DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
@@ -390,8 +431,10 @@ void PlayerEffectRenderer::DrawFanAttackRange(
         const float angle = glm::mix(-halfAngle, halfAngle, t);
 
         glm::vec3 dir = glm::normalize(forward * std::cos(angle) + left * std::sin(angle));
-        edgeVertices.emplace_back(center + dir * outerRadius + up * yOffset);
-        edgeVertices.emplace_back(center + dir * innerRadius + up * yOffset);
+        edgeVertices.emplace_back(surfacePoint(
+            center + dir * outerRadius + up * yOffset));
+        edgeVertices.emplace_back(surfacePoint(
+            center + dir * innerRadius + up * yOffset));
     }
 
     mRenderer->DrawAttackRangeVertices(edgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
@@ -431,6 +474,97 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
         std::max(
             0.0f,
             previewArea.halfWidth - thickness);
+
+    const Planet* planet = enemy->GetCurrentPlanet();
+    if (ShouldFollowSphereSurface(planet)) {
+        // A large planar rectangle is especially misleading on a sphere.
+        // Tessellate it, then lift every sample back onto the planet surface.
+        const float surfaceRadius = glm::length(start - planet->GetPos());
+        const auto surfacePoint = [planet, surfaceRadius](
+                                      const glm::vec3& point) {
+            return ProjectOntoSphereSurface(planet, surfaceRadius, point);
+        };
+        const auto pointAt = [&start,
+                              &end,
+                              &attackFrame,
+                              &surfacePoint](float lengthT,
+                                             float sideways) {
+            return surfacePoint(
+                glm::mix(start, end, lengthT) +
+                attackFrame.left * sideways);
+        };
+        constexpr int lengthSegments = 24;
+        constexpr int widthSegments = 8;
+        const glm::vec4 fillColor(1.0f, 0.1f, 0.1f, 0.18f);
+        const glm::vec4 edgeColor(1.0f, 0.1f, 0.1f, 0.75f);
+
+        for (int lengthIndex = 0;
+             lengthIndex < lengthSegments;
+             ++lengthIndex) {
+            const float fromT = static_cast<float>(lengthIndex) /
+                                static_cast<float>(lengthSegments);
+            const float toT = static_cast<float>(lengthIndex + 1) /
+                              static_cast<float>(lengthSegments);
+            std::vector<glm::vec3> strip;
+            strip.reserve((widthSegments + 1) * 2);
+            for (int widthIndex = 0;
+                 widthIndex <= widthSegments;
+                 ++widthIndex) {
+                const float widthT = static_cast<float>(widthIndex) /
+                                     static_cast<float>(widthSegments);
+                const float sideways = glm::mix(
+                    -previewArea.halfWidth,
+                    previewArea.halfWidth,
+                    widthT);
+                strip.emplace_back(pointAt(fromT, sideways));
+                strip.emplace_back(pointAt(toT, sideways));
+            }
+            mRenderer->DrawAttackRangeVertices(
+                strip, GL_TRIANGLE_STRIP, fillColor);
+        }
+
+        const auto drawSideEdge = [&pointAt, &edgeColor, this](
+                                     float outerSide,
+                                     float innerSide) {
+            std::vector<glm::vec3> strip;
+            strip.reserve((lengthSegments + 1) * 2);
+            for (int index = 0; index <= lengthSegments; ++index) {
+                const float lengthT = static_cast<float>(index) /
+                                      static_cast<float>(lengthSegments);
+                strip.emplace_back(pointAt(lengthT, outerSide));
+                strip.emplace_back(pointAt(lengthT, innerSide));
+            }
+            mRenderer->DrawAttackRangeVertices(
+                strip, GL_TRIANGLE_STRIP, edgeColor);
+        };
+        drawSideEdge(previewArea.halfWidth, innerHalfWidth);
+        drawSideEdge(-previewArea.halfWidth, -innerHalfWidth);
+
+        const auto drawEndEdge = [&pointAt,
+                                  &edgeColor,
+                                  &previewArea,
+                                  this](float lengthT) {
+            std::vector<glm::vec3> strip;
+            strip.reserve((widthSegments + 1) * 2);
+            const float insetLengthT =
+                lengthT <= 0.0f ? 0.01f : 0.99f;
+            for (int index = 0; index <= widthSegments; ++index) {
+                const float widthT = static_cast<float>(index) /
+                                     static_cast<float>(widthSegments);
+                const float sideways = glm::mix(
+                    -previewArea.halfWidth,
+                    previewArea.halfWidth,
+                    widthT);
+                strip.emplace_back(pointAt(lengthT, sideways));
+                strip.emplace_back(pointAt(insetLengthT, sideways));
+            }
+            mRenderer->DrawAttackRangeVertices(
+                strip, GL_TRIANGLE_STRIP, edgeColor);
+        };
+        drawEndEdge(0.0f);
+        drawEndEdge(1.0f);
+        return;
+    }
 
     const std::vector<glm::vec3> fillVertices{
         start + attackFrame.left * previewArea.halfWidth,

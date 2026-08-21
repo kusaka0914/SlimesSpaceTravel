@@ -50,6 +50,8 @@ void PauseMenuRenderer::Draw()
         }
         if (isTwoPlayerEntry && mGame->GetIsPlayer2Joined()) {
             label = "1人であそぶ";
+        } else if (isTwoPlayerEntry && !mGame->IsGameControllerConnected()) {
+            label += "（コントローラーをつなぐ）";
         }
 
         std::string text = selected ? "> " : "  ";

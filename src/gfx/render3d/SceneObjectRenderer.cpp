@@ -36,7 +36,9 @@ SceneObjectRenderer::SceneObjectRenderer(const Renderer3D* renderer, const Playe
 {
 }
 
-void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
+void SceneObjectRenderer::DrawSceneObjects(
+    const glm::mat4& viewMat,
+    const Player* viewportPlayer) const
 {
     if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !mRenderer->GetGame()->GetCurrentStage()) {
         return;
@@ -45,7 +47,7 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
     std::vector<Planet*> planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
     DrawPlanets(planets);
-    DrawActorOnPlanets(planets, viewMat);
+    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
 
     const SequenceSystem* sequenceSystem =
         mRenderer->GetGame()->GetSequenceSystem();
@@ -72,7 +74,10 @@ void SceneObjectRenderer::DrawPlanets(const std::vector<Planet*>& planets) const
     mRenderer->TryDrawActors(planets, false);
 }
 
-void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat) const
+void SceneObjectRenderer::DrawActorOnPlanets(
+    const std::vector<Planet*>& planets,
+    const glm::mat4& viewMat,
+    const Player* viewportPlayer) const
 {
     glUniform1f(mRenderer->GetShader3D()->GetLocToonLevels(), 3.0f);
     glUniform1f(mRenderer->GetShader3D()->GetLocToonStrength(), 0.6f);
@@ -126,7 +131,7 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
-            mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat);
+            mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat, viewportPlayer);
         }
     }
 }

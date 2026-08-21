@@ -64,6 +64,41 @@ opening:
     rubyGapRatio: 0
     centerBased: false
     rotationDegrees: 0
+ending:
+  - id: bgTexture
+    type: texture
+    posRatio: [0, 0]
+    scaleRatio: [1, 1]
+    rotationDegrees: 0
+  - id: endingText
+    type: text
+    posRatio: [0.065, 0.14]
+    scaleRatio: [0.000333333, 1.0]
+    text:
+      - スライムは集めた星に、ママが元気になるよう願いました。
+      - 星の光が家を包み、ママはゆっくり目を覚ましました。
+      - "ママ: おかえり。よくがんばったね。"
+      - こうしてスライムの宇宙の旅は、幸せな終わりを迎えました。
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
+credits:
+  - id: bgTexture
+    type: texture
+    posRatio: [0, 0]
+    scaleRatio: [1, 1]
+    rotationDegrees: 0
+  - id: creditsText
+    type: text
+    posRatio: [0.5, 0.43]
+    scaleRatio: [0.0005, 1.0]
+    text:
+      - "Slime's Space Travel\n\n制作\n草方 拓海\n\n遊んでくれてありがとう！\n\n決定ボタンでタイトルへ"
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 gameOver:
   - id: gameOverText
     type: text

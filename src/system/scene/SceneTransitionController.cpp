@@ -54,6 +54,15 @@ void SceneTransitionController::StartOpening()
     mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Opening);
 }
 
+void SceneTransitionController::StartEnding()
+{
+    mMidpointAction = {};
+    mFadeCompletionAction = {};
+    mFadeTimer = 1.0f;
+    mIsFadeOut = false;
+    mGameProgressState->SetNextSceneState(GameProgressState::SceneState::Ending);
+}
+
 void SceneTransitionController::StartFadeIn()
 {
     mMidpointAction = {};
@@ -132,6 +141,11 @@ void SceneTransitionController::ApplySceneChange()
         mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
         break;
 
+    case GameProgressState::SceneState::Ending:
+        mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Ending);
+        mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
+        break;
+
     case GameProgressState::SceneState::Playing:
         mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
         mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
@@ -162,7 +176,7 @@ void SceneTransitionController::ApplySceneChange()
             mGame->HasStageIntroCinematic(destinationStageNum);
         const bool shouldPlayBaseIntro =
             shouldPlayBaseArrival &&
-            !mHasPlayedBaseIntroThisSession;
+            !mGame->HasSeenBaseIntro();
         const bool shouldDeferStageMusic =
             shouldPlayStageIntro;
 
@@ -183,7 +197,7 @@ void SceneTransitionController::ApplySceneChange()
                 sequenceSystem->PlayCinematicChainThenSequence(
                     {"base_sequence"},
                     "base_arrival_template")) {
-                mHasPlayedBaseIntroThisSession = true;
+                mGame->MarkBaseIntroSeen();
                 if (Player* player = mGame->GetMainPlayer()) {
                     player->SetIsActive(false);
                 }
