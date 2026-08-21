@@ -78,6 +78,8 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mParameterPanel(mContext, mCameraPanel),
       mParticleEffectPanel(mContext),
       mSequencePanel(mContext),
+      mEndingRollPanel(mContext),
+      mStorybookPanel(mContext),
       mTutorialPanel(mContext),
       mAssetBrowserPanel(mContext),
       mStageAddActorPanel(mContext),
@@ -293,7 +295,7 @@ void DebugUIRenderer::ApplyEditorSessionState(
     mSelectedSequenceEditorMenu = std::clamp(
         sessionState.sequenceEditorMenuIndex,
         0,
-        1);
+        4);
     mStageEditorPanel.SetSelectedMenu(sessionState.stageEditorMenuIndex);
     mContext.layout.rightPanelWidth = sessionState.rightPanelWidth;
     mContext.layout.assetBrowserHeight = sessionState.assetBrowserHeight;
@@ -3458,6 +3460,8 @@ void DebugUIRenderer::DrawSequenceEditorTab()
         "演出シーケンス",
         "カメラシーケンス",
         "星獲得",
+        "エンドロール",
+        "絵本演出",
     };
 
     ImGui::BeginChild("SequenceEditorLeft", ImVec2(160.0f, 0.0f), true);
@@ -3482,6 +3486,12 @@ void DebugUIRenderer::DrawSequenceEditorTab()
         break;
     case 2:
         DrawStarCollectionEditor();
+        break;
+    case 3:
+        mEndingRollPanel.Draw();
+        break;
+    case 4:
+        mStorybookPanel.Draw();
         break;
     default:
         break;

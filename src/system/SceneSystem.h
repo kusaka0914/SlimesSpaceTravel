@@ -35,6 +35,8 @@ public:
     void ConfirmBattleStyleSelection();
     void DebugEnterTitle();
     void DebugEnterOpening();
+    void DebugEnterEnding();
+    void DebugStartCredits();
     void StartPlayingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     bool StartOpeningAfterTalkPage(

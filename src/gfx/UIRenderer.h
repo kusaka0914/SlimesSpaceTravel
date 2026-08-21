@@ -171,7 +171,8 @@ public:
         float height,
         GLuint textureHandle,
         bool flipVertical = false,
-        float rotationDegrees = 0.0f);
+        float rotationDegrees = 0.0f,
+        float opacity = 1.0f);
 
 private:
     void Initialize();

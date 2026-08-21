@@ -1,0 +1,79 @@
+duration: 70
+credits:
+  text: "SLIME'S SPACE TRAVEL\n\n\nCreated by\nTAKUMI KUSAKA\n\n\nSpecial Thanks\nかえる大将\nあやか\n支えてくれた家族\n\n\nGame Design\nProgramming\nAnimation\nLevel Design\nScenario\nUI Design\n\nAll by TAKUMI KUSAKA\n\n\nMusic & Sound Effects\n魔王魂\n効果音ラボ\nOtoLogic\nもみじばミュージック\n\n3D Assets\nKenney\nQuaternius\n\n\nPlaytest & Feedback\nまっち\nKen\n\nThank you for playing!"
+  start: 0
+  startY: 1.1
+  scrollSpeed: 0.055
+  textScale: 0.0002
+imageEvents:
+  - image: textures/opening1.png
+    start: 5
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.2
+    y: 0.3
+    width: 0.3
+    height: 0.3
+  - image: textures/opening1.png
+    start: 15
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.8
+    y: 0.7
+    width: 0.3
+    height: 0.3
+  - image: textures/opening1.png
+    start: 25
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.2
+    y: 0.7
+    width: 0.3
+    height: 0.3
+  - image: textures/opening1.png
+    start: 35
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.8
+    y: 0.3
+    width: 0.3
+    height: 0.3
+  - image: textures/opening1.png
+    start: 45
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.2
+    y: 0.3
+    width: 0.3
+    height: 0.3
+  - image: textures/opening1.png
+    start: 55
+    duration: 10
+    interval: 10
+    repeatCount: 1
+    fadeIn: 0.25
+    fadeOut: 0.25
+    x: 0.8
+    y: 0.7
+    width: 0.3
+    height: 0.3
+endImage:
+  image: textures/end.png
+  start: 66
+  fadeIn: 0.6
+  holdDuration: 4

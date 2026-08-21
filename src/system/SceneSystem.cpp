@@ -13,6 +13,7 @@
 #include "system/scene/TalkController.h"
 #include "system/scene/TutorialController.h"
 #include "system/sequence/SequenceSystem.h"
+#include "system/ending/EndingRollConfig.h"
 
 #include <SDL2/SDL_mixer.h>
 #include <glm/glm.hpp>
@@ -49,7 +50,9 @@ void SceneSystem::Update(float deltaTime)
     mTransitionController->UpdateFade(deltaTime);
     if (IsCredits() && mFadeTimer < 0.0f) {
         mCreditsElapsed += deltaTime;
-        if (mCreditsElapsed >= 24.0f) {
+        EndingRollConfig endingRoll;
+        EndingRollConfigIO::Load(endingRoll);
+        if (mCreditsElapsed >= endingRoll.totalDuration) {
             FinishCredits();
         }
     }
@@ -250,6 +253,18 @@ void SceneSystem::DebugEnterTitle()
 void SceneSystem::DebugEnterOpening()
 {
     ResetForDebugScene(GameProgressState::SceneState::Opening);
+}
+
+void SceneSystem::DebugEnterEnding()
+{
+    ResetForDebugScene(GameProgressState::SceneState::Ending);
+    mUIState->StartTalkWith(UIState::TalkWith::Ending);
+}
+
+void SceneSystem::DebugStartCredits()
+{
+    ResetForDebugScene(GameProgressState::SceneState::Credits);
+    mCreditsElapsed = 0.0f;
 }
 
 void SceneSystem::ResetForDebugScene(
@@ -701,5 +716,9 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     // 遷移要求を毎フレーム繰り返さないよう、先に再生状態をリセットする。
     mClearTimer = -1.0f;
     mClearAudioChannel = -1;
+    if (mGame->GetCurrentStageNum() == 5) {
+        StartEnding();
+        return;
+    }
     RequestStageChange(0);
 }

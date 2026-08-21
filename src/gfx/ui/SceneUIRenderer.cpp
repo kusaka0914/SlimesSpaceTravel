@@ -5,6 +5,11 @@
 #include "state/UIState.h"
 #include "system/SceneSystem.h"
 #include "system/UILoadSystem.h"
+#include "system/ending/EndingRollConfig.h"
+#include "system/story/StorybookConfig.h"
+
+#include <algorithm>
+#include <sstream>
 
 SceneUIRenderer::SceneUIRenderer(Game* game, UIRenderer* renderer)
     : mGame(game),
@@ -31,7 +36,7 @@ void SceneUIRenderer::DrawOpening()
 
 void SceneUIRenderer::DrawEnding()
 {
-    mRenderer->DrawSceneTexture("ending", "bgTexture", "ending");
+    DrawStorybookPage("ending", "ending");
     if (mRenderer->DrawSceneTalkUI("ending", "endingText")) {
         return;
     }
@@ -40,25 +45,52 @@ void SceneUIRenderer::DrawEnding()
 
 void SceneUIRenderer::DrawCredits()
 {
-    mRenderer->DrawSceneTexture("credits", "bgTexture", "credits");
-    const UILoadSystem::TextInfo* textInfo =
-        mRenderer->GetUILoadSystem()->GetTextInfo("credits", "creditsText");
-    if (!textInfo || textInfo->texts.empty()) {
+    EndingRollConfig config;
+    EndingRollConfigIO::Load(config);
+    const float elapsed = mGame->GetSceneSystem()->GetCreditsElapsed();
+    const float width = static_cast<float>(mRenderer->GetFbWidth());
+    const float height = static_cast<float>(mRenderer->GetFbHeight());
+    mRenderer->DrawBG(0.0f, 0.0f, width, height, {0.0f, 0.0f, 0.0f, 1.0f});
+
+    if (elapsed >= config.endImageStartTime && !config.endImagePath.empty() &&
+        mRenderer->RegisterCustomUITexture(config.endImagePath)) {
+        const float endImageElapsed = elapsed - config.endImageStartTime;
+        const float endImageOpacity = config.endImageFadeInDuration > 0.0f
+            ? std::clamp(endImageElapsed / config.endImageFadeInDuration, 0.0f, 1.0f)
+            : 1.0f;
+        mRenderer->DrawTextureHandle(0.0f, 0.0f, width, height,
+                                     mRenderer->GetCustomUITextureHandle(config.endImagePath), true,
+                                     0.0f, endImageOpacity);
         return;
     }
 
-    const float elapsed =
-        mGame->GetSceneSystem()->GetCreditsElapsed();
-    const float scrollY =
-        mRenderer->GetFbHeight() * (1.15f - elapsed * 0.055f);
-    mRenderer->DrawText(
-        mRenderer->GetFbWidth() * textInfo->xRatio,
-        scrollY,
-        mRenderer->GetFbWidth() * textInfo->scaleRatio,
-        textInfo->texts.front(),
-        textInfo->centerBased,
-        {255.0f, 255.0f, 255.0f, 255.0f},
-        textInfo->rotationDegrees);
+    for (const EndingRollImageEvent& event : config.imageEvents) {
+        if (!IsEndingRollImageVisible(event, elapsed) ||
+            !mRenderer->RegisterCustomUITexture(event.imagePath)) {
+            continue;
+        }
+        mRenderer->DrawTextureHandle(
+            width * event.xRatio - width * event.widthRatio * 0.5f,
+            height * event.yRatio - height * event.heightRatio * 0.5f,
+            width * event.widthRatio, height * event.heightRatio,
+            mRenderer->GetCustomUITextureHandle(event.imagePath), true, 0.0f,
+            CalculateEndingRollImageOpacity(event, elapsed));
+    }
+
+    const float firstLineY = height *
+        (config.creditsStartYRatio - std::max(0.0f, elapsed - config.creditsStartTime) * config.creditsScrollSpeedRatio);
+    std::istringstream lines(config.creditsText);
+    std::string line;
+    int lineIndex = 0;
+    // DrawText's font scale is independent from screen-space line spacing.
+    // Use the same 6.66%-of-screen rhythm as its built-in two-line layout,
+    // rather than deriving a few-pixel gap from the text scale.
+    const float lineHeight = height * 0.0666f;
+    while (std::getline(lines, line)) {
+        mRenderer->DrawText(width * 0.5f, firstLineY + lineIndex * lineHeight,
+                            width * config.creditsTextScaleRatio, line, true);
+        ++lineIndex;
+    }
 }
 
 void SceneUIRenderer::DrawGameOver()
@@ -70,7 +102,7 @@ void SceneUIRenderer::DrawGameOver()
 
 void SceneUIRenderer::DrawOpeningIntro()
 {
-    mRenderer->DrawSceneTexture("opening", "bgTexture", "opening");
+    DrawStorybookPage("opening", "opening", 0);
     if (mRenderer->DrawSceneTalkUI("opening", "openingText")) {
         return;
     }
@@ -80,6 +112,11 @@ void SceneUIRenderer::DrawOpeningIntro()
 
 void SceneUIRenderer::DrawOpeningTalkWithMother()
 {
+    const UILoadSystem::TextInfo* intro =
+        mRenderer->GetUILoadSystem()->GetTextInfo("opening", "openingText");
+    DrawStorybookPage(
+        "opening", "opening",
+        intro ? static_cast<int>(intro->texts.size()) : 0);
     if (mRenderer->DrawSceneTalkUI("opening", "talkWithMotherText")) {
         return;
     }
@@ -89,6 +126,14 @@ void SceneUIRenderer::DrawOpeningTalkWithMother()
 
 void SceneUIRenderer::DrawOpeningTalkWithDoctor()
 {
+    const UILoadSystem::TextInfo* intro =
+        mRenderer->GetUILoadSystem()->GetTextInfo("opening", "openingText");
+    const UILoadSystem::TextInfo* mother =
+        mRenderer->GetUILoadSystem()->GetTextInfo("opening", "talkWithMotherText");
+    const int pageOffset =
+        (intro ? static_cast<int>(intro->texts.size()) : 0) +
+        (mother ? static_cast<int>(mother->texts.size()) : 0);
+    DrawStorybookPage("opening", "opening", pageOffset);
     const UILoadSystem::TextInfo* talkWithDoctorTextInfo =
         mRenderer->GetUILoadSystem()->GetTextInfo("opening", "talkWithDoctorText");
 
@@ -108,4 +153,24 @@ void SceneUIRenderer::DrawOpeningTalkWithDoctor()
     if (isFinishTalk) {
         mGame->GetSceneSystem()->FinishOpeningStory();
     }
+}
+
+void SceneUIRenderer::DrawStorybookPage(
+    const std::string& trackId,
+    const std::string& fallbackScene,
+    int pageOffset)
+{
+    StorybookConfig config;
+    config.Load();
+    const int pageIndex = pageOffset + mGame->GetSceneSystem()->GetTalkUIIndex();
+    const std::string imagePath = config.GetPageImage(trackId, pageIndex);
+    if (!imagePath.empty() && mRenderer->RegisterCustomUITexture(imagePath)) {
+        mRenderer->DrawTextureHandle(
+            0.0f, 0.0f,
+            static_cast<float>(mRenderer->GetFbWidth()),
+            static_cast<float>(mRenderer->GetFbHeight()),
+            mRenderer->GetCustomUITextureHandle(imagePath), true);
+        return;
+    }
+    mRenderer->DrawSceneTexture(fallbackScene, "bgTexture", fallbackScene);
 }

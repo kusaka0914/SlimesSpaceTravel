@@ -319,6 +319,32 @@ void StageEditorPanel::DrawDebugSceneSwitcher()
         }
     }
 
+    ImGui::SameLine();
+    if (ImGui::Button("エンディングへ移動")) {
+        if (mContext.game->DebugEnterEnding()) {
+            mAddActorPanel.CancelPlacement();
+            mSelectionController.Clear();
+            mSelectedStageYamlPath =
+                mContext.game->GetCurrentStageYamlPath();
+            mStageSwitchStatus = "エンディングへ移動しました";
+        } else {
+            mStageSwitchStatus = "エンディングへの移動に失敗しました";
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("エンドロールを開始")) {
+        if (mContext.game->DebugStartCredits()) {
+            mAddActorPanel.CancelPlacement();
+            mSelectionController.Clear();
+            mSelectedStageYamlPath =
+                mContext.game->GetCurrentStageYamlPath();
+            mStageSwitchStatus = "エンドロールを開始しました";
+        } else {
+            mStageSwitchStatus = "エンドロールの開始に失敗しました";
+        }
+    }
+
     ImGui::TextDisabled(
         "ステージ0のhouse.yamlを読み込みます。保存していない現在の編集内容は失われます。");
 }

@@ -10,5 +10,8 @@ uniform sampler2D diffuseTexture;
 void main()
 {
     vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord) : objectColor;
+    if (useTexture != 0) {
+        baseColor.a *= objectColor.a;
+    }
     fragColor = baseColor;
 }

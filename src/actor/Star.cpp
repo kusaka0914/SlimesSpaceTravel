@@ -170,9 +170,8 @@ void Star::OnObtained()
     mCollectionTimer = 0.0f;
     mCollectionBaseFacingYaw = GetFacingYaw();
 
-    // The stage-clear camera/UI begins as soon as the player reaches the
-    // star. The star actor remains active independently for its collection
-    // animation, so both presentations can run together.
+    // The stage-clear screen starts as soon as the player reaches the star.
+    // The star actor remains active independently for its collection animation.
     if (mGame) {
         mGame->OnStarObtained();
     }

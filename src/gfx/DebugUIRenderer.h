@@ -5,10 +5,12 @@
 #include "gfx/debug/assets/EditorModelThumbnailRenderer.h"
 #include "gfx/debug/panels/AssetBrowserPanel.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
+#include "gfx/debug/panels/EndingRollDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
 #include "gfx/debug/panels/PerformanceDebugPanel.h"
 #include "gfx/debug/panels/SequenceDebugPanel.h"
+#include "gfx/debug/panels/StorybookDebugPanel.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
 #include "gfx/debug/panels/StageEditorPanel.h"
@@ -139,6 +141,8 @@ private:
     ParameterDebugPanel mParameterPanel;
     ParticleEffectDebugPanel mParticleEffectPanel;
     SequenceDebugPanel mSequencePanel;
+    EndingRollDebugPanel mEndingRollPanel;
+    StorybookDebugPanel mStorybookPanel;
     TutorialDebugPanel mTutorialPanel;
     AssetBrowserPanel mAssetBrowserPanel;
 

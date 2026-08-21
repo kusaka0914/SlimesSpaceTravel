@@ -1797,6 +1797,7 @@ void UIRenderer::DrawTextLine(
     glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
     glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
     glUniform1i(mUIShader->GetLocUseTexture(), 1);
+    glUniform4f(mUIShader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1974,7 +1975,8 @@ void UIRenderer::DrawTextureHandle(
     float height,
     GLuint textureHandle,
     bool flipVertical,
-    float rotationDegrees)
+    float rotationDegrees,
+    float opacity)
 {
     if (textureHandle == 0) {
         return;
@@ -1997,6 +1999,9 @@ void UIRenderer::DrawTextureHandle(
     glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
     glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
     glUniform1i(mUIShader->GetLocUseTexture(), 1);
+    glUniform4f(
+        mUIShader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f,
+        std::clamp(opacity, 0.0f, 1.0f));
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

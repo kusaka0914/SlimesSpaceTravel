@@ -83,10 +83,18 @@ void AudioSystem::TryChangeBGM()
         return;
     }
 
-    bool isOpening = mGame->GetSceneSystem()->IsOpening();
-    if (isOpening) {
+    const bool isStoryScene =
+        mGame->GetSceneSystem()->IsOpening() ||
+        mGame->GetSceneSystem()->IsEnding();
+    if (isStoryScene) {
         Mix_HaltMusic();
         PlayBGM("opening_bgm");
+        return;
+    }
+
+    if (mGame->GetSceneSystem()->IsCredits()) {
+        Mix_HaltMusic();
+        PlayBGM("title_bgm");
         return;
     }
 

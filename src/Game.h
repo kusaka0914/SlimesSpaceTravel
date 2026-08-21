@@ -65,6 +65,8 @@ public:
     bool DebugChangeStage(int stageNum, const std::string& yamlPath);
     bool DebugEnterTitle();
     bool DebugEnterOpening();
+    bool DebugEnterEnding();
+    bool DebugStartCredits();
     bool StartUGCMode();
     void OpenUGCWorkBrowser();
     void CloseUGCWorkBrowser();

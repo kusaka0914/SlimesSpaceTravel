@@ -1326,6 +1326,28 @@ bool Game::DebugEnterOpening()
     return true;
 }
 
+bool Game::DebugEnterEnding()
+{
+    if (!PrepareInitialSceneForDebug()) {
+        return false;
+    }
+
+    mSceneSystem->DebugEnterEnding();
+    mAudioSystem->TryChangeBGM();
+    return true;
+}
+
+bool Game::DebugStartCredits()
+{
+    if (!PrepareInitialSceneForDebug()) {
+        return false;
+    }
+
+    mSceneSystem->DebugStartCredits();
+    mAudioSystem->TryChangeBGM();
+    return true;
+}
+
 bool Game::StartUGCMode()
 {
     constexpr int UGCStageNumber = 0;
