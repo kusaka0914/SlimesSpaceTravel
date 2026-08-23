@@ -33,6 +33,10 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
     (void)status;
     (void)deltaTime;
 
+    // 回避キャンセルで解除した空中弱攻撃の移動ロックは、次の攻撃開始時に
+    // だけ通常どおり有効へ戻す。
+    mAirAttackMovementUnlockedByDodge = false;
+
     if (!player.GetOnGround() && attackInput == PlayerAttackInputKind::Wide) {
         if (!CanStartAirAttack()) {
             return;
@@ -303,7 +307,7 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
     }
 
     if (mAttackKind == PlayerAttackKind::Strong) {
-        StartTiredLock(status, movement, 5.0f);
+        StartTiredLock(status, movement, 2.5f);
         return;
     }
 
@@ -383,12 +387,19 @@ void PlayerCombat::CancelCurrentAttack()
     mIsAirAttacking = false;
 }
 
+void PlayerCombat::CancelAirAttackForDodge()
+{
+    CancelCurrentAttack();
+    mAirAttackMovementUnlockedByDodge = true;
+}
+
 void PlayerCombat::OnLanded()
 {
     mIsStrongAttacked = false;
     mIsAssistStrongAttack = false;
     mIsCharged = false;
     mIsAirAttacking = false;
+    mAirAttackMovementUnlockedByDodge = false;
     mAirAttackCount = 0;
     ResetAirWeakAttackHitCount();
     EndAirDodgeAttack();

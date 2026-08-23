@@ -12,7 +12,7 @@ planets:
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
     textureOverride: textures/stoneTex.png
-  - center: [1002, 0, 0]
+  - center: [-580.62805, 18.929491, 3.926554]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
@@ -153,7 +153,7 @@ planets:
     textureOverride: textures/stoneTex.png
   - center:
       - -69.785904
-      - 59.27107
+      - 58.612526
       - 1.6954904
     scale:
       - 4
@@ -244,6 +244,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 0
@@ -258,6 +259,7 @@ enemies:
       - -0.20248644
       - 0.9657809
       - -0.16206937
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 0
@@ -272,6 +274,7 @@ enemies:
       - -0.20787096
       - 0.9349425
       - 0.28752795
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -286,6 +289,7 @@ enemies:
       - -0.21383378
       - -0.9657864
       - -0.14673747
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -300,6 +304,7 @@ enemies:
       - -0.20354052
       - -0.9623903
       - 0.17993388
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -314,6 +319,7 @@ enemies:
       - -0.08995284
       - 0.98518395
       - -0.14601795
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -328,6 +334,7 @@ enemies:
       - 0.14524092
       - 0.9868535
       - -0.07088908
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -342,6 +349,7 @@ enemies:
       - 0.042991456
       - 0.9898146
       - 0.13571632
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -356,6 +364,7 @@ enemies:
       - -0.17171142
       - 0.9833753
       - 0.05906069
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 0
@@ -370,6 +379,7 @@ enemies:
       - 0.038727984
       - 0.98839223
       - -0.14690506
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 0
@@ -384,6 +394,7 @@ enemies:
       - 0.08838707
       - 0.9745133
       - 0.2061838
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -398,6 +409,7 @@ enemies:
       - 0.11159042
       - -0.99226147
       - 0.054450132
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -412,6 +424,7 @@ enemies:
       - 0.111857966
       - -0.97700006
       - -0.18154542
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 6
@@ -436,6 +449,7 @@ enemies:
       - 0.07819391
       - 0.9949204
       - -0.06320286
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 6
@@ -460,6 +474,7 @@ enemies:
       - 0.079712525
       - 0.9943128
       - 0.070399895
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 6
@@ -484,6 +499,7 @@ enemies:
       - -0.054869164
       - 0.99524593
       - -0.08034447
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 6
@@ -508,12 +524,13 @@ enemies:
       - -0.068585925
       - 0.9962983
       - 0.051701155
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_2
     currentPlanetNum: 8
-    theta: -2.2492232
-    phi: 1.4082104
-    height: -0.07112956
+    theta: -2.2455392
+    phi: 1.4072416
+    height: -0.06751871
     pos:
       - -0.4
       - 3.88
@@ -526,160 +543,7 @@ enemies:
       - 1.5
       - 2
       - 1.5
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -0.97730863
-    phi: 1.2240452
-    height: 1.6098146
-    pos:
-      - 1.07
-      - 4.06
-      - -1.58
-    upVec:
-      - 0.15368797
-      - 0.9623922
-      - -0.22401161
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -1.821705
-    phi: 1.063551
-    height: 1.9309173
-    pos:
-      - -0.72
-      - 3.97
-      - -2.79
-    upVec:
-      - -0.10730955
-      - 0.9070795
-      - -0.4070523
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -2.6776648
-    phi: 1.085922
-    height: 1.8896184
-    pos:
-      - -2.45
-      - 4
-      - -1.23
-    upVec:
-      - -0.36256707
-      - 0.91499513
-      - -0.17700066
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: 0.47329637
-    phi: 1.2804269
-    height: 1.4878769
-    pos:
-      - 1.4
-      - 4.05
-      - 0.72
-    upVec:
-      - 0.19912246
-      - 0.974513
-      - 0.10331878
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: 1.7614666
-    phi: 1.2911129
-    height: 1.4643149
-    pos:
-      - -0.29
-      - 4.04
-      - 1.48
-    upVec:
-      - -0.041063346
-      - 0.9745144
-      - 0.2205344
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: 2.8257732
-    phi: 1.1325992
-    height: 1.7986999
-    pos:
-      - -2.34
-      - 4.04
-      - 0.76
-    upVec:
-      - -0.3238814
-      - 0.94051903
-      - 0.10259139
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -2.2610986
-    phi: 1.0733826
-    height: 1.913053
-    pos:
-      - -1.8
-      - 3.99
-      - -2.18
-    upVec:
-      - -0.2710415
-      - 0.9070801
-      - -0.32209042
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -1.2730356
-    phi: 1.0745579
-    height: 1.9108996
-    pos:
-      - 0.83
-      - 3.99
-      - -2.69
-    upVec:
-      - 0.121828586
-      - 0.9150095
-      - -0.3845978
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: -0.24562153
-    phi: 1.2367933
-    height: 1.5825734
-    pos:
-      - 1.78
-      - 4.06
-      - -0.45
-    upVec:
-      - 0.250752
-      - 0.9657906
-      - -0.0661216
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: 1.0722028
-    phi: 1.316695
-    height: 1.4067874
-    pos:
-      - 0.65
-      - 4.02
-      - 1.19
-    upVec:
-      - 0.0975993
-      - 0.97929925
-      - 0.1773344
-  - editorName: 新しい通常敵
-    type: normal_short_interval
-    currentPlanetNum: 8
-    theta: 2.3250155
-    phi: 1.1892579
-    height: 1.6829066
-    pos:
-      - -1.45
-      - 4.06
-      - 1.54
-    upVec:
-      - -0.20247558
-      - 0.9547144
-      - 0.21800016
+    modelPath: enemy_green.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -694,6 +558,7 @@ enemies:
       - 0.051622443
       - -0.9922613
       - -0.11292758
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -708,6 +573,7 @@ enemies:
       - 0.069364704
       - -0.97699934
       - 0.20164524
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -722,6 +588,7 @@ enemies:
       - -0.12080615
       - -0.9922618
       - 0.028677952
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -736,6 +603,7 @@ enemies:
       - -0.13173844
       - 0.93494636
       - -0.32942423
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -750,6 +618,7 @@ enemies:
       - 0.05694432
       - 0.95037407
       - -0.3058537
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -764,6 +633,7 @@ enemies:
       - 0.21481651
       - 0.93495333
       - -0.28234085
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -778,6 +648,7 @@ enemies:
       - 0.3386897
       - 0.92224854
       - -0.1864058
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -792,6 +663,7 @@ enemies:
       - 0.42020726
       - 0.907061
       - -0.025813174
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -806,6 +678,7 @@ enemies:
       - 0.45224696
       - 0.8782248
       - 0.15554374
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -820,6 +693,7 @@ enemies:
       - -0.24775662
       - 0.93494856
       - -0.25394467
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -834,6 +708,7 @@ enemies:
       - -0.3325632
       - 0.93494684
       - -0.12359699
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -848,6 +723,7 @@ enemies:
       - -0.35474253
       - 0.934954
       - -0.004350651
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -862,6 +738,7 @@ enemies:
       - -0.27958438
       - 0.9503731
       - 0.13646816
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -876,6 +753,7 @@ enemies:
       - -0.1622487
       - 0.9547129
       - 0.24939659
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -890,6 +768,7 @@ enemies:
       - -0.019945577
       - 0.945657
       - 0.32455367
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -904,6 +783,7 @@ enemies:
       - 0.15915045
       - 0.96238536
       - 0.2201945
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 7
@@ -918,6 +798,7 @@ enemies:
       - 0.27257752
       - 0.94565374
       - 0.17731468
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -932,6 +813,7 @@ enemies:
       - -0.047246765
       - 0.95471704
       - -0.29374012
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -946,6 +828,7 @@ enemies:
       - 0.056257192
       - 0.9623896
       - -0.2657849
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -960,6 +843,7 @@ enemies:
       - -0.17430127
       - 0.95471597
       - -0.2411152
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -974,6 +858,7 @@ enemies:
       - 0.18111351
       - 0.96578306
       - -0.18563691
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -988,6 +873,7 @@ enemies:
       - -0.25498122
       - 0.9657804
       - -0.047463976
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -1002,6 +888,7 @@ enemies:
       - -0.23919556
       - 0.96892154
       - 0.06305964
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -1016,6 +903,7 @@ enemies:
       - -0.19312716
       - 0.9689209
       - -0.15457821
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 10
@@ -1030,6 +918,7 @@ enemies:
       - -0.20635802
       - 0.96578985
       - 0.15705514
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -1044,6 +933,7 @@ enemies:
       - 0.13304253
       - -0.98337525
       - -0.12358401
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -1058,6 +948,7 @@ enemies:
       - -0.097863674
       - -0.986854
       - -0.1286156
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -1072,6 +963,7 @@ enemies:
       - 0.101915345
       - -0.979299
       - 0.17489095
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 4
@@ -1086,6 +978,7 @@ enemies:
       - -0.1299646
       - -0.98337525
       - 0.12681673
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1100,6 +993,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1114,6 +1008,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1128,6 +1023,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1142,6 +1038,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1156,6 +1053,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1170,6 +1068,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1184,6 +1083,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal_short_interval
     currentPlanetNum: 0
@@ -1198,6 +1098,7 @@ enemies:
       - 0
       - -1
       - 0
+    modelPath: enemy.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -1252,17 +1153,17 @@ boats:
     textureTiling:
       - 1
       - 1
-  - startPlanet: 2
+  - startPlanet: 0
     destPlanet: 5
     destStage: 0
-    theta: 0.6915144
-    phi: 1.3364358
-    height: 4.3783894
+    theta: 0.3772679
+    phi: 1.4931655
+    height: 4.2834387
     facingYaw: 0
     pos:
-      - -0.01
-      - 2.11
-      - 0.08
+      - 0.51
+      - 1.98
+      - 0.18
     upVec:
       - -0.10340866
       - 0.9718245
@@ -1366,18 +1267,29 @@ players:
     currentPlanetNum: 0
 star:
   - currentPlanetNum: 8
-    theta: -2.0097907
-    phi: 1.5707964
-    height: -2.9948845
+    theta: 1.8946981e-05
+    phi: 0.0029402163
+    height: 1.1345315
     isActive: false
     pos:
-      - -0
-      - 1.01
-      - -0
+      - 5.13
+      - 0.02
+      - 0
     upVec:
-      - 0.018880635
-      - 0.99968386
-      - 0.016606584
+      - 0.9999231
+      - -0.008745909
+      - -0.008794963
+    modelPath: star_green.glb
+    facingYaw: -1.5764362
+    rotation:
+      - -2.1409798
+      - 1.560358
+      - -2.149751
+    rotationQuat:
+      - -0.49418354
+      - -0.5014081
+      - -0.50140774
+      - 0.5029541
 NPCs: []
 platforms:
   - currentPlanetNum: 0
@@ -1449,7 +1361,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 2
     pos:
       - 4.16
@@ -1516,8 +1429,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet1
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 5
     pos:
       - -13.229219
@@ -1820,8 +1735,10 @@ platforms:
           - platform_5
           - platform_7
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 6
     pos:
       - -0.02
@@ -1856,9 +1773,12 @@ platforms:
           - platform_39
           - platform_3
         remainsOnAfterPressed: true
-        enemyTargets: []
-        hideTargets: []
-      enemyClearUnlock: {}
+        enemyTargets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
   - currentPlanetNum: 7
     pos:
       - -16.18602
@@ -2073,7 +1993,8 @@ platforms:
         targets:
           - sequence: boats
             index: 2
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 7
     pos:
       - 1.95
@@ -2103,8 +2024,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     pos:
       - -3.16
@@ -2256,8 +2179,10 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 4
     pos:
       - -8.612755

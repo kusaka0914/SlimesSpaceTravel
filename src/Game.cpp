@@ -1097,6 +1097,7 @@ bool Game::SplitPlayer()
     splitPlayer->SetIsActive(true);
 
     mIsPlayerSplit = true;
+    SynchronizeSoloSplitResources(*mainPlayer);
     SelectControlledPlayer(1);
     return true;
 }
@@ -1847,8 +1848,36 @@ void Game::FinishGame()
 
 void Game::RestartGame()
 {
+    // The fade action invokes this only once the screen is completely black.
+    // Merge and choose the camera target at that point, then reveal the
+    // restarted player without a visible camera travel.
+    if (!mIsPlayer2Joined && mIsPlayerSplit) {
+        MergePlayerInto(0);
+    }
+
+    std::vector<Player*> playersToKeepInactive;
     for (auto player : GetPlayers()) {
+        if (!player) {
+            continue;
+        }
+
+        if (!player->GetIsActive()) {
+            playersToKeepInactive.emplace_back(player);
+        }
+        // Restore health and respawn data for every body. The inactive solo
+        // body must not retain 0 HP, otherwise splitting again immediately
+        // retriggers Game Over.
         player->Restart();
+    }
+
+    for (Player* player : playersToKeepInactive) {
+        player->SetVelocity(glm::vec3(0.0f));
+        player->SetControlLocked(true);
+        player->SetIsActive(false);
+    }
+
+    if (mCameraSystem) {
+        mCameraSystem->SnapBehindControlledPlayer();
     }
 }
 
@@ -1866,6 +1895,38 @@ void Game::OnPlayerApplyDamage(int playerNum)
 {
     mAudioSystem->PlaySE("damaged_se");
     VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
+}
+
+void Game::SynchronizeSoloSplitResources(const Player& sourcePlayer)
+{
+    if (mIsPlayer2Joined || !mIsPlayerSplit) {
+        return;
+    }
+
+    const std::vector<Player*>& players = GetPlayers();
+    if (players.size() < 2 ||
+        (players[0] != &sourcePlayer && players[1] != &sourcePlayer)) {
+        return;
+    }
+
+    // A solo split represents one slime with two bodies.  Update only the
+    // other body, and only when a value differs, so this never becomes a
+    // per-frame pair of unconditional writes.
+    for (Player* player : players) {
+        if (!player || player == &sourcePlayer) {
+            continue;
+        }
+
+        if (player->GetMaxHp() != sourcePlayer.GetMaxHp()) {
+            player->SetMaxHp(sourcePlayer.GetMaxHp());
+        }
+        if (player->GetHp() != sourcePlayer.GetHp()) {
+            player->SetHp(sourcePlayer.GetHp());
+        }
+        if (player->GetJewelCount() != sourcePlayer.GetJewelCount()) {
+            player->SetJewelCount(sourcePlayer.GetJewelCount());
+        }
+    }
 }
 
 void Game::OnPlayerAttackHit(int playerNum)

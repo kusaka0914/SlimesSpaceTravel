@@ -7,6 +7,7 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyAttackGeometry.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
@@ -44,6 +45,29 @@ glm::vec3 ProjectOntoSphereSurface(
     }
     return planet->GetPos() +
            glm::normalize(fromCenter) * surfaceRadius;
+}
+
+float CalculateEnemyGuardHeight(const Enemy& enemy)
+{
+    glm::vec3 up = enemy.GetUpVec();
+    if (glm::dot(up, up) <= 0.000001f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
+
+    EnemyCollisionGeometry::ModelBounds modelBounds;
+    if (EnemyCollisionGeometry::TryCreateModelBounds(enemy, modelBounds)) {
+        const float modelTop =
+            glm::dot(modelBounds.center - enemy.GetPos(), up) +
+            EnemyCollisionGeometry::CalculateSupportDistance(modelBounds, up);
+        // The guard sits just above the actual model, independent of the
+        // model's scale or its local origin.
+        return modelTop + 0.25f;
+    }
+
+    // Models without mesh bounds retain the previous safe fallback.
+    return enemy.GetRadius() * 0.8f;
 }
 } // namespace
 
@@ -650,7 +674,7 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
     glUniform1i(shader->GetLocUseTexture(), 1);
     quadIt->second->SetActive();
 
-    const float upMargin = enemy->GetRadius() * 0.8f;
+    const float upMargin = CalculateEnemyGuardHeight(*enemy);
     constexpr float guardWidth = 0.5f;
     constexpr float guardHeight = 0.5f;
 
@@ -684,7 +708,9 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
     hpBarIt->second->SetActive();
 
     constexpr float rightMargin = -0.5f;
-    const float upMargin = enemy->GetRadius() * 1.5f;
+    // Keep the health bar a fixed small distance above the guard row, using
+    // the model's actual head height rather than the collision radius.
+    const float upMargin = CalculateEnemyGuardHeight(*enemy) + 0.40f;
     const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
     constexpr float hpHeight = 0.1f;
 

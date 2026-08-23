@@ -21,7 +21,11 @@ public:
         return mResolvedAttackSequence;
     }
     bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
-    bool CanMoveDuringAttack() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
+    bool CanMoveDuringAttack() const
+    {
+        return mAirAttackMovementUnlockedByDodge ||
+               (mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking);
+    }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
@@ -57,6 +61,7 @@ public:
     void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
     void CancelSpecialAttack();
     void CancelCurrentAttack();
+    void CancelAirAttackForDodge();
     void OnLanded();
     void PrepareAssistAirCombo();
     bool RegisterAirWeakAttackHit();
@@ -191,6 +196,9 @@ private:
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
+    // 空中弱攻撃は着地まで移動を止める。ただし回避でキャンセルした
+    // 場合だけ、次の空中弱攻撃を開始するまで移動を許可する。
+    bool mAirAttackMovementUnlockedByDodge = false;
     bool mIsAirDodgeAttackActive = false;
     bool mHasPendingAttackHit = false;
 

@@ -201,22 +201,12 @@ gameOver:
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
-  - id: restartTextForGameController
+  - id: restartText
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
     text:
-      - "直前からリスタート: X"
-    rubyScaleRatio: 0.48
-    rubyGapRatio: 0
-    centerBased: true
-    rotationDegrees: 0
-  - id: restartTextForKeyBoard
-    type: text
-    posRatio: [0.5, 0.6111]
-    scaleRatio: [0.0003125, 1.0]
-    text:
-      - "直前からリスタート: K"
+      - "直前からリスポーンします"
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

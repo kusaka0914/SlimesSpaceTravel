@@ -18,6 +18,7 @@
 #include "utils/MathUtils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
@@ -49,6 +50,34 @@ glm::vec3 GetNormalizedUpDirection(const Enemy& enemy)
 glm::vec3 ProjectOntoTangentPlane(const glm::vec3& direction, const glm::vec3& upDirection)
 {
     return direction - upDirection * glm::dot(direction, upDirection);
+}
+
+glm::vec3 CalculateCinematicSurfacePosition(
+    const Planet& planet,
+    float theta,
+    float phi,
+    float height)
+{
+    const glm::vec3 direction = glm::normalize(glm::vec3(
+        std::cos(phi) * std::cos(theta),
+        std::sin(phi),
+        std::cos(phi) * std::sin(theta)));
+
+    if (planet.GetPlanetShape() != Planet::PlanetShape::Ellipse) {
+        return planet.CalculateSurfacePos(theta, phi, height);
+    }
+
+    // A flattened planet's sphere radius is its X radius. Using it directly
+    // can place this staged actor inside the long axis of the collision body.
+    const float largestRadius = std::max({
+        std::abs(planet.GetScale().x),
+        std::abs(planet.GetScale().y),
+        std::abs(planet.GetScale().z),
+        0.001f});
+    const Planet::EllipseSurfaceProjection surface =
+        planet.CalculateEllipseSurfaceProjection(
+            planet.GetPos() + direction * (largestRadius * 4.0f));
+    return surface.position + surface.outwardNormal * height;
 }
 
 glm::vec3 GetDyingKnockBackDirection(const Enemy& enemy, const EnemyStatus& status,
@@ -99,7 +128,8 @@ void StageBossDefeatActors(Enemy& boss)
     constexpr float bossTheta = 0.0f;
     constexpr float bossPhi = 0.0f;
     boss.SetSphericalPlacement(bossTheta, bossPhi, boss.GetHeight());
-    boss.SetPos(planet->CalculateSurfacePos(bossTheta, bossPhi, boss.GetHeight()));
+    boss.SetPos(CalculateCinematicSurfacePosition(
+        *planet, bossTheta, bossPhi, boss.GetHeight()));
     const glm::vec3 bossUp = boss.GetPos() - planet->GetPos();
     if (glm::length(bossUp) > directionEpsilon) {
         boss.SetUpVec(glm::normalize(bossUp));
@@ -128,7 +158,8 @@ void StageBossDefeatActors(Enemy& boss)
     }
 
     player->SetSphericalPlacement(playerTheta, playerPhi, player->GetHeight());
-    player->SetPos(planet->CalculateSurfacePos(playerTheta, playerPhi, player->GetHeight()));
+    player->SetPos(CalculateCinematicSurfacePosition(
+        *planet, playerTheta, playerPhi, player->GetHeight()));
     player->SetVelocity(glm::vec3(0.0f));
     player->SetOnGround(false);
     player->SetShouldJudgeLanding(true);
@@ -172,8 +203,8 @@ void StageBossDefeatActors(Enemy& boss)
 
             constexpr float player2Phi = 0.28f;
             player2->SetSphericalPlacement(playerTheta, player2Phi, player2->GetHeight());
-            player2->SetPos(planet->CalculateSurfacePos(
-                playerTheta, player2Phi, player2->GetHeight()));
+            player2->SetPos(CalculateCinematicSurfacePosition(
+                *planet, playerTheta, player2Phi, player2->GetHeight()));
             player2->SetVelocity(glm::vec3(0.0f));
             player2->SetOnGround(false);
             player2->SetShouldJudgeLanding(true);
@@ -215,12 +246,20 @@ void StageBossDefeatActors(Enemy& boss)
         star->SetPos(boss.GetPos() + boss.GetUpVec() * starHeightAboveBoss);
         star->SetUpVec(boss.GetUpVec());
 
-        glm::vec3 starFacingPlayer = player->GetPos() - star->GetPos();
-        starFacingPlayer -= star->GetUpVec() * glm::dot(starFacingPlayer, star->GetUpVec());
-        if (mathUtils && glm::length(starFacingPlayer) > directionEpsilon) {
-            starFacingPlayer = glm::normalize(starFacingPlayer);
+        glm::vec3 starFacingBoss = boss.GetForwardVec();
+        starFacingBoss -=
+            star->GetUpVec() *
+            glm::dot(starFacingBoss, star->GetUpVec());
+        if (mathUtils &&
+            glm::length(starFacingBoss) > directionEpsilon) {
+            starFacingBoss = glm::normalize(starFacingBoss);
+            // Stars use the opposite model-forward axis, matching the
+            // previous presentation while targeting the boss instead.
             star->SetFacingYaw(
-                mathUtils->GetYawFromDirection(star->GetUpVec(), starFacingPlayer) + glm::pi<float>());
+                mathUtils->GetYawFromDirection(
+                    star->GetUpVec(),
+                    starFacingBoss) +
+                glm::pi<float>());
         }
     }
 }

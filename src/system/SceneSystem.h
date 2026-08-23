@@ -139,6 +139,7 @@ private:
 
     float mFadeTimer;
     float mClearTimer;
+    float mGameOverTimer = -1.0f;
     int mClearAudioChannel = -1;
 
     bool mIsFadeOut;

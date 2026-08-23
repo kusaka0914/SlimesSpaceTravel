@@ -1,5 +1,6 @@
 #include "Star.h"
 #include "Game.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "component/CollectableComponent.h"
 #include "system/ParticleSystem.h"
@@ -7,6 +8,7 @@
 #include <cmath>
 #include <fstream>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <yaml-cpp/yaml.h>
 
 Star::Star(Game* game)
@@ -14,6 +16,32 @@ Star::Star(Game* game)
 {
     mIsActive = false;
     AddCollectableComponent();
+}
+
+void Star::Initialize()
+{
+    Actor::Initialize();
+    // Keep the stage-authored orientation. Stars must not be reoriented by
+    // the surrounding planet or debug-mode ground-normal updates.
+    mIsUpVecInitialized = true;
+}
+
+glm::quat Star::GetRenderModelRotationOffset() const
+{
+    // glTF/GLB star assets keep their authored node rotation separately from
+    // mesh vertices.  Static mesh loading intentionally does not bake node
+    // transforms, so compensate here without changing collision, the boss
+    // facing direction, or FBX stars.
+    const std::string& modelPath = GetModelPath();
+    const std::size_t extensionStart = modelPath.find_last_of('.');
+    if (extensionStart == std::string::npos ||
+        modelPath.substr(extensionStart) != ".glb") {
+        return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    return glm::angleAxis(
+        glm::half_pi<float>(),
+        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Star::ApplyConfig()
@@ -90,6 +118,11 @@ void Star::AddCollectableComponent()
 {
     std::unique_ptr<CollectableComponent> collectableComponent = std::make_unique<CollectableComponent>(this, 100);
     mCollectableComponent = collectableComponent.get();
+    // The boss-defeat star must work even if the finishing attack is still
+    // registered for a few frames. Its visual is also wider than a standard
+    // item, so use a forgiving pickup range around the star's centre.
+    mCollectableComponent->SetCanPickupWhileAttacking(true);
+    mCollectableComponent->SetPickupRadius(1.5f);
     AddComponent(std::move(collectableComponent));
 }
 
@@ -162,6 +195,16 @@ void Star::OnObtained()
         : nullptr;
     if (!mObtainingPlayer && mGame) {
         mObtainingPlayer = mGame->GetMainPlayer();
+    }
+
+    // Start the clear sequence with the player directly below the collected
+    // star, already on a valid ground surface. This avoids revealing a player
+    // suspended in the air or inside an elliptical planet.
+    if (mObtainingPlayer) {
+        mObtainingPlayer->ForceGroundedForCinematicAt(
+            GetCurrentPlanet(),
+            GetPos(),
+            GetUpVec());
     }
 
     // Keep the star active while it circles the player.  The collectable

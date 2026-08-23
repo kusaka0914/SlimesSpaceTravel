@@ -57,6 +57,10 @@ public:
     void RespawnAtRestartPoint();
     void Restart();
     void ForceGroundedForCinematic();
+    void ForceGroundedForCinematicAt(
+        Planet* planet,
+        const glm::vec3& surfaceReferencePosition,
+        const glm::vec3& groundUpDirection);
     void RecoverFromFatigue();
     void OnAttachedToAdhesivePlatform();
     void SetBaseScale(const glm::vec3& scale);
@@ -249,7 +253,8 @@ public:
     int GetCurrentPlanetNum() const { return mMovement.GetCurrentPlanetNum(); }
 
     int GetJewelCount() const { return mJewelGauge.GetCount(); }
-    void AddJewelFromItem() { mJewelGauge.AddFromItem(1); }
+    void SetJewelCount(int count) { mJewelGauge.SetCount(count); }
+    void AddJewelFromItem();
 
     int GetPlayerNum() const { return mMovement.GetPlayerNum(); }
 

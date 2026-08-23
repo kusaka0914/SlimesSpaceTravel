@@ -5,12 +5,14 @@
 #include "actor/Player.h"
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
-#include "system/sequence/SequenceSystem.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace {
 constexpr const char* BaseLaunchSequenceId = "launch_rocket_from_base";
+constexpr float BaseLaunchDurationSeconds = 2.0f;
+constexpr float BaseLaunchDistance = 7.0f;
 }
 
 Boat::Boat(Game* game)
@@ -146,7 +148,9 @@ void Boat::UpdateActor(float deltaTime)
         OnShown();
     }
 
-    if (mIsMoving) {
+    if (mIsLaunchingFromBase) {
+        UpdateBaseLaunch(deltaTime);
+    } else if (mIsMoving) {
         UpdateMoving(deltaTime);
     }
 
@@ -201,6 +205,25 @@ void Boat::UpdateMovement(float deltaTime)
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
 }
 
+void Boat::UpdateBaseLaunch(float deltaTime)
+{
+    mBaseLaunchElapsedSeconds += std::max(0.0f, deltaTime);
+    const float progress = std::clamp(
+        mBaseLaunchElapsedSeconds / BaseLaunchDurationSeconds,
+        0.0f,
+        1.0f);
+
+    // This replaces the fixed actor-index sequence. Each rocket lifts away
+    // from the planet along its own up vector with the same ease-in/out feel.
+    const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
+    mPos = glm::mix(mStartPos, mBaseLaunchEndPos, easedProgress);
+
+    if (progress >= 1.0f) {
+        mIsLaunchingFromBase = false;
+        mIsMoving = false;
+    }
+}
+
 void Boat::FinishMoving()
 {
     mPos = mDestPos;
@@ -213,11 +236,23 @@ void Boat::FinishMoving()
 void Boat::StartTravel()
 {
     if (mGame->IsInBase()) {
-        SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-        if (sequenceSystem && !mLaunchSequenceId.empty()) {
-            sequenceSystem->Play(mLaunchSequenceId);
+        if (mIsLaunchingFromBase) {
+            return;
         }
 
+        mStartPos = mPos;
+        glm::vec3 launchDirection = GetUpVec();
+        if (glm::length(launchDirection) <= 0.000001f) {
+            launchDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+        } else {
+            launchDirection = glm::normalize(launchDirection);
+        }
+        mBaseLaunchEndPos = mStartPos + launchDirection * BaseLaunchDistance;
+        mBaseLaunchElapsedSeconds = 0.0f;
+        mIsLaunchingFromBase = true;
+        // PlayerBoatRide follows any moving boat, so all boarded players
+        // follow this launch without per-rocket coordinates.
+        mIsMoving = true;
         mGame->OnBoatStageChangeRequested(mDestStage);
         return;
     }

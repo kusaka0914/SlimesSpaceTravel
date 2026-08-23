@@ -85,6 +85,7 @@ enemies:
       - 0.01333618
       - 0.01376519
       - 0.71807903
+    modelPath: enemy.obj
   - type: normal
     theta: -2.1809852
     phi: 0.10503345
@@ -112,6 +113,7 @@ enemies:
       - -0.0051146504
       - -0.00504187
       - 0.7020048
+    modelPath: enemy.obj
   - type: normal
     theta: 2.2557383
     phi: 0.8845734
@@ -139,6 +141,7 @@ enemies:
       - 0.011224407
       - 0.010688943
       - 0.68953985
+    modelPath: enemy.obj
   - type: normal
     theta: -2.6610897
     phi: -1.1275616
@@ -166,34 +169,36 @@ enemies:
       - -0.0049115224
       - -0.005221057
       - 0.72835064
+    modelPath: enemy.obj
   - editorName: 新しいボス敵
     type: boss
     currentPlanetNum: 2
-    theta: -1.9254149
-    phi: -0.050227392
-    height: 0.31981325
+    theta: -3.0781858
+    phi: 0.08128901
+    height: 0.43351984
     pos:
-      - -1.5
-      - -0.22
-      - -4.05
+      - -4.41
+      - 0.36
+      - -0.28
     upVec:
-      - -0.3467953
-      - -0.050205935
-      - -0.93659616
-    facingYaw: 1.1165224
+      - -0.99304086
+      - 0.115030766
+      - 0.025257528
+    facingYaw: 2.0208652
     rotation:
-      - 0
-      - -1.1165228
-      - 0
+      - 2.9419293
+      - -1.1148987
+      - -2.994898
     rotationQuat:
-      - 0.22790515
-      - 0.012722313
-      - -0.65035105
-      - 0.7245282
+      - -0.4039418
+      - -0.568417
+      - 0.62797016
+      - -0.3455238
     scale:
       - 1.5
       - 2
       - 1.5
+    modelPath: enemy_yellow.obj
   - type: normal
     theta: -1.910462
     phi: -0.72552204
@@ -221,104 +226,7 @@ enemies:
       - -0.022766886
       - -0.02420811
       - 0.72805643
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -2.8427694
-    phi: 0.18340085
-    height: -0.05071211
-    pos:
-      - -3.7109718
-      - 0.7202492
-      - -1.1431551
-    upVec:
-      - -0.93740815
-      - 0.18184891
-      - -0.29697958
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -2.9458935
-    phi: 0.5324764
-    height: -0.044881582
-    pos:
-      - -3.3424988
-      - 2.0078888
-      - -0.66260433
-    upVec:
-      - -0.8508007
-      - 0.50105554
-      - -0.15837185
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -1.3064967
-    phi: -0.6041218
-    height: -0.043363094
-    pos:
-      - 0.8506584
-      - -2.2475262
-      - -3.1432438
-    upVec:
-      - 0.21064068
-      - -0.56326747
-      - -0.7989745
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -1.1931876
-    phi: -0.27282766
-    height: -0.049572945
-    pos:
-      - 1.4026451
-      - -1.0644646
-      - -3.536294
-    upVec:
-      - 0.35677043
-      - -0.27688324
-      - -0.8922167
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -1.0847749
-    phi: 0.071922556
-    height: -0.051254272
-    pos:
-      - 1.8397369
-      - 0.28375912
-      - -3.4824476
-    upVec:
-      - 0.4597146
-      - 0.060957316
-      - -0.88597226
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -2.3941073
-    phi: -0.5114045
-    height: -0.045506954
-    pos:
-      - -2.5291672
-      - -1.935339
-      - -2.3443108
-    upVec:
-      - -0.6428515
-      - -0.4797869
-      - -0.5971153
-  - editorName: 新しい通常敵
-    type: normal
-    currentPlanetNum: 2
-    theta: -1.8913949
-    phi: -0.6801772
-    height: -0.04142189
-    pos:
-      - -0.9698715
-      - -2.4896717
-      - -2.920826
-    upVec:
-      - -0.25458273
-      - -0.6224043
-      - -0.74013555
+    modelPath: enemy.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -529,11 +437,11 @@ players:
       - -0.036752813
       - 0.13214232
 star:
-  - theta: 6.11881e-05
-    phi: -4.7014446e-09
-    height: 1.1491847
+  - theta: 0
+    phi: 0
+    height: 1.1500015
     currentPlanetNum: 2
-    modelPath: star.obj
+    modelPath: star_yellow.glb
     pos:
       - 5.15
       - 0
@@ -959,8 +867,10 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1124,7 +1034,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.28730252
     phi: 0.12781243
@@ -1160,8 +1071,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1292,8 +1205,10 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -1457,7 +1372,8 @@ platforms:
         targets:
           - sequence: boats
             index: 2
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -1493,8 +1409,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -1598,8 +1516,10 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -1856,8 +1776,10 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925

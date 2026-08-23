@@ -97,7 +97,7 @@ void SceneUIRenderer::DrawGameOver()
 {
     mRenderer->DrawBG(0.0f, 0.0f, mRenderer->GetFbWidth(), mRenderer->GetFbHeight(), {0.0f, 0.0f, 0.0f, 0.5f});
     mRenderer->DrawSceneText("gameOver", "gameOverText", 0);
-    mRenderer->DrawTextDependsOnGameController("gameOver", "restartText");
+    mRenderer->DrawSceneText("gameOver", "restartText", 0);
 }
 
 void SceneUIRenderer::DrawOpeningIntro()

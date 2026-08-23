@@ -13,6 +13,7 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "actor/Star.h"
 #include "actor/StageObject.h"
 #include "actor/TutorialTrigger.h"
 #include "component/PlatformBehaviorComponents.h"
@@ -884,6 +885,19 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
             listIndex);
     }
 
+    if (dynamic_cast<Star*>(actor)) {
+        ImGui::SeparatorText("スターのモデル設定");
+        DrawPlacementModelPicker(actor, sequenceName, listIndex);
+    }
+
+    if (Enemy* enemy = dynamic_cast<Enemy*>(actor)) {
+        ImGui::SeparatorText(
+            enemy->GetIsBoss()
+                ? "ボス敵のモデル設定"
+                : "敵のモデル設定");
+        DrawPlacementModelPicker(enemy, sequenceName, listIndex);
+    }
+
     if (dynamic_cast<JewelItem*>(actor)) {
         ImGui::SeparatorText("ジュエルアイテムの見た目");
         DrawPlacementModelPicker(actor, sequenceName, listIndex);
@@ -1142,6 +1156,12 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     if (Boat* boat = dynamic_cast<Boat*>(actor)) {
         ImGui::SeparatorText("ロケット設定");
 
+        // Boat settings are not ordinary transform fields.  Keep track of
+        // them separately so changing a combo box cannot leave only the
+        // runtime object updated while the stage YAML retains the old value.
+        bool boatSettingsChanged = false;
+        bool boatStartPlanetChanged = false;
+
         DrawBoatModelPicker(boat, sequenceName, listIndex);
 
         Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
@@ -1179,6 +1199,8 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     planets[index]->AddBoat(boat);
                     ApplyActorEditorRotation(boat);
                     startPlanetIndex = index;
+                    boatSettingsChanged = true;
+                    boatStartPlanetChanged = true;
                 }
             }
             ImGui::EndCombo();
@@ -1201,6 +1223,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                     boat->SetArrivalPoint(nullptr);
                     boat->SetDestPlanet(planets[index]);
                     destPlanetIndex = index;
+                    boatSettingsChanged = true;
                 }
             }
             ImGui::EndCombo();
@@ -1219,6 +1242,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 arrivalPointPreview.c_str())) {
             if (ImGui::Selectable("自動計算", selectedArrivalPoint == nullptr)) {
                 boat->SetArrivalPoint(nullptr);
+                boatSettingsChanged = true;
             }
 
             if (destPlanet) {
@@ -1237,6 +1261,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                             label.c_str(),
                             selectedArrivalPoint == arrivalPoint)) {
                         boat->SetArrivalPoint(arrivalPoint);
+                        boatSettingsChanged = true;
                     }
                 }
             }
@@ -1248,6 +1273,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 ("移動先ステージ##boatDestStage" + std::to_string(yamlIndex)).c_str(),
                 &destStage)) {
             boat->SetDestStage(std::max(0, destStage));
+            boatSettingsChanged = true;
         }
 
         float travelSpeed = boat->GetTravelSpeed();
@@ -1261,6 +1287,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 500.0f,
                 "%.1f")) {
             boat->SetTravelSpeed(travelSpeed);
+            boatSettingsChanged = true;
         }
 
         float destMargin = boat->GetDestMargin();
@@ -1272,6 +1299,7 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 100.0f,
                 "%.1f")) {
             boat->SetDestMargin(destMargin);
+            boatSettingsChanged = true;
         }
         ImGui::TextDisabled(
             "到着点が未設定の場合に、移動先惑星の表面から離す距離です。");
@@ -1289,12 +1317,33 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 launchSequenceBuffer.data(),
                 launchSequenceBuffer.size())) {
             boat->SetLaunchSequenceId(launchSequenceBuffer.data());
+            boatSettingsChanged = true;
+        }
+
+        if (boatStartPlanetChanged) {
+            // The position remains in world space when reassigned.  Capture
+            // its new planet-local representation so reload reproduces it.
+            const glm::vec3 offset = boat->GetPos() - boat->GetCurrentPlanet()->GetPos();
+            const float distance = glm::length(offset);
+            if (distance > 1e-6f) {
+                const glm::vec3 direction = offset / distance;
+                boat->SetSphericalPlacement(
+                    std::atan2(direction.z, direction.x),
+                    std::asin(glm::clamp(direction.y, -1.0f, 1.0f)),
+                    distance - std::abs(boat->GetCurrentPlanet()->GetRadius()));
+            }
+            boat->CaptureEditorAuthoredPosition();
+        }
+
+        if (boatSettingsChanged) {
+            if (boatStartPlanetChanged) {
+                SaveEditorAuthoredTransforms();
+            }
+            Save();
         }
 
         ImGui::TextDisabled(
             "拠点では移動先ステージ、通常ステージでは移動先惑星と到着点を使用します。");
-        ImGui::TextDisabled(
-            "変更後、左側の「保存する」でステージへ保存してください。");
     }
 
     if (NPC* npc = dynamic_cast<NPC*>(actor)) {
@@ -3933,6 +3982,8 @@ void StagePlacementPanel::SaveActorCommonYaml(
     if (dynamic_cast<const Platform*>(actor) ||
         dynamic_cast<const StageObject*>(actor) ||
         dynamic_cast<const BoatArrivalPoint*>(actor) ||
+        dynamic_cast<const Star*>(actor) ||
+        dynamic_cast<const Enemy*>(actor) ||
         dynamic_cast<const JewelItem*>(actor) ||
         dynamic_cast<const HazardActor*>(actor)) {
         config[sequenceName][yamlIndex]["modelPath"] = actor->GetModelPath();
@@ -4167,10 +4218,15 @@ void StagePlacementPanel::SaveActorCommonYaml(
     }
 
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
-        if (editorTransform && editorTransform->hasPosition) {
-            config[sequenceName][yamlIndex]["startPlanet"] =
-                findPlanetIndex(authoredPlanet);
-        }
+        // Boats use startPlanet rather than the common currentPlanetNum.
+        // Save it even during a normal full-stage save: a boat's ownership
+        // can be changed without a gizmo transform being active.
+        const Planet* startPlanet =
+            editorTransform && editorTransform->hasPosition
+                ? authoredPlanet
+                : boat->GetCurrentPlanet();
+        config[sequenceName][yamlIndex]["startPlanet"] =
+            findPlanetIndex(startPlanet);
         config[sequenceName][yamlIndex]["destPlanet"] =
             findPlanetIndex(boat->GetDestPlanet());
         config[sequenceName][yamlIndex]["destStage"] = boat->GetDestStage();

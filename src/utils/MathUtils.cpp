@@ -68,7 +68,8 @@ glm::mat4 MathUtils::CreateOrient(Actor* actor) const
     modelAxisCorrection[1] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
     modelAxisCorrection[2] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
 
-    return semanticOrientation * modelAxisCorrection;
+    return semanticOrientation * modelAxisCorrection *
+           glm::mat4_cast(actor->GetRenderModelRotationOffset());
 }
 
 glm::quat MathUtils::CalculateActorOrientationFromEditorRotation(Actor* actor,

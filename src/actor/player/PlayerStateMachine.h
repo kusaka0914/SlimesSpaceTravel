@@ -32,8 +32,8 @@ private:
                      PlayerRespawn& respawn, float deltaTime);
     void UpdateIdle(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                     PlayerJewelGauge& jewelGauge, PlayerStatus& status, float deltaTime);
-    void UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding, PlayerCombat& combat,
-                       float deltaTime);
+    void UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
+                       PlayerCombat& combat, float deltaTime);
     void UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status, float deltaTime);
     void UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -110,6 +110,12 @@ private:
 private:
     PlayerActionState mActionState = PlayerActionState::Idle;
     Enemy* mAttackDirectionTarget = nullptr;
+    // 空中弱攻撃を回避でキャンセルした場合は、攻撃後の滞空硬直を
+    // 回避後に持ち越さない。通常の空中回避の短い滞空は維持する。
+    bool mShouldSkipAirDodgePostHover = false;
+    // 空中弱攻撃を回避でキャンセルした後だけ、次の攻撃開始まで
+    // 空中移動を戦闘側の移動ロックから独立して許可する。
+    bool mAllowsAirMovementAfterDodge = false;
     float mCoyoteTimeRemaining = 0.0f;
     float mCoyoteTimeDuration = 0.15f;
 };

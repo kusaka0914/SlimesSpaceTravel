@@ -79,10 +79,10 @@ enemies:
     defaultAttackMotionTimer: 0.5
     attackSpeed: 5
     attackPreparationRange: 2.5
-    preAttackApproachProbabilityPercent: 20
+    preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
     preAttackApproachStopDistance: 2.5
-    postAttackRetreatProbabilityPercent: 50
+    postAttackRetreatProbabilityPercent: 0
     postAttackRetreatDelaySeconds: 1
     postAttackRetreatSpeed: 12
     postAttackRetreatDistance: 4
@@ -91,7 +91,7 @@ enemies:
     attacks:
       - type: meleeAttack
         weight: 100
-    normalHitKnockBackEnabled: true
+    normalHitKnockBackEnabled: false
   - type: normal_short_interval
     displayName: 通常敵（間隔短い）
     behaviorProfile: legacyMelee

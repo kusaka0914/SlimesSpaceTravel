@@ -1443,7 +1443,7 @@ tutorials:
               ruby: false
         advance: confirm
       - id: timing
-        text: "敵が攻撃する時に、敵に向かって回避をすると\n突進して敵のガードを1つ壊せるんだ！"
+        text: "敵が攻撃する直前に、敵に向かって回避をすると\n突進して敵のガードを1つ壊せるんだ！"
         ruby:
           common:
             - text: 敵
@@ -1459,9 +1459,12 @@ tutorials:
               reading: げき
             - text: する
               ruby: false
-            - text: 時
+            - text: 直
               ruby: true
-              reading: とき
+              reading: ちょく
+            - text: 前
+              ruby: true
+              reading: ぜん
             - text: に、
               ruby: false
             - text: 敵
@@ -1579,6 +1582,16 @@ tutorials:
             - text: こう！
               ruby: false
         advance: confirm
+        video:
+          asset: videos/battle_counter_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
   - id: split_switch
     name: 分身とスイッチ
     repeat: everyRequest

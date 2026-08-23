@@ -279,6 +279,7 @@ enemies:
       - 0.16014953
       - 0.9868532
       - -0.021749029
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak_2
     currentPlanetNum: 14
@@ -293,6 +294,7 @@ enemies:
       - -0.06817446
       - 0.9971046
       - 0.03368495
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_3
     currentPlanetNum: 9
@@ -307,12 +309,13 @@ enemies:
       - 0.20620294
       - 0.9769979
       - 0.054365788
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_4
     currentPlanetNum: 3
-    theta: 3.1187766
-    phi: -1.5692523
-    height: -0.35927916
+    theta: 3.1415927
+    phi: -1.5680342
+    height: -0.35998678
     pos:
       - -0.01
       - -3.64
@@ -335,54 +338,7 @@ enemies:
       - 1.3726908e-08
       - 1.7792208e-05
       - 0.9999997
-  - editorName: 新しい通常敵
-    type: boss_weak_2
-    currentPlanetNum: 3
-    theta: -3.1196523
-    phi: -0.48085654
-    height: -0.013336182
-    pos:
-      - -3.53
-      - -1.84
-      - -0.08
-    upVec:
-      - -0.88638115
-      - -0.46254754
-      - -0.019451667
-    facingYaw: -0
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.5183214
-      - -0.005041584
-      - -0.008317645
-      - 0.8551306
-  - editorName: 新しい通常敵
-    type: boss_weak_2
-    currentPlanetNum: 3
-    theta: 0.017169222
-    phi: -0.5100607
-    height: 0.016888142
-    pos:
-      - 3.51
-      - -1.96
-      - 0.06
-    upVec:
-      - 0.8725843
-      - -0.4882338
-      - 0.01498336
-    facingYaw: 4.656613e-10
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - -0.50580764
-      - -0.0037895613
-      - 0.0064627887
-      - 0.8626138
+    modelPath: enemy_purple.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -486,7 +442,7 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011]}
+  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_purple.glb}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 1}]}
   - modelPath: spaceSlime.obj

@@ -48,6 +48,15 @@ void SceneSystem::CreateControllers()
 void SceneSystem::Update(float deltaTime)
 {
     mTransitionController->UpdateFade(deltaTime);
+    if (IsGameOver() && mFadeTimer < 0.0f && mGameOverTimer >= 0.0f) {
+        mGameOverTimer -= std::max(0.0f, deltaTime);
+        if (mGameOverTimer < 0.0f) {
+            // Clear this before requesting the fade so a failed/repeated
+            // update cannot queue another restart.
+            mGameOverTimer = -1.0f;
+            RestartGame();
+        }
+    }
     if (IsCredits() && mFadeTimer < 0.0f) {
         mCreditsElapsed += deltaTime;
         EndingRollConfig endingRoll;
@@ -111,8 +120,8 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
         return mTalkController->TryStartTalkWithNPC(playerNum);
 
     case GameProgressState::SceneState::GameOver:
-        RestartGame();
-        return true;
+        // Game Over restarts automatically after its short display period.
+        return false;
 
     default:
         return false;
@@ -188,10 +197,12 @@ bool SceneSystem::IsTutorialActive(
 void SceneSystem::OnStartPressed()
 {
     if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
-        // Start normally skips the title-opening into gameplay.  An opening
-        // launched from an NPC conversation must instead return to that
-        // conversation, so do not let the skip start a base arrival flow.
-        if (!mHasOpeningResume) {
+        // Enter / controller Start (＋) skips either form of the opening.
+        // NPC-triggered openings return to their suspended conversation;
+        // title openings continue to the normal gameplay fade.
+        if (mHasOpeningResume) {
+            FinishOpeningStory();
+        } else {
             StartFadeIn();
         }
         return;
@@ -280,6 +291,7 @@ void SceneSystem::ResetForDebugScene(
     }
     mClearAudioChannel = -1;
     mClearTimer = -1.0f;
+    mGameOverTimer = -1.0f;
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
     mHasPendingForcedArrivalTalk = false;
@@ -303,6 +315,7 @@ void SceneSystem::StartPlayingScene()
         mTutorialController->Stop(false);
     }
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
+    mGameOverTimer = -1.0f;
 
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
@@ -360,12 +373,10 @@ bool SceneSystem::StartOpeningAfterTalkPage(
     mGame->MarkNPCOpeningTriggerCompleted(
         talkingNPC, sourceTalkPageIndex);
 
-    // The story is authored against the house scene, not the interactive
-    // base (stage0.yaml).  Swap it while the screen is fading; the base is
-    // restored before the NPC conversation continues.
-    if (!mGame->LoadStageForScene(0, "../assets/data/stage/house.yaml")) {
-        return false;
-    }
+    // Keep the authored base scene alive while the opening fades in.  Loading
+    // house.yaml here was synchronous, so the player saw a pause before the
+    // fade even began.  The opening is now a full-screen UI sequence and does
+    // not require a separate background stage.
 
     mOpeningResumeNPC = nullptr;
     mOpeningResumePlayer = nullptr;
@@ -414,7 +425,11 @@ void SceneSystem::FinishOpeningStory()
     if (!RequestFadeAction([this, returnStageNum, returnStageYamlPath,
                             resumeNPCConversationId, resumePlayerIndex,
                             resumeTalkPageIndex]() {
-        if (!mGame->LoadStageForScene(returnStageNum, returnStageYamlPath)) {
+        const bool isAlreadyOnReturnStage =
+            mGame->GetCurrentStageNum() == returnStageNum &&
+            mGame->GetCurrentStageYamlPath() == returnStageYamlPath;
+        if (!isAlreadyOnReturnStage &&
+            !mGame->LoadStageForScene(returnStageNum, returnStageYamlPath)) {
             mIsFinishingOpeningStory = false;
             StartPlayingScene();
             return;
@@ -691,7 +706,12 @@ void SceneSystem::OnLanded()
 
 void SceneSystem::OnPlayerDied()
 {
+    if (IsGameOver()) {
+        return;
+    }
+
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::GameOver);
+    mGameOverTimer = 3.0f;
 }
 
 void SceneSystem::UpdateClearTimer(float deltaTime)

@@ -297,7 +297,7 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011]}
+  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_red.glb}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [""], pos: [-0.06, -1.42, 4.14], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, proximityMessage: {mode: always, variants: [{talkIndex: 0, text: 回避上手く使って急いで～！}], rubies: [{talkIndex: 0, segments: [{text: 回, ruby: true, reading: かい}, {text: 避, ruby: true, reading: ひ}, {text: 上手, ruby: true, reading: うま}, {text: く, ruby: false}, {text: 使, ruby: true, reading: つか}, {text: って, ruby: false}, {text: 急, ruby: true, reading: いそ}, {text: いで～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
 platforms:

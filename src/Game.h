@@ -121,6 +121,7 @@ public:
     void OnPlayerAttackHit(int playerNum);
     void OnStrongAttacked(int playerNum);
     void OnPlayerCounter(int playerNum);
+    void SynchronizeSoloSplitResources(const Player& sourcePlayer);
     void VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
 
     Player* FindNearestPlayer(Actor* actor) const;

@@ -328,15 +328,20 @@ bool PlayerStateMachine::ApplyIdleGravity(
     PlayerCombat& combat,
     float deltaTime)
 {
-    if (movement.UpdateAirborneActionHover(
-            player,
-            deltaTime)) {
+    // 回避キャンセル後は、攻撃／回避の滞空硬直を完全に破棄する。
+    // これより先の空中移動は通常のジャンプと同じ入力経路だけを使う。
+    if (mAllowsAirMovementAfterDodge) {
+        movement.CancelAirborneActionHover();
+    } else if (movement.UpdateAirborneActionHover(
+                   player,
+                   deltaTime)) {
         return false;
     }
 
     const bool canApplyInputMovement =
         !player.GetOnGround() &&
-        combat.CanMoveDuringAttack() &&
+        (mAllowsAirMovementAfterDodge ||
+         combat.CanMoveDuringAttack()) &&
         !combat.IsSpecialCharging() &&
         !combat.GetCanSpecialAttack();
     if (canApplyInputMovement) {
@@ -399,7 +404,8 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
     }
 
     const bool canApplyInputMovement =
-        combat.CanMoveDuringAttack() &&
+        (mAllowsAirMovementAfterDodge ||
+         combat.CanMoveDuringAttack()) &&
         !combat.IsSpecialCharging() &&
         !combat.GetCanSpecialAttack();
     if (canApplyInputMovement &&
@@ -483,6 +489,7 @@ bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, Pla
         return false;
     }
 
+    mShouldSkipAirDodgePostHover = false;
     ChangeState(PlayerActionState::Dodging);
 
     const bool startsInAir = !player.GetOnGround();
@@ -599,6 +606,8 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
     }
 
     movement.ClearStrongAttackDirectionOverride();
+    // 回避で解除した空中移動は、新しい攻撃を出した時点で終了する。
+    mAllowsAirMovementAfterDodge = false;
     ChangeState(PlayerActionState::Attacking);
     combat.StartAttacking(player, attackInput, movement, status, deltaTime);
     input.ConsumeBufferedAttackInput();

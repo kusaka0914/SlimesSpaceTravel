@@ -23,6 +23,10 @@ void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerStatus& stat
 
     status.TakeFallDamage(damage);
 
+    if (player.GetGame()) {
+        player.GetGame()->SynchronizeSoloSplitResources(player);
+    }
+
     if (!status.IsAlive()) {
         return;
     }
@@ -46,6 +50,43 @@ void PlayerRespawn::Respawn(Player& player)
     }
 
     player.SetPos(mRestartPos);
+}
+
+void PlayerRespawn::CaptureRestartFacingDirection(const Player& player)
+{
+    const glm::vec3 facingDirection = player.GetFacingForwardVec();
+    if (glm::length(facingDirection) <= 0.000001f) {
+        mHasRestartFacingDirection = false;
+        return;
+    }
+
+    mRestartFacingDirection = glm::normalize(facingDirection);
+    mHasRestartFacingDirection = true;
+}
+
+void PlayerRespawn::RestoreRestartFacingDirection(Player& player) const
+{
+    if (!mHasRestartFacingDirection) {
+        return;
+    }
+
+    const glm::vec3 upDirection = player.GetUpVec();
+    if (glm::length(upDirection) <= 0.000001f) {
+        return;
+    }
+
+    const glm::vec3 normalizedUpDirection = glm::normalize(upDirection);
+    glm::vec3 tangentFacing =
+        mRestartFacingDirection -
+        glm::dot(mRestartFacingDirection, normalizedUpDirection) *
+            normalizedUpDirection;
+    if (glm::length(tangentFacing) <= 0.000001f) {
+        return;
+    }
+
+    tangentFacing = glm::normalize(tangentFacing);
+    player.SetFacingForwardVec(tangentFacing);
+    player.SetCameraForwardDirection(-tangentFacing, normalizedUpDirection);
 }
 
 bool PlayerRespawn::IsFallIntoPlanetInside(const Player& player) const

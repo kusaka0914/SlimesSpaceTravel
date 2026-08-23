@@ -278,13 +278,16 @@ NPCs:
     type: spaceSlime
     name: RocketGuideNPC
     talkTexts:
-      - 見知らぬスライムさんだ！やっほ～！\nここはロケット発着所だよ～！
-      - "他の惑星に行きたい？\nじゃああの子に聞いてみて～！"
+      - "見知らぬスライムさんだ！やっほ～！\nきみは...地上から来たのかな？"
+      - "でも、一体どうしてこんなところまで？\nなにがあったか教えてくれる？"
       - "今、エレベーターが流行ってるみたいだよ！\nほら！あそこにも！"
       - あれに乗ったら動くのかなぁ～？
       - "あの子のエレベーターが帰ってきたみたいだよ！\n使ってみたら～？"
       - "工事が終わって裏側に行けるようになったよ...！\nでも..."
       - 裏側はこことは雰囲気が違うから気を付けて...！
+      - "そんなことがあったんだね..！\nよし分かった！僕も協力するよ！"
+      - "じゃあまずはほかの惑星に行って、\n星を探さないとね...！"
+      - "あの子、ロケットの場所を知ってたはず！\nまずはあの子に聞いてみて～！"
     pos:
       - -0.03
       - 2.58
@@ -305,9 +308,6 @@ NPCs:
     radius: 0.75
     modelPath: spaceSlime.obj
     talkCameraFocus:
-      - talkIndex: 1
-        sequence: NPCs
-        index: 1
       - talkIndex: 2
         sequence: platforms
         index: 10
@@ -317,6 +317,9 @@ NPCs:
       - talkIndex: 4
         sequence: NPCs
         index: 5
+      - talkIndex: 9
+        sequence: NPCs
+        index: 1
     talkRubies:
       - talkIndex: 0
         segments:
@@ -326,48 +329,37 @@ NPCs:
           - text: 知
             ruby: true
             reading: し
-          - text: らぬスライムさんだ！やっほ～！\nここはロケット
+          - text: "らぬスライムさんだ！やっほ～！\nきみは..."
             ruby: false
-          - text: 発
+          - text: 地
             ruby: true
-            reading: はっ
-          - text: 着
+            reading: ち
+          - text: 上
             ruby: true
-            reading: ちゃく
-          - text: 所
+            reading: じょう
+          - text: から
+            ruby: false
+          - text: 来
             ruby: true
-            reading: じょ
-          - text: だよ～！
+            reading: き
+          - text: たのかな？
             ruby: false
       - talkIndex: 1
         segments:
-          - text: 他
-            ruby: true
-            reading: ほか
-          - text: の
+          - text: でも、
             ruby: false
-          - text: 惑
+          - text: 一
             ruby: true
-            reading: わく
-          - text: 星
+            reading: いっ
+          - text: 体
             ruby: true
-            reading: せい
-          - text: に
+            reading: たい
+          - text: "どうしてこんなところまで？\nなにがあったか"
             ruby: false
-          - text: 行
+          - text: 教
             ruby: true
-            reading: い
-          - text: "きたい？\nじゃああの"
-            ruby: false
-          - text: 子
-            ruby: true
-            reading: こ
-          - text: に
-            ruby: false
-          - text: 聞
-            ruby: true
-            reading: き
-          - text: いてみて～！
+            reading: おし
+          - text: えてくれる？
             ruby: false
       - talkIndex: 2
         segments:
@@ -478,6 +470,87 @@ NPCs:
             reading: つ
           - text: けて...！
             ruby: false
+      - talkIndex: 7
+        segments:
+          - text: "そんなことがあったんだね..！\nよし"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: わ
+          - text: かった！
+            ruby: false
+          - text: 僕
+            ruby: true
+            reading: ぼく
+          - text: も
+            ruby: false
+          - text: 協
+            ruby: true
+            reading: きょう
+          - text: 力
+            ruby: true
+            reading: りょく
+          - text: するよ！
+            ruby: false
+      - talkIndex: 8
+        segments:
+          - text: じゃあまずはほかの
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "って、\n"
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: を
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: さないとね...！
+            ruby: false
+      - talkIndex: 9
+        segments:
+          - text: あの
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: 、ロケットの
+            ruby: false
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 所
+            ruby: true
+            reading: しょ
+          - text: を
+            ruby: false
+          - text: 知
+            ruby: true
+            reading: し
+          - text: "ってたはず！\nまずはあの"
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: に
+            ruby: false
+          - text: 聞
+            ruby: true
+            reading: き
+          - text: いてみて～！
+            ruby: false
     talkStageClearConditions:
       - talkIndex: 2
         stage: 2
@@ -492,29 +565,15 @@ NPCs:
     proximityMessage:
       mode: afterTalk
       variants:
-        - talkIndex: 1
-          text: あの子に聞いてみて～！
         - talkIndex: 3
           text: 動くかなぁ～？
         - talkIndex: 4
           text: エレベーター使ってみたら～？
         - talkIndex: 6
           text: 裏側に行くなら気を付けて...！
+        - talkIndex: 9
+          text: あの子にきいてみて～！
       rubies:
-        - talkIndex: 1
-          segments:
-            - text: あの
-              ruby: false
-            - text: 子
-              ruby: true
-              reading: こ
-            - text: に
-              ruby: false
-            - text: 聞
-              ruby: true
-              reading: き
-            - text: いてみて～！
-              ruby: false
         - talkIndex: 3
           segments:
             - text: 動
@@ -556,6 +615,15 @@ NPCs:
               reading: つ
             - text: けて...！
               ruby: false
+        - talkIndex: 9
+          segments:
+            - text: あの
+              ruby: false
+            - text: 子
+              ruby: true
+              reading: こ
+            - text: にきいてみて～！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -568,7 +636,7 @@ NPCs:
     talkEndingAfterPages:
       - talkIndex: 6
     talkOpeningAfterPages:
-      - talkIndex: 0
+      - talkIndex: 1
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
@@ -606,7 +674,7 @@ NPCs:
         segments:
           - text: 他
             ruby: true
-            reading: た
+            reading: ほか
           - text: の
             ruby: false
           - text: 惑

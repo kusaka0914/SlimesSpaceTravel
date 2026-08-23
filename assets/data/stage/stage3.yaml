@@ -175,6 +175,7 @@ enemies:
       - 0.015585067
       - -0.99860823
       - -0.050387006
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 5
@@ -189,6 +190,7 @@ enemies:
       - 0.015585067
       - -0.99860823
       - -0.050387006
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 9
@@ -203,6 +205,7 @@ enemies:
       - 0.14016801
       - -0.97451514
       - 0.17513797
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 9
@@ -217,6 +220,7 @@ enemies:
       - 0.13122854
       - -0.9851838
       - -0.11041753
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 9
@@ -231,6 +235,7 @@ enemies:
       - -0.2078789
       - -0.9623884
       - 0.17491467
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
     currentPlanetNum: 9
@@ -245,6 +250,7 @@ enemies:
       - -0.15665975
       - -0.97451323
       - -0.16056684
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_2
     currentPlanetNum: 8
@@ -273,54 +279,7 @@ enemies:
       - 0.9999724
       - 0.0035963028
       - -2.3399336e-05
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 3
-    theta: 3.11572
-    phi: -0.72307354
-    height: -0.04772663
-    pos:
-      - -2.96
-      - -2.62
-      - 0.08
-    upVec:
-      - -0.7495235
-      - -0.66169345
-      - 0.01939705
-    facingYaw: 0.25470278
-    rotation:
-      - 0
-      - -0.25470284
-      - 0
-    rotationQuat:
-      - 0.40898043
-      - 0.119723186
-      - -0.04345444
-      - 0.9036111
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 3
-    theta: -0.10142881
-    phi: -0.38285
-    height: -0.021321535
-    pos:
-      - 3.67
-      - -1.49
-      - -0.37
-    upVec:
-      - 0.922835
-      - -0.3735697
-      - -0.09392211
-    facingYaw: -0.041337334
-    rotation:
-      - 0
-      - 0.041337334
-      - 0
-    rotationQuat:
-      - -0.557372
-      - 0.009151867
-      - -0.050514497
-      - 0.8286743
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_3
     currentPlanetNum: 3
@@ -349,6 +308,7 @@ enemies:
       - 1.5
       - 2
       - 1.5
+    modelPath: enemy_blue.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -454,7 +414,7 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.02, -0.08, 0.02], upVec: [0.02592474, -0.9992376, 0.029190011]}
+  - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.02, -0.08, 0.02], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_blue.glb}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["しってる～？\n分身してるときは攻撃力も半分になっちゃうんだ～！", "だから敵と戦うときは合体したほうがいいよ～！\n2人で戦うならいいけどね～！"], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: "しってる～？\n", ruby: false}, {text: 分, ruby: true, reading: ぶん}, {text: 身, ruby: true, reading: しん}, {text: してるときは, ruby: false}, {text: 攻, ruby: true, reading: こう}, {text: 撃, ruby: true, reading: げき}, {text: 力, ruby: true, reading: りょく}, {text: も, ruby: false}, {text: 半, ruby: true, reading: はん}, {text: 分, ruby: true, reading: ぶん}, {text: になっちゃうんだ～！, ruby: false}]}, {talkIndex: 1, segments: [{text: だから, ruby: false}, {text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: "したほうがいいよ～！\n2", ruby: false}, {text: 人, ruby: true, reading: ひと}, {text: で, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うならいいけどね～！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 敵と戦うときは合体したほうがいいよ～！}], rubies: [{talkIndex: 1, segments: [{text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: したほうがいいよ～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: -1.59115, phi: 0.8946725, height: -3.539135, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [表から見えなくても、裏から見えることもあるよ！, ほら！あのスイッチとか！], pos: [-0.03, 1.92, -1.54], upVec: [2.2551054e-05, 0.9958164, -0.09137756], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}, {talkIndex: 1, segments: [{text: ほら！あのスイッチとか！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 表から見えなくても、裏から見えることもあるよ！}], rubies: [{talkIndex: 1, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 1, sequence: platforms, index: 46}]}

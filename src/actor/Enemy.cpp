@@ -123,6 +123,13 @@ bool Enemy::CanUseReducedUpdateRate() const
 
 bool Enemy::ShouldUpdateUpVecEveryFrame() const
 {
+    // Boss defeat staging sets a deliberate up direction for the camera
+    // sequence. Ground rays can alternate between nearby collision surfaces,
+    // which makes that fixed pose visibly shake.
+    if (GetIsBoss() && GetLifeState() == LifeState::Dying) {
+        return false;
+    }
+
     if (!mHasRecordedGroundedTransform ||
         !mOnGround ||
         GetGroundActor() != GetCurrentPlanet()) {

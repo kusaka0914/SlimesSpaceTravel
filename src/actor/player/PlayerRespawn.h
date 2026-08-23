@@ -20,6 +20,8 @@ public:
 
     void SetRestartPlanetIndex(int restartPlanetIndex) { mRestartPlanetIndex = restartPlanetIndex; }
     void SetRestartPos(const glm::vec3& restartPos) { mRestartPos = restartPos; }
+    void CaptureRestartFacingDirection(const Player& player);
+    void RestoreRestartFacingDirection(Player& player) const;
 
     int GetRestartPlanetIndex() const { return mRestartPlanetIndex; }
     const glm::vec3& GetRestartPos() const { return mRestartPos; }
@@ -29,6 +31,8 @@ private:
 
     int mRestartPlanetIndex = 0;
     glm::vec3 mRestartPos = glm::vec3(0.0f);
+    glm::vec3 mRestartFacingDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+    bool mHasRestartFacingDirection = false;
     float mMissingGroundSurfaceDurationSeconds = 0.0f;
     bool mGroundSurfaceDetectedThisFrame = false;
     bool mRespawnFadeRequested = false;

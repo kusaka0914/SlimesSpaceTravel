@@ -15,7 +15,7 @@
 
 namespace {
 constexpr double damageTiredChance = 0.10;
-constexpr float chargedAttackFailureLockDurationSeconds = 20.0f;
+constexpr float chargedAttackFailureLockDurationSeconds = 10.0f;
 constexpr float airborneDamageMultiplier = 2.0f;
 
 bool ShouldStartRandomDamageTiredLock()

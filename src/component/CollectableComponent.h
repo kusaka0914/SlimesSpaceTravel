@@ -12,6 +12,14 @@ public:
     void Update(float deltaTime) override;
     bool GetIsObtained() const { return mIsObtained; }
     Player* GetObtainingPlayer() const { return mObtainingPlayer; }
+    void SetPickupRadius(float pickupRadius)
+    {
+        mPickupRadius = pickupRadius;
+    }
+    void SetCanPickupWhileAttacking(bool canPickupWhileAttacking)
+    {
+        mCanPickupWhileAttacking = canPickupWhileAttacking;
+    }
 
 private:
     Player* FindCollectablePlayerInPickUpRadius() const;
@@ -19,4 +27,6 @@ private:
 private:
     bool mIsObtained;
     Player* mObtainingPlayer = nullptr;
+    float mPickupRadius = 0.8f;
+    bool mCanPickupWhileAttacking = false;
 };

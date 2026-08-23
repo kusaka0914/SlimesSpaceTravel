@@ -171,7 +171,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         return;
     }
 
-    combat.StartTiredLock(status, movement, 5.0f);
+    combat.StartTiredLock(status, movement, 2.5f);
 
     bool hitAirborneEnemy = false;
     for (Enemy* enemy : hitEnemies) {

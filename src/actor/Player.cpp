@@ -302,6 +302,10 @@ void Player::UpdateActor(float deltaTime)
     mStateMachine.Update(*this, mInput, mMovement, mGrounding, mBoatRide, mCombat, mJewelGauge, mStatus, mRespawn,
                          deltaTime);
 
+    if (mGame) {
+        mGame->SynchronizeSoloSplitResources(*this);
+    }
+
     if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
         mPlanetGravityController.OnJumpStarted(
             *this,
@@ -404,6 +408,9 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
 {
     PlayerDamageHandler::Apply(*this, mInput, mMovement, mStateMachine, mCombat, mJewelGauge, mStatus, enemy,
                                deltaTime);
+    if (mGame) {
+        mGame->SynchronizeSoloSplitResources(*this);
+    }
 }
 
 void Player::ApplyDamageFromActor(
@@ -419,6 +426,17 @@ void Player::ApplyDamageFromActor(
         mStatus,
         damageSourcePosition,
         damage);
+    if (mGame) {
+        mGame->SynchronizeSoloSplitResources(*this);
+    }
+}
+
+void Player::AddJewelFromItem()
+{
+    mJewelGauge.AddFromItem(1);
+    if (mGame) {
+        mGame->SynchronizeSoloSplitResources(*this);
+    }
 }
 
 void Player::ApplyFallDamageAndRespawn(float damage)
@@ -448,12 +466,15 @@ void Player::RespawnAtRestartPoint()
     mRespawn.Respawn(*this);
     mStateMachine.ChangeState(PlayerActionState::Idle);
     mCombat.CancelSpecialAttack();
+    // A restart must never retain the movement/attack lock from fatigue.
+    mCombat.EndTiredLock(mStatus, mMovement);
 
     SetIsActive(true);
     SetVelocity(glm::vec3(0.0f));
     SetOnGround(false);
     SetShouldJudgeLanding(true);
     RefreshFallbackUpVec();
+    mRespawn.RestoreRestartFacingDirection(*this);
 
     mInput.ClearAttackBuffer();
     mMovement.ClearStrongAttackDirectionOverride();
@@ -486,8 +507,21 @@ void Player::ForceGroundedForCinematic()
     // begins with the player suspended in midair.
     mGrounding.SnapToGround(*this, 20.0f, 100.0f);
     if (!GetOnGround() && GetCurrentPlanet()) {
-        SetPos(GetCurrentPlanet()->CalculateSurfacePos(
-            GetTheta(), GetPhi(), GetHeight()));
+        Planet* planet = GetCurrentPlanet();
+        glm::vec3 fallbackPosition;
+        if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+            // CalculateSurfacePos uses the spherical radius and can put a
+            // cinematic actor inside a flattened planet. Project the current
+            // position to the actual ellipsoid surface instead.
+            const Planet::EllipseSurfaceProjection surface =
+                planet->CalculateEllipseSurfaceProjection(GetPos());
+            fallbackPosition =
+                surface.position + surface.outwardNormal * GetHeight();
+        } else {
+            fallbackPosition = planet->CalculateSurfacePos(
+                GetTheta(), GetPhi(), GetHeight());
+        }
+        SetPos(fallbackPosition);
         RefreshFallbackUpVec();
         SetOnGround(true);
     }
@@ -497,6 +531,61 @@ void Player::ForceGroundedForCinematic()
     }
 
     SetVelocity(glm::vec3(0.0f));
+    mMovement.ResetEllipseAirborneSurfaceTravel();
+    mMovement.CancelJumpApexHover();
+    mMovement.CancelAirborneActionHover();
+    mMovement.ClearStrongAttackDirectionOverride();
+    mStateMachine.ClearAttackDirectionTarget();
+    mStateMachine.ChangeState(PlayerActionState::Idle);
+    mCombat.CancelSpecialAttack();
+    mAnimationController.ResetToAnimation(idleAnimationId);
+}
+
+void Player::ForceGroundedForCinematicAt(
+    Planet* planet,
+    const glm::vec3& surfaceReferencePosition,
+    const glm::vec3& groundUpDirection)
+{
+    if (!planet) {
+        ForceGroundedForCinematic();
+        return;
+    }
+
+    constexpr float directionEpsilon = 0.000001f;
+    const glm::vec3 planetOffset =
+        surfaceReferencePosition - planet->GetPos();
+    const float planetDistance = glm::length(planetOffset);
+    if (planetDistance <= directionEpsilon) {
+        ForceGroundedForCinematic();
+        return;
+    }
+
+    const glm::vec3 direction = planetOffset / planetDistance;
+    const float theta = std::atan2(direction.z, direction.x);
+    const float phi = std::asin(glm::clamp(direction.y, -1.0f, 1.0f));
+
+    SetCurrentPlanet(planet);
+    // A star-clear pose must not inherit the player's previous airborne
+    // height. Put its origin immediately above the planet surface and hold
+    // that exact contact pose during the clear screen.
+    constexpr float cinematicGroundClearance = 0.05f;
+    SetSphericalPlacement(theta, phi, cinematicGroundClearance);
+    const Planet::EllipseSurfaceProjection surface =
+        planet->CalculateEllipseSurfaceProjection(
+            surfaceReferencePosition);
+    SetPos(
+        surface.position +
+        surface.outwardNormal * cinematicGroundClearance);
+    if (glm::length(groundUpDirection) > directionEpsilon) {
+        SetUpVec(glm::normalize(groundUpDirection));
+    } else {
+        SetUpVec(surface.outwardNormal);
+    }
+    SetVelocity(glm::vec3(0.0f));
+    SetOnGround(true);
+    // The stage-clear scene locks player input, so there is no need to let a
+    // later short landing ray undo this explicitly staged contact pose.
+    SetShouldJudgeLanding(false);
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();
     mMovement.CancelAirborneActionHover();

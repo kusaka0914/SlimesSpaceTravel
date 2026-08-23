@@ -141,6 +141,12 @@ public:
     {
         return mTextureTiling;
     }
+    // Applies only to rendering. Collision and gameplay-facing vectors keep
+    // using the actor's semantic orientation.
+    virtual glm::quat GetRenderModelRotationOffset() const
+    {
+        return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    }
     const std::string& GetTextureOverridePath() const { return mTextureOverridePath; }
     virtual const std::string& GetRenderTextureOverridePath() const
     {

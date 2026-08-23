@@ -50,6 +50,7 @@ private:
 
     void UpdateMoving(float deltaTime);
     void UpdateMovement(float deltaTime);
+    void UpdateBaseLaunch(float deltaTime);
 
     void FinishMoving();
 
@@ -60,6 +61,7 @@ private:
     Planet* mDestPlanet;
 
     bool mIsMoving;
+    bool mIsLaunchingFromBase = false;
     bool mIsActivePrev;
 
     int mDestStage;
@@ -72,6 +74,8 @@ private:
 
     glm::vec3 mStartPos;
     glm::vec3 mDestPos;
+    glm::vec3 mBaseLaunchEndPos{0.0f};
+    float mBaseLaunchElapsedSeconds = 0.0f;
 
     std::string mLaunchSequenceId;
 

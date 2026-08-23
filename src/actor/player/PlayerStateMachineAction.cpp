@@ -11,8 +11,8 @@
 #include "actor/player/PlayerTargetingAssist.h"
 #include "system/AudioSystem.h"
 
-void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding,
-                                       PlayerCombat& combat, float deltaTime)
+void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                       PlayerGrounding& grounding, PlayerCombat& combat, float deltaTime)
 {
     const glm::vec3 movementStart = player.GetPos();
     movement.ApplyDodgeMovement(player, combat, grounding, deltaTime);
@@ -27,12 +27,25 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
         const bool didFinishAirDodge =
             combat.IsAirDodgeAttackActive() &&
             !player.GetOnGround();
+        const bool shouldResumeAirMovementImmediately =
+            didFinishAirDodge && mShouldSkipAirDodgePostHover;
         combat.EndAirDodgeAttack();
-        if (didFinishAirDodge) {
+        if (didFinishAirDodge && !shouldResumeAirMovementImmediately) {
             movement.StopAirborneVerticalMovement(player);
             movement.StartAirborneActionHover(
                 movement.GetAirDodgePostHoverDurationSeconds());
         }
+        if (shouldResumeAirMovementImmediately) {
+            // 攻撃から回避したケースだけは、回避終了フレームから
+            // 空中入力と落下を再開する。これで着地まで停止しない。
+            combat.CancelCurrentAttack();
+            movement.CancelAirborneActionHover();
+            movement.ApplyJumpGravityAndInputMovement(
+                player,
+                input,
+                deltaTime);
+        }
+        mShouldSkipAirDodgePostHover = false;
         StartIdle();
     }
 }
@@ -44,13 +57,22 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
         movement.StopAirborneVerticalMovement(player);
     }
 
+    const bool wasAirWeakAttacking = !player.GetOnGround();
     if (TryStartDodging(
             player,
             input,
             movement,
             combat,
             status)) {
-        combat.CancelCurrentAttack();
+        if (wasAirWeakAttacking) {
+            combat.CancelAirAttackForDodge();
+        } else {
+            combat.CancelCurrentAttack();
+        }
+        // 空中弱攻撃そのものは着地まで移動不能のままにするが、
+        // 回避でキャンセルできた場合は通常操作へ即座に戻す。
+        mShouldSkipAirDodgePostHover = wasAirWeakAttacking;
+        mAllowsAirMovementAfterDodge = wasAirWeakAttacking;
         mAttackDirectionTarget = nullptr;
         return;
     }

@@ -111,4 +111,8 @@ void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, Pla
     player.SetIsActive(true);
 
     player.RefreshFallbackUpVec();
+    // Store only the tangent-facing direction.  The up direction is always
+    // recalculated from the destination planet on respawn, avoiding stale
+    // quaternions or camera vectors from the planet the player departed.
+    respawn.CaptureRestartFacingDirection(player);
 }

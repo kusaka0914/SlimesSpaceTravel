@@ -321,11 +321,24 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
 
     if (scene.mMaterials && sourceMesh.mMaterialIndex < scene.mNumMaterials) {
         const aiMaterial* material = scene.mMaterials[sourceMesh.mMaterialIndex];
-        aiColor3D diffuseColor;
-        if (material && material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == aiReturn_SUCCESS) {
-            loadedMesh.diffuseColor[0] = diffuseColor.r;
-            loadedMesh.diffuseColor[1] = diffuseColor.g;
-            loadedMesh.diffuseColor[2] = diffuseColor.b;
+        aiColor4D baseColor;
+        // Blender's Principled BSDF Base Color can be exported as the PBR
+        // base-color factor rather than the legacy diffuse color.
+        if (material &&
+            material->Get(AI_MATKEY_BASE_COLOR, baseColor) ==
+                aiReturn_SUCCESS) {
+            loadedMesh.diffuseColor[0] = baseColor.r;
+            loadedMesh.diffuseColor[1] = baseColor.g;
+            loadedMesh.diffuseColor[2] = baseColor.b;
+        } else {
+            aiColor3D diffuseColor;
+            if (material &&
+                material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) ==
+                    aiReturn_SUCCESS) {
+                loadedMesh.diffuseColor[0] = diffuseColor.r;
+                loadedMesh.diffuseColor[1] = diffuseColor.g;
+                loadedMesh.diffuseColor[2] = diffuseColor.b;
+            }
         }
     }
 

@@ -19,7 +19,9 @@ public:
     };
 
     Star(Game* game);
+    void Initialize() override;
     void UpdateActor(float deltaTime) override;
+    glm::quat GetRenderModelRotationOffset() const override;
 
     void ApplyConfig();
 

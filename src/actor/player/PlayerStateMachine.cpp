@@ -55,7 +55,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         UpdateIdle(player, input, movement, combat, jewelGauge, status, deltaTime);
         break;
     case PlayerActionState::Dodging:
-        UpdateDodging(player, movement, grounding, combat, deltaTime);
+        UpdateDodging(player, input, movement, grounding, combat, deltaTime);
         break;
     case PlayerActionState::Attacking:
         UpdateAttacking(player, input, movement, combat, status, deltaTime);

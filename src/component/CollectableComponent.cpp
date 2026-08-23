@@ -31,13 +31,12 @@ Player* CollectableComponent::FindCollectablePlayerInPickUpRadius() const
         return nullptr;
     }
 
-    if (nearestPlayer->IsAttacking()) {
+    if (!mCanPickupWhileAttacking && nearestPlayer->IsAttacking()) {
         return nullptr;
     }
 
     const float distTo = glm::length(nearestPlayer->GetPos() - mOwner->GetPos());
-    constexpr float pickupRadius = 0.8f;
-    if (distTo <= pickupRadius) {
+    if (distTo <= mPickupRadius) {
         return nearestPlayer;
     }
 
