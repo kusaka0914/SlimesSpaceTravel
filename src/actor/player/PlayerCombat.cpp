@@ -266,7 +266,7 @@ bool PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
     mAttackRange = mContinuousAttackRange;
     mAttackAngle = mContinuousAttackAngle;
 
-    mContinuousAttackingTimer -= deltaTime;
+    AdvanceContinuousAttackDuration(deltaTime);
     mContinuousAttackingCooldown -= deltaTime;
 
     if (mContinuousAttackingCooldown > 0.0f) {
@@ -278,6 +278,16 @@ bool PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& mov
     Attack(player, movement, status, deltaTime);
     mAttackMoveLockRemaining = 0.0f;
     return true;
+}
+
+void PlayerCombat::AdvanceContinuousAttackDuration(float deltaTime)
+{
+    if (!IsContinuousAttacking()) {
+        return;
+    }
+
+    mContinuousAttackingTimer =
+        std::max(-1.0f, mContinuousAttackingTimer - deltaTime);
 }
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)

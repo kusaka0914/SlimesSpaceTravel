@@ -108,11 +108,14 @@ private:
     bool mTalkCameraPreviewEnabled = false;
     bool mBoatRideCameraPreviewEnabled = false;
     bool mAlignCameraPressedPrev = false;
+    bool mSecondControllerAlignCameraPressedPrev = false;
     bool mBossDefeatSequenceIsPreview = false;
     bool mBossDefeatSEPlayed = false;
     float mBossDefeatSequenceTimer = -1.0f;
     float mCameraStickX = 0.0f;
     float mCameraStickY = 0.0f;
+    float mSecondControllerStickX = 0.0f;
+    float mSecondControllerStickY = 0.0f;
     float mKeyboardPitchInput = 0.0f;
     float mTalkCameraBlend = 0.0f;
     std::vector<float> mPlayerPitchOffsetsDegrees;

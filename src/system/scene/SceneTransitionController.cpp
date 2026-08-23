@@ -191,6 +191,12 @@ void SceneTransitionController::ApplySceneChange()
         mGame->ReloadCurrentStage();
         mGame->StartPlayingScene();
 
+        // ReloadCurrentStage中は、遷移前のタイトル状態でBGM判定が
+        // 行われる。Playingへ切り替えた後にも判定し直さないと、
+        // 操作スタイル選択を省略して拠点へ入った場合にタイトルBGMが
+        // そのまま残ってしまう。
+        mGame->GetAudioSystem()->TryChangeBGM();
+
         if (shouldPlayBaseArrival && mGame->GetSequenceSystem()) {
             SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
             if (shouldPlayBaseIntro &&

@@ -274,6 +274,7 @@ void PlayerEffectRenderer::DrawEnemyEffects(
     }
 
     if (enemy->IsAlive() &&
+        enemy->IsOnGround() &&
         enemy->ShouldDrawAttackPreview() &&
         enemy->GetStandByAttackTimer() > 0.0f &&
         enemy->GetStandByAttackTimer() <= 1.0f) {
@@ -395,8 +396,10 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
         return;
     }
 
-    const EnemyAttackFrame attackFrame =
-        ResolveEnemyAttackFrame(*enemy);
+    EnemyAttackFrame attackFrame = ResolveEnemyAttackFrame(*enemy);
+    attackFrame.origin +=
+        attackFrame.forward *
+        CalculateEnemyAttackFrontOffset(*enemy, attackFrame);
     DrawFanAttackRange(
         enemy->GetCurrentPlanet(),
         attackFrame.origin,
@@ -479,7 +482,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     const EnemyAttackFrame attackFrame =
         ResolveEnemyAttackFrame(*enemy);
     const EnemyMeleeAttackPreviewArea previewArea =
-        CalculateEnemyMeleeAttackPreviewArea(*enemy);
+        CalculateEnemyMeleeAttackPreviewArea(*enemy, attackFrame);
     if (previewArea.forwardLength <= 0.0f ||
         previewArea.halfWidth <= 0.0f) {
         return;
@@ -489,6 +492,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     constexpr float thickness = 0.08f;
     const glm::vec3 start =
         attackFrame.origin +
+        attackFrame.forward * previewArea.forwardStartOffset +
         attackFrame.up * yOffset;
     const glm::vec3 end =
         start +

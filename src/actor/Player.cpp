@@ -493,6 +493,10 @@ void Player::RespawnAtRestartPoint()
 void Player::Restart()
 {
     mStatus.RestoreFullHp();
+    // Game Over からのリスタートはHPと同様に、消費済みのジュエルも
+    // 通常の満タン値まで戻す。ステージ中の単なる位置リスポーンには
+    // 影響させないため、RespawnAtRestartPoint ではなくここで行う。
+    mJewelGauge.RestoreFull();
     RespawnAtRestartPoint();
 }
 

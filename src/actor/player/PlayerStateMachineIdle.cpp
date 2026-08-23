@@ -93,7 +93,7 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    if (TryStartContinuousAttack(input, combat, jewelGauge)) {
+    if (TryStartContinuousAttack(player, input, combat, jewelGauge)) {
         return;
     }
 
@@ -444,10 +444,11 @@ bool PlayerStateMachine::TryReduceTired(PlayerInput& input, PlayerMovement& move
     return true;
 }
 
-bool PlayerStateMachine::TryStartContinuousAttack(PlayerInput& input, PlayerCombat& combat,
+bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                                   PlayerJewelGauge& jewelGauge)
 {
-    const bool canContinuousAttacking = input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
+    const bool canContinuousAttacking = player.GetOnGround() &&
+                                        input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
                                         !input.GetWideAttackPressedPrev() && jewelGauge.CanConsume(1);
     if (!canContinuousAttacking) {
         return false;
@@ -472,6 +473,14 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
                                                    PlayerStatus& status, float deltaTime)
 {
     if (!combat.IsContinuousAttacking()) {
+        return false;
+    }
+
+    // Continuous attack is a ground-only attack. While airborne, its duration
+    // continues to expire but it neither deals hits nor blocks weak attacks,
+    // air dodges, or air strong attacks.
+    if (!player.GetOnGround()) {
+        combat.AdvanceContinuousAttackDuration(deltaTime);
         return false;
     }
 

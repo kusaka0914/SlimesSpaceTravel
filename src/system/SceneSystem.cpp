@@ -68,6 +68,7 @@ void SceneSystem::Update(float deltaTime)
     mTutorialController->Update(deltaTime);
     mTalkController->Update(deltaTime);
     UpdateClearTimer(deltaTime);
+    UpdateArrivalTutorials();
     UpdateForcedArrivalTalk();
 }
 
@@ -97,7 +98,9 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
         return true;
 
     case GameProgressState::SceneState::Credits:
-        FinishCredits();
+        // Credits must play through to the configured end time. Consume the
+        // confirm input so it cannot work as a one-button skip (or leak to
+        // a gameplay input behind the scene).
         return true;
 
     case GameProgressState::SceneState::Talking:
@@ -228,6 +231,12 @@ void SceneSystem::StartEnding()
 
 void SceneSystem::StartBattleStyleSelection()
 {
+    if (mGame->HasSelectedPlayerControlStyle()) {
+        // The choice is saved, so later starts resume immediately.
+        RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
+        return;
+    }
+
     mSelectedBattleStyle = PlayerControlStyle::Assist;
     mTransitionController->StartBattleStyleSelection();
 }
@@ -491,6 +500,10 @@ void SceneSystem::FinishCredits()
 {
     RequestFadeAction([this]() {
         mCreditsElapsed = 0.0f;
+        // Persist this only after the ending story and the full credits have
+        // both completed. Subsequent stage 5 clears can then return normally
+        // to the base instead of replaying the finale.
+        mGame->MarkEndingRollCompleted();
         mUIState->FinishTalkWith();
         mGameProgressState->SetCurrentSceneState(
             GameProgressState::SceneState::Title);
@@ -601,6 +614,25 @@ void SceneSystem::OnBoatArrived(Boat* boat)
     mHasPendingForcedArrivalTalk = true;
     mHasReachedArrivalDestination = true;
 
+    // Game::OnBoatArrived may merge solo split players immediately after
+    // this callback. Start tutorials on the following update, once that
+    // merge and the landing have completed, so their input owner is correct.
+    mHasPendingArrivalTutorials = true;
+}
+
+void SceneSystem::UpdateArrivalTutorials()
+{
+    if (!mHasPendingArrivalTutorials || !IsPlaying()) {
+        return;
+    }
+
+    Player* controlledPlayer = mGame->GetControlledPlayer();
+    if (!controlledPlayer || !controlledPlayer->GetIsActive() ||
+        !controlledPlayer->GetOnGround()) {
+        return;
+    }
+
+    mHasPendingArrivalTutorials = false;
     mTutorialController->TryStartBattleTutorial();
     mTutorialController->TryStartJustDodgeTutorial();
 }
@@ -736,7 +768,11 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     // 遷移要求を毎フレーム繰り返さないよう、先に再生状態をリセットする。
     mClearTimer = -1.0f;
     mClearAudioChannel = -1;
-    if (mGame->GetCurrentStageNum() == 5) {
+    // 初回はエンディングからスタッフロールを再生する。完走した事実は
+    // ステージ進行とは別の専用保存値に記録され、以後の再クリアでは
+    // 拠点へ戻る。
+    if (mGame->GetCurrentStageNum() == 5 &&
+        !mGame->HasCompletedEndingRoll()) {
         StartEnding();
         return;
     }

@@ -15,6 +15,9 @@ bool StageProgressSystem::Load()
 {
     mClearedStages.clear();
     mShownConversationIds.clear();
+    mHasCompletedEndingRoll = false;
+    mHasSelectedPlayerControlStyle = false;
+    mIsAssistControlStyleSelected = false;
 
     YAML::Node root;
     try {
@@ -48,6 +51,23 @@ bool StageProgressSystem::Load()
         }
     }
 
+    // Migrate progress written by builds that temporarily stored this as a
+    // conversation ID.  The next save writes the dedicated property below.
+    const YAML::Node endingRollCompleted = root["endingRollCompleted"];
+    mHasCompletedEndingRoll =
+        endingRollCompleted && endingRollCompleted.IsScalar()
+            ? endingRollCompleted.as<bool>()
+            : mShownConversationIds.contains("cinematic:ending_roll_completed");
+
+    const YAML::Node playerControlStyle = root["playerControlStyle"];
+    if (playerControlStyle && playerControlStyle.IsScalar()) {
+        const std::string style = playerControlStyle.as<std::string>();
+        if (style == "assist" || style == "standard") {
+            mHasSelectedPlayerControlStyle = true;
+            mIsAssistControlStyleSelected = style == "assist";
+        }
+    }
+
     return true;
 }
 
@@ -74,6 +94,11 @@ bool StageProgressSystem::Save() const
     for (const std::string& conversationId :
          mShownConversationIds) {
         root["shownConversations"].push_back(conversationId);
+    }
+    root["endingRollCompleted"] = mHasCompletedEndingRoll;
+    if (mHasSelectedPlayerControlStyle) {
+        root["playerControlStyle"] =
+            mIsAssistControlStyleSelected ? "assist" : "standard";
     }
 
     std::ofstream file(mSavePath);
@@ -133,6 +158,30 @@ bool StageProgressSystem::MarkConversationShown(
 
     const bool changed =
         mShownConversationIds.insert(conversationId).second;
+    if (changed) {
+        Save();
+    }
+    return changed;
+}
+
+bool StageProgressSystem::SetEndingRollCompleted(bool completed)
+{
+    if (mHasCompletedEndingRoll == completed) {
+        return false;
+    }
+
+    mHasCompletedEndingRoll = completed;
+    Save();
+    return true;
+}
+
+bool StageProgressSystem::SetSelectedPlayerControlStyle(
+    bool isAssistControlStyle)
+{
+    const bool changed = !mHasSelectedPlayerControlStyle ||
+                         mIsAssistControlStyleSelected != isAssistControlStyle;
+    mHasSelectedPlayerControlStyle = true;
+    mIsAssistControlStyleSelected = isAssistControlStyle;
     if (changed) {
         Save();
     }

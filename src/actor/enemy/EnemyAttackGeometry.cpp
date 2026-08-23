@@ -124,8 +124,34 @@ EnemyAttackFrame ResolveEnemyAttackFrame(const Enemy& enemy)
     return attackFrame;
 }
 
+float CalculateEnemyAttackFrontOffset(
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame)
+{
+    float frontOffset = std::max(0.0f, enemy.GetRadius());
+    const LoadedModel* loadedModel = enemy.GetLoadedModel();
+    if (!loadedModel || !loadedModel->hasBounds) {
+        return frontOffset;
+    }
+
+    // Rendering maps a model's local +X axis to -GetForwardVec(). Pick the
+    // signed X bound that lies in the current attack direction.
+    const glm::vec3 modelPositiveXAxis = -enemy.GetForwardVec();
+    const float frontAxisAlignment =
+        glm::dot(modelPositiveXAxis, attackFrame.forward) *
+        (enemy.GetScale().x < 0.0f ? -1.0f : 1.0f);
+    const float localFrontBound =
+        frontAxisAlignment >= 0.0f
+            ? loadedModel->boundsMaximum.x
+            : loadedModel->boundsMinimum.x;
+    return std::max(
+        0.0f,
+        std::abs(localFrontBound * enemy.GetScale().x));
+}
+
 EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
-    const Enemy& enemy)
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame)
 {
     EnemyMeleeAttackPreviewArea previewArea;
     previewArea.forwardLength =
@@ -133,8 +159,8 @@ EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
 
     float enemyLateralExtent =
         std::max(0.0f, enemy.GetRadius());
-    float enemyForwardExtent =
-        enemyLateralExtent;
+    float enemyForwardStartOffset =
+        CalculateEnemyAttackFrontOffset(enemy, attackFrame);
     const LoadedModel* loadedModel =
         enemy.GetLoadedModel();
     if (loadedModel && loadedModel->hasBounds) {
@@ -148,14 +174,7 @@ EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
                 std::abs(
                     loadedModel->boundsMaximum.z *
                     absoluteScale.z));
-        enemyForwardExtent =
-            std::max(
-                std::abs(
-                    loadedModel->boundsMinimum.x *
-                    absoluteScale.x),
-                std::abs(
-                    loadedModel->boundsMaximum.x *
-                    absoluteScale.x));
+
     }
 
     float targetHorizontalRadius = 0.0f;
@@ -182,9 +201,9 @@ EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
             maximumTargetCollisionScale;
     }
 
-    previewArea.forwardLength +=
-        enemyForwardExtent +
-        targetHorizontalRadius;
+    previewArea.forwardStartOffset =
+        enemyForwardStartOffset;
+    previewArea.forwardLength += targetHorizontalRadius;
     previewArea.halfWidth =
         enemyLateralExtent +
         targetHorizontalRadius;

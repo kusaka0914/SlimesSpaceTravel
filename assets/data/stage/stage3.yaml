@@ -47,9 +47,9 @@ planets:
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
   - center:
-      - 74.800674
-      - -65.617065
-      - 105.06653
+      - 41.160442
+      - -49.227886
+      - 37.05897
     scale:
       - 4
       - 4
@@ -334,7 +334,7 @@ keys:
 crystals:
   - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
 boats:
-  - {startPlanet: 2, destPlanet: 6, destStage: 0, theta: 1.5434555, phi: 1.0447507, height: 19.727118, facingYaw: 0, pos: [0.48, 17.06, 10.52], upVec: [0, -1, 0], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
+  - {startPlanet: 4, destPlanet: 6, destStage: 0, theta: 0.45893067, phi: -0.012919813, height: 31.9273, facingYaw: 0, pos: [34, -0.49, 16.8], upVec: [0, -1, 0], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
   - {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -3.0091338, phi: -1.1927763, height: -3.8784285, facingYaw: 0, pos: [-0.78, -1.97, -0.1], upVec: [-0.043304242, -0.9989078, -0.017552216], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
 boatArrivalPoints:
   - currentPlanetNum: 3

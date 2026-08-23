@@ -86,7 +86,8 @@ private:
                             PlayerStatus& status, bool wasInputMovementApplied, float deltaTime);
     bool TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
     bool TryReduceTired(PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status);
-    bool TryStartContinuousAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
+    bool TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
+                                  PlayerJewelGauge& jewelGauge);
     void UpdateSpecialAttackIfNeeded(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                      PlayerJewelGauge& jewelGauge, float deltaTime);
     bool TryUpdateContinuousAttack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,

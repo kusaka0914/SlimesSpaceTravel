@@ -10,8 +10,6 @@ screens:
     name: opening
   operation:
     name: operation
-  talk:
-    name: 会話・チュートリアル
   target:
     name: target
   title:
@@ -291,53 +289,6 @@ elements:
       - 0
       - 0
       - 0
-    shadowColor:
-      - 0
-      - 0
-      - 0
-      - 0.65
-    outlineColor:
-      - 0
-      - 0
-      - 0
-      - 1
-  - screen: talk
-    id: continueButton
-    name: つづけるボタン
-    type: image
-    visibleByDefault: false
-    centerBased: false
-    flipVertical: false
-    zOrder: 20
-    rotationDegrees: 0
-    posRatio:
-      - 0.71240175
-      - 0.11240226
-    sizeRatio:
-      - 0.05
-      - 0.05
-    textScaleRatio: 0.0007
-    text: ""
-    texture: textures/Inputs/switch_button_a.png
-    usesInputDeviceVariants: true
-    keyboardText: ""
-    gameControllerText: ""
-    keyboardModifierText: ""
-    gameControllerModifierText: ""
-    keyboardTexture: textures/Inputs/Keyboard/keyboard_space.png
-    gameControllerTexture: textures/Inputs/switch_button_a.png
-    keyboardFlipVertical: false
-    gameControllerFlipVertical: false
-    shadowEnabled: false
-    shadowOffsetXRatio: 0.0015
-    shadowOffsetYRatio: 0.0015
-    outlineEnabled: false
-    outlineWidthRatio: 0.001
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
     shadowColor:
       - 0
       - 0

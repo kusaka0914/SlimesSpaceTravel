@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "VertexArray.h"
 #include "actor/Actor.h"
+#include "actor/CharacterActor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "animation/SkeletalAnimationConstants.h"
@@ -15,6 +16,8 @@
 #include "gfx/render3d/SceneObjectRenderer.h"
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
+#include "system/PhysicsSystem.h"
+#include "system/mesh/LoadedModel.h"
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/TextureLoader.h"
 #include "utils/MathUtils.h"
@@ -22,6 +25,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -47,6 +51,33 @@ struct RenderedRubySegment {
     int scaledRubyWidth = 0;
     int scaledRubyHeight = 0;
 };
+
+std::vector<glm::vec3> CreateBlobShadowVertices(
+    const glm::vec3& center,
+    const glm::vec3& normal,
+    const glm::vec3& tangentX,
+    float radiusX,
+    float radiusY)
+{
+    constexpr int segmentCount = 32;
+    std::vector<glm::vec3> vertices;
+    vertices.reserve(segmentCount + 2);
+    vertices.push_back(center);
+
+    const glm::vec3 tangentY = glm::normalize(
+        glm::cross(normal, tangentX));
+    for (int segment = 0; segment <= segmentCount; ++segment) {
+        const float angle =
+            glm::two_pi<float>() *
+            static_cast<float>(segment) /
+            static_cast<float>(segmentCount);
+        vertices.push_back(
+            center +
+            tangentX * std::cos(angle) * radiusX +
+            tangentY * std::sin(angle) * radiusY);
+    }
+    return vertices;
+}
 
 SDLSurfacePtr RenderTextSurface(
     TTF_Font* font,
@@ -591,6 +622,121 @@ void Renderer3D::DrawUGCPlacementPreviewActor(Actor* actor) const
     mActorOpacityMultiplier = 0.42f;
     DrawActor(actor);
     mActorOpacityMultiplier = 1.0f;
+}
+
+void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
+{
+    if (!actor || !actor->GetIsActive() ||
+        actor->GetRenderOpacity() <= 0.001f || !mGame) {
+        return;
+    }
+
+    const float upLength = glm::length(actor->GetUpVec());
+    if (upLength <= 0.0001f) {
+        return;
+    }
+    const glm::vec3 up = actor->GetUpVec() / upLength;
+
+    glm::vec3 shadowCenter = actor->GetPos();
+    glm::vec3 surfaceNormal = up;
+    float surfaceDistance = 0.0f;
+    if (!actor->GetOnGround()) {
+        PhysicsSystem* physics = mGame->GetPhysicsSystem();
+        if (!physics) {
+            return;
+        }
+
+        constexpr float rayStartOffset = 0.15f;
+        constexpr float maximumShadowDistance = 12.0f;
+        const glm::vec3 rayFrom =
+            actor->GetPos() + up * rayStartOffset;
+        const glm::vec3 rayTo =
+            actor->GetPos() - up * maximumShadowDistance;
+        const std::vector<PhysicsSystem::RayHitActor> hits =
+            physics->RaycastStageSurfaces(rayFrom, rayTo);
+
+        bool foundSurface = false;
+        for (const PhysicsSystem::RayHitActor& hit : hits) {
+            if (hit.actor == actor ||
+                dynamic_cast<const CharacterActor*>(hit.actor)) {
+                continue;
+            }
+            const float normalLength = glm::length(hit.hitNormal);
+            if (normalLength <= 0.0001f) {
+                continue;
+            }
+            const glm::vec3 candidateNormal =
+                hit.hitNormal / normalLength;
+            if (glm::dot(candidateNormal, up) < 0.35f) {
+                continue;
+            }
+            shadowCenter = hit.hitPos;
+            surfaceNormal = candidateNormal;
+            surfaceDistance = glm::length(actor->GetPos() - hit.hitPos);
+            foundSurface = true;
+            break;
+        }
+        if (!foundSurface || surfaceDistance >= maximumShadowDistance) {
+            return;
+        }
+    }
+
+    glm::vec3 tangentX =
+        actor->GetRightVec() -
+        surfaceNormal * glm::dot(actor->GetRightVec(), surfaceNormal);
+    if (glm::length(tangentX) <= 0.0001f) {
+        tangentX = glm::cross(surfaceNormal, glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    if (glm::length(tangentX) <= 0.0001f) {
+        tangentX = glm::cross(surfaceNormal, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+    tangentX = glm::normalize(tangentX);
+
+    float radiusX = 0.68f;
+    float radiusY = 0.54f;
+    const LoadedModel* model = actor->GetLoadedModel();
+    if (model && model->hasBounds) {
+        const glm::vec3 modelSize =
+            glm::abs(
+                (model->boundsMaximum - model->boundsMinimum) *
+                actor->GetScale());
+        radiusX = glm::clamp(modelSize.x * 0.62f, 0.42f, 5.0f);
+        radiusY = glm::clamp(modelSize.z * 0.62f, 0.34f, 5.0f);
+    }
+
+    constexpr float maximumShadowDistance = 12.0f;
+    // The shadow is a gameplay readability marker, not a physical light
+    // simulation. Keep its density fixed even while the actor is airborne.
+    constexpr float distanceFade = 1.0f;
+
+    // Keep the mark just above the receiving surface to avoid flicker.
+    shadowCenter += surfaceNormal * 0.012f;
+    const float distanceScale =
+        1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
+    radiusX *= distanceScale;
+    radiusY *= distanceScale;
+
+    struct ShadowLayer {
+        float scale;
+        float alpha;
+    };
+    constexpr ShadowLayer layers[] = {
+        {1.00f, 0.17f},
+        {0.76f, 0.25f},
+        {0.50f, 0.36f},
+    };
+    for (const ShadowLayer& layer : layers) {
+        DrawAttackRangeVertices(
+            CreateBlobShadowVertices(
+                shadowCenter,
+                surfaceNormal,
+                tangentX,
+                radiusX * layer.scale,
+                radiusY * layer.scale),
+            GL_TRIANGLE_FAN,
+            glm::vec4(0.0f, 0.0f, 0.0f,
+                      layer.alpha * distanceFade));
+    }
 }
 
 void Renderer3D::DrawActor(Actor* actor, bool useOrient) const

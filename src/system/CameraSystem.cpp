@@ -69,6 +69,8 @@ void CameraSystem::ProcessInput()
     }
 
     SDL_GameController* sdlController = mGame->GetSdlController();
+    SDL_GameController* secondController =
+        mGame->GetSdlControllerForPlayer(2);
 
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
@@ -87,6 +89,22 @@ void CameraSystem::ProcessInput()
     }
     if (std::abs(mCameraStickY) < deadZone) {
         mCameraStickY = 0.0f;
+    }
+    mSecondControllerStickX =
+        secondController
+            ? SDL_GameControllerGetAxis(
+                  secondController, SDL_CONTROLLER_AXIS_RIGHTX) * scale
+            : 0.0f;
+    mSecondControllerStickY =
+        secondController
+            ? SDL_GameControllerGetAxis(
+                  secondController, SDL_CONTROLLER_AXIS_RIGHTY) * scale
+            : 0.0f;
+    if (std::abs(mSecondControllerStickX) < deadZone) {
+        mSecondControllerStickX = 0.0f;
+    }
+    if (std::abs(mSecondControllerStickY) < deadZone) {
+        mSecondControllerStickY = 0.0f;
     }
 
     mKeyboardPitchInput = 0.0f;
@@ -110,15 +128,26 @@ void CameraSystem::ProcessInput()
         SDL_GameControllerGetButton(
             sdlController,
             SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    const bool secondControllerAlignCameraPressed =
+        secondController &&
+        SDL_GameControllerGetButton(
+            secondController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    const bool playerTwoUsesController =
+        mGame->GetIsPlayer2Joined() &&
+        mGame->HasGameControllerForPlayer(2);
     const bool alignCameraPressed =
-        keyboardAlignCameraPressed || controllerAlignCameraPressed;
+        controllerAlignCameraPressed ||
+        (keyboardAlignCameraPressed && !playerTwoUsesController);
 
     if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
         int playerIndex = GetPrimaryPlayerIndex();
         if (mGame->GetIsPlayer2Joined()) {
-            // Controller is player 1 and the keyboard is player 2 in local
-            // multiplayer.  Reset the camera belonging to the input source.
-            playerIndex = keyboardAlignCameraPressed ? 1 : 0;
+            // Controller 1 owns player 1.  Controller 2 replaces the
+            // keyboard assignment when it is connected.
+            playerIndex =
+                (keyboardAlignCameraPressed && !playerTwoUsesController)
+                    ? 1
+                    : 0;
         }
         const std::vector<Player*>& players = mGame->GetPlayers();
         if (playerIndex >= 0 &&
@@ -130,6 +159,16 @@ void CameraSystem::ProcessInput()
     }
 
     mAlignCameraPressedPrev = alignCameraPressed;
+    if (sceneSystem && sceneSystem->IsPlaying() &&
+        secondControllerAlignCameraPressed &&
+        !mSecondControllerAlignCameraPressedPrev && playerTwoUsesController) {
+        const std::vector<Player*>& players = mGame->GetPlayers();
+        if (players.size() >= 2 && players[1]) {
+            mPlayerCamera.AlignBehindPlayer(players[1], 1);
+        }
+    }
+    mSecondControllerAlignCameraPressedPrev =
+        secondControllerAlignCameraPressed;
 }
 
 void CameraSystem::Update(float deltaTime)
@@ -278,6 +317,15 @@ void CameraSystem::UpdateCamera(float deltaTime)
                          mPlayerCameraSettings.targetSmoothingSpeed,
                          mPlayerCameraSettings.attackTargetSmoothingSpeed, deltaTime,
                          yawPlayerIndex);
+    if (mGame->GetIsPlayer2Joined() &&
+        mGame->HasGameControllerForPlayer(2)) {
+        const std::vector<Player*>& players = mGame->GetPlayers();
+        if (players.size() >= 2 && players[1]) {
+            players[1]->SetCameraYaw(
+                mSecondControllerStickX *
+                mPlayerCameraSettings.yawSensitivity * deltaTime);
+        }
+    }
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
 }
@@ -308,7 +356,12 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
             }
 
             int keyboardPlayerIndex = -1;
-            if (mGame->IsGameControllerConnected()) {
+            if (mGame->HasGameControllerForPlayer(2)) {
+                if (players.size() >= 2 && players[1]) {
+                    mPlayerPitchOffsetsDegrees[1] +=
+                        -mSecondControllerStickY * pitchSpeed;
+                }
+            } else if (mGame->IsGameControllerConnected()) {
                 if (players.size() >= 2 && players[1]) {
                     keyboardPlayerIndex = 1;
                 }

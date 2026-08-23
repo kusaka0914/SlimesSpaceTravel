@@ -186,9 +186,12 @@ private:
         float viewportScale = 1.0f,
         bool centerTalkPrompt = false,
         float contentScale = -1.0f,
-        const Player* inputPlayer = nullptr);
+        const Player* inputPlayer = nullptr,
+        float opacity = 1.0f);
     const std::string& ResolveCustomElementText(
         const UILoadSystem::CustomElement& element) const;
+    const std::vector<RubyTextSegment>& ResolveCustomElementRuby(
+        const std::string& text);
     const std::string& ResolveCustomElementTexturePath(
         const UILoadSystem::CustomElement& element) const;
     bool ResolveCustomElementTextureFlipVertical(
@@ -246,6 +249,8 @@ private:
     std::unique_ptr<PauseMenuRenderer> mPauseMenuRenderer;
 
     std::vector<RenderedUIElement> mRenderedUIElements;
+    std::unordered_map<std::string, std::vector<RubyTextSegment>>
+        mCustomTextRubyCache;
 
     int mFbWidth;
     int mFbHeight;

@@ -188,12 +188,9 @@ void TutorialController::OnStrongAttacked()
 
 void TutorialController::OnLanded()
 {
-    if (!mGameProgressState ||
-        !mGameProgressState->GetIsFirstStrongAttack()) {
-        return;
-    }
-
-    TryStart("jewel_usage");
+    // Landing after the first air strong attack used to launch the jewel
+    // tutorial.  Landing must remain a gameplay event only; this tutorial
+    // is started by its dedicated trigger instead.
 }
 
 void TutorialController::OnPlayerSwitchSucceeded()
@@ -219,6 +216,13 @@ void TutorialController::OnPlayerSplitMergeSucceeded()
 bool TutorialController::HasActiveTutorial() const
 {
     return GetActiveDefinition() != nullptr;
+}
+
+bool TutorialController::HasCompletedTutorial(
+    const std::string& tutorialId) const
+{
+    return !tutorialId.empty() &&
+           mCompletedTutorialIds.contains(tutorialId);
 }
 
 bool TutorialController::IsWaitingForPlayerAction() const
@@ -304,6 +308,9 @@ void TutorialController::AdvancePage()
 
 void TutorialController::FinishActiveTutorial()
 {
+    if (!mActiveTutorialId.empty()) {
+        mCompletedTutorialIds.insert(mActiveTutorialId);
+    }
     mActiveTutorialId.clear();
     mTutorialPlayer = nullptr;
     mActionPlayerAtPageStart = nullptr;

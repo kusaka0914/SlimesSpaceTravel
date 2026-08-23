@@ -124,6 +124,7 @@ private:
     void ResetForDebugScene(
         GameProgressState::SceneState destinationScene);
     void UpdateClearTimer(float deltaTime);
+    void UpdateArrivalTutorials();
     void UpdateForcedArrivalTalk();
     NPC* FindForcedArrivalTalkNPC() const;
 
@@ -151,6 +152,7 @@ private:
     PlayerControlStyle mSelectedBattleStyle = PlayerControlStyle::Assist;
     bool mHasPendingForcedArrivalTalk = false;
     bool mHasReachedArrivalDestination = false;
+    bool mHasPendingArrivalTutorials = false;
     bool mSuppressForcedArrivalTalkOnce = false;
     NPC* mOpeningResumeNPC = nullptr;
     Player* mOpeningResumePlayer = nullptr;

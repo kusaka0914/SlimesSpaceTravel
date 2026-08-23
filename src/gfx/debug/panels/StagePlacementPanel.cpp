@@ -1485,6 +1485,43 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
                 tutorialController->Preview(
                     tutorialTrigger->GetTutorialId());
             }
+
+            const std::string prerequisitePreview =
+                tutorialTrigger->GetRequiredCompletedTutorialId().empty()
+                    ? "前提なし"
+                    : tutorialTrigger->GetRequiredCompletedTutorialId();
+            if (ImGui::BeginCombo(
+                    ("発動に必要な完了済みチュートリアル##tutorialPrerequisite" +
+                     std::to_string(yamlIndex))
+                        .c_str(),
+                    prerequisitePreview.c_str())) {
+                if (ImGui::Selectable(
+                        "前提なし",
+                        tutorialTrigger->GetRequiredCompletedTutorialId()
+                            .empty())) {
+                    tutorialTrigger->SetRequiredCompletedTutorialId("");
+                }
+                if (tutorialLibrary) {
+                    for (const TutorialDefinition& definition :
+                         tutorialLibrary->GetDefinitions()) {
+                        if (definition.id == tutorialTrigger->GetTutorialId()) {
+                            continue;
+                        }
+                        const bool selected =
+                            tutorialTrigger->GetRequiredCompletedTutorialId() ==
+                            definition.id;
+                        const std::string label =
+                            definition.displayName + " (" + definition.id +
+                            ")##triggerTutorialPrerequisite" +
+                            std::to_string(yamlIndex) + definition.id;
+                        if (ImGui::Selectable(label.c_str(), selected)) {
+                            tutorialTrigger->SetRequiredCompletedTutorialId(
+                                definition.id);
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
             ImGui::TextDisabled(
                 "内容はデバッグエディターの「チュートリアル」タブで編集します。");
         }
@@ -4262,6 +4299,14 @@ void StagePlacementPanel::SaveActorCommonYaml(
             } else {
                 config[sequenceName][yamlIndex]["tutorialId"] =
                     tutorialTrigger->GetTutorialId();
+            }
+            if (tutorialTrigger->GetRequiredCompletedTutorialId().empty()) {
+                config[sequenceName][yamlIndex].remove(
+                    "requiredCompletedTutorialId");
+            } else {
+                config[sequenceName][yamlIndex]
+                    ["requiredCompletedTutorialId"] =
+                    tutorialTrigger->GetRequiredCompletedTutorialId();
             }
             config[sequenceName][yamlIndex].remove("name");
             config[sequenceName][yamlIndex].remove("radius");

@@ -22,6 +22,14 @@ public:
     {
         return mTutorialId;
     }
+    void SetRequiredCompletedTutorialId(const std::string& tutorialId)
+    {
+        mRequiredCompletedTutorialId = tutorialId;
+    }
+    const std::string& GetRequiredCompletedTutorialId() const
+    {
+        return mRequiredCompletedTutorialId;
+    }
 
 protected:
     void OnLoadedModelChanged() override;
@@ -34,5 +42,9 @@ private:
     glm::vec3 mLocalBoundsMin{-0.5f};
     glm::vec3 mLocalBoundsMax{0.5f};
     std::string mTutorialId;
+    std::string mRequiredCompletedTutorialId;
     bool mHasTriggeredThisVisit = false;
+    bool mHasObservedPlayerSplitState = false;
+    bool mWasPlayerSplit = false;
+    bool mRequiresExitAfterSplittingInside = false;
 };

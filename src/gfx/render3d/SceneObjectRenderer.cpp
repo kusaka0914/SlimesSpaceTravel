@@ -15,6 +15,7 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/StageObject.h"
 #include "actor/TutorialTrigger.h"
@@ -48,6 +49,7 @@ void SceneObjectRenderer::DrawSceneObjects(
 
     DrawPlanets(planets);
     DrawActorOnPlanets(planets, viewMat, viewportPlayer);
+    DrawCharacterShadows(planets);
 
     const SequenceSystem* sequenceSystem =
         mRenderer->GetGame()->GetSequenceSystem();
@@ -133,5 +135,29 @@ void SceneObjectRenderer::DrawActorOnPlanets(
         for (Enemy* enemy : planet->GetEnemies()) {
             mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat, viewportPlayer);
         }
+    }
+}
+
+void SceneObjectRenderer::DrawCharacterShadows(
+    const std::vector<Planet*>& planets) const
+{
+    if (!mRenderer || !mRenderer->GetGame()) {
+        return;
+    }
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+        for (Enemy* enemy : planet->GetEnemies()) {
+            mRenderer->DrawBlobShadow(enemy);
+        }
+        for (NPC* npc : planet->GetNPCs()) {
+            mRenderer->DrawBlobShadow(npc);
+        }
+    }
+
+    for (Player* player : mRenderer->GetGame()->GetPlayers()) {
+        mRenderer->DrawBlobShadow(player);
     }
 }

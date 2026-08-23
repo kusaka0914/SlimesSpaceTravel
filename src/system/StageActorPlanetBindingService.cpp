@@ -393,6 +393,14 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
 
     for (const auto& [actorPointer, registration] : registeredActors) {
         (void)actorPointer;
+
+        // A boat's start planet is explicit stage data. Its world position
+        // may intentionally remain near another planet after it is changed
+        // in the editor, so loading must not overwrite that selection.
+        if (dynamic_cast<Boat*>(registration.actor)) {
+            continue;
+        }
+
         RefreshActorBinding(planets, registration, affectedPlanets);
     }
 

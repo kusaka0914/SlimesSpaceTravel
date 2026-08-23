@@ -206,7 +206,7 @@ gameOver:
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
     text:
-      - "直前からリスポーンします"
+      - 直前からリスポーンします
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -255,10 +255,10 @@ default:
 state:
   - id: stageClearText
     type: text
-    posRatio: [0.5, 0.333]
-    scaleRatio: [0.000625, 1.0]
+    posRatio: [0.50000006, 0.2141653]
+    scaleRatio: [0.00032500003, 1.0]
     text:
-      - Thank You For Playing！
+      - STAR GET！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

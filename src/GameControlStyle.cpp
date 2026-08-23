@@ -1,5 +1,7 @@
 #include "Game.h"
 
+#include "system/StageProgressSystem.h"
+
 void Game::TogglePlayerControlStyle()
 {
     SetPlayerControlStyle(
@@ -11,4 +13,14 @@ void Game::TogglePlayerControlStyle()
 void Game::SetPlayerControlStyle(PlayerControlStyle controlStyle)
 {
     mPlayerControlStyle = controlStyle;
+    if (mStageProgressSystem) {
+        mStageProgressSystem->SetSelectedPlayerControlStyle(
+            controlStyle == PlayerControlStyle::Assist);
+    }
+}
+
+bool Game::HasSelectedPlayerControlStyle() const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasSelectedPlayerControlStyle();
 }

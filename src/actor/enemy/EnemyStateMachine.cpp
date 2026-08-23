@@ -80,6 +80,28 @@ glm::vec3 CalculateCinematicSurfacePosition(
     return surface.position + surface.outwardNormal * height;
 }
 
+glm::vec3 CalculateCinematicSurfaceUp(
+    const Planet& planet,
+    float theta,
+    float phi)
+{
+    const glm::vec3 direction = glm::normalize(glm::vec3(
+        std::cos(phi) * std::cos(theta),
+        std::sin(phi),
+        std::cos(phi) * std::sin(theta)));
+    if (planet.GetPlanetShape() != Planet::PlanetShape::Ellipse) {
+        return direction;
+    }
+
+    const float largestRadius = std::max({
+        std::abs(planet.GetScale().x),
+        std::abs(planet.GetScale().y),
+        std::abs(planet.GetScale().z),
+        0.001f});
+    return planet.CalculateEllipseSurfaceProjection(
+        planet.GetPos() + direction * (largestRadius * 4.0f)).outwardNormal;
+}
+
 glm::vec3 GetDyingKnockBackDirection(const Enemy& enemy, const EnemyStatus& status,
                                       const glm::vec3& upDirection)
 {
@@ -125,15 +147,18 @@ void StageBossDefeatActors(Enemy& boss)
         return;
     }
 
+    // 撃破演出では、直前のジャンプ等で残ったheightを使わない。
+    // 負のheightを引き継ぐと、演出開始時点で惑星内部に配置される。
+    constexpr float cinematicSurfaceClearance = 0.08f;
     constexpr float bossTheta = 0.0f;
     constexpr float bossPhi = 0.0f;
-    boss.SetSphericalPlacement(bossTheta, bossPhi, boss.GetHeight());
+    boss.SetSphericalPlacement(
+        bossTheta, bossPhi, cinematicSurfaceClearance);
     boss.SetPos(CalculateCinematicSurfacePosition(
-        *planet, bossTheta, bossPhi, boss.GetHeight()));
-    const glm::vec3 bossUp = boss.GetPos() - planet->GetPos();
-    if (glm::length(bossUp) > directionEpsilon) {
-        boss.SetUpVec(glm::normalize(bossUp));
-    }
+        *planet, bossTheta, bossPhi, cinematicSurfaceClearance));
+    const glm::vec3 bossUp =
+        CalculateCinematicSurfaceUp(*planet, bossTheta, bossPhi);
+    boss.SetUpVec(bossUp);
 
     Player* player = boss.GetGame()->GetMainPlayer();
     if (!player) {
@@ -157,13 +182,15 @@ void StageBossDefeatActors(Enemy& boss)
         }
     }
 
-    player->SetSphericalPlacement(playerTheta, playerPhi, player->GetHeight());
+    player->SetSphericalPlacement(
+        playerTheta, playerPhi, cinematicSurfaceClearance);
     player->SetPos(CalculateCinematicSurfacePosition(
-        *planet, playerTheta, playerPhi, player->GetHeight()));
+        *planet, playerTheta, playerPhi, cinematicSurfaceClearance));
     player->SetVelocity(glm::vec3(0.0f));
     player->SetOnGround(false);
     player->SetShouldJudgeLanding(true);
-    player->RefreshFallbackUpVec();
+    player->SetUpVec(
+        CalculateCinematicSurfaceUp(*planet, playerTheta, playerPhi));
 
     MathUtils* mathUtils = boss.GetGame()->GetMathUtils();
 
@@ -202,13 +229,18 @@ void StageBossDefeatActors(Enemy& boss)
             }
 
             constexpr float player2Phi = 0.28f;
-            player2->SetSphericalPlacement(playerTheta, player2Phi, player2->GetHeight());
+            player2->SetSphericalPlacement(
+                playerTheta, player2Phi, cinematicSurfaceClearance);
             player2->SetPos(CalculateCinematicSurfacePosition(
-                *planet, playerTheta, player2Phi, player2->GetHeight()));
+                *planet,
+                playerTheta,
+                player2Phi,
+                cinematicSurfaceClearance));
             player2->SetVelocity(glm::vec3(0.0f));
             player2->SetOnGround(false);
             player2->SetShouldJudgeLanding(true);
-            player2->RefreshFallbackUpVec();
+            player2->SetUpVec(CalculateCinematicSurfaceUp(
+                *planet, playerTheta, player2Phi));
 
             glm::vec3 player2FacingBoss = boss.GetPos() - player2->GetPos();
             player2FacingBoss -= player2->GetUpVec() *

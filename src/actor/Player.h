@@ -84,6 +84,11 @@ public:
     bool IsAlive() const { return mStatus.IsAlive(); }
 
     bool IsAttacking() const { return mStateMachine.IsAttackingState() || mCombat.IsAttacking(); }
+    bool IsSpecialCharging() const { return mCombat.IsSpecialCharging(); }
+    bool IsContinuousAttacking() const
+    {
+        return mCombat.IsContinuousAttacking();
+    }
     std::uint64_t GetResolvedAttackSequence() const
     {
         return mCombat.GetResolvedAttackSequence();

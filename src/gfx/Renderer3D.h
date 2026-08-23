@@ -15,6 +15,7 @@
 #include <vector>
 
 class Actor;
+class CharacterActor;
 class DebugLabelRenderer;
 class Enemy;
 class Game;
@@ -72,6 +73,7 @@ public:
     void TryDrawActor(Actor* actor, bool useOrient = true) const;
     void DrawActor(Actor* actor, bool useOrient = true) const;
     void DrawUGCPlacementPreviewActor(Actor* actor) const;
+    void DrawBlobShadow(const CharacterActor* actor) const;
     bool IsActorInsideView(const Actor* actor) const;
 
     template <class ActorType> void TryDrawActors(const std::vector<ActorType*>& actors, bool useOrient = true) const

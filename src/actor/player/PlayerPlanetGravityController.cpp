@@ -6,6 +6,7 @@
 #include "actor/ActorGroundResolver.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/player/PlanetGravityCandidateSelector.h"
 #include "actor/player/PlayerMovement.h"
 #include "system/PhysicsSystem.h"
 
@@ -47,7 +48,8 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
     // 現在の惑星を含む全惑星から、
     // プレイヤーとの表面距離が最も短い惑星を取得する。
     // 別の惑星の方が明確に近くなったら所属惑星を変更する。
-    Planet* currentPlanet = player.GetCurrentPlanet();
+    Planet* currentPlanet =
+        SelectNearbyAttractingPlanet(player, movement);
 
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
@@ -100,6 +102,27 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
             player,
             movement.GetDodgeTimer() > 0.0f,
             deltaTime);
+        return;
+    }
+
+    // 球形惑星も楕円惑星と同様に、近接時は表面法線を物理的な上方向
+    // として使う。見た目の回転が完了するのを待って落下しないよう、
+    // 引力方向だけは即時に切り替える。
+    if (currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Sphere &&
+        mIsNearbySurfaceAttractionActive) {
+        const glm::vec3 targetUp =
+            ActorGroundResolver::CalculateFallbackUpVec(
+                currentPlanet,
+                player.GetPos());
+        SmoothAirborneUpVec(player, targetUp, deltaTime);
+        if (movement.GetDodgeTimer() <= 0.0f) {
+            ApplyNearbySurfaceAttraction(
+                player,
+                *currentPlanet,
+                deltaTime);
+        }
         return;
     }
 
@@ -191,6 +214,12 @@ CalculateAirbornePhysicsUpDirection(
             .outwardNormal;
     }
 
+    if (mIsNearbySurfaceAttractionActive && currentPlanet) {
+        return ActorGroundResolver::CalculateFallbackUpVec(
+            currentPlanet,
+            player.GetPos());
+    }
+
     const glm::vec3 visualUp = player.GetUpVec();
     if (glm::length(visualUp) > 0.000001f) {
         return glm::normalize(visualUp);
@@ -249,6 +278,7 @@ void PlayerPlanetGravityController::OnJumpStarted(
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
+    mIsNearbySurfaceAttractionActive = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 
     const Planet* currentPlanet =
@@ -322,6 +352,7 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
+    mIsNearbySurfaceAttractionActive = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
@@ -347,6 +378,7 @@ void PlayerPlanetGravityController::OnRespawned()
     mNoGroundRayDuration = 0.0f;
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
+    mIsNearbySurfaceAttractionActive = false;
     mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
@@ -409,6 +441,87 @@ void PlayerPlanetGravityController::ApplyCurrentPlanet(Player& player, PlayerMov
     }
 
     movement.SetCurrentPlanetNum(planetIndex);
+}
+
+Planet* PlayerPlanetGravityController::SelectNearbyAttractingPlanet(
+    Player& player,
+    PlayerMovement& movement)
+{
+    Stage* stage = player.GetGame()
+        ? player.GetGame()->GetCurrentStage()
+        : nullptr;
+    if (!stage) {
+        return player.GetCurrentPlanet();
+    }
+
+    const PlanetGravityCandidateSelector selector;
+    const PlanetDistanceCandidate nearest =
+        selector.FindNearestPlanet(player.GetPos(), stage->GetPlanets());
+    if (!nearest.planet ||
+        nearest.surfaceDistance > nearbyAttractionRange) {
+        mIsNearbySurfaceAttractionActive = false;
+        return player.GetCurrentPlanet();
+    }
+
+    Planet* currentPlanet = player.GetCurrentPlanet();
+    if (nearest.planet != currentPlanet && currentPlanet &&
+        currentPlanet->CanAttractNearbyPlayer()) {
+        const float currentSurfaceDistance =
+            selector.CalculateSurfaceDistance(
+                player.GetPos(),
+                *currentPlanet);
+        if (nearest.surfaceDistance + planetSwitchDistanceHysteresis >=
+            currentSurfaceDistance) {
+            mIsNearbySurfaceAttractionActive =
+                currentSurfaceDistance <= nearbyAttractionRange;
+            return currentPlanet;
+        }
+    }
+
+    if (nearest.planet != currentPlanet) {
+        SwitchToPlanet(player, movement, nearest.planet);
+
+        // 新しい惑星へ近付いたケースには、ジャンプを開始した足場の
+        // 高さを持ち込まない。距離ゼロから表面へ吸着させる。
+        mEllipseJumpStartSurfaceDistance = 0.0f;
+        if (nearest.planet->GetPlanetShape() ==
+            Planet::PlanetShape::Ellipse) {
+            mUseEllipseSurfaceGravity = true;
+        }
+    }
+
+    mIsNearbySurfaceAttractionActive = true;
+    return player.GetCurrentPlanet();
+}
+
+void PlayerPlanetGravityController::ApplyNearbySurfaceAttraction(
+    Player& player,
+    const Planet& planet,
+    float deltaTime) const
+{
+    if (planet.GetPlanetShape() != Planet::PlanetShape::Sphere) {
+        return;
+    }
+
+    const glm::vec3 toPlayer = player.GetPos() - planet.GetPos();
+    const float centerDistance = glm::length(toPlayer);
+    if (centerDistance <= 0.000001f) {
+        return;
+    }
+
+    const float surfaceDistance =
+        std::abs(centerDistance - std::abs(planet.GetRadius()));
+    const glm::vec3 directionToSurface =
+        centerDistance >= std::abs(planet.GetRadius())
+            ? -toPlayer / centerDistance
+            : toPlayer / centerDistance;
+    const float acceleration = glm::clamp(
+        surfaceDistance * nearbyAttractionAcceleration,
+        0.0f,
+        nearbyAttractionMaximumAcceleration);
+    player.AddVelocity(
+        directionToSurface * acceleration *
+        std::max(0.0f, deltaTime));
 }
 
 bool PlayerPlanetGravityController::TryActivateOverheadGravityRay(

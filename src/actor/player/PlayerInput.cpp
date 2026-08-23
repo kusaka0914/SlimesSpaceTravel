@@ -79,19 +79,23 @@ void PlayerInput::ApplyTutorialInputRestriction(Player& player)
 
 void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& movement)
 {
-    if (!player.GetGame()->IsGameControllerConnected()) {
+    Game* game = player.GetGame();
+
+    if (!game->GetIsPlayer2Joined() &&
+        game->GetControlledPlayer() != &player) {
         return;
     }
 
-    if (player.GetGame()->GetIsPlayer2Joined()) {
-        if (movement.GetPlayerNum() != 1) {
-            return;
-        }
-    } else if (player.GetGame()->GetControlledPlayer() != &player) {
+    // In local multiplayer controller 1 belongs to player 1 and controller
+    // 2 belongs to player 2.  With only one pad, player 2 naturally falls
+    // through to the keyboard mapping below.
+    SDL_GameController* sdlController =
+        game->GetIsPlayer2Joined()
+            ? game->GetSdlControllerForPlayer(movement.GetPlayerNum())
+            : game->GetSdlController();
+    if (!sdlController) {
         return;
     }
-
-    SDL_GameController* sdlController = player.GetGame()->GetSdlController();
 
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
@@ -118,17 +122,13 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
 void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
 {
     Game* game = player.GetGame();
-    const bool isControllerConnected = game->IsGameControllerConnected();
 
     if (game->GetIsPlayer2Joined()) {
-        if (!isControllerConnected && movement.GetPlayerNum() != 1) {
-            return;
-        }
-        if (isControllerConnected && movement.GetPlayerNum() != 2) {
+        if (game->HasGameControllerForPlayer(movement.GetPlayerNum())) {
             return;
         }
     } else {
-        if (isControllerConnected ||
+        if (game->IsGameControllerConnected() ||
             game->GetControlledPlayer() != &player) {
             return;
         }

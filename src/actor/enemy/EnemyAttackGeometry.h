@@ -13,13 +13,20 @@ struct EnemyAttackFrame {
 };
 
 struct EnemyMeleeAttackPreviewArea {
+    // Distance from the actor pivot to the front-most point of its model.
+    // The melee rectangle starts here rather than inside the model.
+    float forwardStartOffset = 0.0f;
     float forwardLength = 0.0f;
     float halfWidth = 0.0f;
 };
 
 EnemyAttackFrame ResolveEnemyAttackFrame(const Enemy& enemy);
+float CalculateEnemyAttackFrontOffset(
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame);
 EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
-    const Enemy& enemy);
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame);
 
 bool IsPositionInsideMeleeAttack(
     const EnemyAttackFrame& attackFrame,

@@ -13,6 +13,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "system/SceneSystem.h"
+#include "system/text/JapaneseRubyGenerator.h"
+#include "system/CameraSystem.h"
 #include "system/sequence/SequenceSystem.h"
 #include <algorithm>
 #include <array>
@@ -682,14 +684,35 @@ void UIRenderer::DrawTextForElement(
     glm::vec4 color,
     float rotationDegrees)
 {
-    DrawText(
-        x,
-        y,
-        scale,
-        message,
-        centerBased,
-        color,
-        rotationDegrees);
+    const std::vector<RubyTextSegment>& rubySegments =
+        ResolveCustomElementRuby(message);
+    const bool hasRuby = std::any_of(
+        rubySegments.begin(),
+        rubySegments.end(),
+        [](const RubyTextSegment& segment) {
+            return segment.showsRuby && !segment.reading.empty();
+        });
+    if (hasRuby) {
+        DrawRubyText(
+            x,
+            y,
+            scale,
+            0.42f,
+            -0.12f,
+            rubySegments,
+            color,
+            centerBased,
+            rotationDegrees);
+    } else {
+        DrawText(
+            x,
+            y,
+            scale,
+            message,
+            centerBased,
+            color,
+            rotationDegrees);
+    }
     RecordRenderedTextElement(
         screen,
         id,
@@ -708,14 +731,34 @@ std::string UIRenderer::GetCustomTextureName(const std::string& assetRelativePat
     return "custom-ui:" + normalizedPath;
 }
 
+const std::vector<RubyTextSegment>& UIRenderer::ResolveCustomElementRuby(
+    const std::string& text)
+{
+    const auto cached = mCustomTextRubyCache.find(text);
+    if (cached != mCustomTextRubyCache.end()) {
+        return cached->second;
+    }
+
+    std::vector<RubyTextSegment> segments;
+    std::string errorMessage;
+    if (!JapaneseRubyGenerator::Generate(text, segments, errorMessage) ||
+        JoinRubyBaseText(segments) != text) {
+        segments.clear();
+    }
+    return mCustomTextRubyCache.emplace(text, std::move(segments))
+        .first->second;
+}
+
 void UIRenderer::DrawCustomElement(
     const UILoadSystem::CustomElement& element,
     float viewportTopY,
     float viewportScale,
     bool centerTalkPrompt,
     float contentScale,
-    const Player* inputPlayer)
+    const Player* inputPlayer,
+    float opacity)
 {
+    opacity = std::clamp(opacity, 0.0f, 1.0f);
     if (contentScale < 0.0f) {
         contentScale = viewportScale;
     }
@@ -783,7 +826,7 @@ void UIRenderer::DrawCustomElement(
             element.color[0] * 255.0f,
             element.color[1] * 255.0f,
             element.color[2] * 255.0f,
-            element.color[3] * 255.0f);
+            element.color[3] * 255.0f * opacity);
         if (element.screen == "title") {
             constexpr std::array<const char*, 3> titleMenuIds = {
                 "startGame", "createStage", "playCreatedStage"};
@@ -791,7 +834,8 @@ void UIRenderer::DrawCustomElement(
                  index < static_cast<int>(titleMenuIds.size()); ++index) {
                 if (element.id == titleMenuIds[index] &&
                     mGame->GetTitleMenuSelection() == index) {
-                    textColor = glm::vec4(255.0f, 225.0f, 45.0f, 255.0f);
+                    textColor = glm::vec4(
+                        255.0f, 225.0f, 45.0f, 255.0f * opacity);
                     break;
                 }
             }
@@ -805,7 +849,7 @@ void UIRenderer::DrawCustomElement(
             element.shadowColor[0] * 255.0f,
             element.shadowColor[1] * 255.0f,
             element.shadowColor[2] * 255.0f,
-            element.shadowColor[3] * 255.0f);
+            element.shadowColor[3] * 255.0f * opacity);
         effect.outlineEnabled = element.outlineEnabled;
         effect.outlineWidth =
             mFbWidth * element.outlineWidthRatio * contentScale;
@@ -813,16 +857,53 @@ void UIRenderer::DrawCustomElement(
             element.outlineColor[0] * 255.0f,
             element.outlineColor[1] * 255.0f,
             element.outlineColor[2] * 255.0f,
-            element.outlineColor[3] * 255.0f);
-        DrawText(
-            x,
-            y,
-            mFbWidth * element.textScaleRatio * contentScale,
-            resolvedText,
-            element.centerBased,
-            textColor,
-            element.rotationDegrees,
-            &effect);
+            element.outlineColor[3] * 255.0f * opacity);
+        const float textScale =
+            mFbWidth * element.textScaleRatio * contentScale;
+        const std::vector<RubyTextSegment>& rubySegments =
+            ResolveCustomElementRuby(resolvedText);
+        const bool hasRuby = std::any_of(
+            rubySegments.begin(),
+            rubySegments.end(),
+            [](const RubyTextSegment& segment) {
+                return segment.showsRuby && !segment.reading.empty();
+            });
+        if (hasRuby) {
+            constexpr float customRubyScaleRatio = 0.42f;
+            constexpr float customRubyGapRatio = -0.12f;
+            if (effect.shadowEnabled && effect.shadowColor.a > 0.0f) {
+                DrawRubyText(
+                    x + effect.shadowOffset.x,
+                    y + effect.shadowOffset.y,
+                    textScale,
+                    customRubyScaleRatio,
+                    customRubyGapRatio,
+                    rubySegments,
+                    effect.shadowColor,
+                    element.centerBased,
+                    element.rotationDegrees);
+            }
+            DrawRubyText(
+                x,
+                y,
+                textScale,
+                customRubyScaleRatio,
+                customRubyGapRatio,
+                rubySegments,
+                textColor,
+                element.centerBased,
+                element.rotationDegrees);
+        } else {
+            DrawText(
+                x,
+                y,
+                textScale,
+                resolvedText,
+                element.centerBased,
+                textColor,
+                element.rotationDegrees,
+                &effect);
+        }
         break;
     }
     case UILoadSystem::CustomElementType::Image:
@@ -843,14 +924,19 @@ void UIRenderer::DrawCustomElement(
             }
         }
         if (RegisterCustomUITexture(texturePath)) {
-            DrawTexture(
-                topLeftX,
-                topLeftY,
-                width,
-                height,
-                GetCustomTextureName(texturePath),
-                flipVertical,
-                element.rotationDegrees);
+            const auto textureIt =
+                mTextures.find(GetCustomTextureName(texturePath));
+            if (textureIt != mTextures.end()) {
+                DrawTextureHandle(
+                    topLeftX,
+                    topLeftY,
+                    width,
+                    height,
+                    textureIt->second,
+                    flipVertical,
+                    element.rotationDegrees,
+                    opacity);
+            }
         }
         break;
     }
@@ -861,7 +947,7 @@ void UIRenderer::DrawCustomElement(
             width,
             height,
             {element.color[0], element.color[1], element.color[2],
-             element.color[3]},
+             element.color[3] * opacity},
             element.rotationDegrees);
         break;
     }
@@ -914,6 +1000,117 @@ void UIRenderer::DrawCustomUI()
     const std::vector<Player*>& players = mGame->GetPlayers();
     const bool isTwoPlayer =
         mGame->GetIsPlayer2Joined() && players.size() >= 2;
+
+    // The operation guide remains visible at all times, but unavailable
+    // actions are intentionally subdued instead of being replaced by an
+    // explanation.  This keeps the layout stable while still showing the
+    // player which inputs are currently accepted.
+    const auto getOperationGuideOpacity =
+        [&](const UILoadSystem::CustomElement& element,
+            const Player* player) {
+            constexpr float disabledOpacity = 0.38f;
+            if (element.screen != "operation") {
+                return 1.0f;
+            }
+
+            const bool playerCanAct =
+                player && player->GetIsActive() && player->IsAlive();
+            if (!playerCanAct) {
+                return disabledOpacity;
+            }
+
+            const bool isSpecialCharging =
+                player->IsSpecialCharging() || player->GetCanSpecialAttack();
+            const bool isContinuousAttack =
+                player->IsContinuousAttacking();
+            // 連続攻撃は地上にいる間だけ操作を占有する。空中では残り時間が
+            // 減るだけで、弱攻撃・回避・強攻撃を通常どおり受け付ける。
+            const bool isGroundContinuousAttack =
+                isContinuousAttack && player->GetOnGround();
+            const bool isModifierHeld = mGame->IsInputModifierHeld();
+            const bool isIdle =
+                player->GetActionState() == Player::ActionState::Idle;
+            const bool isWeakAttacking =
+                player->GetActionState() == Player::ActionState::Attacking;
+            const bool canStartNormalAction =
+                isIdle && !isSpecialCharging && !isGroundContinuousAttack;
+            const bool canRecover =
+                isIdle && player->GetJewelCount() >= 1 &&
+                player->GetHp() < player->GetMaxHp();
+            const bool canStartChargeAttack =
+                isIdle && !isGroundContinuousAttack &&
+                player->GetJewelCount() >= 2;
+            const bool canStartContinuousAttack =
+                canStartNormalAction && player->GetOnGround() &&
+                player->GetJewelCount() >= 1;
+            bool isEnabled = true;
+
+            if (element.id == "buttonA" || element.id == "buttonTextA") {
+                if (isModifierHeld) {
+                    // 特殊入力中は「体力回復」。ジュエルを1個消費する。
+                    isEnabled = canRecover;
+                    return isEnabled ? 1.0f : disabledOpacity;
+                }
+                // Jumping starts only from the ground (apart from the small
+                // coyote-time grace, which is too brief to express in UI).
+                // Continuous attacks do not block jumping.
+                isEnabled = isIdle && !isSpecialCharging &&
+                            player->GetOnGround();
+            } else if (element.id == "buttonB" ||
+                       element.id == "buttonTextB") {
+                // 回避のクールタイムは短く、UIまで点滅すると見づらい。
+                // 継続攻撃・溜めなど、操作が明確に封じられる状態だけ示す。
+                // 溜め中の回避は実際に受け付けるため、通常表示を保つ。
+                // Weak attacks can be cancelled into a dodge.  Keep the
+                // guide bright for that state; the short dodge cooldown is
+                // intentionally not represented in the UI.
+                isEnabled = !isGroundContinuousAttack &&
+                            (isIdle || isWeakAttacking);
+            } else if (element.id == "buttonA_copy" ||
+                       element.id == "buttonTextB_copy") {
+                isEnabled = mGame->CanOpenPauseMenu();
+            } else if (element.id == "buttonX" ||
+                       element.id == "buttonTextX") {
+                if (isModifierHeld) {
+                    // 特殊入力中は「溜め攻撃」。開始には2個必要で、溜め中は
+                    // 同じ入力で発射／終了する。
+                    isEnabled = isSpecialCharging || canStartChargeAttack;
+                    return isEnabled ? 1.0f : disabledOpacity;
+                }
+                // 溜め攻撃は同じ強攻撃入力で発射／終了するので、その間も
+                // 強攻撃だけは有効として表示する。
+                isEnabled = canStartNormalAction || isSpecialCharging;
+            } else if (element.id == "buttonY" ||
+                       element.id == "buttonTextY") {
+                // 特殊入力中は「連続攻撃」で、ジュエルを1個消費する。
+                isEnabled = isModifierHeld
+                                ? canStartContinuousAttack
+                                : canStartNormalAction;
+            } else if (element.id == "buttonB_copy" ||
+                       element.id == "buttonTextB_copy2") {
+                // 溜め中は移動入力を受け付けない。一方、連続攻撃中は
+                // 移動できるため通常表示を保つ。
+                isEnabled = !isSpecialCharging && isIdle;
+            } else if (element.id == "buttonB_copy_copy" ||
+                       element.id == "buttonTextB_copy2_copy" ||
+                       element.id == "buttonB_copy_copy_copy" ||
+                       element.id == "buttonTextB_copy2_copy_copy") {
+                // Camera rotation and reset share the same camera-input
+                // lock, including cinematics, boss defeat and rocket travel.
+                const CameraSystem* cameraSystem = mGame->GetCameraSystem();
+                isEnabled = cameraSystem && cameraSystem->AllowsPlayerInput();
+            } else if (element.id == "buttonB_copy_copy2" ||
+                       element.id == "buttonTextB_copy2_copy2") {
+                isEnabled = mGame->CanSwitchControlledPlayer();
+            } else if (element.id == "buttonB_copy_copy2_copy" ||
+                       element.id == "buttonTextB_copy2_copy2_copy") {
+                // This includes the single-player restriction and, when
+                // merging, the two players being close enough together.
+                isEnabled = mGame->CanTogglePlayerSplit();
+            }
+
+            return isEnabled ? 1.0f : disabledOpacity;
+        };
 
     const auto isTalkPromptElement = [](const std::string& id) {
         return id == "talkableText" ||
@@ -1037,6 +1234,12 @@ void UIRenderer::DrawCustomUI()
             // This authored screen is shared by NPC conversations and every
             // tutorial page, so its placement can be adjusted in the UI editor.
             visibleInGame = isTalkOrTutorial;
+        } else if (element->screen == "ugc") {
+            // UGC用のカスタムUIは、ステージ作成モードのゲーム画面だけに
+            // 限定する。通常プレイでは visibleByDefault に関係なく出さない。
+            // デバッグエディター上では下の専用前景描画に任せる。
+            visibleInGame = mGame->GetIsUGCMode() &&
+                            !mGame->GetIsDebugEditorShowing();
         }
         if (isTalkOrTutorial && element->screen == "default" &&
             isTalkPromptElement(element->id)) {
@@ -1089,7 +1292,8 @@ void UIRenderer::DrawCustomUI()
                 1.0f,
                 false,
                 1.0f,
-                players[0]);
+                players[0],
+                getOperationGuideOpacity(*element, players[0]));
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
@@ -1097,11 +1301,26 @@ void UIRenderer::DrawCustomUI()
                 1.0f,
                 false,
                 1.0f,
-                players[1]);
+                players[1],
+                getOperationGuideOpacity(*element, players[1]));
             continue;
         }
 
-        DrawCustomElement(*element);
+        // In solo split play, only the currently controlled slime receives
+        // input.  Do not use players.front(): it may be the half that is
+        // already inside a rocket, which would incorrectly dim every guide.
+        const Player* operationPlayer =
+            mGame->GetIsPlayerSplit()
+                ? mGame->GetControlledPlayer()
+                : (!players.empty() ? players.front() : nullptr);
+        DrawCustomElement(
+            *element,
+            0.0f,
+            1.0f,
+            false,
+            -1.0f,
+            element->screen == "operation" ? operationPlayer : nullptr,
+            getOperationGuideOpacity(*element, operationPlayer));
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
             RecordRenderedUIElement(
@@ -1476,7 +1695,15 @@ bool UIRenderer::UsesControllerUI(const Player* player) const
         return false;
     }
 
-    return mGame->IsGameControllerConnected() && player->GetPlayerNum() == 1;
+    if (!mGame->IsGameControllerConnected()) {
+        return false;
+    }
+
+    // A controller controls whichever half is currently selected during
+    // solo split play. In local multiplayer, controller 1 is player 1 and,
+    // when connected, controller 2 is player 2.
+    return !mGame->GetIsPlayer2Joined() ||
+           mGame->HasGameControllerForPlayer(player->GetPlayerNum());
 }
 
 bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName)

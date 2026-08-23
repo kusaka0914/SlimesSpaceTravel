@@ -40,6 +40,7 @@ public:
     void OnPlayerSplitMergeSucceeded();
 
     bool HasActiveTutorial() const;
+    bool HasCompletedTutorial(const std::string& tutorialId) const;
     bool IsWaitingForPlayerAction() const;
     bool IsWaitingForPlayerSwitch() const;
     bool IsWaitingForPlayerJump() const;
@@ -74,6 +75,7 @@ private:
 
     TutorialLibrary mLibrary;
     std::unordered_set<std::string> mShownOnceTutorialIds;
+    std::unordered_set<std::string> mCompletedTutorialIds;
     std::string mActiveTutorialId;
     Player* mTutorialPlayer = nullptr;
     Player* mActionPlayerAtPageStart = nullptr;

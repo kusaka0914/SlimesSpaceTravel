@@ -12,7 +12,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/blackPlatform.png
-  - center: [1002, 0, 0]
+  - center: [-613.83136, -269.925, 54.81463]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
@@ -160,14 +160,14 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [51.56816, -10.373858, -3.752574]
-    scale: [6, 2, 6]
+  - center: [51.15775, -10.373855, 21.843506]
+    scale: [4, 4, 4]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
     rocketSpawnCondition: AllBoatPartsCollected
     textureTiling:
-      - 6
-      - 2
+      - 4
+      - 4
     textureSideBlendWidth: 0.05
     stageNum: 11
     canAttractNearbyPlayer: false
@@ -264,40 +264,42 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-enemies: []
+enemies:
+  - {editorName: 新しい通常敵, type: boss_5, currentPlanetNum: 11, theta: -1.9765041, phi: -1.0323765, height: 0.4324727, pos: [-0.9, -3.81, -2.09], upVec: [-0.20261456, -0.85845953, -0.47116295], scale: [1.5, 2, 1.5], modelPath: enemy_red.obj, facingYaw: -2.2351742e-08, rotation: [0, 0, 0], rotationQuat: [0.11216893, -0.028081063, -0.24122274, 0.96355665]}
 keys: []
 crystals:
   - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
-boats: [{startPlanet: 14, destPlanet: 7, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}, {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}]
+boats:
+  - {startPlanet: 14, destPlanet: 7, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
+  - {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
 boatArrivalPoints: []
 boatParts: []
 players:
   - pos:
-      - -1.2
-      - -2.18
-      - -0.12
-    currentPlanetNum: 4
-    theta: -3.040424
-    phi: -1.0632011
-    height: 0.21601944
-    facingYaw: 3.5963097
+      - -3.375389
+      - 1.8554602
+      - -0.8806019
+    currentPlanetNum: 11
+    theta: -2.886392
+    phi: 0.48884016
+    height: -0.04886818
+    facingYaw: -2.6868756
     rotation:
       - 0
-      - 3.5963097
+      - -2.6868756
       - 0
     upVec:
-      - 0.07471662
-      - -0.99111396
-      - 0.11004798
+      - -0.8577925
+      - 0.4616155
+      - -0.22605996
     rotationQuat:
-      - 0.06211687
-      - 0.97256356
-      - 0.024176806
-      - -0.2228836
+      - 0.24909249
+      - -0.518463
+      - 0.81777793
+      - 0.019706156
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
-star:
-  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_red.glb}
+star: [{currentPlanetNum: 11, theta: 0, phi: 0, height: 1.6322937, isActive: false, pos: [5.63, 0, 0], upVec: [-0.21476, -0.36923665, -0.9041806], modelPath: star_red.glb}]
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [""], pos: [-0.06, -1.42, 4.14], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, proximityMessage: {mode: always, variants: [{talkIndex: 0, text: 回避上手く使って急いで～！}], rubies: [{talkIndex: 0, segments: [{text: 回, ruby: true, reading: かい}, {text: 避, ruby: true, reading: ひ}, {text: 上手, ruby: true, reading: うま}, {text: く, ruby: false}, {text: 使, ruby: true, reading: つか}, {text: って, ruby: false}, {text: 急, ruby: true, reading: いそ}, {text: いで～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
 platforms:

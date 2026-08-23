@@ -313,13 +313,13 @@ enemies:
   - editorName: 新しい通常敵
     type: boss_4
     currentPlanetNum: 3
-    theta: 3.1415927
-    phi: -1.5680342
-    height: -0.35998678
+    theta: -1.5707964
+    phi: -1.568506
+    height: 0.40902328
     pos:
-      - -0.01
-      - -3.64
       - 0
+      - -4.41
+      - -0.01
     upVec:
       - -0.0015430235
       - -0.9999988
@@ -442,7 +442,7 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 15, theta: 1.2036346, phi: -0.38795003, height: 85.40143, isActive: false, pos: [30.23, -34.42, 78.61], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_purple.glb}
+  - {currentPlanetNum: 3, theta: -1.2992265, phi: -0.08809471, height: -0.051273823, isActive: false, pos: [1.0551147, -0.3474121, -3.789258], upVec: [0.27749836, -0.08527035, -0.9569345], modelPath: star_purple.glb}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 1}]}
   - modelPath: spaceSlime.obj

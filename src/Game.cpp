@@ -142,6 +142,12 @@ void Game::CreateGameSystems()
     mStageFlowController = std::make_unique<StageFlowController>();
     mStageProgressSystem = std::make_unique<StageProgressSystem>();
     mStageProgressSystem->Load();
+    if (mStageProgressSystem->HasSelectedPlayerControlStyle()) {
+        mPlayerControlStyle =
+            mStageProgressSystem->IsAssistControlStyleSelected()
+                ? PlayerControlStyle::Assist
+                : PlayerControlStyle::Standard;
+    }
     mGamepadRumbleService = std::make_unique<GamepadRumbleService>();
     mEditorBuildRestartService = std::make_unique<EditorBuildRestartService>();
     mEnemyJewelDropSystem =
@@ -557,6 +563,7 @@ void Game::UpdateGame()
     // camera.  Otherwise the fade reaches the midpoint, loads UGC, and never
     // advances to the reveal phase.
     mSceneSystem->Update(deltaTime);
+    UpdatePendingSoloSplitControlSwitch(deltaTime);
 
     if (mIsFreeCameraMode) {
         if (mSequenceSystem) {
@@ -1021,12 +1028,7 @@ void Game::RemoveAllPlayer()
 
 bool Game::TogglePlayerSplit()
 {
-    const bool allowsPlayerSplitToggle =
-        mSceneSystem &&
-        (mSceneSystem->IsPlaying() ||
-         mSceneSystem->IsWaitingForTutorialPlayerSplitMerge());
-    if (!allowsPlayerSplitToggle ||
-        !CanChangeSoloPlayerConfiguration()) {
+    if (!CanTogglePlayerSplit()) {
         return false;
     }
 
@@ -1036,6 +1038,19 @@ bool Game::TogglePlayerSplit()
         mSceneSystem->OnPlayerSplitMergeSucceeded();
     }
     return didChangeSplitState;
+}
+
+bool Game::CanTogglePlayerSplit() const
+{
+    const bool allowsPlayerSplitToggle =
+        mSceneSystem &&
+        (mSceneSystem->IsPlaying() ||
+         mSceneSystem->IsWaitingForTutorialPlayerSplitMerge());
+    if (!allowsPlayerSplitToggle || !CanChangeSoloPlayerConfiguration()) {
+        return false;
+    }
+
+    return !mIsPlayerSplit || AreSplitPlayersCloseEnoughToMerge();
 }
 
 bool Game::CanChangeSoloPlayerConfiguration() const
@@ -1198,16 +1213,11 @@ void Game::SelectControlledPlayer(int playerIndex)
 
 bool Game::SwitchControlledPlayer()
 {
-    const std::vector<Player*>& players = GetPlayers();
-    const bool allowsPlayerSwitch =
-        mSceneSystem &&
-        (mSceneSystem->IsPlaying() ||
-         mSceneSystem->IsWaitingForTutorialPlayerSwitch());
-    if (!mIsPlayerSplit || !CanChangeSoloPlayerConfiguration() ||
-        players.size() < 2 ||
-        !allowsPlayerSwitch) {
+    if (!CanSwitchControlledPlayer()) {
         return false;
     }
+
+    const std::vector<Player*>& players = GetPlayers();
 
     const int previousIndex = mControlledPlayerIndex;
     int nextIndex = previousIndex;
@@ -1231,6 +1241,69 @@ bool Game::SwitchControlledPlayer()
         mSceneSystem->OnPlayerSwitchSucceeded();
     }
     return true;
+}
+
+bool Game::CanSwitchControlledPlayer() const
+{
+    const bool allowsPlayerSwitch =
+        mSceneSystem &&
+        (mSceneSystem->IsPlaying() ||
+         mSceneSystem->IsWaitingForTutorialPlayerSwitch());
+    if (!mIsPlayerSplit || !CanChangeSoloPlayerConfiguration() ||
+        GetPlayers().size() < 2 || !allowsPlayerSwitch) {
+        return false;
+    }
+
+    // Do not present switching as available when the other half is already
+    // riding a rocket (or otherwise inactive).
+    const std::vector<Player*>& players = GetPlayers();
+    for (int index = 0; index < static_cast<int>(players.size()); ++index) {
+        if (index != mControlledPlayerIndex && players[index] &&
+            players[index]->GetIsActive()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Game::RequestSoloSplitControlSwitchAfterBoarding()
+{
+    if (!mIsPlayer2Joined && mIsPlayerSplit) {
+        mPendingSoloSplitControlSwitchTimer = 0.5f;
+    }
+}
+
+void Game::UpdatePendingSoloSplitControlSwitch(float deltaTime)
+{
+    if (mPendingSoloSplitControlSwitchTimer < 0.0f) {
+        return;
+    }
+
+    mPendingSoloSplitControlSwitchTimer -= deltaTime;
+    if (mPendingSoloSplitControlSwitchTimer > 0.0f) {
+        return;
+    }
+    mPendingSoloSplitControlSwitchTimer = -1.0f;
+
+    if (mIsPlayer2Joined || !mIsPlayerSplit) {
+        return;
+    }
+
+    const std::vector<Player*>& players = GetPlayers();
+    if (mControlledPlayerIndex >= 0 &&
+        mControlledPlayerIndex < static_cast<int>(players.size()) &&
+        players[static_cast<std::size_t>(mControlledPlayerIndex)] &&
+        players[static_cast<std::size_t>(mControlledPlayerIndex)]->GetIsActive()) {
+        return;
+    }
+
+    for (int index = 0; index < static_cast<int>(players.size()); ++index) {
+        if (players[static_cast<std::size_t>(index)] &&
+            players[static_cast<std::size_t>(index)]->GetIsActive()) {
+            SelectControlledPlayer(index);
+            return;
+        }
+    }
 }
 
 void Game::LoadData(bool isLoadPlayer)
@@ -1751,6 +1824,19 @@ bool Game::AreAllMainStagesCleared() const
     return true;
 }
 
+bool Game::HasCompletedEndingRoll() const
+{
+    return mStageProgressSystem &&
+           mStageProgressSystem->HasCompletedEndingRoll();
+}
+
+void Game::MarkEndingRollCompleted()
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->SetEndingRollCompleted();
+    }
+}
+
 bool Game::HasCompletedNPCEndingTrigger(
     const NPC* npc, std::size_t talkPageIndex) const
 {
@@ -1957,6 +2043,11 @@ SDL_GameController* Game::GetSdlController() const
     return mGamepadRumbleService->GetController();
 }
 
+SDL_GameController* Game::GetSdlControllerForPlayer(int playerNum) const
+{
+    return mGamepadRumbleService->GetControllerForPlayer(playerNum);
+}
+
 const std::vector<Player*>& Game::GetPlayers() const
 {
     return mWorld->GetPlayers();
@@ -2064,4 +2155,9 @@ bool Game::IsInBase() const
 bool Game::IsGameControllerConnected() const
 {
     return mGamepadRumbleService->IsConnected();
+}
+
+bool Game::HasGameControllerForPlayer(int playerNum) const
+{
+    return mGamepadRumbleService->HasControllerForPlayer(playerNum);
 }

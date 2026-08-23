@@ -54,6 +54,13 @@ private:
         Player& player,
         const Planet& planet,
         float deltaTime) const;
+    Planet* SelectNearbyAttractingPlanet(
+        Player& player,
+        PlayerMovement& movement);
+    void ApplyNearbySurfaceAttraction(
+        Player& player,
+        const Planet& planet,
+        float deltaTime) const;
     void SmoothAirborneUpVec(
         Player& player,
         const glm::vec3& targetUp,
@@ -71,8 +78,15 @@ private:
     // 2.0f: ゆっくり
     // 3.0f: ふわっと自然
     // 5.0f: 比較的速い
-    static constexpr float gravityTurnSpeed = 4.0f;
-    static constexpr float airborneMaximumTurnDegreesPerSecond = 120.0f;
+    static constexpr float gravityTurnSpeed = 12.0f;
+    static constexpr float airborneMaximumTurnDegreesPerSecond = 540.0f;
+
+    // 近接重力は、当たり判定に届く前から姿勢と落下方向を切り替える。
+    // この距離外では従来どおり現在の惑星を維持する。
+    static constexpr float nearbyAttractionRange = 3.0f;
+    static constexpr float planetSwitchDistanceHysteresis = 0.15f;
+    static constexpr float nearbyAttractionAcceleration = 42.0f;
+    static constexpr float nearbyAttractionMaximumAcceleration = 70.0f;
 
     static constexpr float ellipseAttractionStartSurfaceDistance = 1.25f;
     static constexpr float ellipseDetachedTakeoffSurfaceDistance = 0.75f;
@@ -90,6 +104,7 @@ private:
     float mNoGroundRayDuration = 0.0f;
     float mEllipseJumpStartSurfaceDistance = 0.0f;
     bool mUseEllipseSurfaceGravity = false;
+    bool mIsNearbySurfaceAttractionActive = false;
     Planet* mLastLandedPlanet = nullptr;
     glm::vec3 mOverheadGravityUpDirection{0.0f, 1.0f, 0.0f};
 

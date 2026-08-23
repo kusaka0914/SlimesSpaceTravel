@@ -66,6 +66,33 @@ std::string MakeSafeUGCFileName(const std::string& displayName)
     }
     return safeName.empty() ? "untitled" : safeName;
 }
+
+void DrawUGCEraserActiveIndicator(bool isActive)
+{
+    if (!isActive) {
+        return;
+    }
+
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    drawList->AddRect(
+        min,
+        max,
+        IM_COL32(255, 70, 45, 255),
+        7.0f,
+        0,
+        3.0f);
+    drawList->AddRectFilled(
+        ImVec2(min.x + 4.0f, min.y + 4.0f),
+        ImVec2(min.x + 27.0f, min.y + 19.0f),
+        IM_COL32(205, 35, 25, 235),
+        4.0f);
+    drawList->AddText(
+        ImVec2(min.x + 7.0f, min.y + 4.0f),
+        IM_COL32(255, 255, 255, 255),
+        "ON");
+}
 }
 
 DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
@@ -697,6 +724,8 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
             : ImGui::Button(tooltip, size);
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
+        DrawUGCEraserActiveIndicator(
+            std::strcmp(id, "eraser") == 0 && mIsUGCEraserMode);
         if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", tooltip);
         }
@@ -1499,6 +1528,8 @@ void DebugUIRenderer::DrawUGCEditor(
             : ImGui::Button(tooltip, ImVec2(64.0f, 64.0f));
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
+        DrawUGCEraserActiveIndicator(
+            std::strcmp(id, "eraser") == 0 && mIsUGCEraserMode);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tooltip);
         ImGui::PopID();
         return clicked;

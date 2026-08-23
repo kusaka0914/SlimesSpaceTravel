@@ -416,9 +416,9 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
 
-    // Older stage YAML can contain a stale or omitted currentPlanetNum. The
-    // world-space placement remains authoritative, so reconcile ownership
-    // only after every category and planet has finished loading.
+    // Older stage YAML can contain a stale or omitted currentPlanetNum. World
+    // placement remains authoritative for ordinary actors; boats retain their
+    // explicitly serialized startPlanet during this reconciliation.
     StageActorPlanetBindingService::RefreshNearestPlanetBindings(
         mGame->GetCurrentStage());
 }
@@ -873,6 +873,11 @@ TutorialTrigger* ActorLoadSystem::CreateTutorialTriggerFromStageNode(
             trigger->SetTutorialId(
                 triggerNode["tutorialId"]
                     ? triggerNode["tutorialId"].as<std::string>()
+                    : std::string());
+            trigger->SetRequiredCompletedTutorialId(
+                triggerNode["requiredCompletedTutorialId"]
+                    ? triggerNode["requiredCompletedTutorialId"]
+                          .as<std::string>()
                     : std::string());
 
             if (triggerNode["talkTexts"] &&

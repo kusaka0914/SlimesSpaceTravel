@@ -139,6 +139,9 @@ public:
     void RemoveAllPlayer();
     bool TogglePlayerSplit();
     bool SwitchControlledPlayer();
+    bool CanTogglePlayerSplit() const;
+    bool CanSwitchControlledPlayer() const;
+    void RequestSoloSplitControlSwitchAfterBoarding();
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
     void SetGroundNormalRayLength(float rayLength)
@@ -153,6 +156,7 @@ public:
 
     GLFWwindow* GetWindow() const { return mWindow; }
     SDL_GameController* GetSdlController() const;
+    SDL_GameController* GetSdlControllerForPlayer(int playerNum) const;
 
     const std::vector<Player*>& GetPlayers() const;
     const std::vector<JewelItem*>& GetRuntimeJewelItems() const;
@@ -268,6 +272,7 @@ public:
     bool GetIsDebugMode() const { return mIsDebugMode; }
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
+    bool HasSelectedPlayerControlStyle() const;
 
     bool IsInBase() const;
     bool IsStageCleared(int stageNum) const;
@@ -282,11 +287,14 @@ public:
     void MarkNPCOpeningTriggerCompleted(
         const NPC* npc, std::size_t talkPageIndex);
     bool AreAllMainStagesCleared() const;
+    bool HasCompletedEndingRoll() const;
+    void MarkEndingRollCompleted();
     bool HasCompletedNPCEndingTrigger(
         const NPC* npc, std::size_t talkPageIndex) const;
     void MarkNPCEndingTriggerCompleted(
         const NPC* npc, std::size_t talkPageIndex);
     bool IsGameControllerConnected() const;
+    bool HasGameControllerForPlayer(int playerNum) const;
     InputDeviceType GetLastUsedInputDevice() const { return mLastUsedInputDevice; }
     void RecordInputDeviceUsage(InputDeviceType inputDevice)
     {
@@ -324,6 +332,7 @@ private:
     bool AreSplitPlayersCloseEnoughToMerge() const;
     bool MergePlayerInto(int targetPlayerIndex);
     void SelectControlledPlayer(int playerIndex);
+    void UpdatePendingSoloSplitControlSwitch(float deltaTime);
     bool LoadDebugStage(int stageNum, const std::string& yamlPath);
     bool PrepareInitialSceneForDebug();
     void RestoreDebugEditorSessionAtStartup(
@@ -370,6 +379,7 @@ private:
     bool mIsPlayer2Joined = false;
     bool mIsPlayerSplit = false;
     int mControlledPlayerIndex = 0;
+    float mPendingSoloSplitControlSwitchTimer = -1.0f;
     bool mIsDebugEditorShowing = false;
     bool mIsUGCMode = false;
     bool mIsUGCDebugEditorShowing = false;

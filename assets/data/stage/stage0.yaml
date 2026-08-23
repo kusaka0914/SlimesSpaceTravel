@@ -12,9 +12,10 @@ planets:
     textureSideBlendWidth: 0.05
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
+    stageNum: 0
   - center:
       - -27.1
-      - -75.48
+      - -75.48419
       - -36.12
     scale:
       - 10
@@ -176,17 +177,17 @@ boats:
       - -0.0025696573
       - 0.71932703
     travelSpeed: 6.5957127
-  - startPlanet: 0
-    destPlanet: 0
+  - startPlanet: 1
+    destPlanet: 1
     destStage: 6
-    theta: 0.81694776
-    phi: -0.72369015
-    height: 4.7013407
+    theta: 1.122474
+    phi: -1.547427
+    height: 0.29001045
     facingYaw: -1.5359126
     pos:
-      - 0.07
-      - -10.06
-      - 0.03
+      - 0.1
+      - -10.29
+      - 0.22
     rotation:
       - 0.06169799
       - 1.5358474
@@ -247,6 +248,42 @@ boats:
       - 0.7193301
       - 0.004160167
     travelSpeed: 2.1456282
+  - startPlanet: 1
+    destPlanet: 0
+    destStage: 0
+    theta: 2.7276
+    phi: 1.4305596
+    height: 0.19718266
+    facingYaw: -1.5358474
+    pos:
+      - -1.3
+      - 10.1
+      - 0.57
+    rotation:
+      - 0
+      - 1.5358474
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.12796757
+      - 0.9901831
+      - 0.0562285
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.71633106
+      - -0.024400396
+      - 0.6942344
+      - 0.065673806
+    visibleIfStageCleared: 5
+    travelSpeed: 8.0166235
 players:
   - currentPlanetNum: 0
     theta: 1.570679
@@ -283,11 +320,17 @@ NPCs:
       - "今、エレベーターが流行ってるみたいだよ！\nほら！あそこにも！"
       - あれに乗ったら動くのかなぁ～？
       - "あの子のエレベーターが帰ってきたみたいだよ！\n使ってみたら～？"
-      - "工事が終わって裏側に行けるようになったよ...！\nでも..."
+      - "工事が終わって裏側に行けるようになったよ...！\n最後の星がある惑星には裏から行けるけど..."
       - 裏側はこことは雰囲気が違うから気を付けて...！
       - "そんなことがあったんだね..！\nよし分かった！僕も協力するよ！"
       - "じゃあまずはほかの惑星に行って、\n星を探さないとね...！"
       - "あの子、ロケットの場所を知ってたはず！\nまずはあの子に聞いてみて～！"
+      - "おかえり！すべての星を集めれたんだね！\nきみは本当にすごいよ！"
+      - それで、ママはどうだった？
+      - 治ったんだ！よかったね～！
+      - "ここにはもう用がないかもしれないけど...\nよかったらまた遊びに来てよ！"
+      - "あ！そうだそうだ！\n裏から月に行けるようになったんだ！"
+      - "強い敵と戦えるみたいだから暇だったら\n行ってみてよ！"
     pos:
       - -0.03
       - 2.58
@@ -432,7 +475,38 @@ NPCs:
           - text: 行
             ruby: true
             reading: い
-          - text: "けるようになったよ...！\nでも..."
+          - text: "けるようになったよ...！\n"
+            ruby: false
+          - text: 最
+            ruby: true
+            reading: さい
+          - text: 後
+            ruby: true
+            reading: ご
+          - text: の
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: がある
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: には
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: から
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるけど...
             ruby: false
       - talkIndex: 6
         segments:
@@ -551,6 +625,104 @@ NPCs:
             reading: き
           - text: いてみて～！
             ruby: false
+      - talkIndex: 10
+        segments:
+          - text: おかえり！すべての
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: を
+            ruby: false
+          - text: 集
+            ruby: true
+            reading: あつ
+          - text: "めれたんだね！\nきみは"
+            ruby: false
+          - text: 本
+            ruby: true
+            reading: ほん
+          - text: 当
+            ruby: true
+            reading: とう
+          - text: にすごいよ！
+            ruby: false
+      - talkIndex: 11
+        segments:
+          - text: それで、ママはどうだった？
+            ruby: false
+      - talkIndex: 12
+        segments:
+          - text: 治
+            ruby: true
+            reading: なお
+          - text: ったんだ！よかったね～！
+            ruby: false
+      - talkIndex: 13
+        segments:
+          - text: ここにはもう
+            ruby: false
+          - text: 用
+            ruby: true
+            reading: よう
+          - text: "がないかもしれないけど...\nよかったらまた"
+            ruby: false
+          - text: 遊
+            ruby: true
+            reading: あそ
+          - text: びに
+            ruby: false
+          - text: 来
+            ruby: true
+            reading: き
+          - text: てよ！
+            ruby: false
+      - talkIndex: 14
+        segments:
+          - text: "あ！そうだそうだ！\n"
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: から
+            ruby: false
+          - text: 月
+            ruby: true
+            reading: つき
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるようになったんだ！
+            ruby: false
+      - talkIndex: 15
+        segments:
+          - text: 強
+            ruby: true
+            reading: つよ
+          - text: い
+            ruby: false
+          - text: 敵
+            ruby: true
+            reading: てき
+          - text: と
+            ruby: false
+          - text: 戦
+            ruby: true
+            reading: たたか
+          - text: えるみたいだから
+            ruby: false
+          - text: 暇
+            ruby: true
+            reading: ひま
+          - text: "だったら\n"
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: ってみてよ！
+            ruby: false
     talkStageClearConditions:
       - talkIndex: 2
         stage: 2
@@ -562,6 +734,18 @@ NPCs:
         stage: 4
       - talkIndex: 6
         stage: 4
+      - talkIndex: 10
+        stage: 5
+      - talkIndex: 11
+        stage: 5
+      - talkIndex: 12
+        stage: 5
+      - talkIndex: 13
+        stage: 5
+      - talkIndex: 14
+        stage: 5
+      - talkIndex: 15
+        stage: 5
     proximityMessage:
       mode: afterTalk
       variants:
@@ -573,6 +757,8 @@ NPCs:
           text: 裏側に行くなら気を付けて...！
         - talkIndex: 9
           text: あの子にきいてみて～！
+        - talkIndex: 15
+          text: 裏から月に行けるよ！
       rubies:
         - talkIndex: 3
           segments:
@@ -624,6 +810,23 @@ NPCs:
               reading: こ
             - text: にきいてみて～！
               ruby: false
+        - talkIndex: 15
+          segments:
+            - text: 裏
+              ruby: true
+              reading: うら
+            - text: から
+              ruby: false
+            - text: 月
+              ruby: true
+              reading: つき
+            - text: に
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: けるよ！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -646,6 +849,8 @@ NPCs:
     talkTexts:
       - 他の惑星に行くロケットはこの上だよ！
       - ジャンプで階段をのぼってね！
+      - 行けたみたいだね！よかった～！
+      - "ロケットは何回でも使えるから\n気が向いたらまた使ってね！"
     pos:
       - -9.92
       - 2.65
@@ -707,6 +912,45 @@ NPCs:
             reading: だん
           - text: をのぼってね！
             ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けたみたいだね！よかった～！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: ロケットは
+            ruby: false
+          - text: 何
+            ruby: true
+            reading: なん
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: でも
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: "えるから\n"
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: が
+            ruby: false
+          - text: 向
+            ruby: true
+            reading: む
+          - text: いたらまた
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: ってね！
+            ruby: false
     proximityMessage:
       mode: afterTalk
       variants:
@@ -714,6 +958,8 @@ NPCs:
           text: ジャンプで階段登って！
         - talkIndex: 1
           text: ジャンプで階段登って！
+        - talkIndex: 3
+          text: また使ってね！
       rubies:
         - talkIndex: 0
           segments:
@@ -745,6 +991,15 @@ NPCs:
               reading: のぼ
             - text: って！
               ruby: false
+        - talkIndex: 3
+          segments:
+            - text: また
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: ってね！
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -754,6 +1009,11 @@ NPCs:
       - 0.9208719
       - 0.009001648
     forceTalkOnArrival: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 2
+      - talkIndex: 3
+        stage: 2
   - currentPlanetNum: 0
     theta: 0
     phi: -1.570796
@@ -924,6 +1184,8 @@ NPCs:
       - "ん？中に入りたい？\nダメダメ！君ももっとビッグになるんだね！"
       - 屋上に行けるエレベーター作っちゃった～！
       - ...勝手に使わないでね？
+      - きみ、ビッグだねぇ＝！
+      - きみもこの大きい家。一緒に住む？
     pos:
       - -8.32
       - 2.84
@@ -1022,11 +1284,46 @@ NPCs:
             reading: つか
           - text: わないでね？
             ruby: false
+      - talkIndex: 4
+        segments:
+          - text: きみ、ビッグだねぇ＝！
+            ruby: false
+      - talkIndex: 5
+        segments:
+          - text: きみもこの
+            ruby: false
+          - text: 大
+            ruby: true
+            reading: おお
+          - text: きい
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: 。
+            ruby: false
+          - text: 一
+            ruby: true
+            reading: いっ
+          - text: 緒
+            ruby: true
+            reading: しょ
+          - text: に
+            ruby: false
+          - text: 住
+            ruby: true
+            reading: す
+          - text: む？
+            ruby: false
     talkStageClearConditions:
       - talkIndex: 2
         stage: 2
       - talkIndex: 3
         stage: 2
+      - talkIndex: 4
+        stage: 5
+      - talkIndex: 5
+        stage: 5
     proximityMessage:
       mode: afterTalk
       variants:
@@ -1038,6 +1335,8 @@ NPCs:
           text: 使わないでねっ？
         - talkIndex: 3
           text: 使わないでねっ？
+        - talkIndex: 5
+          text: 一緒に住む？
       rubies:
         - talkIndex: 0
           segments:
@@ -1064,6 +1363,21 @@ NPCs:
               reading: つか
             - text: わないでねっ？
               ruby: false
+        - talkIndex: 5
+          segments:
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 緒
+              ruby: true
+              reading: しょ
+            - text: に
+              ruby: false
+            - text: 住
+              ruby: true
+              reading: す
+            - text: む？
+              ruby: false
       range: 3
       height: 1.8
       scale: 1
@@ -1083,9 +1397,9 @@ NPCs:
       - "エレベーターが帰ってきたの！\nこれに乗ったら上に行けるよ！"
       - ここにあったエレベーター、知らない..？
     pos:
-      - -2.6
+      - -2.75
       - 7.52
-      - -12.68
+      - -12.22
     facingYaw: 2.023314
     rotation:
       - 0
@@ -1783,15 +2097,6 @@ NPCs:
       - -0.027292889
       - -0.39507005
     talkCameraFocus:
-      - talkIndex: 0
-        sequence: platforms
-        index: 9
-      - talkIndex: 1
-        sequence: platforms
-        index: 9
-      - talkIndex: 2
-        sequence: platforms
-        index: 9
       - talkIndex: 3
         sequence: platforms
         index: 8
@@ -1810,7 +2115,7 @@ NPCs:
     talkTexts:
       - "こ...こんなウラまでよく来たな！\n（うまそうなやつだ...）"
       - "ま..まぁ何もない村だがゆっくりしてってよ！\n（あとでいただくとしよう...）"
-      - "ちょっと君！いいこと教えてあげるからこっちにpp来なさい！\n（腹減った...もう我慢できない...）"
+      - "ちょっと君！いいこと教えてあげるからこっちに来なさい！\n（腹減った...もう我慢できない...）"
     pos:
       - -13.19
       - -2.34
@@ -1866,7 +2171,7 @@ NPCs:
           - text: 教
             ruby: true
             reading: おし
-          - text: えてあげるからこっちにpp
+          - text: えてあげるからこっちに
             ruby: false
           - text: 来
             ruby: true
@@ -1897,7 +2202,7 @@ NPCs:
         - talkIndex: 1
           text: ゆっくりしてってよ...ジュルリ
         - talkIndex: 2
-          text: さぁ...こっちにきなさい...グヘヘpwayuuuyuuudkkkp
+          text: さぁ...こっちにきなさい...グヘヘ
       rubies:
         - talkIndex: 0
           segments:
@@ -1920,7 +2225,7 @@ NPCs:
               ruby: false
         - talkIndex: 2
           segments:
-            - text: さぁ...こっちにきなさい...グヘヘpwayuuuyuuudkkkp
+            - text: さぁ...こっちにきなさい...グヘヘ
               ruby: false
       range: 3
       height: 1.8
@@ -2829,7 +3134,7 @@ stageObjects:
       - 0.96222866
     pos:
       - -0.78
-      - 2.42
+      - 2.44
       - -20.03
     upVec:
       - 0.0017402023
@@ -3262,7 +3567,7 @@ platforms:
       - 0
     pos:
       - -3.2441673
-      - 7.6
+      - 7.563903
       - -14.08
     upVec:
       - 0
@@ -3287,10 +3592,10 @@ platforms:
       - 0
     components:
       movement:
-        startLocalPos: [-3.2441673, 7.6, -14.08]
-        endLocalPos: [-3.24, 28.24145, -14.08]
-        moveOffset: [0.0041673183, 20.641449, 0]
-        moveDuration: 3
+        startLocalPos: [-3.2441673, 7.563903, -14.08]
+        endLocalPos: [-3.24, 28.241447, -14.08]
+        moveOffset: [0.0041673183, 20.677544, 0]
+        moveDuration: 5
         moveOnPlayer: true
         returnDelay: 1
         endpointWaitSeconds: 0
@@ -3566,16 +3871,16 @@ platforms:
         startLocalPos: [-3.814686, -13.484959, 6.369206]
         endLocalPos: [-19.21046, -92.77774, -36.0141]
         moveOffset: [-15.395775, -79.292786, -42.383305]
-        moveDuration: 8
+        moveDuration: 20
         moveOnPlayer: true
         returnDelay: 1
         endpointWaitSeconds: 0
     visibleIfStageCleared: 5
     platformId: legacy_platforms_8
   - currentPlanetNum: 1
-    theta: 1.2549485
-    phi: -0.31627074
-    height: 8.0416355
+    theta: 0.7214547
+    phi: 1.2328695
+    height: 6.994728
     facingYaw: 3.130676
     rotation:
       - -3.1415815
@@ -3594,9 +3899,9 @@ platforms:
       - -0.00024032593
       - 0.0010485649
     pos:
-      - 5.33
-      - -5.61
-      - 16.3
+      - 4.230486
+      - 16.033577
+      - 3.721325
     rotationQuat:
       - -2.5685844e-05
       - 0.9999783
@@ -3619,9 +3924,9 @@ platforms:
       - 1
     components:
       movement:
-        startLocalPos: [-21.773817, -81.09139, -19.821388]
+        startLocalPos: [4.230486, 16.033577, 3.721325]
         endLocalPos: [-0.26000023, -13.32, 5.290001]
-        moveOffset: [21.513817, 67.77139, 25.11139]
+        moveOffset: [-4.490486, -29.353577, 1.568676]
         moveDuration: 3
         moveOnPlayer: true
         returnDelay: 1

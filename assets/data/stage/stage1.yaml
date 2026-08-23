@@ -325,7 +325,7 @@ boats:
     textureTiling:
       - 1
       - 1
-    travelSpeed: 5
+    travelSpeed: 10
   - startPlanet: 3
     destPlanet: 1
     destStage: 0
@@ -736,6 +736,172 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+  - modelPath: spaceSlime.obj
+    currentPlanetNum: 1
+    theta: 0.019271871
+    phi: -0.7914767
+    height: 0.66386247
+    facingYaw: 0
+    radius: 0.75
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    name: 新しいNPC
+    talkTexts:
+      - "ジュエルを1個使うと、回復か連続攻撃、\n2個使うと溜め攻撃ができるよ！"
+      - "ジュエルは30秒に1個作られて、2個まで増えるんだ！\n敵が落とすジュエルを拾えば10個まで持てるよ！"
+    pos:
+      - 1.87
+      - -1.9
+      - 0.04
+    upVec:
+      - 0.99356365
+      - -0.11320151
+      - 0.004088799
+    forceTalkOnArrival: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: ジュエルを使えば特殊技を出せるよ！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: ジュエルを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: えば
+              ruby: false
+            - text: 特
+              ruby: true
+              reading: とく
+            - text: 殊
+              ruby: true
+              reading: しゅ
+            - text: 技
+              ruby: true
+              reading: わざ
+            - text: を
+              ruby: false
+            - text: 出
+              ruby: true
+              reading: だ
+            - text: せるよ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: ジュエルを1
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: うと、
+            ruby: false
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: 復
+            ruby: true
+            reading: ふく
+          - text: か
+            ruby: false
+          - text: 連
+            ruby: true
+            reading: れん
+          - text: 続
+            ruby: true
+            reading: ぞく
+          - text: 攻
+            ruby: true
+            reading: こう
+          - text: 撃
+            ruby: true
+            reading: げき
+          - text: "、\n2"
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: うと
+            ruby: false
+          - text: 溜
+            ruby: true
+            reading: た
+          - text: め
+            ruby: false
+          - text: 攻
+            ruby: true
+            reading: こう
+          - text: 撃
+            ruby: true
+            reading: げき
+          - text: ができるよ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ジュエルは30
+            ruby: false
+          - text: 秒
+            ruby: true
+            reading: びょう
+          - text: に1
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: られて、2
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: まで
+            ruby: false
+          - text: 増
+            ruby: true
+            reading: ふ
+          - text: "えるんだ！\n"
+            ruby: false
+          - text: 敵
+            ruby: true
+            reading: てき
+          - text: が
+            ruby: false
+          - text: 落
+            ruby: true
+            reading: お
+          - text: とすジュエルを
+            ruby: false
+          - text: 拾
+            ruby: true
+            reading: ひろ
+          - text: えば10
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: まで
+            ruby: false
+          - text: 持
+            ruby: true
+            reading: も
+          - text: てるよ！
+            ruby: false
 platforms:
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -867,10 +1033,8 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1034,8 +1198,7 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.28730252
     phi: 0.12781243
@@ -1071,10 +1234,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1205,10 +1366,8 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -1372,8 +1531,7 @@ platforms:
         targets:
           - sequence: boats
             index: 2
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -1409,10 +1567,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -1516,10 +1672,8 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -1776,10 +1930,8 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -2252,6 +2404,7 @@ tutorialTriggers:
       - -0.2673563
       - 0.28202268
       - 0.61516047
+    requiredCompletedTutorialId: split_switch
   - currentPlanetNum: 0
     tutorialId: union
     theta: -0.16046982
@@ -2498,9 +2651,9 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - -2.01
-      - 0.18
-      - -1.29
+      - -6.66
+      - -0.03
+      - -1.27
     upVec:
       - -0.9989821
       - -0.04492308

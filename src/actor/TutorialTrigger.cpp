@@ -187,6 +187,35 @@ void TutorialTrigger::UpdateActor(float)
         return;
     }
 
+    bool hasPlayerInsideTrigger = false;
+    for (Player* player : mGame->GetPlayers()) {
+        if (player && player->GetIsActive() && player->GetOnGround() &&
+            player->GetCurrentPlanet() == GetCurrentPlanet() &&
+            IsInsideModelBounds(player->GetPos())) {
+            hasPlayerInsideTrigger = true;
+            break;
+        }
+    }
+
+    const bool requiresSplitPlayer = RequiresSplitPlayerToStart();
+    const bool isPlayerSplit = mGame->GetIsPlayerSplit();
+    if (mHasObservedPlayerSplitState && !mWasPlayerSplit &&
+        isPlayerSplit && requiresSplitPlayer && hasPlayerInsideTrigger) {
+        // Splitting while already standing in a split-only trigger must not
+        // start a tutorial whose first page asks for another split/merge.
+        // Require leaving and entering the trigger after the split instead.
+        mRequiresExitAfterSplittingInside = true;
+    }
+    mHasObservedPlayerSplitState = true;
+    mWasPlayerSplit = isPlayerSplit;
+
+    if (mRequiresExitAfterSplittingInside) {
+        if (!hasPlayerInsideTrigger) {
+            mRequiresExitAfterSplittingInside = false;
+        }
+        return;
+    }
+
     for (Player* player : mGame->GetPlayers()) {
         if (!player || !player->GetIsActive() ||
             !player->GetOnGround() ||
@@ -198,8 +227,17 @@ void TutorialTrigger::UpdateActor(float)
             continue;
         }
 
-        if (!mGame->GetIsPlayerSplit() &&
-            RequiresSplitPlayerToStart()) {
+        if (!mRequiredCompletedTutorialId.empty()) {
+            TutorialController* tutorialController =
+                sceneSystem->GetTutorialController();
+            if (!tutorialController ||
+                !tutorialController->HasCompletedTutorial(
+                    mRequiredCompletedTutorialId)) {
+                continue;
+            }
+        }
+
+        if (!isPlayerSplit && requiresSplitPlayer) {
             continue;
         }
 

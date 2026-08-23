@@ -85,7 +85,10 @@ void EnemyCombat::TryApplyAttack(
     const EnemyAttackFrame& attackFrame =
         stateMachine.GetActiveAttackFrame();
     const EnemyMeleeAttackPreviewArea attackArea =
-        CalculateEnemyMeleeAttackPreviewArea(enemy);
+        CalculateEnemyMeleeAttackPreviewArea(enemy, attackFrame);
+    EnemyAttackFrame meleeAttackFrame = attackFrame;
+    meleeAttackFrame.origin +=
+        meleeAttackFrame.forward * attackArea.forwardStartOffset;
     const Planet* planet = enemy.GetCurrentPlanet();
     PhysicsSystem* physicsSystem = enemy.GetGame()->GetPhysicsSystem();
 
@@ -114,7 +117,7 @@ void EnemyCombat::TryApplyAttack(
                  GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
                 if (IsPositionInsideSphereSurfaceMeleeAttack(
                         *planet,
-                        attackFrame,
+                        meleeAttackFrame,
                         samplePosition,
                         attackArea.forwardLength,
                         attackArea.halfWidth)) {
@@ -124,7 +127,7 @@ void EnemyCombat::TryApplyAttack(
             }
         } else {
             isInsideAttack = IsPositionInsideMeleeAttack(
-                attackFrame,
+                meleeAttackFrame,
                 player->GetPos(),
                 attackArea.forwardLength,
                 attackArea.halfWidth);
@@ -148,6 +151,10 @@ void EnemyCombat::TryApplyFanAttack(
 {
     const EnemyAttackFrame& attackFrame =
         stateMachine.GetActiveAttackFrame();
+    EnemyAttackFrame fanAttackFrame = attackFrame;
+    fanAttackFrame.origin +=
+        fanAttackFrame.forward *
+        CalculateEnemyAttackFrontOffset(enemy, attackFrame);
 
     for (Player* player : enemy.GetGame()->GetPlayers()) {
         if (!player || !player->IsAlive() || status.HasHitPlayer(player)) {
@@ -170,7 +177,7 @@ void EnemyCombat::TryApplyFanAttack(
                          *player, *physicsSystem)) {
                     if (IsPositionInsideSphereSurfaceFanAttack(
                             *planet,
-                            attackFrame,
+                            fanAttackFrame,
                             samplePosition,
                             range,
                             angleRadians)) {
@@ -181,7 +188,7 @@ void EnemyCombat::TryApplyFanAttack(
             }
         } else {
             isInsideAttack = IsPositionInsideFanAttack(
-                attackFrame,
+                fanAttackFrame,
                 player->GetPos(),
                 range,
                 angleRadians);

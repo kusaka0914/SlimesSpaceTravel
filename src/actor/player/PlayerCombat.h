@@ -51,6 +51,7 @@ public:
     void StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime);
     bool UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+    void AdvanceContinuousAttackDuration(float deltaTime);
     bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 

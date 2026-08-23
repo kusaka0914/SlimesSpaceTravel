@@ -20,6 +20,7 @@ public:
 
 private:
     void DrawPlanets(const std::vector<Planet*>& planets) const;
+    void DrawCharacterShadows(const std::vector<Planet*>& planets) const;
     void DrawActorOnPlanets(
         const std::vector<Planet*>& planets,
         const glm::mat4& viewMat,

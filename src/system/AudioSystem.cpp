@@ -1,7 +1,11 @@
 #include "AudioSystem.h"
 #include "Game.h"
+#include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "system/SceneSystem.h"
+
+#include <algorithm>
 #include <iostream>
 
 AudioSystem::AudioSystem(Game* game)
@@ -114,18 +118,23 @@ void AudioSystem::TryChangeBGM()
         return;
     }
 
-    int currentPlanetNum = mainPlayer->GetCurrentPlanetNum();
-    if (currentPlanetNum == 0) {
-        Mix_HaltMusic();
-        PlayBGM("stage_bgm");
-        return;
-    }
-
-    if (currentPlanetNum == 2) {
+    Planet* currentPlanet = mainPlayer->GetCurrentPlanet();
+    const bool hasLivingBoss = currentPlanet &&
+        std::any_of(
+            currentPlanet->GetEnemies().begin(),
+            currentPlanet->GetEnemies().end(),
+            [](const Enemy* enemy) {
+                return enemy && enemy->GetIsActive() &&
+                       enemy->GetIsBoss() && enemy->IsAlive();
+            });
+    if (hasLivingBoss) {
         Mix_HaltMusic();
         PlayBGM("boss_bgm");
         return;
     }
+
+    Mix_HaltMusic();
+    PlayBGM("stage_bgm");
 }
 
 void AudioSystem::BeginStageMusicDeferral()
