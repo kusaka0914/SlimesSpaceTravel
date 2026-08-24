@@ -232,7 +232,9 @@ private:
                       float rubyGapRatio,
                       const std::vector<RubyTextSegment>& segments, glm::vec4 color,
                       bool centerBased = false,
-                      float rotationDegrees = 0.0f);
+                      float rotationDegrees = 0.0f,
+                      float outlineWidth = 0.0f,
+                      glm::vec4 outlineColor = glm::vec4(0.0f));
 
 private:
     std::unique_ptr<UIShader> mUIShaderUnique;

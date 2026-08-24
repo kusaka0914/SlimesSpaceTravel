@@ -32,6 +32,25 @@ planets:
     textureSideBlendWidth: 0.05
     rocketSpawnCondition: ""
     stageNum: 2
+  - center:
+      - 96
+      - 0
+      - 0
+    scale:
+      - 4
+      - 4
+      - 4
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    shape: Sphere
+    stageNum: 3
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+    rocketSpawnCondition: ""
 enemies:
   - type: normal
     theta: 1.973047

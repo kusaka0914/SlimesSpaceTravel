@@ -892,7 +892,9 @@ void UIRenderer::DrawCustomElement(
                 rubySegments,
                 textColor,
                 element.centerBased,
-                element.rotationDegrees);
+                element.rotationDegrees,
+                effect.outlineEnabled ? effect.outlineWidth : 0.0f,
+                effect.outlineColor);
         } else {
             DrawText(
                 x,
@@ -2044,7 +2046,9 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                               const std::vector<RubyTextSegment>& segments,
                               glm::vec4 color,
                               bool centerBased,
-                              float rotationDegrees)
+                              float rotationDegrees,
+                              float outlineWidth,
+                              glm::vec4 outlineColor)
 {
     std::vector<std::vector<RubyTextSegment>> lines(1);
 
@@ -2118,11 +2122,20 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
             : glm::vec2(
                   x + maximumLineWidth * 0.5f,
                   y + totalTextHeight * 0.5f);
+    // DrawText treats a center-based position as the centre of the base
+    // glyphs.  Ruby text is drawn segment-by-segment using top-left
+    // coordinates, so convert the shared anchor before drawing.  Without
+    // this conversion the authored centre becomes the text's top-left.
+    const float baseStartX =
+        centerBased ? x - maximumLineWidth * 0.5f : x;
+    const float baseStartY =
+        centerBased ? y - maximumBaseHeight * 0.5f : y;
 
     for (std::size_t lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
-        float currentX = x;
+        float currentX = baseStartX;
         const float lineY =
-            y + firstLineOffset + lineSpacing * static_cast<float>(lineIndex);
+            baseStartY + firstLineOffset +
+            lineSpacing * static_cast<float>(lineIndex);
 
         for (const RubyTextSegment& segment : lines[lineIndex]) {
             int baseWidth = 0;
@@ -2131,6 +2144,19 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                 continue;
             }
 
+            if (outlineWidth > 0.0f && outlineColor.a > 0.0f) {
+                DrawTextLine(
+                    segment.text,
+                    currentX,
+                    lineY,
+                    scale,
+                    false,
+                    0.0f,
+                    outlineColor,
+                    rotationDegrees,
+                    rotationPivot,
+                    outlineWidth);
+            }
             DrawTextLine(
                 segment.text,
                 currentX,
@@ -2153,6 +2179,9 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                         lineY -
                         static_cast<float>(rubyHeight) *
                             (0.9f + rubyGapRatio);
+                    // Ruby glyphs are deliberately left unoutlined.  Their
+                    // smaller size makes even a proportionally thin outline
+                    // fill in the counters and harm legibility.
                     DrawTextLine(
                         segment.reading,
                         rubyX,

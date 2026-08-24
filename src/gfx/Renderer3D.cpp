@@ -692,16 +692,16 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     }
     tangentX = glm::normalize(tangentX);
 
-    float radiusX = 0.68f;
-    float radiusY = 0.54f;
+    float radiusX = 0.34f;
+    float radiusY = 0.27f;
     const LoadedModel* model = actor->GetLoadedModel();
     if (model && model->hasBounds) {
         const glm::vec3 modelSize =
             glm::abs(
                 (model->boundsMaximum - model->boundsMinimum) *
                 actor->GetScale());
-        radiusX = glm::clamp(modelSize.x * 0.62f, 0.42f, 5.0f);
-        radiusY = glm::clamp(modelSize.z * 0.62f, 0.34f, 5.0f);
+        radiusX = glm::clamp(modelSize.x * 0.31f, 0.21f, 2.5f);
+        radiusY = glm::clamp(modelSize.z * 0.31f, 0.17f, 2.5f);
     }
 
     constexpr float maximumShadowDistance = 12.0f;
