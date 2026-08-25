@@ -184,8 +184,8 @@ bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& moveme
 
     ClearPendingAttackHit();
 
-    // FindHitEnemies reads the player's facing vector here, so the hit direction
-    // is the direction the player is facing at the end of the wind-up.
+
+
     Attack(player, movement, status, deltaTime);
     return true;
 }
@@ -305,9 +305,9 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
 
     mAttackComboIndex++;
 
-    // Keyboard K / gamepad X is called Normal internally. It normally ends the
-    // ground combo immediately, but the third hit must remain identifiable until
-    // PlayerAttackResolver applies the finisher's guard break.
+
+
+
     if (mAttackKind == PlayerAttackKind::Normal) {
         if (mAttackComboIndex != 3) {
             ResetGroundAttackCombo();

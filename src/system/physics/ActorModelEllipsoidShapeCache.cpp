@@ -33,7 +33,7 @@ void CombineHash(std::size_t& combinedHash, std::size_t valueHash)
         (combinedHash << 6) +
         (combinedHash >> 2);
 }
-} // namespace
+}
 
 ActorModelEllipsoidShapeCache::~ActorModelEllipsoidShapeCache() = default;
 

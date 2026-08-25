@@ -17,7 +17,7 @@ AudioSystem::AudioSystem(Game* game)
 void AudioSystem::Initialize()
 {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) != 0) {
-        // std::cerr << "Mix_OpenAudio error: " << Mix_GetError() << std::endl;
+
         return;
     }
 
@@ -168,7 +168,7 @@ void AudioSystem::PlayBGM(const std::string& name)
         return;
     }
 
-    // std::cerr << "can't find BGM" << std::endl;
+
 }
 
 void AudioSystem::PlayBGMOnce(const std::string& name)
@@ -196,7 +196,7 @@ int AudioSystem::PlaySE(const std::string& name)
         return Mix_PlayChannel(-1, SE, 0);
     }
 
-    // std::cerr << "can't find SE" << std::endl;
+
     return -1;
 }
 
@@ -213,7 +213,7 @@ void AudioSystem::AddBGM(const std::string& path, const std::string& name)
         return;
     }
 
-    // std::cerr << "Mix_LoadMUS (" + name + ") error: " << Mix_GetError() << std::endl;
+
 }
 
 void AudioSystem::AddSE(const std::string& path, const std::string& name)
@@ -224,5 +224,5 @@ void AudioSystem::AddSE(const std::string& path, const std::string& name)
         return;
     }
 
-    // std::cerr << "Mix_LoadWAV (" + name + ") error: " << Mix_GetError() << std::endl;
+
 }

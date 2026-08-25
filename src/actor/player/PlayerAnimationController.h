@@ -18,8 +18,8 @@ public:
     void Configure(PlayerAnimationDefinitions animationDefinitions);
     void SetLoadedModel(const LoadedModel* loadedModel);
 
-    // BaseLoop animations become the fallback pose. OneShot animations temporarily
-    // override the base animation and return to it when playback finishes.
+
+
     bool RequestAnimation(std::string_view animationId, bool shouldRestart = true);
     bool HasAnimation(std::string_view animationId) const;
 

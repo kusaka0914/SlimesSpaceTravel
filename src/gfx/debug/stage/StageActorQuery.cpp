@@ -49,7 +49,7 @@ std::string MakeIndexedLabel(const char* typeLabel, int yamlIndex)
     return std::string(typeLabel) + " " + std::to_string(yamlIndex);
 }
 
-} // namespace
+}
 
 const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
 {

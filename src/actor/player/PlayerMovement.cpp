@@ -132,8 +132,8 @@ AppliedPlayerMovement MoveWithCollision(
             desiredPosition,
             actorCollisionFilter);
 
-    // A corner can still overlap after the bounded depenetration pass.
-    // Keeping the previous valid position prevents that partial correction from entering the mesh.
+
+
     const glm::vec3 resolvedPosition =
         collisionResult.hasUnresolvedStageOverlap
             ? positionBeforeMovement
@@ -478,8 +478,8 @@ bool MoveAirSlamDownwardUntilFloorCollision(
             player.GetPos() +
             upDirection * upwardLandingCorrection;
 
-        // The collision ellipsoid is centered above the player's visual origin.
-        // A downward sweep therefore stops after the visual origin has crossed the floor.
+
+
         player.Land(landingPosition);
         player.SetShouldJudgeLanding(true);
         return true;
@@ -503,7 +503,7 @@ void ApplyFacingDirection(Player& player, const glm::vec3& upDirection, const gl
     player.SetFacingYaw(CalculateFacingYaw(player, upDirection, facingDirection));
 }
 
-} // namespace
+}
 
 bool PlayerMovement::CanDodge(const PlayerCombat& combat) const
 {
@@ -868,8 +868,8 @@ glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
         mDodgeDir = normalizedSurfaceTangentDirection;
     }
 
-    // Air dodge suspends vertical motion on every planet shape. Curving the
-    // dodge direction along an ellipse must not reintroduce fall velocity.
+
+
     player.SetVelocity(glm::vec3(0.0f));
 
     const float surfaceMovementMultiplier =

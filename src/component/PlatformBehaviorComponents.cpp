@@ -231,7 +231,7 @@ std::uint64_t GetTotalPlayerJumpCount(const Platform* platform)
     return total;
 }
 
-} // namespace
+}
 
 PlatformFadeOnStandComponent::PlatformFadeOnStandComponent(
     Platform* owner,
@@ -569,18 +569,20 @@ bool PlatformAdhesionComponent::DidPlayerMovementTouchPlatform(
         return false;
     }
 
-    // Keep the player fixed at its current position and sweep the platform
-    // through the equivalent relative movement. This catches a contact that
-    // happened between frames even when the final positions do not overlap.
+
+
+
+    // プレイヤーを現在位置に固定して相対的に足場を掃引し、フレーム間ですれ違った接触も検出する。
     const glm::vec3 playerMovement =
         player.GetPos() - movementStart;
     const glm::vec3 platformMovementStart =
         mPlatform->GetPos() -
         mPlatform->GetFrameDelta() +
         playerMovement;
-    // The player collision is narrower than the visible slime near its lower
-    // edge. Expand only the platform footprint enough to catch visible edge
-    // and diagonal contacts without pulling the player from far above it.
+
+
+
+    // 足元付近の見た目より狭い衝突形状だけを補い、遠方から不自然に吸着しない範囲で縁と斜めの接触を拾う。
     const glm::vec3 platformContactPadding(
         0.12f,
         0.05f,
@@ -609,10 +611,11 @@ bool PlatformAdhesionComponent::TryAttachPlayerToAnyPlatformAlongMovement(
         return false;
     }
 
-    // Adhesion is determined by physical contact, not by the planet used for
-    // airborne gravity fallback. This also lets a player move directly from a
-    // platform belonging to one planet onto an adhesive platform belonging to
-    // another planet.
+
+
+
+
+    // 吸着は重力のフォールバック先ではなく物理接触で決めるため、異なる惑星に属する足場へも直接移動できる。
     for (Planet* planet : currentStage->GetPlanets()) {
         if (!planet) {
             continue;
@@ -658,8 +661,9 @@ bool PlatformAdhesionComponent::TryAttachPlayerAlongMovement(
     const bool isAttachedNow =
         player.GetAttachedPlatform() == mPlatform;
     if (wasAttachedLastFrame && !isAttachedNow) {
-        // The cooldown belongs to this component, so jumping from one
-        // adhesive platform never prevents attaching to a different one.
+
+
+        // 再吸着の待機時間は足場ごとに持つ。別の吸着足場への移動まで妨げない。
         mPlayerReattachmentCooldownSeconds.try_emplace(
             &player,
             adhesionReattachmentCooldownSeconds);
@@ -734,10 +738,11 @@ void PlatformAdhesionComponent::Update(float deltaTime)
         const bool isAttachedNow =
             player->GetAttachedPlatform() == mPlatform;
         if (wasAttachedLastFrame && isAttachedNow) {
-            // The platform has already moved this frame, while the player
-            // follows it in CharacterActor::UpdateActor. Do not test the old
-            // player position against the new platform position here; doing
-            // so would detach the player before the follow movement runs.
+
+
+
+
+            // 足場は先に移動し、プレイヤーはCharacterActor::UpdateActorで追従する。この時点で古いプレイヤー位置を検査すると誤って離脱する。
             attachedPlayersThisFrame.insert(player);
             continue;
         }
@@ -1069,8 +1074,9 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
             continue;
         }
 
-        // Enemy targets are intentionally not faded. Runtime deactivation
-        // removes them from rendering, updates, targeting, and collisions.
+
+
+        // 敵はフェードさせず、非アクティブ化で描画・更新・照準・衝突から一括で除外する。
         targetActor->SetRuntimeActivationEnabled(this, mIsPressed);
     }
 

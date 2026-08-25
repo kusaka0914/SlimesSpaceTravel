@@ -33,7 +33,7 @@ Boat::Boat(Game* game)
       mArrivalPoint(nullptr)
 {
     mIsActive = mGame->IsInBase();
-    // mIsActive = true;
+
     AddFocusComponent();
 }
 
@@ -213,8 +213,8 @@ void Boat::UpdateBaseLaunch(float deltaTime)
         0.0f,
         1.0f);
 
-    // This replaces the fixed actor-index sequence. Each rocket lifts away
-    // from the planet along its own up vector with the same ease-in/out feel.
+
+
     const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
     mPos = glm::mix(mStartPos, mBaseLaunchEndPos, easedProgress);
 
@@ -250,8 +250,8 @@ void Boat::StartTravel()
         mBaseLaunchEndPos = mStartPos + launchDirection * BaseLaunchDistance;
         mBaseLaunchElapsedSeconds = 0.0f;
         mIsLaunchingFromBase = true;
-        // PlayerBoatRide follows any moving boat, so all boarded players
-        // follow this launch without per-rocket coordinates.
+
+
         mIsMoving = true;
         mGame->OnBoatStageChangeRequested(mDestStage);
         return;

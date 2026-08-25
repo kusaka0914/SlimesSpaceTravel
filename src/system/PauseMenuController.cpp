@@ -19,8 +19,8 @@ void PauseMenuController::Close()
 void PauseMenuController::MoveSelection(const Game& game, int delta)
 {
     constexpr int menuItemCount = 6;
-    // Disabled entries stay visible but are never a controller/keyboard target.
-    // Resume is always enabled, so this loop always finds an entry.
+
+
     for (int attempt = 0; attempt < menuItemCount; ++attempt) {
         mSelectedIndex =
             (mSelectedIndex + delta + menuItemCount) % menuItemCount;

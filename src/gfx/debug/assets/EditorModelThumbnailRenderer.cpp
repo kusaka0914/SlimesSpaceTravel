@@ -92,7 +92,7 @@ private:
     bool mWasBlendEnabled = false;
     bool mWasCullFaceEnabled = false;
 };
-} // namespace
+}
 
 EditorModelThumbnailRenderer::EditorModelThumbnailRenderer(Game* game)
     : mGame(game)

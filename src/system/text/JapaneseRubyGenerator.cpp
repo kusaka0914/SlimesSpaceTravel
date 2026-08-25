@@ -112,7 +112,7 @@ bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& seg
 
 #endif
 
-} // namespace
+}
 
 bool JapaneseRubyGenerator::Generate(const std::string& text,
                                      std::vector<RubyTextSegment>& segments,

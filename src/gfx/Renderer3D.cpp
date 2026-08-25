@@ -153,7 +153,7 @@ std::vector<glm::vec3> CreateUGCPlacementGhostEdges(
     }
     return vertices;
 }
-} // namespace
+}
 
 Renderer3D::Renderer3D(Game* game)
     : Renderer(game),
@@ -416,9 +416,9 @@ void Renderer3D::DrawScene(
         return;
     }
 
-    // The top/side UGC editor keeps every floor visible as a map. The floor
-    // being edited is bright while the rest are dimmed, matching the inset
-    // preview without changing the normal playtest render.
+
+
+
     if (!emphasizeUGCLayers && mGame &&
         mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing()) {
@@ -453,8 +453,8 @@ void Renderer3D::DrawScene(
                     GL_LINES,
                     glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
             }
-            // Restore the normal scene material state for renderers that
-            // run after the ghost.
+
+
             SetUniforms(viewMat, projMat, cameraPos);
         }
     }
@@ -705,11 +705,11 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     }
 
     constexpr float maximumShadowDistance = 12.0f;
-    // The shadow is a gameplay readability marker, not a physical light
-    // simulation. Keep its density fixed even while the actor is airborne.
+
+
     constexpr float distanceFade = 1.0f;
 
-    // Keep the mark just above the receiving surface to avoid flicker.
+
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale =
         1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);

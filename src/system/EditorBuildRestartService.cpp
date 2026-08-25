@@ -102,7 +102,7 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
     return std::filesystem::path(executablePathBuffer.data());
 }
 #endif
-} // namespace
+}
 
 bool EditorBuildRestartService::ResolveSessionFilePath(
     std::filesystem::path& outSessionFilePath,

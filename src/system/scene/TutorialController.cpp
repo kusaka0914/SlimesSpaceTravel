@@ -167,8 +167,8 @@ void TutorialController::OnEnemyLaunched()
     }
 
     mGameProgressState->SetIsFirstBreak(true);
-    // Assist style teaches launching as part of Y/J mashing, so it does not
-    // need the separate guard-break / aerial-attack tutorial.
+
+
     if (mGame && mGame->IsAssistControlStyle()) {
         return;
     }
@@ -188,9 +188,9 @@ void TutorialController::OnStrongAttacked()
 
 void TutorialController::OnLanded()
 {
-    // Landing after the first air strong attack used to launch the jewel
-    // tutorial.  Landing must remain a gameplay event only; this tutorial
-    // is started by its dedicated trigger instead.
+
+
+
 }
 
 void TutorialController::OnPlayerSwitchSucceeded()

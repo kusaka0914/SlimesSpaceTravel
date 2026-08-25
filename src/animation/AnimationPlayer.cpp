@@ -36,7 +36,7 @@ float CalculateInterpolationFactor(const KeyType& currentKey, const KeyType& nex
     const double elapsedTicks = currentTimeTicks - currentKey.timeTicks;
     return glm::clamp(static_cast<float>(elapsedTicks / intervalTicks), 0.0f, 1.0f);
 }
-} // namespace
+}
 
 void AnimationPlayer::SetAnimationData(const SkeletalAnimationData* animationData)
 {

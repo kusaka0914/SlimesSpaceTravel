@@ -80,7 +80,7 @@ void SortKeyframes(CinematicSequence& sequence)
                          return left.time < right.time;
                      });
 }
-} // namespace
+}
 
 CameraDebugPanel::CameraDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)

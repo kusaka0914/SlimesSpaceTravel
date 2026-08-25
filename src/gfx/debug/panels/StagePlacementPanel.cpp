@@ -363,9 +363,9 @@ void StagePlacementPanel::SaveEditorAuthoredTransforms()
         savedActors.emplace_back(instance.actor);
     }
 
-    // Players are not part of StageActorQuery. Only a planet-only edit marks
-    // their position as authored, so normal gameplay movement remains excluded
-    // while their unchanged world spawn survives the moved planet on reload.
+
+
+
     for (Player* player : mContext.game->GetPlayers()) {
         if (!player || !player->FindEditorAuthoredTransform()) {
             continue;
@@ -1156,9 +1156,9 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
     if (Boat* boat = dynamic_cast<Boat*>(actor)) {
         ImGui::SeparatorText("ロケット設定");
 
-        // Boat settings are not ordinary transform fields.  Keep track of
-        // them separately so changing a combo box cannot leave only the
-        // runtime object updated while the stage YAML retains the old value.
+
+
+
         bool boatSettingsChanged = false;
         bool boatStartPlanetChanged = false;
 
@@ -1321,8 +1321,8 @@ void StagePlacementPanel::DrawActorPlacementEditor(Actor* actor, const std::stri
         }
 
         if (boatStartPlanetChanged) {
-            // The position remains in world space when reassigned.  Capture
-            // its new planet-local representation so reload reproduces it.
+
+
             const glm::vec3 offset = boat->GetPos() - boat->GetCurrentPlanet()->GetPos();
             const float distance = glm::length(offset);
             if (distance > 1e-6f) {
@@ -3217,9 +3217,9 @@ void StagePlacementPanel::DrawPlatformBehaviorEditors(
                     }
                     preservePreviousGroupSettings();
                     latchedSwitch->SetGroupId(groupId);
-                    // A joining switch contributes only its press state. The
-                    // selected group's existing reveal settings remain owned
-                    // by its original configuration switch.
+
+
+
                     latchedSwitch->SetRevealTargets({});
                     latchedSwitch->SetHideTargets({});
                     bool groupWasNormalized = false;
@@ -4255,9 +4255,9 @@ void StagePlacementPanel::SaveActorCommonYaml(
     }
 
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
-        // Boats use startPlanet rather than the common currentPlanetNum.
-        // Save it even during a normal full-stage save: a boat's ownership
-        // can be changed without a gizmo transform being active.
+
+
+
         const Planet* startPlanet =
             editorTransform && editorTransform->hasPosition
                 ? authoredPlanet

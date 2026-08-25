@@ -31,8 +31,8 @@ struct ActorMovementCollisionResult {
 enum class ActorCollisionFilter {
     AllActors,
     IgnoreAirborneEnemies,
-    // Keep enemy contact solid, but do not apply the separation push that
-    // makes groups of moving enemies jitter against one another.
+
+
     StopAtEnemies
 };
 
@@ -57,8 +57,8 @@ public:
     ~PhysicsSystem();
 
     void Initialize();
-    // Used while rebuilding the editor's visual stage. The editor does not
-    // need collision bodies, but stale bodies must not outlive their actors.
+
+
     void ClearForEditorStageRebuild();
 
     btDiscreteDynamicsWorld* GetBulletWorld() const { return mBulletWorld.get(); }

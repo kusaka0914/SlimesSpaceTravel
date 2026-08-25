@@ -39,7 +39,7 @@ std::vector<PlatformTypeDefinition> CreateFallbackDefinitions()
     return definitions;
 }
 
-} // namespace
+}
 
 const std::vector<PlatformTypeDefinition>& PlatformTypeRegistry::GetDefinitions()
 {

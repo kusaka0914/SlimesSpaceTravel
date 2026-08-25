@@ -67,8 +67,8 @@ struct TutorialDefinition {
     float textXRatio = 0.065f;
     float textYRatio = 0.14f;
     float textScaleRatio = 0.000333333f;
-    // Standard pages remain in `pages` for backward-compatible tutorial data.
-    // When enabled, assist controls can use the shorter dedicated page set.
+
+
     bool usesAssistPages = false;
     std::vector<TutorialPage> pages;
     std::vector<TutorialPage> assistPages;

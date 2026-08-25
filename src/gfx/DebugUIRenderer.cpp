@@ -219,8 +219,9 @@ bool DebugUIRenderer::SaveEditorSession(
     const std::string& filePath,
     std::string& outErrorMessage)
 {
-    // Runtime movement is intentionally excluded. The planet panel also
-    // invokes the registered callback that saves authored actor transforms.
+
+
+    // 実行時の移動は保存せず、編集操作で変更したTransformだけを保存する。
     mStagePlanetPanel.SaveEditorAuthoredTransforms();
 
     return EditorSessionRepository::Save(
@@ -531,9 +532,9 @@ void DebugUIRenderer::RegisterUGCUIEditorElements()
         return;
     }
 
-    // Older projects stored each toolbar as one invisible panel.  Keep those
-    // panels as migration anchors, but create editable entries for every
-    // actual button so a click selects the eraser/undo/etc. individually.
+
+
+
     const auto findElement = [&](const std::string& id)
         -> const UILoadSystem::CustomElement* {
         const auto& elements = uiLoadSystem->GetCustomElements();
@@ -888,8 +889,8 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
             return clicked;
         };
 
-    // Each button lives in its own ImGui window.  Draw those windows in
-    // z-order so a larger value is actually in front when buttons overlap.
+
+
     struct ActionControl {
         const char* id;
         const char* texturePath;
@@ -1010,11 +1011,11 @@ void DebugUIRenderer::RefreshUGCWorkList()
 bool DebugUIRenderer::SaveCurrentUGCWork(
     const std::string& displayName)
 {
-    // UGC placement writes its grid cells and objects to the working YAML as
-    // soon as they are changed. Do not run the general-purpose editor
-    // transform saver here: it walks all runtime actors (including rebuilt
-    // UGC platform regions) even though none of that work is needed to make
-    // a copy of a UGC project.
+
+
+
+
+
     mUGCWorkSaveError.clear();
     try {
         const std::string fileName =
@@ -1055,10 +1056,11 @@ bool DebugUIRenderer::SaveCurrentUGCWork(
             return false;
         }
 
-        // Refreshing a vector which is also shown by the open popup in the
-        // same ImGui frame can invalidate its active list state. Refresh it
-        // on the next frame instead.
-        mShouldRefreshUGCWorkList = true;
+
+
+
+    // 同一ImGuiフレームで表示中リストを更新するとポップアップの状態が無効になるため、次フレームで更新する。
+    mShouldRefreshUGCWorkList = true;
         return true;
     } catch (const std::exception& error) {
         std::cerr << "Failed to save UGC work: " << error.what() << std::endl;
@@ -1511,8 +1513,8 @@ void DebugUIRenderer::DrawUGCEditor(
         const GLuint texture = hasTexture
             ? mContext.uiRenderer->GetCustomUITextureHandle(texturePath)
             : 0;
-        // The icon artwork already contains its blue button.  Keep Dear ImGui's
-        // own frame fully transparent so it does not add a second blue backing.
+
+
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -1545,8 +1547,8 @@ void DebugUIRenderer::DrawUGCEditor(
     if (drawActionIcon("redo", "textures/ugc_ui/editor_action_redo.png", "やり直す")) HandleUGCRedo();
     ImGui::End();
 
-    // Controller users have button shortcuts; keyboard and mouse users need
-    // the equivalent editor actions on screen as well.
+
+
     ImGui::SetNextWindowPos(
         resolveUGCAnchor("keyboardTools", ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f)),
         ImGuiCond_Always);
@@ -1586,8 +1588,8 @@ void DebugUIRenderer::DrawUGCEditor(
     ImGui::End();
 
     ImGui::SetNextWindowPos(
-        // Keep the menu with the edit actions: it is the first button above
-        // eraser, undo and redo instead of floating beside the 3D preview.
+
+
         resolveUGCAnchor("menu", ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 32.0f)),
         ImGuiCond_Always);
     ImGui::Begin("###UGCMenu", nullptr, floatingButtonFlags);
@@ -1659,9 +1661,9 @@ void DebugUIRenderer::DrawUGCEditor(
                     return false;
                 }
 
-                // Generated UGC platforms are erased cell-by-cell below.
-                // All other placed actors (enemy, star, switches, etc.) take
-                // priority when they belong to the currently edited layer.
+
+
+
                 Platform* pickedPlatform = dynamic_cast<Platform*>(pickedActor);
                 if (pickedPlatform && pickedPlatform->GetIsUGCGenerated()) {
                     return false;
@@ -1951,8 +1953,8 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
         mContext.gameViewport.width * 0.5f);
     const float minimumPreviewWidth = std::min(180.0f, maximumPreviewWidth);
     if (!mHasInitializedUGCPreviewWidth) {
-        // Start large enough to inspect the stage, while keeping room for a
-        // user to enlarge it up to the half-screen limit.
+
+
         mUGCPreviewWidth = glm::clamp(
             maximumPreviewWidth * (2.0f / 3.0f),
             minimumPreviewWidth,
@@ -2220,8 +2222,8 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
         }
         const std::string label = std::to_string(layer + 1) + "だん";
         const ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
-        // Keep height labels on the preview edge.  They remain a readable
-        // height ruler without ever being drawn over a platform.
+
+
         labelPosition.x = previewMin.x + 7.0f;
         labelPosition.y = glm::clamp(
             labelPosition.y,
@@ -2347,9 +2349,9 @@ void DebugUIRenderer::ChangeUGCEditLayer(int layerDelta)
                 mContext.game->GetUGCGridSize(),
             0.0f);
         mSelectionController.MoveSelectedActorsByDelta(layerMovement);
-        // The drag plane follows the selection vertically. This keeps the
-        // held object on its newly selected layer while horizontal dragging
-        // continues, and preserves the whole move as one undo operation.
+
+
+
         mUGCSelectionDragPlanePoint += layerMovement;
     }
 
@@ -2671,10 +2673,11 @@ void DebugUIRenderer::DrawUGCGridOverlay()
                     std::abs(planet->GetScale().y),
                     std::abs(planet->GetScale().z)}) * 2.0f);
     }
-    // Keep the grid covering the viewport at every zoom level without
-    // drawing thousands of sub-pixel lines. Placement still snaps to the
-    // selected gridSize; only the visual grid becomes coarser when zoomed far
-    // out, similar to DCC and game-engine editors.
+
+
+
+
+    // 配置は常に選択グリッドへスナップする。ズームアウト時だけ表示グリッドを粗くし、極小の線を大量に描かない。
     constexpr int maximumHalfGridLineCount = 120;
     float visualGridSize = gridSize;
     while (requiredGridExtent / visualGridSize >

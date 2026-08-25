@@ -142,8 +142,8 @@ void CameraSystem::ProcessInput()
     if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mAlignCameraPressedPrev) {
         int playerIndex = GetPrimaryPlayerIndex();
         if (mGame->GetIsPlayer2Joined()) {
-            // Controller 1 owns player 1.  Controller 2 replaces the
-            // keyboard assignment when it is connected.
+
+
             playerIndex =
                 (keyboardAlignCameraPressed && !playerTwoUsesController)
                     ? 1

@@ -101,7 +101,7 @@ std::optional<std::size_t> FindYamlSequenceEntryIndex(
     return std::nullopt;
 }
 
-} // namespace
+}
 
 ParameterDebugPanel::ParameterDebugPanel(
     DebugEditorContext& context,

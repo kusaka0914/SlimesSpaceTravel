@@ -61,15 +61,15 @@ float CalculateEnemyGuardHeight(const Enemy& enemy)
         const float modelTop =
             glm::dot(modelBounds.center - enemy.GetPos(), up) +
             EnemyCollisionGeometry::CalculateSupportDistance(modelBounds, up);
-        // The guard sits just above the actual model, independent of the
-        // model's scale or its local origin.
+
+
         return modelTop + 0.25f;
     }
 
-    // Models without mesh bounds retain the previous safe fallback.
+
     return enemy.GetRadius() * 0.8f;
 }
-} // namespace
+}
 
 PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
     : mRenderer(renderer)
@@ -90,11 +90,7 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     mRenderer->TryDrawActor(players[0]);
     DrawPlayerCollisionShape(players[0]);
 
-    /*const bool canDrawP1AttackRange =
-        players[0]->IsAttacking() || players[0]->GetIsStrongAttacked() || players[0]->GetCanSpecialAttack();
-    if (canDrawP1AttackRange) {
-        DrawPlayerAttackRange(players[0]);
-    }*/
+
 
     DrawTiredEffect(viewMat, players[0]);
 
@@ -106,11 +102,7 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     mRenderer->TryDrawActor(players[1]);
     DrawPlayerCollisionShape(players[1]);
 
-    /*const bool canDrawP2AttackRange =
-        players[1]->IsAttacking() || players[1]->GetIsStrongAttacked() || players[1]->GetCanSpecialAttack();
-    if (canDrawP2AttackRange) {
-        DrawPlayerAttackRange(players[1]);
-    }*/
+
 
     DrawTiredEffect(viewMat, players[1]);
 }
@@ -505,8 +497,8 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
 
     const Planet* planet = enemy->GetCurrentPlanet();
     if (ShouldFollowSphereSurface(planet)) {
-        // A large planar rectangle is especially misleading on a sphere.
-        // Tessellate it, then lift every sample back onto the planet surface.
+
+
         const float surfaceRadius = glm::length(start - planet->GetPos());
         const auto surfacePoint = [planet, surfaceRadius](
                                       const glm::vec3& point) {
@@ -712,8 +704,8 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
     hpBarIt->second->SetActive();
 
     constexpr float rightMargin = -0.5f;
-    // Keep the health bar a fixed small distance above the guard row, using
-    // the model's actual head height rather than the collision radius.
+
+
     const float upMargin = CalculateEnemyGuardHeight(*enemy) + 0.40f;
     const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
     constexpr float hpHeight = 0.1f;

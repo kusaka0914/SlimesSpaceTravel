@@ -83,7 +83,7 @@ void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float 
         &player);
     EmitAttackHitEffect(player, enemy, effectScale);
 }
-} // namespace
+}
 
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,

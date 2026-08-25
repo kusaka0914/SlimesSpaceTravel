@@ -390,9 +390,9 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
                 0.0f,
                 1.0f - verticalAxisAlignment * verticalAxisAlignment));
 
-        // The target bounds use their own local axes. Project the player's
-        // upright air-dodge range onto those axes instead of treating their
-        // X/Y/Z components as world-space directions.
+
+
+
         expansion[axisIndex] =
             horizontalCollisionRadius * horizontalAxisAlignment +
             verticalCollisionReach * verticalAxisAlignment;

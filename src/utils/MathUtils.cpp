@@ -42,7 +42,7 @@ glm::quat CreateSurfaceBaseOrientation(Actor* actor)
     basis[2] = baseForward;
     return glm::normalize(glm::quat_cast(basis));
 }
-} // namespace
+}
 
 float MathUtils::GetYawFromDirection(const glm::vec3& up, const glm::vec3& dir) const
 {

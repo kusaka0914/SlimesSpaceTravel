@@ -34,7 +34,7 @@ glm::vec3 BuildRight(const glm::vec3& forward, const glm::vec3& up)
 
     return SafeNormalize(right, glm::vec3(1.0f, 0.0f, 0.0f));
 }
-} // namespace
+}
 
 DebugCamera::DebugCamera(Game* game)
     : mGame(game)
@@ -168,9 +168,9 @@ void DebugCamera::Update(float deltaTime)
         moveSpeed * deltaTime;
     mCameraPos += movementDelta;
     if (mGame && mGame->GetIsUGCMode()) {
-        // Screen-space panning must keep the current viewing angle. Moving
-        // only the camera would make the next zoom aim back at the stage
-        // center and visibly tilt fixed top/side views.
+
+
+
         mUGCTarget += movementDelta;
     }
 }

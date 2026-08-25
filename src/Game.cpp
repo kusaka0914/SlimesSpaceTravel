@@ -199,9 +199,9 @@ void Game::ReloadCurrentStage(bool rebuildPhysics)
         if (players.size() >= 2 && players[0] && players[1]) {
             Player* firstPlayer = players[0];
             Player* secondPlayer = players[1];
-            // A multiplayer stage always begins with both players at the
-            // stage's player-1 spawn. They can immediately walk apart after
-            // the arrival/start sequence has finished.
+
+
+
             secondPlayer->SetCurrentPlanet(firstPlayer->GetCurrentPlanet());
             secondPlayer->SetCurrentPlanetNum(firstPlayer->GetCurrentPlanetNum());
             secondPlayer->SetSphericalPlacement(
@@ -421,17 +421,17 @@ void Game::ReturnToSinglePlayer()
         return;
     }
 
-    // This is a menu action, so unlike ordinary split merging it does not
-    // require the two players to stand next to each other.
+
+
     mIsPlayer2Joined = false;
     MergePlayerInto(0);
 }
 
 bool Game::CanStartTwoPlayerFromPauseMenu() const
 {
-    // Two-player mode uses one game controller and one keyboard.  The menu
-    // must not advertise it as selectable until both the progress condition
-    // and the required controller are available.
+
+
+
     return mIsPlayer2Joined ||
            (IsStageCleared(1) && IsGameControllerConnected());
 }
@@ -444,17 +444,17 @@ bool Game::CanReturnToBaseFromPauseMenu() const
 void Game::ToggleDebugEditor()
 {
     if (mIsUGCMode) {
-        // The UGC editor itself is always visible while editing.  P should
-        // toggle the regular debug editor, not hide the UGC editor and enter
-        // its playtest view.
+
+
+
         mIsUGCDebugEditorShowing = !mIsUGCDebugEditorShowing;
         return;
     }
 
     mIsDebugEditorShowing = !mIsDebugEditorShowing;
     if (mPhysicsSystem) {
-        // Opening the editor changes progress/runtime visibility, but not mesh
-        // geometry. Reusing existing bodies avoids reparsing every stage model.
+
+
         mPhysicsSystem->SyncKinematicBodies();
     }
 }
@@ -559,9 +559,9 @@ void Game::UpdateGame()
         return;
     }
 
-    // Transitions must continue even while the stage editor uses its free
-    // camera.  Otherwise the fade reaches the midpoint, loads UGC, and never
-    // advances to the reveal phase.
+
+
+
     mSceneSystem->Update(deltaTime);
     UpdatePendingSoloSplitControlSwitch(deltaTime);
 
@@ -900,9 +900,9 @@ void Game::DrawUGCPreviewFrame()
         ? mUGCOrthographicHalfHeight /
               std::tan(glm::radians(previewFieldOfViewDegrees) * 0.5f)
         : glm::length(editorPose.position - editorPose.target);
-    // The inset is intentionally closer than a one-to-one framing. Its role
-    // is to inspect what is around the center of the 2D editor, not to show
-    // the entire stage at all times.
+
+
+
     const float previewDistance = glm::clamp(
         editorViewDistance * 0.45f, 3.0f, 100.0f);
     const glm::vec3 previewPosition =
@@ -935,9 +935,9 @@ void Game::SetUGCPlacementModelPreview(
     const std::string& modelPath,
     const glm::vec3& scale)
 {
-    // The position is cleared at the start of each editor frame. Keep the
-    // cached preview actor in that short gap so moving the mouse does not
-    // allocate and reload a model every frame.
+
+
+
     if (!position) {
         return;
     }
@@ -1008,8 +1008,8 @@ void Game::AddPlayer(Player* player)
         player->SetControlLocked(true);
     }
 
-    // When multiplayer survives a stage transition, newly loaded players
-    // retain the split appearance and are immediately controllable.
+
+
     if (mIsPlayer2Joined) {
         player->SetSplitForm(true);
         player->SetControlLocked(false);
@@ -1254,8 +1254,8 @@ bool Game::CanSwitchControlledPlayer() const
         return false;
     }
 
-    // Do not present switching as available when the other half is already
-    // riding a rocket (or otherwise inactive).
+
+
     const std::vector<Player*>& players = GetPlayers();
     for (int index = 0; index < static_cast<int>(players.size()); ++index) {
         if (index != mControlledPlayerIndex && players[index] &&
@@ -1441,9 +1441,9 @@ bool Game::StartUGCMode()
     mIsDebugEditorShowing = true;
     SetFreeCameraMode(true);
 
-    // The title renderer intentionally has no 3D world.  UGC is loaded at
-    // the fade midpoint, so switch to the play scene before the editor frame
-    // is rendered or the editor canvas would be left black.
+
+
+
     mSceneSystem->StartPlayingScene();
 
     if (mCameraSystem) {
@@ -1488,8 +1488,8 @@ void Game::ExecuteTitleMenuSelection()
         mSceneSystem->StartBattleStyleSelection();
         break;
     case 1:
-        // Keep the title on screen until the fade is fully opaque, then
-        // replace the scene and reveal the stage editor from black.
+
+
         mSceneSystem->RequestFadeAction([this]() { StartUGCMode(); });
         break;
     case 2:
@@ -1664,8 +1664,8 @@ void Game::CreatePlayer2()
         }
     }
 
-    // Multiplayer starts from the same split state as solo split mode, but
-    // each slime is controlled by its own player from this point onward.
+
+
     if (!SplitPlayer()) {
         return;
     }
@@ -1686,9 +1686,9 @@ void Game::OnBoatArrived(Boat* boat)
 {
     mSceneSystem->OnBoatArrived(boat);
 
-    // Solo split is only needed to board the rocket. Once both halves arrive,
-    // combine them again. Multiplayer keeps both independently controlled
-    // slimes after landing.
+
+
+
     if (!mIsPlayer2Joined && mIsPlayerSplit) {
         MergePlayerInto(mControlledPlayerIndex);
     }
@@ -1698,9 +1698,10 @@ void Game::OnBoatArrived(Boat* boat)
 void Game::OnStarObtained()
 {
     if (mIsUGCMode) {
-        // This callback runs while the world is iterating actors. Reloading
-        // a stage here destroys those actors under the active iterator, so
-        // complete the save and scene transition on the next frame instead.
+        // Actor走査中にステージを再読込すると走査中のActorを破棄するため、保存と遷移を次フレームへ遅延する。
+
+
+
         mIsUGCClearCompletionPending = true;
         return;
     }
@@ -1923,9 +1924,9 @@ Player* Game::FindNearestPlayer(Actor* actor) const
 
 void Game::FinishGame()
 {
-    // Stage progress is also saved as soon as it changes, but save once more
-    // when leaving from the pause menu so the menu action has a clear commit
-    // point as well.
+
+
+
     if (mStageProgressSystem) {
         mStageProgressSystem->Save();
     }
@@ -1934,9 +1935,9 @@ void Game::FinishGame()
 
 void Game::RestartGame()
 {
-    // The fade action invokes this only once the screen is completely black.
-    // Merge and choose the camera target at that point, then reveal the
-    // restarted player without a visible camera travel.
+
+
+
     if (!mIsPlayer2Joined && mIsPlayerSplit) {
         MergePlayerInto(0);
     }
@@ -1950,9 +1951,9 @@ void Game::RestartGame()
         if (!player->GetIsActive()) {
             playersToKeepInactive.emplace_back(player);
         }
-        // Restore health and respawn data for every body. The inactive solo
-        // body must not retain 0 HP, otherwise splitting again immediately
-        // retriggers Game Over.
+
+
+
         player->Restart();
     }
 
@@ -1995,9 +1996,9 @@ void Game::SynchronizeSoloSplitResources(const Player& sourcePlayer)
         return;
     }
 
-    // A solo split represents one slime with two bodies.  Update only the
-    // other body, and only when a value differs, so this never becomes a
-    // per-frame pair of unconditional writes.
+
+
+
     for (Player* player : players) {
         if (!player || player == &sourcePlayer) {
             continue;

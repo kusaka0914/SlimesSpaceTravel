@@ -259,8 +259,8 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
             mDuplicatePlacementStatus =
                 "選択中オブジェクトの保存データを取得できませんでした";
         } else {
-            // Capture the current inspector values before the YAML node is
-            // retained as the repeated-placement template.
+
+
             mPlacementPanel.Save();
             const bool started =
                 mAddActorPanel.BeginDuplicatePlacement(

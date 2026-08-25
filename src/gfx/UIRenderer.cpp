@@ -214,9 +214,9 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawGameOver();
     }
 
-    // UGC editing has its own product UI. The in-game HUD and authored
-    // operation guide must stay hidden in both the product editor and the
-    // ordinary debug editor opened on top of it.
+
+
+
     const bool isUGCEditing =
         mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing();
@@ -244,8 +244,8 @@ void UIRenderer::DrawGameContent()
         mPauseMenuRenderer->Draw();
     }
 
-    // This is the final UI layer.  Every scene/menu/custom UI is therefore
-    // behind the fade rather than appearing in front of it.
+
+
     mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
@@ -285,9 +285,9 @@ void UIRenderer::DrawDebugEditor(
     }
     EndImGuiFrame();
 
-    // The editor is drawn after the game view and its UI. Draw the transition
-    // once more on the default framebuffer so the editor itself is covered
-    // during a fade instead of suddenly appearing in front of it.
+
+
+
     mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
@@ -1003,10 +1003,10 @@ void UIRenderer::DrawCustomUI()
     const bool isTwoPlayer =
         mGame->GetIsPlayer2Joined() && players.size() >= 2;
 
-    // The operation guide remains visible at all times, but unavailable
-    // actions are intentionally subdued instead of being replaced by an
-    // explanation.  This keeps the layout stable while still showing the
-    // player which inputs are currently accepted.
+
+
+
+
     const auto getOperationGuideOpacity =
         [&](const UILoadSystem::CustomElement& element,
             const Player* player) {
@@ -1053,9 +1053,9 @@ void UIRenderer::DrawCustomUI()
                     isEnabled = canRecover;
                     return isEnabled ? 1.0f : disabledOpacity;
                 }
-                // Jumping starts only from the ground (apart from the small
-                // coyote-time grace, which is too brief to express in UI).
-                // Continuous attacks do not block jumping.
+
+
+
                 isEnabled = isIdle && !isSpecialCharging &&
                             player->GetOnGround();
             } else if (element.id == "buttonB" ||
@@ -1063,9 +1063,9 @@ void UIRenderer::DrawCustomUI()
                 // 回避のクールタイムは短く、UIまで点滅すると見づらい。
                 // 継続攻撃・溜めなど、操作が明確に封じられる状態だけ示す。
                 // 溜め中の回避は実際に受け付けるため、通常表示を保つ。
-                // Weak attacks can be cancelled into a dodge.  Keep the
-                // guide bright for that state; the short dodge cooldown is
-                // intentionally not represented in the UI.
+
+
+
                 isEnabled = !isGroundContinuousAttack &&
                             (isIdle || isWeakAttacking);
             } else if (element.id == "buttonA_copy" ||
@@ -1097,8 +1097,8 @@ void UIRenderer::DrawCustomUI()
                        element.id == "buttonTextB_copy2_copy" ||
                        element.id == "buttonB_copy_copy_copy" ||
                        element.id == "buttonTextB_copy2_copy_copy") {
-                // Camera rotation and reset share the same camera-input
-                // lock, including cinematics, boss defeat and rocket travel.
+
+
                 const CameraSystem* cameraSystem = mGame->GetCameraSystem();
                 isEnabled = cameraSystem && cameraSystem->AllowsPlayerInput();
             } else if (element.id == "buttonB_copy_copy2" ||
@@ -1106,8 +1106,8 @@ void UIRenderer::DrawCustomUI()
                 isEnabled = mGame->CanSwitchControlledPlayer();
             } else if (element.id == "buttonB_copy_copy2_copy" ||
                        element.id == "buttonTextB_copy2_copy2_copy") {
-                // This includes the single-player restriction and, when
-                // merging, the two players being close enough together.
+
+
                 isEnabled = mGame->CanTogglePlayerSplit();
             }
 
@@ -1120,18 +1120,18 @@ void UIRenderer::DrawCustomUI()
                id == "talkableTextureForKeyboard";
     };
 
-    // The operation guide is authored as one group near the lower-right of
-    // a full screen.  In split-screen it keeps its physical size, then the
-    // whole group is moved only as far as needed to fit its half-height view.
-    // This avoids maintaining a second set of hand-tuned coordinates.
+
+
+
+
     const auto getOperationGuideVerticalOffset = [&]() {
         if (!isTwoPlayer) {
             return 0.0f;
         }
 
-        // The guide retains the single-player spacing as well as its size.
-        // It is translated as one block afterwards, rather than squeezing
-        // its Y positions into half the height.
+
+
+
         constexpr float positionScale = 1.0f;
         constexpr float viewportPadding = 12.0f;
         float minY = std::numeric_limits<float>::max();
@@ -1226,15 +1226,15 @@ void UIRenderer::DrawCustomUI()
                     visibleInGame &&
                     !isAssistStyle;
             } else if (element->id == "easyDescription") {
-                // These are separate editable UI elements.  Only the
-                // explanation for the currently selected style is shown.
+
+
                 visibleInGame = visibleInGame && isAssistStyle;
             } else if (element->id == "normalDescription") {
                 visibleInGame = visibleInGame && !isAssistStyle;
             }
         } else if (element->screen == "talk") {
-            // This authored screen is shared by NPC conversations and every
-            // tutorial page, so its placement can be adjusted in the UI editor.
+
+
             visibleInGame = isTalkOrTutorial;
         } else if (element->screen == "ugc") {
             // UGC用のカスタムUIは、ステージ作成モードのゲーム画面だけに
@@ -1245,15 +1245,15 @@ void UIRenderer::DrawCustomUI()
         }
         if (isTalkOrTutorial && element->screen == "default" &&
             isTalkPromptElement(element->id)) {
-            // A conversation/tutorial owns the interaction input while it is
-            // displayed, so neither player's proximity prompt may remain.
+
+
             visibleInGame = false;
         }
         if (isTwoPlayer && !isTalkOrTutorial &&
             element->screen == "default" &&
             isTalkPromptElement(element->id)) {
-            // Do this before the normal global visibility check: player 1
-            // and player 2 may use different input-device prompt images.
+
+
             for (std::size_t index = 0; index < 2; ++index) {
                 const Player* player = players[index];
                 if (!player || !sceneSystem->CanStartTalkWithNPC(player)) {
@@ -1285,9 +1285,9 @@ void UIRenderer::DrawCustomUI()
         }
 
         if (isTwoPlayer && element->screen == "operation") {
-            // Keep its single-player physical size and right-edge anchoring.
-            // The shared vertical offset keeps the whole authored group in
-            // each player's half-height viewport.
+
+
+
             DrawCustomElement(
                 *element,
                 operationGuideVerticalOffset,
@@ -1308,9 +1308,9 @@ void UIRenderer::DrawCustomUI()
             continue;
         }
 
-        // In solo split play, only the currently controlled slime receives
-        // input.  Do not use players.front(): it may be the half that is
-        // already inside a rocket, which would incorrectly dim every guide.
+
+
+
         const Player* operationPlayer =
             mGame->GetIsPlayerSplit()
                 ? mGame->GetControlledPlayer()
@@ -1701,9 +1701,9 @@ bool UIRenderer::UsesControllerUI(const Player* player) const
         return false;
     }
 
-    // A controller controls whichever half is currently selected during
-    // solo split play. In local multiplayer, controller 1 is player 1 and,
-    // when connected, controller 2 is player 2.
+
+
+
     return !mGame->GetIsPlayer2Joined() ||
            mGame->HasGameControllerForPlayer(player->GetPlayerNum());
 }
@@ -2122,10 +2122,12 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
             : glm::vec2(
                   x + maximumLineWidth * 0.5f,
                   y + totalTextHeight * 0.5f);
-    // DrawText treats a center-based position as the centre of the base
-    // glyphs.  Ruby text is drawn segment-by-segment using top-left
-    // coordinates, so convert the shared anchor before drawing.  Without
-    // this conversion the authored centre becomes the text's top-left.
+
+    // 本文の中央基準と左上基準で描くルビが同じ位置に揃うよう、共通の回転基準を使う。
+
+
+
+
     const float baseStartX =
         centerBased ? x - maximumLineWidth * 0.5f : x;
     const float baseStartY =
@@ -2179,9 +2181,11 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                         lineY -
                         static_cast<float>(rubyHeight) *
                             (0.9f + rubyGapRatio);
-                    // Ruby glyphs are deliberately left unoutlined.  Their
-                    // smaller size makes even a proportionally thin outline
-                    // fill in the counters and harm legibility.
+
+                    // 小さいルビに縁取りを付けると文字内部が潰れて読みにくくなるため、縁取りしない。
+
+
+
                     DrawTextLine(
                         segment.reading,
                         rubyX,

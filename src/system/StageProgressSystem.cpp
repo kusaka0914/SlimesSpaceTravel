@@ -51,8 +51,8 @@ bool StageProgressSystem::Load()
         }
     }
 
-    // Migrate progress written by builds that temporarily stored this as a
-    // conversation ID.  The next save writes the dedicated property below.
+
+
     const YAML::Node endingRollCompleted = root["endingRollCompleted"];
     mHasCompletedEndingRoll =
         endingRollCompleted && endingRollCompleted.IsScalar()

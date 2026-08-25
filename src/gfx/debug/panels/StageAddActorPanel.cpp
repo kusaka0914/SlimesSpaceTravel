@@ -511,17 +511,19 @@ bool StageAddActorPanel::TryCreateUGCFallbackPlacement(
     const float buildPlaneY =
         static_cast<float>(mUGCEditLayer) *
         mContext.game->GetUGCGridSize();
-    // The UGC build plane is always the floor selected by the child. It does
-    // not jump to whichever overlapping platform the mouse ray hits first.
+
+
+    // UGCの組立面は、重なった足場ではなく選択中レイヤーの床に固定する。
     if (std::abs(rayDelta.y) > parallelEpsilon) {
         rayParameter =
             (buildPlaneY - rayFrom.y) / rayDelta.y;
     }
 
     if (rayParameter < 0.0f || rayParameter > 1.0f) {
-        // A side view ray can be parallel to the horizontal build plane. Use
-        // a camera-facing plane through the same planet center so every view
-        // still has a deterministic free-space placement point.
+        // 横向きの視線は組立面と平行になり得るため、同じ惑星中心を通るカメラ正面の面で配置位置を決める。
+
+
+
         const glm::vec3 buildPlaneCenter(
             planets.front()->GetPos().x,
             buildPlaneY,
@@ -557,8 +559,9 @@ void StageAddActorPanel::UpdatePlacement()
         return;
     }
 
-    // The ghost is refreshed every frame so it never remains after the
-    // pointer leaves a valid build area.
+
+
+    // ポインターが有効な組立領域を外れた後もゴーストが残らないよう、毎フレーム先に消去する。
     mContext.game->SetUGCPlatformPlacementPreview(std::nullopt);
     mContext.game->SetUGCPlacementModelPreview(std::nullopt);
 
@@ -623,6 +626,7 @@ void StageAddActorPanel::UpdatePlacement()
 
     if (mContext.game->GetIsUGCMode() &&
         mSnapPlacementToGridIntersections) {
+        // 保存するセルはグリッド角だが、生成される足場はセル中心に置かれる。ゴーストも完成後の位置を表示する。
         const float gridSize = mContext.game->GetUGCGridSize();
         placement.worldPosition.x =
             std::round(placement.worldPosition.x / gridSize) * gridSize;
@@ -650,9 +654,9 @@ void StageAddActorPanel::UpdatePlacement()
 
     glm::vec3 previewPosition = placement.worldPosition;
     if (mContext.game->GetIsUGCMode() && mShowUGCPlatformPreview) {
-        // A cell is stored from its lower grid corner, but the generated
-        // platform is centred within that cell. Preview the final result,
-        // rather than the raw mouse intersection.
+
+
+
         const float gridSize = mContext.game->GetUGCGridSize();
         glm::vec3 previewModelScale = mUGCPlacementPreviewModelScale;
         const bool usesPlatformFootprint =
@@ -664,8 +668,8 @@ void StageAddActorPanel::UpdatePlacement()
         if (usesPlatformFootprint) {
             const float footprintSideLength =
                 static_cast<float>(mUGCPlatformFootprintSideLength);
-            // The clicked square is the footprint's lower-right square.
-            // Match the rebuilt UGC platform's centre and model scale.
+
+
             previewPosition.x =
                 (std::floor(placement.worldPosition.x / gridSize) +
                  1.0f - footprintSideLength * 0.5f) * gridSize;
@@ -684,10 +688,10 @@ void StageAddActorPanel::UpdatePlacement()
                 (std::floor(placement.worldPosition.z / gridSize) + 0.5f) *
                 gridSize;
 
-            // Point actors use their authored origin as their actual
-            // position.  Give the creator the same centred position used by
-            // the ghost so enemy/switch/star placement cannot drift by half
-            // a grid cell from the preview.
+
+
+
+
             placement.worldPosition = previewPosition;
         }
         mContext.game->SetUGCPlatformPlacementPreview(previewPosition);

@@ -47,7 +47,7 @@ PlayerAnimationPlaybackMode ParsePlaybackMode(const YAML::Node& animationNode,
         }
     }
 
-    // Older examples may use loop: true/false instead of mode.
+
     if (animationNode["loop"]) {
         return animationNode["loop"].as<bool>() ? PlayerAnimationPlaybackMode::BaseLoop
                                                 : PlayerAnimationPlaybackMode::OneShot;
@@ -92,7 +92,7 @@ void ReadAnimationDefinitions(const YAML::Node& playerNode, PlayerAnimationDefin
 
 void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefinitions& definitions)
 {
-    // Keep existing players.yaml files working during migration.
+
     if (playerNode["idleAnimationName"]) {
         definitions["idle"] = {
             playerNode["idleAnimationName"].as<std::string>(),
@@ -114,7 +114,7 @@ void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefin
         };
     }
 }
-} // namespace
+}
 
 PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
 {
@@ -125,7 +125,7 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         return config;
     }
 
-    // Preserve the old behavior: if multiple player nodes exist, later values overwrite earlier ones.
+
     for (const YAML::Node& playerNode : playerRoot["players"]) {
         config.hp = ReadFloat(playerNode, "hp", config.hp);
         config.scale = ReadFloat(playerNode, "scale", config.scale);

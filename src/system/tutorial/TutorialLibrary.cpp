@@ -319,8 +319,8 @@ bool TutorialLibrary::Load()
                 tutorialNode["assistPages"],
                 definition.assistPages);
 
-            // Seed the original battle tutorial once, then keep the pages as
-            // ordinary YAML data that can be edited in the debug editor.
+
+
             if (definition.id == "battle_basic" &&
                 definition.usesAssistPages) {
                 if (definition.assistPages.empty()) {

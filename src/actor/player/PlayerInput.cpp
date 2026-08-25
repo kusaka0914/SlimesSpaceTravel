@@ -86,9 +86,9 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
         return;
     }
 
-    // In local multiplayer controller 1 belongs to player 1 and controller
-    // 2 belongs to player 2.  With only one pad, player 2 naturally falls
-    // through to the keyboard mapping below.
+
+
+
     SDL_GameController* sdlController =
         game->GetIsPlayer2Joined()
             ? game->GetSdlControllerForPlayer(movement.GetPlayerNum())

@@ -137,7 +137,7 @@ void SuppressPlayerJumpUntilReleased(Game& game, int playerNum)
         }
     }
 }
-} // namespace
+}
 
 InputSystem::InputSystem(Game* game)
     : mGame(game)
@@ -187,8 +187,8 @@ void InputSystem::ProcessGameInput()
     }
 
     UpdateLastUsedInputDevice();
-    // UGC editor input normally returns early below.  Toggle handling must
-    // happen first so P can also close/open the editor while creating.
+
+
     ProcessDebugEditorToggleInput();
     ProcessUGCEditorCursorInput();
     const bool isUGCEditorActive =
@@ -570,8 +570,8 @@ void InputSystem::ProcessUGCEditorCommandInput()
     mUGCEditorDpadRightPressedPrev = dpadRightPressed;
     mUGCEditorDpadUpPressedPrev = dpadUpPressed;
     mUGCEditorDpadDownPressedPrev = dpadDownPressed;
-    // Prevent held minus/plus buttons from triggering their normal game
-    // actions on the frame after leaving the editor.
+
+
     mPauseMenuKeyPressedPrev = playPressed;
     mStartPressedPrev = selectionPressed;
 }

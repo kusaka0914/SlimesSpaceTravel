@@ -49,10 +49,10 @@ float PlanetGravityCandidateSelector::CalculateSurfaceDistance(const glm::vec3& 
     const float surfaceRadius = CalculateApproximateSurfaceRadius(playerPos, planet);
     const float centerDistance = glm::length(playerPos - planet.GetPos());
 
-    // Overlapping gravity volumes are common when planets are placed above
-    // each other. Clamping an inside point to zero makes every containing
-    // planet equally near, so the first planet in the stage remains selected.
-    // The distance to the actual surface is needed on both sides of the mesh.
+
+
+
+
     return std::abs(centerDistance - surfaceRadius);
 }
 

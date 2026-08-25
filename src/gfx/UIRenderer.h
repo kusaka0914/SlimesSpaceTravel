@@ -109,9 +109,9 @@ public:
     }
     void RecordCustomUIElementForEditor(
         const UILoadSystem::CustomElement& element);
-    // UGC editor controls are Dear ImGui windows, which are drawn after the
-    // game view. Positive z-order authored elements therefore need this
-    // foreground pass instead of the normal game-view UI pass.
+
+
+
     void DrawUGCForegroundCustomUI(
         const ImVec2& viewportMin,
         const ImVec2& viewportSize);

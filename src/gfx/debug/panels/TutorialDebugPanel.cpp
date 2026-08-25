@@ -89,7 +89,7 @@ std::string ToLower(std::string text)
         });
     return text;
 }
-} // namespace
+}
 
 TutorialDebugPanel::TutorialDebugPanel(
     DebugEditorContext& context)

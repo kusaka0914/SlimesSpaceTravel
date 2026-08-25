@@ -25,7 +25,7 @@ bool ReadVector3(const YAML::Node& node, glm::vec3& outVector)
     outVector.z = node[2].as<float>();
     return true;
 }
-} // namespace
+}
 
 bool EditorSessionRepository::Save(
     const std::filesystem::path& filePath,

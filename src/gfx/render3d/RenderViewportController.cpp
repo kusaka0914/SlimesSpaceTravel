@@ -55,8 +55,8 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
 
 void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float fbHeight) const
 {
-    // A boss defeat is a shared event.  It deliberately uses the same full
-    // screen focus shot as a rocket ride instead of keeping two small views.
+
+
     if (mGame->GetCameraSystem()->IsBossDefeatSequencePlaying()) {
         DrawGameScreenForSinglePerson(fbWidth, fbHeight);
         return;

@@ -20,4 +20,4 @@ void AddSurfacePoints(
     btConvexHullShape& shape,
     const glm::vec3& dimensions);
 
-} // namespace EllipsoidCollisionShapeGeometry
+}

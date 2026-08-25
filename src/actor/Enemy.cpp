@@ -58,7 +58,7 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
     }
     return nearestPlayer;
 }
-} // namespace
+}
 
 Enemy::Enemy(Game* game)
     : CharacterActor(game),
@@ -123,9 +123,9 @@ bool Enemy::CanUseReducedUpdateRate() const
 
 bool Enemy::ShouldUpdateUpVecEveryFrame() const
 {
-    // Boss defeat staging sets a deliberate up direction for the camera
-    // sequence. Ground rays can alternate between nearby collision surfaces,
-    // which makes that fixed pose visibly shake.
+
+
+
     if (GetIsBoss() && GetLifeState() == LifeState::Dying) {
         return false;
     }
@@ -148,9 +148,9 @@ bool Enemy::ShouldAcceptLandingSurface(
 {
     (void)surfaceNormal;
 
-    // Enemies must not establish a grounded state on another enemy. They
-    // remain airborne and the collision resolver moves them sideways until
-    // they can land on actual stage geometry.
+
+
+
     return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
 }
 

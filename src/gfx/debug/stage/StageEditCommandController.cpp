@@ -447,8 +447,8 @@ void StageEditCommandController::HandleDeleteShortcut()
     const std::unordered_set<std::string>& selectedKeys =
         mSelectionController.GetSelectedKeys();
 
-    // Planets need the dedicated deletion path because it also removes
-    // dependent actors and repairs planet references in the stage YAML.
+
+
     const std::vector<StageActorRef> targets =
         StageActorQuery::CollectAllTargets(
             mContext.game->GetCurrentStage(),
@@ -461,8 +461,8 @@ void StageEditCommandController::HandleDeleteShortcut()
         }
     }
 
-    // A planet deletion reloads the stage and shifts following indices, so
-    // delete from the end to preserve every selected planet's identity.
+
+
     if (!selectedPlanetIndices.empty() &&
         selectedPlanetIndices.size() == selectedKeys.size()) {
         const std::size_t planetCount =
@@ -655,8 +655,8 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
         indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
     }
 
-    // Switch target references currently use a sequence name plus YAML index.
-    // Keep references to surviving actors valid before sequence entries shift.
+
+
     UpdateSwitchTargetReferencesAfterActorDeletion(
         config,
         deleteIndicesBySequence);
@@ -754,9 +754,9 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
     std::unordered_set<std::string> actorSequenceNames;
     for (const StageActorTypeInfo& typeInfo :
          StageActorQuery::GetTypeInfos()) {
-        // Planets were already removed above. They are not actor nodes and
-        // do not have currentPlanetNum, so treating them as dependent actors
-        // could remove unrelated planets (which default to planet index 0).
+
+
+
         if (typeInfo.sequenceName != "boats" &&
             typeInfo.sequenceName != "planets") {
             actorSequenceNames.insert(typeInfo.sequenceName);

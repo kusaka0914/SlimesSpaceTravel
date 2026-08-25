@@ -75,9 +75,9 @@ bool IsAirborneEnemyNearRecovery(
         return false;
     }
 
-    // The launched timer is cleared before the enemy physically lands. Keep
-    // the target eligible while it is descending so a current player action
-    // cannot make the assist miss the one-second trigger window.
+
+
+
     return glm::dot(enemy.GetVelocity(), upDirection) <= 0.0f;
 }
 
@@ -97,7 +97,7 @@ float CalculateDistanceSquaredToEnemySurface(
     const glm::vec3 offset = closestPoint - player.GetPos();
     return glm::dot(offset, offset);
 }
-} // namespace
+}
 
 Enemy* PlayerTargetingAssist::FindAttackTarget(
     const Player& player,

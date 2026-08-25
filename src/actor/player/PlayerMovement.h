@@ -202,8 +202,8 @@ private:
     float mMoveSpeed = 10.2f;
     float mMaximumStepHeight = 0.3f;
     float mKnockBackSpeed = 0.0f;
-    // The old 6.0 m/s jump under 9.8 m/s^2 gravity reached about 1.84 m.
-    // Durations independently control the faster rise and slower fall.
+
+
     float mJumpHeight = 1.8367347f;
     float mJumpAscentDuration = 0.4f;
     float mJumpFallDuration = 0.85f;

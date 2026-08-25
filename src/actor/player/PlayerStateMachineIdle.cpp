@@ -23,9 +23,9 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
     }
 
     if (player.IsAttachedToPlatform()) {
-        // Adhesive platforms allow only the explicit jump escape. Skipping
-        // the rest of the idle actions prevents assist attacks or dodges from
-        // moving the player away from the first contact point.
+
+
+
         TryStartJumping(player, input, movement, combat, deltaTime);
         return;
     }
@@ -216,9 +216,9 @@ bool PlayerStateMachine::TryStartAssistAirSlamAttack(
 {
     const bool hasBufferedWeakAttackRequest =
         input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
-    // Assist air-slam timing is driven by the enemy's landing timer. A rapid
-    // weak-attack sequence can otherwise let the short input buffer expire
-    // before that timer reaches its trigger window.
+
+
+
     const bool hasWeakAttackRequest =
         hasBufferedWeakAttackRequest ||
         input.GetWideAttackPressed();
@@ -476,9 +476,9 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
         return false;
     }
 
-    // Continuous attack is a ground-only attack. While airborne, its duration
-    // continues to expire but it neither deals hits nor blocks weak attacks,
-    // air dodges, or air strong attacks.
+
+
+
     if (!player.GetOnGround()) {
         combat.AdvanceContinuousAttackDuration(deltaTime);
         return false;

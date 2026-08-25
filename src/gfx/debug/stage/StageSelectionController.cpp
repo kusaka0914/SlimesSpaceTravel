@@ -146,10 +146,10 @@ void StageSelectionController::PrepareActorForEditorSelection(Actor* actor)
         return;
     }
 
-    // Free-camera mode pauses actor updates, so a moving platform can still be
-    // left at its last runtime position when selected. Reapply the authored
-    // preview point without deriving or replacing either path endpoint from
-    // that runtime position.
+
+
+
+
     movement->SetEditorPreviewPoint(
         movement->GetEditorPreviewPoint());
 }
@@ -531,9 +531,9 @@ void StageSelectionController::UpdatePickedActorByMouse()
             }
         }
 
-        // Prefer the floor the child is editing. If that floor is empty,
-        // select the highest object in the column so clicking a visible stack
-        // never appears to do nothing.
+
+
+
         if (hits.empty() && !allLayerObjectHits.empty()) {
             int highestLayer = allLayerObjectHits.front().layer;
             for (const LayeredHit& layeredHit : allLayerObjectHits) {
@@ -600,8 +600,8 @@ void StageSelectionController::UpdatePickedActorByMouse()
     if (io.KeyShift) {
         ToggleSelection(hitActor, *target);
     } else if (mContext.game->GetIsUGCMode() && IsSelected(*target)) {
-        // Pressing an already-selected object starts a group drag in UGC.
-        // Keep the selection set intact while making this the picked object.
+
+
         PrepareActorForEditorSelection(hitActor);
         mPickedActor = hitActor;
         mPickedActorRef = *target;
@@ -840,9 +840,9 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const glm::vec3 ndc = glm::vec3(clip) / clip.w;
 
-    // Editor overlays need projected positions outside the viewport so long
-    // lines and box-selection candidates can be clipped by the caller. Only
-    // reject invalid projections or points behind the camera here.
+
+
+
     if (!std::isfinite(ndc.x) ||
         !std::isfinite(ndc.y) ||
         !std::isfinite(ndc.z)) {

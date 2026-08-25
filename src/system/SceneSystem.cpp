@@ -51,8 +51,8 @@ void SceneSystem::Update(float deltaTime)
     if (IsGameOver() && mFadeTimer < 0.0f && mGameOverTimer >= 0.0f) {
         mGameOverTimer -= std::max(0.0f, deltaTime);
         if (mGameOverTimer < 0.0f) {
-            // Clear this before requesting the fade so a failed/repeated
-            // update cannot queue another restart.
+
+
             mGameOverTimer = -1.0f;
             RestartGame();
         }
@@ -98,15 +98,15 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
         return true;
 
     case GameProgressState::SceneState::Credits:
-        // Credits must play through to the configured end time. Consume the
-        // confirm input so it cannot work as a one-button skip (or leak to
-        // a gameplay input behind the scene).
+
+
+
         return true;
 
     case GameProgressState::SceneState::Talking:
     {
-        // In local multiplayer, only the player who initiated the NPC talk
-        // (or tutorial) may advance its pages.
+
+
         const Player* talkingPlayer = GetTalkingPlayer();
         if (talkingPlayer && talkingPlayer->GetPlayerNum() != playerNum) {
             return false;
@@ -123,7 +123,7 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
         return mTalkController->TryStartTalkWithNPC(playerNum);
 
     case GameProgressState::SceneState::GameOver:
-        // Game Over restarts automatically after its short display period.
+
         return false;
 
     default:
@@ -200,9 +200,9 @@ bool SceneSystem::IsTutorialActive(
 void SceneSystem::OnStartPressed()
 {
     if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
-        // Enter / controller Start (＋) skips either form of the opening.
-        // NPC-triggered openings return to their suspended conversation;
-        // title openings continue to the normal gameplay fade.
+
+
+
         if (mHasOpeningResume) {
             FinishOpeningStory();
         } else {
@@ -232,7 +232,7 @@ void SceneSystem::StartEnding()
 void SceneSystem::StartBattleStyleSelection()
 {
     if (mGame->HasSelectedPlayerControlStyle()) {
-        // The choice is saved, so later starts resume immediately.
+
         RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
         return;
     }
@@ -260,8 +260,8 @@ void SceneSystem::ConfirmBattleStyleSelection()
     }
 
     mGame->SetPlayerControlStyle(mSelectedBattleStyle);
-    // A save that has already cleared stage 1 resumes from the base.  A new
-    // save starts from stage 1 as before.
+
+
     RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
 }
 
@@ -330,10 +330,10 @@ void SceneSystem::StartPlayingScene()
     mTalkingPlayer = nullptr;
     mIsFinishingOpeningStory = false;
 
-    // Stage changes already request this explicitly, but direct stage starts
-    // (debug/editor reloads and restart flows) previously skipped it. Queue
-    // the same check here so an NPC configured for arrival always gets a
-    // chance to start its unread conversation after the scene is ready.
+
+
+
+
     mHasPendingForcedArrivalTalk = !mSuppressForcedArrivalTalkOnce;
     mSuppressForcedArrivalTalkOnce = false;
     mHasReachedArrivalDestination = false;
@@ -377,15 +377,17 @@ bool SceneSystem::StartOpeningAfterTalkPage(
         }
     }
 
-    // This must happen before loading house.yaml, because loading destroys
-    // the current stage's NPC instances.
+
+
     mGame->MarkNPCOpeningTriggerCompleted(
         talkingNPC, sourceTalkPageIndex);
 
-    // Keep the authored base scene alive while the opening fades in.  Loading
-    // house.yaml here was synchronous, so the player saw a pause before the
-    // fade even began.  The opening is now a full-screen UI sequence and does
-    // not require a separate background stage.
+    // オープニングは全画面UIなので別ステージを読込む必要がない。同期読込によるフェード開始前の停止を避ける。
+
+
+
+
+
 
     mOpeningResumeNPC = nullptr;
     mOpeningResumePlayer = nullptr;
@@ -399,9 +401,11 @@ bool SceneSystem::StartOpeningAfterTalkPage(
 
 void SceneSystem::FinishOpeningStory()
 {
-    // The opening renderer invokes this every frame after its final page.
-    // Keep the first transition request intact; otherwise the next frame
-    // overwrites the NPC-resume fade with the normal stage-0 arrival flow.
+
+    // 最終ページ後は毎フレーム呼ばれるため、最初の遷移要求を後続フレームで上書きしない。
+
+
+
     if (mIsFinishingOpeningStory) {
         return;
     }
@@ -500,9 +504,9 @@ void SceneSystem::FinishCredits()
 {
     RequestFadeAction([this]() {
         mCreditsElapsed = 0.0f;
-        // Persist this only after the ending story and the full credits have
-        // both completed. Subsequent stage 5 clears can then return normally
-        // to the base instead of replaying the finale.
+
+
+
         mGame->MarkEndingRollCompleted();
         mUIState->FinishTalkWith();
         mGameProgressState->SetCurrentSceneState(
@@ -614,9 +618,11 @@ void SceneSystem::OnBoatArrived(Boat* boat)
     mHasPendingForcedArrivalTalk = true;
     mHasReachedArrivalDestination = true;
 
-    // Game::OnBoatArrived may merge solo split players immediately after
-    // this callback. Start tutorials on the following update, once that
-    // merge and the landing have completed, so their input owner is correct.
+    // 到着直後には1人分裂の合体が続くため、入力の所有者が確定した次フレームでチュートリアルを始める。
+
+
+
+
     mHasPendingArrivalTutorials = true;
 }
 
@@ -688,9 +694,11 @@ NPC* SceneSystem::FindForcedArrivalTalkNPC() const
         return arrivalNPC;
     }
 
-    // During a stage-start cinematic the player can briefly have no resolved
-    // current planet.  Fall back to the stage-wide configured NPC instead of
-    // losing the one-shot arrival conversation in that frame.
+    // ステージ開始演出中は現在惑星が未解決になることがある。1回限りの到着会話を失わないよう、ステージ全体から設定済みNPCを探す。
+
+
+
+
     Stage* stage = mGame->GetCurrentStage();
     if (stage) {
         for (Planet* planet : stage->GetPlanets()) {

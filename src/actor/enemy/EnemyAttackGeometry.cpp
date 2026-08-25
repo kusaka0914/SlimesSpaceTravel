@@ -71,7 +71,7 @@ bool TryGetSpherePreviewPlaneOffset(
     const glm::vec3 positionDirection =
         fromPlanetToPosition / positionRadius;
     const float denominator = glm::dot(positionDirection, planeNormal);
-    // The back half cannot appear in the projected preview area.
+
     if (denominator <= denominatorEpsilon) {
         return false;
     }
@@ -80,7 +80,7 @@ bool TryGetSpherePreviewPlaneOffset(
         (positionDirection / denominator - planeNormal);
     return true;
 }
-} // namespace
+}
 
 EnemyAttackFrame ResolveEnemyAttackFrame(const Enemy& enemy)
 {
@@ -134,8 +134,8 @@ float CalculateEnemyAttackFrontOffset(
         return frontOffset;
     }
 
-    // Rendering maps a model's local +X axis to -GetForwardVec(). Pick the
-    // signed X bound that lies in the current attack direction.
+
+
     const glm::vec3 modelPositiveXAxis = -enemy.GetForwardVec();
     const float frontAxisAlignment =
         glm::dot(modelPositiveXAxis, attackFrame.forward) *

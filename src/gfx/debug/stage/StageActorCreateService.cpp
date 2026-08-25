@@ -200,7 +200,7 @@ glm::vec3 CalculateUGCCellWorldPosition(const UGCPlatformCell& cell)
         (static_cast<float>(cell.gridPosition.z) + 0.5f) * cell.gridSize);
 }
 
-} // namespace
+}
 
 StageActorCreateService::StageActorCreateService(DebugEditorContext& context)
     : mContext(context)
@@ -320,9 +320,10 @@ bool StageActorCreateService::DuplicateActorAtPlacement(
         targetPlanetIndex,
         &placement);
 
-    // A saved quaternion includes the old surface normal. Keeping local Euler
-    // rotation while rebuilding from the clicked normal preserves the authored
-    // facing without tilting the copy toward its previous planet position.
+
+
+
+    // 保存済みQuaternionは複製元の地表法線を含む。クリック先の法線で再構成してもローカルの向きを保つため削除する。
     duplicatedNode.remove("rotationQuat");
 
     if (sourceRef.type == StageActorType::Platform) {
@@ -500,7 +501,7 @@ bool StageActorCreateService::AddUGCPlatformCell(
     for (int offsetX = 0; offsetX < safeSideLength; ++offsetX) {
         for (int offsetZ = 0; offsetZ < safeSideLength; ++offsetZ) {
             UGCPlatformCell cell = newCell;
-            // The clicked cell is the footprint's lower-right corner.
+
             cell.gridPosition.x -= offsetX;
             cell.gridPosition.z -= offsetZ;
             bool alreadyExists = false;
@@ -962,9 +963,10 @@ bool StageActorCreateService::RebuildUGCPlatformNodes(
                 (static_cast<float>(startX + endX + 1) * 0.5f) * gridSize,
                 static_cast<float>(gridLayer) * gridSize,
                 (static_cast<float>(startZ + endZ + 1) * 0.5f) * gridSize);
-            // platform.obj spans two model units on each axis. Platform
-            // actors map their local Z axis to the UGC grid's world X axis,
-            // so width and depth are intentionally crossed here.
+
+
+
+            // platform.objは各軸で2モデル単位、かつActorのローカルZ軸はUGCグリッドのworld X軸に対応するため幅と奥行きを入れ替える。
             const glm::vec3 scale(
                 static_cast<float>(depthInCells) * gridSize * 0.5f,
                 0.1f * gridSize,
@@ -1201,10 +1203,11 @@ bool StageActorCreateService::AddTwoPlayerSwitchPair(
     }
     if (!StageYamlRepository::SaveCurrentStage(mContext, config)) return false;
 
-    // Do not reload the whole stage from the placement callback: that destroys
-    // the editor's current selection/placement state while it is still being
-    // used.  Both switches are created before the next game update, so the
-    // group component always observes a complete pair.
+
+
+
+
+    // 配置コールバック中の全ステージ再読込は選択・配置状態を破棄する。次の更新前に2個を生成できるため、ペアとして完全な状態で観測される。
     const int firstIndex = static_cast<int>(config["platforms"].size()) - 2;
     const YAML::Node firstNode = config["platforms"][firstIndex];
     const YAML::Node secondNode = config["platforms"][firstIndex + 1];

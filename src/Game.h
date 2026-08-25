@@ -55,8 +55,8 @@ public:
     void Shutdown();
 
     void LoadData(bool isLoadPlayer);
-    // The UGC editor only needs a visual stage rebuild. Collision is rebuilt
-    // when playtesting starts, not for every painted cell.
+
+
     void ReloadCurrentStage(bool rebuildPhysics = true);
     void ReloadUIData();
     void ChangeStage(int stageNum);
@@ -173,8 +173,8 @@ public:
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     bool GetIsUGCMode() const { return mIsUGCMode; }
-    // While creating a stage, P opens the ordinary debug editor on top of
-    // the product UGC editor instead of switching to playtest.
+
+
     bool GetIsUGCDebugEditorShowing() const
     {
         return mIsUGCDebugEditorShowing;

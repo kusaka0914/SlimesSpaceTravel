@@ -15,7 +15,7 @@ float ReadFloat(const YAML::Node& node, const char* key, float fallback)
     const YAML::Node value = node[key];
     return value ? value.as<float>() : fallback;
 }
-} // namespace
+}
 
 void PlayerCameraSettings::Normalize()
 {

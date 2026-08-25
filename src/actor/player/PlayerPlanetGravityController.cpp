@@ -24,9 +24,9 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    // The overhead ray is intentionally evaluated while grounded as well.
-    // A successful hit detaches the player from the current floor, so the
-    // newly selected surface normal can become the gravity direction at once.
+
+
+
     if (TryActivateOverheadGravityRay(
             player,
             movement,
@@ -34,8 +34,8 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    // Planet ownership changes only when landing is confirmed. Proximity
-    // alone must not select a planet the player has never touched.
+
+
     if (player.GetOnGround()) {
         return;
     }
@@ -66,10 +66,10 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
                     return;
                 }
 
-                // A high platform can start outside the normal ellipse
-                // activation distance. Waiting for proximity alone can leave
-                // the player falling forever when the old up direction does
-                // not lead back to the ellipse.
+
+
+
+
                 Planet* fallbackPlanet =
                     ResolveFallbackPlanet(player);
                 if (fallbackPlanet &&
@@ -129,8 +129,8 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
 
     // currentPlanetは即時変更するが、
     // upVecと重力方向は徐々に回転させる。
-    // A ground ray always takes priority over the planet fallback.
-    // Once a ray takes over after fallback, fallback stays disabled until landing.
+
+
     if (groundRayHitThisFrame) {
         mNoGroundRayDuration = 0.0f;
         mFallbackGravityActive = false;
@@ -148,8 +148,8 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         mFallbackAppliedThisJump = true;
         mFallbackGravityActive = true;
 
-        // Apply the last confirmed landing planet's default gravity direction
-        // once at the end of the grace period.
+
+
         Planet* fallbackPlanet = ResolveFallbackPlanet(player);
         if (fallbackPlanet &&
             fallbackPlanet != player.GetCurrentPlanet()) {
@@ -235,10 +235,10 @@ bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
         return true;
     }
 
-    // While the visual up direction is turning, the ordinary landing test
-    // still regards the previous floor as walkable. Accept only a surface
-    // that faces the overhead ray's new gravity direction so the old floor
-    // cannot cancel the transition on the following frame.
+
+
+
+
     return CharacterActor::IsWalkableGroundNormal(
         surfaceNormal,
         mOverheadGravityUpDirection);
@@ -248,15 +248,15 @@ void PlayerPlanetGravityController::OnJumpStarted(
     Player& player,
     PlayerMovement& movement)
 {
-    // The platform's owning planet is placement metadata, not proof that the
-    // player landed on that planet. Keep the last direct planet landing.
+
+
     if (!mLastLandedPlanet) {
         mLastLandedPlanet = player.GetCurrentPlanet();
     }
 
-    // A grounded overhead-ray transition also changes the player to an
-    // airborne state. Preserve the acquired normal instead of reinitializing
-    // it as an ordinary jump on the same frame.
+
+
+
     if (mIsOverheadGravityRayActive) {
         mIsJumpSwitchingActive = true;
         return;
@@ -359,8 +359,8 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
-    // A platform landing must not replace the fallback destination with the
-    // platform's owning planet. Only direct contact with a planet counts.
+
+
     Planet* landedPlanet =
         dynamic_cast<Planet*>(player.GetGroundActor());
     if (!landedPlanet) {
@@ -686,8 +686,8 @@ void PlayerPlanetGravityController::ApplyEllipseSurfaceAttraction(
     }
     directionToSurface /= directionLength;
 
-    // Treat the takeoff surface height as the baseline so a high platform does
-    // not activate extra attraction earlier than the planet surface does.
+
+
     const float attractionStartSurfaceDistance =
         mEllipseJumpStartSurfaceDistance +
         ellipseAttractionStartSurfaceDistance;
@@ -759,7 +759,6 @@ void PlayerPlanetGravityController::SmoothAirborneUpVec(
 
     const float dotValue = glm::clamp(glm::dot(mSmoothedUpVec, targetUp), -1.0f, 1.0f);
 
-    // 既に目標方向とほぼ一致している。
     if (dotValue > 0.9999f) {
         mSmoothedUpVec = targetUp;
         player.SetUpVec(mSmoothedUpVec);
@@ -812,7 +811,6 @@ void PlayerPlanetGravityController::SmoothAirborneUpVec(
         mSmoothedUpVec = glm::normalize(mSmoothedUpVec);
     }
 
-    // このフレームで使用する上方向と重力方向を設定する。
     player.SetUpVec(mSmoothedUpVec);
 }
 
@@ -822,12 +820,10 @@ Planet* PlayerPlanetGravityController::ResolvePlanetFromGroundActor(Actor* groun
         return nullptr;
     }
 
-    // 惑星本体に直接着地した場合。
     if (Planet* planet = dynamic_cast<Planet*>(groundActor)) {
         return planet;
     }
 
-    // 惑星に属している足場や移動床へ着地した場合。
     return groundActor->GetCurrentPlanet();
 }
 

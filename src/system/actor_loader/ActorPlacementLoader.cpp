@@ -31,7 +31,7 @@ glm::vec3 ReadVec3(const YAML::Node& node, const char* key, const glm::vec3& fal
 
     return glm::vec3(node[key][0].as<float>(), node[key][1].as<float>(), node[key][2].as<float>());
 }
-} // namespace
+}
 
 glm::vec3 ActorPlacementLoader::CalculatePos(const YAML::Node& node, const Planet& currentPlanet) const
 {

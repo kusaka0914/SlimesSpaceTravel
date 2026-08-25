@@ -68,7 +68,7 @@ void ApplyDamageAndKnockBack(
     input.ClearAttackBuffer();
     input.SyncAttackButtonPrev();
 }
-} // namespace
+}
 
 void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMovement& movement,
                                 PlayerStateMachine& stateMachine, PlayerCombat& combat,

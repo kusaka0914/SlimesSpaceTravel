@@ -7,10 +7,10 @@ GamepadRumbleService::~GamepadRumbleService()
 
 void GamepadRumbleService::Initialize()
 {
-    // SDL can expose each Joy-Con as a separate mini gamepad. Enable its
-    // HIDAPI pairing before the controller subsystem starts so a connected
-    // left/right pair occupies one local-player controller slot, while a
-    // single Joy-Con still remains usable on its own.
+
+
+
+
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS, "0");

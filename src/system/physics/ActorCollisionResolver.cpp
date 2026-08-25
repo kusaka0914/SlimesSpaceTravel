@@ -213,15 +213,17 @@ bool ShouldStopBeforeEnemy(
     const bool startsOverlapping =
         startClearance <= clearanceEpsilon;
     if (startsOverlapping) {
-        // Do not trap an enemy that was spawned overlapping or was moved by
-        // an external platform. Only permit steps that strictly reduce the
-        // existing overlap; sideways or deeper movement remains blocked.
+
+
+
+        // 生成時の重なりや外部足場による移動で敵を閉じ込めない。既存の重なりを減らす方向だけ許可する。
         return endClearance <=
             startClearance + clearanceEpsilon;
     }
 
-    // Testing the complete segment prevents a fast attack from entering or
-    // passing through another enemy between two frame positions.
+
+
+    // フレーム間の全経路を検査し、高速な攻撃が別の敵を通り抜けないようにする。
     return EnemyCollisionGeometry::DoesSegmentIntersectExpandedBounds(
         blockingBounds,
         movementStart,
@@ -493,7 +495,7 @@ std::optional<glm::vec3> ResolveMovementAgainstEnemyEllipsoid(
                 collisionSkinWidth) +
            automaticTopSlide;
 }
-} // namespace
+}
 
 ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
     btDiscreteDynamicsWorld* world,
@@ -633,9 +635,10 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
                     return actor->GetPos();
                 }
 
-                // The swept bounds test above already covers the requested
-                // position. Avoid the endpoint depenetration path so an
-                // enemy that starts overlapped can move outward.
+
+
+
+                // 掃引判定は要求位置までを確認済みなので、終点の押し出しを行わず重なり始めた敵が外へ移動できるようにする。
                 continue;
             }
         }
@@ -650,9 +653,10 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
                     collisionCenterHeight)) {
             if (actorCollisionFilter ==
                 ActorCollisionFilter::StopAtEnemies) {
-                // Enemy movement is kinematic. Returning its current
-                // position blocks this step without applying a separation
-                // impulse to either enemy.
+
+
+
+                // 敵の移動はキネマティックなので、現在位置を返して停止し、どちらにも分離インパルスを加えない。
                 return actor->GetPos();
             }
             return *conflictPos;

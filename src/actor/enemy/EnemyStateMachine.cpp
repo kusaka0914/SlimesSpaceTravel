@@ -67,8 +67,9 @@ glm::vec3 CalculateCinematicSurfacePosition(
         return planet.CalculateSurfacePos(theta, phi, height);
     }
 
-    // A flattened planet's sphere radius is its X radius. Using it directly
-    // can place this staged actor inside the long axis of the collision body.
+
+
+    // 扁平な惑星で球の半径をそのまま使うと、長軸側の衝突形状に演出用Actorが埋まるため最大半径を使う。
     const float largestRadius = std::max({
         std::abs(planet.GetScale().x),
         std::abs(planet.GetScale().y),
@@ -206,9 +207,9 @@ void StageBossDefeatActors(Enemy& boss)
         }
     }
 
-    // During a two-player boss defeat, both players watch one shared full
-    // screen sequence.  Move 2P beside 1P on the boss planet so that the
-    // split-screen can safely resume when the sequence ends.
+
+
+
     if (boss.GetGame()->GetIsPlayer2Joined()) {
         const std::vector<Player*>& players = boss.GetGame()->GetPlayers();
         if (players.size() >= 2 && players[1]) {
@@ -285,8 +286,8 @@ void StageBossDefeatActors(Enemy& boss)
         if (mathUtils &&
             glm::length(starFacingBoss) > directionEpsilon) {
             starFacingBoss = glm::normalize(starFacingBoss);
-            // Stars use the opposite model-forward axis, matching the
-            // previous presentation while targeting the boss instead.
+
+
             star->SetFacingYaw(
                 mathUtils->GetYawFromDirection(
                     star->GetUpVec(),
@@ -348,7 +349,7 @@ void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
     }
 }
 
-} // namespace
+}
 
 EnemyStateMachine::EnemyStateMachine()
     : mLifeState(LifeState::Alive),
@@ -562,8 +563,9 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
-    // Normal attacks remain at their wind-up position. The hit test uses the
-    // fixed melee warning area instead of sweeping the enemy model forward.
+
+
+    // 通常攻撃は予兆位置で固定する。敵モデルを前方へ移動させず、固定の近接予兆範囲で命中を判定する。
     combat.TryApplyAttack(
         enemy,
         status,
@@ -653,8 +655,9 @@ void EnemyStateMachine::UpdatePostRetreatRecovery(
         return;
     }
 
-    // This route intentionally skips the ordinary preparation countdown.
-    // The selected attack starts with only its one-second range preview.
+
+
+    // この復帰経路は通常の準備時間を使わず、選択した攻撃の1秒間の範囲予告だけを行う。
     constexpr float attackPreviewDurationSeconds = 1.0f;
     status.SetStandByAttackTimer(attackPreviewDurationSeconds);
     status.SetIsJustBeforeAttack(false);
@@ -783,8 +786,9 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
 
-        // The shared boss-defeat framing assumes both players are standing
-        // on a surface rather than frozen partway through a jump.
+
+
+        // ボス撃破演出の共通カメラは、両プレイヤーが地面に立っている前提で構図を作る。
         enemy.GetGame()->ForcePlayersGroundedForCinematic();
 
         enemy.GetGame()->GetAudioSystem()->StopBGM();
@@ -822,8 +826,8 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
         return;
     }
 
-    // The boss defeat camera sequence reveals the star one second after this
-    // death effect, rather than immediately when the boss disappears.
+
+
 }
 
 void EnemyStateMachine::FinishLaunched(Enemy& enemy, EnemyStatus& status)

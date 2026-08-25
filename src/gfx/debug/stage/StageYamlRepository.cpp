@@ -50,10 +50,10 @@ bool StageYamlRepository::SaveCurrentStage(
         return false;
     }
 
-    // Actor creation writes the stage YAML immediately.  A planet moved by
-    // the gizmo may not have gone through the planet inspector's Save button
-    // yet, so preserve its authored center before that write replaces the
-    // file with stale coordinates.
+
+
+
+
     if (preserveRuntimePlanetCenters &&
         context.game && context.game->GetCurrentStage() &&
         config["planets"] && config["planets"].IsSequence()) {

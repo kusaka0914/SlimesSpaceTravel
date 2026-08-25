@@ -25,7 +25,7 @@ void SortKeyframes(CinematicSequence& sequence)
                          return left.time < right.time;
                      });
 }
-} // namespace
+}
 
 bool CinematicCamera::Play(
     const CinematicSequence& sequence,
@@ -168,8 +168,8 @@ void CinematicCamera::EvaluatePose(float sequenceTime)
         }
 
         if (sequenceTime < endArrivalTime) {
-            // A cut belongs to its destination keyframe. The preceding pose is
-            // held until the destination timestamp, then switches at once.
+
+
             if (end.transitionMode == CameraTransitionMode::Cut) {
                 mCurrentPose = start.pose;
                 return;

@@ -19,10 +19,11 @@ void PlayerBoatRide::Update(Player& player, PlayerMovement& movement, PlayerResp
         return;
     }
 
-    // Boarding is a world-space interaction. A boat can be deliberately
-    // assigned to a different start planet in the editor while still placed
-    // beside the player, so inspect every boat in the stage rather than only
-    // the player's current planet.
+
+
+
+
+    // ボートは編集時にプレイヤーと別の開始惑星へ割り当てられるため、現在惑星だけでなくステージ内の全ボートを調べる。
     for (Planet* planet : currentStage->GetPlanets()) {
         if (!planet) {
             continue;
@@ -33,7 +34,8 @@ void PlayerBoatRide::Update(Player& player, PlayerMovement& movement, PlayerResp
                 continue;
             }
 
-            // Nearby travelling boats must not pull in an unrelated player.
+
+            // 移動中の近くのボートが、搭乗していないプレイヤーを引き寄せないようにする。
             if (boat->GetIsMoving()) {
                 if (boat->HasBoardedPlayer(&player)) {
                     FollowMovingBoat(player, boat);
@@ -72,14 +74,16 @@ void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
 
     Game* game = player.GetGame();
     boat->BoardPlayer(&player);
-    // A boarded split slime waits inside the rocket.  The rocket launches
-    // only once both split slimes have boarded, instead of merging them.
+
+
+    // 分裂体はロケット内で待機し、両方が搭乗してから発進する。搭乗時には合体しない。
     player.SetIsActive(false);
 
-    // In solo split play, boarding one half must immediately hand control
-    // to the remaining half after a short boarding beat.  This keeps the
-    // player controllable without a manual switch while the first half waits
-    // in the rocket.
+
+
+
+
+    // 1人分裂中は搭乗した側を非選択にし、残った側へ自動で操作を渡す。
     if (game && game->GetIsPlayerSplit() && !game->GetIsPlayer2Joined()) {
         game->RequestSoloSplitControlSwitchAfterBoarding();
     }
@@ -130,8 +134,9 @@ void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, Pla
     player.SetIsActive(true);
 
     player.RefreshFallbackUpVec();
-    // Store only the tangent-facing direction.  The up direction is always
-    // recalculated from the destination planet on respawn, avoiding stale
-    // quaternions or camera vectors from the planet the player departed.
+
+
+
+    // リスタートには接線方向だけを保存する。上方向は到着先惑星から再計算し、出発元の姿勢を持ち込まない。
     respawn.CaptureRestartFacingDirection(player);
 }
