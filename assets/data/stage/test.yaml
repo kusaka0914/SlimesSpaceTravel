@@ -3,35 +3,38 @@ planets:
     scale: [8, 8, 8]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
-    shape: Sphere
     rocketSpawnCondition: AllBoatPartsCollected
     textureTiling:
       - 8
       - 8
     textureSideBlendWidth: 0.05
     stageNum: 0
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center: [32, 50.6, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
-    shape: Sphere
     rocketSpawnCondition: AllEnemiesDead
     textureTiling:
       - 4
       - 4
     textureSideBlendWidth: 0.05
     stageNum: 1
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center: [64, 0, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
-    shape: Sphere
     textureTiling:
       - 4
       - 4
     textureSideBlendWidth: 0.05
     rocketSpawnCondition: ""
     stageNum: 2
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
   - center:
       - 96
       - 0
@@ -46,11 +49,14 @@ planets:
       - 1
       - 1
     model: planet.obj
-    shape: Sphere
     stageNum: 3
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
     rocketSpawnCondition: ""
+    textureTiling:
+      - 4
+      - 4
+    textureSideBlendWidth: 0.05
 enemies:
   - type: normal
     theta: 1.973047
@@ -79,6 +85,7 @@ enemies:
       - -0.3016705
       - 0.6154509
       - 0.59661317
+    modelPath: enemy.obj
   - type: normal
     theta: -2.842698
     phi: -0.111576
@@ -106,6 +113,7 @@ enemies:
       - 0.7765881
       - -0.21837886
       - 0.03998902
+    modelPath: enemy.obj
   - type: normal
     theta: 2.272954
     phi: -0.578284
@@ -133,6 +141,7 @@ enemies:
       - 0.76323926
       - -0.2581088
       - -0.109034516
+    modelPath: enemy.obj
   - type: normal
     theta: 1.331762
     phi: -0.528396
@@ -160,6 +169,7 @@ enemies:
       - -0.12539619
       - 0.85529935
       - 0.2140856
+    modelPath: enemy.obj
   - type: normal
     theta: 0.204886
     phi: 1.007358
@@ -187,6 +197,7 @@ enemies:
       - 0.90692216
       - 0.019725602
       - 0.3298068
+    modelPath: enemy.obj
   - type: normal
     theta: 2.354361
     phi: 0.060486
@@ -214,6 +225,7 @@ enemies:
       - 0.037182707
       - 0.5453684
       - 0.8065328
+    modelPath: enemy.obj
   - type: normal
     theta: -1.88965
     phi: -0.998213
@@ -241,6 +253,7 @@ enemies:
       - 0.79160774
       - -0.012319448
       - 0.035656784
+    modelPath: enemy.obj
   - type: normal
     theta: 1.263585
     phi: -0.856111
@@ -268,6 +281,7 @@ enemies:
       - -0.53974366
       - 0.28078273
       - 0.75611216
+    modelPath: enemy.obj
   - type: normal
     theta: 1.027116
     phi: -0.135222
@@ -295,6 +309,7 @@ enemies:
       - 0.70985174
       - -0.57718897
       - -0.39945802
+    modelPath: enemy.obj
   - type: normal
     theta: 1.536649
     phi: 1.382983
@@ -322,6 +337,7 @@ enemies:
       - 0.7505827
       - -0.04277401
       - -0.57402337
+    modelPath: enemy.obj
   - type: normal
     theta: -1.373556
     phi: -0.239034
@@ -349,6 +365,7 @@ enemies:
       - 0.8184097
       - 0.032843724
       - 0.043483894
+    modelPath: enemy.obj
   - type: normal
     theta: -1.761338
     phi: 0.375625
@@ -376,6 +393,7 @@ enemies:
       - 0.8732541
       - -0.115818076
       - 0.19784184
+    modelPath: enemy.obj
   - type: normal
     theta: 0
     phi: 0.277311
@@ -403,6 +421,7 @@ enemies:
       - 0.7508298
       - 0.32821503
       - 0.38146076
+    modelPath: enemy.obj
   - type: normal
     theta: 0.75125
     phi: 0.034148
@@ -430,6 +449,7 @@ enemies:
       - 0.7531409
       - -0.36730784
       - -0.38312593
+    modelPath: enemy.obj
   - type: normal
     theta: -0.580512
     phi: 0.512216
@@ -457,6 +477,7 @@ enemies:
       - 0.6128025
       - -0.4111657
       - 0.42746273
+    modelPath: enemy.obj
   - type: normal
     theta: -0.4780266
     phi: -0.1327746
@@ -484,6 +505,7 @@ enemies:
       - 0.88201016
       - 0.33148852
       - -0.1494079
+    modelPath: enemy.obj
   - type: normal
     theta: 1.400058
     phi: 0.443256
@@ -511,6 +533,7 @@ enemies:
       - 0.082278684
       - 0.5820358
       - 0.6828017
+    modelPath: enemy.obj
   - type: normal
     theta: 1.385288
     phi: 1.570796
@@ -538,6 +561,7 @@ enemies:
       - 0.78144765
       - 0.102214165
       - 0.61537874
+    modelPath: enemy.obj
   - type: normal
     theta: 0.341477
     phi: -0.135222
@@ -565,6 +589,7 @@ enemies:
       - 0.88278973
       - 0.43820453
       - -0.111820064
+    modelPath: enemy.obj
   - type: normal
     theta: 0.580512
     phi: 0.525433
@@ -592,6 +617,7 @@ enemies:
       - 0.7100406
       - -0.2970121
       - -0.3704739
+    modelPath: enemy.obj
   - type: normal
     theta: 1.67324
     phi: -0.039231
@@ -619,6 +645,7 @@ enemies:
       - 0.84540015
       - -0.16178055
       - -0.021825325
+    modelPath: enemy.obj
   - type: boss
     theta: 0
     phi: 0
@@ -646,6 +673,7 @@ enemies:
       - 0.70895797
       - 0.70525026
       - -0.00062048354
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -674,6 +702,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -702,6 +731,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -730,6 +760,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -758,6 +789,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -786,6 +818,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -814,6 +847,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -842,6 +876,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -870,6 +905,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -898,6 +934,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 2
@@ -926,6 +963,7 @@ enemies:
       - 0.25
       - 0.25
       - 0.25
+    modelPath: enemy.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
@@ -1037,13 +1075,13 @@ boats:
       - -3.3593148e-09
       - -0.28715074
     destStage: 0
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
     textureTiling:
       - 1
       - 1
+    travelSpeed: 0.1
   - theta: 0
     phi: 0
     height: 0
@@ -1072,13 +1110,13 @@ boats:
       - 4.8112723e-09
       - 0.9592415
     destStage: 0
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
     textureTiling:
       - 1
       - 1
+    travelSpeed: 0.1
   - startPlanet: 2
     destPlanet: 2
     destStage: 0
@@ -1107,13 +1145,13 @@ boats:
       - 0.8
       - 0.8
       - 0.8
-    travelDuration: 3
     destMargin: 4
     launchSequenceId: launch_rocket_from_base
     modelPath: boat.obj
     textureTiling:
       - 1
       - 1
+    travelSpeed: 1.350638
 boatParts:
   - type: parts1
     currentPlanetNum: 0
@@ -1301,9 +1339,9 @@ star:
       - 0.49998787
       - -0.49559548
 NPCs:
-  - theta: -0.5460176
-    phi: 1.1324955
-    height: -0.060674667
+  - theta: -0.54607075
+    phi: 1.1324949
+    height: 3.6398087
     type: spaceSlime
     name: BoatPartsNPC
     talkTexts:
@@ -1312,29 +1350,29 @@ NPCs:
       - そこに行ってみたらどうだ？
       - 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！
     pos:
-      - 2.88
-      - 7.19
-      - -1.75
-    facingYaw: 1.3757193
+      - 4.22
+      - 10.54
+      - -2.57
+    facingYaw: 0.8376427
     rotation:
-      - 0
-      - 0
-      - 0
+      - 0.0012866029
+      - -0.83737665
+      - -0.002128704
     scale:
       - 0.25
       - 0.25
       - 0.25
     upVec:
-      - 0.36169103
-      - 0.90528494
-      - -0.22279781
+      - 0.3633595
+      - 0.9052694
+      - -0.22012995
     modelPath: spaceSlime.obj
     radius: 0.75
     rotationQuat:
-      - 0.76735836
-      - -0.20423393
-      - -0.6031614
-      - -0.07514027
+      - 0.90000767
+      - -0.17600767
+      - -0.3776518
+      - -0.12801018
     talkRubies:
       - talkIndex: 0
         segments:
@@ -1449,21 +1487,11 @@ NPCs:
       mode: afterTalk
       variants:
         - talkIndex: 3
-          text: パーツ拾ってロケットで行くんだな！
+          text: テスト
       rubies:
         - talkIndex: 3
           segments:
-            - text: パーツ
-              ruby: false
-            - text: 拾
-              ruby: true
-              reading: ひろ
-            - text: ってロケットで
-              ruby: false
-            - text: 行
-              ruby: true
-              reading: い
-            - text: くんだな！
+            - text: テスト
               ruby: false
       range: 3
       height: 1.8
@@ -1472,6 +1500,8 @@ NPCs:
       - talkIndex: 3
         sequence: boatParts
         index: 1
+    currentPlanetNum: 0
+    forceTalkOnArrival: false
   - theta: -2.8827639
     phi: -0.505858
     height: -0.081878185
@@ -1573,6 +1603,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    forceTalkOnArrival: false
   - theta: 0.34281576
     phi: -0.6170447
     height: -0.08532429
@@ -1751,6 +1782,7 @@ NPCs:
             reading: ふく
           - text: しよう！
             ruby: false
+    forceTalkOnArrival: false
   - theta: -0.63021153
     phi: 0.5423254
     height: -0.08914423
@@ -1816,6 +1848,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    forceTalkOnArrival: false
   - theta: -2.0017486
     phi: 0.9669449
     height: 0.10700321
@@ -1898,6 +1931,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    forceTalkOnArrival: false
   - theta: -0.22626798
     phi: -0.75514007
     height: 3.571107
@@ -1961,6 +1995,7 @@ NPCs:
       range: 3
       height: 1.8
       scale: 1
+    forceTalkOnArrival: false
 platforms:
   - currentPlanetNum: 0
     theta: -2.4810908
@@ -2028,33 +2063,38 @@ platforms:
     theta: -0.67650586
     phi: 0.35397598
     height: 1.4336901
-    facingYaw: -0.8667831
+    facingYaw: 0.7930892
     scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
+      - 0.51
+      - 0.102
+      - 0.5103551
+    modelPath: sylinder_platform.obj
     upVec:
       - 0.73719776
-      - 0.3198226
-      - -0.59519154
+      - 0.31982255
+      - -0.5951916
     pos:
       - 6.9
       - 3.27
       - -5.54
     rotation:
-      - 0
-      - 0.86678314
-      - 0
+      - -0.014115617
+      - -0.77352613
+      - -0.016840754
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 0.64833987
-      - -0.018987998
-      - 0.4894556
-      - -0.582862
+      - 0.7987429
+      - -0.44290257
+      - -0.14805761
+      - -0.37937587
     platformId: legacy_platforms_7
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    components:
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
   - currentPlanetNum: 0
     theta: -0.55195
     phi: 0.087515265
@@ -2370,6 +2410,11 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_9
+        remainsOnAfterPressed: false
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -2.1821268
     phi: 0.6397896
@@ -2468,6 +2513,11 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - legacy_platforms_9
+        remainsOnAfterPressed: false
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -2.673445
     phi: 0.44203264
@@ -2597,6 +2647,11 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - legacy_platforms_12
+        remainsOnAfterPressed: false
+        enemyTargets:
+          []
+        hideTargets:
+          []
 stageObjects:
   - currentPlanetNum: 0
     theta: 0

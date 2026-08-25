@@ -8,13 +8,19 @@ class StageAddActorPanel;
 class StagePlanetPanel;
 class StagePlacementPanel;
 class StageDeleteActorPanel;
+class StageActorYamlWriter;
 class StageSelectionController;
 
 class StageEditorPanel : public DebugPanel {
 public:
-    StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel, StagePlanetPanel& planetPanel,
-                     StagePlacementPanel& placementPanel, StageDeleteActorPanel& deleteActorPanel,
-                     StageSelectionController& selectionController);
+    StageEditorPanel(
+        DebugEditorContext& context,
+        StageAddActorPanel& addActorPanel,
+        StagePlanetPanel& planetPanel,
+        StagePlacementPanel& placementPanel,
+        StageDeleteActorPanel& deleteActorPanel,
+        StageActorYamlWriter& stageActorYamlWriter,
+        StageSelectionController& selectionController);
 
     void Draw() override;
     void DrawTopBar();
@@ -38,6 +44,7 @@ private:
     StagePlanetPanel& mPlanetPanel;
     StagePlacementPanel& mPlacementPanel;
     StageDeleteActorPanel& mDeleteActorPanel;
+    StageActorYamlWriter& mStageActorYamlWriter;
     StageSelectionController& mSelectionController;
 
     int mSelectedMenu = 3;

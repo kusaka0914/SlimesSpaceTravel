@@ -19,6 +19,7 @@
 #include "gfx/debug/panels/TutorialDebugPanel.h"
 #include "gfx/debug/panels/UIDebugPanel.h"
 #include "gfx/debug/stage/StageEditCommandController.h"
+#include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
@@ -148,6 +149,7 @@ private:
 
     StageAddActorPanel mStageAddActorPanel;
     StagePlanetPanel mStagePlanetPanel;
+    StageActorYamlWriter mStageActorYamlWriter;
 
     StageSelectionController mSelectionController;
     StagePlacementPanel mStagePlacementPanel;

@@ -42,6 +42,11 @@ enum class InputDeviceType {
     GameController,
 };
 
+enum class StagePhysicsReloadMode {
+    Rebuild,
+    SkipRebuild,
+};
+
 class Game {
 public:
     Game();
@@ -57,7 +62,9 @@ public:
     void LoadData(bool isLoadPlayer);
 
 
-    void ReloadCurrentStage(bool rebuildPhysics = true);
+    void ReloadCurrentStage(
+        StagePhysicsReloadMode physicsReloadMode =
+            StagePhysicsReloadMode::Rebuild);
     void ReloadUIData();
     void ChangeStage(int stageNum);
     bool HasStageIntroCinematic(int stageNum) const;
@@ -122,7 +129,11 @@ public:
     void OnStrongAttacked(int playerNum);
     void OnPlayerCounter(int playerNum);
     void SynchronizeSoloSplitResources(const Player& sourcePlayer);
-    void VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
+    void VibrateControllerForPlayer(
+        int playerNum,
+        int lowFrequency,
+        int highFrequency,
+        int durationMilliseconds);
 
     Player* FindNearestPlayer(Actor* actor) const;
 

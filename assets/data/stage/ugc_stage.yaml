@@ -72,6 +72,7 @@ platforms:
     textureTiling:
       - 1
       - 2
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
     theta: -1.4352686
     phi: 0.089833036
@@ -107,6 +108,7 @@ platforms:
     textureTiling:
       - 2
       - 5
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
     theta: -1.5707964
     phi: 0.32175055
@@ -142,10 +144,11 @@ platforms:
     textureTiling:
       - 6
       - 2
-  - currentPlanetNum: 1
-    theta: 3.1415927
-    phi: 0.32175055
-    height: 0.32647756
+    ugcPlatformBehavior: normal
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0.0344691
+    height: 25.017237
     facingYaw: 0
     rotation:
       - 0
@@ -157,7 +160,7 @@ platforms:
       - 3
     modelPath: platform.obj
     pos:
-      - -3
+      - 29
       - 1
       - 0
     upVec:
@@ -177,6 +180,7 @@ platforms:
     textureTiling:
       - 2
       - 6
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
     theta: -0.75510436
     phi: 0.16969338
@@ -212,6 +216,7 @@ platforms:
     textureTiling:
       - 4
       - 3
+    ugcPlatformBehavior: normal
   - currentPlanetNum: 0
     theta: -0.14189707
     phi: 0.14048971
@@ -247,10 +252,11 @@ platforms:
     textureTiling:
       - 4
       - 4
-  - currentPlanetNum: 1
-    theta: 3.09995
-    phi: 0.24477467
-    height: 8.537865
+    ugcPlatformBehavior: normal
+  - currentPlanetNum: 0
+    theta: 0.024994794
+    phi: 0.14884412
+    height: 16.229929
     facingYaw: 0
     rotation:
       - 0
@@ -262,7 +268,7 @@ platforms:
       - 1
     modelPath: platform.obj
     pos:
-      - -12
+      - 20
       - 3
       - 0.5
     upVec:
@@ -282,6 +288,7 @@ platforms:
     textureTiling:
       - 3
       - 2
+    ugcPlatformBehavior: normal
 enemies: []
 ugcPlatformCells:
   - planetIndex: 0
@@ -705,6 +712,6 @@ ugcPlatformCells:
       - 1
       - -1
 ugcMetadata:
-  isClearVerified: true
+  isClearVerified: false
   displayName: 新しいステージ
 star: [{currentPlanetNum: 1, theta: 0, phi: 0.4636476, height: 0.1326173, isActive: true, pos: [2, 1, 0], upVec: [0, 1, 0]}]

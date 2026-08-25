@@ -174,7 +174,7 @@ void Game::CreateStages(int stageCount)
     mWorld->CreateStages(stageCount);
 }
 
-void Game::ReloadCurrentStage(bool rebuildPhysics)
+void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
     if (mSequenceSystem) {
         mSequenceSystem->Stop(true);
@@ -188,11 +188,12 @@ void Game::ReloadCurrentStage(bool rebuildPhysics)
         mParticleSystem->Clear();
     }
 
-    if (!rebuildPhysics && mPhysicsSystem) {
+    if (physicsReloadMode == StagePhysicsReloadMode::SkipRebuild &&
+        mPhysicsSystem) {
         mPhysicsSystem->ClearForEditorStageRebuild();
     }
 
-    mStageFlowController->ReloadCurrentStage(*this, rebuildPhysics);
+    mStageFlowController->ReloadCurrentStage(*this, physicsReloadMode);
 
     if (mIsPlayer2Joined) {
         const std::vector<Player*>& players = GetPlayers();
@@ -2034,9 +2035,9 @@ void Game::OnPlayerCounter(int playerNum)
     VibrateControllerForPlayer(playerNum, 25000, 0, 500);
 }
 
-void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds)
 {
-    mGamepadRumbleService->VibrateForPlayer(playerNum, lowFrequency, highFrequency, duration);
+    mGamepadRumbleService->VibrateForPlayer(playerNum, lowFrequency, highFrequency, durationMilliseconds);
 }
 
 SDL_GameController* Game::GetSdlController() const

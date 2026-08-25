@@ -68,12 +68,12 @@ bool GamepadRumbleService::HasControllerForPlayer(int playerNum) const
     return GetControllerForPlayer(playerNum) != nullptr;
 }
 
-void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds)
 {
     SDL_GameController* controller = GetControllerForPlayer(playerNum);
     if (!controller) {
         return;
     }
 
-    SDL_GameControllerRumble(controller, lowFrequency, highFrequency, duration);
+    SDL_GameControllerRumble(controller, lowFrequency, highFrequency, durationMilliseconds);
 }

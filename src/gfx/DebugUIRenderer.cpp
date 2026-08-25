@@ -111,12 +111,23 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mAssetBrowserPanel(mContext),
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
+      mStageActorYamlWriter(mContext),
       mSelectionController(mContext),
-      mStagePlacementPanel(mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); }),
+      mStagePlacementPanel(
+          mContext,
+          mSelectionController,
+          mStageActorYamlWriter,
+          [this]() { mEditCommandController.PushUndo(); }),
       mEditCommandController(mContext, mSelectionController),
       mStageDeleteActorPanel(mContext, mEditCommandController),
-      mStageEditorPanel(mContext, mStageAddActorPanel, mStagePlanetPanel, mStagePlacementPanel, mStageDeleteActorPanel,
-                        mSelectionController),
+      mStageEditorPanel(
+          mContext,
+          mStageAddActorPanel,
+          mStagePlanetPanel,
+          mStagePlacementPanel,
+          mStageDeleteActorPanel,
+          mStageActorYamlWriter,
+          mSelectionController),
       mGizmoController(
           mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
           [this]() {
@@ -124,7 +135,7 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           })
 {
     mStagePlanetPanel.SetSaveDependentActorTransformsCallback(
-        [this]() { mStagePlacementPanel.SaveEditorAuthoredTransforms(); });
+        [this]() { mStageActorYamlWriter.SaveEditorAuthoredTransforms(); });
     mStageAddActorPanel.SetSelectionController(&mSelectionController);
     mStageAddActorPanel.SetPushUndoCallback(
         [this]() { mEditCommandController.PushUndo(); });
@@ -1847,7 +1858,7 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
                 mSelectionController.CalculateSelectedActorsCenter();
             const glm::vec3 totalDelta =
                 finalCenter - mUGCSelectionDragInitialCenter;
-            mStagePlacementPanel.SaveEditorAuthoredTransforms();
+            mStageActorYamlWriter.SaveEditorAuthoredTransforms();
             if (mStageAddActorPanel.TryTranslateUGCPlatformCells(
                     mUGCSelectionDragActorRefs, totalDelta)) {
                 mSelectionController.Clear();
@@ -2486,7 +2497,7 @@ void DebugUIRenderer::DrawUGCTransformControls()
             if (!alreadyConnected) {
                 targets.push_back(targetId);
                 StageYamlRepository::SaveCurrentStage(mContext, stageYaml);
-                mContext.game->ReloadCurrentStage(false);
+                mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
                 mUGCStatus = "スイッチと足場をつなぎました";
             }
         }
@@ -2534,7 +2545,7 @@ void DebugUIRenderer::DrawUGCTransformControls()
             currentPosition.z);
         mSelectionController.MoveSelectedActorsByDelta(
             targetPosition - currentPosition);
-        mStagePlacementPanel.SaveEditorAuthoredTransforms();
+        mStageActorYamlWriter.SaveEditorAuthoredTransforms();
         mUGCStatus = sign > 0.0f
             ? "1だん上へ動かしました"
             : "1だん下へ動かしました";
@@ -2573,7 +2584,7 @@ void DebugUIRenderer::DrawUGCTransformControls()
         rotation.y += glm::radians(mUGCRotationStepDegrees * sign);
         selectedActor->SetEditorRotation(rotation);
         selectedActor->CaptureEditorAuthoredRotation();
-        mStagePlacementPanel.SaveEditorAuthoredTransforms();
+        mStageActorYamlWriter.SaveEditorAuthoredTransforms();
     };
     if (ImGui::Button("左に90度回す", ImVec2(-1.0f, 40.0f))) {
         rotateSelected(-1.0f);

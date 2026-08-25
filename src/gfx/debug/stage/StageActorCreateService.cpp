@@ -526,7 +526,7 @@ bool StageActorCreateService::AddUGCPlatformCell(
         return false;
     }
 
-    mContext.game->ReloadCurrentStage(false);
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
     return true;
 }
 
@@ -543,7 +543,7 @@ bool StageActorCreateService::RefreshUGCPlatformCells()
         return false;
     }
 
-    mContext.game->ReloadCurrentStage(false);
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
     return true;
 }
 
@@ -659,7 +659,7 @@ bool StageActorCreateService::TranslateUGCPlatformCells(
         !StageYamlRepository::SaveCurrentStage(mContext, config)) {
         return false;
     }
-    mContext.game->ReloadCurrentStage(false);
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
     return true;
 }
 
@@ -741,7 +741,7 @@ bool StageActorCreateService::RemoveUGCPlatformCell(
         return false;
     }
 
-    mContext.game->ReloadCurrentStage(false);
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
     return true;
 }
 
@@ -799,7 +799,7 @@ bool StageActorCreateService::RemoveUGCPlatformCellAtGridPosition(
         return false;
     }
 
-    mContext.game->ReloadCurrentStage(false);
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
     return true;
 }
 

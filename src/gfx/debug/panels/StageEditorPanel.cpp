@@ -11,6 +11,7 @@
 #include "gfx/debug/panels/StagePlanetPanel.h"
 #include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "imgui.h"
@@ -87,15 +88,20 @@ std::vector<StageYamlOption> CollectStageYamlOptions(int currentStageNumber, int
 }
 }
 
-StageEditorPanel::StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel,
-                                   StagePlanetPanel& planetPanel, StagePlacementPanel& placementPanel,
-                                   StageDeleteActorPanel& deleteActorPanel,
-                                   StageSelectionController& selectionController)
+StageEditorPanel::StageEditorPanel(
+    DebugEditorContext& context,
+    StageAddActorPanel& addActorPanel,
+    StagePlanetPanel& planetPanel,
+    StagePlacementPanel& placementPanel,
+    StageDeleteActorPanel& deleteActorPanel,
+    StageActorYamlWriter& stageActorYamlWriter,
+    StageSelectionController& selectionController)
     : DebugPanel(context),
       mAddActorPanel(addActorPanel),
       mPlanetPanel(planetPanel),
       mPlacementPanel(placementPanel),
       mDeleteActorPanel(deleteActorPanel),
+      mStageActorYamlWriter(stageActorYamlWriter),
       mSelectionController(selectionController)
 {
 }
@@ -144,7 +150,7 @@ void StageEditorPanel::DrawToolbar()
     ImGui::SameLine();
     if (ImGui::Button("ステージを保存")) {
         mPlanetPanel.Save();
-        mPlacementPanel.Save();
+        mStageActorYamlWriter.SaveAllActorStates();
     }
 }
 
@@ -261,7 +267,7 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
         } else {
 
 
-            mPlacementPanel.Save();
+            mStageActorYamlWriter.SaveAllActorStates();
             const bool started =
                 mAddActorPanel.BeginDuplicatePlacement(
                     *selectedActorRef);
