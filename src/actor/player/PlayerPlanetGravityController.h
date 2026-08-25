@@ -105,6 +105,7 @@ private:
     float mEllipseJumpStartSurfaceDistance = 0.0f;
     bool mUseEllipseSurfaceGravity = false;
     bool mIsNearbySurfaceAttractionActive = false;
+    bool mIsNearbySurfaceAttractionPullActive = false;
     Planet* mLastLandedPlanet = nullptr;
     glm::vec3 mOverheadGravityUpDirection{0.0f, 1.0f, 0.0f};
 

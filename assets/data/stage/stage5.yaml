@@ -1,165 +1,4 @@
 planets:
-  - center: [3.9521134, 2.861023e-06, -42.231804]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 0
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [-613.83136, -269.925, 54.81463]
-    scale: [4, 4, 4]
-    color: [0.0, 1.0, 0.0, 1.0]
-    model: planet.obj
-    rocketSpawnCondition: AllEnemiesDead
-    textureTiling:
-      - 4
-      - 4
-    textureSideBlendWidth: 0.05
-    stageNum: 1
-    canAttractNearbyPlayer: true
-    reactsToOverheadGravityRay: false
-  - center:
-      - 23.98
-      - -18.3
-      - 0
-    scale:
-      - 0
-      - 0
-      - 0
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    model: planet.obj
-    stageNum: 2
-    rocketSpawnCondition: ""
-    textureTiling:
-      - 1
-      - 1
-    textureSideBlendWidth: 0.05
-    canAttractNearbyPlayer: true
-    reactsToOverheadGravityRay: false
-  - center:
-      - 143.41046
-      - -123.311844
-      - 14.976649
-    scale:
-      - 6
-      - 2
-      - 6
-    color:
-      - 1
-      - 1
-      - 1
-      - 1
-    model: planet.obj
-    stageNum: 3
-    rocketSpawnCondition: ""
-    textureTiling:
-      - 6
-      - 6
-    textureSideBlendWidth: 0.05
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: true
-    textureOverride: textures/planet_dry.png
-  - center: [37.06623, 0.21254694, 17.973852]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 3
-      - 3
-    textureSideBlendWidth: 0.05
-    stageNum: 4
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [17.49217, -10.373857, 23.618912]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 5
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [143.14241, -79.75258, -12.338093]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 6
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
-  - center: [114.13836, -61.6463, 22.748716]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 7
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
-  - center: [41.706154, -12.839643, 41.743362]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 8
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [144.25893, -61.28863, -13.180363]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 9
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
-  - center: [130.07812, -69.372, 2.366063]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 10
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
   - center: [51.15775, -10.373855, 21.843506]
     scale: [4, 4, 4]
     color: [1.0, 0.0, 0.0, 1.0]
@@ -169,375 +8,62 @@ planets:
       - 4
       - 4
     textureSideBlendWidth: 0.05
-    stageNum: 11
+    stageNum: 0
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/blackPlatform.png
+  - center: [52.15775, 0.1224668, 9.041753]
+    scale: [4, 1, 4]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 4
+      - 1
+    textureSideBlendWidth: 0.05
+    stageNum: 1
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/blackPlatform.png
-  - center: [17.617432, -23.16952, 30.323849]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 12
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [58.556873, -23.096169, -4.2667246]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 13
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [71.96534, -23.169527, 21.770802]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 14
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [45.077354, -33.92349, 26.927721]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 15
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/blackPlatform.png
-  - center: [111.01259, -81.4061, 21.935722]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 16
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
-  - center: [164.49812, -71.951126, 32.53486]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 17
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
-  - center: [112.80155, -83.90859, -8.595412]
-    scale: [6, 2, 6]
-    color: [1.0, 0.0, 0.0, 1.0]
-    model: planet_3.obj
-    rocketSpawnCondition: AllBoatPartsCollected
-    textureTiling:
-      - 6
-      - 2
-    textureSideBlendWidth: 0.05
-    stageNum: 18
-    canAttractNearbyPlayer: false
-    reactsToOverheadGravityRay: false
-    textureOverride: textures/planet_dry.png
 enemies:
-  - {editorName: 新しい通常敵, type: boss_5, currentPlanetNum: 11, theta: -1.9765041, phi: -1.0323765, height: 0.4324727, pos: [-0.9, -3.81, -2.09], upVec: [-0.20261456, -0.85845953, -0.47116295], scale: [1.5, 2, 1.5], modelPath: enemy_red.obj, facingYaw: -2.2351742e-08, rotation: [0, 0, 0], rotationQuat: [0.11216893, -0.028081063, -0.24122274, 0.96355665]}
+  - {editorName: 新しい通常敵, type: boss_5, currentPlanetNum: 0, theta: -2.48507, phi: -1.1335412, height: 0.29436684, pos: [-1.44, -3.89, -1.11], upVec: [-0.20261456, -0.85845953, -0.47116295], scale: [1.5, 2, 1.5], modelPath: enemy_red.obj, facingYaw: -2.2351742e-08, rotation: [0, 0, 0], rotationQuat: [0.11216893, -0.028081063, -0.24122274, 0.96355665]}
 keys: []
-crystals:
-  - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
-boats:
-  - {startPlanet: 14, destPlanet: 7, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
-  - {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
+crystals: []
+boats: []
 boatArrivalPoints: []
 boatParts: []
 players:
   - pos:
-      - -3.375389
-      - 1.8554602
-      - -0.8806019
-    currentPlanetNum: 11
-    theta: -2.886392
-    phi: 0.48884016
-    height: -0.04886818
-    facingYaw: -2.6868756
+      - 0.2612877
+      - -1.4415166
+      - -2.6952615
+    currentPlanetNum: 1
+    theta: -1.474155
+    phi: -0.48918217
+    height: -0.9323175
+    facingYaw: 2.9823875
     rotation:
       - 0
-      - -2.6868756
+      - 2.9823875
       - 0
     upVec:
-      - -0.8577925
-      - 0.4616155
-      - -0.22605996
+      - 0.03982065
+      - -0.9033509
+      - -0.4270498
     rotationQuat:
-      - 0.24909249
-      - -0.518463
-      - 0.81777793
-      - 0.019706156
+      - -0.21979164
+      - 0.97282076
+      - 0.0040259263
+      - 0.072768115
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
-star: [{currentPlanetNum: 11, theta: 0, phi: 0, height: 1.6322937, isActive: false, pos: [5.63, 0, 0], upVec: [-0.21476, -0.36923665, -0.9041806], modelPath: star_red.glb}]
-NPCs:
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [""], pos: [-0.06, -1.42, 4.14], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, proximityMessage: {mode: always, variants: [{talkIndex: 0, text: 回避上手く使って急いで～！}], rubies: [{talkIndex: 0, segments: [{text: 回, ruby: true, reading: かい}, {text: 避, ruby: true, reading: ひ}, {text: 上手, ruby: true, reading: うま}, {text: く, ruby: false}, {text: 使, ruby: true, reading: つか}, {text: って, ruby: false}, {text: 急, ruby: true, reading: いそ}, {text: いで～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
+star:
+  - {currentPlanetNum: 1, theta: 0, phi: 0, height: 0.63000107, isActive: false, pos: [4.63, 0, 0], upVec: [-0.21476, -0.36923665, -0.9041806], modelPath: star_red.glb}
+NPCs: []
 platforms:
-  - currentPlanetNum: 0
-    pos:
-      - 3.09
-      - -0.83
-      - 5.67
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_23
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-  - currentPlanetNum: 0
-    pos:
-      - 7.28
-      - -0.9
-      - 13.23
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1.8080014
-      - 0.2
-      - 7.370184
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_1
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 0
-    pos:
-      - 9.49
-      - -0.97
-      - 24.71
-    theta: 1.2042401
-    phi: -0.036630332
-    height: 20.493801
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1.8080014
-      - 0.2
-      - 6.0764112
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_2
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 2
-    pos:
-      - 1.93
-      - 17.33
-      - -9.59
-    theta: -1.3721642
-    phi: 1.0570494
-    height: 19.898638
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1.8080014
-      - 0.2
-      - 6.0764112
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_3
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - -12.14
-      - -1.18
-      - -14.18
-    theta: -2.278805
-    phi: -0.06309386
-    height: 12.714915
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1.8080014
-      - 0.2
-      - 6.0764112
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_4
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
-  - currentPlanetNum: 4
-    pos:
-      - -4.76
-      - -1.18
-      - -8.11
-    theta: -2.1014035
-    phi: -0.124783516
-    height: 3.5669017
-    facingYaw: -1.0698878
-    rotation:
-      - 0
-      - 1.0698878
-      - 0
-    scale:
-      - 1.8080014
-      - 0.2
-      - 6.0764112
-    modelPath: platform.obj
-    upVec:
-      - 0
-      - -1
-      - 0
-    platformId: platform_5
-    textureTiling:
-      - 1
-      - 1
-    rotationQuat:
-      - -0
-      - -0.50979275
-      - 0
-      - 0.86029726
-    textureOverride: textures/roadTex.png
-    components:
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
+  - {currentPlanetNum: 1, theta: 1.5909323, phi: -0.22591539, height: -1.0085697, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.06, -0.67, 4.17], upVec: [0, -1, 0], platformId: platform_1, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1]}
+  - {currentPlanetNum: 1, theta: 1.5844718, phi: -0.41796124, height: 4.560451, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.1, -2.05, 7.31], upVec: [0, -1, 0], platformId: platform_2, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1]}
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []
-jewelItems:
-  - currentPlanetNum: 0
-    theta: 0.2674415
-    phi: 1.5286353
-    height: -4.0050325
-    facingYaw: 0
-    modelPath: crystal.obj
-    textureOverride: textures/jewel.png
-    scale:
-      - 0.22
-      - 0.22
-      - 0.22
-    pos:
-      - 0.08109546
-      - 1.9931946
-      - 0.022220612
-    upVec:
-      - 0.019971855
-      - 0.9996839
-      - 0.015274263
-    textureTiling:
-      - 1
-      - 1
+jewelItems: []

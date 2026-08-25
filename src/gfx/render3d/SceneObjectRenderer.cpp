@@ -158,6 +158,8 @@ void SceneObjectRenderer::DrawCharacterShadows(
     }
 
     for (Player* player : mRenderer->GetGame()->GetPlayers()) {
-        mRenderer->DrawBlobShadow(player);
+        if (player && player->GetIsActive()) {
+            mRenderer->DrawBlobShadow(player);
+        }
     }
 }

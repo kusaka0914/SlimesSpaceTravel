@@ -117,7 +117,8 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
                 currentPlanet,
                 player.GetPos());
         SmoothAirborneUpVec(player, targetUp, deltaTime);
-        if (movement.GetDodgeTimer() <= 0.0f) {
+        if (mIsNearbySurfaceAttractionPullActive &&
+            movement.GetDodgeTimer() <= 0.0f) {
             ApplyNearbySurfaceAttraction(
                 player,
                 *currentPlanet,
@@ -279,6 +280,7 @@ void PlayerPlanetGravityController::OnJumpStarted(
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
+    mIsNearbySurfaceAttractionPullActive = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 
     const Planet* currentPlanet =
@@ -353,6 +355,7 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
+    mIsNearbySurfaceAttractionPullActive = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
@@ -379,6 +382,7 @@ void PlayerPlanetGravityController::OnRespawned()
     mEllipseJumpStartSurfaceDistance = 0.0f;
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
+    mIsNearbySurfaceAttractionPullActive = false;
     mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
@@ -460,6 +464,7 @@ Planet* PlayerPlanetGravityController::SelectNearbyAttractingPlanet(
     if (!nearest.planet ||
         nearest.surfaceDistance > nearbyAttractionRange) {
         mIsNearbySurfaceAttractionActive = false;
+        mIsNearbySurfaceAttractionPullActive = false;
         return player.GetCurrentPlanet();
     }
 
@@ -474,12 +479,14 @@ Planet* PlayerPlanetGravityController::SelectNearbyAttractingPlanet(
             currentSurfaceDistance) {
             mIsNearbySurfaceAttractionActive =
                 currentSurfaceDistance <= nearbyAttractionRange;
+            mIsNearbySurfaceAttractionPullActive = false;
             return currentPlanet;
         }
     }
 
     if (nearest.planet != currentPlanet) {
         SwitchToPlanet(player, movement, nearest.planet);
+        mIsNearbySurfaceAttractionPullActive = true;
 
         // 新しい惑星へ近付いたケースには、ジャンプを開始した足場の
         // 高さを持ち込まない。距離ゼロから表面へ吸着させる。

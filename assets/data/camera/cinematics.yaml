@@ -131,3 +131,98 @@ cinematics:
         fieldOfView: 60
         easing: easeInOut
         transition: smooth
+  enter_stage3:
+    name: ステージ3開始演出
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        holdDuration: 0
+        position: [15.825618, -11.147669, -47.121258]
+        target: [15.419789, -10.784235, -46.282677]
+        up: [-0.1921362, -0.93095785, 0.31048554]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [29.273178, -11.676193, -40.384293]
+        target: [28.86735, -11.312759, -39.54571]
+        up: [-0.1921362, -0.93095785, 0.31048554]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [88.18748, -13.0568695, 17.274597]
+        target: [87.79564, -12.395515, 17.914186]
+        up: [-0.54089046, -0.7279456, 0.42134637]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 6
+        holdDuration: 0
+        position: [94.32876, -23.422293, 7.2503085]
+        target: [93.93692, -22.760939, 7.8898973]
+        up: [-0.54089046, -0.7279456, 0.42134637]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+  enter_stage4:
+    name: ステージ4開始演出
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        holdDuration: 0
+        position: [0.99821734, -9.15994, -28.957798]
+        target: [1.9028345, -8.764915, -29.11787]
+        up: [0.38805503, -0.9186577, -0.07403619]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [-14.966345, -16.131283, -26.132843]
+        target: [-14.061728, -15.7362585, -26.292915]
+        up: [0.38805503, -0.9186577, -0.07403619]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 3
+        holdDuration: 0
+        position: [75.47085, -124.97982, 20.114008]
+        target: [76.11903, -124.23173, 19.97181]
+        up: [0.6718232, -0.47389153, 0.5692806]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 6
+        holdDuration: 0
+        position: [100.59216, -95.98648, 14.602856]
+        target: [101.24035, -95.23839, 14.460656]
+        up: [0.6718232, -0.47389153, 0.5692806]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+  enter_stage5:
+    name: ステージ5開始演出
+    loop: false
+    endHoldDuration: 0.5
+    keyframes:
+      - time: 0
+        holdDuration: 0
+        position: [47.615093, -21.377214, -14.293817]
+        target: [47.6829, -21.17478, -13.316871]
+        up: [-0.20830911, -0.95474577, 0.2122924]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth
+      - time: 6
+        holdDuration: 0
+        position: [49.388, -16.084196, 11.250195]
+        target: [49.455807, -15.881762, 12.22714]
+        up: [-0.20830911, -0.95474577, 0.2122924]
+        fieldOfView: 55
+        easing: easeInOut
+        transition: smooth

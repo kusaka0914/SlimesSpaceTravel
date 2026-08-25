@@ -331,7 +331,7 @@ void InputSystem::ProcessTitleMenuInput()
 
     const bool confirmPressed =
         (controller && SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) ||
-        glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
+        glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
     if (confirmPressed && !mTitleMenuConfirmPressedPrev) {
         mGame->ExecuteTitleMenuSelection();
     }
@@ -623,7 +623,7 @@ void InputSystem::ProcessPauseMenuInput()
          SDL_GameControllerGetButton(mGame->GetSdlController(), SDL_CONTROLLER_BUTTON_DPAD_DOWN));
 
     const bool confirmPressed =
-        glfwGetKey(mGame->GetWindow(), GLFW_KEY_ENTER) == GLFW_PRESS ||
+        glfwGetKey(mGame->GetWindow(), GLFW_KEY_SPACE) == GLFW_PRESS ||
         (mGame->GetSdlController() &&
          SDL_GameControllerGetButton(mGame->GetSdlController(), SDL_CONTROLLER_BUTTON_A));
 

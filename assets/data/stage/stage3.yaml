@@ -1160,10 +1160,8 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets:
-          []
-      enemyClearUnlock:
-        {}
+        hideTargets: []
+      enemyClearUnlock: {}
   - currentPlanetNum: 2
     pos:
       - -5.04
@@ -1369,12 +1367,9 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet1
-        targets:
-          []
-        hideTargets:
-          []
-      enemyClearUnlock:
-        {}
+        targets: []
+        hideTargets: []
+      enemyClearUnlock: {}
     rotationQuat:
       - -0.010605924
       - 0.48201528
@@ -2250,8 +2245,7 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 9
     theta: -2.7891998
     phi: 1.454875
@@ -2281,10 +2275,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet2
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
     rotationQuat:
       - 0.90604794
       - -0.012187039
@@ -2633,13 +2625,11 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets:
-          []
+        targets: []
         enemyTargets:
           - sequence: enemies
             index: 6
-        hideTargets:
-          []
+        hideTargets: []
     rotationQuat:
       - 0.006787314
       - 0.78266186

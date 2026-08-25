@@ -602,8 +602,7 @@ platforms:
       - 0.6858514
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 0
     pos:
       - 4.78
@@ -738,10 +737,8 @@ platforms:
           - platform_32
           - platform_14
           - platform_35
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     rotationQuat:
       - 0.87557226
       - 0.0047174157
@@ -780,8 +777,7 @@ platforms:
       - 0.6858514
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 0
     pos:
       - 7.82
@@ -847,8 +843,7 @@ platforms:
       - 0.70136803
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 4
     pos:
       - -3.64
@@ -946,8 +941,7 @@ platforms:
       - -0.5674589
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 4
     pos:
       - -6.4659386
@@ -981,8 +975,7 @@ platforms:
       - 0.86029726
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - -6.4659386
@@ -1065,8 +1058,7 @@ platforms:
       - -0.6809027
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - -3.3451176
@@ -1117,8 +1109,7 @@ platforms:
       - -0.6809027
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 2.5820198
@@ -1201,8 +1192,7 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - -3.4920263
@@ -1285,8 +1275,7 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 3.452015
@@ -1337,8 +1326,7 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 4
     pos:
       - 12.61
@@ -1372,8 +1360,7 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 4
     pos:
       - 15.65
@@ -1407,8 +1394,7 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 11
     pos:
       - -12.07
@@ -1442,8 +1428,7 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 11
     pos:
       - -1.99
@@ -1477,8 +1462,7 @@ platforms:
       - -0.4770858
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 11
     pos:
       - 0.26
@@ -1512,8 +1496,7 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 11
     pos:
       - -1.45
@@ -1547,8 +1530,7 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 13
     pos:
       - -6.31
@@ -1582,8 +1564,7 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 13
     pos:
       - -6.42
@@ -1649,8 +1630,7 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 13
     pos:
       - -11.34
@@ -1684,8 +1664,7 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 12
     theta: 0.7853982
     phi: -1.5017326
@@ -1718,10 +1697,8 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_20
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     rotationQuat:
       - 0.00216861
       - 0.48126176
@@ -1760,8 +1737,7 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - -3.8414173
@@ -1812,8 +1788,7 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 3.0180779
@@ -1864,8 +1839,7 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - -3.9248466
@@ -1916,8 +1890,7 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 2.8745995
@@ -1968,8 +1941,7 @@ platforms:
       - 0.033005647
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     theta: 2.6548862
     phi: -0.68459296
@@ -2002,10 +1974,8 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets:
-          []
-      enemyClearUnlock:
-        {}
+        hideTargets: []
+      enemyClearUnlock: {}
     rotationQuat:
       - 0.012880463
       - 0.9618834
@@ -2040,12 +2010,9 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage4_planet1
-        targets:
-          []
-        hideTargets:
-          []
-      enemyClearUnlock:
-        {}
+        targets: []
+        hideTargets: []
+      enemyClearUnlock: {}
     rotationQuat:
       - -0.016825747
       - 0.96456665
@@ -2116,8 +2083,7 @@ platforms:
       - 0.5753161
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 9.215168
@@ -2168,8 +2134,7 @@ platforms:
       - -0.15897375
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       movement:
         startLocalPos:
           - 11.34396
@@ -2237,8 +2202,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     pos:
       - -2.74
@@ -2321,8 +2285,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 12
     pos:
       - 8.34
@@ -2356,8 +2319,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 12
     pos:
       - 5.26
@@ -2423,8 +2385,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 12
     pos:
       - 7.26
@@ -2458,8 +2419,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 12
     pos:
       - 10.53
@@ -2493,8 +2453,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 15
     pos:
       - -12.02
@@ -2528,8 +2487,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 15
     pos:
       - -12.95
@@ -2563,8 +2521,7 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 15
     pos:
       - -6.15
@@ -2694,8 +2651,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 15
     pos:
       - 11.54
@@ -2729,8 +2685,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     pos:
       - -12.11
@@ -2764,8 +2719,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     pos:
       - -8.56
@@ -2799,8 +2753,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     pos:
       - -8.92
@@ -2834,8 +2787,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 14
     pos:
       - -11.09
@@ -2869,8 +2821,7 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 7
     pos:
       - 2.4
@@ -2931,8 +2882,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -2969,8 +2919,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3007,8 +2956,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3045,8 +2993,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3115,8 +3062,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3153,8 +3099,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3191,8 +3136,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3229,8 +3173,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3267,8 +3210,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3305,8 +3247,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3343,8 +3284,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3445,8 +3385,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3547,8 +3486,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3602,8 +3540,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3657,8 +3594,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3712,8 +3648,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3867,10 +3802,8 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_71
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 9
     theta: 0.38880372
     phi: 1.455409
@@ -3901,13 +3834,11 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets:
-          []
+        targets: []
         enemyTargets:
           - sequence: enemies
             index: 2
-        hideTargets:
-          []
+        hideTargets: []
     rotationQuat:
       - 0.91874933
       - -0.005690434
@@ -3945,8 +3876,7 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 18
     theta: -2.5535913
     phi: -1.4614891
@@ -3979,10 +3909,8 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_72
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
     rotationQuat:
       - 0.0050785583
       - 0.41226733
@@ -4017,10 +3945,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage4_planet2
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
     rotationQuat:
       - 0.87650824
       - -0.0034469082
@@ -4054,8 +3980,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4092,8 +4017,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4130,8 +4054,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4168,8 +4091,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4206,8 +4128,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4244,8 +4165,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4282,8 +4202,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4320,8 +4239,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4390,8 +4308,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 2
         reappearDelay: 1
@@ -4428,8 +4345,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4466,8 +4382,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4504,8 +4419,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4574,8 +4488,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4629,8 +4542,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4684,8 +4596,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4739,8 +4650,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4826,8 +4736,7 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion:
-        {}
+      adhesion: {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2

@@ -3595,7 +3595,7 @@ platforms:
         startLocalPos: [-3.2441673, 7.563903, -14.08]
         endLocalPos: [-3.24, 28.241447, -14.08]
         moveOffset: [0.0041673183, 20.677544, 0]
-        moveDuration: 5
+        moveDuration: 10
         moveOnPlayer: true
         returnDelay: 1
         endpointWaitSeconds: 0

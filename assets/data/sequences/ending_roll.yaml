@@ -6,7 +6,7 @@ credits:
   scrollSpeed: 0.055
   textScale: 0.0002
 imageEvents:
-  - image: textures/opening1.png
+  - image: textures/staffRoll1.png
     start: 5
     duration: 10
     interval: 10
@@ -17,7 +17,7 @@ imageEvents:
     y: 0.3
     width: 0.3
     height: 0.3
-  - image: textures/opening1.png
+  - image: textures/staffRoll2.png
     start: 15
     duration: 10
     interval: 10
@@ -28,7 +28,7 @@ imageEvents:
     y: 0.7
     width: 0.3
     height: 0.3
-  - image: textures/opening1.png
+  - image: textures/staffRoll3.png
     start: 25
     duration: 10
     interval: 10
@@ -39,7 +39,7 @@ imageEvents:
     y: 0.7
     width: 0.3
     height: 0.3
-  - image: textures/opening1.png
+  - image: textures/staffRoll4.png
     start: 35
     duration: 10
     interval: 10
@@ -50,7 +50,7 @@ imageEvents:
     y: 0.3
     width: 0.3
     height: 0.3
-  - image: textures/opening1.png
+  - image: textures/staffRoll5.png
     start: 45
     duration: 10
     interval: 10
@@ -61,7 +61,7 @@ imageEvents:
     y: 0.3
     width: 0.3
     height: 0.3
-  - image: textures/opening1.png
+  - image: textures/staffRoll6.png
     start: 55
     duration: 10
     interval: 10

@@ -38,7 +38,10 @@ bool StageYamlRepository::LoadCurrentStage(DebugEditorContext& context, YAML::No
     return true;
 }
 
-bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::Node config)
+bool StageYamlRepository::SaveCurrentStage(
+    DebugEditorContext& context,
+    YAML::Node config,
+    bool preserveRuntimePlanetCenters)
 {
     const std::string filePath = GetCurrentStageYamlPath(context);
 
@@ -51,7 +54,8 @@ bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::No
     // the gizmo may not have gone through the planet inspector's Save button
     // yet, so preserve its authored center before that write replaces the
     // file with stale coordinates.
-    if (context.game && context.game->GetCurrentStage() &&
+    if (preserveRuntimePlanetCenters &&
+        context.game && context.game->GetCurrentStage() &&
         config["planets"] && config["planets"].IsSequence()) {
         const auto& planets = context.game->GetCurrentStage()->GetPlanets();
         const std::size_t count = std::min(planets.size(), config["planets"].size());
