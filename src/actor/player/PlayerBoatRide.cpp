@@ -11,6 +11,12 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+namespace {
+constexpr float boatTouchRadius = 0.9f;
+constexpr float disembarkClearance = 0.2f;
+constexpr float minimumDirectionLength = 0.0001f;
+}
+
 void PlayerBoatRide::Update(Player& player, PlayerMovement& movement, PlayerRespawn& respawn)
 {
     Game* game = player.GetGame();
@@ -58,12 +64,66 @@ void PlayerBoatRide::FollowMovingBoat(Player& player, Boat* boat) const
     player.SetIsActive(false);
 }
 
+bool PlayerBoatRide::IsWaitingForBoat(const Player& player) const
+{
+    return FindWaitingBoat(player) != nullptr;
+}
+
+bool PlayerBoatRide::CancelWaitingBoatRide(Player& player) const
+{
+    Boat* boat = FindWaitingBoat(player);
+    if (!boat || !boat->UnboardPlayer(&player)) {
+        return false;
+    }
+
+    glm::vec3 directionAwayFromBoat = player.GetPos() - boat->GetPos();
+    if (glm::length(directionAwayFromBoat) < minimumDirectionLength) {
+        directionAwayFromBoat = player.GetRightVec();
+    }
+    if (glm::length(directionAwayFromBoat) < minimumDirectionLength) {
+        directionAwayFromBoat = glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+
+    player.SetPos(
+        boat->GetPos() + glm::normalize(directionAwayFromBoat) *
+            (boatTouchRadius + disembarkClearance));
+    player.SetVelocity(glm::vec3(0.0f));
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(true);
+    player.SetIsActive(true);
+    player.RefreshFallbackUpVec();
+    return true;
+}
+
 bool PlayerBoatRide::IsTouchingBoat(const Player& player, Boat* boat) const
 {
-    constexpr float boatTouchRadius = 0.9f;
     const float distToBoat = glm::length(player.GetPos() - boat->GetPos());
 
     return distToBoat <= boatTouchRadius;
+}
+
+Boat* PlayerBoatRide::FindWaitingBoat(const Player& player) const
+{
+    Game* game = player.GetGame();
+    Stage* currentStage = game ? game->GetCurrentStage() : nullptr;
+    if (!currentStage) {
+        return nullptr;
+    }
+
+    for (Planet* planet : currentStage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && boat->GetIsActive() && !boat->GetIsMoving() &&
+                boat->HasBoardedPlayer(&player)) {
+                return boat;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const

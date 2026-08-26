@@ -171,6 +171,24 @@ void Boat::BoardPlayer(Player* player)
     mBoardedPlayers.push_back(player);
 }
 
+bool Boat::UnboardPlayer(Player* player)
+{
+    if (!player || mIsMoving) {
+        return false;
+    }
+
+    const auto boardedPlayer = std::find(
+        mBoardedPlayers.begin(),
+        mBoardedPlayers.end(),
+        player);
+    if (boardedPlayer == mBoardedPlayers.end()) {
+        return false;
+    }
+
+    mBoardedPlayers.erase(boardedPlayer);
+    return true;
+}
+
 bool Boat::HasBoardedPlayer(const Player* player) const
 {
     return player && std::find(mBoardedPlayers.begin(), mBoardedPlayers.end(), player) != mBoardedPlayers.end();

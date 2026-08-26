@@ -1,5 +1,6 @@
 #include "Player.h"
 
+#include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
@@ -26,6 +27,19 @@ constexpr std::string_view strongAttackAnimationId = "strong_attack";
 Player::Player(Game* game)
     : CharacterActor(game)
 {
+}
+
+void Player::SetCurrentPlanet(Planet* currentPlanet)
+{
+    if (GetCurrentPlanet() == currentPlanet) {
+        return;
+    }
+
+    Actor::SetCurrentPlanet(currentPlanet);
+
+    if (mGame) {
+        mGame->OnPlayerCurrentPlanetChanged(*this);
+    }
 }
 
 void Player::ApplyConfig()
@@ -459,6 +473,16 @@ void Player::OnBoatArrived(Boat* boat)
     mMovement.CancelAirborneActionHover();
     mGrounding.ResetRayCastTimer();
     mPlanetGravityController.OnRespawned();
+}
+
+bool Player::IsWaitingForBoat() const
+{
+    return mBoatRide.IsWaitingForBoat(*this);
+}
+
+bool Player::CancelWaitingBoatRide()
+{
+    return mBoatRide.CancelWaitingBoatRide(*this);
 }
 
 void Player::RespawnAtRestartPoint()

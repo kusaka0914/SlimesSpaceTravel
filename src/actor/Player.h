@@ -54,6 +54,8 @@ public:
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
+    bool IsWaitingForBoat() const;
+    bool CancelWaitingBoatRide();
     void RespawnAtRestartPoint();
     void Restart();
     void ForceGroundedForCinematic();
@@ -65,6 +67,7 @@ public:
     void OnAttachedToAdhesivePlatform();
     void SetBaseScale(const glm::vec3& scale);
     void SetSplitForm(bool isSplitForm);
+    void SetCurrentPlanet(Planet* currentPlanet);
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
     void DebugMoveToPosition(

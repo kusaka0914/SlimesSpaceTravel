@@ -17,6 +17,7 @@ class JewelItem;
 class NPC;
 class Player;
 class Boat;
+class Planet;
 class Stage;
 class PhysicsSystem;
 class MeshLoadSystem;
@@ -118,6 +119,7 @@ public:
 
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
+    void OnPlayerCurrentPlanetChanged(Player& player);
     void OnStarObtained();
     void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();

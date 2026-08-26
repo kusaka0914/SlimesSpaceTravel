@@ -603,6 +603,7 @@ void Game::UpdateGame()
     if (!cameraUpdated && (mCameraSystem->IsCinematicPlaying() || mSceneSystem->IsTalking())) {
         mCameraSystem->Update(deltaTime);
     }
+
 }
 
 void Game::UpdateActors(float deltaTime)
@@ -1234,6 +1235,27 @@ bool Game::SwitchControlledPlayer()
     }
 
     if (nextIndex == previousIndex) {
+        for (int candidateIndex = 0;
+             candidateIndex < static_cast<int>(players.size());
+             ++candidateIndex) {
+            if (candidateIndex == previousIndex) {
+                continue;
+            }
+
+            Player* waitingPlayer =
+                players[static_cast<std::size_t>(candidateIndex)];
+            if (!waitingPlayer || !waitingPlayer->CancelWaitingBoatRide()) {
+                continue;
+            }
+
+            mPendingSoloSplitControlSwitchTimer = -1.0f;
+            SelectControlledPlayer(candidateIndex);
+            if (mSceneSystem) {
+                mSceneSystem->OnPlayerSwitchSucceeded();
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -1260,7 +1282,8 @@ bool Game::CanSwitchControlledPlayer() const
     const std::vector<Player*>& players = GetPlayers();
     for (int index = 0; index < static_cast<int>(players.size()); ++index) {
         if (index != mControlledPlayerIndex && players[index] &&
-            players[index]->GetIsActive()) {
+            (players[index]->GetIsActive() ||
+             players[index]->IsWaitingForBoat())) {
             return true;
         }
     }
@@ -1677,6 +1700,15 @@ void Game::OnBoatArrived(Boat* boat)
     if (!mIsPlayer2Joined && mIsPlayerSplit) {
         MergePlayerInto(mControlledPlayerIndex);
     }
+    mAudioSystem->TryChangeBGM();
+}
+
+void Game::OnPlayerCurrentPlanetChanged(Player& player)
+{
+    if (&player != GetMainPlayer() || !mAudioSystem) {
+        return;
+    }
+
     mAudioSystem->TryChangeBGM();
 }
 
