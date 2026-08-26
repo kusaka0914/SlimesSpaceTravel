@@ -35,6 +35,7 @@ public:
     ~Renderer3D();
 
     void Initialize();
+    void Shutdown();
     void Draw() const;
 
     void DrawScene(

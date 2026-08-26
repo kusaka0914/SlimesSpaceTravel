@@ -30,6 +30,7 @@
 
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
+#include "gfx/performance/GpuDurationTimer.h"
 #include "imgui.h"
 
 #include "utils/MathUtils.h"
@@ -37,6 +38,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <iterator>
@@ -156,6 +158,8 @@ void Game::CreateGameSystems()
     mAudioSystem = std::make_unique<AudioSystem>(this);
     mUIRenderer = std::make_unique<UIRenderer>(this);
     mRenderer3D = std::make_unique<Renderer3D>(this);
+    mGameUiGpuTimer = std::make_unique<GpuDurationTimer>();
+    mEditorUiGpuTimer = std::make_unique<GpuDurationTimer>();
     mSceneSystem = std::make_unique<SceneSystem>(this);
     mMathUtils = std::make_unique<MathUtils>();
     mCameraSystem = std::make_unique<CameraSystem>(this);
@@ -241,10 +245,24 @@ void Game::ReloadUIData()
 void Game::RunLoop()
 {
     while (!glfwWindowShouldClose(mWindow)) {
+        const auto frameStartTime = std::chrono::steady_clock::now();
+        BeginFramePerformanceMeasurement();
+        PollGpuPerformanceMeasurements();
         glfwPollEvents();
         ProcessInput();
+
+        const auto gameUpdateStartTime = std::chrono::steady_clock::now();
         UpdateGame();
+        const auto gameUpdateEndTime = std::chrono::steady_clock::now();
+        mFramePerformanceMetrics.gameUpdateMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                gameUpdateEndTime - gameUpdateStartTime).count();
+
         GenerateOutput();
+
+        mFramePerformanceMetrics.totalMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                std::chrono::steady_clock::now() - frameStartTime).count();
     }
 }
 
@@ -258,6 +276,20 @@ void Game::Shutdown()
 
     if (mAudioSystem) {
         mAudioSystem->Shutdown();
+    }
+
+    if (mRenderer3D) {
+        mRenderer3D->Shutdown();
+    }
+    if (mUIRenderer) {
+        mUIRenderer->Shutdown();
+        mUIRenderer.reset();
+    }
+    if (mGameUiGpuTimer) {
+        mGameUiGpuTimer->Shutdown();
+    }
+    if (mEditorUiGpuTimer) {
+        mEditorUiGpuTimer->Shutdown();
     }
 
     SDL_Quit();
@@ -540,6 +572,74 @@ void Game::ProcessActorsInput()
     mWorld->ProcessActorsInput();
 }
 
+void Game::BeginFramePerformanceMeasurement()
+{
+    mFramePerformanceMetrics.gameUpdateMilliseconds = 0.0f;
+    mFramePerformanceMetrics.firstViewportRenderMilliseconds = 0.0f;
+    mFramePerformanceMetrics.secondViewportRenderMilliseconds = 0.0f;
+    mFramePerformanceMetrics.gameUiCpuMilliseconds = 0.0f;
+    mFramePerformanceMetrics.editorUiCpuMilliseconds = 0.0f;
+    mFramePerformanceMetrics.presentationWaitMilliseconds = 0.0f;
+    mFramePerformanceMetrics.renderedViewportCount = 0;
+}
+
+void Game::PollGpuPerformanceMeasurements()
+{
+    if (mGameUiGpuTimer) {
+        const std::optional<float> elapsedMilliseconds =
+            mGameUiGpuTimer->PollCompletedMilliseconds();
+        if (elapsedMilliseconds) {
+            mFramePerformanceMetrics.gameUiGpuMilliseconds =
+                *elapsedMilliseconds;
+            mFramePerformanceMetrics.hasGameUiGpuMeasurement = true;
+        }
+    }
+
+    if (mEditorUiGpuTimer) {
+        const std::optional<float> elapsedMilliseconds =
+            mEditorUiGpuTimer->PollCompletedMilliseconds();
+        if (elapsedMilliseconds) {
+            mFramePerformanceMetrics.editorUiGpuMilliseconds =
+                *elapsedMilliseconds;
+            mFramePerformanceMetrics.hasEditorUiGpuMeasurement = true;
+        }
+    }
+}
+
+void Game::RecordViewportRenderDurationMilliseconds(
+    int viewportIndex,
+    float durationMilliseconds)
+{
+    if (viewportIndex == 0) {
+        mFramePerformanceMetrics.firstViewportRenderMilliseconds =
+            durationMilliseconds;
+    } else if (viewportIndex == 1) {
+        mFramePerformanceMetrics.secondViewportRenderMilliseconds =
+            durationMilliseconds;
+    } else {
+        return;
+    }
+
+    mFramePerformanceMetrics.renderedViewportCount = std::max(
+        mFramePerformanceMetrics.renderedViewportCount,
+        viewportIndex + 1);
+}
+
+void Game::RecordViewportGpuDurationMilliseconds(
+    int viewportIndex,
+    float durationMilliseconds)
+{
+    if (viewportIndex == 0) {
+        mFramePerformanceMetrics.firstViewportGpuMilliseconds =
+            durationMilliseconds;
+        mFramePerformanceMetrics.hasFirstViewportGpuMeasurement = true;
+    } else if (viewportIndex == 1) {
+        mFramePerformanceMetrics.secondViewportGpuMilliseconds =
+            durationMilliseconds;
+        mFramePerformanceMetrics.hasSecondViewportGpuMeasurement = true;
+    }
+}
+
 void Game::UpdateGame()
 {
     CheckGameControllerConnected();
@@ -639,18 +739,30 @@ void Game::GenerateOutput()
         glViewport(0, 0, framebufferWidth, framebufferHeight);
         glClearColor(0.035f, 0.035f, 0.045f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        const auto editorUiStartTime = std::chrono::steady_clock::now();
+        mEditorUiGpuTimer->Begin();
         mUIRenderer->DrawDebugEditor(
             mEditorGameTexture,
             framebufferWidth,
             framebufferHeight);
+        mEditorUiGpuTimer->End();
+        mFramePerformanceMetrics.editorUiCpuMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                std::chrono::steady_clock::now() - editorUiStartTime).count();
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         DrawGameFrame();
         if (mIsDebugEditorShowing) {
+            const auto editorUiStartTime = std::chrono::steady_clock::now();
+            mEditorUiGpuTimer->Begin();
             mUIRenderer->DrawDebugEditor(
                 0,
                 framebufferWidth,
                 framebufferHeight);
+            mEditorUiGpuTimer->End();
+            mFramePerformanceMetrics.editorUiCpuMilliseconds =
+                std::chrono::duration<float, std::milli>(
+                    std::chrono::steady_clock::now() - editorUiStartTime).count();
         } else if (mUGCSessionState.IsModeActive()) {
             mUIRenderer->DrawUGCPlaytestReturnButton();
         } else if (mUGCSessionState.IsWorkBrowserShowing()) {
@@ -658,7 +770,11 @@ void Game::GenerateOutput()
         }
     }
 
+    const auto presentationStartTime = std::chrono::steady_clock::now();
     glfwSwapBuffers(mWindow);
+    mFramePerformanceMetrics.presentationWaitMilliseconds =
+        std::chrono::duration<float, std::milli>(
+            std::chrono::steady_clock::now() - presentationStartTime).count();
 }
 
 void Game::DrawGameFrame()
@@ -683,7 +799,13 @@ void Game::DrawGameFrame()
     mRenderer3D->Draw();
 
     glDisable(GL_DEPTH_TEST);
+    const auto gameUiStartTime = std::chrono::steady_clock::now();
+    mGameUiGpuTimer->Begin();
     mUIRenderer->DrawGameContent();
+    mGameUiGpuTimer->End();
+    mFramePerformanceMetrics.gameUiCpuMilliseconds =
+        std::chrono::duration<float, std::milli>(
+            std::chrono::steady_clock::now() - gameUiStartTime).count();
     glEnable(GL_DEPTH_TEST);
 }
 

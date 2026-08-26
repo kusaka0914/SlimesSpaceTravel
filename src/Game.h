@@ -38,6 +38,7 @@ class SequenceSystem;
 class StageProgressSystem;
 class EditorBuildRestartService;
 class EnemyJewelDropSystem;
+class GpuDurationTimer;
 
 enum class InputDeviceType {
     KeyboardMouse,
@@ -47,6 +48,25 @@ enum class InputDeviceType {
 enum class StagePhysicsReloadMode {
     Rebuild,
     SkipRebuild,
+};
+
+struct FramePerformanceMetrics {
+    float totalMilliseconds = 0.0f;
+    float gameUpdateMilliseconds = 0.0f;
+    float firstViewportRenderMilliseconds = 0.0f;
+    float secondViewportRenderMilliseconds = 0.0f;
+    float firstViewportGpuMilliseconds = 0.0f;
+    float secondViewportGpuMilliseconds = 0.0f;
+    float gameUiCpuMilliseconds = 0.0f;
+    float gameUiGpuMilliseconds = 0.0f;
+    float editorUiCpuMilliseconds = 0.0f;
+    float editorUiGpuMilliseconds = 0.0f;
+    float presentationWaitMilliseconds = 0.0f;
+    int renderedViewportCount = 0;
+    bool hasFirstViewportGpuMeasurement = false;
+    bool hasSecondViewportGpuMeasurement = false;
+    bool hasGameUiGpuMeasurement = false;
+    bool hasEditorUiGpuMeasurement = false;
 };
 
 class Game {
@@ -253,6 +273,16 @@ public:
     }
     float GetUGCGridSize() const { return mUGCGridSize; }
     float GetLastDeltaTime() const { return mLastDeltaTime; }
+    const FramePerformanceMetrics& GetFramePerformanceMetrics() const
+    {
+        return mFramePerformanceMetrics;
+    }
+    void RecordViewportRenderDurationMilliseconds(
+        int viewportIndex,
+        float durationMilliseconds);
+    void RecordViewportGpuDurationMilliseconds(
+        int viewportIndex,
+        float durationMilliseconds);
     void SetUGCGridSize(float gridSize)
     {
         mUGCGridSize = gridSize > 0.01f ? gridSize : 0.01f;
@@ -325,6 +355,8 @@ private:
 
     void ProcessInput();
     void ProcessActorsInput();
+    void BeginFramePerformanceMeasurement();
+    void PollGpuPerformanceMeasurements();
 
     void UpdateGame();
     void UpdateActors(float deltaTime);
@@ -370,6 +402,8 @@ private:
     std::unique_ptr<AudioSystem> mAudioSystem;
     std::unique_ptr<UIRenderer> mUIRenderer;
     std::unique_ptr<Renderer3D> mRenderer3D;
+    std::unique_ptr<GpuDurationTimer> mGameUiGpuTimer;
+    std::unique_ptr<GpuDurationTimer> mEditorUiGpuTimer;
     std::unique_ptr<PhysicsSystem> mPhysicsSystem;
     std::unique_ptr<CameraSystem> mCameraSystem;
     std::unique_ptr<ActorLoadSystem> mActorLoadSystem;
@@ -389,6 +423,7 @@ private:
 
     double mLastTime = 0.0;
     float mLastDeltaTime = 0.0f;
+    FramePerformanceMetrics mFramePerformanceMetrics;
 
     bool mIsPlayer2Joined = false;
     bool mIsPlayerSplit = false;

@@ -35,10 +35,22 @@ UIRenderer::UIRenderer(Game* game)
 
 UIRenderer::~UIRenderer()
 {
+    Shutdown();
+}
+
+void UIRenderer::Shutdown()
+{
+    ClearTextTextureCache();
+
+    if (!mIsImGuiInitialized) {
+        return;
+    }
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-};
+    mIsImGuiInitialized = false;
+}
 
 void UIRenderer::Initialize()
 {
@@ -80,6 +92,7 @@ void UIRenderer::InitImGui()
 
     ImGui_ImplGlfw_InitForOpenGL(mGame->GetWindow(), true);
     ImGui_ImplOpenGL3_Init(glslVersion);
+    mIsImGuiInitialized = true;
 }
 
 void UIRenderer::RegisterUITextures()
@@ -1976,9 +1989,6 @@ void UIRenderer::DrawTextLine(
     glm::vec2 rotationPivot,
     float outlineWidth)
 {
-    int textWidth = 0;
-    int textHeight = 0;
-
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
@@ -1987,10 +1997,17 @@ void UIRenderer::DrawTextLine(
             ? std::max(1, static_cast<int>(std::round(outlineWidth / scale)))
             : 0;
     const float actualOutlineWidth = static_cast<float>(outlinePixels) * scale;
-    GLuint textTexture =
-        CreateTextTexture(message, textWidth, textHeight, textColor, scale, outlinePixels);
+    const CachedTextTexture* cachedTexture =
+        FindOrCreateTextTexture(message, textColor, outlinePixels);
+    if (!cachedTexture) {
+        return;
+    }
 
-    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
+    const int textWidth =
+        static_cast<int>(static_cast<float>(cachedTexture->unscaledWidth) * scale);
+    const int textHeight =
+        static_cast<int>(static_cast<float>(cachedTexture->unscaledHeight) * scale);
+    if (textWidth <= 0 || textHeight <= 0) {
         return;
     }
 
@@ -2032,12 +2049,88 @@ void UIRenderer::DrawTextLine(
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textTexture);
+    glBindTexture(GL_TEXTURE_2D, cachedTexture->handle);
 
     mVertexArrays.at("quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glDeleteTextures(1, &textTexture);
+}
+
+std::size_t UIRenderer::TextTextureCacheKeyHash::operator()(
+    const TextTextureCacheKey& key) const
+{
+    const std::size_t textHash = std::hash<std::string>{}(key.text);
+    const std::size_t colorHash = std::hash<std::uint32_t>{}(key.rgba);
+    const std::size_t outlineHash = std::hash<int>{}(key.outlinePixels);
+    return textHash ^ (colorHash << 1) ^ (outlineHash << 2);
+}
+
+const UIRenderer::CachedTextTexture* UIRenderer::FindOrCreateTextTexture(
+    const std::string& text,
+    const SDL_Color& color,
+    int outlinePixels)
+{
+    const std::uint32_t rgba =
+        static_cast<std::uint32_t>(color.r) << 24 |
+        static_cast<std::uint32_t>(color.g) << 16 |
+        static_cast<std::uint32_t>(color.b) << 8 |
+        static_cast<std::uint32_t>(color.a);
+    const TextTextureCacheKey key{text, rgba, outlinePixels};
+
+    const auto existingTexture = mTextTextureCache.find(key);
+    if (existingTexture != mTextTextureCache.end()) {
+        existingTexture->second.lastUseOrder = ++mNextTextTextureUseOrder;
+        return &existingTexture->second;
+    }
+
+    constexpr std::size_t maxTextTextureCount = 256;
+    if (mTextTextureCache.size() >= maxTextTextureCount) {
+        EvictLeastRecentlyUsedTextTexture();
+    }
+
+    int unscaledWidth = 0;
+    int unscaledHeight = 0;
+    const GLuint textureHandle =
+        CreateTextTexture(text, unscaledWidth, unscaledHeight, color, 1.0f, outlinePixels);
+    if (textureHandle == 0 || unscaledWidth <= 0 || unscaledHeight <= 0) {
+        return nullptr;
+    }
+
+    const auto [insertedTexture, wasInserted] = mTextTextureCache.emplace(
+        key,
+        CachedTextTexture{
+            textureHandle,
+            unscaledWidth,
+            unscaledHeight,
+            ++mNextTextTextureUseOrder});
+    if (!wasInserted) {
+        glDeleteTextures(1, &textureHandle);
+    }
+    return &insertedTexture->second;
+}
+
+void UIRenderer::EvictLeastRecentlyUsedTextTexture()
+{
+    if (mTextTextureCache.empty()) {
+        return;
+    }
+
+    const auto leastRecentlyUsedTexture = std::min_element(
+        mTextTextureCache.begin(),
+        mTextTextureCache.end(),
+        [](const auto& left, const auto& right) {
+            return left.second.lastUseOrder < right.second.lastUseOrder;
+        });
+    glDeleteTextures(1, &leastRecentlyUsedTexture->second.handle);
+    mTextTextureCache.erase(leastRecentlyUsedTexture);
+}
+
+void UIRenderer::ClearTextTextureCache()
+{
+    for (const auto& cacheEntry : mTextTextureCache) {
+        glDeleteTextures(1, &cacheEntry.second.handle);
+    }
+    mTextTextureCache.clear();
 }
 
 void UIRenderer::DrawRubyText(float x, float y, float scale,

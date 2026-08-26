@@ -166,6 +166,13 @@ Renderer3D::Renderer3D(Game* game)
 
 Renderer3D::~Renderer3D() = default;
 
+void Renderer3D::Shutdown()
+{
+    if (mRenderViewportController) {
+        mRenderViewportController->Shutdown();
+    }
+}
+
 GLuint Renderer3D::CreateRubyTextTextureFor3D(
     const std::vector<RubyTextSegment>& segments,
     int& outWidth,

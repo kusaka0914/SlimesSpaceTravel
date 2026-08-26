@@ -5,6 +5,8 @@
 #include "text/RubyText.h"
 #include <GL/glew.h>
 #include <SDL_ttf.h>
+#include <cstdint>
+#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
@@ -54,6 +56,8 @@ public:
 
     UIRenderer(Game* game);
     ~UIRenderer();
+
+    void Shutdown();
 
     void DrawGameContent();
     void DrawDebugEditor(
@@ -216,6 +220,37 @@ private:
 
     void EndImGuiFrame();
 
+    struct TextTextureCacheKey {
+        std::string text;
+        std::uint32_t rgba = 0;
+        int outlinePixels = 0;
+
+        bool operator==(const TextTextureCacheKey& other) const
+        {
+            return text == other.text &&
+                   rgba == other.rgba &&
+                   outlinePixels == other.outlinePixels;
+        }
+    };
+
+    struct TextTextureCacheKeyHash {
+        std::size_t operator()(const TextTextureCacheKey& key) const;
+    };
+
+    struct CachedTextTexture {
+        GLuint handle = 0;
+        int unscaledWidth = 0;
+        int unscaledHeight = 0;
+        std::uint64_t lastUseOrder = 0;
+    };
+
+    const CachedTextTexture* FindOrCreateTextTexture(
+        const std::string& text,
+        const SDL_Color& color,
+        int outlinePixels);
+    void EvictLeastRecentlyUsedTextTexture();
+    void ClearTextTextureCache();
+
     bool SplitText(const std::string& message, std::string& message1, std::string& message2) const;
     void DrawTextLine(
         const std::string& message,
@@ -253,8 +288,15 @@ private:
     std::vector<RenderedUIElement> mRenderedUIElements;
     std::unordered_map<std::string, std::vector<RubyTextSegment>>
         mCustomTextRubyCache;
+    std::unordered_map<
+        TextTextureCacheKey,
+        CachedTextTexture,
+        TextTextureCacheKeyHash>
+        mTextTextureCache;
+    std::uint64_t mNextTextTextureUseOrder = 0;
 
     int mFbWidth;
     int mFbHeight;
     bool mCustomUIPreviewEnabled = false;
+    bool mIsImGuiInitialized = false;
 };
