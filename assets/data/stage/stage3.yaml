@@ -1160,8 +1160,10 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets: []
-      enemyClearUnlock: {}
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
   - currentPlanetNum: 2
     pos:
       - -5.04
@@ -1367,9 +1369,12 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet1
-        targets: []
-        hideTargets: []
-      enemyClearUnlock: {}
+        targets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
     rotationQuat:
       - -0.010605924
       - 0.48201528
@@ -1568,9 +1573,9 @@ platforms:
         reappearDelay: 2
   - currentPlanetNum: 9
     pos:
-      - 2.6340942
-      - 4.241405
-      - -21.31169
+      - 2.6348495
+      - 4.2414513
+      - -21.311754
     theta: -1.4478215
     phi: 0.19500482
     height: 16.021503
@@ -1601,17 +1606,17 @@ platforms:
     components:
       movement:
         startLocalPos:
-          - 2.6340942
-          - 4.241405
-          - -21.31169
+          - 2.6348495
+          - 4.2414513
+          - -21.311754
         endLocalPos:
           - 1.761589
           - 9.3204155
           - -21.663855
         moveOffset:
-          - -0.8725052
-          - 5.0790105
-          - -0.35216522
+          - -0.8732605
+          - 5.078964
+          - -0.35210037
         moveDuration: 4
         moveOnPlayer: false
         returnDelay: 1
@@ -1645,33 +1650,12 @@ platforms:
     textureTiling:
       - 1
       - 1
-    textureOverride: textures/glass.png
+    textureOverride: textures/roadTex.png
     rotationQuat:
       - -0.08798904
       - -0.10679843
       - 0.024937572
       - 0.99006575
-    components:
-      movement:
-        startLocalPos:
-          - 22.81334
-          - 1.5943127
-          - 2.28129
-        endLocalPos:
-          - 23.364975
-          - -1.6177378
-          - 2.5039902
-        moveOffset:
-          - 0.55163574
-          - -3.2120504
-          - 0.22270012
-        moveDuration: 4
-        moveOnPlayer: false
-        returnDelay: 1
-        endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 7
     pos:
       - 21.604126
@@ -1698,7 +1682,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    textureOverride: textures/glass.png
+    textureOverride: textures/roadTex.png
     rotationQuat:
       - -0.08798904
       - -0.10679843
@@ -1722,9 +1706,6 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 7
     pos:
       - 7.9503403
@@ -1836,7 +1817,7 @@ platforms:
     textureTiling:
       - 1
       - 1
-    textureOverride: textures/glass.png
+    textureOverride: textures/roadTex.png
     rotationQuat:
       - -0.08798904
       - -0.10679843
@@ -1860,9 +1841,6 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      fadeOnStand:
-        fadeOutDuration: 1
-        reappearDelay: 2
   - currentPlanetNum: 9
     pos:
       - 4.492264
@@ -2245,7 +2223,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 9
     theta: -2.7891998
     phi: 1.454875
@@ -2275,8 +2254,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage3_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
     rotationQuat:
       - 0.90604794
       - -0.012187039
@@ -2625,11 +2606,13 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets: []
+        targets:
+          []
         enemyTargets:
           - sequence: enemies
             index: 6
-        hideTargets: []
+        hideTargets:
+          []
     rotationQuat:
       - 0.006787314
       - 0.78266186

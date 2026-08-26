@@ -1,0 +1,118 @@
+#include "gfx/debug/ugc/UGCSessionState.h"
+
+#include <utility>
+
+void UGCSessionState::EnterEditor()
+{
+    mIsWorkBrowserShowing = false;
+    mIsModeActive = true;
+    mIsDebugPanelShowing = false;
+    mIsOrthographicView = true;
+}
+
+void UGCSessionState::ToggleDebugPanel()
+{
+    if (mIsModeActive) {
+        mIsDebugPanelShowing = !mIsDebugPanelShowing;
+    }
+}
+
+bool UGCSessionState::StartPlaytest()
+{
+    if (!mIsModeActive) {
+        return false;
+    }
+    mIsDebugPanelShowing = false;
+    mIsOrthographicView = false;
+    return true;
+}
+
+bool UGCSessionState::StartVerification(
+    const std::string& workFileName)
+{
+    if (!mIsModeActive || workFileName.empty()) {
+        return false;
+    }
+    mVerificationWorkFileName = workFileName;
+    mIsClearCompletionPending = false;
+    return true;
+}
+
+bool UGCSessionState::ReturnToEditor()
+{
+    if (!mIsModeActive) {
+        return false;
+    }
+    mVerificationWorkFileName.clear();
+    mIsClearCompletionPending = false;
+    mIsDebugPanelShowing = false;
+    mIsOrthographicView = true;
+    return true;
+}
+
+void UGCSessionState::Exit()
+{
+    mIsModeActive = false;
+    mIsDebugPanelShowing = false;
+    mIsClearCompletionPending = false;
+    mIsWorkBrowserShowing = false;
+    mIsOrthographicView = false;
+}
+
+void UGCSessionState::OpenWorkBrowser()
+{
+    mIsWorkBrowserShowing = true;
+}
+
+void UGCSessionState::CloseWorkBrowser()
+{
+    mIsWorkBrowserShowing = false;
+}
+
+void UGCSessionState::MarkClearCompletionPending()
+{
+    if (mIsModeActive) {
+        mIsClearCompletionPending = true;
+    }
+}
+
+std::optional<std::string> UGCSessionState::ConsumeClearCompletion()
+{
+    if (!mIsClearCompletionPending) {
+        return std::nullopt;
+    }
+
+    mIsClearCompletionPending = false;
+    if (!mIsModeActive) {
+        return std::nullopt;
+    }
+
+    std::string workFileName = std::move(mVerificationWorkFileName);
+    mVerificationWorkFileName.clear();
+    return workFileName;
+}
+
+bool UGCSessionState::IsModeActive() const
+{
+    return mIsModeActive;
+}
+
+bool UGCSessionState::IsDebugPanelShowing() const
+{
+    return mIsDebugPanelShowing;
+}
+
+bool UGCSessionState::IsWorkBrowserShowing() const
+{
+    return mIsWorkBrowserShowing;
+}
+
+bool UGCSessionState::IsOrthographicView() const
+{
+    return mIsOrthographicView;
+}
+
+void UGCSessionState::SetOrthographicView(bool isOrthographicView)
+{
+    mIsOrthographicView = isOrthographicView;
+}

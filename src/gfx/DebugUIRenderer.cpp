@@ -21,8 +21,6 @@
 #include <array>
 #include <cmath>
 #include <cstring>
-#include <filesystem>
-#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec4.hpp>
 #include <limits>
@@ -32,41 +30,6 @@
 #include <unordered_set>
 
 namespace {
-const std::filesystem::path UGCWorkingStagePath =
-    "../assets/data/stage/ugc_stage.yaml";
-const std::filesystem::path UGCSaveDirectory =
-    "../assets/data/stage/ugc_saves";
-
-std::filesystem::path MakeUGCWorkPath(const std::string& fileName)
-{
-    return UGCSaveDirectory / std::filesystem::u8path(fileName);
-}
-
-std::string ToUtf8FileName(const std::filesystem::path& path)
-{
-    const std::u8string utf8Name = path.filename().u8string();
-    return std::string(utf8Name.begin(), utf8Name.end());
-}
-
-std::string MakeSafeUGCFileName(const std::string& displayName)
-{
-    std::string safeName = displayName;
-    constexpr const char* invalidCharacters = "<>:\"/\\|?*";
-    for (char& character : safeName) {
-        const unsigned char unsignedCharacter =
-            static_cast<unsigned char>(character);
-        if (unsignedCharacter < 32 ||
-            std::strchr(invalidCharacters, character)) {
-            character = '_';
-        }
-    }
-    while (!safeName.empty() &&
-           (safeName.back() == ' ' || safeName.back() == '.')) {
-        safeName.pop_back();
-    }
-    return safeName.empty() ? "untitled" : safeName;
-}
-
 void DrawUGCEraserActiveIndicator(bool isActive)
 {
     if (!isActive) {
@@ -97,6 +60,12 @@ void DrawUGCEraserActiveIndicator(bool isActive)
 
 DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
     : mContext{game, uiRenderer, &mAssetCatalog},
+      mUGCWorkPanel(
+          mContext,
+          [this]() {
+              mSelectionController.Clear();
+              mContext.game->ReloadCurrentStage();
+          }),
       mUGCModelThumbnailRenderer(
           std::make_unique<EditorModelThumbnailRenderer>(game)),
       mPerformancePanel(mContext),
@@ -127,7 +96,9 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           mStagePlacementPanel,
           mStageDeleteActorPanel,
           mStageActorYamlWriter,
-          mSelectionController),
+          mSelectionController,
+          [this]() { return mEditCommandController.RestoreUndo(); },
+          [this]() { return mEditCommandController.RestoreRedo(); }),
       mGizmoController(
           mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
           [this]() {
@@ -861,20 +832,7 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
             ImGui::OpenPopup("作品管理###UGCWorkManagement");
         }
         if (ImGui::MenuItem("完成チェック")) {
-            YAML::Node stageYaml;
-            const bool loaded =
-                StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
-            const YAML::Node stars =
-                loaded ? stageYaml["star"] : YAML::Node();
-            if (!stars || !stars.IsSequence() || stars.size() == 0) {
-                mUGCStatus = "完成チェックにはゴールを置いてください";
-            } else if (!SaveCurrentUGCWork(mUGCWorkName.data())) {
-                mUGCStatus = "下書きを保存できませんでした: " +
-                    mUGCWorkSaveError;
-            } else {
-                mContext.game->StartUGCClearVerification(
-                    MakeSafeUGCFileName(mUGCWorkName.data()) + ".yaml");
-            }
+            StartUGCVerification();
         }
         if (ImGui::MenuItem("タイトルへ戻る")) {
             mContext.game->ExitUGCMode();
@@ -984,403 +942,25 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     DrawUGCWorkManagement();
 }
 
-void DebugUIRenderer::RefreshUGCWorkList()
+void DebugUIRenderer::DrawUGCWorkManagement()
 {
-    mUGCWorkFileNames.clear();
-    std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        UGCSaveDirectory, fileSystemError);
-    if (fileSystemError) {
-        mSelectedUGCWorkIndex = -1;
-        return;
-    }
-
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(
-             UGCSaveDirectory, fileSystemError)) {
-        if (fileSystemError) {
-            break;
-        }
-        if (entry.is_regular_file() &&
-            entry.path().extension() == ".yaml") {
-            mUGCWorkFileNames.emplace_back(
-                ToUtf8FileName(entry.path()));
-        }
-    }
-    std::sort(mUGCWorkFileNames.begin(), mUGCWorkFileNames.end());
-    if (mUGCWorkFileNames.empty()) {
-        mSelectedUGCWorkIndex = -1;
-    } else {
-        mSelectedUGCWorkIndex = glm::clamp(
-            mSelectedUGCWorkIndex,
-            0,
-            static_cast<int>(mUGCWorkFileNames.size()) - 1);
-    }
-    mHasLoadedUGCWorkList = true;
+    mUGCWorkPanel.DrawManagement(mUGCStatus);
 }
 
-bool DebugUIRenderer::SaveCurrentUGCWork(
-    const std::string& displayName)
+void DebugUIRenderer::StartUGCVerification()
 {
-
-
-
-
-
-    mUGCWorkSaveError.clear();
-    try {
-        const std::string fileName =
-            MakeSafeUGCFileName(displayName) + ".yaml";
-        YAML::Node stageYaml;
-        if (!StageYamlRepository::LoadCurrentStage(
-                mContext, stageYaml)) {
-            mUGCWorkSaveError = "作業中のステージを読み込めませんでした";
-            return false;
-        }
-        stageYaml["ugcMetadata"]["displayName"] = displayName;
-        if (!stageYaml["ugcMetadata"]["isClearVerified"]) {
-            stageYaml["ugcMetadata"]["isClearVerified"] = false;
-        }
-        if (!StageYamlRepository::SaveCurrentStage(
-                mContext, stageYaml)) {
-            mUGCWorkSaveError = "作業中のステージを書き込めませんでした";
-            return false;
-        }
-        std::error_code fileSystemError;
-        std::filesystem::create_directories(
-            UGCSaveDirectory, fileSystemError);
-        if (fileSystemError) {
-            mUGCWorkSaveError =
-                "保存フォルダを作れませんでした: " +
-                fileSystemError.message();
-            return false;
-        }
-        std::filesystem::copy_file(
-            UGCWorkingStagePath,
-            MakeUGCWorkPath(fileName),
-            std::filesystem::copy_options::overwrite_existing,
-            fileSystemError);
-        if (fileSystemError) {
-            mUGCWorkSaveError =
-                "作品ファイルをコピーできませんでした: " +
-                fileSystemError.message();
-            return false;
-        }
-
-
-
-
-    // 同一ImGuiフレームで表示中リストを更新するとポップアップの状態が無効になるため、次フレームで更新する。
-    mShouldRefreshUGCWorkList = true;
-        return true;
-    } catch (const std::exception& error) {
-        std::cerr << "Failed to save UGC work: " << error.what() << std::endl;
-        mUGCWorkSaveError = error.what();
-        return false;
-    }
+    mUGCWorkPanel.StartVerification(mUGCStatus);
 }
 
-bool DebugUIRenderer::IsUGCWorkClearVerified(
-    const std::string& workFileName) const
+void DebugUIRenderer::DrawUGCWorkBrowser()
 {
-    try {
-        const YAML::Node stageYaml = YAML::LoadFile(
-            MakeUGCWorkPath(workFileName).string());
-        return stageYaml["ugcMetadata"] &&
-            stageYaml["ugcMetadata"]["isClearVerified"].as<bool>(false);
-    } catch (const YAML::Exception&) {
-        return false;
-    }
+    mUGCWorkPanel.DrawBrowser();
 }
 
 bool DebugUIRenderer::CompleteUGCVerification(
     const std::string& workFileName)
 {
-    YAML::Node stageYaml;
-    if (!StageYamlRepository::LoadCurrentStage(
-            mContext, stageYaml)) {
-        return false;
-    }
-    stageYaml["ugcMetadata"]["isClearVerified"] = true;
-    if (!StageYamlRepository::SaveCurrentStage(
-            mContext, stageYaml)) {
-        return false;
-    }
-
-    std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        UGCSaveDirectory, fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    std::filesystem::copy_file(
-        UGCWorkingStagePath,
-        MakeUGCWorkPath(workFileName),
-        std::filesystem::copy_options::overwrite_existing,
-        fileSystemError);
-    RefreshUGCWorkList();
-    return !fileSystemError;
-}
-
-bool DebugUIRenderer::LoadSelectedUGCWork()
-{
-    if (!CopySelectedUGCWorkToWorkingFile()) {
-        return false;
-    }
-    mSelectionController.Clear();
-    mContext.game->ReloadCurrentStage();
-    return true;
-}
-
-bool DebugUIRenderer::CopySelectedUGCWorkToWorkingFile()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        MakeUGCWorkPath(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]),
-        UGCWorkingStagePath,
-        std::filesystem::copy_options::overwrite_existing,
-        fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    return true;
-}
-
-bool DebugUIRenderer::DuplicateSelectedUGCWork()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    const std::filesystem::path sourceFilePath = MakeUGCWorkPath(
-        mUGCWorkFileNames[mSelectedUGCWorkIndex]);
-    const std::u8string sourceStemUtf8 = sourceFilePath.stem().u8string();
-    const std::string sourceStem(
-        sourceStemUtf8.begin(), sourceStemUtf8.end());
-    std::string destinationFileName = sourceStem + "_コピー.yaml";
-    int suffix = 2;
-    while (std::filesystem::exists(
-        MakeUGCWorkPath(destinationFileName))) {
-        destinationFileName = sourceStem +
-            "_コピー" + std::to_string(suffix++) + ".yaml";
-    }
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        sourceFilePath,
-        MakeUGCWorkPath(destinationFileName),
-        std::filesystem::copy_options::none,
-        fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    RefreshUGCWorkList();
-    return true;
-}
-
-bool DebugUIRenderer::DeleteSelectedUGCWork()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    std::error_code fileSystemError;
-    const bool removed = std::filesystem::remove(
-        MakeUGCWorkPath(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]),
-        fileSystemError);
-    RefreshUGCWorkList();
-    return removed && !fileSystemError;
-}
-
-void DebugUIRenderer::DrawUGCWorkManagement()
-{
-    if (!ImGui::BeginPopupModal(
-            "作品管理###UGCWorkManagement",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
-        return;
-    }
-    if (!mHasLoadedUGCWorkList || mShouldRefreshUGCWorkList) {
-        RefreshUGCWorkList();
-        mShouldRefreshUGCWorkList = false;
-    }
-
-    ImGui::TextUnformatted("現在のステージを作品として保存");
-    ImGui::SetNextItemWidth(320.0f);
-    ImGui::InputText(
-        "作品名###UGCWorkName",
-        mUGCWorkName.data(),
-        mUGCWorkName.size());
-    if (ImGui::Button("保存", ImVec2(120.0f, 0.0f))) {
-        if (SaveCurrentUGCWork(mUGCWorkName.data())) {
-            mUGCStatus = "作品を保存しました";
-        } else {
-            mUGCStatus = "作品を保存できませんでした: " +
-                mUGCWorkSaveError;
-        }
-    }
-
-    ImGui::TextUnformatted("保存した作品");
-    if (ImGui::BeginListBox(
-            "###UGCWorkList", ImVec2(440.0f, 180.0f))) {
-        for (int index = 0;
-             index < static_cast<int>(mUGCWorkFileNames.size());
-             ++index) {
-            const std::string displayName = ToUtf8FileName(
-                MakeUGCWorkPath(mUGCWorkFileNames[index]).stem());
-            if (ImGui::Selectable(
-                    displayName.c_str(),
-                    mSelectedUGCWorkIndex == index)) {
-                mSelectedUGCWorkIndex = index;
-            }
-        }
-        ImGui::EndListBox();
-    }
-    if (ImGui::Button("開く")) {
-        mUGCStatus = LoadSelectedUGCWork()
-            ? "作品を開きました"
-            : "作品を開けませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("作品を複製")) {
-        mUGCStatus = DuplicateSelectedUGCWork()
-            ? "作品を複製しました"
-            : "作品を複製できませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("作品を削除")) {
-        mUGCStatus = DeleteSelectedUGCWork()
-            ? "作品を削除しました"
-            : "作品を削除できませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("閉じる")) {
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-}
-
-void DebugUIRenderer::DrawUGCWorkBrowser()
-{
-    if (!mHasLoadedUGCWorkList) {
-        RefreshUGCWorkList();
-    }
-
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 panelSize(
-        std::min(760.0f, viewport->WorkSize.x - 48.0f),
-        std::min(620.0f, viewport->WorkSize.y - 48.0f));
-    ImGui::SetNextWindowPos(
-        ImVec2(
-            viewport->WorkPos.x +
-                (viewport->WorkSize.x - panelSize.x) * 0.5f,
-            viewport->WorkPos.y +
-                (viewport->WorkSize.y - panelSize.y) * 0.5f),
-        ImGuiCond_Always);
-    ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
-    constexpr ImGuiWindowFlags windowFlags =
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoSavedSettings;
-    ImGui::Begin(
-        "つくったステージ###UGCWorkBrowser",
-        nullptr,
-        windowFlags);
-    ImGui::TextUnformatted("つくったステージ");
-    ImGui::TextDisabled(
-        "作品を選んで、遊ぶか続きを作るか選んでください。");
-    ImGui::Separator();
-
-    const float listHeight = std::max(180.0f, panelSize.y - 190.0f);
-    int verifiedWorkCount = 0;
-    if (ImGui::BeginListBox(
-            "###UGCBrowserWorkList",
-            ImVec2(-1.0f, listHeight))) {
-        for (int index = 0;
-             index < static_cast<int>(mUGCWorkFileNames.size());
-             ++index) {
-            const std::string& fileName = mUGCWorkFileNames[index];
-            if (!IsUGCWorkClearVerified(fileName)) {
-                continue;
-            }
-            ++verifiedWorkCount;
-            const std::string displayName = ToUtf8FileName(
-                MakeUGCWorkPath(fileName).stem());
-            if (ImGui::Selectable(
-                    displayName.c_str(),
-                    mSelectedUGCWorkIndex == index,
-                    0,
-                    ImVec2(0.0f, 40.0f))) {
-                mSelectedUGCWorkIndex = index;
-            }
-        }
-        if (verifiedWorkCount == 0) {
-            ImGui::TextDisabled(
-                "クリア確認済みの作品はまだありません");
-        }
-        ImGui::EndListBox();
-    }
-
-    const bool hasSelectedWork =
-        mSelectedUGCWorkIndex >= 0 &&
-        mSelectedUGCWorkIndex <
-            static_cast<int>(mUGCWorkFileNames.size()) &&
-        IsUGCWorkClearVerified(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]);
-    ImGui::BeginDisabled(!hasSelectedWork);
-    if (ImGui::Button("あそぶ", ImVec2(150.0f, 44.0f))) {
-        if (CopySelectedUGCWorkToWorkingFile() &&
-            mContext.game->StartUGCMode()) {
-            mContext.game->StartUGCPlaytest();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("つづきから作る", ImVec2(180.0f, 44.0f))) {
-        if (CopySelectedUGCWorkToWorkingFile()) {
-            mContext.game->StartUGCMode();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("複製", ImVec2(100.0f, 44.0f))) {
-        DuplicateSelectedUGCWork();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("削除", ImVec2(100.0f, 44.0f))) {
-        ImGui::OpenPopup("作品を削除しますか###UGCDeleteConfirmation");
-    }
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Button("タイトルへ戻る", ImVec2(150.0f, 44.0f)) ||
-        ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-        mContext.game->CloseUGCWorkBrowser();
-    }
-
-    if (ImGui::BeginPopupModal(
-            "作品を削除しますか###UGCDeleteConfirmation",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextUnformatted(
-            "選んだ作品を削除します。この操作は元に戻せません。");
-        if (ImGui::Button("削除する")) {
-            DeleteSelectedUGCWork();
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("やめる")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-    ImGui::End();
+    return mUGCWorkPanel.CompleteVerification(workFileName);
 }
 
 void DebugUIRenderer::DrawUGCEditor(
@@ -1612,17 +1192,7 @@ void DebugUIRenderer::DrawUGCEditor(
             ImGui::OpenPopup("作品管理###UGCWorkManagement");
         }
         if (ImGui::MenuItem("完成チェック")) {
-            YAML::Node stageYaml;
-            const bool loaded = StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
-            const YAML::Node stars = loaded ? stageYaml["star"] : YAML::Node();
-            if (!stars || !stars.IsSequence() || stars.size() == 0) {
-                mUGCStatus = "完成チェックにはゴールを置いてください";
-            } else if (!SaveCurrentUGCWork(mUGCWorkName.data())) {
-                mUGCStatus = "下書きを保存できませんでした: " + mUGCWorkSaveError;
-            } else {
-                mContext.game->StartUGCClearVerification(
-                    MakeSafeUGCFileName(mUGCWorkName.data()) + ".yaml");
-            }
+            StartUGCVerification();
         }
         if (ImGui::MenuItem("タイトルへ戻る")) {
             mContext.game->ExitUGCMode();

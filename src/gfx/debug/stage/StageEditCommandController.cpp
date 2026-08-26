@@ -4,6 +4,7 @@
 #include "Stage.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 
 #include "imgui.h"
 
@@ -406,7 +407,7 @@ StageEditCommandController::StageEditCommandController(DebugEditorContext& conte
 void StageEditCommandController::UpdateShortcuts()
 {
     HandleDeleteShortcut();
-    HandleUndoShortcut();
+    HandleUndoRedoShortcut();
     HandleDuplicateShortcut();
 }
 
@@ -483,7 +484,7 @@ void StageEditCommandController::HandleDeleteShortcut()
     DeleteSelectedKeys(selectedKeys);
 }
 
-void StageEditCommandController::HandleUndoShortcut()
+void StageEditCommandController::HandleUndoRedoShortcut()
 {
     if (!mContext.game || !mContext.game->GetWindow()) {
         return;
@@ -502,16 +503,33 @@ void StageEditCommandController::HandleUndoShortcut()
     const bool commandPressed =
         IsPrimaryShortcutModifierPressed(mContext.game->GetWindow());
 
-    const bool zPressed = glfwGetKey(mContext.game->GetWindow(), GLFW_KEY_Z) == GLFW_PRESS;
+    GLFWwindow* window = mContext.game->GetWindow();
+    const bool zPressed =
+        glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    const bool yPressed =
+        glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS;
+    const bool shiftPressed =
+        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
 
     const bool zTriggered = zPressed && !mZPressedPrev;
+    const bool yTriggered = yPressed && !mYPressedPrev;
     mZPressedPrev = zPressed;
+    mYPressedPrev = yPressed;
 
-    if (!commandPressed || !zTriggered) {
+    if (!commandPressed) {
         return;
     }
 
-    RestoreUndo();
+    const bool redoTriggered =
+        yTriggered || (zTriggered && shiftPressed);
+    if (redoTriggered) {
+        RestoreRedo();
+        return;
+    }
+    if (zTriggered) {
+        RestoreUndo();
+    }
 }
 
 void StageEditCommandController::HandleDuplicateShortcut()
@@ -568,28 +586,24 @@ void StageEditCommandController::PushUndo()
         return;
     }
 
-    mUndoStack.push_back(yamlText);
-    mRedoStack.clear();
+    mEditHistory.PushUndoSnapshot(yamlText);
 
     if (mContext.game->GetIsUGCMode()) {
         YAML::Node stageYaml;
         if (StageYamlRepository::LoadCurrentStage(
                 mContext, stageYaml)) {
-            stageYaml["ugcMetadata"]["isClearVerified"] = false;
+            UGCWorkMetadata::InvalidateClearVerification(stageYaml);
             StageYamlRepository::SaveCurrentStage(
                 mContext, stageYaml);
         }
     }
 
-    constexpr std::size_t maxUndoCount = 20;
-    if (mUndoStack.size() > maxUndoCount) {
-        mUndoStack.erase(mUndoStack.begin());
-    }
 }
 
 bool StageEditCommandController::RestoreUndo()
 {
-    if (!mContext.game || mUndoStack.empty()) {
+    const std::string* yamlText = mEditHistory.FindUndoSnapshot();
+    if (!mContext.game || !yamlText) {
         return false;
     }
 
@@ -598,14 +612,12 @@ bool StageEditCommandController::RestoreUndo()
             mContext, currentYamlText)) {
         return false;
     }
-    const std::string yamlText = mUndoStack.back();
-
-    if (!StageYamlRepository::WriteCurrentStageTextAtomically(mContext, yamlText)) {
+    if (!StageYamlRepository::WriteCurrentStageTextAtomically(
+            mContext, *yamlText)) {
         return false;
     }
 
-    mUndoStack.pop_back();
-    mRedoStack.push_back(currentYamlText);
+    mEditHistory.CommitUndo(currentYamlText);
 
     mSelectionController.Clear();
 
@@ -685,7 +697,8 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
 
 bool StageEditCommandController::RestoreRedo()
 {
-    if (!mContext.game || mRedoStack.empty()) {
+    const std::string* yamlText = mEditHistory.FindRedoSnapshot();
+    if (!mContext.game || !yamlText) {
         return false;
     }
 
@@ -694,14 +707,12 @@ bool StageEditCommandController::RestoreRedo()
             mContext, currentYamlText)) {
         return false;
     }
-    const std::string yamlText = mRedoStack.back();
     if (!StageYamlRepository::WriteCurrentStageTextAtomically(
-            mContext, yamlText)) {
+            mContext, *yamlText)) {
         return false;
     }
 
-    mRedoStack.pop_back();
-    mUndoStack.push_back(currentYamlText);
+    mEditHistory.CommitRedo(currentYamlText);
     mSelectionController.Clear();
     mContext.game->ReloadCurrentStage();
     return true;

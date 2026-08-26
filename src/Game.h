@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/player/PlayerTypes.h"
+#include "gfx/debug/ugc/UGCSessionState.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -82,7 +83,7 @@ public:
     int GetTitleMenuSelection() const { return mTitleMenuSelection; }
     bool GetIsUGCWorkBrowserShowing() const
     {
-        return mIsUGCWorkBrowserShowing;
+        return mUGCSessionState.IsWorkBrowserShowing();
     }
     void StartUGCPlaytest();
     void UndoUGCEdit();
@@ -183,20 +184,20 @@ public:
     std::string GetNPCConversationId(const NPC* npc) const;
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
-    bool GetIsUGCMode() const { return mIsUGCMode; }
+    bool GetIsUGCMode() const { return mUGCSessionState.IsModeActive(); }
 
 
     bool GetIsUGCDebugEditorShowing() const
     {
-        return mIsUGCDebugEditorShowing;
+        return mUGCSessionState.IsDebugPanelShowing();
     }
     bool GetIsUGCOrthographicView() const
     {
-        return mIsUGCOrthographicView;
+        return mUGCSessionState.IsOrthographicView();
     }
     void SetIsUGCOrthographicView(bool isOrthographic)
     {
-        mIsUGCOrthographicView = isOrthographic;
+        mUGCSessionState.SetOrthographicView(isOrthographic);
     }
     float GetUGCOrthographicHalfHeight() const
     {
@@ -392,14 +393,9 @@ private:
     int mControlledPlayerIndex = 0;
     float mPendingSoloSplitControlSwitchTimer = -1.0f;
     bool mIsDebugEditorShowing = false;
-    bool mIsUGCMode = false;
-    bool mIsUGCDebugEditorShowing = false;
+    UGCSessionState mUGCSessionState;
     int mTitleMenuSelection = 0;
-    std::string mUGCVerificationWorkFileName;
-    bool mIsUGCClearCompletionPending = false;
-    bool mIsUGCWorkBrowserShowing = false;
     float mUGCGridSize = 1.0f;
-    bool mIsUGCOrthographicView = false;
     float mUGCOrthographicHalfHeight = 20.0f;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;

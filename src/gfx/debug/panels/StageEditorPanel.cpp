@@ -95,14 +95,18 @@ StageEditorPanel::StageEditorPanel(
     StagePlacementPanel& placementPanel,
     StageDeleteActorPanel& deleteActorPanel,
     StageActorYamlWriter& stageActorYamlWriter,
-    StageSelectionController& selectionController)
+    StageSelectionController& selectionController,
+    std::function<bool()> restoreUndo,
+    std::function<bool()> restoreRedo)
     : DebugPanel(context),
       mAddActorPanel(addActorPanel),
       mPlanetPanel(planetPanel),
       mPlacementPanel(placementPanel),
       mDeleteActorPanel(deleteActorPanel),
       mStageActorYamlWriter(stageActorYamlWriter),
-      mSelectionController(selectionController)
+      mSelectionController(selectionController),
+      mRestoreUndo(std::move(restoreUndo)),
+      mRestoreRedo(std::move(restoreRedo))
 {
 }
 
@@ -151,6 +155,30 @@ void StageEditorPanel::DrawToolbar()
     if (ImGui::Button("ステージを保存")) {
         mPlanetPanel.Save();
         mStageActorYamlWriter.SaveAllActorStates();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("元に戻す##stageUndo")) {
+        mEditHistoryStatus = mRestoreUndo && mRestoreUndo()
+            ? "1つ前の状態に戻しました"
+            : "戻せる操作がありません";
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Ctrl+Z");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("やり直す##stageRedo")) {
+        mEditHistoryStatus = mRestoreRedo && mRestoreRedo()
+            ? "戻した操作をやり直しました"
+            : "やり直せる操作がありません";
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Ctrl+Y または Ctrl+Shift+Z");
+    }
+    if (!mEditHistoryStatus.empty()) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", mEditHistoryStatus.c_str());
     }
 }
 

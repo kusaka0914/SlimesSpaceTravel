@@ -2,6 +2,7 @@
 
 #include "gfx/debug/DebugPanel.h"
 
+#include <functional>
 #include <string>
 
 class StageAddActorPanel;
@@ -20,7 +21,9 @@ public:
         StagePlacementPanel& placementPanel,
         StageDeleteActorPanel& deleteActorPanel,
         StageActorYamlWriter& stageActorYamlWriter,
-        StageSelectionController& selectionController);
+        StageSelectionController& selectionController,
+        std::function<bool()> restoreUndo,
+        std::function<bool()> restoreRedo);
 
     void Draw() override;
     void DrawTopBar();
@@ -46,10 +49,13 @@ private:
     StageDeleteActorPanel& mDeleteActorPanel;
     StageActorYamlWriter& mStageActorYamlWriter;
     StageSelectionController& mSelectionController;
+    std::function<bool()> mRestoreUndo;
+    std::function<bool()> mRestoreRedo;
 
     int mSelectedMenu = 3;
     bool mRequestOpenMainTab = false;
     std::string mSelectedStageYamlPath;
     std::string mStageSwitchStatus;
     std::string mDuplicatePlacementStatus;
+    std::string mEditHistoryStatus;
 };

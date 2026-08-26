@@ -22,9 +22,13 @@
 #include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
+#include "gfx/debug/ugc/UGCWorkPanel.h"
 
-#include <optional>
+#include <array>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 class Game;
 class UIRenderer;
@@ -114,13 +118,7 @@ private:
         const ImVec2& previewMax,
         ImDrawList* drawList);
     void DrawUGCWorkManagement();
-    void RefreshUGCWorkList();
-    bool SaveCurrentUGCWork(const std::string& displayName);
-    bool LoadSelectedUGCWork();
-    bool DuplicateSelectedUGCWork();
-    bool DeleteSelectedUGCWork();
-    bool CopySelectedUGCWorkToWorkingFile();
-    bool IsUGCWorkClearVerified(const std::string& workFileName) const;
+    void StartUGCVerification();
     void UpdateUGCSelectionDrag();
     bool TryIntersectUGCDragPlane(
         const glm::vec3& rayFrom,
@@ -133,8 +131,9 @@ private:
 
 private:
     EditorAssetCatalog mAssetCatalog;
-    std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
     DebugEditorContext mContext;
+    UGCWorkPanel mUGCWorkPanel;
+    std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
 
     PerformanceDebugPanel mPerformancePanel;
     CameraDebugPanel mCameraPanel;
@@ -169,7 +168,6 @@ private:
     float mUGCRotationStepDegrees = 90.0f;
     glm::vec3 mUGCViewDirection{0.0f, 1.0f, 0.0f};
     std::string mUGCStatus;
-    std::string mUGCWorkSaveError;
     int mUGCEditLayer = 0;
     int mUGCPlatformFootprintSideLength = 1;
     std::optional<int> mPendingUGCPlanetDeleteIndex;
@@ -184,9 +182,4 @@ private:
     float mUGCPreviewWidth = 420.0f;
     float mUGCPreviewResizeStartWidth = 420.0f;
     bool mHasInitializedUGCPreviewWidth = false;
-    std::array<char, 96> mUGCWorkName{"新しいステージ"};
-    std::vector<std::string> mUGCWorkFileNames;
-    int mSelectedUGCWorkIndex = -1;
-    bool mHasLoadedUGCWorkList = false;
-    bool mShouldRefreshUGCWorkList = false;
 };

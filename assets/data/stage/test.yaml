@@ -2890,3 +2890,6 @@ tutorialTriggers:
     talkAdvanceConditions:
       - talkIndex: 2
         condition: playerSwitch
+boatArrivalPoints: []
+jewelItems:
+  []

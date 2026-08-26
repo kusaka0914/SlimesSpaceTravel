@@ -444,11 +444,11 @@ bool Game::CanReturnToBaseFromPauseMenu() const
 
 void Game::ToggleDebugEditor()
 {
-    if (mIsUGCMode) {
+    if (mUGCSessionState.IsModeActive()) {
 
 
 
-        mIsUGCDebugEditorShowing = !mIsUGCDebugEditorShowing;
+        mUGCSessionState.ToggleDebugPanel();
         return;
     }
 
@@ -629,7 +629,7 @@ void Game::GenerateOutput()
         glBindFramebuffer(GL_FRAMEBUFFER, mEditorGameFramebuffer);
         DrawGameFrame();
 
-        if (mIsUGCMode && EnsureUGCPreviewRenderTarget()) {
+        if (mUGCSessionState.IsModeActive() && EnsureUGCPreviewRenderTarget()) {
             glBindFramebuffer(GL_FRAMEBUFFER, mUGCPreviewFramebuffer);
             DrawUGCPreviewFrame();
         }
@@ -650,9 +650,9 @@ void Game::GenerateOutput()
                 0,
                 framebufferWidth,
                 framebufferHeight);
-        } else if (mIsUGCMode) {
+        } else if (mUGCSessionState.IsModeActive()) {
             mUIRenderer->DrawUGCPlaytestReturnButton();
-        } else if (mIsUGCWorkBrowserShowing) {
+        } else if (mUGCSessionState.IsWorkBrowserShowing()) {
             mUIRenderer->DrawUGCWorkBrowser();
         }
     }
@@ -897,7 +897,7 @@ void Game::DrawUGCPreviewFrame()
         -basePreviewDirection.x * previewYawSine +
             basePreviewDirection.z * previewYawCosine));
     constexpr float previewFieldOfViewDegrees = 55.0f;
-    const float editorViewDistance = mIsUGCOrthographicView
+    const float editorViewDistance = mUGCSessionState.IsOrthographicView()
         ? mUGCOrthographicHalfHeight /
               std::tan(glm::radians(previewFieldOfViewDegrees) * 0.5f)
         : glm::length(editorPose.position - editorPose.target);
@@ -1434,10 +1434,7 @@ bool Game::StartUGCMode()
     }
 
     ClosePauseMenu();
-    mIsUGCWorkBrowserShowing = false;
-    mIsUGCMode = true;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = true;
+    mUGCSessionState.EnterEditor();
     mUGCOrthographicHalfHeight = 20.0f;
     mIsDebugEditorShowing = true;
     SetFreeCameraMode(true);
@@ -1463,7 +1460,7 @@ void Game::OpenUGCWorkBrowser()
     if (!mSceneSystem || !mSceneSystem->IsTitle()) {
         return;
     }
-    mIsUGCWorkBrowserShowing = true;
+    mUGCSessionState.OpenWorkBrowser();
 }
 
 void Game::MoveTitleMenuSelection(int delta)
@@ -1503,17 +1500,15 @@ void Game::ExecuteTitleMenuSelection()
 
 void Game::CloseUGCWorkBrowser()
 {
-    mIsUGCWorkBrowserShowing = false;
+    mUGCSessionState.CloseWorkBrowser();
 }
 
 void Game::StartUGCPlaytest()
 {
-    if (!mIsUGCMode) {
+    if (!mUGCSessionState.StartPlaytest()) {
         return;
     }
     mIsDebugEditorShowing = false;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = false;
     SetFreeCameraMode(false);
     ReloadCurrentStage();
 }
@@ -1558,36 +1553,25 @@ void Game::MoveUGCSelectionByGrid(int gridX, int gridZ)
 void Game::StartUGCClearVerification(
     const std::string& workFileName)
 {
-    if (!mIsUGCMode || workFileName.empty()) {
+    if (!mUGCSessionState.StartVerification(workFileName)) {
         return;
     }
-    mUGCVerificationWorkFileName = workFileName;
-    mIsUGCClearCompletionPending = false;
     StartUGCPlaytest();
 }
 
 void Game::ReturnToUGCEditor()
 {
-    if (!mIsUGCMode) {
+    if (!mUGCSessionState.ReturnToEditor()) {
         return;
     }
-
-    mUGCVerificationWorkFileName.clear();
-    mIsUGCClearCompletionPending = false;
     ReloadCurrentStage();
     mIsDebugEditorShowing = true;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = true;
     SetFreeCameraMode(true);
 }
 
 void Game::ExitUGCMode()
 {
-    mIsUGCMode = false;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCClearCompletionPending = false;
-    mIsUGCWorkBrowserShowing = false;
-    mIsUGCOrthographicView = false;
+    mUGCSessionState.Exit();
     mIsDebugEditorShowing = false;
     SetFreeCameraMode(false);
 
@@ -1698,12 +1682,12 @@ void Game::OnBoatArrived(Boat* boat)
 
 void Game::OnStarObtained()
 {
-    if (mIsUGCMode) {
+    if (mUGCSessionState.IsModeActive()) {
         // Actor走査中にステージを再読込すると走査中のActorを破棄するため、保存と遷移を次フレームへ遅延する。
 
 
 
-        mIsUGCClearCompletionPending = true;
+        mUGCSessionState.MarkClearCompletionPending();
         return;
     }
     MarkStageCleared(GetCurrentStageNum());
@@ -1721,19 +1705,15 @@ void Game::ForcePlayersGroundedForCinematic()
 
 void Game::ProcessPendingUGCClearCompletion()
 {
-    if (!mIsUGCClearCompletionPending) {
+    const std::optional<std::string> verificationWorkFileName =
+        mUGCSessionState.ConsumeClearCompletion();
+    if (!verificationWorkFileName) {
         return;
     }
-
-    mIsUGCClearCompletionPending = false;
-    if (!mIsUGCMode) {
-        return;
-    }
-    if (!mUGCVerificationWorkFileName.empty() && mUIRenderer) {
+    if (!verificationWorkFileName->empty() && mUIRenderer) {
         mUIRenderer->CompleteUGCVerification(
-            mUGCVerificationWorkFileName);
+            *verificationWorkFileName);
     }
-    mUGCVerificationWorkFileName.clear();
     ExitUGCMode();
     OpenUGCWorkBrowser();
 }

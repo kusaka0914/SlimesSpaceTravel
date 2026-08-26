@@ -12,18 +12,6 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/slimePlatform.png
-  - center: [1002, 0, 0]
-    scale: [4, 4, 4]
-    color: [0.0, 1.0, 0.0, 1.0]
-    model: planet.obj
-    rocketSpawnCondition: AllEnemiesDead
-    textureTiling:
-      - 4
-      - 4
-    textureSideBlendWidth: 0.05
-    stageNum: 1
-    canAttractNearbyPlayer: true
-    reactsToOverheadGravityRay: false
   - center:
       - 23.98
       - -18.3
@@ -38,7 +26,7 @@ planets:
       - 1
       - 1
     model: planet.obj
-    stageNum: 2
+    stageNum: 1
     rocketSpawnCondition: ""
     textureTiling:
       - 1
@@ -60,7 +48,7 @@ planets:
       - 1
       - 1
     model: planet.obj
-    stageNum: 3
+    stageNum: 2
     rocketSpawnCondition: ""
     textureTiling:
       - 4
@@ -78,7 +66,7 @@ planets:
       - 3
       - 3
     textureSideBlendWidth: 0.05
-    stageNum: 4
+    stageNum: 3
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -91,7 +79,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 5
+    stageNum: 4
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -104,7 +92,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 6
+    stageNum: 5
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -117,7 +105,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 7
+    stageNum: 6
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -130,7 +118,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 8
+    stageNum: 7
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -143,7 +131,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 9
+    stageNum: 8
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -156,7 +144,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 10
+    stageNum: 9
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -169,7 +157,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 11
+    stageNum: 10
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -182,7 +170,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 12
+    stageNum: 11
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -195,7 +183,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 13
+    stageNum: 12
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -208,7 +196,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 14
+    stageNum: 13
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -221,7 +209,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 15
+    stageNum: 14
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -234,7 +222,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 16
+    stageNum: 15
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -247,7 +235,7 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 17
+    stageNum: 16
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
@@ -260,14 +248,14 @@ planets:
       - 6
       - 2
     textureSideBlendWidth: 0.05
-    stageNum: 18
+    stageNum: 17
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
 enemies:
   - editorName: 新しい通常敵
     type: boss_weak_2
-    currentPlanetNum: 14
+    currentPlanetNum: 13
     theta: -0.12498715
     phi: 0.6007501
     height: -0.015034583
@@ -282,7 +270,7 @@ enemies:
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak_2
-    currentPlanetNum: 14
+    currentPlanetNum: 13
     theta: 2.6346216
     phi: 1.0003401
     height: -0.01873557
@@ -297,7 +285,7 @@ enemies:
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_3
-    currentPlanetNum: 9
+    currentPlanetNum: 8
     theta: 0.26643562
     phi: 0.47595197
     height: -2.365269
@@ -312,7 +300,7 @@ enemies:
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_4
-    currentPlanetNum: 3
+    currentPlanetNum: 2
     theta: -1.5707964
     phi: -1.568506
     height: 0.40902328
@@ -339,33 +327,14 @@ enemies:
       - 1.7792208e-05
       - 0.9999997
     modelPath: enemy_purple.obj
-keys:
-  - currentPlanetNum: 1
-    theta: 0
-    phi: -0.530965
-    height: 0.1
-    pos:
-      - 3.54
-      - -2.08
-      - 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    facingYaw: 0
-    upVec:
-      - 0.8651578
-      - -0.5013875
-      - -0.010614668
-    scale:
-      - 2
-      - 2
-      - 2
+keys: []
 crystals:
   - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
-boats: [{startPlanet: 14, destPlanet: 7, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}, {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}]
+boats:
+  - {startPlanet: 13, destPlanet: 6, destStage: 0, theta: 1.1431935, phi: -0.4725119, height: -2.350102, facingYaw: 0, pos: [1.3477325, -1.6611576, 2.9573517], upVec: [0.08880587, -0.9770007, 0.19386412], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
+  - {startPlanet: 9, destPlanet: 2, destStage: 0, theta: -2.4236805, phi: -1.3575804, height: -0.0105609605, facingYaw: 0, pos: [-0.32, -1.98, -0.28], upVec: [-0.026204523, -0.99951816, -0.01663809], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
 boatArrivalPoints:
-  - currentPlanetNum: 3
+  - currentPlanetNum: 2
     theta: -0.10220678
     phi: 1.4854097
     height: 0.5969939
@@ -390,7 +359,7 @@ boatArrivalPoints:
     textureTiling:
       - 1
       - 1
-  - currentPlanetNum: 7
+  - currentPlanetNum: 6
     theta: 1.9565785
     phi: 1.2204417
     height: -3.8981276
@@ -442,11 +411,11 @@ players:
   - pos: [4.0, 7.5, 0.0]
     currentPlanetNum: 0
 star:
-  - {currentPlanetNum: 3, theta: -1.2992265, phi: -0.08809471, height: -0.051273823, isActive: false, pos: [1.0551147, -0.3474121, -3.789258], upVec: [0.27749836, -0.08527035, -0.9569345], modelPath: star_purple.glb}
+  - {currentPlanetNum: 2, theta: -1.2992265, phi: -0.08809471, height: -0.051273823, isActive: false, pos: [1.0551147, -0.3474121, -3.789258], upVec: [0.27749836, -0.08527035, -0.9569345], modelPath: star_purple.glb}
 NPCs:
   - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["あれ、ぼくたちと同じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ってことはぼくたちの仲間が...？], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: あれ、ぼくたちと, ruby: false}, {text: 同, ruby: true, reading: おな}, {text: "じスライムでできてるんだって！\nだからさわったらくっつけるんだよ！", ruby: false}]}, {talkIndex: 1, segments: [{text: ってことはぼくたちの, ruby: false}, {text: 仲, ruby: true, reading: なか}, {text: 間, ruby: true, reading: ま}, {text: が...？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: さわったらくっつけるよ！}], rubies: [{talkIndex: 1, segments: [{text: さわったらくっつけるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 1}]}
   - modelPath: spaceSlime.obj
-    currentPlanetNum: 7
+    currentPlanetNum: 6
     theta: -0.38903543
     phi: -0.4184866
     height: -2.0963895
@@ -634,8 +603,8 @@ platforms:
       - -0.50979275
       - 0
       - 0.86029726
-    textureOverride: textures/glass.png
-  - currentPlanetNum: 5
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 4
     pos:
       - 0.46
       - -1.04
@@ -667,7 +636,7 @@ platforms:
       - 0
       - 0.72333825
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - -2.04
       - -1.2
@@ -699,7 +668,7 @@ platforms:
       - 0
       - 0.50974804
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     theta: 1.3438675
     phi: -1.4718757
     height: -0.16974749
@@ -809,8 +778,8 @@ platforms:
       - -0.50979275
       - 0
       - 0.86029726
-    textureOverride: textures/glass.png
-  - currentPlanetNum: 4
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 3
     pos:
       - -8.44
       - 2.36
@@ -844,7 +813,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - -3.64
       - 2.09
@@ -875,8 +844,8 @@ platforms:
       - -0.50979275
       - 0
       - 0.86029726
-    textureOverride: textures/glass.png
-  - currentPlanetNum: 4
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 3
     pos:
       - -6.73
       - -0.5
@@ -907,8 +876,8 @@ platforms:
       - -0.50979275
       - 0
       - 0.86029726
-    textureOverride: textures/glass.png
-  - currentPlanetNum: 4
+    textureOverride: textures/roadTex.png
+  - currentPlanetNum: 3
     pos:
       - -0.52
       - 0.29
@@ -942,7 +911,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - -6.4659386
       - -2.8411713
@@ -993,7 +962,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - -0.59
       - -1.2
@@ -1025,7 +994,7 @@ platforms:
       - 0
       - 0.7366975
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - -3.3451176
       - -4.1690454
@@ -1076,7 +1045,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
       - 2.5820198
       - -4.0448656
@@ -1127,7 +1096,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - 5.36
       - -1.2
@@ -1159,7 +1128,7 @@ platforms:
       - 0
       - 0.05276703
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
       - -3.4920263
       - -3.8587875
@@ -1210,7 +1179,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 11
+  - currentPlanetNum: 10
     pos:
       - -6.39
       - -0.83
@@ -1242,7 +1211,7 @@ platforms:
       - 0
       - 0.05276703
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 5
+  - currentPlanetNum: 4
     pos:
       - 3.452015
       - -5.4309435
@@ -1293,7 +1262,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - 9.070469
       - -2.8357582
@@ -1327,7 +1296,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - 12.61
       - -2.84
@@ -1361,7 +1330,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 4
+  - currentPlanetNum: 3
     pos:
       - 15.65
       - -2.82
@@ -1395,7 +1364,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 11
+  - currentPlanetNum: 10
     pos:
       - -12.07
       - -2.46
@@ -1429,7 +1398,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 11
+  - currentPlanetNum: 10
     pos:
       - -1.99
       - -3.67
@@ -1463,7 +1432,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 11
+  - currentPlanetNum: 10
     pos:
       - 0.26
       - -5.67
@@ -1497,7 +1466,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 11
+  - currentPlanetNum: 10
     pos:
       - -1.45
       - -6.96
@@ -1531,7 +1500,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - -6.31
       - 2.38
@@ -1565,7 +1534,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - -6.42
       - -0.82
@@ -1597,7 +1566,7 @@ platforms:
       - 0
       - 0.05276703
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - -11.38
       - 4.16
@@ -1631,7 +1600,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - -11.34
       - 0.21
@@ -1665,7 +1634,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     theta: 0.7853982
     phi: -1.5017326
     height: -0.15984868
@@ -1704,7 +1673,7 @@ platforms:
       - 0.48126176
       - 0.012384471
       - 0.8764868
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - -3.8414173
       - 5.020048
@@ -1755,7 +1724,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 3.0180779
       - 3.3445683
@@ -1806,7 +1775,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - -3.9248466
       - 1.7472553
@@ -1857,7 +1826,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 2.8745995
       - -0.11512184
@@ -1908,7 +1877,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 0.78
       - -0.35
@@ -1942,7 +1911,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     theta: 2.6548862
     phi: -0.68459296
     height: -0.28713816
@@ -1981,7 +1950,7 @@ platforms:
       - 0.9618834
       - -0.060880855
       - -0.26628536
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     theta: -0.5161105
     phi: -0.71821254
     height: -0.2411385
@@ -2018,7 +1987,7 @@ platforms:
       - 0.96456665
       - 0.055458646
       - -0.25739545
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - 3.14
       - -1.04
@@ -2050,7 +2019,7 @@ platforms:
       - 0
       - 0.8583328
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - 9.215168
       - -2.8388786
@@ -2101,7 +2070,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - 11.34396
       - -5.9590607
@@ -2152,7 +2121,7 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -6.087761
       - -6.6304455
@@ -2203,7 +2172,7 @@ platforms:
         returnDelay: 1
         endpointWaitSeconds: 2
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -2.74
       - -0.91
@@ -2235,7 +2204,7 @@ platforms:
       - 0
       - 0.8583328
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 13
+  - currentPlanetNum: 12
     pos:
       - 2.5813293
       - -6.344654
@@ -2286,7 +2255,7 @@ platforms:
         returnDelay: 1
         endpointWaitSeconds: 2
       adhesion: {}
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 8.34
       - -2.34
@@ -2320,7 +2289,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 5.26
       - -1.3
@@ -2352,7 +2321,7 @@ platforms:
       - 0
       - 0.995333
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 11.55
       - -7.5
@@ -2386,7 +2355,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 7.26
       - -5.93
@@ -2420,7 +2389,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 12
+  - currentPlanetNum: 11
     pos:
       - 10.53
       - -9.25
@@ -2454,7 +2423,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - -12.02
       - -2.44
@@ -2488,7 +2457,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - -12.95
       - -0.95
@@ -2522,7 +2491,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - -6.15
       - -0.94
@@ -2554,7 +2523,7 @@ platforms:
       - 0
       - 0.995333
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -5.28
       - 1.29
@@ -2586,7 +2555,7 @@ platforms:
       - 0
       - 0.9933848
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - 5.82
       - 1.08
@@ -2618,7 +2587,7 @@ platforms:
       - 0
       - 0.995333
     textureOverride: textures/roadTex.png
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - 8.57
       - 3.55
@@ -2652,7 +2621,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 15
+  - currentPlanetNum: 14
     pos:
       - 11.54
       - 5.33
@@ -2686,7 +2655,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -12.11
       - -3.58
@@ -2720,7 +2689,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -8.56
       - -1.99
@@ -2754,7 +2723,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -8.92
       - 0.26
@@ -2788,7 +2757,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 14
+  - currentPlanetNum: 13
     pos:
       - -11.09
       - 1.2
@@ -2822,7 +2791,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     components:
       adhesion: {}
-  - currentPlanetNum: 7
+  - currentPlanetNum: 6
     pos:
       - 2.4
       - -1.77
@@ -2854,7 +2823,7 @@ platforms:
       - 0.39052966
       - 0.0020362432
       - 0.91689825
-  - currentPlanetNum: 7
+  - currentPlanetNum: 6
     pos:
       - 7.03
       - -3.87
@@ -2891,7 +2860,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 7
+  - currentPlanetNum: 6
     pos:
       - 4.94
       - -6.05
@@ -2928,7 +2897,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -5.21
       - 0.57
@@ -2965,7 +2934,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -8.72
       - -0.33
@@ -3002,7 +2971,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -4.51
       - -0.77
@@ -3034,7 +3003,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 7
+  - currentPlanetNum: 6
     pos:
       - 3.95
       - -4.51
@@ -3071,7 +3040,7 @@ platforms:
       - 0.2964845
       - 0.27691203
       - 0.58679867
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -3.11
       - -2.78
@@ -3108,7 +3077,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -7.17
       - -5.78
@@ -3145,7 +3114,7 @@ platforms:
       - 0.70284563
       - 0.58873534
       - -0.2727704
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     pos:
       - 9.59
       - 5.65
@@ -3182,7 +3151,7 @@ platforms:
       - 0.70284563
       - 0.58873534
       - -0.2727704
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     pos:
       - 6.51
       - 3.71
@@ -3219,7 +3188,7 @@ platforms:
       - 0.70297015
       - 0.609049
       - 0.2237685
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     pos:
       - 8.8
       - 2.4
@@ -3256,7 +3225,7 @@ platforms:
       - 0.70297015
       - 0.609049
       - 0.2237685
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     pos:
       - 8.68
       - -0.32
@@ -3293,7 +3262,7 @@ platforms:
       - 0.70284563
       - 0.58873534
       - -0.2727704
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     pos:
       - 3.99
       - 1.06
@@ -3325,7 +3294,7 @@ platforms:
       - 0.38955352
       - -0.027670706
       - 0.920505
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -3.7
       - 1.39
@@ -3357,7 +3326,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -6.8
       - 1.77
@@ -3394,7 +3363,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 3.58
       - -1.45
@@ -3426,7 +3395,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 4.5
       - 0.79
@@ -3458,7 +3427,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 1.9012299
       - -3.3049698
@@ -3512,7 +3481,7 @@ platforms:
       - -0.28807676
       - -0.22102928
       - 0.61004835
-  - currentPlanetNum: 6
+  - currentPlanetNum: 5
     pos:
       - -7.225418
       - 4.0064545
@@ -3566,7 +3535,7 @@ platforms:
       - 0.33016315
       - 0.3050794
       - 0.5726601
-  - currentPlanetNum: 6
+  - currentPlanetNum: 5
     pos:
       - -9.270798
       - 2.007393
@@ -3620,7 +3589,7 @@ platforms:
       - 0.29026735
       - 0.27170494
       - 0.5892278
-  - currentPlanetNum: 6
+  - currentPlanetNum: 5
     pos:
       - -4.60347
       - 0.8505478
@@ -3674,7 +3643,7 @@ platforms:
       - 0.29026732
       - 0.27170494
       - 0.5892278
-  - currentPlanetNum: 6
+  - currentPlanetNum: 5
     pos:
       - -4.58
       - -0.79
@@ -3706,7 +3675,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -4.9
       - -0.64
@@ -3738,7 +3707,7 @@ platforms:
       - 0.9277651
       - -0.057312634
       - 0.36396128
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 5.28
       - 0.63
@@ -3770,7 +3739,7 @@ platforms:
       - 0.9277651
       - -0.057312634
       - 0.36396128
-  - currentPlanetNum: 16
+  - currentPlanetNum: 15
     theta: 2.7390785
     phi: -1.441263
     height: -3.9939206
@@ -3804,7 +3773,7 @@ platforms:
           - platform_71
         enemyTargets: []
         hideTargets: []
-  - currentPlanetNum: 9
+  - currentPlanetNum: 8
     theta: 0.38880372
     phi: 1.455409
     height: -0.008628606
@@ -3844,7 +3813,7 @@ platforms:
       - -0.005690434
       - -0.39464107
       - -0.0112116635
-  - currentPlanetNum: 6
+  - currentPlanetNum: 5
     theta: -2.8632922
     phi: -1.4926751
     height: -0.13974632
@@ -3877,7 +3846,7 @@ platforms:
           - sequence: boats
             index: 1
         hideTargets: []
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     theta: -2.5535913
     phi: -1.4614891
     height: -0.027584532
@@ -3916,7 +3885,7 @@ platforms:
       - 0.41226733
       - 0.0057137697
       - 0.9110309
-  - currentPlanetNum: 17
+  - currentPlanetNum: 16
     theta: 1.9478718
     phi: 0.9483011
     height: -0.09244482
@@ -3952,7 +3921,7 @@ platforms:
       - -0.0034469082
       - -0.4812138
       - 0.012436951
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -4.99
       - -3.2
@@ -3989,7 +3958,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -10.03
       - -3.98
@@ -4026,7 +3995,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - -8.59
       - -5.6
@@ -4063,7 +4032,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 6.73
       - 7.45
@@ -4100,7 +4069,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 11.3
       - 4.78
@@ -4137,7 +4106,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 6.21
       - 3.28
@@ -4174,7 +4143,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 6.94
       - 1.17
@@ -4211,7 +4180,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 5.7
       - -0.82
@@ -4248,7 +4217,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 18
+  - currentPlanetNum: 17
     pos:
       - 4.17
       - -1.13
@@ -4280,7 +4249,7 @@ platforms:
       - 0.9295866
       - -0.029787743
       - 0.3672406
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 17.01
       - -0.59
@@ -4317,7 +4286,7 @@ platforms:
       - -0.21062128
       - 0.6930332
       - 0.6217199
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 12.6
       - 2.19
@@ -4354,7 +4323,7 @@ platforms:
       - 0.06249473
       - 0.92957026
       - -0.052245624
-  - currentPlanetNum: 17
+  - currentPlanetNum: 16
     pos:
       - -13.79
       - 3.73
@@ -4391,7 +4360,7 @@ platforms:
       - 0.06249473
       - 0.92957026
       - -0.052245624
-  - currentPlanetNum: 17
+  - currentPlanetNum: 16
     pos:
       - -14.79
       - 4.23
@@ -4428,7 +4397,7 @@ platforms:
       - 0.06249473
       - 0.92957026
       - -0.052245624
-  - currentPlanetNum: 17
+  - currentPlanetNum: 16
     pos:
       - -3.91
       - 1.36
@@ -4460,7 +4429,7 @@ platforms:
       - 0.92962265
       - -0.03680293
       - 0.36660346
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 5.5085754
       - 2.4688568
@@ -4514,7 +4483,7 @@ platforms:
       - 0.33016315
       - 0.3050794
       - 0.5726601
-  - currentPlanetNum: 10
+  - currentPlanetNum: 9
     pos:
       - 3.996811
       - 3.960167
@@ -4568,7 +4537,7 @@ platforms:
       - 0.71973854
       - 0.621799
       - 0.18541583
-  - currentPlanetNum: 9
+  - currentPlanetNum: 8
     pos:
       - -3.8770294
       - -2.713543
@@ -4622,7 +4591,7 @@ platforms:
       - 0.33016315
       - 0.3050794
       - 0.5726601
-  - currentPlanetNum: 9
+  - currentPlanetNum: 8
     pos:
       - -2.3343964
       - -1.0434608
@@ -4676,7 +4645,7 @@ platforms:
       - 0.71973854
       - 0.621799
       - 0.18541583
-  - currentPlanetNum: 9
+  - currentPlanetNum: 8
     pos:
       - -3.63
       - 1.41
@@ -4708,7 +4677,7 @@ platforms:
       - 0.39559212
       - 0.0015810479
       - 0.9147255
-  - currentPlanetNum: 9
+  - currentPlanetNum: 8
     pos:
       - -6.4560547
       - 3.5101624

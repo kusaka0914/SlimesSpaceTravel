@@ -289,7 +289,8 @@ platforms:
       - 3
       - 2
     ugcPlatformBehavior: normal
-enemies: []
+enemies:
+  []
 ugcPlatformCells:
   - planetIndex: 0
     gridSize: 1
