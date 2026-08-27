@@ -21,6 +21,12 @@ public:
     void Update();
     void DrawBoxSelectionRect() const;
     void ApplyEditorSelectionFlags();
+    void SetBoxSelectionEnabled(bool isEnabled);
+    bool IsBoxSelectionGestureActive() const
+    {
+        return mIsBoxSelectMouseDown &&
+            mShouldStartBoxSelectionOnDrag;
+    }
     void SetUGCEditLayer(int gridLayer) { mUGCEditLayer = gridLayer; }
 
     bool ConsumeRequestOpenPlacement();
@@ -37,10 +43,7 @@ public:
     void SetSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
 
     bool IsSelected(const StageActorRef& actorRef) const;
-    bool IsMovingPlatformDestinationSelected() const
-    {
-        return mIsMovingPlatformDestinationSelected;
-    }
+    bool IsMovingPlatformDestinationSelected() const;
 
     Actor* GetPickedActor() const;
     const std::optional<StageActorRef>& GetPickedActorRef() const;
@@ -65,6 +68,8 @@ public:
 
 private:
     void PrepareActorForEditorSelection(Actor* actor);
+    void ResetBoxSelectionGesture();
+    void ResolveUGCBoxSelectionGestureAfterPick();
     void UpdateBoxSelection();
     void UpdatePickedActorByMouse();
     bool TrySelectUGCMovingPlatformEndpoint(
@@ -95,9 +100,12 @@ private:
     bool mIsBoxSelectMouseDown = false;
     bool mIsBoxSelecting = false;
     bool mBoxSelectMoved = false;
+    bool mIsBoxSelectionEnabled = true;
+    bool mShouldStartBoxSelectionOnDrag = true;
 
     ImVec2 mBoxSelectStart = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectEnd = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectMouseDownPos = ImVec2(0.0f, 0.0f);
+    std::unordered_set<std::string> mSelectedKeysAtBoxSelectMouseDown;
     int mUGCEditLayer = 0;
 };

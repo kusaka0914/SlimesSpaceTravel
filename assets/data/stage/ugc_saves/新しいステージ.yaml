@@ -40,6 +40,97 @@ players:
     rotation: [0.0, 0.0, 0.0]
     upVec: [0.0, 1.0, 0.0]
 platforms:
+  - currentPlanetNum: 1
+    theta: 1.6030432
+    phi: -0.06439344
+    height: 27.089375
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.75
+      - 0.2
+      - 0.75
+    modelPath: platform.obj
+    textureOverride: textures/platform_switch_hold_off_red_platform_uv.png
+    pos:
+      - -1
+      - -2
+      - 31
+    upVec:
+      - 0
+      - 1
+      - 0
+    platformId: platform_10
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: false
+        inactiveOpacity: 0.25
+        targets:
+          - platform_8
+  - currentPlanetNum: 1
+    theta: 1.7033478
+    phi: 0
+    height: 11.132745
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.75
+      - 0.2
+      - 0.75
+    modelPath: platform.obj
+    textureOverride: textures/platform_switch_two_player_off_red_platform_uv.png
+    pos:
+      - -2
+      - 0
+      - 15
+    upVec:
+      - 0
+      - 1
+      - 0
+    platformId: platform_12
+    components:
+      latchedGroupSwitch:
+        groupId: ugc_two_player_pair_1
+        targets:
+          - sequence: platforms
+            index: 18
+            platformId: platform_13
+        hideTargets: []
+  - currentPlanetNum: 1
+    theta: 1.5042281
+    phi: 0
+    height: 11.033295
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.75
+      - 0.2
+      - 0.75
+    modelPath: platform.obj
+    textureOverride: textures/platform_switch_two_player_off_red_platform_uv.png
+    pos:
+      - 1
+      - 0
+      - 15
+    upVec:
+      - 0
+      - 1
+      - 0
+    platformId: platform_14
+    components:
+      latchedGroupSwitch:
+        groupId: ugc_two_player_pair_1
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: 1.5707964
     phi: 0
@@ -78,23 +169,23 @@ platforms:
     textureOverride: textures/roadTex.png
     ugcPlatformBehavior: normal
   - currentPlanetNum: 0
-    theta: -1.8925469
-    phi: 0.105021425
-    height: 5.5393925
+    theta: -1.8568478
+    phi: 0.1123909
+    height: 4.916277
     facingYaw: 0
     rotation:
       - 0
       - 0
       - 0
     scale:
-      - 1
+      - 0.5
       - 0.1
-      - 1
+      - 0.5
     modelPath: platform.obj
     pos:
-      - -3
+      - -2.5
       - 1
-      - -9
+      - -8.5
     upVec:
       - 0
       - 1
@@ -104,29 +195,29 @@ platforms:
     ugcGridSize: 1
     ugcGridLayer: 1
     ugcCellMin:
-      - -4
-      - -10
+      - -3
+      - -9
     ugcCellMax:
       - -3
       - -9
     textureTiling:
-      - 2
-      - 2
+      - 1
+      - 1
     textureOverride: textures/roadTex.png
     ugcPlatformBehavior: moving
     components:
       movement:
         startLocalPos:
-          - -3
+          - -2.5
           - 1
-          - -9
+          - -8.5
         endLocalPos:
-          - 3
-          - 1
-          - -9
+          - 3.5
+          - 2
+          - -8.5
         moveOffset:
           - 6
-          - 0
+          - 1
           - 0
         moveDuration: 3
         moveOnPlayer: false
@@ -615,7 +706,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_8
+    platformId: platform_9
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 4
@@ -652,7 +743,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_9
+    platformId: platform_11
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 5
@@ -726,7 +817,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_16
+    platformId: platform_15
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 6
@@ -741,66 +832,6 @@ platforms:
       - 3
     textureOverride: textures/roadTex.png
     ugcPlatformBehavior: normal
-  - currentPlanetNum: 0
-    theta: -1.5273454
-    phi: 0.08665688
-    height: 30.662659
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.75
-      - 0.2
-      - 0.75
-    modelPath: platform.obj
-    textureOverride: textures/platform_switch_hold_off_red_platform_uv.png
-    pos:
-      - 1.5
-      - 3
-      - -34.5
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_10
-    components:
-      pressureSwitch:
-        remainsOnAfterPressed: false
-        inactiveOpacity: 0.25
-        targets:
-          - platform_8
-  - currentPlanetNum: 0
-    theta: -1.5355169
-    phi: 0.070427634
-    height: 38.63215
-    facingYaw: 0
-    rotation:
-      - 0
-      - 0
-      - 0
-    scale:
-      - 0.75
-      - 0.2
-      - 0.75
-    modelPath: platform.obj
-    textureOverride: textures/platform_switch_hold_off_red_platform_uv.png
-    pos:
-      - 1.5
-      - 3
-      - -42.5
-    upVec:
-      - 0
-      - 1
-      - 0
-    platformId: platform_11
-    components:
-      pressureSwitch:
-        remainsOnAfterPressed: false
-        inactiveOpacity: 0.25
-        targets:
-          - platform_7
 enemies: []
 ugcPlatformCells:
   - planetIndex: 0
@@ -904,46 +935,13 @@ ugcPlatformCells:
   - planetIndex: 0
     gridSize: 1
     gridPosition:
-      - -4
-      - 1
-      - -9
-    behavior: moving
-    movementDeltaCells:
-      - 6
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
       - -3
       - 1
       - -9
     behavior: moving
     movementDeltaCells:
       - 6
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -3
       - 1
-      - -10
-    behavior: moving
-    movementDeltaCells:
-      - 6
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -4
-      - 1
-      - -10
-    behavior: moving
-    movementDeltaCells:
-      - 6
-      - 0
       - 0
   - planetIndex: 0
     gridSize: 1
@@ -1826,6 +1824,6 @@ ugcPlatformCells:
       - -51
     behavior: normal
 ugcMetadata:
-  isClearVerified: true
+  isClearVerified: false
   displayName: 新しいステージ
 star: [{currentPlanetNum: 1, theta: 0, phi: 1.5707964, height: 0, isActive: true, pos: [0, 1, 0], upVec: [0, 1, 0]}]

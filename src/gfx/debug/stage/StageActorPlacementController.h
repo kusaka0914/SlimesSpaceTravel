@@ -106,6 +106,7 @@ public:
     }
 
 private:
+    void ClearMovingPlatformPlacementWorkflow();
     void UpdateTargetPlatformSelection();
     void UpdateMovingPlatformStrokePlacement();
     void PrepareNextMovingPlatformPlacement();

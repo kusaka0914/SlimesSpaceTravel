@@ -265,6 +265,12 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mKeyboardConfirmPressedPrev = true;
 }
 
+void InputSystem::SuppressUGCPlayShortcutUntilReleased()
+{
+    mPauseMenuKeyPressedPrev = true;
+    mUGCEditorPlayPressedPrev = true;
+}
+
 void InputSystem::ProcessUGCModeInput()
 {
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
@@ -634,7 +640,7 @@ void InputSystem::ProcessPauseToggleInput()
     if (returnToUGCEditorPressed && !mPauseMenuKeyPressedPrev &&
         mGame->GetIsUGCPlaytestActive()) {
         mGame->ReturnToUGCEditor();
-        mPauseMenuKeyPressedPrev = true;
+        SuppressUGCPlayShortcutUntilReleased();
         return;
     }
 

@@ -548,6 +548,7 @@ void DebugUIRenderer::Draw(
         mStageAddActorPanel.UpdatePlacement();
         const bool isPlacingActor = mStageAddActorPanel.IsPlacementActive();
         if (!isPlacingActor) {
+            mSelectionController.SetBoxSelectionEnabled(true);
             mSelectionController.Update();
         }
 
@@ -1130,29 +1131,58 @@ void DebugUIRenderer::DrawUGCEditor(
         "presetTools",
         mainViewport->WorkPos,
         ImVec2(720.0f, topBarHeight));
-    ImGui::SetNextWindowPos(
-        presetToolbarAnchor.position,
-        ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(720.0f, topBarHeight),
-        ImGuiCond_Always);
-    ImGui::Begin("###UGCPresetOptions", nullptr, fixedWindowFlags);
     if (usesUGCPlatformFootprint) {
-        constexpr float presetOptionsTopOffset = 72.0f;
-        ImGui::SetCursorPosY(presetOptionsTopOffset);
-        ImGui::SetCursorPosX((720.0f - 220.0f) * 0.5f);
-        ImGui::TextUnformatted("大きさ"); ImGui::SameLine();
-        const int sizes[] = {1, 2, 3}; const char* labels[] = {"1マス", "4マス", "9マス"};
-        for (int index = 0; index < 3; ++index) {
-            if (ImGui::Selectable(labels[index], mUGCPlatformFootprintSideLength == sizes[index], 0, ImVec2(52.0f, 0.0f))) {
-                mUGCPlatformFootprintSideLength = sizes[index];
-                mStageAddActorPanel.SetUGCPlatformFootprintSideLength(sizes[index]);
+        constexpr float presetToolbarWidthPixels = 720.0f;
+        constexpr float presetOptionsWidthPixels = 260.0f;
+        constexpr float presetOptionsHeightPixels = 40.0f;
+        constexpr float presetOptionsTopOffsetPixels = 72.0f;
+        const float presetOptionsLeftOffsetPixels =
+            (presetToolbarWidthPixels - presetOptionsWidthPixels) * 0.5f;
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                presetToolbarAnchor.position.x +
+                    presetOptionsLeftOffsetPixels,
+                presetToolbarAnchor.position.y +
+                    presetOptionsTopOffsetPixels),
+            ImGuiCond_Always);
+        ImGui::SetNextWindowSize(
+            ImVec2(
+                presetOptionsWidthPixels,
+                presetOptionsHeightPixels),
+            ImGuiCond_Always);
+        ImGui::Begin(
+            "###UGCPlatformFootprintOptions",
+            nullptr,
+            fixedWindowFlags);
+        ImGui::TextUnformatted("大きさ");
+        ImGui::SameLine();
+        constexpr std::array<int, 3> footprintSideLengths = {1, 2, 3};
+        constexpr std::array<const char*, 3> footprintLabels = {
+            "1マス",
+            "4マス",
+            "9マス",
+        };
+        for (std::size_t index = 0;
+             index < footprintSideLengths.size();
+             ++index) {
+            const bool isSelected =
+                mUGCPlatformFootprintSideLength ==
+                footprintSideLengths[index];
+            if (ImGui::Selectable(
+                    footprintLabels[index],
+                    isSelected,
+                    0,
+                    ImVec2(52.0f, 0.0f))) {
+                mUGCPlatformFootprintSideLength =
+                    footprintSideLengths[index];
+                mStageAddActorPanel.SetUGCPlatformFootprintSideLength(
+                    footprintSideLengths[index]);
             }
             ImGui::SameLine();
         }
+        ImGui::End();
     }
     DrawUGCWorkManagement();
-    ImGui::End();
 
     for (std::size_t presetIndex = 0;
          presetIndex < presetButtons.size();
@@ -1451,15 +1481,21 @@ void DebugUIRenderer::DrawUGCEditor(
     if (mStageAddActorPanel.IsPlacementActive()) {
         mStageAddActorPanel.UpdatePlacement();
     } else {
-        mSelectionController.Update();
         const bool isChoosingSwitchTarget =
             mUGCConnectionSwitchRef.has_value();
+        const bool allowsSelectionInteraction =
+            !mIsUGCEraserMode && !isChoosingSwitchTarget;
+        mSelectionController.SetBoxSelectionEnabled(
+            allowsSelectionInteraction);
+        mSelectionController.Update();
         if (!mIsUGCEraserMode &&
             !isChoosingSwitchTarget &&
-            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+            !ImGui::GetIO().KeyShift) {
             SyncUGCEditLayerToPickedActor();
         }
-        if (!mIsUGCEraserMode && !isChoosingSwitchTarget) {
+        if (allowsSelectionInteraction &&
+            !mSelectionController.IsBoxSelectionGestureActive()) {
             UpdateUGCSelectionDrag();
         }
         if (mIsUGCEraserMode && !isChoosingSwitchTarget &&
@@ -1555,6 +1591,7 @@ void DebugUIRenderer::DrawUGCEditor(
         }
     }
     mSelectionController.ApplyEditorSelectionFlags();
+    mSelectionController.DrawBoxSelectionRect();
     DrawUGCSwitchConnectionLines();
     DrawUGCUnconnectedSwitchWarnings();
     DrawUGCTransformControls();
@@ -2286,9 +2323,9 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
         0.1f,
         1000.0f);
 
-    const auto projectPoint = [&](const glm::vec3& worldPoint,
-                                  ImVec2& outScreenPoint) {
-        const glm::vec4 clip = projection * view * glm::vec4(worldPoint, 1.0f);
+    const auto projectViewPoint = [&](const glm::vec3& viewPoint,
+                                      ImVec2& outScreenPoint) {
+        const glm::vec4 clip = projection * glm::vec4(viewPoint, 1.0f);
         if (clip.w <= 0.0001f) {
             return false;
         }
@@ -2300,13 +2337,48 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
                 (previewMax.y - previewMin.y);
         return true;
     };
+    const auto projectPoint = [&](const glm::vec3& worldPoint,
+                                  ImVec2& outScreenPoint) {
+        const glm::vec3 viewPoint = glm::vec3(
+            view * glm::vec4(worldPoint, 1.0f));
+        return projectViewPoint(viewPoint, outScreenPoint);
+    };
+    const auto clipLineToNearPlane = [](
+        glm::vec3& viewFrom,
+        glm::vec3& viewTo) {
+        constexpr float nearPlaneZ = -0.1001f;
+        const bool isFromVisible = viewFrom.z <= nearPlaneZ;
+        const bool isToVisible = viewTo.z <= nearPlaneZ;
+        if (!isFromVisible && !isToVisible) {
+            return false;
+        }
+        if (isFromVisible && isToVisible) {
+            return true;
+        }
+
+        glm::vec3& hiddenEndpoint = isFromVisible ? viewTo : viewFrom;
+        const glm::vec3& visibleEndpoint = isFromVisible ? viewFrom : viewTo;
+        const float distanceRatio =
+            (nearPlaneZ - hiddenEndpoint.z) /
+            (visibleEndpoint.z - hiddenEndpoint.z);
+        hiddenEndpoint +=
+            (visibleEndpoint - hiddenEndpoint) * distanceRatio;
+        return true;
+    };
     const auto drawWorldLine = [&](const glm::vec3& from,
                                    const glm::vec3& to,
                                    ImU32 color,
                                    float thickness) {
+        glm::vec3 viewFrom = glm::vec3(view * glm::vec4(from, 1.0f));
+        glm::vec3 viewTo = glm::vec3(view * glm::vec4(to, 1.0f));
+        if (!clipLineToNearPlane(viewFrom, viewTo)) {
+            return;
+        }
+
         ImVec2 screenFrom;
         ImVec2 screenTo;
-        if (projectPoint(from, screenFrom) && projectPoint(to, screenTo)) {
+        if (projectViewPoint(viewFrom, screenFrom) &&
+            projectViewPoint(viewTo, screenTo)) {
             drawList->AddLine(screenFrom, screenTo, color, thickness);
         }
     };

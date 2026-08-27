@@ -12,6 +12,7 @@ public:
 
 private:
     void SuppressOneShotInputUntilReleased();
+    void SuppressUGCPlayShortcutUntilReleased();
     void UpdateLastUsedInputDevice();
     void ProcessPauseToggleInput();
     void ProcessPauseMenuInput();

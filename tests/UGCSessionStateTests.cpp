@@ -42,6 +42,7 @@ void PlaytestHidesEditingViews()
     ExpectTrue(sessionState.IsPlaytestActive(), "playtest active");
     ExpectFalse(sessionState.IsOrthographicView(), "orthographic view");
     ExpectFalse(sessionState.IsDebugPanelShowing(), "debug panel");
+    ExpectFalse(sessionState.IsVerificationActive(), "verification active");
 }
 
 void VerificationRequiresActiveModeAndFileName()
@@ -58,6 +59,11 @@ void VerificationRequiresActiveModeAndFileName()
     ExpectTrue(
         sessionState.StartVerification("work.yaml"),
         "valid verification");
+    ExpectFalse(
+        sessionState.IsVerificationActive(),
+        "verification before playtest");
+    sessionState.StartPlaytest();
+    ExpectTrue(sessionState.IsVerificationActive(), "verification active");
 }
 
 void ClearCompletionReturnsVerificationFileOnce()
@@ -103,6 +109,7 @@ void ReturnToEditorCancelsPendingVerification()
     ExpectTrue(sessionState.IsModeActive(), "mode remains active");
     ExpectFalse(sessionState.IsPlaytestActive(), "playtest active");
     ExpectTrue(sessionState.IsOrthographicView(), "orthographic view");
+    ExpectFalse(sessionState.IsVerificationActive(), "verification active");
     ExpectFalse(
         sessionState.ConsumeClearCompletion().has_value(),
         "pending completion cancelled");
@@ -122,6 +129,7 @@ void ExitClearsAllVisibleUGCState()
     ExpectFalse(sessionState.IsDebugPanelShowing(), "debug panel");
     ExpectFalse(sessionState.IsWorkBrowserShowing(), "work browser");
     ExpectFalse(sessionState.IsOrthographicView(), "orthographic view");
+    ExpectFalse(sessionState.IsVerificationActive(), "verification active");
 }
 
 }

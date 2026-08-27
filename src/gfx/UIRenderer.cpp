@@ -246,6 +246,8 @@ void UIRenderer::DrawGameContent()
         shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
+    } else if (!isStartCinematicPlaying && isUGCPlaytestActive) {
+        mHudRenderer->DrawUGCPlaytestUI();
     }
 
     if (!isStartCinematicPlaying && !isUGCPlaytestActive) {

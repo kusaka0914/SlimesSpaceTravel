@@ -19,6 +19,7 @@ public:
 
     bool IsModeActive() const;
     bool IsPlaytestActive() const;
+    bool IsVerificationActive() const;
     bool IsDebugPanelShowing() const;
     bool IsWorkBrowserShowing() const;
     bool IsOrthographicView() const;

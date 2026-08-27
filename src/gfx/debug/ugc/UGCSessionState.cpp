@@ -4,6 +4,8 @@
 
 void UGCSessionState::EnterEditor()
 {
+    mVerificationWorkFileName.clear();
+    mIsClearCompletionPending = false;
     mIsWorkBrowserShowing = false;
     mIsModeActive = true;
     mIsPlaytestActive = false;
@@ -55,6 +57,7 @@ bool UGCSessionState::ReturnToEditor()
 
 void UGCSessionState::Exit()
 {
+    mVerificationWorkFileName.clear();
     mIsModeActive = false;
     mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
@@ -104,6 +107,12 @@ bool UGCSessionState::IsModeActive() const
 bool UGCSessionState::IsPlaytestActive() const
 {
     return mIsPlaytestActive;
+}
+
+bool UGCSessionState::IsVerificationActive() const
+{
+    return mIsModeActive && mIsPlaytestActive &&
+        !mVerificationWorkFileName.empty();
 }
 
 bool UGCSessionState::IsDebugPanelShowing() const

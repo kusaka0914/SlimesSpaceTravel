@@ -2283,7 +2283,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.40624994
+      - 0.43724993
       - 0
     sizeRatio:
       - 0.026
@@ -2330,7 +2330,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.43724993
+      - 0.62324995
       - 0
     sizeRatio:
       - 0.026
@@ -2377,7 +2377,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.46824995
+      - 0.40624994
       - 0
     sizeRatio:
       - 0.026
@@ -2424,7 +2424,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.49924994
+      - 0.56125
       - 0
     sizeRatio:
       - 0.026
@@ -2471,7 +2471,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.53024995
+      - 0.65424997
       - 0
     sizeRatio:
       - 0.026
@@ -2941,7 +2941,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.56125
+      - 0.46824995
       - 0
     sizeRatio:
       - 0.025999999
@@ -2988,7 +2988,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.59225
+      - 0.49924994
       - 0
     sizeRatio:
       - 0.025999999
@@ -3035,7 +3035,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.62324995
+      - 0.53024995
       - 0
     sizeRatio:
       - 0.025999999
@@ -3082,7 +3082,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.65424997
+      - 0.59225
       - 0
     sizeRatio:
       - 0.025999999

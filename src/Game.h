@@ -212,6 +212,10 @@ public:
     {
         return mUGCSessionState.IsPlaytestActive();
     }
+    bool GetIsUGCClearVerificationActive() const
+    {
+        return mUGCSessionState.IsVerificationActive();
+    }
 
 
     bool GetIsUGCDebugEditorShowing() const

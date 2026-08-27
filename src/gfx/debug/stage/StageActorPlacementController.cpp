@@ -112,6 +112,7 @@ void StageActorPlacementController::BeginPlacement(
     bool autoStackUGCPlatforms,
     bool showUGCPlatformPreview)
 {
+    ClearMovingPlatformPlacementWorkflow();
     mPlacementDisplayName = displayName;
     mPlacementFallbackPlanetIndex = fallbackPlanetIndex;
     mPlacementCreator = std::move(placementCreator);
@@ -142,6 +143,7 @@ void StageActorPlacementController::BeginTargetPlatformSelection(
     std::function<bool()> placementWithoutTargetCreator,
     std::function<void()> continuePlacementCallback)
 {
+    ClearMovingPlatformPlacementWorkflow();
     mPlacementCreator = {};
     mTargetPlatformSelector = std::move(targetSelector);
     mPlacementWithoutTargetCreator =
@@ -184,7 +186,7 @@ void StageActorPlacementController::CancelPlacement()
     mTargetPlatformSelector = {};
     mPlacementWithoutTargetCreator = {};
     mContinuePlacementCallback = {};
-    mMovingPlatformCreator = {};
+    ClearMovingPlatformPlacementWorkflow();
     mPlacementDisplayName.clear();
     mPlacementFallbackPlanetIndex = -1;
     mSnapPlacementToGridIntersections = true;
@@ -199,10 +201,6 @@ void StageActorPlacementController::CancelPlacement()
     mMovingPlatformPathStartPosition.reset();
     mTargetSelectionSourcePreviewPosition.reset();
     mFixedPlacementPreviewPositions.clear();
-    mMovingPlatformStartCells.clear();
-    mWasMovingPlatformStrokeActive = false;
-    mIsMovingPlatformDestinationPlacementActive = false;
-    mShouldWaitForMovingPlatformSourceRelease = false;
     if (mContext.game) {
         mContext.game->SetUGCPlatformPlacementPreview(std::nullopt);
         mContext.game->SetUGCPlacementModelPreview(std::nullopt);
@@ -210,6 +208,15 @@ void StageActorPlacementController::CancelPlacement()
             std::nullopt, std::nullopt);
     }
     mPlacementStatus = "連続配置を終了しました";
+}
+
+void StageActorPlacementController::ClearMovingPlatformPlacementWorkflow()
+{
+    mMovingPlatformCreator = {};
+    mMovingPlatformStartCells.clear();
+    mWasMovingPlatformStrokeActive = false;
+    mIsMovingPlatformDestinationPlacementActive = false;
+    mShouldWaitForMovingPlatformSourceRelease = false;
 }
 
 void StageActorPlacementController::UpdatePlacement()
@@ -490,6 +497,15 @@ void StageActorPlacementController::UpdateMovingPlatformStrokePlacement()
         }
 
         if (mMovingPlatformStartCells.empty()) {
+            mContext.game->SetUGCPlatformPlacementPreview(
+                hoveredFootprintCenter);
+            mContext.game->SetUGCPlacementModelPreview(
+                hoveredFootprintCenter,
+                mUGCPlacementPreviewModelPath,
+                UGCPlatformGrid::CalculateFootprintPreviewScale(
+                    gridSize,
+                    mUGCPlatformFootprintSideLength),
+                mUGCPlacementPreviewTextureOverridePath);
             return;
         }
 
