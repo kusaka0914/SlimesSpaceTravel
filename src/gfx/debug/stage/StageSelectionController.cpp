@@ -175,7 +175,6 @@ void StageSelectionController::ResetBoxSelectionGesture()
     mIsBoxSelecting = false;
     mBoxSelectMoved = false;
     mShouldStartBoxSelectionOnDrag = true;
-    mSelectedKeysAtBoxSelectMouseDown.clear();
 }
 
 void StageSelectionController::ResolveUGCBoxSelectionGestureAfterPick()
@@ -195,9 +194,7 @@ void StageSelectionController::ResolveUGCBoxSelectionGestureAfterPick()
         return;
     }
 
-    const std::string pickedActorKey = MakeKey(*mPickedActorRef);
-    mShouldStartBoxSelectionOnDrag =
-        !mSelectedKeysAtBoxSelectMouseDown.contains(pickedActorKey);
+    mShouldStartBoxSelectionOnDrag = false;
 }
 
 void StageSelectionController::AddSelectedKey(const std::string& key)
@@ -538,7 +535,6 @@ void StageSelectionController::UpdateBoxSelection()
         mBoxSelectMouseDownPos = mousePos;
         mBoxSelectStart = mousePos;
         mBoxSelectEnd = mousePos;
-        mSelectedKeysAtBoxSelectMouseDown = mSelectedKeys;
         mShouldStartBoxSelectionOnDrag = true;
         return;
     }
@@ -694,8 +690,14 @@ void StageSelectionController::UpdatePickedActorByMouse()
 
     size_t hitIndex = 0;
     const ImVec2 clickPos = ImGui::GetMousePos();
-
-    if (!io.KeyShift && mHasLastPickClick) {
+    const std::optional<StageActorRef> nearestHitRef =
+        StageActorQuery::FindTargetForActor(
+            mContext.game->GetCurrentStage(), hits.front().actor);
+    const bool isNearestHitSelected =
+        nearestHitRef && IsSelected(*nearestHitRef);
+    if (!io.KeyShift && isNearestHitSelected) {
+        hitIndex = 0;
+    } else if (!io.KeyShift && mHasLastPickClick) {
         const float clickDeltaX = clickPos.x - mLastPickClickPos.x;
         const float clickDeltaY = clickPos.y - mLastPickClickPos.y;
         constexpr float cycleClickRadius = 6.0f;

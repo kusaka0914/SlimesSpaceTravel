@@ -7,7 +7,9 @@
 
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <yaml-cpp/yaml.h>
 
 namespace {
@@ -16,6 +18,8 @@ const std::filesystem::path WorkingStagePath =
     "../assets/data/stage/ugc_stage.yaml";
 const std::filesystem::path SavedWorkDirectory =
     "../assets/data/stage/ugc_saves";
+const std::filesystem::path NewWorkTemplatePath =
+    "../assets/data/stage/ugc_stage_template.yaml";
 
 }
 
@@ -45,17 +49,20 @@ std::string UGCWorkFileService::ResolveDisplayName(
 
 bool UGCWorkFileService::SaveCurrentWork(
     const std::string& displayName,
+    const std::string& fileName,
     std::string& outErrorMessage) const
 {
     outErrorMessage.clear();
     try {
-        const std::string fileName = CreateWorkFileName(displayName);
         YAML::Node stageYaml;
         if (!StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
             outErrorMessage = "作業中のステージを読み込めませんでした";
             return false;
         }
-        UGCWorkMetadata::PrepareForSave(stageYaml, displayName);
+        UGCWorkMetadata::PrepareForSave(
+            stageYaml,
+            displayName,
+            fileName);
         if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml)) {
             outErrorMessage = "作業中のステージを書き込めませんでした";
             return false;
@@ -86,6 +93,69 @@ bool UGCWorkFileService::SaveCurrentWork(
     }
 }
 
+bool UGCWorkFileService::ResetWorkingStage(
+    std::string& outErrorMessage) const
+{
+    outErrorMessage.clear();
+    std::error_code fileSystemError;
+    std::filesystem::copy_file(
+        NewWorkTemplatePath,
+        WorkingStagePath,
+        std::filesystem::copy_options::overwrite_existing,
+        fileSystemError);
+    if (!fileSystemError) {
+        return true;
+    }
+
+    outErrorMessage =
+        "初期ステージを読み込めませんでした: " +
+        fileSystemError.message();
+    return false;
+}
+
+bool UGCWorkFileService::HasUnsavedChanges() const
+{
+    try {
+        const YAML::Node workingStage =
+            YAML::LoadFile(WorkingStagePath.string());
+        const std::optional<std::string> fileName =
+            UGCWorkMetadata::FindFileName(workingStage);
+        if (!fileName) {
+            return true;
+        }
+
+        const std::filesystem::path savedStagePath =
+            mStorage.ResolveSavedFilePath(*fileName);
+        std::error_code fileSystemError;
+        const std::uintmax_t workingFileSize =
+            std::filesystem::file_size(
+                WorkingStagePath,
+                fileSystemError);
+        if (fileSystemError) {
+            return true;
+        }
+        const std::uintmax_t savedFileSize =
+            std::filesystem::file_size(
+                savedStagePath,
+                fileSystemError);
+        if (fileSystemError || workingFileSize != savedFileSize) {
+            return true;
+        }
+
+        std::ifstream workingFile(WorkingStagePath, std::ios::binary);
+        std::ifstream savedFile(savedStagePath, std::ios::binary);
+        if (!workingFile || !savedFile) {
+            return true;
+        }
+        return !std::equal(
+            std::istreambuf_iterator<char>(workingFile),
+            std::istreambuf_iterator<char>(),
+            std::istreambuf_iterator<char>(savedFile));
+    } catch (const YAML::Exception&) {
+        return true;
+    }
+}
+
 bool UGCWorkFileService::IsClearVerified(const std::string& fileName) const
 {
     return mStorage.IsClearVerified(fileName);
@@ -109,7 +179,27 @@ bool UGCWorkFileService::CompleteVerification(
 bool UGCWorkFileService::CopyToWorkingFile(
     const std::string& fileName) const
 {
-    return mStorage.CopySavedFileToWorking(fileName);
+    if (!mStorage.CopySavedFileToWorking(fileName)) {
+        return false;
+    }
+
+    try {
+        YAML::Node stageYaml = YAML::LoadFile(WorkingStagePath.string());
+        UGCWorkMetadata::PrepareForSave(
+            stageYaml,
+            ResolveDisplayName(fileName),
+            fileName);
+        if (!StageYamlRepository::SaveYamlFile(
+            WorkingStagePath.string(),
+            stageYaml)) {
+            return false;
+        }
+        return mStorage.CopyWorkingFileToSaved(
+            fileName,
+            true).Succeeded();
+    } catch (const YAML::Exception&) {
+        return false;
+    }
 }
 
 bool UGCWorkFileService::DuplicateWork(const std::string& fileName) const

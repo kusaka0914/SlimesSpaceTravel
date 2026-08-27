@@ -408,8 +408,7 @@ platforms:
     textureOverride: textures/slimePlatform.png
     ugcPlatformBehavior: adhesive
     components:
-      adhesion:
-        {}
+      adhesion: {}
   - currentPlanetNum: 0
     theta: -1.589662
     phi: 0.11270772
@@ -1862,7 +1861,8 @@ ugcPlatformCells:
       - -6
     behavior: normal
 ugcMetadata:
-  isClearVerified: false
-  displayName: 新しいステージ
+  isClearVerified: true
+  displayName: 僕のステージ
+  fileName: 僕のステージ.yaml
 star:
   - {currentPlanetNum: 1, theta: 0, phi: 1.5707964, height: 0, isActive: true, pos: [0, 1, 0], upVec: [0, 1, 0]}

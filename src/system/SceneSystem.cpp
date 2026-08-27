@@ -270,6 +270,11 @@ void SceneSystem::DebugEnterTitle()
     ResetForDebugScene(GameProgressState::SceneState::Title);
 }
 
+void SceneSystem::EnterTitleAtFadeMidpoint()
+{
+    ApplyDebugSceneState(GameProgressState::SceneState::Title);
+}
+
 void SceneSystem::DebugEnterOpening()
 {
     ResetForDebugScene(GameProgressState::SceneState::Opening);
@@ -291,6 +296,12 @@ void SceneSystem::ResetForDebugScene(
     GameProgressState::SceneState destinationScene)
 {
     mTransitionController->CancelPendingTransition();
+    ApplyDebugSceneState(destinationScene);
+}
+
+void SceneSystem::ApplyDebugSceneState(
+    GameProgressState::SceneState destinationScene)
+{
     if (mTutorialController) {
         mTutorialController->Stop(false);
     }

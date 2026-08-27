@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 class StageActorCreateService;
@@ -27,6 +28,12 @@ public:
         StageSelectionController* selectionController);
     void SetPushUndoCallback(
         std::function<void()> pushUndoCallback);
+    void SetPlacementCompletedCallback(
+        std::function<void()> placementCompletedCallback)
+    {
+        mPlacementCompletedCallback =
+            std::move(placementCompletedCallback);
+    }
     void SetUGCEditLayer(int gridLayer) { mUGCEditLayer = gridLayer; }
     void SetUGCPlatformFootprintSideLength(int sideLength)
     {
@@ -119,6 +126,7 @@ private:
     StageActorPlacementResolver& mPlacementResolver;
     StageSelectionController* mSelectionController = nullptr;
     std::function<void()> mPushUndoCallback;
+    std::function<void()> mPlacementCompletedCallback;
     std::function<bool(int, const StageActorPlacement&)> mPlacementCreator;
     std::function<bool(Platform*)> mTargetPlatformSelector;
     std::function<bool()> mPlacementWithoutTargetCreator;

@@ -23,6 +23,7 @@
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/ugc/UGCWorkPanel.h"
+#include "gfx/debug/ugc/UGCEditorTutorial.h"
 
 #include <array>
 #include <memory>
@@ -56,6 +57,7 @@ public:
     void HandleUGCZoom(float distanceMultiplier);
     void HandleUGCLayerChange(int layerDelta);
     void HandleUGCSelectionGridMove(int gridX, int gridZ);
+    void HandleUGCEditorTutorialReturnedFromPlaytest();
 
     bool SaveEditorSession(
         const std::string& filePath,
@@ -126,7 +128,10 @@ private:
         const ImVec2& previewMin,
         const ImVec2& previewMax,
         ImDrawList* drawList);
+    bool IsUGCWorkManagementOpen() const;
     void DrawUGCWorkManagement();
+    void DrawUGCEditorTutorial();
+    void DrawUGCTutorialHighlightForLastItem(bool shouldHighlight) const;
     void StartUGCVerification();
     void UpdateUGCSelectionDrag();
     bool TryIntersectUGCDragPlane(
@@ -141,6 +146,7 @@ private:
     EditorAssetCatalog mAssetCatalog;
     DebugEditorContext mContext;
     UGCWorkPanel mUGCWorkPanel;
+    UGCEditorTutorial mUGCEditorTutorial;
     std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
 
     PerformanceDebugPanel mPerformancePanel;
@@ -172,6 +178,7 @@ private:
     bool mIsBuildRestartStatusError = false;
     bool mIsUGCEraserMode = false;
     bool mShouldOpenUGCEditorMenu = false;
+    bool mShouldOpenUGCWorkManagement = false;
     std::optional<UGCPresetKind> mActiveUGCPresetKind;
     std::optional<UGCPresetKind> mUGCPresetBeforeEraser;
     glm::vec3 mUGCViewDirection{0.0f, 1.0f, 0.0f};

@@ -245,7 +245,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_1
+    platformId: platform_3
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 1
@@ -262,38 +262,38 @@ platforms:
     ugcPlatformBehavior: normal
   - currentPlanetNum: 0
     theta: -1.5707964
-    phi: 0.15264933
-    height: 9.152946
+    phi: 0.15865526
+    height: 8.658989
     facingYaw: 0
     rotation:
       - 0
       - 0
       - 0
     scale:
-      - 1
+      - 0.5
       - 0.1
       - 1
     modelPath: platform.obj
     pos:
       - 0
       - 2
-      - -13
+      - -12.5
     upVec:
       - 0
       - 1
       - 0
-    platformId: platform_1
+    platformId: platform_3
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 2
     ugcCellMin:
       - -1
-      - -14
+      - -13
     ugcCellMax:
       - 0
       - -13
     textureTiling:
-      - 2
+      - 1
       - 2
     textureOverride: textures/roadTex.png
     ugcPlatformBehavior: moving
@@ -302,11 +302,66 @@ platforms:
         startLocalPos:
           - 0
           - 2
-          - -13
+          - -12.5
         endLocalPos:
           - -6
           - 2
-          - -13
+          - -12.5
+        moveOffset:
+          - -6
+          - 0
+          - 0
+        moveDuration: 3
+        moveOnPlayer: false
+        returnDelay: 0
+        endpointWaitSeconds: 0.5
+  - currentPlanetNum: 0
+    theta: -1.5337762
+    phi: 0.14697903
+    height: 9.6565
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.5
+      - 0.1
+      - 0.5
+    modelPath: platform.obj
+    pos:
+      - 0.5
+      - 2
+      - -13.5
+    upVec:
+      - 0
+      - 1
+      - 0
+    platformId: platform_4
+    ugcGeneratedPlatform: true
+    ugcGridSize: 1
+    ugcGridLayer: 2
+    ugcCellMin:
+      - 0
+      - -14
+    ugcCellMax:
+      - 0
+      - -14
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    ugcPlatformBehavior: moving
+    components:
+      movement:
+        startLocalPos:
+          - 0.5
+          - 2
+          - -13.5
+        endLocalPos:
+          - -5.5
+          - 2
+          - -13.5
         moveOffset:
           - -6
           - 0
@@ -355,9 +410,9 @@ platforms:
     components:
       adhesion: {}
   - currentPlanetNum: 0
-    theta: -1.5707964
-    phi: 0.11272761
-    height: 22.669271
+    theta: -1.589662
+    phi: 0.11270772
+    height: 22.673958
     facingYaw: 0
     rotation:
       - 0
@@ -366,17 +421,17 @@ platforms:
     scale:
       - 0.5
       - 0.1
-      - 1
+      - 0.5
     modelPath: platform.obj
     pos:
-      - 0
+      - -0.5
       - 3
       - -26.5
     upVec:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_4
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -384,11 +439,11 @@ platforms:
       - -1
       - -27
     ugcCellMax:
-      - 0
+      - -1
       - -27
     textureTiling:
       - 1
-      - 2
+      - 1
     textureOverride: textures/glass.png
     ugcPlatformBehavior: fading
     components:
@@ -540,7 +595,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_4
+    platformId: platform_5
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -595,7 +650,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_5
+    platformId: platform_6
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -632,7 +687,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_6
+    platformId: platform_7
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -669,7 +724,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_7
+    platformId: platform_9
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 4
@@ -706,7 +761,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_9
+    platformId: platform_11
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 4
@@ -743,7 +798,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_11
+    platformId: platform_13
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 5
@@ -780,7 +835,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_13
+    platformId: platform_15
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 5
@@ -817,7 +872,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_15
+    platformId: platform_16
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 6
@@ -928,13 +983,6 @@ ugcPlatformCells:
   - planetIndex: 0
     gridSize: 1
     gridPosition:
-      - -1
-      - 1
-      - -6
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
       - -3
       - 1
       - -9
@@ -980,850 +1028,841 @@ ugcPlatformCells:
     gridSize: 1
     gridPosition:
       - -1
+      - 3
+      - -18
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -18
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -21
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -21
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -24
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -24
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -27
+    behavior: fading
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -31
+    behavior: adhesive
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -31
+    behavior: adhesive
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -30
+    behavior: adhesive
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -30
+    behavior: adhesive
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
       - 2
-      - -14
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -36
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -35
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -34
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 4
+      - -39
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 4
+      - -38
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 4
+      - -39
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 4
+      - -38
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 4
+      - -38
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 4
+      - -38
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 4
+      - -39
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 4
+      - -39
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -42
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 5
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -44
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -2
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -46
     behavior: moving
     movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -46
+    behavior: moving
+    movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -46
+    behavior: moving
+    movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 3
+      - -47
+    behavior: moving
+    movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -47
+    behavior: moving
+    movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 3
+      - -47
+    behavior: moving
+    movementDeltaCells:
+      - 0
+      - 2
+      - -1
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 5
+      - -52
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 4
+      - 5
+      - -50
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -55
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -55
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -55
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -54
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -54
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -54
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 5
+      - -56
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 5
+      - -56
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -56
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 6
+      - -64
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 6
+      - -64
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 6
+      - -64
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 6
+      - -63
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 6
+      - -63
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 6
+      - -63
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 6
+      - -65
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 6
+      - -65
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 6
+      - -65
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 6
+      - -62
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 6
+      - -62
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 6
+      - -62
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 2
+      - 6
+      - -61
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 6
+      - -61
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 6
+      - -61
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 1
+      - 3
+      - -43
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 0
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - 3
+      - 5
+      - -51
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1
+    gridPosition:
+      - -1
+      - 1
       - -6
-      - 0
-      - 0
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -18
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -18
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -21
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -21
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -24
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -24
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -27
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -27
-    behavior: fading
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -31
-    behavior: adhesive
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -31
-    behavior: adhesive
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -30
-    behavior: adhesive
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -30
-    behavior: adhesive
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -36
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -35
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -34
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 4
-      - -39
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 4
-      - -38
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 4
-      - -39
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 4
-      - -38
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 4
-      - -38
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 4
-      - -38
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 4
-      - -39
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 4
-      - -39
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -42
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 5
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -44
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -2
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -46
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -46
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -46
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 3
-      - -47
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -47
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 3
-      - -47
-    behavior: moving
-    movementDeltaCells:
-      - 0
-      - 2
-      - -1
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -51
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -51
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 5
-      - -51
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - -1
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 5
-      - -52
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 5
-      - -51
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 4
-      - 5
-      - -50
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -55
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -55
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -55
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -54
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -54
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -54
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 5
-      - -56
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 5
-      - -56
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -56
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 6
-      - -64
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 6
-      - -64
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 6
-      - -64
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 6
-      - -63
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 6
-      - -63
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 6
-      - -63
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 6
-      - -65
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 6
-      - -65
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 6
-      - -65
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 6
-      - -62
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 6
-      - -62
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 6
-      - -62
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 2
-      - 6
-      - -61
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 6
-      - -61
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 6
-      - -61
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 1
-      - 3
-      - -43
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 0
-      - 5
-      - -51
-    behavior: normal
-  - planetIndex: 0
-    gridSize: 1
-    gridPosition:
-      - 3
-      - 5
-      - -51
     behavior: normal
 ugcMetadata:
-  isClearVerified: false
-  displayName: 新しいステージ
-star: [{currentPlanetNum: 1, theta: 0, phi: 1.5707964, height: 0, isActive: true, pos: [0, 1, 0], upVec: [0, 1, 0]}]
+  isClearVerified: true
+  displayName: 僕のステージ
+  fileName: 僕のステージ.yaml
+star:
+  - {currentPlanetNum: 1, theta: 0, phi: 1.5707964, height: 0, isActive: true, pos: [0, 1, 0], upVec: [0, 1, 0]}

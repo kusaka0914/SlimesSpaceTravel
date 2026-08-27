@@ -978,6 +978,11 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
     return true;
 }
 
+void StageEditCommandController::ClearHistory()
+{
+    mEditHistory.Clear();
+}
+
 bool StageEditCommandController::RestoreRedo()
 {
     const std::string* yamlText = mEditHistory.FindRedoSnapshot();

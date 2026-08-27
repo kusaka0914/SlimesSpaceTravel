@@ -17,6 +17,7 @@
 #include <glm/glm.hpp>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 class StageSelectionController;
@@ -29,6 +30,12 @@ public:
     void UpdatePlacement();
     void SetSelectionController(StageSelectionController* selectionController);
     void SetPushUndoCallback(std::function<void()> pushUndoCallback);
+    void SetPlacementCompletedCallback(
+        std::function<void()> placementCompletedCallback)
+    {
+        mPlacementController.SetPlacementCompletedCallback(
+            std::move(placementCompletedCallback));
+    }
     void SetUGCEditLayer(int gridLayer)
     {
         mPlacementController.SetUGCEditLayer(gridLayer);

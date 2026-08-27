@@ -403,6 +403,9 @@ void StageActorPlacementController::UpdatePlacement()
     }
 
     const bool created = mPlacementCreator(planetIndex, placement);
+    if (created && mPlacementCompletedCallback) {
+        mPlacementCompletedCallback();
+    }
     if (mTargetPlatformSelector) {
         return;
     }

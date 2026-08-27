@@ -45,6 +45,12 @@ void StageEditHistory::CommitRedo(const std::string& currentYamlText)
     mUndoSnapshots.push_back(currentYamlText);
 }
 
+void StageEditHistory::Clear()
+{
+    mUndoSnapshots.clear();
+    mRedoSnapshots.clear();
+}
+
 std::size_t StageEditHistory::GetUndoCount() const
 {
     return mUndoSnapshots.size();

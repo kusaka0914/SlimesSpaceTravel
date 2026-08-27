@@ -29,6 +29,8 @@ void RegisterUGCSessionStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterUGCPresetVisualsTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterUGCEditorTutorialTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -45,6 +47,7 @@ int main()
     RegisterUGCWorkMetadataTests(tests);
     RegisterUGCSessionStateTests(tests);
     RegisterUGCPresetVisualsTests(tests);
+    RegisterUGCEditorTutorialTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

@@ -84,6 +84,7 @@ void UIRenderer::InitImGui()
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
     io.Fonts->AddFontFromFileTTF("../assets/fonts/NotoSansJP-Black.ttf", 18.0f, nullptr,
                                  io.Fonts->GetGlyphRangesJapanese());
@@ -381,6 +382,13 @@ void UIRenderer::MoveUGCSelectionByGrid(int gridX, int gridZ)
 {
     if (mDebugUIRenderer) {
         mDebugUIRenderer->HandleUGCSelectionGridMove(gridX, gridZ);
+    }
+}
+
+void UIRenderer::NotifyUGCEditorTutorialReturnedFromPlaytest()
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->HandleUGCEditorTutorialReturnedFromPlaytest();
     }
 }
 

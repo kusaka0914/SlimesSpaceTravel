@@ -122,6 +122,15 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           mContext,
           [this]() {
               mSelectionController.Clear();
+              HandleUGCSelectionMode();
+              mUGCConnectionSwitchRef.reset();
+              mIsUGCSelectionDragging = false;
+              mIsUGCMovingPlatformDestinationDrag = false;
+              mEditCommandController.ClearHistory();
+              mUGCEditLayer = 0;
+              mStageAddActorPanel.SetUGCEditLayer(mUGCEditLayer);
+              mSelectionController.SetUGCEditLayer(mUGCEditLayer);
+              mContext.game->SetUGCPreviewEditLayer(mUGCEditLayer);
               mContext.game->ReloadCurrentStage();
           }),
       mUGCModelThumbnailRenderer(
@@ -168,6 +177,13 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
     mStageAddActorPanel.SetSelectionController(&mSelectionController);
     mStageAddActorPanel.SetPushUndoCallback(
         [this]() { mEditCommandController.PushUndo(); });
+    mStageAddActorPanel.SetPlacementCompletedCallback([this]() {
+        if (mActiveUGCPresetKind) {
+            mUGCEditorTutorial.RecordPlacement(
+                *mActiveUGCPresetKind,
+                mUGCPlatformFootprintSideLength);
+        }
+    });
     mStageAddActorPanel.SetUGCEditLayer(mUGCEditLayer);
     mSelectionController.SetUGCEditLayer(mUGCEditLayer);
     if (mContext.game) {
@@ -177,7 +193,9 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 
 void DebugUIRenderer::HandleUGCUndo()
 {
-    mUGCStatus = mEditCommandController.RestoreUndo()
+    const bool wasRestored = mEditCommandController.RestoreUndo();
+    mUGCEditorTutorial.RecordUndo(wasRestored);
+    mUGCStatus = wasRestored
         ? "1つ前の状態に戻しました"
         : "戻せる操作がありません";
 }
@@ -229,11 +247,26 @@ void DebugUIRenderer::OpenUGCEditorMenu()
 void DebugUIRenderer::HandleUGCZoom(float distanceMultiplier)
 {
     AdjustUGCViewDistance(distanceMultiplier);
+    mUGCEditorTutorial.RecordViewAdjustment();
+}
+
+void DebugUIRenderer::HandleUGCEditorTutorialReturnedFromPlaytest()
+{
+    mUGCEditorTutorial.RecordReturnedFromPlaytest();
 }
 
 void DebugUIRenderer::HandleUGCLayerChange(int layerDelta)
 {
+    const bool isMovingSelection =
+        mIsUGCSelectionDragging &&
+        mSelectionController.GetSelectedActorCount() > 0;
+    const int previousLayer = mUGCEditLayer;
     ChangeUGCEditLayer(layerDelta);
+    if (mUGCEditLayer != previousLayer) {
+        mUGCEditorTutorial.RecordLayerChange(
+            layerDelta,
+            isMovingSelection);
+    }
 }
 
 void DebugUIRenderer::HandleUGCSelectionGridMove(int gridX, int gridZ)
@@ -913,7 +946,7 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     }
     if (ImGui::BeginPopup("メニュー###UGCDebugProductMenu")) {
         if (ImGui::MenuItem("保存・開く")) {
-            ImGui::OpenPopup("作品管理###UGCWorkManagement");
+            mShouldOpenUGCWorkManagement = true;
         }
         if (ImGui::MenuItem("完成チェック")) {
             StartUGCVerification();
@@ -1019,16 +1052,200 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     }
     ImGui::End();
 
-    DrawUGCGridOverlay();
-    DrawUGCStackBadges();
-    DrawUGCPlacementPreview();
-    DrawUGCPreviewOverlay();
+    if (!IsUGCWorkManagementOpen()) {
+        DrawUGCGridOverlay();
+        DrawUGCStackBadges();
+        DrawUGCPlacementPreview();
+        DrawUGCPreviewOverlay();
+    }
     DrawUGCWorkManagement();
+}
+
+bool DebugUIRenderer::IsUGCWorkManagementOpen() const
+{
+    return mShouldOpenUGCWorkManagement ||
+        ImGui::IsPopupOpen(
+            "作品管理###UGCWorkManagement",
+            ImGuiPopupFlags_AnyPopupLevel);
 }
 
 void DebugUIRenderer::DrawUGCWorkManagement()
 {
+    if (mShouldOpenUGCWorkManagement) {
+        ImGui::OpenPopup("作品管理###UGCWorkManagement");
+        mShouldOpenUGCWorkManagement = false;
+    }
     mUGCWorkPanel.DrawManagement(mUGCStatus);
+}
+
+void DebugUIRenderer::DrawUGCTutorialHighlightForLastItem(
+    bool shouldHighlight) const
+{
+    if (!shouldHighlight) {
+        return;
+    }
+    const float pulse =
+        0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 5.0f);
+    const int alpha = static_cast<int>(190.0f + pulse * 65.0f);
+    ImGui::GetWindowDrawList()->AddRect(
+        ImGui::GetItemRectMin(),
+        ImGui::GetItemRectMax(),
+        IM_COL32(255, 215, 45, alpha),
+        10.0f,
+        0,
+        5.0f);
+}
+
+void DebugUIRenderer::DrawUGCEditorTutorial()
+{
+    if (!mContext.game) {
+        return;
+    }
+
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    constexpr ImGuiWindowFlags tutorialWindowFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings;
+    if (!mUGCEditorTutorial.IsActive()) {
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                viewport->WorkPos.x + viewport->WorkSize.x - 230.0f,
+                viewport->WorkPos.y + 16.0f),
+            ImGuiCond_Always);
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_WindowPadding,
+            ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+        ImGui::Begin(
+            "###UGCTutorialReplay",
+            nullptr,
+            tutorialWindowFlags |
+                ImGuiWindowFlags_NoBackground);
+        if (ImGui::Button("操作練習", ImVec2(154.0f, 46.0f))) {
+            mContext.game->StartUGCEditorTutorial();
+        }
+        ImGui::End();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(3);
+        return;
+    }
+
+    const UGCEditorTutorialStep step = mUGCEditorTutorial.GetStep();
+    const bool isWelcome = step == UGCEditorTutorialStep::Welcome;
+    const bool isComplete = step == UGCEditorTutorialStep::Complete;
+    const ImVec2 panelSize(
+        std::min(680.0f, viewport->WorkSize.x - 48.0f),
+        isWelcome || isComplete ? 246.0f : 192.0f);
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
+            viewport->WorkPos.y + 112.0f),
+        ImGuiCond_Always,
+        ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24.0f, 20.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.0f, 12.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_WindowBg,
+        ImVec4(0.025f, 0.055f, 0.10f, 0.98f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Border,
+        ImVec4(0.25f, 0.66f, 1.0f, 0.90f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_PlotHistogram,
+        ImVec4(0.18f, 0.67f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_FrameBg,
+        ImVec4(0.07f, 0.14f, 0.23f, 1.0f));
+    ImGui::Begin(
+        "###UGCEditorTutorial",
+        nullptr,
+        tutorialWindowFlags);
+
+    ImGui::SetWindowFontScale(1.22f);
+    ImGui::TextUnformatted("操作練習");
+    ImGui::SetWindowFontScale(1.0f);
+    if (!isComplete) {
+        const char* skipLabel = "練習をスキップ";
+        const float skipButtonWidth = 138.0f;
+        ImGui::SameLine(
+            ImGui::GetWindowContentRegionMax().x - skipButtonWidth);
+        if (ImGui::Button(skipLabel, ImVec2(skipButtonWidth, 34.0f))) {
+            mUGCEditorTutorial.Stop();
+            mContext.game->FinishUGCEditorTutorial(false);
+            ImGui::End();
+            ImGui::PopStyleColor(7);
+            ImGui::PopStyleVar(5);
+            return;
+        }
+    }
+
+    if (!isWelcome) {
+        const std::string actionCountText =
+            isComplete
+            ? "完了"
+            : std::to_string(mUGCEditorTutorial.GetCurrentActionNumber()) +
+                " / " + std::to_string(mUGCEditorTutorial.GetActionCount());
+        ImGui::TextColored(
+            ImVec4(1.0f, 0.84f, 0.25f, 1.0f),
+            "%s",
+            actionCountText.c_str());
+        ImGui::SameLine();
+        ImGui::ProgressBar(
+            mUGCEditorTutorial.GetProgressRatio(),
+            ImVec2(-1.0f, 12.0f),
+            "");
+    }
+
+    ImGui::Separator();
+    const std::string instruction =
+        mUGCEditorTutorial.GetInstruction();
+    ImGui::SetWindowFontScale(1.14f);
+    ImGui::TextWrapped("%s", instruction.c_str());
+    ImGui::SetWindowFontScale(1.0f);
+
+    if (isWelcome) {
+        ImGui::SetCursorPosY(panelSize.y - 66.0f);
+        if (ImGui::Button("練習をはじめる", ImVec2(220.0f, 44.0f))) {
+            mUGCEditorTutorial.AdvanceFromWelcome();
+        }
+    } else if (isComplete) {
+        ImGui::SetCursorPosY(panelSize.y - 66.0f);
+        if (ImGui::Button(
+                "通常のステージ作成へ",
+                ImVec2(240.0f, 44.0f))) {
+            mUGCEditorTutorial.Stop();
+            mContext.game->FinishUGCEditorTutorial(true);
+        }
+    }
+    ImGui::End();
+    ImGui::PopStyleColor(7);
+    ImGui::PopStyleVar(5);
 }
 
 void DebugUIRenderer::StartUGCVerification()
@@ -1052,6 +1269,15 @@ void DebugUIRenderer::DrawUGCEditor(
     int gameViewWidth,
     int gameViewHeight)
 {
+    const bool isTutorialStage =
+        mContext.game &&
+        mContext.game->GetIsUGCEditorTutorialActive();
+    if (isTutorialStage && !mUGCEditorTutorial.IsActive()) {
+        mUGCEditorTutorial.Start();
+    } else if (!isTutorialStage && mUGCEditorTutorial.IsActive()) {
+        mUGCEditorTutorial.Stop();
+    }
+
     const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
     constexpr float topBarHeight = 104.0f;
     const ImVec2 gameViewportMin(
@@ -1178,12 +1404,13 @@ void DebugUIRenderer::DrawUGCEditor(
                 mStageAddActorPanel.SetUGCPlatformFootprintSideLength(
                     footprintSideLengths[index]);
             }
+            DrawUGCTutorialHighlightForLastItem(
+                mUGCEditorTutorial.ShouldHighlightFootprintOptions() &&
+                footprintSideLengths[index] > 1);
             ImGui::SameLine();
         }
         ImGui::End();
     }
-    DrawUGCWorkManagement();
-
     for (std::size_t presetIndex = 0;
          presetIndex < presetButtons.size();
          ++presetIndex) {
@@ -1234,6 +1461,9 @@ void DebugUIRenderer::DrawUGCEditor(
                   ImVec2(0.0f, 1.0f),
                   ImVec2(1.0f, 0.0f))
             : ImGui::Button(preset.label, layout.size);
+        DrawUGCTutorialHighlightForLastItem(
+            mUGCEditorTutorial.IsActive() &&
+            mUGCEditorTutorial.ShouldHighlightPreset(preset.kind));
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
         if (ImGui::IsItemHovered()) {
@@ -1327,6 +1557,8 @@ void DebugUIRenderer::DrawUGCEditor(
             isSelectionMode)) {
         HandleUGCSelectionMode();
     }
+    DrawUGCTutorialHighlightForLastItem(
+        mUGCEditorTutorial.ShouldHighlightSelection());
     ImGui::End();
     ImGui::PopStyleVar();
 
@@ -1334,7 +1566,8 @@ void DebugUIRenderer::DrawUGCEditor(
         [&](const char* id,
             const char* texturePath,
             const char* tooltip,
-            const ImVec2& fallbackPosition) {
+            const ImVec2& fallbackPosition,
+            bool shouldHighlight = false) {
             const UGCControlLayout layout = resolveUGCControlLayout(
                 id,
                 fallbackPosition);
@@ -1347,6 +1580,7 @@ void DebugUIRenderer::DrawUGCEditor(
                 ImVec2(0.0f, 0.0f));
             ImGui::Begin(windowId.c_str(), nullptr, floatingButtonFlags);
             const bool clicked = drawActionIcon(id, texturePath, tooltip, layout.size);
+            DrawUGCTutorialHighlightForLastItem(shouldHighlight);
             ImGui::End();
             ImGui::PopStyleVar();
             return clicked;
@@ -1356,14 +1590,16 @@ void DebugUIRenderer::DrawUGCEditor(
             "eraser",
             "textures/ugc_ui/editor_action_eraser.png",
             mIsUGCEraserMode ? "消しゴム：ON" : "消しゴム",
-            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f))) {
+            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f),
+            mUGCEditorTutorial.ShouldHighlightEraser())) {
         HandleUGCEraserToggle();
     }
     if (drawUGCActionControl(
             "undo",
             "textures/ugc_ui/editor_action_undo.png",
             "1つ戻す",
-            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 172.0f))) {
+            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 172.0f),
+            mUGCEditorTutorial.ShouldHighlightUndo())) {
         HandleUGCUndo();
     }
     if (drawUGCActionControl(
@@ -1377,28 +1613,32 @@ void DebugUIRenderer::DrawUGCEditor(
             "layerUp",
             "textures/ugc_ui/editor_action_layer_up.png",
             "上のだん",
-            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f))) {
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f),
+            mUGCEditorTutorial.ShouldHighlightLayerUp())) {
         HandleUGCLayerChange(1);
     }
     if (drawUGCActionControl(
             "layerDown",
             "textures/ugc_ui/editor_action_layer_down.png",
             "下のだん",
-            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 80.0f))) {
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 80.0f),
+            mUGCEditorTutorial.ShouldHighlightLayerDown())) {
         HandleUGCLayerChange(-1);
     }
     if (drawUGCActionControl(
             "zoomIn",
             "textures/ugc_ui/editor_action_zoom_in.png",
             "近づく",
-            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 152.0f))) {
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 152.0f),
+            mUGCEditorTutorial.ShouldHighlightZoom())) {
         HandleUGCZoom(0.85f);
     }
     if (drawUGCActionControl(
             "zoomOut",
             "textures/ugc_ui/editor_action_zoom_out_control.png",
             "遠ざかる",
-            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 216.0f))) {
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 216.0f),
+            mUGCEditorTutorial.ShouldHighlightZoom())) {
         HandleUGCZoom(1.18f);
     }
     if (drawUGCActionControl(
@@ -1425,11 +1665,14 @@ void DebugUIRenderer::DrawUGCEditor(
             "textures/ugc_ui/editor_action_play.png",
             "遊ぶ",
             playLayout.size)) {
+        mUGCEditorTutorial.RecordPlaytestStarted();
         mContext.game->StartUGCPlaytest();
         ImGui::End();
         ImGui::PopStyleVar();
         return;
     }
+    DrawUGCTutorialHighlightForLastItem(
+        mUGCEditorTutorial.ShouldHighlightPlaytest());
     ImGui::End();
     ImGui::PopStyleVar();
 
@@ -1442,29 +1685,147 @@ void DebugUIRenderer::DrawUGCEditor(
         ImGuiStyleVar_WindowPadding,
         ImVec2(0.0f, 0.0f));
     ImGui::Begin("###UGCMenu", nullptr, floatingButtonFlags);
-    if (mShouldOpenUGCEditorMenu) {
+    const bool wasMenuButtonPressed = drawActionIcon(
+        "menu",
+        "textures/ugc_ui/editor_action_menu.png",
+        "メニュー",
+        menuLayout.size);
+    const bool shouldToggleMenu =
+        mShouldOpenUGCEditorMenu || wasMenuButtonPressed;
+    mShouldOpenUGCEditorMenu = false;
+    const bool wasMenuOpen = ImGui::IsPopupOpen(
+        "メニュー###UGCProductMenu");
+    if (shouldToggleMenu && !wasMenuOpen) {
         ImGui::OpenPopup("メニュー###UGCProductMenu");
-        mShouldOpenUGCEditorMenu = false;
     }
-    if (drawActionIcon(
-            "menu",
-            "textures/ugc_ui/editor_action_menu.png",
-            "メニュー",
-            menuLayout.size)) {
-        ImGui::OpenPopup("メニュー###UGCProductMenu");
-    }
-    if (ImGui::BeginPopup("メニュー###UGCProductMenu")) {
-        if (ImGui::MenuItem("保存・開く")) {
-            ImGui::OpenPopup("作品管理###UGCWorkManagement");
+
+    constexpr float menuPanelWidth = 284.0f;
+    constexpr float menuPanelHeight = 252.0f;
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            std::max(
+                gameViewportMin.x + 16.0f,
+                menuLayout.position.x - menuPanelWidth - 10.0f),
+            menuLayout.position.y),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(menuPanelWidth, menuPanelHeight),
+        ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(18.0f, 18.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 10.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_PopupBg,
+        ImVec4(0.025f, 0.055f, 0.10f, 0.98f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Border,
+        ImVec4(0.25f, 0.66f, 1.0f, 0.90f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+    constexpr ImGuiWindowFlags productMenuFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoSavedSettings;
+    if (ImGui::BeginPopup(
+            "メニュー###UGCProductMenu",
+            productMenuFlags)) {
+        if (shouldToggleMenu && wasMenuOpen) {
+            ImGui::CloseCurrentPopup();
         }
-        if (ImGui::MenuItem("完成チェック")) {
+
+        ImGui::SetWindowFontScale(1.15f);
+        ImGui::TextUnformatted("メニュー");
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::Separator();
+        constexpr float menuButtonWidth = 248.0f;
+        constexpr float menuButtonHeight = 46.0f;
+        if (mUGCEditorTutorial.IsActive()) {
+            ImGui::BeginDisabled();
+        }
+        ImGui::SetItemDefaultFocus();
+        if (ImGui::Button(
+                "保存・開く",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
+            mShouldOpenUGCWorkManagement = true;
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::Button(
+                "完成チェック",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
             StartUGCVerification();
+            ImGui::CloseCurrentPopup();
         }
-        if (ImGui::MenuItem("タイトルへ戻る")) {
-            mContext.game->ExitUGCMode();
+        if (mUGCEditorTutorial.IsActive()) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::Spacing();
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.22f, 0.25f, 0.32f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.34f, 0.39f, 0.48f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.17f, 0.20f, 0.27f, 1.0f));
+        if (ImGui::Button(
+                "タイトルへ戻る",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
+            if (mUGCWorkPanel.HasUnsavedChanges()) {
+                ImGui::OpenPopup(
+                    "保存せずタイトルへ戻りますか###UGCExitConfirmation");
+            } else {
+                mContext.game->ExitUGCMode();
+            }
+        }
+        ImGui::PopStyleColor(3);
+
+        if (ImGui::BeginPopupModal(
+                "保存せずタイトルへ戻りますか###UGCExitConfirmation",
+                nullptr,
+                ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings)) {
+            ImGui::TextUnformatted(
+                "保存していない変更があります。タイトルへ戻りますか？");
+            ImGui::TextDisabled("保存していない変更は失われます。");
+            ImGui::Spacing();
+            if (ImGui::Button(
+                    "保存せず戻る",
+                    ImVec2(150.0f, 42.0f))) {
+                mContext.game->ExitUGCMode();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("やめる", ImVec2(120.0f, 42.0f)) ||
+                ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        const bool shouldCloseMenu =
+            ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight);
+        if (shouldCloseMenu &&
+            !ImGui::IsPopupOpen(
+                "保存せずタイトルへ戻りますか###UGCExitConfirmation")) {
+            ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar(5);
     ImGui::End();
     ImGui::PopStyleVar();
     DrawUGCViewport(
@@ -1473,10 +1834,13 @@ void DebugUIRenderer::DrawUGCEditor(
         gameViewHeight,
         gameViewportMin,
         gameViewportMax);
-    DrawUGCGridOverlay();
-    DrawUGCStackBadges();
-    DrawUGCPlacementPreview();
-    DrawUGCPreviewOverlay();
+    const bool isWorkManagementOpen = IsUGCWorkManagementOpen();
+    if (!isWorkManagementOpen) {
+        DrawUGCGridOverlay();
+        DrawUGCStackBadges();
+        DrawUGCPlacementPreview();
+        DrawUGCPreviewOverlay();
+    }
 
     if (mStageAddActorPanel.IsPlacementActive()) {
         mStageAddActorPanel.UpdatePlacement();
@@ -1569,12 +1933,16 @@ void DebugUIRenderer::DrawUGCEditor(
 
             if (tryDeletePickedPlanetOnly()) {
                 mUGCStatus = "惑星だけを消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (tryDeletePickedActorOnCurrentLayer()) {
                 mUGCStatus = "今のだんのものを消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (mStageAddActorPanel.TryEraseUGCPlatformCell()) {
                 mUGCStatus = "足場を1マス消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (tryDeletePickedActorAsHighestFallback()) {
                 mUGCStatus = "いちばん上のものを消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
                        !mSelectionController.GetSelectedKeys().empty()) {
                 const std::optional<StageActorRef>& selectedRef =
@@ -1585,23 +1953,28 @@ void DebugUIRenderer::DrawUGCEditor(
                         mSelectionController.GetSelectedKeys();
                     if (mEditCommandController.DeleteSelectedKeys(selectedKeys)) {
                         mUGCStatus = "選んだものを消しました";
+                        mUGCEditorTutorial.RecordErase(true);
                     }
                 }
             }
         }
     }
     mSelectionController.ApplyEditorSelectionFlags();
-    mSelectionController.DrawBoxSelectionRect();
-    DrawUGCSwitchConnectionLines();
-    DrawUGCUnconnectedSwitchWarnings();
-    DrawUGCTransformControls();
-    if (mContext.uiRenderer) {
+    if (!isWorkManagementOpen) {
+        mSelectionController.DrawBoxSelectionRect();
+        DrawUGCSwitchConnectionLines();
+        DrawUGCUnconnectedSwitchWarnings();
+        DrawUGCTransformControls();
+    }
+    DrawUGCEditorTutorial();
+    if (!isWorkManagementOpen && mContext.uiRenderer) {
         mContext.uiRenderer->DrawUGCForegroundCustomUI(
             gameViewportMin,
             ImVec2(
                 gameViewportMax.x - gameViewportMin.x,
                 gameViewportMax.y - gameViewportMin.y));
     }
+    DrawUGCWorkManagement();
 }
 
 void DebugUIRenderer::DrawUGCSwitchConnectionLines()
@@ -1969,6 +2342,10 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
                     !mIsUGCMovingPlatformDestinationDrag
                 ? "移動しました"
                 : "移動先を動かせませんでした";
+            if (updatedUGCPlatform ||
+                !mIsUGCMovingPlatformDestinationDrag) {
+                mUGCEditorTutorial.RecordSelectionMove();
+            }
         }
         mIsUGCSelectionDragging = false;
         mIsUGCMovingPlatformDestinationDrag = false;
@@ -2975,7 +3352,7 @@ void DebugUIRenderer::DrawUGCGridOverlay()
         verticalAxis = glm::vec3(0.0f, 1.0f, 0.0f);
     }
 
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
     const ImVec2 clipMin(
         mContext.gameViewport.x,
         mContext.gameViewport.y);

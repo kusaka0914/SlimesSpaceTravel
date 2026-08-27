@@ -27,7 +27,7 @@ UGCWorkStorage::UGCWorkStorage(UGCWorkStoragePaths paths)
 {
 }
 
-std::filesystem::path UGCWorkStorage::CreateSavedFilePath(
+std::filesystem::path UGCWorkStorage::ResolveSavedFilePath(
     const std::string& fileName) const
 {
     return mPaths.savedWorkDirectory / CreateUtf8Path(fileName);
@@ -77,7 +77,7 @@ UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(
         : std::filesystem::copy_options::none;
     std::filesystem::copy_file(
         mPaths.workingStageFile,
-        CreateSavedFilePath(fileName),
+        ResolveSavedFilePath(fileName),
         copyOptions,
         fileSystemError);
     if (fileSystemError) {
@@ -91,7 +91,7 @@ bool UGCWorkStorage::CopySavedFileToWorking(
 {
     std::error_code fileSystemError;
     std::filesystem::copy_file(
-        CreateSavedFilePath(fileName),
+        ResolveSavedFilePath(fileName),
         mPaths.workingStageFile,
         std::filesystem::copy_options::overwrite_existing,
         fileSystemError);
@@ -102,13 +102,13 @@ bool UGCWorkStorage::DuplicateSavedFile(
     const std::string& fileName) const
 {
     const std::filesystem::path sourceFilePath =
-        CreateSavedFilePath(fileName);
+        ResolveSavedFilePath(fileName);
     const std::string sourceStem =
         ToUtf8FileName(sourceFilePath.stem());
     std::string destinationFileName = sourceStem + "_コピー.yaml";
     int suffix = 2;
     while (std::filesystem::exists(
-        CreateSavedFilePath(destinationFileName))) {
+        ResolveSavedFilePath(destinationFileName))) {
         destinationFileName = sourceStem +
             "_コピー" + std::to_string(suffix++) + ".yaml";
     }
@@ -116,7 +116,7 @@ bool UGCWorkStorage::DuplicateSavedFile(
     std::error_code fileSystemError;
     std::filesystem::copy_file(
         sourceFilePath,
-        CreateSavedFilePath(destinationFileName),
+        ResolveSavedFilePath(destinationFileName),
         std::filesystem::copy_options::none,
         fileSystemError);
     return !fileSystemError;
@@ -126,7 +126,7 @@ bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const
 {
     std::error_code fileSystemError;
     const bool wasRemoved = std::filesystem::remove(
-        CreateSavedFilePath(fileName), fileSystemError);
+        ResolveSavedFilePath(fileName), fileSystemError);
     return wasRemoved && !fileSystemError;
 }
 
@@ -134,7 +134,7 @@ bool UGCWorkStorage::IsClearVerified(const std::string& fileName) const
 {
     try {
         const YAML::Node stageYaml =
-            YAML::LoadFile(CreateSavedFilePath(fileName).string());
+            YAML::LoadFile(ResolveSavedFilePath(fileName).string());
         return UGCWorkMetadata::IsClearVerified(stageYaml);
     } catch (const YAML::Exception&) {
         return false;

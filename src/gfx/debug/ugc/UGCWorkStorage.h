@@ -39,10 +39,9 @@ public:
     bool DuplicateSavedFile(const std::string& fileName) const;
     bool DeleteSavedFile(const std::string& fileName) const;
     bool IsClearVerified(const std::string& fileName) const;
-
-private:
-    std::filesystem::path CreateSavedFilePath(
+    std::filesystem::path ResolveSavedFilePath(
         const std::string& fileName) const;
 
+private:
     UGCWorkStoragePaths mPaths;
 };

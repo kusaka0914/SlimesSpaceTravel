@@ -97,6 +97,12 @@ public:
     bool DebugEnterEnding();
     bool DebugStartCredits();
     bool StartUGCMode();
+    bool StartUGCEditorTutorial();
+    bool FinishUGCEditorTutorial(bool wasCompleted);
+    bool GetIsUGCEditorTutorialActive() const
+    {
+        return mIsUGCEditorTutorialActive;
+    }
     void OpenUGCWorkBrowser();
     void CloseUGCWorkBrowser();
     void MoveTitleMenuSelection(int delta);
@@ -403,6 +409,7 @@ private:
     void DestroyUGCPreviewRenderTarget();
     void DrawUGCPreviewFrame();
     void ProcessPendingUGCClearCompletion();
+    void CompleteUGCModeExit(bool shouldOpenWorkBrowser);
 
     void CreatePlayer2();
     void CheckGameControllerConnected();
@@ -414,6 +421,10 @@ private:
     void SelectControlledPlayer(int playerIndex);
     void UpdatePendingSoloSplitControlSwitch(float deltaTime);
     bool LoadDebugStage(int stageNum, const std::string& yamlPath);
+    bool StartUGCModeWithStage(
+        const std::string& yamlPath,
+        bool isTutorial);
+    bool HasSeenUGCEditorTutorial() const;
     bool PrepareInitialSceneForDebug();
     void RestoreDebugEditorSessionAtStartup(
         const std::string& editorSessionPath,
@@ -465,11 +476,14 @@ private:
     float mPendingSoloSplitControlSwitchTimer = -1.0f;
     bool mIsDebugEditorShowing = false;
     UGCSessionState mUGCSessionState;
+    std::optional<std::string> mPendingUGCClearTransitionWorkFileName;
+    bool mIsUGCClearTransitionInProgress = false;
     int mTitleMenuSelection = 0;
     float mUGCGridSize = 1.0f;
     float mUGCOrthographicHalfHeight = 20.0f;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+    bool mIsUGCEditorTutorialActive = false;
 
     unsigned int mEditorGameFramebuffer = 0;
     unsigned int mEditorGameTexture = 0;

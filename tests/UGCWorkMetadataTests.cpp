@@ -13,12 +13,19 @@ void PrepareForSaveAddsDisplayNameAndUnverifiedDefault()
 {
     YAML::Node stageYaml;
 
-    UGCWorkMetadata::PrepareForSave(stageYaml, "テスト作品");
+    UGCWorkMetadata::PrepareForSave(
+        stageYaml,
+        "テスト作品",
+        "テスト作品.yaml");
 
     ExpectEqual(
         std::string("テスト作品"),
         stageYaml["ugcMetadata"]["displayName"].as<std::string>(),
         "display name");
+    ExpectEqual(
+        std::string("テスト作品.yaml"),
+        UGCWorkMetadata::FindFileName(stageYaml).value_or(""),
+        "file name");
     ExpectFalse(
         UGCWorkMetadata::IsClearVerified(stageYaml),
         "new work verification state");
@@ -29,7 +36,10 @@ void PrepareForSavePreservesCompletedVerification()
     YAML::Node stageYaml;
     UGCWorkMetadata::MarkClearVerified(stageYaml);
 
-    UGCWorkMetadata::PrepareForSave(stageYaml, "検証済み作品");
+    UGCWorkMetadata::PrepareForSave(
+        stageYaml,
+        "検証済み作品",
+        "検証済み作品.yaml");
 
     ExpectTrue(
         UGCWorkMetadata::IsClearVerified(stageYaml),
@@ -73,6 +83,26 @@ void MalformedVerificationFlagIsTreatedAsUnverified()
         "malformed verification state");
 }
 
+void MissingOrMalformedIdentityIsIgnored()
+{
+    YAML::Node stageYaml;
+    ExpectFalse(
+        UGCWorkMetadata::FindDisplayName(stageYaml).has_value(),
+        "missing display name");
+    ExpectFalse(
+        UGCWorkMetadata::FindFileName(stageYaml).has_value(),
+        "missing file name");
+
+    stageYaml["ugcMetadata"]["displayName"] = YAML::Node(YAML::NodeType::Map);
+    stageYaml["ugcMetadata"]["fileName"] = YAML::Node(YAML::NodeType::Sequence);
+    ExpectFalse(
+        UGCWorkMetadata::FindDisplayName(stageYaml).has_value(),
+        "malformed display name");
+    ExpectFalse(
+        UGCWorkMetadata::FindFileName(stageYaml).has_value(),
+        "malformed file name");
+}
+
 }
 
 void RegisterUGCWorkMetadataTests(
@@ -83,4 +113,5 @@ void RegisterUGCWorkMetadataTests(
     tests.emplace_back("UGCWorkMetadata.EditInvalidatesCompletedVerification", EditInvalidatesCompletedVerification);
     tests.emplace_back("UGCWorkMetadata.GoalDetectionRequiresNonEmptySequence", GoalDetectionRequiresNonEmptySequence);
     tests.emplace_back("UGCWorkMetadata.MalformedVerificationFlagIsTreatedAsUnverified", MalformedVerificationFlagIsTreatedAsUnverified);
+    tests.emplace_back("UGCWorkMetadata.MissingOrMalformedIdentityIsIgnored", MissingOrMalformedIdentityIsIgnored);
 }

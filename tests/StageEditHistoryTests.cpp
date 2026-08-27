@@ -81,6 +81,19 @@ void EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps()
     ExpectTrue(history.FindRedoSnapshot() == nullptr, "missing redo snapshot");
 }
 
+void ClearRemovesUndoAndRedoSnapshots()
+{
+    StageEditHistory history;
+    history.PushUndoSnapshot("before edit");
+    history.CommitUndo("after edit");
+    history.PushUndoSnapshot("before next edit");
+
+    history.Clear();
+
+    ExpectEqual(std::size_t{0}, history.GetUndoCount(), "undo count");
+    ExpectEqual(std::size_t{0}, history.GetRedoCount(), "redo count");
+}
+
 }
 
 void RegisterStageEditHistoryTests(
@@ -91,4 +104,5 @@ void RegisterStageEditHistoryTests(
     tests.emplace_back("StageEditHistory.RedoMovesCurrentSnapshotBackToUndoHistory", RedoMovesCurrentSnapshotBackToUndoHistory);
     tests.emplace_back("StageEditHistory.UndoHistoryDiscardsOldestSnapshotAtLimit", UndoHistoryDiscardsOldestSnapshotAtLimit);
     tests.emplace_back("StageEditHistory.EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps", EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps);
+    tests.emplace_back("StageEditHistory.ClearRemovesUndoAndRedoSnapshots", ClearRemovesUndoAndRedoSnapshots);
 }

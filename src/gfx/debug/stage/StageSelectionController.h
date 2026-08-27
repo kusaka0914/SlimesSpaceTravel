@@ -106,6 +106,5 @@ private:
     ImVec2 mBoxSelectStart = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectEnd = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectMouseDownPos = ImVec2(0.0f, 0.0f);
-    std::unordered_set<std::string> mSelectedKeysAtBoxSelectMouseDown;
     int mUGCEditLayer = 0;
 };

@@ -15,6 +15,7 @@ public:
     const std::string* FindRedoSnapshot() const;
     void CommitUndo(const std::string& currentYamlText);
     void CommitRedo(const std::string& currentYamlText);
+    void Clear();
 
     std::size_t GetUndoCount() const;
     std::size_t GetRedoCount() const;

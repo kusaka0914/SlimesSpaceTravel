@@ -18,7 +18,10 @@ public:
 
     bool SaveCurrentWork(
         const std::string& displayName,
+        const std::string& fileName,
         std::string& outErrorMessage) const;
+    bool ResetWorkingStage(std::string& outErrorMessage) const;
+    bool HasUnsavedChanges() const;
     bool IsClearVerified(const std::string& fileName) const;
     bool CompleteVerification(const std::string& fileName) const;
     bool CopyToWorkingFile(const std::string& fileName) const;

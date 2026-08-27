@@ -74,6 +74,7 @@ public:
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
+    void NotifyUGCEditorTutorialReturnedFromPlaytest();
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
 
     bool SaveDebugEditorSession(

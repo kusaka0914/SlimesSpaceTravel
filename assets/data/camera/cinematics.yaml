@@ -80,17 +80,17 @@ cinematics:
         transition: smooth
       - time: 3
         holdDuration: 0
-        position: [35.593742, 24.249847, -2.4069967]
-        target: [36.25508, 23.512117, -2.2714007]
-        up: [-0.7468019, -0.6644954, 0.027072165]
+        position: [-14.440151, -1.3364979, -3.807054]
+        target: [-13.562708, -0.8899793, -3.6317966]
+        up: [-0.47964817, 0.812441, 0.33147752]
         fieldOfView: 60
         easing: easeInOut
         transition: smooth
       - time: 6
         holdDuration: 0
-        position: [41.926132, 15.156785, -1.6722455]
-        target: [42.52374, 14.36685, -1.534881]
-        up: [-0.7987165, -0.6014997, 0.015816152]
+        position: [-9.496455, 2.6668906, -2.2179973]
+        target: [-8.540214, 2.9400978, -2.1133084]
+        up: [-0.29252392, 0.88588727, 0.36004668]
         fieldOfView: 60
         easing: easeInOut
         transition: smooth

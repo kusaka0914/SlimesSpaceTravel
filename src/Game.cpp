@@ -1592,14 +1592,44 @@ bool Game::DebugStartCredits()
 
 bool Game::StartUGCMode()
 {
-    constexpr int UGCStageNumber = 0;
     constexpr const char* UGCStageYamlPath =
         "../assets/data/stage/ugc_stage.yaml";
+    return StartUGCModeWithStage(UGCStageYamlPath, false);
+}
 
-    if (!LoadDebugStage(UGCStageNumber, UGCStageYamlPath)) {
+bool Game::StartUGCEditorTutorial()
+{
+    const std::filesystem::path tutorialTemplatePath =
+        "../assets/data/stage/ugc_tutorial_template.yaml";
+    const std::filesystem::path tutorialStagePath =
+        "../build/ugc_tutorial_stage.yaml";
+    std::error_code copyError;
+    std::filesystem::copy_file(
+        tutorialTemplatePath,
+        tutorialStagePath,
+        std::filesystem::copy_options::overwrite_existing,
+        copyError);
+    if (copyError) {
+        std::cerr << "Failed to reset UGC editor tutorial: "
+                  << copyError.message() << '\n';
+        return false;
+    }
+    constexpr const char* tutorialStageYamlPath =
+        "../build/ugc_tutorial_stage.yaml";
+    return StartUGCModeWithStage(tutorialStageYamlPath, true);
+}
+
+bool Game::StartUGCModeWithStage(
+    const std::string& yamlPath,
+    bool isTutorial)
+{
+    constexpr int UGCStageNumber = 0;
+
+    if (!LoadDebugStage(UGCStageNumber, yamlPath)) {
         return false;
     }
 
+    mIsUGCEditorTutorialActive = isTutorial;
     ClosePauseMenu();
     mUGCSessionState.EnterEditor();
     mUGCOrthographicHalfHeight = 20.0f;
@@ -1620,6 +1650,29 @@ bool Game::StartUGCMode()
         mCameraSystem->SetDebugCameraPose(pose);
     }
     return true;
+}
+
+bool Game::HasSeenUGCEditorTutorial() const
+{
+    if (!mStageProgressSystem) {
+        return false;
+    }
+    return mStageProgressSystem->HasShownConversation(
+               "tutorial:ugc_editor_completed") ||
+        mStageProgressSystem->HasShownConversation(
+               "tutorial:ugc_editor_skipped");
+}
+
+bool Game::FinishUGCEditorTutorial(bool wasCompleted)
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->MarkConversationShown(
+            wasCompleted
+                ? "tutorial:ugc_editor_completed"
+                : "tutorial:ugc_editor_skipped");
+    }
+    mIsUGCEditorTutorialActive = false;
+    return StartUGCMode();
 }
 
 void Game::OpenUGCWorkBrowser()
@@ -1653,9 +1706,13 @@ void Game::ExecuteTitleMenuSelection()
         mSceneSystem->StartBattleStyleSelection();
         break;
     case 1:
-
-
-        mSceneSystem->RequestFadeAction([this]() { StartUGCMode(); });
+        mSceneSystem->RequestFadeAction([this]() {
+            if (HasSeenUGCEditorTutorial()) {
+                StartUGCMode();
+            } else {
+                StartUGCEditorTutorial();
+            }
+        });
         break;
     case 2:
         OpenUGCWorkBrowser();
@@ -1739,11 +1796,26 @@ void Game::ReturnToUGCEditor()
     ReloadCurrentStage();
     mIsDebugEditorShowing = true;
     SetFreeCameraMode(true);
+    if (mIsUGCEditorTutorialActive && mUIRenderer) {
+        mUIRenderer->NotifyUGCEditorTutorialReturnedFromPlaytest();
+    }
 }
 
 void Game::ExitUGCMode()
 {
+    if (!mSceneSystem) {
+        return;
+    }
+    mSceneSystem->RequestFadeAction(
+        [this]() { CompleteUGCModeExit(false); });
+}
+
+void Game::CompleteUGCModeExit(bool shouldOpenWorkBrowser)
+{
+    mIsUGCClearTransitionInProgress = false;
+    mPendingUGCClearTransitionWorkFileName.reset();
     mUGCSessionState.Exit();
+    mIsUGCEditorTutorialActive = false;
     mIsDebugEditorShowing = false;
     SetFreeCameraMode(false);
 
@@ -1751,8 +1823,11 @@ void Game::ExitUGCMode()
     constexpr const char* InitialStageYamlPath =
         "../assets/data/stage/house.yaml";
     if (LoadDebugStage(InitialStageNumber, InitialStageYamlPath)) {
-        mSceneSystem->DebugEnterTitle();
+        mSceneSystem->EnterTitleAtFadeMidpoint();
         mAudioSystem->TryChangeBGM();
+        if (shouldOpenWorkBrowser) {
+            OpenUGCWorkBrowser();
+        }
     }
 }
 
@@ -1864,6 +1939,9 @@ void Game::OnPlayerCurrentPlanetChanged(Player& player)
 void Game::OnStarObtained()
 {
     if (mUGCSessionState.IsModeActive()) {
+        if (mIsUGCClearTransitionInProgress) {
+            return;
+        }
         // Actor走査中にステージを再読込すると走査中のActorを破棄するため、保存と遷移を次フレームへ遅延する。
 
 
@@ -1886,21 +1964,41 @@ void Game::ForcePlayersGroundedForCinematic()
 
 void Game::ProcessPendingUGCClearCompletion()
 {
-    const std::optional<std::string> verificationWorkFileName =
-        mUGCSessionState.ConsumeClearCompletion();
-    if (!verificationWorkFileName) {
-        return;
+    if (!mPendingUGCClearTransitionWorkFileName) {
+        mPendingUGCClearTransitionWorkFileName =
+            mUGCSessionState.ConsumeClearCompletion();
     }
-    if (verificationWorkFileName->empty()) {
-        ReturnToUGCEditor();
+    if (!mPendingUGCClearTransitionWorkFileName || !mSceneSystem) {
         return;
     }
 
-    if (mUIRenderer) {
-        mUIRenderer->CompleteUGCVerification(*verificationWorkFileName);
+    const std::string completedWorkFileName =
+        *mPendingUGCClearTransitionWorkFileName;
+    if (completedWorkFileName.empty()) {
+        if (mSceneSystem->RequestFadeAction(
+                [this]() {
+                    ReturnToUGCEditor();
+                    mIsUGCClearTransitionInProgress = false;
+                })) {
+            mPendingUGCClearTransitionWorkFileName.reset();
+            mIsUGCClearTransitionInProgress = true;
+        }
+        return;
     }
-    ExitUGCMode();
-    OpenUGCWorkBrowser();
+
+    const auto completeVerificationAndReturnToBrowser =
+        [this, completedWorkFileName]() {
+            if (mUIRenderer) {
+                mUIRenderer->CompleteUGCVerification(
+                    completedWorkFileName);
+            }
+            CompleteUGCModeExit(true);
+        };
+    if (mSceneSystem->RequestFadeAction(
+            completeVerificationAndReturnToBrowser)) {
+        mPendingUGCClearTransitionWorkFileName.reset();
+        mIsUGCClearTransitionInProgress = true;
+    }
 }
 
 bool Game::IsStageCleared(int stageNum) const

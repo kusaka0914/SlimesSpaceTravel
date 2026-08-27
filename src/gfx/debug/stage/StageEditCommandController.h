@@ -19,6 +19,7 @@ public:
     void PushUndo();
     bool RestoreUndo();
     bool RestoreRedo();
+    void ClearHistory();
 
     bool DeleteSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
     bool DeletePlanet(int planetIndex);
