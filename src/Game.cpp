@@ -763,8 +763,6 @@ void Game::GenerateOutput()
             mFramePerformanceMetrics.editorUiCpuMilliseconds =
                 std::chrono::duration<float, std::milli>(
                     std::chrono::steady_clock::now() - editorUiStartTime).count();
-        } else if (mUGCSessionState.IsModeActive()) {
-            mUIRenderer->DrawUGCPlaytestReturnButton();
         } else if (mUGCSessionState.IsWorkBrowserShowing()) {
             mUIRenderer->DrawUGCWorkBrowser();
         }
@@ -993,6 +991,12 @@ void Game::DrawUGCPreviewFrame()
         return;
     }
 
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    mUIRenderer->DrawSkyBox(previewWidth, previewHeight);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+
     const CameraPose editorPose = mCameraSystem->GetDebugCameraPose();
     const float targetPreviewY =
         static_cast<float>(mUGCPreviewEditLayer) * mUGCGridSize;
@@ -1045,7 +1049,7 @@ void Game::DrawUGCPreviewFrame()
         view,
         projection,
         previewPosition,
-        true,
+        UGCSceneLayerRenderMode::HighlightEditingLayerWithoutDimming,
         mUGCPreviewEditLayer);
 }
 
@@ -1057,12 +1061,12 @@ void Game::AddActor(std::unique_ptr<Actor> actor)
 void Game::SetUGCPlacementModelPreview(
     const std::optional<glm::vec3>& position,
     const std::string& modelPath,
-    const glm::vec3& scale)
+    const glm::vec3& scale,
+    const std::string& textureOverridePath)
 {
-
-
-
+    mUGCPlacementModelPreviewPositions.clear();
     if (!position) {
+        mUGCPlacementModelPreviewActor.reset();
         return;
     }
     if (modelPath.empty()) {
@@ -1082,7 +1086,25 @@ void Game::SetUGCPlacementModelPreview(
 
     mUGCPlacementModelPreviewActor->SetPos(*position);
     mUGCPlacementModelPreviewActor->SetScale(scale);
+    mUGCPlacementModelPreviewActor->SetTextureOverridePath(
+        textureOverridePath);
     mUGCPlacementModelPreviewActor->SetIsActive(true);
+}
+
+void Game::SetUGCPlacementModelPreviewPositions(
+    const std::vector<glm::vec3>& positions,
+    const std::string& modelPath,
+    const glm::vec3& scale,
+    const std::string& textureOverridePath)
+{
+    if (positions.empty()) {
+        SetUGCPlacementModelPreview(std::nullopt);
+        return;
+    }
+
+    SetUGCPlacementModelPreview(
+        positions.front(), modelPath, scale, textureOverridePath);
+    mUGCPlacementModelPreviewPositions = positions;
 }
 
 void Game::RemoveActor(Actor* actor)
@@ -1678,6 +1700,11 @@ void Game::SelectUGCEditorMode()
     if (mUIRenderer) mUIRenderer->SelectUGCEditorMode();
 }
 
+void Game::OpenUGCEditorMenu()
+{
+    if (mUIRenderer) mUIRenderer->OpenUGCEditorMenu();
+}
+
 void Game::ZoomUGCEditor(float distanceMultiplier)
 {
     if (mUIRenderer) mUIRenderer->ZoomUGCEditor(distanceMultiplier);
@@ -1864,9 +1891,13 @@ void Game::ProcessPendingUGCClearCompletion()
     if (!verificationWorkFileName) {
         return;
     }
-    if (!verificationWorkFileName->empty() && mUIRenderer) {
-        mUIRenderer->CompleteUGCVerification(
-            *verificationWorkFileName);
+    if (verificationWorkFileName->empty()) {
+        ReturnToUGCEditor();
+        return;
+    }
+
+    if (mUIRenderer) {
+        mUIRenderer->CompleteUGCVerification(*verificationWorkFileName);
     }
     ExitUGCMode();
     OpenUGCWorkBrowser();

@@ -6,6 +6,7 @@
 #include "gfx/debug/stage/StageEditorTypes.h"
 
 #include <glm/glm.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
@@ -16,10 +17,12 @@ public:
 
     bool AddPlatform(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale,
                      const StageActorPlacement* placement = nullptr);
-    bool AddPressureSwitchPlatform(
+    std::optional<std::string> AddPressureSwitchPlatform(
         int currentPlanetNum,
         const std::string& modelPath,
         const glm::vec3& scale,
+        const std::string& textureOverridePath,
+        const std::string& targetPlatformId,
         const StageActorPlacement* placement = nullptr);
     bool AddRideMovingPlatform(
         int currentPlanetNum,
@@ -42,9 +45,15 @@ public:
     bool AddTwoPlayerSwitchPair(
         int currentPlanetNum,
         const StageActorPlacement& firstPlacement,
-        const StageActorPlacement& secondPlacement);
+        const StageActorPlacement& secondPlacement,
+        const glm::vec3& scale,
+        const std::string& textureOverridePath,
+        const std::string& targetPlatformId);
     bool AddPlanet(const std::string& modelPath);
     bool AddEllipsePlanet(const std::string& modelPath);
+    bool AddEllipsePlanetAtPosition(
+        const std::string& modelPath,
+        const glm::vec3& worldPosition);
     bool AddEnemy(const std::string& type, int currentPlanetNum,
                   const StageActorPlacement* placement = nullptr);
     bool AddNPC(const std::string& modelPath, int currentPlanetNum, const std::string& name,
@@ -96,6 +105,8 @@ private:
     bool IsValidPlanetIndex(int planetIndex, const char* label) const;
     void ApplyPlacementToNode(YAML::Node& node, int planetIndex,
                               const StageActorPlacement* placement) const;
+    void SynchronizeRuntimeSwitchTargets(
+        const YAML::Node& stageConfig) const;
 
     void EnsureSequence(YAML::Node& config, const std::string& sequenceName) const;
 

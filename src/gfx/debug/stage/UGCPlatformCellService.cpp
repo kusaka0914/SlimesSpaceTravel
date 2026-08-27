@@ -4,10 +4,12 @@
 #include "Stage.h"
 #include "actor/Planet.h"
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StagePlatformIdentifiers.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "gfx/debug/stage/UGCPlatformDocument.h"
 #include "gfx/debug/stage/UGCPlatformGrid.h"
+#include "gfx/debug/stage/UGCPresetVisuals.h"
 #include "system/ActorLoadSystem.h"
 
 #include <algorithm>
@@ -28,6 +30,29 @@ bool TryReadPlatformCell(
     PlatformCell& outCell)
 {
     return UGCPlatformDocument::TryReadCell(cellNode, outCell);
+}
+
+void PreserveGeneratedPlatformIdentityAndRotation(
+    const YAML::Node& previousPlatformNode,
+    YAML::Node& rebuiltPlatformNode)
+{
+    if (!previousPlatformNode) {
+        return;
+    }
+
+    if (previousPlatformNode["platformId"]) {
+        rebuiltPlatformNode["platformId"] =
+            previousPlatformNode["platformId"].as<std::string>();
+    }
+
+    constexpr const char* rotationKeys[] = {
+        "rotation", "rotationQuat", "upVec", "facingYaw"};
+    for (const char* rotationKey : rotationKeys) {
+        if (previousPlatformNode[rotationKey]) {
+            rebuiltPlatformNode[rotationKey] =
+                YAML::Clone(previousPlatformNode[rotationKey]);
+        }
+    }
 }
 
 }
@@ -97,6 +122,44 @@ bool UGCPlatformCellService::AddCell(
     return true;
 }
 
+bool UGCPlatformCellService::AddCells(
+    int planetIndex,
+    const std::vector<glm::ivec3>& anchorGridPositions,
+    float gridSize,
+    int footprintSideLength,
+    const std::string& behavior,
+    const glm::ivec3& movementDeltaCells)
+{
+    if (!CanEditCells() || !IsValidPlanetIndex(planetIndex) ||
+        anchorGridPositions.empty()) {
+        return false;
+    }
+
+    YAML::Node stageConfig;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, stageConfig)) {
+        return false;
+    }
+
+    const float safeGridSize = UGCPlatformGrid::SanitizeGridSize(gridSize);
+    for (const glm::ivec3& anchorGridPosition : anchorGridPositions) {
+        PlatformCell cell;
+        cell.planetIndex = planetIndex;
+        cell.gridSize = safeGridSize;
+        cell.gridPosition = anchorGridPosition;
+        cell.behavior = behavior;
+        cell.movementDeltaCells = movementDeltaCells;
+        UGCPlatformDocument::AddFootprint(
+            stageConfig, cell, footprintSideLength);
+    }
+
+    if (!RebuildGeneratedPlatforms(stageConfig) ||
+        !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
+        return false;
+    }
+    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
+    return true;
+}
+
 bool UGCPlatformCellService::RefreshGeneratedPlatforms()
 {
     if (!CanEditCells()) {
@@ -140,7 +203,9 @@ bool UGCPlatformCellService::TranslateCells(
     }
 
     std::vector<UGCPlatformCellTranslationRegion> selectedRegions;
+    std::vector<int> selectedPlatformYamlIndices;
     selectedRegions.reserve(generatedPlatformRefs.size());
+    selectedPlatformYamlIndices.reserve(generatedPlatformRefs.size());
     for (const StageActorRef& generatedPlatformRef : generatedPlatformRefs) {
         if (generatedPlatformRef.sequenceName != "platforms" ||
             generatedPlatformRef.yamlIndex < 0 ||
@@ -170,6 +235,8 @@ bool UGCPlatformCellService::TranslateCells(
         region.gridDelta = UGCPlatformGrid::CalculateGridDelta(
             worldDelta, region.gridSize);
         selectedRegions.emplace_back(region);
+        selectedPlatformYamlIndices.emplace_back(
+            generatedPlatformRef.yamlIndex);
     }
 
     if (selectedRegions.empty()) {
@@ -181,6 +248,18 @@ bool UGCPlatformCellService::TranslateCells(
         return false;
     }
 
+    for (std::size_t regionIndex = 0;
+         regionIndex < selectedRegions.size();
+         ++regionIndex) {
+        YAML::Node platformNode = stageConfig["platforms"]
+            [selectedPlatformYamlIndices[regionIndex]];
+        if (!UGCPlatformDocument::TranslateGeneratedPlatformRegionMetadata(
+                platformNode,
+                selectedRegions[regionIndex].gridDelta)) {
+            return false;
+        }
+    }
+
     if (!RebuildGeneratedPlatforms(stageConfig) ||
         !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
         return false;
@@ -189,9 +268,135 @@ bool UGCPlatformCellService::TranslateCells(
     return true;
 }
 
-bool UGCPlatformCellService::RemoveCell(
+bool UGCPlatformCellService::TranslateMovingPlatformDestinations(
+    const std::vector<StageActorRef>& generatedPlatformRefs,
+    const glm::vec3& worldDelta)
+{
+    return UpdateMovingPlatformDestinations(
+        generatedPlatformRefs,
+        worldDelta,
+        RuntimeActorRefresh::ReloadActors);
+}
+
+bool UGCPlatformCellService::SaveMovingPlatformDestinationTranslation(
+    const std::vector<StageActorRef>& generatedPlatformRefs,
+    const glm::vec3& worldDelta)
+{
+    return UpdateMovingPlatformDestinations(
+        generatedPlatformRefs,
+        worldDelta,
+        RuntimeActorRefresh::KeepCurrentActors);
+}
+
+bool UGCPlatformCellService::UpdateMovingPlatformDestinations(
+    const std::vector<StageActorRef>& generatedPlatformRefs,
+    const glm::vec3& worldDelta,
+    RuntimeActorRefresh runtimeActorRefresh)
+{
+    if (!CanEditCells() || generatedPlatformRefs.empty()) {
+        return false;
+    }
+
+    YAML::Node stageConfig;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, stageConfig)) {
+        return false;
+    }
+
+    const YAML::Node platforms = stageConfig["platforms"];
+    const YAML::Node cells = stageConfig[UGCPlatformDocument::PlatformCellsKey];
+    if (!platforms || !platforms.IsSequence() ||
+        !cells || !cells.IsSequence()) {
+        return false;
+    }
+
+    struct DestinationRegion {
+        int planetIndex = -1;
+        float gridSize = 1.0f;
+        int gridLayer = 0;
+        int minimumX = 0;
+        int minimumZ = 0;
+        int maximumX = 0;
+        int maximumZ = 0;
+        glm::ivec3 gridDelta{0};
+    };
+
+    std::vector<DestinationRegion> destinationRegions;
+    destinationRegions.reserve(generatedPlatformRefs.size());
+    for (const StageActorRef& generatedPlatformRef : generatedPlatformRefs) {
+        if (generatedPlatformRef.sequenceName != "platforms" ||
+            generatedPlatformRef.yamlIndex < 0 ||
+            generatedPlatformRef.yamlIndex >= static_cast<int>(platforms.size())) {
+            continue;
+        }
+
+        const YAML::Node platformNode = platforms[generatedPlatformRef.yamlIndex];
+        const YAML::Node cellMin = platformNode["ugcCellMin"];
+        const YAML::Node cellMax = platformNode["ugcCellMax"];
+        if (!platformNode[GeneratedPlatformKey] ||
+            !platformNode[GeneratedPlatformKey].as<bool>(false) ||
+            platformNode["ugcPlatformBehavior"].as<std::string>("") != "moving" ||
+            !cellMin || !cellMin.IsSequence() || cellMin.size() < 2 ||
+            !cellMax || !cellMax.IsSequence() || cellMax.size() < 2) {
+            continue;
+        }
+
+        DestinationRegion region;
+        region.planetIndex = platformNode["currentPlanetNum"].as<int>(-1);
+        region.gridSize = platformNode["ugcGridSize"].as<float>(1.0f);
+        region.gridLayer = platformNode["ugcGridLayer"].as<int>(0);
+        region.minimumX = cellMin[0].as<int>();
+        region.minimumZ = cellMin[1].as<int>();
+        region.maximumX = cellMax[0].as<int>();
+        region.maximumZ = cellMax[1].as<int>();
+        region.gridDelta = UGCPlatformGrid::CalculateGridDelta(
+            worldDelta, region.gridSize);
+        destinationRegions.emplace_back(region);
+    }
+
+    int updatedCellCount = 0;
+    for (YAML::Node cellNode : cells) {
+        UGCPlatformCell cell;
+        if (!UGCPlatformDocument::TryReadCell(cellNode, cell) ||
+            cell.behavior != "moving") {
+            continue;
+        }
+
+        for (const DestinationRegion& region : destinationRegions) {
+            const bool belongsToRegion =
+                cell.planetIndex == region.planetIndex &&
+                std::abs(cell.gridSize - region.gridSize) < 0.0001f &&
+                cell.gridPosition.y == region.gridLayer &&
+                cell.gridPosition.x >= region.minimumX &&
+                cell.gridPosition.x <= region.maximumX &&
+                cell.gridPosition.z >= region.minimumZ &&
+                cell.gridPosition.z <= region.maximumZ;
+            if (!belongsToRegion) {
+                continue;
+            }
+
+            cell.movementDeltaCells += region.gridDelta;
+            cellNode["movementDeltaCells"][0] = cell.movementDeltaCells.x;
+            cellNode["movementDeltaCells"][1] = cell.movementDeltaCells.y;
+            cellNode["movementDeltaCells"][2] = cell.movementDeltaCells.z;
+            ++updatedCellCount;
+            break;
+        }
+    }
+
+    if (updatedCellCount == 0 ||
+        !RebuildGeneratedPlatforms(stageConfig) ||
+        !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
+        return false;
+    }
+    if (runtimeActorRefresh == RuntimeActorRefresh::ReloadActors) {
+        mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
+    }
+    return true;
+}
+
+bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(
     const StageActorRef& generatedPlatformRef,
-    const glm::vec3& hitPosition)
+    const glm::vec3& destinationWorldPosition)
 {
     if (!CanEditCells() ||
         generatedPlatformRef.sequenceName != "platforms" ||
@@ -216,16 +421,33 @@ bool UGCPlatformCellService::RemoveCell(
         return false;
     }
 
-    const int planetIndex =
+    const YAML::Node cellMin = generatedPlatform["ugcCellMin"];
+    const YAML::Node cellMax = generatedPlatform["ugcCellMax"];
+    if (generatedPlatform["ugcPlatformBehavior"].as<std::string>("") !=
+            "moving" ||
+        !cellMin || !cellMin.IsSequence() || cellMin.size() < 2 ||
+        !cellMax || !cellMax.IsSequence() || cellMax.size() < 2) {
+        return false;
+    }
+
+    UGCGeneratedPlatformRegion sourceRegion;
+    sourceRegion.planetIndex =
         generatedPlatform["currentPlanetNum"].as<int>(-1);
-    const float gridSize = generatedPlatform["ugcGridSize"].as<float>(1.0f);
-    const int gridLayer = generatedPlatform["ugcGridLayer"].as<int>(0);
-    if (!UGCPlatformDocument::RemoveClosestCell(
-            stageConfig,
-            planetIndex,
-            gridSize,
-            gridLayer,
-            hitPosition)) {
+    sourceRegion.gridSize =
+        generatedPlatform["ugcGridSize"].as<float>(1.0f);
+    sourceRegion.gridLayer =
+        generatedPlatform["ugcGridLayer"].as<int>(0);
+    sourceRegion.minimumX = cellMin[0].as<int>();
+    sourceRegion.minimumZ = cellMin[1].as<int>();
+    sourceRegion.maximumX = cellMax[0].as<int>();
+    sourceRegion.maximumZ = cellMax[1].as<int>();
+
+    const glm::ivec3 destinationGridPosition =
+        UGCPlatformGrid::CalculateGridPosition(
+            destinationWorldPosition,
+            sourceRegion.gridSize);
+    if (!UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
+            stageConfig, sourceRegion, destinationGridPosition)) {
         return false;
     }
 
@@ -366,11 +588,30 @@ void UGCPlatformCellService::ApplyPlacement(
 bool UGCPlatformCellService::RebuildGeneratedPlatforms(
     YAML::Node& stageConfig) const
 {
-    UGCPlatformDocument::RemoveGeneratedPlatforms(stageConfig);
+    const YAML::Node previousPlatformNodes =
+        YAML::Clone(stageConfig["platforms"]);
     const std::vector<UGCGeneratedPlatformRegion> generatedRegions =
         UGCPlatformDocument::CalculateGeneratedPlatformRegions(stageConfig);
 
+    std::vector<YAML::Node> previousGeneratedPlatforms;
+    previousGeneratedPlatforms.reserve(generatedRegions.size());
     for (const UGCGeneratedPlatformRegion& region : generatedRegions) {
+        const YAML::Node matchingPlatform =
+            UGCPlatformDocument::FindMatchingGeneratedPlatformNode(
+                stageConfig, region);
+        previousGeneratedPlatforms.emplace_back(
+            matchingPlatform
+                ? YAML::Clone(matchingPlatform)
+                : YAML::Node(YAML::NodeType::Undefined));
+    }
+
+    UGCPlatformDocument::RemoveGeneratedPlatforms(stageConfig);
+
+    for (std::size_t regionIndex = 0;
+         regionIndex < generatedRegions.size();
+         ++regionIndex) {
+        const UGCGeneratedPlatformRegion& region =
+            generatedRegions[regionIndex];
         const int widthInCells = region.maximumX - region.minimumX + 1;
         const int depthInCells = region.maximumZ - region.minimumZ + 1;
         const glm::vec3 worldPosition(
@@ -392,8 +633,14 @@ bool UGCPlatformCellService::RebuildGeneratedPlatforms(
         placement.worldPosition = worldPosition;
         placement.surfaceNormal = glm::vec3(0.0f, 1.0f, 0.0f);
         ApplyPlacement(platformNode, region.planetIndex, placement);
-        platformNode["platformId"] =
-            StagePlatformIdentifiers::CreateUniqueId(stageConfig);
+        PreserveGeneratedPlatformIdentityAndRotation(
+            previousGeneratedPlatforms[regionIndex],
+            platformNode);
+        if (!platformNode["platformId"] ||
+            platformNode["platformId"].as<std::string>("").empty()) {
+            platformNode["platformId"] =
+                StagePlatformIdentifiers::CreateUniqueId(stageConfig);
+        }
         platformNode[GeneratedPlatformKey] = true;
         platformNode["ugcGridSize"] = region.gridSize;
         platformNode["ugcGridLayer"] = region.gridLayer;
@@ -403,6 +650,8 @@ bool UGCPlatformCellService::RebuildGeneratedPlatforms(
         platformNode["ugcCellMax"][1] = region.maximumZ;
         platformNode["textureTiling"][0] = depthInCells;
         platformNode["textureTiling"][1] = widthInCells;
+        platformNode["textureOverride"] =
+            GetUGCPlatformTextureOverridePath(region.behavior);
         platformNode["ugcPlatformBehavior"] = region.behavior;
         if (region.behavior == "fading") {
                 platformNode["components"]["fadeOnStand"]["fadeOutDuration"] = 1.0f;
@@ -430,5 +679,7 @@ bool UGCPlatformCellService::RebuildGeneratedPlatforms(
         }
         stageConfig["platforms"].push_back(platformNode);
     }
+    StagePlatformConnections::RemapLatchedGroupSwitchTargetIndices(
+        stageConfig, previousPlatformNodes);
     return true;
 }

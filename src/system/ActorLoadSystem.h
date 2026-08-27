@@ -57,6 +57,9 @@ public:
         const YAML::Node& node,
         int stageYamlIndex);
     Actor* FindPlacedActor(const std::string& sequenceName, int stageYamlIndex) const;
+    Platform* FindPlacedPlatform(
+        const std::string& platformId,
+        int preferredStageYamlIndex = -1) const;
 
     void ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet, int stageYamlIndex,
                                      float defaultHeight = 0.0f);

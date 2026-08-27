@@ -65,6 +65,7 @@ private:
     bool mUGCEditorDpadUpPressedPrev = false;
     bool mUGCEditorDpadDownPressedPrev = false;
     bool mKeyboardConfirmPressedPrev = false;
+    bool mShouldIgnoreNextSyntheticCursorMotion = false;
     bool mHasPreviousCursorPosition = false;
     double mPreviousCursorX = 0.0;
     double mPreviousCursorY = 0.0;

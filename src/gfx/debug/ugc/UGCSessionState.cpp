@@ -6,6 +6,7 @@ void UGCSessionState::EnterEditor()
 {
     mIsWorkBrowserShowing = false;
     mIsModeActive = true;
+    mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = true;
 }
@@ -22,6 +23,7 @@ bool UGCSessionState::StartPlaytest()
     if (!mIsModeActive) {
         return false;
     }
+    mIsPlaytestActive = true;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = false;
     return true;
@@ -45,6 +47,7 @@ bool UGCSessionState::ReturnToEditor()
     }
     mVerificationWorkFileName.clear();
     mIsClearCompletionPending = false;
+    mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = true;
     return true;
@@ -53,6 +56,7 @@ bool UGCSessionState::ReturnToEditor()
 void UGCSessionState::Exit()
 {
     mIsModeActive = false;
+    mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
     mIsClearCompletionPending = false;
     mIsWorkBrowserShowing = false;
@@ -95,6 +99,11 @@ std::optional<std::string> UGCSessionState::ConsumeClearCompletion()
 bool UGCSessionState::IsModeActive() const
 {
     return mIsModeActive;
+}
+
+bool UGCSessionState::IsPlaytestActive() const
+{
+    return mIsPlaytestActive;
 }
 
 bool UGCSessionState::IsDebugPanelShowing() const

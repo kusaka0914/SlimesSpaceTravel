@@ -74,7 +74,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.95214635
+      - 0.96320486
       - 0.0577586
     sizeRatio:
       - 0.025999993
@@ -215,7 +215,7 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.00625
+      - 0.0062500015
       - 0.5444371
     sizeRatio:
       - 0.025999999
@@ -2518,8 +2518,8 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.9510685
-      - 0.100239396
+      - 0.96212703
+      - 0.092898905
     sizeRatio:
       - 0.025999999
       - 0.025999999
@@ -2565,8 +2565,8 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.9510685
-      - 0.13023938
+      - 0.96212703
+      - 0.12798078
     sizeRatio:
       - 0.025999999
       - 0.025999999
@@ -2612,8 +2612,8 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.9510685
-      - 0.16023938
+      - 0.96212703
+      - 0.1602394
     sizeRatio:
       - 0.025999999
       - 0.025999999
@@ -2707,10 +2707,10 @@ elements:
     rotationDegrees: 0
     posRatio:
       - 0.00625
-      - 0.08669824
+      - 0.092171684
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -2753,11 +2753,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.00625
-      - 0.11669824
+      - 0.0062500015
+      - 0.12873982
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -2800,11 +2800,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.00625
-      - 0.14669825
+      - 0.0062500015
+      - 0.16640264
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -2847,22 +2847,22 @@ elements:
     zOrder: 1
     rotationDegrees: 0
     posRatio:
-      - 0.96908253
-      - 0.07691193
+      - 0.39097852
+      - 0.018756002
     sizeRatio:
       - 0.015301247
       - 0.015300001
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_plus.png
-    usesInputDeviceVariants: false
+    usesInputDeviceVariants: true
     keyboardText: ""
     gameControllerText: ""
     keyboardModifierText: ""
     gameControllerModifierText: ""
-    keyboardTexture: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_enter.png
     gameControllerTexture: ""
-    keyboardFlipVertical: true
+    keyboardFlipVertical: false
     gameControllerFlipVertical: true
     shadowEnabled: false
     shadowOffsetXRatio: 0.0015
@@ -2894,8 +2894,8 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.00625
-      - 0.17669824
+      - 0.0062500015
+      - 0.20461282
     sizeRatio:
       - 0.025999999
       - 0.025999999
@@ -2944,8 +2944,8 @@ elements:
       - 0.56125
       - 0
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -2988,11 +2988,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.59224993
+      - 0.59225
       - 0
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -3038,8 +3038,8 @@ elements:
       - 0.62324995
       - 0
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -3082,11 +3082,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.6542499
+      - 0.65424997
       - 0
     sizeRatio:
-      - 0.026
-      - 0.026
+      - 0.025999999
+      - 0.025999999
     textScaleRatio: 0.0007
     text: New Text
     texture: ""
@@ -3099,6 +3099,382 @@ elements:
     gameControllerTexture: ""
     keyboardFlipVertical: true
     gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy
+    name: menuIcon2 コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.97785836
+      - 0.10989891
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_k.png
+    gameControllerTexture: textures/Inputs/switch_button_x.png
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy
+    name: menuIcon2 コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.97785836
+      - 0.14375696
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_u.png
+    gameControllerTexture: textures/Inputs/switch_button_b.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy_copy
+    name: menuIcon2 コピー コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.97785836
+      - 0.17706071
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_j.png
+    gameControllerTexture: textures/Inputs/switch_button_y.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy2
+    name: menuIcon2 コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.020272886
+      - 0.56011236
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_escape.png
+    gameControllerTexture: textures/Inputs/switch_button_minus.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy2_copy
+    name: menuIcon2 コピー コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.0203
+      - 0.076111875
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_i.png
+    gameControllerTexture: textures/Inputs/switch_button_zr.png
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy2_copy_copy
+    name: menuIcon2 コピー コピー コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.0203
+      - 0.110890225
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_y.png
+    gameControllerTexture: textures/Inputs/switch_button_zl.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy2_copy_copy_copy
+    name: menuIcon2 コピー コピー コピー コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.0203
+      - 0.14785789
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_m.png
+    gameControllerTexture: textures/Inputs/switch_button_r.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: false
+    outlineWidthRatio: 0.001
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: ugc
+    id: menuIcon2_copy_copy2_copy_copy_copy_copy
+    name: menuIcon2 コピー コピー コピー コピー コピー コピー
+    type: image
+    visibleByDefault: true
+    centerBased: false
+    flipVertical: true
+    zOrder: 1
+    rotationDegrees: 0
+    posRatio:
+      - 0.0203
+      - 0.18537292
+    sizeRatio:
+      - 0.015301247
+      - 0.015300001
+    textScaleRatio: 0.0007
+    text: New Text
+    texture: textures/Inputs/switch_button_plus.png
+    usesInputDeviceVariants: true
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: textures/Inputs/Keyboard/keyboard_n.png
+    gameControllerTexture: textures/Inputs/switch_button_l.png
+    keyboardFlipVertical: false
+    gameControllerFlipVertical: false
     shadowEnabled: false
     shadowOffsetXRatio: 0.0015
     shadowOffsetYRatio: 0.0015

@@ -20,6 +20,13 @@ public:
         int footprintSideLength = 1,
         const std::string& behavior = "normal",
         const glm::ivec3& movementDeltaCells = glm::ivec3(0));
+    bool AddCells(
+        int planetIndex,
+        const std::vector<glm::ivec3>& anchorGridPositions,
+        float gridSize,
+        int footprintSideLength,
+        const std::string& behavior,
+        const glm::ivec3& movementDeltaCells = glm::ivec3(0));
     bool RefreshGeneratedPlatforms();
     bool TranslateCells(
         const StageActorRef& generatedPlatformRef,
@@ -27,9 +34,15 @@ public:
     bool TranslateCells(
         const std::vector<StageActorRef>& generatedPlatformRefs,
         const glm::vec3& worldDelta);
-    bool RemoveCell(
+    bool TranslateMovingPlatformDestinations(
+        const std::vector<StageActorRef>& generatedPlatformRefs,
+        const glm::vec3& worldDelta);
+    bool SaveMovingPlatformDestinationTranslation(
+        const std::vector<StageActorRef>& generatedPlatformRefs,
+        const glm::vec3& worldDelta);
+    bool RemoveMovingPlatformDestinationCell(
         const StageActorRef& generatedPlatformRef,
-        const glm::vec3& hitPosition);
+        const glm::vec3& destinationWorldPosition);
     bool RemoveCellAtGridPosition(
         int planetIndex,
         const glm::vec3& worldPosition,
@@ -48,6 +61,15 @@ public:
         int emptyColumnGridLayer) const;
 
 private:
+    enum class RuntimeActorRefresh {
+        KeepCurrentActors,
+        ReloadActors,
+    };
+
+    bool UpdateMovingPlatformDestinations(
+        const std::vector<StageActorRef>& generatedPlatformRefs,
+        const glm::vec3& worldDelta,
+        RuntimeActorRefresh runtimeActorRefresh);
     bool CanEditCells() const;
     bool IsValidPlanetIndex(int planetIndex) const;
     bool RebuildGeneratedPlatforms(YAML::Node& stageConfig) const;

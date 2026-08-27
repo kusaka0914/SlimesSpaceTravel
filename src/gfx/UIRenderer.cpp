@@ -233,9 +233,12 @@ void UIRenderer::DrawGameContent()
     const bool isUGCEditing =
         mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive =
+        mGame->GetIsUGCPlaytestActive();
     const bool shouldDrawDefaultUI =
         !isStartCinematicPlaying &&
         !isUGCEditing &&
+        !isUGCPlaytestActive &&
         (sceneSystem->IsPlaying() ||
          sceneSystem->IsTutorialActive("jewel_usage"));
     mHudRenderer->UpdateTalkableUIVisibility(
@@ -245,7 +248,7 @@ void UIRenderer::DrawGameContent()
         mHudRenderer->DrawDefaultUI();
     }
 
-    if (!isStartCinematicPlaying) {
+    if (!isStartCinematicPlaying && !isUGCPlaytestActive) {
         mStateUIRenderer->DrawStateUI();
     }
 
@@ -253,7 +256,8 @@ void UIRenderer::DrawGameContent()
         DrawCustomUI();
     }
 
-    if (!isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
+    if (!isUGCPlaytestActive && !isStartCinematicPlaying &&
+        mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
@@ -307,37 +311,6 @@ void UIRenderer::DrawDebugEditor(
     glDepthMask(GL_TRUE);
 }
 
-void UIRenderer::DrawUGCPlaytestReturnButton()
-{
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, mFbWidth, mFbHeight);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::SetNextWindowPos(ImVec2(16.0f, 16.0f), ImGuiCond_Always);
-    constexpr ImGuiWindowFlags windowFlags =
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoSavedSettings;
-    ImGui::Begin(
-        "UGCプレイテスト###UGCPlaytestReturn",
-        nullptr,
-        windowFlags);
-    ImGui::TextUnformatted("－ボタンでも作る画面へ戻れます");
-    if (ImGui::Button("作る画面へ戻る", ImVec2(180.0f, 42.0f))) {
-        mGame->ReturnToUGCEditor();
-    }
-    ImGui::End();
-    EndImGuiFrame();
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-}
-
 void UIRenderer::DrawUGCWorkBrowser()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
@@ -381,6 +354,11 @@ void UIRenderer::ToggleUGCEraser()
 void UIRenderer::SelectUGCEditorMode()
 {
     if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCSelectionMode();
+}
+
+void UIRenderer::OpenUGCEditorMenu()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->OpenUGCEditorMenu();
 }
 
 void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
@@ -769,7 +747,8 @@ void UIRenderer::DrawCustomElement(
     bool centerTalkPrompt,
     float contentScale,
     const Player* inputPlayer,
-    float opacity)
+    float opacity,
+    const std::string* textOverride)
 {
     opacity = std::clamp(opacity, 0.0f, 1.0f);
     if (contentScale < 0.0f) {
@@ -814,7 +793,9 @@ void UIRenderer::DrawCustomElement(
     switch (element.type) {
     case UILoadSystem::CustomElementType::Text:
     {
-        std::string resolvedText = ResolveCustomElementText(element);
+        std::string resolvedText = textOverride
+            ? *textOverride
+            : ResolveCustomElementText(element);
         if (inputPlayer && element.usesInputDeviceVariants) {
             const bool usesController = UsesControllerUI(inputPlayer);
             if (mGame->IsInputModifierHeld()) {
@@ -976,8 +957,10 @@ void UIRenderer::DrawCustomUI()
 
     const bool isUGCEditing =
         mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
+    static const std::string returnToEditorText = "作る画面に戻る";
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "menu" ||
+        return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
                id == "play" || id == "preview" ||
                id == "presetPlatform" || id == "presetEnemy" ||
@@ -1217,6 +1200,9 @@ void UIRenderer::DrawCustomUI()
              element->zOrder > 0)) {
             continue;
         }
+        if (isUGCPlaytestActive && element->screen != "operation") {
+            continue;
+        }
 
         bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
         if (element->screen == "operation") {
@@ -1297,6 +1283,11 @@ void UIRenderer::DrawCustomUI()
             continue;
         }
 
+        const std::string* textOverride =
+            isUGCPlaytestActive && element->id == "buttonTextB_copy"
+                ? &returnToEditorText
+                : nullptr;
+
         if (isTwoPlayer && element->screen == "operation") {
 
 
@@ -1308,7 +1299,8 @@ void UIRenderer::DrawCustomUI()
                 false,
                 1.0f,
                 players[0],
-                getOperationGuideOpacity(*element, players[0]));
+                getOperationGuideOpacity(*element, players[0]),
+                textOverride);
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
@@ -1317,7 +1309,8 @@ void UIRenderer::DrawCustomUI()
                 false,
                 1.0f,
                 players[1],
-                getOperationGuideOpacity(*element, players[1]));
+                getOperationGuideOpacity(*element, players[1]),
+                textOverride);
             continue;
         }
 
@@ -1335,7 +1328,8 @@ void UIRenderer::DrawCustomUI()
             false,
             -1.0f,
             element->screen == "operation" ? operationPlayer : nullptr,
-            getOperationGuideOpacity(*element, operationPlayer));
+            getOperationGuideOpacity(*element, operationPlayer),
+            textOverride);
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
             RecordRenderedUIElement(
@@ -1358,7 +1352,7 @@ void UIRenderer::DrawUGCForegroundCustomUI(
     }
 
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "menu" ||
+        return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
                id == "play" || id == "preview" ||
                id == "presetPlatform" || id == "presetEnemy" ||
@@ -1430,12 +1424,25 @@ void UIRenderer::EndImGuiFrame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void UIRenderer::DrawSkyBox()
+void UIRenderer::DrawSkyBox(int renderWidth, int renderHeight)
 {
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    if (renderWidth <= 0 || renderHeight <= 0) {
+        glfwGetFramebufferSize(
+            mGame->GetWindow(),
+            &renderWidth,
+            &renderHeight);
+    }
+
+    const int previousFramebufferWidth = mFbWidth;
+    const int previousFramebufferHeight = mFbHeight;
+    mFbWidth = renderWidth;
+    mFbHeight = renderHeight;
     glUseProgram(mUIShader->GetShaderProgram());
 
     DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
+
+    mFbWidth = previousFramebufferWidth;
+    mFbHeight = previousFramebufferHeight;
 }
 
 void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, int index,

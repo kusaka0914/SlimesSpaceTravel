@@ -16,6 +16,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <optional>
+#include <string>
 #include <vector>
 
 class StageSelectionController;
@@ -47,6 +48,12 @@ public:
     bool TryTranslateUGCPlatformCells(
         const std::vector<StageActorRef>& actorRefs,
         const glm::vec3& worldDelta);
+    bool TryTranslateUGCMovingPlatformDestinations(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
+    bool TrySaveUGCMovingPlatformDestinationTranslation(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
     bool IsPlacementActive() const
     {
         return mPlacementController.IsPlacementActive();
@@ -54,6 +61,14 @@ public:
     const std::optional<glm::vec3>& GetPlacementPreviewPosition() const
     {
         return mPlacementController.GetPlacementPreviewPosition();
+    }
+    const std::string& GetPlacementDisplayName() const
+    {
+        return mPlacementController.GetPlacementDisplayName();
+    }
+    const std::string& GetPlacementStatus() const
+    {
+        return mPlacementController.GetPlacementStatus();
     }
     void CancelPlacement();
 

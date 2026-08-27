@@ -10,6 +10,7 @@
 
 #include <GLFW/glfw3.h>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -114,6 +115,119 @@ void RenumberPlanetNodes(YAML::Node planetNodes)
     }
 }
 
+glm::vec3 ReadPlanetCenter(const YAML::Node& planetNode)
+{
+    const YAML::Node center = planetNode["center"];
+    if (!center || !center.IsSequence() || center.size() < 3) {
+        return glm::vec3(0.0f);
+    }
+    return glm::vec3(
+        center[0].as<float>(0.0f),
+        center[1].as<float>(0.0f),
+        center[2].as<float>(0.0f));
+}
+
+float ReadPlanetRadius(const YAML::Node& planetNode)
+{
+    const YAML::Node scale = planetNode["scale"];
+    if (!scale || !scale.IsSequence() || scale.size() == 0) {
+        return 1.0f;
+    }
+    return std::abs(scale[0].as<float>(1.0f));
+}
+
+bool TryReadVec3(
+    const YAML::Node& node,
+    const char* key,
+    glm::vec3& outVector)
+{
+    const YAML::Node vectorNode = node[key];
+    if (!vectorNode || !vectorNode.IsSequence() || vectorNode.size() < 3) {
+        return false;
+    }
+    outVector = glm::vec3(
+        vectorNode[0].as<float>(),
+        vectorNode[1].as<float>(),
+        vectorNode[2].as<float>());
+    return true;
+}
+
+void WriteVec3(
+    YAML::Node node,
+    const char* key,
+    const glm::vec3& vector)
+{
+    node[key][0] = vector.x;
+    node[key][1] = vector.y;
+    node[key][2] = vector.z;
+}
+
+void TranslateMovementPath(
+    YAML::Node movementNode,
+    const glm::vec3& localPositionOffset)
+{
+    if (!movementNode || !movementNode.IsMap()) {
+        return;
+    }
+
+    constexpr const char* pathPositionKeys[] = {
+        "startLocalPos", "endLocalPos"};
+    for (const char* pathPositionKey : pathPositionKeys) {
+        glm::vec3 localPosition;
+        if (TryReadVec3(movementNode, pathPositionKey, localPosition)) {
+            WriteVec3(
+                movementNode,
+                pathPositionKey,
+                localPosition + localPositionOffset);
+        }
+    }
+}
+
+void PreserveActorWorldPositionAfterPlanetReassignment(
+    YAML::Node actorNode,
+    float previousPlanetRadius,
+    float replacementPlanetRadius,
+    const glm::vec3& localPositionOffset)
+{
+    glm::vec3 previousLocalPosition;
+    if (!TryReadVec3(actorNode, "pos", previousLocalPosition)) {
+        const float theta = actorNode["theta"].as<float>(0.0f);
+        const float phi = actorNode["phi"].as<float>(0.0f);
+        const float height = actorNode["height"].as<float>(0.0f);
+        const glm::vec3 direction(
+            std::cos(phi) * std::cos(theta),
+            std::sin(phi),
+            std::cos(phi) * std::sin(theta));
+        previousLocalPosition =
+            direction * (previousPlanetRadius + height);
+    }
+
+    const glm::vec3 replacementLocalPosition =
+        previousLocalPosition + localPositionOffset;
+    WriteVec3(actorNode, "pos", replacementLocalPosition);
+
+    const float distanceFromReplacementCenter =
+        glm::length(replacementLocalPosition);
+    if (distanceFromReplacementCenter > 0.000001f) {
+        const glm::vec3 direction =
+            replacementLocalPosition / distanceFromReplacementCenter;
+        actorNode["theta"] = std::atan2(direction.z, direction.x);
+        actorNode["phi"] = std::asin(
+            glm::clamp(direction.y, -1.0f, 1.0f));
+        actorNode["height"] =
+            distanceFromReplacementCenter - replacementPlanetRadius;
+    }
+
+    TranslateMovementPath(actorNode, localPositionOffset);
+    const YAML::Node readOnlyActorNode = actorNode;
+    const YAML::Node components = readOnlyActorNode["components"];
+    if (components && components.IsMap() && components["movement"]) {
+        TranslateMovementPath(
+            actorNode["components"]["movement"],
+            localPositionOffset);
+    }
+}
+
 void ReassignPlayersFromDeletedPlanet(
     YAML::Node& stageYaml,
     int deletedPlanetIndex,
@@ -139,12 +253,181 @@ void ReassignPlayersFromDeletedPlanet(
         }
 
         if (currentPlanetIndex == deletedPlanetIndex) {
+            playerNode["currentPlanetNum"] = replacementPlanetIndex;
+        } else if (currentPlanetIndex > deletedPlanetIndex) {
+            playerNode["currentPlanetNum"] = currentPlanetIndex - 1;
+        }
+    }
+}
+
+void ReassignPlayersPreservingWorldPositions(
+    YAML::Node& stageYaml,
+    int deletedPlanetIndex,
+    int replacementPlanetIndex,
+    float deletedPlanetRadius,
+    float replacementPlanetRadius,
+    const glm::vec3& localPositionOffset)
+{
+    YAML::Node players = stageYaml["players"];
+    if (!players || !players.IsSequence()) {
+        return;
+    }
+
+    for (YAML::Node playerNode : players) {
+        if (!playerNode.IsMap()) {
+            continue;
+        }
+
+        int currentPlanetIndex = 0;
+        if (!TryReadPlanetIndex(
+                playerNode,
+                "currentPlanetNum",
+                0,
+                currentPlanetIndex)) {
+            continue;
+        }
+
+        if (currentPlanetIndex == deletedPlanetIndex) {
+            PreserveActorWorldPositionAfterPlanetReassignment(
+                playerNode,
+                deletedPlanetRadius,
+                replacementPlanetRadius,
+                localPositionOffset);
             playerNode["currentPlanetNum"] =
                 replacementPlanetIndex;
         } else if (currentPlanetIndex > deletedPlanetIndex) {
             playerNode["currentPlanetNum"] =
                 currentPlanetIndex - 1;
         }
+    }
+}
+
+int ResolvePlanetIndexAfterDeletion(
+    int sourcePlanetIndex,
+    int deletedPlanetIndex,
+    int replacementPlanetIndex)
+{
+    if (sourcePlanetIndex == deletedPlanetIndex) {
+        return replacementPlanetIndex;
+    }
+    if (sourcePlanetIndex > deletedPlanetIndex) {
+        return sourcePlanetIndex - 1;
+    }
+    return sourcePlanetIndex;
+}
+
+void ReassignActorsPreservingWorldPositions(
+    YAML::Node& stageYaml,
+    const std::string& sequenceName,
+    int deletedPlanetIndex,
+    int replacementPlanetIndex,
+    float deletedPlanetRadius,
+    float replacementPlanetRadius,
+    const glm::vec3& localPositionOffset)
+{
+    YAML::Node actorNodes = stageYaml[sequenceName];
+    if (!actorNodes || !actorNodes.IsSequence()) {
+        return;
+    }
+
+    for (YAML::Node actorNode : actorNodes) {
+        if (!actorNode.IsMap()) {
+            continue;
+        }
+
+        int currentPlanetIndex = 0;
+        if (!TryReadPlanetIndex(
+                actorNode,
+                "currentPlanetNum",
+                0,
+                currentPlanetIndex)) {
+            continue;
+        }
+
+        if (currentPlanetIndex == deletedPlanetIndex) {
+            PreserveActorWorldPositionAfterPlanetReassignment(
+                actorNode,
+                deletedPlanetRadius,
+                replacementPlanetRadius,
+                localPositionOffset);
+        }
+        actorNode["currentPlanetNum"] = ResolvePlanetIndexAfterDeletion(
+            currentPlanetIndex,
+            deletedPlanetIndex,
+            replacementPlanetIndex);
+    }
+}
+
+void ReassignBoatsPreservingWorldPositions(
+    YAML::Node& stageYaml,
+    int deletedPlanetIndex,
+    int replacementPlanetIndex,
+    float deletedPlanetRadius,
+    float replacementPlanetRadius,
+    const glm::vec3& localPositionOffset)
+{
+    YAML::Node boats = stageYaml["boats"];
+    if (!boats || !boats.IsSequence()) {
+        return;
+    }
+
+    for (YAML::Node boatNode : boats) {
+        if (!boatNode.IsMap()) {
+            continue;
+        }
+
+        int startPlanetIndex = 0;
+        if (TryReadPlanetIndex(
+                boatNode,
+                "startPlanet",
+                0,
+                startPlanetIndex)) {
+            if (startPlanetIndex == deletedPlanetIndex) {
+                PreserveActorWorldPositionAfterPlanetReassignment(
+                    boatNode,
+                    deletedPlanetRadius,
+                    replacementPlanetRadius,
+                    localPositionOffset);
+            }
+            boatNode["startPlanet"] = ResolvePlanetIndexAfterDeletion(
+                startPlanetIndex,
+                deletedPlanetIndex,
+                replacementPlanetIndex);
+        }
+
+        int destinationPlanetIndex = 0;
+        if (TryReadPlanetIndex(
+                boatNode,
+                "destPlanet",
+                0,
+                destinationPlanetIndex)) {
+            boatNode["destPlanet"] = ResolvePlanetIndexAfterDeletion(
+                destinationPlanetIndex,
+                deletedPlanetIndex,
+                replacementPlanetIndex);
+        }
+    }
+}
+
+void ReassignUGCPlatformCellsFromDeletedPlanet(
+    YAML::Node& stageYaml,
+    int deletedPlanetIndex,
+    int replacementPlanetIndex)
+{
+    YAML::Node cells = stageYaml["ugcPlatformCells"];
+    if (!cells || !cells.IsSequence()) {
+        return;
+    }
+
+    for (YAML::Node cell : cells) {
+        if (!cell.IsMap() || !cell["planetIndex"]) {
+            continue;
+        }
+
+        cell["planetIndex"] = ResolvePlanetIndexAfterDeletion(
+            cell["planetIndex"].as<int>(0),
+            deletedPlanetIndex,
+            replacementPlanetIndex);
     }
 }
 
@@ -783,6 +1066,106 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
     RemoveUGCPlatformCellsOnDeletedPlanet(
         stageYaml,
         planetIndex);
+
+    if (!StageYamlRepository::SaveCurrentStage(
+            mContext,
+            stageYaml,
+            false)) {
+        return false;
+    }
+
+    mSelectionController.Clear();
+    mContext.game->ReloadCurrentStage();
+    return true;
+}
+
+bool StageEditCommandController::DeletePlanetOnly(int planetIndex)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
+    }
+
+    YAML::Node stageYaml;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
+        return false;
+    }
+
+    const YAML::Node planets = stageYaml["planets"];
+    if (!planets || !planets.IsSequence() ||
+        planets.size() <= 1 ||
+        planetIndex < 0 ||
+        planetIndex >= static_cast<int>(planets.size())) {
+        return false;
+    }
+
+    const YAML::Node deletedPlanetNode = YAML::Clone(planets[planetIndex]);
+    const int replacementPlanetSourceIndex =
+        planetIndex + 1 < static_cast<int>(planets.size())
+            ? planetIndex + 1
+            : planetIndex - 1;
+    const YAML::Node replacementPlanetNode =
+        YAML::Clone(planets[replacementPlanetSourceIndex]);
+    const glm::vec3 localPositionOffset =
+        ReadPlanetCenter(deletedPlanetNode) -
+        ReadPlanetCenter(replacementPlanetNode);
+    const float deletedPlanetRadius =
+        ReadPlanetRadius(deletedPlanetNode);
+    const float replacementPlanetRadius =
+        ReadPlanetRadius(replacementPlanetNode);
+
+    PushUndo();
+    if (!StageYamlRepository::RemoveSequenceElement(
+            stageYaml,
+            "planets",
+            planetIndex)) {
+        return false;
+    }
+
+    RenumberPlanetNodes(stageYaml["planets"]);
+    const int remainingPlanetCount =
+        static_cast<int>(stageYaml["planets"].size());
+    const int replacementPlanetIndex = std::min(
+        planetIndex,
+        remainingPlanetCount - 1);
+
+    ReassignPlayersPreservingWorldPositions(
+        stageYaml,
+        planetIndex,
+        replacementPlanetIndex,
+        deletedPlanetRadius,
+        replacementPlanetRadius,
+        localPositionOffset);
+    ReassignBoatsPreservingWorldPositions(
+        stageYaml,
+        planetIndex,
+        replacementPlanetIndex,
+        deletedPlanetRadius,
+        replacementPlanetRadius,
+        localPositionOffset);
+    std::unordered_set<std::string> actorSequenceNames;
+    for (const StageActorTypeInfo& typeInfo :
+         StageActorQuery::GetTypeInfos()) {
+        if (typeInfo.sequenceName == "planets" ||
+            typeInfo.sequenceName == "boats") {
+            continue;
+        }
+
+        actorSequenceNames.insert(typeInfo.sequenceName);
+    }
+    for (const std::string& sequenceName : actorSequenceNames) {
+        ReassignActorsPreservingWorldPositions(
+            stageYaml,
+            sequenceName,
+            planetIndex,
+            replacementPlanetIndex,
+            deletedPlanetRadius,
+            replacementPlanetRadius,
+            localPositionOffset);
+    }
+    ReassignUGCPlatformCellsFromDeletedPlanet(
+        stageYaml,
+        planetIndex,
+        replacementPlanetIndex);
 
     if (!StageYamlRepository::SaveCurrentStage(
             mContext,

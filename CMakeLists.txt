@@ -53,6 +53,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformIdentifiersTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformConnectionsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageYamlRepositoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkFileNameTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkStorageTests.cpp
@@ -61,8 +62,10 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageYamlRepositoryOperations.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkFileName.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkStorage.cpp
@@ -71,6 +74,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src

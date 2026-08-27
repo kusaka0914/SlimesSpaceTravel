@@ -151,6 +151,8 @@ std::vector<PlatformRevealTarget> ReadSwitchActorTargets(
         target.sequenceName =
             targetNode["sequence"].as<std::string>();
         target.yamlIndex = targetNode["index"].as<int>();
+        target.platformId =
+            targetNode["platformId"].as<std::string>("");
         if (target.IsValid()) {
             targets.emplace_back(std::move(target));
         }
@@ -1088,6 +1090,40 @@ Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int sta
     }
 
     return nullptr;
+}
+
+Platform* ActorLoadSystem::FindPlacedPlatform(
+    const std::string& platformId,
+    int preferredStageYamlIndex) const
+{
+    if (!mGame || platformId.empty()) {
+        return nullptr;
+    }
+
+    Stage* stage = mGame->GetCurrentStage();
+    if (!stage) {
+        return nullptr;
+    }
+
+    Platform* matchingPlatform = nullptr;
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform || platform->GetPlatformId() != platformId) {
+                continue;
+            }
+            if (platform->GetStageYamlIndex() == preferredStageYamlIndex) {
+                return platform;
+            }
+            if (!matchingPlatform) {
+                matchingPlatform = platform;
+            }
+        }
+    }
+    return matchingPlatform;
 }
 
 void ActorLoadSystem::LoadEnemies(const char* path)

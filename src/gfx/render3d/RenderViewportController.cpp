@@ -55,7 +55,12 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
     const auto renderStartTime = std::chrono::steady_clock::now();
     const GLuint gpuTimerQuery = BeginGpuTimerQuery(0);
     mRenderer->DrawScene(
-        views[0], proj, cameraPos, false, 0, mGame->GetControlledPlayer());
+        views[0],
+        proj,
+        cameraPos,
+        UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer,
+        0,
+        mGame->GetControlledPlayer());
     EndGpuTimerQuery(gpuTimerQuery);
     mGame->RecordViewportRenderDurationMilliseconds(
         0,
@@ -95,7 +100,13 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
     const auto firstViewportRenderStartTime =
         std::chrono::steady_clock::now();
     const GLuint firstViewportGpuTimerQuery = BeginGpuTimerQuery(0);
-    mRenderer->DrawScene(views[0], proj, p1CameraPos, false, 0, player1);
+    mRenderer->DrawScene(
+        views[0],
+        proj,
+        p1CameraPos,
+        UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer,
+        0,
+        player1);
     EndGpuTimerQuery(firstViewportGpuTimerQuery);
     mGame->RecordViewportRenderDurationMilliseconds(
         0,
@@ -107,7 +118,13 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
     const auto secondViewportRenderStartTime =
         std::chrono::steady_clock::now();
     const GLuint secondViewportGpuTimerQuery = BeginGpuTimerQuery(1);
-    mRenderer->DrawScene(views[1], proj, p2CameraPos, false, 0, player2);
+    mRenderer->DrawScene(
+        views[1],
+        proj,
+        p2CameraPos,
+        UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer,
+        0,
+        player2);
     EndGpuTimerQuery(secondViewportGpuTimerQuery);
     mGame->RecordViewportRenderDurationMilliseconds(
         1,

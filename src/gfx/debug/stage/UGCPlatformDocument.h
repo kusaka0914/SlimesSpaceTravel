@@ -59,6 +59,10 @@ bool RemoveClosestCell(
     float gridSize,
     int gridLayer,
     const glm::vec3& hitPosition);
+bool RemoveMovingDestinationCellAtGridPosition(
+    YAML::Node& stageConfig,
+    const UGCGeneratedPlatformRegion& sourceRegion,
+    const glm::ivec3& destinationGridPosition);
 
 bool ResolveLayerAtGridPosition(
     const YAML::Node& stageConfig,
@@ -76,9 +80,15 @@ int ResolvePlacementLayerAtGridPosition(
 int TranslateCells(
     YAML::Node& stageConfig,
     const std::vector<UGCPlatformCellTranslationRegion>& regions);
+bool TranslateGeneratedPlatformRegionMetadata(
+    YAML::Node& platformNode,
+    const glm::ivec3& gridDelta);
 
 void RemoveGeneratedPlatforms(YAML::Node& stageConfig);
 std::vector<UGCGeneratedPlatformRegion> CalculateGeneratedPlatformRegions(
     const YAML::Node& stageConfig);
+YAML::Node FindMatchingGeneratedPlatformNode(
+    const YAML::Node& stageConfig,
+    const UGCGeneratedPlatformRegion& region);
 
 }

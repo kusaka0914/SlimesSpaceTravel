@@ -31,6 +31,12 @@ public:
     bool TryTranslateCells(
         const std::vector<StageActorRef>& actorRefs,
         const glm::vec3& worldDelta);
+    bool TryTranslateMovingPlatformDestinations(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
+    bool TrySaveMovingPlatformDestinationTranslation(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
 
 private:
     DebugEditorContext& mContext;

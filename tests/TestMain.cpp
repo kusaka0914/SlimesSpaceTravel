@@ -9,6 +9,8 @@ void RegisterStageActorNodeFactoryTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterStagePlatformIdentifiersTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterStagePlatformConnectionsTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterStageYamlRepositoryTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterUGCWorkFileNameTests(
@@ -25,12 +27,15 @@ void RegisterUGCWorkMetadataTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterUGCSessionStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterUGCPresetVisualsTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
     std::vector<std::pair<std::string, std::function<void()>>> tests;
     RegisterStageActorNodeFactoryTests(tests);
     RegisterStagePlatformIdentifiersTests(tests);
+    RegisterStagePlatformConnectionsTests(tests);
     RegisterStageYamlRepositoryTests(tests);
     RegisterUGCWorkFileNameTests(tests);
     RegisterUGCWorkStorageTests(tests);
@@ -39,6 +44,7 @@ int main()
     RegisterStageEditHistoryTests(tests);
     RegisterUGCWorkMetadataTests(tests);
     RegisterUGCSessionStateTests(tests);
+    RegisterUGCPresetVisualsTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gfx/debug/stage/UGCPresetVisuals.h"
+
 #include <functional>
 
 class StageActorCreateService;
@@ -7,18 +9,6 @@ class StageActorPlacementController;
 class StageSelectionController;
 class UGCPlatformCellService;
 struct DebugEditorContext;
-
-enum class UGCPresetKind {
-    NormalPlatform,
-    NormalEnemy,
-    EllipsePlanet,
-    PressureSwitch,
-    GoalStar,
-    MovingPlatform,
-    FadingPlatform,
-    AdhesivePlatform,
-    TwoPlayerSwitch,
-};
 
 class UGCPlacementPresetController {
 public:

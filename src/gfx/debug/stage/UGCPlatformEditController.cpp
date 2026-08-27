@@ -5,6 +5,7 @@
 #include "gfx/debug/stage/StageActorPlacementResolver.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/UGCPlatformCellService.h"
+#include "gfx/debug/stage/UGCPlatformGrid.h"
 #include "imgui.h"
 
 #include <cmath>
@@ -47,9 +48,20 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
+    int eraseLayer = mGridLayer;
+    const bool isMovingPlatformDestination =
+        mSelectionController->IsMovingPlatformDestinationSelected();
+    if (isMovingPlatformDestination) {
+        const glm::vec3 destinationCenter = mSelectionController
+            ->CalculateSelectedMovingPlatformDestinationsCenter();
+        const float gridSize = mContext.game->GetUGCGridSize();
+        eraseLayer = static_cast<int>(std::round(
+            destinationCenter.y / gridSize));
+    }
+
     StageActorPlacement placement;
     if (!mPlacementResolver.TryResolveUGCBuildPlanePlacement(
-            rayFrom, rayTo, mGridLayer, placement)) {
+            rayFrom, rayTo, eraseLayer, placement)) {
         return false;
     }
 
@@ -59,7 +71,33 @@ bool UGCPlatformEditController::TryEraseCell()
     }
 
     const float gridSize = mContext.game->GetUGCGridSize();
-    int eraseLayer = mGridLayer;
+    if (isMovingPlatformDestination) {
+        const std::optional<StageActorRef>& destinationRef =
+            mSelectionController->GetPickedActorRef();
+        if (!destinationRef) {
+            return false;
+        }
+
+        const glm::ivec3 erasedDestinationCell =
+            UGCPlatformGrid::CalculateGridPosition(
+                placement.worldPosition, gridSize);
+        if (mLastErasedCell &&
+            *mLastErasedCell == erasedDestinationCell) {
+            return false;
+        }
+        if (mPushUndoCallback) {
+            mPushUndoCallback();
+        }
+        const bool removed = mPlatformCellService
+            .RemoveMovingPlatformDestinationCell(
+                *destinationRef, placement.worldPosition);
+        if (removed) {
+            mLastErasedCell = erasedDestinationCell;
+            mSelectionController->Clear();
+        }
+        return removed;
+    }
+
     if (!mPlatformCellService.ResolveLayerAtGridPosition(
             0,
             placement.worldPosition,
@@ -104,4 +142,20 @@ bool UGCPlatformEditController::TryTranslateCells(
     const glm::vec3& worldDelta)
 {
     return mPlatformCellService.TranslateCells(actorRefs, worldDelta);
+}
+
+bool UGCPlatformEditController::TryTranslateMovingPlatformDestinations(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mPlatformCellService.TranslateMovingPlatformDestinations(
+        actorRefs, worldDelta);
+}
+
+bool UGCPlatformEditController::TrySaveMovingPlatformDestinationTranslation(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mPlatformCellService.SaveMovingPlatformDestinationTranslation(
+        actorRefs, worldDelta);
 }

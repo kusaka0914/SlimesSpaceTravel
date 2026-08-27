@@ -1,6 +1,7 @@
 #include "gfx/debug/stage/UGCPlacementPresetController.h"
 
 #include "Game.h"
+#include "actor/Platform.h"
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
 #include "gfx/debug/stage/StageActorPlacementController.h"
@@ -50,6 +51,9 @@ void UGCPlacementPresetController::SetPushUndoCallback(
 
 bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
 {
+    const UGCPresetVisual& presetVisual =
+        GetUGCPresetVisual(presetKind);
+
     switch (presetKind) {
     case UGCPresetKind::NormalPlatform:
         if (!mPlatformCellService.RefreshGeneratedPlatforms()) {
@@ -80,7 +84,11 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
             false,
             true);
         mPlacementController.SetPlacementPreviewModel(
-            "platform.obj", glm::vec3(1.0f));
+            presetVisual.modelPath,
+            UGCPlatformGrid::CalculateFootprintPreviewScale(
+                mContext.game->GetUGCGridSize(),
+                mPlatformFootprintSideLength),
+            presetVisual.initialTextureOverridePath);
         return true;
     case UGCPresetKind::NormalEnemy:
         mPlacementController.BeginPlacement(
@@ -96,33 +104,96 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                     "normal", planetIndex, &worldUpPlacement);
             });
         mPlacementController.SetPlacementPreviewModel(
-            "enemy.obj", glm::vec3(0.25f));
+            presetVisual.modelPath,
+            presetVisual.thumbnailScale,
+            presetVisual.initialTextureOverridePath);
         return true;
     case UGCPresetKind::EllipsePlanet:
-        mPlacementController.CancelPlacement();
-        if (mPushUndoCallback) {
-            mPushUndoCallback();
-        }
-        return mCreateService.AddEllipsePlanet("planet.obj");
-    case UGCPresetKind::PressureSwitch:
         mPlacementController.BeginPlacement(
-            "スイッチ",
+            "惑星",
             0,
-            [this](int planetIndex, const StageActorPlacement& placement) {
+            [this, modelPath = presetVisual.modelPath](
+                int,
+                const StageActorPlacement& placement) {
                 if (mPushUndoCallback) {
                     mPushUndoCallback();
                 }
-                const StageActorPlacement worldUpPlacement =
-                    CreateWorldUpPlacement(placement);
-                return mCreateService.AddPressureSwitchPlatform(
-                    planetIndex,
-                    "platform.obj",
-                    glm::vec3(0.75f, 0.2f, 0.75f),
-                    &worldUpPlacement);
+                return mCreateService.AddEllipsePlanetAtPosition(
+                    modelPath,
+                    placement.worldPosition);
             });
         mPlacementController.SetPlacementPreviewModel(
-            "platform.obj", glm::vec3(0.75f, 0.2f, 0.75f));
+            presetVisual.modelPath,
+            presetVisual.thumbnailScale,
+            presetVisual.initialTextureOverridePath);
         return true;
+    case UGCPresetKind::PressureSwitch:
+        {
+        const glm::vec3 switchScale = presetVisual.thumbnailScale;
+        const std::string switchTexturePath =
+            presetVisual.initialTextureOverridePath;
+        mPlacementController.BeginPlacement(
+            "スイッチ：配置位置",
+            0,
+            [this, switchScale, switchTexturePath](
+                int planetIndex,
+                const StageActorPlacement& placement) {
+                const StageActorPlacement worldUpPlacement =
+                    CreateWorldUpPlacement(placement);
+                mPlacementController.BeginTargetPlatformSelection(
+                    "スイッチ：表示する足場",
+                    worldUpPlacement.worldPosition,
+                    [this,
+                     planetIndex,
+                     worldUpPlacement,
+                     switchScale,
+                     switchTexturePath](Platform* targetPlatform) {
+                        const std::string& targetPlatformId =
+                            targetPlatform->GetPlatformId();
+                        if (targetPlatformId.empty()) {
+                            return false;
+                        }
+
+                        if (mPushUndoCallback) {
+                            mPushUndoCallback();
+                        }
+                        return mCreateService.AddPressureSwitchPlatform(
+                                   planetIndex,
+                                   "platform.obj",
+                                   switchScale,
+                                   switchTexturePath,
+                                   targetPlatformId,
+                                   &worldUpPlacement)
+                            .has_value();
+                    },
+                    [this,
+                     planetIndex,
+                     worldUpPlacement,
+                     switchScale,
+                     switchTexturePath]() {
+                        if (mPushUndoCallback) {
+                            mPushUndoCallback();
+                        }
+                        return mCreateService.AddPressureSwitchPlatform(
+                                   planetIndex,
+                                   "platform.obj",
+                                   switchScale,
+                                   switchTexturePath,
+                                   "",
+                                   &worldUpPlacement)
+                            .has_value();
+                    },
+                    [this]() {
+                        ActivatePreset(UGCPresetKind::PressureSwitch);
+                    });
+                return true;
+            });
+        mPlacementController.SetPlacementPreviewModel(
+            presetVisual.modelPath,
+            presetVisual.thumbnailScale,
+            presetVisual.initialTextureOverridePath);
+        return true;
+        }
     case UGCPresetKind::GoalStar:
         mPlacementController.BeginPlacement(
             "ゴールの星",
@@ -134,7 +205,9 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                 return mCreateService.AddStar(planetIndex, &placement);
             });
         mPlacementController.SetPlacementPreviewModel(
-            "star.obj", glm::vec3(0.3f));
+            presetVisual.modelPath,
+            presetVisual.thumbnailScale,
+            presetVisual.initialTextureOverridePath);
         return true;
     case UGCPresetKind::MovingPlatform: {
         if (!mPlatformCellService.RefreshGeneratedPlatforms()) {
@@ -143,53 +216,25 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
         if (mSelectionController) {
             mSelectionController->Clear();
         }
-        auto startPlacement =
-            std::make_shared<std::optional<StageActorPlacement>>();
-        mPlacementController.BeginPlacement(
-            "移動足場：出発点",
-            0,
-            [this, startPlacement](
+        mPlacementController.BeginMovingPlatformStrokePlacement(
+            [this](
                 int planetIndex,
-                const StageActorPlacement& placement) {
-                if (!*startPlacement) {
-                    *startPlacement = CreateWorldUpPlacement(placement);
-                    mPlacementController.SetPlacementPrompt(
-                        "移動足場：到着点",
-                        "到着点をクリックしてください");
-                    return true;
-                }
-                if (mPushUndoCallback) {
-                    mPushUndoCallback();
-                }
-                const float gridSize = mContext.game->GetUGCGridSize();
-                const glm::ivec3 startCell =
-                    UGCPlatformGrid::CalculateGridPosition(
-                        (*startPlacement)->worldPosition, gridSize);
-                const glm::ivec3 endCell =
-                    UGCPlatformGrid::CalculateGridPosition(
-                        placement.worldPosition, gridSize);
-                const bool created = mPlatformCellService.AddCell(
+                const std::vector<glm::ivec3>& startCells,
+                const glm::ivec3& destinationOffset) {
+                return mPlatformCellService.AddCells(
                     planetIndex,
-                    **startPlacement,
-                    gridSize,
+                    startCells,
+                    mContext.game->GetUGCGridSize(),
                     mPlatformFootprintSideLength,
                     "moving",
-                    endCell - startCell);
-                if (created) {
-                    *startPlacement = std::nullopt;
-                    mPlacementController.SetPlacementDisplayName(
-                        "移動足場：出発点");
-                    if (mSelectionController) {
-                        mSelectionController->Clear();
-                    }
-                }
-                return created;
+                    destinationOffset);
             });
         mPlacementController.SetPlacementPreviewModel(
-            "platform.obj",
+            presetVisual.modelPath,
             UGCPlatformGrid::CalculateFootprintPreviewScale(
                 mContext.game->GetUGCGridSize(),
-                mPlatformFootprintSideLength));
+                mPlatformFootprintSideLength),
+            presetVisual.initialTextureOverridePath);
         return true;
     }
     case UGCPresetKind::FadingPlatform:
@@ -225,43 +270,90 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
             false,
             true);
         mPlacementController.SetPlacementPreviewModel(
-            "platform.obj",
+            presetVisual.modelPath,
             UGCPlatformGrid::CalculateFootprintPreviewScale(
                 mContext.game->GetUGCGridSize(),
-                mPlatformFootprintSideLength));
+                mPlatformFootprintSideLength),
+            presetVisual.initialTextureOverridePath);
         return true;
     }
     case UGCPresetKind::TwoPlayerSwitch: {
+        const glm::vec3 switchScale = presetVisual.thumbnailScale;
+        const std::string switchTexturePath =
+            presetVisual.initialTextureOverridePath;
         auto firstPlacement =
             std::make_shared<std::optional<StageActorPlacement>>();
         mPlacementController.BeginPlacement(
             "2人用スイッチ：1つ目",
             0,
-            [this, firstPlacement](
+            [this, firstPlacement, switchScale, switchTexturePath](
                 int planetIndex,
                 const StageActorPlacement& placement) {
                 if (!*firstPlacement) {
                     *firstPlacement = CreateWorldUpPlacement(placement);
+                    mPlacementController.SetFixedPlacementPreviewPositions(
+                        {(*firstPlacement)->worldPosition});
                     mPlacementController.SetPlacementPrompt(
                         "2人用スイッチ：2つ目",
                         "もう1つのスイッチをクリックしてください");
                     return true;
                 }
-                if (mPushUndoCallback) {
-                    mPushUndoCallback();
-                }
-                const bool created =
-                    mCreateService.AddTwoPlayerSwitchPair(
-                        planetIndex,
-                        **firstPlacement,
-                        CreateWorldUpPlacement(placement));
-                if (created) {
-                    *firstPlacement = std::nullopt;
-                }
-                return created;
+                const StageActorPlacement secondPlacement =
+                    CreateWorldUpPlacement(placement);
+                mPlacementController.SetFixedPlacementPreviewPositions(
+                    {(*firstPlacement)->worldPosition,
+                     secondPlacement.worldPosition});
+                mPlacementController.BeginTargetPlatformSelection(
+                    "2人用スイッチ：表示する足場",
+                    (*firstPlacement)->worldPosition,
+                    [this,
+                     planetIndex,
+                     firstPlacement,
+                     secondPlacement,
+                     switchScale,
+                     switchTexturePath](Platform* targetPlatform) {
+                        const std::string& targetPlatformId =
+                            targetPlatform->GetPlatformId();
+                        if (targetPlatformId.empty()) {
+                            return false;
+                        }
+                        if (mPushUndoCallback) {
+                            mPushUndoCallback();
+                        }
+                        return mCreateService.AddTwoPlayerSwitchPair(
+                            planetIndex,
+                            **firstPlacement,
+                            secondPlacement,
+                            switchScale,
+                            switchTexturePath,
+                            targetPlatformId);
+                    },
+                    [this,
+                     planetIndex,
+                     firstPlacement,
+                     secondPlacement,
+                     switchScale,
+                     switchTexturePath]() {
+                        if (mPushUndoCallback) {
+                            mPushUndoCallback();
+                        }
+                        return mCreateService.AddTwoPlayerSwitchPair(
+                            planetIndex,
+                            **firstPlacement,
+                            secondPlacement,
+                            switchScale,
+                            switchTexturePath,
+                            "");
+                    },
+                    [this]() {
+                        ActivatePreset(UGCPresetKind::TwoPlayerSwitch);
+                    });
+                return true;
             });
         mPlacementController.SetPlacementPreviewModel(
-            "platform.obj", glm::vec3(0.75f, 0.2f, 0.75f));
+            presetVisual.modelPath,
+            presetVisual.thumbnailScale,
+            presetVisual.initialTextureOverridePath);
         return true;
     }
     }

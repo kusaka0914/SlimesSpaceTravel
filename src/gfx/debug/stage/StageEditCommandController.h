@@ -22,6 +22,7 @@ public:
 
     bool DeleteSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
     bool DeletePlanet(int planetIndex);
+    bool DeletePlanetOnly(int planetIndex);
     bool DuplicateSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
 
     bool ConsumeRequestOpenPlacement();

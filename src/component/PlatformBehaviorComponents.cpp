@@ -865,7 +865,13 @@ PlatformPressureSwitchComponent::~PlatformPressureSwitchComponent()
 
 void PlatformPressureSwitchComponent::Update(float deltaTime)
 {
-    if (!mPlatform || IsEditorPreview(mPlatform)) return;
+    if (!mPlatform) {
+        return;
+    }
+    if (IsEditorPreview(mPlatform)) {
+        ApplyTargetState();
+        return;
+    }
 
     const float safeDeltaTime = std::max(0.0f, deltaTime);
     const bool hasCurrentContact =
@@ -1059,13 +1065,16 @@ Actor* PlatformPressureSwitchComponent::FindTargetActor(
 
 void PlatformPressureSwitchComponent::ApplyTargetState()
 {
+    const bool isEditorPreview = IsEditorPreview(mPlatform);
     for (const std::string& platformId : mTargetPlatformIds) {
         Platform* target = FindTargetPlatform(platformId);
         if (!target) continue;
         target->SetComponentOpacity(
             this,
-            mIsPressed ? 1.0f : mInactiveOpacity);
-        target->SetComponentCollisionEnabled(this, mIsPressed);
+            isEditorPreview || mIsPressed ? 1.0f : mInactiveOpacity);
+        target->SetComponentCollisionEnabled(
+            this,
+            isEditorPreview || mIsPressed);
     }
 
     for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
@@ -1077,7 +1086,9 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
 
 
         // 敵はフェードさせず、非アクティブ化で描画・更新・照準・衝突から一括で除外する。
-        targetActor->SetRuntimeActivationEnabled(this, mIsPressed);
+        targetActor->SetRuntimeActivationEnabled(
+            this,
+            isEditorPreview || mIsPressed);
     }
 
     for (const PlatformRevealTarget& targetRef : mHideTargets) {
@@ -1086,7 +1097,7 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
             continue;
         }
 
-        if (mIsPressed) {
+        if (!isEditorPreview && mIsPressed) {
             targetActor->SetRuntimeActivationEnabled(this, false);
         } else {
             targetActor->ClearRuntimeActivationState(this);
@@ -1496,11 +1507,17 @@ Actor* PlatformLatchedGroupSwitchComponent::FindTargetActor(
         return nullptr;
     }
 
-    return mPlatform->GetGame()
-        ->GetActorLoadSystem()
-        ->FindPlacedActor(
-            target.sequenceName,
+    ActorLoadSystem* actorLoadSystem =
+        mPlatform->GetGame()->GetActorLoadSystem();
+    if (!target.platformId.empty()) {
+        return actorLoadSystem->FindPlacedPlatform(
+            target.platformId,
             target.yamlIndex);
+    }
+
+    return actorLoadSystem->FindPlacedActor(
+        target.sequenceName,
+        target.yamlIndex);
 }
 
 void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(

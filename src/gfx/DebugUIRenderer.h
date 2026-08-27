@@ -52,6 +52,7 @@ public:
     void HandleUGCRedo();
     void HandleUGCEraserToggle();
     void HandleUGCSelectionMode();
+    void OpenUGCEditorMenu();
     void HandleUGCZoom(float distanceMultiplier);
     void HandleUGCLayerChange(int layerDelta);
     void HandleUGCSelectionGridMove(int gridX, int gridZ);
@@ -75,6 +76,11 @@ private:
         Tutorials,
         Stage,
         UserInterface,
+    };
+
+    enum class UGCSwitchConnectionAction {
+        Connect,
+        Disconnect,
     };
 
     void DrawBasicInfoTab();
@@ -106,7 +112,10 @@ private:
         const ImVec2& viewportMax);
     void DrawUGCDebugEditorOverlay();
     void RegisterUGCUIEditorElements();
+    void DrawUGCSwitchConnectionLines();
+    void DrawUGCUnconnectedSwitchWarnings();
     void DrawUGCTransformControls();
+    void ToggleUGCVerticalView();
     void SetUGCFixedView(const glm::vec3& viewDirection);
     void AdjustUGCViewDistance(float distanceMultiplier);
     void DrawUGCGridOverlay();
@@ -125,7 +134,6 @@ private:
         const glm::vec3& rayTo,
         glm::vec3& outIntersection) const;
     void DrawUGCLayerControls();
-    void DrawUGCPlanetDeleteConfirmation();
     void ChangeUGCEditLayer(int layerDelta);
     void SyncUGCEditLayerToPickedActor();
 
@@ -163,21 +171,25 @@ private:
     std::string mBuildRestartStatus;
     bool mIsBuildRestartStatusError = false;
     bool mIsUGCEraserMode = false;
+    bool mShouldOpenUGCEditorMenu = false;
     std::optional<UGCPresetKind> mActiveUGCPresetKind;
     std::optional<UGCPresetKind> mUGCPresetBeforeEraser;
-    float mUGCRotationStepDegrees = 90.0f;
     glm::vec3 mUGCViewDirection{0.0f, 1.0f, 0.0f};
     std::string mUGCStatus;
     int mUGCEditLayer = 0;
     int mUGCPlatformFootprintSideLength = 1;
-    std::optional<int> mPendingUGCPlanetDeleteIndex;
     std::optional<StageActorRef> mUGCConnectionSwitchRef;
+    UGCSwitchConnectionAction mUGCSwitchConnectionAction =
+        UGCSwitchConnectionAction::Connect;
     bool mIsUGCSelectionDragging = false;
+    bool mIsUGCMovingPlatformDestinationDrag = false;
     bool mHasUGCSelectionDragMoved = false;
     glm::vec3 mUGCSelectionDragPlanePoint{0.0f};
     glm::vec3 mUGCSelectionDragPlaneNormal{0.0f, 1.0f, 0.0f};
     glm::vec3 mUGCSelectionDragOffset{0.0f};
     glm::vec3 mUGCSelectionDragInitialCenter{0.0f};
+    glm::vec3 mUGCSelectionDragAppliedDelta{0.0f};
+    glm::vec3 mUGCSelectionDragSavedDelta{0.0f};
     std::vector<StageActorRef> mUGCSelectionDragActorRefs;
     float mUGCPreviewWidth = 420.0f;
     float mUGCPreviewResizeStartWidth = 420.0f;

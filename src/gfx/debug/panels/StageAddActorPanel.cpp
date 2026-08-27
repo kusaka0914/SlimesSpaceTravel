@@ -125,6 +125,23 @@ bool StageAddActorPanel::TryTranslateUGCPlatformCells(
         worldDelta);
 }
 
+bool StageAddActorPanel::TryTranslateUGCMovingPlatformDestinations(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController.TryTranslateMovingPlatformDestinations(
+        actorRefs,
+        worldDelta);
+}
+
+bool StageAddActorPanel::TrySaveUGCMovingPlatformDestinationTranslation(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController
+        .TrySaveMovingPlatformDestinationTranslation(actorRefs, worldDelta);
+}
+
 bool StageAddActorPanel::BeginDuplicatePlacement(
     const StageActorRef& sourceRef)
 {

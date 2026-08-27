@@ -64,17 +64,17 @@ public:
         GLuint gameViewTexture,
         int gameViewWidth,
         int gameViewHeight);
-    void DrawUGCPlaytestReturnButton();
     void DrawUGCWorkBrowser();
     bool CompleteUGCVerification(const std::string& workFileName);
     void UndoUGCEdit();
     void RedoUGCEdit();
     void ToggleUGCEraser();
     void SelectUGCEditorMode();
+    void OpenUGCEditorMenu();
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
-    void DrawSkyBox();
+    void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
 
     bool SaveDebugEditorSession(
         const std::string& filePath,
@@ -191,7 +191,8 @@ private:
         bool centerTalkPrompt = false,
         float contentScale = -1.0f,
         const Player* inputPlayer = nullptr,
-        float opacity = 1.0f);
+        float opacity = 1.0f,
+        const std::string* textOverride = nullptr);
     const std::string& ResolveCustomElementText(
         const UILoadSystem::CustomElement& element) const;
     const std::vector<RubyTextSegment>& ResolveCustomElementRuby(

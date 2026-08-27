@@ -111,6 +111,7 @@ public:
     void RedoUGCEdit();
     void ToggleUGCEraser();
     void SelectUGCEditorMode();
+    void OpenUGCEditorMenu();
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
@@ -207,6 +208,10 @@ public:
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     bool GetIsUGCMode() const { return mUGCSessionState.IsModeActive(); }
+    bool GetIsUGCPlaytestActive() const
+    {
+        return mUGCSessionState.IsPlaytestActive();
+    }
 
 
     bool GetIsUGCDebugEditorShowing() const
@@ -258,13 +263,38 @@ public:
     {
         return mUGCPlatformPlacementPreviewPosition;
     }
+    void SetUGCMovingPlatformPathPreview(
+        const std::optional<glm::vec3>& startPosition,
+        const std::optional<glm::vec3>& destinationPosition)
+    {
+        mUGCMovingPlatformPathStartPosition = startPosition;
+        mUGCMovingPlatformPathDestinationPosition = destinationPosition;
+    }
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathStartPosition() const
+    {
+        return mUGCMovingPlatformPathStartPosition;
+    }
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathDestinationPosition() const
+    {
+        return mUGCMovingPlatformPathDestinationPosition;
+    }
     void SetUGCPlacementModelPreview(
         const std::optional<glm::vec3>& position,
         const std::string& modelPath = "",
-        const glm::vec3& scale = glm::vec3(1.0f));
+        const glm::vec3& scale = glm::vec3(1.0f),
+        const std::string& textureOverridePath = "");
+    void SetUGCPlacementModelPreviewPositions(
+        const std::vector<glm::vec3>& positions,
+        const std::string& modelPath,
+        const glm::vec3& scale,
+        const std::string& textureOverridePath = "");
     Actor* GetUGCPlacementModelPreview() const
     {
         return mUGCPlacementModelPreviewActor.get();
+    }
+    const std::vector<glm::vec3>& GetUGCPlacementModelPreviewPositions() const
+    {
+        return mUGCPlacementModelPreviewPositions;
     }
     void SetUGCOrthographicHalfHeight(float halfHeight)
     {
@@ -451,7 +481,10 @@ private:
     int mRequestedUGCPreviewRenderHeight = 540;
     int mUGCPreviewEditLayer = 0;
     std::optional<glm::vec3> mUGCPlatformPlacementPreviewPosition;
+    std::optional<glm::vec3> mUGCMovingPlatformPathStartPosition;
+    std::optional<glm::vec3> mUGCMovingPlatformPathDestinationPosition;
     std::unique_ptr<Actor> mUGCPlacementModelPreviewActor;
+    std::vector<glm::vec3> mUGCPlacementModelPreviewPositions;
     float mUGCPreviewYawRadians = 0.0f;
     float mUGCPreviewFocusY = 0.0f;
     bool mHasUGCPreviewFocusY = false;

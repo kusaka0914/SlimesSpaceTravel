@@ -18,6 +18,7 @@
 #include "component/PlatformBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 
 #include <cmath>
@@ -81,6 +82,8 @@ void StageActorYamlWriter::SaveAllActorStates()
         return;
     }
 
+    StagePlatformConnections::AddStableIdsToLatchedGroupSwitchTargets(
+        config);
     WriteAllActorStates(config);
     StageYamlRepository::SaveCurrentStage(mContext, config);
 }
@@ -95,6 +98,9 @@ void StageActorYamlWriter::SaveEditorAuthoredTransforms()
     if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
         return;
     }
+
+    StagePlatformConnections::AddStableIdsToLatchedGroupSwitchTargets(
+        config);
 
     std::vector<Actor*> savedActors;
     const std::vector<StageActorInstance> instances =
@@ -585,6 +591,25 @@ void StageActorYamlWriter::WritePlatformState(
                 YAML::Node targetNode;
                 targetNode["sequence"] = target.sequenceName;
                 targetNode["index"] = target.yamlIndex;
+                std::string targetPlatformId = target.platformId;
+                if (targetPlatformId.empty() &&
+                    target.sequenceName == "platforms" &&
+                    mContext.game && mContext.game->GetCurrentStage()) {
+                    Platform* targetPlatform = dynamic_cast<Platform*>(
+                        StageActorQuery::FindActorByRef(
+                            mContext.game->GetCurrentStage(),
+                            StageActorRef{
+                                StageActorType::Platform,
+                                target.yamlIndex,
+                                target.sequenceName,
+                                ""}));
+                    if (targetPlatform) {
+                        targetPlatformId = targetPlatform->GetPlatformId();
+                    }
+                }
+                if (!targetPlatformId.empty()) {
+                    targetNode["platformId"] = targetPlatformId;
+                }
                 node["targets"].push_back(targetNode);
             }
             node["hideTargets"] =

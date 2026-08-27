@@ -39,6 +39,7 @@ void PlaytestHidesEditingViews()
     const bool wasStarted = sessionState.StartPlaytest();
 
     ExpectTrue(wasStarted, "playtest start result");
+    ExpectTrue(sessionState.IsPlaytestActive(), "playtest active");
     ExpectFalse(sessionState.IsOrthographicView(), "orthographic view");
     ExpectFalse(sessionState.IsDebugPanelShowing(), "debug panel");
 }
@@ -100,6 +101,7 @@ void ReturnToEditorCancelsPendingVerification()
 
     ExpectTrue(wasReturned, "return result");
     ExpectTrue(sessionState.IsModeActive(), "mode remains active");
+    ExpectFalse(sessionState.IsPlaytestActive(), "playtest active");
     ExpectTrue(sessionState.IsOrthographicView(), "orthographic view");
     ExpectFalse(
         sessionState.ConsumeClearCompletion().has_value(),
@@ -116,6 +118,7 @@ void ExitClearsAllVisibleUGCState()
     sessionState.Exit();
 
     ExpectFalse(sessionState.IsModeActive(), "mode active");
+    ExpectFalse(sessionState.IsPlaytestActive(), "playtest active");
     ExpectFalse(sessionState.IsDebugPanelShowing(), "debug panel");
     ExpectFalse(sessionState.IsWorkBrowserShowing(), "work browser");
     ExpectFalse(sessionState.IsOrthographicView(), "orthographic view");

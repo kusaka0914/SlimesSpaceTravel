@@ -205,6 +205,45 @@ bool UGCPlatformDocument::RemoveClosestCell(
         RemoveCellAtIndex(stageConfig, *closestCellIndex);
 }
 
+bool UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
+    YAML::Node& stageConfig,
+    const UGCGeneratedPlatformRegion& sourceRegion,
+    const glm::ivec3& destinationGridPosition)
+{
+    const YAML::Node cells = stageConfig[PlatformCellsKey];
+    if (!cells || !cells.IsSequence()) {
+        return false;
+    }
+
+    for (std::size_t cellIndex = 0; cellIndex < cells.size(); ++cellIndex) {
+        UGCPlatformCell cell;
+        if (!TryReadCell(cells[cellIndex], cell)) {
+            continue;
+        }
+
+        const bool belongsToSourceRegion =
+            cell.behavior == "moving" &&
+            cell.planetIndex == sourceRegion.planetIndex &&
+            std::abs(cell.gridSize - sourceRegion.gridSize) <
+                GridSizeComparisonTolerance &&
+            cell.gridPosition.y == sourceRegion.gridLayer &&
+            cell.gridPosition.x >= sourceRegion.minimumX &&
+            cell.gridPosition.x <= sourceRegion.maximumX &&
+            cell.gridPosition.z >= sourceRegion.minimumZ &&
+            cell.gridPosition.z <= sourceRegion.maximumZ;
+        if (!belongsToSourceRegion) {
+            continue;
+        }
+
+        const glm::ivec3 cellDestination =
+            cell.gridPosition + cell.movementDeltaCells;
+        if (cellDestination == destinationGridPosition) {
+            return RemoveCellAtIndex(stageConfig, cellIndex);
+        }
+    }
+    return false;
+}
+
 bool UGCPlatformDocument::ResolveLayerAtGridPosition(
     const YAML::Node& stageConfig,
     int planetIndex,
@@ -233,8 +272,8 @@ bool UGCPlatformDocument::ResolveLayerAtGridPosition(
         outGridLayer = preferredGridLayer;
         return true;
     }
-    if (matchingLayers.size() == 1) {
-        outGridLayer = *matchingLayers.begin();
+    if (!matchingLayers.empty()) {
+        outGridLayer = *matchingLayers.rbegin();
         return true;
     }
     return false;
@@ -306,6 +345,28 @@ int UGCPlatformDocument::TranslateCells(
         }
     }
     return translatedCellCount;
+}
+
+bool UGCPlatformDocument::TranslateGeneratedPlatformRegionMetadata(
+    YAML::Node& platformNode,
+    const glm::ivec3& gridDelta)
+{
+    const YAML::Node cellMin = platformNode["ugcCellMin"];
+    const YAML::Node cellMax = platformNode["ugcCellMax"];
+    if (!platformNode[GeneratedPlatformKey] ||
+        !platformNode[GeneratedPlatformKey].as<bool>(false) ||
+        !cellMin || !cellMin.IsSequence() || cellMin.size() < 2 ||
+        !cellMax || !cellMax.IsSequence() || cellMax.size() < 2) {
+        return false;
+    }
+
+    platformNode["ugcGridLayer"] =
+        platformNode["ugcGridLayer"].as<int>(0) + gridDelta.y;
+    platformNode["ugcCellMin"][0] = cellMin[0].as<int>() + gridDelta.x;
+    platformNode["ugcCellMin"][1] = cellMin[1].as<int>() + gridDelta.z;
+    platformNode["ugcCellMax"][0] = cellMax[0].as<int>() + gridDelta.x;
+    platformNode["ugcCellMax"][1] = cellMax[1].as<int>() + gridDelta.z;
+    return true;
 }
 
 void UGCPlatformDocument::RemoveGeneratedPlatforms(YAML::Node& stageConfig)
@@ -398,4 +459,44 @@ UGCPlatformDocument::CalculateGeneratedPlatformRegions(
         }
     }
     return regions;
+}
+
+YAML::Node UGCPlatformDocument::FindMatchingGeneratedPlatformNode(
+    const YAML::Node& stageConfig,
+    const UGCGeneratedPlatformRegion& region)
+{
+    const YAML::Node platforms = stageConfig["platforms"];
+    if (!platforms || !platforms.IsSequence()) {
+        return YAML::Node(YAML::NodeType::Undefined);
+    }
+
+    for (const YAML::Node& platformNode : platforms) {
+        const YAML::Node cellMin = platformNode["ugcCellMin"];
+        const YAML::Node cellMax = platformNode["ugcCellMax"];
+        if (!platformNode[GeneratedPlatformKey] ||
+            !platformNode[GeneratedPlatformKey].as<bool>(false) ||
+            !cellMin || !cellMin.IsSequence() || cellMin.size() < 2 ||
+            !cellMax || !cellMax.IsSequence() || cellMax.size() < 2) {
+            continue;
+        }
+
+        const bool matchesRegion =
+            platformNode["currentPlanetNum"].as<int>(-1) ==
+                region.planetIndex &&
+            std::abs(
+                platformNode["ugcGridSize"].as<float>(1.0f) -
+                region.gridSize) < GridSizeComparisonTolerance &&
+            platformNode["ugcGridLayer"].as<int>(0) == region.gridLayer &&
+            cellMin[0].as<int>() == region.minimumX &&
+            cellMin[1].as<int>() == region.minimumZ &&
+            cellMax[0].as<int>() == region.maximumX &&
+            cellMax[1].as<int>() == region.maximumZ &&
+            platformNode["ugcPlatformBehavior"].as<std::string>("normal") ==
+                region.behavior;
+        if (matchesRegion) {
+            return platformNode;
+        }
+    }
+
+    return YAML::Node(YAML::NodeType::Undefined);
 }
