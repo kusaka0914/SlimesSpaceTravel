@@ -107,7 +107,10 @@ ParameterDebugPanel::ParameterDebugPanel(
     DebugEditorContext& context,
     CameraDebugPanel& cameraPanel)
     : DebugPanel(context),
-      mCameraPanel(cameraPanel)
+      mCameraPanel(cameraPanel),
+      mPlayerPanel(context),
+      mEnemyPresetPanel(context),
+      mEnemyPanel(context, mEnemyPresetPanel)
 {
 }
 
@@ -120,7 +123,6 @@ void ParameterDebugPanel::Draw()
     for (int i = 0; i < IM_ARRAYSIZE(menus); ++i) {
         if (ImGui::Selectable(menus[i], mSelectedMenu == i)) {
             mSelectedMenu = i;
-            mSaveStatusMessage.clear();
         }
     }
 
@@ -132,10 +134,10 @@ void ParameterDebugPanel::Draw()
 
     switch (mSelectedMenu) {
     case 0:
-        DrawPlayer();
+        mPlayerPanel.Draw();
         break;
     case 1:
-        DrawEnemies();
+        mEnemyPanel.Draw();
         break;
     case 2:
         mCameraPanel.Draw();
@@ -147,7 +149,13 @@ void ParameterDebugPanel::Draw()
     ImGui::EndChild();
 }
 
-void ParameterDebugPanel::DrawPlayer()
+PlayerParameterDebugPanel::PlayerParameterDebugPanel(
+    DebugEditorContext& context)
+    : DebugPanel(context)
+{
+}
+
+void PlayerParameterDebugPanel::Draw()
 {
     if (!mContext.game || mContext.game->GetPlayers().empty()) {
         return;
@@ -159,7 +167,7 @@ void ParameterDebugPanel::DrawPlayer()
     }
 
     if (ImGui::Button("プレイヤー設定を保存")) {
-        mSaveStatusMessage = SavePlayerParameters()
+        mSaveStatusMessage = SaveParameters()
                                  ? "players.yamlへ保存しました"
                                  : "プレイヤー設定を保存できませんでした";
     }
@@ -762,7 +770,15 @@ void ParameterDebugPanel::DrawPlayer()
     }
 }
 
-void ParameterDebugPanel::DrawEnemies()
+EnemyParameterDebugPanel::EnemyParameterDebugPanel(
+    DebugEditorContext& context,
+    EnemyPresetDebugPanel& presetPanel)
+    : DebugPanel(context),
+      mPresetPanel(presetPanel)
+{
+}
+
+void EnemyParameterDebugPanel::Draw()
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
@@ -773,7 +789,7 @@ void ParameterDebugPanel::DrawEnemies()
         return;
     }
 
-    DrawEnemyPresets();
+    mPresetPanel.Draw();
     ImGui::Separator();
 
     Enemy* normalEnemy = nullptr;
@@ -805,7 +821,7 @@ void ParameterDebugPanel::DrawEnemies()
     }
 
     if (ImGui::Button("敵設定を保存")) {
-        mSaveStatusMessage = SaveEnemyParameters()
+        mSaveStatusMessage = SaveParameters()
                                  ? "enemies.yamlへ保存しました"
                                  : "敵設定を保存できませんでした";
     }
@@ -1104,19 +1120,25 @@ void ParameterDebugPanel::DrawEnemies()
     }
 }
 
-bool ParameterDebugPanel::SavePlayerParameters()
+bool PlayerParameterDebugPanel::SaveParameters()
 {
     if (!mContext.game || mContext.game->GetPlayers().empty()) {
         return false;
     }
 
-    return SavePlayerYaml(mContext.game->GetPlayers()[0]);
+    return SaveYaml(mContext.game->GetPlayers()[0]);
 }
 
-void ParameterDebugPanel::DrawEnemyPresets()
+EnemyPresetDebugPanel::EnemyPresetDebugPanel(
+    DebugEditorContext& context)
+    : DebugPanel(context)
 {
-    if (!mEnemyPresetsLoaded) {
-        ReloadEnemyPresets();
+}
+
+void EnemyPresetDebugPanel::Draw()
+{
+    if (!mHasLoadedPresets) {
+        ReloadPresets();
     }
 
     if (!ImGui::TreeNodeEx(
@@ -1129,40 +1151,40 @@ void ParameterDebugPanel::DrawEnemyPresets()
         "何度も配置する敵の基準値です。保存すると敵追加の一覧へ自動で反映されます。");
 
     if (ImGui::Button("再読み込み")) {
-        ReloadEnemyPresets();
+        ReloadPresets();
     }
 
-    if (mEnemyPresets.empty()) {
+    if (mPresets.empty()) {
         ImGui::TextDisabled("編集できる敵プリセットがありません。 ");
-        if (!mEnemyPresetStatusMessage.empty()) {
+        if (!mStatusMessage.empty()) {
             ImGui::TextWrapped(
                 "%s",
-                mEnemyPresetStatusMessage.c_str());
+                mStatusMessage.c_str());
         }
         ImGui::TreePop();
         return;
     }
 
-    mSelectedEnemyPresetIndex = std::clamp(
-        mSelectedEnemyPresetIndex,
+    mSelectedPresetIndex = std::clamp(
+        mSelectedPresetIndex,
         0,
-        static_cast<int>(mEnemyPresets.size()) - 1);
+        static_cast<int>(mPresets.size()) - 1);
     const EnemyPresetDefinition& selectedPreset =
-        mEnemyPresets[mSelectedEnemyPresetIndex];
+        mPresets[mSelectedPresetIndex];
     if (ImGui::BeginCombo(
             "編集するプリセット",
             selectedPreset.displayName.c_str())) {
         for (std::size_t presetIndex = 0;
-             presetIndex < mEnemyPresets.size();
+             presetIndex < mPresets.size();
              ++presetIndex) {
             const bool isSelected =
                 static_cast<int>(presetIndex) ==
-                mSelectedEnemyPresetIndex;
+                mSelectedPresetIndex;
             const std::string label =
-                mEnemyPresets[presetIndex].displayName +
-                " (" + mEnemyPresets[presetIndex].id + ")";
+                mPresets[presetIndex].displayName +
+                " (" + mPresets[presetIndex].id + ")";
             if (ImGui::Selectable(label.c_str(), isSelected)) {
-                SelectEnemyPreset(static_cast<int>(presetIndex));
+                SelectPreset(static_cast<int>(presetIndex));
             }
             if (isSelected) {
                 ImGui::SetItemDefaultFocus();
@@ -1172,40 +1194,40 @@ void ParameterDebugPanel::DrawEnemyPresets()
     }
 
     if (ImGui::Button("選択中を複製")) {
-        DuplicateSelectedEnemyPreset();
+        DuplicateSelectedPreset();
     }
     ImGui::SameLine();
     if (ImGui::Button("プリセットを保存")) {
-        mEnemyPresetStatusMessage = SaveSelectedEnemyPreset()
+        mStatusMessage = SaveSelectedPreset()
             ? "敵プリセットを保存しました。"
-            : mEnemyPresetStatusMessage;
+            : mStatusMessage;
     }
 
     ImGui::InputText(
         "ID",
-        mEnemyPresetIdBuffer.data(),
-        mEnemyPresetIdBuffer.size());
+        mPresetIdBuffer.data(),
+        mPresetIdBuffer.size());
     ImGui::TextDisabled("半角英数字、_、-を使用できます。配置済みの敵があるIDは変更に注意してください。");
     ImGui::InputText(
         "表示名",
-        mEnemyPresetDisplayNameBuffer.data(),
-        mEnemyPresetDisplayNameBuffer.size());
-    ImGui::Checkbox("ボスとして扱う", &mEditedEnemyPreset.isBoss);
+        mPresetDisplayNameBuffer.data(),
+        mPresetDisplayNameBuffer.size());
+    ImGui::Checkbox("ボスとして扱う", &mEditedPreset.isBoss);
     ImGui::Checkbox(
         "通常攻撃でノックバックする",
-        &mEditedEnemyPreset.isNormalHitKnockBackEnabled);
+        &mEditedPreset.isNormalHitKnockBackEnabled);
     ImGui::TextDisabled(
         "移動と追跡は共通動作です。攻撃構成だけをプリセットごとに保存します。");
     ImGui::DragFloat(
         "攻撃準備を始める距離",
-        &mEditedEnemyPreset.attackPreparationRange,
+        &mEditedPreset.attackPreparationRange,
         0.05f,
         0.0f,
         100.0f,
         "%.2f");
     ImGui::TextDisabled(
         "プレイヤーとの距離がこの値以下になると、攻撃待機タイマーを開始します。");
-    DrawEnemyAttackEditor();
+    DrawAttackEditor();
 
     if (ImGui::TreeNodeEx(
             "ボスの攻撃前後行動",
@@ -1215,21 +1237,21 @@ void ParameterDebugPanel::DrawEnemyPresets()
         ImGui::SeparatorText("攻撃前の急接近");
         ImGui::DragFloat(
             "発生確率 (%)##preAttackApproach",
-            &mEditedEnemyPreset.preAttackApproachProbabilityPercent,
+            &mEditedPreset.preAttackApproachProbabilityPercent,
             0.5f,
             0.0f,
             100.0f,
             "%.1f%%");
         ImGui::DragFloat(
             "接近速度##preAttackApproach",
-            &mEditedEnemyPreset.preAttackApproachSpeed,
+            &mEditedPreset.preAttackApproachSpeed,
             0.1f,
             0.0f,
             100.0f,
             "%.2f");
         ImGui::DragFloat(
             "プレイヤー手前の停止距離",
-            &mEditedEnemyPreset.preAttackApproachStopDistance,
+            &mEditedPreset.preAttackApproachStopDistance,
             0.05f,
             0.0f,
             100.0f,
@@ -1240,42 +1262,42 @@ void ParameterDebugPanel::DrawEnemyPresets()
         ImGui::SeparatorText("攻撃後の急退避");
         ImGui::DragFloat(
             "発生確率 (%)##postAttackRetreat",
-            &mEditedEnemyPreset.postAttackRetreatProbabilityPercent,
+            &mEditedPreset.postAttackRetreatProbabilityPercent,
             0.5f,
             0.0f,
             100.0f,
             "%.1f%%");
         ImGui::DragFloat(
             "攻撃完了後の待機 (秒)",
-            &mEditedEnemyPreset.postAttackRetreatDelaySeconds,
+            &mEditedPreset.postAttackRetreatDelaySeconds,
             0.05f,
             0.0f,
             30.0f,
             "%.2f");
         ImGui::DragFloat(
             "退避速度##postAttackRetreat",
-            &mEditedEnemyPreset.postAttackRetreatSpeed,
+            &mEditedPreset.postAttackRetreatSpeed,
             0.1f,
             0.0f,
             100.0f,
             "%.2f");
         ImGui::DragFloat(
             "退避距離",
-            &mEditedEnemyPreset.postAttackRetreatDistance,
+            &mEditedPreset.postAttackRetreatDistance,
             0.05f,
             0.0f,
             100.0f,
             "%.2f");
         ImGui::DragFloat(
             "退避後の停止時間 (秒)",
-            &mEditedEnemyPreset.postRetreatRecoverySeconds,
+            &mEditedPreset.postRetreatRecoverySeconds,
             0.05f,
             0.0f,
             30.0f,
             "%.2f");
         ImGui::DragFloat(
             "停止後に急接近攻撃する確率 (%)",
-            &mEditedEnemyPreset
+            &mEditedPreset
                  .postRetreatFollowupApproachProbabilityPercent,
             0.5f,
             0.0f,
@@ -1288,70 +1310,70 @@ void ParameterDebugPanel::DrawEnemyPresets()
 
     ImGui::DragFloat(
         "初期HP",
-        &mEditedEnemyPreset.hp,
+        &mEditedPreset.hp,
         1.0f,
         1.0f,
         99999.0f,
         "%.0f");
     ImGui::DragFloat(
         "スケール",
-        &mEditedEnemyPreset.scale,
+        &mEditedPreset.scale,
         0.01f,
         0.01f,
         100.0f,
         "%.2f");
     ImGui::DragFloat(
         "移動速度",
-        &mEditedEnemyPreset.moveSpeed,
+        &mEditedPreset.moveSpeed,
         0.1f,
         0.0f,
         100.0f,
         "%.2f");
     ImGui::DragFloat(
         "攻撃力",
-        &mEditedEnemyPreset.attack,
+        &mEditedPreset.attack,
         0.1f,
         0.0f,
         99999.0f,
         "%.1f");
     ImGui::DragInt(
         "ブレイク回数",
-        &mEditedEnemyPreset.breakCountMax,
+        &mEditedPreset.breakCountMax,
         0.1f,
         0,
         100);
     ImGui::DragFloat(
         "当たり半径",
-        &mEditedEnemyPreset.radius,
+        &mEditedPreset.radius,
         0.01f,
         0.0f,
         100.0f,
         "%.2f");
     ImGui::DragFloat(
         "攻撃間隔（秒）",
-        &mEditedEnemyPreset.attackIntervalSeconds,
+        &mEditedPreset.attackIntervalSeconds,
         0.05f,
         0.0f,
         120.0f,
         "%.2f");
     ImGui::DragFloat(
         "攻撃モーション時間（秒）",
-        &mEditedEnemyPreset.attackMotionDurationSeconds,
+        &mEditedPreset.attackMotionDurationSeconds,
         0.05f,
         0.0f,
         120.0f,
         "%.2f");
     ImGui::DragFloat(
         "攻撃移動速度",
-        &mEditedEnemyPreset.attackSpeed,
+        &mEditedPreset.attackSpeed,
         0.1f,
         0.0f,
         100.0f,
         "%.2f");
     ImGui::InputText(
         "モデル",
-        mEnemyModelPathBuffer.data(),
-        mEnemyModelPathBuffer.size());
+        mModelPathBuffer.data(),
+        mModelPathBuffer.size());
     ImGui::Button(
         "モデルアセットをここへドロップ##enemyPresetModelDrop",
         ImVec2(-1.0f, 0.0f));
@@ -1360,45 +1382,45 @@ void ParameterDebugPanel::DrawEnemyPresets()
             EditorAssetType::Model,
             droppedModelPath)) {
         std::snprintf(
-            mEnemyModelPathBuffer.data(),
-            mEnemyModelPathBuffer.size(),
+            mModelPathBuffer.data(),
+            mModelPathBuffer.size(),
             "%s",
             droppedModelPath.c_str());
     }
 
-    if (!mEnemyPresetStatusMessage.empty()) {
+    if (!mStatusMessage.empty()) {
         ImGui::TextWrapped(
             "%s",
-            mEnemyPresetStatusMessage.c_str());
+            mStatusMessage.c_str());
     }
     ImGui::TreePop();
 }
 
-void ParameterDebugPanel::DrawEnemyAttackEditor()
+void EnemyPresetDebugPanel::DrawAttackEditor()
 {
     ImGui::Separator();
     ImGui::TextUnformatted("攻撃構成");
     ImGui::TextDisabled(
         "各攻撃の確率は常に合計100%%になるよう自動調整されます。");
 
-    mSelectedEnemyAttackTypeIndex = std::clamp(
-        mSelectedEnemyAttackTypeIndex,
+    mSelectedAttackTypeIndex = std::clamp(
+        mSelectedAttackTypeIndex,
         0,
         static_cast<int>(enemyAttackTypeOptions.size()) - 1);
     if (ImGui::BeginCombo(
             "追加する攻撃",
-            enemyAttackTypeOptions[mSelectedEnemyAttackTypeIndex]
+            enemyAttackTypeOptions[mSelectedAttackTypeIndex]
                 .displayName)) {
         for (std::size_t optionIndex = 0;
              optionIndex < enemyAttackTypeOptions.size();
              ++optionIndex) {
             const bool isSelected =
                 static_cast<int>(optionIndex) ==
-                mSelectedEnemyAttackTypeIndex;
+                mSelectedAttackTypeIndex;
             if (ImGui::Selectable(
                     enemyAttackTypeOptions[optionIndex].displayName,
                     isSelected)) {
-                mSelectedEnemyAttackTypeIndex =
+                mSelectedAttackTypeIndex =
                     static_cast<int>(optionIndex);
             }
             if (isSelected) {
@@ -1409,16 +1431,16 @@ void ParameterDebugPanel::DrawEnemyAttackEditor()
     }
     ImGui::SameLine();
     if (ImGui::Button("攻撃を追加")) {
-        AddEnemyAttack(
-            enemyAttackTypeOptions[mSelectedEnemyAttackTypeIndex].type);
+        AddAttack(
+            enemyAttackTypeOptions[mSelectedAttackTypeIndex].type);
     }
 
     std::optional<std::size_t> attackToRemove;
     for (std::size_t attackIndex = 0;
-         attackIndex < mEditedEnemyPreset.attacks.size();
+         attackIndex < mEditedPreset.attacks.size();
          ++attackIndex) {
         EnemyAttackPresetDefinition& attack =
-            mEditedEnemyPreset.attacks[attackIndex];
+            mEditedPreset.attacks[attackIndex];
         ImGui::PushID(static_cast<int>(attackIndex));
 
         const bool isOpen = ImGui::TreeNodeEx(
@@ -1439,7 +1461,7 @@ void ParameterDebugPanel::DrawEnemyAttackEditor()
                     0.0f,
                     100.0f,
                     "%.1f%%")) {
-                SetEnemyAttackProbability(
+                SetAttackProbability(
                     attackIndex,
                     probabilityPercent);
             }
@@ -1517,22 +1539,22 @@ void ParameterDebugPanel::DrawEnemyAttackEditor()
     }
 
     if (attackToRemove) {
-        if (mEditedEnemyPreset.attacks.size() <= 1) {
-            mEnemyPresetStatusMessage =
+        if (mEditedPreset.attacks.size() <= 1) {
+            mStatusMessage =
                 "攻撃構成には1つ以上の攻撃が必要です。";
         } else {
-            mEditedEnemyPreset.attacks.erase(
-                mEditedEnemyPreset.attacks.begin() +
+            mEditedPreset.attacks.erase(
+                mEditedPreset.attacks.begin() +
                 static_cast<std::ptrdiff_t>(*attackToRemove));
             EnemyPresetRepository::NormalizeAttackProbabilities(
-                mEditedEnemyPreset.attacks);
+                mEditedPreset.attacks);
         }
     }
 
-    if (!mEditedEnemyPreset.isBoss) {
+    if (!mEditedPreset.isBoss) {
         const bool hasBossOnlyAttack = std::any_of(
-            mEditedEnemyPreset.attacks.begin(),
-            mEditedEnemyPreset.attacks.end(),
+            mEditedPreset.attacks.begin(),
+            mEditedPreset.attacks.end(),
             [](const EnemyAttackPresetDefinition& attack) {
                 return attack.type != "meleeAttack";
             });
@@ -1544,28 +1566,28 @@ void ParameterDebugPanel::DrawEnemyAttackEditor()
     ImGui::Separator();
 }
 
-void ParameterDebugPanel::AddEnemyAttack(const std::string& attackType)
+void EnemyPresetDebugPanel::AddAttack(const std::string& attackType)
 {
     const bool alreadyExists = std::any_of(
-        mEditedEnemyPreset.attacks.begin(),
-        mEditedEnemyPreset.attacks.end(),
+        mEditedPreset.attacks.begin(),
+        mEditedPreset.attacks.end(),
         [&attackType](const EnemyAttackPresetDefinition& attack) {
             return attack.type == attackType;
         });
     if (alreadyExists) {
-        mEnemyPresetStatusMessage =
+        mStatusMessage =
             "同じ種類の攻撃は1つのプリセットに重複して追加できません。";
         return;
     }
 
     const std::size_t previousAttackCount =
-        mEditedEnemyPreset.attacks.size();
+        mEditedPreset.attacks.size();
     const float newAttackProbability =
         100.0f / static_cast<float>(previousAttackCount + 1);
     const float existingProbabilityScale =
         (100.0f - newAttackProbability) / 100.0f;
     for (EnemyAttackPresetDefinition& attack :
-         mEditedEnemyPreset.attacks) {
+         mEditedPreset.attacks) {
         attack.selectionProbabilityPercent *=
             existingProbabilityScale;
     }
@@ -1573,20 +1595,20 @@ void ParameterDebugPanel::AddEnemyAttack(const std::string& attackType)
     EnemyAttackPresetDefinition newAttack =
         EnemyPresetRepository::CreateDefaultAttack(attackType);
     newAttack.selectionProbabilityPercent = newAttackProbability;
-    mEditedEnemyPreset.attacks.push_back(std::move(newAttack));
-    mEnemyPresetStatusMessage.clear();
+    mEditedPreset.attacks.push_back(std::move(newAttack));
+    mStatusMessage.clear();
 }
 
-void ParameterDebugPanel::SetEnemyAttackProbability(
+void EnemyPresetDebugPanel::SetAttackProbability(
     std::size_t attackIndex,
     float probabilityPercent)
 {
-    if (attackIndex >= mEditedEnemyPreset.attacks.size()) {
+    if (attackIndex >= mEditedPreset.attacks.size()) {
         return;
     }
 
-    if (mEditedEnemyPreset.attacks.size() == 1) {
-        mEditedEnemyPreset.attacks[attackIndex]
+    if (mEditedPreset.attacks.size() == 1) {
+        mEditedPreset.attacks[attackIndex]
             .selectionProbabilityPercent = 100.0f;
         return;
     }
@@ -1597,12 +1619,12 @@ void ParameterDebugPanel::SetEnemyAttackProbability(
         100.0f);
     float otherProbabilityTotal = 0.0f;
     for (std::size_t currentIndex = 0;
-         currentIndex < mEditedEnemyPreset.attacks.size();
+         currentIndex < mEditedPreset.attacks.size();
          ++currentIndex) {
         if (currentIndex == attackIndex) {
             continue;
         }
-        otherProbabilityTotal += mEditedEnemyPreset.attacks[currentIndex]
+        otherProbabilityTotal += mEditedPreset.attacks[currentIndex]
             .selectionProbabilityPercent;
     }
 
@@ -1610,12 +1632,12 @@ void ParameterDebugPanel::SetEnemyAttackProbability(
     if (otherProbabilityTotal <= 0.0001f) {
         const float equalProbability =
             remainingProbability /
-            static_cast<float>(mEditedEnemyPreset.attacks.size() - 1);
+            static_cast<float>(mEditedPreset.attacks.size() - 1);
         for (std::size_t currentIndex = 0;
-             currentIndex < mEditedEnemyPreset.attacks.size();
+             currentIndex < mEditedPreset.attacks.size();
              ++currentIndex) {
             if (currentIndex != attackIndex) {
-                mEditedEnemyPreset.attacks[currentIndex]
+                mEditedPreset.attacks[currentIndex]
                     .selectionProbabilityPercent = equalProbability;
             }
         }
@@ -1623,139 +1645,139 @@ void ParameterDebugPanel::SetEnemyAttackProbability(
         const float probabilityScale =
             remainingProbability / otherProbabilityTotal;
         for (std::size_t currentIndex = 0;
-             currentIndex < mEditedEnemyPreset.attacks.size();
+             currentIndex < mEditedPreset.attacks.size();
              ++currentIndex) {
             if (currentIndex != attackIndex) {
-                mEditedEnemyPreset.attacks[currentIndex]
+                mEditedPreset.attacks[currentIndex]
                     .selectionProbabilityPercent *= probabilityScale;
             }
         }
     }
 
-    mEditedEnemyPreset.attacks[attackIndex]
+    mEditedPreset.attacks[attackIndex]
         .selectionProbabilityPercent = clampedProbability;
 }
 
-void ParameterDebugPanel::ReloadEnemyPresets()
+void EnemyPresetDebugPanel::ReloadPresets()
 {
-    mEnemyPresetsLoaded = true;
+    mHasLoadedPresets = true;
     std::string loadError;
     if (!EnemyPresetRepository::Load(
             "../assets/data/actor/enemies.yaml",
-            mEnemyPresets,
+            mPresets,
             loadError)) {
-        mSelectedEnemyPresetIndex = -1;
-        mEnemyPresetStatusMessage = loadError;
+        mSelectedPresetIndex = -1;
+        mStatusMessage = loadError;
         return;
     }
 
-    if (mEnemyPresets.empty()) {
-        mSelectedEnemyPresetIndex = -1;
-        mEnemyPresetStatusMessage =
+    if (mPresets.empty()) {
+        mSelectedPresetIndex = -1;
+        mStatusMessage =
             "敵プリセットが登録されていません。";
         return;
     }
 
-    mEnemyPresetStatusMessage.clear();
-    SelectEnemyPreset(std::clamp(
-        mSelectedEnemyPresetIndex,
+    mStatusMessage.clear();
+    SelectPreset(std::clamp(
+        mSelectedPresetIndex,
         0,
-        static_cast<int>(mEnemyPresets.size()) - 1));
+        static_cast<int>(mPresets.size()) - 1));
 }
 
-void ParameterDebugPanel::SelectEnemyPreset(int presetIndex)
+void EnemyPresetDebugPanel::SelectPreset(int presetIndex)
 {
     if (presetIndex < 0 ||
-        presetIndex >= static_cast<int>(mEnemyPresets.size())) {
+        presetIndex >= static_cast<int>(mPresets.size())) {
         return;
     }
 
-    mSelectedEnemyPresetIndex = presetIndex;
-    mEditedEnemyPreset = mEnemyPresets[presetIndex];
-    mOriginalEnemyPresetId = mEditedEnemyPreset.id;
+    mSelectedPresetIndex = presetIndex;
+    mEditedPreset = mPresets[presetIndex];
+    mOriginalPresetId = mEditedPreset.id;
     std::snprintf(
-        mEnemyPresetIdBuffer.data(),
-        mEnemyPresetIdBuffer.size(),
+        mPresetIdBuffer.data(),
+        mPresetIdBuffer.size(),
         "%s",
-        mEditedEnemyPreset.id.c_str());
+        mEditedPreset.id.c_str());
     std::snprintf(
-        mEnemyPresetDisplayNameBuffer.data(),
-        mEnemyPresetDisplayNameBuffer.size(),
+        mPresetDisplayNameBuffer.data(),
+        mPresetDisplayNameBuffer.size(),
         "%s",
-        mEditedEnemyPreset.displayName.c_str());
+        mEditedPreset.displayName.c_str());
     std::snprintf(
-        mEnemyModelPathBuffer.data(),
-        mEnemyModelPathBuffer.size(),
+        mModelPathBuffer.data(),
+        mModelPathBuffer.size(),
         "%s",
-        mEditedEnemyPreset.modelPath.c_str());
+        mEditedPreset.modelPath.c_str());
 }
 
-bool ParameterDebugPanel::SaveSelectedEnemyPreset()
+bool EnemyPresetDebugPanel::SaveSelectedPreset()
 {
-    mEditedEnemyPreset.id = mEnemyPresetIdBuffer.data();
-    mEditedEnemyPreset.displayName =
-        mEnemyPresetDisplayNameBuffer.data();
-    mEditedEnemyPreset.modelPath = mEnemyModelPathBuffer.data();
-    if (mEditedEnemyPreset.displayName.empty()) {
-        mEditedEnemyPreset.displayName = mEditedEnemyPreset.id;
+    mEditedPreset.id = mPresetIdBuffer.data();
+    mEditedPreset.displayName =
+        mPresetDisplayNameBuffer.data();
+    mEditedPreset.modelPath = mModelPathBuffer.data();
+    if (mEditedPreset.displayName.empty()) {
+        mEditedPreset.displayName = mEditedPreset.id;
     }
 
     std::string saveError;
     if (!EnemyPresetRepository::Save(
             "../assets/data/actor/enemies.yaml",
-            mOriginalEnemyPresetId,
-            mEditedEnemyPreset,
+            mOriginalPresetId,
+            mEditedPreset,
             saveError)) {
-        mEnemyPresetStatusMessage = saveError;
+        mStatusMessage = saveError;
         return false;
     }
 
-    const std::string savedId = mEditedEnemyPreset.id;
-    ReloadEnemyPresets();
+    const std::string savedId = mEditedPreset.id;
+    ReloadPresets();
     const auto savedPreset = std::find_if(
-        mEnemyPresets.begin(),
-        mEnemyPresets.end(),
+        mPresets.begin(),
+        mPresets.end(),
         [&savedId](const EnemyPresetDefinition& preset) {
             return preset.id == savedId;
         });
-    if (savedPreset != mEnemyPresets.end()) {
-        SelectEnemyPreset(static_cast<int>(
-            std::distance(mEnemyPresets.begin(), savedPreset)));
+    if (savedPreset != mPresets.end()) {
+        SelectPreset(static_cast<int>(
+            std::distance(mPresets.begin(), savedPreset)));
     }
     return true;
 }
 
-void ParameterDebugPanel::DuplicateSelectedEnemyPreset()
+void EnemyPresetDebugPanel::DuplicateSelectedPreset()
 {
-    if (mSelectedEnemyPresetIndex < 0 ||
-        mSelectedEnemyPresetIndex >=
-            static_cast<int>(mEnemyPresets.size())) {
+    if (mSelectedPresetIndex < 0 ||
+        mSelectedPresetIndex >=
+            static_cast<int>(mPresets.size())) {
         return;
     }
 
-    mEditedEnemyPreset =
-        mEnemyPresets[mSelectedEnemyPresetIndex];
-    mEditedEnemyPreset.id =
+    mEditedPreset =
+        mPresets[mSelectedPresetIndex];
+    mEditedPreset.id =
         EnemyPresetRepository::CreateUniqueId(
-            mEditedEnemyPreset.id,
-            mEnemyPresets);
-    mEditedEnemyPreset.displayName += " コピー";
-    mOriginalEnemyPresetId.clear();
+            mEditedPreset.id,
+            mPresets);
+    mEditedPreset.displayName += " コピー";
+    mOriginalPresetId.clear();
     std::snprintf(
-        mEnemyPresetIdBuffer.data(),
-        mEnemyPresetIdBuffer.size(),
+        mPresetIdBuffer.data(),
+        mPresetIdBuffer.size(),
         "%s",
-        mEditedEnemyPreset.id.c_str());
+        mEditedPreset.id.c_str());
     std::snprintf(
-        mEnemyPresetDisplayNameBuffer.data(),
-        mEnemyPresetDisplayNameBuffer.size(),
+        mPresetDisplayNameBuffer.data(),
+        mPresetDisplayNameBuffer.size(),
         "%s",
-        mEditedEnemyPreset.displayName.c_str());
-    mEnemyPresetStatusMessage =
+        mEditedPreset.displayName.c_str());
+    mStatusMessage =
         "複製内容を編集中です。保存すると新しいプリセットになります。";
 }
 
-bool ParameterDebugPanel::SaveEnemyParameters()
+bool EnemyParameterDebugPanel::SaveParameters()
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return false;
@@ -1783,10 +1805,10 @@ bool ParameterDebugPanel::SaveEnemyParameters()
         }
     }
 
-    return SaveEnemiesYaml(normalEnemy, bossEnemy);
+    return SaveYaml(normalEnemy, bossEnemy);
 }
 
-bool ParameterDebugPanel::SavePlayerYaml(Player* player)
+bool PlayerParameterDebugPanel::SaveYaml(Player* player)
 {
     if (!player) {
         return false;
@@ -2001,7 +2023,7 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     return SaveYamlFile(filePath, config);
 }
 
-bool ParameterDebugPanel::SaveEnemiesYaml(
+bool EnemyParameterDebugPanel::SaveYaml(
     Enemy* normalEnemy,
     Enemy* bossEnemy)
 {
@@ -2096,3 +2118,5 @@ bool ParameterDebugPanel::SaveEnemiesYaml(
 
     return SaveYamlFile(filePath, config);
 }
+
+

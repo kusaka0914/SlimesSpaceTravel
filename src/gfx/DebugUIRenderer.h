@@ -1,16 +1,23 @@
 #pragma once
 
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/DebugEditorSection.h"
+#include "gfx/debug/DebugEditorLayoutController.h"
+#include "gfx/debug/DebugGameViewportRenderer.h"
+#include "gfx/debug/DebugBuildRestartPanel.h"
+#include "gfx/debug/DebugEditorWorkspaceRenderer.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
-#include "gfx/debug/assets/EditorModelThumbnailRenderer.h"
 #include "gfx/debug/panels/AssetBrowserPanel.h"
+#include "gfx/debug/panels/BasicInfoDebugPanel.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
 #include "gfx/debug/panels/EndingRollDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
 #include "gfx/debug/panels/PerformanceDebugPanel.h"
 #include "gfx/debug/panels/SequenceDebugPanel.h"
+#include "gfx/debug/panels/SequenceEditorWorkspacePanel.h"
 #include "gfx/debug/panels/StorybookDebugPanel.h"
+#include "gfx/debug/panels/StarCollectionDebugPanel.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageDeleteActorPanel.h"
 #include "gfx/debug/panels/StageEditorPanel.h"
@@ -22,22 +29,19 @@
 #include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
-#include "gfx/debug/ugc/UGCWorkPanel.h"
-#include "gfx/debug/ugc/UGCEditorTutorial.h"
 
-#include <array>
 #include <memory>
-#include <optional>
 #include <string>
-#include <vector>
 
 class Game;
+class DebugEditorSessionCoordinator;
+class UGCEditorRenderer;
 class UIRenderer;
-struct EditorSessionState;
 
 class DebugUIRenderer {
 public:
     DebugUIRenderer(Game* game, UIRenderer* uiRenderer);
+    ~DebugUIRenderer();
 
     void Draw(
         unsigned int gameViewTexture,
@@ -70,86 +74,13 @@ public:
         bool isError);
 
 private:
-    enum class EditorSection {
-        BasicInfo,
-        Parameters,
-        Particles,
-        Sequences,
-        Tutorials,
-        Stage,
-        UserInterface,
-    };
-
-    enum class UGCSwitchConnectionAction {
-        Connect,
-        Disconnect,
-    };
-
-    void DrawBasicInfoTab();
-    void DrawSequenceEditorTab();
-    void DrawStarCollectionEditor();
-    void DrawDockedToolPanel(EditorSection section);
-    void DrawDockedAssetBrowser(EditorSection section);
-    void DrawGameViewport(
-        EditorSection section,
-        unsigned int gameViewTexture,
-        int gameViewWidth,
-        int gameViewHeight);
-    void DrawGameViewportToolbar(
-        const ImVec2& toolbarMin,
-        float toolbarWidth,
-        bool showGizmoTranslationSpace);
-    void ResolveResizableLayout(EditorSection section);
-    void DrawLayoutResizeHandles(EditorSection section);
-    const char* ResolveToolPanelTitle(EditorSection section) const;
-    EditorSessionState CaptureEditorSessionState() const;
-    void ApplyEditorSessionState(const EditorSessionState& sessionState);
-    void AlignFreeCameraUpToSelectedActor();
-    void DrawBuildRestartControls();
-    void DrawUGCViewport(
-        unsigned int gameViewTexture,
-        int gameViewWidth,
-        int gameViewHeight,
-        const ImVec2& viewportMin,
-        const ImVec2& viewportMax);
-    void DrawUGCDebugEditorOverlay();
-    void RegisterUGCUIEditorElements();
-    void DrawUGCSwitchConnectionLines();
-    void DrawUGCUnconnectedSwitchWarnings();
-    void DrawUGCTransformControls();
-    void ToggleUGCVerticalView();
-    void SetUGCFixedView(const glm::vec3& viewDirection);
-    void AdjustUGCViewDistance(float distanceMultiplier);
-    void DrawUGCGridOverlay();
-    void DrawUGCStackBadges();
-    void DrawUGCPlacementPreview();
-    void DrawUGCPreviewOverlay();
-    void DrawUGCPreviewLayerGuides(
-        const ImVec2& previewMin,
-        const ImVec2& previewMax,
-        ImDrawList* drawList);
-    bool IsUGCWorkManagementOpen() const;
-    void DrawUGCWorkManagement();
-    void DrawUGCEditorTutorial();
-    void DrawUGCTutorialHighlightForLastItem(bool shouldHighlight) const;
-    void StartUGCVerification();
-    void UpdateUGCSelectionDrag();
-    bool TryIntersectUGCDragPlane(
-        const glm::vec3& rayFrom,
-        const glm::vec3& rayTo,
-        glm::vec3& outIntersection) const;
-    void DrawUGCLayerControls();
-    void ChangeUGCEditLayer(int layerDelta);
-    void SyncUGCEditLayerToPickedActor();
-
-private:
     EditorAssetCatalog mAssetCatalog;
     DebugEditorContext mContext;
-    UGCWorkPanel mUGCWorkPanel;
-    UGCEditorTutorial mUGCEditorTutorial;
-    std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
+    DebugEditorLayoutController mLayoutController;
+    DebugBuildRestartPanel mBuildRestartPanel;
 
     PerformanceDebugPanel mPerformancePanel;
+    BasicInfoDebugPanel mBasicInfoPanel;
     CameraDebugPanel mCameraPanel;
     UIDebugPanel mUIPanel;
     ParameterDebugPanel mParameterPanel;
@@ -157,6 +88,8 @@ private:
     SequenceDebugPanel mSequencePanel;
     EndingRollDebugPanel mEndingRollPanel;
     StorybookDebugPanel mStorybookPanel;
+    StarCollectionDebugPanel mStarCollectionPanel;
+    SequenceEditorWorkspacePanel mSequenceEditorPanel;
     TutorialDebugPanel mTutorialPanel;
     AssetBrowserPanel mAssetBrowserPanel;
 
@@ -170,35 +103,9 @@ private:
     StageDeleteActorPanel mStageDeleteActorPanel;
     StageEditorPanel mStageEditorPanel;
     StageGizmoController mGizmoController;
+    DebugGameViewportRenderer mGameViewportRenderer;
+    DebugEditorWorkspaceRenderer mWorkspaceRenderer;
+    std::unique_ptr<DebugEditorSessionCoordinator> mSessionCoordinator;
+    std::unique_ptr<UGCEditorRenderer> mUGCEditorRenderer;
 
-    EditorSection mActiveSection = EditorSection::BasicInfo;
-    int mSelectedSequenceEditorMenu = 0;
-    bool mShouldSelectRestoredSection = false;
-    std::string mBuildRestartStatus;
-    bool mIsBuildRestartStatusError = false;
-    bool mIsUGCEraserMode = false;
-    bool mShouldOpenUGCEditorMenu = false;
-    bool mShouldOpenUGCWorkManagement = false;
-    std::optional<UGCPresetKind> mActiveUGCPresetKind;
-    std::optional<UGCPresetKind> mUGCPresetBeforeEraser;
-    glm::vec3 mUGCViewDirection{0.0f, 1.0f, 0.0f};
-    std::string mUGCStatus;
-    int mUGCEditLayer = 0;
-    int mUGCPlatformFootprintSideLength = 1;
-    std::optional<StageActorRef> mUGCConnectionSwitchRef;
-    UGCSwitchConnectionAction mUGCSwitchConnectionAction =
-        UGCSwitchConnectionAction::Connect;
-    bool mIsUGCSelectionDragging = false;
-    bool mIsUGCMovingPlatformDestinationDrag = false;
-    bool mHasUGCSelectionDragMoved = false;
-    glm::vec3 mUGCSelectionDragPlanePoint{0.0f};
-    glm::vec3 mUGCSelectionDragPlaneNormal{0.0f, 1.0f, 0.0f};
-    glm::vec3 mUGCSelectionDragOffset{0.0f};
-    glm::vec3 mUGCSelectionDragInitialCenter{0.0f};
-    glm::vec3 mUGCSelectionDragAppliedDelta{0.0f};
-    glm::vec3 mUGCSelectionDragSavedDelta{0.0f};
-    std::vector<StageActorRef> mUGCSelectionDragActorRefs;
-    float mUGCPreviewWidth = 420.0f;
-    float mUGCPreviewResizeStartWidth = 420.0f;
-    bool mHasInitializedUGCPreviewWidth = false;
 };

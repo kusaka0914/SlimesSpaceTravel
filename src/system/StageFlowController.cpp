@@ -12,17 +12,17 @@ StageFlowController::StageFlowController()
 {
 }
 
-void StageFlowController::LoadData(Game& game, bool isLoadPlayer)
+void StageFlowController::LoadData(Game& game)
 {
     game.RemoveAllActor();
-    game.GetActorLoadSystem()->LoadData(isLoadPlayer);
+    game.GetActorLoadSystem()->LoadData();
 }
 
 void StageFlowController::ReloadCurrentStage(
     Game& game,
     StagePhysicsReloadMode physicsReloadMode)
 {
-    LoadData(game, true);
+    LoadData(game);
     if (physicsReloadMode == StagePhysicsReloadMode::Rebuild) {
         game.GetPhysicsSystem()->Initialize();
     }

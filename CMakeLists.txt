@@ -62,10 +62,17 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPreviewStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCClearTransitionStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -77,11 +84,22 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorToolState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorMenuState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewPanelState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSelectionDragState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSwitchConnectionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCClearTransitionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/performance/FramePerformanceTracker.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UGCModeController.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src

@@ -815,11 +815,14 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
 
         ActorLoadSystem* actorLoadSystem =
             mGame->GetActorLoadSystem();
-        return actorLoadSystem
-                   ? actorLoadSystem->FindPlacedActor(
-                         page->focusTarget.sequenceName,
-                         page->focusTarget.yamlIndex)
-                   : nullptr;
+        Stage* stage = mGame->GetCurrentStage();
+        if (!actorLoadSystem || !stage) {
+            return nullptr;
+        }
+        return actorLoadSystem->GetActorLocator().FindPlacedActor(
+            *stage,
+            page->focusTarget.sequenceName,
+            page->focusTarget.yamlIndex);
     }
 
     NPC* talkingNPC = sceneSystem ? sceneSystem->GetTalkingNPC() : nullptr;
@@ -843,9 +846,14 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
     }
 
     ActorLoadSystem* actorLoadSystem = mGame->GetActorLoadSystem();
-    return actorLoadSystem
-               ? actorLoadSystem->FindPlacedActor(target->sequenceName, target->yamlIndex)
-               : nullptr;
+    Stage* stage = mGame->GetCurrentStage();
+    if (!actorLoadSystem || !stage) {
+        return nullptr;
+    }
+    return actorLoadSystem->GetActorLocator().FindPlacedActor(
+        *stage,
+        target->sequenceName,
+        target->yamlIndex);
 }
 
 std::vector<glm::mat4> CameraSystem::GetViews()
