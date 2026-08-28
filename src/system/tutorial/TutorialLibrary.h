@@ -13,7 +13,7 @@ enum class TutorialAdvanceCondition {
 };
 
 enum class TutorialRepeatPolicy {
-    OncePerSession = 0,
+    OnceEver = 0,
     EveryRequest
 };
 
@@ -63,7 +63,7 @@ struct TutorialDefinition {
     std::string id;
     std::string displayName;
     TutorialRepeatPolicy repeatPolicy =
-        TutorialRepeatPolicy::OncePerSession;
+        TutorialRepeatPolicy::OnceEver;
     float textXRatio = 0.065f;
     float textYRatio = 0.14f;
     float textScaleRatio = 0.000333333f;

@@ -17,7 +17,9 @@ public:
     std::vector<Enemy*> FindEnemiesTouchingAirDodgeMovement(
         Player& player,
         const glm::vec3& movementStart,
-        const glm::vec3& movementEnd) const;
+        const glm::vec3& movementEnd,
+        float horizontalHitboxScale,
+        float verticalHitboxScale) const;
 
 private:
     bool IsGroundedEnemyWithinAirAttackHeight(
@@ -36,6 +38,8 @@ private:
         const Player& player,
         const Enemy& enemy,
         const glm::vec3& movementStart,
-        const glm::vec3& movementEnd) const;
+        const glm::vec3& movementEnd,
+        float horizontalHitboxScale,
+        float verticalHitboxScale) const;
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange, float attackAngle) const;
 };

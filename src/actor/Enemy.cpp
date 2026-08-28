@@ -272,7 +272,9 @@ void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
 }
 
 void Enemy::ApplyAirDodgePush(
-    const glm::vec3& dodgeDirection)
+    const glm::vec3& dodgeDirection,
+    float pushSpeed,
+    float pushDampingPerSecond)
 {
     if (GetIsBoss() ||
         IsOnGround() ||
@@ -282,7 +284,9 @@ void Enemy::ApplyAirDodgePush(
 
     mMovement->ApplyAirDodgePush(
         *this,
-        dodgeDirection);
+        dodgeDirection,
+        pushSpeed,
+        pushDampingPerSecond);
 }
 
 const char* Enemy::GetCurrentBehaviorActionType() const

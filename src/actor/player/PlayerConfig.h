@@ -28,6 +28,11 @@ struct PlayerConfig {
     float dodgeDuration = 0.1f;
     float dodgeCooldownTime = 0.3f;
     float dodgeDistance = 3.0f;
+    float airDodgeAttackDamage = 5.0f;
+    float airDodgeHorizontalHitboxScale = 1.0f;
+    float airDodgeVerticalHitboxScale = 2.0f;
+    float airDodgeEnemyPushSpeed = 6.0f;
+    float airDodgeEnemyPushDampingPerSecond = 8.0f;
 
     float normalAttackRange = 2.8f;
     float normalAttackAngle = 0.8f;
@@ -60,7 +65,8 @@ struct PlayerConfig {
     float defaultDamageTimer = 1.0f;
     float defaultAttackMotionTimer = 0.3f;
     float attackHitDelay = 0.5f;
-    float attackCooldown = 0.3f;
+    float groundWeakAttackCooldownSeconds = 0.0f;
+    float airWeakAttackCooldownSeconds = 0.19f;
     float lastAttackCooldown = 1.0f;
     float defaultStrongAttackTimer = 0.06f;
     float knockBackSpeed = 0.0f;

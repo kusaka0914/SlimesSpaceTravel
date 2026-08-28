@@ -34,7 +34,9 @@ public:
     void MoveDuringDying(Enemy& enemy, float deltaTime);
     void ApplyAirDodgePush(
         Enemy& enemy,
-        const glm::vec3& dodgeDirection);
+        const glm::vec3& dodgeDirection,
+        float pushSpeed,
+        float pushDampingPerSecond);
 
     void LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
     void UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
@@ -51,4 +53,5 @@ private:
 
     EnemyGrounding mGrounding;
     glm::vec3 mAirDodgePushVelocity{0.0f};
+    float mAirDodgePushDampingPerSecond = 8.0f;
 };

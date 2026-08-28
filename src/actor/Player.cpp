@@ -85,6 +85,15 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mMovement.SetDodgeDuration(config.dodgeDuration);
     mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);
     mMovement.SetDodgeDistance(config.dodgeDistance);
+    mCombat.SetAirDodgeAttackDamage(config.airDodgeAttackDamage);
+    mCombat.SetAirDodgeHorizontalHitboxScale(
+        config.airDodgeHorizontalHitboxScale);
+    mCombat.SetAirDodgeVerticalHitboxScale(
+        config.airDodgeVerticalHitboxScale);
+    mCombat.SetAirDodgeEnemyPushSpeed(
+        config.airDodgeEnemyPushSpeed);
+    mCombat.SetAirDodgeEnemyPushDampingPerSecond(
+        config.airDodgeEnemyPushDampingPerSecond);
 
     mCombat.SetNormalAttackRange(config.normalAttackRange);
     mCombat.SetNormalAttackAngle(config.normalAttackAngle);
@@ -120,7 +129,10 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mStatus.SetDefaultDamageTimer(config.defaultDamageTimer);
     mCombat.SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
     mCombat.SetAttackHitDelay(config.attackHitDelay);
-    mCombat.SetAttackCooldown(config.attackCooldown);
+    mCombat.SetGroundWeakAttackCooldownSeconds(
+        config.groundWeakAttackCooldownSeconds);
+    mCombat.SetAirWeakAttackCooldownSeconds(
+        config.airWeakAttackCooldownSeconds);
     mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
     mCombat.SetDefaultStrongAttackTimer(config.defaultStrongAttackTimer);
     mMovement.SetKnockBackSpeed(config.knockBackSpeed);

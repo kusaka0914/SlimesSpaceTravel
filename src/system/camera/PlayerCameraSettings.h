@@ -6,8 +6,9 @@ struct PlayerCameraSettings {
     float distance = 8.0f;
     float pitchDegrees = -57.29578f;
     float targetHeight = 1.5f;
+    float splitScreenTargetHeight = 1.5f;
     float fieldOfViewDegrees = 60.0f;
-    float splitScreenFieldOfViewDegrees = 45.0f;
+    float splitScreenFieldOfViewDegrees = 55.0f;
     float yawSensitivity = 2.5f;
     float pitchSensitivityDegrees = 90.0f;
     float minPitchDegrees = -80.0f;

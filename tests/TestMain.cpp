@@ -31,6 +31,10 @@ void RegisterUGCPresetVisualsTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterUGCEditorTutorialTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterStageProgressSystemTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterPlayerConfigLoaderTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -48,6 +52,8 @@ int main()
     RegisterUGCSessionStateTests(tests);
     RegisterUGCPresetVisualsTests(tests);
     RegisterUGCEditorTutorialTests(tests);
+    RegisterStageProgressSystemTests(tests);
+    RegisterPlayerConfigLoaderTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

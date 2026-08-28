@@ -138,7 +138,7 @@ public:
     void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
                                          float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
-                                      float screenTopY, float uiScale);
+                                      float screenTopY, float screenHeight);
     bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
 

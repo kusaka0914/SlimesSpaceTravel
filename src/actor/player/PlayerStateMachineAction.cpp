@@ -107,11 +107,19 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
         mAttackDirectionTarget = nullptr;
-        if (!player.GetOnGround() &&
-            combat.IsAirAttacking()) {
+        const bool isAirWeakAttack =
+            combat.IsAirAttacking();
+        if (!player.GetOnGround() && isAirWeakAttack) {
             movement.StopAirborneVerticalMovement(player);
             movement.StartAirborneActionHover(
                 movement.GetAirWeakAttackPostHoverDurationSeconds());
+        }
+        if (isAirWeakAttack) {
+            combat.StartAirWeakAttackCooldown();
+        } else if (
+            combat.GetAttackKind() ==
+            PlayerAttackKind::Wide) {
+            combat.StartGroundWeakAttackCooldown();
         }
         StartIdle();
     }

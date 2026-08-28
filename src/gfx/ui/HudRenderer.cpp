@@ -83,14 +83,17 @@ void HudRenderer::DrawPlayerFatiguePromptUI()
     const bool isTwoPlayer =
         mGame->GetIsPlayer2Joined() && players.size() >= 2;
     if (!isTwoPlayer) {
-        DrawPlayerPromptUI(mGame->GetMainPlayer(), 0.0f, 1.0f);
+        DrawPlayerPromptUI(
+            mGame->GetMainPlayer(),
+            0.0f,
+            static_cast<float>(mRenderer->GetFbHeight()));
         return;
     }
 
     const float halfHeight =
         static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
-    DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
-    DrawPlayerPromptUI(players[1], halfHeight, 1.0f);
+    DrawPlayerPromptUI(players[0], 0.0f, halfHeight);
+    DrawPlayerPromptUI(players[1], halfHeight, halfHeight);
 }
 
 void HudRenderer::DrawPlayerStatusUIForPlayer(
@@ -113,14 +116,14 @@ void HudRenderer::DrawPlayerStatusUIForPlayer(
     }
 }
 
-void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float screenHeight)
 {
     if (!player) {
         return;
     }
 
     if (player->GetIsTired()) {
-        DrawRecommendReduceTiredUI(player, screenTopY, uiScale);
+        DrawRecommendReduceTiredUI(player, screenTopY, screenHeight);
     }
 }
 
@@ -215,9 +218,14 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
         remainPartsTextInfo->rotationDegrees);
 }
 
-void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, uiScale);
+    mRenderer->DrawTextDependsOnPlayerInput(
+        player,
+        "state",
+        "recommendReduceTiredText",
+        screenTopY,
+        screenHeight);
 }
 
 void HudRenderer::DrawUGCClearVerificationGuide()

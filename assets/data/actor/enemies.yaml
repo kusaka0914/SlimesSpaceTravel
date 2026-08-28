@@ -17,7 +17,7 @@ enemies:
     defaultStandByAttackTimer: 6
     defaultAttackMotionTimer: 3
     attackSpeed: 1.5
-    attackPreparationRange: 1.5
+    attackPreparationRange: 2.6
     attacks:
       - type: meleeAttack
         weight: 100
@@ -30,6 +30,8 @@ enemies:
     postAttackRetreatDistance: 4
     postRetreatRecoverySeconds: 2
     postRetreatFollowupApproachProbabilityPercent: 0
+    normalHitKnockBackEnabled: true
+    postAttackRetreatDelaySeconds: 1
   - type: normalFixed
     displayName: 動かない敵
     behaviorProfile: legacyMelee
@@ -106,7 +108,7 @@ enemies:
     defaultStandByAttackTimer: 2
     defaultAttackMotionTimer: 1
     attackSpeed: 5
-    attackPreparationRange: 2.25
+    attackPreparationRange: 2.6
     preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
     preAttackApproachStopDistance: 2.5
@@ -119,6 +121,7 @@ enemies:
       - type: meleeAttack
         weight: 100
     postAttackRetreatDelaySeconds: 1
+    normalHitKnockBackEnabled: true
   - type: boss_2
     displayName: ボス敵2
     behaviorProfile: bossMelee
@@ -134,10 +137,10 @@ enemies:
     defaultAttackMotionTimer: 1
     attackSpeed: 4
     attackPreparationRange: 2.5
-    preAttackApproachProbabilityPercent: 25
+    preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
     preAttackApproachStopDistance: 2.5
-    postAttackRetreatProbabilityPercent: 55
+    postAttackRetreatProbabilityPercent: 0
     postAttackRetreatDelaySeconds: 1
     postAttackRetreatSpeed: 12
     postAttackRetreatDistance: 4
@@ -145,12 +148,12 @@ enemies:
     postRetreatFollowupApproachProbabilityPercent: 25
     attacks:
       - type: meleeAttack
-        weight: 67
+        weight: 34
       - type: tripleChargeAttack
-        weight: 33
+        weight: 66
         chargeCount: 2
         repeatDelay: 1
-    normalHitKnockBackEnabled: true
+    normalHitKnockBackEnabled: false
   - type: boss_weak
     displayName: 弱いボス敵
     behaviorProfile: bossMelee
@@ -210,13 +213,13 @@ enemies:
     postRetreatFollowupApproachProbabilityPercent: 30
     attacks:
       - type: meleeAttack
-        weight: 13.875
+        weight: 14.996771
       - type: tripleChargeAttack
-        weight: 50
+        weight: 43
         chargeCount: 2
         repeatDelay: 1
       - type: fanAttack
-        weight: 36.125
+        weight: 42.003227
         range: 6
         angleDegrees: 90
         windUpDuration: 2
@@ -271,7 +274,7 @@ enemies:
     attack: 1
     breakCountMax: 4
     radius: 1.5
-    defaultStandByAttackTimer: 3
+    defaultStandByAttackTimer: 2
     defaultAttackMotionTimer: 1
     attackSpeed: 4
     attackPreparationRange: 2.5

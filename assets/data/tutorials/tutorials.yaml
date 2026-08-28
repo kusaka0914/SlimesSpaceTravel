@@ -1,7 +1,7 @@
 tutorials:
   - id: battle_basic
     name: 戦闘の基本
-    repeat: oncePerSession
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -629,7 +629,7 @@ tutorials:
           flipVertical: true
   - id: enemy_break
     name: ガード破壊と空中攻撃
-    repeat: oncePerSession
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -1194,7 +1194,7 @@ tutorials:
           flipVertical: true
   - id: jewel_usage
     name: ジュエルの使い方
-    repeat: oncePerSession
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.74
     textScaleRatio: 0.000333333
@@ -1374,7 +1374,7 @@ tutorials:
         advance: confirm
   - id: just_dodge
     name: カウンター突進
-    repeat: oncePerSession
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -1594,7 +1594,7 @@ tutorials:
           flipVertical: true
   - id: split_switch
     name: 分身とスイッチ
-    repeat: everyRequest
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -1846,7 +1846,7 @@ tutorials:
         advance: confirm
   - id: switch_success
     name: スイッチ押し成功
-    repeat: everyRequest
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333
@@ -1977,7 +1977,7 @@ tutorials:
         advance: confirm
   - id: union
     name: 合体
-    repeat: everyRequest
+    repeat: onceEver
     textXRatio: 0.065
     textYRatio: 0.14
     textScaleRatio: 0.000333333

@@ -4,6 +4,7 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "gfx/debug/ugc/UGCWorkFileName.h"
 #include "gfx/debug/ugc/UGCWorkMetadata.h"
+#include "system/UserDataPaths.h"
 
 #include <exception>
 #include <filesystem>
@@ -14,10 +15,6 @@
 
 namespace {
 
-const std::filesystem::path WorkingStagePath =
-    "../assets/data/stage/ugc_stage.yaml";
-const std::filesystem::path SavedWorkDirectory =
-    "../assets/data/stage/ugc_saves";
 const std::filesystem::path NewWorkTemplatePath =
     "../assets/data/stage/ugc_stage_template.yaml";
 
@@ -25,7 +22,9 @@ const std::filesystem::path NewWorkTemplatePath =
 
 UGCWorkFileService::UGCWorkFileService(DebugEditorContext& context)
     : mContext(context),
-      mStorage({WorkingStagePath, SavedWorkDirectory})
+      mStorage({
+          UserDataPaths::ResolveUGCWorkingStageFile(),
+          UserDataPaths::ResolveUGCSavedWorkDirectory()})
 {
 }
 
@@ -98,9 +97,20 @@ bool UGCWorkFileService::ResetWorkingStage(
 {
     outErrorMessage.clear();
     std::error_code fileSystemError;
+    const std::filesystem::path workingStagePath =
+        UserDataPaths::ResolveUGCWorkingStageFile();
+    std::filesystem::create_directories(
+        workingStagePath.parent_path(),
+        fileSystemError);
+    if (fileSystemError) {
+        outErrorMessage =
+            "作業フォルダを作れませんでした: " +
+            fileSystemError.message();
+        return false;
+    }
     std::filesystem::copy_file(
         NewWorkTemplatePath,
-        WorkingStagePath,
+        workingStagePath,
         std::filesystem::copy_options::overwrite_existing,
         fileSystemError);
     if (!fileSystemError) {
@@ -117,7 +127,8 @@ bool UGCWorkFileService::HasUnsavedChanges() const
 {
     try {
         const YAML::Node workingStage =
-            YAML::LoadFile(WorkingStagePath.string());
+            YAML::LoadFile(
+                UserDataPaths::ResolveUGCWorkingStageFile().string());
         const std::optional<std::string> fileName =
             UGCWorkMetadata::FindFileName(workingStage);
         if (!fileName) {
@@ -129,7 +140,7 @@ bool UGCWorkFileService::HasUnsavedChanges() const
         std::error_code fileSystemError;
         const std::uintmax_t workingFileSize =
             std::filesystem::file_size(
-                WorkingStagePath,
+                UserDataPaths::ResolveUGCWorkingStageFile(),
                 fileSystemError);
         if (fileSystemError) {
             return true;
@@ -142,7 +153,9 @@ bool UGCWorkFileService::HasUnsavedChanges() const
             return true;
         }
 
-        std::ifstream workingFile(WorkingStagePath, std::ios::binary);
+        std::ifstream workingFile(
+            UserDataPaths::ResolveUGCWorkingStageFile(),
+            std::ios::binary);
         std::ifstream savedFile(savedStagePath, std::ios::binary);
         if (!workingFile || !savedFile) {
             return true;
@@ -184,13 +197,15 @@ bool UGCWorkFileService::CopyToWorkingFile(
     }
 
     try {
-        YAML::Node stageYaml = YAML::LoadFile(WorkingStagePath.string());
+        const std::filesystem::path workingStagePath =
+            UserDataPaths::ResolveUGCWorkingStageFile();
+        YAML::Node stageYaml = YAML::LoadFile(workingStagePath.string());
         UGCWorkMetadata::PrepareForSave(
             stageYaml,
             ResolveDisplayName(fileName),
             fileName);
         if (!StageYamlRepository::SaveYamlFile(
-            WorkingStagePath.string(),
+            workingStagePath.string(),
             stageYaml)) {
             return false;
         }

@@ -327,6 +327,831 @@ enemies:
       - 1.7792208e-05
       - 0.9999997
     modelPath: enemy_purple.obj
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 13
+    theta: 0.6941931
+    phi: 0.36035827
+    height: -1.7912617
+    pos:
+      - 3.026947
+      - 1.4840412
+      - 2.519661
+    upVec:
+      - 0.21759826
+      - 0.95871097
+      - 0.18309624
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 13
+    theta: -0.9521298
+    phi: 0.30937225
+    height: -1.4978638
+    pos:
+      - 2.487053
+      - 1.3707237
+      - -3.4935532
+    upVec:
+      - 0.1905104
+      - 0.94565487
+      - -0.26351964
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 13
+    theta: -2.104799
+    phi: 0.57344615
+    height: -2.7498477
+    pos:
+      - -1.3896484
+      - 1.7633057
+      - -2.350132
+    upVec:
+      - -0.08635181
+      - 0.98518384
+      - -0.14817636
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: boss_weak_2
+    currentPlanetNum: 13
+    theta: 1.8805228
+    phi: 0.37841183
+    height: -1.8895979
+    pos:
+      - -1.1642075
+      - 1.518568
+      - 3.6378536
+    upVec:
+      - -0.08205598
+      - 0.9623881
+      - 0.25899035
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 1.9486481
+    phi: -0.32715175
+    height: -1.6027255
+    pos:
+      - -1.5362206
+      - -1.4130516
+      - 3.8703146
+    upVec:
+      - -0.11550878
+      - -0.9503742
+      - 0.28887153
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 1.456173
+    phi: -0.4839264
+    height: -2.3999164
+    pos:
+      - 0.36447144
+      - -1.6749687
+      - 3.1657925
+    upVec:
+      - 0.023508547
+      - -0.9769979
+      - 0.21194918
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 0.4464967
+    phi: -0.47034752
+    height: -2.3404138
+    pos:
+      - 2.9423866
+      - -1.6585102
+      - 1.4086428
+    upVec:
+      - 0.19162534
+      - -0.9770006
+      - 0.09353939
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 2.4850783
+    phi: -0.31903332
+    height: -1.5552864
+    pos:
+      - -3.3431053
+      - -1.3940792
+      - 2.5759792
+    upVec:
+      - -0.2587761
+      - -0.9456554
+      - 0.19690312
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -2.6558115
+    phi: -0.25382015
+    height: -1.1594138
+    pos:
+      - -4.1434326
+      - -1.2154884
+      - -2.187654
+    upVec:
+      - -0.3581226
+      - -0.9149989
+      - -0.18580976
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 0.054827977
+    phi: -0.34278366
+    height: -1.6926146
+    pos:
+      - 4.0506973
+      - -1.4477558
+      - 0.22231436
+    upVec:
+      - 0.29696956
+      - -0.95471257
+      - 0.018254135
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 2.6952555
+    phi: -0.9084472
+    height: -3.561007
+    pos:
+      - -1.3529701
+      - -1.9232674
+      - 0.6474576
+    upVec:
+      - -0.0834961
+      - -0.995788
+      - 0.037877336
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -2.938271
+    phi: -0.43435234
+    height: -2.1739624
+    pos:
+      - -3.399269
+      - -1.6100845
+      - -0.70082855
+    upVec:
+      - -0.2306021
+      - -0.9718232
+      - -0.048808318
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -2.2336555
+    phi: -0.25340456
+    height: -1.1567206
+    pos:
+      - -2.8852425
+      - -1.2142162
+      - -3.6957288
+    upVec:
+      - -0.25210592
+      - -0.91500163
+      - -0.31498384
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -1.3701031
+    phi: -0.27924728
+    height: -1.3161163
+    pos:
+      - 0.8975563
+      - -1.291029
+      - -4.412075
+    upVec:
+      - 0.07672799
+      - -0.9288826
+      - -0.36233944
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -0.930266
+    phi: -1.1393435
+    height: -3.8358977
+    pos:
+      - 0.5408516
+      - -1.9657822
+      - -0.72561646
+    upVec:
+      - 0.025120644
+      - -0.99860823
+      - -0.046375643
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -0.77240944
+    phi: -0.2656912
+    height: -1.232934
+    pos:
+      - 3.2945175
+      - -1.2517185
+      - -3.2100272
+    upVec:
+      - 0.27669647
+      - -0.92225087
+      - -0.26998633
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: 0.9240372
+    phi: -0.70386446
+    height: -3.1445203
+    pos:
+      - 1.3117867
+      - -1.8479767
+      - 1.7372284
+    upVec:
+      - 0.080556236
+      - -0.9911103
+      - 0.10588279
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -2.1137316
+    phi: -0.59292006
+    height: -2.8166838
+    pos:
+      - -1.3639412
+      - -1.7787895
+      - -2.2603264
+    upVec:
+      - -0.084775716
+      - -0.9868533
+      - -0.13759997
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 12
+    theta: -1.5186318
+    phi: -0.54050636
+    height: -2.6293354
+    pos:
+      - 0.15
+      - -1.73
+      - -2.89
+    upVec:
+      - 0.011129617
+      - -0.983375
+      - -0.18124537
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 1.9108553
+    phi: 0.20320618
+    height: -0.8471203
+    pos:
+      - -1.683342
+      - 1.0399055
+      - 4.7578487
+    upVec:
+      - -0.15557183
+      - 0.87821066
+      - 0.45226482
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 2.3375976
+    phi: 0.26345825
+    height: -1.219182
+    pos:
+      - -3.2026443
+      - 1.2450256
+      - 3.3240337
+    upVec:
+      - -0.2699863
+      - 0.9222508
+      - 0.27669644
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 1.3193704
+    phi: 0.33028618
+    height: -1.6209769
+    pos:
+      - 1.03
+      - 1.42
+      - 4.01
+    upVec:
+      - 0.0793183
+      - 0.9503761
+      - 0.30082205
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 0.5455258
+    phi: 0.4331617
+    height: -2.1682131
+    pos:
+      - 2.973095
+      - 1.6083641
+      - 1.8045673
+    upVec:
+      - 0.2006784
+      - 0.9718241
+      - 0.12363687
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 2.6613224
+    phi: 0.21856947
+    height: -0.94114876
+    pos:
+      - -4.3798027
+      - 1.0969276
+      - 2.2816772
+    upVec:
+      - -0.40685156
+      - 0.88876706
+      - 0.21110418
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 1.699557
+    phi: 0.735439
+    height: -3.2230225
+    pos:
+      - -0.26441574
+      - 1.8631096
+      - 2.042183
+    upVec:
+      - -0.016812576
+      - 0.9922574
+      - 0.12305527
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -0.36561155
+    phi: 0.45842907
+    height: -2.2867079
+    pos:
+      - 3.1098022
+      - 1.64328
+      - -1.1905041
+    upVec:
+      - 0.21027997
+      - 0.97451335
+      - -0.078142144
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -0.89098316
+    phi: 0.42680484
+    height: -2.1372313
+    pos:
+      - 2.2104836
+      - 1.5990486
+      - -2.7345543
+    upVec:
+      - 0.14725962
+      - 0.97182643
+      - -0.18403256
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -1.7502422
+    phi: 0.42432654
+    height: -2.1250222
+    pos:
+      - -0.6302872
+      - 1.595356
+      - -3.4746265
+    upVec:
+      - -0.04529787
+      - 0.9689278
+      - -0.2431607
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 2.528604
+    phi: 0.5410601
+    height: -2.6314347
+    pos:
+      - -2.3617058
+      - 1.7349625
+      - 1.661169
+    upVec:
+      - -0.14972933
+      - 0.9833753
+      - 0.102734186
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -2.7375095
+    phi: 0.9665865
+    height: -3.6461785
+    pos:
+      - -1.229538
+      - 1.9370804
+      - -0.5257683
+    upVec:
+      - -0.07713658
+      - 0.9965324
+      - -0.031196643
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 3.0921009
+    phi: 0.25883892
+    height: -1.1903887
+    pos:
+      - -4.6436996
+      - 1.23106
+      - 0.2300129
+    upVec:
+      - -0.38587558
+      - 0.92224586
+      - 0.023721004
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -2.4982438
+    phi: 0.383923
+    height: -1.9188647
+    pos:
+      - -3.0275764
+      - 1.5286331
+      - -2.2699623
+    upVec:
+      - -0.21620491
+      - 0.96238667
+      - -0.16452149
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -2.0907943
+    phi: 0.3611641
+    height: -1.795702
+    pos:
+      - -1.9542542
+      - 1.4856453
+      - -3.4131908
+    upVec:
+      - -0.14317961
+      - 0.958712
+      - -0.24570535
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -2.0907943
+    phi: 0.3611641
+    height: -1.795702
+    pos:
+      - -1.9542542
+      - 1.4856453
+      - -3.4131908
+    upVec:
+      - -0.14317961
+      - 0.958712
+      - -0.24570535
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 0.111278765
+    phi: 0.8858954
+    height: -3.524496
+    pos:
+      - 1.5563087
+      - 1.9172325
+      - 0.17390251
+    upVec:
+      - 0.091328405
+      - 0.99576277
+      - 0.010754794
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -2.7963374
+    phi: 0.22001259
+    height: -0.9496956
+    pos:
+      - -4.637726
+      - 1.1021881
+      - -1.6680088
+    upVec:
+      - -0.4296622
+      - 0.888759
+      - -0.15968053
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 1.8601578
+    phi: 0.40449515
+    height: -2.0258121
+    pos:
+      - -1.0424843
+      - 1.5640602
+      - 3.501587
+    upVec:
+      - -0.07224058
+      - 0.96577924
+      - 0.24910234
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: -1.3532814
+    phi: 0.6347889
+    height: -2.9506931
+    pos:
+      - 0.52986145
+      - 1.8082619
+      - -2.397438
+    upVec:
+      - 0.031439513
+      - 0.9883943
+      - -0.1486212
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 14
+    theta: 0.8954915
+    phi: 0.2669975
+    height: -1.2409053
+    pos:
+      - 2.8696632
+      - 1.2556229
+      - 3.5829353
+    upVec:
+      - 0.2415735
+      - 0.9222419
+      - 0.30184796
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 2.8841076
+    phi: -0.31023517
+    height: -1.5031333
+    pos:
+      - -4.1410255
+      - -1.3728151
+      - 1.0904579
+    upVec:
+      - -0.31443158
+      - -0.9456544
+      - 0.08288948
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 2.3639514
+    phi: -0.49926633
+    height: -2.465168
+    pos:
+      - -2.2113552
+      - -1.6924124
+      - 2.1773114
+    upVec:
+      - -0.14488493
+      - -0.97929925
+      - 0.14135604
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -2.9500353
+    phi: -0.39315787
+    height: -1.9674678
+    pos:
+      - -3.6567335
+      - -1.5448923
+      - -0.7091694
+    upVec:
+      - -0.25498262
+      - -0.9657801
+      - -0.04746426
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -2.323314
+    phi: -0.40924755
+    height: -2.0500584
+    pos:
+      - -2.4767609
+      - -1.5717573
+      - -2.645236
+    upVec:
+      - -0.16837236
+      - -0.96891886
+      - -0.18123762
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 2.9593277
+    phi: -0.7226348
+    height: -3.1918454
+    pos:
+      - -2.0714111
+      - -1.8572102
+      - 0.38178253
+    upVec:
+      - -0.12201575
+      - -0.9922679
+      - 0.022728944
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 1.7012327
+    phi: -0.5729166
+    height: -2.7479944
+    pos:
+      - -0.35543823
+      - -1.7628641
+      - 2.7095227
+    upVec:
+      - -0.02306387
+      - -0.9851837
+      - 0.16994473
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -2.2302375
+    phi: -0.8069368
+    height: -3.3800662
+    pos:
+      - -1.1103172
+      - -1.8920422
+      - -1.4322796
+    upVec:
+      - -0.064958006
+      - -0.99418324
+      - -0.08590804
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -1.4977638
+    phi: -0.53404903
+    height: -2.6044545
+    pos:
+      - 0.21326447
+      - -1.7284098
+      - -2.914935
+    upVec:
+      - 0.011760935
+      - -0.98141694
+      - -0.1915265
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 1.1373627
+    phi: -0.43453544
+    height: -2.1748488
+    pos:
+      - 1.457222
+      - -1.6103468
+      - 3.1488204
+    upVec:
+      - 0.098165676
+      - -0.9718236
+      - 0.21429515
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 1.6629303
+    phi: -1.1746293
+    height: -3.8644776
+    pos:
+      - -0.07581711
+      - -1.9701195
+      - 0.8205714
+    upVec:
+      - 0.004504656
+      - -0.9988764
+      - 0.047177777
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -1.4544759
+    phi: -0.28220633
+    height: -1.334086
+    pos:
+      - 0.52009773
+      - -1.2993422
+      - -4.451063
+    upVec:
+      - 0.039099447
+      - -0.93494964
+      - -0.35261935
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -0.9025147
+    phi: -0.33520445
+    height: -1.6492643
+    pos:
+      - 2.5458374
+      - -1.4312277
+      - -3.2247791
+    upVec:
+      - 0.19441518
+      - -0.95036906
+      - -0.24290207
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -0.7112313
+    phi: -0.9568738
+    height: -3.632568
+    pos:
+      - 1.0331783
+      - -1.9351263
+      - -0.8902607
+    upVec:
+      - 0.06367661
+      - -0.9964587
+      - -0.054912593
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: 0.62306476
+    phi: -0.50759184
+    height: -2.4994407
+    pos:
+      - 2.4843578
+      - -1.7015314
+      - 1.7851253
+    upVec:
+      - 0.16405483
+      - -0.9792976
+      - 0.118584886
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -0.44342005
+    phi: -0.4042183
+    height: -2.0243728
+    pos:
+      - 3.301733
+      - -1.5636148
+      - -1.5682087
+    upVec:
+      - 0.2330449
+      - -0.9657868
+      - -0.113780424
+    modelPath: enemy.obj
+  - editorName: 新しい通常敵
+    type: normal
+    currentPlanetNum: 3
+    theta: -0.027414367
+    phi: -0.6112063
+    height: -2.8768175
+    pos:
+      - 2.5567894
+      - -1.7922564
+      - -0.07011032
+    upVec:
+      - 0.16150361
+      - -0.9868542
+      - -0.0059594447
+    modelPath: enemy.obj
 keys: []
 crystals:
   - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
@@ -571,7 +1396,8 @@ platforms:
       - 0.6858514
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 0
     pos:
       - 4.78
@@ -706,8 +1532,12 @@ platforms:
           - platform_32
           - platform_14
           - platform_35
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
     rotationQuat:
       - 0.87557226
       - 0.0047174157
@@ -746,7 +1576,8 @@ platforms:
       - 0.6858514
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 0
     pos:
       - 7.82
@@ -812,7 +1643,8 @@ platforms:
       - 0.70136803
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 3
     pos:
       - -3.64
@@ -910,7 +1742,8 @@ platforms:
       - -0.5674589
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 3
     pos:
       - -6.4659386
@@ -944,7 +1777,8 @@ platforms:
       - 0.86029726
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - -6.4659386
@@ -1027,7 +1861,8 @@ platforms:
       - -0.6809027
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - -3.3451176
@@ -1078,7 +1913,8 @@ platforms:
       - -0.6809027
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 2.5820198
@@ -1161,7 +1997,8 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - -3.4920263
@@ -1244,7 +2081,8 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 3.452015
@@ -1295,7 +2133,8 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 3
     pos:
       - 12.61
@@ -1329,7 +2168,8 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 3
     pos:
       - 15.65
@@ -1363,7 +2203,8 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 10
     pos:
       - -12.07
@@ -1397,7 +2238,8 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 10
     pos:
       - -1.99
@@ -1431,7 +2273,8 @@ platforms:
       - -0.4770858
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 10
     pos:
       - 0.26
@@ -1465,7 +2308,8 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 10
     pos:
       - -1.45
@@ -1499,7 +2343,8 @@ platforms:
       - -0.47708583
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 12
     pos:
       - -6.31
@@ -1533,7 +2378,8 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 12
     pos:
       - -6.42
@@ -1599,7 +2445,8 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 12
     pos:
       - -11.34
@@ -1633,7 +2480,8 @@ platforms:
       - 0.03139526
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 11
     theta: 0.7853982
     phi: -1.5017326
@@ -1666,8 +2514,10 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_20
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     rotationQuat:
       - 0.00216861
       - 0.48126176
@@ -1706,7 +2556,8 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - -3.8414173
@@ -1757,7 +2608,8 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 3.0180779
@@ -1808,7 +2660,8 @@ platforms:
       - 0.68062115
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - -3.9248466
@@ -1859,7 +2712,8 @@ platforms:
       - 0.02831724
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 2.8745995
@@ -1910,7 +2764,8 @@ platforms:
       - 0.033005647
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     theta: 2.6548862
     phi: -0.68459296
@@ -1943,8 +2798,10 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets: []
-      enemyClearUnlock: {}
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
     rotationQuat:
       - 0.012880463
       - 0.9618834
@@ -1979,9 +2836,12 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage4_planet1
-        targets: []
-        hideTargets: []
-      enemyClearUnlock: {}
+        targets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
     rotationQuat:
       - -0.016825747
       - 0.96456665
@@ -2052,7 +2912,8 @@ platforms:
       - 0.5753161
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 9.215168
@@ -2103,7 +2964,8 @@ platforms:
       - -0.15897375
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       movement:
         startLocalPos:
           - 11.34396
@@ -2171,7 +3033,8 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     pos:
       - -2.74
@@ -2254,7 +3117,8 @@ platforms:
         moveOnPlayer: false
         returnDelay: 1
         endpointWaitSeconds: 2
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 11
     pos:
       - 8.34
@@ -2288,7 +3152,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 11
     pos:
       - 5.26
@@ -2354,7 +3219,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 11
     pos:
       - 7.26
@@ -2388,7 +3254,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 11
     pos:
       - 10.53
@@ -2422,7 +3289,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 14
     pos:
       - -12.02
@@ -2456,7 +3324,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 14
     pos:
       - -12.95
@@ -2490,7 +3359,8 @@ platforms:
       - -0.07308185
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 14
     pos:
       - -6.15
@@ -2620,7 +3490,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 14
     pos:
       - 11.54
@@ -2654,7 +3525,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     pos:
       - -12.11
@@ -2688,7 +3560,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     pos:
       - -8.56
@@ -2722,7 +3595,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     pos:
       - -8.92
@@ -2756,7 +3630,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 13
     pos:
       - -11.09
@@ -2790,7 +3665,8 @@ platforms:
       - 0.42743236
     textureOverride: textures/slimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
   - currentPlanetNum: 6
     pos:
       - 2.4
@@ -2851,7 +3727,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -2888,7 +3765,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -2925,7 +3803,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -2962,7 +3841,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3031,7 +3911,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3068,7 +3949,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3105,7 +3987,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3142,7 +4025,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3179,7 +4063,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3216,7 +4101,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3253,7 +4139,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3354,7 +4241,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3455,7 +4343,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3509,7 +4398,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3563,7 +4453,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3617,7 +4508,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -3771,8 +4663,10 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_71
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 8
     theta: 0.38880372
     phi: 1.455409
@@ -3803,11 +4697,13 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: true
         inactiveOpacity: 0.2
-        targets: []
+        targets:
+          []
         enemyTargets:
           - sequence: enemies
             index: 2
-        hideTargets: []
+        hideTargets:
+          []
     rotationQuat:
       - 0.91874933
       - -0.005690434
@@ -3845,7 +4741,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 17
     theta: -2.5535913
     phi: -1.4614891
@@ -3878,8 +4775,10 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_72
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     rotationQuat:
       - 0.0050785583
       - 0.41226733
@@ -3914,8 +4813,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage4_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
     rotationQuat:
       - 0.87650824
       - -0.0034469082
@@ -3949,7 +4850,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -3986,7 +4888,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4023,7 +4926,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4060,7 +4964,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4097,7 +5002,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4134,7 +5040,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4171,7 +5078,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4208,7 +5116,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 0.5
         reappearDelay: 2
@@ -4277,7 +5186,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 2
         reappearDelay: 1
@@ -4314,7 +5224,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4351,7 +5262,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4388,7 +5300,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1.5
         reappearDelay: 2
@@ -4457,7 +5370,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4511,7 +5425,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4565,7 +5480,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4619,7 +5535,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2
@@ -4705,7 +5622,8 @@ platforms:
       - 1
     textureOverride: textures/rottenSlimePlatform.png
     components:
-      adhesion: {}
+      adhesion:
+        {}
       fadeOnStand:
         fadeOutDuration: 1
         reappearDelay: 2

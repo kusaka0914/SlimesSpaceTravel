@@ -380,7 +380,9 @@ void EnemyMovement::MoveDuringDying(Enemy& enemy, float deltaTime)
 
 void EnemyMovement::ApplyAirDodgePush(
     Enemy& enemy,
-    const glm::vec3& dodgeDirection)
+    const glm::vec3& dodgeDirection,
+    float pushSpeed,
+    float pushDampingPerSecond)
 {
     glm::vec3 tangentialPushDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
@@ -390,10 +392,11 @@ void EnemyMovement::ApplyAirDodgePush(
         return;
     }
 
-    constexpr float airDodgePushSpeed = 6.0f;
     mAirDodgePushVelocity =
         tangentialPushDirection *
-        airDodgePushSpeed;
+        std::max(0.0f, pushSpeed);
+    mAirDodgePushDampingPerSecond =
+        std::max(0.0f, pushDampingPerSecond);
 }
 
 void EnemyMovement::UpdateAirDodgePushMovement(
@@ -456,11 +459,10 @@ void EnemyMovement::UpdateAirDodgePushMovement(
         return;
     }
 
-    constexpr float airDodgePushDampingPerSecond = 8.0f;
     const float dampedPushSpeed =
         pushSpeed *
         std::exp(
-            -airDodgePushDampingPerSecond *
+            -mAirDodgePushDampingPerSecond *
             deltaTime);
     mAirDodgePushVelocity =
         tangentialPushDirection *

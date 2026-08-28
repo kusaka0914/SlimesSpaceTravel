@@ -26,6 +26,7 @@
 #include "system/StageFlowController.h"
 #include "system/StageProgressSystem.h"
 #include "system/UILoadSystem.h"
+#include "system/UserDataPaths.h"
 #include "system/sequence/SequenceSystem.h"
 
 #include "gfx/Renderer3D.h"
@@ -55,6 +56,13 @@ std::string BuildStageIntroCinematicId(int stageNum)
 
     return "enter_stage" + std::to_string(stageNum);
 }
+
+std::string BuildCompletedTutorialId(const std::string& tutorialId)
+{
+    return tutorialId.empty()
+               ? std::string{}
+               : "tutorial:completed:" + tutorialId;
+}
 }
 
 Game::Game()
@@ -78,6 +86,13 @@ bool Game::Initialize(
 {
     if (!InitializeGLFW()) {
         return false;
+    }
+
+    std::string userDataErrorMessage;
+    if (!UserDataPaths::PrepareFromPackagedAssets(
+            "../assets/data",
+            userDataErrorMessage)) {
+        std::cerr << userDataErrorMessage << '\n';
     }
 
     CreateGameSystems();
@@ -1592,9 +1607,9 @@ bool Game::DebugStartCredits()
 
 bool Game::StartUGCMode()
 {
-    constexpr const char* UGCStageYamlPath =
-        "../assets/data/stage/ugc_stage.yaml";
-    return StartUGCModeWithStage(UGCStageYamlPath, false);
+    return StartUGCModeWithStage(
+        UserDataPaths::ResolveUGCWorkingStageFile().string(),
+        false);
 }
 
 bool Game::StartUGCEditorTutorial()
@@ -1602,7 +1617,7 @@ bool Game::StartUGCEditorTutorial()
     const std::filesystem::path tutorialTemplatePath =
         "../assets/data/stage/ugc_tutorial_template.yaml";
     const std::filesystem::path tutorialStagePath =
-        "../build/ugc_tutorial_stage.yaml";
+        UserDataPaths::ResolveUGCTutorialStageFile();
     std::error_code copyError;
     std::filesystem::copy_file(
         tutorialTemplatePath,
@@ -1614,9 +1629,7 @@ bool Game::StartUGCEditorTutorial()
                   << copyError.message() << '\n';
         return false;
     }
-    constexpr const char* tutorialStageYamlPath =
-        "../build/ugc_tutorial_stage.yaml";
-    return StartUGCModeWithStage(tutorialStageYamlPath, true);
+    return StartUGCModeWithStage(tutorialStagePath.string(), true);
 }
 
 bool Game::StartUGCModeWithStage(
@@ -2026,6 +2039,32 @@ void Game::SetStageCleared(int stageNum, bool isCleared)
     if (changed && mPhysicsSystem) {
         mPhysicsSystem->Initialize();
     }
+}
+
+bool Game::HasCompletedTutorial(const std::string& tutorialId) const
+{
+    const std::string completedTutorialId =
+        BuildCompletedTutorialId(tutorialId);
+    return mStageProgressSystem &&
+           !completedTutorialId.empty() &&
+           mStageProgressSystem->HasShownConversation(
+               completedTutorialId);
+}
+
+void Game::MarkTutorialCompleted(const std::string& tutorialId)
+{
+    if (!mStageProgressSystem) {
+        return;
+    }
+
+    const std::string completedTutorialId =
+        BuildCompletedTutorialId(tutorialId);
+    if (completedTutorialId.empty()) {
+        return;
+    }
+
+    mStageProgressSystem->MarkConversationShown(
+        completedTutorialId);
 }
 
 bool Game::HasShownNPCConversation(const NPC* npc) const

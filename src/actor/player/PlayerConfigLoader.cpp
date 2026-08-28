@@ -194,6 +194,31 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.dodgeDuration = ReadFloat(playerNode, "dodgeDuration", config.dodgeDuration);
         config.dodgeCooldownTime = ReadFloat(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);
         config.dodgeDistance = ReadFloat(playerNode, "dodgeDistance", config.dodgeDistance);
+        config.airDodgeAttackDamage =
+            ReadFloat(
+                playerNode,
+                "airDodgeAttackDamage",
+                config.airDodgeAttackDamage);
+        config.airDodgeHorizontalHitboxScale =
+            ReadFloat(
+                playerNode,
+                "airDodgeHorizontalHitboxScale",
+                config.airDodgeHorizontalHitboxScale);
+        config.airDodgeVerticalHitboxScale =
+            ReadFloat(
+                playerNode,
+                "airDodgeVerticalHitboxScale",
+                config.airDodgeVerticalHitboxScale);
+        config.airDodgeEnemyPushSpeed =
+            ReadFloat(
+                playerNode,
+                "airDodgeEnemyPushSpeed",
+                config.airDodgeEnemyPushSpeed);
+        config.airDodgeEnemyPushDampingPerSecond =
+            ReadFloat(
+                playerNode,
+                "airDodgeEnemyPushDampingPerSecond",
+                config.airDodgeEnemyPushDampingPerSecond);
 
         config.normalAttackRange = ReadFloat(playerNode, "normalAttackRange", config.normalAttackRange);
         config.normalAttackAngle = ReadFloat(playerNode, "normalAttackAngle", config.normalAttackAngle);
@@ -247,7 +272,16 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.defaultDamageTimer = ReadFloat(playerNode, "defaultDamageTimer", config.defaultDamageTimer);
         config.defaultAttackMotionTimer = ReadFloat(playerNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
         config.attackHitDelay = ReadFloat(playerNode, "attackHitDelay", config.attackHitDelay);
-        config.attackCooldown = ReadFloat(playerNode, "attackCooldown", config.attackCooldown);
+        config.groundWeakAttackCooldownSeconds =
+            ReadFloat(
+                playerNode,
+                "groundWeakAttackCooldownSeconds",
+                config.groundWeakAttackCooldownSeconds);
+        config.airWeakAttackCooldownSeconds =
+            ReadFloat(
+                playerNode,
+                "airWeakAttackCooldownSeconds",
+                config.airWeakAttackCooldownSeconds);
         config.lastAttackCooldown = ReadFloat(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
         config.defaultStrongAttackTimer = ReadFloat(playerNode, "defaultStrongAttackTimer", config.defaultStrongAttackTimer);
         config.knockBackSpeed = ReadFloat(playerNode, "knockBackSpeed", config.knockBackSpeed);

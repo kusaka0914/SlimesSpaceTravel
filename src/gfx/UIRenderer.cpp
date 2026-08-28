@@ -969,6 +969,8 @@ void UIRenderer::DrawCustomUI()
         mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
     static const std::string returnToEditorText = "作る画面に戻る";
+    static const std::string disembarkBoatText =
+        "降車";
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
         return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
@@ -1018,6 +1020,14 @@ void UIRenderer::DrawCustomUI()
             const Player* player) {
             constexpr float disabledOpacity = 0.38f;
             if (element.screen != "operation") {
+                return 1.0f;
+            }
+
+            const bool isBoatDisembarkGuide =
+                player && player->IsWaitingForBoat() &&
+                (element.id == "buttonB" ||
+                 element.id == "buttonTextB");
+            if (isBoatDisembarkGuide) {
                 return 1.0f;
             }
 
@@ -1299,9 +1309,11 @@ void UIRenderer::DrawCustomUI()
                 : nullptr;
 
         if (isTwoPlayer && element->screen == "operation") {
-
-
-
+            const std::string* player1TextOverride =
+                element->id == "buttonTextB" && players[0] &&
+                        players[0]->IsWaitingForBoat()
+                    ? &disembarkBoatText
+                    : textOverride;
             DrawCustomElement(
                 *element,
                 operationGuideVerticalOffset,
@@ -1310,7 +1322,12 @@ void UIRenderer::DrawCustomUI()
                 1.0f,
                 players[0],
                 getOperationGuideOpacity(*element, players[0]),
-                textOverride);
+                player1TextOverride);
+            const std::string* player2TextOverride =
+                element->id == "buttonTextB" && players[1] &&
+                        players[1]->IsWaitingForBoat()
+                    ? &disembarkBoatText
+                    : textOverride;
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
@@ -1320,7 +1337,7 @@ void UIRenderer::DrawCustomUI()
                 1.0f,
                 players[1],
                 getOperationGuideOpacity(*element, players[1]),
-                textOverride);
+                player2TextOverride);
             continue;
         }
 
@@ -1331,6 +1348,11 @@ void UIRenderer::DrawCustomUI()
             mGame->GetIsPlayerSplit()
                 ? mGame->GetControlledPlayer()
                 : (!players.empty() ? players.front() : nullptr);
+        const std::string* operationTextOverride =
+            element->id == "buttonTextB" && operationPlayer &&
+                    operationPlayer->IsWaitingForBoat()
+                ? &disembarkBoatText
+                : textOverride;
         DrawCustomElement(
             *element,
             0.0f,
@@ -1339,7 +1361,7 @@ void UIRenderer::DrawCustomUI()
             -1.0f,
             element->screen == "operation" ? operationPlayer : nullptr,
             getOperationGuideOpacity(*element, operationPlayer),
-            textOverride);
+            operationTextOverride);
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
             RecordRenderedUIElement(
@@ -1687,7 +1709,7 @@ void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, c
 
 void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
                                               const std::string& UIName, float screenTopY,
-                                              float uiScale)
+                                              float screenHeight)
 {
     const UILoadSystem::TextInfo* textInfo = nullptr;
     std::string resolvedUIName;
@@ -1703,11 +1725,9 @@ void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::s
         return;
     }
 
-    const float screenHeight = mFbHeight * uiScale;
-
     const float x = mFbWidth * textInfo->xRatio;
     const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
+    const float scale = mFbWidth * textInfo->scaleRatio;
 
     DrawTextForElement(
         sceneName,

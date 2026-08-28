@@ -5,20 +5,39 @@
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerRespawn.h"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <vector>
 
 namespace {
 constexpr float boatTouchRadius = 0.9f;
 constexpr float disembarkClearance = 0.2f;
+constexpr float reboardCooldownDurationSeconds = 0.5f;
 constexpr float minimumDirectionLength = 0.0001f;
 }
 
-void PlayerBoatRide::Update(Player& player, PlayerMovement& movement, PlayerRespawn& respawn)
+void PlayerBoatRide::Update(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerRespawn& respawn,
+    float deltaTime)
 {
+    mReboardCooldownSeconds = std::max(
+        0.0f,
+        mReboardCooldownSeconds - std::max(0.0f, deltaTime));
+
+    const bool didRequestDisembark =
+        input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    if (didRequestDisembark && CancelWaitingBoatRide(player)) {
+        input.SuppressDodgeUntilReleased();
+        return;
+    }
+
     Game* game = player.GetGame();
     Stage* currentStage = game ? game->GetCurrentStage() : nullptr;
     if (!currentStage) {
@@ -50,7 +69,8 @@ void PlayerBoatRide::Update(Player& player, PlayerMovement& movement, PlayerResp
                 continue;
             }
 
-            if (IsTouchingBoat(player, boat)) {
+            if (mReboardCooldownSeconds <= 0.0f &&
+                IsTouchingBoat(player, boat)) {
                 StartRidingBoat(player, boat);
                 return;
             }
@@ -69,7 +89,7 @@ bool PlayerBoatRide::IsWaitingForBoat(const Player& player) const
     return FindWaitingBoat(player) != nullptr;
 }
 
-bool PlayerBoatRide::CancelWaitingBoatRide(Player& player) const
+bool PlayerBoatRide::CancelWaitingBoatRide(Player& player)
 {
     Boat* boat = FindWaitingBoat(player);
     if (!boat || !boat->UnboardPlayer(&player)) {
@@ -92,6 +112,7 @@ bool PlayerBoatRide::CancelWaitingBoatRide(Player& player) const
     player.SetShouldJudgeLanding(true);
     player.SetIsActive(true);
     player.RefreshFallbackUpVec();
+    mReboardCooldownSeconds = reboardCooldownDurationSeconds;
     return true;
 }
 

@@ -61,7 +61,8 @@ star: [{currentPlanetNum: 0, theta: -2.3147247, phi: 0.36082476, height: -0.0484
 NPCs: []
 platforms:
   - {currentPlanetNum: 1, theta: 1.5909323, phi: -0.22591539, height: -1.0085697, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.06, -0.67, 4.17], upVec: [0, -1, 0], platformId: platform_1, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
-  - {currentPlanetNum: 1, theta: 1.5844718, phi: -0.41796124, height: 4.560451, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.1, -2.05, 7.31], upVec: [0, -1, 0], platformId: platform_2, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
+  - {currentPlanetNum: 1, theta: 1.5844718, phi: -0.41796124, height: 4.560451, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.1, -1.83, 7.31], upVec: [0, -1, 0], platformId: platform_2, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
+  - {currentPlanetNum: 0, theta: -0.7488542, phi: 1.2317675, height: 3.7555861, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [1.06, 7.29, -1.76], upVec: [0, -1, 0], platformId: platform_3, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []

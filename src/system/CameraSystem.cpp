@@ -737,8 +737,12 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
         mPlayerCameraSettings.maxPitchDegrees);
     const float pitchDegrees =
         glm::mix(normalPitchDegrees, mPlayerCameraSettings.talkPitchDegrees, talkBlend);
+    const float normalTargetHeight =
+        mGame && mGame->GetIsPlayer2Joined()
+            ? mPlayerCameraSettings.splitScreenTargetHeight
+            : mPlayerCameraSettings.targetHeight;
     const float targetHeight =
-        glm::mix(mPlayerCameraSettings.targetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
+        glm::mix(normalTargetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
 
     return mPlayerCamera.GetView(
         player, playerIndex, distance, glm::radians(pitchDegrees), targetHeight);
@@ -763,9 +767,13 @@ glm::mat4 CameraSystem::GetTalkPageFocusView(Player* player, int playerIndex)
         player == mTalkCameraPlayer
             ? GetEasedTalkCameraBlend()
             : 0.0f;
+    const float normalTargetHeight =
+        mGame && mGame->GetIsPlayer2Joined()
+            ? mPlayerCameraSettings.splitScreenTargetHeight
+            : mPlayerCameraSettings.targetHeight;
     const float currentCameraTargetHeight =
         glm::mix(
-            mPlayerCameraSettings.targetHeight,
+            normalTargetHeight,
             mPlayerCameraSettings.talkTargetHeight,
             talkCameraBlend);
     const glm::vec3 normalTargetPos =

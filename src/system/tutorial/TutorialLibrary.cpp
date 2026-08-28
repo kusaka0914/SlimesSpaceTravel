@@ -200,7 +200,7 @@ bool TutorialLibrary::Load()
                     ReadString(
                         tutorialNode,
                         "repeat",
-                        "oncePerSession"));
+                        "onceEver"));
             definition.textXRatio = ReadFloat(
                 tutorialNode,
                 "textXRatio",
@@ -634,7 +634,7 @@ const char* GetTutorialRepeatPolicyId(
 {
     return policy == TutorialRepeatPolicy::EveryRequest
                ? "everyRequest"
-               : "oncePerSession";
+               : "onceEver";
 }
 
 TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
@@ -642,5 +642,5 @@ TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
 {
     return policyId == "everyRequest"
                ? TutorialRepeatPolicy::EveryRequest
-               : TutorialRepeatPolicy::OncePerSession;
+               : TutorialRepeatPolicy::OnceEver;
 }

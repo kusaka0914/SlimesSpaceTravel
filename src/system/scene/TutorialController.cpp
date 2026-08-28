@@ -41,11 +41,14 @@ bool TutorialController::TryStart(
         return false;
     }
 
-    const bool wasAlreadyShown =
+    const bool wasAlreadyCompleted =
+        mGame->HasCompletedTutorial(tutorialId);
+    const bool wasAlreadyShownThisSession =
         mShownOnceTutorialIds.contains(tutorialId);
-    if (!ignoreRepeatPolicy && wasAlreadyShown &&
+    if (!ignoreRepeatPolicy &&
+        (wasAlreadyCompleted || wasAlreadyShownThisSession) &&
         definition->repeatPolicy ==
-            TutorialRepeatPolicy::OncePerSession) {
+            TutorialRepeatPolicy::OnceEver) {
         return false;
     }
 
@@ -61,9 +64,11 @@ bool TutorialController::TryStart(
 
     if (!ignoreRepeatPolicy &&
         definition->repeatPolicy ==
-            TutorialRepeatPolicy::OncePerSession) {
+            TutorialRepeatPolicy::OnceEver) {
         mShownOnceTutorialIds.insert(tutorialId);
     }
+    mShouldRecordActiveTutorialCompletion =
+        !ignoreRepeatPolicy;
 
     mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
     mUIState->SetTalkUIIndex(0);
@@ -117,6 +122,7 @@ void TutorialController::Stop(bool returnToPlaying)
     mActiveTutorialId.clear();
     mTutorialPlayer = nullptr;
     mActionPlayerAtPageStart = nullptr;
+    mShouldRecordActiveTutorialCompletion = false;
     if (mUIState) {
         mUIState->FinishTutorial();
     }
@@ -222,7 +228,8 @@ bool TutorialController::HasCompletedTutorial(
     const std::string& tutorialId) const
 {
     return !tutorialId.empty() &&
-           mCompletedTutorialIds.contains(tutorialId);
+           (mCompletedTutorialIds.contains(tutorialId) ||
+            (mGame && mGame->HasCompletedTutorial(tutorialId)));
 }
 
 bool TutorialController::IsWaitingForPlayerAction() const
@@ -310,10 +317,14 @@ void TutorialController::FinishActiveTutorial()
 {
     if (!mActiveTutorialId.empty()) {
         mCompletedTutorialIds.insert(mActiveTutorialId);
+        if (mShouldRecordActiveTutorialCompletion && mGame) {
+            mGame->MarkTutorialCompleted(mActiveTutorialId);
+        }
     }
     mActiveTutorialId.clear();
     mTutorialPlayer = nullptr;
     mActionPlayerAtPageStart = nullptr;
+    mShouldRecordActiveTutorialCompletion = false;
     if (mUIState) {
         mUIState->FinishTutorial();
     }

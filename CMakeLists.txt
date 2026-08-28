@@ -64,6 +64,8 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -77,6 +79,9 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -113,7 +118,7 @@ target_link_libraries(game
     ${BULLET_LIBRARIES}
     SDL2_mixer::SDL2_mixer
     SDL2_ttf::SDL2_ttf
-    yaml-cpp
+    yaml-cpp::yaml-cpp
 )
 
 if (WIN32)
@@ -123,6 +128,19 @@ if (WIN32)
         mfreadwrite
         mfuuid
         ole32
+    )
+
+    add_custom_target(package_windows
+        COMMAND powershell
+            -NoProfile
+            -ExecutionPolicy Bypass
+            -File ${CMAKE_CURRENT_SOURCE_DIR}/scripts/Create-WindowsDistribution.ps1
+            -BuildDirectory ${CMAKE_BINARY_DIR}
+            -Configuration $<CONFIG>
+            -OutputDirectory ${CMAKE_CURRENT_SOURCE_DIR}/dist
+            -SkipBuild
+        DEPENDS game
+        USES_TERMINAL
     )
 
 endif()

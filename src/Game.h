@@ -362,6 +362,8 @@ public:
     bool IsStageCleared(int stageNum) const;
     void MarkStageCleared(int stageNum);
     void SetStageCleared(int stageNum, bool isCleared);
+    bool HasCompletedTutorial(const std::string& tutorialId) const;
+    void MarkTutorialCompleted(const std::string& tutorialId);
     bool HasShownNPCConversation(const NPC* npc) const;
     void MarkNPCConversationShown(const NPC* npc);
     bool HasSeenBaseIntro() const;

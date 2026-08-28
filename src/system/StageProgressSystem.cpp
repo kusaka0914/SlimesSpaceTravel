@@ -1,12 +1,20 @@
 #include "system/StageProgressSystem.h"
 
+#include "system/UserDataPaths.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
-StageProgressSystem::StageProgressSystem(std::string savePath)
+StageProgressSystem::StageProgressSystem()
+    : StageProgressSystem(UserDataPaths::ResolveStageProgressFile())
+{
+}
+
+StageProgressSystem::StageProgressSystem(
+    std::filesystem::path savePath)
     : mSavePath(std::move(savePath))
 {
 }
@@ -19,11 +27,14 @@ bool StageProgressSystem::Load()
     mHasSelectedPlayerControlStyle = false;
     mIsAssistControlStyleSelected = false;
 
+    std::ifstream input(mSavePath);
+    if (!input.is_open()) {
+        return true;
+    }
+
     YAML::Node root;
     try {
-        root = YAML::LoadFile(mSavePath);
-    } catch (const YAML::BadFile&) {
-        return true;
+        root = YAML::Load(input);
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load stage progress: "
                   << exception.what() << '\n';
@@ -73,7 +84,7 @@ bool StageProgressSystem::Load()
 
 bool StageProgressSystem::Save() const
 {
-    const std::filesystem::path savePath(mSavePath);
+    const std::filesystem::path& savePath = mSavePath;
     std::error_code error;
     if (savePath.has_parent_path()) {
         std::filesystem::create_directories(savePath.parent_path(), error);
@@ -103,7 +114,8 @@ bool StageProgressSystem::Save() const
 
     std::ofstream file(mSavePath);
     if (!file.is_open()) {
-        std::cerr << "Failed to save stage progress: " << mSavePath << '\n';
+        std::cerr << "Failed to save stage progress: "
+                  << mSavePath.string() << '\n';
         return false;
     }
 

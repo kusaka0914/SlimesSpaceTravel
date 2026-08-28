@@ -367,7 +367,7 @@ pauseMenu:
     posRatio: [0.4999999, 0.46796587]
     scaleRatio: [0.00030719998, 1.0]
     text:
-      - 2人であそぶ
+      - ふたりであそぶ
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
