@@ -17,7 +17,7 @@ enemies:
     defaultStandByAttackTimer: 6
     defaultAttackMotionTimer: 3
     attackSpeed: 1.5
-    attackPreparationRange: 1.5
+    attackPreparationRange: 2.6
     attacks:
       - type: meleeAttack
         weight: 100
@@ -30,6 +30,8 @@ enemies:
     postAttackRetreatDistance: 4
     postRetreatRecoverySeconds: 2
     postRetreatFollowupApproachProbabilityPercent: 0
+    normalHitKnockBackEnabled: true
+    postAttackRetreatDelaySeconds: 1
   - type: normalFixed
     displayName: 動かない敵
     behaviorProfile: legacyMelee
@@ -76,8 +78,8 @@ enemies:
     breakCountMax: 3
     radius: 2
     defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
@@ -106,7 +108,7 @@ enemies:
     defaultStandByAttackTimer: 2
     defaultAttackMotionTimer: 1
     attackSpeed: 5
-    attackPreparationRange: 2.25
+    attackPreparationRange: 2.6
     preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
     preAttackApproachStopDistance: 2.5
@@ -119,6 +121,7 @@ enemies:
       - type: meleeAttack
         weight: 100
     postAttackRetreatDelaySeconds: 1
+    normalHitKnockBackEnabled: true
   - type: boss_2
     displayName: ボス敵2
     behaviorProfile: bossMelee
@@ -131,13 +134,13 @@ enemies:
     breakCountMax: 3
     radius: 1.5
     defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
-    preAttackApproachProbabilityPercent: 25
+    preAttackApproachProbabilityPercent: 0
     preAttackApproachSpeed: 12
     preAttackApproachStopDistance: 2.5
-    postAttackRetreatProbabilityPercent: 55
+    postAttackRetreatProbabilityPercent: 0
     postAttackRetreatDelaySeconds: 1
     postAttackRetreatSpeed: 12
     postAttackRetreatDistance: 4
@@ -145,11 +148,12 @@ enemies:
     postRetreatFollowupApproachProbabilityPercent: 25
     attacks:
       - type: meleeAttack
-        weight: 67
+        weight: 34
       - type: tripleChargeAttack
-        weight: 33
+        weight: 66
         chargeCount: 2
         repeatDelay: 1
+    normalHitKnockBackEnabled: false
   - type: boss_weak
     displayName: 弱いボス敵
     behaviorProfile: bossMelee
@@ -162,8 +166,8 @@ enemies:
     breakCountMax: 3
     radius: 0.75
     defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 25
     preAttackApproachSpeed: 12
@@ -195,8 +199,8 @@ enemies:
     breakCountMax: 4
     radius: 1.5
     defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 30
     preAttackApproachSpeed: 12
@@ -209,15 +213,15 @@ enemies:
     postRetreatFollowupApproachProbabilityPercent: 30
     attacks:
       - type: meleeAttack
-        weight: 13.875
+        weight: 14.996771
       - type: tripleChargeAttack
-        weight: 50
+        weight: 43
         chargeCount: 2
         repeatDelay: 1
       - type: fanAttack
-        weight: 36.125
-        range: 5
-        angleDegrees: 30
+        weight: 42.003227
+        range: 6
+        angleDegrees: 90
         windUpDuration: 2
         attackDuration: 0.5
   - type: boss_weak_2
@@ -233,8 +237,8 @@ enemies:
     breakCountMax: 3
     radius: 0.75
     defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 30
     preAttackApproachSpeed: 12
@@ -255,7 +259,7 @@ enemies:
       - type: fanAttack
         weight: 36.466778
         range: 6
-        angleDegrees: 120
+        angleDegrees: 90
         windUpDuration: 2
         attackDuration: 0.5
   - type: boss_4
@@ -270,9 +274,9 @@ enemies:
     attack: 1
     breakCountMax: 4
     radius: 1.5
-    defaultStandByAttackTimer: 3
-    defaultAttackMotionTimer: 0.5
-    attackSpeed: 5
+    defaultStandByAttackTimer: 2
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 40
     preAttackApproachSpeed: 12
@@ -290,8 +294,8 @@ enemies:
         repeatDelay: 1
       - type: fanAttack
         weight: 20
-        range: 5
-        angleDegrees: 30
+        range: 6
+        angleDegrees: 90
         windUpDuration: 2
         attackDuration: 0.5
       - type: radialAttack
@@ -311,9 +315,9 @@ enemies:
     attack: 1
     breakCountMax: 5
     radius: 1.5
-    defaultStandByAttackTimer: 1
+    defaultStandByAttackTimer: 2
     defaultAttackMotionTimer: 1
-    attackSpeed: 5
+    attackSpeed: 4
     attackPreparationRange: 2.5
     preAttackApproachProbabilityPercent: 50
     preAttackApproachSpeed: 12

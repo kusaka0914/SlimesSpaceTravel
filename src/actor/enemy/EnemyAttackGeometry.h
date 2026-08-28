@@ -13,8 +13,8 @@ struct EnemyAttackFrame {
 };
 
 struct EnemyMeleeAttackPreviewArea {
-    // Distance from the actor pivot to the front-most point of its model.
-    // The melee rectangle starts here rather than inside the model.
+
+
     float forwardStartOffset = 0.0f;
     float forwardLength = 0.0f;
     float halfWidth = 0.0f;
@@ -44,8 +44,8 @@ bool IsPositionInsideRadialAttack(
     const glm::vec3& position,
     float range);
 
-// These use the inverse of the sphere projection used by the attack preview,
-// keeping the visible curved area and its hit test on exactly the same surface.
+
+
 bool IsPositionInsideSphereSurfaceMeleeAttack(
     const Planet& planet,
     const EnemyAttackFrame& attackFrame,

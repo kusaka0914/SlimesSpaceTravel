@@ -82,9 +82,9 @@ void SceneUIRenderer::DrawCredits()
     std::istringstream lines(config.creditsText);
     std::string line;
     int lineIndex = 0;
-    // DrawText's font scale is independent from screen-space line spacing.
-    // Use the same 6.66%-of-screen rhythm as its built-in two-line layout,
-    // rather than deriving a few-pixel gap from the text scale.
+
+
+
     const float lineHeight = height * 0.0666f;
     while (std::getline(lines, line)) {
         mRenderer->DrawText(width * 0.5f, firstLineY + lineIndex * lineHeight,

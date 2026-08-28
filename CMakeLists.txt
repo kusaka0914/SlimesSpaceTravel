@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(game)
 
 set(CMAKE_CXX_STANDARD 20)
+include(CTest)
 
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
@@ -47,6 +48,55 @@ find_package(SDL2_mixer REQUIRED)
 find_package(SDL2_ttf REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+if (BUILD_TESTING)
+    add_executable(game_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformIdentifiersTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformConnectionsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageYamlRepositoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkFileNameTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkStorageTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformGridTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformDocumentTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageYamlRepositoryOperations.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkFileName.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkStorage.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformGrid.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformDocument.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
+    )
+    target_include_directories(game_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+    target_link_libraries(game_tests PRIVATE
+        glm::glm
+        yaml-cpp::yaml-cpp
+    )
+    if (MSVC)
+        target_compile_options(game_tests PRIVATE /utf-8 /MP)
+    endif()
+    add_test(NAME game_tests COMMAND game_tests)
+endif()
+
 target_include_directories(game PRIVATE
     ${OPENGL_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIRS}
@@ -68,7 +118,7 @@ target_link_libraries(game
     ${BULLET_LIBRARIES}
     SDL2_mixer::SDL2_mixer
     SDL2_ttf::SDL2_ttf
-    yaml-cpp
+    yaml-cpp::yaml-cpp
 )
 
 if (WIN32)
@@ -78,6 +128,19 @@ if (WIN32)
         mfreadwrite
         mfuuid
         ole32
+    )
+
+    add_custom_target(package_windows
+        COMMAND powershell
+            -NoProfile
+            -ExecutionPolicy Bypass
+            -File ${CMAKE_CURRENT_SOURCE_DIR}/scripts/Create-WindowsDistribution.ps1
+            -BuildDirectory ${CMAKE_BINARY_DIR}
+            -Configuration $<CONFIG>
+            -OutputDirectory ${CMAKE_CURRENT_SOURCE_DIR}/dist
+            -SkipBuild
+        DEPENDS game
+        USES_TERMINAL
     )
 
 endif()

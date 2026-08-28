@@ -1,0 +1,31 @@
+planets:
+  - center: [0.0, 0.0, 0.0]
+    scale: [4.0, 1.0, 4.0]
+    color: [1.0, 1.0, 1.0, 1.0]
+    model: planet.obj
+    shape: Ellipse
+    stageNum: 0
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    rocketSpawnCondition: ""
+players:
+  - pos: [0.0, 3.8, 0.0]
+    currentPlanetNum: 0
+    theta: 0.0
+    phi: 1.5707964
+    height: 2.8
+    facingYaw: 0.0
+    rotation: [0.0, 0.0, 0.0]
+    upVec: [0.0, 1.0, 0.0]
+platforms: []
+enemies: []
+stars: []
+ugcPlatformCells:
+  - planetIndex: 0
+    gridSize: 1.0
+    gridPosition: [-1, 0, 0]
+    behavior: normal
+  - planetIndex: 0
+    gridSize: 1.0
+    gridPosition: [0, 0, 0]
+    behavior: normal

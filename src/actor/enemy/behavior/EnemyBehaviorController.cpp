@@ -19,7 +19,7 @@ bool IsAttackAction(const EnemyBehaviorAction& action)
            actionType == "fanAttack" ||
            actionType == "radialAttack";
 }
-} // namespace
+}
 
 EnemyBehaviorController::EnemyBehaviorController()
     : mRandomEngine(std::random_device{}())

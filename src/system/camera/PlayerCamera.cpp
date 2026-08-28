@@ -38,7 +38,7 @@ glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, cons
     glm::vec3 tangentDirection;
     return TryGetTangentDirection(rotated, up, tangentDirection) ? tangentDirection : desired;
 }
-} // namespace
+}
 
 PlayerCamera::PlayerCamera(CameraCollisionResolver& collisionResolver)
     : mCollisionResolver(collisionResolver)
@@ -58,9 +58,9 @@ void PlayerCamera::Update(const std::vector<Player*>& players, float yawDelta, f
     if (yawPlayerIndex >= 0 &&
         yawPlayerIndex < static_cast<int>(players.size()) &&
         players[static_cast<std::size_t>(yawPlayerIndex)]) {
-        // Manual camera input must always take priority over the automatic
-        // align-behind transition. Otherwise UpdateCameraForward overwrites
-        // the yaw every frame until the transition happens to complete.
+
+
+
         constexpr float manualYawEpsilon = 0.000001f;
         if (std::abs(yawDelta) > manualYawEpsilon) {
             mStates[static_cast<std::size_t>(yawPlayerIndex)].isAligningBehindPlayer = false;
@@ -198,8 +198,8 @@ void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm:
         return;
     }
 
-    // cameraForwardVec points from the player toward the camera, so place the
-    // camera on the side opposite the conversation target.
+
+
     glm::vec3 targetForward;
     if (!TryGetTangentDirection(player->GetPos() - targetPosition, up, targetForward)) {
         return;
@@ -321,9 +321,9 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
     }
 
     if (state.isAligningBehindPlayer) {
-        // The player's up direction changes while moving over a sphere.
-        // Keep both directions on the current tangent plane so the completion
-        // dot product can still reach its threshold after that change.
+
+
+
         glm::vec3 currentForward;
         glm::vec3 alignTargetForward;
         if (!TryGetTangentDirection(state.cameraForwardVec, up, currentForward) ||
@@ -356,7 +356,7 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
         !attackTarget->GetIsDead() && attackTarget->GetCurrentPlanet() == player->GetCurrentPlanet();
 
     glm::vec3 targetForward;
-    // This vector points from the player toward the camera, so the enemy direction is inverted.
+
     if (hasValidAttackTarget &&
         TryGetTangentDirection(player->GetPos() - attackTarget->GetPos(), up, targetForward)) {
         state.attackTargetForwardVec = targetForward;

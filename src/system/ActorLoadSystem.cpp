@@ -151,6 +151,8 @@ std::vector<PlatformRevealTarget> ReadSwitchActorTargets(
         target.sequenceName =
             targetNode["sequence"].as<std::string>();
         target.yamlIndex = targetNode["index"].as<int>();
+        target.platformId =
+            targetNode["platformId"].as<std::string>("");
         if (target.IsValid()) {
             targets.emplace_back(std::move(target));
         }
@@ -380,7 +382,7 @@ void ApplyTalkEndingAfterPages(
     }
 }
 
-} // namespace
+}
 
 ActorLoadSystem::ActorLoadSystem(Game* game)
     : mGame(game),
@@ -416,9 +418,9 @@ void ActorLoadSystem::LoadData(bool isLoadPlayer)
     LoadFallRespawnPoints(path.c_str());
     LoadPlayers(path.c_str());
 
-    // Older stage YAML can contain a stale or omitted currentPlanetNum. World
-    // placement remains authoritative for ordinary actors; boats retain their
-    // explicitly serialized startPlanet during this reconciliation.
+
+
+
     StageActorPlanetBindingService::RefreshNearestPlanetBindings(
         mGame->GetCurrentStage());
 }
@@ -512,8 +514,8 @@ Player* ActorLoadSystem::CreatePlayerFromStageNode(const YAML::Node& node, int p
     mPlacementLoader.ApplyPlacementFromStageNode(player.get(), node, currentPlanet, playerNum - 1, 0.0f);
     mPlacementLoader.ApplyRotationFromStageNode(player.get(), node);
 
-    // The rendered orientation, gameplay facing, and camera movement basis are
-    // stored separately. Restore them together before the first camera frame.
+
+
     const glm::vec3 playerFacingDirection =
         -player->Actor::GetForwardVec();
     player->SetFacingForwardVec(playerFacingDirection);
@@ -664,8 +666,8 @@ NPC* ActorLoadSystem::CreateNPCFromStageNode(const YAML::Node& node, int stageYa
                     }
                 }
 
-                // Compatibility with the first implementation, which stored
-                // one shared message for every clear-state conversation.
+
+
                 if (!loadedVariants && messageNode["text"]) {
                     const std::string legacyText =
                         messageNode["text"].as<std::string>();
@@ -1088,6 +1090,40 @@ Actor* ActorLoadSystem::FindPlacedActor(const std::string& sequenceName, int sta
     }
 
     return nullptr;
+}
+
+Platform* ActorLoadSystem::FindPlacedPlatform(
+    const std::string& platformId,
+    int preferredStageYamlIndex) const
+{
+    if (!mGame || platformId.empty()) {
+        return nullptr;
+    }
+
+    Stage* stage = mGame->GetCurrentStage();
+    if (!stage) {
+        return nullptr;
+    }
+
+    Platform* matchingPlatform = nullptr;
+    for (Planet* planet : stage->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform || platform->GetPlatformId() != platformId) {
+                continue;
+            }
+            if (platform->GetStageYamlIndex() == preferredStageYamlIndex) {
+                return platform;
+            }
+            if (!matchingPlatform) {
+                matchingPlatform = platform;
+            }
+        }
+    }
+    return matchingPlatform;
 }
 
 void ActorLoadSystem::LoadEnemies(const char* path)

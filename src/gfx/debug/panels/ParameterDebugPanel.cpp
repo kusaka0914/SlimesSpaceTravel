@@ -101,7 +101,7 @@ std::optional<std::size_t> FindYamlSequenceEntryIndex(
     return std::nullopt;
 }
 
-} // namespace
+}
 
 ParameterDebugPanel::ParameterDebugPanel(
     DebugEditorContext& context,
@@ -483,6 +483,104 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetWideAttack(wideAttack);
         }
 
+        float groundWeakAttackCooldownSeconds =
+            player->GetGroundWeakAttackCooldownSeconds();
+        if (ImGui::DragFloat(
+                "地上弱攻撃後クールタイム（秒）",
+                &groundWeakAttackCooldownSeconds,
+                0.01f,
+                0.0f,
+                5.0f,
+                "%.2f")) {
+            player->SetGroundWeakAttackCooldownSeconds(
+                groundWeakAttackCooldownSeconds);
+        }
+
+        float airWeakAttackCooldownSeconds =
+            player->GetAirWeakAttackCooldownSeconds();
+        if (ImGui::DragFloat(
+                "空中弱攻撃後クールタイム（秒）",
+                &airWeakAttackCooldownSeconds,
+                0.01f,
+                0.0f,
+                5.0f,
+                "%.2f")) {
+            player->SetAirWeakAttackCooldownSeconds(
+                airWeakAttackCooldownSeconds);
+        }
+        ImGui::TextDisabled(
+            "攻撃動作が終わった時点から、次の攻撃までの時間です。");
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("空中回避攻撃（空中U / B）")) {
+        float attackDamage = player->GetAirDodgeAttackDamage();
+        if (ImGui::DragFloat(
+                "攻撃力##空中回避攻撃",
+                &attackDamage,
+                0.1f,
+                0.0f,
+                999.0f,
+                "%.1f")) {
+            player->SetAirDodgeAttackDamage(attackDamage);
+        }
+
+        float horizontalHitboxScale =
+            player->GetAirDodgeHorizontalHitboxScale();
+        if (ImGui::DragFloat(
+                "横方向の判定倍率",
+                &horizontalHitboxScale,
+                0.05f,
+                0.0f,
+                10.0f,
+                "%.2f")) {
+            player->SetAirDodgeHorizontalHitboxScale(
+                horizontalHitboxScale);
+        }
+
+        float verticalHitboxScale =
+            player->GetAirDodgeVerticalHitboxScale();
+        if (ImGui::DragFloat(
+                "縦方向の判定倍率",
+                &verticalHitboxScale,
+                0.05f,
+                0.0f,
+                10.0f,
+                "%.2f")) {
+            player->SetAirDodgeVerticalHitboxScale(
+                verticalHitboxScale);
+        }
+        ImGui::TextDisabled(
+            "プレイヤーの衝突判定を基準に、回避中の軌道全体を判定します。");
+
+        float enemyPushSpeed =
+            player->GetAirDodgeEnemyPushSpeed();
+        if (ImGui::DragFloat(
+                "敵を押す初速",
+                &enemyPushSpeed,
+                0.1f,
+                0.0f,
+                30.0f,
+                "%.1f")) {
+            player->SetAirDodgeEnemyPushSpeed(enemyPushSpeed);
+        }
+
+        float enemyPushDampingPerSecond =
+            player->GetAirDodgeEnemyPushDampingPerSecond();
+        if (ImGui::DragFloat(
+                "押し出し減衰（毎秒）",
+                &enemyPushDampingPerSecond,
+                0.1f,
+                0.0f,
+                30.0f,
+                "%.1f")) {
+            player->SetAirDodgeEnemyPushDampingPerSecond(
+                enemyPushDampingPerSecond);
+        }
+        ImGui::TextDisabled(
+            "減衰を大きくすると、敵が早く止まります。");
+
         ImGui::TreePop();
     }
 
@@ -640,11 +738,19 @@ void ParameterDebugPanel::DrawPlayer()
             player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
         }
 
-        float attackCooldown = player->GetAttackCooldown();
-        if (ImGui::SliderFloat("攻撃クールタイム", &attackCooldown, 0.0f, 5.0f, "%.2f")) {
-            attackCooldown = std::round(attackCooldown * 100.0f) / 100.0f;
-            player->SetAttackCooldown(attackCooldown);
+        float attackHitDelaySeconds =
+            player->GetAttackHitDelay();
+        if (ImGui::DragFloat(
+                "攻撃判定までの時間（秒）",
+                &attackHitDelaySeconds,
+                0.01f,
+                0.0f,
+                5.0f,
+                "%.2f")) {
+            player->SetAttackHitDelay(attackHitDelaySeconds);
         }
+        ImGui::TextDisabled(
+            "弱攻撃を含む、判定遅延を使うすべての攻撃に反映されます。");
 
         float lastAttackCooldown = player->GetLastAttackCooldown();
         if (ImGui::SliderFloat("最終攻撃クールタイム", &lastAttackCooldown, 0.0f, 5.0f, "%.2f")) {
@@ -1786,6 +1892,36 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDuration", player->GetDodgeDuration());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeCooldownTime", player->GetDodgeCooldownTime());
     SetYamlSequenceValue(config, sequenceName, index, "dodgeDistance", player->GetDodgeDistance());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgeAttackDamage",
+        player->GetAirDodgeAttackDamage());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgeHorizontalHitboxScale",
+        player->GetAirDodgeHorizontalHitboxScale());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgeVerticalHitboxScale",
+        player->GetAirDodgeVerticalHitboxScale());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgeEnemyPushSpeed",
+        player->GetAirDodgeEnemyPushSpeed());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airDodgeEnemyPushDampingPerSecond",
+        player->GetAirDodgeEnemyPushDampingPerSecond());
     SetYamlSequenceValue(config, sequenceName, index, "normalAttackRange", player->GetNormalAttackRange());
     SetYamlSequenceValue(config, sequenceName, index, "normalAttackAngle", player->GetNormalAttackAngle());
     SetYamlSequenceValue(config, sequenceName, index, "normalAttack", player->GetNormalAttack());
@@ -1837,7 +1973,25 @@ bool ParameterDebugPanel::SavePlayerYaml(Player* player)
     SetYamlSequenceValue(config, sequenceName, index, "defaultDamageTimer", player->GetDefaultDamageTimer());
     SetYamlSequenceValue(config, sequenceName, index, "defaultAttackMotionTimer",
                          player->GetDefaultAttackMotionTimer());
-    SetYamlSequenceValue(config, sequenceName, index, "attackCooldown", player->GetAttackCooldown());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "attackHitDelay",
+        player->GetAttackHitDelay());
+    config[sequenceName][index].remove("attackCooldown");
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "groundWeakAttackCooldownSeconds",
+        player->GetGroundWeakAttackCooldownSeconds());
+    SetYamlSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "airWeakAttackCooldownSeconds",
+        player->GetAirWeakAttackCooldownSeconds());
     SetYamlSequenceValue(config, sequenceName, index, "lastAttackCooldown", player->GetLastAttackCooldown());
     SetYamlSequenceValue(config, sequenceName, index, "defaultStrongAttackTimer",
                          player->GetDefaultStrongAttackTimer());

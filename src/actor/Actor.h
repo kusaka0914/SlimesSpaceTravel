@@ -141,8 +141,8 @@ public:
     {
         return mTextureTiling;
     }
-    // Applies only to rendering. Collision and gameplay-facing vectors keep
-    // using the actor's semantic orientation.
+
+
     virtual glm::quat GetRenderModelRotationOffset() const
     {
         return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
@@ -183,9 +183,9 @@ public:
 
     void SetIsEditorSelected(bool isEditorSelected) { mIsEditorSelected = isEditorSelected; }
 
-    // Captures a transform changed by an editor operation. Runtime movement
-    // intentionally does not call this, so stage saves cannot turn an AI or
-    // animation position into the next spawn position.
+
+
+
     void CaptureEditorAuthoredPosition();
     void CaptureEditorAuthoredRotation();
     void CaptureEditorAuthoredScale();

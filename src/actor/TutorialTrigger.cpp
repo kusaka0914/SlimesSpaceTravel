@@ -201,9 +201,9 @@ void TutorialTrigger::UpdateActor(float)
     const bool isPlayerSplit = mGame->GetIsPlayerSplit();
     if (mHasObservedPlayerSplitState && !mWasPlayerSplit &&
         isPlayerSplit && requiresSplitPlayer && hasPlayerInsideTrigger) {
-        // Splitting while already standing in a split-only trigger must not
-        // start a tutorial whose first page asks for another split/merge.
-        // Require leaving and entering the trigger after the split instead.
+
+
+
         mRequiresExitAfterSplittingInside = true;
     }
     mHasObservedPlayerSplitState = true;

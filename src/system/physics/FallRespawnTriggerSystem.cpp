@@ -28,7 +28,7 @@ btTransform CreatePlayerSweepTransform(
             actorOrientation.w));
     return transform;
 }
-} // namespace
+}
 
 FallRespawnTriggerSystem::FallRespawnTriggerSystem(Game* game)
     : mGame(game)

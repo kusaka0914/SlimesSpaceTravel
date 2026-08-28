@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/player/PlayerTypes.h"
+#include "gfx/debug/ugc/UGCSessionState.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -16,6 +17,7 @@ class JewelItem;
 class NPC;
 class Player;
 class Boat;
+class Planet;
 class Stage;
 class PhysicsSystem;
 class MeshLoadSystem;
@@ -36,10 +38,35 @@ class SequenceSystem;
 class StageProgressSystem;
 class EditorBuildRestartService;
 class EnemyJewelDropSystem;
+class GpuDurationTimer;
 
 enum class InputDeviceType {
     KeyboardMouse,
     GameController,
+};
+
+enum class StagePhysicsReloadMode {
+    Rebuild,
+    SkipRebuild,
+};
+
+struct FramePerformanceMetrics {
+    float totalMilliseconds = 0.0f;
+    float gameUpdateMilliseconds = 0.0f;
+    float firstViewportRenderMilliseconds = 0.0f;
+    float secondViewportRenderMilliseconds = 0.0f;
+    float firstViewportGpuMilliseconds = 0.0f;
+    float secondViewportGpuMilliseconds = 0.0f;
+    float gameUiCpuMilliseconds = 0.0f;
+    float gameUiGpuMilliseconds = 0.0f;
+    float editorUiCpuMilliseconds = 0.0f;
+    float editorUiGpuMilliseconds = 0.0f;
+    float presentationWaitMilliseconds = 0.0f;
+    int renderedViewportCount = 0;
+    bool hasFirstViewportGpuMeasurement = false;
+    bool hasSecondViewportGpuMeasurement = false;
+    bool hasGameUiGpuMeasurement = false;
+    bool hasEditorUiGpuMeasurement = false;
 };
 
 class Game {
@@ -55,9 +82,11 @@ public:
     void Shutdown();
 
     void LoadData(bool isLoadPlayer);
-    // The UGC editor only needs a visual stage rebuild. Collision is rebuilt
-    // when playtesting starts, not for every painted cell.
-    void ReloadCurrentStage(bool rebuildPhysics = true);
+
+
+    void ReloadCurrentStage(
+        StagePhysicsReloadMode physicsReloadMode =
+            StagePhysicsReloadMode::Rebuild);
     void ReloadUIData();
     void ChangeStage(int stageNum);
     bool HasStageIntroCinematic(int stageNum) const;
@@ -68,6 +97,12 @@ public:
     bool DebugEnterEnding();
     bool DebugStartCredits();
     bool StartUGCMode();
+    bool StartUGCEditorTutorial();
+    bool FinishUGCEditorTutorial(bool wasCompleted);
+    bool GetIsUGCEditorTutorialActive() const
+    {
+        return mIsUGCEditorTutorialActive;
+    }
     void OpenUGCWorkBrowser();
     void CloseUGCWorkBrowser();
     void MoveTitleMenuSelection(int delta);
@@ -75,13 +110,14 @@ public:
     int GetTitleMenuSelection() const { return mTitleMenuSelection; }
     bool GetIsUGCWorkBrowserShowing() const
     {
-        return mIsUGCWorkBrowserShowing;
+        return mUGCSessionState.IsWorkBrowserShowing();
     }
     void StartUGCPlaytest();
     void UndoUGCEdit();
     void RedoUGCEdit();
     void ToggleUGCEraser();
     void SelectUGCEditorMode();
+    void OpenUGCEditorMenu();
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
@@ -110,6 +146,7 @@ public:
 
     void OnBoatStageChangeRequested(int destStage);
     void OnBoatArrived(Boat* boat);
+    void OnPlayerCurrentPlanetChanged(Player& player);
     void OnStarObtained();
     void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();
@@ -122,7 +159,11 @@ public:
     void OnStrongAttacked(int playerNum);
     void OnPlayerCounter(int playerNum);
     void SynchronizeSoloSplitResources(const Player& sourcePlayer);
-    void VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
+    void VibrateControllerForPlayer(
+        int playerNum,
+        int lowFrequency,
+        int highFrequency,
+        int durationMilliseconds);
 
     Player* FindNearestPlayer(Actor* actor) const;
 
@@ -172,20 +213,28 @@ public:
     std::string GetNPCConversationId(const NPC* npc) const;
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
-    bool GetIsUGCMode() const { return mIsUGCMode; }
-    // While creating a stage, P opens the ordinary debug editor on top of
-    // the product UGC editor instead of switching to playtest.
+    bool GetIsUGCMode() const { return mUGCSessionState.IsModeActive(); }
+    bool GetIsUGCPlaytestActive() const
+    {
+        return mUGCSessionState.IsPlaytestActive();
+    }
+    bool GetIsUGCClearVerificationActive() const
+    {
+        return mUGCSessionState.IsVerificationActive();
+    }
+
+
     bool GetIsUGCDebugEditorShowing() const
     {
-        return mIsUGCDebugEditorShowing;
+        return mUGCSessionState.IsDebugPanelShowing();
     }
     bool GetIsUGCOrthographicView() const
     {
-        return mIsUGCOrthographicView;
+        return mUGCSessionState.IsOrthographicView();
     }
     void SetIsUGCOrthographicView(bool isOrthographic)
     {
-        mIsUGCOrthographicView = isOrthographic;
+        mUGCSessionState.SetOrthographicView(isOrthographic);
     }
     float GetUGCOrthographicHalfHeight() const
     {
@@ -224,13 +273,38 @@ public:
     {
         return mUGCPlatformPlacementPreviewPosition;
     }
+    void SetUGCMovingPlatformPathPreview(
+        const std::optional<glm::vec3>& startPosition,
+        const std::optional<glm::vec3>& destinationPosition)
+    {
+        mUGCMovingPlatformPathStartPosition = startPosition;
+        mUGCMovingPlatformPathDestinationPosition = destinationPosition;
+    }
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathStartPosition() const
+    {
+        return mUGCMovingPlatformPathStartPosition;
+    }
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathDestinationPosition() const
+    {
+        return mUGCMovingPlatformPathDestinationPosition;
+    }
     void SetUGCPlacementModelPreview(
         const std::optional<glm::vec3>& position,
         const std::string& modelPath = "",
-        const glm::vec3& scale = glm::vec3(1.0f));
+        const glm::vec3& scale = glm::vec3(1.0f),
+        const std::string& textureOverridePath = "");
+    void SetUGCPlacementModelPreviewPositions(
+        const std::vector<glm::vec3>& positions,
+        const std::string& modelPath,
+        const glm::vec3& scale,
+        const std::string& textureOverridePath = "");
     Actor* GetUGCPlacementModelPreview() const
     {
         return mUGCPlacementModelPreviewActor.get();
+    }
+    const std::vector<glm::vec3>& GetUGCPlacementModelPreviewPositions() const
+    {
+        return mUGCPlacementModelPreviewPositions;
     }
     void SetUGCOrthographicHalfHeight(float halfHeight)
     {
@@ -239,6 +313,16 @@ public:
     }
     float GetUGCGridSize() const { return mUGCGridSize; }
     float GetLastDeltaTime() const { return mLastDeltaTime; }
+    const FramePerformanceMetrics& GetFramePerformanceMetrics() const
+    {
+        return mFramePerformanceMetrics;
+    }
+    void RecordViewportRenderDurationMilliseconds(
+        int viewportIndex,
+        float durationMilliseconds);
+    void RecordViewportGpuDurationMilliseconds(
+        int viewportIndex,
+        float durationMilliseconds);
     void SetUGCGridSize(float gridSize)
     {
         mUGCGridSize = gridSize > 0.01f ? gridSize : 0.01f;
@@ -278,6 +362,8 @@ public:
     bool IsStageCleared(int stageNum) const;
     void MarkStageCleared(int stageNum);
     void SetStageCleared(int stageNum, bool isCleared);
+    bool HasCompletedTutorial(const std::string& tutorialId) const;
+    void MarkTutorialCompleted(const std::string& tutorialId);
     bool HasShownNPCConversation(const NPC* npc) const;
     void MarkNPCConversationShown(const NPC* npc);
     bool HasSeenBaseIntro() const;
@@ -311,6 +397,8 @@ private:
 
     void ProcessInput();
     void ProcessActorsInput();
+    void BeginFramePerformanceMeasurement();
+    void PollGpuPerformanceMeasurements();
 
     void UpdateGame();
     void UpdateActors(float deltaTime);
@@ -323,6 +411,7 @@ private:
     void DestroyUGCPreviewRenderTarget();
     void DrawUGCPreviewFrame();
     void ProcessPendingUGCClearCompletion();
+    void CompleteUGCModeExit(bool shouldOpenWorkBrowser);
 
     void CreatePlayer2();
     void CheckGameControllerConnected();
@@ -334,6 +423,10 @@ private:
     void SelectControlledPlayer(int playerIndex);
     void UpdatePendingSoloSplitControlSwitch(float deltaTime);
     bool LoadDebugStage(int stageNum, const std::string& yamlPath);
+    bool StartUGCModeWithStage(
+        const std::string& yamlPath,
+        bool isTutorial);
+    bool HasSeenUGCEditorTutorial() const;
     bool PrepareInitialSceneForDebug();
     void RestoreDebugEditorSessionAtStartup(
         const std::string& editorSessionPath,
@@ -356,6 +449,8 @@ private:
     std::unique_ptr<AudioSystem> mAudioSystem;
     std::unique_ptr<UIRenderer> mUIRenderer;
     std::unique_ptr<Renderer3D> mRenderer3D;
+    std::unique_ptr<GpuDurationTimer> mGameUiGpuTimer;
+    std::unique_ptr<GpuDurationTimer> mEditorUiGpuTimer;
     std::unique_ptr<PhysicsSystem> mPhysicsSystem;
     std::unique_ptr<CameraSystem> mCameraSystem;
     std::unique_ptr<ActorLoadSystem> mActorLoadSystem;
@@ -375,23 +470,22 @@ private:
 
     double mLastTime = 0.0;
     float mLastDeltaTime = 0.0f;
+    FramePerformanceMetrics mFramePerformanceMetrics;
 
     bool mIsPlayer2Joined = false;
     bool mIsPlayerSplit = false;
     int mControlledPlayerIndex = 0;
     float mPendingSoloSplitControlSwitchTimer = -1.0f;
     bool mIsDebugEditorShowing = false;
-    bool mIsUGCMode = false;
-    bool mIsUGCDebugEditorShowing = false;
+    UGCSessionState mUGCSessionState;
+    std::optional<std::string> mPendingUGCClearTransitionWorkFileName;
+    bool mIsUGCClearTransitionInProgress = false;
     int mTitleMenuSelection = 0;
-    std::string mUGCVerificationWorkFileName;
-    bool mIsUGCClearCompletionPending = false;
-    bool mIsUGCWorkBrowserShowing = false;
     float mUGCGridSize = 1.0f;
-    bool mIsUGCOrthographicView = false;
     float mUGCOrthographicHalfHeight = 20.0f;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+    bool mIsUGCEditorTutorialActive = false;
 
     unsigned int mEditorGameFramebuffer = 0;
     unsigned int mEditorGameTexture = 0;
@@ -407,7 +501,10 @@ private:
     int mRequestedUGCPreviewRenderHeight = 540;
     int mUGCPreviewEditLayer = 0;
     std::optional<glm::vec3> mUGCPlatformPlacementPreviewPosition;
+    std::optional<glm::vec3> mUGCMovingPlatformPathStartPosition;
+    std::optional<glm::vec3> mUGCMovingPlatformPathDestinationPosition;
     std::unique_ptr<Actor> mUGCPlacementModelPreviewActor;
+    std::vector<glm::vec3> mUGCPlacementModelPreviewPositions;
     float mUGCPreviewYawRadians = 0.0f;
     float mUGCPreviewFocusY = 0.0f;
     bool mHasUGCPreviewFocusY = false;

@@ -17,10 +17,12 @@ class Player;
 struct PlatformRevealTarget {
     std::string sequenceName;
     int yamlIndex = -1;
+    std::string platformId;
 
     bool IsValid() const
     {
-        return !sequenceName.empty() && yamlIndex >= 0;
+        return !platformId.empty() ||
+               (!sequenceName.empty() && yamlIndex >= 0);
     }
 };
 
@@ -142,9 +144,9 @@ private:
     float mSpeed = 2.0f;
 };
 
-// Keeps a player attached to this platform after contact from any direction.
-// The player owns the attachment state so movement and rotation use the same
-// transform delta path as ordinary platform grounding.
+
+
+
 class PlatformAdhesionComponent : public Component {
 public:
     explicit PlatformAdhesionComponent(Platform* owner, int updateOrder = 90);

@@ -21,17 +21,17 @@ Star::Star(Game* game)
 void Star::Initialize()
 {
     Actor::Initialize();
-    // Keep the stage-authored orientation. Stars must not be reoriented by
-    // the surrounding planet or debug-mode ground-normal updates.
+
+
     mIsUpVecInitialized = true;
 }
 
 glm::quat Star::GetRenderModelRotationOffset() const
 {
-    // glTF/GLB star assets keep their authored node rotation separately from
-    // mesh vertices.  Static mesh loading intentionally does not bake node
-    // transforms, so compensate here without changing collision, the boss
-    // facing direction, or FBX stars.
+
+
+
+
     const std::string& modelPath = GetModelPath();
     const std::size_t extensionStart = modelPath.find_last_of('.');
     if (extensionStart == std::string::npos ||
@@ -118,9 +118,9 @@ void Star::AddCollectableComponent()
 {
     std::unique_ptr<CollectableComponent> collectableComponent = std::make_unique<CollectableComponent>(this, 100);
     mCollectableComponent = collectableComponent.get();
-    // The boss-defeat star must work even if the finishing attack is still
-    // registered for a few frames. Its visual is also wider than a standard
-    // item, so use a forgiving pickup range around the star's centre.
+
+
+
     mCollectableComponent->SetCanPickupWhileAttacking(true);
     mCollectableComponent->SetPickupRadius(1.5f);
     AddComponent(std::move(collectableComponent));
@@ -197,9 +197,9 @@ void Star::OnObtained()
         mObtainingPlayer = mGame->GetMainPlayer();
     }
 
-    // Start the clear sequence with the player directly below the collected
-    // star, already on a valid ground surface. This avoids revealing a player
-    // suspended in the air or inside an elliptical planet.
+
+
+
     if (mObtainingPlayer) {
         mObtainingPlayer->ForceGroundedForCinematicAt(
             GetCurrentPlanet(),
@@ -207,14 +207,14 @@ void Star::OnObtained()
             GetUpVec());
     }
 
-    // Keep the star active while it circles the player.  The collectable
-    // component is already marked obtained, so it cannot be picked up twice.
+
+
     mCollectionState = CollectionState::Orbiting;
     mCollectionTimer = 0.0f;
     mCollectionBaseFacingYaw = GetFacingYaw();
 
-    // The stage-clear screen starts as soon as the player reaches the star.
-    // The star actor remains active independently for its collection animation.
+
+
     if (mGame) {
         mGame->OnStarObtained();
     }

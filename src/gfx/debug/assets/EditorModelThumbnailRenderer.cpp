@@ -92,7 +92,7 @@ private:
     bool mWasBlendEnabled = false;
     bool mWasCullFaceEnabled = false;
 };
-} // namespace
+}
 
 EditorModelThumbnailRenderer::EditorModelThumbnailRenderer(Game* game)
     : mGame(game)
@@ -118,12 +118,24 @@ void EditorModelThumbnailRenderer::BeginFrame()
 GLuint EditorModelThumbnailRenderer::ResolveThumbnail(
     const std::string& modelPath)
 {
-    const auto cachedThumbnail = mThumbnailTextures.find(modelPath);
+    return ResolveThumbnail(modelPath, glm::vec3(1.0f), "");
+}
+
+GLuint EditorModelThumbnailRenderer::ResolveThumbnail(
+    const std::string& modelPath,
+    const glm::vec3& modelScale,
+    const std::string& textureOverridePath)
+{
+    const std::string thumbnailCacheKey = BuildThumbnailCacheKey(
+        modelPath,
+        modelScale,
+        textureOverridePath);
+    const auto cachedThumbnail = mThumbnailTextures.find(thumbnailCacheKey);
     if (cachedThumbnail != mThumbnailTextures.end()) {
         return cachedThumbnail->second;
     }
     if (modelPath.empty() ||
-        mFailedModelPaths.contains(modelPath) ||
+        mFailedModelPaths.contains(thumbnailCacheKey) ||
         mDidGenerateThumbnailThisFrame ||
         !mGame || !mGame->GetMeshLoadSystem()) {
         return 0;
@@ -137,19 +149,35 @@ GLuint EditorModelThumbnailRenderer::ResolveThumbnail(
         !loadedModel->hasBounds ||
         !GenerateThumbnail(
             *loadedModel,
+            modelScale,
+            textureOverridePath,
             thumbnailTextureHandle)) {
-        mFailedModelPaths.insert(modelPath);
+        mFailedModelPaths.insert(thumbnailCacheKey);
         return 0;
     }
 
-    mThumbnailTextures.emplace(modelPath, thumbnailTextureHandle);
+    mThumbnailTextures.emplace(thumbnailCacheKey, thumbnailTextureHandle);
     return thumbnailTextureHandle;
 }
 
 bool EditorModelThumbnailRenderer::HasFailed(
     const std::string& modelPath) const
 {
-    return mFailedModelPaths.contains(modelPath);
+    return mFailedModelPaths.contains(BuildThumbnailCacheKey(
+        modelPath,
+        glm::vec3(1.0f),
+        ""));
+}
+
+std::string EditorModelThumbnailRenderer::BuildThumbnailCacheKey(
+    const std::string& modelPath,
+    const glm::vec3& modelScale,
+    const std::string& textureOverridePath)
+{
+    return modelPath + "|" + textureOverridePath + "|" +
+        std::to_string(modelScale.x) + "|" +
+        std::to_string(modelScale.y) + "|" +
+        std::to_string(modelScale.z);
 }
 
 void EditorModelThumbnailRenderer::Clear()
@@ -167,6 +195,8 @@ void EditorModelThumbnailRenderer::Clear()
 
 bool EditorModelThumbnailRenderer::GenerateThumbnail(
     const LoadedModel& loadedModel,
+    const glm::vec3& modelScale,
+    const std::string& textureOverridePath,
     GLuint& generatedTextureHandle)
 {
     if (!mGame || !mGame->GetRenderer3D() ||
@@ -228,8 +258,10 @@ bool EditorModelThumbnailRenderer::GenerateThumbnail(
         (loadedModel.boundsMinimum + loadedModel.boundsMaximum) * 0.5f;
     const glm::vec3 modelHalfExtents =
         (loadedModel.boundsMaximum - loadedModel.boundsMinimum) * 0.5f;
+    const glm::vec3 scaledModelHalfExtents = glm::abs(
+        modelHalfExtents * modelScale);
     const float modelRadius =
-        std::max(glm::length(modelHalfExtents), MinimumModelRadius);
+        std::max(glm::length(scaledModelHalfExtents), MinimumModelRadius);
     const float fieldOfViewRadians =
         glm::radians(ThumbnailFieldOfViewDegrees);
     const float cameraDistance =
@@ -243,7 +275,10 @@ bool EditorModelThumbnailRenderer::GenerateThumbnail(
     const float farPlane =
         cameraDistance + modelRadius * 1.5f;
 
-    const glm::mat4 modelMatrix(1.0f);
+    const glm::mat4 modelMatrix = glm::translate(
+        glm::mat4(1.0f), modelCenter) *
+        glm::scale(glm::mat4(1.0f), modelScale) *
+        glm::translate(glm::mat4(1.0f), -modelCenter);
     const glm::mat4 viewMatrix = glm::lookAt(
         cameraPosition,
         modelCenter,
@@ -290,11 +325,18 @@ bool EditorModelThumbnailRenderer::GenerateThumbnail(
     glUniform1i(shader->GetLocUseBackTexture(), 0);
     glUniform2f(shader->GetLocTextureTiling(), 1.0f, 1.0f);
 
+    const GLuint textureOverride = textureOverridePath.empty()
+        ? 0
+        : mGame->GetRenderer3D()->GetOrLoadTextureOverride(
+              textureOverridePath);
     glActiveTexture(GL_TEXTURE0);
     for (const LoadedMesh& loadedMesh : loadedModel.meshes) {
         glBindVertexArray(loadedMesh.VAO);
-        if (loadedMesh.textureID != 0) {
-            glBindTexture(GL_TEXTURE_2D, loadedMesh.textureID);
+        const GLuint textureHandle = textureOverride != 0
+            ? textureOverride
+            : loadedMesh.textureID;
+        if (textureHandle != 0) {
+            glBindTexture(GL_TEXTURE_2D, textureHandle);
             glUniform1i(shader->GetLocDiffuseTexture(), 0);
             glUniform1i(shader->GetLocUseTexture(), 1);
         } else {

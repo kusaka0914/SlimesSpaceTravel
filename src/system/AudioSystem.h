@@ -31,11 +31,13 @@ private:
     void CreateSEList();
     void AddBGM(const std::string& path, const std::string& name);
     void AddSE(const std::string& path, const std::string& name);
+    void PlayBGMIfChanged(const std::string& name);
 
 private:
     Game* mGame;
 
     std::unordered_map<std::string, Mix_Music*> mBGMList;
     std::unordered_map<std::string, Mix_Chunk*> mSEList;
+    std::string mCurrentLoopingBGMName;
     bool mIsStageMusicDeferred = false;
 };

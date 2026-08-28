@@ -38,6 +38,7 @@ public:
     void ConsumeBufferedAttackInput();
     void ClearAttackBuffer();
     void SuppressJumpUntilReleased() { mJumpPressedPrev = true; }
+    void SuppressDodgeUntilReleased() { mDodgePressedPrev = true; }
 
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }

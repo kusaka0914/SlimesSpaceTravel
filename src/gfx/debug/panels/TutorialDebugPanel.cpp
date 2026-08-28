@@ -89,7 +89,7 @@ std::string ToLower(std::string text)
         });
     return text;
 }
-} // namespace
+}
 
 TutorialDebugPanel::TutorialDebugPanel(
     DebugEditorContext& context)
@@ -229,7 +229,7 @@ void TutorialDebugPanel::DrawTutorialEditor(
             ? 1
             : 0;
     const char* repeatPolicyLabels[] = {
-        "ゲーム起動中に1回",
+        "セーブデータにつき1回",
         "呼び出されるたびに再生"};
     if (ImGui::Combo(
             "再生回数",
@@ -239,7 +239,7 @@ void TutorialDebugPanel::DrawTutorialEditor(
         definition->repeatPolicy =
             repeatPolicyIndex == 1
                 ? TutorialRepeatPolicy::EveryRequest
-                : TutorialRepeatPolicy::OncePerSession;
+                : TutorialRepeatPolicy::OnceEver;
     }
 
     ImGui::DragFloat(

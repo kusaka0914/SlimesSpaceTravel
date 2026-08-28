@@ -17,7 +17,6 @@
 namespace {
 constexpr float attackDodgeCancelDelaySeconds = 0.5f;
 constexpr float airWeakAttackDamageMultiplier = 2.0f;
-constexpr float airDodgeAttackDamageMultiplier = 0.5f;
 }
 
 bool PlayerCombat::IsAttacking() const
@@ -48,7 +47,8 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mAttackCooldown;
+        mAttackCooldownRemaining =
+            mAirWeakAttackCooldownSeconds;
         mAttack =
             mWideAttack *
             airWeakAttackDamageMultiplier;
@@ -82,7 +82,8 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mAttackCooldown;
+        mAttackCooldownRemaining =
+            mGroundWeakAttackCooldownSeconds;
         mAttack = mWideAttack;
     }
 
@@ -105,6 +106,7 @@ void PlayerCombat::ConfigureStrongAttack()
 
 void PlayerCombat::StartAirSlamAttack()
 {
+    EndContinuousAttacking();
     ConfigureStrongAttack();
     mIsAssistStrongAttack = false;
     mIsStrongAttacked = true;
@@ -184,8 +186,8 @@ bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& moveme
 
     ClearPendingAttackHit();
 
-    // FindHitEnemies reads the player's facing vector here, so the hit direction
-    // is the direction the player is facing at the end of the wind-up.
+
+
     Attack(player, movement, status, deltaTime);
     return true;
 }
@@ -305,9 +307,9 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
 
     mAttackComboIndex++;
 
-    // Keyboard K / gamepad X is called Normal internally. It normally ends the
-    // ground combo immediately, but the third hit must remain identifiable until
-    // PlayerAttackResolver applies the finisher's guard break.
+
+
+
     if (mAttackKind == PlayerAttackKind::Normal) {
         if (mAttackComboIndex != 3) {
             ResetGroundAttackCombo();
@@ -353,6 +355,12 @@ void PlayerCombat::StartContinuousAttacking()
     mContinuousAttackingCooldown = 0.0f;
 }
 
+void PlayerCombat::EndContinuousAttacking()
+{
+    mContinuousAttackingTimer = -1.0f;
+    mContinuousAttackingCooldown = -1.0f;
+}
+
 void PlayerCombat::StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime)
 {
     status.StartTired();
@@ -385,7 +393,7 @@ void PlayerCombat::CancelSpecialAttack()
     mIsAssistStrongAttack = false;
     mCanSpecialAttack = false;
     mSpecialChargingTimer = -1.0f;
-    mContinuousAttackingTimer = -1.0f;
+    EndContinuousAttacking();
 }
 
 void PlayerCombat::CancelCurrentAttack()
@@ -458,7 +466,9 @@ void PlayerCombat::UpdateAirDodgeAttack(
         mHitDetector.FindEnemiesTouchingAirDodgeMovement(
             player,
             movementStart,
-            movementEnd);
+            movementEnd,
+            mAirDodgeHorizontalHitboxScale,
+            mAirDodgeVerticalHitboxScale);
     std::vector<Enemy*> newlyHitEnemies;
     for (Enemy* enemy : touchingEnemies) {
         const bool wasAlreadyHit =
@@ -474,16 +484,14 @@ void PlayerCombat::UpdateAirDodgeAttack(
         newlyHitEnemies.emplace_back(enemy);
     }
 
-    const float airDodgeDamage =
-        mWideAttack *
-        airWeakAttackDamageMultiplier *
-        airDodgeAttackDamageMultiplier;
     const bool didHitEnemy =
         mAttackResolver.ResolveAirDodgeAttack(
             player,
             movement,
             newlyHitEnemies,
-            airDodgeDamage);
+            mAirDodgeAttackDamage,
+            mAirDodgeEnemyPushSpeed,
+            mAirDodgeEnemyPushDampingPerSecond);
     if (didHitEnemy) {
         mAirAttackCount = 0;
         ResetAirWeakAttackHitCount();
@@ -497,6 +505,22 @@ void PlayerCombat::EndAirDodgeAttack()
 {
     mIsAirDodgeAttackActive = false;
     mAirDodgeHitEnemies.clear();
+}
+
+void PlayerCombat::StartGroundWeakAttackCooldown()
+{
+    mAttackCooldownRemaining =
+        std::max(
+            mAttackCooldownRemaining,
+            mGroundWeakAttackCooldownSeconds);
+}
+
+void PlayerCombat::StartAirWeakAttackCooldown()
+{
+    mAttackCooldownRemaining =
+        std::max(
+            mAttackCooldownRemaining,
+            mAirWeakAttackCooldownSeconds);
 }
 
 void PlayerCombat::UpdateAttackCooldown(float deltaTime)

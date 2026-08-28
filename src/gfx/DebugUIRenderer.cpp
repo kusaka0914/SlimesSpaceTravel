@@ -8,9 +8,11 @@
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "actor/Platform.h"
+#include "component/PlatformBehaviorComponents.h"
 #include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/session/EditorSessionState.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
@@ -21,8 +23,6 @@
 #include <array>
 #include <cmath>
 #include <cstring>
-#include <filesystem>
-#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec4.hpp>
 #include <limits>
@@ -32,41 +32,6 @@
 #include <unordered_set>
 
 namespace {
-const std::filesystem::path UGCWorkingStagePath =
-    "../assets/data/stage/ugc_stage.yaml";
-const std::filesystem::path UGCSaveDirectory =
-    "../assets/data/stage/ugc_saves";
-
-std::filesystem::path MakeUGCWorkPath(const std::string& fileName)
-{
-    return UGCSaveDirectory / std::filesystem::u8path(fileName);
-}
-
-std::string ToUtf8FileName(const std::filesystem::path& path)
-{
-    const std::u8string utf8Name = path.filename().u8string();
-    return std::string(utf8Name.begin(), utf8Name.end());
-}
-
-std::string MakeSafeUGCFileName(const std::string& displayName)
-{
-    std::string safeName = displayName;
-    constexpr const char* invalidCharacters = "<>:\"/\\|?*";
-    for (char& character : safeName) {
-        const unsigned char unsignedCharacter =
-            static_cast<unsigned char>(character);
-        if (unsignedCharacter < 32 ||
-            std::strchr(invalidCharacters, character)) {
-            character = '_';
-        }
-    }
-    while (!safeName.empty() &&
-           (safeName.back() == ' ' || safeName.back() == '.')) {
-        safeName.pop_back();
-    }
-    return safeName.empty() ? "untitled" : safeName;
-}
-
 void DrawUGCEraserActiveIndicator(bool isActive)
 {
     if (!isActive) {
@@ -93,10 +58,81 @@ void DrawUGCEraserActiveIndicator(bool isActive)
         IM_COL32(255, 255, 255, 255),
         "ON");
 }
+
+void DrawUGCSelectionActiveIndicator(bool isActive)
+{
+    if (!isActive) {
+        return;
+    }
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    drawList->AddRect(
+        ImGui::GetItemRectMin(),
+        ImGui::GetItemRectMax(),
+        IM_COL32(255, 201, 46, 255),
+        10.0f,
+        0,
+        3.0f);
+}
+
+void DrawUGCWarningTriangle(
+    ImDrawList* drawList,
+    const ImVec2& center)
+{
+    if (!drawList) {
+        return;
+    }
+
+    constexpr float halfWidth = 18.0f;
+    constexpr float topOffset = 20.0f;
+    constexpr float bottomOffset = 14.0f;
+    const ImVec2 top(center.x, center.y - topOffset);
+    const ImVec2 bottomLeft(
+        center.x - halfWidth,
+        center.y + bottomOffset);
+    const ImVec2 bottomRight(
+        center.x + halfWidth,
+        center.y + bottomOffset);
+    drawList->AddTriangleFilled(
+        top,
+        bottomLeft,
+        bottomRight,
+        IM_COL32(255, 213, 45, 245));
+    drawList->AddTriangle(
+        top,
+        bottomLeft,
+        bottomRight,
+        IM_COL32(55, 42, 5, 255),
+        2.5f);
+    drawList->AddRectFilled(
+        ImVec2(center.x - 2.5f, center.y - 9.0f),
+        ImVec2(center.x + 2.5f, center.y + 3.0f),
+        IM_COL32(55, 42, 5, 255),
+        2.0f);
+    drawList->AddCircleFilled(
+        ImVec2(center.x, center.y + 8.0f),
+        2.8f,
+        IM_COL32(55, 42, 5, 255));
+}
 }
 
 DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
     : mContext{game, uiRenderer, &mAssetCatalog},
+      mUGCWorkPanel(
+          mContext,
+          [this]() {
+              mSelectionController.Clear();
+              HandleUGCSelectionMode();
+              mUGCConnectionSwitchRef.reset();
+              mIsUGCSelectionDragging = false;
+              mIsUGCMovingPlatformDestinationDrag = false;
+              mEditCommandController.ClearHistory();
+              mUGCEditLayer = 0;
+              mStageAddActorPanel.SetUGCEditLayer(mUGCEditLayer);
+              mSelectionController.SetUGCEditLayer(mUGCEditLayer);
+              mContext.game->SetUGCPreviewEditLayer(mUGCEditLayer);
+              mContext.game->ReloadCurrentStage();
+          }),
       mUGCModelThumbnailRenderer(
           std::make_unique<EditorModelThumbnailRenderer>(game)),
       mPerformancePanel(mContext),
@@ -111,12 +147,25 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mAssetBrowserPanel(mContext),
       mStageAddActorPanel(mContext),
       mStagePlanetPanel(mContext),
+      mStageActorYamlWriter(mContext),
       mSelectionController(mContext),
-      mStagePlacementPanel(mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); }),
+      mStagePlacementPanel(
+          mContext,
+          mSelectionController,
+          mStageActorYamlWriter,
+          [this]() { mEditCommandController.PushUndo(); }),
       mEditCommandController(mContext, mSelectionController),
       mStageDeleteActorPanel(mContext, mEditCommandController),
-      mStageEditorPanel(mContext, mStageAddActorPanel, mStagePlanetPanel, mStagePlacementPanel, mStageDeleteActorPanel,
-                        mSelectionController),
+      mStageEditorPanel(
+          mContext,
+          mStageAddActorPanel,
+          mStagePlanetPanel,
+          mStagePlacementPanel,
+          mStageDeleteActorPanel,
+          mStageActorYamlWriter,
+          mSelectionController,
+          [this]() { return mEditCommandController.RestoreUndo(); },
+          [this]() { return mEditCommandController.RestoreRedo(); }),
       mGizmoController(
           mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
           [this]() {
@@ -124,10 +173,17 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           })
 {
     mStagePlanetPanel.SetSaveDependentActorTransformsCallback(
-        [this]() { mStagePlacementPanel.SaveEditorAuthoredTransforms(); });
+        [this]() { mStageActorYamlWriter.SaveEditorAuthoredTransforms(); });
     mStageAddActorPanel.SetSelectionController(&mSelectionController);
     mStageAddActorPanel.SetPushUndoCallback(
         [this]() { mEditCommandController.PushUndo(); });
+    mStageAddActorPanel.SetPlacementCompletedCallback([this]() {
+        if (mActiveUGCPresetKind) {
+            mUGCEditorTutorial.RecordPlacement(
+                *mActiveUGCPresetKind,
+                mUGCPlatformFootprintSideLength);
+        }
+    });
     mStageAddActorPanel.SetUGCEditLayer(mUGCEditLayer);
     mSelectionController.SetUGCEditLayer(mUGCEditLayer);
     if (mContext.game) {
@@ -137,7 +193,9 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
 
 void DebugUIRenderer::HandleUGCUndo()
 {
-    mUGCStatus = mEditCommandController.RestoreUndo()
+    const bool wasRestored = mEditCommandController.RestoreUndo();
+    mUGCEditorTutorial.RecordUndo(wasRestored);
+    mUGCStatus = wasRestored
         ? "1つ前の状態に戻しました"
         : "戻せる操作がありません";
 }
@@ -181,14 +239,34 @@ void DebugUIRenderer::HandleUGCSelectionMode()
     mUGCStatus = "選びたいものをクリックしてください";
 }
 
+void DebugUIRenderer::OpenUGCEditorMenu()
+{
+    mShouldOpenUGCEditorMenu = true;
+}
+
 void DebugUIRenderer::HandleUGCZoom(float distanceMultiplier)
 {
     AdjustUGCViewDistance(distanceMultiplier);
+    mUGCEditorTutorial.RecordViewAdjustment();
+}
+
+void DebugUIRenderer::HandleUGCEditorTutorialReturnedFromPlaytest()
+{
+    mUGCEditorTutorial.RecordReturnedFromPlaytest();
 }
 
 void DebugUIRenderer::HandleUGCLayerChange(int layerDelta)
 {
+    const bool isMovingSelection =
+        mIsUGCSelectionDragging &&
+        mSelectionController.GetSelectedActorCount() > 0;
+    const int previousLayer = mUGCEditLayer;
     ChangeUGCEditLayer(layerDelta);
+    if (mUGCEditLayer != previousLayer) {
+        mUGCEditorTutorial.RecordLayerChange(
+            layerDelta,
+            isMovingSelection);
+    }
 }
 
 void DebugUIRenderer::HandleUGCSelectionGridMove(int gridX, int gridZ)
@@ -207,9 +285,24 @@ void DebugUIRenderer::HandleUGCSelectionGridMove(int gridX, int gridZ)
          mSelectionController.CollectSelectedActorInstances()) {
         selectedRefs.push_back(selected.ref);
     }
+    if (mSelectionController.IsMovingPlatformDestinationSelected()) {
+        const bool destinationMoved =
+            mStageAddActorPanel.TryTranslateUGCMovingPlatformDestinations(
+                selectedRefs, movement);
+        if (destinationMoved) {
+            mSelectionController.Clear();
+            mUGCStatus = "移動先を1マス動かしました";
+        } else {
+            mUGCStatus = "移動先を動かせませんでした";
+        }
+        return;
+    }
+
     mSelectionController.MoveSelectedActorsByDelta(movement);
-    if (mStageAddActorPanel.TryTranslateUGCPlatformCells(
-            selectedRefs, movement)) {
+    const bool updatedUGCPlatform =
+        mStageAddActorPanel.TryTranslateUGCPlatformCells(
+            selectedRefs, movement);
+    if (updatedUGCPlatform) {
         mSelectionController.Clear();
     }
     mUGCStatus = "選んだものを1マス動かしました";
@@ -219,8 +312,9 @@ bool DebugUIRenderer::SaveEditorSession(
     const std::string& filePath,
     std::string& outErrorMessage)
 {
-    // Runtime movement is intentionally excluded. The planet panel also
-    // invokes the registered callback that saves authored actor transforms.
+
+
+    // 実行時の移動は保存せず、編集操作で変更したTransformだけを保存する。
     mStagePlanetPanel.SaveEditorAuthoredTransforms();
 
     return EditorSessionRepository::Save(
@@ -487,6 +581,7 @@ void DebugUIRenderer::Draw(
         mStageAddActorPanel.UpdatePlacement();
         const bool isPlacingActor = mStageAddActorPanel.IsPlacementActive();
         if (!isPlacingActor) {
+            mSelectionController.SetBoxSelectionEnabled(true);
             mSelectionController.Update();
         }
 
@@ -531,9 +626,9 @@ void DebugUIRenderer::RegisterUGCUIEditorElements()
         return;
     }
 
-    // Older projects stored each toolbar as one invisible panel.  Keep those
-    // panels as migration anchors, but create editable entries for every
-    // actual button so a click selects the eraser/undo/etc. individually.
+
+
+
     const auto findElement = [&](const std::string& id)
         -> const UILoadSystem::CustomElement* {
         const auto& elements = uiLoadSystem->GetCustomElements();
@@ -735,19 +830,18 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
 
     struct PresetButton {
         const char* label;
-        const char* modelPath;
         UGCPresetKind kind;
     };
     constexpr std::array<PresetButton, 9> presetButtons = {{
-        {"足場", "platform.obj", UGCPresetKind::NormalPlatform},
-        {"敵", "enemy.obj", UGCPresetKind::NormalEnemy},
-        {"惑星", "planet.obj", UGCPresetKind::EllipsePlanet},
-        {"スイッチ", "platform.obj", UGCPresetKind::PressureSwitch},
-        {"ゴール", "star.obj", UGCPresetKind::GoalStar},
-        {"移動足場", "platform.obj", UGCPresetKind::MovingPlatform},
-        {"消える足場", "platform.obj", UGCPresetKind::FadingPlatform},
-        {"くっつき足場", "platform.obj", UGCPresetKind::AdhesivePlatform},
-        {"2人用スイッチ", "platform.obj", UGCPresetKind::TwoPlayerSwitch},
+        {"惑星", UGCPresetKind::EllipsePlanet},
+        {"足場", UGCPresetKind::NormalPlatform},
+        {"移動足場", UGCPresetKind::MovingPlatform},
+        {"消える足場", UGCPresetKind::FadingPlatform},
+        {"くっつき足場", UGCPresetKind::AdhesivePlatform},
+        {"スイッチ", UGCPresetKind::PressureSwitch},
+        {"2人用スイッチ", UGCPresetKind::TwoPlayerSwitch},
+        {"敵", UGCPresetKind::NormalEnemy},
+        {"ゴール", UGCPresetKind::GoalStar},
     }};
     if (mUGCModelThumbnailRenderer) {
         mUGCModelThumbnailRenderer->BeginFrame();
@@ -755,8 +849,9 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     constexpr float presetIconSize = 52.0f;
     constexpr float presetSlotWidth = 62.0f;
     constexpr std::array<const char*, 9> presetIds = {{
-        "presetPlatform", "presetEnemy", "presetPlanet", "presetSwitch", "presetGoal",
-        "presetMoving", "presetFading", "presetAdhesive", "presetTwoPlayer",
+        "presetPlanet", "presetPlatform", "presetMoving", "presetFading",
+        "presetAdhesive", "presetSwitch", "presetTwoPlayer", "presetEnemy",
+        "presetGoal",
     }};
     std::array<std::size_t, 9> presetDrawOrder = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     std::stable_sort(
@@ -783,8 +878,13 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
         ImGui::SetNextWindowPos(layout.position, ImGuiCond_Always);
         ImGui::Begin(windowId.c_str(), nullptr, overlayFlags);
         ImGui::PushID(preset.label);
+        const UGCPresetVisual& presetVisual =
+            GetUGCPresetVisual(preset.kind);
         const GLuint thumbnail = mUGCModelThumbnailRenderer
-            ? mUGCModelThumbnailRenderer->ResolveThumbnail(preset.modelPath)
+            ? mUGCModelThumbnailRenderer->ResolveThumbnail(
+                  presetVisual.modelPath,
+                  presetVisual.thumbnailScale,
+                  presetVisual.initialTextureOverridePath)
             : 0;
         const bool isActive = mActiveUGCPresetKind == preset.kind;
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 9.0f);
@@ -846,23 +946,10 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     }
     if (ImGui::BeginPopup("メニュー###UGCDebugProductMenu")) {
         if (ImGui::MenuItem("保存・開く")) {
-            ImGui::OpenPopup("作品管理###UGCWorkManagement");
+            mShouldOpenUGCWorkManagement = true;
         }
         if (ImGui::MenuItem("完成チェック")) {
-            YAML::Node stageYaml;
-            const bool loaded =
-                StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
-            const YAML::Node stars =
-                loaded ? stageYaml["star"] : YAML::Node();
-            if (!stars || !stars.IsSequence() || stars.size() == 0) {
-                mUGCStatus = "完成チェックにはゴールを置いてください";
-            } else if (!SaveCurrentUGCWork(mUGCWorkName.data())) {
-                mUGCStatus = "下書きを保存できませんでした: " +
-                    mUGCWorkSaveError;
-            } else {
-                mContext.game->StartUGCClearVerification(
-                    MakeSafeUGCFileName(mUGCWorkName.data()) + ".yaml");
-            }
+            StartUGCVerification();
         }
         if (ImGui::MenuItem("タイトルへ戻る")) {
             mContext.game->ExitUGCMode();
@@ -888,8 +975,8 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
             return clicked;
         };
 
-    // Each button lives in its own ImGui window.  Draw those windows in
-    // z-order so a larger value is actually in front when buttons overlap.
+
+
     struct ActionControl {
         const char* id;
         const char* texturePath;
@@ -912,7 +999,7 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
          ImVec2(viewportMin.x + 6.0f, viewportMin.y + 184.0f)},
         {"zoomOut", "textures/ugc_ui/editor_action_zoom_out.png", "遠ざかる",
          ImVec2(viewportMin.x + 6.0f, viewportMin.y + 242.0f)},
-        {"previewView", "textures/ugc_ui/editor_action_zoom_out.png",
+        {"previewView", "textures/ugc_ui/editor_action_preview_view.png",
          mContext.game->GetIsUGCPreviewViewedFromBelow()
              ? "上から見る" : "下から見る",
          ImVec2(viewportMin.x + 6.0f, viewportMin.y + 300.0f)},
@@ -944,7 +1031,7 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
         } else if (std::strcmp(control.id, "zoomOut") == 0) {
             HandleUGCZoom(1.18f);
         } else if (std::strcmp(control.id, "previewView") == 0) {
-            mContext.game->ToggleUGCPreviewVerticalView();
+            ToggleUGCVerticalView();
         }
     }
 
@@ -965,409 +1052,216 @@ void DebugUIRenderer::DrawUGCDebugEditorOverlay()
     }
     ImGui::End();
 
-    DrawUGCGridOverlay();
-    DrawUGCStackBadges();
-    DrawUGCPlacementPreview();
-    DrawUGCPreviewOverlay();
+    if (!IsUGCWorkManagementOpen()) {
+        DrawUGCGridOverlay();
+        DrawUGCStackBadges();
+        DrawUGCPlacementPreview();
+        DrawUGCPreviewOverlay();
+    }
     DrawUGCWorkManagement();
 }
 
-void DebugUIRenderer::RefreshUGCWorkList()
+bool DebugUIRenderer::IsUGCWorkManagementOpen() const
 {
-    mUGCWorkFileNames.clear();
-    std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        UGCSaveDirectory, fileSystemError);
-    if (fileSystemError) {
-        mSelectedUGCWorkIndex = -1;
+    return mShouldOpenUGCWorkManagement ||
+        ImGui::IsPopupOpen(
+            "作品管理###UGCWorkManagement",
+            ImGuiPopupFlags_AnyPopupLevel);
+}
+
+void DebugUIRenderer::DrawUGCWorkManagement()
+{
+    if (mShouldOpenUGCWorkManagement) {
+        ImGui::OpenPopup("作品管理###UGCWorkManagement");
+        mShouldOpenUGCWorkManagement = false;
+    }
+    mUGCWorkPanel.DrawManagement(mUGCStatus);
+}
+
+void DebugUIRenderer::DrawUGCTutorialHighlightForLastItem(
+    bool shouldHighlight) const
+{
+    if (!shouldHighlight) {
+        return;
+    }
+    const float pulse =
+        0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 5.0f);
+    const int alpha = static_cast<int>(190.0f + pulse * 65.0f);
+    ImGui::GetWindowDrawList()->AddRect(
+        ImGui::GetItemRectMin(),
+        ImGui::GetItemRectMax(),
+        IM_COL32(255, 215, 45, alpha),
+        10.0f,
+        0,
+        5.0f);
+}
+
+void DebugUIRenderer::DrawUGCEditorTutorial()
+{
+    if (!mContext.game) {
         return;
     }
 
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(
-             UGCSaveDirectory, fileSystemError)) {
-        if (fileSystemError) {
-            break;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    constexpr ImGuiWindowFlags tutorialWindowFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings;
+    if (!mUGCEditorTutorial.IsActive()) {
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                viewport->WorkPos.x + viewport->WorkSize.x - 230.0f,
+                viewport->WorkPos.y + 16.0f),
+            ImGuiCond_Always);
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_WindowPadding,
+            ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+        ImGui::Begin(
+            "###UGCTutorialReplay",
+            nullptr,
+            tutorialWindowFlags |
+                ImGuiWindowFlags_NoBackground);
+        if (ImGui::Button("操作練習", ImVec2(154.0f, 46.0f))) {
+            mContext.game->StartUGCEditorTutorial();
         }
-        if (entry.is_regular_file() &&
-            entry.path().extension() == ".yaml") {
-            mUGCWorkFileNames.emplace_back(
-                ToUtf8FileName(entry.path()));
+        ImGui::End();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(3);
+        return;
+    }
+
+    const UGCEditorTutorialStep step = mUGCEditorTutorial.GetStep();
+    const bool isWelcome = step == UGCEditorTutorialStep::Welcome;
+    const bool isComplete = step == UGCEditorTutorialStep::Complete;
+    const ImVec2 panelSize(
+        std::min(680.0f, viewport->WorkSize.x - 48.0f),
+        isWelcome || isComplete ? 246.0f : 192.0f);
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
+            viewport->WorkPos.y + 112.0f),
+        ImGuiCond_Always,
+        ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24.0f, 20.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.0f, 12.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_WindowBg,
+        ImVec4(0.025f, 0.055f, 0.10f, 0.98f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Border,
+        ImVec4(0.25f, 0.66f, 1.0f, 0.90f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_PlotHistogram,
+        ImVec4(0.18f, 0.67f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_FrameBg,
+        ImVec4(0.07f, 0.14f, 0.23f, 1.0f));
+    ImGui::Begin(
+        "###UGCEditorTutorial",
+        nullptr,
+        tutorialWindowFlags);
+
+    ImGui::SetWindowFontScale(1.22f);
+    ImGui::TextUnformatted("操作練習");
+    ImGui::SetWindowFontScale(1.0f);
+    if (!isComplete) {
+        const char* skipLabel = "練習をスキップ";
+        const float skipButtonWidth = 138.0f;
+        ImGui::SameLine(
+            ImGui::GetWindowContentRegionMax().x - skipButtonWidth);
+        if (ImGui::Button(skipLabel, ImVec2(skipButtonWidth, 34.0f))) {
+            mUGCEditorTutorial.Stop();
+            mContext.game->FinishUGCEditorTutorial(false);
+            ImGui::End();
+            ImGui::PopStyleColor(7);
+            ImGui::PopStyleVar(5);
+            return;
         }
     }
-    std::sort(mUGCWorkFileNames.begin(), mUGCWorkFileNames.end());
-    if (mUGCWorkFileNames.empty()) {
-        mSelectedUGCWorkIndex = -1;
-    } else {
-        mSelectedUGCWorkIndex = glm::clamp(
-            mSelectedUGCWorkIndex,
-            0,
-            static_cast<int>(mUGCWorkFileNames.size()) - 1);
+
+    if (!isWelcome) {
+        const std::string actionCountText =
+            isComplete
+            ? "完了"
+            : std::to_string(mUGCEditorTutorial.GetCurrentActionNumber()) +
+                " / " + std::to_string(mUGCEditorTutorial.GetActionCount());
+        ImGui::TextColored(
+            ImVec4(1.0f, 0.84f, 0.25f, 1.0f),
+            "%s",
+            actionCountText.c_str());
+        ImGui::SameLine();
+        ImGui::ProgressBar(
+            mUGCEditorTutorial.GetProgressRatio(),
+            ImVec2(-1.0f, 12.0f),
+            "");
     }
-    mHasLoadedUGCWorkList = true;
+
+    ImGui::Separator();
+    const std::string instruction =
+        mUGCEditorTutorial.GetInstruction();
+    ImGui::SetWindowFontScale(1.14f);
+    ImGui::TextWrapped("%s", instruction.c_str());
+    ImGui::SetWindowFontScale(1.0f);
+
+    if (isWelcome) {
+        ImGui::SetCursorPosY(panelSize.y - 66.0f);
+        if (ImGui::Button("練習をはじめる", ImVec2(220.0f, 44.0f))) {
+            mUGCEditorTutorial.AdvanceFromWelcome();
+        }
+    } else if (isComplete) {
+        ImGui::SetCursorPosY(panelSize.y - 66.0f);
+        if (ImGui::Button(
+                "通常のステージ作成へ",
+                ImVec2(240.0f, 44.0f))) {
+            mUGCEditorTutorial.Stop();
+            mContext.game->FinishUGCEditorTutorial(true);
+        }
+    }
+    ImGui::End();
+    ImGui::PopStyleColor(7);
+    ImGui::PopStyleVar(5);
 }
 
-bool DebugUIRenderer::SaveCurrentUGCWork(
-    const std::string& displayName)
+void DebugUIRenderer::StartUGCVerification()
 {
-    // UGC placement writes its grid cells and objects to the working YAML as
-    // soon as they are changed. Do not run the general-purpose editor
-    // transform saver here: it walks all runtime actors (including rebuilt
-    // UGC platform regions) even though none of that work is needed to make
-    // a copy of a UGC project.
-    mUGCWorkSaveError.clear();
-    try {
-        const std::string fileName =
-            MakeSafeUGCFileName(displayName) + ".yaml";
-        YAML::Node stageYaml;
-        if (!StageYamlRepository::LoadCurrentStage(
-                mContext, stageYaml)) {
-            mUGCWorkSaveError = "作業中のステージを読み込めませんでした";
-            return false;
-        }
-        stageYaml["ugcMetadata"]["displayName"] = displayName;
-        if (!stageYaml["ugcMetadata"]["isClearVerified"]) {
-            stageYaml["ugcMetadata"]["isClearVerified"] = false;
-        }
-        if (!StageYamlRepository::SaveCurrentStage(
-                mContext, stageYaml)) {
-            mUGCWorkSaveError = "作業中のステージを書き込めませんでした";
-            return false;
-        }
-        std::error_code fileSystemError;
-        std::filesystem::create_directories(
-            UGCSaveDirectory, fileSystemError);
-        if (fileSystemError) {
-            mUGCWorkSaveError =
-                "保存フォルダを作れませんでした: " +
-                fileSystemError.message();
-            return false;
-        }
-        std::filesystem::copy_file(
-            UGCWorkingStagePath,
-            MakeUGCWorkPath(fileName),
-            std::filesystem::copy_options::overwrite_existing,
-            fileSystemError);
-        if (fileSystemError) {
-            mUGCWorkSaveError =
-                "作品ファイルをコピーできませんでした: " +
-                fileSystemError.message();
-            return false;
-        }
-
-        // Refreshing a vector which is also shown by the open popup in the
-        // same ImGui frame can invalidate its active list state. Refresh it
-        // on the next frame instead.
-        mShouldRefreshUGCWorkList = true;
-        return true;
-    } catch (const std::exception& error) {
-        std::cerr << "Failed to save UGC work: " << error.what() << std::endl;
-        mUGCWorkSaveError = error.what();
-        return false;
-    }
+    mUGCWorkPanel.StartVerification(mUGCStatus);
 }
 
-bool DebugUIRenderer::IsUGCWorkClearVerified(
-    const std::string& workFileName) const
+void DebugUIRenderer::DrawUGCWorkBrowser()
 {
-    try {
-        const YAML::Node stageYaml = YAML::LoadFile(
-            MakeUGCWorkPath(workFileName).string());
-        return stageYaml["ugcMetadata"] &&
-            stageYaml["ugcMetadata"]["isClearVerified"].as<bool>(false);
-    } catch (const YAML::Exception&) {
-        return false;
-    }
+    mUGCWorkPanel.DrawBrowser();
 }
 
 bool DebugUIRenderer::CompleteUGCVerification(
     const std::string& workFileName)
 {
-    YAML::Node stageYaml;
-    if (!StageYamlRepository::LoadCurrentStage(
-            mContext, stageYaml)) {
-        return false;
-    }
-    stageYaml["ugcMetadata"]["isClearVerified"] = true;
-    if (!StageYamlRepository::SaveCurrentStage(
-            mContext, stageYaml)) {
-        return false;
-    }
-
-    std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        UGCSaveDirectory, fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    std::filesystem::copy_file(
-        UGCWorkingStagePath,
-        MakeUGCWorkPath(workFileName),
-        std::filesystem::copy_options::overwrite_existing,
-        fileSystemError);
-    RefreshUGCWorkList();
-    return !fileSystemError;
-}
-
-bool DebugUIRenderer::LoadSelectedUGCWork()
-{
-    if (!CopySelectedUGCWorkToWorkingFile()) {
-        return false;
-    }
-    mSelectionController.Clear();
-    mContext.game->ReloadCurrentStage();
-    return true;
-}
-
-bool DebugUIRenderer::CopySelectedUGCWorkToWorkingFile()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        MakeUGCWorkPath(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]),
-        UGCWorkingStagePath,
-        std::filesystem::copy_options::overwrite_existing,
-        fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    return true;
-}
-
-bool DebugUIRenderer::DuplicateSelectedUGCWork()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    const std::filesystem::path sourceFilePath = MakeUGCWorkPath(
-        mUGCWorkFileNames[mSelectedUGCWorkIndex]);
-    const std::u8string sourceStemUtf8 = sourceFilePath.stem().u8string();
-    const std::string sourceStem(
-        sourceStemUtf8.begin(), sourceStemUtf8.end());
-    std::string destinationFileName = sourceStem + "_コピー.yaml";
-    int suffix = 2;
-    while (std::filesystem::exists(
-        MakeUGCWorkPath(destinationFileName))) {
-        destinationFileName = sourceStem +
-            "_コピー" + std::to_string(suffix++) + ".yaml";
-    }
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        sourceFilePath,
-        MakeUGCWorkPath(destinationFileName),
-        std::filesystem::copy_options::none,
-        fileSystemError);
-    if (fileSystemError) {
-        return false;
-    }
-    RefreshUGCWorkList();
-    return true;
-}
-
-bool DebugUIRenderer::DeleteSelectedUGCWork()
-{
-    if (mSelectedUGCWorkIndex < 0 ||
-        mSelectedUGCWorkIndex >=
-            static_cast<int>(mUGCWorkFileNames.size())) {
-        return false;
-    }
-    std::error_code fileSystemError;
-    const bool removed = std::filesystem::remove(
-        MakeUGCWorkPath(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]),
-        fileSystemError);
-    RefreshUGCWorkList();
-    return removed && !fileSystemError;
-}
-
-void DebugUIRenderer::DrawUGCWorkManagement()
-{
-    if (!ImGui::BeginPopupModal(
-            "作品管理###UGCWorkManagement",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
-        return;
-    }
-    if (!mHasLoadedUGCWorkList || mShouldRefreshUGCWorkList) {
-        RefreshUGCWorkList();
-        mShouldRefreshUGCWorkList = false;
-    }
-
-    ImGui::TextUnformatted("現在のステージを作品として保存");
-    ImGui::SetNextItemWidth(320.0f);
-    ImGui::InputText(
-        "作品名###UGCWorkName",
-        mUGCWorkName.data(),
-        mUGCWorkName.size());
-    if (ImGui::Button("保存", ImVec2(120.0f, 0.0f))) {
-        if (SaveCurrentUGCWork(mUGCWorkName.data())) {
-            mUGCStatus = "作品を保存しました";
-        } else {
-            mUGCStatus = "作品を保存できませんでした: " +
-                mUGCWorkSaveError;
-        }
-    }
-
-    ImGui::TextUnformatted("保存した作品");
-    if (ImGui::BeginListBox(
-            "###UGCWorkList", ImVec2(440.0f, 180.0f))) {
-        for (int index = 0;
-             index < static_cast<int>(mUGCWorkFileNames.size());
-             ++index) {
-            const std::string displayName = ToUtf8FileName(
-                MakeUGCWorkPath(mUGCWorkFileNames[index]).stem());
-            if (ImGui::Selectable(
-                    displayName.c_str(),
-                    mSelectedUGCWorkIndex == index)) {
-                mSelectedUGCWorkIndex = index;
-            }
-        }
-        ImGui::EndListBox();
-    }
-    if (ImGui::Button("開く")) {
-        mUGCStatus = LoadSelectedUGCWork()
-            ? "作品を開きました"
-            : "作品を開けませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("作品を複製")) {
-        mUGCStatus = DuplicateSelectedUGCWork()
-            ? "作品を複製しました"
-            : "作品を複製できませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("作品を削除")) {
-        mUGCStatus = DeleteSelectedUGCWork()
-            ? "作品を削除しました"
-            : "作品を削除できませんでした";
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("閉じる")) {
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-}
-
-void DebugUIRenderer::DrawUGCWorkBrowser()
-{
-    if (!mHasLoadedUGCWorkList) {
-        RefreshUGCWorkList();
-    }
-
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 panelSize(
-        std::min(760.0f, viewport->WorkSize.x - 48.0f),
-        std::min(620.0f, viewport->WorkSize.y - 48.0f));
-    ImGui::SetNextWindowPos(
-        ImVec2(
-            viewport->WorkPos.x +
-                (viewport->WorkSize.x - panelSize.x) * 0.5f,
-            viewport->WorkPos.y +
-                (viewport->WorkSize.y - panelSize.y) * 0.5f),
-        ImGuiCond_Always);
-    ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
-    constexpr ImGuiWindowFlags windowFlags =
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoSavedSettings;
-    ImGui::Begin(
-        "つくったステージ###UGCWorkBrowser",
-        nullptr,
-        windowFlags);
-    ImGui::TextUnformatted("つくったステージ");
-    ImGui::TextDisabled(
-        "作品を選んで、遊ぶか続きを作るか選んでください。");
-    ImGui::Separator();
-
-    const float listHeight = std::max(180.0f, panelSize.y - 190.0f);
-    int verifiedWorkCount = 0;
-    if (ImGui::BeginListBox(
-            "###UGCBrowserWorkList",
-            ImVec2(-1.0f, listHeight))) {
-        for (int index = 0;
-             index < static_cast<int>(mUGCWorkFileNames.size());
-             ++index) {
-            const std::string& fileName = mUGCWorkFileNames[index];
-            if (!IsUGCWorkClearVerified(fileName)) {
-                continue;
-            }
-            ++verifiedWorkCount;
-            const std::string displayName = ToUtf8FileName(
-                MakeUGCWorkPath(fileName).stem());
-            if (ImGui::Selectable(
-                    displayName.c_str(),
-                    mSelectedUGCWorkIndex == index,
-                    0,
-                    ImVec2(0.0f, 40.0f))) {
-                mSelectedUGCWorkIndex = index;
-            }
-        }
-        if (verifiedWorkCount == 0) {
-            ImGui::TextDisabled(
-                "クリア確認済みの作品はまだありません");
-        }
-        ImGui::EndListBox();
-    }
-
-    const bool hasSelectedWork =
-        mSelectedUGCWorkIndex >= 0 &&
-        mSelectedUGCWorkIndex <
-            static_cast<int>(mUGCWorkFileNames.size()) &&
-        IsUGCWorkClearVerified(
-            mUGCWorkFileNames[mSelectedUGCWorkIndex]);
-    ImGui::BeginDisabled(!hasSelectedWork);
-    if (ImGui::Button("あそぶ", ImVec2(150.0f, 44.0f))) {
-        if (CopySelectedUGCWorkToWorkingFile() &&
-            mContext.game->StartUGCMode()) {
-            mContext.game->StartUGCPlaytest();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("つづきから作る", ImVec2(180.0f, 44.0f))) {
-        if (CopySelectedUGCWorkToWorkingFile()) {
-            mContext.game->StartUGCMode();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("複製", ImVec2(100.0f, 44.0f))) {
-        DuplicateSelectedUGCWork();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("削除", ImVec2(100.0f, 44.0f))) {
-        ImGui::OpenPopup("作品を削除しますか###UGCDeleteConfirmation");
-    }
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Button("タイトルへ戻る", ImVec2(150.0f, 44.0f)) ||
-        ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-        mContext.game->CloseUGCWorkBrowser();
-    }
-
-    if (ImGui::BeginPopupModal(
-            "作品を削除しますか###UGCDeleteConfirmation",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextUnformatted(
-            "選んだ作品を削除します。この操作は元に戻せません。");
-        if (ImGui::Button("削除する")) {
-            DeleteSelectedUGCWork();
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("やめる")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-    ImGui::End();
+    return mUGCWorkPanel.CompleteVerification(workFileName);
 }
 
 void DebugUIRenderer::DrawUGCEditor(
@@ -1375,6 +1269,15 @@ void DebugUIRenderer::DrawUGCEditor(
     int gameViewWidth,
     int gameViewHeight)
 {
+    const bool isTutorialStage =
+        mContext.game &&
+        mContext.game->GetIsUGCEditorTutorialActive();
+    if (isTutorialStage && !mUGCEditorTutorial.IsActive()) {
+        mUGCEditorTutorial.Start();
+    } else if (!isTutorialStage && mUGCEditorTutorial.IsActive()) {
+        mUGCEditorTutorial.Stop();
+    }
+
     const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
     constexpr float topBarHeight = 104.0f;
     const ImVec2 gameViewportMin(
@@ -1383,21 +1286,36 @@ void DebugUIRenderer::DrawUGCEditor(
     const ImVec2 gameViewportMax(
         mainViewport->WorkPos.x + mainViewport->WorkSize.x,
         mainViewport->WorkPos.y + mainViewport->WorkSize.y);
-    const auto resolveUGCAnchor = [&](const char* id, const ImVec2& fallback) {
+    struct UGCControlLayout {
+        ImVec2 position;
+        ImVec2 size;
+    };
+    const auto resolveUGCControlLayout =
+        [&](const char* id,
+            const ImVec2& fallbackPosition,
+            const ImVec2& fallbackSize = ImVec2(64.0f, 64.0f)) {
         if (!mContext.uiRenderer || !mContext.uiRenderer->GetUILoadSystem()) {
-            return fallback;
+            return UGCControlLayout{fallbackPosition, fallbackSize};
         }
         for (const UILoadSystem::CustomElement& element :
              mContext.uiRenderer->GetUILoadSystem()->GetCustomElements()) {
             if (element.screen == "ugc" && element.id == id) {
-                return ImVec2(
-                    mainViewport->WorkPos.x +
-                        mainViewport->WorkSize.x * element.xRatio,
-                    mainViewport->WorkPos.y +
-                        mainViewport->WorkSize.x * element.yRatio);
+                return UGCControlLayout{
+                    ImVec2(
+                        mainViewport->WorkPos.x +
+                            mainViewport->WorkSize.x * element.xRatio,
+                        mainViewport->WorkPos.y +
+                            mainViewport->WorkSize.x * element.yRatio),
+                    ImVec2(
+                        std::max(
+                            1.0f,
+                            mainViewport->WorkSize.x * element.widthRatio),
+                        std::max(
+                            1.0f,
+                            mainViewport->WorkSize.x * element.heightRatio))};
             }
         }
-        return fallback;
+        return UGCControlLayout{fallbackPosition, fallbackSize};
     };
     if (mUGCModelThumbnailRenderer) {
         mUGCModelThumbnailRenderer->BeginFrame();
@@ -1410,41 +1328,121 @@ void DebugUIRenderer::DrawUGCEditor(
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoCollapse |
         ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoScrollbar;
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse;
 
-    ImGui::SetNextWindowPos(
-        resolveUGCAnchor("presetTools", mainViewport->WorkPos),
-        ImGuiCond_Always);
-    constexpr float presetToolbarWidth = 720.0f;
-    ImGui::SetNextWindowSize(
-        ImVec2(presetToolbarWidth, topBarHeight),
-        ImGuiCond_Always);
-    ImGui::Begin("###UGCTopBar", nullptr, fixedWindowFlags);
     struct PresetButton {
+        const char* id;
         const char* label;
-        const char* modelPath;
         UGCPresetKind kind;
     };
     constexpr std::array<PresetButton, 9> presetButtons = {{
-        {"足場", "platform.obj", UGCPresetKind::NormalPlatform},
-        {"敵", "enemy.obj", UGCPresetKind::NormalEnemy},
-        {"惑星", "planet.obj", UGCPresetKind::EllipsePlanet},
-        {"スイッチ", "platform.obj", UGCPresetKind::PressureSwitch},
-        {"ゴール", "star.obj", UGCPresetKind::GoalStar},
-        {"移動足場", "platform.obj", UGCPresetKind::MovingPlatform},
-        {"消える足場", "platform.obj", UGCPresetKind::FadingPlatform},
-        {"くっつき足場", "platform.obj", UGCPresetKind::AdhesivePlatform},
-        {"2人用スイッチ", "platform.obj", UGCPresetKind::TwoPlayerSwitch},
+        {"presetPlanet", "惑星", UGCPresetKind::EllipsePlanet},
+        {"presetPlatform", "足場", UGCPresetKind::NormalPlatform},
+        {"presetMoving", "移動足場", UGCPresetKind::MovingPlatform},
+        {"presetFading", "消える足場", UGCPresetKind::FadingPlatform},
+        {"presetAdhesive", "くっつき足場", UGCPresetKind::AdhesivePlatform},
+        {"presetSwitch", "スイッチ", UGCPresetKind::PressureSwitch},
+        {"presetTwoPlayer", "2人用スイッチ", UGCPresetKind::TwoPlayerSwitch},
+        {"presetEnemy", "敵", UGCPresetKind::NormalEnemy},
+        {"presetGoal", "ゴール", UGCPresetKind::GoalStar},
     }};
-    constexpr float itemButtonWidth = 80.0f;
-    ImGui::SetCursorPosX(std::max(
-        0.0f,
-        (presetToolbarWidth -
-         itemButtonWidth * presetButtons.size()) * 0.5f));
-    for (const PresetButton& preset : presetButtons) {
+
+    const bool usesUGCPlatformFootprint =
+        mActiveUGCPresetKind == UGCPresetKind::NormalPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::MovingPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::FadingPlatform ||
+        mActiveUGCPresetKind == UGCPresetKind::AdhesivePlatform;
+    const UGCControlLayout presetToolbarAnchor = resolveUGCControlLayout(
+        "presetTools",
+        mainViewport->WorkPos,
+        ImVec2(720.0f, topBarHeight));
+    if (usesUGCPlatformFootprint) {
+        constexpr float presetToolbarWidthPixels = 720.0f;
+        constexpr float presetOptionsWidthPixels = 260.0f;
+        constexpr float presetOptionsHeightPixels = 40.0f;
+        constexpr float presetOptionsTopOffsetPixels = 72.0f;
+        const float presetOptionsLeftOffsetPixels =
+            (presetToolbarWidthPixels - presetOptionsWidthPixels) * 0.5f;
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                presetToolbarAnchor.position.x +
+                    presetOptionsLeftOffsetPixels,
+                presetToolbarAnchor.position.y +
+                    presetOptionsTopOffsetPixels),
+            ImGuiCond_Always);
+        ImGui::SetNextWindowSize(
+            ImVec2(
+                presetOptionsWidthPixels,
+                presetOptionsHeightPixels),
+            ImGuiCond_Always);
+        ImGui::Begin(
+            "###UGCPlatformFootprintOptions",
+            nullptr,
+            fixedWindowFlags);
+        ImGui::TextUnformatted("大きさ");
+        ImGui::SameLine();
+        constexpr std::array<int, 3> footprintSideLengths = {1, 2, 3};
+        constexpr std::array<const char*, 3> footprintLabels = {
+            "1マス",
+            "4マス",
+            "9マス",
+        };
+        for (std::size_t index = 0;
+             index < footprintSideLengths.size();
+             ++index) {
+            const bool isSelected =
+                mUGCPlatformFootprintSideLength ==
+                footprintSideLengths[index];
+            if (ImGui::Selectable(
+                    footprintLabels[index],
+                    isSelected,
+                    0,
+                    ImVec2(52.0f, 0.0f))) {
+                mUGCPlatformFootprintSideLength =
+                    footprintSideLengths[index];
+                mStageAddActorPanel.SetUGCPlatformFootprintSideLength(
+                    footprintSideLengths[index]);
+            }
+            DrawUGCTutorialHighlightForLastItem(
+                mUGCEditorTutorial.ShouldHighlightFootprintOptions() &&
+                footprintSideLengths[index] > 1);
+            ImGui::SameLine();
+        }
+        ImGui::End();
+    }
+    for (std::size_t presetIndex = 0;
+         presetIndex < presetButtons.size();
+         ++presetIndex) {
+        const PresetButton& preset = presetButtons[presetIndex];
+        const UGCControlLayout layout = resolveUGCControlLayout(
+            preset.id,
+            ImVec2(
+                mainViewport->WorkPos.x +
+                    mainViewport->WorkSize.x *
+                        (0.40625f + 0.031f * static_cast<float>(presetIndex)),
+                mainViewport->WorkPos.y),
+            ImVec2(60.0f, 60.0f));
+        const std::string windowId =
+            std::string("###UGCPreset_") + preset.id;
+        const ImVec2 framePadding = ImGui::GetStyle().FramePadding;
+        const ImVec2 presetWindowSize(
+            layout.size.x + framePadding.x * 2.0f,
+            layout.size.y + framePadding.y * 2.0f);
+        ImGui::SetNextWindowPos(layout.position, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(presetWindowSize, ImGuiCond_Always);
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_WindowPadding,
+            ImVec2(0.0f, 0.0f));
+        ImGui::Begin(windowId.c_str(), nullptr, fixedWindowFlags);
         ImGui::PushID(preset.label);
+        const UGCPresetVisual& presetVisual =
+            GetUGCPresetVisual(preset.kind);
         const GLuint thumbnail = mUGCModelThumbnailRenderer
-            ? mUGCModelThumbnailRenderer->ResolveThumbnail(preset.modelPath)
+            ? mUGCModelThumbnailRenderer->ResolveThumbnail(
+                  presetVisual.modelPath,
+                  presetVisual.thumbnailScale,
+                  presetVisual.initialTextureOverridePath)
             : 0;
         const bool isActivePreset = mActiveUGCPresetKind == preset.kind;
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
@@ -1459,10 +1457,13 @@ void DebugUIRenderer::DrawUGCEditor(
             ? ImGui::ImageButton(
                   "##presetIcon",
                   static_cast<ImTextureID>(thumbnail),
-                  ImVec2(60.0f, 60.0f),
+                  layout.size,
                   ImVec2(0.0f, 1.0f),
                   ImVec2(1.0f, 0.0f))
-            : ImGui::Button(preset.label, ImVec2(60.0f, 60.0f));
+            : ImGui::Button(preset.label, layout.size);
+        DrawUGCTutorialHighlightForLastItem(
+            mUGCEditorTutorial.IsActive() &&
+            mUGCEditorTutorial.ShouldHighlightPreset(preset.kind));
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
         if (ImGui::IsItemHovered()) {
@@ -1476,43 +1477,29 @@ void DebugUIRenderer::DrawUGCEditor(
                                      : std::string(preset.label) + "を選べませんでした";
         }
         ImGui::PopID();
-        ImGui::SameLine();
+        ImGui::End();
+        ImGui::PopStyleVar();
     }
-    ImGui::NewLine();
-    const bool usesUGCPlatformFootprint =
-        mActiveUGCPresetKind == UGCPresetKind::NormalPlatform ||
-        mActiveUGCPresetKind == UGCPresetKind::MovingPlatform ||
-        mActiveUGCPresetKind == UGCPresetKind::FadingPlatform ||
-        mActiveUGCPresetKind == UGCPresetKind::AdhesivePlatform;
-    if (usesUGCPlatformFootprint) {
-        ImGui::SetCursorPosX((presetToolbarWidth - 220.0f) * 0.5f);
-        ImGui::TextUnformatted("大きさ"); ImGui::SameLine();
-        const int sizes[] = {1, 2, 3}; const char* labels[] = {"1マス", "4マス", "9マス"};
-        for (int index = 0; index < 3; ++index) {
-            if (ImGui::Selectable(labels[index], mUGCPlatformFootprintSideLength == sizes[index], 0, ImVec2(52.0f, 0.0f))) {
-                mUGCPlatformFootprintSideLength = sizes[index];
-                mStageAddActorPanel.SetUGCPlatformFootprintSideLength(sizes[index]);
-            }
-            ImGui::SameLine();
-        }
-    }
-    DrawUGCWorkManagement();
-    ImGui::End();
 
     constexpr ImGuiWindowFlags floatingButtonFlags =
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground |
         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_AlwaysAutoResize;
-    const auto drawActionIcon = [&](const char* id, const char* texturePath, const char* tooltip) {
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse;
+    const auto drawActionIcon = [&](const char* id,
+                                    const char* texturePath,
+                                    const char* tooltip,
+                                    const ImVec2& size = ImVec2(64.0f, 64.0f),
+                                    bool isSelected = false) {
         ImGui::PushID(id);
         const bool hasTexture = mContext.uiRenderer &&
             mContext.uiRenderer->RegisterCustomUITexture(texturePath);
         const GLuint texture = hasTexture
             ? mContext.uiRenderer->GetCustomUITextureHandle(texturePath)
             : 0;
-        // The icon artwork already contains its blue button.  Keep Dear ImGui's
-        // own frame fully transparent so it does not add a second blue backing.
+
+
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -1522,129 +1509,378 @@ void DebugUIRenderer::DrawUGCEditor(
             ? ImGui::ImageButton(
                   "##actionIcon",
                   static_cast<ImTextureID>(texture),
-                  ImVec2(64.0f, 64.0f),
+                  size,
                   ImVec2(0.0f, 1.0f),
                   ImVec2(1.0f, 0.0f))
-            : ImGui::Button(tooltip, ImVec2(64.0f, 64.0f));
+            : ImGui::Button(tooltip, size);
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
+        DrawUGCSelectionActiveIndicator(isSelected);
         DrawUGCEraserActiveIndicator(
             std::strcmp(id, "eraser") == 0 && mIsUGCEraserMode);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tooltip);
         ImGui::PopID();
         return clicked;
     };
-    ImGui::SetNextWindowPos(
-        resolveUGCAnchor("quickTools", ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f)),
-        ImGuiCond_Always);
-    ImGui::Begin("###UGCQuickTools", nullptr, floatingButtonFlags);
-    if (drawActionIcon("eraser", "textures/ugc_ui/editor_action_eraser.png", mIsUGCEraserMode ? "消しゴム：ON" : "消しゴム")) {
+
+    const UGCControlLayout presetReferenceLayout = resolveUGCControlLayout(
+        "presetPlanet",
+        ImVec2(
+            mainViewport->WorkPos.x + mainViewport->WorkSize.x * 0.40625f,
+            mainViewport->WorkPos.y),
+        ImVec2(60.0f, 60.0f));
+    const UGCControlLayout selectionPositionLayout = resolveUGCControlLayout(
+        "selection",
+        ImVec2(
+            mainViewport->WorkPos.x + mainViewport->WorkSize.x * 0.375f,
+            mainViewport->WorkPos.y),
+        presetReferenceLayout.size);
+    const UGCControlLayout selectionLayout{
+        selectionPositionLayout.position,
+        presetReferenceLayout.size};
+    const bool isSelectionMode =
+        !mIsUGCEraserMode && !mStageAddActorPanel.IsPlacementActive();
+    const ImVec2 selectionWindowSize(
+        selectionLayout.size.x + ImGui::GetStyle().FramePadding.x * 2.0f,
+        selectionLayout.size.y + ImGui::GetStyle().FramePadding.y * 2.0f);
+    ImGui::SetNextWindowPos(selectionLayout.position, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(selectionWindowSize, ImGuiCond_Always);
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_WindowPadding,
+        ImVec2(0.0f, 0.0f));
+    ImGui::Begin("###UGCSelection", nullptr, fixedWindowFlags);
+    if (drawActionIcon(
+            "selection",
+            "textures/ugc_ui/editor_action_select.png",
+            "選択モード",
+            selectionLayout.size,
+            isSelectionMode)) {
+        HandleUGCSelectionMode();
+    }
+    DrawUGCTutorialHighlightForLastItem(
+        mUGCEditorTutorial.ShouldHighlightSelection());
+    ImGui::End();
+    ImGui::PopStyleVar();
+
+    const auto drawUGCActionControl =
+        [&](const char* id,
+            const char* texturePath,
+            const char* tooltip,
+            const ImVec2& fallbackPosition,
+            bool shouldHighlight = false) {
+            const UGCControlLayout layout = resolveUGCControlLayout(
+                id,
+                fallbackPosition);
+            const std::string windowId =
+                std::string("###UGCAction_") + id;
+            ImGui::SetNextWindowPos(layout.position, ImGuiCond_Always);
+            ImGui::SetNextWindowSize(layout.size, ImGuiCond_Always);
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_WindowPadding,
+                ImVec2(0.0f, 0.0f));
+            ImGui::Begin(windowId.c_str(), nullptr, floatingButtonFlags);
+            const bool clicked = drawActionIcon(id, texturePath, tooltip, layout.size);
+            DrawUGCTutorialHighlightForLastItem(shouldHighlight);
+            ImGui::End();
+            ImGui::PopStyleVar();
+            return clicked;
+        };
+
+    if (drawUGCActionControl(
+            "eraser",
+            "textures/ugc_ui/editor_action_eraser.png",
+            mIsUGCEraserMode ? "消しゴム：ON" : "消しゴム",
+            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 108.0f),
+            mUGCEditorTutorial.ShouldHighlightEraser())) {
         HandleUGCEraserToggle();
     }
-    if (drawActionIcon("undo", "textures/ugc_ui/editor_action_undo.png", "1つ戻す")) HandleUGCUndo();
-    if (drawActionIcon("redo", "textures/ugc_ui/editor_action_redo.png", "やり直す")) HandleUGCRedo();
-    ImGui::End();
-
-    // Controller users have button shortcuts; keyboard and mouse users need
-    // the equivalent editor actions on screen as well.
-    ImGui::SetNextWindowPos(
-        resolveUGCAnchor("keyboardTools", ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f)),
-        ImGuiCond_Always);
-    ImGui::Begin("###UGCKeyboardTools", nullptr, floatingButtonFlags);
-    if (drawActionIcon("layerUp", "textures/ugc_ui/editor_action_layer_up.png", "上のだん")) {
+    if (drawUGCActionControl(
+            "undo",
+            "textures/ugc_ui/editor_action_undo.png",
+            "1つ戻す",
+            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 172.0f),
+            mUGCEditorTutorial.ShouldHighlightUndo())) {
+        HandleUGCUndo();
+    }
+    if (drawUGCActionControl(
+            "redo",
+            "textures/ugc_ui/editor_action_redo.png",
+            "やり直す",
+            ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 236.0f))) {
+        HandleUGCRedo();
+    }
+    if (drawUGCActionControl(
+            "layerUp",
+            "textures/ugc_ui/editor_action_layer_up.png",
+            "上のだん",
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 16.0f),
+            mUGCEditorTutorial.ShouldHighlightLayerUp())) {
         HandleUGCLayerChange(1);
     }
-    if (drawActionIcon("layerDown", "textures/ugc_ui/editor_action_layer_down.png", "下のだん")) {
+    if (drawUGCActionControl(
+            "layerDown",
+            "textures/ugc_ui/editor_action_layer_down.png",
+            "下のだん",
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 80.0f),
+            mUGCEditorTutorial.ShouldHighlightLayerDown())) {
         HandleUGCLayerChange(-1);
     }
-    ImGui::Dummy(ImVec2(0.0f, 8.0f));
-    if (drawActionIcon("zoomIn", "textures/ugc_ui/editor_action_zoom_in.png", "近づく")) {
+    if (drawUGCActionControl(
+            "zoomIn",
+            "textures/ugc_ui/editor_action_zoom_in.png",
+            "近づく",
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 152.0f),
+            mUGCEditorTutorial.ShouldHighlightZoom())) {
         HandleUGCZoom(0.85f);
     }
-    if (drawActionIcon("zoomOut", "textures/ugc_ui/editor_action_zoom_out.png", "遠ざかる")) {
+    if (drawUGCActionControl(
+            "zoomOut",
+            "textures/ugc_ui/editor_action_zoom_out_control.png",
+            "遠ざかる",
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 216.0f),
+            mUGCEditorTutorial.ShouldHighlightZoom())) {
         HandleUGCZoom(1.18f);
     }
-    if (drawActionIcon(
+    if (drawUGCActionControl(
             "previewView",
-            "textures/ugc_ui/editor_action_zoom_out.png",
+            "textures/ugc_ui/editor_action_preview_view_control.png",
             mContext.game->GetIsUGCPreviewViewedFromBelow()
                 ? "上から見る"
-                : "下から見る")) {
-        mContext.game->ToggleUGCPreviewVerticalView();
+                : "下から見る",
+            ImVec2(gameViewportMin.x + 16.0f, gameViewportMin.y + topBarHeight + 280.0f))) {
+        ToggleUGCVerticalView();
     }
-    ImGui::End();
 
-    ImGui::SetNextWindowPos(
-        resolveUGCAnchor("play", ImVec2(gameViewportMin.x + 16.0f, gameViewportMax.y - 74.0f)),
-        ImGuiCond_Always);
+    const UGCControlLayout playLayout = resolveUGCControlLayout(
+        "play",
+        ImVec2(gameViewportMin.x + 16.0f, gameViewportMax.y - 74.0f));
+    ImGui::SetNextWindowPos(playLayout.position, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(playLayout.size, ImGuiCond_Always);
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_WindowPadding,
+        ImVec2(0.0f, 0.0f));
     ImGui::Begin("###UGCPlay", nullptr, floatingButtonFlags);
-    if (drawActionIcon("play", "textures/ugc_ui/editor_action_play.png", "遊ぶ")) {
+    if (drawActionIcon(
+            "play",
+            "textures/ugc_ui/editor_action_play.png",
+            "遊ぶ",
+            playLayout.size)) {
+        mUGCEditorTutorial.RecordPlaytestStarted();
         mContext.game->StartUGCPlaytest();
         ImGui::End();
+        ImGui::PopStyleVar();
         return;
     }
+    DrawUGCTutorialHighlightForLastItem(
+        mUGCEditorTutorial.ShouldHighlightPlaytest());
     ImGui::End();
+    ImGui::PopStyleVar();
 
-    ImGui::SetNextWindowPos(
-        // Keep the menu with the edit actions: it is the first button above
-        // eraser, undo and redo instead of floating beside the 3D preview.
-        resolveUGCAnchor("menu", ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 32.0f)),
-        ImGuiCond_Always);
+    const UGCControlLayout menuLayout = resolveUGCControlLayout(
+        "menu",
+        ImVec2(gameViewportMax.x - 92.0f, gameViewportMin.y + 32.0f));
+    ImGui::SetNextWindowPos(menuLayout.position, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(menuLayout.size, ImGuiCond_Always);
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_WindowPadding,
+        ImVec2(0.0f, 0.0f));
     ImGui::Begin("###UGCMenu", nullptr, floatingButtonFlags);
-    if (drawActionIcon("menu", "textures/ugc_ui/editor_action_menu.png", "メニュー")) {
+    const bool wasMenuButtonPressed = drawActionIcon(
+        "menu",
+        "textures/ugc_ui/editor_action_menu.png",
+        "メニュー",
+        menuLayout.size);
+    const bool shouldToggleMenu =
+        mShouldOpenUGCEditorMenu || wasMenuButtonPressed;
+    mShouldOpenUGCEditorMenu = false;
+    const bool wasMenuOpen = ImGui::IsPopupOpen(
+        "メニュー###UGCProductMenu");
+    if (shouldToggleMenu && !wasMenuOpen) {
         ImGui::OpenPopup("メニュー###UGCProductMenu");
     }
-    if (ImGui::BeginPopup("メニュー###UGCProductMenu")) {
-        if (ImGui::MenuItem("保存・開く")) {
-            ImGui::OpenPopup("作品管理###UGCWorkManagement");
+
+    constexpr float menuPanelWidth = 284.0f;
+    constexpr float menuPanelHeight = 252.0f;
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            std::max(
+                gameViewportMin.x + 16.0f,
+                menuLayout.position.x - menuPanelWidth - 10.0f),
+            menuLayout.position.y),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(menuPanelWidth, menuPanelHeight),
+        ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(18.0f, 18.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 10.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_PopupBg,
+        ImVec4(0.025f, 0.055f, 0.10f, 0.98f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Border,
+        ImVec4(0.25f, 0.66f, 1.0f, 0.90f));
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+    constexpr ImGuiWindowFlags productMenuFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoSavedSettings;
+    if (ImGui::BeginPopup(
+            "メニュー###UGCProductMenu",
+            productMenuFlags)) {
+        if (shouldToggleMenu && wasMenuOpen) {
+            ImGui::CloseCurrentPopup();
         }
-        if (ImGui::MenuItem("完成チェック")) {
-            YAML::Node stageYaml;
-            const bool loaded = StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
-            const YAML::Node stars = loaded ? stageYaml["star"] : YAML::Node();
-            if (!stars || !stars.IsSequence() || stars.size() == 0) {
-                mUGCStatus = "完成チェックにはゴールを置いてください";
-            } else if (!SaveCurrentUGCWork(mUGCWorkName.data())) {
-                mUGCStatus = "下書きを保存できませんでした: " + mUGCWorkSaveError;
+
+        ImGui::SetWindowFontScale(1.15f);
+        ImGui::TextUnformatted("メニュー");
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::Separator();
+        constexpr float menuButtonWidth = 248.0f;
+        constexpr float menuButtonHeight = 46.0f;
+        if (mUGCEditorTutorial.IsActive()) {
+            ImGui::BeginDisabled();
+        }
+        ImGui::SetItemDefaultFocus();
+        if (ImGui::Button(
+                "保存・開く",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
+            mShouldOpenUGCWorkManagement = true;
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::Button(
+                "完成チェック",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
+            StartUGCVerification();
+            ImGui::CloseCurrentPopup();
+        }
+        if (mUGCEditorTutorial.IsActive()) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::Spacing();
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.22f, 0.25f, 0.32f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.34f, 0.39f, 0.48f, 1.0f));
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.17f, 0.20f, 0.27f, 1.0f));
+        if (ImGui::Button(
+                "タイトルへ戻る",
+                ImVec2(menuButtonWidth, menuButtonHeight))) {
+            if (mUGCWorkPanel.HasUnsavedChanges()) {
+                ImGui::OpenPopup(
+                    "保存せずタイトルへ戻りますか###UGCExitConfirmation");
             } else {
-                mContext.game->StartUGCClearVerification(
-                    MakeSafeUGCFileName(mUGCWorkName.data()) + ".yaml");
+                mContext.game->ExitUGCMode();
             }
         }
-        if (ImGui::MenuItem("タイトルへ戻る")) {
-            mContext.game->ExitUGCMode();
+        ImGui::PopStyleColor(3);
+
+        if (ImGui::BeginPopupModal(
+                "保存せずタイトルへ戻りますか###UGCExitConfirmation",
+                nullptr,
+                ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings)) {
+            ImGui::TextUnformatted(
+                "保存していない変更があります。タイトルへ戻りますか？");
+            ImGui::TextDisabled("保存していない変更は失われます。");
+            ImGui::Spacing();
+            if (ImGui::Button(
+                    "保存せず戻る",
+                    ImVec2(150.0f, 42.0f))) {
+                mContext.game->ExitUGCMode();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("やめる", ImVec2(120.0f, 42.0f)) ||
+                ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
-        if (!mSelectionController.GetSelectedKeys().empty()) {
-            ImGui::Separator();
-            DrawUGCTransformControls();
+
+        const bool shouldCloseMenu =
+            ImGui::IsKeyPressed(ImGuiKey_Escape) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight);
+        if (shouldCloseMenu &&
+            !ImGui::IsPopupOpen(
+                "保存せずタイトルへ戻りますか###UGCExitConfirmation")) {
+            ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar(5);
     ImGui::End();
+    ImGui::PopStyleVar();
     DrawUGCViewport(
         gameViewTexture,
         gameViewWidth,
         gameViewHeight,
         gameViewportMin,
         gameViewportMax);
-    DrawUGCGridOverlay();
-    DrawUGCStackBadges();
-    DrawUGCPlacementPreview();
-    DrawUGCPreviewOverlay();
+    const bool isWorkManagementOpen = IsUGCWorkManagementOpen();
+    if (!isWorkManagementOpen) {
+        DrawUGCGridOverlay();
+        DrawUGCStackBadges();
+        DrawUGCPlacementPreview();
+        DrawUGCPreviewOverlay();
+    }
 
     if (mStageAddActorPanel.IsPlacementActive()) {
         mStageAddActorPanel.UpdatePlacement();
     } else {
+        const bool isChoosingSwitchTarget =
+            mUGCConnectionSwitchRef.has_value();
+        const bool allowsSelectionInteraction =
+            !mIsUGCEraserMode && !isChoosingSwitchTarget;
+        mSelectionController.SetBoxSelectionEnabled(
+            allowsSelectionInteraction);
         mSelectionController.Update();
         if (!mIsUGCEraserMode &&
-            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            !isChoosingSwitchTarget &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+            !ImGui::GetIO().KeyShift) {
             SyncUGCEditLayerToPickedActor();
         }
-        if (!mIsUGCEraserMode) {
+        if (allowsSelectionInteraction &&
+            !mSelectionController.IsBoxSelectionGestureActive()) {
             UpdateUGCSelectionDrag();
         }
-        if (mIsUGCEraserMode &&
+        if (mIsUGCEraserMode && !isChoosingSwitchTarget &&
             ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            const auto tryDeletePickedPlanetOnly = [&]() {
+                if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    return false;
+                }
+
+                Actor* pickedActor = mSelectionController.GetPickedActor();
+                const std::optional<StageActorRef>& pickedRef =
+                    mSelectionController.GetPickedActorRef();
+                if (!pickedActor || !pickedRef ||
+                    dynamic_cast<Planet*>(pickedActor) == nullptr ||
+                    pickedRef->type != StageActorType::Planet) {
+                    return false;
+                }
+
+                return mEditCommandController.DeletePlanetOnly(
+                    pickedRef->yamlIndex);
+            };
             const auto tryDeletePickedActorOnCurrentLayer = [&]() {
                 if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
                     !mContext.game) {
@@ -1659,9 +1895,9 @@ void DebugUIRenderer::DrawUGCEditor(
                     return false;
                 }
 
-                // Generated UGC platforms are erased cell-by-cell below.
-                // All other placed actors (enemy, star, switches, etc.) take
-                // priority when they belong to the currently edited layer.
+
+
+
                 Platform* pickedPlatform = dynamic_cast<Platform*>(pickedActor);
                 if (pickedPlatform && pickedPlatform->GetIsUGCGenerated()) {
                     return false;
@@ -1695,70 +1931,294 @@ void DebugUIRenderer::DrawUGCEditor(
                     StageActorQuery::MakeKey(*pickedRef)});
             };
 
-            if (tryDeletePickedActorOnCurrentLayer()) {
+            if (tryDeletePickedPlanetOnly()) {
+                mUGCStatus = "惑星だけを消しました";
+                mUGCEditorTutorial.RecordErase(true);
+            } else if (tryDeletePickedActorOnCurrentLayer()) {
                 mUGCStatus = "今のだんのものを消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (mStageAddActorPanel.TryEraseUGCPlatformCell()) {
                 mUGCStatus = "足場を1マス消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (tryDeletePickedActorAsHighestFallback()) {
                 mUGCStatus = "いちばん上のものを消しました";
+                mUGCEditorTutorial.RecordErase(true);
             } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
                        !mSelectionController.GetSelectedKeys().empty()) {
                 const std::optional<StageActorRef>& selectedRef =
                     mSelectionController.GetPickedActorRef();
-                if (selectedRef &&
-                    selectedRef->type == StageActorType::Planet) {
-                    mPendingUGCPlanetDeleteIndex = selectedRef->yamlIndex;
-                    ImGui::OpenPopup(
-                        "惑星を消しますか###UGCPlanetDeleteConfirmation");
-                } else {
+                if (!selectedRef ||
+                    selectedRef->type != StageActorType::Planet) {
                     const std::unordered_set<std::string> selectedKeys =
                         mSelectionController.GetSelectedKeys();
                     if (mEditCommandController.DeleteSelectedKeys(selectedKeys)) {
                         mUGCStatus = "選んだものを消しました";
+                        mUGCEditorTutorial.RecordErase(true);
                     }
                 }
             }
         }
     }
-    DrawUGCPlanetDeleteConfirmation();
     mSelectionController.ApplyEditorSelectionFlags();
-    if (mContext.uiRenderer) {
+    if (!isWorkManagementOpen) {
+        mSelectionController.DrawBoxSelectionRect();
+        DrawUGCSwitchConnectionLines();
+        DrawUGCUnconnectedSwitchWarnings();
+        DrawUGCTransformControls();
+    }
+    DrawUGCEditorTutorial();
+    if (!isWorkManagementOpen && mContext.uiRenderer) {
         mContext.uiRenderer->DrawUGCForegroundCustomUI(
             gameViewportMin,
             ImVec2(
                 gameViewportMax.x - gameViewportMin.x,
                 gameViewportMax.y - gameViewportMin.y));
     }
+    DrawUGCWorkManagement();
 }
 
-void DebugUIRenderer::DrawUGCPlanetDeleteConfirmation()
+void DebugUIRenderer::DrawUGCSwitchConnectionLines()
 {
-    if (!ImGui::BeginPopupModal(
-            "惑星を消しますか###UGCPlanetDeleteConfirmation",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
+    Platform* selectedPlatform = dynamic_cast<Platform*>(
+        mSelectionController.GetSingleSelectedActor());
+    if (!selectedPlatform || !mContext.game ||
+        !mContext.game->GetCurrentStage()) {
         return;
     }
 
-    ImGui::TextWrapped(
-        "この惑星と、惑星の上に置いたものをぜんぶ消します。");
-    ImGui::TextUnformatted("本当に消しますか？");
-    if (ImGui::Button("消す", ImVec2(120.0f, 40.0f))) {
-        const bool deleted = mPendingUGCPlanetDeleteIndex &&
-            mEditCommandController.DeletePlanet(
-                *mPendingUGCPlanetDeleteIndex);
-        mUGCStatus = deleted
-            ? "惑星を消しました"
-            : "最後の惑星は消せません";
-        mPendingUGCPlanetDeleteIndex.reset();
-        ImGui::CloseCurrentPopup();
+    const std::string& selectedPlatformId =
+        selectedPlatform->GetPlatformId();
+    const std::optional<StageActorRef>& selectedRef =
+        mSelectionController.GetPickedActorRef();
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    const auto drawConnection =
+        [this, drawList](Platform* switchPlatform, Platform* targetPlatform) {
+            if (!switchPlatform || !targetPlatform) {
+                return;
+            }
+
+            ImVec2 switchScreenPosition;
+            ImVec2 targetScreenPosition;
+            if (!mSelectionController.TryWorldToScreenPoint(
+                    switchPlatform->GetPos(), switchScreenPosition) ||
+                !mSelectionController.TryWorldToScreenPoint(
+                    targetPlatform->GetPos(), targetScreenPosition)) {
+                return;
+            }
+
+            drawList->AddLine(
+                switchScreenPosition,
+                targetScreenPosition,
+                IM_COL32(5, 15, 24, 220),
+                6.0f);
+            drawList->AddLine(
+                switchScreenPosition,
+                targetScreenPosition,
+                IM_COL32(70, 225, 255, 245),
+                3.0f);
+            drawList->AddCircleFilled(
+                switchScreenPosition,
+                6.0f,
+                IM_COL32(70, 225, 255, 255));
+            drawList->AddCircleFilled(
+                targetScreenPosition,
+                6.0f,
+                IM_COL32(255, 225, 90, 255));
+        };
+
+    const auto findPlatformById =
+        [this](const std::string& platformId, int preferredYamlIndex) {
+        if (platformId.empty()) {
+            return static_cast<Platform*>(nullptr);
+        }
+        Platform* matchingPlatform = nullptr;
+        for (Planet* planet :
+             mContext.game->GetCurrentStage()->GetPlanets()) {
+            if (!planet) {
+                continue;
+            }
+            for (Platform* platform : planet->GetPlatforms()) {
+                if (platform && platform->GetPlatformId() == platformId) {
+                    if (platform->GetStageYamlIndex() ==
+                        preferredYamlIndex) {
+                        return platform;
+                    }
+                    if (!matchingPlatform) {
+                        matchingPlatform = platform;
+                    }
+                }
+            }
+        }
+        return matchingPlatform;
+    };
+
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* switchPlatform : planet->GetPlatforms()) {
+            PlatformPressureSwitchComponent* pressureSwitch =
+                switchPlatform
+                    ? switchPlatform->GetPressureSwitchComponent()
+                    : nullptr;
+            if (!pressureSwitch) {
+                continue;
+            }
+
+            for (const std::string& targetPlatformId :
+                 pressureSwitch->GetTargetPlatformIds()) {
+                const bool isSelectedSwitch =
+                    switchPlatform == selectedPlatform;
+                const bool isSelectedTarget =
+                    !selectedPlatformId.empty() &&
+                    targetPlatformId == selectedPlatformId;
+                if (!isSelectedSwitch && !isSelectedTarget) {
+                    continue;
+                }
+                drawConnection(
+                    switchPlatform,
+                    findPlatformById(targetPlatformId, -1));
+            }
+        }
     }
-    ImGui::SameLine();
-    if (ImGui::Button("やめる", ImVec2(120.0f, 40.0f))) {
-        mPendingUGCPlanetDeleteIndex.reset();
-        ImGui::CloseCurrentPopup();
+
+    if (!selectedRef) {
+        return;
     }
-    ImGui::EndPopup();
+
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* switchPlatform : planet->GetPlatforms()) {
+            PlatformLatchedGroupSwitchComponent* groupSwitch =
+                switchPlatform
+                    ? switchPlatform->GetLatchedGroupSwitchComponent()
+                    : nullptr;
+            if (!groupSwitch || groupSwitch->GetGroupId().empty()) {
+                continue;
+            }
+
+            std::vector<PlatformRevealTarget> groupTargets;
+            for (Planet* groupPlanet :
+                 mContext.game->GetCurrentStage()->GetPlanets()) {
+                if (!groupPlanet) {
+                    continue;
+                }
+                for (Platform* groupMember : groupPlanet->GetPlatforms()) {
+                    PlatformLatchedGroupSwitchComponent* memberComponent =
+                        groupMember
+                            ? groupMember->GetLatchedGroupSwitchComponent()
+                            : nullptr;
+                    if (!memberComponent ||
+                        memberComponent->GetGroupId() !=
+                            groupSwitch->GetGroupId()) {
+                        continue;
+                    }
+                    groupTargets.insert(
+                        groupTargets.end(),
+                        memberComponent->GetRevealTargets().begin(),
+                        memberComponent->GetRevealTargets().end());
+                }
+            }
+
+            PlatformLatchedGroupSwitchComponent* selectedGroupSwitch =
+                selectedPlatform->GetLatchedGroupSwitchComponent();
+            const bool isSelectedGroup = selectedGroupSwitch &&
+                selectedGroupSwitch->GetGroupId() ==
+                    groupSwitch->GetGroupId();
+            for (const PlatformRevealTarget& target : groupTargets) {
+                const bool isSelectedTarget =
+                    (!target.platformId.empty() &&
+                     target.platformId == selectedPlatformId) ||
+                    (target.platformId.empty() &&
+                     target.sequenceName == selectedRef->sequenceName &&
+                     target.yamlIndex == selectedRef->yamlIndex);
+                if (!isSelectedGroup && !isSelectedTarget) {
+                    continue;
+                }
+
+                Platform* targetPlatform =
+                    !target.platformId.empty()
+                        ? findPlatformById(
+                              target.platformId,
+                              target.yamlIndex)
+                        : dynamic_cast<Platform*>(
+                              StageActorQuery::FindActorByRef(
+                                  mContext.game->GetCurrentStage(),
+                                  StageActorRef{
+                                      StageActorType::Platform,
+                                      target.yamlIndex,
+                                      target.sequenceName,
+                                      ""}));
+                drawConnection(switchPlatform, targetPlatform);
+            }
+        }
+    }
+}
+
+void DebugUIRenderer::DrawUGCUnconnectedSwitchWarnings()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return;
+    }
+
+    std::unordered_set<std::string> connectedGroupIds;
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* platform : planet->GetPlatforms()) {
+            PlatformLatchedGroupSwitchComponent* groupSwitch =
+                platform
+                    ? platform->GetLatchedGroupSwitchComponent()
+                    : nullptr;
+            if (!groupSwitch || groupSwitch->GetGroupId().empty()) {
+                continue;
+            }
+            const bool hasConnectedTarget =
+                !groupSwitch->GetRevealTargets().empty() ||
+                !groupSwitch->GetHideTargets().empty();
+            if (hasConnectedTarget) {
+                connectedGroupIds.insert(groupSwitch->GetGroupId());
+            }
+        }
+    }
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform) {
+                continue;
+            }
+
+            const PlatformPressureSwitchComponent* pressureSwitch =
+                platform->GetPressureSwitchComponent();
+            const bool isUnconnectedPressureSwitch = pressureSwitch &&
+                pressureSwitch->GetTargetPlatformIds().empty() &&
+                pressureSwitch->GetTargetEnemyRefs().empty() &&
+                pressureSwitch->GetHideTargets().empty();
+
+            const PlatformLatchedGroupSwitchComponent* groupSwitch =
+                platform->GetLatchedGroupSwitchComponent();
+            const bool isUnconnectedGroupSwitch = groupSwitch &&
+                (groupSwitch->GetGroupId().empty() ||
+                 !connectedGroupIds.contains(groupSwitch->GetGroupId()));
+            if (!isUnconnectedPressureSwitch &&
+                !isUnconnectedGroupSwitch) {
+                continue;
+            }
+
+            ImVec2 screenPosition;
+            if (mSelectionController.TryWorldToScreenPoint(
+                    platform->GetPos(), screenPosition)) {
+                DrawUGCWarningTriangle(drawList, screenPosition);
+            }
+        }
+    }
 }
 
 bool DebugUIRenderer::TryIntersectUGCDragPlane(
@@ -1827,10 +2287,14 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
         }
 
         mIsUGCSelectionDragging = true;
+        mIsUGCMovingPlatformDestinationDrag =
+            mSelectionController.IsMovingPlatformDestinationSelected();
         mHasUGCSelectionDragMoved = false;
         mUGCSelectionDragOffset =
             selectionCenter - intersection;
         mUGCSelectionDragInitialCenter = selectionCenter;
+        mUGCSelectionDragAppliedDelta = glm::vec3(0.0f);
+        mUGCSelectionDragSavedDelta = glm::vec3(0.0f);
         mUGCSelectionDragActorRefs.clear();
         mUGCSelectionDragActorRefs.reserve(selectedInstances.size());
         for (const StageActorInstance& selectedInstance : selectedInstances) {
@@ -1841,19 +2305,53 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
 
     if (!isMouseDown) {
         if (mHasUGCSelectionDragMoved) {
-            const glm::vec3 finalCenter =
-                mSelectionController.CalculateSelectedActorsCenter();
-            const glm::vec3 totalDelta =
-                finalCenter - mUGCSelectionDragInitialCenter;
-            mStagePlacementPanel.SaveEditorAuthoredTransforms();
-            if (mStageAddActorPanel.TryTranslateUGCPlatformCells(
-                    mUGCSelectionDragActorRefs, totalDelta)) {
+            glm::vec3 totalDelta = mUGCSelectionDragAppliedDelta;
+            if (mIsUGCMovingPlatformDestinationDrag) {
+                const glm::vec3 finalDestinationCenter =
+                    mSelectionController
+                        .CalculateSelectedMovingPlatformDestinationsCenter();
+                totalDelta = finalDestinationCenter -
+                    mUGCSelectionDragInitialCenter -
+                    mUGCSelectionDragSavedDelta;
+            }
+            bool updatedUGCPlatform = false;
+            if (mIsUGCMovingPlatformDestinationDrag) {
+                constexpr float minimumTranslationLength = 0.0001f;
+                updatedUGCPlatform = glm::length(totalDelta) <
+                    minimumTranslationLength;
+                if (!updatedUGCPlatform) {
+                    updatedUGCPlatform = mStageAddActorPanel
+                        .TryTranslateUGCMovingPlatformDestinations(
+                            mUGCSelectionDragActorRefs, totalDelta);
+                }
+                if (!updatedUGCPlatform) {
+                    mSelectionController
+                        .MoveSelectedMovingPlatformDestinationsByDelta(
+                            -totalDelta);
+                }
+            } else {
+                mStageActorYamlWriter.SaveEditorAuthoredTransforms();
+                updatedUGCPlatform =
+                    mStageAddActorPanel.TryTranslateUGCPlatformCells(
+                        mUGCSelectionDragActorRefs, totalDelta);
+            }
+            if (updatedUGCPlatform) {
                 mSelectionController.Clear();
             }
-            mUGCStatus = "移動しました";
+            mUGCStatus = updatedUGCPlatform ||
+                    !mIsUGCMovingPlatformDestinationDrag
+                ? "移動しました"
+                : "移動先を動かせませんでした";
+            if (updatedUGCPlatform ||
+                !mIsUGCMovingPlatformDestinationDrag) {
+                mUGCEditorTutorial.RecordSelectionMove();
+            }
         }
         mIsUGCSelectionDragging = false;
+        mIsUGCMovingPlatformDestinationDrag = false;
         mHasUGCSelectionDragMoved = false;
+        mUGCSelectionDragAppliedDelta = glm::vec3(0.0f);
+        mUGCSelectionDragSavedDelta = glm::vec3(0.0f);
         mUGCSelectionDragActorRefs.clear();
         return;
     }
@@ -1876,8 +2374,10 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
             std::round(unsnappedDelta.x / gridSize) * gridSize,
             std::round(unsnappedDelta.y / gridSize) * gridSize,
             std::round(unsnappedDelta.z / gridSize) * gridSize);
-    const glm::vec3 currentCenter =
-        mSelectionController.CalculateSelectedActorsCenter();
+    const glm::vec3 currentCenter = mIsUGCMovingPlatformDestinationDrag
+        ? mSelectionController
+              .CalculateSelectedMovingPlatformDestinationsCenter()
+        : mSelectionController.CalculateSelectedActorsCenter();
     const glm::vec3 movementDelta = snappedTarget - currentCenter;
     if (glm::length(movementDelta) <= 0.000001f) {
         return;
@@ -1887,7 +2387,13 @@ void DebugUIRenderer::UpdateUGCSelectionDrag()
         mEditCommandController.PushUndo();
         mHasUGCSelectionDragMoved = true;
     }
-    mSelectionController.MoveSelectedActorsByDelta(movementDelta);
+    if (mIsUGCMovingPlatformDestinationDrag) {
+        mSelectionController.MoveSelectedMovingPlatformDestinationsByDelta(
+            movementDelta);
+    } else {
+        mSelectionController.MoveSelectedActorsByDelta(movementDelta);
+    }
+    mUGCSelectionDragAppliedDelta += movementDelta;
 }
 
 void DebugUIRenderer::DrawUGCViewport(
@@ -1951,8 +2457,8 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
         mContext.gameViewport.width * 0.5f);
     const float minimumPreviewWidth = std::min(180.0f, maximumPreviewWidth);
     if (!mHasInitializedUGCPreviewWidth) {
-        // Start large enough to inspect the stage, while keeping room for a
-        // user to enlarge it up to the half-screen limit.
+
+
         mUGCPreviewWidth = glm::clamp(
             maximumPreviewWidth * (2.0f / 3.0f),
             minimumPreviewWidth,
@@ -2020,7 +2526,7 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
     drawList->AddText(
         ImVec2(previewMin.x, previewMin.y - 20.0f),
         IM_COL32(235, 240, 255, 255),
-        "3Dプレビュー");
+        "3Dプレビュー　← → 回転");
     drawList->AddImage(
         static_cast<ImTextureID>(previewTexture),
         previewMin,
@@ -2067,11 +2573,21 @@ void DebugUIRenderer::DrawUGCPreviewOverlay()
             minimumPreviewWidth,
             maximumPreviewWidth);
         if (previewElement) {
-            previewElement->widthRatio =
+            const float previousWidthRatio =
+                previewElement->widthRatio;
+            const float previousHeightRatio =
+                previewElement->heightRatio;
+            const float resizedWidthRatio =
                 mUGCPreviewWidth /
                 std::max(mContext.gameViewport.width, 1.0f);
-            previewElement->heightRatio =
-                previewElement->widthRatio * 9.0f / 16.0f;
+            const float resizedHeightRatio =
+                resizedWidthRatio * 9.0f / 16.0f;
+            previewElement->xRatio +=
+                previousWidthRatio - resizedWidthRatio;
+            previewElement->yRatio +=
+                previousHeightRatio - resizedHeightRatio;
+            previewElement->widthRatio = resizedWidthRatio;
+            previewElement->heightRatio = resizedHeightRatio;
         }
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
     } else if (ImGui::IsItemHovered()) {
@@ -2184,9 +2700,9 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
         0.1f,
         1000.0f);
 
-    const auto projectPoint = [&](const glm::vec3& worldPoint,
-                                  ImVec2& outScreenPoint) {
-        const glm::vec4 clip = projection * view * glm::vec4(worldPoint, 1.0f);
+    const auto projectViewPoint = [&](const glm::vec3& viewPoint,
+                                      ImVec2& outScreenPoint) {
+        const glm::vec4 clip = projection * glm::vec4(viewPoint, 1.0f);
         if (clip.w <= 0.0001f) {
             return false;
         }
@@ -2198,13 +2714,48 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
                 (previewMax.y - previewMin.y);
         return true;
     };
+    const auto projectPoint = [&](const glm::vec3& worldPoint,
+                                  ImVec2& outScreenPoint) {
+        const glm::vec3 viewPoint = glm::vec3(
+            view * glm::vec4(worldPoint, 1.0f));
+        return projectViewPoint(viewPoint, outScreenPoint);
+    };
+    const auto clipLineToNearPlane = [](
+        glm::vec3& viewFrom,
+        glm::vec3& viewTo) {
+        constexpr float nearPlaneZ = -0.1001f;
+        const bool isFromVisible = viewFrom.z <= nearPlaneZ;
+        const bool isToVisible = viewTo.z <= nearPlaneZ;
+        if (!isFromVisible && !isToVisible) {
+            return false;
+        }
+        if (isFromVisible && isToVisible) {
+            return true;
+        }
+
+        glm::vec3& hiddenEndpoint = isFromVisible ? viewTo : viewFrom;
+        const glm::vec3& visibleEndpoint = isFromVisible ? viewFrom : viewTo;
+        const float distanceRatio =
+            (nearPlaneZ - hiddenEndpoint.z) /
+            (visibleEndpoint.z - hiddenEndpoint.z);
+        hiddenEndpoint +=
+            (visibleEndpoint - hiddenEndpoint) * distanceRatio;
+        return true;
+    };
     const auto drawWorldLine = [&](const glm::vec3& from,
                                    const glm::vec3& to,
                                    ImU32 color,
                                    float thickness) {
+        glm::vec3 viewFrom = glm::vec3(view * glm::vec4(from, 1.0f));
+        glm::vec3 viewTo = glm::vec3(view * glm::vec4(to, 1.0f));
+        if (!clipLineToNearPlane(viewFrom, viewTo)) {
+            return;
+        }
+
         ImVec2 screenFrom;
         ImVec2 screenTo;
-        if (projectPoint(from, screenFrom) && projectPoint(to, screenTo)) {
+        if (projectViewPoint(viewFrom, screenFrom) &&
+            projectViewPoint(viewTo, screenTo)) {
             drawList->AddLine(screenFrom, screenTo, color, thickness);
         }
     };
@@ -2220,8 +2771,8 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
         }
         const std::string label = std::to_string(layer + 1) + "だん";
         const ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
-        // Keep height labels on the preview edge.  They remain a readable
-        // height ruler without ever being drawn over a platform.
+
+
         labelPosition.x = previewMin.x + 7.0f;
         labelPosition.y = glm::clamp(
             labelPosition.y,
@@ -2273,9 +2824,63 @@ void DebugUIRenderer::DrawUGCPreviewLayerGuides(
 
 void DebugUIRenderer::DrawUGCPlacementPreview()
 {
+    if (!mContext.gameViewport.IsValid()) {
+        return;
+    }
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    std::string placementInstruction;
+    if (mStageAddActorPanel.IsPlacementActive()) {
+        const std::string& placementStatus =
+            mStageAddActorPanel.GetPlacementStatus();
+        if (!placementStatus.empty()) {
+            placementInstruction =
+                mStageAddActorPanel.GetPlacementDisplayName() + "\n" +
+                placementStatus;
+        }
+    } else if (mUGCConnectionSwitchRef) {
+        placementInstruction = mUGCSwitchConnectionAction ==
+                UGCSwitchConnectionAction::Connect
+            ? "スイッチ：表示する足場\n"
+              "対応する足場をクリックしてください"
+            : "スイッチ：つながりを解除\n"
+              "解除する足場をクリックしてください";
+    }
+
+    if (!placementInstruction.empty()) {
+        const ImVec2 instructionPosition(
+            mContext.gameViewport.x + 18.0f,
+            mContext.gameViewport.y + 18.0f);
+        ImFont* instructionFont = ImGui::GetFont();
+        const float instructionFontSize = ImGui::GetFontSize() * 2.0f;
+        const ImVec2 instructionSize = instructionFont->CalcTextSizeA(
+            instructionFontSize,
+            std::numeric_limits<float>::max(),
+            0.0f,
+            placementInstruction.c_str());
+        constexpr float instructionPadding = 16.0f;
+        drawList->AddRectFilled(
+            ImVec2(
+                instructionPosition.x - instructionPadding,
+                instructionPosition.y - instructionPadding),
+            ImVec2(
+                instructionPosition.x + instructionSize.x +
+                    instructionPadding,
+                instructionPosition.y + instructionSize.y +
+                    instructionPadding),
+            IM_COL32(8, 15, 27, 220),
+            5.0f);
+        drawList->AddText(
+            instructionFont,
+            instructionFontSize,
+            instructionPosition,
+            IM_COL32(235, 245, 255, 255),
+            placementInstruction.c_str());
+    }
+
     const std::optional<glm::vec3>& previewPosition =
         mStageAddActorPanel.GetPlacementPreviewPosition();
-    if (!previewPosition || !mContext.gameViewport.IsValid()) {
+    if (!previewPosition) {
         return;
     }
 
@@ -2285,7 +2890,6 @@ void DebugUIRenderer::DrawUGCPlacementPreview()
         return;
     }
 
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
     constexpr float markerRadius = 18.0f;
     drawList->AddCircleFilled(
         screenPosition,
@@ -2316,6 +2920,7 @@ void DebugUIRenderer::DrawUGCPlacementPreview()
         ImVec2(screenPosition.x + 24.0f, screenPosition.y - 8.0f),
         IM_COL32(220, 255, 230, 245),
         previewLabel.c_str());
+
 }
 
 void DebugUIRenderer::ChangeUGCEditLayer(int layerDelta)
@@ -2336,6 +2941,9 @@ void DebugUIRenderer::ChangeUGCEditLayer(int layerDelta)
     const bool isMovingSelectedActors =
         mIsUGCSelectionDragging &&
         mSelectionController.GetSelectedActorCount() > 0;
+    const bool isMovingPlatformDestination =
+        isMovingSelectedActors &&
+        mIsUGCMovingPlatformDestinationDrag;
     if (isMovingSelectedActors) {
         if (!mHasUGCSelectionDragMoved) {
             mEditCommandController.PushUndo();
@@ -2346,10 +2954,22 @@ void DebugUIRenderer::ChangeUGCEditLayer(int layerDelta)
             static_cast<float>(nextLayer - mUGCEditLayer) *
                 mContext.game->GetUGCGridSize(),
             0.0f);
-        mSelectionController.MoveSelectedActorsByDelta(layerMovement);
-        // The drag plane follows the selection vertically. This keeps the
-        // held object on its newly selected layer while horizontal dragging
-        // continues, and preserves the whole move as one undo operation.
+        if (isMovingPlatformDestination) {
+            const bool wasSaved = mStageAddActorPanel
+                .TrySaveUGCMovingPlatformDestinationTranslation(
+                    mUGCSelectionDragActorRefs, layerMovement);
+            if (!wasSaved) {
+                mUGCStatus = "移動先の高さを保存できませんでした";
+                return;
+            }
+            mSelectionController.MoveSelectedMovingPlatformDestinationsByDelta(
+                layerMovement);
+            mUGCSelectionDragSavedDelta += layerMovement;
+        } else {
+            mSelectionController.MoveSelectedActorsByDelta(layerMovement);
+            mUGCSelectionDragAppliedDelta += layerMovement;
+        }
+
         mUGCSelectionDragPlanePoint += layerMovement;
     }
 
@@ -2360,11 +2980,16 @@ void DebugUIRenderer::ChangeUGCEditLayer(int layerDelta)
     if (!isMovingSelectedActors) {
         mSelectionController.Clear();
     }
-    mUGCStatus = isMovingSelectedActors
-        ? "選んだものも" + std::to_string(mUGCEditLayer + 1) +
-              "だん目へ動かしました"
-        : std::to_string(mUGCEditLayer + 1) +
-              "だん目を作っています";
+    if (isMovingPlatformDestination) {
+        mUGCStatus = "移動先を" + std::to_string(mUGCEditLayer + 1) +
+            "だん目へ動かしました";
+    } else if (isMovingSelectedActors) {
+        mUGCStatus = "選んだものも" + std::to_string(mUGCEditLayer + 1) +
+            "だん目へ動かしました";
+    } else {
+        mUGCStatus = std::to_string(mUGCEditLayer + 1) +
+            "だん目を作っています";
+    }
 }
 
 void DebugUIRenderer::SyncUGCEditLayerToPickedActor()
@@ -2372,17 +2997,21 @@ void DebugUIRenderer::SyncUGCEditLayerToPickedActor()
     Actor* pickedActor = mSelectionController.GetPickedActor();
     const std::optional<StageActorRef>& pickedRef =
         mSelectionController.GetPickedActorRef();
-    if (!pickedActor || !pickedRef ||
-        dynamic_cast<Planet*>(pickedActor) != nullptr ||
-        !mContext.game) {
+    if (!pickedActor || !pickedRef || !mContext.game) {
         return;
     }
 
     const float gridSize = mContext.game->GetUGCGridSize();
+    const bool isMovingPlatformDestination =
+        mSelectionController.IsMovingPlatformDestinationSelected();
+    const glm::vec3 pickedPosition = isMovingPlatformDestination
+        ? mSelectionController.CalculateSelectedActorsCenter()
+        : pickedActor->GetPos();
     int pickedLayer = static_cast<int>(std::round(
-        pickedActor->GetPos().y / gridSize));
+        pickedPosition.y / gridSize));
     YAML::Node stageYaml;
-    if (StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
+    if (!isMovingPlatformDestination &&
+        StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
         const YAML::Node sequence = stageYaml[pickedRef->sequenceName];
         if (sequence && sequence.IsSequence() &&
             pickedRef->yamlIndex >= 0 &&
@@ -2437,23 +3066,29 @@ void DebugUIRenderer::DrawUGCLayerControls()
 void DebugUIRenderer::DrawUGCTransformControls()
 {
     Actor* selectedActor = mSelectionController.GetSingleSelectedActor();
-    if (!selectedActor) {
-        ImGui::TextWrapped(
-            "ゲーム画面のものを1つ選ぶと、高さや向きを変えられます。");
-        return;
-    }
-
-    bool isGeneratedUGCPlatform = false;
     const std::optional<StageActorRef>& selectedRef =
         mSelectionController.GetPickedActorRef();
-
     const bool selectedIsConnectionSwitch =
         mUGCConnectionSwitchRef && selectedRef &&
         selectedRef->sequenceName == mUGCConnectionSwitchRef->sequenceName &&
         selectedRef->yamlIndex == mUGCConnectionSwitchRef->yamlIndex;
-    if (mUGCConnectionSwitchRef && selectedRef &&
-        !selectedIsConnectionSwitch &&
-        selectedRef->sequenceName == "platforms") {
+    if (mUGCConnectionSwitchRef && selectedRef) {
+        Platform* targetPlatform = dynamic_cast<Platform*>(selectedActor);
+        const bool selectedIsAnotherSwitch = targetPlatform &&
+            (targetPlatform->GetPressureSwitchComponent() != nullptr ||
+             targetPlatform->GetLatchedGroupSwitchComponent() != nullptr);
+        const bool canEditSelectedPlatformConnection =
+            !selectedIsConnectionSwitch &&
+            selectedRef->sequenceName == "platforms" &&
+            targetPlatform != nullptr &&
+            !selectedIsAnotherSwitch;
+        if (!canEditSelectedPlatformConnection) {
+            mUGCStatus =
+                "足場を選択してください（惑星やスイッチにはつなげません）";
+            mSelectionController.Clear();
+            return;
+        }
+
         YAML::Node stageYaml;
         const bool loaded = StageYamlRepository::LoadCurrentStage(
             mContext, stageYaml);
@@ -2473,113 +3108,128 @@ void DebugUIRenderer::DrawUGCTransformControls()
             YAML::Node targetNode = targetNodes[selectedRef->yamlIndex];
             const std::string targetId = targetNode["platformId"]
                 ? targetNode["platformId"].as<std::string>() : "";
-            YAML::Node targets = switchNodes[
-                mUGCConnectionSwitchRef->yamlIndex]["components"]
-                ["pressureSwitch"]["targets"];
-            bool alreadyConnected = targetId.empty();
-            for (const YAML::Node& target : targets) {
-                alreadyConnected = alreadyConnected ||
-                    (target.as<std::string>("") == targetId);
-            }
-            if (!alreadyConnected) {
-                targets.push_back(targetId);
+            const bool wasConnectionChanged =
+                mUGCSwitchConnectionAction ==
+                    UGCSwitchConnectionAction::Connect
+                ? StagePlatformConnections::AssignExclusiveSwitchTarget(
+                      stageYaml,
+                      mUGCConnectionSwitchRef->yamlIndex,
+                      targetId)
+                : StagePlatformConnections::DisconnectSwitchTarget(
+                      stageYaml,
+                      mUGCConnectionSwitchRef->yamlIndex,
+                      targetId,
+                      selectedRef->yamlIndex);
+            if (wasConnectionChanged) {
                 StageYamlRepository::SaveCurrentStage(mContext, stageYaml);
-                mContext.game->ReloadCurrentStage(false);
-                mUGCStatus = "スイッチと足場をつなぎました";
+                mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
+                mUGCStatus = mUGCSwitchConnectionAction ==
+                        UGCSwitchConnectionAction::Connect
+                    ? "スイッチと足場をつなぎました"
+                    : "スイッチと足場のつながりを解除しました";
+            } else if (mUGCSwitchConnectionAction ==
+                       UGCSwitchConnectionAction::Disconnect) {
+                mUGCStatus = "この足場とはつながっていません";
             }
         }
         mUGCConnectionSwitchRef.reset();
         mSelectionController.Clear();
         return;
     }
-    if (selectedRef) {
-        YAML::Node stageYaml;
-        if (StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
-            const YAML::Node sequence = stageYaml[selectedRef->sequenceName];
-            if (sequence && sequence.IsSequence() &&
-                selectedRef->yamlIndex >= 0 &&
-                selectedRef->yamlIndex < static_cast<int>(sequence.size())) {
-                const YAML::Node actorNode = sequence[selectedRef->yamlIndex];
-                isGeneratedUGCPlatform =
-                    actorNode["ugcGeneratedPlatform"] &&
-                    actorNode["ugcGeneratedPlatform"].as<bool>(false);
-            }
-        }
-    }
-    ImGui::TextUnformatted("高さを変える");
-    const auto moveSelectedVertically =
-        [this, selectedActor, selectedRef, isGeneratedUGCPlatform](float sign) {
-        mEditCommandController.PushUndo();
-        const float gridSize = mContext.game->GetUGCGridSize();
-        const glm::vec3 movementDelta(0.0f, sign * gridSize, 0.0f);
-        if (isGeneratedUGCPlatform && selectedRef) {
-            if (mStageAddActorPanel.TryTranslateUGCPlatformCells(
-                    *selectedRef, movementDelta)) {
-                mSelectionController.Clear();
-                mUGCStatus = sign > 0.0f
-                    ? "足場を1だん上へ動かしました"
-                    : "足場を1だん下へ動かしました";
-            }
-            return;
-        }
 
-        const glm::vec3 currentPosition = selectedActor->GetPos();
-        const float snappedHeight =
-            std::round(currentPosition.y / gridSize) * gridSize;
-        const glm::vec3 targetPosition(
-            currentPosition.x,
-            snappedHeight + sign * gridSize,
-            currentPosition.z);
-        mSelectionController.MoveSelectedActorsByDelta(
-            targetPosition - currentPosition);
-        mStagePlacementPanel.SaveEditorAuthoredTransforms();
-        mUGCStatus = sign > 0.0f
-            ? "1だん上へ動かしました"
-            : "1だん下へ動かしました";
-    };
-    if (ImGui::Button("1だん上へ", ImVec2(-1.0f, 40.0f))) {
-        moveSelectedVertically(1.0f);
-    }
-    if (ImGui::Button("1だん下へ", ImVec2(-1.0f, 40.0f))) {
-        moveSelectedVertically(-1.0f);
+    if (!selectedActor || !selectedRef || !mContext.gameViewport.IsValid()) {
+        return;
     }
 
-    if (isGeneratedUGCPlatform) {
-        ImGui::TextDisabled(
-            "足場の向きと大きさはマスに合わせて自動で決まります。");
+    ImVec2 selectedScreenPosition;
+    if (!mSelectionController.TryWorldToScreenPoint(
+            selectedActor->GetPos(), selectedScreenPosition)) {
         return;
     }
 
     Platform* selectedPlatform = dynamic_cast<Platform*>(selectedActor);
-    const bool isPressureSwitch = selectedPlatform && selectedRef &&
+    const bool isPressureSwitch = selectedPlatform &&
         selectedPlatform->GetPressureSwitchComponent() != nullptr;
-    if (isPressureSwitch) {
-        ImGui::Separator();
-        ImGui::TextWrapped("このスイッチで表示する足場を選べます。");
-        if (ImGui::Button("つなぐ", ImVec2(-1.0f, 40.0f))) {
+    const bool isTwoPlayerSwitch = selectedPlatform &&
+        selectedPlatform->GetLatchedGroupSwitchComponent() != nullptr;
+
+    constexpr float buttonWidth = 74.0f;
+    constexpr float buttonHeight = 32.0f;
+    constexpr float buttonGap = 6.0f;
+    constexpr ImGuiWindowFlags actionWindowFlags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoNav;
+
+    if (isPressureSwitch || isTwoPlayerSwitch) {
+        const ImVec2 connectPosition(
+            selectedScreenPosition.x - buttonWidth,
+            selectedScreenPosition.y - buttonHeight - 24.0f);
+        ImGui::SetNextWindowPos(connectPosition, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.82f);
+        ImGui::Begin(
+            "###UGCSelectedSwitchConnection",
+            nullptr,
+            actionWindowFlags);
+        if (ImGui::Button(
+                "つなぐ",
+                ImVec2(buttonWidth, buttonHeight))) {
+            mIsUGCEraserMode = false;
+            mStageAddActorPanel.CancelPlacement();
             mUGCConnectionSwitchRef = *selectedRef;
+            mUGCSwitchConnectionAction =
+                UGCSwitchConnectionAction::Connect;
             mSelectionController.Clear();
             mUGCStatus = "表示したい足場を1つクリックしてください";
         }
+        ImGui::SameLine(0.0f, buttonGap);
+        if (ImGui::Button(
+                "解除",
+                ImVec2(buttonWidth, buttonHeight))) {
+            mIsUGCEraserMode = false;
+            mStageAddActorPanel.CancelPlacement();
+            mUGCConnectionSwitchRef = *selectedRef;
+            mUGCSwitchConnectionAction =
+                UGCSwitchConnectionAction::Disconnect;
+            mSelectionController.Clear();
+            mUGCStatus = "つながりを解除したい足場をクリックしてください";
+        }
+        ImGui::End();
+    }
+}
+
+void DebugUIRenderer::ToggleUGCVerticalView()
+{
+    if (!mContext.game || !mContext.game->GetCameraSystem()) {
+        return;
     }
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("むきを変える");
-    const auto rotateSelected = [this, selectedActor](float sign) {
-        mEditCommandController.PushUndo();
-        glm::vec3 rotation = selectedActor->GetEditorRotation();
-        rotation.y += glm::radians(mUGCRotationStepDegrees * sign);
-        selectedActor->SetEditorRotation(rotation);
-        selectedActor->CaptureEditorAuthoredRotation();
-        mStagePlacementPanel.SaveEditorAuthoredTransforms();
-    };
-    if (ImGui::Button("左に90度回す", ImVec2(-1.0f, 40.0f))) {
-        rotateSelected(-1.0f);
-    }
-    if (ImGui::Button("右に90度回す", ImVec2(-1.0f, 40.0f))) {
-        rotateSelected(1.0f);
-    }
+    mContext.game->ToggleUGCPreviewVerticalView();
+    const bool isViewedFromBelow =
+        mContext.game->GetIsUGCPreviewViewedFromBelow();
+    const glm::vec3 viewDirection = isViewedFromBelow
+        ? glm::vec3(0.0f, -1.0f, 0.0f)
+        : glm::vec3(0.0f, 1.0f, 0.0f);
 
+    CameraSystem* cameraSystem = mContext.game->GetCameraSystem();
+    CameraPose pose = cameraSystem->GetDebugCameraPose();
+    const float currentViewDistance = glm::length(
+        pose.position - pose.target);
+    constexpr float fallbackViewDistance = 30.0f;
+    const float viewDistance = currentViewDistance > 0.0001f
+        ? currentViewDistance
+        : fallbackViewDistance;
+
+    pose.position = pose.target + viewDirection * viewDistance;
+    pose.up = isViewedFromBelow
+        ? glm::vec3(0.0f, 0.0f, 1.0f)
+        : glm::vec3(0.0f, 0.0f, -1.0f);
+    cameraSystem->SetDebugCameraPose(pose);
+
+    mUGCViewDirection = viewDirection;
+    mContext.game->SetIsUGCOrthographicView(true);
+    mContext.game->SetFreeCameraMode(true);
 }
 
 void DebugUIRenderer::SetUGCFixedView(const glm::vec3& viewDirection)
@@ -2620,9 +3270,13 @@ void DebugUIRenderer::SetUGCFixedView(const glm::vec3& viewDirection)
     CameraPose pose;
     pose.position = stageCenter + normalizedDirection * viewDistance;
     pose.target = stageCenter;
-    pose.up = std::abs(normalizedDirection.y) > 0.9f
-        ? glm::vec3(0.0f, 0.0f, -1.0f)
-        : glm::vec3(0.0f, 1.0f, 0.0f);
+    if (normalizedDirection.y > 0.9f) {
+        pose.up = glm::vec3(0.0f, 0.0f, -1.0f);
+    } else if (normalizedDirection.y < -0.9f) {
+        pose.up = glm::vec3(0.0f, 0.0f, 1.0f);
+    } else {
+        pose.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
     pose.fieldOfViewDegrees = 55.0f;
     mContext.game->SetIsUGCOrthographicView(isAxisAlignedView);
     if (isAxisAlignedView) {
@@ -2671,10 +3325,11 @@ void DebugUIRenderer::DrawUGCGridOverlay()
                     std::abs(planet->GetScale().y),
                     std::abs(planet->GetScale().z)}) * 2.0f);
     }
-    // Keep the grid covering the viewport at every zoom level without
-    // drawing thousands of sub-pixel lines. Placement still snaps to the
-    // selected gridSize; only the visual grid becomes coarser when zoomed far
-    // out, similar to DCC and game-engine editors.
+
+
+
+
+    // 配置は常に選択グリッドへスナップする。ズームアウト時だけ表示グリッドを粗くし、極小の線を大量に描かない。
     constexpr int maximumHalfGridLineCount = 120;
     float visualGridSize = gridSize;
     while (requiredGridExtent / visualGridSize >
@@ -2697,7 +3352,7 @@ void DebugUIRenderer::DrawUGCGridOverlay()
         verticalAxis = glm::vec3(0.0f, 1.0f, 0.0f);
     }
 
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
     const ImVec2 clipMin(
         mContext.gameViewport.x,
         mContext.gameViewport.y);

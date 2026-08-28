@@ -17,7 +17,7 @@ AudioSystem::AudioSystem(Game* game)
 void AudioSystem::Initialize()
 {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) != 0) {
-        // std::cerr << "Mix_OpenAudio error: " << Mix_GetError() << std::endl;
+
         return;
     }
 
@@ -82,8 +82,7 @@ void AudioSystem::TryChangeBGM()
         mGame->GetSceneSystem()->IsTitle() ||
         mGame->GetSceneSystem()->IsBattleStyleSelection();
     if (isTitle) {
-        Mix_HaltMusic();
-        PlayBGM("title_bgm");
+        PlayBGMIfChanged("title_bgm");
         return;
     }
 
@@ -91,21 +90,18 @@ void AudioSystem::TryChangeBGM()
         mGame->GetSceneSystem()->IsOpening() ||
         mGame->GetSceneSystem()->IsEnding();
     if (isStoryScene) {
-        Mix_HaltMusic();
-        PlayBGM("opening_bgm");
+        PlayBGMIfChanged("opening_bgm");
         return;
     }
 
     if (mGame->GetSceneSystem()->IsCredits()) {
-        Mix_HaltMusic();
-        PlayBGM("title_bgm");
+        PlayBGMIfChanged("title_bgm");
         return;
     }
 
     int currentStageNum = mGame->GetCurrentStageNum();
     if (currentStageNum == 0) {
-        Mix_HaltMusic();
-        PlayBGM("base_bgm");
+        PlayBGMIfChanged("base_bgm");
         return;
     }
 
@@ -128,19 +124,18 @@ void AudioSystem::TryChangeBGM()
                        enemy->GetIsBoss() && enemy->IsAlive();
             });
     if (hasLivingBoss) {
-        Mix_HaltMusic();
-        PlayBGM("boss_bgm");
+        PlayBGMIfChanged("boss_bgm");
         return;
     }
 
-    Mix_HaltMusic();
-    PlayBGM("stage_bgm");
+    PlayBGMIfChanged("stage_bgm");
 }
 
 void AudioSystem::BeginStageMusicDeferral()
 {
     mIsStageMusicDeferred = true;
     Mix_HaltMusic();
+    mCurrentLoopingBGMName.clear();
 }
 
 void AudioSystem::ResumeDeferredStageMusic()
@@ -156,19 +151,35 @@ void AudioSystem::ResumeDeferredStageMusic()
 void AudioSystem::Shutdown()
 {
     Mix_HaltMusic();
+    mCurrentLoopingBGMName.clear();
     Mix_CloseAudio();
 }
 
 void AudioSystem::PlayBGM(const std::string& name)
 {
-    auto it = mBGMList.find(name);
-    Mix_Music* BGM = (it != mBGMList.end()) ? it->second : nullptr;
-    if (BGM) {
-        Mix_PlayMusic(BGM, -1);
+    const auto musicIterator = mBGMList.find(name);
+    Mix_Music* music =
+        musicIterator != mBGMList.end()
+            ? musicIterator->second
+            : nullptr;
+    if (!music) {
         return;
     }
 
-    // std::cerr << "can't find BGM" << std::endl;
+    Mix_PlayMusic(music, -1);
+    mCurrentLoopingBGMName = name;
+}
+
+void AudioSystem::PlayBGMIfChanged(const std::string& name)
+{
+    const bool isRequestedBGMPlaying =
+        mCurrentLoopingBGMName == name && Mix_PlayingMusic() != 0;
+    if (isRequestedBGMPlaying) {
+        return;
+    }
+
+    Mix_HaltMusic();
+    PlayBGM(name);
 }
 
 void AudioSystem::PlayBGMOnce(const std::string& name)
@@ -180,12 +191,14 @@ void AudioSystem::PlayBGMOnce(const std::string& name)
             : nullptr;
     if (music) {
         Mix_PlayMusic(music, 0);
+        mCurrentLoopingBGMName.clear();
     }
 }
 
 void AudioSystem::StopBGM()
 {
     Mix_HaltMusic();
+    mCurrentLoopingBGMName.clear();
 }
 
 int AudioSystem::PlaySE(const std::string& name)
@@ -196,7 +209,7 @@ int AudioSystem::PlaySE(const std::string& name)
         return Mix_PlayChannel(-1, SE, 0);
     }
 
-    // std::cerr << "can't find SE" << std::endl;
+
     return -1;
 }
 
@@ -213,7 +226,7 @@ void AudioSystem::AddBGM(const std::string& path, const std::string& name)
         return;
     }
 
-    // std::cerr << "Mix_LoadMUS (" + name + ") error: " << Mix_GetError() << std::endl;
+
 }
 
 void AudioSystem::AddSE(const std::string& path, const std::string& name)
@@ -224,5 +237,5 @@ void AudioSystem::AddSE(const std::string& path, const std::string& name)
         return;
     }
 
-    // std::cerr << "Mix_LoadWAV (" + name + ") error: " << Mix_GetError() << std::endl;
+
 }

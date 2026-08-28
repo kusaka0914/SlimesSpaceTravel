@@ -32,7 +32,7 @@ public:
         return !actor || actor->GetIsActive();
     }
 };
-} // namespace
+}
 
 CameraCollisionResolver::CameraCollisionResolver(Game* game)
     : mGame(game)

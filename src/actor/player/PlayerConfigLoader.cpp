@@ -47,7 +47,7 @@ PlayerAnimationPlaybackMode ParsePlaybackMode(const YAML::Node& animationNode,
         }
     }
 
-    // Older examples may use loop: true/false instead of mode.
+
     if (animationNode["loop"]) {
         return animationNode["loop"].as<bool>() ? PlayerAnimationPlaybackMode::BaseLoop
                                                 : PlayerAnimationPlaybackMode::OneShot;
@@ -92,7 +92,7 @@ void ReadAnimationDefinitions(const YAML::Node& playerNode, PlayerAnimationDefin
 
 void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefinitions& definitions)
 {
-    // Keep existing players.yaml files working during migration.
+
     if (playerNode["idleAnimationName"]) {
         definitions["idle"] = {
             playerNode["idleAnimationName"].as<std::string>(),
@@ -114,7 +114,7 @@ void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefin
         };
     }
 }
-} // namespace
+}
 
 PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
 {
@@ -125,7 +125,7 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         return config;
     }
 
-    // Preserve the old behavior: if multiple player nodes exist, later values overwrite earlier ones.
+
     for (const YAML::Node& playerNode : playerRoot["players"]) {
         config.hp = ReadFloat(playerNode, "hp", config.hp);
         config.scale = ReadFloat(playerNode, "scale", config.scale);
@@ -194,6 +194,31 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.dodgeDuration = ReadFloat(playerNode, "dodgeDuration", config.dodgeDuration);
         config.dodgeCooldownTime = ReadFloat(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);
         config.dodgeDistance = ReadFloat(playerNode, "dodgeDistance", config.dodgeDistance);
+        config.airDodgeAttackDamage =
+            ReadFloat(
+                playerNode,
+                "airDodgeAttackDamage",
+                config.airDodgeAttackDamage);
+        config.airDodgeHorizontalHitboxScale =
+            ReadFloat(
+                playerNode,
+                "airDodgeHorizontalHitboxScale",
+                config.airDodgeHorizontalHitboxScale);
+        config.airDodgeVerticalHitboxScale =
+            ReadFloat(
+                playerNode,
+                "airDodgeVerticalHitboxScale",
+                config.airDodgeVerticalHitboxScale);
+        config.airDodgeEnemyPushSpeed =
+            ReadFloat(
+                playerNode,
+                "airDodgeEnemyPushSpeed",
+                config.airDodgeEnemyPushSpeed);
+        config.airDodgeEnemyPushDampingPerSecond =
+            ReadFloat(
+                playerNode,
+                "airDodgeEnemyPushDampingPerSecond",
+                config.airDodgeEnemyPushDampingPerSecond);
 
         config.normalAttackRange = ReadFloat(playerNode, "normalAttackRange", config.normalAttackRange);
         config.normalAttackAngle = ReadFloat(playerNode, "normalAttackAngle", config.normalAttackAngle);
@@ -247,7 +272,16 @@ PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
         config.defaultDamageTimer = ReadFloat(playerNode, "defaultDamageTimer", config.defaultDamageTimer);
         config.defaultAttackMotionTimer = ReadFloat(playerNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
         config.attackHitDelay = ReadFloat(playerNode, "attackHitDelay", config.attackHitDelay);
-        config.attackCooldown = ReadFloat(playerNode, "attackCooldown", config.attackCooldown);
+        config.groundWeakAttackCooldownSeconds =
+            ReadFloat(
+                playerNode,
+                "groundWeakAttackCooldownSeconds",
+                config.groundWeakAttackCooldownSeconds);
+        config.airWeakAttackCooldownSeconds =
+            ReadFloat(
+                playerNode,
+                "airWeakAttackCooldownSeconds",
+                config.airWeakAttackCooldownSeconds);
         config.lastAttackCooldown = ReadFloat(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
         config.defaultStrongAttackTimer = ReadFloat(playerNode, "defaultStrongAttackTimer", config.defaultStrongAttackTimer);
         config.knockBackSpeed = ReadFloat(playerNode, "knockBackSpeed", config.knockBackSpeed);

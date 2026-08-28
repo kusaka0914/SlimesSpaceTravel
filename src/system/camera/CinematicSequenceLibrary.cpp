@@ -103,7 +103,7 @@ void SortKeyframes(CinematicSequence& sequence)
                          return left.time < right.time;
                      });
 }
-} // namespace
+}
 
 CinematicSequenceLibrary::CinematicSequenceLibrary(std::string filePath)
     : mFilePath(std::move(filePath))

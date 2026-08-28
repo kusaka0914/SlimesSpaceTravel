@@ -35,10 +35,22 @@ UIRenderer::UIRenderer(Game* game)
 
 UIRenderer::~UIRenderer()
 {
+    Shutdown();
+}
+
+void UIRenderer::Shutdown()
+{
+    ClearTextTextureCache();
+
+    if (!mIsImGuiInitialized) {
+        return;
+    }
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-};
+    mIsImGuiInitialized = false;
+}
 
 void UIRenderer::Initialize()
 {
@@ -72,6 +84,7 @@ void UIRenderer::InitImGui()
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
     io.Fonts->AddFontFromFileTTF("../assets/fonts/NotoSansJP-Black.ttf", 18.0f, nullptr,
                                  io.Fonts->GetGlyphRangesJapanese());
@@ -80,6 +93,7 @@ void UIRenderer::InitImGui()
 
     ImGui_ImplGlfw_InitForOpenGL(mGame->GetWindow(), true);
     ImGui_ImplOpenGL3_Init(glslVersion);
+    mIsImGuiInitialized = true;
 }
 
 void UIRenderer::RegisterUITextures()
@@ -214,15 +228,18 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawGameOver();
     }
 
-    // UGC editing has its own product UI. The in-game HUD and authored
-    // operation guide must stay hidden in both the product editor and the
-    // ordinary debug editor opened on top of it.
+
+
+
     const bool isUGCEditing =
         mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive =
+        mGame->GetIsUGCPlaytestActive();
     const bool shouldDrawDefaultUI =
         !isStartCinematicPlaying &&
         !isUGCEditing &&
+        !isUGCPlaytestActive &&
         (sceneSystem->IsPlaying() ||
          sceneSystem->IsTutorialActive("jewel_usage"));
     mHudRenderer->UpdateTalkableUIVisibility(
@@ -230,9 +247,11 @@ void UIRenderer::DrawGameContent()
         shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
+    } else if (!isStartCinematicPlaying && isUGCPlaytestActive) {
+        mHudRenderer->DrawUGCPlaytestUI();
     }
 
-    if (!isStartCinematicPlaying) {
+    if (!isStartCinematicPlaying && !isUGCPlaytestActive) {
         mStateUIRenderer->DrawStateUI();
     }
 
@@ -240,12 +259,13 @@ void UIRenderer::DrawGameContent()
         DrawCustomUI();
     }
 
-    if (!isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
+    if (!isUGCPlaytestActive && !isStartCinematicPlaying &&
+        mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
-    // This is the final UI layer.  Every scene/menu/custom UI is therefore
-    // behind the fade rather than appearing in front of it.
+
+
     mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
@@ -285,41 +305,10 @@ void UIRenderer::DrawDebugEditor(
     }
     EndImGuiFrame();
 
-    // The editor is drawn after the game view and its UI. Draw the transition
-    // once more on the default framebuffer so the editor itself is covered
-    // during a fade instead of suddenly appearing in front of it.
+
+
+
     mStateUIRenderer->DrawTransitionUI();
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-}
-
-void UIRenderer::DrawUGCPlaytestReturnButton()
-{
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, mFbWidth, mFbHeight);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::SetNextWindowPos(ImVec2(16.0f, 16.0f), ImGuiCond_Always);
-    constexpr ImGuiWindowFlags windowFlags =
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoSavedSettings;
-    ImGui::Begin(
-        "UGCプレイテスト###UGCPlaytestReturn",
-        nullptr,
-        windowFlags);
-    ImGui::TextUnformatted("－ボタンでも作る画面へ戻れます");
-    if (ImGui::Button("作る画面へ戻る", ImVec2(180.0f, 42.0f))) {
-        mGame->ReturnToUGCEditor();
-    }
-    ImGui::End();
-    EndImGuiFrame();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -370,6 +359,11 @@ void UIRenderer::SelectUGCEditorMode()
     if (mDebugUIRenderer) mDebugUIRenderer->HandleUGCSelectionMode();
 }
 
+void UIRenderer::OpenUGCEditorMenu()
+{
+    if (mDebugUIRenderer) mDebugUIRenderer->OpenUGCEditorMenu();
+}
+
 void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
 {
     if (mDebugUIRenderer) {
@@ -388,6 +382,13 @@ void UIRenderer::MoveUGCSelectionByGrid(int gridX, int gridZ)
 {
     if (mDebugUIRenderer) {
         mDebugUIRenderer->HandleUGCSelectionGridMove(gridX, gridZ);
+    }
+}
+
+void UIRenderer::NotifyUGCEditorTutorialReturnedFromPlaytest()
+{
+    if (mDebugUIRenderer) {
+        mDebugUIRenderer->HandleUGCEditorTutorialReturnedFromPlaytest();
     }
 }
 
@@ -756,7 +757,8 @@ void UIRenderer::DrawCustomElement(
     bool centerTalkPrompt,
     float contentScale,
     const Player* inputPlayer,
-    float opacity)
+    float opacity,
+    const std::string* textOverride)
 {
     opacity = std::clamp(opacity, 0.0f, 1.0f);
     if (contentScale < 0.0f) {
@@ -801,7 +803,9 @@ void UIRenderer::DrawCustomElement(
     switch (element.type) {
     case UILoadSystem::CustomElementType::Text:
     {
-        std::string resolvedText = ResolveCustomElementText(element);
+        std::string resolvedText = textOverride
+            ? *textOverride
+            : ResolveCustomElementText(element);
         if (inputPlayer && element.usesInputDeviceVariants) {
             const bool usesController = UsesControllerUI(inputPlayer);
             if (mGame->IsInputModifierHeld()) {
@@ -963,8 +967,12 @@ void UIRenderer::DrawCustomUI()
 
     const bool isUGCEditing =
         mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
+    static const std::string returnToEditorText = "作る画面に戻る";
+    static const std::string disembarkBoatText =
+        "降車";
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "menu" ||
+        return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
                id == "play" || id == "preview" ||
                id == "presetPlatform" || id == "presetEnemy" ||
@@ -1003,15 +1011,23 @@ void UIRenderer::DrawCustomUI()
     const bool isTwoPlayer =
         mGame->GetIsPlayer2Joined() && players.size() >= 2;
 
-    // The operation guide remains visible at all times, but unavailable
-    // actions are intentionally subdued instead of being replaced by an
-    // explanation.  This keeps the layout stable while still showing the
-    // player which inputs are currently accepted.
+
+
+
+
     const auto getOperationGuideOpacity =
         [&](const UILoadSystem::CustomElement& element,
             const Player* player) {
             constexpr float disabledOpacity = 0.38f;
             if (element.screen != "operation") {
+                return 1.0f;
+            }
+
+            const bool isBoatDisembarkGuide =
+                player && player->IsWaitingForBoat() &&
+                (element.id == "buttonB" ||
+                 element.id == "buttonTextB");
+            if (isBoatDisembarkGuide) {
                 return 1.0f;
             }
 
@@ -1053,9 +1069,9 @@ void UIRenderer::DrawCustomUI()
                     isEnabled = canRecover;
                     return isEnabled ? 1.0f : disabledOpacity;
                 }
-                // Jumping starts only from the ground (apart from the small
-                // coyote-time grace, which is too brief to express in UI).
-                // Continuous attacks do not block jumping.
+
+
+
                 isEnabled = isIdle && !isSpecialCharging &&
                             player->GetOnGround();
             } else if (element.id == "buttonB" ||
@@ -1063,9 +1079,9 @@ void UIRenderer::DrawCustomUI()
                 // 回避のクールタイムは短く、UIまで点滅すると見づらい。
                 // 継続攻撃・溜めなど、操作が明確に封じられる状態だけ示す。
                 // 溜め中の回避は実際に受け付けるため、通常表示を保つ。
-                // Weak attacks can be cancelled into a dodge.  Keep the
-                // guide bright for that state; the short dodge cooldown is
-                // intentionally not represented in the UI.
+
+
+
                 isEnabled = !isGroundContinuousAttack &&
                             (isIdle || isWeakAttacking);
             } else if (element.id == "buttonA_copy" ||
@@ -1097,8 +1113,8 @@ void UIRenderer::DrawCustomUI()
                        element.id == "buttonTextB_copy2_copy" ||
                        element.id == "buttonB_copy_copy_copy" ||
                        element.id == "buttonTextB_copy2_copy_copy") {
-                // Camera rotation and reset share the same camera-input
-                // lock, including cinematics, boss defeat and rocket travel.
+
+
                 const CameraSystem* cameraSystem = mGame->GetCameraSystem();
                 isEnabled = cameraSystem && cameraSystem->AllowsPlayerInput();
             } else if (element.id == "buttonB_copy_copy2" ||
@@ -1106,8 +1122,8 @@ void UIRenderer::DrawCustomUI()
                 isEnabled = mGame->CanSwitchControlledPlayer();
             } else if (element.id == "buttonB_copy_copy2_copy" ||
                        element.id == "buttonTextB_copy2_copy2_copy") {
-                // This includes the single-player restriction and, when
-                // merging, the two players being close enough together.
+
+
                 isEnabled = mGame->CanTogglePlayerSplit();
             }
 
@@ -1120,18 +1136,18 @@ void UIRenderer::DrawCustomUI()
                id == "talkableTextureForKeyboard";
     };
 
-    // The operation guide is authored as one group near the lower-right of
-    // a full screen.  In split-screen it keeps its physical size, then the
-    // whole group is moved only as far as needed to fit its half-height view.
-    // This avoids maintaining a second set of hand-tuned coordinates.
+
+
+
+
     const auto getOperationGuideVerticalOffset = [&]() {
         if (!isTwoPlayer) {
             return 0.0f;
         }
 
-        // The guide retains the single-player spacing as well as its size.
-        // It is translated as one block afterwards, rather than squeezing
-        // its Y positions into half the height.
+
+
+
         constexpr float positionScale = 1.0f;
         constexpr float viewportPadding = 12.0f;
         float minY = std::numeric_limits<float>::max();
@@ -1204,6 +1220,9 @@ void UIRenderer::DrawCustomUI()
              element->zOrder > 0)) {
             continue;
         }
+        if (isUGCPlaytestActive && element->screen != "operation") {
+            continue;
+        }
 
         bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
         if (element->screen == "operation") {
@@ -1226,15 +1245,15 @@ void UIRenderer::DrawCustomUI()
                     visibleInGame &&
                     !isAssistStyle;
             } else if (element->id == "easyDescription") {
-                // These are separate editable UI elements.  Only the
-                // explanation for the currently selected style is shown.
+
+
                 visibleInGame = visibleInGame && isAssistStyle;
             } else if (element->id == "normalDescription") {
                 visibleInGame = visibleInGame && !isAssistStyle;
             }
         } else if (element->screen == "talk") {
-            // This authored screen is shared by NPC conversations and every
-            // tutorial page, so its placement can be adjusted in the UI editor.
+
+
             visibleInGame = isTalkOrTutorial;
         } else if (element->screen == "ugc") {
             // UGC用のカスタムUIは、ステージ作成モードのゲーム画面だけに
@@ -1245,15 +1264,15 @@ void UIRenderer::DrawCustomUI()
         }
         if (isTalkOrTutorial && element->screen == "default" &&
             isTalkPromptElement(element->id)) {
-            // A conversation/tutorial owns the interaction input while it is
-            // displayed, so neither player's proximity prompt may remain.
+
+
             visibleInGame = false;
         }
         if (isTwoPlayer && !isTalkOrTutorial &&
             element->screen == "default" &&
             isTalkPromptElement(element->id)) {
-            // Do this before the normal global visibility check: player 1
-            // and player 2 may use different input-device prompt images.
+
+
             for (std::size_t index = 0; index < 2; ++index) {
                 const Player* player = players[index];
                 if (!player || !sceneSystem->CanStartTalkWithNPC(player)) {
@@ -1284,10 +1303,17 @@ void UIRenderer::DrawCustomUI()
             continue;
         }
 
+        const std::string* textOverride =
+            isUGCPlaytestActive && element->id == "buttonTextB_copy"
+                ? &returnToEditorText
+                : nullptr;
+
         if (isTwoPlayer && element->screen == "operation") {
-            // Keep its single-player physical size and right-edge anchoring.
-            // The shared vertical offset keeps the whole authored group in
-            // each player's half-height viewport.
+            const std::string* player1TextOverride =
+                element->id == "buttonTextB" && players[0] &&
+                        players[0]->IsWaitingForBoat()
+                    ? &disembarkBoatText
+                    : textOverride;
             DrawCustomElement(
                 *element,
                 operationGuideVerticalOffset,
@@ -1295,7 +1321,13 @@ void UIRenderer::DrawCustomUI()
                 false,
                 1.0f,
                 players[0],
-                getOperationGuideOpacity(*element, players[0]));
+                getOperationGuideOpacity(*element, players[0]),
+                player1TextOverride);
+            const std::string* player2TextOverride =
+                element->id == "buttonTextB" && players[1] &&
+                        players[1]->IsWaitingForBoat()
+                    ? &disembarkBoatText
+                    : textOverride;
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
@@ -1304,17 +1336,23 @@ void UIRenderer::DrawCustomUI()
                 false,
                 1.0f,
                 players[1],
-                getOperationGuideOpacity(*element, players[1]));
+                getOperationGuideOpacity(*element, players[1]),
+                player2TextOverride);
             continue;
         }
 
-        // In solo split play, only the currently controlled slime receives
-        // input.  Do not use players.front(): it may be the half that is
-        // already inside a rocket, which would incorrectly dim every guide.
+
+
+
         const Player* operationPlayer =
             mGame->GetIsPlayerSplit()
                 ? mGame->GetControlledPlayer()
                 : (!players.empty() ? players.front() : nullptr);
+        const std::string* operationTextOverride =
+            element->id == "buttonTextB" && operationPlayer &&
+                    operationPlayer->IsWaitingForBoat()
+                ? &disembarkBoatText
+                : textOverride;
         DrawCustomElement(
             *element,
             0.0f,
@@ -1322,7 +1360,8 @@ void UIRenderer::DrawCustomUI()
             false,
             -1.0f,
             element->screen == "operation" ? operationPlayer : nullptr,
-            getOperationGuideOpacity(*element, operationPlayer));
+            getOperationGuideOpacity(*element, operationPlayer),
+            operationTextOverride);
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
             RecordRenderedUIElement(
@@ -1345,7 +1384,7 @@ void UIRenderer::DrawUGCForegroundCustomUI(
     }
 
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "menu" ||
+        return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
                id == "play" || id == "preview" ||
                id == "presetPlatform" || id == "presetEnemy" ||
@@ -1417,12 +1456,25 @@ void UIRenderer::EndImGuiFrame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void UIRenderer::DrawSkyBox()
+void UIRenderer::DrawSkyBox(int renderWidth, int renderHeight)
 {
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    if (renderWidth <= 0 || renderHeight <= 0) {
+        glfwGetFramebufferSize(
+            mGame->GetWindow(),
+            &renderWidth,
+            &renderHeight);
+    }
+
+    const int previousFramebufferWidth = mFbWidth;
+    const int previousFramebufferHeight = mFbHeight;
+    mFbWidth = renderWidth;
+    mFbHeight = renderHeight;
     glUseProgram(mUIShader->GetShaderProgram());
 
     DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
+
+    mFbWidth = previousFramebufferWidth;
+    mFbHeight = previousFramebufferHeight;
 }
 
 void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, int index,
@@ -1657,7 +1709,7 @@ void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, c
 
 void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
                                               const std::string& UIName, float screenTopY,
-                                              float uiScale)
+                                              float screenHeight)
 {
     const UILoadSystem::TextInfo* textInfo = nullptr;
     std::string resolvedUIName;
@@ -1673,11 +1725,9 @@ void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::s
         return;
     }
 
-    const float screenHeight = mFbHeight * uiScale;
-
     const float x = mFbWidth * textInfo->xRatio;
     const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
+    const float scale = mFbWidth * textInfo->scaleRatio;
 
     DrawTextForElement(
         sceneName,
@@ -1701,9 +1751,9 @@ bool UIRenderer::UsesControllerUI(const Player* player) const
         return false;
     }
 
-    // A controller controls whichever half is currently selected during
-    // solo split play. In local multiplayer, controller 1 is player 1 and,
-    // when connected, controller 2 is player 2.
+
+
+
     return !mGame->GetIsPlayer2Joined() ||
            mGame->HasGameControllerForPlayer(player->GetPlayerNum());
 }
@@ -1976,9 +2026,6 @@ void UIRenderer::DrawTextLine(
     glm::vec2 rotationPivot,
     float outlineWidth)
 {
-    int textWidth = 0;
-    int textHeight = 0;
-
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
@@ -1987,10 +2034,17 @@ void UIRenderer::DrawTextLine(
             ? std::max(1, static_cast<int>(std::round(outlineWidth / scale)))
             : 0;
     const float actualOutlineWidth = static_cast<float>(outlinePixels) * scale;
-    GLuint textTexture =
-        CreateTextTexture(message, textWidth, textHeight, textColor, scale, outlinePixels);
+    const CachedTextTexture* cachedTexture =
+        FindOrCreateTextTexture(message, textColor, outlinePixels);
+    if (!cachedTexture) {
+        return;
+    }
 
-    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
+    const int textWidth =
+        static_cast<int>(static_cast<float>(cachedTexture->unscaledWidth) * scale);
+    const int textHeight =
+        static_cast<int>(static_cast<float>(cachedTexture->unscaledHeight) * scale);
+    if (textWidth <= 0 || textHeight <= 0) {
         return;
     }
 
@@ -2032,12 +2086,88 @@ void UIRenderer::DrawTextLine(
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textTexture);
+    glBindTexture(GL_TEXTURE_2D, cachedTexture->handle);
 
     mVertexArrays.at("quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glDeleteTextures(1, &textTexture);
+}
+
+std::size_t UIRenderer::TextTextureCacheKeyHash::operator()(
+    const TextTextureCacheKey& key) const
+{
+    const std::size_t textHash = std::hash<std::string>{}(key.text);
+    const std::size_t colorHash = std::hash<std::uint32_t>{}(key.rgba);
+    const std::size_t outlineHash = std::hash<int>{}(key.outlinePixels);
+    return textHash ^ (colorHash << 1) ^ (outlineHash << 2);
+}
+
+const UIRenderer::CachedTextTexture* UIRenderer::FindOrCreateTextTexture(
+    const std::string& text,
+    const SDL_Color& color,
+    int outlinePixels)
+{
+    const std::uint32_t rgba =
+        static_cast<std::uint32_t>(color.r) << 24 |
+        static_cast<std::uint32_t>(color.g) << 16 |
+        static_cast<std::uint32_t>(color.b) << 8 |
+        static_cast<std::uint32_t>(color.a);
+    const TextTextureCacheKey key{text, rgba, outlinePixels};
+
+    const auto existingTexture = mTextTextureCache.find(key);
+    if (existingTexture != mTextTextureCache.end()) {
+        existingTexture->second.lastUseOrder = ++mNextTextTextureUseOrder;
+        return &existingTexture->second;
+    }
+
+    constexpr std::size_t maxTextTextureCount = 256;
+    if (mTextTextureCache.size() >= maxTextTextureCount) {
+        EvictLeastRecentlyUsedTextTexture();
+    }
+
+    int unscaledWidth = 0;
+    int unscaledHeight = 0;
+    const GLuint textureHandle =
+        CreateTextTexture(text, unscaledWidth, unscaledHeight, color, 1.0f, outlinePixels);
+    if (textureHandle == 0 || unscaledWidth <= 0 || unscaledHeight <= 0) {
+        return nullptr;
+    }
+
+    const auto [insertedTexture, wasInserted] = mTextTextureCache.emplace(
+        key,
+        CachedTextTexture{
+            textureHandle,
+            unscaledWidth,
+            unscaledHeight,
+            ++mNextTextTextureUseOrder});
+    if (!wasInserted) {
+        glDeleteTextures(1, &textureHandle);
+    }
+    return &insertedTexture->second;
+}
+
+void UIRenderer::EvictLeastRecentlyUsedTextTexture()
+{
+    if (mTextTextureCache.empty()) {
+        return;
+    }
+
+    const auto leastRecentlyUsedTexture = std::min_element(
+        mTextTextureCache.begin(),
+        mTextTextureCache.end(),
+        [](const auto& left, const auto& right) {
+            return left.second.lastUseOrder < right.second.lastUseOrder;
+        });
+    glDeleteTextures(1, &leastRecentlyUsedTexture->second.handle);
+    mTextTextureCache.erase(leastRecentlyUsedTexture);
+}
+
+void UIRenderer::ClearTextTextureCache()
+{
+    for (const auto& cacheEntry : mTextTextureCache) {
+        glDeleteTextures(1, &cacheEntry.second.handle);
+    }
+    mTextTextureCache.clear();
 }
 
 void UIRenderer::DrawRubyText(float x, float y, float scale,
@@ -2122,10 +2252,12 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
             : glm::vec2(
                   x + maximumLineWidth * 0.5f,
                   y + totalTextHeight * 0.5f);
-    // DrawText treats a center-based position as the centre of the base
-    // glyphs.  Ruby text is drawn segment-by-segment using top-left
-    // coordinates, so convert the shared anchor before drawing.  Without
-    // this conversion the authored centre becomes the text's top-left.
+
+    // 本文の中央基準と左上基準で描くルビが同じ位置に揃うよう、共通の回転基準を使う。
+
+
+
+
     const float baseStartX =
         centerBased ? x - maximumLineWidth * 0.5f : x;
     const float baseStartY =
@@ -2179,9 +2311,11 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
                         lineY -
                         static_cast<float>(rubyHeight) *
                             (0.9f + rubyGapRatio);
-                    // Ruby glyphs are deliberately left unoutlined.  Their
-                    // smaller size makes even a proportionally thin outline
-                    // fill in the counters and harm legibility.
+
+                    // 小さいルビに縁取りを付けると文字内部が潰れて読みにくくなるため、縁取りしない。
+
+
+
                     DrawTextLine(
                         segment.reading,
                         rubyX,

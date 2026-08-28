@@ -1,5 +1,6 @@
 #include "Player.h"
 
+#include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
@@ -21,11 +22,24 @@ constexpr std::string_view dodgeAnimationId = "dodge";
 constexpr std::string_view attackAnimationId = "attack";
 constexpr std::string_view secondAttackAnimationId = "second_attack";
 constexpr std::string_view strongAttackAnimationId = "strong_attack";
-} // namespace
+}
 
 Player::Player(Game* game)
     : CharacterActor(game)
 {
+}
+
+void Player::SetCurrentPlanet(Planet* currentPlanet)
+{
+    if (GetCurrentPlanet() == currentPlanet) {
+        return;
+    }
+
+    Actor::SetCurrentPlanet(currentPlanet);
+
+    if (mGame) {
+        mGame->OnPlayerCurrentPlanetChanged(*this);
+    }
 }
 
 void Player::ApplyConfig()
@@ -71,6 +85,15 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mMovement.SetDodgeDuration(config.dodgeDuration);
     mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);
     mMovement.SetDodgeDistance(config.dodgeDistance);
+    mCombat.SetAirDodgeAttackDamage(config.airDodgeAttackDamage);
+    mCombat.SetAirDodgeHorizontalHitboxScale(
+        config.airDodgeHorizontalHitboxScale);
+    mCombat.SetAirDodgeVerticalHitboxScale(
+        config.airDodgeVerticalHitboxScale);
+    mCombat.SetAirDodgeEnemyPushSpeed(
+        config.airDodgeEnemyPushSpeed);
+    mCombat.SetAirDodgeEnemyPushDampingPerSecond(
+        config.airDodgeEnemyPushDampingPerSecond);
 
     mCombat.SetNormalAttackRange(config.normalAttackRange);
     mCombat.SetNormalAttackAngle(config.normalAttackAngle);
@@ -106,7 +129,10 @@ void Player::ApplyPlayerConfig(const PlayerConfig& config)
     mStatus.SetDefaultDamageTimer(config.defaultDamageTimer);
     mCombat.SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
     mCombat.SetAttackHitDelay(config.attackHitDelay);
-    mCombat.SetAttackCooldown(config.attackCooldown);
+    mCombat.SetGroundWeakAttackCooldownSeconds(
+        config.groundWeakAttackCooldownSeconds);
+    mCombat.SetAirWeakAttackCooldownSeconds(
+        config.airWeakAttackCooldownSeconds);
     mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
     mCombat.SetDefaultStrongAttackTimer(config.defaultStrongAttackTimer);
     mMovement.SetKnockBackSpeed(config.knockBackSpeed);
@@ -147,9 +173,9 @@ void Player::RecoverFromFatigue()
 
 void Player::OnAttachedToAdhesivePlatform()
 {
-    // Adhesion is a stable support point even when it is a wall or ceiling.
-    // Restore the same airborne action availability as a landing without
-    // emitting a separate gameplay landing event.
+
+
+
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();
@@ -280,8 +306,8 @@ void Player::UpdateActor(float deltaTime)
     const bool didWalkOffGround =
         wasOnGroundBeforeLandingCheck && !GetOnGround();
     if (didWalkOffGround) {
-        // Jump input starts airborne gravity in the state machine below, but
-        // simply walking off an edge bypasses that transition.
+
+
         mPlanetGravityController.OnJumpStarted(
             *this,
             mMovement);
@@ -461,12 +487,22 @@ void Player::OnBoatArrived(Boat* boat)
     mPlanetGravityController.OnRespawned();
 }
 
+bool Player::IsWaitingForBoat() const
+{
+    return mBoatRide.IsWaitingForBoat(*this);
+}
+
+bool Player::CancelWaitingBoatRide()
+{
+    return mBoatRide.CancelWaitingBoatRide(*this);
+}
+
 void Player::RespawnAtRestartPoint()
 {
     mRespawn.Respawn(*this);
     mStateMachine.ChangeState(PlayerActionState::Idle);
     mCombat.CancelSpecialAttack();
-    // A restart must never retain the movement/attack lock from fatigue.
+
     mCombat.EndTiredLock(mStatus, mMovement);
 
     SetIsActive(true);
@@ -506,17 +542,17 @@ void Player::ForceGroundedForCinematic()
         return;
     }
 
-    // Prefer the actual collision surface below the player, so platforms are
-    // preserved. A planet-surface fallback guarantees that a cinematic never
-    // begins with the player suspended in midair.
+
+
+
     mGrounding.SnapToGround(*this, 20.0f, 100.0f);
     if (!GetOnGround() && GetCurrentPlanet()) {
         Planet* planet = GetCurrentPlanet();
         glm::vec3 fallbackPosition;
         if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
-            // CalculateSurfacePos uses the spherical radius and can put a
-            // cinematic actor inside a flattened planet. Project the current
-            // position to the actual ellipsoid surface instead.
+
+
+
             const Planet::EllipseSurfaceProjection surface =
                 planet->CalculateEllipseSurfaceProjection(GetPos());
             fallbackPosition =
@@ -569,9 +605,9 @@ void Player::ForceGroundedForCinematicAt(
     const float phi = std::asin(glm::clamp(direction.y, -1.0f, 1.0f));
 
     SetCurrentPlanet(planet);
-    // A star-clear pose must not inherit the player's previous airborne
-    // height. Put its origin immediately above the planet surface and hold
-    // that exact contact pose during the clear screen.
+
+
+
     constexpr float cinematicGroundClearance = 0.05f;
     SetSphericalPlacement(theta, phi, cinematicGroundClearance);
     const Planet::EllipseSurfaceProjection surface =
@@ -587,8 +623,8 @@ void Player::ForceGroundedForCinematicAt(
     }
     SetVelocity(glm::vec3(0.0f));
     SetOnGround(true);
-    // The stage-clear scene locks player input, so there is no need to let a
-    // later short landing ray undo this explicitly staged contact pose.
+
+
     SetShouldJudgeLanding(false);
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();

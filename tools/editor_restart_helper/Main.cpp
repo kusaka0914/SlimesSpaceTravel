@@ -247,7 +247,7 @@ bool LaunchGame(
     _exit(127);
 }
 #endif
-} // namespace
+}
 
 int main(int argumentCount, char* argumentValues[])
 {

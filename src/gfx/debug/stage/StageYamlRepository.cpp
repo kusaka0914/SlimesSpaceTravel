@@ -50,10 +50,10 @@ bool StageYamlRepository::SaveCurrentStage(
         return false;
     }
 
-    // Actor creation writes the stage YAML immediately.  A planet moved by
-    // the gizmo may not have gone through the planet inspector's Save button
-    // yet, so preserve its authored center before that write replaces the
-    // file with stale coordinates.
+
+
+
+
     if (preserveRuntimePlanetCenters &&
         context.game && context.game->GetCurrentStage() &&
         config["planets"] && config["planets"].IsSequence()) {
@@ -154,46 +154,5 @@ bool StageYamlRepository::WriteCurrentStageTextAtomically(DebugEditorContext& co
         }
     }
 
-    return true;
-}
-
-bool StageYamlRepository::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
-{
-    std::ofstream file(filePath);
-
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file << config;
-    return true;
-}
-
-bool StageYamlRepository::RemoveSequenceElement(YAML::Node& config, const std::string& sequenceName, int index)
-{
-    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
-        std::cerr << "Invalid yaml sequence: " << sequenceName << std::endl;
-        return false;
-    }
-
-    YAML::Node oldSeq = config[sequenceName];
-
-    if (index < 0 || index >= static_cast<int>(oldSeq.size())) {
-        std::cerr << "Delete index out of range: " << index << std::endl;
-        return false;
-    }
-
-    YAML::Node newSeq(YAML::NodeType::Sequence);
-
-    for (int i = 0; i < static_cast<int>(oldSeq.size()); ++i) {
-        if (i == index) {
-            continue;
-        }
-
-        newSeq.push_back(oldSeq[i]);
-    }
-
-    config[sequenceName] = newSeq;
     return true;
 }

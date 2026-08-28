@@ -170,7 +170,7 @@ ParticleEmitterDefinition CreateDefaultEmitter()
     emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
     return emitter;
 }
-} // namespace
+}
 
 ParticleEffectDebugPanel::ParticleEffectDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)

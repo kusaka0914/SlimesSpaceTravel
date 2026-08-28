@@ -80,7 +80,7 @@ void SortKeyframes(CinematicSequence& sequence)
                          return left.time < right.time;
                      });
 }
-} // namespace
+}
 
 CameraDebugPanel::CameraDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)
@@ -116,6 +116,12 @@ void CameraDebugPanel::DrawView(View view)
                                                     0.25f, -89.0f, 89.0f);
             playerCameraChanged |= ImGui::DragFloat("注視点の高さ##PlayerCamera", &playerCameraSettings.targetHeight,
                                                     0.05f, -10.0f, 20.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "2画面時の注視点の高さ##PlayerCamera",
+                &playerCameraSettings.splitScreenTargetHeight,
+                0.05f,
+                -10.0f,
+                20.0f);
             playerCameraChanged |=
                 ImGui::DragFloat("FOV##PlayerCamera", &playerCameraSettings.fieldOfViewDegrees, 0.25f, 10.0f, 120.0f);
             playerCameraChanged |= ImGui::DragFloat(

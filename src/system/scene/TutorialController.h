@@ -82,4 +82,5 @@ private:
     std::uint64_t mJumpSequenceAtPageStart = 0;
     std::uint64_t mTutorialSessionSequence = 0;
     bool mHasJumpStartedOnCurrentPage = false;
+    bool mShouldRecordActiveTutorialCompletion = false;
 };

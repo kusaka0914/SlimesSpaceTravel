@@ -83,7 +83,7 @@ void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float 
         &player);
     EmitAttackHitEffect(player, enemy, effectScale);
 }
-} // namespace
+}
 
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,
@@ -247,7 +247,9 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
     Player& player,
     const PlayerMovement& movement,
     const std::vector<Enemy*>& hitEnemies,
-    float damage) const
+    float damage,
+    float enemyPushSpeed,
+    float enemyPushDampingPerSecond) const
 {
     bool didHitEnemy = false;
     for (Enemy* enemy : hitEnemies) {
@@ -262,7 +264,9 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
             player,
             1.25f);
         enemy->ApplyAirDodgePush(
-            movement.GetDodgeDirection());
+            movement.GetDodgeDirection(),
+            enemyPushSpeed,
+            enemyPushDampingPerSecond);
         didHitEnemy = true;
     }
 

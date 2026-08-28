@@ -200,7 +200,7 @@ bool TutorialLibrary::Load()
                     ReadString(
                         tutorialNode,
                         "repeat",
-                        "oncePerSession"));
+                        "onceEver"));
             definition.textXRatio = ReadFloat(
                 tutorialNode,
                 "textXRatio",
@@ -319,8 +319,8 @@ bool TutorialLibrary::Load()
                 tutorialNode["assistPages"],
                 definition.assistPages);
 
-            // Seed the original battle tutorial once, then keep the pages as
-            // ordinary YAML data that can be edited in the debug editor.
+
+
             if (definition.id == "battle_basic" &&
                 definition.usesAssistPages) {
                 if (definition.assistPages.empty()) {
@@ -634,7 +634,7 @@ const char* GetTutorialRepeatPolicyId(
 {
     return policy == TutorialRepeatPolicy::EveryRequest
                ? "everyRequest"
-               : "oncePerSession";
+               : "onceEver";
 }
 
 TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
@@ -642,5 +642,5 @@ TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
 {
     return policyId == "everyRequest"
                ? TutorialRepeatPolicy::EveryRequest
-               : TutorialRepeatPolicy::OncePerSession;
+               : TutorialRepeatPolicy::OnceEver;
 }

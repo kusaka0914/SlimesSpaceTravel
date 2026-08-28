@@ -19,6 +19,7 @@ public:
     void StartTravel();
     void StartFocus();
     void BoardPlayer(Player* player);
+    bool UnboardPlayer(Player* player);
     bool HasBoardedPlayer(const Player* player) const;
 
     void SetDestPlanet(Planet* destPlanet);

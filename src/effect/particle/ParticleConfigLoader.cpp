@@ -238,7 +238,7 @@ void EmitEmitterDefinition(YAML::Emitter& emitter, const ParticleEmitterDefiniti
 
     emitter << YAML::EndMap;
 }
-} // namespace
+}
 
 bool ParticleConfigLoader::Load(
     const std::string& filePath,

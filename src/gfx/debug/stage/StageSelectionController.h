@@ -21,6 +21,12 @@ public:
     void Update();
     void DrawBoxSelectionRect() const;
     void ApplyEditorSelectionFlags();
+    void SetBoxSelectionEnabled(bool isEnabled);
+    bool IsBoxSelectionGestureActive() const
+    {
+        return mIsBoxSelectMouseDown &&
+            mShouldStartBoxSelectionOnDrag;
+    }
     void SetUGCEditLayer(int gridLayer) { mUGCEditLayer = gridLayer; }
 
     bool ConsumeRequestOpenPlacement();
@@ -37,6 +43,7 @@ public:
     void SetSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
 
     bool IsSelected(const StageActorRef& actorRef) const;
+    bool IsMovingPlatformDestinationSelected() const;
 
     Actor* GetPickedActor() const;
     const std::optional<StageActorRef>& GetPickedActorRef() const;
@@ -47,7 +54,10 @@ public:
     std::vector<StageActorInstance> CollectSelectedActorInstances() const;
 
     glm::vec3 CalculateSelectedActorsCenter() const;
+    glm::vec3 CalculateSelectedMovingPlatformDestinationsCenter() const;
     void MoveSelectedActorsByDelta(const glm::vec3& delta);
+    void MoveSelectedMovingPlatformDestinationsByDelta(
+        const glm::vec3& delta);
     bool TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec3& outRayTo) const;
     bool TryWorldToScreenPoint(
         const glm::vec3& worldPos,
@@ -58,8 +68,12 @@ public:
 
 private:
     void PrepareActorForEditorSelection(Actor* actor);
+    void ResetBoxSelectionGesture();
+    void ResolveUGCBoxSelectionGestureAfterPick();
     void UpdateBoxSelection();
     void UpdatePickedActorByMouse();
+    bool TrySelectUGCMovingPlatformEndpoint(
+        const ImVec2& clickPosition);
     std::vector<PhysicsSystem::RayHitActor> CollectUGCScreenPickHits(
         const ImVec2& clickPosition) const;
 
@@ -77,6 +91,7 @@ private:
     std::unordered_set<std::string> mSelectedKeys;
 
     bool mRequestOpenPlacement = false;
+    bool mIsMovingPlatformDestinationSelected = false;
 
     int mLastMousePickFrame = -1;
     bool mHasLastPickClick = false;
@@ -85,6 +100,8 @@ private:
     bool mIsBoxSelectMouseDown = false;
     bool mIsBoxSelecting = false;
     bool mBoxSelectMoved = false;
+    bool mIsBoxSelectionEnabled = true;
+    bool mShouldStartBoxSelectionOnDrag = true;
 
     ImVec2 mBoxSelectStart = ImVec2(0.0f, 0.0f);
     ImVec2 mBoxSelectEnd = ImVec2(0.0f, 0.0f);

@@ -44,7 +44,7 @@ glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, cons
     glm::vec3 tangentDirection;
     return TryGetTangentDirection(rotated, up, tangentDirection) ? tangentDirection : desired;
 }
-} // namespace
+}
 
 TalkController::TalkController(Game* game, GameProgressState* gameProgressState, UIState* uiState, NPC*& talkingNPC,
                                Player*& talkingPlayer)

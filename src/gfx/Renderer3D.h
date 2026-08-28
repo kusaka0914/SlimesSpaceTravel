@@ -29,19 +29,28 @@ class SceneObjectRenderer;
 class Shader3D;
 class VertexArray;
 
+enum class UGCSceneLayerRenderMode {
+    AutomaticallyHighlightEditingLayer,
+    HighlightEditingLayer,
+    HighlightEditingLayerWithoutDimming,
+    ShowAllLayers,
+};
+
 class Renderer3D : public Renderer {
 public:
     explicit Renderer3D(Game* game);
     ~Renderer3D();
 
     void Initialize();
+    void Shutdown();
     void Draw() const;
 
     void DrawScene(
         const glm::mat4& viewMat,
         const glm::mat4& projMat,
         const glm::vec3& cameraPos,
-        bool emphasizeUGCLayers = false,
+        UGCSceneLayerRenderMode ugcLayerRenderMode =
+            UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer,
         int ugcEditLayer = 0,
         const Player* viewportPlayer = nullptr) const;
 
@@ -108,6 +117,7 @@ private:
         const glm::vec4& color,
         float scaleMultiplier) const;
     void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
+    void DrawUGCMovingPlatformPaths() const;
 
     bool UploadActorSkinningMatrices(const Actor* actor) const;
     void SetSkinningEnabled(bool isEnabled) const;
@@ -129,6 +139,7 @@ private:
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;
     mutable bool mEmphasizeUGCLayers = false;
+    mutable bool mDimNonEditingUGCLayers = false;
     mutable int mUGCEditLayer = 0;
     mutable float mActorOpacityMultiplier = 1.0f;
 };

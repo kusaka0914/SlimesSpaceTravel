@@ -172,4 +172,4 @@ bool DoesSegmentIntersectExpandedBounds(
 
     return maximumSegmentTime >= 0.0f && minimumSegmentTime <= 1.0f;
 }
-} // namespace EnemyCollisionGeometry
+}

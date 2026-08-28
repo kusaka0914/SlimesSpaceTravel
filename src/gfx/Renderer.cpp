@@ -29,7 +29,7 @@ void Renderer::Initialize()
 void Renderer::InitializeFont()
 {
     if (TTF_Init() != 0) {
-        // std::cerr << "TTF_Init failed: " << TTF_GetError() << std::endl;
+
     }
 
     mFont = TTF_OpenFont("../assets/fonts/NotoSansJP-Black.ttf", 72);

@@ -52,8 +52,8 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
         return false;
     }
 
-    // A steep surface is unsuitable for gravity alignment, but still proves
-    // that the player has not fallen into empty space.
+
+
     if (onSurfaceDetected) {
         onSurfaceDetected();
     }
@@ -78,7 +78,7 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
     outHit.object = rayCallback.m_collisionObject;
     return true;
 }
-} // namespace
+}
 
 glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec3& pos, const glm::vec3& upVec,
                                                        const glm::vec3& forwardVec, const glm::vec3& leftVec,

@@ -138,7 +138,7 @@ void AppendBehaviorActions(
             try {
                 action.parameters[key] = entry.second.as<float>();
             } catch (const YAML::BadConversion&) {
-                // Attack metadata that is not numeric is not consumed at runtime.
+
             }
         }
 
@@ -183,8 +183,8 @@ bool ApplyPresetAttacks(
     };
     AppendBehaviorActions(behavior, attacksNode);
 
-    // A saved preset must contain at least one attack. Keep the legacy attack
-    // as a safe fallback for hand-edited or incomplete YAML files.
+
+
     if (behavior.actions.size() == 2) {
         behavior.actions.push_back(
             EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
@@ -193,7 +193,7 @@ bool ApplyPresetAttacks(
     config.behavior = std::move(behavior);
     return true;
 }
-} // namespace
+}
 
 EnemyConfig EnemyConfigLoader::Load(const std::string& path, const std::string& type)
 {

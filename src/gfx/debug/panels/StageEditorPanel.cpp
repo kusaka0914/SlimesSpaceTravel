@@ -11,6 +11,7 @@
 #include "gfx/debug/panels/StagePlanetPanel.h"
 #include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "imgui.h"
@@ -87,16 +88,25 @@ std::vector<StageYamlOption> CollectStageYamlOptions(int currentStageNumber, int
 }
 }
 
-StageEditorPanel::StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel,
-                                   StagePlanetPanel& planetPanel, StagePlacementPanel& placementPanel,
-                                   StageDeleteActorPanel& deleteActorPanel,
-                                   StageSelectionController& selectionController)
+StageEditorPanel::StageEditorPanel(
+    DebugEditorContext& context,
+    StageAddActorPanel& addActorPanel,
+    StagePlanetPanel& planetPanel,
+    StagePlacementPanel& placementPanel,
+    StageDeleteActorPanel& deleteActorPanel,
+    StageActorYamlWriter& stageActorYamlWriter,
+    StageSelectionController& selectionController,
+    std::function<bool()> restoreUndo,
+    std::function<bool()> restoreRedo)
     : DebugPanel(context),
       mAddActorPanel(addActorPanel),
       mPlanetPanel(planetPanel),
       mPlacementPanel(placementPanel),
       mDeleteActorPanel(deleteActorPanel),
-      mSelectionController(selectionController)
+      mStageActorYamlWriter(stageActorYamlWriter),
+      mSelectionController(selectionController),
+      mRestoreUndo(std::move(restoreUndo)),
+      mRestoreRedo(std::move(restoreRedo))
 {
 }
 
@@ -144,7 +154,31 @@ void StageEditorPanel::DrawToolbar()
     ImGui::SameLine();
     if (ImGui::Button("ステージを保存")) {
         mPlanetPanel.Save();
-        mPlacementPanel.Save();
+        mStageActorYamlWriter.SaveAllActorStates();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("元に戻す##stageUndo")) {
+        mEditHistoryStatus = mRestoreUndo && mRestoreUndo()
+            ? "1つ前の状態に戻しました"
+            : "戻せる操作がありません";
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Ctrl+Z");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("やり直す##stageRedo")) {
+        mEditHistoryStatus = mRestoreRedo && mRestoreRedo()
+            ? "戻した操作をやり直しました"
+            : "やり直せる操作がありません";
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Ctrl+Y または Ctrl+Shift+Z");
+    }
+    if (!mEditHistoryStatus.empty()) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", mEditHistoryStatus.c_str());
     }
 }
 
@@ -259,9 +293,9 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
             mDuplicatePlacementStatus =
                 "選択中オブジェクトの保存データを取得できませんでした";
         } else {
-            // Capture the current inspector values before the YAML node is
-            // retained as the repeated-placement template.
-            mPlacementPanel.Save();
+
+
+            mStageActorYamlWriter.SaveAllActorStates();
             const bool started =
                 mAddActorPanel.BeginDuplicatePlacement(
                     *selectedActorRef);

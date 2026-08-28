@@ -17,6 +17,7 @@
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <glm/gtc/matrix_transform.hpp>
 #include <unordered_set>
 #include <utility>
@@ -33,6 +34,16 @@ void StageSelectionController::Update()
 
     if (!mIsBoxSelecting) {
         UpdatePickedActorByMouse();
+    }
+
+    ResolveUGCBoxSelectionGestureAfterPick();
+}
+
+void StageSelectionController::SetBoxSelectionEnabled(bool isEnabled)
+{
+    mIsBoxSelectionEnabled = isEnabled;
+    if (!mIsBoxSelectionEnabled) {
+        ResetBoxSelectionGesture();
     }
 }
 
@@ -82,6 +93,7 @@ void StageSelectionController::Clear()
     mPickedActor = nullptr;
     mPickedActorRef.reset();
     mSelectedKeys.clear();
+    mIsMovingPlatformDestinationSelected = false;
     mHasLastPickClick = false;
 }
 
@@ -94,6 +106,7 @@ void StageSelectionController::ClearPickedActor()
 void StageSelectionController::ClearSelectedKeys()
 {
     mSelectedKeys.clear();
+    mIsMovingPlatformDestinationSelected = false;
 }
 
 void StageSelectionController::SetSingleSelection(Actor* actor, const StageActorRef& actorRef)
@@ -105,12 +118,14 @@ void StageSelectionController::SetSingleSelection(Actor* actor, const StageActor
 
     mSelectedKeys.clear();
     mSelectedKeys.insert(MakeKey(actorRef));
+    mIsMovingPlatformDestinationSelected = false;
 
     mRequestOpenPlacement = true;
 }
 
 void StageSelectionController::ToggleSelection(Actor* actor, const StageActorRef& actorRef)
 {
+    mIsMovingPlatformDestinationSelected = false;
     const std::string key = MakeKey(actorRef);
 
     if (mSelectedKeys.contains(key)) {
@@ -146,12 +161,40 @@ void StageSelectionController::PrepareActorForEditorSelection(Actor* actor)
         return;
     }
 
-    // Free-camera mode pauses actor updates, so a moving platform can still be
-    // left at its last runtime position when selected. Reapply the authored
-    // preview point without deriving or replacing either path endpoint from
-    // that runtime position.
+
+
+
+
     movement->SetEditorPreviewPoint(
         movement->GetEditorPreviewPoint());
+}
+
+void StageSelectionController::ResetBoxSelectionGesture()
+{
+    mIsBoxSelectMouseDown = false;
+    mIsBoxSelecting = false;
+    mBoxSelectMoved = false;
+    mShouldStartBoxSelectionOnDrag = true;
+}
+
+void StageSelectionController::ResolveUGCBoxSelectionGestureAfterPick()
+{
+    if (!mIsBoxSelectMouseDown || mIsBoxSelecting ||
+        !mContext.game || !mContext.game->GetIsUGCMode()) {
+        return;
+    }
+
+    if (ImGui::GetIO().KeyShift) {
+        mShouldStartBoxSelectionOnDrag = true;
+        return;
+    }
+
+    if (!mPickedActorRef) {
+        mShouldStartBoxSelectionOnDrag = true;
+        return;
+    }
+
+    mShouldStartBoxSelectionOnDrag = false;
 }
 
 void StageSelectionController::AddSelectedKey(const std::string& key)
@@ -172,6 +215,7 @@ void StageSelectionController::SetSelectedKeys(const std::unordered_set<std::str
 {
     mSelectedKeys = selectedKeys;
     ClearPickedActor();
+    mIsMovingPlatformDestinationSelected = false;
 
     mRequestOpenPlacement = true;
 }
@@ -179,6 +223,18 @@ void StageSelectionController::SetSelectedKeys(const std::unordered_set<std::str
 bool StageSelectionController::IsSelected(const StageActorRef& actorRef) const
 {
     return mSelectedKeys.contains(MakeKey(actorRef));
+}
+
+bool StageSelectionController::IsMovingPlatformDestinationSelected() const
+{
+    if (!mIsMovingPlatformDestinationSelected ||
+        mSelectedKeys.size() != 1 || !mPickedActor) {
+        return false;
+    }
+
+    const Platform* selectedPlatform =
+        dynamic_cast<const Platform*>(mPickedActor);
+    return selectedPlatform && selectedPlatform->GetMovementComponent();
 }
 
 Actor* StageSelectionController::GetPickedActor() const
@@ -256,6 +312,10 @@ StageSelectionController::CollectSelectedActorInstances() const
 
 glm::vec3 StageSelectionController::CalculateSelectedActorsCenter() const
 {
+    if (mIsMovingPlatformDestinationSelected) {
+        return CalculateSelectedMovingPlatformDestinationsCenter();
+    }
+
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return glm::vec3(0.0f);
     }
@@ -286,6 +346,42 @@ glm::vec3 StageSelectionController::CalculateSelectedActorsCenter() const
     return sum / static_cast<float>(count);
 }
 
+glm::vec3 StageSelectionController::
+CalculateSelectedMovingPlatformDestinationsCenter() const
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return glm::vec3(0.0f);
+    }
+
+    glm::vec3 destinationPositionSum(0.0f);
+    int destinationCount = 0;
+    for (const StageActorInstance& instance :
+         StageActorQuery::CollectAllActorInstances(
+             mContext.game->GetCurrentStage())) {
+        if (!instance.actor ||
+            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
+        }
+
+        Platform* platform = dynamic_cast<Platform*>(instance.actor);
+        PlatformMovementComponent* movement =
+            platform ? platform->GetMovementComponent() : nullptr;
+        Planet* planet = platform ? platform->GetCurrentPlanet() : nullptr;
+        if (!movement || !planet) {
+            continue;
+        }
+
+        destinationPositionSum +=
+            planet->GetPos() + movement->GetDestinationLocalPos();
+        ++destinationCount;
+    }
+
+    if (destinationCount == 0) {
+        return glm::vec3(0.0f);
+    }
+    return destinationPositionSum / static_cast<float>(destinationCount);
+}
+
 void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -309,8 +405,10 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
 
         selectedPlanets.insert(planet);
         planet->SetPos(planet->GetPos() + delta);
-        if (mContext.planetMoveMode ==
-            PlanetMoveMode::WithBoundActors) {
+        const bool shouldMoveBoundActors =
+            !mContext.game->GetIsUGCMode() &&
+            mContext.planetMoveMode == PlanetMoveMode::WithBoundActors;
+        if (shouldMoveBoundActors) {
             StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
                 planet,
                 delta);
@@ -339,8 +437,8 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
         // 選択惑星の所属物は惑星移動で既に追従している。個別にも選択されて
         // いる場合に再度deltaを加えると二重移動になるためスキップする。
         const bool wasMovedWithSelectedPlanet =
-            mContext.planetMoveMode ==
-                PlanetMoveMode::WithBoundActors &&
+            !mContext.game->GetIsUGCMode() &&
+            mContext.planetMoveMode == PlanetMoveMode::WithBoundActors &&
             selectedPlanets.contains(
                 instance.actor->GetCurrentPlanet());
         if (wasMovedWithSelectedPlanet) {
@@ -360,16 +458,42 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
     }
 }
 
+void StageSelectionController::MoveSelectedMovingPlatformDestinationsByDelta(
+    const glm::vec3& delta)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return;
+    }
+
+    for (const StageActorInstance& instance :
+         StageActorQuery::CollectAllActorInstances(
+             mContext.game->GetCurrentStage())) {
+        if (!instance.actor ||
+            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+            continue;
+        }
+
+        Platform* platform = dynamic_cast<Platform*>(instance.actor);
+        if (!platform || !platform->GetMovementComponent()) {
+            continue;
+        }
+
+        PlatformMovementComponent* movement =
+            platform->GetMovementComponent();
+        movement->SetDestinationLocalPos(
+            movement->GetDestinationLocalPos() + delta);
+        movement->SetEditorPreviewPoint(1);
+    }
+}
+
 void StageSelectionController::UpdateBoxSelection()
 {
     if (!mContext.game || !mContext.game->GetWindow()) {
         return;
     }
 
-    if (mContext.game->GetIsUGCMode()) {
-        mIsBoxSelectMouseDown = false;
-        mIsBoxSelecting = false;
-        mBoxSelectMoved = false;
+    if (!mIsBoxSelectionEnabled) {
+        ResetBoxSelectionGesture();
         return;
     }
 
@@ -411,6 +535,7 @@ void StageSelectionController::UpdateBoxSelection()
         mBoxSelectMouseDownPos = mousePos;
         mBoxSelectStart = mousePos;
         mBoxSelectEnd = mousePos;
+        mShouldStartBoxSelectionOnDrag = true;
         return;
     }
 
@@ -421,7 +546,8 @@ void StageSelectionController::UpdateBoxSelection()
         const float dy = mBoxSelectEnd.y - mBoxSelectMouseDownPos.y;
         const float distance = std::sqrt(dx * dx + dy * dy);
 
-        if (distance > 5.0f) {
+        if (distance > 5.0f &&
+            mShouldStartBoxSelectionOnDrag) {
             mIsBoxSelecting = true;
             mBoxSelectMoved = true;
         }
@@ -440,9 +566,7 @@ void StageSelectionController::UpdateBoxSelection()
             SelectActorsInScreenRect(rectMin, rectMax, io.KeyShift);
         }
 
-        mIsBoxSelectMouseDown = false;
-        mIsBoxSelecting = false;
-        mBoxSelectMoved = false;
+        ResetBoxSelectionGesture();
     }
 }
 
@@ -477,6 +601,17 @@ void StageSelectionController::UpdatePickedActorByMouse()
 
     std::vector<PhysicsSystem::RayHitActor> rawHits =
         mContext.game->GetPhysicsSystem()->PickActorsByRay(rayFrom, rayTo);
+    const bool hasDirectPlatformHit = std::any_of(
+        rawHits.begin(),
+        rawHits.end(),
+        [](const PhysicsSystem::RayHitActor& hit) {
+            return dynamic_cast<Platform*>(hit.actor) != nullptr;
+        });
+    if (mContext.game->GetIsUGCMode() && !io.KeyShift &&
+        !hasDirectPlatformHit &&
+        TrySelectUGCMovingPlatformEndpoint(ImGui::GetMousePos())) {
+        return;
+    }
     if (rawHits.empty() && mContext.game->GetIsUGCMode()) {
         rawHits = CollectUGCScreenPickHits(ImGui::GetMousePos());
     }
@@ -490,9 +625,8 @@ void StageSelectionController::UpdatePickedActorByMouse()
             PhysicsSystem::RayHitActor hit;
             int layer = 0;
         };
-        std::vector<LayeredHit> allLayerObjectHits;
-        std::vector<PhysicsSystem::RayHitActor> currentLayerPlanetHits;
-        std::unordered_set<Actor*> seenObjectActors;
+        std::vector<LayeredHit> allLayerHits;
+        std::unordered_set<Actor*> seenActors;
         std::unordered_set<Actor*> seenCurrentLayerActors;
         for (const PhysicsSystem::RayHitActor& hit : rawHits) {
             if (!hit.actor) {
@@ -517,35 +651,30 @@ void StageSelectionController::UpdatePickedActorByMouse()
                     actorLayer = actorNode["ugcGridLayer"].as<int>(actorLayer);
                 }
             }
-            const bool isPlanet = dynamic_cast<Planet*>(hit.actor) != nullptr;
-            if (!isPlanet && seenObjectActors.insert(hit.actor).second) {
-                allLayerObjectHits.push_back({hit, actorLayer});
+            if (seenActors.insert(hit.actor).second) {
+                allLayerHits.push_back({hit, actorLayer});
             }
             if (actorLayer == mUGCEditLayer &&
                 seenCurrentLayerActors.insert(hit.actor).second) {
-                if (isPlanet) {
-                    currentLayerPlanetHits.push_back(hit);
-                } else {
-                    hits.push_back(hit);
-                }
+                hits.push_back(hit);
             }
         }
 
-        // Prefer the floor the child is editing. If that floor is empty,
-        // select the highest object in the column so clicking a visible stack
-        // never appears to do nothing.
-        if (hits.empty() && !allLayerObjectHits.empty()) {
-            int highestLayer = allLayerObjectHits.front().layer;
-            for (const LayeredHit& layeredHit : allLayerObjectHits) {
+        if (io.KeyShift) {
+            hits.clear();
+            for (const LayeredHit& layeredHit : allLayerHits) {
+                hits.push_back(layeredHit.hit);
+            }
+        } else if (hits.empty() && !allLayerHits.empty()) {
+            int highestLayer = allLayerHits.front().layer;
+            for (const LayeredHit& layeredHit : allLayerHits) {
                 highestLayer = std::max(highestLayer, layeredHit.layer);
             }
-            for (const LayeredHit& layeredHit : allLayerObjectHits) {
+            for (const LayeredHit& layeredHit : allLayerHits) {
                 if (layeredHit.layer == highestLayer) {
                     hits.push_back(layeredHit.hit);
                 }
             }
-        } else if (hits.empty() && allLayerObjectHits.empty()) {
-            hits = std::move(currentLayerPlanetHits);
         }
     } else {
         hits = rawHits;
@@ -561,8 +690,14 @@ void StageSelectionController::UpdatePickedActorByMouse()
 
     size_t hitIndex = 0;
     const ImVec2 clickPos = ImGui::GetMousePos();
-
-    if (!io.KeyShift && mHasLastPickClick) {
+    const std::optional<StageActorRef> nearestHitRef =
+        StageActorQuery::FindTargetForActor(
+            mContext.game->GetCurrentStage(), hits.front().actor);
+    const bool isNearestHitSelected =
+        nearestHitRef && IsSelected(*nearestHitRef);
+    if (!io.KeyShift && isNearestHitSelected) {
+        hitIndex = 0;
+    } else if (!io.KeyShift && mHasLastPickClick) {
         const float clickDeltaX = clickPos.x - mLastPickClickPos.x;
         const float clickDeltaY = clickPos.y - mLastPickClickPos.y;
         constexpr float cycleClickRadius = 6.0f;
@@ -600,14 +735,120 @@ void StageSelectionController::UpdatePickedActorByMouse()
     if (io.KeyShift) {
         ToggleSelection(hitActor, *target);
     } else if (mContext.game->GetIsUGCMode() && IsSelected(*target)) {
-        // Pressing an already-selected object starts a group drag in UGC.
-        // Keep the selection set intact while making this the picked object.
+
+
         PrepareActorForEditorSelection(hitActor);
         mPickedActor = hitActor;
         mPickedActorRef = *target;
+        mIsMovingPlatformDestinationSelected = false;
     } else {
         SetSingleSelection(hitActor, *target);
     }
+}
+
+bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
+    const ImVec2& clickPosition)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
+    }
+
+    Platform* closestPlatform = nullptr;
+    std::optional<StageActorRef> closestPlatformRef;
+    int closestEndpoint = 0;
+    float closestDistanceSquared = std::numeric_limits<float>::max();
+
+    for (const StageActorInstance& instance :
+         StageActorQuery::CollectAllActorInstances(
+             mContext.game->GetCurrentStage())) {
+        Platform* platform = dynamic_cast<Platform*>(instance.actor);
+        if (!platform || !platform->GetIsUGCGenerated()) {
+            continue;
+        }
+
+        PlatformMovementComponent* movement =
+            platform->GetMovementComponent();
+        Planet* planet = platform->GetCurrentPlanet();
+        if (!movement || !planet) {
+            continue;
+        }
+
+        const glm::vec3 absoluteScale = glm::abs(platform->GetScale());
+        const float worldSelectionRadius = std::max(
+            0.5f,
+            platform->GetRadius() * std::max(
+                absoluteScale.x,
+                std::max(absoluteScale.y, absoluteScale.z)));
+        constexpr glm::vec3 selectionRadiusAxes[] = {
+            glm::vec3(1.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)};
+        const glm::vec3 endpointWorldPositions[] = {
+            planet->GetPos() + movement->GetBaseLocalPos(),
+            planet->GetPos() + movement->GetDestinationLocalPos()};
+        for (int endpoint = 0; endpoint < 2; ++endpoint) {
+            ImVec2 endpointScreenPosition;
+            if (!WorldToScreenPoint(
+                    endpointWorldPositions[endpoint],
+                    endpointScreenPosition)) {
+                continue;
+            }
+
+            float selectionRadiusPixels = 30.0f;
+            for (const glm::vec3& selectionRadiusAxis :
+                 selectionRadiusAxes) {
+                ImVec2 radiusScreenPosition;
+                if (!WorldToScreenPoint(
+                        endpointWorldPositions[endpoint] +
+                            selectionRadiusAxis * worldSelectionRadius,
+                        radiusScreenPosition)) {
+                    continue;
+                }
+
+                const float radiusX =
+                    radiusScreenPosition.x - endpointScreenPosition.x;
+                const float radiusY =
+                    radiusScreenPosition.y - endpointScreenPosition.y;
+                selectionRadiusPixels = std::max(
+                    selectionRadiusPixels,
+                    std::sqrt(radiusX * radiusX + radiusY * radiusY));
+            }
+            selectionRadiusPixels = glm::clamp(
+                selectionRadiusPixels,
+                30.0f,
+                180.0f);
+
+            const float deltaX =
+                clickPosition.x - endpointScreenPosition.x;
+            const float deltaY =
+                clickPosition.y - endpointScreenPosition.y;
+            const float distanceSquared = deltaX * deltaX + deltaY * deltaY;
+            if (distanceSquared >
+                    selectionRadiusPixels * selectionRadiusPixels ||
+                distanceSquared >= closestDistanceSquared) {
+                continue;
+            }
+
+            closestPlatform = platform;
+            closestPlatformRef = instance.ref;
+            closestEndpoint = endpoint;
+            closestDistanceSquared = distanceSquared;
+        }
+    }
+
+    if (!closestPlatform || !closestPlatformRef) {
+        return false;
+    }
+
+    closestPlatform->GetMovementComponent()->SetEditorPreviewPoint(
+        closestEndpoint);
+    mPickedActor = closestPlatform;
+    mPickedActorRef = *closestPlatformRef;
+    mSelectedKeys.clear();
+    mSelectedKeys.insert(MakeKey(*closestPlatformRef));
+    mIsMovingPlatformDestinationSelected = closestEndpoint == 1;
+    mRequestOpenPlacement = true;
+    return true;
 }
 
 std::vector<PhysicsSystem::RayHitActor>
@@ -840,9 +1081,9 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const glm::vec3 ndc = glm::vec3(clip) / clip.w;
 
-    // Editor overlays need projected positions outside the viewport so long
-    // lines and box-selection candidates can be clipped by the caller. Only
-    // reject invalid projections or points behind the camera here.
+
+
+
     if (!std::isfinite(ndc.x) ||
         !std::isfinite(ndc.y) ||
         !std::isfinite(ndc.z)) {
@@ -892,6 +1133,7 @@ void StageSelectionController::SelectActorsInScreenRect(const ImVec2& rectMin, c
     }
 
     ClearPickedActor();
+    mIsMovingPlatformDestinationSelected = false;
 
     mRequestOpenPlacement = true;
 }

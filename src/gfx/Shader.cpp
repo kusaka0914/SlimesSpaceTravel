@@ -25,7 +25,7 @@ std::string Shader::GetShaderSrcFromFile(const std::string& path) const
     const std::ifstream file(path);
 
     if (!file.is_open()) {
-        // std::cerr << "Cannot open file: " << path << std::endl;
+
         return "";
     }
 

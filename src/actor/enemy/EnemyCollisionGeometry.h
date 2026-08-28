@@ -36,4 +36,4 @@ bool DoesSegmentIntersectExpandedBounds(
     const glm::vec3& segmentEnd,
     const glm::vec3& expansion);
 
-} // namespace EnemyCollisionGeometry
+}

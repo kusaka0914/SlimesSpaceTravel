@@ -107,11 +107,19 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
         mAttackDirectionTarget = nullptr;
-        if (!player.GetOnGround() &&
-            combat.IsAirAttacking()) {
+        const bool isAirWeakAttack =
+            combat.IsAirAttacking();
+        if (!player.GetOnGround() && isAirWeakAttack) {
             movement.StopAirborneVerticalMovement(player);
             movement.StartAirborneActionHover(
                 movement.GetAirWeakAttackPostHoverDurationSeconds());
+        }
+        if (isAirWeakAttack) {
+            combat.StartAirWeakAttackCooldown();
+        } else if (
+            combat.GetAttackKind() ==
+            PlayerAttackKind::Wide) {
+            combat.StartGroundWeakAttackCooldown();
         }
         StartIdle();
     }
@@ -267,9 +275,9 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
 
     if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
-        // The charged attack stays in the charging state, so it does not
-        // enter StrongAttacking automatically. Explicitly play the same
-        // one-shot animation used by a regular strong attack.
+
+
+
         player.RequestStrongAttackAnimation();
     }
 

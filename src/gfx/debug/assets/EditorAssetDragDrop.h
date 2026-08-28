@@ -63,4 +63,4 @@ inline bool AcceptPath(
     return true;
 }
 
-} // namespace EditorAssetDragDrop
+}

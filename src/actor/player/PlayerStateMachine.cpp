@@ -43,7 +43,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      float deltaTime)
 {
     movement.UpdateCameraRelativeMovementDirections(player, input);
-    boatRide.Update(player, movement, respawn);
+    boatRide.Update(player, input, movement, respawn, deltaTime);
     UpdateCoyoteTime(player, deltaTime);
 
     if (jewelGauge.ShouldStartRecoverTimer()) {

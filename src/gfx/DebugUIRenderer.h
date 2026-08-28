@@ -19,11 +19,17 @@
 #include "gfx/debug/panels/TutorialDebugPanel.h"
 #include "gfx/debug/panels/UIDebugPanel.h"
 #include "gfx/debug/stage/StageEditCommandController.h"
+#include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
+#include "gfx/debug/ugc/UGCWorkPanel.h"
+#include "gfx/debug/ugc/UGCEditorTutorial.h"
 
-#include <optional>
+#include <array>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 class Game;
 class UIRenderer;
@@ -47,9 +53,11 @@ public:
     void HandleUGCRedo();
     void HandleUGCEraserToggle();
     void HandleUGCSelectionMode();
+    void OpenUGCEditorMenu();
     void HandleUGCZoom(float distanceMultiplier);
     void HandleUGCLayerChange(int layerDelta);
     void HandleUGCSelectionGridMove(int gridX, int gridZ);
+    void HandleUGCEditorTutorialReturnedFromPlaytest();
 
     bool SaveEditorSession(
         const std::string& filePath,
@@ -70,6 +78,11 @@ private:
         Tutorials,
         Stage,
         UserInterface,
+    };
+
+    enum class UGCSwitchConnectionAction {
+        Connect,
+        Disconnect,
     };
 
     void DrawBasicInfoTab();
@@ -101,7 +114,10 @@ private:
         const ImVec2& viewportMax);
     void DrawUGCDebugEditorOverlay();
     void RegisterUGCUIEditorElements();
+    void DrawUGCSwitchConnectionLines();
+    void DrawUGCUnconnectedSwitchWarnings();
     void DrawUGCTransformControls();
+    void ToggleUGCVerticalView();
     void SetUGCFixedView(const glm::vec3& viewDirection);
     void AdjustUGCViewDistance(float distanceMultiplier);
     void DrawUGCGridOverlay();
@@ -112,28 +128,26 @@ private:
         const ImVec2& previewMin,
         const ImVec2& previewMax,
         ImDrawList* drawList);
+    bool IsUGCWorkManagementOpen() const;
     void DrawUGCWorkManagement();
-    void RefreshUGCWorkList();
-    bool SaveCurrentUGCWork(const std::string& displayName);
-    bool LoadSelectedUGCWork();
-    bool DuplicateSelectedUGCWork();
-    bool DeleteSelectedUGCWork();
-    bool CopySelectedUGCWorkToWorkingFile();
-    bool IsUGCWorkClearVerified(const std::string& workFileName) const;
+    void DrawUGCEditorTutorial();
+    void DrawUGCTutorialHighlightForLastItem(bool shouldHighlight) const;
+    void StartUGCVerification();
     void UpdateUGCSelectionDrag();
     bool TryIntersectUGCDragPlane(
         const glm::vec3& rayFrom,
         const glm::vec3& rayTo,
         glm::vec3& outIntersection) const;
     void DrawUGCLayerControls();
-    void DrawUGCPlanetDeleteConfirmation();
     void ChangeUGCEditLayer(int layerDelta);
     void SyncUGCEditLayerToPickedActor();
 
 private:
     EditorAssetCatalog mAssetCatalog;
-    std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
     DebugEditorContext mContext;
+    UGCWorkPanel mUGCWorkPanel;
+    UGCEditorTutorial mUGCEditorTutorial;
+    std::unique_ptr<EditorModelThumbnailRenderer> mUGCModelThumbnailRenderer;
 
     PerformanceDebugPanel mPerformancePanel;
     CameraDebugPanel mCameraPanel;
@@ -148,6 +162,7 @@ private:
 
     StageAddActorPanel mStageAddActorPanel;
     StagePlanetPanel mStagePlanetPanel;
+    StageActorYamlWriter mStageActorYamlWriter;
 
     StageSelectionController mSelectionController;
     StagePlacementPanel mStagePlacementPanel;
@@ -162,29 +177,28 @@ private:
     std::string mBuildRestartStatus;
     bool mIsBuildRestartStatusError = false;
     bool mIsUGCEraserMode = false;
+    bool mShouldOpenUGCEditorMenu = false;
+    bool mShouldOpenUGCWorkManagement = false;
     std::optional<UGCPresetKind> mActiveUGCPresetKind;
     std::optional<UGCPresetKind> mUGCPresetBeforeEraser;
-    float mUGCRotationStepDegrees = 90.0f;
     glm::vec3 mUGCViewDirection{0.0f, 1.0f, 0.0f};
     std::string mUGCStatus;
-    std::string mUGCWorkSaveError;
     int mUGCEditLayer = 0;
     int mUGCPlatformFootprintSideLength = 1;
-    std::optional<int> mPendingUGCPlanetDeleteIndex;
     std::optional<StageActorRef> mUGCConnectionSwitchRef;
+    UGCSwitchConnectionAction mUGCSwitchConnectionAction =
+        UGCSwitchConnectionAction::Connect;
     bool mIsUGCSelectionDragging = false;
+    bool mIsUGCMovingPlatformDestinationDrag = false;
     bool mHasUGCSelectionDragMoved = false;
     glm::vec3 mUGCSelectionDragPlanePoint{0.0f};
     glm::vec3 mUGCSelectionDragPlaneNormal{0.0f, 1.0f, 0.0f};
     glm::vec3 mUGCSelectionDragOffset{0.0f};
     glm::vec3 mUGCSelectionDragInitialCenter{0.0f};
+    glm::vec3 mUGCSelectionDragAppliedDelta{0.0f};
+    glm::vec3 mUGCSelectionDragSavedDelta{0.0f};
     std::vector<StageActorRef> mUGCSelectionDragActorRefs;
     float mUGCPreviewWidth = 420.0f;
     float mUGCPreviewResizeStartWidth = 420.0f;
     bool mHasInitializedUGCPreviewWidth = false;
-    std::array<char, 96> mUGCWorkName{"新しいステージ"};
-    std::vector<std::string> mUGCWorkFileNames;
-    int mSelectedUGCWorkIndex = -1;
-    bool mHasLoadedUGCWorkList = false;
-    bool mShouldRefreshUGCWorkList = false;
 };

@@ -124,9 +124,9 @@ void SceneObjectRenderer::DrawActorOnPlanets(
         return;
     }
 
-    // Billboards keep depth testing enabled but do not write depth. Drawing
-    // them after every opaque actor lets nearer geometry occlude them without
-    // allowing farther geometry drawn later to overwrite their color.
+
+
+
     for (Planet* planet : planets) {
         if (!planet) {
             continue;

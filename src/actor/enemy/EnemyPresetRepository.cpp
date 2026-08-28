@@ -336,7 +336,7 @@ bool SaveYaml(
     }
     return true;
 }
-} // namespace
+}
 
 bool EnemyPresetRepository::Load(
     const std::string& filePath,

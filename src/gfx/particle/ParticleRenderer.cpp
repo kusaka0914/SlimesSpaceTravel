@@ -79,7 +79,7 @@ void RestoreOpenGLState(const OpenGLState& state)
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(state.boundTexture));
     glActiveTexture(state.activeTexture);
 }
-} // namespace
+}
 
 ParticleRenderer::ParticleRenderer(Game* game)
     : mGame(game),
@@ -171,7 +171,7 @@ std::size_t ParticleRenderer::BatchKeyHash::operator()(const BatchKey& key) cons
 
 void ParticleRenderer::InitializeBuffers()
 {
-    // local position x/y, texture coordinate u/v
+
     constexpr float quadVertices[] = {
         -0.5f, -0.5f, 0.0f, 0.0f,
          0.5f, -0.5f, 1.0f, 0.0f,

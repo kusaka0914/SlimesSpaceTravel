@@ -180,8 +180,8 @@ void UIDebugPanel::DrawElementList(UILoadSystem* uiLoadSystem)
         UILoadSystem::CustomElement& addedElement =
             uiLoadSystem->GetCustomElements()[addedIndex];
         if (addedElement.screen == "ugc") {
-            // UGC has no generic HUD pass. New authored elements should be
-            // immediately visible on the stage-creation canvas.
+
+
             addedElement.visibleByDefault = true;
         }
         mCanvasEditor.SetSingleSelection(addedIndex);

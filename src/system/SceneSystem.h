@@ -34,6 +34,7 @@ public:
     void MoveBattleStyleSelection(int direction);
     void ConfirmBattleStyleSelection();
     void DebugEnterTitle();
+    void EnterTitleAtFadeMidpoint();
     void DebugEnterOpening();
     void DebugEnterEnding();
     void DebugStartCredits();
@@ -121,6 +122,8 @@ public:
 
 private:
     void CreateControllers();
+    void ApplyDebugSceneState(
+        GameProgressState::SceneState destinationScene);
     void ResetForDebugScene(
         GameProgressState::SceneState destinationScene);
     void UpdateClearTimer(float deltaTime);

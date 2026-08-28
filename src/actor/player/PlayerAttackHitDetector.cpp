@@ -155,7 +155,9 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesInRadius(
 std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement(
     Player& player,
     const glm::vec3& movementStart,
-    const glm::vec3& movementEnd) const
+    const glm::vec3& movementEnd,
+    float horizontalHitboxScale,
+    float verticalHitboxScale) const
 {
     std::vector<Enemy*> hitEnemies;
 
@@ -173,7 +175,8 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
         std::max(
             physicsSystem->GetPlayerCollisionWidth(),
             physicsSystem->GetPlayerCollisionDepth()) *
-        player.GetCollisionScaleMultiplier();
+        player.GetCollisionScaleMultiplier() *
+        std::max(0.0f, horizontalHitboxScale);
     const glm::vec3 playerUp = player.GetUpVec();
     const float playerUpLengthSquared =
         glm::dot(playerUp, playerUp);
@@ -183,9 +186,10 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
 
     const glm::vec3 upDirection =
         playerUp / std::sqrt(playerUpLengthSquared);
-    constexpr float verticalHitRangeMultiplier = 2.0f;
+    const float safeVerticalHitboxScale =
+        std::max(0.0001f, verticalHitboxScale);
     const auto scaleVerticalDistanceForHitTest =
-        [&upDirection](const glm::vec3& direction) {
+        [&upDirection, safeVerticalHitboxScale](const glm::vec3& direction) {
             const float verticalDistance =
                 glm::dot(direction, upDirection);
             const glm::vec3 horizontalDirection =
@@ -193,7 +197,7 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
             return horizontalDirection +
                    upDirection *
                        (verticalDistance /
-                        verticalHitRangeMultiplier);
+                        safeVerticalHitboxScale);
         };
 
     const glm::vec3 movement =
@@ -218,7 +222,9 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
                     player,
                     *enemy,
                     movementStart,
-                    movementEnd)) {
+                    movementEnd,
+                    horizontalHitboxScale,
+                    verticalHitboxScale)) {
                 hitEnemies.emplace_back(enemy);
             }
             continue;
@@ -338,7 +344,9 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
     const Player& player,
     const Enemy& enemy,
     const glm::vec3& movementStart,
-    const glm::vec3& movementEnd) const
+    const glm::vec3& movementEnd,
+    float horizontalHitboxScale,
+    float verticalHitboxScale) const
 {
     ModelBounds enemyBounds;
     if (!TryCreateModelBounds(enemy, enemyBounds)) {
@@ -360,12 +368,12 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
         std::max(
             physicsSystem->GetPlayerCollisionWidth(),
             physicsSystem->GetPlayerCollisionDepth()) *
-        collisionScaleMultiplier;
+        collisionScaleMultiplier *
+        std::max(0.0f, horizontalHitboxScale);
     const float verticalCollisionHalfHeight =
         0.5f *
         physicsSystem->GetPlayerCollisionHeight() *
         collisionScaleMultiplier;
-    constexpr float airDodgeVerticalReachMultiplier = 2.0f;
     glm::vec3 playerUpDirection = player.GetUpVec();
     const float playerUpLength = glm::length(playerUpDirection);
     if (playerUpLength <= geometryEpsilon) {
@@ -375,7 +383,7 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
 
     const float verticalCollisionReach =
         verticalCollisionHalfHeight *
-        airDodgeVerticalReachMultiplier;
+        std::max(0.0f, verticalHitboxScale);
     glm::vec3 expansion(0.0f);
     for (glm::length_t axisIndex = 0;
          axisIndex < enemyBounds.axes.size();
@@ -390,9 +398,9 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
                 0.0f,
                 1.0f - verticalAxisAlignment * verticalAxisAlignment));
 
-        // The target bounds use their own local axes. Project the player's
-        // upright air-dodge range onto those axes instead of treating their
-        // X/Y/Z components as world-space directions.
+
+
+
         expansion[axisIndex] =
             horizontalCollisionRadius * horizontalAxisAlignment +
             verticalCollisionReach * verticalAxisAlignment;

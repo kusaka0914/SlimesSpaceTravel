@@ -12,7 +12,11 @@ public:
     void Shutdown();
     void UpdateConnection();
 
-    void VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
+    void VibrateForPlayer(
+        int playerNum,
+        int lowFrequency,
+        int highFrequency,
+        int durationMilliseconds);
 
     SDL_GameController* GetController() const { return GetControllerForPlayer(1); }
     SDL_GameController* GetControllerForPlayer(int playerNum) const;

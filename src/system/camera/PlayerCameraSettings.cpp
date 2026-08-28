@@ -15,13 +15,14 @@ float ReadFloat(const YAML::Node& node, const char* key, float fallback)
     const YAML::Node value = node[key];
     return value ? value.as<float>() : fallback;
 }
-} // namespace
+}
 
 void PlayerCameraSettings::Normalize()
 {
     distance = glm::clamp(distance, 0.5f, 50.0f);
     pitchDegrees = glm::clamp(pitchDegrees, -89.0f, 89.0f);
     targetHeight = glm::clamp(targetHeight, -10.0f, 20.0f);
+    splitScreenTargetHeight = glm::clamp(splitScreenTargetHeight, -10.0f, 20.0f);
     fieldOfViewDegrees = glm::clamp(fieldOfViewDegrees, 10.0f, 120.0f);
     splitScreenFieldOfViewDegrees = glm::clamp(splitScreenFieldOfViewDegrees, 10.0f, 120.0f);
     yawSensitivity = glm::clamp(yawSensitivity, 0.0f, 20.0f);
@@ -80,6 +81,8 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
         loadedSettings.distance = ReadFloat(cameraNode, "distance", loadedSettings.distance);
         loadedSettings.pitchDegrees = ReadFloat(cameraNode, "pitchDegrees", loadedSettings.pitchDegrees);
         loadedSettings.targetHeight = ReadFloat(cameraNode, "targetHeight", loadedSettings.targetHeight);
+        loadedSettings.splitScreenTargetHeight =
+            ReadFloat(cameraNode, "splitScreenTargetHeight", loadedSettings.splitScreenTargetHeight);
         loadedSettings.fieldOfViewDegrees =
             ReadFloat(cameraNode, "fieldOfView", loadedSettings.fieldOfViewDegrees);
         loadedSettings.splitScreenFieldOfViewDegrees =
@@ -170,6 +173,8 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "distance" << YAML::Value << normalizedSettings.distance;
         emitter << YAML::Key << "pitchDegrees" << YAML::Value << normalizedSettings.pitchDegrees;
         emitter << YAML::Key << "targetHeight" << YAML::Value << normalizedSettings.targetHeight;
+        emitter << YAML::Key << "splitScreenTargetHeight" << YAML::Value
+                << normalizedSettings.splitScreenTargetHeight;
         emitter << YAML::Key << "fieldOfView" << YAML::Value << normalizedSettings.fieldOfViewDegrees;
         emitter << YAML::Key << "splitScreenFieldOfView" << YAML::Value
                 << normalizedSettings.splitScreenFieldOfViewDegrees;

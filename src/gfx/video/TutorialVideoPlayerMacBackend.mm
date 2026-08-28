@@ -26,7 +26,7 @@ std::string MakeErrorMessage(
             : "unknown error";
     return std::string(operation) + " failed: " + description;
 }
-} // namespace
+}
 
 struct TutorialVideoPlayerMacBackend {
     __strong AVURLAsset* asset = nil;
@@ -236,7 +236,7 @@ void UploadPendingFrame(TutorialVideoPlayerMacBackend& backend)
         GL_UNSIGNED_BYTE,
         backend.pendingPixels.data());
 }
-} // namespace
+}
 
 TutorialVideoPlayerMacBackend*
 CreateTutorialVideoPlayerMacBackend()

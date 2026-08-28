@@ -19,8 +19,11 @@ shownConversations:
   - ../assets/data/stage/stage0.yaml|NPCs:9|clear:-1
   - ../assets/data/stage/stage1.yaml|NPCs:0|clear:-1
   - ../assets/data/stage/stage3.yaml|NPCs:0|clear:-1
+  - ../assets/data/stage/stage3.yaml|NPCs:1|clear:-1
   - ../assets/data/stage/stage3.yaml|NPCs:2|clear:-1
   - ../assets/data/stage/stage4.yaml|NPCs:1|clear:-1
   - cinematic:base_intro
+  - tutorial:ugc_editor_completed
+  - tutorial:ugc_editor_skipped
 endingRollCompleted: true
 playerControlStyle: assist

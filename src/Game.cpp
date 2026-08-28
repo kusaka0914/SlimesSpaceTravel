@@ -26,10 +26,12 @@
 #include "system/StageFlowController.h"
 #include "system/StageProgressSystem.h"
 #include "system/UILoadSystem.h"
+#include "system/UserDataPaths.h"
 #include "system/sequence/SequenceSystem.h"
 
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
+#include "gfx/performance/GpuDurationTimer.h"
 #include "imgui.h"
 
 #include "utils/MathUtils.h"
@@ -37,6 +39,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <iterator>
@@ -52,6 +55,13 @@ std::string BuildStageIntroCinematicId(int stageNum)
     }
 
     return "enter_stage" + std::to_string(stageNum);
+}
+
+std::string BuildCompletedTutorialId(const std::string& tutorialId)
+{
+    return tutorialId.empty()
+               ? std::string{}
+               : "tutorial:completed:" + tutorialId;
 }
 }
 
@@ -76,6 +86,13 @@ bool Game::Initialize(
 {
     if (!InitializeGLFW()) {
         return false;
+    }
+
+    std::string userDataErrorMessage;
+    if (!UserDataPaths::PrepareFromPackagedAssets(
+            "../assets/data",
+            userDataErrorMessage)) {
+        std::cerr << userDataErrorMessage << '\n';
     }
 
     CreateGameSystems();
@@ -156,6 +173,8 @@ void Game::CreateGameSystems()
     mAudioSystem = std::make_unique<AudioSystem>(this);
     mUIRenderer = std::make_unique<UIRenderer>(this);
     mRenderer3D = std::make_unique<Renderer3D>(this);
+    mGameUiGpuTimer = std::make_unique<GpuDurationTimer>();
+    mEditorUiGpuTimer = std::make_unique<GpuDurationTimer>();
     mSceneSystem = std::make_unique<SceneSystem>(this);
     mMathUtils = std::make_unique<MathUtils>();
     mCameraSystem = std::make_unique<CameraSystem>(this);
@@ -174,7 +193,7 @@ void Game::CreateStages(int stageCount)
     mWorld->CreateStages(stageCount);
 }
 
-void Game::ReloadCurrentStage(bool rebuildPhysics)
+void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
     if (mSequenceSystem) {
         mSequenceSystem->Stop(true);
@@ -188,20 +207,21 @@ void Game::ReloadCurrentStage(bool rebuildPhysics)
         mParticleSystem->Clear();
     }
 
-    if (!rebuildPhysics && mPhysicsSystem) {
+    if (physicsReloadMode == StagePhysicsReloadMode::SkipRebuild &&
+        mPhysicsSystem) {
         mPhysicsSystem->ClearForEditorStageRebuild();
     }
 
-    mStageFlowController->ReloadCurrentStage(*this, rebuildPhysics);
+    mStageFlowController->ReloadCurrentStage(*this, physicsReloadMode);
 
     if (mIsPlayer2Joined) {
         const std::vector<Player*>& players = GetPlayers();
         if (players.size() >= 2 && players[0] && players[1]) {
             Player* firstPlayer = players[0];
             Player* secondPlayer = players[1];
-            // A multiplayer stage always begins with both players at the
-            // stage's player-1 spawn. They can immediately walk apart after
-            // the arrival/start sequence has finished.
+
+
+
             secondPlayer->SetCurrentPlanet(firstPlayer->GetCurrentPlanet());
             secondPlayer->SetCurrentPlanetNum(firstPlayer->GetCurrentPlanetNum());
             secondPlayer->SetSphericalPlacement(
@@ -240,10 +260,24 @@ void Game::ReloadUIData()
 void Game::RunLoop()
 {
     while (!glfwWindowShouldClose(mWindow)) {
+        const auto frameStartTime = std::chrono::steady_clock::now();
+        BeginFramePerformanceMeasurement();
+        PollGpuPerformanceMeasurements();
         glfwPollEvents();
         ProcessInput();
+
+        const auto gameUpdateStartTime = std::chrono::steady_clock::now();
         UpdateGame();
+        const auto gameUpdateEndTime = std::chrono::steady_clock::now();
+        mFramePerformanceMetrics.gameUpdateMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                gameUpdateEndTime - gameUpdateStartTime).count();
+
         GenerateOutput();
+
+        mFramePerformanceMetrics.totalMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                std::chrono::steady_clock::now() - frameStartTime).count();
     }
 }
 
@@ -257,6 +291,20 @@ void Game::Shutdown()
 
     if (mAudioSystem) {
         mAudioSystem->Shutdown();
+    }
+
+    if (mRenderer3D) {
+        mRenderer3D->Shutdown();
+    }
+    if (mUIRenderer) {
+        mUIRenderer->Shutdown();
+        mUIRenderer.reset();
+    }
+    if (mGameUiGpuTimer) {
+        mGameUiGpuTimer->Shutdown();
+    }
+    if (mEditorUiGpuTimer) {
+        mEditorUiGpuTimer->Shutdown();
     }
 
     SDL_Quit();
@@ -421,17 +469,17 @@ void Game::ReturnToSinglePlayer()
         return;
     }
 
-    // This is a menu action, so unlike ordinary split merging it does not
-    // require the two players to stand next to each other.
+
+
     mIsPlayer2Joined = false;
     MergePlayerInto(0);
 }
 
 bool Game::CanStartTwoPlayerFromPauseMenu() const
 {
-    // Two-player mode uses one game controller and one keyboard.  The menu
-    // must not advertise it as selectable until both the progress condition
-    // and the required controller are available.
+
+
+
     return mIsPlayer2Joined ||
            (IsStageCleared(1) && IsGameControllerConnected());
 }
@@ -443,18 +491,18 @@ bool Game::CanReturnToBaseFromPauseMenu() const
 
 void Game::ToggleDebugEditor()
 {
-    if (mIsUGCMode) {
-        // The UGC editor itself is always visible while editing.  P should
-        // toggle the regular debug editor, not hide the UGC editor and enter
-        // its playtest view.
-        mIsUGCDebugEditorShowing = !mIsUGCDebugEditorShowing;
+    if (mUGCSessionState.IsModeActive()) {
+
+
+
+        mUGCSessionState.ToggleDebugPanel();
         return;
     }
 
     mIsDebugEditorShowing = !mIsDebugEditorShowing;
     if (mPhysicsSystem) {
-        // Opening the editor changes progress/runtime visibility, but not mesh
-        // geometry. Reusing existing bodies avoids reparsing every stage model.
+
+
         mPhysicsSystem->SyncKinematicBodies();
     }
 }
@@ -539,6 +587,74 @@ void Game::ProcessActorsInput()
     mWorld->ProcessActorsInput();
 }
 
+void Game::BeginFramePerformanceMeasurement()
+{
+    mFramePerformanceMetrics.gameUpdateMilliseconds = 0.0f;
+    mFramePerformanceMetrics.firstViewportRenderMilliseconds = 0.0f;
+    mFramePerformanceMetrics.secondViewportRenderMilliseconds = 0.0f;
+    mFramePerformanceMetrics.gameUiCpuMilliseconds = 0.0f;
+    mFramePerformanceMetrics.editorUiCpuMilliseconds = 0.0f;
+    mFramePerformanceMetrics.presentationWaitMilliseconds = 0.0f;
+    mFramePerformanceMetrics.renderedViewportCount = 0;
+}
+
+void Game::PollGpuPerformanceMeasurements()
+{
+    if (mGameUiGpuTimer) {
+        const std::optional<float> elapsedMilliseconds =
+            mGameUiGpuTimer->PollCompletedMilliseconds();
+        if (elapsedMilliseconds) {
+            mFramePerformanceMetrics.gameUiGpuMilliseconds =
+                *elapsedMilliseconds;
+            mFramePerformanceMetrics.hasGameUiGpuMeasurement = true;
+        }
+    }
+
+    if (mEditorUiGpuTimer) {
+        const std::optional<float> elapsedMilliseconds =
+            mEditorUiGpuTimer->PollCompletedMilliseconds();
+        if (elapsedMilliseconds) {
+            mFramePerformanceMetrics.editorUiGpuMilliseconds =
+                *elapsedMilliseconds;
+            mFramePerformanceMetrics.hasEditorUiGpuMeasurement = true;
+        }
+    }
+}
+
+void Game::RecordViewportRenderDurationMilliseconds(
+    int viewportIndex,
+    float durationMilliseconds)
+{
+    if (viewportIndex == 0) {
+        mFramePerformanceMetrics.firstViewportRenderMilliseconds =
+            durationMilliseconds;
+    } else if (viewportIndex == 1) {
+        mFramePerformanceMetrics.secondViewportRenderMilliseconds =
+            durationMilliseconds;
+    } else {
+        return;
+    }
+
+    mFramePerformanceMetrics.renderedViewportCount = std::max(
+        mFramePerformanceMetrics.renderedViewportCount,
+        viewportIndex + 1);
+}
+
+void Game::RecordViewportGpuDurationMilliseconds(
+    int viewportIndex,
+    float durationMilliseconds)
+{
+    if (viewportIndex == 0) {
+        mFramePerformanceMetrics.firstViewportGpuMilliseconds =
+            durationMilliseconds;
+        mFramePerformanceMetrics.hasFirstViewportGpuMeasurement = true;
+    } else if (viewportIndex == 1) {
+        mFramePerformanceMetrics.secondViewportGpuMilliseconds =
+            durationMilliseconds;
+        mFramePerformanceMetrics.hasSecondViewportGpuMeasurement = true;
+    }
+}
+
 void Game::UpdateGame()
 {
     CheckGameControllerConnected();
@@ -559,9 +675,9 @@ void Game::UpdateGame()
         return;
     }
 
-    // Transitions must continue even while the stage editor uses its free
-    // camera.  Otherwise the fade reaches the midpoint, loads UGC, and never
-    // advances to the reveal phase.
+
+
+
     mSceneSystem->Update(deltaTime);
     UpdatePendingSoloSplitControlSwitch(deltaTime);
 
@@ -602,6 +718,7 @@ void Game::UpdateGame()
     if (!cameraUpdated && (mCameraSystem->IsCinematicPlaying() || mSceneSystem->IsTalking())) {
         mCameraSystem->Update(deltaTime);
     }
+
 }
 
 void Game::UpdateActors(float deltaTime)
@@ -628,7 +745,7 @@ void Game::GenerateOutput()
         glBindFramebuffer(GL_FRAMEBUFFER, mEditorGameFramebuffer);
         DrawGameFrame();
 
-        if (mIsUGCMode && EnsureUGCPreviewRenderTarget()) {
+        if (mUGCSessionState.IsModeActive() && EnsureUGCPreviewRenderTarget()) {
             glBindFramebuffer(GL_FRAMEBUFFER, mUGCPreviewFramebuffer);
             DrawUGCPreviewFrame();
         }
@@ -637,26 +754,40 @@ void Game::GenerateOutput()
         glViewport(0, 0, framebufferWidth, framebufferHeight);
         glClearColor(0.035f, 0.035f, 0.045f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        const auto editorUiStartTime = std::chrono::steady_clock::now();
+        mEditorUiGpuTimer->Begin();
         mUIRenderer->DrawDebugEditor(
             mEditorGameTexture,
             framebufferWidth,
             framebufferHeight);
+        mEditorUiGpuTimer->End();
+        mFramePerformanceMetrics.editorUiCpuMilliseconds =
+            std::chrono::duration<float, std::milli>(
+                std::chrono::steady_clock::now() - editorUiStartTime).count();
     } else {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         DrawGameFrame();
         if (mIsDebugEditorShowing) {
+            const auto editorUiStartTime = std::chrono::steady_clock::now();
+            mEditorUiGpuTimer->Begin();
             mUIRenderer->DrawDebugEditor(
                 0,
                 framebufferWidth,
                 framebufferHeight);
-        } else if (mIsUGCMode) {
-            mUIRenderer->DrawUGCPlaytestReturnButton();
-        } else if (mIsUGCWorkBrowserShowing) {
+            mEditorUiGpuTimer->End();
+            mFramePerformanceMetrics.editorUiCpuMilliseconds =
+                std::chrono::duration<float, std::milli>(
+                    std::chrono::steady_clock::now() - editorUiStartTime).count();
+        } else if (mUGCSessionState.IsWorkBrowserShowing()) {
             mUIRenderer->DrawUGCWorkBrowser();
         }
     }
 
+    const auto presentationStartTime = std::chrono::steady_clock::now();
     glfwSwapBuffers(mWindow);
+    mFramePerformanceMetrics.presentationWaitMilliseconds =
+        std::chrono::duration<float, std::milli>(
+            std::chrono::steady_clock::now() - presentationStartTime).count();
 }
 
 void Game::DrawGameFrame()
@@ -681,7 +812,13 @@ void Game::DrawGameFrame()
     mRenderer3D->Draw();
 
     glDisable(GL_DEPTH_TEST);
+    const auto gameUiStartTime = std::chrono::steady_clock::now();
+    mGameUiGpuTimer->Begin();
     mUIRenderer->DrawGameContent();
+    mGameUiGpuTimer->End();
+    mFramePerformanceMetrics.gameUiCpuMilliseconds =
+        std::chrono::duration<float, std::milli>(
+            std::chrono::steady_clock::now() - gameUiStartTime).count();
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -869,6 +1006,12 @@ void Game::DrawUGCPreviewFrame()
         return;
     }
 
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    mUIRenderer->DrawSkyBox(previewWidth, previewHeight);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+
     const CameraPose editorPose = mCameraSystem->GetDebugCameraPose();
     const float targetPreviewY =
         static_cast<float>(mUGCPreviewEditLayer) * mUGCGridSize;
@@ -896,13 +1039,13 @@ void Game::DrawUGCPreviewFrame()
         -basePreviewDirection.x * previewYawSine +
             basePreviewDirection.z * previewYawCosine));
     constexpr float previewFieldOfViewDegrees = 55.0f;
-    const float editorViewDistance = mIsUGCOrthographicView
+    const float editorViewDistance = mUGCSessionState.IsOrthographicView()
         ? mUGCOrthographicHalfHeight /
               std::tan(glm::radians(previewFieldOfViewDegrees) * 0.5f)
         : glm::length(editorPose.position - editorPose.target);
-    // The inset is intentionally closer than a one-to-one framing. Its role
-    // is to inspect what is around the center of the 2D editor, not to show
-    // the entire stage at all times.
+
+
+
     const float previewDistance = glm::clamp(
         editorViewDistance * 0.45f, 3.0f, 100.0f);
     const glm::vec3 previewPosition =
@@ -921,7 +1064,7 @@ void Game::DrawUGCPreviewFrame()
         view,
         projection,
         previewPosition,
-        true,
+        UGCSceneLayerRenderMode::HighlightEditingLayerWithoutDimming,
         mUGCPreviewEditLayer);
 }
 
@@ -933,12 +1076,12 @@ void Game::AddActor(std::unique_ptr<Actor> actor)
 void Game::SetUGCPlacementModelPreview(
     const std::optional<glm::vec3>& position,
     const std::string& modelPath,
-    const glm::vec3& scale)
+    const glm::vec3& scale,
+    const std::string& textureOverridePath)
 {
-    // The position is cleared at the start of each editor frame. Keep the
-    // cached preview actor in that short gap so moving the mouse does not
-    // allocate and reload a model every frame.
+    mUGCPlacementModelPreviewPositions.clear();
     if (!position) {
+        mUGCPlacementModelPreviewActor.reset();
         return;
     }
     if (modelPath.empty()) {
@@ -958,7 +1101,25 @@ void Game::SetUGCPlacementModelPreview(
 
     mUGCPlacementModelPreviewActor->SetPos(*position);
     mUGCPlacementModelPreviewActor->SetScale(scale);
+    mUGCPlacementModelPreviewActor->SetTextureOverridePath(
+        textureOverridePath);
     mUGCPlacementModelPreviewActor->SetIsActive(true);
+}
+
+void Game::SetUGCPlacementModelPreviewPositions(
+    const std::vector<glm::vec3>& positions,
+    const std::string& modelPath,
+    const glm::vec3& scale,
+    const std::string& textureOverridePath)
+{
+    if (positions.empty()) {
+        SetUGCPlacementModelPreview(std::nullopt);
+        return;
+    }
+
+    SetUGCPlacementModelPreview(
+        positions.front(), modelPath, scale, textureOverridePath);
+    mUGCPlacementModelPreviewPositions = positions;
 }
 
 void Game::RemoveActor(Actor* actor)
@@ -1008,8 +1169,8 @@ void Game::AddPlayer(Player* player)
         player->SetControlLocked(true);
     }
 
-    // When multiplayer survives a stage transition, newly loaded players
-    // retain the split appearance and are immediately controllable.
+
+
     if (mIsPlayer2Joined) {
         player->SetSplitForm(true);
         player->SetControlLocked(false);
@@ -1233,6 +1394,27 @@ bool Game::SwitchControlledPlayer()
     }
 
     if (nextIndex == previousIndex) {
+        for (int candidateIndex = 0;
+             candidateIndex < static_cast<int>(players.size());
+             ++candidateIndex) {
+            if (candidateIndex == previousIndex) {
+                continue;
+            }
+
+            Player* waitingPlayer =
+                players[static_cast<std::size_t>(candidateIndex)];
+            if (!waitingPlayer || !waitingPlayer->CancelWaitingBoatRide()) {
+                continue;
+            }
+
+            mPendingSoloSplitControlSwitchTimer = -1.0f;
+            SelectControlledPlayer(candidateIndex);
+            if (mSceneSystem) {
+                mSceneSystem->OnPlayerSwitchSucceeded();
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -1254,12 +1436,13 @@ bool Game::CanSwitchControlledPlayer() const
         return false;
     }
 
-    // Do not present switching as available when the other half is already
-    // riding a rocket (or otherwise inactive).
+
+
     const std::vector<Player*>& players = GetPlayers();
     for (int index = 0; index < static_cast<int>(players.size()); ++index) {
         if (index != mControlledPlayerIndex && players[index] &&
-            players[index]->GetIsActive()) {
+            (players[index]->GetIsActive() ||
+             players[index]->IsWaitingForBoat())) {
             return true;
         }
     }
@@ -1424,26 +1607,51 @@ bool Game::DebugStartCredits()
 
 bool Game::StartUGCMode()
 {
-    constexpr int UGCStageNumber = 0;
-    constexpr const char* UGCStageYamlPath =
-        "../assets/data/stage/ugc_stage.yaml";
+    return StartUGCModeWithStage(
+        UserDataPaths::ResolveUGCWorkingStageFile().string(),
+        false);
+}
 
-    if (!LoadDebugStage(UGCStageNumber, UGCStageYamlPath)) {
+bool Game::StartUGCEditorTutorial()
+{
+    const std::filesystem::path tutorialTemplatePath =
+        "../assets/data/stage/ugc_tutorial_template.yaml";
+    const std::filesystem::path tutorialStagePath =
+        UserDataPaths::ResolveUGCTutorialStageFile();
+    std::error_code copyError;
+    std::filesystem::copy_file(
+        tutorialTemplatePath,
+        tutorialStagePath,
+        std::filesystem::copy_options::overwrite_existing,
+        copyError);
+    if (copyError) {
+        std::cerr << "Failed to reset UGC editor tutorial: "
+                  << copyError.message() << '\n';
+        return false;
+    }
+    return StartUGCModeWithStage(tutorialStagePath.string(), true);
+}
+
+bool Game::StartUGCModeWithStage(
+    const std::string& yamlPath,
+    bool isTutorial)
+{
+    constexpr int UGCStageNumber = 0;
+
+    if (!LoadDebugStage(UGCStageNumber, yamlPath)) {
         return false;
     }
 
+    mIsUGCEditorTutorialActive = isTutorial;
     ClosePauseMenu();
-    mIsUGCWorkBrowserShowing = false;
-    mIsUGCMode = true;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = true;
+    mUGCSessionState.EnterEditor();
     mUGCOrthographicHalfHeight = 20.0f;
     mIsDebugEditorShowing = true;
     SetFreeCameraMode(true);
 
-    // The title renderer intentionally has no 3D world.  UGC is loaded at
-    // the fade midpoint, so switch to the play scene before the editor frame
-    // is rendered or the editor canvas would be left black.
+
+
+
     mSceneSystem->StartPlayingScene();
 
     if (mCameraSystem) {
@@ -1457,12 +1665,35 @@ bool Game::StartUGCMode()
     return true;
 }
 
+bool Game::HasSeenUGCEditorTutorial() const
+{
+    if (!mStageProgressSystem) {
+        return false;
+    }
+    return mStageProgressSystem->HasShownConversation(
+               "tutorial:ugc_editor_completed") ||
+        mStageProgressSystem->HasShownConversation(
+               "tutorial:ugc_editor_skipped");
+}
+
+bool Game::FinishUGCEditorTutorial(bool wasCompleted)
+{
+    if (mStageProgressSystem) {
+        mStageProgressSystem->MarkConversationShown(
+            wasCompleted
+                ? "tutorial:ugc_editor_completed"
+                : "tutorial:ugc_editor_skipped");
+    }
+    mIsUGCEditorTutorialActive = false;
+    return StartUGCMode();
+}
+
 void Game::OpenUGCWorkBrowser()
 {
     if (!mSceneSystem || !mSceneSystem->IsTitle()) {
         return;
     }
-    mIsUGCWorkBrowserShowing = true;
+    mUGCSessionState.OpenWorkBrowser();
 }
 
 void Game::MoveTitleMenuSelection(int delta)
@@ -1488,9 +1719,13 @@ void Game::ExecuteTitleMenuSelection()
         mSceneSystem->StartBattleStyleSelection();
         break;
     case 1:
-        // Keep the title on screen until the fade is fully opaque, then
-        // replace the scene and reveal the stage editor from black.
-        mSceneSystem->RequestFadeAction([this]() { StartUGCMode(); });
+        mSceneSystem->RequestFadeAction([this]() {
+            if (HasSeenUGCEditorTutorial()) {
+                StartUGCMode();
+            } else {
+                StartUGCEditorTutorial();
+            }
+        });
         break;
     case 2:
         OpenUGCWorkBrowser();
@@ -1502,17 +1737,15 @@ void Game::ExecuteTitleMenuSelection()
 
 void Game::CloseUGCWorkBrowser()
 {
-    mIsUGCWorkBrowserShowing = false;
+    mUGCSessionState.CloseWorkBrowser();
 }
 
 void Game::StartUGCPlaytest()
 {
-    if (!mIsUGCMode) {
+    if (!mUGCSessionState.StartPlaytest()) {
         return;
     }
     mIsDebugEditorShowing = false;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = false;
     SetFreeCameraMode(false);
     ReloadCurrentStage();
 }
@@ -1537,6 +1770,11 @@ void Game::SelectUGCEditorMode()
     if (mUIRenderer) mUIRenderer->SelectUGCEditorMode();
 }
 
+void Game::OpenUGCEditorMenu()
+{
+    if (mUIRenderer) mUIRenderer->OpenUGCEditorMenu();
+}
+
 void Game::ZoomUGCEditor(float distanceMultiplier)
 {
     if (mUIRenderer) mUIRenderer->ZoomUGCEditor(distanceMultiplier);
@@ -1557,36 +1795,40 @@ void Game::MoveUGCSelectionByGrid(int gridX, int gridZ)
 void Game::StartUGCClearVerification(
     const std::string& workFileName)
 {
-    if (!mIsUGCMode || workFileName.empty()) {
+    if (!mUGCSessionState.StartVerification(workFileName)) {
         return;
     }
-    mUGCVerificationWorkFileName = workFileName;
-    mIsUGCClearCompletionPending = false;
     StartUGCPlaytest();
 }
 
 void Game::ReturnToUGCEditor()
 {
-    if (!mIsUGCMode) {
+    if (!mUGCSessionState.ReturnToEditor()) {
         return;
     }
-
-    mUGCVerificationWorkFileName.clear();
-    mIsUGCClearCompletionPending = false;
     ReloadCurrentStage();
     mIsDebugEditorShowing = true;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCOrthographicView = true;
     SetFreeCameraMode(true);
+    if (mIsUGCEditorTutorialActive && mUIRenderer) {
+        mUIRenderer->NotifyUGCEditorTutorialReturnedFromPlaytest();
+    }
 }
 
 void Game::ExitUGCMode()
 {
-    mIsUGCMode = false;
-    mIsUGCDebugEditorShowing = false;
-    mIsUGCClearCompletionPending = false;
-    mIsUGCWorkBrowserShowing = false;
-    mIsUGCOrthographicView = false;
+    if (!mSceneSystem) {
+        return;
+    }
+    mSceneSystem->RequestFadeAction(
+        [this]() { CompleteUGCModeExit(false); });
+}
+
+void Game::CompleteUGCModeExit(bool shouldOpenWorkBrowser)
+{
+    mIsUGCClearTransitionInProgress = false;
+    mPendingUGCClearTransitionWorkFileName.reset();
+    mUGCSessionState.Exit();
+    mIsUGCEditorTutorialActive = false;
     mIsDebugEditorShowing = false;
     SetFreeCameraMode(false);
 
@@ -1594,8 +1836,11 @@ void Game::ExitUGCMode()
     constexpr const char* InitialStageYamlPath =
         "../assets/data/stage/house.yaml";
     if (LoadDebugStage(InitialStageNumber, InitialStageYamlPath)) {
-        mSceneSystem->DebugEnterTitle();
+        mSceneSystem->EnterTitleAtFadeMidpoint();
         mAudioSystem->TryChangeBGM();
+        if (shouldOpenWorkBrowser) {
+            OpenUGCWorkBrowser();
+        }
     }
 }
 
@@ -1664,8 +1909,8 @@ void Game::CreatePlayer2()
         }
     }
 
-    // Multiplayer starts from the same split state as solo split mode, but
-    // each slime is controlled by its own player from this point onward.
+
+
     if (!SplitPlayer()) {
         return;
     }
@@ -1686,22 +1931,35 @@ void Game::OnBoatArrived(Boat* boat)
 {
     mSceneSystem->OnBoatArrived(boat);
 
-    // Solo split is only needed to board the rocket. Once both halves arrive,
-    // combine them again. Multiplayer keeps both independently controlled
-    // slimes after landing.
+
+
+
     if (!mIsPlayer2Joined && mIsPlayerSplit) {
         MergePlayerInto(mControlledPlayerIndex);
     }
     mAudioSystem->TryChangeBGM();
 }
 
+void Game::OnPlayerCurrentPlanetChanged(Player& player)
+{
+    if (&player != GetMainPlayer() || !mAudioSystem) {
+        return;
+    }
+
+    mAudioSystem->TryChangeBGM();
+}
+
 void Game::OnStarObtained()
 {
-    if (mIsUGCMode) {
-        // This callback runs while the world is iterating actors. Reloading
-        // a stage here destroys those actors under the active iterator, so
-        // complete the save and scene transition on the next frame instead.
-        mIsUGCClearCompletionPending = true;
+    if (mUGCSessionState.IsModeActive()) {
+        if (mIsUGCClearTransitionInProgress) {
+            return;
+        }
+        // Actor走査中にステージを再読込すると走査中のActorを破棄するため、保存と遷移を次フレームへ遅延する。
+
+
+
+        mUGCSessionState.MarkClearCompletionPending();
         return;
     }
     MarkStageCleared(GetCurrentStageNum());
@@ -1719,21 +1977,41 @@ void Game::ForcePlayersGroundedForCinematic()
 
 void Game::ProcessPendingUGCClearCompletion()
 {
-    if (!mIsUGCClearCompletionPending) {
+    if (!mPendingUGCClearTransitionWorkFileName) {
+        mPendingUGCClearTransitionWorkFileName =
+            mUGCSessionState.ConsumeClearCompletion();
+    }
+    if (!mPendingUGCClearTransitionWorkFileName || !mSceneSystem) {
         return;
     }
 
-    mIsUGCClearCompletionPending = false;
-    if (!mIsUGCMode) {
+    const std::string completedWorkFileName =
+        *mPendingUGCClearTransitionWorkFileName;
+    if (completedWorkFileName.empty()) {
+        if (mSceneSystem->RequestFadeAction(
+                [this]() {
+                    ReturnToUGCEditor();
+                    mIsUGCClearTransitionInProgress = false;
+                })) {
+            mPendingUGCClearTransitionWorkFileName.reset();
+            mIsUGCClearTransitionInProgress = true;
+        }
         return;
     }
-    if (!mUGCVerificationWorkFileName.empty() && mUIRenderer) {
-        mUIRenderer->CompleteUGCVerification(
-            mUGCVerificationWorkFileName);
+
+    const auto completeVerificationAndReturnToBrowser =
+        [this, completedWorkFileName]() {
+            if (mUIRenderer) {
+                mUIRenderer->CompleteUGCVerification(
+                    completedWorkFileName);
+            }
+            CompleteUGCModeExit(true);
+        };
+    if (mSceneSystem->RequestFadeAction(
+            completeVerificationAndReturnToBrowser)) {
+        mPendingUGCClearTransitionWorkFileName.reset();
+        mIsUGCClearTransitionInProgress = true;
     }
-    mUGCVerificationWorkFileName.clear();
-    ExitUGCMode();
-    OpenUGCWorkBrowser();
 }
 
 bool Game::IsStageCleared(int stageNum) const
@@ -1761,6 +2039,32 @@ void Game::SetStageCleared(int stageNum, bool isCleared)
     if (changed && mPhysicsSystem) {
         mPhysicsSystem->Initialize();
     }
+}
+
+bool Game::HasCompletedTutorial(const std::string& tutorialId) const
+{
+    const std::string completedTutorialId =
+        BuildCompletedTutorialId(tutorialId);
+    return mStageProgressSystem &&
+           !completedTutorialId.empty() &&
+           mStageProgressSystem->HasShownConversation(
+               completedTutorialId);
+}
+
+void Game::MarkTutorialCompleted(const std::string& tutorialId)
+{
+    if (!mStageProgressSystem) {
+        return;
+    }
+
+    const std::string completedTutorialId =
+        BuildCompletedTutorialId(tutorialId);
+    if (completedTutorialId.empty()) {
+        return;
+    }
+
+    mStageProgressSystem->MarkConversationShown(
+        completedTutorialId);
 }
 
 bool Game::HasShownNPCConversation(const NPC* npc) const
@@ -1923,9 +2227,9 @@ Player* Game::FindNearestPlayer(Actor* actor) const
 
 void Game::FinishGame()
 {
-    // Stage progress is also saved as soon as it changes, but save once more
-    // when leaving from the pause menu so the menu action has a clear commit
-    // point as well.
+
+
+
     if (mStageProgressSystem) {
         mStageProgressSystem->Save();
     }
@@ -1934,9 +2238,9 @@ void Game::FinishGame()
 
 void Game::RestartGame()
 {
-    // The fade action invokes this only once the screen is completely black.
-    // Merge and choose the camera target at that point, then reveal the
-    // restarted player without a visible camera travel.
+
+
+
     if (!mIsPlayer2Joined && mIsPlayerSplit) {
         MergePlayerInto(0);
     }
@@ -1950,9 +2254,9 @@ void Game::RestartGame()
         if (!player->GetIsActive()) {
             playersToKeepInactive.emplace_back(player);
         }
-        // Restore health and respawn data for every body. The inactive solo
-        // body must not retain 0 HP, otherwise splitting again immediately
-        // retriggers Game Over.
+
+
+
         player->Restart();
     }
 
@@ -1995,9 +2299,9 @@ void Game::SynchronizeSoloSplitResources(const Player& sourcePlayer)
         return;
     }
 
-    // A solo split represents one slime with two bodies.  Update only the
-    // other body, and only when a value differs, so this never becomes a
-    // per-frame pair of unconditional writes.
+
+
+
     for (Player* player : players) {
         if (!player || player == &sourcePlayer) {
             continue;
@@ -2033,9 +2337,9 @@ void Game::OnPlayerCounter(int playerNum)
     VibrateControllerForPlayer(playerNum, 25000, 0, 500);
 }
 
-void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds)
 {
-    mGamepadRumbleService->VibrateForPlayer(playerNum, lowFrequency, highFrequency, duration);
+    mGamepadRumbleService->VibrateForPlayer(playerNum, lowFrequency, highFrequency, durationMilliseconds);
 }
 
 SDL_GameController* Game::GetSdlController() const

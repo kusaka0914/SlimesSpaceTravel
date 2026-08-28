@@ -34,6 +34,22 @@ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=<vcpkgのパス>/scripts/buildsystems
 cmake --build build --config Release
 ```
 
+## Windows配布版の作成
+
+次のコマンドで、`dist`にWindows向けの配布フォルダを作成できます。
+
+```powershell
+cmake --build build --config Release --target package_windows
+```
+
+配布フォルダでは実行ファイルとDLLを`dist/bin`へ配置し、`assets`と
+`shaders`を同じ階層へ配置します。モデルはコードと製品用YAMLから参照される
+ファイルだけを収集します。進行状況、作業中のステージ、保存した作品、
+デバッグ用ステージは配布物へ含めません。
+
+進行状況と作成したステージは、Windowsでは
+`%APPDATA%/SlimesSpaceTravel`へ保存されます。
+
 動作を確認だけで良い場合は、GitHub Releases の配布版を使用してください。
 
 ## デバッグモードについて

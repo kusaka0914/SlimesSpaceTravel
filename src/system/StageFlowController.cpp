@@ -20,10 +20,10 @@ void StageFlowController::LoadData(Game& game, bool isLoadPlayer)
 
 void StageFlowController::ReloadCurrentStage(
     Game& game,
-    bool rebuildPhysics)
+    StagePhysicsReloadMode physicsReloadMode)
 {
     LoadData(game, true);
-    if (rebuildPhysics) {
+    if (physicsReloadMode == StagePhysicsReloadMode::Rebuild) {
         game.GetPhysicsSystem()->Initialize();
     }
     game.GetAudioSystem()->TryChangeBGM();

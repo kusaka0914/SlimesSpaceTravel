@@ -47,7 +47,7 @@ std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
         position - forward * halfForward + left * halfSide,
         position - forward * halfForward - left * halfSide};
 }
-} // namespace
+}
 
 void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyStateMachine& stateMachine,
                              float deltaTime, bool isAllBreak)

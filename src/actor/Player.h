@@ -54,6 +54,8 @@ public:
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
+    bool IsWaitingForBoat() const;
+    bool CancelWaitingBoatRide();
     void RespawnAtRestartPoint();
     void Restart();
     void ForceGroundedForCinematic();
@@ -65,6 +67,7 @@ public:
     void OnAttachedToAdhesivePlatform();
     void SetBaseScale(const glm::vec3& scale);
     void SetSplitForm(bool isSplitForm);
+    void SetCurrentPlanet(Planet* currentPlanet);
     void MoveToCurrentPlanetOrigin();
     void DebugMoveToPlanet(Planet* planet, int planetIndex);
     void DebugMoveToPosition(
@@ -124,7 +127,15 @@ public:
 
     void SetDefaultDamageTimer(float defaultDamageTimer) { mStatus.SetDefaultDamageTimer(defaultDamageTimer); }
 
-    void SetAttackCooldown(float attackCooldown) { mCombat.SetAttackCooldown(attackCooldown); }
+    void SetGroundWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mCombat.SetGroundWeakAttackCooldownSeconds(cooldownSeconds);
+    }
+
+    void SetAirWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mCombat.SetAirWeakAttackCooldownSeconds(cooldownSeconds);
+    }
 
     void SetLastAttackCooldown(float lastAttackCooldown) { mCombat.SetLastAttackCooldown(lastAttackCooldown); }
 
@@ -155,6 +166,28 @@ public:
     void SetWideAttackAngle(float wideAttackAngle) { mCombat.SetWideAttackAngle(wideAttackAngle); }
 
     void SetWideAttack(float wideAttack) { mCombat.SetWideAttack(wideAttack); }
+
+    void SetAirDodgeAttackDamage(float damage) { mCombat.SetAirDodgeAttackDamage(damage); }
+
+    void SetAirDodgeHorizontalHitboxScale(float scale)
+    {
+        mCombat.SetAirDodgeHorizontalHitboxScale(scale);
+    }
+
+    void SetAirDodgeVerticalHitboxScale(float scale)
+    {
+        mCombat.SetAirDodgeVerticalHitboxScale(scale);
+    }
+
+    void SetAirDodgeEnemyPushSpeed(float speed)
+    {
+        mCombat.SetAirDodgeEnemyPushSpeed(speed);
+    }
+
+    void SetAirDodgeEnemyPushDampingPerSecond(float dampingPerSecond)
+    {
+        mCombat.SetAirDodgeEnemyPushDampingPerSecond(dampingPerSecond);
+    }
 
     void SetStrongAttackRange(float strongAttackRange) { mCombat.SetStrongAttackRange(strongAttackRange); }
 
@@ -206,6 +239,11 @@ public:
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
     {
         mCombat.SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
+    }
+
+    void SetAttackHitDelay(float attackHitDelay)
+    {
+        mCombat.SetAttackHitDelay(attackHitDelay);
     }
 
     void SetRayCastTimer(float rayCastTimer) { mGrounding.SetRayCastTimer(rayCastTimer); }
@@ -301,7 +339,15 @@ public:
 
     float GetDefaultDamageTimer() const { return mStatus.GetDefaultDamageTimer(); }
 
-    float GetAttackCooldown() const { return mCombat.GetAttackCooldown(); }
+    float GetGroundWeakAttackCooldownSeconds() const
+    {
+        return mCombat.GetGroundWeakAttackCooldownSeconds();
+    }
+
+    float GetAirWeakAttackCooldownSeconds() const
+    {
+        return mCombat.GetAirWeakAttackCooldownSeconds();
+    }
 
     float GetLastAttackCooldown() const { return mCombat.GetLastAttackCooldown(); }
 
@@ -326,6 +372,28 @@ public:
     float GetWideAttackAngle() const { return mCombat.GetWideAttackAngle(); }
 
     float GetWideAttack() const { return mCombat.GetWideAttack(); }
+
+    float GetAirDodgeAttackDamage() const { return mCombat.GetAirDodgeAttackDamage(); }
+
+    float GetAirDodgeHorizontalHitboxScale() const
+    {
+        return mCombat.GetAirDodgeHorizontalHitboxScale();
+    }
+
+    float GetAirDodgeVerticalHitboxScale() const
+    {
+        return mCombat.GetAirDodgeVerticalHitboxScale();
+    }
+
+    float GetAirDodgeEnemyPushSpeed() const
+    {
+        return mCombat.GetAirDodgeEnemyPushSpeed();
+    }
+
+    float GetAirDodgeEnemyPushDampingPerSecond() const
+    {
+        return mCombat.GetAirDodgeEnemyPushDampingPerSecond();
+    }
 
     float GetStrongAttackRange() const { return mCombat.GetStrongAttackRange(); }
 
@@ -363,6 +431,8 @@ public:
     float GetDefaultStrongAttackTimer() const { return mCombat.GetDefaultStrongAttackTimer(); }
 
     float GetDefaultAttackMotionTimer() const { return mCombat.GetDefaultAttackMotionTimer(); }
+
+    float GetAttackHitDelay() const { return mCombat.GetAttackHitDelay(); }
 
     float GetInputAvailableTimer() const { return mInput.GetInputAvailableTimer(); }
 

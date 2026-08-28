@@ -228,7 +228,7 @@ unsigned int LoadDiffuseTexture(const aiScene& scene, const aiMesh& sourceMesh, 
 
     const std::string relativeTexturePath = texturePath.C_Str();
     if (relativeTexturePath.empty() || relativeTexturePath.front() == '*') {
-        // Embedded textures require a memory-loading path. The existing TextureLoader only accepts file paths.
+
         return 0;
     }
 
@@ -322,8 +322,8 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
     if (scene.mMaterials && sourceMesh.mMaterialIndex < scene.mNumMaterials) {
         const aiMaterial* material = scene.mMaterials[sourceMesh.mMaterialIndex];
         aiColor4D baseColor;
-        // Blender's Principled BSDF Base Color can be exported as the PBR
-        // base-color factor rather than the legacy diffuse color.
+
+
         if (material &&
             material->Get(AI_MATKEY_BASE_COLOR, baseColor) ==
                 aiReturn_SUCCESS) {
@@ -344,7 +344,7 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
 
     return loadedMesh;
 }
-} // namespace
+}
 
 AssimpMeshLoader::AssimpMeshLoader(const TextureLoader* textureLoader)
     : mTextureLoader(textureLoader)

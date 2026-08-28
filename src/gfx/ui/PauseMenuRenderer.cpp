@@ -49,7 +49,7 @@ void PauseMenuRenderer::Draw()
             label += mGame->IsAssistControlStyle() ? "アシスト" : "スタンダード";
         }
         if (isTwoPlayerEntry && mGame->GetIsPlayer2Joined()) {
-            label = "1人であそぶ";
+            label = "ひとりであそぶ";
         } else if (isTwoPlayerEntry && !mGame->IsGameControllerConnected()) {
             label += "（コントローラーをつなぐ）";
         }

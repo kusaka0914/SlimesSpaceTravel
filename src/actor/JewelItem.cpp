@@ -36,8 +36,8 @@ void JewelItem::UpdateActor(float deltaTime)
         return;
     }
 
-    // Editor placement must not consume the item while its transform is being
-    // adjusted near a player.
+
+
     if (mGame && mGame->GetIsDebugEditorShowing()) {
         return;
     }

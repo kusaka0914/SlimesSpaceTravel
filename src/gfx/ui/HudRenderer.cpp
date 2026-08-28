@@ -18,21 +18,14 @@ HudRenderer::HudRenderer(Game* game, UIRenderer* renderer)
 
 void HudRenderer::DrawDefaultUI()
 {
+    DrawPlayerFatiguePromptUI();
+
     const std::vector<Player*>& players = mGame->GetPlayers();
     if (players.empty()) {
         return;
     }
 
-    const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
-    const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
     const Player* mainPlayer = mGame->GetMainPlayer();
-
-    if (!isTwoPlayer) {
-        DrawPlayerPromptUI(mainPlayer, 0.0f, 1.0f);
-    } else {
-        DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
-        DrawPlayerPromptUI(players[1], halfHeight, 1.0f);
-    }
 
     if (mGame->IsInBase()) {
         return;
@@ -47,15 +40,66 @@ void HudRenderer::DrawDefaultUI()
         DrawRemainPartsUI(remainBoatPartsCount);
     }
 
-    if (!isTwoPlayer) {
-        DrawPlayerStatusUI(mainPlayer, 0.0f, 1.0f);
-    } else {
-        DrawPlayerStatusUI(players[0], 0.0f, 0.5f);
-        DrawPlayerStatusUI(players[1], halfHeight, 0.5f);
+    DrawPlayerStatusUI();
+}
+
+void HudRenderer::DrawUGCPlaytestUI()
+{
+    DrawPlayerFatiguePromptUI();
+    DrawPlayerStatusUI();
+
+    if (mGame->GetIsUGCClearVerificationActive()) {
+        DrawUGCClearVerificationGuide();
     }
 }
 
-void HudRenderer::DrawPlayerStatusUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawPlayerStatusUI()
+{
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    const Player* mainPlayer = mGame->GetMainPlayer();
+    if (players.empty() || !mainPlayer) {
+        return;
+    }
+
+    const bool isTwoPlayer =
+        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    if (!isTwoPlayer) {
+        DrawPlayerStatusUIForPlayer(mainPlayer, 0.0f, 1.0f);
+    } else {
+        const float halfHeight =
+            static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+        DrawPlayerStatusUIForPlayer(players[0], 0.0f, 0.5f);
+        DrawPlayerStatusUIForPlayer(players[1], halfHeight, 0.5f);
+    }
+}
+
+void HudRenderer::DrawPlayerFatiguePromptUI()
+{
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    if (players.empty()) {
+        return;
+    }
+
+    const bool isTwoPlayer =
+        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    if (!isTwoPlayer) {
+        DrawPlayerPromptUI(
+            mGame->GetMainPlayer(),
+            0.0f,
+            static_cast<float>(mRenderer->GetFbHeight()));
+        return;
+    }
+
+    const float halfHeight =
+        static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+    DrawPlayerPromptUI(players[0], 0.0f, halfHeight);
+    DrawPlayerPromptUI(players[1], halfHeight, halfHeight);
+}
+
+void HudRenderer::DrawPlayerStatusUIForPlayer(
+    const Player* player,
+    float screenTopY,
+    float uiScale)
 {
     if (!player) {
         return;
@@ -72,14 +116,14 @@ void HudRenderer::DrawPlayerStatusUI(const Player* player, float screenTopY, flo
     }
 }
 
-void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float screenHeight)
 {
     if (!player) {
         return;
     }
 
     if (player->GetIsTired()) {
-        DrawRecommendReduceTiredUI(player, screenTopY, uiScale);
+        DrawRecommendReduceTiredUI(player, screenTopY, screenHeight);
     }
 }
 
@@ -174,7 +218,21 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
         remainPartsTextInfo->rotationDegrees);
 }
 
-void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, uiScale);
+    mRenderer->DrawTextDependsOnPlayerInput(
+        player,
+        "state",
+        "recommendReduceTiredText",
+        screenTopY,
+        screenHeight);
+}
+
+void HudRenderer::DrawUGCClearVerificationGuide()
+{
+    mRenderer->DrawSceneText(
+        "state",
+        "ugcClearVerificationGuideText",
+        0,
+        {255, 255, 255, 255});
 }

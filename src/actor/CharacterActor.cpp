@@ -10,7 +10,7 @@ constexpr float excludedSurfaceDetectionLengthMultiplier = 4.0f;
 constexpr float excludedSurfaceDetectionRayLength =
     landingRayLength * excludedSurfaceDetectionLengthMultiplier;
 constexpr float walkableGroundNormalMinimumUpDot = 0.65f;
-} // namespace
+}
 
 CharacterActor::CharacterActor(Game* game)
     : Actor(game),
@@ -75,31 +75,26 @@ void CharacterActor::JudgeLanding()
     const glm::vec3 backOffset = -mFacingForwardVec * bodyOffset;
 
     if (mOnGround) {
-        // 体中央でのレイキャスト
         if (ResolveLandingByRay(glm::vec3(0.0f), glm::vec3(0.0f)) !=
             LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体後ろ側でのレイキャスト
         if (ResolveLandingByRay(backOffset, frontOffset) !=
             LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体前側でのレイキャスト
         if (ResolveLandingByRay(frontOffset, backOffset) !=
             LandingRayResolution::NoHit) {
             return;
         }
     } else {
-        // 体前側でのレイキャスト
         if (ResolveLandingByRay(frontOffset, backOffset) !=
             LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体中央でのレイキャスト
         if (ResolveLandingByRay(glm::vec3(0.0f), glm::vec3(0.0f)) !=
             LandingRayResolution::NoHit) {
             return;

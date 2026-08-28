@@ -57,7 +57,7 @@ bool IsKeyboardOrMouseInputActive(GLFWwindow* window)
         return false;
     }
 
-    constexpr std::array<int, 21> TrackedKeys = {
+    constexpr std::array<int, 30> TrackedKeys = {
         GLFW_KEY_W,
         GLFW_KEY_A,
         GLFW_KEY_S,
@@ -69,11 +69,20 @@ bool IsKeyboardOrMouseInputActive(GLFWwindow* window)
         GLFW_KEY_SPACE,
         GLFW_KEY_J,
         GLFW_KEY_K,
+        GLFW_KEY_M,
         GLFW_KEY_U,
+        GLFW_KEY_Q,
+        GLFW_KEY_E,
+        GLFW_KEY_X,
+        GLFW_KEY_Z,
         GLFW_KEY_N,
         GLFW_KEY_I,
         GLFW_KEY_O,
         GLFW_KEY_Y,
+        GLFW_KEY_PAGE_UP,
+        GLFW_KEY_PAGE_DOWN,
+        GLFW_KEY_TAB,
+        GLFW_KEY_F5,
         GLFW_KEY_ENTER,
         GLFW_KEY_ESCAPE,
         GLFW_KEY_P,
@@ -137,7 +146,7 @@ void SuppressPlayerJumpUntilReleased(Game& game, int playerNum)
         }
     }
 }
-} // namespace
+}
 
 InputSystem::InputSystem(Game* game)
     : mGame(game)
@@ -187,8 +196,8 @@ void InputSystem::ProcessGameInput()
     }
 
     UpdateLastUsedInputDevice();
-    // UGC editor input normally returns early below.  Toggle handling must
-    // happen first so P can also close/open the editor while creating.
+
+
     ProcessDebugEditorToggleInput();
     ProcessUGCEditorCursorInput();
     const bool isUGCEditorActive =
@@ -254,6 +263,12 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mUGCEditorPlayPressedPrev = true;
     mUGCEditorSelectionPressedPrev = true;
     mKeyboardConfirmPressedPrev = true;
+}
+
+void InputSystem::SuppressUGCPlayShortcutUntilReleased()
+{
+    mPauseMenuKeyPressedPrev = true;
+    mUGCEditorPlayPressedPrev = true;
 }
 
 void InputSystem::ProcessUGCModeInput()
@@ -431,6 +446,7 @@ void InputSystem::ProcessUGCEditorCursorInput()
         cursorX, 0.0, static_cast<double>(windowWidth - 1));
     cursorY = std::clamp(
         cursorY, 0.0, static_cast<double>(windowHeight - 1));
+    mShouldIgnoreNextSyntheticCursorMotion = true;
     glfwSetCursorPos(window, cursorX, cursorY);
 
     constexpr float edgeScrollAreaPixels = 24.0f;
@@ -470,52 +486,81 @@ void InputSystem::ProcessUGCEditorCursorInput()
 void InputSystem::ProcessUGCEditorCommandInput()
 {
     SDL_GameController* controller = mGame->GetSdlController();
-    if (!controller) {
-        mUGCEditorUndoPressedPrev = false;
-        mUGCEditorRedoPressedPrev = false;
-        mUGCEditorEraserPressedPrev = false;
-        mUGCEditorZoomInPressedPrev = false;
-        mUGCEditorZoomOutPressedPrev = false;
-        mUGCEditorLayerDownPressedPrev = false;
-        mUGCEditorLayerUpPressedPrev = false;
-        mUGCEditorPlayPressedPrev = false;
-        mUGCEditorSelectionPressedPrev = false;
-        mUGCEditorDpadLeftPressedPrev = false;
-        mUGCEditorDpadRightPressedPrev = false;
-        mUGCEditorDpadUpPressedPrev = false;
-        mUGCEditorDpadDownPressedPrev = false;
-        return;
-    }
-
-    const bool undoPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_B) != 0;
-    const bool redoPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_Y) != 0;
-    const bool eraserPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_X) != 0;
-    const bool zoomInPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) != 0;
-    const bool zoomOutPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) != 0;
+    GLFWwindow* window = mGame->GetWindow();
+    const bool undoPressed =
+        (controller &&
+         SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS);
+    const bool redoPressed =
+        (controller &&
+         SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_Y) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS);
+    const bool eraserPressed =
+        (controller &&
+         SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS);
+    const bool zoomInPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS);
+    const bool zoomOutPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
     constexpr Sint16 triggerPressedThreshold = 16000;
-    const bool layerDownPressed = SDL_GameControllerGetAxis(
-        controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >
-        triggerPressedThreshold;
-    const bool layerUpPressed = SDL_GameControllerGetAxis(
-        controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >
-        triggerPressedThreshold;
-    const bool playPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_BACK) != 0;
-    const bool selectionPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_START) != 0;
-    const bool dpadLeftPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT) != 0;
-    const bool dpadRightPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) != 0;
-    const bool dpadUpPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_DPAD_UP) != 0;
-    const bool dpadDownPressed = SDL_GameControllerGetButton(
-        controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN) != 0;
+    const bool layerDownPressed =
+        (controller &&
+         SDL_GameControllerGetAxis(
+             controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT) >
+             triggerPressedThreshold) ||
+        (window && glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS);
+    const bool layerUpPressed =
+        (controller &&
+         SDL_GameControllerGetAxis(
+             controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >
+             triggerPressedThreshold) ||
+        (window && glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS);
+    const bool playPressed =
+        (controller &&
+         SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS);
+    const bool selectionPressed =
+        (controller &&
+         SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START) != 0) ||
+        (window && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS);
+    const bool dpadLeftPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT) != 0);
+    const bool dpadRightPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) != 0);
+    const bool dpadUpPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_DPAD_UP) != 0);
+    const bool dpadDownPressed =
+        (controller &&
+         SDL_GameControllerGetButton(
+             controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN) != 0);
+
+    float previewTurnInput = 0.0f;
+    if (window && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        previewTurnInput = -1.0f;
+    } else if (window && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        previewTurnInput = 1.0f;
+    }
+    if (previewTurnInput != 0.0f) {
+        constexpr float previewTurnRadiansPerSecond = 1.8f;
+        const float deltaTime = std::max(
+            0.001f,
+            mGame->GetLastDeltaTime());
+        mGame->AdjustUGCPreviewYaw(
+            -previewTurnInput * previewTurnRadiansPerSecond * deltaTime);
+    }
 
     if (undoPressed && !mUGCEditorUndoPressedPrev) {
         mGame->UndoUGCEdit();
@@ -570,8 +615,8 @@ void InputSystem::ProcessUGCEditorCommandInput()
     mUGCEditorDpadRightPressedPrev = dpadRightPressed;
     mUGCEditorDpadUpPressedPrev = dpadUpPressed;
     mUGCEditorDpadDownPressedPrev = dpadDownPressed;
-    // Prevent held minus/plus buttons from triggering their normal game
-    // actions on the frame after leaving the editor.
+
+
     mPauseMenuKeyPressedPrev = playPressed;
     mStartPressedPrev = selectionPressed;
 }
@@ -590,10 +635,12 @@ void InputSystem::ProcessPauseToggleInput()
         SDL_GameControllerGetButton(
             mGame->GetSdlController(), SDL_CONTROLLER_BUTTON_BACK);
 
-    if (controllerBackPressed && !mPauseMenuKeyPressedPrev &&
-        mGame->GetIsUGCMode() && !mGame->GetIsDebugEditorShowing()) {
+    const bool returnToUGCEditorPressed =
+        escapePressed || controllerBackPressed;
+    if (returnToUGCEditorPressed && !mPauseMenuKeyPressedPrev &&
+        mGame->GetIsUGCPlaytestActive()) {
         mGame->ReturnToUGCEditor();
-        mPauseMenuKeyPressedPrev = true;
+        SuppressUGCPlayShortcutUntilReleased();
         return;
     }
 
@@ -689,7 +736,11 @@ void InputSystem::UpdateLastUsedInputDevice()
     mPreviousCursorY = cursorY;
     mHasPreviousCursorPosition = true;
 
-    if (IsKeyboardOrMouseInputActive(window) || hasMouseMoved) {
+    const bool hasPhysicalMouseMoved =
+        hasMouseMoved && !mShouldIgnoreNextSyntheticCursorMotion;
+    mShouldIgnoreNextSyntheticCursorMotion = false;
+
+    if (IsKeyboardOrMouseInputActive(window) || hasPhysicalMouseMoved) {
         mGame->RecordInputDeviceUsage(InputDeviceType::KeyboardMouse);
     }
 

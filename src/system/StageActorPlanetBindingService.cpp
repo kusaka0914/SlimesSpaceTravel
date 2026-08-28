@@ -374,7 +374,7 @@ void FinalizeBindingChanges(
     RefreshBoatDestinations(planets);
 }
 
-} // namespace
+}
 
 bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
     Stage* stage)
@@ -394,9 +394,9 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
     for (const auto& [actorPointer, registration] : registeredActors) {
         (void)actorPointer;
 
-        // A boat's start planet is explicit stage data. Its world position
-        // may intentionally remain near another planet after it is changed
-        // in the editor, so loading must not overwrite that selection.
+
+
+
         if (dynamic_cast<Boat*>(registration.actor)) {
             continue;
         }
@@ -487,8 +487,8 @@ PreserveBoundActorWorldPositionsAfterPlanetMove(
             PlatformMovementComponent* movement =
                 platform->GetMovementComponent();
             if (movement) {
-                // The planet moved but the path did not. Subtracting the
-                // planet delta converts both endpoints to the new center.
+
+
                 movement->TranslatePath(-planetTranslation);
             }
         }

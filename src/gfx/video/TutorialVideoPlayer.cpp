@@ -33,7 +33,7 @@ std::string FormatPlatformError(const char* operation, long errorCode)
             << static_cast<unsigned long>(errorCode) << ")";
     return message.str();
 }
-} // namespace
+}
 
 class TutorialVideoPlayer::Implementation {
 public:

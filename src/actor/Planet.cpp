@@ -68,7 +68,7 @@ int FindShortestScaleAxisIndex(const glm::vec3& absoluteScale)
     }
     return shortestAxisIndex;
 }
-} // namespace
+}
 
 void Planet::ApplyConfig(const YAML::Node& node)
 {
@@ -224,10 +224,10 @@ bool Planet::ArePositionsOnSameSurfaceFace(
         return true;
     }
 
-    // The side region is still used to keep enemy movement away from an
-    // ellipse edge. Interaction filtering only needs to prevent attacks and
-    // targeting through the planet, so positions on the same hemisphere stay
-    // related even when knockback moves one actor into the side region.
+
+
+
+
     return ResolveEllipseSurfaceHemisphere(
                firstWorldPosition) ==
            ResolveEllipseSurfaceHemisphere(

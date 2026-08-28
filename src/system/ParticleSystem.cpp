@@ -51,7 +51,7 @@ ParticleEmitterDefinition CreateDefaultEmitter()
     emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
     return emitter;
 }
-} // namespace
+}
 
 ParticleSystem::ParticleSystem(std::size_t maxParticleCount)
     : mRandomEngine(std::random_device{}()),

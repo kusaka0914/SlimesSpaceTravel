@@ -69,9 +69,9 @@ btTransform CreateModelBoundsTransform(
     modelUpAxis = glm::normalize(modelUpAxis);
     modelLateralAxis = glm::normalize(modelLateralAxis);
 
-    // Rendering mirrors the model Z axis in addition to rotating its axes.
-    // A box is symmetric around its center, so the equivalent proper rotation
-    // uses +left for the box axis and applies the mirror only to the center.
+
+
+
     const glm::vec3 correctedLocalBoundsCenter(
         scaledLocalBoundsCenter.x,
         scaledLocalBoundsCenter.y,
@@ -191,7 +191,7 @@ bool DoesConvexShapeSweepOverlapActorCollision(
         targetTransform,
         castResult);
 }
-} // namespace
+}
 
 PhysicsSystem::PhysicsSystem(Game* game)
     : mGame(game)

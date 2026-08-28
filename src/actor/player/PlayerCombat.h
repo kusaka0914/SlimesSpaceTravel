@@ -57,6 +57,7 @@ public:
 
     void StartSpecialAttackCharging();
     void StartContinuousAttacking();
+    void EndContinuousAttacking();
     void StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime);
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
     void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
@@ -74,6 +75,8 @@ public:
         const glm::vec3& movementStart,
         const glm::vec3& movementEnd);
     void EndAirDodgeAttack();
+    void StartGroundWeakAttackCooldown();
+    void StartAirWeakAttackCooldown();
 
     void UpdateAttackCooldown(float deltaTime);
     void UpdateAttackMoveLock(PlayerStatus& status, float deltaTime);
@@ -82,7 +85,14 @@ public:
 
     void SetAttack(float attack) { mAttack = attack; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
-    void SetAttackCooldown(float attackCooldown) { mAttackCooldown = attackCooldown; }
+    void SetGroundWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mGroundWeakAttackCooldownSeconds = cooldownSeconds;
+    }
+    void SetAirWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mAirWeakAttackCooldownSeconds = cooldownSeconds;
+    }
     void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
     void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
@@ -91,6 +101,14 @@ public:
     void SetWideAttackRange(float wideAttackRange) { mWideAttackRange = wideAttackRange; }
     void SetWideAttackAngle(float wideAttackAngle) { mWideAttackAngle = wideAttackAngle; }
     void SetWideAttack(float wideAttack) { mWideAttack = wideAttack; }
+    void SetAirDodgeAttackDamage(float damage) { mAirDodgeAttackDamage = damage; }
+    void SetAirDodgeHorizontalHitboxScale(float scale) { mAirDodgeHorizontalHitboxScale = scale; }
+    void SetAirDodgeVerticalHitboxScale(float scale) { mAirDodgeVerticalHitboxScale = scale; }
+    void SetAirDodgeEnemyPushSpeed(float speed) { mAirDodgeEnemyPushSpeed = speed; }
+    void SetAirDodgeEnemyPushDampingPerSecond(float dampingPerSecond)
+    {
+        mAirDodgeEnemyPushDampingPerSecond = dampingPerSecond;
+    }
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
@@ -134,7 +152,14 @@ public:
     float GetAttack() const { return mAttack; }
     float GetAttackSpeed() const { return mAttackSpeed; }
     float GetAttackCooldownRemaining() const { return mAttackCooldownRemaining; }
-    float GetAttackCooldown() const { return mAttackCooldown; }
+    float GetGroundWeakAttackCooldownSeconds() const
+    {
+        return mGroundWeakAttackCooldownSeconds;
+    }
+    float GetAirWeakAttackCooldownSeconds() const
+    {
+        return mAirWeakAttackCooldownSeconds;
+    }
     float GetLastAttackCooldown() const { return mLastAttackCooldown; }
     float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
     float GetAttackMoveLockRemaining() const { return mAttackMoveLockRemaining; }
@@ -152,6 +177,14 @@ public:
     float GetWideAttackRange() const { return mWideAttackRange; }
     float GetWideAttackAngle() const { return mWideAttackAngle; }
     float GetWideAttack() const { return mWideAttack; }
+    float GetAirDodgeAttackDamage() const { return mAirDodgeAttackDamage; }
+    float GetAirDodgeHorizontalHitboxScale() const { return mAirDodgeHorizontalHitboxScale; }
+    float GetAirDodgeVerticalHitboxScale() const { return mAirDodgeVerticalHitboxScale; }
+    float GetAirDodgeEnemyPushSpeed() const { return mAirDodgeEnemyPushSpeed; }
+    float GetAirDodgeEnemyPushDampingPerSecond() const
+    {
+        return mAirDodgeEnemyPushDampingPerSecond;
+    }
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
@@ -211,7 +244,8 @@ private:
     float mAttack = 10.0f;
     float mAttackSpeed = 5.0f;
     float mAttackCooldownRemaining = 0.0f;
-    float mAttackCooldown = 0.3f;
+    float mGroundWeakAttackCooldownSeconds = 0.0f;
+    float mAirWeakAttackCooldownSeconds = 0.19f;
     float mLastAttackCooldown = 1.0f;
     float mAttackMoveLockRemaining = -1.0f;
     float mAttackDodgeLockRemaining = 0.0f;
@@ -231,6 +265,11 @@ private:
     float mWideAttackRange = 2.8f;
     float mWideAttackAngle = -0.2f;
     float mWideAttack = 5.0f;
+    float mAirDodgeAttackDamage = 5.0f;
+    float mAirDodgeHorizontalHitboxScale = 1.0f;
+    float mAirDodgeVerticalHitboxScale = 2.0f;
+    float mAirDodgeEnemyPushSpeed = 6.0f;
+    float mAirDodgeEnemyPushDampingPerSecond = 8.0f;
     float mStrongAttackRange = 6.0f;
     float mStrongAttack = 50.0f;
     float mStrongAttackSpeed = 100.0f;

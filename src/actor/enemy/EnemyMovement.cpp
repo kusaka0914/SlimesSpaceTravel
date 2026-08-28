@@ -78,11 +78,11 @@ bool IsWithinCurrentEllipseFaceMovementArea(
         return true;
     }
 
-    // This restriction belongs to the enemy's assigned planet, not to its
-    // current landing actor. During an attack, resolving an overlap with
-    // another enemy can temporarily change the landing actor. Basing the
-    // decision on that transient state allowed the collision correction to
-    // push enemies through the front/back boundary.
+
+
+
+
+
 
     const Planet::EllipseSurfaceProjection surfaceProjection =
         planet->CalculateEllipseSurfaceProjection(
@@ -111,10 +111,10 @@ bool IsWithinCurrentEllipseFaceMovementArea(
     const Planet::EllipseSurfaceFace currentHemisphere =
         planet->ResolveEllipseSurfaceHemisphere(
             enemy.GetPos());
-    // Keep enemies near the center of their assigned face. A value of 0.45
-    // still allowed enemies to reach the visibly curved shoulder of this
-    // ellipse, especially after enemy-to-enemy collision correction. 0.85
-    // stops them before that shoulder while retaining a useful combat area.
+
+
+
+
     constexpr float faceInteriorBoundaryRatio = 0.45f;
     return currentHemisphere ==
                Planet::EllipseSurfaceFace::Front
@@ -166,7 +166,7 @@ glm::vec3 ClampToCurrentEllipseFaceMovementArea(
         requestedPosition,
         allowedRatio);
 }
-} // namespace
+}
 
 void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float deltaTime)
 {
@@ -234,9 +234,9 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
 
 void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
-    // Same simple chase model as the stg branch: update facing first, then
-    // advance at a fixed speed in that facing direction. The tangent
-    // projection keeps it valid on the current planet surface.
+
+
+
     glm::vec3 tangentialMoveDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
             enemy.GetFacingForwardVec(),
@@ -380,7 +380,9 @@ void EnemyMovement::MoveDuringDying(Enemy& enemy, float deltaTime)
 
 void EnemyMovement::ApplyAirDodgePush(
     Enemy& enemy,
-    const glm::vec3& dodgeDirection)
+    const glm::vec3& dodgeDirection,
+    float pushSpeed,
+    float pushDampingPerSecond)
 {
     glm::vec3 tangentialPushDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
@@ -390,10 +392,11 @@ void EnemyMovement::ApplyAirDodgePush(
         return;
     }
 
-    constexpr float airDodgePushSpeed = 6.0f;
     mAirDodgePushVelocity =
         tangentialPushDirection *
-        airDodgePushSpeed;
+        std::max(0.0f, pushSpeed);
+    mAirDodgePushDampingPerSecond =
+        std::max(0.0f, pushDampingPerSecond);
 }
 
 void EnemyMovement::UpdateAirDodgePushMovement(
@@ -456,11 +459,10 @@ void EnemyMovement::UpdateAirDodgePushMovement(
         return;
     }
 
-    constexpr float airDodgePushDampingPerSecond = 8.0f;
     const float dampedPushSpeed =
         pushSpeed *
         std::exp(
-            -airDodgePushDampingPerSecond *
+            -mAirDodgePushDampingPerSecond *
             deltaTime);
     mAirDodgePushVelocity =
         tangentialPushDirection *

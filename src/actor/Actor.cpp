@@ -92,8 +92,8 @@ void Actor::Update(float deltaTime)
         mDeferredUpdateSeconds = 0.0f;
     }
     else {
-        // A nearby actor must resume on the current frame instead of applying
-        // time accumulated while it was outside the gameplay area.
+
+
         mDeferredUpdateSeconds = 0.0f;
     }
 

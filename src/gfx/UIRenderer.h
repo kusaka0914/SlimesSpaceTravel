@@ -5,6 +5,8 @@
 #include "text/RubyText.h"
 #include <GL/glew.h>
 #include <SDL_ttf.h>
+#include <cstdint>
+#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
@@ -55,22 +57,25 @@ public:
     UIRenderer(Game* game);
     ~UIRenderer();
 
+    void Shutdown();
+
     void DrawGameContent();
     void DrawDebugEditor(
         GLuint gameViewTexture,
         int gameViewWidth,
         int gameViewHeight);
-    void DrawUGCPlaytestReturnButton();
     void DrawUGCWorkBrowser();
     bool CompleteUGCVerification(const std::string& workFileName);
     void UndoUGCEdit();
     void RedoUGCEdit();
     void ToggleUGCEraser();
     void SelectUGCEditorMode();
+    void OpenUGCEditorMenu();
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
-    void DrawSkyBox();
+    void NotifyUGCEditorTutorialReturnedFromPlaytest();
+    void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
 
     bool SaveDebugEditorSession(
         const std::string& filePath,
@@ -109,9 +114,9 @@ public:
     }
     void RecordCustomUIElementForEditor(
         const UILoadSystem::CustomElement& element);
-    // UGC editor controls are Dear ImGui windows, which are drawn after the
-    // game view. Positive z-order authored elements therefore need this
-    // foreground pass instead of the normal game-view UI pass.
+
+
+
     void DrawUGCForegroundCustomUI(
         const ImVec2& viewportMin,
         const ImVec2& viewportSize);
@@ -133,7 +138,7 @@ public:
     void DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
                                          float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName, const std::string& UIName,
-                                      float screenTopY, float uiScale);
+                                      float screenTopY, float screenHeight);
     bool UsesControllerUI(const Player* player) const;
     bool DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName);
 
@@ -187,7 +192,8 @@ private:
         bool centerTalkPrompt = false,
         float contentScale = -1.0f,
         const Player* inputPlayer = nullptr,
-        float opacity = 1.0f);
+        float opacity = 1.0f,
+        const std::string* textOverride = nullptr);
     const std::string& ResolveCustomElementText(
         const UILoadSystem::CustomElement& element) const;
     const std::vector<RubyTextSegment>& ResolveCustomElementRuby(
@@ -215,6 +221,37 @@ private:
     static std::string GetCustomTextureName(const std::string& assetRelativePath);
 
     void EndImGuiFrame();
+
+    struct TextTextureCacheKey {
+        std::string text;
+        std::uint32_t rgba = 0;
+        int outlinePixels = 0;
+
+        bool operator==(const TextTextureCacheKey& other) const
+        {
+            return text == other.text &&
+                   rgba == other.rgba &&
+                   outlinePixels == other.outlinePixels;
+        }
+    };
+
+    struct TextTextureCacheKeyHash {
+        std::size_t operator()(const TextTextureCacheKey& key) const;
+    };
+
+    struct CachedTextTexture {
+        GLuint handle = 0;
+        int unscaledWidth = 0;
+        int unscaledHeight = 0;
+        std::uint64_t lastUseOrder = 0;
+    };
+
+    const CachedTextTexture* FindOrCreateTextTexture(
+        const std::string& text,
+        const SDL_Color& color,
+        int outlinePixels);
+    void EvictLeastRecentlyUsedTextTexture();
+    void ClearTextTextureCache();
 
     bool SplitText(const std::string& message, std::string& message1, std::string& message2) const;
     void DrawTextLine(
@@ -253,8 +290,15 @@ private:
     std::vector<RenderedUIElement> mRenderedUIElements;
     std::unordered_map<std::string, std::vector<RubyTextSegment>>
         mCustomTextRubyCache;
+    std::unordered_map<
+        TextTextureCacheKey,
+        CachedTextTexture,
+        TextTextureCacheKeyHash>
+        mTextTextureCache;
+    std::uint64_t mNextTextTextureUseOrder = 0;
 
     int mFbWidth;
     int mFbHeight;
     bool mCustomUIPreviewEnabled = false;
+    bool mIsImGuiInitialized = false;
 };

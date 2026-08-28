@@ -13,7 +13,7 @@
 #undef max
 #endif
 
-// Keeps enemies from walking past valid ground on curved stages or small platforms.
+
 glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3& desiredPos) const
 {
     const glm::vec3 currentPos = enemy.GetPos();
@@ -36,10 +36,10 @@ glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3&
             glm::mix(currentPos, desiredPos, checkRatio);
 
         if (!HasGroundBelow(enemy, checkPos)) {
-            // A fast attack can cross an edge within one frame. Returning the
-            // previous sample would cancel that entire frame and make the
-            // enemy appear frozen, so find the last supported position inside
-            // this sample interval instead.
+
+
+
+
             float safeRatio = lastSafeRatio;
             float unsupportedRatio = checkRatio;
             constexpr int edgeSearchIterations = 10;

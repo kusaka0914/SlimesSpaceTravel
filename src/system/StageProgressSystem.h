@@ -1,12 +1,13 @@
 #pragma once
 
+#include <filesystem>
 #include <set>
 #include <string>
 
 class StageProgressSystem {
 public:
-    explicit StageProgressSystem(
-        std::string savePath = "../assets/data/save/stage_progress.yaml");
+    StageProgressSystem();
+    explicit StageProgressSystem(std::filesystem::path savePath);
 
     bool Load();
     bool Save() const;
@@ -17,9 +18,9 @@ public:
     bool HasShownConversation(const std::string& conversationId) const;
     bool MarkConversationShown(const std::string& conversationId);
 
-    // The finale is independent from ordinary NPC conversation history.
-    // Keep it as an explicit progress value so replay behaviour remains
-    // stable even if story IDs are later renamed.
+
+
+
     bool HasCompletedEndingRoll() const { return mHasCompletedEndingRoll; }
     bool SetEndingRollCompleted(bool completed = true);
 
@@ -34,7 +35,7 @@ public:
     bool SetSelectedPlayerControlStyle(bool isAssistControlStyle);
 
 private:
-    std::string mSavePath;
+    std::filesystem::path mSavePath;
     std::set<int> mClearedStages;
     std::set<std::string> mShownConversationIds;
     bool mHasCompletedEndingRoll = false;

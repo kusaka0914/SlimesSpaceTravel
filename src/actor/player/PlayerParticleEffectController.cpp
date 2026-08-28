@@ -31,7 +31,7 @@ ParticleSystem* GetParticleSystem(Player& player)
     Game* game = player.GetGame();
     return game ? game->GetParticleSystem() : nullptr;
 }
-} // namespace
+}
 
 void PlayerParticleEffectController::UpdateWalking(Player& player, bool isWalking)
 {

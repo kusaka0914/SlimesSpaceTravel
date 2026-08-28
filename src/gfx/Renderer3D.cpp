@@ -7,6 +7,7 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "animation/SkeletalAnimationConstants.h"
+#include "component/PlatformMovementComponent.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/NPCProximityMessageRenderer.h"
@@ -17,6 +18,7 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "system/PhysicsSystem.h"
+#include "Stage.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/TextureLoader.h"
@@ -153,7 +155,7 @@ std::vector<glm::vec3> CreateUGCPlacementGhostEdges(
     }
     return vertices;
 }
-} // namespace
+}
 
 Renderer3D::Renderer3D(Game* game)
     : Renderer(game),
@@ -165,6 +167,13 @@ Renderer3D::Renderer3D(Game* game)
 }
 
 Renderer3D::~Renderer3D() = default;
+
+void Renderer3D::Shutdown()
+{
+    if (mRenderViewportController) {
+        mRenderViewportController->Shutdown();
+    }
+}
 
 GLuint Renderer3D::CreateRubyTextTextureFor3D(
     const std::vector<RubyTextSegment>& segments,
@@ -408,26 +417,34 @@ void Renderer3D::DrawScene(
     const glm::mat4& viewMat,
     const glm::mat4& projMat,
     const glm::vec3& cameraPos,
-    bool emphasizeUGCLayers,
+    UGCSceneLayerRenderMode ugcLayerRenderMode,
     int ugcEditLayer,
     const Player* viewportPlayer) const
 {
     if (!mSceneObjectRenderer || !mShader3D) {
         return;
     }
-
-    // The top/side UGC editor keeps every floor visible as a map. The floor
-    // being edited is bright while the rest are dimmed, matching the inset
-    // preview without changing the normal playtest render.
-    if (!emphasizeUGCLayers && mGame &&
+    bool emphasizesUGCLayers =
+        ugcLayerRenderMode == UGCSceneLayerRenderMode::HighlightEditingLayer ||
+        ugcLayerRenderMode ==
+            UGCSceneLayerRenderMode::HighlightEditingLayerWithoutDimming;
+    bool dimsNonEditingUGCLayers =
+        ugcLayerRenderMode == UGCSceneLayerRenderMode::HighlightEditingLayer;
+    const bool shouldAutomaticallyHighlightEditingLayer =
+        ugcLayerRenderMode ==
+            UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer &&
+        mGame &&
         mGame->GetIsUGCMode() &&
-        mGame->GetIsDebugEditorShowing()) {
-        emphasizeUGCLayers = true;
+        mGame->GetIsDebugEditorShowing();
+    if (shouldAutomaticallyHighlightEditingLayer) {
+        emphasizesUGCLayers = true;
+        dimsNonEditingUGCLayers = true;
         ugcEditLayer = mGame->GetUGCPreviewEditLayer();
     }
 
     glUseProgram(mShader3D->GetShaderProgram());
-    mEmphasizeUGCLayers = emphasizeUGCLayers;
+    mEmphasizeUGCLayers = emphasizesUGCLayers;
+    mDimNonEditingUGCLayers = dimsNonEditingUGCLayers;
     mUGCEditLayer = ugcEditLayer;
     UpdateViewFrustum(projMat * viewMat);
     SetUniforms(viewMat, projMat, cameraPos);
@@ -435,13 +452,23 @@ void Renderer3D::DrawScene(
 
     if (mGame && mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing()) {
+        DrawUGCMovingPlatformPaths();
         const std::optional<glm::vec3>& placementPreview =
             mGame->GetUGCPlatformPlacementPreview();
         if (placementPreview) {
             Actor* placementPreviewActor =
                 mGame->GetUGCPlacementModelPreview();
             if (placementPreviewActor) {
-                DrawUGCPlacementPreviewActor(placementPreviewActor);
+                const std::vector<glm::vec3>& previewPositions =
+                    mGame->GetUGCPlacementModelPreviewPositions();
+                if (previewPositions.empty()) {
+                    DrawUGCPlacementPreviewActor(placementPreviewActor);
+                } else {
+                    for (const glm::vec3& previewPosition : previewPositions) {
+                        placementPreviewActor->SetPos(previewPosition);
+                        DrawUGCPlacementPreviewActor(placementPreviewActor);
+                    }
+                }
             } else {
                 const float gridSize = mGame->GetUGCGridSize();
                 DrawAttackRangeVertices(
@@ -453,8 +480,8 @@ void Renderer3D::DrawScene(
                     GL_LINES,
                     glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
             }
-            // Restore the normal scene material state for renderers that
-            // run after the ghost.
+
+
             SetUniforms(viewMat, projMat, cameraPos);
         }
     }
@@ -463,6 +490,91 @@ void Renderer3D::DrawScene(
         mParticleRenderer->Draw(viewMat, projMat);
     }
     mEmphasizeUGCLayers = false;
+    mDimNonEditingUGCLayers = false;
+}
+
+void Renderer3D::DrawUGCMovingPlatformPaths() const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+
+    std::vector<glm::vec3> pathVertices;
+    std::vector<std::pair<Platform*, glm::vec3>> endpointPreviews;
+    const float pathHeightOffset = mGame->GetUGCGridSize() * 0.18f;
+    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform || !platform->GetIsActive()) {
+                continue;
+            }
+
+            const PlatformMovementComponent* movement =
+                platform->GetMovementComponent();
+            if (!movement || !platform->GetIsUGCGenerated()) {
+                continue;
+            }
+
+            const glm::vec3 sourceWorldPosition =
+                planet->GetPos() + movement->GetBaseLocalPos();
+            const glm::vec3 destinationWorldPosition =
+                planet->GetPos() + movement->GetDestinationLocalPos();
+            pathVertices.push_back(
+                sourceWorldPosition +
+                glm::vec3(0.0f, pathHeightOffset, 0.0f));
+            pathVertices.push_back(
+                destinationWorldPosition +
+                glm::vec3(0.0f, pathHeightOffset, 0.0f));
+            const glm::vec3 currentWorldPosition = platform->GetPos();
+            const glm::vec3 otherEndpointWorldPosition =
+                glm::distance(currentWorldPosition, sourceWorldPosition) <=
+                    glm::distance(currentWorldPosition, destinationWorldPosition)
+                    ? destinationWorldPosition
+                    : sourceWorldPosition;
+            endpointPreviews.emplace_back(
+                platform, otherEndpointWorldPosition);
+        }
+    }
+
+    const std::optional<glm::vec3>& previewPathStart =
+        mGame->GetUGCMovingPlatformPathStartPosition();
+    const std::optional<glm::vec3>& previewPathDestination =
+        mGame->GetUGCMovingPlatformPathDestinationPosition();
+    if (previewPathStart && previewPathDestination) {
+        pathVertices.push_back(
+            *previewPathStart + glm::vec3(0.0f, pathHeightOffset, 0.0f));
+        pathVertices.push_back(
+            *previewPathDestination +
+            glm::vec3(0.0f, pathHeightOffset, 0.0f));
+    }
+
+    if (pathVertices.empty()) {
+        return;
+    }
+
+    GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
+    GLfloat previousLineWidth = 1.0f;
+    glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
+    glDisable(GL_DEPTH_TEST);
+    glLineWidth(2.0f);
+    DrawAttackRangeVertices(
+        pathVertices,
+        GL_LINES,
+        glm::vec4(0.2f, 0.9f, 1.0f, 0.9f));
+    glLineWidth(previousLineWidth);
+    if (wasDepthTestEnabled == GL_TRUE) {
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    for (const auto& [platform, endpointWorldPosition] : endpointPreviews) {
+        const glm::vec3 currentWorldPosition = platform->GetPos();
+        platform->SetPos(endpointWorldPosition);
+        DrawUGCPlacementPreviewActor(platform);
+        platform->SetPos(currentWorldPosition);
+    }
 }
 
 void Renderer3D::UpdateViewFrustum(
@@ -705,11 +817,11 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     }
 
     constexpr float maximumShadowDistance = 12.0f;
-    // The shadow is a gameplay readability marker, not a physical light
-    // simulation. Keep its density fixed even while the actor is airborne.
+
+
     constexpr float distanceFade = 1.0f;
 
-    // Keep the mark just above the receiving surface to avoid flicker.
+
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale =
         1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
@@ -767,7 +879,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     }
 
     float layerBrightness = 1.0f;
-    if (isGeneratedUGCPlatform && !isOnCurrentUGCLayer) {
+    if (mDimNonEditingUGCLayers && isGeneratedUGCPlatform &&
+        !isOnCurrentUGCLayer) {
         const int layerDistance = std::abs(
             platform->GetUGCGridLayer() - mUGCEditLayer);
         layerBrightness = layerDistance == 1 ? 0.45f : 0.22f;
