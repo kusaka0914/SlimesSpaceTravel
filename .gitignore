@@ -3,5 +3,6 @@ dist/
 .cursor/
 .vscode/
 .vs/
+AGENTS.md
 
 .DS_Store
