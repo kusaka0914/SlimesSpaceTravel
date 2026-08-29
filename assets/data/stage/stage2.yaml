@@ -2918,8 +2918,7 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 1
     pos:
       - 4.16
@@ -2986,10 +2985,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet1
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 4
     pos:
       - -13.229219
@@ -3292,10 +3289,8 @@ platforms:
           - platform_5
           - platform_7
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 5
     pos:
       - -0.02
@@ -3330,12 +3325,9 @@ platforms:
           - platform_39
           - platform_3
         remainsOnAfterPressed: true
-        enemyTargets:
-          []
-        hideTargets:
-          []
-      enemyClearUnlock:
-        {}
+        enemyTargets: []
+        hideTargets: []
+      enemyClearUnlock: {}
   - currentPlanetNum: 6
     pos:
       - -16.18602
@@ -3550,8 +3542,7 @@ platforms:
         targets:
           - sequence: boats
             index: 2
-        hideTargets:
-          []
+        hideTargets: []
   - currentPlanetNum: 6
     pos:
       - 1.95
@@ -3581,10 +3572,8 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet2
-        targets:
-          []
-        hideTargets:
-          []
+        targets: []
+        hideTargets: []
   - currentPlanetNum: 0
     pos:
       - -2.91
@@ -3736,10 +3725,8 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 3
     pos:
       - -8.612755

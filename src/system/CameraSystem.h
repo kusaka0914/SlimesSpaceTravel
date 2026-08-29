@@ -76,6 +76,9 @@ public:
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     bool AllowsPlayerInput() const;
     void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
+    void TransitionToControlledPlayer(
+        int fromPlayerIndex,
+        int toPlayerIndex);
     void StartBossDefeatSequence(Enemy* boss, Star* star);
     bool PreviewBossDefeatSequence();
     void StopBossDefeatSequence();
@@ -97,6 +100,7 @@ private:
     int GetPrimaryPlayerIndex() const;
     float GetEasedTalkCameraBlend() const;
     float GetEasedTalkPageFocusBlend() const;
+    void CopyPlayerPitchOffset(int fromPlayerIndex, int toPlayerIndex);
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;

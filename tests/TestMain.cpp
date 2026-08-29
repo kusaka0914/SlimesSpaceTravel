@@ -51,6 +51,8 @@ void RegisterUGCModeControllerTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlatformStageConfigTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterPlayerCameraSettingsTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -78,6 +80,7 @@ int main()
     RegisterFramePerformanceTrackerTests(tests);
     RegisterUGCModeControllerTests(tests);
     RegisterPlatformStageConfigTests(tests);
+    RegisterPlayerCameraSettingsTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

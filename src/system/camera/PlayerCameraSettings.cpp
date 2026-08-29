@@ -33,6 +33,30 @@ void PlayerCameraSettings::Normalize()
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
     attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
+    autoFollowDelaySeconds = glm::clamp(autoFollowDelaySeconds, 0.0f, 5.0f);
+    autoFollowRotationDurationSeconds =
+        glm::clamp(autoFollowRotationDurationSeconds, 0.05f, 5.0f);
+    autoFollowMinimumLateralInput = glm::clamp(autoFollowMinimumLateralInput, 0.0f, 1.0f);
+    autoFollowMaximumBackwardInput = glm::clamp(autoFollowMaximumBackwardInput, 0.0f, 1.0f);
+    autoFollowDelayAfterManualInputSeconds =
+        glm::clamp(autoFollowDelayAfterManualInputSeconds, 0.0f, 5.0f);
+    backwardFacingLookAheadDistance =
+        glm::clamp(backwardFacingLookAheadDistance, 0.0f, 50.0f);
+    backwardFacingFramingActivationDelaySeconds =
+        glm::clamp(backwardFacingFramingActivationDelaySeconds, 0.0f, 5.0f);
+    backwardFacingFramingMinimumBackwardInput =
+        glm::clamp(backwardFacingFramingMinimumBackwardInput, 0.0f, 1.0f);
+    surfaceTraversalAutoAlignAngleDegrees =
+        glm::clamp(surfaceTraversalAutoAlignAngleDegrees, 0.0f, 180.0f);
+    surfaceTraversalAutoAlignMinimumMovementInput =
+        glm::clamp(surfaceTraversalAutoAlignMinimumMovementInput, 0.0f, 1.0f);
+    backwardFacingFramingStartAngleDegrees =
+        glm::clamp(backwardFacingFramingStartAngleDegrees, 0.0f, 180.0f);
+    backwardFacingFramingEndAngleDegrees =
+        glm::clamp(backwardFacingFramingEndAngleDegrees,
+                   backwardFacingFramingStartAngleDegrees, 180.0f);
+    backwardFacingFramingSmoothingSpeed =
+        glm::clamp(backwardFacingFramingSmoothingSpeed, 0.0f, 50.0f);
 
     talkDistance = glm::clamp(talkDistance, 0.5f, 50.0f);
     talkPitchDegrees = glm::clamp(talkPitchDegrees, -89.0f, 89.0f);
@@ -101,6 +125,44 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             ReadFloat(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
         loadedSettings.attackTargetSmoothingSpeed =
             ReadFloat(cameraNode, "attackTargetSmoothingSpeed", loadedSettings.attackTargetSmoothingSpeed);
+        loadedSettings.autoFollowDelaySeconds =
+            ReadFloat(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
+        loadedSettings.autoFollowRotationDurationSeconds =
+            ReadFloat(cameraNode, "autoFollowRotationDurationSeconds",
+                      loadedSettings.autoFollowRotationDurationSeconds);
+        loadedSettings.autoFollowMinimumLateralInput =
+            ReadFloat(cameraNode, "autoFollowMinimumLateralInput",
+                      loadedSettings.autoFollowMinimumLateralInput);
+        loadedSettings.autoFollowMaximumBackwardInput =
+            ReadFloat(cameraNode, "autoFollowMaximumBackwardInput",
+                      loadedSettings.autoFollowMaximumBackwardInput);
+        loadedSettings.autoFollowDelayAfterManualInputSeconds =
+            ReadFloat(cameraNode, "autoFollowDelayAfterManualInputSeconds",
+                      loadedSettings.autoFollowDelayAfterManualInputSeconds);
+        loadedSettings.backwardFacingLookAheadDistance =
+            ReadFloat(cameraNode, "backwardFacingLookAheadDistance",
+                      loadedSettings.backwardFacingLookAheadDistance);
+        loadedSettings.backwardFacingFramingActivationDelaySeconds =
+            ReadFloat(cameraNode, "backwardFacingFramingActivationDelaySeconds",
+                      loadedSettings.backwardFacingFramingActivationDelaySeconds);
+        loadedSettings.backwardFacingFramingMinimumBackwardInput =
+            ReadFloat(cameraNode, "backwardFacingFramingMinimumBackwardInput",
+                      loadedSettings.backwardFacingFramingMinimumBackwardInput);
+        loadedSettings.surfaceTraversalAutoAlignAngleDegrees =
+            ReadFloat(cameraNode, "surfaceTraversalAutoAlignAngleDegrees",
+                      loadedSettings.surfaceTraversalAutoAlignAngleDegrees);
+        loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput =
+            ReadFloat(cameraNode, "surfaceTraversalAutoAlignMinimumMovementInput",
+                      loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput);
+        loadedSettings.backwardFacingFramingStartAngleDegrees =
+            ReadFloat(cameraNode, "backwardFacingFramingStartAngleDegrees",
+                      loadedSettings.backwardFacingFramingStartAngleDegrees);
+        loadedSettings.backwardFacingFramingEndAngleDegrees =
+            ReadFloat(cameraNode, "backwardFacingFramingEndAngleDegrees",
+                      loadedSettings.backwardFacingFramingEndAngleDegrees);
+        loadedSettings.backwardFacingFramingSmoothingSpeed =
+            ReadFloat(cameraNode, "backwardFacingFramingSmoothingSpeed",
+                      loadedSettings.backwardFacingFramingSmoothingSpeed);
 
         const YAML::Node talkNode = cameraNode["talk"];
         if (talkNode && talkNode.IsMap()) {
@@ -190,6 +252,32 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
                 << normalizedSettings.targetSmoothingSpeed;
         emitter << YAML::Key << "attackTargetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.attackTargetSmoothingSpeed;
+        emitter << YAML::Key << "autoFollowDelaySeconds" << YAML::Value
+                << normalizedSettings.autoFollowDelaySeconds;
+        emitter << YAML::Key << "autoFollowRotationDurationSeconds" << YAML::Value
+                << normalizedSettings.autoFollowRotationDurationSeconds;
+        emitter << YAML::Key << "autoFollowMinimumLateralInput" << YAML::Value
+                << normalizedSettings.autoFollowMinimumLateralInput;
+        emitter << YAML::Key << "autoFollowMaximumBackwardInput" << YAML::Value
+                << normalizedSettings.autoFollowMaximumBackwardInput;
+        emitter << YAML::Key << "autoFollowDelayAfterManualInputSeconds" << YAML::Value
+                << normalizedSettings.autoFollowDelayAfterManualInputSeconds;
+        emitter << YAML::Key << "backwardFacingLookAheadDistance" << YAML::Value
+                << normalizedSettings.backwardFacingLookAheadDistance;
+        emitter << YAML::Key << "backwardFacingFramingActivationDelaySeconds" << YAML::Value
+                << normalizedSettings.backwardFacingFramingActivationDelaySeconds;
+        emitter << YAML::Key << "backwardFacingFramingMinimumBackwardInput" << YAML::Value
+                << normalizedSettings.backwardFacingFramingMinimumBackwardInput;
+        emitter << YAML::Key << "surfaceTraversalAutoAlignAngleDegrees" << YAML::Value
+                << normalizedSettings.surfaceTraversalAutoAlignAngleDegrees;
+        emitter << YAML::Key << "surfaceTraversalAutoAlignMinimumMovementInput" << YAML::Value
+                << normalizedSettings.surfaceTraversalAutoAlignMinimumMovementInput;
+        emitter << YAML::Key << "backwardFacingFramingStartAngleDegrees" << YAML::Value
+                << normalizedSettings.backwardFacingFramingStartAngleDegrees;
+        emitter << YAML::Key << "backwardFacingFramingEndAngleDegrees" << YAML::Value
+                << normalizedSettings.backwardFacingFramingEndAngleDegrees;
+        emitter << YAML::Key << "backwardFacingFramingSmoothingSpeed" << YAML::Value
+                << normalizedSettings.backwardFacingFramingSmoothingSpeed;
 
         emitter << YAML::Key << "talk" << YAML::Value << YAML::BeginMap;
         emitter << YAML::Key << "distance" << YAML::Value << normalizedSettings.talkDistance;

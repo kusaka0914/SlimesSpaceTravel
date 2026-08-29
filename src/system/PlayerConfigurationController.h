@@ -2,6 +2,8 @@
 
 #include "system/PlayerControlConfigurationState.h"
 
+#include <glm/glm.hpp>
+
 class CameraSystem;
 class GameProgressController;
 class GameWorld;
@@ -37,6 +39,8 @@ public:
 
     bool ToggleSplit();
     bool CanToggleSplit() const;
+    void UpdateSplitMergeTransition(float deltaTime);
+    bool IsSplitMergeTransitionActive() const;
     bool SwitchControlledPlayer();
     bool CanSwitchControlledPlayer() const;
     void RequestControlSwitchAfterBoarding();
@@ -52,12 +56,42 @@ public:
     Player* GetControlledPlayer() const;
 
 private:
+    enum class SplitMergeTransitionKind {
+        None,
+        Splitting,
+        Merging,
+    };
+
+    enum class ControlledPlayerCameraTransition {
+        Snap,
+        Smooth,
+    };
+
+    struct SplitMergeTransitionState {
+        SplitMergeTransitionKind kind = SplitMergeTransitionKind::None;
+        float elapsedSeconds = 0.0f;
+        glm::vec3 splitPlayerStartPosition{0.0f};
+        glm::vec3 splitPlayerStartScale{1.0f};
+        glm::vec3 mainPlayerStartScale{1.0f};
+    };
+
     bool CanChangeSoloConfiguration() const;
     bool SplitPlayer();
-    bool MergePlayer();
+    bool BeginSoloSplitTransition();
+    bool BeginSoloMergeTransition();
+    void UpdateSoloSplitTransition(float progress);
+    void UpdateSoloMergeTransition(float progress);
+    void CompleteSoloSplitTransition();
+    void CompleteSoloMergeTransition();
     bool AreSplitPlayersCloseEnoughToMerge() const;
-    bool MergePlayerInto(int targetPlayerIndex);
-    void SelectControlledPlayer(int playerIndex);
+    bool MergePlayerInto(
+        int targetPlayerIndex,
+        ControlledPlayerCameraTransition cameraTransition =
+            ControlledPlayerCameraTransition::Snap);
+    void SelectControlledPlayer(
+        int playerIndex,
+        ControlledPlayerCameraTransition cameraTransition =
+            ControlledPlayerCameraTransition::Snap);
 
     GameWorld& mWorld;
     StagePlayerLoader& mPlayerLoader;
@@ -69,4 +103,5 @@ private:
     PauseMenuController& mPauseMenuController;
     bool mIsSecondPlayerJoined = false;
     PlayerControlConfigurationState mControlState;
+    SplitMergeTransitionState mSplitMergeTransition;
 };

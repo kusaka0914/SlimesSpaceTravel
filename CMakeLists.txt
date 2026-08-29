@@ -74,6 +74,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerCameraSettingsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -102,6 +103,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/performance/FramePerformanceTracker.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UGCModeController.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src

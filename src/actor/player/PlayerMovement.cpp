@@ -538,6 +538,40 @@ bool PlayerMovement::CanDodge(const PlayerCombat& combat) const
 void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input)
 {
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
+    const glm::vec2 movementInput(
+        input.GetMoveLeft(),
+        input.GetMoveForward());
+    const float movementInputMagnitude = glm::length(movementInput);
+    constexpr float movementInputReleaseThreshold = 0.01f;
+    if (mIsCameraAutoAlignMovementDirectionLocked) {
+        if (movementInputMagnitude <= movementInputReleaseThreshold) {
+            mIsCameraAutoAlignMovementDirectionLocked = false;
+        } else {
+            const glm::vec2 currentInputDirection =
+                movementInput / movementInputMagnitude;
+            constexpr float movementDirectionUnlockAngleDegrees = 30.0f;
+            const float movementDirectionUnlockDot = std::cos(
+                glm::radians(movementDirectionUnlockAngleDegrees));
+            const bool didMovementInputDirectionChange =
+                glm::dot(
+                    mCameraAutoAlignStartInputDirection,
+                    currentInputDirection) < movementDirectionUnlockDot;
+            if (didMovementInputDirectionChange) {
+                mIsCameraAutoAlignMovementDirectionLocked = false;
+                mHasCameraAutoAlignCancellationRequest = true;
+            } else {
+                glm::vec3 transportedMovementDirection;
+                if (TryNormalizeDirection(
+                        ProjectOntoPlane(
+                            mCameraAutoAlignMovementDirection,
+                            upDirection),
+                        transportedMovementDirection)) {
+                    mCameraAutoAlignMovementDirection =
+                        transportedMovementDirection;
+                }
+            }
+        }
+    }
 
     const glm::vec3 projectedForwardDirection = ProjectOntoPlane(mForwardVec, upDirection);
 
@@ -597,9 +631,48 @@ void PlayerMovement::SetCameraForwardDirection(const glm::vec3& forwardDirection
     mLeftVec = normalizedLeftDirection;
 }
 
+void PlayerMovement::LockMovementDirectionForCameraAutoAlign(
+    const PlayerInput& input,
+    const glm::vec3& upDirection)
+{
+    glm::vec3 normalizedUpDirection;
+    if (!TryNormalizeDirection(upDirection, normalizedUpDirection)) {
+        return;
+    }
+
+    const glm::vec3 requestedMovementDirection =
+        mForwardVec * input.GetMoveForward() +
+        mLeftVec * input.GetMoveLeft();
+    glm::vec3 movementDirection;
+    if (!TryNormalizeDirection(
+            ProjectOntoPlane(
+                requestedMovementDirection,
+                normalizedUpDirection),
+            movementDirection)) {
+        return;
+    }
+
+    mCameraAutoAlignMovementDirection = movementDirection;
+    mCameraAutoAlignStartInputDirection = glm::normalize(
+        glm::vec2(input.GetMoveLeft(), input.GetMoveForward()));
+    mIsCameraAutoAlignMovementDirectionLocked = true;
+}
+
+bool PlayerMovement::ConsumeCameraAutoAlignCancellationRequest()
+{
+    const bool hasCancellationRequest =
+        mHasCameraAutoAlignCancellationRequest;
+    mHasCameraAutoAlignCancellationRequest = false;
+    return hasCancellationRequest;
+}
+
 void PlayerMovement::UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input)
 {
-    const glm::vec3 requestedFacingDirection = mForwardVec * input.GetMoveForward() + mLeftVec * input.GetMoveLeft();
+    const glm::vec3 requestedFacingDirection =
+        mIsCameraAutoAlignMovementDirectionLocked
+            ? mCameraAutoAlignMovementDirection
+            : mForwardVec * input.GetMoveForward() +
+                  mLeftVec * input.GetMoveLeft();
 
     glm::vec3 facingDirection;
 
@@ -683,10 +756,23 @@ glm::vec3 PlayerMovement::CalculateInputMovementDelta(
     const PlayerInput& input,
     float deltaTime) const
 {
-    const glm::vec3 forwardMovement =
-        mForwardVec * input.GetMoveForward();
-    const glm::vec3 leftMovement =
-        mLeftVec * input.GetMoveLeft();
+    glm::vec3 requestedMovementDirection;
+    if (mIsCameraAutoAlignMovementDirectionLocked) {
+        const float movementInputMagnitude = glm::clamp(
+            glm::length(
+                glm::vec2(
+                    input.GetMoveLeft(),
+                    input.GetMoveForward())),
+            0.0f,
+            1.0f);
+        requestedMovementDirection =
+            mCameraAutoAlignMovementDirection *
+            movementInputMagnitude;
+    } else {
+        requestedMovementDirection =
+            mForwardVec * input.GetMoveForward() +
+            mLeftVec * input.GetMoveLeft();
+    }
 
     constexpr float fallbackAirControlMultiplier = 0.3f;
     const float inputMovementMultiplier =
@@ -694,7 +780,7 @@ glm::vec3 PlayerMovement::CalculateInputMovementDelta(
             ? fallbackAirControlMultiplier
             : 1.0f;
     return
-        (forwardMovement + leftMovement) *
+        requestedMovementDirection *
         mMoveSpeed *
         inputMovementMultiplier *
         deltaTime;

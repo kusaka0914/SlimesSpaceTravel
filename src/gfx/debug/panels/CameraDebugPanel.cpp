@@ -51,6 +51,89 @@ void CameraDebugPanel::Draw()
             playerCameraChanged |= ImGui::DragFloat("位置追従速度##PlayerCamera",
                                                     &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
+            ImGui::SeparatorText("移動時の自動追従");
+            playerCameraChanged |= ImGui::DragFloat(
+                "追従開始までの横入力時間（秒）##AutoFollowCamera",
+                &playerCameraSettings.autoFollowDelaySeconds,
+                0.05f,
+                0.0f,
+                5.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "背後まで回る時間（秒）##AutoFollowCamera",
+                &playerCameraSettings.autoFollowRotationDurationSeconds,
+                0.05f,
+                0.05f,
+                5.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "追従を始める横入力##AutoFollowCamera",
+                &playerCameraSettings.autoFollowMinimumLateralInput,
+                0.01f,
+                0.0f,
+                1.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "許容する後ろ入力##AutoFollowCamera",
+                &playerCameraSettings.autoFollowMaximumBackwardInput,
+                0.01f,
+                0.0f,
+                1.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "手動操作後の待機時間（秒）##AutoFollowCamera",
+                &playerCameraSettings.autoFollowDelayAfterManualInputSeconds,
+                0.05f,
+                0.0f,
+                5.0f);
+
+            ImGui::SeparatorText("下向き時の構図調整");
+            playerCameraChanged |= ImGui::DragFloat(
+                "進行方向への注視点距離##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingLookAheadDistance,
+                0.1f,
+                0.0f,
+                50.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "構図変更までの下入力時間（秒）##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingFramingActivationDelaySeconds,
+                0.05f,
+                0.0f,
+                5.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "構図変更を始める下入力##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingFramingMinimumBackwardInput,
+                0.01f,
+                0.0f,
+                1.0f);
+            ImGui::SeparatorText("惑星を回り込んだ時の背後合わせ");
+            playerCameraChanged |= ImGui::DragFloat(
+                "背後合わせを始める表面移動角度（度）##SurfaceTraversalAutoAlign",
+                &playerCameraSettings.surfaceTraversalAutoAlignAngleDegrees,
+                1.0f,
+                0.0f,
+                180.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "背後合わせを有効にする移動入力##SurfaceTraversalAutoAlign",
+                &playerCameraSettings.surfaceTraversalAutoAlignMinimumMovementInput,
+                0.01f,
+                0.0f,
+                1.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "構図を変え始める角度（度）##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingFramingStartAngleDegrees,
+                1.0f,
+                0.0f,
+                180.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "構図を戻し始める角度（度）##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingFramingEndAngleDegrees,
+                1.0f,
+                0.0f,
+                180.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "注視点変更速度##BackwardFacingFraming",
+                &playerCameraSettings.backwardFacingFramingSmoothingSpeed,
+                0.1f,
+                0.0f,
+                50.0f);
+
             ImGui::SeparatorText("攻撃時アシスト");
             playerCameraChanged |= ImGui::DragFloat(
                 "対象への追従速度##AttackCamera", &playerCameraSettings.attackTargetSmoothingSpeed, 0.1f, 0.0f, 50.0f);

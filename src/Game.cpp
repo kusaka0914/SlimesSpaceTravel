@@ -80,6 +80,8 @@ bool Game::Initialize(
     const std::string& editorSessionPath,
     const std::string& editorRestartErrorLogPath)
 {
+    mIsDebugMode = isDebugMode;
+
     if (!InitializeGLFW()) {
         return false;
     }
@@ -101,7 +103,6 @@ bool Game::Initialize(
     CreateStages(stageCount);
 
     if (isDebugMode) {
-        mIsDebugMode = true;
         mWorld->ChangeStage(1);
         mStageFlowController->SetCurrentStageYamlPath("../assets/data/stage/test.yaml");
         mSceneSystem->StartPlayingScene();
@@ -501,7 +502,9 @@ void Game::ProcessActorsInput()
          isWaitingForTutorialPlayerJump) &&
         !IsEditorKeyboardInputCaptured() &&
         mCameraSystem->AllowsPlayerInput() &&
-        (!mSequenceSystem || !mSequenceSystem->LocksPlayerControl());
+        (!mSequenceSystem || !mSequenceSystem->LocksPlayerControl()) &&
+        (!mPlayerConfigurationController ||
+         !mPlayerConfigurationController->IsSplitMergeTransitionActive());
 
     const std::vector<Player*>& players = GetPlayers();
     for (Player* player : players) {
@@ -591,6 +594,10 @@ void Game::UpdateGame()
         }
     } else if (shouldUpdateTutorialPlayer) {
         mWorld->UpdatePlayer(GetControlledPlayer(), deltaTime);
+    }
+
+    if (mPlayerConfigurationController) {
+        mPlayerConfigurationController->UpdateSplitMergeTransition(deltaTime);
     }
 
     if (mSequenceSystem) {

@@ -110,6 +110,16 @@ public:
         mMovement.SetCameraForwardDirection(forwardDirection, upDirection);
     }
 
+    void LockMovementDirectionForCameraAutoAlign()
+    {
+        mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec());
+    }
+
+    bool ConsumeCameraAutoAlignCancellationRequest()
+    {
+        return mMovement.ConsumeCameraAutoAlignCancellationRequest();
+    }
+
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
 
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
@@ -332,6 +342,9 @@ public:
     }
 
     float GetCameraYaw() const { return mInput.GetCameraYaw(); }
+
+    float GetMoveForwardInput() const { return mInput.GetMoveForward(); }
+    float GetMoveLeftInput() const { return mInput.GetMoveLeft(); }
 
     float GetAttackSpeed() const { return mCombat.GetAttackSpeed(); }
 

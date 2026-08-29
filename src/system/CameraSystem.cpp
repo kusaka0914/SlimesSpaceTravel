@@ -315,20 +315,30 @@ void CameraSystem::UpdateCamera(float deltaTime)
 
     UpdatePlayerPitchOffsets(deltaTime);
 
-    const int yawPlayerIndex = GetPrimaryPlayerIndex();
-    mPlayerCamera.Update(mGame->GetPlayers(), yawDelta, mPlayerCameraSettings.upSmoothingSpeed,
-                         mPlayerCameraSettings.targetSmoothingSpeed,
-                         mPlayerCameraSettings.attackTargetSmoothingSpeed, deltaTime,
-                         yawPlayerIndex);
-    if (mGame->GetIsPlayer2Joined() &&
-        mGame->HasGameControllerForPlayer(2)) {
-        const std::vector<Player*>& players = mGame->GetPlayers();
-        if (players.size() >= 2 && players[1]) {
-            players[1]->SetCameraYaw(
-                mSecondControllerStickX *
-                mPlayerCameraSettings.yawSensitivity * deltaTime);
-        }
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    std::vector<float> yawDeltas(players.size(), 0.0f);
+    const int primaryPlayerIndex = GetPrimaryPlayerIndex();
+    if (primaryPlayerIndex >= 0 &&
+        primaryPlayerIndex < static_cast<int>(yawDeltas.size())) {
+        yawDeltas[static_cast<std::size_t>(primaryPlayerIndex)] = yawDelta;
     }
+    if (mGame->GetIsPlayer2Joined() &&
+        mGame->HasGameControllerForPlayer(2) &&
+        yawDeltas.size() >= 2) {
+        yawDeltas[1] =
+            mSecondControllerStickX *
+            mPlayerCameraSettings.yawSensitivity * deltaTime;
+    }
+
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    const bool allowsMovementCameraAssist =
+        sceneSystem && sceneSystem->IsPlaying() &&
+        mTalkCameraBlend <= 0.0f &&
+        !mBossDefeatSequence.IsActive() &&
+        !mIsTargetFocus;
+    mPlayerCamera.Update(players, yawDeltas,
+                         mPlayerCameraSettings, deltaTime,
+                         allowsMovementCameraAssist);
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
 }
@@ -531,6 +541,39 @@ void CameraSystem::SnapToControlledPlayer(
     mPlayerCamera.SnapToPlayer(
         players[static_cast<std::size_t>(toPlayerIndex)],
         toPlayerIndex);
+
+    CopyPlayerPitchOffset(fromPlayerIndex, toPlayerIndex);
+}
+
+void CameraSystem::TransitionToControlledPlayer(
+    int fromPlayerIndex,
+    int toPlayerIndex)
+{
+    if (!mGame || toPlayerIndex < 0) {
+        return;
+    }
+
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    if (toPlayerIndex >= static_cast<int>(players.size()) ||
+        !players[static_cast<std::size_t>(toPlayerIndex)]) {
+        return;
+    }
+
+    mPlayerCamera.TransitionToPlayer(
+        fromPlayerIndex,
+        players[static_cast<std::size_t>(toPlayerIndex)],
+        toPlayerIndex);
+
+    CopyPlayerPitchOffset(fromPlayerIndex, toPlayerIndex);
+}
+
+void CameraSystem::CopyPlayerPitchOffset(
+    int fromPlayerIndex,
+    int toPlayerIndex)
+{
+    if (toPlayerIndex < 0) {
+        return;
+    }
 
     const int requiredPitchCount =
         std::max(fromPlayerIndex, toPlayerIndex) + 1;

@@ -16,6 +16,19 @@ struct PlayerCameraSettings {
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
     float attackTargetSmoothingSpeed = 6.0f;
+    float autoFollowDelaySeconds = 0.5f;
+    float autoFollowRotationDurationSeconds = 1.0f;
+    float autoFollowMinimumLateralInput = 0.35f;
+    float autoFollowMaximumBackwardInput = 0.35f;
+    float autoFollowDelayAfterManualInputSeconds = 0.75f;
+    float backwardFacingLookAheadDistance = 2.0f;
+    float backwardFacingFramingActivationDelaySeconds = 0.5f;
+    float backwardFacingFramingMinimumBackwardInput = 0.35f;
+    float surfaceTraversalAutoAlignAngleDegrees = 100.0f;
+    float surfaceTraversalAutoAlignMinimumMovementInput = 0.35f;
+    float backwardFacingFramingStartAngleDegrees = 60.0f;
+    float backwardFacingFramingEndAngleDegrees = 72.0f;
+    float backwardFacingFramingSmoothingSpeed = 4.0f;
 
     float talkDistance = 4.5f;
     float talkPitchDegrees = -30.0f;

@@ -12,6 +12,19 @@ playerCamera:
   upSmoothingSpeed: 4.2
   targetSmoothingSpeed: 3
   attackTargetSmoothingSpeed: 6
+  autoFollowDelaySeconds: 0.5
+  autoFollowRotationDurationSeconds: 1
+  autoFollowMinimumLateralInput: 0.35
+  autoFollowMaximumBackwardInput: 0.35
+  autoFollowDelayAfterManualInputSeconds: 0.75
+  backwardFacingLookAheadDistance: 2
+  backwardFacingFramingActivationDelaySeconds: 0.5
+  backwardFacingFramingMinimumBackwardInput: 0.35
+  surfaceTraversalAutoAlignAngleDegrees: 100
+  surfaceTraversalAutoAlignMinimumMovementInput: 0.35
+  backwardFacingFramingStartAngleDegrees: 60
+  backwardFacingFramingEndAngleDegrees: 72
+  backwardFacingFramingSmoothingSpeed: 4
   talk:
     distance: 2.9
     pitchDegrees: -46
