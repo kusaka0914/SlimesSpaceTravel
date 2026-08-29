@@ -17,7 +17,7 @@ class Game;
 class Player;
 class UIShader;
 class VertexArray;
-class DebugUIRenderer;
+class UIDebugEditorBridge;
 class SceneUIRenderer;
 class HudRenderer;
 class StateUIRenderer;
@@ -280,7 +280,7 @@ private:
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
 
-    std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
+    std::unique_ptr<UIDebugEditorBridge> mDebugEditorBridge;
 
     std::unique_ptr<SceneUIRenderer> mSceneUIRenderer;
     std::unique_ptr<HudRenderer> mHudRenderer;

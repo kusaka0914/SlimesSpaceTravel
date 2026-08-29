@@ -291,15 +291,14 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
         return;
     }
 
-    auto& textures = const_cast<Renderer3D*>(mRenderer)->GetTextures();
-    auto texIt = textures.find("tired_star");
-    if (texIt == textures.end()) {
+    const GLuint tiredStarTexture =
+        mRenderer->FindTexture("tired_star");
+    if (tiredStarTexture == 0) {
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto quadIt = vertexArrays.find("quad");
-    if (quadIt == vertexArrays.end()) {
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (!quad) {
         return;
     }
 
@@ -308,12 +307,12 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texIt->second);
+    glBindTexture(GL_TEXTURE_2D, tiredStarTexture);
     glUniform1i(shader->GetLocDiffuseTexture(), 0);
     glUniform1i(shader->GetLocUseTexture(), 1);
     glUniform4f(shader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     constexpr int starCount = 3;
     constexpr float orbitRadius = 0.35f;
@@ -653,11 +652,9 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
         return;
     }
 
-    auto& textures = const_cast<Renderer3D*>(mRenderer)->GetTextures();
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto guardIt = textures.find("guard");
-    auto quadIt = vertexArrays.find("quad");
-    if (guardIt == textures.end() || quadIt == vertexArrays.end()) {
+    const GLuint guardTexture = mRenderer->FindTexture("guard");
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (guardTexture == 0 || !quad) {
         return;
     }
 
@@ -666,9 +663,9 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, guardIt->second);
+    glBindTexture(GL_TEXTURE_2D, guardTexture);
     glUniform1i(shader->GetLocUseTexture(), 1);
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     const float upMargin = CalculateEnemyGuardHeight(*enemy);
     constexpr float guardWidth = 0.5f;
@@ -692,16 +689,15 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto hpBarIt = vertexArrays.find("hpBar");
-    if (hpBarIt == vertexArrays.end()) {
+    VertexArray* hpBar = mRenderer->FindVertexArray("hpBar");
+    if (!hpBar) {
         return;
     }
 
     Shader3D* shader = mRenderer->GetShader3D();
 
     mRenderer->StartTransparentDraw();
-    hpBarIt->second->SetActive();
+    hpBar->SetActive();
 
     constexpr float rightMargin = -0.5f;
 

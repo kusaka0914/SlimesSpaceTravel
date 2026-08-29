@@ -14,8 +14,6 @@ class StageEditCommandController {
 public:
     StageEditCommandController(DebugEditorContext& context, StageSelectionController& selectionController);
 
-    void UpdateShortcuts();
-
     void PushUndo();
     bool RestoreUndo();
     bool RestoreRedo();
@@ -29,10 +27,6 @@ public:
     bool ConsumeRequestOpenPlacement();
 
 private:
-    void HandleDeleteShortcut();
-    void HandleUndoRedoShortcut();
-    void HandleDuplicateShortcut();
-
     void OffsetDuplicatedActorNode(YAML::Node actorNode, const glm::vec3& offset) const;
 
 private:
@@ -40,10 +34,6 @@ private:
     StageSelectionController& mSelectionController;
 
     StageEditHistory mEditHistory;
-
-    bool mZPressedPrev = false;
-    bool mYPressedPrev = false;
-    bool mDPressedPrev = false;
 
     bool mRequestOpenPlacement = false;
 };

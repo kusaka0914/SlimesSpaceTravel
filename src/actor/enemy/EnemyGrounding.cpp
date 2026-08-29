@@ -1,6 +1,5 @@
 #include "actor/enemy/EnemyGrounding.h"
 
-#include "Game.h"
 #include "actor/Enemy.h"
 #include "system/PhysicsSystem.h"
 
@@ -13,6 +12,10 @@
 #undef max
 #endif
 
+EnemyGrounding::EnemyGrounding(PhysicsSystem& physicsSystem)
+    : mPhysicsSystem(physicsSystem)
+{
+}
 
 glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3& desiredPos) const
 {
@@ -69,11 +72,7 @@ glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3&
 
 bool EnemyGrounding::HasGroundBelow(const Enemy& enemy, const glm::vec3& checkPos) const
 {
-    if (!enemy.GetGame() || !enemy.GetGame()->GetPhysicsSystem()) {
-        return true;
-    }
-
-    btDiscreteDynamicsWorld* bulletWorld = enemy.GetGame()->GetPhysicsSystem()->GetBulletWorld();
+    btDiscreteDynamicsWorld* bulletWorld = mPhysicsSystem.GetBulletWorld();
     if (!bulletWorld) {
         return true;
     }

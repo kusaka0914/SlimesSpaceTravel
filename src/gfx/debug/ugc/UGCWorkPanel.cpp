@@ -1,5 +1,8 @@
 #include "gfx/debug/ugc/UGCWorkPanel.h"
 
+#include "gfx/debug/ugc/UGCEditorMenuState.h"
+#include "gfx/debug/ugc/UGCEditorToolState.h"
+
 #include "Game.h"
 #include "gfx/debug/DebugEditorContext.h"
 #include "imgui.h"
@@ -9,15 +12,32 @@
 
 UGCWorkPanel::UGCWorkPanel(
     DebugEditorContext& context,
+    UGCEditorMenuState& menuState,
+    UGCEditorToolState& toolState,
     std::function<void()> reloadSelectedWork)
     : mContext(context),
+      mMenuState(menuState),
+      mToolState(toolState),
       mController(context, mState, std::move(reloadSelectedWork))
 {
 }
 
-void UGCWorkPanel::StartVerification(std::string& outStatusMessage)
+void UGCWorkPanel::RequestManagementOpen()
 {
-    mController.StartVerification(outStatusMessage);
+    mMenuState.RequestWorkManagementOpen();
+}
+
+bool UGCWorkPanel::IsManagementOpen() const
+{
+    return mMenuState.HasWorkManagementOpenRequest() ||
+        ImGui::IsPopupOpen(
+            "作品管理###UGCWorkManagement",
+            ImGuiPopupFlags_AnyPopupLevel);
+}
+
+void UGCWorkPanel::StartVerification()
+{
+    mController.StartVerification(mToolState.statusMessage);
 }
 
 bool UGCWorkPanel::CompleteVerification(const std::string& workFileName)
@@ -30,8 +50,12 @@ bool UGCWorkPanel::HasUnsavedChanges() const
     return mController.HasUnsavedChanges();
 }
 
-void UGCWorkPanel::DrawManagement(std::string& outStatusMessage)
+void UGCWorkPanel::DrawManagement()
 {
+    if (mMenuState.ConsumeWorkManagementOpenRequest()) {
+        ImGui::OpenPopup("作品管理###UGCWorkManagement");
+    }
+    std::string& outStatusMessage = mToolState.statusMessage;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 panelSize(
         std::min(860.0f, viewport->WorkSize.x - 64.0f),
@@ -592,5 +616,4 @@ void UGCWorkPanel::DrawBrowser()
     ImGui::PopStyleColor(13);
     ImGui::PopStyleVar(5);
 }
-
 

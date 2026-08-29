@@ -18,10 +18,8 @@ Key::Key(Game* game)
     AddFocusComponent();
 }
 
-void Key::ApplyConfig()
+void Key::ApplyConfig(const YAML::Node& keyRoot)
 {
-    YAML::Node keyRoot = YAML::LoadFile("../assets/data/actor/keys.yaml");
-
     if (!keyRoot["keys"] || !keyRoot["keys"].IsSequence()) {
         return;
     }

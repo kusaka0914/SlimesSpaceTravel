@@ -57,8 +57,6 @@ void StateUIRenderer::DrawTalkWithNPC()
 {
     NPC* talkingNPC = mGame->GetSceneSystem()->GetTalkingNPC();
     if (!talkingNPC) {
-        mGame->StartPlayingScene();
-        mGame->GetSceneSystem()->GetUIState()->FinishTalkWith();
         return;
     }
 
@@ -66,18 +64,15 @@ void StateUIRenderer::DrawTalkWithNPC()
         talkingNPC->GetResolvedTalkTexts();
     const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
 
-    const bool isTalking = talkUIIndex < static_cast<int>(talkTexts.size());
-    if (isTalking) {
-        const std::vector<RubyTextSegment>& rubySegments =
-            talkingNPC->GetResolvedTalkRubySegments(
-                static_cast<std::size_t>(talkUIIndex));
-        mRenderer->DrawTalkUI(talkTexts, talkUIIndex, &rubySegments);
+    if (talkUIIndex < 0 ||
+        talkUIIndex >= static_cast<int>(talkTexts.size())) {
         return;
     }
 
-    talkingNPC->MarkTalkCompletedThisVisit();
-    mGame->StartPlayingScene();
-    mGame->GetSceneSystem()->GetUIState()->FinishTalkWith();
+    const std::vector<RubyTextSegment>& rubySegments =
+        talkingNPC->GetResolvedTalkRubySegments(
+            static_cast<std::size_t>(talkUIIndex));
+    mRenderer->DrawTalkUI(talkTexts, talkUIIndex, &rubySegments);
 }
 
 void StateUIRenderer::DrawActiveTutorial()

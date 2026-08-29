@@ -158,9 +158,6 @@ public:
     void StartFocusingScene();
 
     void AddActor(std::unique_ptr<Actor> actor);
-    void RemoveActor(Actor* actor);
-    void RemoveAllActor();
-
     void AddPlayer(Player* player);
     void RemoveAllPlayer();
     bool TogglePlayerSplit();
@@ -315,7 +312,7 @@ public:
 private:
     bool InitializeGLFW();
     void InitializeGameController();
-    void CreateGameSystems();
+    bool CreateGameSystems();
     void CreateStages(int stageCount);
 
     void ProcessInput();

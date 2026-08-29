@@ -10,18 +10,20 @@
 #include "system/actor_loader/StagePlayerLoader.h"
 
 class Game;
+class GameWorld;
 
 class ActorLoadSystem {
 public:
-    explicit ActorLoadSystem(Game* game);
+    ActorLoadSystem(Game* game, GameWorld& world);
 
-    void LoadData();
+    bool LoadData();
 
     StageActorCreationService& GetCreationService();
     StagePlayerLoader& GetPlayerLoader();
     StageActorLocator& GetActorLocator();
 
 private:
+    GameWorld& mWorld;
     ActorPlacementLoader mPlacementLoader;
     StagePlayerLoader mPlayerLoader;
     StageBoatCreator mBoatCreator;

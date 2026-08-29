@@ -925,9 +925,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     const std::string& renderTextureOverridePath =
         actor->GetRenderTextureOverridePath();
     if (!renderTextureOverridePath.empty()) {
-        textureOverride =
-            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
-                renderTextureOverridePath);
+        textureOverride = GetOrLoadTextureOverride(
+            renderTextureOverridePath);
     }
 
     GLuint backTextureOverride = 0;
@@ -935,9 +934,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     if (planet &&
         planet->GetPlanetShape() == Planet::PlanetShape::Ellipse &&
         !planet->GetBackTextureOverridePath().empty()) {
-        backTextureOverride =
-            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
-                planet->GetBackTextureOverridePath());
+        backTextureOverride = GetOrLoadTextureOverride(
+            planet->GetBackTextureOverridePath());
     }
 
     if (backTextureOverride != 0) {
@@ -996,7 +994,23 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         1.0f);
 }
 
-GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)
+VertexArray* Renderer3D::FindVertexArray(
+    const std::string& name) const
+{
+    const auto vertexArray = mVertexArrays.find(name);
+    return vertexArray != mVertexArrays.end()
+        ? vertexArray->second.get()
+        : nullptr;
+}
+
+GLuint Renderer3D::FindTexture(const std::string& name) const
+{
+    const auto texture = mTextures.find(name);
+    return texture != mTextures.end() ? texture->second : 0;
+}
+
+GLuint Renderer3D::GetOrLoadTextureOverride(
+    const std::string& assetRelativePath) const
 {
     if (assetRelativePath.empty()) {
         return 0;

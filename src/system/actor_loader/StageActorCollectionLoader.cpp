@@ -23,7 +23,35 @@
 #include "system/actor_loader/StagePlayerLoader.h"
 
 #include <string>
+#include <array>
+#include <iostream>
 #include <yaml-cpp/yaml.h>
+
+namespace {
+bool HasValidStageCollections(const YAML::Node& stageRoot)
+{
+    if (!stageRoot || !stageRoot.IsMap() ||
+        !stageRoot["planets"] ||
+        !stageRoot["planets"].IsSequence() ||
+        stageRoot["planets"].size() == 0) {
+        return false;
+    }
+
+    constexpr std::array<const char*, 17> collectionNames = {
+        "planets", "players", "NPCs", "enemies", "boats",
+        "boatParts", "keys", "crystals", "star", "platforms",
+        "movingPlatforms", "boatArrivalPoints", "fallRespawnPoints",
+        "stageObjects", "tutorialTriggers", "jewelItems", "hazardActors",
+    };
+    for (const char* collectionName : collectionNames) {
+        const YAML::Node collection = stageRoot[collectionName];
+        if (collection && !collection.IsSequence()) {
+            return false;
+        }
+    }
+    return true;
+}
+}
 
 StageActorCollectionLoader::StageActorCollectionLoader(
     Game* game,
@@ -37,52 +65,69 @@ StageActorCollectionLoader::StageActorCollectionLoader(
 {
 }
 
-void StageActorCollectionLoader::LoadAll()
+bool StageActorCollectionLoader::LoadAll()
 {
     if (!mGame) {
-        return;
+        return false;
     }
 
     const std::string& path = mGame->GetCurrentStageYamlPath();
+    YAML::Node stageRoot;
+    try {
+        stageRoot = YAML::LoadFile(path);
+    } catch (const YAML::Exception& exception) {
+        std::cerr << "Failed to load stage YAML: " << path << '\n'
+                  << exception.what() << '\n';
+        return false;
+    }
+    if (!HasValidStageCollections(stageRoot)) {
+        std::cerr << "Stage YAML has an invalid collection structure: "
+                  << path << '\n';
+        return false;
+    }
+    if (!mCreationService.ReloadActorDefaultConfigs()) {
+        return false;
+    }
 
-    LoadPlanets(path.c_str());
-    LoadEnemies(path.c_str());
-    LoadBoatArrivalPoints(path.c_str());
-    LoadBoats(path.c_str());
-    LoadBoatParts(path.c_str());
-    LoadKeys(path.c_str());
-    LoadCrystals(path.c_str());
-    LoadStar(path.c_str());
-    LoadNPCs(path.c_str());
-    LoadTutorialTriggers(path.c_str());
-    LoadJewelItems(path.c_str());
-    LoadHazardActors(path.c_str());
-    LoadPlatforms(path.c_str());
-    LoadLegacyMovingPlatforms(path.c_str());
-    LoadStageObjects(path.c_str());
-    LoadFallRespawnPoints(path.c_str());
-    LoadPlayers(path.c_str());
+    LoadPlanets(stageRoot);
+    LoadEnemies(stageRoot);
+    LoadBoatArrivalPoints(stageRoot);
+    LoadBoats(stageRoot);
+    LoadBoatParts(stageRoot);
+    LoadKeys(stageRoot);
+    LoadCrystals(stageRoot);
+    LoadStar(stageRoot);
+    LoadNPCs(stageRoot);
+    LoadTutorialTriggers(stageRoot);
+    LoadJewelItems(stageRoot);
+    LoadHazardActors(stageRoot);
+    LoadPlatforms(stageRoot);
+    LoadLegacyMovingPlatforms(stageRoot);
+    LoadStageObjects(stageRoot);
+    LoadFallRespawnPoints(stageRoot);
+    LoadPlayers(stageRoot);
 
     StageActorPlanetBindingService::RefreshNearestPlanetBindings(
         mGame->GetCurrentStage());
+    return true;
 }
 
-void StageActorCollectionLoader::LoadPlayers(const char* path)
+void StageActorCollectionLoader::LoadPlayers(const YAML::Node& stageRoot)
 {
-    mPlayerLoader.LoadPlayersFromFile(path);
+    mPlayerLoader.LoadPlayers(stageRoot);
 }
 
-void StageActorCollectionLoader::LoadNPCs(const char* path)
+void StageActorCollectionLoader::LoadNPCs(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<NPC>(
-        path, "NPCs", [](Planet* planet) { planet->RemoveAllNPCs(); },
+        stageRoot, "NPCs", [](Planet* planet) { planet->RemoveAllNPCs(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateNPC(node, index); });
 }
 
-void StageActorCollectionLoader::LoadTutorialTriggers(const char* path)
+void StageActorCollectionLoader::LoadTutorialTriggers(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<TutorialTrigger>(
-        path,
+        stageRoot,
         "tutorialTriggers",
         [](Planet* planet) { planet->RemoveAllTutorialTriggers(); },
         [this](const YAML::Node& node, int index) {
@@ -90,14 +135,14 @@ void StageActorCollectionLoader::LoadTutorialTriggers(const char* path)
         });
 }
 
-void StageActorCollectionLoader::LoadEnemies(const char* path)
+void StageActorCollectionLoader::LoadEnemies(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Enemy>(
-        path, "enemies", [](Planet* planet) { planet->RemoveAllEnemy(); },
+        stageRoot, "enemies", [](Planet* planet) { planet->RemoveAllEnemy(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateEnemy(node, index); });
 }
 
-void StageActorCollectionLoader::LoadPlanets(const char* path)
+void StageActorCollectionLoader::LoadPlanets(const YAML::Node& stageRoot)
 {
     if (!mGame || !mGame->GetCurrentStage()) {
         return;
@@ -105,63 +150,61 @@ void StageActorCollectionLoader::LoadPlanets(const char* path)
 
     mGame->GetCurrentStage()->RemoveAllPlanet();
 
-    YAML::Node root = YAML::LoadFile(path);
-
-    if (!root["planets"] || !root["planets"].IsSequence()) {
+    if (!stageRoot["planets"] || !stageRoot["planets"].IsSequence()) {
         return;
     }
 
-    for (const YAML::Node& node : root["planets"]) {
+    for (const YAML::Node& node : stageRoot["planets"]) {
         mCreationService.CreatePlanet(node);
     }
 }
 
-void StageActorCollectionLoader::LoadBoats(const char* path)
+void StageActorCollectionLoader::LoadBoats(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Boat>(
-        path, "boats", [](Planet* planet) { planet->RemoveAllBoat(); },
+        stageRoot, "boats", [](Planet* planet) { planet->RemoveAllBoat(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateBoat(node, index); });
 }
 
-void StageActorCollectionLoader::LoadBoatParts(const char* path)
+void StageActorCollectionLoader::LoadBoatParts(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<BoatParts>(
-        path, "boatParts", [](Planet* planet) { planet->RemoveAllBoatParts(); },
+        stageRoot, "boatParts", [](Planet* planet) { planet->RemoveAllBoatParts(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateBoatParts(node, index); });
 }
 
-void StageActorCollectionLoader::LoadKeys(const char* path)
+void StageActorCollectionLoader::LoadKeys(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Key>(
-        path, "keys", [](Planet* planet) { planet->RemoveKey(); },
+        stageRoot, "keys", [](Planet* planet) { planet->RemoveKey(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateKey(node, index); });
 }
 
-void StageActorCollectionLoader::LoadCrystals(const char* path)
+void StageActorCollectionLoader::LoadCrystals(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Crystal>(
-        path, "crystals", [](Planet* planet) { planet->RemoveAllCrystals(); },
+        stageRoot, "crystals", [](Planet* planet) { planet->RemoveAllCrystals(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateCrystal(node, index); });
 }
 
-void StageActorCollectionLoader::LoadStar(const char* path)
+void StageActorCollectionLoader::LoadStar(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Star>(
-        path, "star", [](Planet* planet) { planet->RemoveStar(); },
+        stageRoot, "star", [](Planet* planet) { planet->RemoveStar(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateStar(node, index); });
 }
 
-void StageActorCollectionLoader::LoadPlatforms(const char* path)
+void StageActorCollectionLoader::LoadPlatforms(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Platform>(
-        path, "platforms", [](Planet* planet) { planet->RemoveAllPlatforms(); },
+        stageRoot, "platforms", [](Planet* planet) { planet->RemoveAllPlatforms(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreatePlatform(node, index); });
 }
 
-void StageActorCollectionLoader::LoadLegacyMovingPlatforms(const char* path)
+void StageActorCollectionLoader::LoadLegacyMovingPlatforms(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Platform>(
-        path, "movingPlatforms",
+        stageRoot, "movingPlatforms",
         [](Planet* planet) {
             planet->RemovePlatformsByStageSequence("movingPlatforms");
         },
@@ -170,17 +213,17 @@ void StageActorCollectionLoader::LoadLegacyMovingPlatforms(const char* path)
         });
 }
 
-void StageActorCollectionLoader::LoadBoatArrivalPoints(const char* path)
+void StageActorCollectionLoader::LoadBoatArrivalPoints(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<BoatArrivalPoint>(
-        path, "boatArrivalPoints", [](Planet* planet) { planet->RemoveAllBoatArrivalPoints(); },
+        stageRoot, "boatArrivalPoints", [](Planet* planet) { planet->RemoveAllBoatArrivalPoints(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateBoatArrivalPoint(node, index); });
 }
 
-void StageActorCollectionLoader::LoadJewelItems(const char* path)
+void StageActorCollectionLoader::LoadJewelItems(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<JewelItem>(
-        path,
+        stageRoot,
         "jewelItems",
         [](Planet* planet) { planet->RemoveAllJewelItems(); },
         [this](const YAML::Node& node, int index) {
@@ -188,10 +231,10 @@ void StageActorCollectionLoader::LoadJewelItems(const char* path)
         });
 }
 
-void StageActorCollectionLoader::LoadHazardActors(const char* path)
+void StageActorCollectionLoader::LoadHazardActors(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<HazardActor>(
-        path,
+        stageRoot,
         "hazardActors",
         [](Planet* planet) { planet->RemoveAllHazardActors(); },
         [this](const YAML::Node& node, int index) {
@@ -199,17 +242,16 @@ void StageActorCollectionLoader::LoadHazardActors(const char* path)
         });
 }
 
-void StageActorCollectionLoader::LoadFallRespawnPoints(const char* path)
+void StageActorCollectionLoader::LoadFallRespawnPoints(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<FallRespawnPoint>(
-        path, "fallRespawnPoints", [](Planet* planet) { planet->RemoveAllFallRespawnPoints(); },
+        stageRoot, "fallRespawnPoints", [](Planet* planet) { planet->RemoveAllFallRespawnPoints(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateFallRespawnPoint(node, index); });
 }
 
-void StageActorCollectionLoader::LoadStageObjects(const char* path)
+void StageActorCollectionLoader::LoadStageObjects(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<StageObject>(
-        path, "stageObjects", [](Planet* planet) { planet->RemoveAllStageObjects(); },
+        stageRoot, "stageObjects", [](Planet* planet) { planet->RemoveAllStageObjects(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateStageObject(node, index); });
 }
-

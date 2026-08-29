@@ -1,13 +1,21 @@
 #include "actor/player/PlayerInput.h"
 
+#include "Game.h"
+
 #include "actor/Player.h"
 #include "actor/player/PlayerMovement.h"
+#include "system/InputSystem.h"
 #include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
 #include <cmath>
 #include <glm/glm.hpp>
+
+PlayerInput::PlayerInput(InputSystem& inputSystem)
+    : mInputSystem(inputSystem)
+{
+}
 
 void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 {
@@ -89,19 +97,23 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
 
 
 
-    SDL_GameController* sdlController =
+    const int controllerPlayerNum =
         game->GetIsPlayer2Joined()
-            ? game->GetSdlControllerForPlayer(movement.GetPlayerNum())
-            : game->GetSdlController();
-    if (!sdlController) {
+            ? movement.GetPlayerNum()
+            : 1;
+    if (!mInputSystem.HasControllerInput(controllerPlayerNum)) {
         return;
     }
 
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
 
-    mMoveForward = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTY) * scale;
-    mMoveLeft = SDL_GameControllerGetAxis(sdlController, SDL_CONTROLLER_AXIS_LEFTX) * scale;
+    mMoveForward = mInputSystem.GetControllerAxis(
+        controllerPlayerNum,
+        SDL_CONTROLLER_AXIS_LEFTY) * scale;
+    mMoveLeft = mInputSystem.GetControllerAxis(
+        controllerPlayerNum,
+        SDL_CONTROLLER_AXIS_LEFTX) * scale;
 
     if (std::abs(mMoveForward) < deadZone) {
         mMoveForward = 0.0f;
@@ -111,11 +123,16 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
         mMoveLeft = 0.0f;
     }
 
-    mJumpPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_A);
-    mAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_X);
-    mWideAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_Y);
-    mDodgePressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_B);
-    mSpecialAttackPressed = SDL_GameControllerGetButton(sdlController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+    mJumpPressed = mInputSystem.IsControllerButtonPressed(
+        controllerPlayerNum, SDL_CONTROLLER_BUTTON_A);
+    mAttackPressed = mInputSystem.IsControllerButtonPressed(
+        controllerPlayerNum, SDL_CONTROLLER_BUTTON_X);
+    mWideAttackPressed = mInputSystem.IsControllerButtonPressed(
+        controllerPlayerNum, SDL_CONTROLLER_BUTTON_Y);
+    mDodgePressed = mInputSystem.IsControllerButtonPressed(
+        controllerPlayerNum, SDL_CONTROLLER_BUTTON_B);
+    mSpecialAttackPressed = mInputSystem.IsControllerButtonPressed(
+        controllerPlayerNum, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
     mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
 }
 
@@ -148,27 +165,25 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         return;
     }
 
-    GLFWwindow* window = game->GetWindow();
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_W)) {
         mMoveForward -= 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_S)) {
         mMoveForward += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_A)) {
         mMoveLeft -= 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_D)) {
         mMoveLeft += 1.0f;
     }
 
     constexpr float cameraKeySpeed = 0.02f;
 
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_RIGHT)) {
         mCameraYaw += cameraKeySpeed;
     }
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    if (mInputSystem.IsKeyPressed(GLFW_KEY_LEFT)) {
         mCameraYaw -= cameraKeySpeed;
     }
 
@@ -180,11 +195,11 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mMoveLeft = moveInput.x;
     mMoveForward = moveInput.y;
 
-    mJumpPressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-    mAttackPressed = glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS;
-    mWideAttackPressed = glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS;
-    mDodgePressed = glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS;
-    mSpecialAttackPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+    mJumpPressed = mInputSystem.IsKeyPressed(GLFW_KEY_SPACE);
+    mAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_K);
+    mWideAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_J);
+    mDodgePressed = mInputSystem.IsKeyPressed(GLFW_KEY_U);
+    mSpecialAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_N);
     mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
 }
 

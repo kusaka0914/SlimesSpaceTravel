@@ -6,7 +6,6 @@
 #include "system/ParticleSystem.h"
 
 #include <cmath>
-#include <fstream>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <yaml-cpp/yaml.h>
@@ -44,10 +43,8 @@ glm::quat Star::GetRenderModelRotationOffset() const
         glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Star::ApplyConfig()
+void Star::ApplyConfig(const YAML::Node& starRoot)
 {
-    YAML::Node starRoot = YAML::LoadFile("../assets/data/actor/stars.yaml");
-
     if (!starRoot["stars"] || !starRoot["stars"].IsSequence()) {
         return;
     }
@@ -69,30 +66,6 @@ void Star::ApplyConfig()
             mCollectionSettings.fallDuration = collection["fallDuration"].as<float>(mCollectionSettings.fallDuration);
         }
     }
-}
-
-bool Star::SaveCollectionAnimationSettings() const
-{
-    YAML::Emitter emitter;
-    emitter << YAML::BeginMap << YAML::Key << "stars" << YAML::Value << YAML::BeginSeq;
-    emitter << YAML::BeginMap;
-    emitter << YAML::Key << "modelPath" << YAML::Value << GetModelPath();
-    emitter << YAML::Key << "scale" << YAML::Value << GetScale().x;
-    emitter << YAML::Key << "collectionAnimation" << YAML::Value << YAML::BeginMap;
-    emitter << YAML::Key << "orbitDuration" << YAML::Value << mCollectionSettings.orbitDuration;
-    emitter << YAML::Key << "orbitStartRadius" << YAML::Value << mCollectionSettings.orbitStartRadius;
-    emitter << YAML::Key << "orbitSpinDegreesPerSecond" << YAML::Value << mCollectionSettings.orbitSpinDegreesPerSecond;
-    emitter << YAML::Key << "finalHeight" << YAML::Value << mCollectionSettings.finalHeight;
-    emitter << YAML::Key << "waitAbovePlayerDuration" << YAML::Value << mCollectionSettings.waitAbovePlayerDuration;
-    emitter << YAML::Key << "fallDuration" << YAML::Value << mCollectionSettings.fallDuration;
-    emitter << YAML::EndMap << YAML::EndMap << YAML::EndSeq << YAML::EndMap;
-
-    std::ofstream file("../assets/data/actor/stars.yaml");
-    if (!file) {
-        return false;
-    }
-    file << emitter.c_str();
-    return file.good();
 }
 
 bool Star::StartCollectionPreview(Player* player)

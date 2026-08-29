@@ -8,7 +8,7 @@
 #include "actor/player/PlayerConfig.h"
 #include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -25,7 +25,11 @@ constexpr std::string_view strongAttackAnimationId = "strong_attack";
 }
 
 Player::Player(Game* game)
-    : CharacterActor(game)
+    : CharacterActor(game),
+      mInput(*game->GetInputSystem()),
+      mMovement(
+          *game->GetPhysicsSystem(),
+          *game->GetMathUtils())
 {
 }
 

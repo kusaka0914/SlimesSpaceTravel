@@ -1,4 +1,5 @@
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformAdhesionComponent.h"
+#include "component/PlatformEnemyClearUnlockComponent.h"
 
 #include "Game.h"
 #include "Stage.h"
@@ -274,5 +275,4 @@ PlatformEnemyClearUnlockComponent(
 PlatformEnemyClearUnlockComponent::
 ~PlatformEnemyClearUnlockComponent()
     = default;
-
 

@@ -1,6 +1,6 @@
 #include "gfx/debug/panels/SequenceEditorWorkspacePanel.h"
 
-#include "gfx/debug/panels/CameraDebugPanel.h"
+#include "gfx/debug/panels/CinematicSequenceDebugPanel.h"
 #include "gfx/debug/panels/EndingRollDebugPanel.h"
 #include "gfx/debug/panels/SequenceDebugPanel.h"
 #include "gfx/debug/panels/StorybookDebugPanel.h"
@@ -10,12 +10,12 @@
 #include <algorithm>
 
 SequenceEditorWorkspacePanel::SequenceEditorWorkspacePanel(
-    CameraDebugPanel& cameraPanel,
+    CinematicSequenceDebugPanel& cinematicCameraPanel,
     SequenceDebugPanel& sequencePanel,
     EndingRollDebugPanel& endingRollPanel,
     StorybookDebugPanel& storybookPanel,
     StarCollectionDebugPanel& starCollectionPanel)
-    : mCameraPanel(cameraPanel),
+    : mCinematicCameraPanel(cinematicCameraPanel),
       mSequencePanel(sequencePanel),
       mEndingRollPanel(endingRollPanel),
       mStorybookPanel(storybookPanel),
@@ -61,7 +61,7 @@ void SequenceEditorWorkspacePanel::Draw()
         mSequencePanel.Draw();
         break;
     case 1:
-        mCameraPanel.DrawCinematicSequenceEditor();
+        mCinematicCameraPanel.Draw();
         break;
     case 2:
         mStarCollectionPanel.Draw();

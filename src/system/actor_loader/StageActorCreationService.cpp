@@ -25,7 +25,9 @@
 #include "system/actor_loader/TutorialTriggerStageConfigApplicator.h"
 
 #include <glm/glm.hpp>
+#include <iostream>
 #include <string>
+#include <utility>
 
 StageActorCreationService::StageActorCreationService(
     StageActorFactory& actorFactory,
@@ -39,6 +41,39 @@ StageActorCreationService::StageActorCreationService(
 {
 }
 
+bool StageActorCreationService::ReloadActorDefaultConfigs()
+{
+    try {
+        YAML::Node boatArrivalPointConfig = YAML::LoadFile(
+            "../assets/data/actor/boatarrivalpoints.yaml");
+        YAML::Node boatPartsConfig = YAML::LoadFile(
+            "../assets/data/actor/boatparts.yaml");
+        YAML::Node crystalConfig = YAML::LoadFile(
+            "../assets/data/actor/crystals.yaml");
+        YAML::Node fallRespawnPointConfig = YAML::LoadFile(
+            "../assets/data/actor/fallrespawnpoints.yaml");
+        YAML::Node keyConfig = YAML::LoadFile(
+            "../assets/data/actor/keys.yaml");
+        YAML::Node npcConfig = YAML::LoadFile(
+            "../assets/data/actor/npcs.yaml");
+        YAML::Node starConfig = YAML::LoadFile(
+            "../assets/data/actor/stars.yaml");
+
+        mBoatArrivalPointConfig = std::move(boatArrivalPointConfig);
+        mBoatPartsConfig = std::move(boatPartsConfig);
+        mCrystalConfig = std::move(crystalConfig);
+        mFallRespawnPointConfig = std::move(fallRespawnPointConfig);
+        mKeyConfig = std::move(keyConfig);
+        mNpcConfig = std::move(npcConfig);
+        mStarConfig = std::move(starConfig);
+        return true;
+    } catch (const YAML::Exception& exception) {
+        std::cerr << "Failed to load actor default YAML: "
+                  << exception.what() << '\n';
+        return false;
+    }
+}
+
 Player* StageActorCreationService::CreatePlayer(const YAML::Node& node, int playerNum)
 {
     return mPlayerLoader.CreatePlayerFromStageNode(node, playerNum);
@@ -48,7 +83,10 @@ NPC* StageActorCreationService::CreateNPC(const YAML::Node& node, int stageYamlI
 {
     return mActorFactory.CreatePlacedActorFromStageNode<NPC>(
         node, stageYamlIndex, 1.0f, glm::vec3(0.25f), "npc.obj", [](Planet* planet, NPC* npc) { planet->AddNPC(npc); },
-        [](NPC* npc, const YAML::Node& node) {
+        [this](NPC* npc, const YAML::Node& node) {
+            const std::string type =
+                node["type"] ? node["type"].as<std::string>() : "";
+            npc->ApplyConfig(mNpcConfig, type);
             ApplyNpcStageConfig(*npc, node);
         },
         [](NPC* npc, const YAML::Node&) { npc->SetBaseScale(npc->GetScale()); });
@@ -108,9 +146,9 @@ BoatParts* StageActorCreationService::CreateBoatParts(const YAML::Node& node, in
             planet->AddBoatParts(boatParts);
             planet->Initialize();
         },
-        [](BoatParts* boatParts, const YAML::Node& node) {
+        [this](BoatParts* boatParts, const YAML::Node& node) {
             const std::string type = node["type"] ? node["type"].as<std::string>() : "";
-            boatParts->ApplyConfig(type);
+            boatParts->ApplyConfig(mBoatPartsConfig, type);
         });
 }
 
@@ -119,7 +157,9 @@ Key* StageActorCreationService::CreateKey(const YAML::Node& node, int stageYamlI
     return mActorFactory.CreatePlacedActorFromStageNode<Key>(
         node, stageYamlIndex, 0.0f, glm::vec3(0.25f), "key.obj",
         [](Planet* planet, Key* key) { planet->SetKey(key); },
-        [](Key* key, const YAML::Node&) { key->ApplyConfig(); });
+        [this](Key* key, const YAML::Node&) {
+            key->ApplyConfig(mKeyConfig);
+        });
 }
 
 Crystal* StageActorCreationService::CreateCrystal(const YAML::Node& node, int stageYamlIndex)
@@ -127,9 +167,9 @@ Crystal* StageActorCreationService::CreateCrystal(const YAML::Node& node, int st
     return mActorFactory.CreatePlacedActorFromStageNode<Crystal>(
         node, stageYamlIndex, 1.0f, glm::vec3(0.25f), "",
         [](Planet* planet, Crystal* crystal) { planet->AddCrystal(crystal); },
-        [](Crystal* crystal, const YAML::Node& node) {
+        [this](Crystal* crystal, const YAML::Node& node) {
             const std::string type = node["type"] ? node["type"].as<std::string>() : "";
-            crystal->ApplyConfig(type);
+            crystal->ApplyConfig(mCrystalConfig, type);
         });
 }
 
@@ -138,7 +178,9 @@ Star* StageActorCreationService::CreateStar(const YAML::Node& node, int stageYam
     return mActorFactory.CreatePlacedActorFromStageNode<Star>(
         node, stageYamlIndex, 1.0f, glm::vec3(0.0f), "star.obj",
         [](Planet* planet, Star* star) { planet->SetStar(star); },
-        [](Star* star, const YAML::Node&) { star->ApplyConfig(); },
+        [this](Star* star, const YAML::Node&) {
+            star->ApplyConfig(mStarConfig);
+        },
         [](Star* star, const YAML::Node& node) {
             if (node["isActive"]) {
                 star->SetIsActive(node["isActive"].as<bool>());
@@ -245,7 +287,9 @@ BoatArrivalPoint* StageActorCreationService::CreateBoatArrivalPoint(const YAML::
     return mActorFactory.CreatePlacedActorFromStageNode<BoatArrivalPoint>(
         node, stageYamlIndex, 1.0f, glm::vec3(0.4f), "platform.obj",
         [](Planet* planet, BoatArrivalPoint* point) { planet->AddBoatArrivalPoint(point); },
-        [](BoatArrivalPoint* point, const YAML::Node&) { point->ApplyConfig(); });
+        [this](BoatArrivalPoint* point, const YAML::Node&) {
+            point->ApplyConfig(mBoatArrivalPointConfig);
+        });
 }
 
 FallRespawnPoint* StageActorCreationService::CreateFallRespawnPoint(const YAML::Node& node, int stageYamlIndex)
@@ -253,7 +297,9 @@ FallRespawnPoint* StageActorCreationService::CreateFallRespawnPoint(const YAML::
     return mActorFactory.CreatePlacedActorFromStageNode<FallRespawnPoint>(
         node, stageYamlIndex, 0.0f, glm::vec3(4.0f, 1.0f, 4.0f), "platform.obj",
         [](Planet* planet, FallRespawnPoint* point) { planet->AddFallRespawnPoint(point); },
-        [](FallRespawnPoint* point, const YAML::Node&) { point->ApplyConfig(); },
+        [this](FallRespawnPoint* point, const YAML::Node&) {
+            point->ApplyConfig(mFallRespawnPointConfig);
+        },
         [](FallRespawnPoint* point, const YAML::Node& node) {
             if (node["damage"]) {
                 point->SetDamage(node["damage"].as<float>());

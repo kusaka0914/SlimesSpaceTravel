@@ -1,5 +1,11 @@
 #include "Platform.h"
-#include "component/PlatformBehaviorComponents.h"
+#include "Game.h"
+#include "component/PlatformAdhesionComponent.h"
+#include "component/PlatformEnemyClearUnlockComponent.h"
+#include "component/PlatformLatchedGroupSwitchComponent.h"
+#include "component/PlatformMotionBehaviorComponents.h"
+#include "component/PlatformPressureSwitchComponent.h"
+#include "component/PlatformVisibilityComponents.h"
 #include "component/PlatformMovementComponent.h"
 
 #include <algorithm>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformRevealTarget.h"
 
 #include <glm/glm.hpp>
 #include <optional>

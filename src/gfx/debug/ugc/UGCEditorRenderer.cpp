@@ -5,7 +5,6 @@
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "component/PlatformBehaviorComponents.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StagePlanetPanel.h"
@@ -15,6 +14,7 @@
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageSelectionController.h"
+#include "gfx/debug/stage/StageSelectionOverlay.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
@@ -53,23 +53,8 @@ UGCEditorRenderer::UGCEditorRenderer(
           mSelectionController,
           mToolState,
           mConnectionState),
-      mUGCEditCommandController(
-          mContext,
-          mStageAddActorPanel,
-          mSelectionController,
-          mEditCommandController,
-          mEditorTutorial,
-          mToolState,
-          mDragState),
-      mEditLayerController(
-          mContext,
-          mStageAddActorPanel,
-          mSelectionController,
-          mEditCommandController,
-          mEditorTutorial,
-          mToolState,
-          mDragState),
-      mSelectionDragController(
+      mViewController(mContext, mEditorTutorial),
+      mInteractionController(
           mContext,
           mStageAddActorPanel,
           mStageActorYamlWriter,
@@ -77,23 +62,9 @@ UGCEditorRenderer::UGCEditorRenderer(
           mEditCommandController,
           mEditorTutorial,
           mToolState,
-          mDragState),
-      mViewController(mContext, mEditorTutorial),
-      mSceneInteractionController(
-          mContext,
-          mStageAddActorPanel,
-          mSelectionController,
-          mEditCommandController,
-          mEditorTutorial,
-          mToolState,
+          mDragState,
           mConnectionState,
-          mSelectionDragController,
-          mEditLayerController),
-      mInteractionController(
-          mUGCEditCommandController,
-          mEditLayerController,
-          mViewController,
-          mSceneInteractionController),
+          mViewController),
       mPreviewRenderer(
           mContext,
           mToolState,
@@ -109,7 +80,7 @@ UGCEditorRenderer::UGCEditorRenderer(
           mSwitchConnectionController,
           mToolState,
           mConnectionState),
-      mWorkFlowController(
+      mWorkPanel(
           mContext,
           mMenuState,
           mToolState,
@@ -138,7 +109,7 @@ UGCEditorRenderer::UGCEditorRenderer(
           mSceneOverlayRenderer,
           mToolState,
           mMenuState,
-          mWorkFlowController,
+          mWorkPanel,
           mModelThumbnailRenderer.get(),
           mIsAdjustingUGCUI),
       mChromeRenderer(
@@ -149,7 +120,7 @@ UGCEditorRenderer::UGCEditorRenderer(
           mTutorialOverlayRenderer,
           mToolState,
           mMenuState,
-          mWorkFlowController,
+          mWorkPanel,
           mModelThumbnailRenderer.get())
 {
     mStageAddActorPanel.SetPlacementCompletedCallback([this]() {
@@ -232,30 +203,30 @@ void UGCEditorRenderer::DrawDebugEditorOverlay()
 
 bool UGCEditorRenderer::IsWorkManagementOpen() const
 {
-    return mWorkFlowController.IsManagementOpen();
+    return mWorkPanel.IsManagementOpen();
 }
 
 void UGCEditorRenderer::DrawWorkManagement()
 {
-    mWorkFlowController.DrawManagement();
+    mWorkPanel.DrawManagement();
 }
 
 
 
 void UGCEditorRenderer::StartVerification()
 {
-    mWorkFlowController.StartVerification();
+    mWorkPanel.StartVerification();
 }
 
 void UGCEditorRenderer::DrawWorkBrowser()
 {
-    mWorkFlowController.DrawBrowser();
+    mWorkPanel.DrawBrowser();
 }
 
 bool UGCEditorRenderer::CompleteVerification(
     const std::string& workFileName)
 {
-    return mWorkFlowController.CompleteVerification(workFileName);
+    return mWorkPanel.CompleteVerification(workFileName);
 }
 
 void UGCEditorRenderer::Draw(
@@ -297,7 +268,7 @@ void UGCEditorRenderer::Draw(
 
     mInteractionController.UpdateSceneInteraction();
     if (!isWorkManagementOpen) {
-        mSelectionController.DrawBoxSelectionRect();
+        DrawStageSelectionOverlay(mSelectionController);
         mSceneOverlayRenderer.DrawSelectionOverlays();
     }
     mTutorialOverlayRenderer.Draw();
@@ -310,10 +281,6 @@ void UGCEditorRenderer::Draw(
     }
     DrawWorkManagement();
 }
-
-
-
-
 
 
 

@@ -12,7 +12,7 @@ public:
         Game* game,
         const ActorPlacementLoader& placementLoader);
 
-    void LoadPlayersFromFile(const char* stageYamlPath);
+    void LoadPlayers(const YAML::Node& stageRoot);
     Player* CreatePlayerFromStageNode(
         const YAML::Node& node,
         int playerNum);

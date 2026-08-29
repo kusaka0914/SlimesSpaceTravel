@@ -11,7 +11,7 @@
 #include "gfx/debug/ugc/UGCEditorToolState.h"
 #include "gfx/debug/ugc/UGCPreviewRenderer.h"
 #include "gfx/debug/ugc/UGCSceneOverlayRenderer.h"
-#include "gfx/debug/ugc/UGCWorkFlowController.h"
+#include "gfx/debug/ugc/UGCWorkPanel.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -51,7 +51,7 @@ UGCDebugOverlayRenderer::UGCDebugOverlayRenderer(
     UGCSceneOverlayRenderer& sceneOverlayRenderer,
     UGCEditorToolState& toolState,
     UGCEditorMenuState& menuState,
-    UGCWorkFlowController& workFlowController,
+    UGCWorkPanel& workPanel,
     EditorModelThumbnailRenderer* modelThumbnailRenderer,
     std::function<bool()> isAdjustingUGCUI)
     : mContext(context),
@@ -61,7 +61,7 @@ UGCDebugOverlayRenderer::UGCDebugOverlayRenderer(
       mSceneOverlayRenderer(sceneOverlayRenderer),
       mToolState(toolState),
       mMenuState(menuState),
-      mWorkFlowController(workFlowController),
+      mWorkPanel(workPanel),
       mModelThumbnailRenderer(modelThumbnailRenderer),
       mIsAdjustingUGCUI(std::move(isAdjustingUGCUI))
 {
@@ -302,7 +302,7 @@ void UGCDebugOverlayRenderer::Draw()
             mMenuState.RequestWorkManagementOpen();
         }
         if (ImGui::MenuItem("完成チェック")) {
-            mWorkFlowController.StartVerification();
+            mWorkPanel.StartVerification();
         }
         if (ImGui::MenuItem("タイトルへ戻る")) {
             mContext.game->ExitUGCMode();
@@ -405,9 +405,9 @@ void UGCDebugOverlayRenderer::Draw()
     }
     ImGui::End();
 
-    if (!mWorkFlowController.IsManagementOpen()) {
+    if (!mWorkPanel.IsManagementOpen()) {
         mSceneOverlayRenderer.DrawBackgroundGuides();
         mPreviewRenderer.DrawPreviewOverlay();
     }
-    mWorkFlowController.DrawManagement();
+    mWorkPanel.DrawManagement();
 }

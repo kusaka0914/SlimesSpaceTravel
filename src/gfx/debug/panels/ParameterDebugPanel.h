@@ -2,6 +2,7 @@
 
 #include "actor/enemy/EnemyPresetRepository.h"
 #include "gfx/debug/DebugPanel.h"
+#include "gfx/debug/panels/ActorParameterYamlWriter.h"
 
 #include <array>
 #include <cstddef>
@@ -20,8 +21,7 @@ public:
 
 private:
     bool SaveParameters();
-    bool SaveYaml(Player* player);
-
+    ActorParameterYamlWriter mYamlWriter;
     std::string mSaveStatusMessage;
 };
 
@@ -64,9 +64,8 @@ public:
 
 private:
     bool SaveParameters();
-    bool SaveYaml(Enemy* normalEnemy, Enemy* bossEnemy);
-
     EnemyPresetDebugPanel& mPresetPanel;
+    ActorParameterYamlWriter mYamlWriter;
     std::string mSaveStatusMessage;
 };
 

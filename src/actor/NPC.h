@@ -2,6 +2,7 @@
 
 #include "actor/CharacterActor.h"
 #include "text/RubyText.h"
+#include <yaml-cpp/yaml.h>
 #include <cstddef>
 #include <glm/glm.hpp>
 #include <optional>
@@ -40,7 +41,7 @@ class NPC : public CharacterActor {
 public:
     NPC(Game* game);
 
-    void ApplyConfig(const std::string& type);
+    void ApplyConfig(const YAML::Node& configRoot, const std::string& type);
 
     void UpdateActor(float deltaTime) override;
 

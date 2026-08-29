@@ -2,11 +2,9 @@
 
 #include "gfx/UIRenderer.h"
 #include "Game.h"
-#include "state/UIState.h"
 #include "system/SceneSystem.h"
 #include "system/UILoadSystem.h"
 #include "system/ending/EndingRollConfig.h"
-#include "system/story/StorybookConfig.h"
 
 #include <algorithm>
 #include <sstream>
@@ -37,16 +35,13 @@ void SceneUIRenderer::DrawOpening()
 void SceneUIRenderer::DrawEnding()
 {
     DrawStorybookPage("ending", "ending");
-    if (mRenderer->DrawSceneTalkUI("ending", "endingText")) {
-        return;
-    }
-    mGame->GetSceneSystem()->FinishEndingStory();
+    mRenderer->DrawSceneTalkUI("ending", "endingText");
 }
 
 void SceneUIRenderer::DrawCredits()
 {
-    EndingRollConfig config;
-    EndingRollConfigIO::Load(config);
+    const EndingRollConfig& config =
+        mGame->GetSceneSystem()->GetEndingRollConfig();
     const float elapsed = mGame->GetSceneSystem()->GetCreditsElapsed();
     const float width = static_cast<float>(mRenderer->GetFbWidth());
     const float height = static_cast<float>(mRenderer->GetFbHeight());
@@ -103,11 +98,7 @@ void SceneUIRenderer::DrawGameOver()
 void SceneUIRenderer::DrawOpeningIntro()
 {
     DrawStorybookPage("opening", "opening", 0);
-    if (mRenderer->DrawSceneTalkUI("opening", "openingText")) {
-        return;
-    }
-
-    mGame->GetSceneSystem()->GetUIState()->StartTalkWith(UIState::TalkWith::Mother);
+    mRenderer->DrawSceneTalkUI("opening", "openingText");
 }
 
 void SceneUIRenderer::DrawOpeningTalkWithMother()
@@ -117,11 +108,7 @@ void SceneUIRenderer::DrawOpeningTalkWithMother()
     DrawStorybookPage(
         "opening", "opening",
         intro ? static_cast<int>(intro->texts.size()) : 0);
-    if (mRenderer->DrawSceneTalkUI("opening", "talkWithMotherText")) {
-        return;
-    }
-
-    mGame->GetSceneSystem()->GetUIState()->StartTalkWith(UIState::TalkWith::Doctor);
+    mRenderer->DrawSceneTalkUI("opening", "talkWithMotherText");
 }
 
 void SceneUIRenderer::DrawOpeningTalkWithDoctor()
@@ -134,25 +121,7 @@ void SceneUIRenderer::DrawOpeningTalkWithDoctor()
         (intro ? static_cast<int>(intro->texts.size()) : 0) +
         (mother ? static_cast<int>(mother->texts.size()) : 0);
     DrawStorybookPage("opening", "opening", pageOffset);
-    const UILoadSystem::TextInfo* talkWithDoctorTextInfo =
-        mRenderer->GetUILoadSystem()->GetTextInfo("opening", "talkWithDoctorText");
-
-    if (!talkWithDoctorTextInfo) {
-        return;
-    }
-
-    const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
-    const std::vector<std::string>& talkTexts = talkWithDoctorTextInfo->texts;
-    const bool isTalking = talkUIIndex >= 0 && talkUIIndex < static_cast<int>(talkTexts.size());
-    if (isTalking) {
-        mRenderer->DrawTalkUI(talkWithDoctorTextInfo);
-        return;
-    }
-
-    const bool isFinishTalk = talkUIIndex >= static_cast<int>(talkTexts.size());
-    if (isFinishTalk) {
-        mGame->GetSceneSystem()->FinishOpeningStory();
-    }
+    mRenderer->DrawSceneTalkUI("opening", "talkWithDoctorText");
 }
 
 void SceneUIRenderer::DrawStorybookPage(
@@ -160,10 +129,11 @@ void SceneUIRenderer::DrawStorybookPage(
     const std::string& fallbackScene,
     int pageOffset)
 {
-    StorybookConfig config;
-    config.Load();
     const int pageIndex = pageOffset + mGame->GetSceneSystem()->GetTalkUIIndex();
-    const std::string imagePath = config.GetPageImage(trackId, pageIndex);
+    const std::string imagePath =
+        mGame->GetSceneSystem()->FindStorybookPageImage(
+            trackId,
+            pageIndex);
     if (!imagePath.empty() && mRenderer->RegisterCustomUITexture(imagePath)) {
         mRenderer->DrawTextureHandle(
             0.0f, 0.0f,

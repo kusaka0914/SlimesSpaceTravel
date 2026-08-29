@@ -3,6 +3,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/DebugEditorSection.h"
 #include "gfx/debug/session/DebugEditorSessionCoordinator.h"
+#include "gfx/debug/stage/StageEditShortcutHandler.h"
 
 class AssetBrowserPanel;
 class BasicInfoDebugPanel;
@@ -70,6 +71,7 @@ private:
     StageAddActorPanel& mStageAddActorPanel;
     StageSelectionController& mSelectionController;
     StageEditCommandController& mEditCommandController;
+    StageEditShortcutHandler mStageEditShortcutHandler;
     StageEditorPanel& mStageEditorPanel;
     StageGizmoController& mGizmoController;
 

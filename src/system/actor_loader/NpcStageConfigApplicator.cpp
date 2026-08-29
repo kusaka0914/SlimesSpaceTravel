@@ -353,6 +353,4 @@ void ApplyNpcStageConfig(NPC& configuredNpc, const YAML::Node& node)
             }
 
             const std::string type = node["type"] ? node["type"].as<std::string>() : "";
-            npc->ApplyConfig(type);
 }
-

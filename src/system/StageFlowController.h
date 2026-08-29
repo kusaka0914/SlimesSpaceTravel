@@ -10,7 +10,7 @@ class StageFlowController {
 public:
     StageFlowController();
 
-    void LoadData(Game& game);
+    bool LoadData(Game& game);
     void ReloadCurrentStage(
         Game& game,
         StagePhysicsReloadMode physicsReloadMode);

@@ -23,6 +23,7 @@
 #include "gfx/debug/stage/StageEditCommandController.h"
 #include "gfx/debug/stage/StageGizmoController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
+#include "gfx/debug/stage/StageSelectionOverlay.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -43,6 +44,10 @@ DebugEditorWorkspaceRenderer::DebugEditorWorkspaceRenderer(
       mStageAddActorPanel(dependencies.stageAddActorPanel),
       mSelectionController(dependencies.selectionController),
       mEditCommandController(dependencies.editCommandController),
+      mStageEditShortcutHandler(
+          dependencies.context,
+          dependencies.selectionController,
+          dependencies.editCommandController),
       mStageEditorPanel(dependencies.stageEditorPanel),
       mGizmoController(dependencies.gizmoController)
 {
@@ -187,14 +192,14 @@ void DebugEditorWorkspaceRenderer::Draw(
         }
 
         if (!isPlacingActor) {
-            mEditCommandController.UpdateShortcuts();
+            mStageEditShortcutHandler.Update();
         }
         if (mEditCommandController.ConsumeRequestOpenPlacement()) {
             mStageEditorPanel.RequestOpenPlacementTab();
         }
 
         mSelectionController.ApplyEditorSelectionFlags();
-        mSelectionController.DrawBoxSelectionRect();
+        DrawStageSelectionOverlay(mSelectionController);
         if (!isPlacingActor) {
             mGizmoController.Update();
         }
@@ -293,8 +298,6 @@ void DebugEditorWorkspaceRenderer::DrawDockedAssetBrowser(DebugEditorSection sec
     mAssetBrowserPanel.Draw();
     ImGui::End();
 }
-
-
 
 
 

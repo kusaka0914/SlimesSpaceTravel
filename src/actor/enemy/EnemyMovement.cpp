@@ -168,6 +168,15 @@ glm::vec3 ClampToCurrentEllipseFaceMovementArea(
 }
 }
 
+EnemyMovement::EnemyMovement(
+    PhysicsSystem& physicsSystem,
+    MathUtils& mathUtils)
+    : mPhysicsSystem(physicsSystem),
+      mMathUtils(mathUtils),
+      mGrounding(physicsSystem)
+{
+}
+
 void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float deltaTime)
 {
     Player* nearestPlayer = status.GetNearestPlayer();
@@ -208,7 +217,7 @@ void EnemyMovement::UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float del
     }
 
     enemy.SetFacingForwardForEnemy(facingForward);
-    enemy.SetFacingYawForEnemy(enemy.GetGame()->GetMathUtils()->GetYawFromDirection(enemy.GetUpVec(), facingForward) +
+    enemy.SetFacingYawForEnemy(mMathUtils.GetYawFromDirection(enemy.GetUpVec(), facingForward) +
                                3.14159265f);
 }
 
@@ -228,7 +237,7 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
     }
 
     enemy.SetFacingForwardForEnemy(facingForward);
-    enemy.SetFacingYawForEnemy(enemy.GetGame()->GetMathUtils()->GetYawFromDirection(enemy.GetUpVec(), facingForward) +
+    enemy.SetFacingYawForEnemy(mMathUtils.GetYawFromDirection(enemy.GetUpVec(), facingForward) +
                                3.14159265f);
 }
 
@@ -424,16 +433,8 @@ void EnemyMovement::UpdateAirDodgePushMovement(
         tangentialPushDirection *
         pushSpeed *
         deltaTime;
-    PhysicsSystem* physicsSystem =
-        enemy.GetGame()
-            ? enemy.GetGame()->GetPhysicsSystem()
-            : nullptr;
-    if (!physicsSystem) {
-        return;
-    }
-
     const ActorMovementCollisionResult collisionResult =
-        physicsSystem->ResolveMovementCollision(
+        mPhysicsSystem.ResolveMovementCollision(
             &enemy,
             movementDelta,
             enemy.GetPos() + movementDelta,
@@ -556,17 +557,8 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
     const glm::vec3 movementDelta =
         velocity *
         deltaTime;
-    PhysicsSystem* physicsSystem =
-        enemy.GetGame()
-            ? enemy.GetGame()->GetPhysicsSystem()
-            : nullptr;
-    if (!physicsSystem) {
-        enemy.AddPos(movementDelta);
-        return;
-    }
-
     const ActorMovementCollisionResult collisionResult =
-        physicsSystem->ResolveMovementCollision(
+        mPhysicsSystem.ResolveMovementCollision(
             &enemy,
             movementDelta,
             enemy.GetPos() + movementDelta,
@@ -618,7 +610,7 @@ glm::vec3 EnemyMovement::CalculateCollisionAdjustedPos(Enemy& enemy, const glm::
     glm::vec3 desiredPos = enemy.GetPos() + moveDelta;
 
     const ActorMovementCollisionResult collisionResult =
-        enemy.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
+        mPhysicsSystem.ResolveMovementCollision(
             &enemy,
             moveDelta,
             desiredPos,

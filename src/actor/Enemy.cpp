@@ -63,7 +63,9 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
 Enemy::Enemy(Game* game)
     : CharacterActor(game),
       mStateMachine(std::make_unique<EnemyStateMachine>()),
-      mMovement(std::make_unique<EnemyMovement>()),
+      mMovement(std::make_unique<EnemyMovement>(
+          *game->GetPhysicsSystem(),
+          *game->GetMathUtils())),
       mCombat(std::make_unique<EnemyCombat>()),
       mDamageHandler(std::make_unique<EnemyDamageHandler>()),
       mBehaviorController(std::make_unique<EnemyBehaviorController>())

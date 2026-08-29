@@ -1,5 +1,7 @@
 #include "system/physics/ActorCollisionResolver.h"
 
+#include "Game.h"
+
 #include "actor/Actor.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"

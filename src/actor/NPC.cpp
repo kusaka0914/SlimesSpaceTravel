@@ -42,10 +42,10 @@ NPC::NPC(Game* game)
     mShouldJudgeLanding = true;
 }
 
-void NPC::ApplyConfig(const std::string& type)
+void NPC::ApplyConfig(
+    const YAML::Node& npcRoot,
+    const std::string& type)
 {
-    YAML::Node npcRoot = YAML::LoadFile("../assets/data/actor/npcs.yaml");
-
     if (!npcRoot["npcs"] || !npcRoot["npcs"].IsSequence()) {
         return;
     }

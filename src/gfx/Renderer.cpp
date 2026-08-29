@@ -17,22 +17,33 @@ Renderer::~Renderer()
     if (mFont) {
         TTF_CloseFont(mFont);
     }
-    TTF_Quit();
+    if (mDidInitializeTtf) {
+        TTF_Quit();
+    }
 }
 
 void Renderer::Initialize()
 {
-    InitializeFont();
+    mIsInitialized = InitializeFont();
     InitializeVertexArrays();
 }
 
-void Renderer::InitializeFont()
+bool Renderer::InitializeFont()
 {
     if (TTF_Init() != 0) {
-
+        std::cerr << "Failed to initialize SDL_ttf: "
+                  << TTF_GetError() << '\n';
+        return false;
     }
+    mDidInitializeTtf = true;
 
     mFont = TTF_OpenFont("../assets/fonts/NotoSansJP-Black.ttf", 72);
+    if (!mFont) {
+        std::cerr << "Failed to open renderer font: "
+                  << TTF_GetError() << '\n';
+        return false;
+    }
+    return true;
 }
 
 void Renderer::InitializeVertexArrays()

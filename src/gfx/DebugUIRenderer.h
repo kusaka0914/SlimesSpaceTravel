@@ -10,6 +10,7 @@
 #include "gfx/debug/panels/AssetBrowserPanel.h"
 #include "gfx/debug/panels/BasicInfoDebugPanel.h"
 #include "gfx/debug/panels/CameraDebugPanel.h"
+#include "gfx/debug/panels/CinematicSequenceDebugPanel.h"
 #include "gfx/debug/panels/EndingRollDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
@@ -82,6 +83,7 @@ private:
     PerformanceDebugPanel mPerformancePanel;
     BasicInfoDebugPanel mBasicInfoPanel;
     CameraDebugPanel mCameraPanel;
+    CinematicSequenceDebugPanel mCinematicCameraPanel;
     UIDebugPanel mUIPanel;
     ParameterDebugPanel mParameterPanel;
     ParticleEffectDebugPanel mParticleEffectPanel;

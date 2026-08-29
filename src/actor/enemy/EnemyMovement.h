@@ -7,9 +7,15 @@
 class Enemy;
 class EnemyStateMachine;
 class EnemyStatus;
+class PhysicsSystem;
+class MathUtils;
 
 class EnemyMovement {
 public:
+    EnemyMovement(
+        PhysicsSystem& physicsSystem,
+        MathUtils& mathUtils);
+
     void UpdateFacingVec(Enemy& enemy, EnemyStatus& status, float deltaTime);
     void FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus& status);
 
@@ -44,6 +50,8 @@ public:
     glm::vec3 CalculateCollisionAdjustedPos(Enemy& enemy, const glm::vec3& moveDelta);
 
 private:
+    PhysicsSystem& mPhysicsSystem;
+    MathUtils& mMathUtils;
     void ApplyGravityWithContinuousCollision(
         Enemy& enemy,
         float deltaTime);

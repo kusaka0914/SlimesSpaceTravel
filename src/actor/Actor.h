@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Game.h"
-
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -12,6 +10,7 @@
 #include <vector>
 
 class Component;
+class Game;
 class Planet;
 struct LoadedMesh;
 struct LoadedModel;
@@ -115,11 +114,7 @@ public:
         return mShouldReactToOverheadGravityRay;
     }
     bool IsProgressVisibilitySatisfied() const;
-    bool IsProgressVisibleForCurrentMode() const
-    {
-        return IsProgressVisibilitySatisfied() ||
-               (mGame && mGame->GetIsDebugEditorShowing());
-    }
+    bool IsProgressVisibleForCurrentMode() const;
     bool IsRuntimeActivationEnabledForCurrentMode() const;
     bool ShouldHideWhenRocketAppears() const
     {
@@ -213,7 +208,7 @@ protected:
     {
         return 0.0f;
     }
-    virtual bool ShouldUpdateUpVecEveryFrame() const { return mGame->GetIsDebugMode(); }
+    virtual bool ShouldUpdateUpVecEveryFrame() const;
     virtual bool ShouldRebuildDirectionVectorsEveryFrame() const { return true; }
     virtual void OnUpVecUpdateFailed();
     void UpdateFallbackUpVec();

@@ -7,6 +7,7 @@
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "system/sequence/BossDefeatSequence.h"
 
 #include <glm/glm.hpp>
 
@@ -78,14 +79,17 @@ public:
     void StartBossDefeatSequence(Enemy* boss, Star* star);
     bool PreviewBossDefeatSequence();
     void StopBossDefeatSequence();
-    bool IsBossDefeatSequencePlaying() const { return mBossDefeatSequenceTimer >= 0.0f; }
+    bool IsBossDefeatSequencePlaying() const { return mBossDefeatSequence.IsActive(); }
     std::vector<glm::mat4> GetViews();
     glm::vec3 GetCameraPos() const;
     glm::vec3 GetPlayerCameraPos(int playerNum) const;
 
 private:
     void UpdateCamera(float deltaTime);
-    void UpdateBossDefeatSequence(float deltaTime);
+    void BeginBossDefeatSequence(
+        Enemy* boss,
+        Star* star,
+        bool isPreview);
     void UpdateTalkCameraTransition(float deltaTime);
     void UpdateTalkCameraAim();
     void UpdateTalkPageFocus(float deltaTime);
@@ -103,15 +107,13 @@ private:
 
 private:
     Game* mGame;
+    BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;
     bool mTalkCameraPreviewEnabled = false;
     bool mBoatRideCameraPreviewEnabled = false;
     bool mAlignCameraPressedPrev = false;
     bool mSecondControllerAlignCameraPressedPrev = false;
-    bool mBossDefeatSequenceIsPreview = false;
-    bool mBossDefeatSEPlayed = false;
-    float mBossDefeatSequenceTimer = -1.0f;
     float mCameraStickX = 0.0f;
     float mCameraStickY = 0.0f;
     float mSecondControllerStickX = 0.0f;
@@ -129,8 +131,6 @@ private:
     glm::vec3 mTalkPageFocusTargetPos{0.0f};
     glm::vec3 mTalkPageFocusUpVec{0.0f, 1.0f, 0.0f};
     glm::vec3 mRenderedTalkPageCameraPos{0.0f};
-    Enemy* mDefeatedBoss = nullptr;
-    Star* mBossDefeatStar = nullptr;
     Boat* mBoatRideCameraTarget = nullptr;
 
     CameraCollisionResolver mCollisionResolver;

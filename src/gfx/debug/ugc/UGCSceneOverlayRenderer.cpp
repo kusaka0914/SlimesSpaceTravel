@@ -7,7 +7,8 @@
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformLatchedGroupSwitchComponent.h"
+#include "component/PlatformPressureSwitchComponent.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageActorQuery.h"
@@ -771,5 +772,4 @@ void UGCSceneOverlayRenderer::DrawStackBadges()
     }
     drawList->PopClipRect();
 }
-
 

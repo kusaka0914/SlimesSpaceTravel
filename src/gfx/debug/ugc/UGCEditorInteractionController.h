@@ -1,19 +1,32 @@
 #pragma once
 
+#include "gfx/debug/DebugEditorContext.h"
+
 #include <glm/glm.hpp>
 
-class UGCEditCommandController;
-class UGCEditLayerController;
+class StageActorYamlWriter;
+class StageAddActorPanel;
+class StageEditCommandController;
+class StageSelectionController;
 class UGCEditorViewController;
-class UGCSceneInteractionController;
+class UGCEditorToolState;
+class UGCEditorTutorial;
+class UGCSelectionDragState;
+class UGCSwitchConnectionState;
 
 class UGCEditorInteractionController {
 public:
     UGCEditorInteractionController(
-        UGCEditCommandController& editCommandController,
-        UGCEditLayerController& editLayerController,
-        UGCEditorViewController& viewController,
-        UGCSceneInteractionController& sceneInteractionController);
+        DebugEditorContext& context,
+        StageAddActorPanel& stageAddActorPanel,
+        StageActorYamlWriter& stageActorYamlWriter,
+        StageSelectionController& selectionController,
+        StageEditCommandController& editCommandController,
+        UGCEditorTutorial& editorTutorial,
+        UGCEditorToolState& toolState,
+        UGCSelectionDragState& dragState,
+        UGCSwitchConnectionState& connectionState,
+        UGCEditorViewController& viewController);
 
     void HandleUndo();
     void HandleRedo();
@@ -29,8 +42,21 @@ public:
     const glm::vec3& GetViewDirection() const;
 
 private:
-    UGCEditCommandController& mEditCommandController;
-    UGCEditLayerController& mEditLayerController;
+    bool TryIntersectDragPlane(
+        const glm::vec3& rayFrom,
+        const glm::vec3& rayTo,
+        glm::vec3& outIntersection) const;
+    void UpdateSelectionDrag();
+    void SyncEditLayerToPickedActor();
+
+    DebugEditorContext& mContext;
+    StageAddActorPanel& mStageAddActorPanel;
+    StageActorYamlWriter& mStageActorYamlWriter;
+    StageSelectionController& mSelectionController;
+    StageEditCommandController& mEditCommandController;
+    UGCEditorTutorial& mEditorTutorial;
+    UGCEditorToolState& mToolState;
+    UGCSelectionDragState& mDragState;
+    UGCSwitchConnectionState& mConnectionState;
     UGCEditorViewController& mViewController;
-    UGCSceneInteractionController& mSceneInteractionController;
 };

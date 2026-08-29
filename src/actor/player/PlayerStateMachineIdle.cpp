@@ -1,5 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Player.h"

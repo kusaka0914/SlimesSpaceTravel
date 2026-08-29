@@ -12,10 +12,8 @@ FallRespawnPoint::FallRespawnPoint(Game* game)
     mIsUpVecInitialized = true;
 }
 
-void FallRespawnPoint::ApplyConfig()
+void FallRespawnPoint::ApplyConfig(const YAML::Node& root)
 {
-    YAML::Node root = YAML::LoadFile("../assets/data/actor/fallrespawnpoints.yaml");
-
     if (!root["fallRespawnPoints"] || !root["fallRespawnPoints"].IsSequence()) {
         return;
     }

@@ -7,9 +7,15 @@ class PlayerCombat;
 class PlayerGrounding;
 class PlayerInput;
 class Planet;
+class PhysicsSystem;
+class MathUtils;
 
 class PlayerMovement {
 public:
+    PlayerMovement(
+        PhysicsSystem& physicsSystem,
+        MathUtils& mathUtils);
+
     bool CanDodge(const PlayerCombat& combat) const;
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
@@ -140,6 +146,9 @@ public:
     void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
 
 private:
+    PhysicsSystem& mPhysicsSystem;
+    MathUtils& mMathUtils;
+
     enum class DodgeTrajectory {
         Straight,
         FollowEllipseSurface,

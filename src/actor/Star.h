@@ -2,6 +2,7 @@
 
 #include "actor/Actor.h"
 #include <glm/glm.hpp>
+#include <yaml-cpp/yaml.h>
 
 class Game;
 class CollectableComponent;
@@ -23,7 +24,7 @@ public:
     void UpdateActor(float deltaTime) override;
     glm::quat GetRenderModelRotationOffset() const override;
 
-    void ApplyConfig();
+    void ApplyConfig(const YAML::Node& configRoot);
 
     CollectableComponent* GetCollectableComponent() const { return mCollectableComponent; }
     const CollectionAnimationSettings& GetCollectionAnimationSettings() const
@@ -34,7 +35,6 @@ public:
     {
         mCollectionSettings = settings;
     }
-    bool SaveCollectionAnimationSettings() const;
     bool StartCollectionPreview(Player* player);
 
 private:

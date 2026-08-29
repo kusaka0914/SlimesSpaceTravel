@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/panels/ActorParameterYamlWriter.h"
 
 class DebugBuildRestartPanel;
 
@@ -15,4 +16,5 @@ public:
 private:
     DebugEditorContext& mContext;
     DebugBuildRestartPanel& mBuildRestartPanel;
+    ActorParameterYamlWriter mYamlWriter;
 };

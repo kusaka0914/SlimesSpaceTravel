@@ -1,5 +1,7 @@
 #include "actor/player/PlayerDamageHandler.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"

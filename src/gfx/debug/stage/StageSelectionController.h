@@ -14,12 +14,18 @@
 
 class Actor;
 
+struct StageSelectionScreenRect {
+    ImVec2 minimum;
+    ImVec2 maximum;
+};
+
 class StageSelectionController {
 public:
     explicit StageSelectionController(DebugEditorContext& context);
 
     void Update();
-    void DrawBoxSelectionRect() const;
+    std::optional<StageSelectionScreenRect>
+        FindActiveBoxSelectionScreenRect() const;
     void ApplyEditorSelectionFlags();
     void SetBoxSelectionEnabled(bool isEnabled);
     bool IsBoxSelectionGestureActive() const

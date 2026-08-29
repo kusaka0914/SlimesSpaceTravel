@@ -27,6 +27,7 @@ public:
     bool IsWaitingForPlayerJump() const;
 
 private:
+    bool FinishTalkIfComplete();
     TalkPageAdvanceCondition GetCurrentAdvanceCondition() const;
     void CaptureCurrentPageActionBaseline();
     bool TryAdvanceTalkFromCompletedAction();

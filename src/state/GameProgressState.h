@@ -2,8 +2,6 @@
 
 #include <string>
 
-class Game;
-
 class GameProgressState {
 public:
     enum class SceneState {
@@ -22,7 +20,7 @@ public:
         GameClear
     };
 
-    GameProgressState(Game* game);
+    GameProgressState();
 
     void SetIsFirstBreak(bool isFirstBreak) { mIsFirstBreak = isFirstBreak; }
     void SetIsFirstStrongAttack(bool isFirstStrongAttack) { mIsFirstStrongAttack = isFirstStrongAttack; }
@@ -41,6 +39,4 @@ private:
 
     SceneState mCurrentSceneState;
     SceneState mNextSceneState;
-
-    Game* mGame;
 };

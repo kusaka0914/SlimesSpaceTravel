@@ -1,13 +1,12 @@
 #include "actor/player/PlayerMovement.h"
 
-#include "Game.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerGrounding.h"
 #include "actor/player/PlayerInput.h"
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
 
@@ -115,13 +114,12 @@ void TryAttachToAdhesionPlatformAlongMovement(
 }
 
 AppliedPlayerMovement MoveWithCollision(
+    PhysicsSystem& physicsSystem,
     Player& player,
     const glm::vec3& movementDelta,
     ActorCollisionFilter actorCollisionFilter =
         ActorCollisionFilter::AllActors)
 {
-    PhysicsSystem& physicsSystem = *player.GetGame()->GetPhysicsSystem();
-
     const glm::vec3 positionBeforeMovement = player.GetPos();
     const glm::vec3 desiredPosition = player.GetPos() + movementDelta;
 
@@ -151,6 +149,7 @@ AppliedPlayerMovement MoveWithCollision(
 }
 
 AppliedPlayerMovement MoveWithCollisionSubsteps(
+    PhysicsSystem& physicsSystem,
     Player& player,
     const glm::vec3& movementDelta,
     float maximumSubstepDistance,
@@ -183,6 +182,7 @@ AppliedPlayerMovement MoveWithCollisionSubsteps(
          ++substepIndex) {
         const AppliedPlayerMovement appliedSubstep =
             MoveWithCollision(
+                physicsSystem,
                 player,
                 substepMovement,
                 actorCollisionFilter);
@@ -209,6 +209,7 @@ AppliedPlayerMovement MoveWithCollisionSubsteps(
 }
 
 bool TryStepUpFromGround(
+    PhysicsSystem& physicsSystem,
     Player& player,
     const glm::vec3& positionBeforeMovement,
     const glm::vec3& normalResolvedPosition,
@@ -235,6 +236,7 @@ bool TryStepUpFromGround(
     player.SetPos(positionBeforeMovement);
     const AppliedPlayerMovement upwardMovement =
         MoveWithCollision(
+            physicsSystem,
             player,
             upDirection * maximumStepHeight);
     if (player.IsAttachedToPlatform()) {
@@ -253,6 +255,7 @@ bool TryStepUpFromGround(
     }
 
     (void)MoveWithCollision(
+        physicsSystem,
         player,
         horizontalMovement);
     if (player.IsAttachedToPlatform()) {
@@ -277,6 +280,7 @@ bool TryStepUpFromGround(
     constexpr float stepLandingProbeExtraDistance = 0.05f;
     const AppliedPlayerMovement downwardMovement =
         MoveWithCollision(
+            physicsSystem,
             player,
             -upDirection *
                 (maximumStepHeight +
@@ -322,6 +326,7 @@ bool TryStepUpFromGround(
 }
 
 void MoveAirborneWithCollision(
+    PhysicsSystem& physicsSystem,
     Player& player,
     const glm::vec3& upDirection,
     const glm::vec3& requestedMovement)
@@ -329,6 +334,7 @@ void MoveAirborneWithCollision(
     constexpr float maximumAirborneCollisionSubstepDistance = 0.05f;
     const AppliedPlayerMovement appliedMovement =
         MoveWithCollisionSubsteps(
+            physicsSystem,
             player,
             requestedMovement,
             maximumAirborneCollisionSubstepDistance);
@@ -398,6 +404,7 @@ void MoveAirborneWithCollision(
 }
 
 bool MoveAirSlamDownwardUntilFloorCollision(
+    PhysicsSystem& physicsSystem,
     Player& player,
     const glm::vec3& upDirection,
     float deltaTime)
@@ -428,6 +435,7 @@ bool MoveAirSlamDownwardUntilFloorCollision(
          ++substepIndex) {
         const AppliedPlayerMovement appliedMovement =
             MoveWithCollision(
+                physicsSystem,
                 player,
                 substepMovement);
         if (player.IsAttachedToPlatform()) {
@@ -465,8 +473,6 @@ bool MoveAirSlamDownwardUntilFloorCollision(
             continue;
         }
 
-        const PhysicsSystem& physicsSystem =
-            *player.GetGame()->GetPhysicsSystem();
         const float collisionBottomOffsetFromPlayerOrigin =
             physicsSystem.GetPlayerCollisionCenterHeight() -
             physicsSystem.GetPlayerCollisionHeight() * 0.5f;
@@ -488,21 +494,37 @@ bool MoveAirSlamDownwardUntilFloorCollision(
     return false;
 }
 
-float CalculateFacingYaw(Player& player, const glm::vec3& upDirection, const glm::vec3& facingDirection)
+float CalculateFacingYaw(
+    MathUtils& mathUtils,
+    const glm::vec3& upDirection,
+    const glm::vec3& facingDirection)
 {
-    MathUtils& mathUtils = *player.GetGame()->GetMathUtils();
-
     const float directionYaw = mathUtils.GetYawFromDirection(upDirection, facingDirection);
 
     return directionYaw + glm::pi<float>();
 }
 
-void ApplyFacingDirection(Player& player, const glm::vec3& upDirection, const glm::vec3& facingDirection)
+void ApplyFacingDirection(
+    MathUtils& mathUtils,
+    Player& player,
+    const glm::vec3& upDirection,
+    const glm::vec3& facingDirection)
 {
     player.SetFacingForwardVec(facingDirection);
-    player.SetFacingYaw(CalculateFacingYaw(player, upDirection, facingDirection));
+    player.SetFacingYaw(CalculateFacingYaw(
+        mathUtils,
+        upDirection,
+        facingDirection));
 }
 
+}
+
+PlayerMovement::PlayerMovement(
+    PhysicsSystem& physicsSystem,
+    MathUtils& mathUtils)
+    : mPhysicsSystem(physicsSystem),
+      mMathUtils(mathUtils)
+{
 }
 
 bool PlayerMovement::CanDodge(const PlayerCombat& combat) const
@@ -596,7 +618,11 @@ void PlayerMovement::FaceDirection(Player& player, const glm::vec3& facingDirect
     }
 
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
-    ApplyFacingDirection(player, upDirection, normalizedFacingDirection);
+    ApplyFacingDirection(
+        mMathUtils,
+        player,
+        upDirection,
+        normalizedFacingDirection);
 }
 
 void PlayerMovement::UpdateDodgeCooldown(float deltaTime)
@@ -620,6 +646,7 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
         player.GetPos();
     const AppliedPlayerMovement normalMovement =
         MoveWithCollision(
+            mPhysicsSystem,
             player,
             movementDelta);
     if (player.IsAttachedToPlatform()) {
@@ -643,6 +670,7 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
     const glm::vec3 normalResolvedPosition =
         player.GetPos();
     (void)TryStepUpFromGround(
+        mPhysicsSystem,
         player,
         positionBeforeMovement,
         normalResolvedPosition,
@@ -709,8 +737,8 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
                     *currentPlanet,
                     dodgeSpeed,
                     deltaTime);
-        }
-    }
+}
+}
 
     const ActorCollisionFilter actorCollisionFilter =
         combat.IsAirDodgeAttackActive()
@@ -720,6 +748,7 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
     // 接触中の薄い壁を1フレームで越えないよう、回避だけ短い区間ごとに衝突を解決する。
     constexpr float maximumDodgeCollisionSubstepDistance = 0.05f;
     (void)MoveWithCollisionSubsteps(
+        mPhysicsSystem,
         player,
         movementDelta,
         maximumDodgeCollisionSubstepDistance,
@@ -746,7 +775,7 @@ void PlayerMovement::ApplyAttackMovement(Player& player, const PlayerCombat& com
 
     const glm::vec3 movementDelta = player.GetFacingForwardVec() * combat.GetAttackSpeed() * deltaTime;
 
-    MoveWithCollision(player, movementDelta);
+    MoveWithCollision(mPhysicsSystem, player, movementDelta);
 }
 
 void PlayerMovement::ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime)
@@ -759,7 +788,7 @@ void PlayerMovement::ApplyStrongAttackMovement(Player& player, const PlayerComba
         mHasStrongAttackDirectionOverride ? mStrongAttackDirectionOverride : player.GetFacingForwardVec();
     const glm::vec3 movementDelta = attackDirection * combat.GetStrongAttackSpeed() * deltaTime;
 
-    MoveWithCollision(player, movementDelta);
+    MoveWithCollision(mPhysicsSystem, player, movementDelta);
 }
 
 void PlayerMovement::ApplyKnockBackMovement(Player& player, float deltaTime)
@@ -778,7 +807,7 @@ void PlayerMovement::ApplyKnockBackMovement(Player& player, float deltaTime)
 
     const glm::vec3 movementDelta = knockBackDirection * mKnockBackSpeed * deltaTime;
 
-    MoveWithCollision(player, movementDelta);
+    MoveWithCollision(mPhysicsSystem, player, movementDelta);
 }
 
 void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input)
@@ -915,6 +944,7 @@ void PlayerMovement::StartJumpMovement(Player& player, float deltaTime)
 
     // ジャンプ開始後は状態更新から即時returnするため、このフレーム分の上昇移動をここで反映する。
     MoveAirborneWithCollision(
+        mPhysicsSystem,
         player,
         upDirection,
         player.GetVelocity() * deltaTime);
@@ -1071,6 +1101,7 @@ void PlayerMovement::ApplyJumpGravityMovement(
     }
 
     MoveAirborneWithCollision(
+        mPhysicsSystem,
         player,
         physicsUpDirection,
         requestedMovement);
@@ -1281,6 +1312,7 @@ bool PlayerMovement::UpdateAirSlamMovement(
     if (mAirSlamMovementPhase ==
         AirSlamMovementPhase::Rising) {
         MoveAirborneWithCollision(
+            mPhysicsSystem,
             player,
             upDirection,
             player.GetVelocity() * deltaTime);
@@ -1328,6 +1360,7 @@ bool PlayerMovement::UpdateAirSlamMovement(
     player.SetVelocity(
         -upDirection * fallSpeed);
     return MoveAirSlamDownwardUntilFloorCollision(
+        mPhysicsSystem,
         player,
         upDirection,
         deltaTime);

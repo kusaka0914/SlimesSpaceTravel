@@ -4,8 +4,8 @@
 #include "actor/Actor.h"
 #include "actor/Player.h"
 
-#include <algorithm>
 #include <limits>
+#include <utility>
 #include <glm/glm.hpp>
 
 void GameWorld::CreateStages(int stageCount)
@@ -33,23 +33,6 @@ void GameWorld::AddActor(std::unique_ptr<Actor> actor)
     mActors.emplace_back(std::move(actor));
 }
 
-void GameWorld::RemoveActor(Actor* actor)
-{
-    auto iter = std::find_if(mActors.begin(), mActors.end(),
-                             [actor](const std::unique_ptr<Actor>& current) { return current.get() == actor; });
-
-    if (iter != mActors.end()) {
-        std::iter_swap(iter, mActors.end() - 1);
-        mActors.pop_back();
-    }
-}
-
-void GameWorld::RemoveAllActors()
-{
-    mPlayers.clear();
-    mActors.clear();
-}
-
 void GameWorld::AddPlayer(Player* player)
 {
     mPlayers.emplace_back(player);
@@ -65,6 +48,17 @@ void GameWorld::ProcessActorsInput()
     for (const auto& actorUnique : mActors) {
         actorUnique->ProcessInput();
     }
+}
+
+void GameWorld::SwapRuntimeState(GameWorld& other) noexcept
+{
+    using std::swap;
+    swap(mPlayers, other.mPlayers);
+    swap(mActors, other.mActors);
+    swap(mStages, other.mStages);
+    swap(mStagesUnique, other.mStagesUnique);
+    swap(mCurrentStage, other.mCurrentStage);
+    swap(mCurrentStageNum, other.mCurrentStageNum);
 }
 
 void GameWorld::ProcessPlayerInput(Player* player)

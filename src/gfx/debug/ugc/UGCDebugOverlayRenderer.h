@@ -11,7 +11,7 @@ class UGCEditorMenuState;
 class UGCEditorToolState;
 class UGCPreviewRenderer;
 class UGCSceneOverlayRenderer;
-class UGCWorkFlowController;
+class UGCWorkPanel;
 
 class UGCDebugOverlayRenderer {
 public:
@@ -23,7 +23,7 @@ public:
         UGCSceneOverlayRenderer& sceneOverlayRenderer,
         UGCEditorToolState& toolState,
         UGCEditorMenuState& menuState,
-        UGCWorkFlowController& workFlowController,
+        UGCWorkPanel& workPanel,
         EditorModelThumbnailRenderer* modelThumbnailRenderer,
         std::function<bool()> isAdjustingUGCUI);
 
@@ -37,7 +37,7 @@ private:
     UGCSceneOverlayRenderer& mSceneOverlayRenderer;
     UGCEditorToolState& mToolState;
     UGCEditorMenuState& mMenuState;
-    UGCWorkFlowController& mWorkFlowController;
+    UGCWorkPanel& mWorkPanel;
     EditorModelThumbnailRenderer* mModelThumbnailRenderer = nullptr;
     std::function<bool()> mIsAdjustingUGCUI;
 };

@@ -6,8 +6,6 @@
 #include "gfx/debug/ugc/UGCEditorTutorial.h"
 #include "gfx/debug/ugc/UGCEditorElementRegistrar.h"
 #include "gfx/debug/ugc/UGCEditorChromeRenderer.h"
-#include "gfx/debug/ugc/UGCEditCommandController.h"
-#include "gfx/debug/ugc/UGCEditLayerController.h"
 #include "gfx/debug/ugc/UGCEditorMenuState.h"
 #include "gfx/debug/ugc/UGCDebugOverlayRenderer.h"
 #include "gfx/debug/ugc/UGCEditorInteractionController.h"
@@ -15,13 +13,11 @@
 #include "gfx/debug/ugc/UGCEditorViewController.h"
 #include "gfx/debug/ugc/UGCPreviewRenderer.h"
 #include "gfx/debug/ugc/UGCSceneOverlayRenderer.h"
-#include "gfx/debug/ugc/UGCSceneInteractionController.h"
-#include "gfx/debug/ugc/UGCSelectionDragController.h"
 #include "gfx/debug/ugc/UGCSwitchConnectionController.h"
 #include "gfx/debug/ugc/UGCSwitchConnectionState.h"
 #include "gfx/debug/ugc/UGCTutorialOverlayRenderer.h"
 #include "gfx/debug/ugc/UGCSelectionDragState.h"
-#include "gfx/debug/ugc/UGCWorkFlowController.h"
+#include "gfx/debug/ugc/UGCWorkPanel.h"
 
 #include <functional>
 #include <glm/glm.hpp>
@@ -88,16 +84,12 @@ private:
     UGCEditorElementRegistrar mElementRegistrar;
     UGCSwitchConnectionState mConnectionState;
     UGCSwitchConnectionController mSwitchConnectionController;
-    UGCEditCommandController mUGCEditCommandController;
-    UGCEditLayerController mEditLayerController;
-    UGCSelectionDragController mSelectionDragController;
     UGCEditorViewController mViewController;
-    UGCSceneInteractionController mSceneInteractionController;
     UGCEditorInteractionController mInteractionController;
     UGCPreviewRenderer mPreviewRenderer;
     UGCTutorialOverlayRenderer mTutorialOverlayRenderer;
     UGCSceneOverlayRenderer mSceneOverlayRenderer;
-    UGCWorkFlowController mWorkFlowController;
+    UGCWorkPanel mWorkPanel;
     std::unique_ptr<EditorModelThumbnailRenderer> mModelThumbnailRenderer;
     UGCDebugOverlayRenderer mDebugOverlayRenderer;
     UGCEditorChromeRenderer mChromeRenderer;

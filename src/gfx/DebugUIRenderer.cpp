@@ -25,6 +25,7 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mPerformancePanel(mContext),
       mBasicInfoPanel(mPerformancePanel),
       mCameraPanel(mContext),
+      mCinematicCameraPanel(mContext),
       mUIPanel(mContext),
       mParameterPanel(mContext, mCameraPanel),
       mParticleEffectPanel(mContext),
@@ -35,7 +36,7 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           mContext,
           mBuildRestartPanel),
       mSequenceEditorPanel(
-          mCameraPanel,
+          mCinematicCameraPanel,
           mSequencePanel,
           mEndingRollPanel,
           mStorybookPanel,

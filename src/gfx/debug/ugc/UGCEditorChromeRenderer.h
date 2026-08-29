@@ -9,7 +9,7 @@ class UGCEditorMenuState;
 class UGCEditorToolState;
 class UGCEditorTutorial;
 class UGCTutorialOverlayRenderer;
-class UGCWorkFlowController;
+class UGCWorkPanel;
 
 class UGCEditorChromeRenderer {
 public:
@@ -21,7 +21,7 @@ public:
         UGCTutorialOverlayRenderer& tutorialOverlayRenderer,
         UGCEditorToolState& toolState,
         UGCEditorMenuState& menuState,
-        UGCWorkFlowController& workFlowController,
+        UGCWorkPanel& workPanel,
         EditorModelThumbnailRenderer* modelThumbnailRenderer);
 
     bool DrawControls();
@@ -34,7 +34,6 @@ private:
     UGCTutorialOverlayRenderer& mTutorialOverlayRenderer;
     UGCEditorToolState& mToolState;
     UGCEditorMenuState& mMenuState;
-    UGCWorkFlowController& mWorkFlowController;
+    UGCWorkPanel& mWorkPanel;
     EditorModelThumbnailRenderer* mModelThumbnailRenderer = nullptr;
 };
-

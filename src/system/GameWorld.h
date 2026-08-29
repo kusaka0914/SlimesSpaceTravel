@@ -10,10 +10,9 @@ class Stage;
 class GameWorld {
 public:
     void CreateStages(int stageCount);
+    void SwapRuntimeState(GameWorld& other) noexcept;
 
     void AddActor(std::unique_ptr<Actor> actor);
-    void RemoveActor(Actor* actor);
-    void RemoveAllActors();
 
     void AddPlayer(Player* player);
     void RemoveAllPlayers();

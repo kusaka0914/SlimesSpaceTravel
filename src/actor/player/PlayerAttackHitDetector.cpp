@@ -1,5 +1,7 @@
 #include "actor/player/PlayerAttackHitDetector.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"

@@ -31,6 +31,8 @@ public:
         StageBoatCreator& boatCreator,
         StagePlanetCreator& planetCreator);
 
+    bool ReloadActorDefaultConfigs();
+
     Planet* CreatePlanet(const YAML::Node& node);
     Player* CreatePlayer(const YAML::Node& node, int playerNum);
     Enemy* CreateEnemy(const YAML::Node& node, int stageYamlIndex);
@@ -68,4 +70,11 @@ private:
     StagePlayerLoader& mPlayerLoader;
     StageBoatCreator& mBoatCreator;
     StagePlanetCreator& mPlanetCreator;
+    YAML::Node mBoatArrivalPointConfig;
+    YAML::Node mBoatPartsConfig;
+    YAML::Node mCrystalConfig;
+    YAML::Node mFallRespawnPointConfig;
+    YAML::Node mKeyConfig;
+    YAML::Node mNpcConfig;
+    YAML::Node mStarConfig;
 };

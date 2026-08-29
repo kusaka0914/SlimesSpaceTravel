@@ -56,11 +56,12 @@ public:
 
     Game* GetGame() const { return mGame; }
     Shader3D* GetShader3D() const { return mShader3D; }
-    std::unordered_map<std::string, std::unique_ptr<VertexArray>>& GetVertexArrays() { return mVertexArrays; }
-    std::unordered_map<std::string, GLuint>& GetTextures() { return mTextures; }
+    VertexArray* FindVertexArray(const std::string& name) const;
+    GLuint FindTexture(const std::string& name) const;
     GLuint GetAttackRangeVAO() const { return mAttackRangeVAO; }
     GLuint GetAttackRangeVBO() const { return mAttackRangeVBO; }
-    GLuint GetOrLoadTextureOverride(const std::string& assetRelativePath);
+    GLuint GetOrLoadTextureOverride(
+        const std::string& assetRelativePath) const;
 
     GLuint CreateTextTextureFor3D(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
                                   float textScale) const
@@ -135,7 +136,7 @@ private:
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
-    std::unordered_set<std::string> mFailedTextureOverrides;
+    mutable std::unordered_set<std::string> mFailedTextureOverrides;
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;
     mutable bool mEmphasizeUGCLayers = false;

@@ -1,4 +1,4 @@
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformMotionBehaviorComponents.h"
 
 #include "Game.h"
 #include "Stage.h"
@@ -168,5 +168,4 @@ void PlatformConveyorComponent::SetSpeed(float speed)
 {
     mSpeed = std::max(0.0f, speed);
 }
-
 

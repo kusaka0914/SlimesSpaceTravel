@@ -12,7 +12,7 @@
 #include "gfx/debug/ugc/UGCEditorToolState.h"
 #include "gfx/debug/ugc/UGCEditorTutorial.h"
 #include "gfx/debug/ugc/UGCTutorialOverlayRenderer.h"
-#include "gfx/debug/ugc/UGCWorkFlowController.h"
+#include "gfx/debug/ugc/UGCWorkPanel.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -68,7 +68,7 @@ UGCEditorChromeRenderer::UGCEditorChromeRenderer(
     UGCTutorialOverlayRenderer& tutorialOverlayRenderer,
     UGCEditorToolState& toolState,
     UGCEditorMenuState& menuState,
-    UGCWorkFlowController& workFlowController,
+    UGCWorkPanel& workPanel,
     EditorModelThumbnailRenderer* modelThumbnailRenderer)
     : mContext(context),
       mStageAddActorPanel(stageAddActorPanel),
@@ -77,7 +77,7 @@ UGCEditorChromeRenderer::UGCEditorChromeRenderer(
       mTutorialOverlayRenderer(tutorialOverlayRenderer),
       mToolState(toolState),
       mMenuState(menuState),
-      mWorkFlowController(workFlowController),
+      mWorkPanel(workPanel),
       mModelThumbnailRenderer(modelThumbnailRenderer)
 {
 }
@@ -567,7 +567,7 @@ bool UGCEditorChromeRenderer::DrawControls()
         if (ImGui::Button(
                 "完成チェック",
                 ImVec2(menuButtonWidth, menuButtonHeight))) {
-            mWorkFlowController.StartVerification();
+            mWorkPanel.StartVerification();
             ImGui::CloseCurrentPopup();
         }
         if (mEditorTutorial.IsActive()) {
@@ -587,7 +587,7 @@ bool UGCEditorChromeRenderer::DrawControls()
         if (ImGui::Button(
                 "タイトルへ戻る",
                 ImVec2(menuButtonWidth, menuButtonHeight))) {
-            if (mWorkFlowController.HasUnsavedChanges()) {
+            if (mWorkPanel.HasUnsavedChanges()) {
                 ImGui::OpenPopup(
                     "保存せずタイトルへ戻りますか###UGCExitConfirmation");
             } else {
@@ -635,4 +635,3 @@ bool UGCEditorChromeRenderer::DrawControls()
     ImGui::PopStyleVar();
     return false;
 }
-

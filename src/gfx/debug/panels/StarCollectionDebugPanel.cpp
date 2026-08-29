@@ -13,7 +13,8 @@ StarCollectionDebugPanel::StarCollectionDebugPanel(
     DebugEditorContext& context,
     DebugBuildRestartPanel& buildRestartPanel)
     : mContext(context),
-      mBuildRestartPanel(buildRestartPanel)
+      mBuildRestartPanel(buildRestartPanel),
+      mYamlWriter(context)
 {
 }
 
@@ -87,7 +88,8 @@ void StarCollectionDebugPanel::Draw()
     }
     ImGui::SameLine();
     if (ImGui::Button("stars.yamlへ保存")) {
-        const bool saved = star->SaveCollectionAnimationSettings();
+        const bool saved =
+            mYamlWriter.SaveStarCollectionAnimation(*star);
         mBuildRestartPanel.SetStatus(
             saved
                 ? "星獲得演出を保存しました"

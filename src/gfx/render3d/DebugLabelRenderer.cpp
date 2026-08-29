@@ -112,9 +112,8 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto quadIt = vertexArrays.find("quad");
-    if (quadIt == vertexArrays.end()) {
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (!quad) {
         glDeleteTextures(1, &textTexture);
         return;
     }
@@ -129,7 +128,7 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
     glUniform1i(shader->GetLocUseTexture(), 1);
     glUniform4f(shader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     const float labelHeight = actor->GetRadius() * actor->GetScale().y + 0.8f;
     constexpr float baseHeight = 0.5f;

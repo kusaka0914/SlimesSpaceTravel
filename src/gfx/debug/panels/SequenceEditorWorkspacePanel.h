@@ -1,6 +1,6 @@
 #pragma once
 
-class CameraDebugPanel;
+class CinematicSequenceDebugPanel;
 class EndingRollDebugPanel;
 class SequenceDebugPanel;
 class StorybookDebugPanel;
@@ -9,7 +9,7 @@ class StarCollectionDebugPanel;
 class SequenceEditorWorkspacePanel {
 public:
     SequenceEditorWorkspacePanel(
-        CameraDebugPanel& cameraPanel,
+        CinematicSequenceDebugPanel& cinematicCameraPanel,
         SequenceDebugPanel& sequencePanel,
         EndingRollDebugPanel& endingRollPanel,
         StorybookDebugPanel& storybookPanel,
@@ -20,7 +20,7 @@ public:
     void SetSelectedMenuIndex(int menuIndex);
 
 private:
-    CameraDebugPanel& mCameraPanel;
+    CinematicSequenceDebugPanel& mCinematicCameraPanel;
     SequenceDebugPanel& mSequencePanel;
     EndingRollDebugPanel& mEndingRollPanel;
     StorybookDebugPanel& mStorybookPanel;

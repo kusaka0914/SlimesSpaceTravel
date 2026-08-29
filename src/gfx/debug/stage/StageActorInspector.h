@@ -3,6 +3,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/stage/StageActorAssetEditor.h"
 #include "gfx/debug/stage/StagePlatformEditor.h"
+#include "gfx/debug/stage/StageNPCInspector.h"
 
 #include <cstddef>
 #include <functional>
@@ -53,8 +54,8 @@ private:
     StageActorYamlWriter& mStageActorYamlWriter;
     StagePlayerEditor& mStagePlayerEditor;
     StageActorAssetEditor mStageActorAssetEditor;
+    StageNPCInspector mStageNPCInspector;
     StagePlatformEditor mStagePlatformEditor;
     Callback mPushUndo;
-    std::string mRubyGenerationStatus;
     std::string mSurfaceAlignmentStatus;
 };

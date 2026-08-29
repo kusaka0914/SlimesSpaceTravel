@@ -2,7 +2,10 @@
 
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformLatchedGroupSwitchComponent.h"
+#include "component/PlatformMotionBehaviorComponents.h"
+#include "component/PlatformPressureSwitchComponent.h"
+#include "component/PlatformVisibilityComponents.h"
 #include "component/PlatformMovementComponent.h"
 
 namespace {

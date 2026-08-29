@@ -1,9 +1,5 @@
 #include "gfx/debug/ugc/UGCEditorInteractionController.h"
-#include "gfx/debug/ugc/UGCEditCommandController.h"
-#include "gfx/debug/ugc/UGCEditLayerController.h"
 #include "gfx/debug/ugc/UGCEditorViewController.h"
-#include "gfx/debug/ugc/UGCSceneInteractionController.h"
-#include "gfx/debug/ugc/UGCSelectionDragController.h"
 #include "gfx/debug/ugc/UGCEditorToolState.h"
 #include "gfx/debug/ugc/UGCEditorTutorial.h"
 #include "gfx/debug/ugc/UGCSelectionDragState.h"
@@ -30,36 +26,30 @@
 #include <vector>
 
 UGCEditorInteractionController::UGCEditorInteractionController(
-    UGCEditCommandController& editCommandController,
-    UGCEditLayerController& editLayerController,
-    UGCEditorViewController& viewController,
-    UGCSceneInteractionController& sceneInteractionController)
-    : mEditCommandController(editCommandController),
-      mEditLayerController(editLayerController),
-      mViewController(viewController),
-      mSceneInteractionController(sceneInteractionController)
-{
-}
-
-UGCEditCommandController::UGCEditCommandController(
     DebugEditorContext& context,
     StageAddActorPanel& stageAddActorPanel,
+    StageActorYamlWriter& stageActorYamlWriter,
     StageSelectionController& selectionController,
     StageEditCommandController& editCommandController,
     UGCEditorTutorial& editorTutorial,
     UGCEditorToolState& toolState,
-    UGCSelectionDragState& dragState)
+    UGCSelectionDragState& dragState,
+    UGCSwitchConnectionState& connectionState,
+    UGCEditorViewController& viewController)
     : mContext(context),
       mStageAddActorPanel(stageAddActorPanel),
+      mStageActorYamlWriter(stageActorYamlWriter),
       mSelectionController(selectionController),
       mEditCommandController(editCommandController),
       mEditorTutorial(editorTutorial),
       mToolState(toolState),
-      mDragState(dragState)
+      mDragState(dragState),
+      mConnectionState(connectionState),
+      mViewController(viewController)
 {
 }
 
-void UGCEditCommandController::HandleUndo()
+void UGCEditorInteractionController::HandleUndo()
 {
     const bool wasRestored = mEditCommandController.RestoreUndo();
     mEditorTutorial.RecordUndo(wasRestored);
@@ -68,14 +58,14 @@ void UGCEditCommandController::HandleUndo()
         : "戻せる操作がありません";
 }
 
-void UGCEditCommandController::HandleRedo()
+void UGCEditorInteractionController::HandleRedo()
 {
     mToolState.statusMessage = mEditCommandController.RestoreRedo()
         ? "戻した操作をやり直しました"
         : "やり直せる操作がありません";
 }
 
-void UGCEditCommandController::ToggleEraser()
+void UGCEditorInteractionController::ToggleEraser()
 {
     if (!mToolState.isEraserMode) {
         const std::optional<UGCPresetKind> presetToRestore =
@@ -101,7 +91,7 @@ void UGCEditCommandController::ToggleEraser()
     }
 }
 
-void UGCEditCommandController::ActivateSelectionMode()
+void UGCEditorInteractionController::ActivateSelectionMode()
 {
     mToolState.ActivateSelection();
     mStageAddActorPanel.CancelPlacement();
@@ -122,25 +112,7 @@ void UGCEditorViewController::AdjustZoom(float distanceMultiplier)
     mEditorTutorial.RecordViewAdjustment();
 }
 
-UGCEditLayerController::UGCEditLayerController(
-    DebugEditorContext& context,
-    StageAddActorPanel& stageAddActorPanel,
-    StageSelectionController& selectionController,
-    StageEditCommandController& editCommandController,
-    UGCEditorTutorial& editorTutorial,
-    UGCEditorToolState& toolState,
-    UGCSelectionDragState& dragState)
-    : mContext(context),
-      mStageAddActorPanel(stageAddActorPanel),
-      mSelectionController(selectionController),
-      mEditCommandController(editCommandController),
-      mEditorTutorial(editorTutorial),
-      mToolState(toolState),
-      mDragState(dragState)
-{
-}
-
-void UGCEditLayerController::ChangeLayer(int layerDelta)
+void UGCEditorInteractionController::ChangeLayer(int layerDelta)
 {
     const bool isMovingSelection =
         mDragState.isDragging &&
@@ -154,7 +126,7 @@ void UGCEditLayerController::ChangeLayer(int layerDelta)
     }
 }
 
-void UGCEditCommandController::MoveSelectionOnGrid(int gridX, int gridZ)
+void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
 {
     if (mToolState.isEraserMode || mStageAddActorPanel.IsPlacementActive() ||
         mSelectionController.GetSelectedActorCount() == 0) {
@@ -193,27 +165,7 @@ void UGCEditCommandController::MoveSelectionOnGrid(int gridX, int gridZ)
     mToolState.statusMessage = "選んだものを1マス動かしました";
 }
 
-UGCSelectionDragController::UGCSelectionDragController(
-    DebugEditorContext& context,
-    StageAddActorPanel& stageAddActorPanel,
-    StageActorYamlWriter& stageActorYamlWriter,
-    StageSelectionController& selectionController,
-    StageEditCommandController& editCommandController,
-    UGCEditorTutorial& editorTutorial,
-    UGCEditorToolState& toolState,
-    UGCSelectionDragState& dragState)
-    : mContext(context),
-      mStageAddActorPanel(stageAddActorPanel),
-      mStageActorYamlWriter(stageActorYamlWriter),
-      mSelectionController(selectionController),
-      mEditCommandController(editCommandController),
-      mEditorTutorial(editorTutorial),
-      mToolState(toolState),
-      mDragState(dragState)
-{
-}
-
-bool UGCSelectionDragController::TryIntersectDragPlane(
+bool UGCEditorInteractionController::TryIntersectDragPlane(
     const glm::vec3& rayFrom,
     const glm::vec3& rayTo,
     glm::vec3& outIntersection) const
@@ -235,7 +187,7 @@ bool UGCSelectionDragController::TryIntersectDragPlane(
     return true;
 }
 
-void UGCSelectionDragController::Update()
+void UGCEditorInteractionController::UpdateSelectionDrag()
 {
     if (!mContext.game || !mContext.game->GetCameraSystem()) {
         return;
@@ -388,7 +340,7 @@ void UGCSelectionDragController::Update()
     mDragState.appliedDelta += movementDelta;
 }
 
-void UGCEditLayerController::ChangeEditLayer(int layerDelta)
+void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
 {
     constexpr int minimumLayer = 0;
     constexpr int maximumLayer = 20;
@@ -457,7 +409,7 @@ void UGCEditLayerController::ChangeEditLayer(int layerDelta)
     }
 }
 
-void UGCEditLayerController::SyncEditLayerToPickedActor()
+void UGCEditorInteractionController::SyncEditLayerToPickedActor()
 {
     Actor* pickedActor = mSelectionController.GetPickedActor();
     const std::optional<StageActorRef>& pickedRef =
@@ -642,29 +594,7 @@ const glm::vec3& UGCEditorViewController::GetViewDirection() const
 }
 
 
-UGCSceneInteractionController::UGCSceneInteractionController(
-    DebugEditorContext& context,
-    StageAddActorPanel& stageAddActorPanel,
-    StageSelectionController& selectionController,
-    StageEditCommandController& editCommandController,
-    UGCEditorTutorial& editorTutorial,
-    UGCEditorToolState& toolState,
-    UGCSwitchConnectionState& connectionState,
-    UGCSelectionDragController& selectionDragController,
-    UGCEditLayerController& editLayerController)
-    : mContext(context),
-      mStageAddActorPanel(stageAddActorPanel),
-      mSelectionController(selectionController),
-      mEditCommandController(editCommandController),
-      mEditorTutorial(editorTutorial),
-      mToolState(toolState),
-      mConnectionState(connectionState),
-      mSelectionDragController(selectionDragController),
-      mEditLayerController(editLayerController)
-{
-}
-
-void UGCSceneInteractionController::Update()
+void UGCEditorInteractionController::UpdateSceneInteraction()
 {
     if (mStageAddActorPanel.IsPlacementActive()) {
         mStageAddActorPanel.UpdatePlacement();
@@ -680,11 +610,11 @@ void UGCSceneInteractionController::Update()
             !isChoosingSwitchTarget &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
             !ImGui::GetIO().KeyShift) {
-            mEditLayerController.SyncEditLayerToPickedActor();
+            SyncEditLayerToPickedActor();
         }
         if (allowsSelectionInteraction &&
             !mSelectionController.IsBoxSelectionGestureActive()) {
-            mSelectionDragController.Update();
+            UpdateSelectionDrag();
         }
         if (mToolState.isEraserMode && !isChoosingSwitchTarget &&
             ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
@@ -786,49 +716,9 @@ void UGCSceneInteractionController::Update()
     mSelectionController.ApplyEditorSelectionFlags();
 }
 
-void UGCEditorInteractionController::HandleUndo()
-{
-    mEditCommandController.HandleUndo();
-}
-
-void UGCEditorInteractionController::HandleRedo()
-{
-    mEditCommandController.HandleRedo();
-}
-
-void UGCEditorInteractionController::ToggleEraser()
-{
-    mEditCommandController.ToggleEraser();
-}
-
-void UGCEditorInteractionController::ActivateSelectionMode()
-{
-    mEditCommandController.ActivateSelectionMode();
-}
-
 void UGCEditorInteractionController::AdjustZoom(float distanceMultiplier)
 {
     mViewController.AdjustZoom(distanceMultiplier);
-}
-
-void UGCEditorInteractionController::ChangeLayer(int layerDelta)
-{
-    mEditLayerController.ChangeLayer(layerDelta);
-}
-
-void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
-{
-    mEditCommandController.MoveSelectionOnGrid(gridX, gridZ);
-}
-
-void UGCEditorInteractionController::UpdateSceneInteraction()
-{
-    mSceneInteractionController.Update();
-}
-
-void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
-{
-    mEditLayerController.ChangeEditLayer(layerDelta);
 }
 
 void UGCEditorInteractionController::ToggleVerticalView()

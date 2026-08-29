@@ -43,7 +43,8 @@ std::string ToLower(std::string value)
 }
 
 StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context)
-    : DebugPanel(context)
+    : DebugPanel(context),
+      mYamlWriter(context)
 {
 }
 
@@ -270,7 +271,7 @@ void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
 
 void StagePlanetPanel::Save()
 {
-    SaveYaml(false);
+    mYamlWriter.Save(false);
 }
 
 void StagePlanetPanel::SaveEditorAuthoredTransforms()
@@ -290,7 +291,7 @@ void StagePlanetPanel::SaveEditorAuthoredTransforms()
         }
     }
 
-    if (editedPlanets.empty() || !SaveYaml(true)) {
+    if (editedPlanets.empty() || !mYamlWriter.Save(true)) {
         return;
     }
 
@@ -303,84 +304,6 @@ void StagePlanetPanel::SetSaveDependentActorTransformsCallback(
     std::function<void()> callback)
 {
     mSaveDependentActorTransformsCallback = std::move(callback);
-}
-
-bool StagePlanetPanel::SaveYaml(bool shouldSaveEditorTransform)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return false;
-    }
-
-    YAML::Node config;
-
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    for (std::size_t i = 0; i < planets.size(); ++i) {
-        Planet* planet = planets[i];
-        if (!planet) {
-            continue;
-        }
-
-        const EditorAuthoredTransform* editorTransform =
-            shouldSaveEditorTransform
-            ? planet->FindEditorAuthoredTransform()
-            : nullptr;
-        if (editorTransform && editorTransform->hasPosition) {
-            const glm::vec3& center = editorTransform->localPosition;
-            config["planets"][i]["center"][0] = center.x;
-            config["planets"][i]["center"][1] = center.y;
-            config["planets"][i]["center"][2] = center.z;
-        }
-        if (editorTransform && editorTransform->hasScale) {
-            const glm::vec3& scale = editorTransform->scale;
-            config["planets"][i]["scale"][0] = scale.x;
-            config["planets"][i]["scale"][1] = scale.y;
-            config["planets"][i]["scale"][2] = scale.z;
-        }
-
-        if (shouldSaveEditorTransform) {
-            continue;
-        }
-
-        config["planets"][i].remove("shape");
-
-        config["planets"][i]["model"] = planet->GetModelPath();
-
-        const std::string& textureOverride = planet->GetTextureOverridePath();
-        if (textureOverride.empty()) {
-            config["planets"][i].remove("textureOverride");
-        } else {
-            config["planets"][i]["textureOverride"] = textureOverride;
-        }
-
-        const glm::vec2 textureTiling = planet->GetTextureTiling();
-        config["planets"][i]["textureTiling"][0] = textureTiling.x;
-        config["planets"][i]["textureTiling"][1] = textureTiling.y;
-
-        const std::string& backTextureOverride =
-            planet->GetBackTextureOverridePath();
-        if (backTextureOverride.empty()) {
-            config["planets"][i].remove("backTextureOverride");
-        } else {
-            config["planets"][i]["backTextureOverride"] =
-                backTextureOverride;
-        }
-        config["planets"][i]["textureSideBlendWidth"] =
-            planet->GetTextureSideBlendWidth();
-        config["planets"][i]["canAttractNearbyPlayer"] =
-            planet->CanAttractNearbyPlayer();
-        config["planets"][i]["reactsToOverheadGravityRay"] =
-            planet->ShouldReactToOverheadGravityRay();
-
-        config["planets"][i]["rocketSpawnCondition"] =
-            planet->GetRocketSpawnCondition();
-    }
-
-    return StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
 void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 class Game;
 class Player;
 
@@ -7,8 +9,16 @@ class InputSystem {
 public:
     explicit InputSystem(Game* game);
 
+    void CaptureFrameInput();
     void ProcessGameInput();
     bool IsMovementInputPressedForPlayer(const Player* player) const;
+    bool IsKeyPressed(int key) const;
+    bool IsMouseButtonPressed(int button) const;
+    int GetControllerAxis(int playerNum, int axis) const;
+    bool IsControllerButtonPressed(int playerNum, int button) const;
+    bool HasControllerInput(int playerNum) const;
+    double GetCursorX() const { return mSnapshot.cursorX; }
+    double GetCursorY() const { return mSnapshot.cursorY; }
 
 private:
     void SuppressOneShotInputUntilReleased();
@@ -31,7 +41,18 @@ private:
     void ProcessStartInput();
 
 private:
+    struct InputSnapshot {
+        std::array<bool, 512> keys{};
+        std::array<bool, 16> mouseButtons{};
+        std::array<std::array<int, 8>, 2> controllerAxes{};
+        std::array<std::array<bool, 32>, 2> controllerButtons{};
+        std::array<bool, 2> hasController{};
+        double cursorX = 0.0;
+        double cursorY = 0.0;
+    };
+
     Game* mGame = nullptr;
+    InputSnapshot mSnapshot;
 
     bool mReloadKeyPressedPrev = false;
     bool mUIReloadKeyPressedPrev = false;

@@ -7,16 +7,22 @@
 #include <string>
 
 struct DebugEditorContext;
+class UGCEditorMenuState;
+class UGCEditorToolState;
 
 class UGCWorkPanel {
 public:
     UGCWorkPanel(
         DebugEditorContext& context,
+        UGCEditorMenuState& menuState,
+        UGCEditorToolState& toolState,
         std::function<void()> reloadSelectedWork);
 
-    void DrawManagement(std::string& outStatusMessage);
+    void RequestManagementOpen();
+    bool IsManagementOpen() const;
+    void DrawManagement();
     void DrawBrowser();
-    void StartVerification(std::string& outStatusMessage);
+    void StartVerification();
     bool CompleteVerification(const std::string& workFileName);
     bool HasUnsavedChanges() const;
 
@@ -27,6 +33,8 @@ private:
     bool DrawNewWorkConfirmation(std::string& outStatusMessage);
 
     DebugEditorContext& mContext;
+    UGCEditorMenuState& mMenuState;
+    UGCEditorToolState& mToolState;
     UGCWorkState mState;
     UGCWorkController mController;
 };

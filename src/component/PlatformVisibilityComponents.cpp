@@ -1,4 +1,4 @@
-#include "component/PlatformBehaviorComponents.h"
+#include "component/PlatformVisibilityComponents.h"
 
 #include "Game.h"
 #include "Stage.h"
@@ -232,5 +232,4 @@ void PlatformIntervalToggleComponent::ApplyState(float opacity)
     mPlatform->SetComponentOpacity(this, opacity);
     mPlatform->SetComponentCollisionEnabled(this, mVisible);
 }
-
 

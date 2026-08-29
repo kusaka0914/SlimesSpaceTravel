@@ -91,7 +91,10 @@ bool Game::Initialize(
         std::cerr << userDataErrorMessage << '\n';
     }
 
-    CreateGameSystems();
+    if (!CreateGameSystems()) {
+        Shutdown();
+        return false;
+    }
     InitializeGameController();
 
     constexpr int stageCount = 6;
@@ -148,7 +151,7 @@ void Game::InitializeGameController()
     mGamepadRumbleService->Initialize();
 }
 
-void Game::CreateGameSystems()
+bool Game::CreateGameSystems()
 {
     mWorld = std::make_unique<GameWorld>();
     mPauseMenuController = std::make_unique<PauseMenuController>();
@@ -159,16 +162,26 @@ void Game::CreateGameSystems()
 
     mAudioSystem = std::make_unique<AudioSystem>(this);
     mUIRenderer = std::make_unique<UIRenderer>(this);
+    if (!mUIRenderer->IsInitialized()) {
+        std::cerr << "Failed to initialize the UI renderer.\n";
+        return false;
+    }
     mDebugEditorSessionController =
         std::make_unique<DebugEditorSessionController>(
             mIsDebugMode, *mWindow, *mUIRenderer);
     mRenderer3D = std::make_unique<Renderer3D>(this);
-    mSceneSystem = std::make_unique<SceneSystem>(this);
+    if (!mRenderer3D->IsInitialized()) {
+        std::cerr << "Failed to initialize the 3D renderer.\n";
+        return false;
+    }
+    mSceneSystem = std::make_unique<SceneSystem>(
+        this,
+        *mUIRenderer->GetUILoadSystem());
     mMathUtils = std::make_unique<MathUtils>();
     mCameraSystem = std::make_unique<CameraSystem>(this);
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>(this);
     mUGCPreviewController->SetMeshLoadSystem(*mMeshLoadSystem);
-    mActorLoadSystem = std::make_unique<ActorLoadSystem>(this);
+    mActorLoadSystem = std::make_unique<ActorLoadSystem>(this, *mWorld);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);
     mProgressController = std::make_unique<GameProgressController>(
         *mWorld,
@@ -204,6 +217,7 @@ void Game::CreateGameSystems()
 
     mParticleSystem = std::make_unique<ParticleSystem>();
     mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
+    return true;
 }
 
 void Game::CreateStages(int stageCount)
@@ -293,15 +307,17 @@ void Game::Shutdown()
         mAudioSystem->Shutdown();
     }
 
+    if (mFrameRenderer) {
+        mFrameRenderer->Shutdown();
+        mFrameRenderer.reset();
+    }
     if (mRenderer3D) {
         mRenderer3D->Shutdown();
+        mRenderer3D.reset();
     }
     if (mUIRenderer) {
         mUIRenderer->Shutdown();
         mUIRenderer.reset();
-    }
-    if (mFrameRenderer) {
-        mFrameRenderer->Shutdown();
     }
 
     SDL_Quit();
@@ -343,6 +359,7 @@ void Game::ProcessInput()
     SDL_GameControllerUpdate();
 
     if (mInputSystem) {
+        mInputSystem->CaptureFrameInput();
         mInputSystem->ProcessGameInput();
     }
 
@@ -781,22 +798,6 @@ const std::vector<glm::vec3>&
 Game::GetUGCPlacementModelPreviewPositions() const
 {
     return mUGCPreviewController->GetPlacementModelPositions();
-}
-
-void Game::RemoveActor(Actor* actor)
-{
-    mWorld->RemoveActor(actor);
-}
-
-void Game::RemoveAllActor()
-{
-    if (mEnemyJewelDropSystem) {
-        mEnemyJewelDropSystem->ClearRuntimeDrops();
-    }
-    mWorld->RemoveAllActors();
-    if (mPlayerConfigurationController) {
-        mPlayerConfigurationController->Reset();
-    }
 }
 
 void Game::RequestEnemyJewelDrop(

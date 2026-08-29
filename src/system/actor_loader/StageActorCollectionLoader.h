@@ -1,5 +1,7 @@
 #pragma once
 
+#include <yaml-cpp/yaml.h>
+
 class Game;
 class StageActorCreationService;
 class StageActorFactory;
@@ -13,26 +15,26 @@ public:
         StageActorCreationService& creationService,
         StagePlayerLoader& playerLoader);
 
-    void LoadAll();
+    bool LoadAll();
 
 private:
-    void LoadPlayers(const char* path);
-    void LoadNPCs(const char* path);
-    void LoadEnemies(const char* path);
-    void LoadPlanets(const char* path);
-    void LoadBoats(const char* path);
-    void LoadBoatParts(const char* path);
-    void LoadKeys(const char* path);
-    void LoadCrystals(const char* path);
-    void LoadStar(const char* path);
-    void LoadPlatforms(const char* path);
-    void LoadLegacyMovingPlatforms(const char* path);
-    void LoadBoatArrivalPoints(const char* path);
-    void LoadFallRespawnPoints(const char* path);
-    void LoadStageObjects(const char* path);
-    void LoadTutorialTriggers(const char* path);
-    void LoadJewelItems(const char* path);
-    void LoadHazardActors(const char* path);
+    void LoadPlayers(const YAML::Node& stageRoot);
+    void LoadNPCs(const YAML::Node& stageRoot);
+    void LoadEnemies(const YAML::Node& stageRoot);
+    void LoadPlanets(const YAML::Node& stageRoot);
+    void LoadBoats(const YAML::Node& stageRoot);
+    void LoadBoatParts(const YAML::Node& stageRoot);
+    void LoadKeys(const YAML::Node& stageRoot);
+    void LoadCrystals(const YAML::Node& stageRoot);
+    void LoadStar(const YAML::Node& stageRoot);
+    void LoadPlatforms(const YAML::Node& stageRoot);
+    void LoadLegacyMovingPlatforms(const YAML::Node& stageRoot);
+    void LoadBoatArrivalPoints(const YAML::Node& stageRoot);
+    void LoadFallRespawnPoints(const YAML::Node& stageRoot);
+    void LoadStageObjects(const YAML::Node& stageRoot);
+    void LoadTutorialTriggers(const YAML::Node& stageRoot);
+    void LoadJewelItems(const YAML::Node& stageRoot);
+    void LoadHazardActors(const YAML::Node& stageRoot);
 
 private:
     Game* mGame = nullptr;

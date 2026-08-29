@@ -20,16 +20,15 @@ StagePlayerLoader::StagePlayerLoader(
 {
 }
 
-void StagePlayerLoader::LoadPlayersFromFile(const char* stageYamlPath)
+void StagePlayerLoader::LoadPlayers(const YAML::Node& stageRoot)
 {
     if (!mGame) {
         return;
     }
 
-    const YAML::Node root = YAML::LoadFile(stageYamlPath);
     mGame->RemoveAllPlayer();
 
-    YAML::Node playerNodes = root["players"];
+    YAML::Node playerNodes = stageRoot["players"];
     if (!playerNodes || !playerNodes.IsSequence() || playerNodes.size() == 0) {
         playerNodes = YAML::Node(YAML::NodeType::Sequence);
         YAML::Node defaultPlayer;
