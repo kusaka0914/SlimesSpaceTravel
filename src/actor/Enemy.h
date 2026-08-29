@@ -35,7 +35,7 @@ public:
         float pushSpeed,
         float pushDampingPerSecond);
     void DefeatImmediately();
-    void ApplyConfig(const std::string& type);
+    void ApplyConfig(const EnemyConfig& config);
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
     void SetIsNormalHitKnockBackEnabled(bool isEnabled)
@@ -163,7 +163,6 @@ protected:
 
 private:
     bool CanUseReducedUpdateRate() const;
-    void ApplyEnemyConfig(const EnemyConfig& config);
 
 private:
     EnemyStatus mStatus;

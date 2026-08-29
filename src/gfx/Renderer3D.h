@@ -103,6 +103,19 @@ public:
     }
 
     void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
+    glm::mat4 CreateBillboard(
+        const glm::mat4& viewMat,
+        const Actor* actor,
+        float upMargin,
+        float rightMargin,
+        float width,
+        float height) const;
+    glm::mat4 CreateBillboard(
+        const glm::mat4& viewMat,
+        const glm::vec3& centerPosition,
+        const glm::vec3& upDirection,
+        float width,
+        float height) const;
 
 private:
     void InitializeAttackRangeBuffer();

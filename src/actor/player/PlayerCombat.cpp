@@ -21,6 +21,11 @@ constexpr float attackDodgeCancelDelaySeconds = 0.5f;
 constexpr float airWeakAttackDamageMultiplier = 2.0f;
 }
 
+PlayerCombat::PlayerCombat(PhysicsSystem& physicsSystem)
+    : mHitDetector(physicsSystem)
+{
+}
+
 bool PlayerCombat::IsAttacking() const
 {
     return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f ||

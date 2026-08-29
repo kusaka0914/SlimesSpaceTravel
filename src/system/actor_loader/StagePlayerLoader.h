@@ -1,5 +1,7 @@
 #pragma once
 
+#include "actor/player/PlayerConfig.h"
+
 #include <yaml-cpp/yaml.h>
 
 class ActorPlacementLoader;
@@ -12,6 +14,7 @@ public:
         Game* game,
         const ActorPlacementLoader& placementLoader);
 
+    void SetPlayerConfig(PlayerConfig config);
     void LoadPlayers(const YAML::Node& stageRoot);
     Player* CreatePlayerFromStageNode(
         const YAML::Node& node,
@@ -21,4 +24,5 @@ public:
 private:
     Game* mGame = nullptr;
     const ActorPlacementLoader& mPlacementLoader;
+    PlayerConfig mPlayerConfig;
 };

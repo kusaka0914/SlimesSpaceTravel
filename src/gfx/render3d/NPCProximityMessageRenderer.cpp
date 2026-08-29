@@ -10,7 +10,6 @@
 #include "gfx/UIRenderer.h"
 #include "gfx/VertexArray.h"
 #include "system/UILoadSystem.h"
-#include "utils/MathUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -149,7 +148,7 @@ void NPCProximityMessageRenderer::DrawMessage(
     glBindTexture(GL_TEXTURE_2D, backgroundTexture);
     glUniform1i(shader->GetLocDiffuseTexture(), 0);
     const glm::mat4 backgroundBillboard =
-        renderer.GetGame()->GetMathUtils()->CreateBillBoard(
+        renderer.CreateBillboard(
             viewMat,
             center,
             npc->GetUpVec(),
@@ -164,7 +163,7 @@ void NPCProximityMessageRenderer::DrawMessage(
 
     glBindTexture(GL_TEXTURE_2D, textTexture);
     const glm::mat4 textBillboard =
-        renderer.GetGame()->GetMathUtils()->CreateBillBoard(
+        renderer.CreateBillboard(
             viewMat,
             center + npc->GetUpVec() * (0.04f * scale),
             npc->GetUpVec(),

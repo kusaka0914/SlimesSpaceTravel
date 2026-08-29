@@ -481,7 +481,6 @@ void Renderer3D::DrawScene(
                     glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
             }
 
-
             SetUniforms(viewMat, projMat, cameraPos);
         }
     }
@@ -817,11 +816,7 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     }
 
     constexpr float maximumShadowDistance = 12.0f;
-
-
     constexpr float distanceFade = 1.0f;
-
-
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale =
         1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
@@ -1076,6 +1071,35 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glBindVertexArray(0);
 
     EndTransparentDraw();
+}
+
+glm::mat4 Renderer3D::CreateBillboard(
+    const glm::mat4& viewMat,
+    const Actor* actor,
+    float upMargin,
+    float rightMargin,
+    float width,
+    float height) const
+{
+    if (!mGame || !mGame->GetMathUtils()) {
+        return glm::mat4(1.0f);
+    }
+    return mGame->GetMathUtils()->CreateBillBoard(
+        viewMat, actor, upMargin, rightMargin, width, height);
+}
+
+glm::mat4 Renderer3D::CreateBillboard(
+    const glm::mat4& viewMat,
+    const glm::vec3& centerPosition,
+    const glm::vec3& upDirection,
+    float width,
+    float height) const
+{
+    if (!mGame || !mGame->GetMathUtils()) {
+        return glm::mat4(1.0f);
+    }
+    return mGame->GetMathUtils()->CreateBillBoard(
+        viewMat, centerPosition, upDirection, width, height);
 }
 
 glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const

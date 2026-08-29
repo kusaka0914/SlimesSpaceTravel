@@ -6,7 +6,6 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/player/PlayerConfig.h"
-#include "actor/player/PlayerConfigLoader.h"
 #include "actor/player/PlayerDamageHandler.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
@@ -29,7 +28,9 @@ Player::Player(Game* game)
       mInput(*game->GetInputSystem()),
       mMovement(
           *game->GetPhysicsSystem(),
-          *game->GetMathUtils())
+          *game->GetMathUtils()),
+      mGrounding(*game->GetPhysicsSystem()),
+      mCombat(*game->GetPhysicsSystem())
 {
 }
 
@@ -46,14 +47,7 @@ void Player::SetCurrentPlanet(Planet* currentPlanet)
     }
 }
 
-void Player::ApplyConfig()
-{
-    const PlayerConfig config = PlayerConfigLoader::Load("../assets/data/actor/players.yaml");
-
-    ApplyPlayerConfig(config);
-}
-
-void Player::ApplyPlayerConfig(const PlayerConfig& config)
+void Player::ApplyConfig(const PlayerConfig& config)
 {
     mStatus.ConfigureHp(config.hp);
     SetScale(glm::vec3(config.scale));

@@ -1,7 +1,6 @@
 #include "gfx/render3d/PlayerEffectRenderer.h"
 
 #include "gfx/Renderer3D.h"
-#include "Game.h"
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
@@ -12,7 +11,6 @@
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
 #include "system/physics/EllipsoidCollisionShapeGeometry.h"
-#include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -61,12 +59,8 @@ float CalculateEnemyGuardHeight(const Enemy& enemy)
         const float modelTop =
             glm::dot(modelBounds.center - enemy.GetPos(), up) +
             EnemyCollisionGeometry::CalculateSupportDistance(modelBounds, up);
-
-
         return modelTop + 0.25f;
     }
-
-
     return enemy.GetRadius() * 0.8f;
 }
 }
@@ -76,22 +70,23 @@ PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
 {
 }
 
-void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
+void PlayerEffectRenderer::DrawPlayers(
+    const glm::mat4& viewMat,
+    const std::vector<Player*>& players,
+    bool isDebugEditorShowing,
+    const PhysicsSystem* physicsSystem) const
 {
-    if (!mRenderer || !mRenderer->GetGame()) {
+    if (!mRenderer) {
         return;
     }
 
-    const std::vector<Player*>& players = mRenderer->GetGame()->GetPlayers();
     if (players.empty() || !players[0]) {
         return;
     }
 
     mRenderer->TryDrawActor(players[0]);
-    DrawPlayerCollisionShape(players[0]);
-
-
-
+    DrawPlayerCollisionShape(
+        players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
     const bool hasPlayer2 = players.size() >= 2 && players[1];
@@ -100,27 +95,18 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     }
 
     mRenderer->TryDrawActor(players[1]);
-    DrawPlayerCollisionShape(players[1]);
-
-
-
+    DrawPlayerCollisionShape(
+        players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
 }
 
 void PlayerEffectRenderer::DrawPlayerCollisionShape(
-    const Player* player) const
+    const Player* player,
+    bool isDebugEditorShowing,
+    const PhysicsSystem* physicsSystem) const
 {
-    if (!mRenderer || !player || !player->GetIsActive()) {
-        return;
-    }
-
-    Game* game = mRenderer->GetGame();
-    if (!game || !game->GetIsDebugEditorShowing()) {
-        return;
-    }
-
-    const PhysicsSystem* physicsSystem = game->GetPhysicsSystem();
-    if (!physicsSystem) {
+    if (!mRenderer || !player || !player->GetIsActive() ||
+        !isDebugEditorShowing || !physicsSystem) {
         return;
     }
 
@@ -249,10 +235,7 @@ void PlayerEffectRenderer::DrawEnemyEffects(
         return;
     }
 
-    Game* game = mRenderer->GetGame();
-    const Player* controlledPlayer = viewportPlayer
-        ? viewportPlayer
-        : (game ? game->GetControlledPlayer() : nullptr);
+    const Player* controlledPlayer = viewportPlayer;
     const Planet* playerPlanet =
         controlledPlayer
             ? controlledPlayer->GetCurrentPlanet()
@@ -283,7 +266,7 @@ void PlayerEffectRenderer::DrawEnemyEffects(
 
 void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D()) {
+    if (!mRenderer || !mRenderer->GetShader3D()) {
         return;
     }
 
@@ -353,7 +336,8 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
         const glm::vec3 orbitOffset = forward * std::cos(angle) * orbitRadius + left * std::sin(angle) * orbitRadius;
         const float scale = starSize * (1.0f + 0.15f * std::sin(time * 8.0f + static_cast<float>(i)));
 
-        glm::mat4 billboard = mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, center + orbitOffset, up, scale, scale);
+        const glm::mat4 billboard = mRenderer->CreateBillboard(
+            viewMat, center + orbitOffset, up, scale, scale);
 
         glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -642,7 +626,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
 
 void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy ||
+    if (!mRenderer || !mRenderer->GetShader3D() || !enemy ||
         !enemy->IsAlive()) {
         return;
     }
@@ -674,7 +658,8 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
     for (int i = 0; i < breakCount; i++) {
         const float rightMargin = (i - (breakCount - 1) * 0.5f) * 0.4f;
         glm::mat4 billboard =
-            mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
+            mRenderer->CreateBillboard(
+                viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
         glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -685,7 +670,7 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
 
 void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy) {
+    if (!mRenderer || !mRenderer->GetShader3D() || !enemy) {
         return;
     }
 
@@ -706,7 +691,8 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
     const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
     constexpr float hpHeight = 0.1f;
 
-    glm::mat4 billboard = mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
+    const glm::mat4 billboard = mRenderer->CreateBillboard(
+        viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
     glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
 
     std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};

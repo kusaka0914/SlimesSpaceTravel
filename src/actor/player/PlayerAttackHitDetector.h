@@ -7,9 +7,12 @@
 class Enemy;
 class Player;
 class PlayerCombat;
+class PhysicsSystem;
 
 class PlayerAttackHitDetector {
 public:
+    explicit PlayerAttackHitDetector(PhysicsSystem& physicsSystem);
+
     std::vector<Enemy*> FindHitEnemies(Player& player, const PlayerCombat& combat) const;
     std::vector<Enemy*> FindEnemiesInRadius(
         Player& player,
@@ -42,4 +45,6 @@ private:
         float horizontalHitboxScale,
         float verticalHitboxScale) const;
     bool IsEnemyHitByAttack(float dist, float dot, float effectiveRange, float attackAngle) const;
+
+    PhysicsSystem& mPhysicsSystem;
 };

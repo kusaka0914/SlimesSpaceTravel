@@ -17,7 +17,6 @@
 #include "actor/StageObject.h"
 #include "actor/TutorialTrigger.h"
 #include "gfx/Shader3D.h"
-#include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
@@ -35,8 +34,6 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
     if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetGame()->GetCurrentStage()) {
         return;
     }
-
-
 
     if (mRenderer->GetGame()->GetIsUGCMode()) {
         return;
@@ -138,7 +135,8 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
     const float width = baseHeight * aspect;
 
     const glm::mat4 billboard =
-        mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, actor, labelHeight, 0.0f, width, height);
+        mRenderer->CreateBillboard(
+            viewMat, actor, labelHeight, 0.0f, width, height);
 
     glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

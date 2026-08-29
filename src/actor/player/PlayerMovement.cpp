@@ -700,8 +700,11 @@ glm::vec3 PlayerMovement::CalculateInputMovementDelta(
         deltaTime;
 }
 
-void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding,
-                                         float deltaTime)
+void PlayerMovement::ApplyDodgeMovement(
+    Player& player,
+    const PlayerCombat& combat,
+    PlayerGrounding& grounding,
+    float deltaTime)
 {
     if (player.IsAttachedToPlatform()) {
         return;
@@ -737,8 +740,8 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
                     *currentPlanet,
                     dodgeSpeed,
                     deltaTime);
-}
-}
+        }
+    }
 
     const ActorCollisionFilter actorCollisionFilter =
         combat.IsAirDodgeAttackActive()

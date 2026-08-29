@@ -41,6 +41,8 @@ void RegisterStageProgressSystemTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerConfigLoaderTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterEnemyConfigLoaderTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerControlConfigurationStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterFramePerformanceTrackerTests(
@@ -71,6 +73,7 @@ int main()
     RegisterUGCEditorTutorialTests(tests);
     RegisterStageProgressSystemTests(tests);
     RegisterPlayerConfigLoaderTests(tests);
+    RegisterEnemyConfigLoaderTests(tests);
     RegisterPlayerControlConfigurationStateTests(tests);
     RegisterFramePerformanceTrackerTests(tests);
     RegisterUGCModeControllerTests(tests);

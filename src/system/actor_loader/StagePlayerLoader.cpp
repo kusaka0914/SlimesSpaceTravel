@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 StagePlayerLoader::StagePlayerLoader(
@@ -18,6 +19,11 @@ StagePlayerLoader::StagePlayerLoader(
     : mGame(game),
       mPlacementLoader(placementLoader)
 {
+}
+
+void StagePlayerLoader::SetPlayerConfig(PlayerConfig config)
+{
+    mPlayerConfig = std::move(config);
 }
 
 void StagePlayerLoader::LoadPlayers(const YAML::Node& stageRoot)
@@ -123,7 +129,7 @@ Player* StagePlayerLoader::CreatePlayerFromStageNode(
         -playerFacingDirection,
         player->GetUpVec());
 
-    player->ApplyConfig();
+    player->ApplyConfig(mPlayerConfig);
     if (node["modelPath"]) {
         player->SetModelPath(node["modelPath"].as<std::string>());
     }

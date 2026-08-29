@@ -2,6 +2,8 @@
 
 #include "actor/player/PlayerConfigLoader.h"
 
+#include <yaml-cpp/yaml.h>
+
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -100,6 +102,23 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         "air dodge enemy push damping");
 }
 
+void ParsedPlayerYamlProducesConfigWithoutFileAccess()
+{
+    const YAML::Node playerRoot = YAML::Load(
+        "players:\n"
+        "  - hp: 135\n"
+        "    moveSpeed: 7.25\n");
+
+    const PlayerConfig config = PlayerConfigLoader::Parse(playerRoot);
+
+    ExpectNear(135.0f, config.hp, 0.0001f, "parsed player hp");
+    ExpectNear(
+        7.25f,
+        config.moveSpeed,
+        0.0001f,
+        "parsed player move speed");
+}
+
 }
 
 void RegisterPlayerConfigLoaderTests(
@@ -108,4 +127,7 @@ void RegisterPlayerConfigLoaderTests(
     tests.emplace_back(
         "PlayerConfigLoader.AirDodgeAttackParametersLoadIndependentlyFromWeakAttack",
         AirDodgeAttackParametersLoadIndependentlyFromWeakAttack);
+    tests.emplace_back(
+        "PlayerConfigLoader.ParsedPlayerYamlProducesConfigWithoutFileAccess",
+        ParsedPlayerYamlProducesConfigWithoutFileAccess);
 }

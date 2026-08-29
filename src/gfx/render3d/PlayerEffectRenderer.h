@@ -6,20 +6,28 @@
 class Enemy;
 class Planet;
 class Player;
+class PhysicsSystem;
 class Renderer3D;
 
 class PlayerEffectRenderer {
 public:
     explicit PlayerEffectRenderer(const Renderer3D* renderer);
 
-    void DrawPlayers(const glm::mat4& viewMat) const;
+    void DrawPlayers(
+        const glm::mat4& viewMat,
+        const std::vector<Player*>& players,
+        bool isDebugEditorShowing,
+        const PhysicsSystem* physicsSystem) const;
     void DrawEnemyEffects(
         Enemy* enemy,
         const glm::mat4& viewMat,
         const Player* viewportPlayer) const;
 
 private:
-    void DrawPlayerCollisionShape(const Player* player) const;
+    void DrawPlayerCollisionShape(
+        const Player* player,
+        bool isDebugEditorShowing,
+        const PhysicsSystem* physicsSystem) const;
     void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
     void DrawPlayerAttackRange(Player* player) const;
     void DrawEnemyAttackRange(Enemy* enemy) const;

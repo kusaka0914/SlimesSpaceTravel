@@ -5,6 +5,8 @@
 #include "actor/BoatParts.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
+#include "actor/enemy/EnemyConfigLoader.h"
+#include "actor/player/PlayerConfigLoader.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/HazardActor.h"
 #include "actor/JewelItem.h"
@@ -50,6 +52,8 @@ bool StageActorCreationService::ReloadActorDefaultConfigs()
             "../assets/data/actor/boatparts.yaml");
         YAML::Node crystalConfig = YAML::LoadFile(
             "../assets/data/actor/crystals.yaml");
+        YAML::Node enemyConfig = YAML::LoadFile(
+            "../assets/data/actor/enemies.yaml");
         YAML::Node fallRespawnPointConfig = YAML::LoadFile(
             "../assets/data/actor/fallrespawnpoints.yaml");
         YAML::Node keyConfig = YAML::LoadFile(
@@ -58,14 +62,18 @@ bool StageActorCreationService::ReloadActorDefaultConfigs()
             "../assets/data/actor/npcs.yaml");
         YAML::Node starConfig = YAML::LoadFile(
             "../assets/data/actor/stars.yaml");
+        PlayerConfig playerConfig = PlayerConfigLoader::Load(
+            "../assets/data/actor/players.yaml");
 
         mBoatArrivalPointConfig = std::move(boatArrivalPointConfig);
         mBoatPartsConfig = std::move(boatPartsConfig);
         mCrystalConfig = std::move(crystalConfig);
+        mEnemyConfig = std::move(enemyConfig);
         mFallRespawnPointConfig = std::move(fallRespawnPointConfig);
         mKeyConfig = std::move(keyConfig);
         mNpcConfig = std::move(npcConfig);
         mStarConfig = std::move(starConfig);
+        mPlayerLoader.SetPlayerConfig(std::move(playerConfig));
         return true;
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load actor default YAML: "
@@ -119,9 +127,11 @@ Enemy* StageActorCreationService::CreateEnemy(const YAML::Node& node, int stageY
     return mActorFactory.CreatePlacedActorFromStageNode<Enemy>(
         node, stageYamlIndex, 1.0f, glm::vec3(0.25f), "enemy.obj",
         [](Planet* planet, Enemy* enemy) { planet->AddEnemy(enemy); },
-        [](Enemy* enemy, const YAML::Node& node) {
-            const std::string type = node["type"] ? node["type"].as<std::string>() : "normal";
-            enemy->ApplyConfig(type);
+        [this](Enemy* enemy, const YAML::Node& node) {
+            const std::string type =
+                node["type"] ? node["type"].as<std::string>() : "normal";
+            enemy->ApplyConfig(
+                EnemyConfigLoader::Parse(mEnemyConfig, type));
         },
         [](Enemy* enemy, const YAML::Node&) { enemy->SetBaseScale(enemy->GetScale()); });
 }

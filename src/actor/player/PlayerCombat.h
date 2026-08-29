@@ -12,9 +12,12 @@ class PlayerInput;
 class PlayerJewelGauge;
 class PlayerMovement;
 class PlayerStatus;
+class PhysicsSystem;
 
 class PlayerCombat {
 public:
+    explicit PlayerCombat(PhysicsSystem& physicsSystem);
+
     bool IsAttacking() const;
     std::uint64_t GetResolvedAttackSequence() const
     {

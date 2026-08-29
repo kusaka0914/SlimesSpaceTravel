@@ -6,7 +6,6 @@
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCombat.h"
 #include "actor/enemy/EnemyConfig.h"
-#include "actor/enemy/EnemyConfigLoader.h"
 #include "actor/enemy/EnemyDamageHandler.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
@@ -125,9 +124,6 @@ bool Enemy::CanUseReducedUpdateRate() const
 
 bool Enemy::ShouldUpdateUpVecEveryFrame() const
 {
-
-
-
     if (GetIsBoss() && GetLifeState() == LifeState::Dying) {
         return false;
     }
@@ -150,19 +146,10 @@ bool Enemy::ShouldAcceptLandingSurface(
 {
     (void)surfaceNormal;
 
-
-
-
     return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
 }
 
-void Enemy::ApplyConfig(const std::string& type)
-{
-    const EnemyConfig config = EnemyConfigLoader::Load("../assets/data/actor/enemies.yaml", type);
-    ApplyEnemyConfig(config);
-}
-
-void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
+void Enemy::ApplyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
     SetIsNormalHitKnockBackEnabled(

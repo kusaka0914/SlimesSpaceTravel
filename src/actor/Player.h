@@ -40,7 +40,7 @@ public:
     static constexpr float SplitBodyScaleMultiplier = 0.8f;
     static constexpr float SplitAttackMultiplier = 0.6f;
 
-    void ApplyConfig();
+    void ApplyConfig(const PlayerConfig& config);
 
     void Initialize() override;
     void ProcessActor() override;
@@ -512,7 +512,6 @@ public:
     void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 
 private:
-    void ApplyPlayerConfig(const PlayerConfig& config);
     void RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState);
 
     bool ShouldAcceptLandingSurface(

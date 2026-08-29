@@ -57,7 +57,11 @@ void SceneObjectRenderer::DrawSceneObjects(
         sequenceSystem &&
         sequenceSystem->IsCinematicChainPlaying();
     if (mPlayerEffectRenderer && !isStageStartCinematicPlaying) {
-        mPlayerEffectRenderer->DrawPlayers(viewMat);
+        mPlayerEffectRenderer->DrawPlayers(
+            viewMat,
+            mRenderer->GetGame()->GetPlayers(),
+            mRenderer->GetGame()->GetIsDebugEditorShowing(),
+            mRenderer->GetGame()->GetPhysicsSystem());
     }
 
     if (mNPCProximityMessageRenderer) {
@@ -124,16 +128,17 @@ void SceneObjectRenderer::DrawActorOnPlanets(
         return;
     }
 
-
-
-
+    const Player* effectReferencePlayer = viewportPlayer
+        ? viewportPlayer
+        : mRenderer->GetGame()->GetControlledPlayer();
     for (Planet* planet : planets) {
         if (!planet) {
             continue;
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
-            mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat, viewportPlayer);
+            mPlayerEffectRenderer->DrawEnemyEffects(
+                enemy, viewMat, effectReferencePlayer);
         }
     }
 }

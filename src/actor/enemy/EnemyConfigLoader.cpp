@@ -183,8 +183,6 @@ bool ApplyPresetAttacks(
     };
     AppendBehaviorActions(behavior, attacksNode);
 
-
-
     if (behavior.actions.size() == 2) {
         behavior.actions.push_back(
             EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
@@ -195,12 +193,12 @@ bool ApplyPresetAttacks(
 }
 }
 
-EnemyConfig EnemyConfigLoader::Load(const std::string& path, const std::string& type)
+EnemyConfig EnemyConfigLoader::Parse(
+    const YAML::Node& enemyRoot,
+    const std::string& type)
 {
     EnemyConfig config;
     config.isBoss = type == "boss";
-
-    YAML::Node enemyRoot = YAML::LoadFile(path);
 
     if (!enemyRoot["enemies"] || !enemyRoot["enemies"].IsSequence()) {
         return config;

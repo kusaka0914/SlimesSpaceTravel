@@ -73,6 +73,7 @@ private:
     YAML::Node mBoatArrivalPointConfig;
     YAML::Node mBoatPartsConfig;
     YAML::Node mCrystalConfig;
+    YAML::Node mEnemyConfig;
     YAML::Node mFallRespawnPointConfig;
     YAML::Node mKeyConfig;
     YAML::Node mNpcConfig;
