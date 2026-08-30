@@ -96,6 +96,7 @@ public:
     int GetTitleMenuSelection() const { return mTitleMenuSelection; }
     bool GetIsUGCWorkBrowserShowing() const;
     void StartUGCPlaytest();
+    void StartUGCSavedWorkPlaytest();
     void UndoUGCEdit();
     void RedoUGCEdit();
     void ToggleUGCEraser();
@@ -107,6 +108,10 @@ public:
     void StartUGCClearVerification(const std::string& workFileName);
     void ReturnToUGCEditor();
     void ExitUGCMode();
+    void MoveUGCClearResultSelection(int delta);
+    void ExecuteUGCClearResultSelection();
+    bool GetIsUGCClearResultShowing() const;
+    int GetUGCClearResultSelection() const;
     bool RestoreDebugEditorStage(int stageNum, const std::string& yamlPath);
     void TogglePauseMenu();
     void ClosePauseMenu() override;
@@ -134,6 +139,7 @@ public:
     void OnBoatArrived(Boat* boat);
     void OnPlayerCurrentPlanetChanged(Player& player);
     void OnStarObtained();
+    void OnStarCollectionAnimationFinished();
     void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();
     void RequestEnemyJewelDrop(const Enemy& defeatedEnemy);
@@ -157,6 +163,7 @@ public:
     void FinishGame();
     void RestartGame();
     void StartPlayingScene() override;
+    void StartUGCStageClearPresentation() override;
     void StartFocusingScene();
     void FinishFocusingScene();
 

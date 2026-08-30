@@ -88,12 +88,23 @@ void UGCModeController::CloseWorkBrowser()
 
 void UGCModeController::StartPlaytest()
 {
-    if (!mSessionState.StartPlaytest()) {
+    StartPlaytest(UGCPlaytestPurpose::EditorPreview);
+}
+
+void UGCModeController::StartSavedWorkPlaytest()
+{
+    StartPlaytest(UGCPlaytestPurpose::SavedWork);
+}
+
+void UGCModeController::StartPlaytest(UGCPlaytestPurpose purpose)
+{
+    if (!mSessionState.StartPlaytest(purpose)) {
         return;
     }
     mRuntime.SetDebugEditorShowing(false);
     mRuntime.SetFreeCameraMode(false);
     mRuntime.ReloadCurrentStage();
+    mRuntime.StartPlayingScene();
 }
 
 void UGCModeController::StartClearVerification(
@@ -102,7 +113,7 @@ void UGCModeController::StartClearVerification(
     if (!mSessionState.StartVerification(workFileName)) {
         return;
     }
-    StartPlaytest();
+    StartPlaytest(UGCPlaytestPurpose::ClearVerification);
 }
 
 void UGCModeController::ReturnToEditor()
@@ -111,6 +122,7 @@ void UGCModeController::ReturnToEditor()
         return;
     }
     mRuntime.ReloadCurrentStage();
+    mRuntime.StartPlayingScene();
     mRuntime.SetDebugEditorShowing(true);
     mRuntime.SetFreeCameraMode(true);
     if (mIsEditorTutorialActive) {
@@ -129,11 +141,19 @@ bool UGCModeController::HandleGoalObtained()
     if (!mSessionState.IsModeActive()) {
         return false;
     }
-    if (!mClearTransitionState.IsTransitionInProgress()) {
-        // Actor走査中の再読込を避けるため、保存と遷移は次フレームで行う。
-        mSessionState.MarkClearCompletionPending();
-    }
+    mRuntime.StartUGCStageClearPresentation();
     return true;
+}
+
+void UGCModeController::HandleGoalCollectionFinished()
+{
+    if (!mSessionState.IsModeActive() ||
+        mClearTransitionState.IsTransitionInProgress()) {
+        return;
+    }
+
+    // Star更新中にステージを再読込しないよう、実際の遷移は次フレームで行う。
+    mSessionState.MarkClearCompletionPending();
 }
 
 void UGCModeController::ProcessPendingClearCompletion()
@@ -142,7 +162,20 @@ void UGCModeController::ProcessPendingClearCompletion()
         const std::optional<std::string> completedWorkFileName =
             mSessionState.ConsumeClearCompletion();
         if (completedWorkFileName) {
-            mClearTransitionState.QueueCompletion(*completedWorkFileName);
+            UGCClearDestination destination = UGCClearDestination::Editor;
+            switch (mSessionState.GetPlaytestPurpose()) {
+            case UGCPlaytestPurpose::ClearVerification:
+                destination = UGCClearDestination::WorkBrowser;
+                break;
+            case UGCPlaytestPurpose::SavedWork:
+                destination = UGCClearDestination::ResultMenu;
+                break;
+            case UGCPlaytestPurpose::EditorPreview:
+                break;
+            }
+            mClearTransitionState.QueueCompletion(
+                *completedWorkFileName,
+                destination);
         }
     }
     if (!mClearTransitionState.HasPendingCompletion()) {
@@ -151,25 +184,55 @@ void UGCModeController::ProcessPendingClearCompletion()
 
     const std::string completedWorkFileName =
         mClearTransitionState.GetCompletedWorkFileName();
-    if (completedWorkFileName.empty()) {
-        if (mRuntime.RequestSceneFadeAction(
-                [this]() {
-                    ReturnToEditor();
-                    mClearTransitionState.CompleteTransition();
-                })) {
-            mClearTransitionState.BeginTransition();
-        }
+    const UGCClearDestination destination =
+        mClearTransitionState.GetDestination();
+    const auto completeClearTransition =
+        [this, completedWorkFileName, destination]() {
+            switch (destination) {
+            case UGCClearDestination::Editor:
+                ReturnToEditor();
+                break;
+            case UGCClearDestination::WorkBrowser:
+                mRuntime.CompleteUGCVerification(completedWorkFileName);
+                CompleteModeExit(true);
+                break;
+            case UGCClearDestination::ResultMenu:
+                mSessionState.ShowClearResult();
+                break;
+            }
+            mClearTransitionState.CompleteTransition();
+        };
+    if (mRuntime.RequestSceneFadeAction(
+            completeClearTransition)) {
+        mClearTransitionState.BeginTransition();
+    }
+}
+
+void UGCModeController::MoveClearResultSelection(int delta)
+{
+    constexpr int clearResultItemCount = 3;
+    mSessionState.MoveClearResultSelection(delta, clearResultItemCount);
+}
+
+void UGCModeController::ExecuteClearResultSelection()
+{
+    if (!mSessionState.IsClearResultShowing()) {
         return;
     }
 
-    const auto completeVerificationAndReturnToBrowser =
-        [this, completedWorkFileName]() {
-            mRuntime.CompleteUGCVerification(completedWorkFileName);
-            CompleteModeExit(true);
-        };
-    if (mRuntime.RequestSceneFadeAction(
-            completeVerificationAndReturnToBrowser)) {
-        mClearTransitionState.BeginTransition();
+    switch (mSessionState.GetClearResultSelection()) {
+    case 0:
+        mRuntime.RequestSceneFadeAction(
+            [this]() { StartSavedWorkPlaytest(); });
+        break;
+    case 1:
+        mRuntime.RequestSceneFadeAction([this]() { ReturnToEditor(); });
+        break;
+    case 2:
+        ExitMode();
+        break;
+    default:
+        break;
     }
 }
 
@@ -191,6 +254,16 @@ bool UGCModeController::IsPlaytestActive() const
 bool UGCModeController::IsVerificationActive() const
 {
     return mSessionState.IsVerificationActive();
+}
+
+bool UGCModeController::IsClearResultShowing() const
+{
+    return mSessionState.IsClearResultShowing();
+}
+
+int UGCModeController::GetClearResultSelection() const
+{
+    return mSessionState.GetClearResultSelection();
 }
 
 bool UGCModeController::IsDebugPanelShowing() const

@@ -11,11 +11,18 @@ bool UGCClearTransitionState::HasPendingCompletion() const
 }
 
 void UGCClearTransitionState::QueueCompletion(
-    const std::string& workFileName)
+    const std::string& workFileName,
+    UGCClearDestination destination)
 {
     if (!mIsTransitionInProgress && !mPendingWorkFileName) {
         mPendingWorkFileName = workFileName;
+        mDestination = destination;
     }
+}
+
+UGCClearDestination UGCClearTransitionState::GetDestination() const
+{
+    return mDestination;
 }
 
 const std::string& UGCClearTransitionState::GetCompletedWorkFileName() const

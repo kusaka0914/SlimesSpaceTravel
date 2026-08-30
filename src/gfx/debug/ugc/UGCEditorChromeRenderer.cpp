@@ -82,6 +82,83 @@ UGCEditorChromeRenderer::UGCEditorChromeRenderer(
 {
 }
 
+void UGCEditorChromeRenderer::DrawSaveShortcut(
+    const ImGuiViewport& viewport)
+{
+    if (mEditorTutorial.IsActive()) {
+        return;
+    }
+
+    constexpr float referenceWidth = 2560.0f;
+    constexpr float referenceHeight = 1440.0f;
+    const float uiScale = std::max(
+        1.0f,
+        std::min(
+            viewport.WorkSize.x / referenceWidth,
+            viewport.WorkSize.y / referenceHeight));
+    const float buttonWidth = 154.0f * uiScale;
+    const float buttonHeight = 46.0f * uiScale;
+    const float buttonGap = 12.0f * uiScale;
+    const float tutorialButtonRightMargin = 230.0f * uiScale;
+    const ImVec2 saveButtonPosition(
+        viewport.WorkPos.x + viewport.WorkSize.x -
+            tutorialButtonRightMargin - buttonGap - buttonWidth,
+        viewport.WorkPos.y + 16.0f * uiScale);
+    ImGui::SetNextWindowPos(saveButtonPosition, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(
+        ImVec2(buttonWidth, 76.0f * uiScale),
+        ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        ImVec4(0.08f, 0.36f, 0.65f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(0.10f, 0.49f, 0.86f, 1.0f));
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(0.06f, 0.29f, 0.54f, 1.0f));
+    constexpr ImGuiWindowFlags saveWindowFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoBackground;
+    ImGui::Begin("###UGCSaveShortcut", nullptr, saveWindowFlags);
+    ImGui::SetWindowFontScale(uiScale);
+    if (ImGui::Button("保存", ImVec2(buttonWidth, buttonHeight))) {
+        mWasLastSaveSuccessful = mWorkPanel.SaveCurrentWork();
+        mSaveFeedbackMessage = mWasLastSaveSuccessful
+            ? "保存しました"
+            : "保存できませんでした";
+        mSaveFeedbackRemainingSeconds = 2.5f;
+    }
+
+    if (mSaveFeedbackRemainingSeconds > 0.0f) {
+        mSaveFeedbackRemainingSeconds = std::max(
+            0.0f,
+            mSaveFeedbackRemainingSeconds - ImGui::GetIO().DeltaTime);
+        const ImVec2 messageSize =
+            ImGui::CalcTextSize(mSaveFeedbackMessage.c_str());
+        ImGui::SetCursorPosX(std::max(
+            0.0f,
+            (buttonWidth - messageSize.x) * 0.5f));
+        const ImVec4 messageColor = mWasLastSaveSuccessful
+            ? ImVec4(0.48f, 1.0f, 0.62f, 1.0f)
+            : ImVec4(1.0f, 0.42f, 0.42f, 1.0f);
+        ImGui::TextColored(
+            messageColor,
+            "%s",
+            mSaveFeedbackMessage.c_str());
+    }
+    ImGui::End();
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(3);
+}
+
 bool UGCEditorChromeRenderer::DrawControls()
 {
     const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
@@ -633,5 +710,6 @@ bool UGCEditorChromeRenderer::DrawControls()
     ImGui::PopStyleVar(5);
     ImGui::End();
     ImGui::PopStyleVar();
+    DrawSaveShortcut(*mainViewport);
     return false;
 }

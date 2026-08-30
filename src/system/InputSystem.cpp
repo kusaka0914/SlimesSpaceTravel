@@ -276,6 +276,10 @@ void InputSystem::ProcessGameInput()
 
     UpdateLastUsedInputDevice();
 
+    if (mGame->GetIsUGCClearResultShowing()) {
+        ProcessUGCClearResultInput();
+        return;
+    }
 
     ProcessDebugEditorToggleInput();
     ProcessUGCEditorCursorInput();
@@ -329,6 +333,8 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mTitleMenuConfirmPressedPrev = true;
     mUGCModePressedPrev = true;
     mUGCWorkBrowserPressedPrev = true;
+    mUGCClearResultDirectionPressedPrev = true;
+    mUGCClearResultConfirmPressedPrev = true;
     mStartPressedPrev = true;
     mPauseMenuKeyPressedPrev = true;
     mPauseMenuUpPressedPrev = true;
@@ -389,6 +395,36 @@ void InputSystem::ProcessUGCModeInput()
     mUGCWorkBrowserPressedPrev = browserPressed;
 }
 
+void InputSystem::ProcessUGCClearResultInput()
+{
+    constexpr Sint16 directionThreshold = 16000;
+    const bool upPressed =
+        IsKeyPressed(GLFW_KEY_UP) ||
+        IsKeyPressed(GLFW_KEY_W) ||
+        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) <
+            -directionThreshold;
+    const bool downPressed =
+        IsKeyPressed(GLFW_KEY_DOWN) ||
+        IsKeyPressed(GLFW_KEY_S) ||
+        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) >
+            directionThreshold;
+    const bool directionPressed = upPressed || downPressed;
+    if (directionPressed && !mUGCClearResultDirectionPressedPrev) {
+        mGame->MoveUGCClearResultSelection(upPressed ? -1 : 1);
+    }
+    mUGCClearResultDirectionPressedPrev = directionPressed;
+
+    const bool confirmPressed =
+        IsKeyPressed(GLFW_KEY_SPACE) ||
+        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
+    if (confirmPressed && !mUGCClearResultConfirmPressedPrev) {
+        mGame->ExecuteUGCClearResultSelection();
+    }
+    mUGCClearResultConfirmPressedPrev = confirmPressed;
+}
+
 void InputSystem::ProcessTitleMenuInput()
 {
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
@@ -439,12 +475,19 @@ void InputSystem::ProcessUGCEditorCursorInput()
                 ImGuiMouseButton_Left,
                 isPhysicalLeftMousePressed);
         }
+        mWasUGCEditorCursorActive = false;
         mUGCEditorControllerClickPressedPrev = false;
         return;
     }
 
     const bool isControllerClickPressed =
         IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
+    if (!mWasUGCEditorCursorActive) {
+        // タイトル決定に使ったAを、編集画面の最初のボタンへ流さない。
+        mWasUGCEditorCursorActive = true;
+        mUGCEditorControllerClickPressedPrev = isControllerClickPressed;
+        return;
+    }
     if (isControllerClickPressed !=
             mUGCEditorControllerClickPressedPrev &&
         ImGui::GetCurrentContext()) {
@@ -868,6 +911,10 @@ void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
         return;
     }
 
+    const bool canProcessSceneAction =
+        allowsSceneAction &&
+        !mGame->GetIsUGCWorkBrowserShowing();
+
     const bool controllerConfirmPressed =
         IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
 
@@ -879,7 +926,7 @@ void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
         controlledPlayer ? controlledPlayer->GetPlayerNum() : 1;
     const bool isTwoPlayerMode = mGame->GetIsPlayer2Joined();
 
-    if (allowsSceneAction &&
+    if (canProcessSceneAction &&
         controllerConfirmPressed &&
         !mControllerConfirmPressedPrev) {
         const int controllerPlayerNum =
@@ -891,7 +938,7 @@ void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
         }
     }
 
-    if (allowsSceneAction &&
+    if (canProcessSceneAction &&
         keyboardConfirmPressed &&
         !mKeyboardConfirmPressedPrev) {
         const int keyboardPlayerNum =

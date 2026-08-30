@@ -73,6 +73,7 @@ public:
     void RequestStageChange(int stageNum);
     void OnBoatArrived(Boat* boat);
     void OnStageClear();
+    void OnUGCStageClear();
     void OnEnemyLaunched();
     void OnStrongAttacked();
     void OnLanded();

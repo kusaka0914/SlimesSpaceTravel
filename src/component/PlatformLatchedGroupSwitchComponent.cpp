@@ -8,8 +8,10 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
+#include "component/FocusComponent.h"
 #include "component/PlatformMovementComponent.h"
 #include "system/ActorLoadSystem.h"
+#include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -21,6 +23,7 @@
 namespace {
 
 constexpr float pressureSwitchContactReleaseGraceSeconds = 0.15f;
+constexpr float inactiveRevealPlatformOpacity = 0.2f;
 
 bool IsEditorPreview(const Platform* platform)
 {
@@ -250,12 +253,12 @@ void PlatformLatchedGroupSwitchComponent::Update(float deltaTime)
         ActivateGroup(groupSwitches);
     }
 
-    if (mHasAppliedActivatedTargetState) {
-        return;
+    if (!mHasAppliedActivatedTargetState) {
+        ApplyGroupTargetState(groupTargets, groupHideTargets, true);
+        mHasAppliedActivatedTargetState = true;
     }
 
-    ApplyGroupTargetState(groupTargets, groupHideTargets, true);
-    mHasAppliedActivatedTargetState = true;
+    UpdateFirstActivationReveal(groupTargets);
 }
 
 void PlatformLatchedGroupSwitchComponent::SetGroupId(
@@ -270,6 +273,7 @@ void PlatformLatchedGroupSwitchComponent::SetGroupId(
     mCurrentPressingPlayer = nullptr;
     mIsGroupActivated = false;
     mHasAppliedActivatedTargetState = false;
+    mIsWaitingForActivationReveal = false;
 }
 
 void PlatformLatchedGroupSwitchComponent::SetRevealTargets(
@@ -304,6 +308,7 @@ void PlatformLatchedGroupSwitchComponent::SetRevealTargets(
     }
 
     mHasAppliedActivatedTargetState = false;
+    mIsWaitingForActivationReveal = false;
 }
 
 void PlatformLatchedGroupSwitchComponent::SetHideTargets(
@@ -334,6 +339,7 @@ void PlatformLatchedGroupSwitchComponent::SetHideTargets(
     }
 
     mHasAppliedActivatedTargetState = false;
+    mIsWaitingForActivationReveal = false;
 }
 
 bool PlatformLatchedGroupSwitchComponent::
@@ -358,6 +364,11 @@ void PlatformLatchedGroupSwitchComponent::ClearTargetRuntimeStates()
     for (Actor* targetActor : mRuntimeTargetActors) {
         if (targetActor) {
             targetActor->ClearRuntimeActivationState(this);
+            Platform* targetPlatform =
+                dynamic_cast<Platform*>(targetActor);
+            if (targetPlatform) {
+                targetPlatform->ClearComponentRuntimeState(this);
+            }
         }
     }
     mRuntimeTargetActors.clear();
@@ -627,10 +638,25 @@ void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
             }
             Platform* platform = dynamic_cast<Platform*>(targetActor);
             if (platform) {
+                platform->SetComponentOpacity(
+                    this,
+                    inactiveRevealPlatformOpacity);
+                platform->SetComponentCollisionEnabled(this, false);
                 platform->StartFocus();
+                mRuntimeTargetActors.emplace_back(platform);
+                mIsWaitingForActivationReveal = true;
             }
         } else {
-            targetActor->SetRuntimeActivationEnabled(this, false);
+            Platform* platform = dynamic_cast<Platform*>(targetActor);
+            if (platform) {
+                targetActor->ClearRuntimeActivationState(this);
+                platform->SetComponentOpacity(
+                    this,
+                    inactiveRevealPlatformOpacity);
+                platform->SetComponentCollisionEnabled(this, false);
+            } else {
+                targetActor->SetRuntimeActivationEnabled(this, false);
+            }
             mRuntimeTargetActors.emplace_back(targetActor);
         }
     }
@@ -647,5 +673,46 @@ void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
         } else {
             targetActor->ClearRuntimeActivationState(this);
         }
+    }
+}
+
+void PlatformLatchedGroupSwitchComponent::UpdateFirstActivationReveal(
+    const std::vector<PlatformRevealTarget>& revealTargets)
+{
+    if (!mIsWaitingForActivationReveal) {
+        return;
+    }
+
+    bool hasReachedRevealMoment = false;
+    for (const PlatformRevealTarget& target : revealTargets) {
+        Platform* targetPlatform =
+            dynamic_cast<Platform*>(FindTargetActor(target));
+        FocusComponent* focusComponent =
+            targetPlatform
+                ? targetPlatform->GetFocusComponent()
+                : nullptr;
+        if (focusComponent &&
+            focusComponent->HasReachedRevealMoment()) {
+            hasReachedRevealMoment = true;
+            break;
+        }
+    }
+    if (!hasReachedRevealMoment) {
+        return;
+    }
+
+    for (const PlatformRevealTarget& target : revealTargets) {
+        Platform* targetPlatform =
+            dynamic_cast<Platform*>(FindTargetActor(target));
+        if (targetPlatform) {
+            targetPlatform->ClearComponentRuntimeState(this);
+        }
+    }
+    mIsWaitingForActivationReveal = false;
+
+    if (mPlatform && mPlatform->GetGame() &&
+        mPlatform->GetGame()->GetAudioSystem()) {
+        mPlatform->GetGame()->GetAudioSystem()->PlaySE(
+            "show_boat_se");
     }
 }

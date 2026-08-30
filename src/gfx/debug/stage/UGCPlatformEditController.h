@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/debug/stage/StageEditorTypes.h"
+#include "gfx/debug/stage/UGCPlatformDocument.h"
 
 #include <functional>
 #include <glm/glm.hpp>
@@ -25,6 +26,7 @@ public:
     void SetGridLayer(int gridLayer) { mGridLayer = gridLayer; }
 
     bool TryEraseCell();
+    void EndEraseGesture();
     bool TryTranslateCells(
         const StageActorRef& actorRef,
         const glm::vec3& worldDelta);
@@ -46,4 +48,7 @@ private:
     std::function<void()> mPushUndoCallback;
     int mGridLayer = 0;
     std::optional<glm::ivec3> mLastErasedCell;
+    std::optional<UGCGeneratedPlatformRegion>
+        mMovingDestinationEraseRegion;
+    std::optional<int> mMovingDestinationEraseLayer;
 };

@@ -617,6 +617,10 @@ void UGCEditorInteractionController::UpdateSceneInteraction()
             UpdateSelectionDrag();
         }
         if (mToolState.isEraserMode && !isChoosingSwitchTarget &&
+            !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            mStageAddActorPanel.EndUGCEraseGesture();
+        }
+        if (mToolState.isEraserMode && !isChoosingSwitchTarget &&
             ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
             const auto tryDeletePickedPlanetOnly = [&]() {
                 if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {

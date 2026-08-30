@@ -95,6 +95,52 @@ void SceneUIRenderer::DrawGameOver()
     mRenderer->DrawSceneText("gameOver", "restartText", 0);
 }
 
+void SceneUIRenderer::DrawUGCClearResult()
+{
+    const float framebufferWidth =
+        static_cast<float>(mRenderer->GetFbWidth());
+    const float framebufferHeight =
+        static_cast<float>(mRenderer->GetFbHeight());
+    mRenderer->DrawBG(
+        0.0f,
+        0.0f,
+        framebufferWidth,
+        framebufferHeight,
+        {0.0f, 0.0f, 0.0f, 0.62f});
+    mRenderer->DrawSceneText("ugcClearResult", "titleText", 0);
+
+    constexpr const char* resultItemIds[] = {
+        "retryText",
+        "returnEditorText",
+        "returnTitleText",
+    };
+    const int selectedIndex = mGame->GetUGCClearResultSelection();
+    for (int index = 0; index < 3; ++index) {
+        const UILoadSystem::TextInfo* textInfo =
+            mRenderer->GetUILoadSystem()->GetTextInfo(
+                "ugcClearResult",
+                resultItemIds[index]);
+        if (!textInfo || textInfo->texts.empty()) {
+            continue;
+        }
+
+        const bool isSelected = selectedIndex == index;
+        const std::string label =
+            (isSelected ? "> " : "  ") + textInfo->texts[0];
+        mRenderer->DrawTextForElement(
+            "ugcClearResult",
+            resultItemIds[index],
+            framebufferWidth * textInfo->xRatio,
+            framebufferHeight * textInfo->yRatio,
+            framebufferWidth * textInfo->scaleRatio,
+            label,
+            textInfo->centerBased,
+            isSelected
+                ? glm::vec4(255.0f, 230.0f, 0.0f, 255.0f)
+                : glm::vec4(255.0f));
+    }
+}
+
 void SceneUIRenderer::DrawOpeningIntro()
 {
     DrawStorybookPage("opening", "opening", 0);

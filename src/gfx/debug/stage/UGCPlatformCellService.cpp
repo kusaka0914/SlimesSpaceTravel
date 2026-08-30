@@ -398,6 +398,21 @@ bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(
     const StageActorRef& generatedPlatformRef,
     const glm::vec3& destinationWorldPosition)
 {
+    UGCGeneratedPlatformRegion sourceRegion;
+    if (!ResolveMovingPlatformRegion(
+            generatedPlatformRef,
+            sourceRegion)) {
+        return false;
+    }
+    return RemoveMovingPlatformDestinationCell(
+        sourceRegion,
+        destinationWorldPosition);
+}
+
+bool UGCPlatformCellService::ResolveMovingPlatformRegion(
+    const StageActorRef& generatedPlatformRef,
+    UGCGeneratedPlatformRegion& outRegion) const
+{
     if (!CanEditCells() ||
         generatedPlatformRef.sequenceName != "platforms" ||
         generatedPlatformRef.yamlIndex < 0) {
@@ -430,17 +445,32 @@ bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(
         return false;
     }
 
-    UGCGeneratedPlatformRegion sourceRegion;
-    sourceRegion.planetIndex =
+    outRegion.planetIndex =
         generatedPlatform["currentPlanetNum"].as<int>(-1);
-    sourceRegion.gridSize =
+    outRegion.gridSize =
         generatedPlatform["ugcGridSize"].as<float>(1.0f);
-    sourceRegion.gridLayer =
+    outRegion.gridLayer =
         generatedPlatform["ugcGridLayer"].as<int>(0);
-    sourceRegion.minimumX = cellMin[0].as<int>();
-    sourceRegion.minimumZ = cellMin[1].as<int>();
-    sourceRegion.maximumX = cellMax[0].as<int>();
-    sourceRegion.maximumZ = cellMax[1].as<int>();
+    outRegion.minimumX = cellMin[0].as<int>();
+    outRegion.minimumZ = cellMin[1].as<int>();
+    outRegion.maximumX = cellMax[0].as<int>();
+    outRegion.maximumZ = cellMax[1].as<int>();
+    outRegion.behavior = "moving";
+    return true;
+}
+
+bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(
+    const UGCGeneratedPlatformRegion& sourceRegion,
+    const glm::vec3& destinationWorldPosition)
+{
+    if (!CanEditCells() || sourceRegion.behavior != "moving") {
+        return false;
+    }
+
+    YAML::Node stageConfig;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, stageConfig)) {
+        return false;
+    }
 
     const glm::ivec3 destinationGridPosition =
         UGCPlatformGrid::CalculateGridPosition(

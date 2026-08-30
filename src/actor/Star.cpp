@@ -176,7 +176,9 @@ void Star::OnObtained()
 
 
 
-    if (mObtainingPlayer) {
+    const bool shouldUseMainGameCollectionPlacement =
+        mGame && !mGame->GetIsUGCMode();
+    if (mObtainingPlayer && shouldUseMainGameCollectionPlacement) {
         mObtainingPlayer->ForceGroundedForCinematicAt(
             GetCurrentPlanet(),
             GetPos(),
@@ -295,7 +297,9 @@ void Star::FinishCollection()
     mCollectionState = CollectionState::Waiting;
     mCollectionTimer = 0.0f;
     mObtainingPlayer = nullptr;
-
+    if (mGame) {
+        mGame->OnStarCollectionAnimationFinished();
+    }
 }
 
 float Star::CalculateCollectionAnimationDurationSeconds() const

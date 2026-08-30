@@ -48,16 +48,31 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
-    int eraseLayer = mGridLayer;
-    const bool isMovingPlatformDestination =
+    const bool isSelectedMovingPlatformDestination =
         mSelectionController->IsMovingPlatformDestinationSelected();
-    if (isMovingPlatformDestination) {
+    if (isSelectedMovingPlatformDestination &&
+        !mMovingDestinationEraseRegion) {
+        const std::optional<StageActorRef>& destinationRef =
+            mSelectionController->GetPickedActorRef();
+        UGCGeneratedPlatformRegion sourceRegion;
+        if (!destinationRef ||
+            !mPlatformCellService.ResolveMovingPlatformRegion(
+                *destinationRef,
+                sourceRegion)) {
+            return false;
+        }
+        mMovingDestinationEraseRegion = sourceRegion;
+
         const glm::vec3 destinationCenter = mSelectionController
             ->CalculateSelectedMovingPlatformDestinationsCenter();
-        const float gridSize = mContext.game->GetUGCGridSize();
-        eraseLayer = static_cast<int>(std::round(
+        const float gridSize = sourceRegion.gridSize;
+        mMovingDestinationEraseLayer = static_cast<int>(std::round(
             destinationCenter.y / gridSize));
     }
+    const bool isMovingPlatformDestination =
+        mMovingDestinationEraseRegion.has_value();
+    int eraseLayer = mMovingDestinationEraseLayer
+        .value_or(mGridLayer);
 
     StageActorPlacement placement;
     if (!mPlacementResolver.TryResolveUGCBuildPlanePlacement(
@@ -70,14 +85,8 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
-    const float gridSize = mContext.game->GetUGCGridSize();
     if (isMovingPlatformDestination) {
-        const std::optional<StageActorRef>& destinationRef =
-            mSelectionController->GetPickedActorRef();
-        if (!destinationRef) {
-            return false;
-        }
-
+        const float gridSize = mMovingDestinationEraseRegion->gridSize;
         const glm::ivec3 erasedDestinationCell =
             UGCPlatformGrid::CalculateGridPosition(
                 placement.worldPosition, gridSize);
@@ -90,7 +99,8 @@ bool UGCPlatformEditController::TryEraseCell()
         }
         const bool removed = mPlatformCellService
             .RemoveMovingPlatformDestinationCell(
-                *destinationRef, placement.worldPosition);
+                *mMovingDestinationEraseRegion,
+                placement.worldPosition);
         if (removed) {
             mLastErasedCell = erasedDestinationCell;
             mSelectionController->Clear();
@@ -98,6 +108,7 @@ bool UGCPlatformEditController::TryEraseCell()
         return removed;
     }
 
+    const float gridSize = mContext.game->GetUGCGridSize();
     if (!mPlatformCellService.ResolveLayerAtGridPosition(
             0,
             placement.worldPosition,
@@ -128,6 +139,13 @@ bool UGCPlatformEditController::TryEraseCell()
         mSelectionController->Clear();
     }
     return removed;
+}
+
+void UGCPlatformEditController::EndEraseGesture()
+{
+    mLastErasedCell.reset();
+    mMovingDestinationEraseRegion.reset();
+    mMovingDestinationEraseLayer.reset();
 }
 
 bool UGCPlatformEditController::TryTranslateCells(

@@ -211,6 +211,47 @@ gameOver:
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
+ugcClearResult:
+  - id: titleText
+    type: text
+    posRatio: [0.5, 0.30]
+    scaleRatio: [0.00052, 1.0]
+    text:
+      - ステージクリア！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: retryText
+    type: text
+    posRatio: [0.5, 0.46]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - もう一度遊ぶ
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnEditorText
+    type: text
+    posRatio: [0.5, 0.55]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - 編集に戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnTitleText
+    type: text
+    posRatio: [0.5, 0.64]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - タイトルに戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 default:
   - id: hpTexture
     type: texture

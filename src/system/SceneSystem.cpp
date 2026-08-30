@@ -670,6 +670,21 @@ void SceneSystem::OnStageClear()
     mClearTimer = 12.0f;
 }
 
+void SceneSystem::OnUGCStageClear()
+{
+    mGameProgressState->SetCurrentSceneState(
+        GameProgressState::SceneState::StageClear);
+    Mix_HaltMusic();
+    if (mGame->GetAudioSystem()) {
+        mGame->GetAudioSystem()->PlaySE("clear_se");
+    }
+
+    // UGCは星の獲得演出完了を起点に専用結果画面へ遷移するため、
+    // SceneSystemの通常ステージ用タイマーでは拠点へ戻さない。
+    mClearTimer = -1.0f;
+    mClearAudioChannel = -1;
+}
+
 void SceneSystem::OnEnemyLaunched()
 {
     mTutorialController->OnEnemyLaunched();

@@ -2,6 +2,8 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 
+#include <string>
+
 class EditorModelThumbnailRenderer;
 class StageAddActorPanel;
 class UGCEditorInteractionController;
@@ -10,6 +12,7 @@ class UGCEditorToolState;
 class UGCEditorTutorial;
 class UGCTutorialOverlayRenderer;
 class UGCWorkPanel;
+struct ImGuiViewport;
 
 class UGCEditorChromeRenderer {
 public:
@@ -27,6 +30,8 @@ public:
     bool DrawControls();
 
 private:
+    void DrawSaveShortcut(const ImGuiViewport& viewport);
+
     DebugEditorContext& mContext;
     StageAddActorPanel& mStageAddActorPanel;
     UGCEditorInteractionController& mInteractionController;
@@ -36,4 +41,7 @@ private:
     UGCEditorMenuState& mMenuState;
     UGCWorkPanel& mWorkPanel;
     EditorModelThumbnailRenderer* mModelThumbnailRenderer = nullptr;
+    std::string mSaveFeedbackMessage;
+    float mSaveFeedbackRemainingSeconds = 0.0f;
+    bool mWasLastSaveSuccessful = false;
 };

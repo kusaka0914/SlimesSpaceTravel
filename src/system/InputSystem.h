@@ -33,6 +33,7 @@ private:
     void ProcessBattleStyleSelectionInput();
     void ProcessTitleMenuInput();
     void ProcessUGCModeInput();
+    void ProcessUGCClearResultInput();
     void ProcessUGCEditorCursorInput();
     void ProcessUGCEditorCommandInput();
     void ProcessSceneConfirmInput(bool allowsSceneAction);
@@ -66,12 +67,15 @@ private:
     bool mTitleMenuConfirmPressedPrev = false;
     bool mUGCModePressedPrev = false;
     bool mUGCWorkBrowserPressedPrev = false;
+    bool mUGCClearResultDirectionPressedPrev = false;
+    bool mUGCClearResultConfirmPressedPrev = false;
     bool mStartPressedPrev = false;
     bool mPauseMenuKeyPressedPrev = false;
     bool mPauseMenuUpPressedPrev = false;
     bool mPauseMenuDownPressedPrev = false;
     bool mPauseMenuConfirmPressedPrev = false;
     bool mControllerConfirmPressedPrev = false;
+    bool mWasUGCEditorCursorActive = false;
     bool mUGCEditorControllerClickPressedPrev = false;
     bool mUGCEditorUndoPressedPrev = false;
     bool mUGCEditorRedoPressedPrev = false;

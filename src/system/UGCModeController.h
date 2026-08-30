@@ -18,16 +18,22 @@ public:
     void OpenWorkBrowser();
     void CloseWorkBrowser();
     void StartPlaytest();
+    void StartSavedWorkPlaytest();
     void StartClearVerification(const std::string& workFileName);
     void ReturnToEditor();
     void ExitMode();
     bool HandleGoalObtained();
+    void HandleGoalCollectionFinished();
     void ProcessPendingClearCompletion();
+    void MoveClearResultSelection(int delta);
+    void ExecuteClearResultSelection();
     void ToggleDebugPanel();
 
     bool IsModeActive() const;
     bool IsPlaytestActive() const;
     bool IsVerificationActive() const;
+    bool IsClearResultShowing() const;
+    int GetClearResultSelection() const;
     bool IsDebugPanelShowing() const;
     bool IsWorkBrowserShowing() const;
     bool IsOrthographicView() const;
@@ -35,6 +41,7 @@ public:
     bool IsEditorTutorialActive() const;
 
 private:
+    void StartPlaytest(UGCPlaytestPurpose purpose);
     bool StartModeWithStage(
         const std::string& yamlPath,
         bool isTutorial);

@@ -52,6 +52,8 @@ private:
         const std::vector<PlatformRevealTarget>& revealTargets,
         const std::vector<PlatformRevealTarget>& hideTargets,
         bool isGroupActivated);
+    void UpdateFirstActivationReveal(
+        const std::vector<PlatformRevealTarget>& revealTargets);
 
     static constexpr std::size_t RequiredSwitchCount = 2;
 
@@ -63,4 +65,5 @@ private:
     Player* mCurrentPressingPlayer = nullptr;
     bool mIsGroupActivated = false;
     bool mHasAppliedActivatedTargetState = false;
+    bool mIsWaitingForActivationReveal = false;
 };

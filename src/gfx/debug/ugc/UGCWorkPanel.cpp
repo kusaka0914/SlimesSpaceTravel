@@ -35,6 +35,22 @@ bool UGCWorkPanel::IsManagementOpen() const
             ImGuiPopupFlags_AnyPopupLevel);
 }
 
+bool UGCWorkPanel::SaveCurrentWork()
+{
+    if (!mState.hasLoadedWorkList) {
+        mController.RefreshWorkList();
+    }
+    mController.SynchronizeCurrentWorkIdentity();
+
+    const bool wasSaved = mState.currentWorkFileName
+        ? mController.OverwriteCurrentWork()
+        : mController.SaveAsNamedWork();
+    mToolState.statusMessage = wasSaved
+        ? "作品を保存しました"
+        : "作品を保存できませんでした: " + mState.saveErrorMessage;
+    return wasSaved;
+}
+
 void UGCWorkPanel::StartVerification()
 {
     mController.StartVerification(mToolState.statusMessage);
@@ -517,7 +533,7 @@ void UGCWorkPanel::DrawBrowser()
     if (ImGui::Button("あそぶ", ImVec2(140.0f, 46.0f))) {
         if (mController.CopySelectedWorkToWorkingFile() &&
             mContext.game->StartUGCMode()) {
-            mContext.game->StartUGCPlaytest();
+            mContext.game->StartUGCSavedWorkPlaytest();
         }
     }
     ImGui::SameLine();
@@ -616,4 +632,3 @@ void UGCWorkPanel::DrawBrowser()
     ImGui::PopStyleColor(13);
     ImGui::PopStyleVar(5);
 }
-

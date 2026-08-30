@@ -22,6 +22,7 @@ public:
     bool IsManagementOpen() const;
     void DrawManagement();
     void DrawBrowser();
+    bool SaveCurrentWork();
     void StartVerification();
     bool CompleteVerification(const std::string& workFileName);
     bool HasUnsavedChanges() const;

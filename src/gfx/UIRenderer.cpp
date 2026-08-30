@@ -154,6 +154,8 @@ void UIRenderer::DrawGameContent()
         mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive =
         mGame->GetIsUGCPlaytestActive();
+    const bool isUGCClearResultShowing =
+        mGame->GetIsUGCClearResultShowing();
     const bool shouldDrawDefaultUI =
         !isStartCinematicPlaying &&
         !isUGCEditing &&
@@ -165,11 +167,19 @@ void UIRenderer::DrawGameContent()
         shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
-    } else if (!isStartCinematicPlaying && isUGCPlaytestActive) {
+    } else if (!isStartCinematicPlaying && isUGCClearResultShowing) {
+        mSceneUIRenderer->DrawUGCClearResult();
+    } else if (!isStartCinematicPlaying && isUGCPlaytestActive &&
+               !sceneSystem->IsStageClear()) {
         mHudRenderer->DrawUGCPlaytestUI();
     }
 
-    if (!isStartCinematicPlaying && !isUGCPlaytestActive) {
+    const bool shouldDrawUGCStageClear =
+        isUGCPlaytestActive &&
+        sceneSystem->IsStageClear() &&
+        !isUGCClearResultShowing;
+    if (!isStartCinematicPlaying &&
+        (!isUGCPlaytestActive || shouldDrawUGCStageClear)) {
         mStateUIRenderer->DrawStateUI();
     }
 

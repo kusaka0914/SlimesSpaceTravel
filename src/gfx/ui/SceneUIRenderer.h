@@ -14,6 +14,7 @@ public:
     void DrawEnding();
     void DrawCredits();
     void DrawGameOver();
+    void DrawUGCClearResult();
 
 private:
     void DrawStorybookPage(

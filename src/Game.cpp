@@ -617,7 +617,8 @@ void Game::UpdateGame()
 
     bool cameraUpdated = false;
     const bool shouldUpdateEntireWorld =
-        mSceneSystem->CanUpdateWorld() || mSceneSystem->IsStageClear();
+        (mSceneSystem->CanUpdateWorld() || mSceneSystem->IsStageClear()) &&
+        !GetIsUGCClearResultShowing();
     const bool shouldUpdateTutorialPlayer =
         mSceneSystem->IsWaitingForTutorialPlayerJump();
 
@@ -1179,6 +1180,11 @@ void Game::StartUGCPlaytest()
     mUGCModeController->StartPlaytest();
 }
 
+void Game::StartUGCSavedWorkPlaytest()
+{
+    mUGCModeController->StartSavedWorkPlaytest();
+}
+
 void Game::UndoUGCEdit()
 {
     if (mUIRenderer) mUIRenderer->UndoUGCEdit();
@@ -1235,6 +1241,29 @@ void Game::ReturnToUGCEditor()
 void Game::ExitUGCMode()
 {
     mUGCModeController->ExitMode();
+}
+
+void Game::MoveUGCClearResultSelection(int delta)
+{
+    mUGCModeController->MoveClearResultSelection(delta);
+}
+
+void Game::ExecuteUGCClearResultSelection()
+{
+    mUGCModeController->ExecuteClearResultSelection();
+}
+
+bool Game::GetIsUGCClearResultShowing() const
+{
+    return mUGCModeController &&
+        mUGCModeController->IsClearResultShowing();
+}
+
+int Game::GetUGCClearResultSelection() const
+{
+    return mUGCModeController
+        ? mUGCModeController->GetClearResultSelection()
+        : 0;
 }
 
 bool Game::PrepareInitialSceneForDebug()
@@ -1323,6 +1352,13 @@ void Game::OnStarObtained()
     }
     MarkStageCleared(GetCurrentStageNum());
     mSceneSystem->OnStageClear();
+}
+
+void Game::OnStarCollectionAnimationFinished()
+{
+    if (mUGCModeController) {
+        mUGCModeController->HandleGoalCollectionFinished();
+    }
 }
 
 void Game::ForcePlayersGroundedForCinematic()
@@ -1530,6 +1566,13 @@ void Game::RestartGame()
 void Game::StartPlayingScene()
 {
     mSceneSystem->StartPlayingScene();
+}
+
+void Game::StartUGCStageClearPresentation()
+{
+    if (mSceneSystem) {
+        mSceneSystem->OnUGCStageClear();
+    }
 }
 
 void Game::StartFocusingScene()

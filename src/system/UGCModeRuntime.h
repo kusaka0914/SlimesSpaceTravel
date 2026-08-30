@@ -19,6 +19,7 @@ public:
     virtual void ClosePauseMenu() = 0;
     virtual void SetUGCOrthographicHalfHeight(float halfHeight) = 0;
     virtual void StartPlayingScene() = 0;
+    virtual void StartUGCStageClearPresentation() = 0;
     virtual void SetDebugCameraPose(const CameraPose& pose) = 0;
     virtual bool RequestSceneFadeAction(
         const std::function<void()>& fadeAction) = 0;
