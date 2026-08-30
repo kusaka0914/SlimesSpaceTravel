@@ -53,6 +53,8 @@ void RegisterPlatformStageConfigTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerCameraSettingsTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterCameraShakeEffectTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -81,6 +83,7 @@ int main()
     RegisterUGCModeControllerTests(tests);
     RegisterPlatformStageConfigTests(tests);
     RegisterPlayerCameraSettingsTests(tests);
+    RegisterCameraShakeEffectTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

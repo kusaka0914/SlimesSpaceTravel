@@ -142,6 +142,7 @@ public:
     void OnPlayerApplyDamage(int playerNum);
     void OnPlayerAttackHit(int playerNum);
     void OnStrongAttacked(int playerNum);
+    void OnAirSlamAttackHit(int playerNum);
     void OnPlayerCounter(int playerNum);
     void SynchronizeSoloSplitResources(const Player& sourcePlayer);
     void VibrateControllerForPlayer(
@@ -161,6 +162,10 @@ public:
     void AddPlayer(Player* player);
     void RemoveAllPlayer();
     bool TogglePlayerSplit();
+    void SetPlayerSplitMergeButtonHeld(bool isHeld);
+    bool TryResolvePlayerMergeGuide(
+        const Player*& targetPlayer,
+        float& radiusWorldUnits) const;
     bool SwitchControlledPlayer();
     bool CanTogglePlayerSplit() const;
     bool CanSwitchControlledPlayer() const;

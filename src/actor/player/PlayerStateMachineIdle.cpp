@@ -143,7 +143,7 @@ bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
     }
 
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
             player);
     if (!target) {
         return false;
@@ -236,7 +236,7 @@ bool PlayerStateMachine::TryStartAssistAirSlamAttack(
 
     constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 1.0f;
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
             player,
             assistAirSlamLaunchedTimerThresholdSeconds);
     if (!target) {
@@ -543,7 +543,7 @@ bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
     }
 
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
             player);
     if (!target ||
         !movement.StartDodgeMovementTowards(
@@ -597,14 +597,14 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
     const float attackAngle =
         isNormalAttack ? combat.GetNormalAttackAngle() : combat.GetWideAttackAngle();
     if (player.GetGame()->IsAssistControlStyle()) {
-        const bool requireAirborneTarget = !player.GetOnGround();
+        const bool requireLaunchedTarget = !player.GetOnGround();
 
         // 敵への自動方向転換はアシスト操作時だけ行う。
         mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
             player,
             attackRange,
             attackAngle,
-            requireAirborneTarget);
+            requireLaunchedTarget);
 
         if (mAttackDirectionTarget) {
             PlayerTargetingAssist::FaceTarget(

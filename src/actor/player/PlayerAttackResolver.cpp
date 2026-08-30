@@ -122,7 +122,25 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
         combat.StartAfterAttackReaction(player, movement, status);
 
-        if (player.GetOnGround()) {
+        const bool isGroundComboFinisher =
+            player.GetOnGround() &&
+            combat.GetAttackComboIndex() == 3;
+        if (isGroundComboFinisher) {
+            for (Enemy* enemy : hitEnemies) {
+                const bool canBreakGuardAsGroundCombo =
+                    enemy &&
+                    (enemy->IsOnGround() ||
+                     enemy->GetActionState() ==
+                         Enemy::ActionState::KnockedBack);
+                if (canBreakGuardAsGroundCombo) {
+                    // 通常被弾の小さな上向きノックバックより先に、
+                    // 地上コンボ最終段のガード破壊を確定する。通常ノックバックで
+                    // 一時的に浮いていても、同じ3段コンボの継続として扱う。
+                    enemy->ApplyBreak(deltaTime);
+                }
+                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
+            }
+        } else if (player.GetOnGround()) {
             for (Enemy* enemy : hitEnemies) {
                 ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
             }
@@ -163,12 +181,6 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
 
         combat.ResetGroundAttackCombo();
         player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
-
-        for (Enemy* enemy : hitEnemies) {
-            if (enemy->GetOnGround()) {
-                enemy->ApplyBreak(deltaTime);
-            }
-        }
 
         return;
     }

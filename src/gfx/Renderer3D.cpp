@@ -726,11 +726,18 @@ void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
 
 void Renderer3D::DrawUGCPlacementPreviewActor(Actor* actor) const
 {
+    DrawInactiveActorPreview(actor, 0.42f);
+}
+
+void Renderer3D::DrawInactiveActorPreview(
+    Actor* actor,
+    float opacity) const
+{
     if (!actor) {
         return;
     }
 
-    mActorOpacityMultiplier = 0.42f;
+    mActorOpacityMultiplier = glm::clamp(opacity, 0.0f, 1.0f);
     DrawActor(actor);
     mActorOpacityMultiplier = 1.0f;
 }
@@ -1104,7 +1111,7 @@ glm::mat4 Renderer3D::CreateBillboard(
 
 glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const
 {
-    const glm::vec3 scale = actor->GetScale() * scaleMultiplier;
+    const glm::vec3 scale = actor->GetRenderScale() * scaleMultiplier;
 
     if (useOrient) {
         return glm::translate(glm::mat4(1.0f), actor->GetPos()) * mGame->GetMathUtils()->CreateOrient(actor) *

@@ -22,6 +22,13 @@
 #include <initializer_list>
 
 namespace {
+const glm::vec4 attackWarningFillColor(1.0f, 0.1f, 0.1f, 0.18f);
+const glm::vec4 attackWarningEdgeColor(1.0f, 0.1f, 0.1f, 0.75f);
+const glm::vec4 attackImpactFillColor(1.0f, 1.0f, 1.0f, 0.62f);
+const glm::vec4 attackImpactEdgeColor(1.0f);
+const glm::vec4 mergeGuideFillColor(0.2f, 0.9f, 1.0f, 0.16f);
+const glm::vec4 mergeGuideEdgeColor(0.35f, 1.0f, 0.75f, 0.9f);
+
 bool ShouldFollowSphereSurface(const Planet* planet)
 {
     return planet && planet->GetPlanetShape() ==
@@ -98,6 +105,110 @@ void PlayerEffectRenderer::DrawPlayers(
     DrawPlayerCollisionShape(
         players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
+}
+
+void PlayerEffectRenderer::DrawPlayerMergeGuide(
+    const Player* targetPlayer,
+    float radiusWorldUnits) const
+{
+    if (!mRenderer ||
+        !targetPlayer ||
+        !targetPlayer->GetIsActive() ||
+        radiusWorldUnits <= 0.0f) {
+        return;
+    }
+
+    glm::vec3 up = targetPlayer->GetUpVec();
+    if (glm::dot(up, up) <= 0.000001f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
+
+    glm::vec3 forward = targetPlayer->GetFacingForwardVec();
+    forward -= up * glm::dot(forward, up);
+    if (glm::dot(forward, forward) <= 0.000001f) {
+        glm::vec3 fallbackAxis(1.0f, 0.0f, 0.0f);
+        if (std::abs(up.y) < 0.9f) {
+            fallbackAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+        forward = glm::cross(fallbackAxis, up);
+    }
+    forward = glm::normalize(forward);
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+
+    constexpr float surfaceOffsetWorldUnits = 0.06f;
+    const glm::vec3 center = targetPlayer->GetPos();
+    const Planet* planet = targetPlayer->GetCurrentPlanet();
+    const bool shouldFollowPlanetSurface =
+        planet &&
+        planet->GetPlanetShape() != Planet::PlanetShape::Normal;
+    float playerSurfaceOffset = 0.0f;
+    if (shouldFollowPlanetSurface) {
+        const Planet::EllipseSurfaceProjection centerProjection =
+            planet->CalculateEllipseSurfaceProjection(center);
+        playerSurfaceOffset = glm::dot(
+            center - centerProjection.position,
+            centerProjection.outwardNormal);
+    }
+
+    const auto resolveSurfacePoint =
+        [planet,
+         shouldFollowPlanetSurface,
+         playerSurfaceOffset,
+         surfaceOffsetWorldUnits,
+         up](const glm::vec3& point) {
+            if (!shouldFollowPlanetSurface) {
+                return point + up * surfaceOffsetWorldUnits;
+            }
+            const Planet::EllipseSurfaceProjection projection =
+                planet->CalculateEllipseSurfaceProjection(point);
+            return projection.position +
+                   projection.outwardNormal *
+                       (playerSurfaceOffset + surfaceOffsetWorldUnits);
+        };
+
+    constexpr int segmentCount = 72;
+    std::vector<glm::vec3> fillVertices;
+    fillVertices.reserve(segmentCount + 2);
+    fillVertices.push_back(resolveSurfacePoint(center));
+    for (int segmentIndex = 0;
+         segmentIndex <= segmentCount;
+         ++segmentIndex) {
+        const float angle =
+            glm::two_pi<float>() *
+            static_cast<float>(segmentIndex) /
+            static_cast<float>(segmentCount);
+        const glm::vec3 direction =
+            forward * std::cos(angle) + left * std::sin(angle);
+        fillVertices.push_back(resolveSurfacePoint(
+            center + direction * radiusWorldUnits));
+    }
+    mRenderer->DrawAttackRangeVertices(
+        fillVertices, GL_TRIANGLE_FAN, mergeGuideFillColor);
+
+    constexpr float edgeThicknessWorldUnits = 0.08f;
+    const float innerRadius = std::max(
+        0.0f,
+        radiusWorldUnits - edgeThicknessWorldUnits);
+    std::vector<glm::vec3> edgeVertices;
+    edgeVertices.reserve((segmentCount + 1) * 2);
+    for (int segmentIndex = 0;
+         segmentIndex <= segmentCount;
+         ++segmentIndex) {
+        const float angle =
+            glm::two_pi<float>() *
+            static_cast<float>(segmentIndex) /
+            static_cast<float>(segmentCount);
+        const glm::vec3 direction =
+            forward * std::cos(angle) + left * std::sin(angle);
+        edgeVertices.push_back(resolveSurfacePoint(
+            center + direction * radiusWorldUnits));
+        edgeVertices.push_back(resolveSurfacePoint(
+            center + direction * innerRadius));
+    }
+    mRenderer->DrawAttackRangeVertices(
+        edgeVertices, GL_TRIANGLE_STRIP, mergeGuideEdgeColor);
 }
 
 void PlayerEffectRenderer::DrawPlayerCollisionShape(
@@ -248,18 +359,26 @@ void PlayerEffectRenderer::DrawEnemyEffects(
         DrawEnemyHp(viewMat, enemy);
     }
 
-    if (enemy->IsAlive() &&
-        enemy->IsOnGround() &&
+    const bool shouldDrawAttackWarning =
         enemy->ShouldDrawAttackPreview() &&
         enemy->GetStandByAttackTimer() > 0.0f &&
-        enemy->GetStandByAttackTimer() <= 1.0f) {
+        enemy->GetStandByAttackTimer() <= 1.0f;
+    const bool shouldDrawAttackImpactFlash =
+        enemy->ShouldDrawAttackImpactFlash();
+    if (enemy->IsAlive() &&
+        enemy->IsOnGround() &&
+        (shouldDrawAttackWarning || shouldDrawAttackImpactFlash)) {
         EnemyAttackPreview preview;
         if (enemy->GetBehaviorAttackPreview(preview) &&
             (preview.shape == EnemyAttackPreviewShape::Fan ||
              preview.shape == EnemyAttackPreviewShape::Radial)) {
-            DrawEnemyFanAttackRange(enemy, preview.range, preview.angleRadians);
+            DrawEnemyFanAttackRange(
+                enemy,
+                preview.range,
+                preview.angleRadians,
+                shouldDrawAttackImpactFlash);
         } else {
-            DrawEnemyAttackRange(enemy);
+            DrawEnemyAttackRange(enemy, shouldDrawAttackImpactFlash);
         }
     }
 }
@@ -361,11 +480,16 @@ void PlayerEffectRenderer::DrawPlayerAttackRange(Player* player) const
         glm::normalize(player->GetLeftVec()),
         player->GetAttackRange(),
         player->GetAttackAngle(),
-        0.06f);
+        0.06f,
+        attackWarningFillColor,
+        attackWarningEdgeColor);
 }
 
 void PlayerEffectRenderer::DrawEnemyFanAttackRange(
-    Enemy* enemy, float range, float angleRadians) const
+    Enemy* enemy,
+    float range,
+    float angleRadians,
+    bool shouldFlashWhite) const
 {
     if (!mRenderer || !enemy) {
         return;
@@ -375,6 +499,12 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
     attackFrame.origin +=
         attackFrame.forward *
         CalculateEnemyAttackFrontOffset(*enemy, attackFrame);
+    const glm::vec4& fillColor = shouldFlashWhite
+        ? attackImpactFillColor
+        : attackWarningFillColor;
+    const glm::vec4& edgeColor = shouldFlashWhite
+        ? attackImpactEdgeColor
+        : attackWarningEdgeColor;
     DrawFanAttackRange(
         enemy->GetCurrentPlanet(),
         attackFrame.origin,
@@ -383,12 +513,16 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
         attackFrame.left,
         range,
         angleRadians,
-        0.56f);
+        0.56f,
+        fillColor,
+        edgeColor);
 }
 
 void PlayerEffectRenderer::DrawFanAttackRange(
     const Planet* planet, const glm::vec3& center, const glm::vec3& up, const glm::vec3& forward,
-    const glm::vec3& left, float range, float angleRadians, float yOffset) const
+    const glm::vec3& left, float range, float angleRadians, float yOffset,
+    const glm::vec4& fillColor,
+    const glm::vec4& edgeColor) const
 {
     if (!mRenderer || range <= 0.0f || angleRadians <= 0.0f) {
         return;
@@ -419,7 +553,8 @@ void PlayerEffectRenderer::DrawFanAttackRange(
             surfacePoint(center + dir * range + up * yOffset));
     }
 
-    mRenderer->DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+    mRenderer->DrawAttackRangeVertices(
+        fanVertices, GL_TRIANGLE_FAN, fillColor);
 
     constexpr float thickness = 0.08f;
     const float innerRadius = std::max(0.0f, range - thickness);
@@ -439,10 +574,13 @@ void PlayerEffectRenderer::DrawFanAttackRange(
             center + dir * innerRadius + up * yOffset));
     }
 
-    mRenderer->DrawAttackRangeVertices(edgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    mRenderer->DrawAttackRangeVertices(
+        edgeVertices, GL_TRIANGLE_STRIP, edgeColor);
 }
 
-void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
+void PlayerEffectRenderer::DrawEnemyAttackRange(
+    Enemy* enemy,
+    bool shouldFlashWhite) const
 {
     if (!mRenderer || !enemy) {
         return;
@@ -465,6 +603,12 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
 
     constexpr float yOffset = 0.56f;
     constexpr float thickness = 0.08f;
+    const glm::vec4& fillColor = shouldFlashWhite
+        ? attackImpactFillColor
+        : attackWarningFillColor;
+    const glm::vec4& edgeColor = shouldFlashWhite
+        ? attackImpactEdgeColor
+        : attackWarningEdgeColor;
     const glm::vec3 start =
         attackFrame.origin +
         attackFrame.forward * previewArea.forwardStartOffset +
@@ -498,9 +642,6 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
         };
         constexpr int lengthSegments = 24;
         constexpr int widthSegments = 8;
-        const glm::vec4 fillColor(1.0f, 0.1f, 0.1f, 0.18f);
-        const glm::vec4 edgeColor(1.0f, 0.1f, 0.1f, 0.75f);
-
         for (int lengthIndex = 0;
              lengthIndex < lengthSegments;
              ++lengthIndex) {
@@ -577,7 +718,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         fillVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+        fillColor);
 
     const std::vector<glm::vec3> leftEdgeVertices{
         start + attackFrame.left * previewArea.halfWidth,
@@ -587,7 +728,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         leftEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const std::vector<glm::vec3> rightEdgeVertices{
         start - attackFrame.left * previewArea.halfWidth,
@@ -597,7 +738,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         rightEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const glm::vec3 innerStart =
         start + attackFrame.forward * thickness;
@@ -609,7 +750,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         startEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const glm::vec3 innerEnd =
         end - attackFrame.forward * thickness;
@@ -621,7 +762,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         endEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 }
 
 void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const

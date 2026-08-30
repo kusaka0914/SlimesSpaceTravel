@@ -64,9 +64,13 @@ void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& m
 
     enemy.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
 
-    // 空中の敵を再度打ち上げると、ガード破壊のたびに浮き直してしまう。
-    // ガード数は減らすが、打ち上げ開始は地上にいる敵だけに限定する。
-    if (status.IsBreakCountEmpty() && enemy.IsOnGround()) {
+    const bool canStartLaunch =
+        enemy.IsOnGround() ||
+        stateMachine.GetActionState() ==
+            EnemyStateMachine::ActionState::KnockedBack;
+    // 通常ノックバックの小さな浮きは地上コンボの途中状態なので、
+    // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
+    if (status.IsBreakCountEmpty() && canStartLaunch) {
         movement.LaunchIntoAir(enemy, status, stateMachine, deltaTime);
         return;
     }
@@ -78,7 +82,7 @@ void EnemyCombat::TryApplyAttack(
     const EnemyStateMachine& stateMachine,
     float deltaTime)
 {
-    if (!stateMachine.IsProgressing(status)) {
+    if (!stateMachine.IsAttackImpactActive(status)) {
         return;
     }
 
@@ -149,6 +153,10 @@ void EnemyCombat::TryApplyFanAttack(
     float angleRadians,
     float deltaTime)
 {
+    if (!stateMachine.IsAttackImpactActive(status)) {
+        return;
+    }
+
     const EnemyAttackFrame& attackFrame =
         stateMachine.GetActiveAttackFrame();
     EnemyAttackFrame fanAttackFrame = attackFrame;
@@ -209,6 +217,10 @@ void EnemyCombat::TryApplyGroundRadialAttack(
     float range,
     float deltaTime)
 {
+    if (!stateMachine.IsAttackImpactActive(status)) {
+        return;
+    }
+
     const EnemyAttackFrame& attackFrame =
         stateMachine.GetActiveAttackFrame();
 

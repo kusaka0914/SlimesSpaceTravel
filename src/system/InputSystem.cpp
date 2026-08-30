@@ -314,6 +314,9 @@ void InputSystem::ProcessGameInput()
 
 void InputSystem::SuppressOneShotInputUntilReleased()
 {
+    if (mGame) {
+        mGame->SetPlayerSplitMergeButtonHeld(false);
+    }
     mReloadKeyPressedPrev = true;
     mUIReloadKeyPressedPrev = true;
     mPPressedPrev = true;
@@ -808,6 +811,7 @@ void InputSystem::ProcessPlayerSplitInput()
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) >
             triggerPressedThreshold;
 
+    mGame->SetPlayerSplitMergeButtonHeld(splitPressed);
     if (splitPressed && !mPlayerSplitPressedPrev) {
         mGame->TogglePlayerSplit();
     }

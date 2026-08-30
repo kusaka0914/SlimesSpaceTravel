@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "component/PlatformEnemyClearUnlockComponent.h"
+#include "component/FocusComponent.h"
 #include "component/PlatformLatchedGroupSwitchComponent.h"
 #include "component/PlatformMotionBehaviorComponents.h"
 #include "component/PlatformPressureSwitchComponent.h"
@@ -262,6 +263,18 @@ void Platform::RemoveLatchedGroupSwitchComponent()
     mLatchedGroupSwitchComponent->ClearTargetRuntimeStates();
     RemoveComponent(mLatchedGroupSwitchComponent);
     mLatchedGroupSwitchComponent = nullptr;
+}
+
+void Platform::StartFocus()
+{
+    if (!mFocusComponent) {
+        auto focusComponent =
+            std::make_unique<FocusComponent>(this, 100);
+        mFocusComponent = focusComponent.get();
+        AddComponent(std::move(focusComponent));
+    }
+
+    mFocusComponent->StartFocus();
 }
 
 void Platform::SetComponentOpacity(const Component* component, float opacity)

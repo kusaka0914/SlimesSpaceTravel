@@ -115,6 +115,11 @@ public:
         mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec());
     }
 
+    void UnlockMovementDirectionForCameraAutoAlign()
+    {
+        mMovement.UnlockMovementDirectionForCameraAutoAlign();
+    }
+
     bool ConsumeCameraAutoAlignCancellationRequest()
     {
         return mMovement.ConsumeCameraAutoAlignCancellationRequest();

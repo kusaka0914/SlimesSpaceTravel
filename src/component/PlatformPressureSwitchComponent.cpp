@@ -10,7 +10,9 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "component/PlatformMovementComponent.h"
+#include "component/FocusComponent.h"
 #include "system/ActorLoadSystem.h"
+#include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -262,9 +264,12 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     const bool isPressed =
         mHasLatchedOn || hasCurrentContact ||
         mContactGraceRemainingSeconds > 0.0f;
-    if (isPressed != mIsPressed) {
-        mIsPressed = isPressed;
+    const bool didBecomePressed = isPressed && !mIsPressed;
+    mIsPressed = isPressed;
+    if (didBecomePressed && !mHasStartedActivationFocus) {
+        StartFirstActivationFocus();
     }
+    UpdateFirstActivationReveal();
     ApplyTargetState();
 }
 
@@ -438,15 +443,18 @@ Actor* PlatformPressureSwitchComponent::FindTargetActor(
 void PlatformPressureSwitchComponent::ApplyTargetState()
 {
     const bool isEditorPreview = IsEditorPreview(mPlatform);
+    const bool shouldRevealPressedTargets =
+        isEditorPreview ||
+        (mIsPressed && !mIsWaitingForActivationReveal);
     for (const std::string& platformId : mTargetPlatformIds) {
         Platform* target = FindTargetPlatform(platformId);
         if (!target) continue;
         target->SetComponentOpacity(
             this,
-            isEditorPreview || mIsPressed ? 1.0f : mInactiveOpacity);
+            shouldRevealPressedTargets ? 1.0f : mInactiveOpacity);
         target->SetComponentCollisionEnabled(
             this,
-            isEditorPreview || mIsPressed);
+            shouldRevealPressedTargets);
     }
 
     for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
@@ -460,7 +468,7 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
         // 敵はフェードさせず、非アクティブ化で描画・更新・照準・衝突から一括で除外する。
         targetActor->SetRuntimeActivationEnabled(
             this,
-            isEditorPreview || mIsPressed);
+            shouldRevealPressedTargets);
     }
 
     for (const PlatformRevealTarget& targetRef : mHideTargets) {
@@ -469,11 +477,51 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
             continue;
         }
 
-        if (!isEditorPreview && mIsPressed) {
+        if (!isEditorPreview && shouldRevealPressedTargets) {
             targetActor->SetRuntimeActivationEnabled(this, false);
         } else {
             targetActor->ClearRuntimeActivationState(this);
         }
+    }
+}
+
+void PlatformPressureSwitchComponent::StartFirstActivationFocus()
+{
+    for (const std::string& platformId : mTargetPlatformIds) {
+        Platform* target = FindTargetPlatform(platformId);
+        if (!target) {
+            continue;
+        }
+
+        mHasStartedActivationFocus = true;
+        mIsWaitingForActivationReveal = true;
+        target->StartFocus();
+        return;
+    }
+}
+
+void PlatformPressureSwitchComponent::UpdateFirstActivationReveal()
+{
+    if (!mIsWaitingForActivationReveal) {
+        return;
+    }
+
+    for (const std::string& platformId : mTargetPlatformIds) {
+        Platform* target = FindTargetPlatform(platformId);
+        FocusComponent* focusComponent =
+            target ? target->GetFocusComponent() : nullptr;
+        if (!focusComponent ||
+            !focusComponent->HasReachedRevealMoment()) {
+            continue;
+        }
+
+        mIsWaitingForActivationReveal = false;
+        if (mIsPressed && mPlatform && mPlatform->GetGame() &&
+            mPlatform->GetGame()->GetAudioSystem()) {
+            mPlatform->GetGame()->GetAudioSystem()->PlaySE(
+                "show_boat_se");
+        }
+        return;
     }
 }
 
@@ -512,4 +560,3 @@ PlatformLatchedGroupSwitchComponent(
 
 PlatformLatchedGroupSwitchComponent::~PlatformLatchedGroupSwitchComponent() =
     default;
-

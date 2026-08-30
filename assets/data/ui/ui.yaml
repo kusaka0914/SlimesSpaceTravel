@@ -268,7 +268,7 @@ state:
     posRatio: [0.9, 0.055]
     scaleRatio: [0.00024, 1.0]
     text:
-      - "ゴールできれば完成！"
+      - ゴールできれば完成！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true

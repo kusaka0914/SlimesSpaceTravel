@@ -162,6 +162,16 @@ void Boat::StartFocus()
     mFocusComponent->StartFocus();
 }
 
+bool Boat::ShouldRenderUnavailablePreview() const
+{
+    constexpr float completedTravelProgress = 1.0f;
+    return !mIsActive &&
+           !mIsMoving &&
+           mProgress < completedTravelProgress &&
+           !mIsDebugDisabled &&
+           IsProgressVisibleForCurrentMode();
+}
+
 void Boat::BoardPlayer(Player* player)
 {
     if (!player || HasBoardedPlayer(player)) {

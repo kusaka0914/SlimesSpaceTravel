@@ -610,6 +610,7 @@ void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
     bool isGroupActivated)
 {
     ClearTargetRuntimeStates();
+    bool hasStartedPlatformFocus = false;
     for (const PlatformRevealTarget& target : revealTargets) {
         Actor* targetActor = FindTargetActor(target);
         if (!targetActor) {
@@ -624,6 +625,11 @@ void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
             Boat* boat = dynamic_cast<Boat*>(targetActor);
             if (boat && !wasExplicitlyActive) {
                 boat->StartFocus();
+            }
+            Platform* platform = dynamic_cast<Platform*>(targetActor);
+            if (platform && !hasStartedPlatformFocus) {
+                platform->StartFocus();
+                hasStartedPlatformFocus = true;
             }
         } else {
             targetActor->SetRuntimeActivationEnabled(this, false);
@@ -645,5 +651,4 @@ void PlatformLatchedGroupSwitchComponent::ApplyGroupTargetState(
         }
     }
 }
-
 

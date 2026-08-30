@@ -12,6 +12,7 @@ class PlatformAdhesionComponent;
 class PlatformDirectionalMovementComponent;
 class PlatformEnemyClearUnlockComponent;
 class PlatformFadeOnStandComponent;
+class FocusComponent;
 class PlatformIntervalToggleComponent;
 class PlatformJumpToggleComponent;
 class PlatformLatchedGroupSwitchComponent;
@@ -89,6 +90,9 @@ public:
         return mLatchedGroupSwitchComponent;
     }
 
+    void StartFocus();
+    FocusComponent* GetFocusComponent() const { return mFocusComponent; }
+
     void SetPlatformId(const std::string& platformId) { mPlatformId = platformId; }
     const std::string& GetPlatformId() const { return mPlatformId; }
 
@@ -128,6 +132,7 @@ private:
         mEnemyClearUnlockComponent = nullptr;
     PlatformLatchedGroupSwitchComponent*
         mLatchedGroupSwitchComponent = nullptr;
+    FocusComponent* mFocusComponent = nullptr;
 
     std::string mPlatformId;
     bool mIsUGCGenerated = false;

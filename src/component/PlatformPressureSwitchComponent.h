@@ -36,6 +36,8 @@ private:
     Platform* FindTargetPlatform(const std::string& platformId) const;
     Actor* FindTargetActor(const PlatformRevealTarget& target) const;
     void ApplyTargetState();
+    void StartFirstActivationFocus();
+    void UpdateFirstActivationReveal();
 
     Platform* mPlatform = nullptr;
     std::vector<std::string> mTargetPlatformIds;
@@ -46,4 +48,6 @@ private:
     bool mShouldRemainOnAfterPressed = false;
     bool mHasLatchedOn = false;
     bool mIsPressed = false;
+    bool mHasStartedActivationFocus = false;
+    bool mIsWaitingForActivationReveal = false;
 };

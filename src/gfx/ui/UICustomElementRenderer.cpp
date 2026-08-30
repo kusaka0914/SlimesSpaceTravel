@@ -22,6 +22,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <limits>
+#include <optional>
 
 void UIRenderer::DrawCustomElement(
     const UILoadSystem::CustomElement& element,
@@ -288,6 +289,7 @@ void UIRenderer::DrawCustomUI()
 
 
 
+    std::optional<bool> canTogglePlayerSplit;
     const auto getOperationGuideOpacity =
         [&](const UILoadSystem::CustomElement& element,
             const Player* player) {
@@ -395,9 +397,11 @@ void UIRenderer::DrawCustomUI()
                 isEnabled = mGame->CanSwitchControlledPlayer();
             } else if (element.id == "buttonB_copy_copy2_copy" ||
                        element.id == "buttonTextB_copy2_copy2_copy") {
-
-
-                isEnabled = mGame->CanTogglePlayerSplit();
+                if (!canTogglePlayerSplit) {
+                    canTogglePlayerSplit =
+                        mGame->CanTogglePlayerSplit();
+                }
+                isEnabled = *canTogglePlayerSplit;
             }
 
             return isEnabled ? 1.0f : disabledOpacity;
@@ -722,4 +726,3 @@ void UIRenderer::DrawUGCForegroundCustomUI(
         }
     }
 }
-

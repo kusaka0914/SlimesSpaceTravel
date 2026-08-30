@@ -7,6 +7,7 @@
 #include "actor/Key.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "component/FocusComponent.h"
@@ -176,7 +177,45 @@ void CameraSystem::ProcessInput()
 
 void CameraSystem::Update(float deltaTime)
 {
+    UpdateShakeEffects(deltaTime);
     UpdateCamera(deltaTime);
+}
+
+void CameraSystem::UpdateShakeEffects(float deltaTime)
+{
+    for (CameraShakeEffect& shakeEffect : mPlayerShakeEffects) {
+        shakeEffect.Update(deltaTime);
+    }
+}
+
+void CameraSystem::StartAirStrongAttackHitShake(int playerNum)
+{
+    const int playerIndex = playerNum - 1;
+    if (playerIndex < 0) {
+        return;
+    }
+
+    const std::size_t shakeIndex = static_cast<std::size_t>(playerIndex);
+    if (mPlayerShakeEffects.size() <= shakeIndex) {
+        mPlayerShakeEffects.resize(shakeIndex + 1);
+    }
+    mPlayerShakeEffects[shakeIndex].TryStart(
+        CameraShakePattern::AirStrongAttackHit);
+}
+
+void CameraSystem::StartPlayerDamagedShake(int playerNum)
+{
+    const int playerIndex = playerNum - 1;
+    if (playerIndex < 0) {
+        return;
+    }
+
+    const std::size_t shakeIndex = static_cast<std::size_t>(playerIndex);
+    if (mPlayerShakeEffects.size() <= shakeIndex) {
+        mPlayerShakeEffects.resize(shakeIndex + 1);
+    }
+    mPlayerShakeEffects[shakeIndex].TryStart(
+        CameraShakePattern::PlayerDamaged);
 }
 
 bool CameraSystem::PlayCinematic(
@@ -232,6 +271,7 @@ void CameraSystem::ResetForStageChange()
     mCameraStickY = 0.0f;
     mKeyboardPitchInput = 0.0f;
     mPlayerPitchOffsetsDegrees.clear();
+    mPlayerShakeEffects.clear();
     mPlayerCamera.Reset();
     mTalkCameraBlend = 0.0f;
     mTalkCameraPlayer = nullptr;
@@ -748,8 +788,28 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
     const float targetHeight =
         glm::mix(normalTargetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
 
-    return mPlayerCamera.GetView(
+    const glm::mat4 view = mPlayerCamera.GetView(
         player, playerIndex, distance, glm::radians(pitchDegrees), targetHeight);
+    return ApplyPlayerShake(view, playerIndex);
+}
+
+glm::mat4 CameraSystem::ApplyPlayerShake(
+    const glm::mat4& view,
+    int playerIndex) const
+{
+    if (playerIndex < 0 ||
+        static_cast<std::size_t>(playerIndex) >=
+            mPlayerShakeEffects.size()) {
+        return view;
+    }
+
+    const glm::vec2 localOffset =
+        mPlayerShakeEffects[static_cast<std::size_t>(playerIndex)]
+            .GetLocalOffset();
+    const glm::mat4 shakeTranslation = glm::translate(
+        glm::mat4(1.0f),
+        glm::vec3(-localOffset.x, -localOffset.y, 0.0f));
+    return shakeTranslation * view;
 }
 
 glm::mat4 CameraSystem::GetTalkPageFocusView(Player* player, int playerIndex)
@@ -973,15 +1033,16 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    if (Boat* focusingBoat = FindFocusingBoat()) {
-        views.emplace_back(mFocusCamera.GetFocusView(focusingBoat));
+    if (Actor* focusingActor = FindFocusingActor()) {
+        views.emplace_back(mFocusCamera.GetFocusView(focusingActor));
         return views;
     }
 
     Key* key = currentPlanet->GetKey();
     if (key) {
         FocusComponent* focusComponent = key->GetFocusComponent();
-        if (focusComponent && focusComponent->GetFocusTimer() >= 0.0f) {
+        if (focusComponent &&
+            focusComponent->GetFocusTimer() >= 0.0f) {
             views.emplace_back(mFocusCamera.GetFocusView(key));
             return views;
         }
@@ -1002,7 +1063,10 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     if (mIsTargetFocus) {
         Enemy* targetEnemy = FindBossEnemy(currentPlanet);
         if (targetEnemy) {
-            views.emplace_back(mFocusCamera.GetTargetCameraView(targetEnemy));
+            views.emplace_back(
+                ApplyPlayerShake(
+                    mFocusCamera.GetTargetCameraView(targetEnemy),
+                    primaryPlayerIndex));
             return views;
         }
     }
@@ -1071,7 +1135,7 @@ int CameraSystem::GetPrimaryPlayerIndex() const
     return controlledIndex;
 }
 
-Boat* CameraSystem::FindFocusingBoat() const
+Actor* CameraSystem::FindFocusingActor() const
 {
     Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
     if (!stage) {
@@ -1084,7 +1148,7 @@ Boat* CameraSystem::FindFocusingBoat() const
         }
 
         for (Boat* boat : planet->GetBoats()) {
-            if (!boat || !boat->GetIsActive()) {
+            if (!boat) {
                 continue;
             }
 
@@ -1095,6 +1159,20 @@ Boat* CameraSystem::FindFocusingBoat() const
                 return boat;
             }
         }
+
+        for (Platform* platform : planet->GetPlatforms()) {
+            if (!platform) {
+                continue;
+            }
+
+            FocusComponent* focusComponent =
+                platform->GetFocusComponent();
+            if (focusComponent &&
+                focusComponent->GetFocusTimer() >= 0.0f) {
+                return platform;
+            }
+        }
+
     }
     return nullptr;
 }

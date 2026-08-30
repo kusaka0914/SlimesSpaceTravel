@@ -565,7 +565,12 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
 
 
 
-    // 通常攻撃は予兆位置で固定する。敵モデルを前方へ移動させず、固定の近接予兆範囲で命中を判定する。
+    status.DecreaseCanCounteredTimer(deltaTime);
+    if (status.GetCanCounteredTimer() <= 0.0f) {
+        status.SetCanCountered(false);
+    }
+
+    // 通常攻撃は予兆位置で固定する。白い攻撃表示と同じ時間だけ、固定の近接範囲で命中を判定する。
     combat.TryApplyAttack(
         enemy,
         status,
@@ -573,11 +578,6 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         deltaTime);
     if (mActionState != ActionState::Attacking) {
         return;
-    }
-
-    status.DecreaseCanCounteredTimer(deltaTime);
-    if (status.GetCanCounteredTimer() <= 0.0f) {
-        status.SetCanCountered(false);
     }
 
     status.DecreaseAttackMotionTimer(deltaTime);
@@ -590,10 +590,14 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
 
 void EnemyStateMachine::UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime)
 {
-    movement.MoveDuringKnockBack(enemy, status, deltaTime);
+    if (status.GetKnockBackTimer() > 0.0f) {
+        movement.MoveDuringKnockBack(enemy, status, deltaTime);
+        status.DecreaseKnockBackTimer(deltaTime);
+    }
 
-    status.DecreaseKnockBackTimer(deltaTime);
-    if (status.GetKnockBackTimer() <= 0.0f) {
+    // 横移動が終わっても、通常被弾で浮いた敵は着地まで KnockedBack を維持する。
+    // ここで Idle に戻すと、空中で再被弾した際に上向き速度を再設定できなくなる。
+    if (status.GetKnockBackTimer() <= 0.0f && enemy.IsOnGround()) {
         StartIdle(enemy);
     }
 }
@@ -845,6 +849,13 @@ bool EnemyStateMachine::IsJustBeforeAttack(const EnemyStatus& status) const
 
     constexpr float justBeforeAttackTime = 1.0f;
     return status.GetStandByAttackTimer() <= justBeforeAttackTime;
+}
+
+bool EnemyStateMachine::IsAttackImpactActive(
+    const EnemyStatus& status) const
+{
+    return mActionState == ActionState::Attacking &&
+           status.GetCanCounteredTimer() > 0.0f;
 }
 
 bool EnemyStateMachine::IsProgressing(const EnemyStatus& status) const

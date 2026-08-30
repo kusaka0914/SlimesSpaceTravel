@@ -67,6 +67,11 @@ EnemyBehaviorActionResult EnemyRadialAttackAction::Update(
         return EnemyBehaviorActionResult::Finished;
     }
 
+    context.status.DecreaseCanCounteredTimer(deltaTime);
+    if (context.status.GetCanCounteredTimer() <= 0.0f) {
+        context.status.SetCanCountered(false);
+    }
+
     if (!mHasAppliedDamage) {
         context.combat.TryApplyGroundRadialAttack(
             context.enemy,
@@ -80,11 +85,6 @@ EnemyBehaviorActionResult EnemyRadialAttackAction::Update(
             EnemyStateMachine::ActionState::Attacking) {
             return EnemyBehaviorActionResult::Finished;
         }
-    }
-
-    context.status.DecreaseCanCounteredTimer(deltaTime);
-    if (context.status.GetCanCounteredTimer() <= 0.0f) {
-        context.status.SetCanCountered(false);
     }
 
     context.status.DecreaseAttackMotionTimer(deltaTime);

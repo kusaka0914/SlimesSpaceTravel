@@ -144,6 +144,9 @@ void PlayerCamera::Update(const std::vector<Player*>& players,
             std::abs(yawDelta), std::abs(player->GetCameraYaw()));
         if (appliedManualYawMagnitude > manualYawEpsilon) {
             state.isAligningBehindPlayer = false;
+            if (state.isSurfaceTraversalAutoAligning) {
+                player->UnlockMovementDirectionForCameraAutoAlign();
+            }
             CancelAutomaticFollow(state);
             state.autoFollowDelayRemainingSeconds =
                 settings.autoFollowDelayAfterManualInputSeconds;
@@ -195,6 +198,7 @@ void PlayerCamera::SnapToPlayer(
 
     state.hasAttackTargetForward = false;
     state.isAligningBehindPlayer = false;
+    player->UnlockMovementDirectionForCameraAutoAlign();
     CancelAutomaticFollow(state);
     state.isBackwardFacingFramingActive = false;
     state.autoFollowDelayRemainingSeconds = 0.0f;
@@ -228,6 +232,7 @@ void PlayerCamera::TransitionToPlayer(
     state = previousState;
     state.hasAttackTargetForward = false;
     state.isAligningBehindPlayer = false;
+    player->UnlockMovementDirectionForCameraAutoAlign();
     CancelAutomaticFollow(state);
     ResetSurfaceTraversalTracking(state);
 
@@ -266,6 +271,7 @@ void PlayerCamera::SnapBehindPlayer(Player* player, int playerIndex)
         state.hasCameraForward = false;
         state.hasAttackTargetForward = false;
         state.isAligningBehindPlayer = false;
+        player->UnlockMovementDirectionForCameraAutoAlign();
         CancelAutomaticFollow(state);
         state.isBackwardFacingFramingActive = false;
         state.autoFollowDelayRemainingSeconds = 0.0f;
@@ -279,6 +285,7 @@ void PlayerCamera::SnapBehindPlayer(Player* player, int playerIndex)
     state.hasCameraForward = true;
     state.hasAttackTargetForward = false;
     state.isAligningBehindPlayer = false;
+    player->UnlockMovementDirectionForCameraAutoAlign();
     CancelAutomaticFollow(state);
     state.isBackwardFacingFramingActive = false;
     state.autoFollowDelayRemainingSeconds = 0.0f;
@@ -304,6 +311,7 @@ void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
         return;
     }
 
+    player->UnlockMovementDirectionForCameraAutoAlign();
     CancelAutomaticFollow(state);
     state.alignTargetForwardVec = cameraForward;
     state.isAligningBehindPlayer = true;
@@ -396,11 +404,15 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
             glm::normalize(forwardVec) * lookAheadDistance;
     }
 
+    const glm::vec3 collisionTargetPos =
+        state.targetPos + glm::normalize(state.upVec) * targetHeight;
     const glm::vec3 lookAtPos = state.targetPos + lookAtOffset;
     const glm::vec3 desiredCameraPos =
         state.targetPos - cameraDir * cameraDistance;
 
-    state.cameraPos = mCollisionResolver.Resolve(lookAtPos, desiredCameraPos);
+    state.cameraPos = mCollisionResolver.Resolve(
+        collisionTargetPos,
+        desiredCameraPos);
 
     return glm::lookAt(state.cameraPos, lookAtPos, state.upVec);
 }
@@ -436,6 +448,7 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex,
     PlayerCameraState& state = mStates[playerIndex];
 
     if (player->ConsumeCameraAutoAlignCancellationRequest()) {
+        player->UnlockMovementDirectionForCameraAutoAlign();
         CancelAutomaticFollow(state);
         ResetSurfaceTraversalTracking(state);
     }
@@ -480,6 +493,9 @@ void PlayerCamera::UpdateAutoFollowRequest(
          !state.isSurfaceTraversalAutoAligning);
 
     if (isAutoFollowBlocked) {
+        if (state.isSurfaceTraversalAutoAligning) {
+            player->UnlockMovementDirectionForCameraAutoAlign();
+        }
         CancelAutomaticFollow(state);
         return;
     }
@@ -593,6 +609,9 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
     }
 
     if (shouldAssistAttack) {
+        if (state.isSurfaceTraversalAutoAligning) {
+            player->UnlockMovementDirectionForCameraAutoAlign();
+        }
         state.isAutoFollowingBehindPlayer = false;
         state.isSurfaceTraversalAutoAligning = false;
         state.autoFollowElapsedSeconds = 0.0f;
@@ -651,6 +670,7 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
                 -player->GetFacingForwardVec(),
                 up,
                 currentBehindPlayerForward)) {
+            player->UnlockMovementDirectionForCameraAutoAlign();
             state.isAutoFollowingBehindPlayer = false;
             state.isSurfaceTraversalAutoAligning = false;
             state.autoFollowElapsedSeconds = 0.0f;
@@ -671,6 +691,7 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
         if (rotationProgress >= 1.0f) {
             state.cameraForwardVec = currentBehindPlayerForward;
             player->SetCameraForwardDirection(state.cameraForwardVec, up);
+            player->UnlockMovementDirectionForCameraAutoAlign();
             state.isAutoFollowingBehindPlayer = false;
             state.isSurfaceTraversalAutoAligning = false;
             state.autoFollowElapsedSeconds = 0.0f;

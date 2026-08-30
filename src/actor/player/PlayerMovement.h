@@ -23,6 +23,7 @@ public:
     void LockMovementDirectionForCameraAutoAlign(
         const PlayerInput& input,
         const glm::vec3& upDirection);
+    void UnlockMovementDirectionForCameraAutoAlign();
     bool ConsumeCameraAutoAlignCancellationRequest();
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);

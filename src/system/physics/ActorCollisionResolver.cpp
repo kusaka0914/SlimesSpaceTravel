@@ -31,6 +31,8 @@ constexpr float enemyTopSurfaceMinimumUpDot = 0.45f;
 constexpr float enemyTopSlideFromFallRatio = 0.5f;
 constexpr float enemyTopMaximumSlideDistance = 0.06f;
 constexpr float enemyStopContactBuffer = 0.01f;
+constexpr float walkableSurfaceMinimumUpDot = 0.65f;
+constexpr float blockingSweepDirectionMaximumDot = -0.01f;
 
 bool TryNormalizeDirection(
     const glm::vec3& direction,
@@ -254,6 +256,60 @@ btTransform CreatePlayerCollisionTransform(
             actorOrientation.w));
     return transform;
 }
+
+class ClosestBlockingStageSweepCallback final
+    : public btCollisionWorld::ClosestConvexResultCallback {
+public:
+    ClosestBlockingStageSweepCallback(
+        const btVector3& from,
+        const btVector3& to,
+        const glm::vec3& actorUpDirection,
+        const glm::vec3& sweepDirection)
+        : btCollisionWorld::ClosestConvexResultCallback(from, to),
+          mActorUpDirection(actorUpDirection),
+          mSweepDirection(sweepDirection)
+    {
+    }
+
+    btScalar addSingleResult(
+        btCollisionWorld::LocalConvexResult& convexResult,
+        bool normalInWorldSpace) override
+    {
+        btVector3 hitNormal = convexResult.m_hitNormalLocal;
+        if (!normalInWorldSpace && convexResult.m_hitCollisionObject) {
+            hitNormal =
+                convexResult.m_hitCollisionObject
+                    ->getWorldTransform()
+                    .getBasis() *
+                hitNormal;
+        }
+
+        glm::vec3 blockingNormal(
+            hitNormal.x(),
+            hitNormal.y(),
+            hitNormal.z());
+        if (!TryNormalizeDirection(blockingNormal, blockingNormal)) {
+            return 1.0f;
+        }
+
+        const bool isWalkableSurface =
+            glm::dot(blockingNormal, mActorUpDirection) >=
+            walkableSurfaceMinimumUpDot;
+        const bool isMovingIntoSurface =
+            glm::dot(blockingNormal, mSweepDirection) <=
+            blockingSweepDirectionMaximumDot;
+        if (isWalkableSurface || !isMovingIntoSurface) {
+            return 1.0f;
+        }
+
+        return btCollisionWorld::ClosestConvexResultCallback::
+            addSingleResult(convexResult, normalInWorldSpace);
+    }
+
+private:
+    glm::vec3 mActorUpDirection{0.0f, 1.0f, 0.0f};
+    glm::vec3 mSweepDirection{0.0f};
+};
 
 class DeepestPenetrationContactCallback final
     : public btCollisionWorld::ContactResultCallback {
@@ -586,6 +642,64 @@ ActorMovementCollisionResult ActorCollisionResolver::CheckCollision(
     return collisionResult;
 }
 
+bool ActorCollisionResolver::DoesSweepHitBlockingStage(
+    btDiscreteDynamicsWorld* world,
+    btConvexShape* actorShape,
+    const Actor& actor,
+    const glm::vec3& fromPosition,
+    const glm::vec3& toPosition,
+    float collisionCenterHeight) const
+{
+    if (!world || !actorShape) {
+        return false;
+    }
+
+    glm::vec3 actorUpDirection;
+    if (!TryNormalizeDirection(
+            actor.GetUpVec(),
+            actorUpDirection)) {
+        actorUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+
+    glm::vec3 sweepDirection;
+    if (!TryNormalizeDirection(
+            toPosition - fromPosition,
+            sweepDirection)) {
+        return false;
+    }
+
+    const glm::vec3 fromCollisionCenter =
+        fromPosition +
+        actorUpDirection * collisionCenterHeight;
+    const glm::vec3 toCollisionCenter =
+        toPosition +
+        actorUpDirection * collisionCenterHeight;
+    const btTransform fromTransform =
+        CreatePlayerCollisionTransform(
+            actor,
+            fromCollisionCenter);
+    const btTransform toTransform =
+        CreatePlayerCollisionTransform(
+            actor,
+            toCollisionCenter);
+
+    ClosestBlockingStageSweepCallback sweepCallback(
+        fromTransform.getOrigin(),
+        toTransform.getOrigin(),
+        actorUpDirection,
+        sweepDirection);
+    sweepCallback.m_collisionFilterGroup =
+        static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    sweepCallback.m_collisionFilterMask =
+        static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    world->convexSweepTest(
+        actorShape,
+        fromTransform,
+        toTransform,
+        sweepCallback);
+    return sweepCallback.hasHit();
+}
+
 std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
     btDiscreteDynamicsWorld* world,
     btConvexShape* movingActorShape,
@@ -602,6 +716,11 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(
         actor->GetCurrentPlanet()->GetEnemies();
 
     for (Enemy* enemy : enemies) {
+        if (actorCollisionFilter ==
+            ActorCollisionFilter::IgnoreEnemies) {
+            continue;
+        }
+
         if (enemy == actor) {
             continue;
         }

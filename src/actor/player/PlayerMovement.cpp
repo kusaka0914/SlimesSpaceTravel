@@ -545,17 +545,19 @@ void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, cons
     constexpr float movementInputReleaseThreshold = 0.01f;
     if (mIsCameraAutoAlignMovementDirectionLocked) {
         if (movementInputMagnitude <= movementInputReleaseThreshold) {
-            mIsCameraAutoAlignMovementDirectionLocked = false;
+            // 表裏遷移の回転中は、スティックが一瞬ニュートラルを
+            // 通っても開始時の進行方向を保持する。解除はカメラの
+            // 回転完了、または明確な入力方向変更時に行う。
         } else {
             const glm::vec2 currentInputDirection =
                 movementInput / movementInputMagnitude;
-            constexpr float movementDirectionUnlockAngleDegrees = 30.0f;
+            constexpr float movementDirectionUnlockAngleDegrees = 90.0f;
             const float movementDirectionUnlockDot = std::cos(
                 glm::radians(movementDirectionUnlockAngleDegrees));
             const bool didMovementInputDirectionChange =
                 glm::dot(
                     mCameraAutoAlignStartInputDirection,
-                    currentInputDirection) < movementDirectionUnlockDot;
+                    currentInputDirection) <= movementDirectionUnlockDot;
             if (didMovementInputDirectionChange) {
                 mIsCameraAutoAlignMovementDirectionLocked = false;
                 mHasCameraAutoAlignCancellationRequest = true;
@@ -664,6 +666,11 @@ bool PlayerMovement::ConsumeCameraAutoAlignCancellationRequest()
         mHasCameraAutoAlignCancellationRequest;
     mHasCameraAutoAlignCancellationRequest = false;
     return hasCancellationRequest;
+}
+
+void PlayerMovement::UnlockMovementDirectionForCameraAutoAlign()
+{
+    mIsCameraAutoAlignMovementDirectionLocked = false;
 }
 
 void PlayerMovement::UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input)

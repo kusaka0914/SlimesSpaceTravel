@@ -83,6 +83,9 @@ public:
     void TryDrawActor(Actor* actor, bool useOrient = true) const;
     void DrawActor(Actor* actor, bool useOrient = true) const;
     void DrawUGCPlacementPreviewActor(Actor* actor) const;
+    void DrawInactiveActorPreview(
+        Actor* actor,
+        float opacity) const;
     void DrawBlobShadow(const CharacterActor* actor) const;
     bool IsActorInsideView(const Actor* actor) const;
 

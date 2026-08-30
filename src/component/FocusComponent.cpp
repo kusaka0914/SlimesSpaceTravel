@@ -2,6 +2,11 @@
 #include "Game.h"
 #include "actor/Actor.h"
 
+namespace {
+constexpr float focusDurationSeconds = 3.0f;
+constexpr float revealTimeRemainingSeconds = 2.0f;
+}
+
 FocusComponent::FocusComponent(Actor* owner, int updateOrder) : Component(owner, updateOrder), mFocusTimer(-1.0f) {}
 
 void FocusComponent::Update(float deltaTime)
@@ -25,11 +30,15 @@ void FocusComponent::TryShowOwner()
         return;
     }
 
-    constexpr float ownerAppearTime = 2.0f;
-    const bool shouldOwnerAppear = mFocusTimer <= ownerAppearTime;
-    if (shouldOwnerAppear) {
+    if (HasReachedRevealMoment()) {
         mOwner->SetIsActive(true);
     }
+}
+
+bool FocusComponent::HasReachedRevealMoment() const
+{
+    return mFocusTimer >= 0.0f &&
+           mFocusTimer <= revealTimeRemainingSeconds;
 }
 
 void FocusComponent::TryFinishFocus()
@@ -42,6 +51,6 @@ void FocusComponent::TryFinishFocus()
 
 void FocusComponent::StartFocus()
 {
-    mFocusTimer = 3.0f;
+    mFocusTimer = focusDurationSeconds;
     mOwner->GetGame()->StartFocusingScene();
 }

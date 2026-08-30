@@ -11,7 +11,7 @@ planets:
     stageNum: 0
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [44.42074, 50.6, 0]
+  - center: [44.42074, 50.59924, 0]
     scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
@@ -23,7 +23,7 @@ planets:
     stageNum: 1
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [47.9321, 11.178522, 0]
+  - center: [47.9321, 11.178402, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -693,41 +693,6 @@ keys:
       - 0.7123397
 crystals: []
 boats:
-  - startPlanet: 2
-    destPlanet: 2
-    destStage: 0
-    theta: -2.6349576
-    phi: 0.36575687
-    height: 0.25032997
-    facingYaw: -1.8253922e-07
-    pos:
-      - -3.47
-      - 1.52
-      - -1.93
-    upVec:
-      - 0.999446
-      - 0.0039598737
-      - 0.033046503
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.7084094
-      - 0.01170849
-      - -0.011662064
-      - -0.70560825
-    scale:
-      - 0.8
-      - 0.8
-      - 0.8
-    destMargin: 4
-    launchSequenceId: launch_rocket_from_base
-    modelPath: boat.obj
-    textureTiling:
-      - 1
-      - 1
-    travelSpeed: 1.350638
   - startPlanet: 0
     destPlanet: 3
     destStage: 0
@@ -806,9 +771,9 @@ boats:
     height: 2.0631275
     facingYaw: -1.67347e-08
     pos:
-      - 2.95
-      - 3.81
-      - 3.68
+      - 2
+      - -0.5
+      - -1.16
     upVec:
       - 0.99973696
       - -0.014351349
@@ -1634,7 +1599,7 @@ platforms:
         groupId: stage1_planet1
         targets:
           - sequence: boats
-            index: 1
+            index: 0
         hideTargets: []
   - currentPlanetNum: 0
     theta: -0.28730252
@@ -1967,7 +1932,7 @@ platforms:
         groupId: stage1_planet2
         targets:
           - sequence: boats
-            index: 2
+            index: 1
         hideTargets: []
   - currentPlanetNum: 3
     theta: 0.40818188
@@ -2131,8 +2096,8 @@ platforms:
       - -0.011923702
     pos:
       - 7.53
-      - 3.2
-      - -4.24
+      - 3.18
+      - -4.2
     rotation:
       - -3.125965
       - -0.7028181
@@ -2162,8 +2127,8 @@ platforms:
       - 0.019054621
     pos:
       - 2.09
-      - 5.3
-      - -5.99
+      - 5.26
+      - -5.95
     rotation:
       - 3.1166222
       - 0.70259434
@@ -2193,8 +2158,8 @@ platforms:
       - -0.011400163
     pos:
       - 2.2
-      - 5.27
-      - -5.96
+      - 5.18
+      - -5.9
     rotation:
       - -3.1266513
       - -0.70283055
@@ -2212,32 +2177,32 @@ platforms:
     theta: -0.5523795
     phi: 0.08754171
     height: 2.3078227
-    facingYaw: 0.6858318
+    facingYaw: 0.6984948
     scale:
-      - 0.4613373
-      - 0.29901487
+      - 0.46536788
+      - 0.29901502
       - 0.17202999
     modelPath: curvePlatform.obj
     upVec:
       - 0.99978936
-      - 0.01565963
+      - 0.01565957
       - -0.013269603
     pos:
-      - -3.2
-      - 5.1
-      - -6.12
+      - -3.28
+      - 5.07
+      - -6.07
     rotation:
-      - -0.0171464
-      - -0.68575966
-      - -3.1150723
+      - -0.017327314
+      - -0.6984208
+      - -3.1147888
     textureTiling:
       - 2.4785843
       - 3.2790415
     rotationQuat:
-      - 0.67268246
-      - -0.24033244
-      - -0.23521927
-      - -0.65909827
+      - 0.6711797
+      - -0.24450068
+      - -0.23947363
+      - -0.6575634
     platformId: platform_25
   - currentPlanetNum: 3
     theta: 0.72371554
@@ -2439,32 +2404,32 @@ platforms:
     theta: -0.5523795
     phi: 0.08754171
     height: 2.3078227
-    facingYaw: -0.85060734
+    facingYaw: -0.85060775
     scale:
-      - 1.7460092
+      - 1.6557144
       - 3.3802917
-      - 1.5283791
+      - 1.693341
     modelPath: platform.obj
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - 0
+      - 0
     pos:
       - 4.36
-      - 2.03
-      - -3.23
+      - 2.07
+      - -3.02
     rotation:
-      - -2.9541619e-08
+      - 0
       - 0.8506076
-      - -2.0968263e-07
+      - 0
     textureTiling:
       - 2.4785843
       - 3.2790415
     rotationQuat:
+      - 0.64411306
+      - 0.29175055
+      - 0.29175055
       - -0.64411306
-      - -0.29175043
-      - -0.2917504
-      - 0.6441132
     platformId: platform_32
 stageObjects: []
 tutorialTriggers:

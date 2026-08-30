@@ -206,6 +206,7 @@ bool Game::CreateGameSystems()
                 .progressController = *mProgressController,
                 .gamepadService = *mGamepadRumbleService,
                 .pauseMenuController = *mPauseMenuController,
+                .physicsSystem = *mPhysicsSystem,
             });
 
     mFrameRenderer = std::make_unique<GameFrameRenderer>(
@@ -559,6 +560,11 @@ void Game::UpdateGame()
 
     if (mHitStopTimer >= 0.0f) {
         mHitStopTimer -= deltaTime;
+        if (mCameraSystem) {
+            // ヒットストップ中も画面シェイクだけは時間を進める。
+            // 通常の追従更新は止めたままなので、衝撃がカメラ基準位置を乱さない。
+            mCameraSystem->UpdateShakeEffects(deltaTime);
+        }
         return;
     }
 
@@ -849,6 +855,26 @@ bool Game::TogglePlayerSplit()
 {
     return mPlayerConfigurationController &&
            mPlayerConfigurationController->ToggleSplit();
+}
+
+void Game::SetPlayerSplitMergeButtonHeld(bool isHeld)
+{
+    if (mPlayerConfigurationController) {
+        mPlayerConfigurationController->SetSplitMergeButtonHeld(isHeld);
+    }
+}
+
+bool Game::TryResolvePlayerMergeGuide(
+    const Player*& targetPlayer,
+    float& radiusWorldUnits) const
+{
+    if (!mPlayerConfigurationController) {
+        targetPlayer = nullptr;
+        radiusWorldUnits = 0.0f;
+        return false;
+    }
+    return mPlayerConfigurationController->TryResolveMergeGuide(
+        targetPlayer, radiusWorldUnits);
 }
 
 bool Game::CanTogglePlayerSplit() const
@@ -1486,6 +1512,9 @@ void Game::OnPlayerApplyDamage(int playerNum)
 {
     mAudioSystem->PlaySE("damaged_se");
     VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
+    if (mCameraSystem) {
+        mCameraSystem->StartPlayerDamagedShake(playerNum);
+    }
 }
 
 void Game::SynchronizeSoloSplitResources(const Player& sourcePlayer)
@@ -1506,6 +1535,14 @@ void Game::OnStrongAttacked(int playerNum)
     mSceneSystem->OnStrongAttacked();
     mHitStopTimer = 0.4f;
     VibrateControllerForPlayer(playerNum, 40000, 0, 500);
+}
+
+void Game::OnAirSlamAttackHit(int playerNum)
+{
+    OnStrongAttacked(playerNum);
+    if (mCameraSystem) {
+        mCameraSystem->StartAirStrongAttackHitShake(playerNum);
+    }
 }
 
 void Game::OnPlayerCounter(int playerNum)

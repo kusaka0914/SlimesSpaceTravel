@@ -62,6 +62,16 @@ void SceneObjectRenderer::DrawSceneObjects(
             mRenderer->GetGame()->GetPlayers(),
             mRenderer->GetGame()->GetIsDebugEditorShowing(),
             mRenderer->GetGame()->GetPhysicsSystem());
+
+        const Player* mergeGuideTargetPlayer = nullptr;
+        float mergeGuideRadiusWorldUnits = 0.0f;
+        if (mRenderer->GetGame()->TryResolvePlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits)) {
+            mPlayerEffectRenderer->DrawPlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits);
+        }
     }
 
     if (mNPCProximityMessageRenderer) {
@@ -99,7 +109,16 @@ void SceneObjectRenderer::DrawActorOnPlanets(
             }
         }
 
-        mRenderer->TryDrawActors(planet->GetBoats());
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && boat->ShouldRenderUnavailablePreview()) {
+                constexpr float unavailableRocketOpacity = 0.2f;
+                mRenderer->DrawInactiveActorPreview(
+                    boat,
+                    unavailableRocketOpacity);
+                continue;
+            }
+            mRenderer->TryDrawActor(boat);
+        }
         mRenderer->TryDrawActors(planet->GetBoatParts());
         mRenderer->TryDrawActors(planet->GetCrystals());
         mRenderer->TryDrawActors(planet->GetPlatforms());

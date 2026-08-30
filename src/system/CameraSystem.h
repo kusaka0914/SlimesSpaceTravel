@@ -6,6 +6,7 @@
 #include "system/camera/DebugCamera.h"
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
+#include "system/camera/CameraShakeEffect.h"
 #include "system/camera/PlayerCameraSettings.h"
 #include "system/sequence/BossDefeatSequence.h"
 
@@ -30,6 +31,9 @@ public:
 
     void ProcessInput();
     void Update(float deltaTime);
+    void UpdateShakeEffects(float deltaTime);
+    void StartAirStrongAttackHitShake(int playerNum);
+    void StartPlayerDamagedShake(int playerNum);
 
     bool PlayCinematic(
         std::string_view sequenceId,
@@ -102,9 +106,12 @@ private:
     float GetEasedTalkPageFocusBlend() const;
     void CopyPlayerPitchOffset(int fromPlayerIndex, int toPlayerIndex);
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
+    glm::mat4 ApplyPlayerShake(
+        const glm::mat4& view,
+        int playerIndex) const;
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;
-    Boat* FindFocusingBoat() const;
+    Actor* FindFocusingActor() const;
     Boat* FindMovingBoat() const;
     Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;
@@ -125,6 +132,7 @@ private:
     float mKeyboardPitchInput = 0.0f;
     float mTalkCameraBlend = 0.0f;
     std::vector<float> mPlayerPitchOffsetsDegrees;
+    std::vector<CameraShakeEffect> mPlayerShakeEffects;
     Player* mTalkCameraPlayer = nullptr;
     bool mHasTalkCameraTarget = false;
     glm::vec3 mTalkCameraTargetPos{0.0f};

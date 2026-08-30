@@ -33,6 +33,7 @@ public:
 
     bool GetIsMoving() const { return mIsMoving; }
     bool HasAppeared() const { return mIsActive; }
+    bool ShouldRenderUnavailablePreview() const;
 
     float GetProgress() const { return mProgress; }
     float GetTravelSpeed() const { return mTravelSpeed; }

@@ -10,6 +10,7 @@ class GameWorld;
 class GamepadRumbleService;
 class PauseMenuController;
 class Player;
+class PhysicsSystem;
 class SceneSystem;
 class SequenceSystem;
 class StagePlayerLoader;
@@ -23,6 +24,7 @@ struct PlayerConfigurationDependencies {
     GameProgressController& progressController;
     GamepadRumbleService& gamepadService;
     PauseMenuController& pauseMenuController;
+    PhysicsSystem& physicsSystem;
 };
 
 class PlayerConfigurationController {
@@ -39,6 +41,10 @@ public:
 
     bool ToggleSplit();
     bool CanToggleSplit() const;
+    void SetSplitMergeButtonHeld(bool isHeld);
+    bool TryResolveMergeGuide(
+        const Player*& targetPlayer,
+        float& radiusWorldUnits) const;
     void UpdateSplitMergeTransition(float deltaTime);
     bool IsSplitMergeTransitionActive() const;
     bool SwitchControlledPlayer();
@@ -71,14 +77,24 @@ private:
         SplitMergeTransitionKind kind = SplitMergeTransitionKind::None;
         float elapsedSeconds = 0.0f;
         glm::vec3 splitPlayerStartPosition{0.0f};
+        glm::vec3 splitDirection{1.0f, 0.0f, 0.0f};
         glm::vec3 splitPlayerStartScale{1.0f};
         glm::vec3 mainPlayerStartScale{1.0f};
     };
 
+    bool CanStartSplitMergeInput() const;
     bool CanChangeSoloConfiguration() const;
     bool SplitPlayer();
     bool BeginSoloSplitTransition();
+    bool TryResolveSplitDirection(
+        Player& mainPlayer,
+        glm::vec3& splitDirection) const;
+    bool IsSplitDirectionClear(
+        Player& mainPlayer,
+        const glm::vec3& splitDirection) const;
     bool BeginSoloMergeTransition();
+    void UpdatePendingSoloMergeRequest();
+    Player* FindMergeGuideTargetPlayer() const;
     void UpdateSoloSplitTransition(float progress);
     void UpdateSoloMergeTransition(float progress);
     void CompleteSoloSplitTransition();
@@ -101,7 +117,10 @@ private:
     GameProgressController& mProgressController;
     GamepadRumbleService& mGamepadService;
     PauseMenuController& mPauseMenuController;
+    PhysicsSystem& mPhysicsSystem;
     bool mIsSecondPlayerJoined = false;
     PlayerControlConfigurationState mControlState;
     SplitMergeTransitionState mSplitMergeTransition;
+    bool mIsSplitMergeButtonHeld = false;
+    bool mIsMergeGuideRequested = false;
 };
