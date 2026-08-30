@@ -47,16 +47,17 @@ void SceneObjectRenderer::DrawSceneObjects(
 
     std::vector<Planet*> planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
-    DrawPlanets(planets);
-    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
-    DrawCharacterShadows(planets);
-
     const SequenceSystem* sequenceSystem =
         mRenderer->GetGame()->GetSequenceSystem();
-    const bool isStageStartCinematicPlaying =
-        sequenceSystem &&
-        sequenceSystem->IsCinematicChainPlaying();
-    if (mPlayerEffectRenderer && !isStageStartCinematicPlaying) {
+    const bool shouldDrawPlayers =
+        !sequenceSystem ||
+        !sequenceSystem->IsCinematicChainPlaying();
+
+    DrawPlanets(planets);
+    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
+    DrawCharacterShadows(planets, shouldDrawPlayers);
+
+    if (mPlayerEffectRenderer && shouldDrawPlayers) {
         mPlayerEffectRenderer->DrawPlayers(
             viewMat,
             mRenderer->GetGame()->GetPlayers(),
@@ -163,7 +164,8 @@ void SceneObjectRenderer::DrawActorOnPlanets(
 }
 
 void SceneObjectRenderer::DrawCharacterShadows(
-    const std::vector<Planet*>& planets) const
+    const std::vector<Planet*>& planets,
+    bool shouldDrawPlayers) const
 {
     if (!mRenderer || !mRenderer->GetGame()) {
         return;
@@ -174,11 +176,21 @@ void SceneObjectRenderer::DrawCharacterShadows(
             continue;
         }
         for (Enemy* enemy : planet->GetEnemies()) {
+            if (!mRenderer->IsActorInsideView(enemy)) {
+                continue;
+            }
             mRenderer->DrawBlobShadow(enemy);
         }
         for (NPC* npc : planet->GetNPCs()) {
+            if (!mRenderer->IsActorInsideView(npc)) {
+                continue;
+            }
             mRenderer->DrawBlobShadow(npc);
         }
+    }
+
+    if (!shouldDrawPlayers) {
+        return;
     }
 
     for (Player* player : mRenderer->GetGame()->GetPlayers()) {

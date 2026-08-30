@@ -46,11 +46,19 @@ public:
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
     bool ShouldRenderSolidWhite() const override;
+    glm::vec3 GetRenderPosition() const override;
+    glm::vec3 GetRenderScale() const override;
+    glm::quat GetRenderModelRotationOffset() const override;
 
     void ApplyDamage(Enemy* enemy, float deltaTime);
     void ApplyDamageFromActor(
         const glm::vec3& damageSourcePosition,
         float damage);
+    void StartDamageKnockBack(
+        const glm::vec3& damageSourcePosition);
+    void StartNormalHitReaction();
+    void StartStarCollectionCelebration(float durationSeconds);
+    void StopStarCollectionCelebration();
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
@@ -530,6 +538,8 @@ public:
     void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 
 private:
+    void UpdateNormalHitReaction(float deltaTime);
+    void UpdateStarCollectionCelebration(float deltaTime);
     void RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState);
 
     bool ShouldAcceptLandingSurface(
@@ -560,5 +570,8 @@ private:
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
     bool mIsSplitForm = false;
+    float mNormalHitReactionElapsedSeconds = -1.0f;
+    float mStarCollectionCelebrationElapsedSeconds = -1.0f;
+    float mStarCollectionCelebrationDurationSeconds = 0.0f;
     std::uint64_t mJumpSequence = 0;
 };

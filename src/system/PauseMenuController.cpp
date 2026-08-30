@@ -58,7 +58,12 @@ void PauseMenuController::ExecuteSelectedItem(Game& game)
         break;
 
     case 4:
-        game.OpenFeedbackForm();
+        if (game.IsReviewBuild()) {
+            Close();
+            game.ToggleDebugEditor();
+        } else {
+            game.OpenFeedbackForm();
+        }
         break;
 
     case 5:

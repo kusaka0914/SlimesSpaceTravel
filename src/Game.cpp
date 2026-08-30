@@ -76,11 +76,12 @@ Game::Game()
 Game::~Game() = default;
 
 bool Game::Initialize(
-    bool isDebugMode,
+    bool areDebugToolsEnabled,
+    bool shouldStartInDebugStage,
     const std::string& editorSessionPath,
     const std::string& editorRestartErrorLogPath)
 {
-    mIsDebugMode = isDebugMode;
+    mIsDebugMode = areDebugToolsEnabled;
 
     if (!InitializeGLFW()) {
         return false;
@@ -99,10 +100,10 @@ bool Game::Initialize(
     }
     InitializeGameController();
 
-    constexpr int stageCount = 6;
+    constexpr int stageCount = 7;
     CreateStages(stageCount);
 
-    if (isDebugMode) {
+    if (shouldStartInDebugStage) {
         mWorld->ChangeStage(1);
         mStageFlowController->SetCurrentStageYamlPath("../assets/data/stage/test.yaml");
         mSceneSystem->StartPlayingScene();
@@ -241,12 +242,31 @@ void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
         mParticleSystem->Clear();
     }
 
+    if (mSceneSystem) {
+        mSceneSystem->ClearActorReferencesForStageReload();
+    }
+
+    if (mUIRenderer) {
+        mUIRenderer->ClearDebugActorReferencesForStageReload();
+    }
+
     if (physicsReloadMode == StagePhysicsReloadMode::SkipRebuild &&
         mPhysicsSystem) {
         mPhysicsSystem->ClearForEditorStageRebuild();
     }
 
-    mStageFlowController->ReloadCurrentStage(*this, physicsReloadMode);
+    const bool wasStageReloaded =
+        mStageFlowController->ReloadCurrentStage(
+            *this, physicsReloadMode);
+    if (!wasStageReloaded) {
+        return;
+    }
+
+    if (mEnemyJewelDropSystem) {
+        // Runtime drops are owned by the old GameWorld. Their non-owning
+        // render references must not survive a successful world swap.
+        mEnemyJewelDropSystem->ClearRuntimeDrops();
+    }
 
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->SynchronizeAfterStageReload();
@@ -425,6 +445,15 @@ void Game::TryCreatePlayer2()
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->JoinSecondPlayer();
     }
+}
+
+bool Game::IsReviewBuild() const
+{
+#ifdef GAME_REVIEW_BUILD
+    return true;
+#else
+    return false;
+#endif
 }
 
 void Game::ReturnToSinglePlayer()
@@ -1506,6 +1535,11 @@ void Game::StartPlayingScene()
 void Game::StartFocusingScene()
 {
     mSceneSystem->StartFocusingScene();
+}
+
+void Game::FinishFocusingScene()
+{
+    mSceneSystem->FinishFocusingScene();
 }
 
 void Game::OnPlayerApplyDamage(int playerNum)

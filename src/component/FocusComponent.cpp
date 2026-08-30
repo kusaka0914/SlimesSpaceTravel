@@ -1,6 +1,7 @@
 #include "FocusComponent.h"
 #include "Game.h"
 #include "actor/Actor.h"
+#include "system/CameraSystem.h"
 
 namespace {
 constexpr float focusDurationSeconds = 3.0f;
@@ -43,10 +44,21 @@ bool FocusComponent::HasReachedRevealMoment() const
 
 void FocusComponent::TryFinishFocus()
 {
-    const bool shouldFinishFocus = mFocusTimer <= 0.0f;
-    if (shouldFinishFocus) {
-        mOwner->GetGame()->StartPlayingScene();
+    if (mFocusTimer > 0.0f) {
+        return;
     }
+
+    mFocusTimer = -1.0f;
+
+    Game* game = mOwner ? mOwner->GetGame() : nullptr;
+    CameraSystem* cameraSystem =
+        game ? game->GetCameraSystem() : nullptr;
+    if (!game ||
+        (cameraSystem && cameraSystem->HasActiveRevealFocus())) {
+        return;
+    }
+
+    game->FinishFocusingScene();
 }
 
 void FocusComponent::StartFocus()

@@ -462,15 +462,29 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex,
     state.autoFollowDelayRemainingSeconds = std::max(
         0.0f, state.autoFollowDelayRemainingSeconds - std::max(0.0f, deltaTime));
 
+    const bool allowsGroundedMovementCameraAssist =
+        allowsMovementCameraAssist &&
+        player->GetOnGround();
     UpdateAutoFollowRequest(
-        player, state, settings, deltaTime, allowsMovementCameraAssist);
+        player,
+        state,
+        settings,
+        deltaTime,
+        allowsGroundedMovementCameraAssist);
 
     UpdateCameraForward(player, state, settings.attackTargetSmoothingSpeed,
                         settings.autoFollowRotationDurationSeconds, deltaTime);
     UpdateBackwardFacingFraming(
-        player, state, settings, deltaTime, allowsMovementCameraAssist);
+        player,
+        state,
+        settings,
+        deltaTime,
+        allowsGroundedMovementCameraAssist);
     UpdateSurfaceTraversalAutoAlign(
-        player, state, settings, allowsMovementCameraAssist);
+        player,
+        state,
+        settings,
+        allowsGroundedMovementCameraAssist);
 }
 
 void PlayerCamera::UpdateAutoFollowRequest(

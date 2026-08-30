@@ -36,6 +36,8 @@ public:
     bool IsInBase() const { return mCurrentStageNum == 0; }
 
 private:
+    void RefreshEnemyUpdatePriorities();
+
     std::vector<Player*> mPlayers;
     std::vector<std::unique_ptr<Actor>> mActors;
     std::vector<Stage*> mStages;
@@ -43,4 +45,5 @@ private:
 
     Stage* mCurrentStage = nullptr;
     int mCurrentStageNum = 0;
+    float mEnemyUpdatePriorityRefreshRemainingSeconds = 0.0f;
 };

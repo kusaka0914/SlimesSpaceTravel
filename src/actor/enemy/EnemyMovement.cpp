@@ -72,6 +72,18 @@ bool TryCalculateTangentialDirectionToPlayer(
         tangentialDirectionToPlayer);
 }
 
+Planet::EllipseSurfaceFace ResolveAllowedEllipseHemisphere(
+    const Enemy& enemy,
+    const Planet& planet)
+{
+    const glm::vec3& referencePosition =
+        enemy.HasRecordedGroundedTransform()
+            ? enemy.GetLastGroundedPosition()
+            : enemy.GetPos();
+    return planet.ResolveEllipseSurfaceHemisphere(
+        referencePosition);
+}
+
 bool IsWithinCurrentEllipseFaceMovementArea(
     const Enemy& enemy,
     const glm::vec3& requestedPosition)
@@ -113,18 +125,74 @@ bool IsWithinCurrentEllipseFaceMovementArea(
          planet->GetPos()[verticalAxisIndex]) /
         verticalAxisRadius;
 
-    const Planet::EllipseSurfaceFace currentHemisphere =
-        planet->ResolveEllipseSurfaceHemisphere(
-            enemy.GetPos());
+    const Planet::EllipseSurfaceFace allowedHemisphere =
+        ResolveAllowedEllipseHemisphere(enemy, *planet);
 
 
 
 
     constexpr float faceInteriorBoundaryRatio = 0.45f;
-    return currentHemisphere ==
+    return allowedHemisphere ==
                Planet::EllipseSurfaceFace::Front
         ? projectedVerticalRatio >= faceInteriorBoundaryRatio
         : projectedVerticalRatio <= -faceInteriorBoundaryRatio;
+}
+
+glm::vec3 ClampAirborneMovementToCurrentEllipseFaceMovementArea(
+    const Enemy& enemy,
+    const glm::vec3& upDirection,
+    const glm::vec3& requestedMovement)
+{
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet ||
+        planet->GetPlanetShape() !=
+            Planet::PlanetShape::Ellipse) {
+        return requestedMovement;
+    }
+
+    const glm::vec3 currentPosition = enemy.GetPos();
+    if (IsWithinCurrentEllipseFaceMovementArea(
+            enemy,
+            currentPosition + requestedMovement)) {
+        return requestedMovement;
+    }
+
+    // The face boundary limits travel along the ellipse, not movement toward
+    // its surface. Keeping the normal component prevents an airborne enemy
+    // from being suspended when its knockback reaches the face boundary.
+    const glm::vec3 normalMovement =
+        upDirection *
+        glm::dot(requestedMovement, upDirection);
+    const glm::vec3 tangentialMovement =
+        requestedMovement - normalMovement;
+    if (glm::dot(tangentialMovement, tangentialMovement) <=
+        directionLengthEpsilonSquared) {
+        return normalMovement;
+    }
+
+    float allowedTangentialRatio = 0.0f;
+    float blockedTangentialRatio = 1.0f;
+    constexpr int boundarySearchIterations = 16;
+    for (int iteration = 0;
+         iteration < boundarySearchIterations;
+         ++iteration) {
+        const float middleRatio =
+            (allowedTangentialRatio + blockedTangentialRatio) * 0.5f;
+        const glm::vec3 candidatePosition =
+            currentPosition +
+            normalMovement +
+            tangentialMovement * middleRatio;
+        if (IsWithinCurrentEllipseFaceMovementArea(
+                enemy,
+                candidatePosition)) {
+            allowedTangentialRatio = middleRatio;
+        } else {
+            blockedTangentialRatio = middleRatio;
+        }
+    }
+
+    return normalMovement +
+           tangentialMovement * allowedTangentialRatio;
 }
 
 glm::vec3 ClampToCurrentEllipseFaceMovementArea(
@@ -611,10 +679,15 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
             deltaTime;
     enemy.SetVelocity(velocity);
 
-    const glm::vec3 movementDelta =
+    const glm::vec3 requestedMovementDelta =
         velocity *
         deltaTime;
     const glm::vec3 movementStart = enemy.GetPos();
+    const glm::vec3 movementDelta =
+        ClampAirborneMovementToCurrentEllipseFaceMovementArea(
+            enemy,
+            upDirection,
+            requestedMovementDelta);
     const glm::vec3 desiredPosition =
         movementStart + movementDelta;
     ActorMovementCollisionResult collisionResult =
@@ -624,9 +697,11 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
             desiredPosition,
             ActorCollisionFilter::AllActors);
     glm::vec3 faceConstrainedPosition =
-        ClampToCurrentEllipseFaceMovementArea(
+        movementStart +
+        ClampAirborneMovementToCurrentEllipseFaceMovementArea(
             enemy,
-            collisionResult.resolvedPosition);
+            upDirection,
+            collisionResult.resolvedPosition - movementStart);
     enemy.SetPos(faceConstrainedPosition);
 
     const bool isMovingTowardGround =
@@ -673,9 +748,11 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
                     desiredPosition,
                     ActorCollisionFilter::AllActors);
             faceConstrainedPosition =
-                ClampToCurrentEllipseFaceMovementArea(
+                movementStart +
+                ClampAirborneMovementToCurrentEllipseFaceMovementArea(
                     enemy,
-                    collisionResult.resolvedPosition);
+                    upDirection,
+                    collisionResult.resolvedPosition - movementStart);
             enemy.SetPos(faceConstrainedPosition);
 
             const float downwardDistanceAfterPush =
@@ -705,9 +782,11 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
                 desiredPosition,
                 ActorCollisionFilter::IgnoreEnemies);
         faceConstrainedPosition =
-            ClampToCurrentEllipseFaceMovementArea(
+            movementStart +
+            ClampAirborneMovementToCurrentEllipseFaceMovementArea(
                 enemy,
-                collisionResult.resolvedPosition);
+                upDirection,
+                collisionResult.resolvedPosition - movementStart);
         enemy.SetPos(faceConstrainedPosition);
         mShouldSeparateAfterLanding = true;
     }

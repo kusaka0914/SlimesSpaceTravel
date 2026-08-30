@@ -72,6 +72,9 @@ void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& m
     // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
     if (status.IsBreakCountEmpty() && canStartLaunch) {
         movement.LaunchIntoAir(enemy, status, stateMachine, deltaTime);
+        if (!status.GetIsBoss()) {
+            enemy.StartNormalHitReaction();
+        }
         return;
     }
 }

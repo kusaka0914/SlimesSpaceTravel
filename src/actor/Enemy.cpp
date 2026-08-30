@@ -21,8 +21,6 @@
 
 namespace {
 constexpr float dormantEnemyUpdateIntervalSeconds = 0.25f;
-constexpr float minimumFullRateDistance = 30.0f;
-constexpr float fullRateDistanceMargin = 5.0f;
 constexpr float groundedPositionEpsilon = 0.0001f;
 constexpr float normalEnemySpinDurationSeconds = 0.42f;
 constexpr float bossSquashDurationSeconds = 0.10f;
@@ -100,10 +98,9 @@ float Enemy::ResolveMinimumUpdateIntervalSeconds() const
 
 bool Enemy::CanUseReducedUpdateRate() const
 {
-    Game* game = GetGame();
     Planet* planet = GetCurrentPlanet();
-    if (!game ||
-        !planet ||
+    if (!planet ||
+        mShouldUseFullRateUpdate ||
         !mStateMachine->IsAlive() ||
         mStateMachine->GetActionState() != ActionState::Idle ||
         mHitReactionKind != HitReactionKind::None ||
@@ -113,31 +110,6 @@ bool Enemy::CanUseReducedUpdateRate() const
         GetIsEditorSelected()) {
         return false;
     }
-
-    const float fullRateDistance =
-        std::max(
-            minimumFullRateDistance,
-            GetDetectionRange() + fullRateDistanceMargin);
-    const float fullRateDistanceSquared =
-        fullRateDistance * fullRateDistance;
-
-    for (Player* player : game->GetPlayers()) {
-        if (!player ||
-            !player->GetIsActive() ||
-            !player->IsAlive() ||
-            player->GetCurrentPlanet() != planet) {
-            continue;
-        }
-
-        const glm::vec3 enemyToPlayer =
-            player->GetPos() - GetPos();
-        const float distanceSquared =
-            glm::dot(enemyToPlayer, enemyToPlayer);
-        if (distanceSquared <= fullRateDistanceSquared) {
-            return false;
-        }
-    }
-
     return true;
 }
 

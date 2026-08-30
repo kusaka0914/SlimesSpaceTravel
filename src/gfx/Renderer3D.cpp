@@ -1111,14 +1111,15 @@ glm::mat4 Renderer3D::CreateBillboard(
 
 glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const
 {
+    const glm::vec3 position = actor->GetRenderPosition();
     const glm::vec3 scale = actor->GetRenderScale() * scaleMultiplier;
 
     if (useOrient) {
-        return glm::translate(glm::mat4(1.0f), actor->GetPos()) * mGame->GetMathUtils()->CreateOrient(actor) *
+        return glm::translate(glm::mat4(1.0f), position) * mGame->GetMathUtils()->CreateOrient(actor) *
                glm::scale(glm::mat4(1.0f), scale);
     }
 
-    return glm::translate(glm::mat4(1.0f), actor->GetPos()) * glm::scale(glm::mat4(1.0f), scale);
+    return glm::translate(glm::mat4(1.0f), position) * glm::scale(glm::mat4(1.0f), scale);
 }
 
 void Renderer3D::DrawActorSelectionUnderlay(

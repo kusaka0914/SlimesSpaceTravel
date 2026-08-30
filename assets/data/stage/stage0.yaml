@@ -180,9 +180,9 @@ boats:
   - startPlanet: 1
     destPlanet: 1
     destStage: 6
-    theta: 1.122474
-    phi: -1.547427
-    height: 0.29001045
+    theta: 1.1441694
+    phi: -1.5473151
+    height: 0.2928381
     facingYaw: -1.5359126
     pos:
       - 0.1
@@ -251,9 +251,9 @@ boats:
   - startPlanet: 1
     destPlanet: 0
     destStage: 0
-    theta: 2.7276
-    phi: 1.4305596
-    height: 0.19718266
+    theta: 2.7283754
+    phi: 1.4311695
+    height: 0.19925785
     facingYaw: -1.5358474
     pos:
       - -1.3

@@ -487,16 +487,20 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
 
 void PlatformPressureSwitchComponent::StartFirstActivationFocus()
 {
+    bool hasFocusTarget = false;
     for (const std::string& platformId : mTargetPlatformIds) {
         Platform* target = FindTargetPlatform(platformId);
         if (!target) {
             continue;
         }
 
+        target->StartFocus();
+        hasFocusTarget = true;
+    }
+
+    if (hasFocusTarget) {
         mHasStartedActivationFocus = true;
         mIsWaitingForActivationReveal = true;
-        target->StartFocus();
-        return;
     }
 }
 

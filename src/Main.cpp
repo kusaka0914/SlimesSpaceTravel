@@ -15,7 +15,12 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif
 
 struct GameLaunchOptions {
-    bool isDebugMode = false;
+#ifdef GAME_REVIEW_BUILD
+    bool areDebugToolsEnabled = true;
+#else
+    bool areDebugToolsEnabled = false;
+#endif
+    bool shouldStartInDebugStage = false;
     std::string editorSessionPath;
     std::string editorRestartErrorLogPath;
 };
@@ -25,13 +30,15 @@ GameLaunchOptions ParseLaunchOptions(int argc, const char* argv[])
     GameLaunchOptions launchOptions;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--debug") == 0) {
-            launchOptions.isDebugMode = true;
+            launchOptions.areDebugToolsEnabled = true;
+            launchOptions.shouldStartInDebugStage = true;
             continue;
         }
 
         if (std::strcmp(argv[i], "--restore-editor-session") == 0 && i + 1 < argc) {
             launchOptions.editorSessionPath = argv[++i];
-            launchOptions.isDebugMode = true;
+            launchOptions.areDebugToolsEnabled = true;
+            launchOptions.shouldStartInDebugStage = true;
             continue;
         }
 
@@ -71,7 +78,8 @@ int main(int argc, const char* argv[])
     Game game;
 
     if (game.Initialize(
-            launchOptions.isDebugMode,
+            launchOptions.areDebugToolsEnabled,
+            launchOptions.shouldStartInDebugStage,
             launchOptions.editorSessionPath,
             launchOptions.editorRestartErrorLogPath)) {
         game.RunLoop();

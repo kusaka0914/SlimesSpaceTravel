@@ -12,6 +12,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <string_view>
 
 namespace {
@@ -21,6 +23,62 @@ constexpr std::string_view dodgeAnimationId = "dodge";
 constexpr std::string_view attackAnimationId = "attack";
 constexpr std::string_view secondAttackAnimationId = "second_attack";
 constexpr std::string_view strongAttackAnimationId = "strong_attack";
+constexpr float normalHitReactionDurationSeconds = 0.42f;
+
+struct StarCollectionCelebrationTransform {
+    float heightOffsetWorldUnits = 0.0f;
+    glm::vec3 scaleMultiplier{1.0f};
+};
+
+float CalculateSmoothstep(float progress)
+{
+    const float clampedProgress = glm::clamp(progress, 0.0f, 1.0f);
+    return clampedProgress * clampedProgress *
+           (3.0f - 2.0f * clampedProgress);
+}
+
+StarCollectionCelebrationTransform
+CalculateStarCollectionCelebrationTransform(
+    float elapsedSeconds,
+    float durationSeconds)
+{
+    StarCollectionCelebrationTransform transform;
+    if (elapsedSeconds < 0.0f || durationSeconds <= 0.0f) {
+        return transform;
+    }
+
+    const float celebrationProgress = glm::clamp(
+        elapsedSeconds / durationSeconds,
+        0.0f,
+        1.0f);
+    constexpr float hopCount = 3.0f;
+    const float hopProgress = std::min(
+        celebrationProgress * hopCount,
+        hopCount - 0.0001f);
+    const float progressWithinHop =
+        hopProgress - std::floor(hopProgress);
+    const float hopArc =
+        4.0f * progressWithinHop * (1.0f - progressWithinHop);
+
+    constexpr float baseHopHeightWorldUnits = 0.22f;
+    constexpr float middleHopHeightBonusWorldUnits = 0.08f;
+    const float hopHeightWorldUnits =
+        baseHopHeightWorldUnits +
+        std::sin(glm::pi<float>() * celebrationProgress) *
+            middleHopHeightBonusWorldUnits;
+    transform.heightOffsetWorldUnits =
+        hopArc * hopHeightWorldUnits;
+
+    constexpr float maximumStretch = 0.08f;
+    const float stretch =
+        std::sin(glm::two_pi<float>() * progressWithinHop) *
+        maximumStretch;
+    transform.scaleMultiplier = glm::vec3(
+        1.0f - stretch * 0.45f,
+        1.0f + stretch,
+        1.0f - stretch * 0.45f);
+    return transform;
+}
 }
 
 Player::Player(Game* game)
@@ -159,6 +217,103 @@ bool Player::ShouldRenderSolidWhite() const
     return (blinkPhase % 2) == 0;
 }
 
+glm::vec3 Player::GetRenderPosition() const
+{
+    const StarCollectionCelebrationTransform celebrationTransform =
+        CalculateStarCollectionCelebrationTransform(
+            mStarCollectionCelebrationElapsedSeconds,
+            mStarCollectionCelebrationDurationSeconds);
+
+    glm::vec3 upDirection = GetUpVec();
+    const float upLengthSquared = glm::dot(upDirection, upDirection);
+    if (upLengthSquared <= 0.000001f) {
+        upDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        upDirection /= std::sqrt(upLengthSquared);
+    }
+
+    return GetPos() +
+           upDirection * celebrationTransform.heightOffsetWorldUnits;
+}
+
+glm::vec3 Player::GetRenderScale() const
+{
+    const StarCollectionCelebrationTransform celebrationTransform =
+        CalculateStarCollectionCelebrationTransform(
+            mStarCollectionCelebrationElapsedSeconds,
+            mStarCollectionCelebrationDurationSeconds);
+    return Actor::GetRenderScale() *
+           celebrationTransform.scaleMultiplier;
+}
+
+glm::quat Player::GetRenderModelRotationOffset() const
+{
+    if (mNormalHitReactionElapsedSeconds < 0.0f) {
+        return Actor::GetRenderModelRotationOffset();
+    }
+
+    const float progress = glm::clamp(
+        mNormalHitReactionElapsedSeconds /
+            normalHitReactionDurationSeconds,
+        0.0f,
+        1.0f);
+    const float angleRadians =
+        glm::two_pi<float>() * CalculateSmoothstep(progress);
+    return glm::angleAxis(
+        angleRadians,
+        glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+void Player::StartNormalHitReaction()
+{
+    mNormalHitReactionElapsedSeconds = 0.0f;
+}
+
+void Player::StartStarCollectionCelebration(float durationSeconds)
+{
+    mStarCollectionCelebrationElapsedSeconds = 0.0f;
+    mStarCollectionCelebrationDurationSeconds =
+        std::max(0.01f, durationSeconds);
+}
+
+void Player::StopStarCollectionCelebration()
+{
+    mStarCollectionCelebrationElapsedSeconds = -1.0f;
+    mStarCollectionCelebrationDurationSeconds = 0.0f;
+}
+
+void Player::UpdateNormalHitReaction(float deltaTime)
+{
+    if (mNormalHitReactionElapsedSeconds < 0.0f) {
+        return;
+    }
+
+    mNormalHitReactionElapsedSeconds +=
+        std::max(0.0f, deltaTime);
+    if (mNormalHitReactionElapsedSeconds <
+        normalHitReactionDurationSeconds) {
+        return;
+    }
+
+    mNormalHitReactionElapsedSeconds = -1.0f;
+}
+
+void Player::UpdateStarCollectionCelebration(float deltaTime)
+{
+    if (mStarCollectionCelebrationElapsedSeconds < 0.0f) {
+        return;
+    }
+
+    mStarCollectionCelebrationElapsedSeconds +=
+        std::max(0.0f, deltaTime);
+    if (mStarCollectionCelebrationElapsedSeconds <
+        mStarCollectionCelebrationDurationSeconds) {
+        return;
+    }
+
+    StopStarCollectionCelebration();
+}
+
 void Player::RecoverFromFatigue()
 {
     if (!mStatus.IsTired()) {
@@ -260,6 +415,9 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    UpdateNormalHitReaction(deltaTime);
+    UpdateStarCollectionCelebration(deltaTime);
+
     if (GetIsActive() && !IsAttachedToPlatform()) {
         PlatformAdhesionComponent::
             TryAttachPlayerToAnyPlatformAlongMovement(
@@ -455,6 +613,17 @@ void Player::ApplyDamageFromActor(
     }
 }
 
+void Player::StartDamageKnockBack(
+    const glm::vec3& damageSourcePosition)
+{
+    mMovement.StartKnockBack(
+        *this,
+        damageSourcePosition);
+    mPlanetGravityController.OnJumpStarted(
+        *this,
+        mMovement);
+}
+
 void Player::AddJewelFromItem()
 {
     mJewelGauge.AddFromItem(1);
@@ -521,6 +690,8 @@ void Player::RespawnAtRestartPoint()
     mRespawn.OnRespawnCompleted();
     mParticleEffectController.Reset();
     mUseSecondAttackAnimationNext = false;
+    mNormalHitReactionElapsedSeconds = -1.0f;
+    StopStarCollectionCelebration();
     mAnimationController.ResetToAnimation(idleAnimationId);
 }
 

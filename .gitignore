@@ -1,5 +1,7 @@
 build/
 dist/
+build-review/
+dist-review/
 .cursor/
 .vscode/
 .vs/

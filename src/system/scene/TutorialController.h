@@ -9,6 +9,7 @@
 class Game;
 class GameProgressState;
 class Player;
+class Platform;
 class UIState;
 
 class TutorialController {
@@ -29,6 +30,7 @@ public:
         const std::string& tutorialId,
         std::size_t pageIndex);
     void Stop(bool returnToPlaying = true);
+    bool ResumeAfterFocus();
     void TryAdvanceFromConfirm();
 
     void TryStartBattleTutorial();
@@ -40,6 +42,8 @@ public:
     void OnPlayerSplitMergeSucceeded();
 
     bool HasActiveTutorial() const;
+    bool IsShowingConversation() const;
+    bool IsShowingActionObjective() const;
     bool HasCompletedTutorial(const std::string& tutorialId) const;
     bool IsWaitingForPlayerAction() const;
     bool IsWaitingForPlayerSwitch() const;
@@ -62,10 +66,15 @@ public:
     const TutorialLibrary& GetLibrary() const { return mLibrary; }
 
 private:
+    void BeginActionObjective();
     void AdvancePage();
     void FinishActiveTutorial();
     void CaptureCurrentPageActionBaseline();
     bool TryAdvanceFromCompletedAction();
+    void AdvanceAfterCompletedAction();
+    const Platform* FindObjectivePressureSwitch() const;
+    bool IsTutorialPlayerNearPressureSwitch() const;
+    bool IsTutorialPlayerPressingPressureSwitch() const;
     TutorialAdvanceCondition GetCurrentAdvanceCondition() const;
 
 private:
@@ -82,5 +91,6 @@ private:
     std::uint64_t mJumpSequenceAtPageStart = 0;
     std::uint64_t mTutorialSessionSequence = 0;
     bool mHasJumpStartedOnCurrentPage = false;
+    bool mIsActionObjectiveActive = false;
     bool mShouldRecordActiveTutorialCompletion = false;
 };

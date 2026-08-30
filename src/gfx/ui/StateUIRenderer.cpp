@@ -9,6 +9,7 @@
 #include "system/scene/TutorialController.h"
 #include "system/tutorial/TutorialLibrary.h"
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -24,8 +25,11 @@ StateUIRenderer::~StateUIRenderer() = default;
 
 void StateUIRenderer::DrawStateUI()
 {
-    if (mGame->GetSceneSystem()->HasActiveTutorial()) {
+    if (mGame->GetSceneSystem()->IsShowingTutorialConversation()) {
         DrawActiveTutorial();
+    } else if (mGame->GetSceneSystem()->IsShowingTutorialObjective()) {
+        mTutorialVideoPlayer->Stop();
+        DrawActionObjective();
     } else {
         mTutorialVideoPlayer->Stop();
     }
@@ -37,6 +41,70 @@ void StateUIRenderer::DrawStateUI()
     if (mGame->GetSceneSystem()->IsStageClear()) {
         DrawStageClear();
     }
+}
+
+void StateUIRenderer::DrawActionObjective()
+{
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    TutorialController* tutorialController =
+        sceneSystem ? sceneSystem->GetTutorialController() : nullptr;
+    const TutorialPage* page =
+        tutorialController
+            ? tutorialController->GetCurrentPage()
+            : nullptr;
+    if (!page) {
+        return;
+    }
+
+    const std::string& objectiveText =
+        page->ResolveObjectiveText(
+            mGame->IsGameControllerConnected());
+    if (objectiveText.empty()) {
+        return;
+    }
+    std::string singleLineObjectiveText = objectiveText;
+    std::replace(
+        singleLineObjectiveText.begin(),
+        singleLineObjectiveText.end(),
+        '\n',
+        ' ');
+
+    const float framebufferWidth =
+        static_cast<float>(mRenderer->GetFbWidth());
+    const float framebufferHeight =
+        static_cast<float>(mRenderer->GetFbHeight());
+    const float textScale = framebufferWidth * 0.00022f;
+    int textWidth = 0;
+    int textHeight = 0;
+    if (!mRenderer->CalculateTextSize(
+            singleLineObjectiveText,
+            textScale,
+            textWidth,
+            textHeight) ||
+        textHeight <= 0) {
+        return;
+    }
+
+    const float rightMargin = framebufferWidth * 0.02f;
+    const float topMargin = framebufferHeight * 0.025f;
+    const float textLeft = std::max(
+        rightMargin,
+        framebufferWidth - rightMargin -
+            static_cast<float>(textWidth));
+    UIRenderer::TextEffect textEffect;
+    textEffect.shadowEnabled = true;
+    textEffect.shadowOffset = glm::vec2(2.0f, 2.0f);
+    textEffect.shadowColor =
+        glm::vec4(0.0f, 0.0f, 0.0f, 220.0f);
+    mRenderer->DrawText(
+        textLeft,
+        topMargin,
+        textScale,
+        singleLineObjectiveText,
+        false,
+        {255.0f, 255.0f, 255.0f, 255.0f},
+        0.0f,
+        &textEffect);
 }
 
 void StateUIRenderer::DrawTransitionUI()

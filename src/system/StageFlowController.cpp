@@ -17,17 +17,18 @@ bool StageFlowController::LoadData(Game& game)
     return game.GetActorLoadSystem()->LoadData();
 }
 
-void StageFlowController::ReloadCurrentStage(
+bool StageFlowController::ReloadCurrentStage(
     Game& game,
     StagePhysicsReloadMode physicsReloadMode)
 {
     if (!LoadData(game)) {
-        return;
+        return false;
     }
     if (physicsReloadMode == StagePhysicsReloadMode::Rebuild) {
         game.GetPhysicsSystem()->Initialize();
     }
     game.GetAudioSystem()->TryChangeBGM();
+    return true;
 }
 
 void StageFlowController::ChangeStage(GameWorld& world, int stageNum)

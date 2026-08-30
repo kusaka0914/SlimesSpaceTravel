@@ -19,6 +19,7 @@ public:
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     void ResumeTalkWithNPC(
         NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex);
+    void ClearActorReferencesForStageReload();
     bool TryStartTalkWithNPC(int playerNum);
     bool CanStartTalkWithNPC(const Player* player) const;
 

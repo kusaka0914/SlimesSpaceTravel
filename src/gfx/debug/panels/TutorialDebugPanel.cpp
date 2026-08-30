@@ -64,6 +64,14 @@ const char* GetAdvanceConditionLabel(
         return "ジャンプして着地したら進む";
     case TutorialAdvanceCondition::PlayerSplitMerge:
         return "分裂または合体が成功したら進む";
+    case TutorialAdvanceCondition::ApproachPressureSwitch:
+        return "スイッチへ近づいたら進む";
+    case TutorialAdvanceCondition::PressPressureSwitch:
+        return "スイッチを押したら進む";
+    case TutorialAdvanceCondition::PlayerSplit:
+        return "分裂状態になったら進む";
+    case TutorialAdvanceCondition::PlayerMerge:
+        return "合体状態になったら進む";
     case TutorialAdvanceCondition::Confirm:
     default:
         return "決定入力で進む";
@@ -354,6 +362,25 @@ void TutorialDebugPanel::DrawPageEditor(
         library.RegeneratePageRuby(page);
     }
 
+    ImGui::SeparatorText("会話を閉じた後の目標表示");
+    ImGui::TextDisabled(
+        "空欄の場合は、上の会話テキストをそのまま使います。");
+    DrawMultilineStringInput<1024>(
+        "共通目標テキスト",
+        page.objectiveText,
+        ImVec2(-1.0f, 46.0f));
+    DrawMultilineStringInput<1024>(
+        "ゲームパッド用目標テキスト",
+        page.controllerObjectiveText,
+        ImVec2(-1.0f, 46.0f));
+    DrawMultilineStringInput<1024>(
+        "キーボード用目標テキスト",
+        page.keyboardObjectiveText,
+        ImVec2(-1.0f, 46.0f));
+    DrawStringInput<256>(
+        "目標スイッチのPlatform ID",
+        page.objectivePlatformId);
+
     const auto drawRubyReadingEditor = [](
                                           const char* label,
                                           std::vector<RubyTextSegment>& segments) {
@@ -411,7 +438,11 @@ void TutorialDebugPanel::DrawPageEditor(
         "決定入力で進む",
         "プレイヤー切替が成功したら進む",
         "ジャンプして着地したら進む",
-        "分裂または合体が成功したら進む"};
+        "分裂または合体が成功したら進む",
+        "スイッチへ近づいたら進む",
+        "スイッチを押したら進む",
+        "分裂状態になったら進む",
+        "合体状態になったら進む"};
     if (ImGui::Combo(
             "次ページへ進む条件",
             &advanceConditionIndex,

@@ -9,7 +9,11 @@ enum class TutorialAdvanceCondition {
     Confirm = 0,
     PlayerSwitch,
     Jump,
-    PlayerSplitMerge
+    PlayerSplitMerge,
+    ApproachPressureSwitch,
+    PressPressureSwitch,
+    PlayerSplit,
+    PlayerMerge
 };
 
 enum class TutorialRepeatPolicy {
@@ -46,6 +50,10 @@ struct TutorialPage {
     std::string text;
     std::string controllerText;
     std::string keyboardText;
+    std::string objectiveText;
+    std::string controllerObjectiveText;
+    std::string keyboardObjectiveText;
+    std::string objectivePlatformId;
     TutorialAdvanceCondition advanceCondition =
         TutorialAdvanceCondition::Confirm;
     TutorialFocusTarget focusTarget;
@@ -55,6 +63,11 @@ struct TutorialPage {
     std::vector<RubyTextSegment> keyboardRubySegments;
 
     const std::string& ResolveText(bool usesController) const;
+    const std::string& ResolveObjectiveText(bool usesController) const;
+    bool HasConversationText(bool usesController) const
+    {
+        return !ResolveText(usesController).empty();
+    }
     const std::vector<RubyTextSegment>&
     ResolveRubySegments(bool usesController) const;
 };

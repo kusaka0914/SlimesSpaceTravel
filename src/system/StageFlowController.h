@@ -11,7 +11,7 @@ public:
     StageFlowController();
 
     bool LoadData(Game& game);
-    void ReloadCurrentStage(
+    bool ReloadCurrentStage(
         Game& game,
         StagePhysicsReloadMode physicsReloadMode);
     void ChangeStage(GameWorld& world, int stageNum);

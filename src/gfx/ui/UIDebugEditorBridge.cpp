@@ -87,6 +87,11 @@ void UIDebugEditorBridge::NotifyTutorialReturnedFromPlaytest()
     mDebugUIRenderer->HandleUGCEditorTutorialReturnedFromPlaytest();
 }
 
+void UIDebugEditorBridge::ClearStageSelectionForStageReload()
+{
+    mDebugUIRenderer->ClearStageSelectionForStageReload();
+}
+
 bool UIDebugEditorBridge::SaveSession(
     const std::string& filePath,
     std::string& outErrorMessage)

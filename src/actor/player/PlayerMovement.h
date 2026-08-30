@@ -62,7 +62,9 @@ public:
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
     void ClearStrongAttackDirectionOverride();
 
-    void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
+    void StartKnockBack(
+        Player& player,
+        const glm::vec3& damageSourcePosition);
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
     void RestoreAirDodge()
     {
@@ -233,7 +235,7 @@ private:
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
     glm::vec3 mCameraAutoAlignMovementDirection = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec2 mCameraAutoAlignStartInputDirection = glm::vec2(0.0f, 1.0f);
-    glm::vec3 mKnockBackFrom = glm::vec3(0.0f);
+    glm::vec3 mKnockBackDirection = glm::vec3(0.0f);
     glm::vec3 mEllipseAirborneStartSurfaceNormal =
         glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);

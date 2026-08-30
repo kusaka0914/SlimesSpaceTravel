@@ -312,6 +312,13 @@ void UIRenderer::NotifyUGCEditorTutorialReturnedFromPlaytest()
     }
 }
 
+void UIRenderer::ClearDebugActorReferencesForStageReload()
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->ClearStageSelectionForStageReload();
+    }
+}
+
 bool UIRenderer::SaveDebugEditorSession(
     const std::string& filePath,
     std::string& outErrorMessage)

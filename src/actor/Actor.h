@@ -131,6 +131,7 @@ public:
     glm::vec3 GetRightVec() const { return -mLeftVec; }
     const glm::quat& GetOrientation() const { return mOrientation; }
     const glm::vec3& GetScale() const { return mScale; }
+    virtual glm::vec3 GetRenderPosition() const { return mPos; }
     virtual glm::vec3 GetRenderScale() const { return mScale; }
     const glm::vec2& GetTextureTiling() const { return mTextureTiling; }
     virtual glm::vec2 GetRenderTextureTiling() const

@@ -5,7 +5,7 @@ playerCamera:
   splitScreenTargetHeight: 1.5
   fieldOfView: 60
   splitScreenFieldOfView: 55
-  yawSensitivity: 2.5
+  yawSensitivity: 1.5707963
   pitchSensitivityDegrees: 90
   minPitchDegrees: -80
   maxPitchDegrees: 0

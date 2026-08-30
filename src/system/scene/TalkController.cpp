@@ -201,6 +201,16 @@ void TalkController::ResumeTalkWithNPC(
     CaptureCurrentPageActionBaseline();
 }
 
+void TalkController::ClearActorReferencesForStageReload()
+{
+    mTalkingNPC = nullptr;
+    mTalkingPlayer = nullptr;
+    mActionPlayerAtPageStart = nullptr;
+    mControlledPlayerIndexAtPageStart = -1;
+    mJumpSequenceAtPageStart = 0;
+    mHasJumpStartedOnCurrentPage = false;
+}
+
 TalkPageAdvanceCondition
 TalkController::GetCurrentAdvanceCondition() const
 {

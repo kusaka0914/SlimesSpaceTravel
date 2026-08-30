@@ -893,17 +893,51 @@ void PlayerMovement::ApplyKnockBackMovement(Player& player, float deltaTime)
         return;
     }
 
-    const glm::vec3 awayFromKnockBackOrigin = player.GetPos() - mKnockBackFrom;
+    const glm::vec3 tangentialMovementDelta =
+        mKnockBackDirection *
+        mKnockBackSpeed *
+        deltaTime;
+    MoveWithCollision(
+        mPhysicsSystem,
+        player,
+        tangentialMovementDelta);
+    ApplyJumpGravity(player, deltaTime);
+}
 
-    glm::vec3 knockBackDirection;
+void PlayerMovement::StartKnockBack(
+    Player& player,
+    const glm::vec3& damageSourcePosition)
+{
+    const glm::vec3 upDirection =
+        GetNormalizedUpDirection(player);
+    const glm::vec3 awayFromDamageSource =
+        player.GetPos() - damageSourcePosition;
 
-    if (!TryNormalizeDirection(awayFromKnockBackOrigin, knockBackDirection)) {
-        return;
+    if (!TryNormalizeDirection(
+            ProjectOntoPlane(
+                awayFromDamageSource,
+                upDirection),
+            mKnockBackDirection) &&
+        !TryNormalizeDirection(
+            ProjectOntoPlane(
+                -player.GetFacingForwardVec(),
+                upDirection),
+            mKnockBackDirection)) {
+        mKnockBackDirection =
+            CreatePerpendicularDirection(upDirection);
     }
 
-    const glm::vec3 movementDelta = knockBackDirection * mKnockBackSpeed * deltaTime;
-
-    MoveWithCollision(mPhysicsSystem, player, movementDelta);
+    player.DetachFromPlatform();
+    RecordEllipseAirborneStartSurfaceNormal(player);
+    CancelJumpApexHover();
+    CancelAirborneActionHover();
+    constexpr float upwardSpeedRatio = 0.5f;
+    player.SetVelocity(
+        upDirection *
+        mKnockBackSpeed *
+        upwardSpeedRatio);
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
 }
 
 void PlayerMovement::StartDodgeMovement(Player& player, const PlayerInput& input)

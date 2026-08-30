@@ -55,6 +55,12 @@ void RegisterPlayerCameraSettingsTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterCameraShakeEffectTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterTutorialObjectiveTextTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterOperationGuideVisibilityTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterPlayerJewelGaugeTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -84,6 +90,9 @@ int main()
     RegisterPlatformStageConfigTests(tests);
     RegisterPlayerCameraSettingsTests(tests);
     RegisterCameraShakeEffectTests(tests);
+    RegisterTutorialObjectiveTextTests(tests);
+    RegisterOperationGuideVisibilityTests(tests);
+    RegisterPlayerJewelGaugeTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

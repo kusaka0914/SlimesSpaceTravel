@@ -78,6 +78,7 @@ public:
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
+    bool HasActiveRevealFocus() const;
     bool AllowsPlayerInput() const;
     void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
     void TransitionToControlledPlayer(
@@ -111,7 +112,7 @@ private:
         int playerIndex) const;
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;
-    Actor* FindFocusingActor() const;
+    std::vector<Actor*> FindFocusingActors() const;
     Boat* FindMovingBoat() const;
     Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;
@@ -121,6 +122,9 @@ private:
     BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;
+    bool mIsShowingRevealFocus = false;
+    std::vector<Actor*> mRevealFocusActors;
+    glm::mat4 mRevealFocusView{1.0f};
     bool mTalkCameraPreviewEnabled = false;
     bool mBoatRideCameraPreviewEnabled = false;
     bool mAlignCameraPressedPrev = false;
@@ -129,6 +133,7 @@ private:
     float mCameraStickY = 0.0f;
     float mSecondControllerStickX = 0.0f;
     float mSecondControllerStickY = 0.0f;
+    float mKeyboardYawInput = 0.0f;
     float mKeyboardPitchInput = 0.0f;
     float mTalkCameraBlend = 0.0f;
     std::vector<float> mPlayerPitchOffsetsDegrees;

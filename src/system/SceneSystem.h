@@ -44,7 +44,9 @@ public:
     void DebugEnterOpening();
     void DebugEnterEnding();
     void DebugStartCredits();
+    void ClearActorReferencesForStageReload();
     void StartPlayingScene();
+    void FinishFocusingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     bool StartOpeningAfterTalkPage(
         NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
@@ -105,6 +107,8 @@ public:
     bool IsWaitingForTutorialPlayerSplitMerge() const;
 
     bool HasActiveTutorial() const;
+    bool IsShowingTutorialConversation() const;
+    bool IsShowingTutorialObjective() const;
     bool IsTutorialActive(
         const std::string& tutorialId) const;
     bool CanStartTalkWithNPC(const Player* player) const;

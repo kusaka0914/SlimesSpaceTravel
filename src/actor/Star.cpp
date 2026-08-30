@@ -5,6 +5,7 @@
 #include "component/CollectableComponent.h"
 #include "system/ParticleSystem.h"
 
+#include <algorithm>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -84,6 +85,8 @@ bool Star::StartCollectionPreview(Player* player)
     mCollectionState = CollectionState::Orbiting;
     mIsCollectionPreview = true;
     mCollectionBaseFacingYaw = GetFacingYaw();
+    mObtainingPlayer->StartStarCollectionCelebration(
+        CalculateCollectionAnimationDurationSeconds());
     return true;
 }
 
@@ -186,6 +189,10 @@ void Star::OnObtained()
     mCollectionTimer = 0.0f;
     mCollectionBaseFacingYaw = GetFacingYaw();
 
+    if (mObtainingPlayer) {
+        mObtainingPlayer->StartStarCollectionCelebration(
+            CalculateCollectionAnimationDurationSeconds());
+    }
 
 
     if (mGame) {
@@ -268,6 +275,10 @@ void Star::UpdateCollectionAnimation(float deltaTime)
 
 void Star::FinishCollection()
 {
+    if (mObtainingPlayer) {
+        mObtainingPlayer->StopStarCollectionCelebration();
+    }
+
     if (mIsCollectionPreview) {
         SetPos(mPreviewOriginalPos);
         SetUpVec(mPreviewOriginalUp);
@@ -285,4 +296,11 @@ void Star::FinishCollection()
     mCollectionTimer = 0.0f;
     mObtainingPlayer = nullptr;
 
+}
+
+float Star::CalculateCollectionAnimationDurationSeconds() const
+{
+    return std::max(0.01f, mCollectionSettings.orbitDuration) +
+           std::max(0.0f, mCollectionSettings.waitAbovePlayerDuration) +
+           std::max(0.01f, mCollectionSettings.fallDuration);
 }

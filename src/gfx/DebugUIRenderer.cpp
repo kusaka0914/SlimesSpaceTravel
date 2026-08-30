@@ -184,6 +184,11 @@ void DebugUIRenderer::HandleUGCEditorTutorialReturnedFromPlaytest()
     mUGCEditorRenderer->HandleTutorialReturnedFromPlaytest();
 }
 
+void DebugUIRenderer::ClearStageSelectionForStageReload()
+{
+    mSelectionController.Clear();
+}
+
 bool DebugUIRenderer::SaveEditorSession(
     const std::string& filePath,
     std::string& outErrorMessage)

@@ -30,7 +30,7 @@ CameraSystem::CameraSystem(Game* game)
       mBossDefeatSequence(game),
       mCollisionResolver(game),
       mDebugCamera(game),
-      mFocusCamera(game),
+      mFocusCamera(game, mCollisionResolver),
       mPlayerCamera(mCollisionResolver),
       mPlayerCameraSettingsRepository("../assets/data/camera/player.yaml"),
       mCinematicLibrary("../assets/data/camera/cinematics.yaml")
@@ -48,6 +48,7 @@ void CameraSystem::ProcessInput()
     if (mGame->IsEditorKeyboardInputCaptured()) {
         mCameraStickX = 0.0f;
         mCameraStickY = 0.0f;
+        mKeyboardYawInput = 0.0f;
         mKeyboardPitchInput = 0.0f;
         mAlignCameraPressedPrev = true;
         if (mGame->GetIsFreeCameraMode()) {
@@ -62,15 +63,6 @@ void CameraSystem::ProcessInput()
     }
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    if (sceneSystem &&
-        sceneSystem->IsWaitingForTutorialPlayerAction()) {
-        mCameraStickX = 0.0f;
-        mCameraStickY = 0.0f;
-        mKeyboardPitchInput = 0.0f;
-        mAlignCameraPressedPrev = false;
-        return;
-    }
-
     InputSystem* inputSystem = mGame->GetInputSystem();
     if (!inputSystem) {
         return;
@@ -115,9 +107,18 @@ void CameraSystem::ProcessInput()
         mSecondControllerStickY = 0.0f;
     }
 
+    mKeyboardYawInput = 0.0f;
     mKeyboardPitchInput = 0.0f;
     const bool acceptsKeyboardInput =
         !mGame->IsEditorKeyboardInputCaptured();
+    if (acceptsKeyboardInput &&
+        inputSystem->IsKeyPressed(GLFW_KEY_RIGHT)) {
+        mKeyboardYawInput += 1.0f;
+    }
+    if (acceptsKeyboardInput &&
+        inputSystem->IsKeyPressed(GLFW_KEY_LEFT)) {
+        mKeyboardYawInput -= 1.0f;
+    }
     if (acceptsKeyboardInput &&
         inputSystem->IsKeyPressed(GLFW_KEY_UP)) {
         mKeyboardPitchInput += 1.0f;
@@ -266,9 +267,13 @@ void CameraSystem::ResetForStageChange()
     StopBossDefeatSequence();
 
     mIsTargetFocus = false;
+    mIsShowingRevealFocus = false;
+    mRevealFocusActors.clear();
+    mRevealFocusView = glm::mat4(1.0f);
     mAlignCameraPressedPrev = false;
     mCameraStickX = 0.0f;
     mCameraStickY = 0.0f;
+    mKeyboardYawInput = 0.0f;
     mKeyboardPitchInput = 0.0f;
     mPlayerPitchOffsetsDegrees.clear();
     mPlayerShakeEffects.clear();
@@ -349,25 +354,50 @@ void CameraSystem::UpdateCamera(float deltaTime)
         return;
     }
 
-    const float yawDelta = mTalkCameraBlend > 0.0f
-                               ? 0.0f
-                               : mCameraStickX * mPlayerCameraSettings.yawSensitivity * deltaTime;
-
     UpdatePlayerPitchOffsets(deltaTime);
 
     const std::vector<Player*>& players = mGame->GetPlayers();
     std::vector<float> yawDeltas(players.size(), 0.0f);
     const int primaryPlayerIndex = GetPrimaryPlayerIndex();
-    if (primaryPlayerIndex >= 0 &&
-        primaryPlayerIndex < static_cast<int>(yawDeltas.size())) {
-        yawDeltas[static_cast<std::size_t>(primaryPlayerIndex)] = yawDelta;
-    }
-    if (mGame->GetIsPlayer2Joined() &&
-        mGame->HasGameControllerForPlayer(2) &&
-        yawDeltas.size() >= 2) {
-        yawDeltas[1] =
-            mSecondControllerStickX *
-            mPlayerCameraSettings.yawSensitivity * deltaTime;
+    const bool allowsManualYaw = mTalkCameraBlend <= 0.0f;
+    if (allowsManualYaw) {
+        const float yawSpeedRadiansPerSecond =
+            mPlayerCameraSettings.yawSensitivity;
+        const float safeDeltaTime = std::max(0.0f, deltaTime);
+
+        if (mGame->GetIsPlayer2Joined()) {
+            if (!players.empty() && players[0] &&
+                mGame->IsGameControllerConnected()) {
+                yawDeltas[0] =
+                    mCameraStickX * yawSpeedRadiansPerSecond * safeDeltaTime;
+            }
+
+            if (mGame->HasGameControllerForPlayer(2)) {
+                if (yawDeltas.size() >= 2 && players[1]) {
+                    yawDeltas[1] =
+                        mSecondControllerStickX *
+                        yawSpeedRadiansPerSecond * safeDeltaTime;
+                }
+            } else if (mGame->IsGameControllerConnected()) {
+                if (yawDeltas.size() >= 2 && players[1]) {
+                    yawDeltas[1] =
+                        mKeyboardYawInput *
+                        yawSpeedRadiansPerSecond * safeDeltaTime;
+                }
+            } else if (!players.empty() && players[0]) {
+                yawDeltas[0] =
+                    mKeyboardYawInput *
+                    yawSpeedRadiansPerSecond * safeDeltaTime;
+            }
+        } else if (primaryPlayerIndex >= 0 &&
+                   primaryPlayerIndex < static_cast<int>(yawDeltas.size())) {
+            const float yawInput =
+                mGame->IsGameControllerConnected()
+                    ? mCameraStickX
+                    : mKeyboardYawInput;
+            yawDeltas[static_cast<std::size_t>(primaryPlayerIndex)] =
+                yawInput * yawSpeedRadiansPerSecond * safeDeltaTime;
+        }
     }
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
@@ -923,6 +953,7 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
 std::vector<glm::mat4> CameraSystem::GetViews()
 {
     std::vector<glm::mat4> views;
+    mIsShowingRevealFocus = false;
 
     if (!mGame) {
         return views;
@@ -1033,20 +1064,19 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    if (Actor* focusingActor = FindFocusingActor()) {
-        views.emplace_back(mFocusCamera.GetFocusView(focusingActor));
+    std::vector<Actor*> focusingActors = FindFocusingActors();
+    if (!focusingActors.empty()) {
+        mIsShowingRevealFocus = true;
+        if (focusingActors != mRevealFocusActors) {
+            mRevealFocusActors = focusingActors;
+            mRevealFocusView = mFocusCamera.GetFocusView(
+                focusingActors,
+                mPlayerCamera.GetCameraPos(primaryPlayerIndex));
+        }
+        views.emplace_back(mRevealFocusView);
         return views;
     }
-
-    Key* key = currentPlanet->GetKey();
-    if (key) {
-        FocusComponent* focusComponent = key->GetFocusComponent();
-        if (focusComponent &&
-            focusComponent->GetFocusTimer() >= 0.0f) {
-            views.emplace_back(mFocusCamera.GetFocusView(key));
-            return views;
-        }
-    }
+    mRevealFocusActors.clear();
 
     if (sceneSystem && sceneSystem->IsStageClear()) {
         views.emplace_back(
@@ -1111,6 +1141,10 @@ glm::vec3 CameraSystem::GetCameraPos() const
         return mFocusCamera.GetCameraPos();
     }
 
+    if (mIsShowingRevealFocus) {
+        return mFocusCamera.GetCameraPos();
+    }
+
     return mPlayerCamera.GetCameraPos(GetPrimaryPlayerIndex());
 }
 
@@ -1135,16 +1169,25 @@ int CameraSystem::GetPrimaryPlayerIndex() const
     return controlledIndex;
 }
 
-Actor* CameraSystem::FindFocusingActor() const
+std::vector<Actor*> CameraSystem::FindFocusingActors() const
 {
+    std::vector<Actor*> focusingActors;
     Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
     if (!stage) {
-        return nullptr;
+        return focusingActors;
     }
 
     for (Planet* planet : stage->GetPlanets()) {
         if (!planet) {
             continue;
+        }
+
+        Key* key = planet->GetKey();
+        FocusComponent* keyFocusComponent =
+            key ? key->GetFocusComponent() : nullptr;
+        if (keyFocusComponent &&
+            keyFocusComponent->GetFocusTimer() > 0.0f) {
+            focusingActors.emplace_back(key);
         }
 
         for (Boat* boat : planet->GetBoats()) {
@@ -1155,8 +1198,8 @@ Actor* CameraSystem::FindFocusingActor() const
             FocusComponent* focusComponent =
                 boat->GetFocusComponent();
             if (focusComponent &&
-                focusComponent->GetFocusTimer() >= 0.0f) {
-                return boat;
+                focusComponent->GetFocusTimer() > 0.0f) {
+                focusingActors.emplace_back(boat);
             }
         }
 
@@ -1168,13 +1211,18 @@ Actor* CameraSystem::FindFocusingActor() const
             FocusComponent* focusComponent =
                 platform->GetFocusComponent();
             if (focusComponent &&
-                focusComponent->GetFocusTimer() >= 0.0f) {
-                return platform;
+                focusComponent->GetFocusTimer() > 0.0f) {
+                focusingActors.emplace_back(platform);
             }
         }
 
     }
-    return nullptr;
+    return focusingActors;
+}
+
+bool CameraSystem::HasActiveRevealFocus() const
+{
+    return !FindFocusingActors().empty();
 }
 
 Boat* CameraSystem::FindMovingBoat() const

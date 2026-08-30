@@ -13,6 +13,7 @@ class EnemyBehaviorController;
 class EnemyDamageHandler;
 class EnemyMovement;
 class Game;
+class GameWorld;
 class Player;
 struct EnemyAttackPreview;
 struct EnemyConfig;
@@ -178,6 +179,8 @@ protected:
     bool ShouldUpdateUpVecEveryFrame() const override;
 
 private:
+    friend class GameWorld;
+
     enum class HitReactionKind {
         None,
         NormalEnemySpin,
@@ -185,6 +188,10 @@ private:
     };
 
     bool CanUseReducedUpdateRate() const;
+    void SetShouldUseFullRateUpdate(bool shouldUseFullRateUpdate)
+    {
+        mShouldUseFullRateUpdate = shouldUseFullRateUpdate;
+    }
     void UpdateHitReaction(float deltaTime);
 
 private:
@@ -199,6 +206,7 @@ private:
     glm::vec3 mLastGroundedUpDirection{0.0f, 1.0f, 0.0f};
     bool mHasRecordedGroundedTransform = false;
     bool mShouldDropJewelOnDeath = false;
+    bool mShouldUseFullRateUpdate = true;
     HitReactionKind mHitReactionKind = HitReactionKind::None;
     float mHitReactionElapsedSeconds = 0.0f;
 };

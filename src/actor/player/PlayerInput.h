@@ -50,6 +50,7 @@ public:
 
 private:
     void ApplyTutorialInputRestriction(Player& player);
+    void UpdateRecoverInput(const Player& player);
     void CaptureAttackInput();
     void ClearNonControlledPlayerInput();
 

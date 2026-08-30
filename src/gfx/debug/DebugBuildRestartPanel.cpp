@@ -19,6 +19,10 @@ void DebugBuildRestartPanel::SetStatus(
 
 void DebugBuildRestartPanel::Draw()
 {
+    if (mContext.game && mContext.game->IsReviewBuild()) {
+        return;
+    }
+
     if (ImGui::Button("Build & Restart")) {
         std::string restartErrorMessage;
         if (!mContext.game ||

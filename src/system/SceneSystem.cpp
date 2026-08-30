@@ -123,21 +123,25 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
 
     case GameProgressState::SceneState::Talking:
     {
-
+        if (mTutorialController->HasActiveTutorial()) {
+            mTutorialController->TryAdvanceFromConfirm();
+            return true;
+        }
 
         const Player* talkingPlayer = GetTalkingPlayer();
         if (talkingPlayer && talkingPlayer->GetPlayerNum() != playerNum) {
             return false;
         }
-        if (mTutorialController->HasActiveTutorial()) {
-            mTutorialController->TryAdvanceFromConfirm();
-        } else {
-            mTalkController->TryAdvanceTalkFromConfirm();
-        }
+        mTalkController->TryAdvanceTalkFromConfirm();
         return true;
     }
 
     case GameProgressState::SceneState::Playing:
+        if (mTutorialController->HasActiveTutorial()) {
+            // 操作目標の実行中はA/Spaceも通常操作に使うため、
+            // 同じ入力で別の会話を開始しない。
+            return false;
+        }
         return mTalkController->TryStartTalkWithNPC(playerNum);
 
     case GameProgressState::SceneState::GameOver:
@@ -243,9 +247,22 @@ void SceneSystem::StartOpening()
     mTransitionController->StartOpening();
 }
 
+bool SceneSystem::IsShowingTutorialConversation() const
+{
+    return mTutorialController &&
+           mTutorialController->IsShowingConversation();
+}
+
+bool SceneSystem::IsShowingTutorialObjective() const
+{
+    return mTutorialController &&
+           mTutorialController->IsShowingActionObjective();
+}
+
 void SceneSystem::StartEnding()
 {
     ReloadStorybookConfig();
+    mUIState->StartTalkWith(UIState::TalkWith::Ending);
     mTransitionController->StartEnding();
 }
 
@@ -312,6 +329,19 @@ void SceneSystem::DebugStartCredits()
     mEndingCreditsFlow->Reset();
 }
 
+void SceneSystem::ClearActorReferencesForStageReload()
+{
+    if (mTutorialController) {
+        mTutorialController->Stop(false);
+    }
+    if (mTalkController) {
+        mTalkController->ClearActorReferencesForStageReload();
+    } else {
+        mTalkingNPC = nullptr;
+        mTalkingPlayer = nullptr;
+    }
+}
+
 void SceneSystem::ResetForDebugScene(
     GameProgressState::SceneState destinationScene)
 {
@@ -365,6 +395,25 @@ void SceneSystem::StartPlayingScene()
 
     for (Player* player : mGame->GetPlayers()) {
         player->SetInputAvailableTimer(0.15f);
+    }
+}
+
+void SceneSystem::FinishFocusingScene()
+{
+    if (!mTutorialController ||
+        !mTutorialController->ResumeAfterFocus()) {
+        StartPlayingScene();
+        return;
+    }
+
+    if (!IsPlaying()) {
+        return;
+    }
+
+    for (Player* player : mGame->GetPlayers()) {
+        if (player) {
+            player->SetInputAvailableTimer(0.15f);
+        }
     }
 }
 

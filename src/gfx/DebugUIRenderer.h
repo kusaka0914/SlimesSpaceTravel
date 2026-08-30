@@ -63,6 +63,7 @@ public:
     void HandleUGCLayerChange(int layerDelta);
     void HandleUGCSelectionGridMove(int gridX, int gridZ);
     void HandleUGCEditorTutorialReturnedFromPlaytest();
+    void ClearStageSelectionForStageReload();
 
     bool SaveEditorSession(
         const std::string& filePath,

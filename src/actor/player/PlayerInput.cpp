@@ -41,6 +41,7 @@ void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 
     ProcessGameController(player, movement);
     ProcessKeyboard(player, movement);
+    UpdateRecoverInput(player);
     ApplyTutorialInputRestriction(player);
     CaptureAttackInput();
 }
@@ -133,7 +134,6 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
         controllerPlayerNum, SDL_CONTROLLER_BUTTON_B);
     mSpecialAttackPressed = mInputSystem.IsControllerButtonPressed(
         controllerPlayerNum, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
 }
 
 void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
@@ -153,7 +153,6 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
 
     mMoveForward = 0.0f;
     mMoveLeft = 0.0f;
-    mCameraYaw = 0.0f;
     mJumpPressed = false;
     mAttackPressed = false;
     mWideAttackPressed = false;
@@ -178,15 +177,6 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         mMoveLeft += 1.0f;
     }
 
-    constexpr float cameraKeySpeed = 0.02f;
-
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_RIGHT)) {
-        mCameraYaw += cameraKeySpeed;
-    }
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_LEFT)) {
-        mCameraYaw -= cameraKeySpeed;
-    }
-
     glm::vec2 moveInput(mMoveLeft, mMoveForward);
     if (glm::length(moveInput) > 1.0f) {
         moveInput = glm::normalize(moveInput);
@@ -200,7 +190,18 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mWideAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_J);
     mDodgePressed = mInputSystem.IsKeyPressed(GLFW_KEY_U);
     mSpecialAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_N);
-    mRecoverPressed = mSpecialAttackPressed && mJumpPressed;
+}
+
+void PlayerInput::UpdateRecoverInput(const Player& player)
+{
+    const bool isCombinationRecoveryRequested =
+        mSpecialAttackPressed && mJumpPressed;
+    const bool isAssistRecoveryRequested =
+        player.GetGame()->IsAssistControlStyle() &&
+        mAttackPressed &&
+        !mSpecialAttackPressed;
+    mRecoverPressed =
+        isCombinationRecoveryRequested || isAssistRecoveryRequested;
 }
 
 void PlayerInput::CaptureAttackInput()
@@ -213,7 +214,7 @@ void PlayerInput::CaptureAttackInput()
     const bool normalAttackStarted = mAttackPressed && !mAttackPressedPrev;
     const bool wideAttackStarted = mWideAttackPressed && !mWideAttackPressedPrev;
 
-    if (normalAttackStarted) {
+    if (normalAttackStarted && !mRecoverPressed) {
         mBufferedAttackInput = PlayerAttackInputKind::Normal;
         mAttackBufferRemaining = mAttackBufferDuration;
     } else if (wideAttackStarted) {

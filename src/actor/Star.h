@@ -49,6 +49,7 @@ private:
     void OnObtained();
     void UpdateCollectionAnimation(float deltaTime);
     void FinishCollection();
+    float CalculateCollectionAnimationDurationSeconds() const;
 
 private:
     CollectableComponent* mCollectableComponent;

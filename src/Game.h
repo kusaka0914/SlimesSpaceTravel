@@ -60,7 +60,8 @@ public:
     ~Game();
 
     bool Initialize(
-        bool isDebugMode,
+        bool areDebugToolsEnabled,
+        bool shouldStartInDebugStage,
         const std::string& editorSessionPath = {},
         const std::string& editorRestartErrorLogPath = {});
     void RunLoop();
@@ -157,6 +158,7 @@ public:
     void RestartGame();
     void StartPlayingScene() override;
     void StartFocusingScene();
+    void FinishFocusingScene();
 
     void AddActor(std::unique_ptr<Actor> actor);
     void AddPlayer(Player* player);
@@ -279,6 +281,7 @@ public:
     bool GetIsPlayer2Joined() const;
     bool GetIsPlayerSplit() const;
     bool GetIsDebugMode() const { return mIsDebugMode; }
+    bool IsReviewBuild() const;
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
     bool HasSelectedPlayerControlStyle() const;

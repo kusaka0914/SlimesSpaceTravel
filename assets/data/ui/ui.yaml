@@ -329,8 +329,8 @@ pauseMenu:
     rotationDegrees: 0
   - id: panelBg
     type: texture
-    posRatio: [0.29000002, 0.21826096]
-    scaleRatio: [0.41999993, 0.563478]
+    posRatio: [0.2494735, 0.21826094]
+    scaleRatio: [0.501053, 0.56347793]
     rotationDegrees: 0
   - id: titleText
     type: text

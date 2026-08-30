@@ -4,6 +4,7 @@
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyAttackGeometry.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
@@ -118,7 +119,16 @@ void PlayerEffectRenderer::DrawPlayerMergeGuide(
         return;
     }
 
+    const Platform* groundPlatform = nullptr;
+    if (targetPlayer->GetOnGround()) {
+        groundPlatform = dynamic_cast<const Platform*>(
+            targetPlayer->GetGroundActor());
+    }
+
     glm::vec3 up = targetPlayer->GetUpVec();
+    if (groundPlatform) {
+        up = groundPlatform->GetUpVec();
+    }
     if (glm::dot(up, up) <= 0.000001f) {
         up = glm::vec3(0.0f, 1.0f, 0.0f);
     } else {
@@ -141,6 +151,7 @@ void PlayerEffectRenderer::DrawPlayerMergeGuide(
     const glm::vec3 center = targetPlayer->GetPos();
     const Planet* planet = targetPlayer->GetCurrentPlanet();
     const bool shouldFollowPlanetSurface =
+        !groundPlatform &&
         planet &&
         planet->GetPlanetShape() != Planet::PlanetShape::Normal;
     float playerSurfaceOffset = 0.0f;

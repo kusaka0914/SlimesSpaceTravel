@@ -5,6 +5,7 @@
 #include "gfx/UIShader.h"
 #include "gfx/VertexArray.h"
 #include "gfx/ui/HudRenderer.h"
+#include "gfx/ui/OperationGuideVisibility.h"
 #include "gfx/ui/PauseMenuRenderer.h"
 #include "gfx/ui/SceneUIRenderer.h"
 #include "gfx/ui/StateUIRenderer.h"
@@ -245,6 +246,10 @@ void UIRenderer::DrawCustomUI()
     static const std::string returnToEditorText = "作る画面に戻る";
     static const std::string disembarkBoatText =
         "降車";
+    static const std::string assistAttackText = "攻撃";
+    static const std::string assistRecoverText = "体力回復";
+    static const std::string assistChargingText = "溜め中";
+    static const std::string assistFireChargedAttackText = "発射";
     const auto isBuiltInUGCEditorElement = [](const std::string& id) {
         return id == "presetTools" || id == "selection" || id == "menu" ||
                id == "quickTools" || id == "keyboardTools" ||
@@ -280,14 +285,26 @@ void UIRenderer::DrawCustomUI()
         sceneSystem->IsBattleStyleSelection();
     const bool isTalkOrTutorial =
         sceneSystem->IsTalkWithNPC() ||
-        sceneSystem->HasActiveTutorial();
+        sceneSystem->IsShowingTutorialConversation();
     const std::vector<Player*>& players = mGame->GetPlayers();
     const bool isTwoPlayer =
         mGame->GetIsPlayer2Joined() && players.size() >= 2;
-
-
-
-
+    const Player* operationPlayer =
+        mGame->GetIsPlayerSplit()
+            ? mGame->GetControlledPlayer()
+            : (!players.empty() ? players.front() : nullptr);
+    bool hasPlayerWaitingForBoat = false;
+    for (const Player* player : players) {
+        if (!player || !player->GetIsActive()) {
+            continue;
+        }
+        hasPlayerWaitingForBoat =
+            hasPlayerWaitingForBoat || player->IsWaitingForBoat();
+    }
+    const OperationGuideDisplayState operationGuideDisplayState{
+        mGame->GetCurrentStageNum(),
+        operationPlayer ? operationPlayer->GetCurrentPlanetNum() : 0,
+        isUGCPlaytestActive};
 
     std::optional<bool> canTogglePlayerSplit;
     const auto getOperationGuideOpacity =
@@ -328,14 +345,17 @@ void UIRenderer::DrawCustomUI()
             const bool canStartNormalAction =
                 isIdle && !isSpecialCharging && !isGroundContinuousAttack;
             const bool canRecover =
-                isIdle && player->GetJewelCount() >= 1 &&
+                isIdle && !isSpecialCharging &&
+                !player->GetCanSpecialAttack() &&
+                player->GetJewelCount() >= 1 &&
                 player->GetHp() < player->GetMaxHp();
             const bool canStartChargeAttack =
                 isIdle && !isGroundContinuousAttack &&
                 player->GetJewelCount() >= 2;
             const bool canStartContinuousAttack =
                 canStartNormalAction && player->GetOnGround() &&
-                player->GetJewelCount() >= 1;
+                player->GetJewelCount() >=
+                    PlayerJewelGauge::ContinuousAttackCost;
             bool isEnabled = true;
 
             if (element.id == "buttonA" || element.id == "buttonTextA") {
@@ -370,12 +390,18 @@ void UIRenderer::DrawCustomUI()
                     isEnabled = isSpecialCharging || canStartChargeAttack;
                     return isEnabled ? 1.0f : disabledOpacity;
                 }
+                if (mGame->IsAssistControlStyle()) {
+                    isEnabled = isSpecialCharging ||
+                                player->GetCanSpecialAttack() ||
+                                canRecover;
+                    return isEnabled ? 1.0f : disabledOpacity;
+                }
                 // 溜め攻撃は同じ強攻撃入力で発射／終了するので、その間も
                 // 強攻撃だけは有効として表示する。
                 isEnabled = canStartNormalAction || isSpecialCharging;
             } else if (element.id == "buttonY" ||
                        element.id == "buttonTextY") {
-                // 特殊入力中は「連続攻撃」で、ジュエルを1個消費する。
+                // 特殊入力中は「連続攻撃」で、ジュエルを2個消費する。
                 isEnabled = isModifierHeld
                                 ? canStartContinuousAttack
                                 : canStartNormalAction;
@@ -503,7 +529,16 @@ void UIRenderer::DrawCustomUI()
 
         bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
         if (element->screen == "operation") {
-            visibleInGame = isPlaying;
+            const bool isBoatDisembarkGuide =
+                hasPlayerWaitingForBoat &&
+                (element->id == "buttonB" ||
+                 element->id == "buttonTextB");
+            visibleInGame =
+                isPlaying &&
+                (isBoatDisembarkGuide ||
+                 ShouldShowOperationGuideElement(
+                     element->id,
+                     operationGuideDisplayState));
         } else if (element->screen == "title") {
             visibleInGame = isTitle;
         } else if (element->screen == "opening") {
@@ -584,13 +619,43 @@ void UIRenderer::DrawCustomUI()
             isUGCPlaytestActive && element->id == "buttonTextB_copy"
                 ? &returnToEditorText
                 : nullptr;
+        if (element->id == "buttonTextY" &&
+            mGame->IsAssistControlStyle() &&
+            !mGame->IsInputModifierHeld()) {
+            textOverride = &assistAttackText;
+        }
+        if (element->id == "buttonTextX" &&
+            mGame->IsAssistControlStyle() &&
+            !mGame->IsInputModifierHeld()) {
+            textOverride = &assistRecoverText;
+        }
+
+        const auto resolvePlayerTextOverride =
+            [&](const Player* player) -> const std::string* {
+                if (element->id == "buttonTextB" && player &&
+                    player->IsWaitingForBoat()) {
+                    return &disembarkBoatText;
+                }
+                if (element->id != "buttonTextX" ||
+                    !mGame->IsAssistControlStyle() ||
+                    !player) {
+                    return textOverride;
+                }
+                if (player->GetCanSpecialAttack()) {
+                    return &assistFireChargedAttackText;
+                }
+                if (player->IsSpecialCharging()) {
+                    return &assistChargingText;
+                }
+                if (mGame->IsInputModifierHeld()) {
+                    return textOverride;
+                }
+                return &assistRecoverText;
+            };
 
         if (isTwoPlayer && element->screen == "operation") {
             const std::string* player1TextOverride =
-                element->id == "buttonTextB" && players[0] &&
-                        players[0]->IsWaitingForBoat()
-                    ? &disembarkBoatText
-                    : textOverride;
+                resolvePlayerTextOverride(players[0]);
             DrawCustomElement(
                 *element,
                 operationGuideVerticalOffset,
@@ -601,10 +666,7 @@ void UIRenderer::DrawCustomUI()
                 getOperationGuideOpacity(*element, players[0]),
                 player1TextOverride);
             const std::string* player2TextOverride =
-                element->id == "buttonTextB" && players[1] &&
-                        players[1]->IsWaitingForBoat()
-                    ? &disembarkBoatText
-                    : textOverride;
+                resolvePlayerTextOverride(players[1]);
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
@@ -617,19 +679,8 @@ void UIRenderer::DrawCustomUI()
                 player2TextOverride);
             continue;
         }
-
-
-
-
-        const Player* operationPlayer =
-            mGame->GetIsPlayerSplit()
-                ? mGame->GetControlledPlayer()
-                : (!players.empty() ? players.front() : nullptr);
         const std::string* operationTextOverride =
-            element->id == "buttonTextB" && operationPlayer &&
-                    operationPlayer->IsWaitingForBoat()
-                ? &disembarkBoatText
-                : textOverride;
+            resolvePlayerTextOverride(operationPlayer);
         DrawCustomElement(
             *element,
             0.0f,

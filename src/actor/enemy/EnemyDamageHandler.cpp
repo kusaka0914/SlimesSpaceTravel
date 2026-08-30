@@ -29,6 +29,12 @@ void EnemyDamageHandler::ApplyDamage(
         return;
     }
 
+    if (status.GetIsBoss()) {
+        enemy.StartBossHitReaction();
+    } else {
+        enemy.StartNormalHitReaction();
+    }
+
     if (status.GetIsStrongAttacked()) {
         // 強攻撃はプレイヤーから敵への3D方向へ移動するため、時間を2倍にすると
         // 横・縦のノックバック距離が同じ比率で2倍になる。
@@ -37,14 +43,10 @@ void EnemyDamageHandler::ApplyDamage(
 
         status.ClearStrongAttacked();
         stateMachine.FinishLaunched(enemy, status);
-        if (status.GetIsBoss()) {
-            enemy.StartBossHitReaction();
-        }
         return;
     }
 
     if (status.GetIsBoss()) {
-        enemy.StartBossHitReaction();
         return;
     }
 
@@ -57,7 +59,6 @@ void EnemyDamageHandler::ApplyDamage(
         constexpr float knockBackTimer = 0.04f;
         stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
         movement.StartNormalHitKnockBack(enemy, status);
-        enemy.StartNormalHitReaction();
     }
 }
 

@@ -344,6 +344,47 @@ enemies:
         range: 5
         windUpDuration: 2
         attackDuration: 0.5
+  - type: boss_6
+    displayName: ボス敵6
+    behaviorProfile: bossMelee
+    isBoss: true
+    normalHitKnockBackEnabled: false
+    hp: 10000
+    modelPath: enemy.obj
+    scale: 1
+    speed: 3
+    attack: 1
+    breakCountMax: 5
+    radius: 1.5
+    defaultStandByAttackTimer: 1
+    defaultAttackMotionTimer: 1
+    attackSpeed: 4
+    attackPreparationRange: 2.5
+    preAttackApproachProbabilityPercent: 100
+    preAttackApproachSpeed: 12
+    preAttackApproachStopDistance: 2.5
+    postAttackRetreatProbabilityPercent: 100
+    postAttackRetreatDelaySeconds: 0
+    postAttackRetreatSpeed: 12
+    postAttackRetreatDistance: 6
+    postRetreatRecoverySeconds: 0
+    postRetreatFollowupApproachProbabilityPercent: 100
+    attacks:
+      - type: tripleChargeAttack
+        weight: 32.068645
+        chargeCount: 3
+        repeatDelay: 1
+      - type: fanAttack
+        weight: 34.93135
+        range: 6
+        angleDegrees: 90
+        windUpDuration: 2
+        attackDuration: 0.5
+      - type: radialAttack
+        weight: 33
+        range: 5
+        windUpDuration: 2
+        attackDuration: 0.5
 behaviorProfiles:
   legacyMelee:
     actions:

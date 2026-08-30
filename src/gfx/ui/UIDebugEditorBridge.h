@@ -30,6 +30,7 @@ public:
     void ChangeLayer(int layerDelta);
     void MoveSelectionOnGrid(int gridX, int gridZ);
     void NotifyTutorialReturnedFromPlaytest();
+    void ClearStageSelectionForStageReload();
     bool SaveSession(
         const std::string& filePath,
         std::string& outErrorMessage);
