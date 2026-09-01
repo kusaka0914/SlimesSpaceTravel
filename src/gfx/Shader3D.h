@@ -17,6 +17,16 @@ public:
     int GetLocToonStrength() const { return mLocToonStrength; }
     int GetLocRimStrength() const { return mLocRimStrength; }
     int GetLocRimPower() const { return mLocRimPower; }
+    int GetLocUseSkinning() const { return mLocUseSkinning; }
+    int GetLocBoneTransforms() const { return mLocBoneTransforms; }
+    int GetLocTextureTiling() const { return mLocTextureTiling; }
+    int GetLocUseBackTexture() const { return mLocUseBackTexture; }
+    int GetLocBackTexture() const { return mLocBackTexture; }
+    int GetLocTextureSideBlendWidth() const
+    {
+        return mLocTextureSideBlendWidth;
+    }
+    int GetLocColorMultiplier() const { return mLocColorMultiplier; }
 
 private:
     int mLocLightPos;
@@ -27,4 +37,11 @@ private:
     int mLocToonLevels;
     int mLocRimStrength;
     int mLocRimPower;
+    int mLocUseSkinning;
+    int mLocBoneTransforms;
+    int mLocTextureTiling;
+    int mLocUseBackTexture;
+    int mLocBackTexture;
+    int mLocTextureSideBlendWidth;
+    int mLocColorMultiplier;
 };

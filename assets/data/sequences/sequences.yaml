@@ -1,0 +1,78 @@
+sequences:
+  base_arrival_template:
+    name: 拠点到着時演出
+    loop: false
+    clips:
+      - type: playerControl
+        start: 0
+        enabled: false
+      - type: actorVisibility
+        start: 0
+        target:
+          group: players
+          index: 0
+        visible: false
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: boats
+          index: 5
+        from: [0.002, 10, 16.028]
+        to: [0.002, 2.506, 16.028]
+        easing: easeOut
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: players
+          index: 0
+        from: [0.0018811935, 10, 16.028183]
+        to: [0.0018812361, 2.506, 16.0282]
+        easing: easeOut
+      - type: actorVisibility
+        start: 2
+        target:
+          group: players
+          index: 0
+        visible: true
+      - type: actorMove
+        start: 2.5
+        duration: 1
+        target:
+          group: boats
+          index: 5
+        from: [0.002, 2.506, 16.028]
+        to: [0.002, 24.270756, 16.028]
+        easing: easeIn
+      - type: playerControl
+        start: 3.5
+        enabled: true
+      - type: actorVisibility
+        start: 3.5
+        target:
+          group: boats
+          index: 5
+        visible: false
+  launch_rocket_from_base:
+    name: 各惑星へのロケット出発演出
+    loop: false
+    clips:
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: boats
+          index: 0
+        from: [0, 10, -9.5]
+        to: [0, 17, -9.5]
+        easing: easeInOut
+      - type: actorMove
+        start: 0
+        duration: 2
+        target:
+          group: players
+          index: 0
+        from: [0, 10.059345, -9.5]
+        to: [0, 17, -9.5]
+        easing: easeInOut

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/Actor.h"
+#include <yaml-cpp/yaml.h>
 
 #include <string>
 
@@ -12,7 +13,7 @@ public:
     BoatParts(Game* game);
     void UpdateActor(float deltaTime) override;
 
-    void ApplyConfig(const std::string& type);
+    void ApplyConfig(const YAML::Node& configRoot, const std::string& type);
 
 private:
     void AddCollectableComponent();

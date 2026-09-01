@@ -13,6 +13,11 @@ public:
     void Draw() override;
 
 private:
+    void DrawPlanetDeletion();
+
+private:
     StageEditCommandController& mEditCommandController;
     std::unordered_set<std::string> mSelectedKeys;
+    int mSelectedPlanetIndex = -1;
+    int mPendingPlanetIndex = -1;
 };

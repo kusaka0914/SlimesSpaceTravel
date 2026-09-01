@@ -4,6 +4,7 @@
 #include "system/PhysicsSystem.h"
 
 #include <btBulletDynamicsCommon.h>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -15,6 +16,7 @@ struct RayHit {
 
 bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, const glm::vec3& offset,
                    const ActorGroundResolver::NormalRejector& shouldRejectNormal,
+                   const ActorGroundResolver::SurfaceDetectedCallback& onSurfaceDetected,
                    const ActorGroundResolver::CastSucceededCallback& onCastSucceeded, RayHit& outHit)
 {
     if (!game || !game->GetPhysicsSystem()) {
@@ -32,7 +34,7 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
 
     const glm::vec3 up = glm::normalize(upVec);
     constexpr float rayStartOffset = 0.2f;
-    constexpr float rayLength = 5.0f;
+    const float rayLength = game->GetGroundNormalRayLength();
 
     const glm::vec3 rayFromPos = pos + offset + up * rayStartOffset;
     const glm::vec3 rayToPos = pos + offset - up * rayLength;
@@ -48,6 +50,12 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
 
     if (!rayCallback.hasHit()) {
         return false;
+    }
+
+
+
+    if (onSurfaceDetected) {
+        onSurfaceDetected();
     }
 
     const btVector3 hitNormalBt = rayCallback.m_hitNormalWorld;
@@ -70,15 +78,21 @@ bool CastGroundRay(Game* game, const glm::vec3& pos, const glm::vec3& upVec, con
     outHit.object = rayCallback.m_collisionObject;
     return true;
 }
-} // namespace
+}
 
 glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec3& pos, const glm::vec3& upVec,
                                                        const glm::vec3& forwardVec, const glm::vec3& leftVec,
                                                        const NormalRejector& shouldRejectNormal,
+                                                       const SurfaceDetectedCallback& onSurfaceDetected,
                                                        const CastSucceededCallback& onCastSucceeded)
 {
+    if (game && game->GetPhysicsSystem()) {
+        game->GetPhysicsSystem()->SyncKinematicBodies();
+    }
+
     RayHit mainHit;
-    if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal, onCastSucceeded, mainHit)) {
+    if (!CastGroundRay(game, pos, upVec, glm::vec3(0.0f), shouldRejectNormal,
+                       onSurfaceDetected, onCastSucceeded, mainHit)) {
         return glm::vec3(0.0f);
     }
 
@@ -92,7 +106,8 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
 
     for (const glm::vec3& offset : offsets) {
         RayHit hit;
-        if (!CastGroundRay(game, pos, upVec, offset, shouldRejectNormal, onCastSucceeded, hit)) {
+        if (!CastGroundRay(game, pos, upVec, offset, shouldRejectNormal,
+                           onSurfaceDetected, onCastSucceeded, hit)) {
             continue;
         }
 
@@ -124,6 +139,13 @@ glm::vec3 ActorGroundResolver::CalculateFallbackUpVec(const Planet* currentPlane
     }
 
     const glm::vec3 toActor = actorPos - currentPlanet->GetPos();
+
+    // Ellipseは最も薄いスケール軸を縦方向として扱う。これにより、
+    // 惑星の向きが変わっても中心へ斜めに引っ張られない。
+    if (currentPlanet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
+        return currentPlanet->CalculateEllipseVerticalDirection(actorPos);
+    }
+
     if (glm::length(toActor) < 1e-6f) {
         return glm::vec3(0.0f, 1.0f, 0.0f);
     }

@@ -1,13 +1,19 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
+#include "actor/Enemy.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTargetingAssist.h"
 #include "system/AudioSystem.h"
 
+#include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
 
@@ -18,21 +24,68 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    if (TryStartCharging(player, input, combat)) {
+    if (player.IsAttachedToPlatform()) {
+
+
+
+        TryStartJumping(player, input, movement, combat, deltaTime);
         return;
     }
 
-    ApplyIdleGravity(player, combat, deltaTime);
+    if (TryStartAssistAirSlamAttack(
+            player,
+            input,
+            movement,
+            combat)) {
+        return;
+    }
+
+    if (TryStartAirSlamAttack(
+            player,
+            input,
+            movement,
+            combat,
+            deltaTime)) {
+        return;
+    }
+
+    if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
+        return;
+    }
+
+    if (TryStartAssistBrokenEnemyAirCombo(
+            player,
+            input,
+            movement,
+            combat,
+            status,
+            deltaTime)) {
+        return;
+    }
+
+    const bool wasInputMovementApplied = ApplyIdleGravity(
+        player,
+        input,
+        movement,
+        combat,
+        deltaTime);
+
+    if (TryRecover(player, input, combat, jewelGauge, status)) {
+        return;
+    }
 
     if (TryStartJumping(player, input, movement, combat, deltaTime)) {
         return;
     }
 
-    if (TryRecover(player, input, jewelGauge, status)) {
-        return;
-    }
-
-    UpdateIdleMovement(player, input, movement, combat, status, deltaTime);
+    UpdateIdleMovement(
+        player,
+        input,
+        movement,
+        combat,
+        status,
+        wasInputMovementApplied,
+        deltaTime);
 
     if (TryStartSpecialAttack(input, combat, jewelGauge)) {
         return;
@@ -42,7 +95,7 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    if (TryStartContinuousAttack(input, combat, jewelGauge)) {
+    if (TryStartContinuousAttack(player, input, combat, jewelGauge)) {
         return;
     }
 
@@ -56,45 +109,285 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
+    if (TryStartAssistAirDodgeAttack(
+            player,
+            input,
+            movement,
+            combat,
+            status)) {
+        return;
+    }
+
     TryStartAttack(player, input, movement, combat, status, deltaTime);
 }
 
-bool PlayerStateMachine::TryStartCharging(Player& player, PlayerInput& input, PlayerCombat& combat)
+bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status,
+    float deltaTime)
 {
-    const bool canStartCharging = !player.GetOnGround() && input.GetAttackPressed() && !combat.GetIsStrongAttacked();
-    if (!canStartCharging) {
+    const bool hasWeakAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
+    const bool canStartAirCombo =
+        player.GetGame()->IsAssistControlStyle() &&
+        player.GetOnGround() &&
+        hasWeakAttackRequest &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (!canStartAirCombo) {
         return false;
     }
 
-    ChangeState(PlayerActionState::Charging);
-    combat.StartCharging(player);
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
+            player);
+    if (!target) {
+        return false;
+    }
+
+    glm::vec3 targetUpDirection = target->GetUpVec();
+    const float targetUpLength = glm::length(targetUpDirection);
+    if (targetUpLength > 0.0001f) {
+        targetUpDirection /= targetUpLength;
+        player.SetUpVec(targetUpDirection);
+    }
+
+    glm::vec3 entryDirection = player.GetPos() - target->GetPos();
+    entryDirection -= targetUpDirection * glm::dot(entryDirection, targetUpDirection);
+    const float entryDirectionLength = glm::length(entryDirection);
+    if (entryDirectionLength > 0.0001f) {
+        entryDirection /= entryDirectionLength;
+    } else {
+        entryDirection = -target->GetFacingForwardVec();
+    }
+
+    EnemyCollisionGeometry::ModelBounds targetBounds;
+    const bool hasTargetModelBounds =
+        EnemyCollisionGeometry::TryCreateModelBounds(
+            *target,
+            targetBounds);
+    const float targetSurfaceDistance =
+        hasTargetModelBounds
+            ? EnemyCollisionGeometry::CalculateSupportDistance(
+                  targetBounds,
+                  entryDirection)
+            : std::max(0.0f, target->GetRadius());
+    const glm::vec3 targetCollisionCenter =
+        hasTargetModelBounds
+            ? targetBounds.center
+            : target->GetPos();
+    constexpr float playerEntryClearance = 0.8f;
+    player.SetPos(
+        targetCollisionCenter +
+        entryDirection *
+            (targetSurfaceDistance +
+             playerEntryClearance));
+    player.SetVelocity(glm::vec3(0.0f));
+    player.SetOnGround(false);
+    player.SetShouldJudgeLanding(false);
+    player.RefreshFallbackUpVec();
+
+    movement.CancelJumpApexHover();
+    movement.CancelAirborneActionHover();
+    movement.ResetEllipseAirborneSurfaceTravel();
+    combat.PrepareAssistAirCombo();
+
+    mAttackDirectionTarget = target;
+    PlayerTargetingAssist::FaceTarget(player, movement, *target);
+    movement.ClearStrongAttackDirectionOverride();
+    ChangeState(PlayerActionState::Attacking);
+    combat.StartAttacking(
+        player,
+        PlayerAttackInputKind::Wide,
+        movement,
+        status,
+        deltaTime);
+    input.ConsumeBufferedAttackInput();
     return true;
 }
 
-void PlayerStateMachine::ApplyIdleGravity(Player& player, PlayerCombat& combat, float deltaTime)
+bool PlayerStateMachine::TryStartAssistAirSlamAttack(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat)
 {
-    if (!combat.IsAirAttackFloating()) {
-        player.ApplyGravityToSelf(deltaTime);
+    const bool hasBufferedWeakAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
+
+
+
+    const bool hasWeakAttackRequest =
+        hasBufferedWeakAttackRequest ||
+        input.GetWideAttackPressed();
+    const bool canStartAirSlam =
+        player.GetGame()->IsAssistControlStyle() &&
+        !player.GetOnGround() &&
+        hasWeakAttackRequest &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        !combat.GetIsStrongAttacked();
+    if (!canStartAirSlam) {
+        return false;
     }
+
+    constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 1.0f;
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
+            player,
+            assistAirSlamLaunchedTimerThresholdSeconds);
+    if (!target) {
+        return false;
+    }
+
+    mAttackDirectionTarget = target;
+    PlayerTargetingAssist::FaceTarget(player, movement, *target);
+    movement.ClearStrongAttackDirectionOverride();
+    movement.StartAirSlamMovement(player);
+    combat.StartAirSlamAttack();
+    input.ConsumeBufferedAttackInput();
+    mCoyoteTimeRemaining = 0.0f;
+    ChangeState(PlayerActionState::AirSlamAttacking);
+    return true;
+}
+
+bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                                     PlayerCombat& combat, float deltaTime)
+{
+    if (!player.GetGame()->IsAssistControlStyle()) {
+        return false;
+    }
+
+    if (input.GetSpecialAttackPressed() ||
+        input.GetBufferedAttackInput() != PlayerAttackInputKind::Normal ||
+        combat.GetAttackCooldownRemaining() > 0.0f || combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
+        return false;
+    }
+
+    constexpr float assistStrongTargetRangeMargin = 2.0f;
+    const float targetRange = combat.GetStrongAttackRange() + assistStrongTargetRangeMargin;
+    Enemy* target = PlayerTargetingAssist::FindAssistStrongTarget(
+        player,
+        targetRange,
+        combat.GetNormalAttackAngle());
+    if (!target) {
+        return false;
+    }
+
+    mAttackDirectionTarget = target;
+    PlayerTargetingAssist::FaceTarget(player, movement, *target);
+    movement.StartStrongAttackMovementTowards(player, target->GetPos());
+
+    input.ConsumeBufferedAttackInput();
+    mCoyoteTimeRemaining = 0.0f;
+
+    ChangeState(PlayerActionState::StrongAttacking);
+    combat.StartAssistStrongAttacking(player, deltaTime);
+    return true;
+}
+
+bool PlayerStateMachine::TryStartAirSlamAttack(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    float deltaTime)
+{
+    (void)deltaTime;
+
+    const bool hasNormalAttackRequest =
+        input.GetBufferedAttackInput() == PlayerAttackInputKind::Normal;
+    const bool canStartAirSlam =
+        !player.GetOnGround() &&
+        hasNormalAttackRequest &&
+        !input.GetSpecialAttackPressed() &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        !combat.GetIsStrongAttacked();
+
+    if (!canStartAirSlam) {
+        return false;
+    }
+
+    mAttackDirectionTarget = nullptr;
+    movement.ClearStrongAttackDirectionOverride();
+    movement.StartAirSlamMovement(player);
+    combat.StartAirSlamAttack();
+    input.ConsumeBufferedAttackInput();
+    mCoyoteTimeRemaining = 0.0f;
+    ChangeState(
+        PlayerActionState::AirSlamAttacking);
+    return true;
+}
+
+
+bool PlayerStateMachine::ApplyIdleGravity(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    float deltaTime)
+{
+    // 回避キャンセル後は、攻撃／回避の滞空硬直を完全に破棄する。
+    // これより先の空中移動は通常のジャンプと同じ入力経路だけを使う。
+    if (mAllowsAirMovementAfterDodge) {
+        movement.CancelAirborneActionHover();
+    } else if (movement.UpdateAirborneActionHover(
+                   player,
+                   deltaTime)) {
+        return false;
+    }
+
+    const bool canApplyInputMovement =
+        !player.GetOnGround() &&
+        (mAllowsAirMovementAfterDodge ||
+         combat.CanMoveDuringAttack()) &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (canApplyInputMovement) {
+        movement.ApplyJumpGravityAndInputMovement(
+            player,
+            input,
+            deltaTime);
+        return true;
+    }
+
+    movement.ApplyJumpGravity(player, deltaTime);
+    return false;
 }
 
 bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, float deltaTime)
 {
-    const bool canStartJumping = input.GetJumpPressed() && player.GetOnGround();
+    const bool jumpStarted = input.GetJumpPressed() && !input.GetJumpPressedPrev();
+    const bool hasGroundGrace = player.GetOnGround() || mCoyoteTimeRemaining > 0.0f;
+    const bool canStartJumping = jumpStarted && hasGroundGrace;
+
     if (!canStartJumping || combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
         return false;
     }
 
-    movement.StartJumping(player, deltaTime);
+    mCoyoteTimeRemaining = 0.0f;
+    movement.StartJumpMovement(player, deltaTime);
+    player.NotifyJumpStarted();
+
+    player.GetGame()->GetAudioSystem()->PlaySE("jump_se");
     return true;
 }
 
-bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerJewelGauge& jewelGauge,
-                                    PlayerStatus& status)
+bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerCombat& combat,
+                                    PlayerJewelGauge& jewelGauge, PlayerStatus& status)
 {
-    const bool canRecover = input.GetRecoverPressed() && !input.GetRecoverPressedPrev() && jewelGauge.CanConsume(1) &&
-                            status.GetHp() != status.GetMaxHp();
+    const bool isPreparingSpecialAttack =
+        combat.IsSpecialCharging() || combat.GetCanSpecialAttack();
+    const bool canRecover =
+        !isPreparingSpecialAttack &&
+        input.GetRecoverPressed() &&
+        !input.GetRecoverPressedPrev() &&
+        jewelGauge.CanConsume(1) &&
+        status.GetHp() != status.GetMaxHp();
     if (!canRecover) {
         return false;
     }
@@ -106,15 +399,26 @@ bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerJe
 }
 
 void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                            PlayerCombat& combat, PlayerStatus& status, float deltaTime)
+                                            PlayerCombat& combat, PlayerStatus& status,
+                                            bool wasInputMovementApplied, float deltaTime)
 {
-    const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
-    if (isMoving && !status.IsTired()) {
-        movement.ChangeFaceDir(player, input);
+    if (player.IsAttachedToPlatform()) {
+        return;
     }
 
-    if (movement.CanWalk(combat) && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack()) {
-        movement.UpdateWalk(player, input, deltaTime);
+    const bool isMoving = std::abs(input.GetMoveForward()) > 0.01f || std::abs(input.GetMoveLeft()) > 0.01f;
+    if (isMoving && !status.IsTired()) {
+        movement.UpdateFacingDirectionFromInput(player, input);
+    }
+
+    const bool canApplyInputMovement =
+        (mAllowsAirMovementAfterDodge ||
+         combat.CanMoveDuringAttack()) &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (canApplyInputMovement &&
+        !wasInputMovementApplied) {
+        movement.MoveFromInput(player, input, deltaTime);
     }
 
     const bool isFalling = glm::dot(player.GetVelocity(), player.GetUpVec()) < 0.0f;
@@ -123,7 +427,8 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
     }
 }
 
-bool PlayerStateMachine::TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge)
+bool PlayerStateMachine::TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat,
+                                               PlayerJewelGauge& jewelGauge)
 {
     const bool canSpecialAttack = input.GetSpecialAttackPressed() && input.GetAttackPressed() &&
                                   !input.GetAttackPressedPrev() && jewelGauge.CanConsume(2);
@@ -131,6 +436,7 @@ bool PlayerStateMachine::TryStartSpecialAttack(PlayerInput& input, PlayerCombat&
         return false;
     }
 
+    input.ClearAttackBuffer();
     combat.StartSpecialAttackCharging();
     return true;
 }
@@ -146,16 +452,20 @@ bool PlayerStateMachine::TryReduceTired(PlayerInput& input, PlayerMovement& move
     return true;
 }
 
-bool PlayerStateMachine::TryStartContinuousAttack(PlayerInput& input, PlayerCombat& combat,
+bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                                   PlayerJewelGauge& jewelGauge)
 {
-    const bool canContinuousAttacking = input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
-                                        !input.GetWideAttackPressedPrev() && jewelGauge.CanConsume(1);
+    const bool canContinuousAttacking = player.GetOnGround() &&
+                                        input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
+                                        !input.GetWideAttackPressedPrev() &&
+                                        jewelGauge.CanConsume(
+                                            PlayerJewelGauge::ContinuousAttackCost);
     if (!canContinuousAttacking) {
         return false;
     }
 
-    jewelGauge.Consume(1);
+    input.ClearAttackBuffer();
+    jewelGauge.Consume(PlayerJewelGauge::ContinuousAttackCost);
     combat.StartContinuousAttacking();
     return true;
 }
@@ -176,6 +486,14 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
         return false;
     }
 
+
+
+
+    if (!player.GetOnGround()) {
+        combat.AdvanceContinuousAttackDuration(deltaTime);
+        return false;
+    }
+
     UpdateContinuousAttacking(player, movement, combat, status, deltaTime);
     return true;
 }
@@ -183,32 +501,134 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
 bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status)
 {
-    const bool canStartDodging = movement.CanDodge(combat) && input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    const bool canStartDodging = movement.CanDodge(combat) && combat.CanDodgeDuringAttack() &&
+                                 input.GetDodgePressed() && !input.GetDodgePressedPrev();
+
     if (!canStartDodging) {
         return false;
     }
 
+    mShouldSkipAirDodgePostHover = false;
     ChangeState(PlayerActionState::Dodging);
-    movement.StartDodging(player, input, status);
+
+    const bool startsInAir = !player.GetOnGround();
+    movement.StartDodgeMovement(player, input);
+    if (startsInAir) {
+        combat.StartAirDodgeAttack();
+    } else {
+        combat.EndAirDodgeAttack();
+    }
+    status.StartDodgeInvincibility(
+        movement.GetDodgeDuration());
+
+    player.GetGame()->GetAudioSystem()->PlaySE("dodge_se");
+
+    return true;
+}
+
+bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status)
+{
+    const bool hasWideAttackRequest =
+        input.GetBufferedAttackInput() ==
+        PlayerAttackInputKind::Wide;
+    const bool canStartAutoDodge =
+        player.GetGame()->IsAssistControlStyle() &&
+        !player.GetOnGround() &&
+        hasWideAttackRequest &&
+        !combat.CanStartAirAttack() &&
+        combat.GetAttackCooldownRemaining() <= 0.0f &&
+        movement.CanDodge(combat) &&
+        combat.CanDodgeDuringAttack() &&
+        !combat.IsSpecialCharging() &&
+        !combat.GetCanSpecialAttack();
+    if (!canStartAutoDodge) {
+        return false;
+    }
+
+    Enemy* target =
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
+            player);
+    if (!target ||
+        !movement.StartDodgeMovementTowards(
+            player,
+            target->GetPos())) {
+        return false;
+    }
+
+    PlayerTargetingAssist::FaceTarget(
+        player,
+        movement,
+        *target);
+    input.ConsumeBufferedAttackInput();
+    mAttackDirectionTarget = nullptr;
+
+    ChangeState(PlayerActionState::Dodging);
+    combat.StartAirDodgeAttack();
+    status.StartDodgeInvincibility(
+        movement.GetDodgeDuration());
+    player.GetGame()
+        ->GetAudioSystem()
+        ->PlaySE("dodge_se");
     return true;
 }
 
 bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
                                         PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
-    const bool canStartAttacking = combat.GetAttackCooldownRemaining() <= 0.0f &&
-                                   ((input.GetAttackPressed() || input.GetWideAttackPressed()) &&
-                                    !input.GetAttackPressedPrev() && !input.GetWideAttackPressedPrev());
+    const PlayerAttackInputKind attackInput = input.GetBufferedAttackInput();
+    const bool hasAttackRequest = attackInput != PlayerAttackInputKind::None;
+    const bool canStartAttacking = combat.GetAttackCooldownRemaining() <= 0.0f && hasAttackRequest;
 
     if (!canStartAttacking || combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
         return false;
     }
 
-    if (!player.GetOnGround() && !input.GetWideAttackPressed()) {
+    if (!player.GetOnGround() && attackInput != PlayerAttackInputKind::Wide) {
         return false;
     }
 
+    if (!player.GetOnGround() &&
+        attackInput == PlayerAttackInputKind::Wide &&
+        !combat.CanStartAirAttack()) {
+        input.ConsumeBufferedAttackInput();
+        return false;
+    }
+
+    const bool isNormalAttack = attackInput == PlayerAttackInputKind::Normal;
+    const float attackRange =
+        isNormalAttack ? combat.GetNormalAttackRange() : combat.GetWideAttackRange();
+    const float attackAngle =
+        isNormalAttack ? combat.GetNormalAttackAngle() : combat.GetWideAttackAngle();
+    if (player.GetGame()->IsAssistControlStyle()) {
+        const bool requireLaunchedTarget = !player.GetOnGround();
+
+        // 敵への自動方向転換はアシスト操作時だけ行う。
+        mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
+            player,
+            attackRange,
+            attackAngle,
+            requireLaunchedTarget);
+
+        if (mAttackDirectionTarget) {
+            PlayerTargetingAssist::FaceTarget(
+                player,
+                movement,
+                *mAttackDirectionTarget);
+        }
+    } else {
+        mAttackDirectionTarget = nullptr;
+    }
+
+    movement.ClearStrongAttackDirectionOverride();
+    // 回避で解除した空中移動は、新しい攻撃を出した時点で終了する。
+    mAllowsAirMovementAfterDodge = false;
     ChangeState(PlayerActionState::Attacking);
-    combat.StartAttacking(player, input, movement, status, deltaTime);
+    combat.StartAttacking(player, attackInput, movement, status, deltaTime);
+    input.ConsumeBufferedAttackInput();
     return true;
 }

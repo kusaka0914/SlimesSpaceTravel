@@ -4,19 +4,70 @@
 #include <optional>
 
 class btDiscreteDynamicsWorld;
-class btSphereShape;
+class btConvexShape;
 
 class Actor;
+enum class ActorCollisionFilter;
+struct ActorMovementCollisionResult;
 
 class ActorCollisionResolver {
 public:
-    glm::vec3 CheckCollision(btDiscreteDynamicsWorld* world, btSphereShape* playerShape, Actor* actor,
-                             const glm::vec3& moveDelta, const glm::vec3& desiredPos) const;
+    ActorMovementCollisionResult CheckCollision(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* playerShape,
+        Actor* actor,
+        const glm::vec3& moveDelta,
+        const glm::vec3& desiredPos,
+        float collisionCenterHeight,
+        ActorCollisionFilter actorCollisionFilter) const;
+
+    bool DoesSweepHitBlockingStage(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* actorShape,
+        const Actor& actor,
+        const glm::vec3& fromPosition,
+        const glm::vec3& toPosition,
+        float collisionCenterHeight) const;
 
 private:
-    std::optional<glm::vec3> CheckConflictActors(Actor* actor, const glm::vec3& desiredPos) const;
-    std::optional<glm::vec3> CheckConflictActor(Actor* actor, const glm::vec3& desiredPos) const;
-    std::optional<glm::vec3> CheckConflictWall(btDiscreteDynamicsWorld* world, btSphereShape* playerShape,
-                                               Actor* actor, const glm::vec3& moveDelta,
-                                               const glm::vec3& desiredPos) const;
+    struct StageSweepResolution {
+        glm::vec3 position{0.0f};
+        glm::vec3 blockingNormal{0.0f};
+        bool didBlockRequestedMovement = false;
+    };
+
+    struct StageOverlapResolution {
+        glm::vec3 position{0.0f};
+        glm::vec3 blockingNormal{0.0f};
+        bool hadOverlap = false;
+        bool hasRemainingOverlap = false;
+    };
+
+    std::optional<glm::vec3> CheckConflictActors(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* movingActorShape,
+        Actor* actor,
+        const glm::vec3& desiredPos,
+        float collisionCenterHeight,
+        ActorCollisionFilter actorCollisionFilter) const;
+    std::optional<glm::vec3> CheckConflictActor(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* movingActorShape,
+        Actor* movingActor,
+        Actor* blockingActor,
+        const glm::vec3& desiredPos,
+        float collisionCenterHeight) const;
+    std::optional<StageSweepResolution> CheckConflictWall(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* playerShape,
+        Actor* actor,
+        const glm::vec3& moveDelta,
+        const glm::vec3& desiredPos,
+        float collisionCenterHeight) const;
+    StageOverlapResolution ResolveStageOverlap(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* playerShape,
+        Actor* actor,
+        const glm::vec3& position,
+        float collisionCenterHeight) const;
 };

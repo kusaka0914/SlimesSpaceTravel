@@ -7,6 +7,13 @@ GamepadRumbleService::~GamepadRumbleService()
 
 void GamepadRumbleService::Initialize()
 {
+
+
+
+
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS, "0");
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) == 0) {
         UpdateConnection();
     }
@@ -14,35 +21,59 @@ void GamepadRumbleService::Initialize()
 
 void GamepadRumbleService::Shutdown()
 {
-    if (mController) {
-        SDL_GameControllerClose(mController);
-        mController = nullptr;
+    for (SDL_GameController* controller : mControllers) {
+        if (controller) {
+            SDL_GameControllerClose(controller);
+        }
     }
+    mControllers.clear();
 }
 
 void GamepadRumbleService::UpdateConnection()
 {
-    if (mController) {
+    int connectedControllerCount = 0;
+    for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+        if (SDL_IsGameController(i)) {
+            ++connectedControllerCount;
+        }
+    }
+
+    if (connectedControllerCount == static_cast<int>(mControllers.size())) {
         return;
     }
 
+    Shutdown();
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) {
-            mController = SDL_GameControllerOpen(i);
-            break;
+            if (SDL_GameController* controller = SDL_GameControllerOpen(i)) {
+                mControllers.push_back(controller);
+            }
         }
     }
 }
 
-void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration)
+SDL_GameController* GamepadRumbleService::GetControllerForPlayer(
+    int playerNum) const
 {
-    if (playerNum != 1) {
+    const int controllerIndex = playerNum - 1;
+    if (controllerIndex < 0 ||
+        controllerIndex >= static_cast<int>(mControllers.size())) {
+        return nullptr;
+    }
+    return mControllers[static_cast<std::size_t>(controllerIndex)];
+}
+
+bool GamepadRumbleService::HasControllerForPlayer(int playerNum) const
+{
+    return GetControllerForPlayer(playerNum) != nullptr;
+}
+
+void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds)
+{
+    SDL_GameController* controller = GetControllerForPlayer(playerNum);
+    if (!controller) {
         return;
     }
 
-    if (!mController) {
-        return;
-    }
-
-    SDL_GameControllerRumble(mController, lowFrequency, highFrequency, duration);
+    SDL_GameControllerRumble(controller, lowFrequency, highFrequency, durationMilliseconds);
 }

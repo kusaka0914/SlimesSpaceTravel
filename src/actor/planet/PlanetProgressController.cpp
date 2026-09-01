@@ -27,6 +27,19 @@ void PlanetProgressController::SetRocketSpawnCondition(const std::string& rocket
     }
 }
 
+std::string PlanetProgressController::GetRocketSpawnCondition() const
+{
+    switch (mRocketSpawnCondition) {
+    case RocketSpawnCondition::AllEnemiesDead:
+        return "AllEnemiesDead";
+    case RocketSpawnCondition::AllBoatPartsCollected:
+        return "AllBoatPartsCollected";
+    case RocketSpawnCondition::None:
+    default:
+        return "";
+    }
+}
+
 void PlanetProgressController::InitRemainBoatPartsCount(const PlanetActorRegistry& actorRegistry)
 {
     mRemainBoatPartsCount = 0;
@@ -55,7 +68,8 @@ void PlanetProgressController::OnEnemyDead(const PlanetActorRegistry& actorRegis
 bool PlanetProgressController::CheckIsAllEnemiesDead(const PlanetActorRegistry& actorRegistry) const
 {
     for (Enemy* enemy : actorRegistry.GetEnemies()) {
-        if (enemy && enemy->GetIsDead()) {
+        if (!enemy || !enemy->GetIsActive() ||
+            enemy->GetIsDead()) {
             continue;
         }
 
@@ -95,7 +109,7 @@ bool PlanetProgressController::CheckIsAllBoatPartsCollected(const PlanetActorReg
 void PlanetProgressController::StartBoatFocus(const PlanetActorRegistry& actorRegistry) const
 {
     for (Boat* boat : actorRegistry.GetBoats()) {
-        if (!boat) {
+        if (!boat || boat->IsDebugDisabled()) {
             continue;
         }
 

@@ -1,6 +1,10 @@
 #include "actor/player/PlayerCombat.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
+#include "actor/HazardActor.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerJewelGauge.h"
@@ -12,25 +16,57 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
-bool PlayerCombat::IsAttacking() const
-{
-    return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f || mAttackPressTimer >= 0.0f ||
-           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f || mAirAttackFloatingTimer >= 0.0f;
+namespace {
+constexpr float attackDodgeCancelDelaySeconds = 0.5f;
+constexpr float airWeakAttackDamageMultiplier = 2.0f;
 }
 
-void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement,
-                                  PlayerStatus& status, float deltaTime)
+PlayerCombat::PlayerCombat(PhysicsSystem& physicsSystem)
+    : mHitDetector(physicsSystem)
 {
-    if (!player.GetOnGround() && input.GetWideAttackPressed()) {
+}
+
+bool PlayerCombat::IsAttacking() const
+{
+    return mAttackMotionTimer >= 0.0f || mStrongAttackTimer >= 0.0f ||
+           mContinuousAttackingTimer >= 0.0f || mSpecialChargingTimer >= 0.0f ||
+           mHasPendingAttackHit;
+}
+
+void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
+                                   PlayerStatus& status, float deltaTime)
+{
+    (void)status;
+    (void)deltaTime;
+
+    // 回避キャンセルで解除した空中弱攻撃の移動ロックは、次の攻撃開始時に
+    // だけ通常どおり有効へ戻す。
+    mAirAttackMovementUnlockedByDodge = false;
+
+    if (!player.GetOnGround() && attackInput == PlayerAttackInputKind::Wide) {
+        if (!CanStartAirAttack()) {
+            return;
+        }
+
+        player.RestartAirborneGravityFallbackDelay();
+        ResetGroundAttackCombo();
+        ++mAirAttackCount;
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mAttackCooldown;
-        mAttack = mWideAttack / 2.0f;
-        mAirAttackFloatingTimer = 0.5f;
+        mAttackCooldownRemaining =
+            mAirWeakAttackCooldownSeconds;
+        mAttack =
+            mWideAttack *
+            airWeakAttackDamageMultiplier;
         mIsAirAttacking = true;
+        movement.CancelJumpApexHover();
+        movement.CancelAirborneActionHover();
+        movement.StopAirborneVerticalMovement(player);
+        mAttackDodgeLockRemaining =
+            attackDodgeCancelDelaySeconds;
 
-        Attack(player, movement, status, deltaTime);
+        StartAttackHitDelay();
         return;
     }
 
@@ -38,52 +74,91 @@ void PlayerCombat::StartAttacking(Player& player, const PlayerInput& input, Play
         return;
     }
 
-    if (input.GetAttackPressed()) {
+    const bool shouldFinishAssistCombo =
+        player.GetGame()->IsAssistControlStyle() &&
+        attackInput == PlayerAttackInputKind::Wide &&
+        mAttackComboIndex == 2;
+
+    if (attackInput == PlayerAttackInputKind::Normal || shouldFinishAssistCombo) {
         mAttackKind = PlayerAttackKind::Normal;
         mAttackRange = mNormalAttackRange;
         mAttackAngle = mNormalAttackAngle;
         mAttackCooldownRemaining = mLastAttackCooldown;
         mAttack = mNormalAttack;
-    } else if (input.GetWideAttackPressed()) {
+    } else if (attackInput == PlayerAttackInputKind::Wide) {
         mAttackKind = PlayerAttackKind::Wide;
         mAttackRange = mWideAttackRange;
         mAttackAngle = mWideAttackAngle;
-        mAttackCooldownRemaining = mAttackCooldown;
+        mAttackCooldownRemaining =
+            mGroundWeakAttackCooldownSeconds;
         mAttack = mWideAttack;
     }
 
-    Attack(player, movement, status, deltaTime);
+    const bool isGroundWeakAttack =
+        attackInput == PlayerAttackInputKind::Wide &&
+        !shouldFinishAssistCombo;
+    mAttackDodgeLockRemaining =
+        isGroundWeakAttack ? 0.0f : attackDodgeCancelDelaySeconds;
+    StartAttackHitDelay();
 }
 
-void PlayerCombat::StartCharging(Player& player)
-{
-    mAttackPressTimer = mDefaultAttackPressTimer;
-
-    player.GetGame()->GetAudioSystem()->PlaySE("air_charging_se");
-}
-
-void PlayerCombat::StartStrongAttacking(Player& player, float deltaTime)
+void PlayerCombat::ConfigureStrongAttack()
 {
     mAttackKind = PlayerAttackKind::Strong;
     mAttackRange = mStrongAttackRange;
     mAttackAngle = mNormalAttackAngle;
     mAttackCooldownRemaining = mLastAttackCooldown;
     mAttack = mStrongAttack;
-
-    float pressTime = 1.0f;
-    if (mDefaultAttackPressTimer > 0.0f) {
-        pressTime = std::min(1.0f, (mDefaultAttackPressTimer - mAttackPressTimer) / mDefaultAttackPressTimer);
-    }
-    mStrongAttackTimer = mDefaultStrongAttackTimer * pressTime;
-    mAttackPressTimer = -1.0f;
-
-    mIsStrongAttacked = true;
 }
 
-void PlayerCombat::FinishCharging(Player& player, const PlayerMovement& movement)
+void PlayerCombat::StartAirSlamAttack()
 {
-    player.GetGame()->OnPlayerFinishCharging(movement.GetPlayerNum());
+    EndContinuousAttacking();
+    ConfigureStrongAttack();
+    mIsAssistStrongAttack = false;
+    mIsStrongAttacked = true;
     mIsCharged = true;
+    ClearPendingAttackHit();
+}
+
+bool PlayerCombat::ResolveAirSlamImpact(
+    Player& player,
+    PlayerMovement& movement,
+    float deltaTime)
+{
+    ConfigureStrongAttack();
+    ++mResolvedAttackSequence;
+    const std::vector<Enemy*> hitEnemies =
+        mHitDetector.FindEnemiesInRadius(
+            player,
+            mStrongAttackRange);
+
+    const bool didHitEnemy =
+        mAttackResolver.ResolveAirSlamAttack(
+            player,
+            movement,
+            *this,
+            hitEnemies,
+            deltaTime);
+
+    mIsStrongAttackHit = didHitEnemy;
+    mIsStrongAttacked = false;
+    mIsCharged = false;
+    return didHitEnemy;
+}
+
+void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
+{
+    (void)deltaTime;
+
+    ConfigureStrongAttack();
+    mIsAssistStrongAttack = true;
+    mStrongAttackTimer = mDefaultStrongAttackTimer;
+    mIsStrongAttacked = true;
+    mIsCharged = true;
+
+    StartAttackHitDelay();
+    player.GetGame()->GetAudioSystem()->PlaySE("air_charged_se");
 }
 
 void PlayerCombat::FinishSpecialAttackCharging()
@@ -92,10 +167,62 @@ void PlayerCombat::FinishSpecialAttackCharging()
     mCanSpecialAttack = false;
 }
 
+void PlayerCombat::StartAttackHitDelay()
+{
+    mAttackHitDelayRemaining = std::max(0.0f, mAttackHitDelay);
+    mHasPendingAttackHit = true;
+}
+
+void PlayerCombat::ClearPendingAttackHit()
+{
+    mAttackHitDelayRemaining = -1.0f;
+    mHasPendingAttackHit = false;
+}
+
+bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status,
+                                          float deltaTime)
+{
+    if (!mHasPendingAttackHit) {
+        return false;
+    }
+
+    mAttackHitDelayRemaining -= deltaTime;
+    if (mAttackHitDelayRemaining > 0.0f) {
+        return false;
+    }
+
+    ClearPendingAttackHit();
+
+
+
+    Attack(player, movement, status, deltaTime);
+    return true;
+}
+
 void PlayerCombat::Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
 {
+    ++mResolvedAttackSequence;
     const std::vector<Enemy*> hitEnemies = mHitDetector.FindHitEnemies(player, *this);
-    mAttackResolver.ResolveAttack(player, movement, status, *this, hitEnemies, deltaTime);
+    bool didHitHazardActor = false;
+    Planet* currentPlanet = player.GetCurrentPlanet();
+    if (currentPlanet) {
+        for (HazardActor* hazardActor :
+             currentPlanet->GetHazardActors()) {
+            if (hazardActor &&
+                hazardActor->TryReactToAttack(player)) {
+                didHitHazardActor = true;
+            }
+        }
+    }
+
+    mAttackResolver.ResolveAttack(
+        player,
+        movement,
+        status,
+        *this,
+        hitEnemies,
+        didHitHazardActor,
+        deltaTime);
 }
 
 void PlayerCombat::WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime)
@@ -121,8 +248,18 @@ void PlayerCombat::StrongAttack(Player& player, PlayerMovement& movement, Player
 void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge,
                                  float deltaTime)
 {
+    mAttackKind = PlayerAttackKind::Charged;
+    mAttackRange = mChargedAttackRange;
+    mAttackAngle = mChargedAttackAngle;
+    ++mResolvedAttackSequence;
+
     const std::vector<Enemy*> enemies = mHitDetector.FindHitEnemies(player, *this);
-    mAttackResolver.ResolveSpecialAttack(player, jewelGauge, enemies, deltaTime);
+    mAttackResolver.ResolveSpecialAttack(
+        player,
+        jewelGauge,
+        enemies,
+        mChargedAttackDamage,
+        deltaTime);
 
     player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 0, 40000, 1000);
 
@@ -130,42 +267,66 @@ void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement,
     mAttackCooldownRemaining = 1.0f;
 }
 
-void PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status,
+bool PlayerCombat::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                              float deltaTime)
 {
     mAttackKind = PlayerAttackKind::Wide;
-    mAttack = mWideAttack / 2.0f;
-    mAttackRange = mWideAttackRange;
-    mAttackAngle = mWideAttackAngle;
+    mAttack = mContinuousAttackDamage;
+    mAttackRange = mContinuousAttackRange;
+    mAttackAngle = mContinuousAttackAngle;
 
-    mContinuousAttackingTimer -= deltaTime;
+    AdvanceContinuousAttackDuration(deltaTime);
     mContinuousAttackingCooldown -= deltaTime;
 
-    if (mContinuousAttackingCooldown <= 0.0f) {
-        mContinuousAttackingCooldown = 0.25f;
-        Attack(player, movement, status, deltaTime);
-        mAttackMoveLockRemaining = 0.0f;
+    if (mContinuousAttackingCooldown > 0.0f) {
+        return false;
     }
+
+    mContinuousAttackingCooldown =
+        std::max(0.0f, mContinuousAttackIntervalSeconds);
+    Attack(player, movement, status, deltaTime);
+    mAttackMoveLockRemaining = 0.0f;
+    return true;
+}
+
+void PlayerCombat::AdvanceContinuousAttackDuration(float deltaTime)
+{
+    if (!IsContinuousAttacking()) {
+        return;
+    }
+
+    mContinuousAttackingTimer =
+        std::max(-1.0f, mContinuousAttackingTimer - deltaTime);
 }
 
 void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status)
 {
-    mAttackMoveLockRemaining = 0.2f;
+    mAttackMoveLockRemaining = 0.6f;
+
+    if (!player.GetOnGround()) {
+        ResetGroundAttackCombo();
+        return;
+    }
+
     mComboKeepTimer = mAttackMoveLockRemaining + 1.0f;
 
-    if (player.GetOnGround()) {
-        mAttackMotionTimer = mDefaultAttackMotionTimer;
-    }
+    mAttackMotionTimer = mDefaultAttackMotionTimer;
 
     mAttackComboIndex++;
 
-    if (mAttackKind == PlayerAttackKind::Normal && mAttackComboIndex != 3) {
-        mAttackComboIndex = 0;
+
+
+
+    if (mAttackKind == PlayerAttackKind::Normal) {
+        if (mAttackComboIndex != 3) {
+            ResetGroundAttackCombo();
+        }
+        StartGroundFinisherCooldown();
         return;
     }
 
     if (mAttackKind == PlayerAttackKind::Strong) {
-        StartTiredLock(status, movement, 5.0f);
+        StartTiredLock(status, movement, 2.5f);
         return;
     }
 
@@ -173,26 +334,38 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
         return;
     }
 
-    if (mAttackKind == PlayerAttackKind::Normal) {
-        mAttackMoveLockRemaining = 1.0f;
-    }
-
     if (mAttackKind == PlayerAttackKind::Wide && player.GetOnGround()) {
-        mAttackCooldownRemaining = mLastAttackCooldown;
-        mAttackMoveLockRemaining = 0.8f;
+        StartGroundFinisherCooldown();
     }
+}
+
+void PlayerCombat::StartGroundFinisherCooldown()
+{
+    mAttackCooldownRemaining = mLastAttackCooldown;
+    mAttackMoveLockRemaining = 0.8f;
 }
 
 void PlayerCombat::StartSpecialAttackCharging()
 {
-    mSpecialChargingTimer = 3.0f;
-    mAttackRange = mWideAttackRange;
-    mAttackAngle = mWideAttackAngle / 2.0f;
+    mAttackKind = PlayerAttackKind::Charged;
+    mAttackRange = mChargedAttackRange;
+    mAttackAngle = mChargedAttackAngle;
+    mAttack = mChargedAttackDamage;
+    mSpecialChargingTimer =
+        std::max(0.0f, mChargedAttackChargeDurationSeconds);
 }
 
 void PlayerCombat::StartContinuousAttacking()
 {
-    mContinuousAttackingTimer = 6.0f;
+    mContinuousAttackingTimer =
+        std::max(0.0f, mContinuousAttackDurationSeconds);
+    mContinuousAttackingCooldown = 0.0f;
+}
+
+void PlayerCombat::EndContinuousAttacking()
+{
+    mContinuousAttackingTimer = -1.0f;
+    mContinuousAttackingCooldown = -1.0f;
 }
 
 void PlayerCombat::StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime)
@@ -214,25 +387,147 @@ void PlayerCombat::ReduceTiredLock(PlayerStatus& status, PlayerMovement& movemen
     }
 }
 
+void PlayerCombat::EndTiredLock(PlayerStatus& status, PlayerMovement& movement)
+{
+    status.EndTired();
+    mAttackMoveLockRemaining = 0.0f;
+    movement.SetDodgeCooldown(0.0f);
+    mAttackCooldownRemaining = 0.0f;
+}
+
 void PlayerCombat::CancelSpecialAttack()
 {
+    mIsAssistStrongAttack = false;
     mCanSpecialAttack = false;
     mSpecialChargingTimer = -1.0f;
-    mContinuousAttackingTimer = -1.0f;
+    EndContinuousAttacking();
+}
+
+void PlayerCombat::CancelCurrentAttack()
+{
+    ClearPendingAttackHit();
+    mAttackMotionTimer = -1.0f;
+    mAttackMoveLockRemaining = 0.0f;
+    mAttackDodgeLockRemaining = 0.0f;
+    mIsAirAttacking = false;
+}
+
+void PlayerCombat::CancelAirAttackForDodge()
+{
+    CancelCurrentAttack();
+    mAirAttackMovementUnlockedByDodge = true;
 }
 
 void PlayerCombat::OnLanded()
 {
     mIsStrongAttacked = false;
+    mIsAssistStrongAttack = false;
     mIsCharged = false;
+    mIsAirAttacking = false;
+    mAirAttackMovementUnlockedByDodge = false;
+    mAirAttackCount = 0;
+    ResetAirWeakAttackHitCount();
+    EndAirDodgeAttack();
+}
+
+void PlayerCombat::PrepareAssistAirCombo()
+{
+    mAirAttackCount = 0;
+    ResetAirWeakAttackHitCount();
     mIsAirAttacking = false;
 }
 
-void PlayerCombat::UpdateAirAttackFloatingTimer(float deltaTime)
+bool PlayerCombat::RegisterAirWeakAttackHit()
 {
-    if (mAirAttackFloatingTimer > 0.0f) {
-        mAirAttackFloatingTimer -= deltaTime;
+    ++mAirWeakAttackHitCount;
+    if (mAirWeakAttackHitCount < airWeakAttackHitsForBreak) {
+        return false;
     }
+
+    ResetAirWeakAttackHitCount();
+    return true;
+}
+
+void PlayerCombat::ResetAirWeakAttackHitCount()
+{
+    mAirWeakAttackHitCount = 0;
+}
+
+void PlayerCombat::StartAirDodgeAttack()
+{
+    mIsAirDodgeAttackActive = true;
+    mAirDodgeHitEnemies.clear();
+}
+
+void PlayerCombat::UpdateAirDodgeAttack(
+    Player& player,
+    PlayerMovement& movement,
+    const glm::vec3& movementStart,
+    const glm::vec3& movementEnd)
+{
+    if (!mIsAirDodgeAttackActive) {
+        return;
+    }
+
+    const std::vector<Enemy*> touchingEnemies =
+        mHitDetector.FindEnemiesTouchingAirDodgeMovement(
+            player,
+            movementStart,
+            movementEnd,
+            mAirDodgeHorizontalHitboxScale,
+            mAirDodgeVerticalHitboxScale);
+    std::vector<Enemy*> newlyHitEnemies;
+    for (Enemy* enemy : touchingEnemies) {
+        const bool wasAlreadyHit =
+            std::find(
+                mAirDodgeHitEnemies.begin(),
+                mAirDodgeHitEnemies.end(),
+                enemy) != mAirDodgeHitEnemies.end();
+        if (wasAlreadyHit) {
+            continue;
+        }
+
+        mAirDodgeHitEnemies.emplace_back(enemy);
+        newlyHitEnemies.emplace_back(enemy);
+    }
+
+    const bool didHitEnemy =
+        mAttackResolver.ResolveAirDodgeAttack(
+            player,
+            movement,
+            newlyHitEnemies,
+            mAirDodgeAttackDamage,
+            mAirDodgeEnemyPushSpeed,
+            mAirDodgeEnemyPushDampingPerSecond);
+    if (didHitEnemy) {
+        mAirAttackCount = 0;
+        ResetAirWeakAttackHitCount();
+        // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
+        // 外した場合は現在の回避を最後にして、着地まで再使用できない。
+        movement.RestoreAirDodge();
+    }
+}
+
+void PlayerCombat::EndAirDodgeAttack()
+{
+    mIsAirDodgeAttackActive = false;
+    mAirDodgeHitEnemies.clear();
+}
+
+void PlayerCombat::StartGroundWeakAttackCooldown()
+{
+    mAttackCooldownRemaining =
+        std::max(
+            mAttackCooldownRemaining,
+            mGroundWeakAttackCooldownSeconds);
+}
+
+void PlayerCombat::StartAirWeakAttackCooldown()
+{
+    mAttackCooldownRemaining =
+        std::max(
+            mAttackCooldownRemaining,
+            mAirWeakAttackCooldownSeconds);
 }
 
 void PlayerCombat::UpdateAttackCooldown(float deltaTime)
@@ -266,5 +561,10 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
         return;
     }
 
-    mAttackComboIndex = 0;
+    ResetGroundAttackCombo();
+}
+
+bool PlayerCombat::CanAcceptMovementInput() const
+{
+    return CanMoveDuringAttack() && !IsSpecialCharging() && !GetCanSpecialAttack();
 }

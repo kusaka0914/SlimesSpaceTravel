@@ -1,5 +1,6 @@
 #include "gfx/debug/panels/StagePlanetPanel.h"
 
+#include "gfx/Renderer3D.h"
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Actor.h"
@@ -13,16 +14,37 @@
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "actor/TutorialTrigger.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
+#include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <utility>
+
+namespace {
+std::string ToLower(std::string value)
+{
+    std::transform(
+        value.begin(),
+        value.end(),
+        value.begin(),
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+    return value;
+}
+
+}
 
 StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context)
-    : DebugPanel(context)
+    : DebugPanel(context),
+      mYamlWriter(context)
 {
 }
 
@@ -34,6 +56,9 @@ void StagePlanetPanel::Draw()
 
     const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
 
+    if (mFocusedPlanet) {
+        ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    }
     if (!ImGui::TreeNode("惑星")) {
         return;
     }
@@ -42,15 +67,20 @@ void StagePlanetPanel::Draw()
 
     for (std::size_t i = 0; i < planets.size(); ++i) {
         Planet* planet = planets[i];
-        if (!planet) {
+        if (!planet || (mFocusedPlanet && planet != mFocusedPlanet)) {
             continue;
         }
 
         const std::string treeLabel = "惑星 " + std::to_string(i) + "##planet" + std::to_string(i);
 
+        if (mFocusedPlanet) {
+            ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+        }
         if (ImGui::TreeNode(treeLabel.c_str())) {
             glm::vec3 center = planet->GetPos();
-            glm::vec3 scale = planet->GetScale();
+            const glm::vec3 previousCenter = center;
+            const glm::vec3 previousScale = planet->GetScale();
+            glm::vec3 scale = previousScale;
 
             bool centerChanged = false;
             bool scaleChanged = false;
@@ -75,31 +105,45 @@ void StagePlanetPanel::Draw()
 
             if (centerChanged) {
                 planet->SetPos(center);
-                UpdateActorsOnPlanetSurface(planet);
+                if (mContext.planetMoveMode ==
+                    PlanetMoveMode::WithBoundActors) {
+                    StageActorPlanetBindingService::
+                        TranslateActorsBoundToPlanet(
+                            planet,
+                            center - previousCenter);
+                } else {
+                    StageActorPlanetBindingService::
+                        PreserveBoundActorWorldPositionsAfterPlanetMove(
+                            planet,
+                            center - previousCenter);
+                }
+                planet->CaptureEditorAuthoredPosition();
+                mHasPendingTransformEdit = true;
             }
 
             if (scaleChanged) {
-                bool isSphere = false;
-
                 scale.x = std::round(scale.x * 100.0f) / 100.0f;
                 scale.y = std::round(scale.y * 100.0f) / 100.0f;
                 scale.z = std::round(scale.z * 100.0f) / 100.0f;
 
-                if (scale.x == scale.y && scale.y == scale.z && scale.x == scale.z) {
-                    isSphere = true;
-                }
+                planet->SetTextureTiling(
+                    glm::vec2(
+                        std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),
+                        std::max(1.0f, std::abs(scale.y))));
 
                 planet->SetScale(scale);
 
-                if (isSphere) {
-                    planet->SetPlanetShape("Sphere");
-                } else {
-                    planet->SetPlanetShape("Ellipse");
-                }
-
                 planet->SetRadius(scale.x);
 
-                UpdateActorsOnPlanetSurface(planet);
+                StageActorPlanetBindingService::
+                    ReprojectSurfaceActorsAfterPlanetScale(planet);
+                planet->CaptureEditorAuthoredScale();
+                mHasPendingTransformEdit = true;
+            }
+
+            if (mHasPendingTransformEdit && !ImGui::IsAnyItemActive()) {
+                SaveEditorAuthoredTransforms();
+                mHasPendingTransformEdit = false;
             }
 
             const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
@@ -123,6 +167,89 @@ void StagePlanetPanel::Draw()
                     mContext.game->GetMeshLoadSystem()->SetActorMesh(planet);
                 }
             }
+            ImGui::Button(
+                ("モデルアセットをここへドロップ##planetModelDrop" +
+                 std::to_string(i))
+                    .c_str(),
+                ImVec2(-1.0f, 0.0f));
+            std::string droppedModelPath;
+            if (EditorAssetDragDrop::AcceptPath(
+                    EditorAssetType::Model,
+                    droppedModelPath)) {
+                planet->SetModelPath(droppedModelPath);
+                if (mContext.game->GetMeshLoadSystem()) {
+                    mContext.game->GetMeshLoadSystem()->SetActorMesh(planet);
+                }
+            }
+            ImGui::TextWrapped(
+                "選択中: %s",
+                planet->GetModelPath().c_str());
+
+            DrawTexturePicker(planet, i);
+            if (planet->GetPlanetShape() ==
+                Planet::PlanetShape::Ellipse) {
+                DrawBackTexturePicker(planet, i);
+            }
+            DrawTextureTilingEditor(planet, i);
+
+            ImGui::SeparatorText("近接時の重力");
+            bool canAttractNearbyPlayer =
+                planet->CanAttractNearbyPlayer();
+            if (ImGui::Checkbox(
+                    ("近づいたプレイヤーを吸い付ける##planetNearbyGravity" +
+                     std::to_string(i))
+                        .c_str(),
+                    &canAttractNearbyPlayer)) {
+                planet->SetCanAttractNearbyPlayer(
+                    canAttractNearbyPlayer);
+            }
+            ImGui::TextDisabled(
+                "OFFでも、ロケット移動や明示的な所属変更ではこの惑星へ移動できます。");
+
+            bool shouldReactToOverheadGravityRay =
+                planet->ShouldReactToOverheadGravityRay();
+            if (ImGui::Checkbox(
+                    ("頭上重力レイに反応する##planetOverheadGravityRay" +
+                     std::to_string(i))
+                        .c_str(),
+                    &shouldReactToOverheadGravityRay)) {
+                planet->SetShouldReactToOverheadGravityRay(
+                    shouldReactToOverheadGravityRay);
+            }
+            ImGui::TextDisabled(
+                "ONにすると、空中のプレイヤーが頭上からこの惑星を検出した際に、当たった面の法線へ重力方向を切り替えます。");
+
+            ImGui::SeparatorText("ロケット出現条件");
+            const char* spawnConditionLabels[] = {
+                "なし",
+                "敵をすべて倒す",
+                "ボートパーツをすべて集める",
+            };
+            const char* spawnConditionValues[] = {
+                "",
+                "AllEnemiesDead",
+                "AllBoatPartsCollected",
+            };
+            const std::string currentSpawnCondition =
+                planet->GetRocketSpawnCondition();
+            int spawnConditionIndex = 0;
+            for (int conditionIndex = 0;
+                 conditionIndex < IM_ARRAYSIZE(spawnConditionValues);
+                 ++conditionIndex) {
+                if (currentSpawnCondition ==
+                    spawnConditionValues[conditionIndex]) {
+                    spawnConditionIndex = conditionIndex;
+                    break;
+                }
+            }
+            if (ImGui::Combo(
+                    ("出現条件##rocketSpawnCondition" + std::to_string(i)).c_str(),
+                    &spawnConditionIndex,
+                    spawnConditionLabels,
+                    IM_ARRAYSIZE(spawnConditionLabels))) {
+                planet->SetRocketSpawnCondition(
+                    spawnConditionValues[spawnConditionIndex]);
+            }
 
             ImGui::TreePop();
         }
@@ -131,88 +258,340 @@ void StagePlanetPanel::Draw()
     ImGui::TreePop();
 }
 
+void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
+{
+    if (!selectedPlanet) {
+        return;
+    }
+
+    mFocusedPlanet = selectedPlanet;
+    Draw();
+    mFocusedPlanet = nullptr;
+}
+
 void StagePlanetPanel::Save()
 {
+    mYamlWriter.Save(false);
+}
+
+void StagePlanetPanel::SaveEditorAuthoredTransforms()
+{
+    if (mSaveDependentActorTransformsCallback) {
+        mSaveDependentActorTransformsCallback();
+    }
+
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
     }
 
-    YAML::Node config;
+    std::vector<Planet*> editedPlanets;
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (planet && planet->FindEditorAuthoredTransform()) {
+            editedPlanets.emplace_back(planet);
+        }
+    }
 
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+    if (editedPlanets.empty() || !mYamlWriter.Save(true)) {
         return;
     }
 
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-    for (std::size_t i = 0; i < planets.size(); ++i) {
-        Planet* planet = planets[i];
-        if (!planet) {
-            continue;
-        }
-
-        const glm::vec3 center = planet->GetPos();
-        const glm::vec3 scale = planet->GetScale();
-
-        config["planets"][i]["center"][0] = center.x;
-        config["planets"][i]["center"][1] = center.y;
-        config["planets"][i]["center"][2] = center.z;
-
-        config["planets"][i]["scale"][0] = scale.x;
-        config["planets"][i]["scale"][1] = scale.y;
-        config["planets"][i]["scale"][2] = scale.z;
-
-        config["planets"][i]["model"] = planet->GetModelPath();
+    for (Planet* planet : editedPlanets) {
+        planet->ClearEditorAuthoredTransform();
     }
-
-    StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
-void StagePlanetPanel::UpdateActorsOnPlanetSurface(Planet* planet)
+void StagePlanetPanel::SetSaveDependentActorTransformsCallback(
+    std::function<void()> callback)
 {
-    if (!planet || !mContext.game) {
+    mSaveDependentActorTransformsCallback = std::move(callback);
+}
+
+void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex)
+{
+    if (!planet) {
         return;
     }
 
-    auto updateActor = [planet](Actor* actor) {
-        if (!actor) {
-            return;
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
+
+    ImGui::SeparatorText("テクスチャ");
+    const std::string& selectedTexture = planet->GetTextureOverridePath();
+    ImGui::TextWrapped(
+        "選択中: %s",
+        selectedTexture.empty() ? "モデル標準" : selectedTexture.c_str());
+    ImGui::Button(
+        ("画像アセットをここへドロップ##planetTextureDrop" +
+         std::to_string(planetIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        planet->SetTextureOverridePath(droppedTexturePath);
+        if (mContext.game && mContext.game->GetRenderer3D() &&
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                droppedTexturePath) == 0) {
+            mTextureAssetStatus =
+                "テクスチャの読み込みに失敗しました: " +
+                droppedTexturePath;
+        } else {
+            mTextureAssetStatus.clear();
+        }
+    }
+
+    const std::string pickerId = "##planetTexturePicker" + std::to_string(planetIndex);
+    if (ImGui::TreeNode(("テクスチャを選ぶ" + pickerId).c_str())) {
+        const std::string filterId = "##planetTextureFilter" + std::to_string(planetIndex);
+        ImGui::InputTextWithHint(
+            filterId.c_str(),
+            "ファイル名で検索",
+            mTextureAssetFilter.data(),
+            mTextureAssetFilter.size());
+        ImGui::SameLine();
+        if (ImGui::Button(("更新##planetTextureRefresh" + std::to_string(planetIndex)).c_str())) {
+            mContext.assetCatalog->Refresh();
         }
 
-        const glm::vec3 newPos = planet->CalculateSurfacePos(actor->GetTheta(), actor->GetPhi(), actor->GetHeight());
+        if (ImGui::Selectable(
+                ("モデル標準に戻す##planetTextureDefault" + std::to_string(planetIndex)).c_str(),
+                selectedTexture.empty())) {
+            planet->SetTextureOverridePath("");
+        }
 
-        actor->SetPos(newPos);
-    };
+        const std::string assetListId = "PlanetTextureAssetPicker##" + std::to_string(planetIndex);
+        ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
+        const std::string filter = ToLower(mTextureAssetFilter.data());
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
+            if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+                continue;
+            }
 
-    if (!mContext.game->GetPlayers().empty()) {
-        updateActor(mContext.game->GetPlayers()[0]);
+            if (ImGui::Selectable(asset.c_str(), selectedTexture == asset)) {
+                planet->SetTextureOverridePath(asset);
+                if (mContext.game && mContext.game->GetRenderer3D()) {
+                    const GLuint texture =
+                        mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(asset);
+                    if (texture == 0) {
+                        mTextureAssetStatus = "テクスチャの読み込みに失敗しました: " + asset;
+                    } else {
+                        mTextureAssetStatus.clear();
+                    }
+                }
+            }
+        }
+        ImGui::EndChild();
+
+        if (!mTextureAssetStatus.empty()) {
+            ImGui::TextColored(
+                ImVec4(1.0f, 0.35f, 0.25f, 1.0f),
+                "%s",
+                mTextureAssetStatus.c_str());
+        }
+
+        ImGui::TreePop();
     }
 
-    for (Enemy* enemy : planet->GetEnemies()) {
-        updateActor(enemy);
+    if (!selectedTexture.empty() && mContext.game && mContext.game->GetRenderer3D()) {
+        const GLuint texture =
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(selectedTexture);
+        if (texture != 0) {
+            ImGui::TextUnformatted("プレビュー");
+            ImGui::Image(
+                static_cast<ImTextureID>(texture),
+                ImVec2(128.0f, 128.0f),
+                ImVec2(0.0f, 1.0f),
+                ImVec2(1.0f, 0.0f));
+        }
+    }
+}
+
+void StagePlanetPanel::DrawBackTexturePicker(
+    Planet* planet,
+    std::size_t planetIndex)
+{
+    if (!planet) {
+        return;
     }
 
-    for (Crystal* crystal : planet->GetCrystals()) {
-        updateActor(crystal);
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
+
+    ImGui::SeparatorText("楕円の裏側テクスチャ");
+    ImGui::TextDisabled(
+        "惑星中心より下半分に使用します。未設定なら表側と同じテクスチャです。");
+
+    const std::string& selectedTexture =
+        planet->GetBackTextureOverridePath();
+    ImGui::TextWrapped(
+        "選択中: %s",
+        selectedTexture.empty()
+            ? "表側と同じ"
+            : selectedTexture.c_str());
+    ImGui::Button(
+        ("画像アセットをここへドロップ##planetBackTextureDrop" +
+         std::to_string(planetIndex))
+            .c_str(),
+        ImVec2(-1.0f, 0.0f));
+    std::string droppedTexturePath;
+    if (EditorAssetDragDrop::AcceptPath(
+            EditorAssetType::Texture,
+            droppedTexturePath)) {
+        planet->SetBackTextureOverridePath(droppedTexturePath);
+        if (mContext.game && mContext.game->GetRenderer3D() &&
+            mContext.game->GetRenderer3D()->GetOrLoadTextureOverride(
+                droppedTexturePath) == 0) {
+            mTextureAssetStatus =
+                "裏側テクスチャの読み込みに失敗しました: " +
+                droppedTexturePath;
+        } else {
+            mTextureAssetStatus.clear();
+        }
     }
 
-    for (Boat* boat : planet->GetBoats()) {
-        updateActor(boat);
+    const std::string pickerId =
+        "##planetBackTexturePicker" + std::to_string(planetIndex);
+    if (ImGui::TreeNode(
+            ("裏側テクスチャを選ぶ" + pickerId).c_str())) {
+        const std::string filterId =
+            "##planetBackTextureFilter" + std::to_string(planetIndex);
+        ImGui::InputTextWithHint(
+            filterId.c_str(),
+            "ファイル名で検索",
+            mTextureAssetFilter.data(),
+            mTextureAssetFilter.size());
+        ImGui::SameLine();
+        if (ImGui::Button(
+                ("更新##planetBackTextureRefresh" +
+                 std::to_string(planetIndex))
+                    .c_str())) {
+            mContext.assetCatalog->Refresh();
+        }
+
+        if (ImGui::Selectable(
+                ("表側と同じ##planetBackTextureDefault" +
+                 std::to_string(planetIndex))
+                    .c_str(),
+                selectedTexture.empty())) {
+            planet->SetBackTextureOverridePath("");
+        }
+
+        const std::string assetListId =
+            "PlanetBackTextureAssetPicker##" +
+            std::to_string(planetIndex);
+        ImGui::BeginChild(
+            assetListId.c_str(),
+            ImVec2(0.0f, 180.0f),
+            true);
+        const std::string filter =
+            ToLower(mTextureAssetFilter.data());
+        for (const std::string& asset :
+             mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
+            if (!filter.empty() &&
+                ToLower(asset).find(filter) == std::string::npos) {
+                continue;
+            }
+
+            if (ImGui::Selectable(
+                    asset.c_str(),
+                    selectedTexture == asset)) {
+                planet->SetBackTextureOverridePath(asset);
+                if (mContext.game &&
+                    mContext.game->GetRenderer3D()) {
+                    const GLuint texture =
+                        mContext.game->GetRenderer3D()
+                            ->GetOrLoadTextureOverride(asset);
+                    if (texture == 0) {
+                        mTextureAssetStatus =
+                            "裏側テクスチャの読み込みに失敗しました: " +
+                            asset;
+                    } else {
+                        mTextureAssetStatus.clear();
+                    }
+                }
+            }
+        }
+        ImGui::EndChild();
+
+        if (!mTextureAssetStatus.empty()) {
+            ImGui::TextColored(
+                ImVec4(1.0f, 0.35f, 0.25f, 1.0f),
+                "%s",
+                mTextureAssetStatus.c_str());
+        }
+        ImGui::TreePop();
     }
 
-    for (BoatParts* part : planet->GetBoatParts()) {
-        updateActor(part);
+    float blendWidth = planet->GetTextureSideBlendWidth();
+    if (ImGui::SliderFloat(
+            ("表裏の境界ぼかし##planetTextureSideBlendWidth" +
+             std::to_string(planetIndex))
+                .c_str(),
+            &blendWidth,
+            0.0f,
+            0.5f,
+            "%.3f")) {
+        planet->SetTextureSideBlendWidth(blendWidth);
+    }
+    ImGui::TextDisabled(
+        "0に近いほど中心でくっきり切り替わり、大きいほど滑らかに混ざります。");
+
+    if (!selectedTexture.empty() &&
+        mContext.game &&
+        mContext.game->GetRenderer3D()) {
+        const GLuint texture =
+            mContext.game->GetRenderer3D()
+                ->GetOrLoadTextureOverride(selectedTexture);
+        if (texture != 0) {
+            ImGui::TextUnformatted("裏側プレビュー");
+            ImGui::Image(
+                static_cast<ImTextureID>(texture),
+                ImVec2(128.0f, 128.0f),
+                ImVec2(0.0f, 1.0f),
+                ImVec2(1.0f, 0.0f));
+        }
+    }
+}
+
+void StagePlanetPanel::DrawTextureTilingEditor(Planet* planet, std::size_t planetIndex)
+{
+    if (!planet) {
+        return;
     }
 
-    for (NPC* npc : planet->GetNPCs()) {
-        updateActor(npc);
+    ImGui::SeparatorText("テクスチャ繰り返し");
+    glm::vec2 textureTiling = planet->GetTextureTiling();
+    const std::string tilingId = "UV繰り返し##planetTextureTiling" + std::to_string(planetIndex);
+    if (ImGui::DragFloat2(
+            tilingId.c_str(),
+            &textureTiling.x,
+            0.1f,
+            0.01f,
+            100.0f,
+            "%.2f")) {
+        planet->SetTextureTiling(glm::max(textureTiling, glm::vec2(0.01f)));
     }
 
-    if (Key* key = planet->GetKey()) {
-        updateActor(key);
+    if (ImGui::Button(("2回繰り返す##planetTextureTiling2" + std::to_string(planetIndex)).c_str())) {
+        planet->SetTextureTiling(glm::vec2(2.0f));
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(("4回繰り返す##planetTextureTiling4" + std::to_string(planetIndex)).c_str())) {
+        planet->SetTextureTiling(glm::vec2(4.0f));
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(("1に戻す##planetTextureTilingReset" + std::to_string(planetIndex)).c_str())) {
+        planet->SetTextureTiling(glm::vec2(1.0f));
     }
 
-    if (Star* star = planet->GetStar()) {
-        updateActor(star);
-    }
+    ImGui::TextDisabled(
+        "スケール変更時に自動追従します。横はX/Zの一周方向、縦はY方向です。");
 }

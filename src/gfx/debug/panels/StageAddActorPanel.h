@@ -2,42 +2,102 @@
 
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
+#include "gfx/debug/stage/StageActorCreationForms.h"
+#include "gfx/debug/stage/StageActorPlacementController.h"
+#include "gfx/debug/stage/StageActorPlacementResolver.h"
+#include "gfx/debug/stage/StageBoatCreationForm.h"
+#include "gfx/debug/stage/StageCollectibleCreationForms.h"
+#include "gfx/debug/stage/StageEditorTypes.h"
+#include "gfx/debug/stage/StageWorldCreationForms.h"
+#include "gfx/debug/stage/UGCPlatformCellService.h"
+#include "gfx/debug/stage/UGCPlatformEditController.h"
+#include "gfx/debug/stage/UGCPlacementPresetController.h"
 
+#include <functional>
 #include <glm/glm.hpp>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StageSelectionController;
 
 class StageAddActorPanel : public DebugPanel {
 public:
     explicit StageAddActorPanel(DebugEditorContext& context);
 
     void Draw() override;
-
-private:
-    void DrawPlanetCombo(const char* label, int& selectedPlanetIndex);
+    void UpdatePlacement();
+    void SetSelectionController(StageSelectionController* selectionController);
+    void SetPushUndoCallback(std::function<void()> pushUndoCallback);
+    void SetPlacementCompletedCallback(
+        std::function<void()> placementCompletedCallback)
+    {
+        mPlacementController.SetPlacementCompletedCallback(
+            std::move(placementCompletedCallback));
+    }
+    void SetUGCEditLayer(int gridLayer)
+    {
+        mPlacementController.SetUGCEditLayer(gridLayer);
+        mUGCPlatformEditController.SetGridLayer(gridLayer);
+    }
+    void SetUGCPlatformFootprintSideLength(int sideLength)
+    {
+        mPlacementController.SetUGCPlatformFootprintSideLength(sideLength);
+        mUGCPresetController.SetPlatformFootprintSideLength(sideLength);
+    }
+    bool BeginDuplicatePlacement(const StageActorRef& sourceRef);
+    bool ActivateUGCPreset(UGCPresetKind presetKind);
+    bool TryEraseUGCPlatformCell();
+    void EndUGCEraseGesture();
+    bool TryTranslateUGCPlatformCells(
+        const StageActorRef& actorRef,
+        const glm::vec3& worldDelta);
+    bool TryTranslateUGCPlatformCells(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
+    bool TryTranslateUGCMovingPlatformDestinations(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
+    bool TrySaveUGCMovingPlatformDestinationTranslation(
+        const std::vector<StageActorRef>& actorRefs,
+        const glm::vec3& worldDelta);
+    bool IsPlacementActive() const
+    {
+        return mPlacementController.IsPlacementActive();
+    }
+    const std::optional<glm::vec3>& GetPlacementPreviewPosition() const
+    {
+        return mPlacementController.GetPlacementPreviewPosition();
+    }
+    const std::string& GetPlacementDisplayName() const
+    {
+        return mPlacementController.GetPlacementDisplayName();
+    }
+    const std::string& GetPlacementStatus() const
+    {
+        return mPlacementController.GetPlacementStatus();
+    }
+    void CancelPlacement();
 
 private:
     StageActorCreateService mCreateService;
-
-    int mSelectedPlanetModelIndex = 0;
-
-    int mSelectedEnemyTypeIndex = 0;
-    int mSelectedEnemyPlanetIndex = -1;
-
-    int mSelectedPlatformPlanetIndex = -1;
-    int mSelectedPlatformModelIndex = 0;
-    glm::vec3 mPlatformScale = glm::vec3(1.0f, 1.0f, 1.0f);
-
-    int mSelectedCrystalPlanetIndex = -1;
-    int mSelectedCrystalTypeIndex = 0;
-
-    int mSelectedNPCPlanetIndex = -1;
-    int mSelectedNPCTypeIndex = 0;
-
-    int mSelectedBoatPartsPlanetIndex = -1;
-    int mSelectedBoatPartsTypeIndex = 0;
-
-    int mSelectedBoatStartPlanetIndex = -1;
-    int mSelectedBoatDestPlanetIndex = -1;
-    int mSelectedBoatDestStage = 0;
-
-    int mSelectedStarPlanetIndex = -1;
+    UGCPlatformCellService mUGCPlatformCellService;
+    StageActorPlacementResolver mPlacementResolver;
+    UGCPlatformEditController mUGCPlatformEditController;
+    StageActorPlacementController mPlacementController;
+    UGCPlacementPresetController mUGCPresetController;
+    StageJewelItemCreationForm mJewelItemCreationForm;
+    StageHazardActorCreationForm mHazardActorCreationForm;
+    StageBoatArrivalPointCreationForm mBoatArrivalPointCreationForm;
+    StageEnemyCreationForm mEnemyCreationForm;
+    StageNPCCreationForm mNPCCreationForm;
+    StageTutorialTriggerCreationForm mTutorialTriggerCreationForm;
+    StageObjectCreationForm mStageObjectCreationForm;
+    StagePlanetCreationForm mPlanetCreationForm;
+    StagePlatformCreationForm mPlatformCreationForm;
+    StageCrystalCreationForm mCrystalCreationForm;
+    StageBoatPartsCreationForm mBoatPartsCreationForm;
+    StageBoatCreationForm mBoatCreationForm;
+    StageStarCreationForm mStarCreationForm;
 };

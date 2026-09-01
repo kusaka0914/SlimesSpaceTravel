@@ -1,5 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
 #include "actor/Player.h"
 #include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"
@@ -11,13 +13,19 @@
 #include "actor/player/PlayerStatus.h"
 #include "system/SceneSystem.h"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 
-void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerGrounding& grounding,
-                                PlayerBoatRide& boatRide, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
-                                PlayerStatus& status, PlayerRespawn& respawn, float deltaTime)
+void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                PlayerGrounding& grounding, PlayerBoatRide& boatRide, PlayerCombat& combat,
+                                PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
+                                float deltaTime)
 {
-    if (!player.GetGame()->GetSceneSystem()->IsPlaying()) {
+    SceneSystem* sceneSystem =
+        player.GetGame()->GetSceneSystem();
+    if (!sceneSystem ||
+        (!sceneSystem->IsPlaying() &&
+         !sceneSystem->IsWaitingForTutorialPlayerJump())) {
         return;
     }
 
@@ -36,8 +44,9 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                      float deltaTime)
 {
-    movement.UpdateWorldVec(player, input);
-    boatRide.Update(player, movement, respawn);
+    movement.UpdateCameraRelativeMovementDirections(player, input);
+    boatRide.Update(player, input, movement, respawn, deltaTime);
+    UpdateCoyoteTime(player, deltaTime);
 
     if (jewelGauge.ShouldStartRecoverTimer()) {
         StartJewelTimer(jewelGauge);
@@ -48,16 +57,20 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         UpdateIdle(player, input, movement, combat, jewelGauge, status, deltaTime);
         break;
     case PlayerActionState::Dodging:
-        UpdateDodging(player, movement, grounding, combat, deltaTime);
+        UpdateDodging(player, input, movement, grounding, combat, deltaTime);
         break;
     case PlayerActionState::Attacking:
         UpdateAttacking(player, input, movement, combat, status, deltaTime);
         break;
-    case PlayerActionState::Charging:
-        UpdateCharging(player, input, movement, combat, deltaTime);
-        break;
     case PlayerActionState::StrongAttacking:
-        UpdateStrongAttacking(player, movement, combat, status, deltaTime);
+        UpdateStrongAttacking(player, input, movement, combat, status, deltaTime);
+        break;
+    case PlayerActionState::AirSlamAttacking:
+        UpdateAirSlamAttacking(
+            player,
+            movement,
+            combat,
+            deltaTime);
         break;
     case PlayerActionState::KnockedBack:
         UpdateKnockedBack(player, movement, combat, status, deltaTime);
@@ -72,8 +85,7 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
                                      PlayerCombat& combat, PlayerJewelGauge& jewelGauge, PlayerStatus& status,
                                      float deltaTime)
 {
-    combat.UpdateAirAttackFloatingTimer(deltaTime);
-    movement.ReduceDodgeCooldown(deltaTime);
+    movement.UpdateDodgeCooldown(deltaTime);
 
     if (jewelGauge.GetRecoverTimer() >= 0.0f) {
         jewelGauge.UpdateRecoverTimer(deltaTime);
@@ -85,16 +97,28 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
     status.UpdateInvincibleTimer(deltaTime);
     grounding.UpdateRayCastTimer(deltaTime);
     input.UpdateInputAvailableTimer(deltaTime);
+    input.UpdateAttackBuffer(deltaTime);
 
     if (combat.GetComboKeepTimer() > 0.0f) {
         combat.UpdateComboKeepTimer(deltaTime);
     }
 }
 
+void PlayerStateMachine::UpdateCoyoteTime(const Player& player, float deltaTime)
+{
+    if (player.GetOnGround()) {
+        mCoyoteTimeRemaining = mCoyoteTimeDuration;
+        return;
+    }
+
+    mCoyoteTimeRemaining = std::max(0.0f, mCoyoteTimeRemaining - deltaTime);
+}
+
 bool PlayerStateMachine::IsAttackingState() const
 {
-    return mActionState == PlayerActionState::Attacking || mActionState == PlayerActionState::Charging ||
-           mActionState == PlayerActionState::StrongAttacking;
+    return mActionState == PlayerActionState::Attacking ||
+           mActionState == PlayerActionState::StrongAttacking ||
+           mActionState == PlayerActionState::AirSlamAttacking;
 }
 
 void PlayerStateMachine::StartIdle()

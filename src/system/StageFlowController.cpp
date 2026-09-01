@@ -12,17 +12,23 @@ StageFlowController::StageFlowController()
 {
 }
 
-void StageFlowController::LoadData(Game& game, bool isLoadPlayer)
+bool StageFlowController::LoadData(Game& game)
 {
-    game.RemoveAllActor();
-    game.GetActorLoadSystem()->LoadData(isLoadPlayer);
+    return game.GetActorLoadSystem()->LoadData();
 }
 
-void StageFlowController::ReloadCurrentStage(Game& game)
+bool StageFlowController::ReloadCurrentStage(
+    Game& game,
+    StagePhysicsReloadMode physicsReloadMode)
 {
-    LoadData(game, true);
-    game.GetPhysicsSystem()->Initialize();
+    if (!LoadData(game)) {
+        return false;
+    }
+    if (physicsReloadMode == StagePhysicsReloadMode::Rebuild) {
+        game.GetPhysicsSystem()->Initialize();
+    }
     game.GetAudioSystem()->TryChangeBGM();
+    return true;
 }
 
 void StageFlowController::ChangeStage(GameWorld& world, int stageNum)

@@ -1,0 +1,370 @@
+particleEffects:
+  attack_hit:
+    name: attack_hit
+    emitters:
+      - texture: spark_core.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.065
+          max: 0.095
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 0
+            max: 1.68
+          endMultiplier: 0.05
+        rotationDegrees:
+          min: -25
+          max: 25
+        angularVelocityDegrees:
+          min: 0
+          max: 0
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.9, 1]
+        colorEnd: [1, 0.38, 0.04, 0]
+      - texture: spark_streak.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.1
+          max: 0.15
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 0.78
+            max: 2.57
+          endMultiplier: 0.1
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: 0
+          max: 0
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.73, 0.2, 1]
+        colorEnd: [1, 0.18, 0.01, 0]
+      - texture: spark_dot.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: hemisphere
+        count: 2
+        lifetime:
+          min: 0.16
+          max: 0.27
+        speed:
+          min: 0.3
+          max: 0.85
+        size:
+          start:
+            min: 0
+            max: 1.4
+          endMultiplier: 0.18
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -80
+          max: 80
+        spreadAngleDegrees: 180
+        gravity: 0.15
+        drag: 2.5
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.58, 0.1, 0.95]
+        colorEnd: [1, 0.12, 0.01, 0]
+  enemy_defeat:
+    name: enemy_defeat
+    emitters:
+      - texture: spark_core.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.12
+          max: 0.18
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 0.95
+            max: 1.2
+          endMultiplier: 0.05
+        rotationDegrees:
+          min: -30
+          max: 30
+        angularVelocityDegrees:
+          min: 0
+          max: 0
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.82, 1]
+        colorEnd: [1, 0.3, 0.02, 0]
+      - texture: spark_streak.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 2
+        lifetime:
+          min: 0.18
+          max: 0.28
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 1.15
+            max: 1.5
+          endMultiplier: 0.08
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -100
+          max: 100
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.72, 0.16, 1]
+        colorEnd: [1, 0.12, 0.01, 0]
+      - texture: spark_dot.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 8
+        lifetime:
+          min: 0.35
+          max: 0.62
+        speed:
+          min: 1.2
+          max: 3.8
+        size:
+          start:
+            min: 0.18
+            max: 0.32
+          endMultiplier: 0.1
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -120
+          max: 120
+        spreadAngleDegrees: 180
+        gravity: 0.7
+        drag: 1.6
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.62, 0.1, 1]
+        colorEnd: [0.95, 0.08, 0.01, 0]
+  landing_dust:
+    name: landing_dust
+    emitters:
+      - texture: dust_puff.png
+        blendMode: alpha
+        renderMode: billboard
+        directionMode: hemisphere
+        count: 10
+        lifetime:
+          min: 0.3
+          max: 0.52
+        speed:
+          min: 0.55
+          max: 1.45
+        size:
+          start:
+            min: 0.2
+            max: 0.34
+          endMultiplier: 2.15
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -90
+          max: 90
+        spreadAngleDegrees: 180
+        gravity: 0.18
+        drag: 2.9
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [0.98, 0.96, 0.9, 0.8]
+        colorEnd: [0.7, 0.68, 0.64, 0]
+  player_special_charge:
+    name: プレイヤー溜めオーラ
+    emitters:
+      - texture: player_charge_aura.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.22
+          max: 0.28
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 1.39
+            max: 1.39
+          endMultiplier: 1.4
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: 110
+          max: 160
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [0.7, 0.92, 1, 0.82]
+        colorEnd: [0.22, 0.65, 1, 0]
+  star_glow:
+    name: star_glow
+    emitters:
+      - texture: star_magic_glow.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.55
+          max: 0.75
+        speed:
+          min: 0
+          max: 0
+        size:
+          start:
+            min: 0.85
+            max: 1.1
+          endMultiplier: 0.72
+        rotationDegrees:
+          min: -8
+          max: 8
+        angularVelocityDegrees:
+          min: -18
+          max: 18
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.8, 0.32]
+        colorEnd: [1, 0.72, 0.15, 0]
+  star_sparkle:
+    name: star_sparkle
+    emitters:
+      - texture: spark_streak.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 1
+        lifetime:
+          min: 0.18
+          max: 0.32
+        speed:
+          min: 0.12
+          max: 0.38
+        size:
+          start:
+            min: 0.22
+            max: 0.48
+          endMultiplier: 0.15
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -45
+          max: 45
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0.6
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 1, 0.72, 0.8]
+        colorEnd: [1, 0.55, 0.05, 0]
+      - texture: spark_dot.png
+        blendMode: additive
+        renderMode: billboard
+        directionMode: sphere
+        count: 3
+        lifetime:
+          min: 0.45
+          max: 0.8
+        speed:
+          min: 0.28
+          max: 0.72
+        size:
+          start:
+            min: 0.055
+            max: 0.14
+          endMultiplier: 0.05
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -100
+          max: 100
+        spreadAngleDegrees: 180
+        gravity: 0
+        drag: 0.8
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [1, 0.95, 0.35, 0.9]
+        colorEnd: [0.55, 0.9, 1, 0]
+  walk_start_dust:
+    name: walk_start_dust
+    emitters:
+      - texture: dust_puff.png
+        blendMode: alpha
+        renderMode: billboard
+        directionMode: cone
+        count: 5
+        lifetime:
+          min: 0.24
+          max: 0.38
+        speed:
+          min: 0.45
+          max: 1.1
+        size:
+          start:
+            min: 0.17
+            max: 0.27
+          endMultiplier: 1.9
+        rotationDegrees:
+          min: 0
+          max: 360
+        angularVelocityDegrees:
+          min: -70
+          max: 70
+        spreadAngleDegrees: 48
+        gravity: -0.12
+        drag: 3.2
+        velocityStretch: 0
+        positionOffset: [0, 0, 0]
+        colorStart: [0.96, 0.94, 0.88, 0.74]
+        colorEnd: [0.72, 0.7, 0.66, 0]

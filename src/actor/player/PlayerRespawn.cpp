@@ -1,5 +1,7 @@
 #include "actor/player/PlayerRespawn.h"
 
+#include "Game.h"
+#include "Stage.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -8,11 +10,12 @@
 #include "actor/player/PlayerStatus.h"
 #include "actor/player/PlayerTypes.h"
 #include "system/PhysicsSystem.h"
+#include "system/SceneSystem.h"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 
-void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat,
-                                              PlayerStatus& status, float damage)
+void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerStatus& status, float damage)
 {
     if (!status.IsAlive()) {
         return;
@@ -20,26 +23,70 @@ void PlayerRespawn::ApplyFallDamageAndRespawn(Player& player, PlayerStateMachine
 
     status.TakeFallDamage(damage);
 
+    if (player.GetGame()) {
+        player.GetGame()->SynchronizeSoloSplitResources(player);
+    }
+
     if (!status.IsAlive()) {
         return;
     }
 
-    stateMachine.ChangeState(PlayerActionState::Idle);
-    combat.CancelSpecialAttack();
-    player.SetVelocity(glm::vec3(0.0f));
-    Respawn(player);
+    SceneSystem* sceneSystem = player.GetGame() ? player.GetGame()->GetSceneSystem() : nullptr;
+    if (sceneSystem) {
+        sceneSystem->RequestPlayerRespawn(&player);
+    }
 }
 
 void PlayerRespawn::Respawn(Player& player)
 {
+    Stage* currentStage = player.GetGame() ? player.GetGame()->GetCurrentStage() : nullptr;
+    if (currentStage) {
+        const std::vector<Planet*>& planets = currentStage->GetPlanets();
+        if (mRestartPlanetIndex >= 0 && mRestartPlanetIndex < static_cast<int>(planets.size()) &&
+            planets[mRestartPlanetIndex]) {
+            player.SetCurrentPlanetNum(mRestartPlanetIndex);
+            player.SetCurrentPlanet(planets[mRestartPlanetIndex]);
+        }
+    }
+
     player.SetPos(mRestartPos);
 }
 
-void PlayerRespawn::Restart(Player& player, PlayerStateMachine& stateMachine, PlayerStatus& status)
+void PlayerRespawn::CaptureRestartFacingDirection(const Player& player)
 {
-    stateMachine.ChangeState(PlayerActionState::Idle);
-    status.RestoreFullHp();
-    Respawn(player);
+    const glm::vec3 facingDirection = player.GetFacingForwardVec();
+    if (glm::length(facingDirection) <= 0.000001f) {
+        mHasRestartFacingDirection = false;
+        return;
+    }
+
+    mRestartFacingDirection = glm::normalize(facingDirection);
+    mHasRestartFacingDirection = true;
+}
+
+void PlayerRespawn::RestoreRestartFacingDirection(Player& player) const
+{
+    if (!mHasRestartFacingDirection) {
+        return;
+    }
+
+    const glm::vec3 upDirection = player.GetUpVec();
+    if (glm::length(upDirection) <= 0.000001f) {
+        return;
+    }
+
+    const glm::vec3 normalizedUpDirection = glm::normalize(upDirection);
+    glm::vec3 tangentFacing =
+        mRestartFacingDirection -
+        glm::dot(mRestartFacingDirection, normalizedUpDirection) *
+            normalizedUpDirection;
+    if (glm::length(tangentFacing) <= 0.000001f) {
+        return;
+    }
+
+    tangentFacing = glm::normalize(tangentFacing);
+    player.SetFacingForwardVec(tangentFacing);
+    player.SetCameraForwardDirection(-tangentFacing, normalizedUpDirection);
 }
 
 bool PlayerRespawn::IsFallIntoPlanetInside(const Player& player) const
@@ -61,6 +108,9 @@ bool PlayerRespawn::IsFallIntoPlanetInside(const Player& player) const
 void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMachine, PlayerCombat& combat,
                                      PlayerStatus& status, const glm::vec3& prevPos)
 {
+    (void)stateMachine;
+    (void)combat;
+
     if (!player.GetGame() || !player.GetGame()->GetPhysicsSystem()) {
         return;
     }
@@ -73,7 +123,11 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
         return;
     }
 
-    auto hit = player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(prevPos, player.GetPos());
+    auto hit =
+        player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(
+            &player,
+            prevPos,
+            player.GetPos());
 
     if (!hit || !hit->actor) {
         return;
@@ -85,5 +139,49 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
         return;
     }
 
-    ApplyFallDamageAndRespawn(player, stateMachine, combat, status, point->GetDamage());
+    ApplyFallDamageAndRespawn(player, status, point->GetDamage());
+}
+
+bool PlayerRespawn::UpdateMissingGroundSurfaceRespawn(
+    Player& player,
+    const PlayerStatus& status,
+    float deltaTime)
+{
+    const bool groundSurfaceDetectedThisFrame =
+        mGroundSurfaceDetectedThisFrame;
+    mGroundSurfaceDetectedThisFrame = false;
+
+    if (!player.GetIsActive() || !status.IsAlive() || mRespawnFadeRequested) {
+        return false;
+    }
+
+    const bool hasGroundSupport =
+        player.GetOnGround() ||
+        groundSurfaceDetectedThisFrame ||
+        player.IsEllipseAirborneGravityActive();
+    if (hasGroundSupport) {
+        mMissingGroundSurfaceDurationSeconds = 0.0f;
+        return false;
+    }
+
+    mMissingGroundSurfaceDurationSeconds += std::max(0.0f, deltaTime);
+    if (mMissingGroundSurfaceDurationSeconds <
+        missingGroundSurfaceRespawnDelaySeconds) {
+        return false;
+    }
+
+    SceneSystem* sceneSystem = player.GetGame() ? player.GetGame()->GetSceneSystem() : nullptr;
+    if (!sceneSystem || !sceneSystem->RequestPlayerRespawn(&player)) {
+        return false;
+    }
+
+    mRespawnFadeRequested = true;
+    return true;
+}
+
+void PlayerRespawn::OnRespawnCompleted()
+{
+    mMissingGroundSurfaceDurationSeconds = 0.0f;
+    mGroundSurfaceDetectedThisFrame = false;
+    mRespawnFadeRequested = false;
 }

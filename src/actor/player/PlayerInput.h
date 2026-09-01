@@ -1,20 +1,27 @@
 #pragma once
 
+#include "actor/player/PlayerTypes.h"
+
 class Player;
 class PlayerMovement;
+class InputSystem;
 
 class PlayerInput {
 public:
+    explicit PlayerInput(InputSystem& inputSystem);
+
     void ProcessActor(Player& player, const PlayerMovement& movement);
     void ProcessGameController(Player& player, const PlayerMovement& movement);
     void ProcessKeyboard(Player& player, const PlayerMovement& movement);
 
     void EndFrame();
     void UpdateInputAvailableTimer(float deltaTime);
+    void UpdateAttackBuffer(float deltaTime);
 
     bool GetDodgePressed() const { return mDodgePressed; }
     bool GetDodgePressedPrev() const { return mDodgePressedPrev; }
     bool GetJumpPressed() const { return mJumpPressed; }
+    bool GetJumpPressedPrev() const { return mJumpPressedPrev; }
     bool GetAttackPressed() const { return mAttackPressed; }
     bool GetAttackPressedPrev() const { return mAttackPressedPrev; }
     bool GetWideAttackPressed() const { return mWideAttackPressed; }
@@ -29,15 +36,31 @@ public:
     float GetMoveLeft() const { return mMoveLeft; }
     float GetInputAvailableTimer() const { return mInputAvailableTimer; }
 
+    PlayerAttackInputKind GetBufferedAttackInput() const { return mBufferedAttackInput; }
+    bool HasBufferedAttackInput() const { return mBufferedAttackInput != PlayerAttackInputKind::None; }
+    void ConsumeBufferedAttackInput();
+    void ClearAttackBuffer();
+    void SuppressJumpUntilReleased() { mJumpPressedPrev = true; }
+    void SuppressDodgeUntilReleased() { mDodgePressedPrev = true; }
+
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
 
     void SyncAttackButtonPrev();
 
 private:
+    void ApplyTutorialInputRestriction(Player& player);
+    void UpdateRecoverInput(const Player& player);
+    void CaptureAttackInput();
+    void ClearNonControlledPlayerInput();
+
+private:
+    InputSystem& mInputSystem;
+
     bool mDodgePressed = false;
     bool mDodgePressedPrev = false;
     bool mJumpPressed = false;
+    bool mJumpPressedPrev = false;
     bool mAttackPressed = false;
     bool mAttackPressedPrev = false;
     bool mWideAttackPressed = false;
@@ -53,4 +76,8 @@ private:
     float mCameraStickX = 0.0f;
     float mCameraStickY = 0.0f;
     float mInputAvailableTimer = -1.0f;
+
+    PlayerAttackInputKind mBufferedAttackInput = PlayerAttackInputKind::None;
+    float mAttackBufferRemaining = 0.0f;
+    float mAttackBufferDuration = 0.5f;
 };

@@ -19,18 +19,35 @@ bool PlayerJewelGauge::Consume(int amount)
 
 void PlayerJewelGauge::Add(int value)
 {
-    mCount = std::clamp(mCount + value, 0, mMaxCount);
+    if (value <= 0 || mCount >= automaticRecoveryMaxCount) {
+        return;
+    }
+
+    mCount = std::min(
+        mCount + value,
+        automaticRecoveryMaxCount);
+}
+
+void PlayerJewelGauge::AddFromItem(int value)
+{
+    mCount = std::clamp(
+        mCount + value,
+        0,
+        itemPickupMaxCount);
 }
 
 void PlayerJewelGauge::RestoreFull()
 {
-    mCount = mMaxCount;
+    mCount = std::max(
+        mCount,
+        automaticRecoveryMaxCount);
     mRecoverTimer = -1.0f;
 }
 
 bool PlayerJewelGauge::ShouldStartRecoverTimer() const
 {
-    return mCount < mMaxCount && mRecoverTimer <= 0.0f;
+    return mCount < automaticRecoveryMaxCount &&
+           mRecoverTimer <= 0.0f;
 }
 
 void PlayerJewelGauge::StartRecoverTimer(float seconds)
@@ -45,12 +62,12 @@ void PlayerJewelGauge::UpdateRecoverTimer(float deltaTime)
         return;
     }
 
-    if (mCount < mMaxCount) {
+    if (mCount < automaticRecoveryMaxCount) {
         ++mCount;
     }
 }
 
 void PlayerJewelGauge::SetCount(int count)
 {
-    mCount = std::clamp(count, 0, mMaxCount);
+    mCount = std::clamp(count, 0, itemPickupMaxCount);
 }

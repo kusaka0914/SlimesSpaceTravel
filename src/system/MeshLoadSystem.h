@@ -1,38 +1,43 @@
 #pragma once
 
 #include "system/mesh/AssimpMeshLoader.h"
-#include "system/mesh/LoadedMesh.h"
+#include "system/mesh/LoadedModel.h"
 #include "system/mesh/MeshCollisionDataLoader.h"
 #include "system/mesh/TextureLoader.h"
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class Actor;
 class Game;
 
+struct CollisionMeshGeometry {
+    std::vector<float> positions;
+    std::vector<unsigned int> indices;
+};
+
 class MeshLoadSystem {
 public:
-    MeshLoadSystem(Game* game);
+    explicit MeshLoadSystem(Game* game);
 
     void Initialize();
     void SetActorMesh(Actor* actor);
 
-    std::vector<LoadedMesh> LoadMeshFromFile(const char* path);
+    LoadedModel LoadModelFromFile(const char* path);
 
-    bool LoadMeshPositionsAndIndices(const char* path, std::vector<float>& outPositions,
-                                     std::vector<unsigned int>& outIndices);
+    const CollisionMeshGeometry* ResolveCollisionMeshGeometry(
+        const std::string& modelFilePath);
 
-    std::vector<LoadedMesh>* GetLoadedMeshes(const std::string& meshName)
-    {
-        auto it = mLoadedMeshes.find(meshName);
-        return (it != mLoadedMeshes.end()) ? &it->second : nullptr;
-    }
+    const LoadedModel* FindLoadedModel(const std::string& modelPath) const;
+    const LoadedModel* ResolveLoadedModel(const std::string& modelPath);
 
 private:
-    void CreateLoadedMeshes();
-    void RegisterMesh(const std::string& meshName, const char* path);
+    void CreateLoadedModels();
+    void RegisterModel(const std::string& modelPath);
+
+    std::string ResolveModelFilePath(const std::string& modelPath) const;
 
 private:
     Game* mGame;
@@ -41,5 +46,7 @@ private:
     AssimpMeshLoader mAssimpMeshLoader;
     MeshCollisionDataLoader mCollisionDataLoader;
 
-    std::unordered_map<std::string, std::vector<LoadedMesh>> mLoadedMeshes;
+    std::unordered_map<std::string, LoadedModel> mLoadedModels;
+    std::unordered_map<std::string, CollisionMeshGeometry> mCollisionMeshGeometryByPath;
+    std::unordered_set<std::string> mFailedCollisionMeshPaths;
 };

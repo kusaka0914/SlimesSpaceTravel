@@ -18,28 +18,19 @@ HudRenderer::HudRenderer(Game* game, UIRenderer* renderer)
 
 void HudRenderer::DrawDefaultUI()
 {
+    DrawPlayerFatiguePromptUI();
+
     const std::vector<Player*>& players = mGame->GetPlayers();
     if (players.empty()) {
         return;
     }
 
-    DrawOperationSupportUI();
-
-    const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
-    const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
-
-    if (!isTwoPlayer) {
-        DrawPlayerPromptUI(players[0], 0.0f, 1.0f);
-    } else {
-        DrawPlayerPromptUI(players[0], 0.0f, 0.5f);
-        DrawPlayerPromptUI(players[1], halfHeight, 0.5f);
-    }
+    const Player* mainPlayer = mGame->GetMainPlayer();
 
     if (mGame->IsInBase()) {
         return;
     }
 
-    const Player* mainPlayer = players[0];
     if (!mainPlayer || !mainPlayer->GetCurrentPlanet()) {
         return;
     }
@@ -49,15 +40,66 @@ void HudRenderer::DrawDefaultUI()
         DrawRemainPartsUI(remainBoatPartsCount);
     }
 
-    if (!isTwoPlayer) {
-        DrawPlayerStatusUI(players[0], 0.0f, 1.0f);
-    } else {
-        DrawPlayerStatusUI(players[0], 0.0f, 0.5f);
-        DrawPlayerStatusUI(players[1], halfHeight, 0.5f);
+    DrawPlayerStatusUI();
+}
+
+void HudRenderer::DrawUGCPlaytestUI()
+{
+    DrawPlayerFatiguePromptUI();
+    DrawPlayerStatusUI();
+
+    if (mGame->GetIsUGCClearVerificationActive()) {
+        DrawUGCClearVerificationGuide();
     }
 }
 
-void HudRenderer::DrawPlayerStatusUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawPlayerStatusUI()
+{
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    const Player* mainPlayer = mGame->GetMainPlayer();
+    if (players.empty() || !mainPlayer) {
+        return;
+    }
+
+    const bool isTwoPlayer =
+        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    if (!isTwoPlayer) {
+        DrawPlayerStatusUIForPlayer(mainPlayer, 0.0f, 1.0f);
+    } else {
+        const float halfHeight =
+            static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+        DrawPlayerStatusUIForPlayer(players[0], 0.0f, 0.5f);
+        DrawPlayerStatusUIForPlayer(players[1], halfHeight, 0.5f);
+    }
+}
+
+void HudRenderer::DrawPlayerFatiguePromptUI()
+{
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    if (players.empty()) {
+        return;
+    }
+
+    const bool isTwoPlayer =
+        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    if (!isTwoPlayer) {
+        DrawPlayerPromptUI(
+            mGame->GetMainPlayer(),
+            0.0f,
+            static_cast<float>(mRenderer->GetFbHeight()));
+        return;
+    }
+
+    const float halfHeight =
+        static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+    DrawPlayerPromptUI(players[0], 0.0f, halfHeight);
+    DrawPlayerPromptUI(players[1], halfHeight, halfHeight);
+}
+
+void HudRenderer::DrawPlayerStatusUIForPlayer(
+    const Player* player,
+    float screenTopY,
+    float uiScale)
 {
     if (!player) {
         return;
@@ -74,31 +116,15 @@ void HudRenderer::DrawPlayerStatusUI(const Player* player, float screenTopY, flo
     }
 }
 
-void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float screenHeight)
 {
     if (!player) {
         return;
     }
 
-    const NPC* talkableNPC = player->GetTalkableNPC();
-    if (talkableNPC && talkableNPC->GetIsTalkable()) {
-        DrawTalkableUI(player, screenTopY, uiScale);
-    }
-
     if (player->GetIsTired()) {
-        DrawRecommendReduceTiredUI(player, screenTopY, uiScale);
+        DrawRecommendReduceTiredUI(player, screenTopY, screenHeight);
     }
-}
-
-void HudRenderer::DrawOperationSupportUI()
-{
-    const bool isOperationUIShow = mGame->GetSceneSystem()->GetUIState()->GetIsOperationUIShow();
-    if (isOperationUIShow) {
-        mRenderer->DrawTextDependsOnGameController("default", "operationSupportText", false);
-        return;
-    }
-
-    mRenderer->DrawSceneText("default", "operationSupportHiddenText", false, 0);
 }
 
 void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
@@ -127,9 +153,48 @@ void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
     mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
 }
 
-void HudRenderer::DrawTalkableUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::UpdateTalkableUIVisibility(
+    const std::vector<Player*>& players,
+    bool allowsPrompt)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "default", "talkableText", true, screenTopY, uiScale);
+    constexpr const char* screen = "default";
+    constexpr const char* talkableTextId = "talkableText";
+    constexpr const char* controllerTextureId =
+        "talkableTextureForGameController";
+    constexpr const char* keyboardTextureId =
+        "talkableTextureForKeyboard";
+
+    const SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    const bool hasModalConversation =
+        sceneSystem &&
+        (sceneSystem->IsTalkWithNPC() || sceneSystem->HasActiveTutorial());
+    const Player* promptPlayer = nullptr;
+    if (allowsPrompt && !hasModalConversation) {
+        for (const Player* player : players) {
+            if (sceneSystem && sceneSystem->CanStartTalkWithNPC(player)) {
+                promptPlayer = player;
+                break;
+            }
+        }
+    }
+
+    const bool shouldShowPrompt = promptPlayer != nullptr;
+    const bool usesController =
+        shouldShowPrompt &&
+        mRenderer->UsesControllerUI(promptPlayer);
+
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        talkableTextId,
+        shouldShowPrompt);
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        controllerTextureId,
+        shouldShowPrompt && usesController);
+    mRenderer->SetCustomUIElementVisible(
+        screen,
+        keyboardTextureId,
+        shouldShowPrompt && !usesController);
 }
 
 void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
@@ -140,12 +205,34 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
     }
 
     const std::string remainText = remainPartsTextInfo->texts[0] + std::to_string(remainBoatPartsCount);
-    mRenderer->DrawText(mRenderer->GetFbWidth() - mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
-                        mRenderer->GetFbWidth() * remainPartsTextInfo->yRatio,
-                        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio, remainText, false);
+    mRenderer->DrawTextForElement(
+        "default",
+        "remainPartsText",
+        mRenderer->GetFbWidth() -
+            mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
+        mRenderer->GetFbWidth() * remainPartsTextInfo->yRatio,
+        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio,
+        remainText,
+        remainPartsTextInfo->centerBased,
+        {255, 255, 255, 255},
+        remainPartsTextInfo->rotationDegrees);
 }
 
-void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float uiScale)
+void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", false, screenTopY, uiScale);
+    mRenderer->DrawTextDependsOnPlayerInput(
+        player,
+        "state",
+        "recommendReduceTiredText",
+        screenTopY,
+        screenHeight);
+}
+
+void HudRenderer::DrawUGCClearVerificationGuide()
+{
+    mRenderer->DrawSceneText(
+        "state",
+        "ugcClearVerificationGuideText",
+        0,
+        {255, 255, 255, 255});
 }

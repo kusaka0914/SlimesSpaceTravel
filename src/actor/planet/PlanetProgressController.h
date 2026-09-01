@@ -16,6 +16,7 @@ public:
     void OnBoatPartsObtained(const PlanetActorRegistry& actorRegistry);
 
     void SetRocketSpawnCondition(const std::string& rocketSpawnCondition);
+    std::string GetRocketSpawnCondition() const;
 
     int GetRemainBoatPartsCount() const { return mRemainBoatPartsCount; }
 

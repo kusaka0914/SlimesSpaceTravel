@@ -9,11 +9,15 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
+#include "gfx/debug/stage/PlatformTypeRegistry.h"
 
 #include <string>
 #include <vector>
@@ -45,23 +49,39 @@ std::string MakeIndexedLabel(const char* typeLabel, int yamlIndex)
     return std::string(typeLabel) + " " + std::to_string(yamlIndex);
 }
 
-} // namespace
+}
 
 const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
 {
-    static const std::vector<StageActorTypeInfo> typeInfos = {
-        {StageActorType::Enemy, "enemies", "敵"},
-        {StageActorType::Platform, "platforms", "足場"},
-        {StageActorType::MovingPlatform, "movingPlatforms", "動く足場"},
-        {StageActorType::Key, "keys", "キー"},
-        {StageActorType::Boat, "boats", "ボート"},
-        {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
-        {StageActorType::Crystal, "crystals", "クリスタル"},
-        {StageActorType::NPC, "NPCs", "NPC"},
-        {StageActorType::Star, "star", "星"},
-        {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
-        {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
-    };
+    static const std::vector<StageActorTypeInfo> typeInfos = [] {
+        std::vector<StageActorTypeInfo> result = {
+            {StageActorType::Planet, "planets", "惑星"},
+            {StageActorType::Enemy, "enemies", "敵"},
+            {StageActorType::Key, "keys", "キー"},
+            {StageActorType::Boat, "boats", "ボート"},
+            {StageActorType::BoatParts, "boatParts", "ボートパーツ"},
+            {StageActorType::Crystal, "crystals", "クリスタル"},
+            {StageActorType::NPC, "NPCs", "NPC"},
+            {StageActorType::Star, "star", "星"},
+            {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
+            {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
+            {StageActorType::StageObject, "stageObjects", "汎用モデル"},
+            {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
+            {StageActorType::JewelItem, "jewelItems", "ジュエルアイテム"},
+            {StageActorType::HazardActor, "hazardActors", "危険アクター"},
+        };
+
+        const auto& platformTypes = PlatformTypeRegistry::GetDefinitions();
+        result.reserve(result.size() + platformTypes.size());
+        for (const PlatformTypeDefinition& definition : platformTypes) {
+            result.emplace_back(StageActorTypeInfo{
+                StageActorType::Platform,
+                definition.sequenceName,
+                definition.displayName});
+        }
+
+        return result;
+    }();
 
     return typeInfos;
 }
@@ -76,10 +96,21 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
 
     const std::vector<Planet*> planets = stage->GetPlanets();
 
-    for (Planet* planet : planets) {
+    for (std::size_t planetIndex = 0;
+         planetIndex < planets.size();
+         ++planetIndex) {
+        Planet* planet = planets[planetIndex];
         if (!planet) {
             continue;
         }
+
+        AddInstance(
+            instances,
+            planet,
+            StageActorType::Planet,
+            static_cast<int>(planetIndex),
+            "planets",
+            MakeIndexedLabel("惑星", static_cast<int>(planetIndex)));
 
         for (Enemy* enemy : planet->GetEnemies()) {
             const int yamlIndex = enemy ? enemy->GetStageYamlIndex() : -1;
@@ -89,14 +120,26 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
 
         for (Platform* platform : planet->GetPlatforms()) {
             const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
-            AddInstance(instances, platform, StageActorType::Platform, yamlIndex, "platforms",
-                        MakeIndexedLabel("足場", yamlIndex));
-        }
+            if (!platform) {
+                continue;
+            }
 
-        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
-            const int yamlIndex = platform ? platform->GetStageYamlIndex() : -1;
-            AddInstance(instances, platform, StageActorType::MovingPlatform, yamlIndex, "movingPlatforms",
-                        MakeIndexedLabel("動く足場", yamlIndex));
+            std::string sequenceName = platform->GetStageSequenceName();
+            if (sequenceName.empty()) {
+                sequenceName = "platforms";
+            }
+
+            const PlatformTypeDefinition* definition =
+                PlatformTypeRegistry::FindBySequenceName(sequenceName);
+            const std::string displayName =
+                definition ? definition->displayName : "足場";
+            AddInstance(
+                instances,
+                platform,
+                StageActorType::Platform,
+                yamlIndex,
+                sequenceName,
+                MakeIndexedLabel(displayName.c_str(), yamlIndex));
         }
 
         if (Key* key = planet->GetKey()) {
@@ -127,6 +170,45 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
             AddInstance(instances, npc, StageActorType::NPC, yamlIndex, "NPCs", MakeIndexedLabel("NPC", yamlIndex));
         }
 
+        for (TutorialTrigger* trigger :
+             planet->GetTutorialTriggers()) {
+            const int yamlIndex =
+                trigger ? trigger->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                trigger,
+                StageActorType::TutorialTrigger,
+                yamlIndex,
+                "tutorialTriggers",
+                MakeIndexedLabel(
+                    "チュートリアルトリガー",
+                    yamlIndex));
+        }
+
+        for (JewelItem* jewelItem : planet->GetJewelItems()) {
+            const int yamlIndex =
+                jewelItem ? jewelItem->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                jewelItem,
+                StageActorType::JewelItem,
+                yamlIndex,
+                "jewelItems",
+                MakeIndexedLabel("ジュエルアイテム", yamlIndex));
+        }
+
+        for (HazardActor* hazardActor : planet->GetHazardActors()) {
+            const int yamlIndex =
+                hazardActor ? hazardActor->GetStageYamlIndex() : -1;
+            AddInstance(
+                instances,
+                hazardActor,
+                StageActorType::HazardActor,
+                yamlIndex,
+                "hazardActors",
+                MakeIndexedLabel("危険アクター", yamlIndex));
+        }
+
         if (Star* star = planet->GetStar()) {
             const int yamlIndex = star->GetStageYamlIndex();
             AddInstance(instances, star, StageActorType::Star, yamlIndex, "star", MakeIndexedLabel("星", yamlIndex));
@@ -143,16 +225,32 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
             AddInstance(instances, point, StageActorType::FallRespawnPoint, yamlIndex, "fallRespawnPoints",
                         MakeIndexedLabel("落下判定", yamlIndex));
         }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            const int yamlIndex = stageObject ? stageObject->GetStageYamlIndex() : -1;
+            const std::string modelName =
+                stageObject ? stageObject->GetModelPath() : std::string("汎用モデル");
+            AddInstance(instances, stageObject, StageActorType::StageObject, yamlIndex, "stageObjects",
+                        modelName + " " + std::to_string(yamlIndex));
+        }
     }
 
     return instances;
 }
 
-std::vector<StageActorRef> StageActorQuery::CollectAllTargets(Stage* stage)
+std::vector<StageActorRef> StageActorQuery::CollectAllTargets(
+    Stage* stage,
+    bool includePlanets)
 {
     std::vector<StageActorRef> targets;
 
     for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
+        // 惑星削除は所属アクターの参照更新が必要なため、通常の削除対象には
+        // 含めない。複製処理だけが明示的に惑星を要求する。
+        if (!includePlanets &&
+            instance.ref.type == StageActorType::Planet) {
+            continue;
+        }
         targets.emplace_back(instance.ref);
     }
 
@@ -198,6 +296,10 @@ std::string StageActorQuery::MakeKey(const StageActorRef& target)
 
 std::string StageActorQuery::GetSequenceName(StageActorType type)
 {
+    if (type == StageActorType::Planet) {
+        return "planets";
+    }
+
     for (const StageActorTypeInfo& info : GetTypeInfos()) {
         if (info.type == type) {
             return info.sequenceName;
@@ -209,11 +311,25 @@ std::string StageActorQuery::GetSequenceName(StageActorType type)
 
 const char* StageActorQuery::GetTypeLabel(StageActorType type)
 {
+    if (type == StageActorType::Planet) {
+        return "惑星";
+    }
+
     for (const StageActorTypeInfo& info : GetTypeInfos()) {
         if (info.type == type) {
-            return info.displayName;
+            return info.displayName.c_str();
         }
     }
 
     return "不明";
+}
+
+std::string StageActorQuery::GetTypeLabel(const StageActorRef& actorRef)
+{
+    if (const PlatformTypeDefinition* definition =
+            PlatformTypeRegistry::FindBySequenceName(actorRef.sequenceName)) {
+        return definition->displayName;
+    }
+
+    return GetTypeLabel(actorRef.type);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 class Game;
 class GameProgressState;
 class UIState;
@@ -11,8 +13,14 @@ public:
 
     void UpdateFade(float deltaTime);
     void StartOpening();
+    void StartEnding();
+    void StartBattleStyleSelection();
     void StartFadeIn();
+    void CancelPendingTransition();
     void RequestStageChange(int stageNum);
+    bool RequestFadeAction(
+        std::function<void()> midpointAction,
+        std::function<void()> completionAction = {});
 
 private:
     void ApplySceneChange();
@@ -26,4 +34,7 @@ private:
     bool& mIsFadeOut;
     bool& mHasPendingStageChange;
     int& mNextStageNum;
+
+    std::function<void()> mMidpointAction;
+    std::function<void()> mFadeCompletionAction;
 };

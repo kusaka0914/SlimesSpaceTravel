@@ -2,19 +2,26 @@
 
 #include "Game.h"
 #include "actor/Player.h"
-#include "gfx/DebugUIRenderer.h"
 #include "gfx/UIShader.h"
 #include "gfx/VertexArray.h"
 #include "gfx/ui/HudRenderer.h"
 #include "gfx/ui/PauseMenuRenderer.h"
 #include "gfx/ui/SceneUIRenderer.h"
 #include "gfx/ui/StateUIRenderer.h"
+#include "gfx/ui/UIDebugEditorBridge.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "system/SceneSystem.h"
+#include "system/text/JapaneseRubyGenerator.h"
+#include "system/CameraSystem.h"
+#include "system/sequence/SequenceSystem.h"
+#include <algorithm>
+#include <array>
+#include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <limits>
 
 UIRenderer::UIRenderer(Game* game)
     : Renderer(game),
@@ -28,10 +35,22 @@ UIRenderer::UIRenderer(Game* game)
 
 UIRenderer::~UIRenderer()
 {
+    Shutdown();
+}
+
+void UIRenderer::Shutdown()
+{
+    ClearTextTextureCache();
+
+    if (!mIsImGuiInitialized) {
+        return;
+    }
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-};
+    mIsImGuiInitialized = false;
+}
 
 void UIRenderer::Initialize()
 {
@@ -41,7 +60,8 @@ void UIRenderer::Initialize()
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
-    mDebugUIRenderer = std::make_unique<DebugUIRenderer>(mGame, this);
+    mDebugEditorBridge =
+        std::make_unique<UIDebugEditorBridge>(mGame, this);
     mSceneUIRenderer = std::make_unique<SceneUIRenderer>(mGame, this);
     mHudRenderer = std::make_unique<HudRenderer>(mGame, this);
     mStateUIRenderer = std::make_unique<StateUIRenderer>(mGame, this);
@@ -55,6 +75,7 @@ void UIRenderer::Initialize()
     InitImGui();
 
     RegisterUITextures();
+    RegisterCustomUITextures();
 }
 
 void UIRenderer::InitImGui()
@@ -64,6 +85,7 @@ void UIRenderer::InitImGui()
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
     io.Fonts->AddFontFromFileTTF("../assets/fonts/NotoSansJP-Black.ttf", 18.0f, nullptr,
                                  io.Fonts->GetGlyphRangesJapanese());
@@ -72,6 +94,7 @@ void UIRenderer::InitImGui()
 
     ImGui_ImplGlfw_InitForOpenGL(mGame->GetWindow(), true);
     ImGui_ImplOpenGL3_Init(glslVersion);
+    mIsImGuiInitialized = true;
 }
 
 void UIRenderer::RegisterUITextures()
@@ -87,9 +110,10 @@ void UIRenderer::RegisterUITextures()
     RegisterTexture(basePath + "jewel.png", "jewel");
 }
 
-void UIRenderer::Draw()
+void UIRenderer::DrawGameContent()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    mRenderedUIElements.clear();
     glViewport(0, 0, mFbWidth, mFbHeight);
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -97,396 +121,253 @@ void UIRenderer::Draw()
     glDepthMask(GL_FALSE);
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+    const bool isStartCinematicPlaying =
+        sequenceSystem &&
+        sequenceSystem->IsCinematicChainPlaying();
 
-    if (sceneSystem->IsTitle()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsTitle()) {
         mSceneUIRenderer->DrawTitle();
     }
 
-    if (sceneSystem->IsOpening()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsOpening()) {
         mSceneUIRenderer->DrawOpening();
     }
 
-    if (sceneSystem->IsGameOver()) {
+    if (!isStartCinematicPlaying && sceneSystem->IsEnding()) {
+        mSceneUIRenderer->DrawEnding();
+    }
+
+    if (!isStartCinematicPlaying && sceneSystem->IsCredits()) {
+        mSceneUIRenderer->DrawCredits();
+    }
+
+    if (!isStartCinematicPlaying && sceneSystem->IsGameOver()) {
         mSceneUIRenderer->DrawGameOver();
     }
 
-    const bool shouldDrawDefaultUI = sceneSystem->IsPlaying() || sceneSystem->IsJewelTutorialShowing();
+
+
+
+    const bool isUGCEditing =
+        mGame->GetIsUGCMode() &&
+        mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive =
+        mGame->GetIsUGCPlaytestActive();
+    const bool isUGCClearResultShowing =
+        mGame->GetIsUGCClearResultShowing();
+    const bool shouldDrawDefaultUI =
+        !isStartCinematicPlaying &&
+        !isUGCEditing &&
+        !isUGCPlaytestActive &&
+        (sceneSystem->IsPlaying() ||
+         sceneSystem->IsTutorialActive("jewel_usage"));
+    mHudRenderer->UpdateTalkableUIVisibility(
+        mGame->GetPlayers(),
+        shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
+    } else if (!isStartCinematicPlaying && isUGCClearResultShowing) {
+        mSceneUIRenderer->DrawUGCClearResult();
+    } else if (!isStartCinematicPlaying && isUGCPlaytestActive &&
+               !sceneSystem->IsStageClear()) {
+        mHudRenderer->DrawUGCPlaytestUI();
     }
 
-    mStateUIRenderer->DrawStateUI();
+    const bool shouldDrawUGCStageClear =
+        isUGCPlaytestActive &&
+        sceneSystem->IsStageClear() &&
+        !isUGCClearResultShowing;
+    if (!isStartCinematicPlaying &&
+        (!isUGCPlaytestActive || shouldDrawUGCStageClear)) {
+        mStateUIRenderer->DrawStateUI();
+    }
 
-    if (mGame->GetIsPauseMenuOpen()) {
+    if (!isStartCinematicPlaying) {
+        DrawCustomUI();
+    }
+
+    if (!isUGCPlaytestActive && !isStartCinematicPlaying &&
+        mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
-    if (mGame->GetIsDebugEditorShowing()) {
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
 
-        mDebugUIRenderer->Draw();
 
-        EndImGuiFrame();
-    }
+    mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::DrawDebugEditor(
+    GLuint gameViewTexture,
+    int gameViewWidth,
+    int gameViewHeight)
+{
+    if (!mGame->GetIsDebugEditorShowing()) {
+        return;
+    }
+
+    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, mFbWidth, mFbHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    if (mGame->GetIsUGCMode() &&
+        !mGame->GetIsUGCDebugEditorShowing()) {
+        mDebugEditorBridge->DrawEditor(
+            gameViewTexture,
+            gameViewWidth,
+            gameViewHeight,
+            true);
+    } else {
+        mDebugEditorBridge->DrawEditor(
+            gameViewTexture,
+            gameViewWidth,
+            gameViewHeight,
+            false);
+    }
+    EndImGuiFrame();
+
+
+
+
+    mStateUIRenderer->DrawTransitionUI();
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+}
+
+void UIRenderer::DrawUGCWorkBrowser()
+{
+    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, mFbWidth, mFbHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    mDebugEditorBridge->DrawWorkBrowser();
+    EndImGuiFrame();
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+}
+
+bool UIRenderer::CompleteUGCVerification(
+    const std::string& workFileName)
+{
+    return mDebugEditorBridge &&
+        mDebugEditorBridge->CompleteUGCVerification(workFileName);
+}
+
+void UIRenderer::UndoUGCEdit()
+{
+    if (mDebugEditorBridge) mDebugEditorBridge->HandleUndo();
+}
+
+void UIRenderer::RedoUGCEdit()
+{
+    if (mDebugEditorBridge) mDebugEditorBridge->HandleRedo();
+}
+
+void UIRenderer::ToggleUGCEraser()
+{
+    if (mDebugEditorBridge) mDebugEditorBridge->ToggleEraser();
+}
+
+void UIRenderer::SelectUGCEditorMode()
+{
+    if (mDebugEditorBridge) mDebugEditorBridge->ActivateSelectionMode();
+}
+
+void UIRenderer::OpenUGCEditorMenu()
+{
+    if (mDebugEditorBridge) mDebugEditorBridge->OpenEditorMenu();
+}
+
+void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->AdjustZoom(distanceMultiplier);
+    }
+}
+
+void UIRenderer::ChangeUGCEditLayer(int layerDelta)
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->ChangeLayer(layerDelta);
+    }
+}
+
+void UIRenderer::MoveUGCSelectionByGrid(int gridX, int gridZ)
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->MoveSelectionOnGrid(gridX, gridZ);
+    }
+}
+
+void UIRenderer::NotifyUGCEditorTutorialReturnedFromPlaytest()
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->NotifyTutorialReturnedFromPlaytest();
+    }
+}
+
+void UIRenderer::ClearDebugActorReferencesForStageReload()
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->ClearStageSelectionForStageReload();
+    }
+}
+
+bool UIRenderer::SaveDebugEditorSession(
+    const std::string& filePath,
+    std::string& outErrorMessage)
+{
+    if (!mDebugEditorBridge) {
+        outErrorMessage = "The debug editor is not initialized.";
+        return false;
+    }
+
+    return mDebugEditorBridge->SaveSession(
+        filePath,
+        outErrorMessage);
+}
+
+bool UIRenderer::RestoreDebugEditorSession(
+    const std::string& filePath,
+    std::string& outErrorMessage)
+{
+    if (!mDebugEditorBridge) {
+        outErrorMessage = "The debug editor is not initialized.";
+        return false;
+    }
+
+    return mDebugEditorBridge->RestoreSession(
+        filePath,
+        outErrorMessage);
+}
+
+void UIRenderer::SetEditorRestartStatus(
+    const std::string& message,
+    bool isError)
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->SetBuildRestartStatus(message, isError);
+    }
 }
 
 void UIRenderer::EndImGuiFrame()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void UIRenderer::DrawSkyBox()
-{
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
-}
-
-void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, bool isCenterBase, int index,
-                               glm::vec4 color)
-{
-    const auto textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName);
-    if (!textInfo) {
-        return;
-    }
-
-    if (index < 0 || index >= static_cast<int>(textInfo->texts.size())) {
-        return;
-    }
-
-    DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio,
-             textInfo->texts[index], isCenterBase, color);
-}
-
-void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index)
-{
-    DrawSceneTexture("state", "talkBgTexture", "textBg");
-
-    const auto talkTextInfo = mUILoadSystem->GetTextInfo("state", "talkText");
-    if (!talkTextInfo) {
-        return;
-    }
-
-    if (index < 0 || index >= static_cast<int>(texts.size())) {
-        return;
-    }
-
-    constexpr glm::vec4 black{0.0f, 0.0f, 0.0f, 255.0f};
-    DrawText(mFbWidth * talkTextInfo->xRatio, mFbHeight * talkTextInfo->yRatio, mFbWidth * talkTextInfo->scaleRatio,
-             texts[index], false, black);
-}
-
-void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
-{
-    if (!textInfo) {
-        return;
-    }
-
-    const auto talkBgTextureInfo = mUILoadSystem->GetTextureInfo("state", "talkBgTexture");
-    if (!talkBgTextureInfo) {
-        return;
-    }
-
-    constexpr float textureMarginX = 0.0275f;
-    constexpr float textureMarginY = 0.0845f;
-    DrawTexture(mFbWidth * (textInfo->xRatio - textureMarginX), mFbHeight * (textInfo->yRatio - textureMarginY),
-                mFbWidth * talkBgTextureInfo->widthRatio, mFbHeight * talkBgTextureInfo->heightRatio, "textBg");
-
-    const glm::vec4 black{0.0f, 0.0f, 0.0f, 255.0f};
-    const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
-
-    if (talkUIIndex < 0 || talkUIIndex >= static_cast<int>(textInfo->texts.size())) {
-        return;
-    }
-
-    DrawText(mFbWidth * textInfo->xRatio, mFbHeight * textInfo->yRatio, mFbWidth * textInfo->scaleRatio,
-             textInfo->texts[talkUIIndex], false, black);
-}
-
-bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)
-{
-    const UILoadSystem::TextInfo* textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName);
-    if (!textInfo) {
-        return false;
-    }
-
-    const bool isTalking = mGame->GetSceneSystem()->GetTalkUIIndex() < static_cast<int>(textInfo->texts.size());
-    if (isTalking) {
-        DrawTalkUI(textInfo);
-        return true;
-    }
-    return false;
-}
-
-void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
-                                                 bool isCenterBase, float screenTopY, float uiScale)
-{
-    const UILoadSystem::TextInfo* textInfo;
-    if (mGame->IsGameControllerConnected()) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
-    } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
-    }
-
-    if (!textInfo) {
-        return;
-    }
-
-    const float screenHeight = mFbHeight * uiScale;
-
-    const float x = mFbWidth * textInfo->xRatio;
-    const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
-
-    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
-}
-
-void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
-                                              const std::string& UIName, bool isCenterBase, float screenTopY,
-                                              float uiScale)
-{
-    const UILoadSystem::TextInfo* textInfo = nullptr;
-
-    if (UsesControllerUI(player)) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
-    } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
-    }
-
-    if (!textInfo) {
-        return;
-    }
-
-    const float screenHeight = mFbHeight * uiScale;
-
-    const float x = mFbWidth * textInfo->xRatio;
-    const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
-
-    DrawText(x, y, scale, textInfo->texts[0], isCenterBase);
-}
-
-bool UIRenderer::UsesControllerUI(const Player* player) const
-{
-    if (!player) {
-        return false;
-    }
-
-    return mGame->IsGameControllerConnected() && player->GetPlayerNum() == 1;
-}
-
-bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName)
-{
-    const UILoadSystem::TextInfo* textInfo;
-    if (mGame->IsGameControllerConnected()) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
-    } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
-    }
-
-    if (!textInfo) {
-        return false;
-    }
-
-    const bool isTalking = mGame->GetSceneSystem()->GetTalkUIIndex() < static_cast<int>(textInfo->texts.size());
-    if (isTalking) {
-        DrawTalkUI(textInfo);
-        return true;
-    }
-    return false;
-}
-
-void UIRenderer::DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color)
-{
-    const UILoadSystem::TextureInfo* textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
-        return;
-    }
-
-    DrawBG(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
-           mFbHeight * textureInfo->heightRatio, color);
-}
-
-void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::string& UIName,
-                                  const std::string& textureName)
-{
-    const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
-        return;
-    }
-
-    DrawTexture(mFbWidth * textureInfo->xRatio, mFbHeight * textureInfo->yRatio, mFbWidth * textureInfo->widthRatio,
-                mFbHeight * textureInfo->heightRatio, textureName);
-}
-
-void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName,
-                                    const std::string& textureName, float gap, int count, float screenTopY,
-                                    float uiScale)
-{
-    const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
-        return;
-    }
-
-    const float screenHeight = mFbHeight * uiScale;
-
-    const float textureX = mFbWidth * textureInfo->xRatio;
-    const float textureY = screenTopY + screenHeight * textureInfo->yRatio;
-
-    const float textureWidth = mFbWidth * textureInfo->widthRatio * uiScale;
-    const float textureHeight = mFbWidth * textureInfo->heightRatio * uiScale;
-
-    const float textureGap = gap * uiScale;
-
-    float currentX = textureX;
-
-    while (count > 0) {
-        DrawTexture(currentX, textureY, textureWidth, textureHeight, textureName);
-        currentX += textureGap;
-        count--;
-    }
-}
-
-void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color)
-{
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
-                      glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 proj = glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
-
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocUseTexture(), 0);
-    glUniform4fv(mUIShader->GetLocObjectColor(), 1, color.data());
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    mVertexArrays.at("quad")->SetActive();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-void UIRenderer::DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase, glm::vec4 color)
-{
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    std::string message1 = message;
-    std::string message2;
-    const bool isNewLine = SplitText(message, message1, message2);
-
-    DrawTextLine(message1, x, y, scale, isCenterBase, isNewLine ? -mFbHeight * 0.0222f : 0.0f, color);
-
-    if (!isNewLine) {
-        return;
-    }
-
-    DrawTextLine(message2, x, y, scale, isCenterBase, mFbHeight * 0.0444f, color);
-}
-
-bool UIRenderer::SplitText(const std::string& message, std::string& message1, std::string& message2) const
-{
-    size_t newline = message.find('\n');
-    if (newline != std::string::npos) {
-        message1 = message.substr(0, newline);
-        message2 = message.substr(newline + 1);
-        return true;
-    }
-
-    newline = message.find("\\n");
-    if (newline != std::string::npos) {
-        message1 = message.substr(0, newline);
-        message2 = message.substr(newline + 2);
-        return true;
-    }
-
-    message1 = message;
-    message2.clear();
-    return false;
-}
-
-void UIRenderer::DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase,
-                              float yOffset, glm::vec4 color)
-{
-    int textWidth = 0;
-    int textHeight = 0;
-
-    const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
-                              static_cast<Uint8>(color.w)};
-
-    GLuint textTexture = CreateTextTexture(message, textWidth, textHeight, textColor, scale);
-
-    if (textTexture == 0 || textWidth <= 0 || textHeight <= 0) {
-        return;
-    }
-
-    glm::vec3 pos;
-    if (isCenterBase) {
-        pos = glm::vec3(x, y + yOffset, 0.0f);
-    } else {
-        pos = glm::vec3(x + textWidth * 0.5f, y + textHeight * 0.5f + yOffset, 0.0f);
-    }
-
-    const glm::mat4 model =
-        glm::translate(glm::mat4(1.0f), pos) * glm::scale(glm::mat4(1.0f), glm::vec3(textWidth, textHeight, 1.0f));
-    const glm::mat4 view = glm::mat4(1.0f);
-    const glm::mat4 proj =
-        glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
-
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
-    glUniform1i(mUIShader->GetLocUseTexture(), 1);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textTexture);
-
-    mVertexArrays.at("quad")->SetActive();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    glDeleteTextures(1, &textTexture);
-}
-
-void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName)
-{
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    const glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
-                            glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
-    const glm::mat4 view = glm::mat4(1.0f);
-    const glm::mat4 proj =
-        glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
-
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
-    glUniform1i(mUIShader->GetLocUseTexture(), 1);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glActiveTexture(GL_TEXTURE0);
-
-    auto textureIt = mTextures.find(textureName);
-    if (textureIt == mTextures.end()) {
-        return;
-    }
-
-    glBindTexture(GL_TEXTURE_2D, textureIt->second);
-
-    mVertexArrays.at("quad")->SetActive();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

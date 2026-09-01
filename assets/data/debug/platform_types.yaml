@@ -1,0 +1,16 @@
+# 足場タイプを追加すると、ステージエディターの「足場の種類」に自動で表示されます。
+# sequenceNameに対応する読み込み処理と足場クラスはゲーム側へ一度だけ登録してください。
+platformTypes:
+  - id: normal
+    displayName: 通常足場
+    sequenceName: platforms
+
+  - id: moving
+    displayName: 動く足場
+    sequenceName: movingPlatforms
+    defaults:
+      moveOnPlayer: false
+      moveDuration: 3.0
+      returnDelay: 1.0
+      endpointWaitSeconds: 0.0
+      moveOffset: [4.0, 0.0, 0.0]

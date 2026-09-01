@@ -1,5 +1,7 @@
 #include "actor/player/PlayerGrounding.h"
 
+#include "Game.h"
+
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -9,9 +11,14 @@
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 
+PlayerGrounding::PlayerGrounding(PhysicsSystem& physicsSystem)
+    : mPhysicsSystem(physicsSystem)
+{
+}
+
 void PlayerGrounding::OnLanded(Player& player, PlayerMovement& movement, PlayerCombat& combat)
 {
-    movement.SetIsDodged(false);
+    movement.SetHasUsedDodge(false);
     combat.OnLanded();
     player.GetGame()->OnLanded();
 }
@@ -52,7 +59,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
 
     btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
 
-    auto* bulletWorld = player.GetGame()->GetPhysicsSystem()->GetBulletWorld();
+    auto* bulletWorld = mPhysicsSystem.GetBulletWorld();
     if (!bulletWorld) {
         return;
     }
@@ -63,9 +70,47 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
         return;
     }
 
-    const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+    Actor* hitActor =
+        cb.m_collisionObject
+            ? static_cast<Actor*>(
+                  cb.m_collisionObject->getUserPointer())
+            : nullptr;
+    if (hitActor && !hitActor->ShouldAffectGravityDirection()) {
+        player.SetVelocity(glm::vec3(0.0f));
+        player.RefreshFallbackUpVec();
+        player.SetOnGround(false);
+        return;
+    }
 
-    player.SetPos(hitPos);
+    const glm::vec3 hitNormal(
+        cb.m_hitNormalWorld.x(),
+        cb.m_hitNormalWorld.y(),
+        cb.m_hitNormalWorld.z());
+    if (!player.IsWalkableGroundNormal(hitNormal, up)) {
+        return;
+    }
+
+    const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
+    const ActorMovementCollisionResult collisionResult =
+        mPhysicsSystem.ResolveMovementCollision(
+            &player,
+            hitPos - player.GetPos(),
+            hitPos);
+
+    if (collisionResult.hasUnresolvedStageOverlap) {
+        return;
+    }
+
+    const bool wasSnapBlockedByNonGround =
+        collisionResult.didHitStage &&
+        !player.IsWalkableGroundNormal(
+            collisionResult.blockingNormal,
+            up);
+    if (wasSnapBlockedByNonGround) {
+        return;
+    }
+
+    player.SetPos(collisionResult.resolvedPosition);
     player.SetOnGround(true);
     player.SetVelocity(glm::vec3(0.0f));
 }

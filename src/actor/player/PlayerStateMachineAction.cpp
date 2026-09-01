@@ -1,5 +1,8 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
+#include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
 #include "actor/player/PlayerGrounding.h"
@@ -7,15 +10,44 @@
 #include "actor/player/PlayerJewelGauge.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
+#include "actor/player/PlayerTargetingAssist.h"
 #include "system/AudioSystem.h"
 
-void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement, PlayerGrounding& grounding,
-                                       PlayerCombat& combat, float deltaTime)
+void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                       PlayerGrounding& grounding, PlayerCombat& combat, float deltaTime)
 {
-    movement.MoveDuringDodging(player, combat, grounding, deltaTime);
+    const glm::vec3 movementStart = player.GetPos();
+    movement.ApplyDodgeMovement(player, combat, grounding, deltaTime);
+    combat.UpdateAirDodgeAttack(
+        player,
+        movement,
+        movementStart,
+        player.GetPos());
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {
+        const bool didFinishAirDodge =
+            combat.IsAirDodgeAttackActive() &&
+            !player.GetOnGround();
+        const bool shouldResumeAirMovementImmediately =
+            didFinishAirDodge && mShouldSkipAirDodgePostHover;
+        combat.EndAirDodgeAttack();
+        if (didFinishAirDodge && !shouldResumeAirMovementImmediately) {
+            movement.StopAirborneVerticalMovement(player);
+            movement.StartAirborneActionHover(
+                movement.GetAirDodgePostHoverDurationSeconds());
+        }
+        if (shouldResumeAirMovementImmediately) {
+            // 攻撃から回避したケースだけは、回避終了フレームから
+            // 空中入力と落下を再開する。これで着地まで停止しない。
+            combat.CancelCurrentAttack();
+            movement.CancelAirborneActionHover();
+            movement.ApplyJumpGravityAndInputMovement(
+                player,
+                input,
+                deltaTime);
+        }
+        mShouldSkipAirDodgePostHover = false;
         StartIdle();
     }
 }
@@ -23,73 +55,187 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerMovement& movement,
 void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status, float deltaTime)
 {
-    if (player.GetOnGround()) {
-        movement.MoveDuringAttacking(player, combat, deltaTime);
+    if (!player.GetOnGround()) {
+        movement.StopAirborneVerticalMovement(player);
     }
 
-    if (movement.CanWalk(combat)) {
-        movement.UpdateWalk(player, input, deltaTime);
+    const bool wasAirWeakAttacking = !player.GetOnGround();
+    if (TryStartDodging(
+            player,
+            input,
+            movement,
+            combat,
+            status)) {
+        if (wasAirWeakAttacking) {
+            combat.CancelAirAttackForDodge();
+        } else {
+            combat.CancelCurrentAttack();
+        }
+        // 空中弱攻撃そのものは着地まで移動不能のままにするが、
+        // 回避でキャンセルできた場合は通常操作へ即座に戻す。
+        mShouldSkipAirDodgePostHover = wasAirWeakAttacking;
+        mAllowsAirMovementAfterDodge = wasAirWeakAttacking;
+        mAttackDirectionTarget = nullptr;
+        return;
+    }
+
+    if (combat.HasPendingAttackHit()) {
+        const bool targetMatchesPlayerAttackHeight =
+            player.GetOnGround() ||
+            (mAttackDirectionTarget &&
+             mAttackDirectionTarget->IsLaunched());
+        const bool hasValidDirectionTarget =
+            mAttackDirectionTarget &&
+            mAttackDirectionTarget->GetIsActive() &&
+            mAttackDirectionTarget->IsAlive() &&
+            !mAttackDirectionTarget->GetIsDead() &&
+            targetMatchesPlayerAttackHeight &&
+            mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
+
+        if (hasValidDirectionTarget) {
+            // 攻撃開始時に選んだ最寄りの敵へ、判定が出る瞬間まで向きを維持する。
+            PlayerTargetingAssist::FaceTarget(player, movement, *mAttackDirectionTarget);
+        } else {
+            mAttackDirectionTarget = nullptr;
+            movement.UpdateFacingDirectionFromInput(player, input);
+        }
+
+        const bool didResolveAttack = combat.UpdatePendingAttackHit(player, movement, status, deltaTime);
+        if (didResolveAttack) {
+            mAttackDirectionTarget = nullptr;
+        }
+        return;
+    }
+
+    if (player.GetOnGround()) {
+        movement.ApplyAttackMovement(player, combat, deltaTime);
     }
 
     combat.ReduceAttackMotionTimer(deltaTime);
     if (combat.GetAttackMotionTimer() <= 0.0f) {
+        mAttackDirectionTarget = nullptr;
+        const bool isAirWeakAttack =
+            combat.IsAirAttacking();
+        if (!player.GetOnGround() && isAirWeakAttack) {
+            movement.StopAirborneVerticalMovement(player);
+            movement.StartAirborneActionHover(
+                movement.GetAirWeakAttackPostHoverDurationSeconds());
+        }
+        if (isAirWeakAttack) {
+            combat.StartAirWeakAttackCooldown();
+        } else if (
+            combat.GetAttackKind() ==
+            PlayerAttackKind::Wide) {
+            combat.StartGroundWeakAttackCooldown();
+        }
         StartIdle();
     }
 }
 
-void PlayerStateMachine::UpdateCharging(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                        PlayerCombat& combat, float deltaTime)
+void PlayerStateMachine::UpdateStrongAttacking(
+    Player& player,
+    PlayerInput& input,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    PlayerStatus& status,
+    float deltaTime)
 {
-    const bool isAttackBtnReleased = !input.GetAttackPressed();
-    if (isAttackBtnReleased) {
-        ChangeState(PlayerActionState::StrongAttacking);
-        combat.StartStrongAttacking(player, deltaTime);
-        return;
+    const bool hasValidStrongTarget =
+        mAttackDirectionTarget &&
+        mAttackDirectionTarget->GetIsActive() &&
+        mAttackDirectionTarget->IsAlive() &&
+        !mAttackDirectionTarget->GetIsDead() &&
+        mAttackDirectionTarget->IsLaunched() &&
+        mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
+
+    if (hasValidStrongTarget) {
+        // アシストStrong中は、対象方向へ向きと突進方向を維持する。
+        PlayerTargetingAssist::FaceTarget(
+            player,
+            movement,
+            *mAttackDirectionTarget);
+
+        movement.UpdateStrongAttackDirectionTowards(
+            player,
+            mAttackDirectionTarget->GetPos());
+    } else {
+        mAttackDirectionTarget = nullptr;
+
+        if (combat.HasPendingAttackHit() &&
+            !combat.GetIsAssistStrongAttack()) {
+            movement.UpdateFacingDirectionFromInput(player, input);
+        }
     }
 
-    if (combat.GetAttackPressTimer() < 0.0f) {
-        return;
-    }
-
-    combat.ReduceAttackPressTimer(deltaTime);
-    if (combat.GetAttackPressTimer() >= 0.0f) {
-        movement.MoveDuringCharging(player, deltaTime);
-        return;
-    }
-
-    combat.FinishCharging(player, movement);
-}
-
-void PlayerStateMachine::UpdateStrongAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                               PlayerStatus& status, float deltaTime)
-{
-    movement.MoveDuringStrongAttacking(player, combat, deltaTime);
-
-    combat.ReduceStrongAttackTimer(deltaTime);
     if (combat.GetStrongAttackTimer() >= 0.0f) {
+        movement.ApplyStrongAttackMovement(player, combat, deltaTime);
+        combat.ReduceStrongAttackTimer(deltaTime);
+    }
+
+    combat.UpdatePendingAttackHit(
+        player,
+        movement,
+        status,
+        deltaTime);
+
+    if (combat.HasPendingAttackHit() ||
+        combat.GetStrongAttackTimer() >= 0.0f) {
         return;
     }
 
+    mAttackDirectionTarget = nullptr;
+    movement.ClearStrongAttackDirectionOverride();
+    player.SetShouldJudgeLanding(true);
     StartIdle();
 
     if (!combat.GetIsCharged()) {
         return;
     }
 
-    if (!combat.GetIsStrongAttackHit()) {
-        combat.Attack(player, movement, status, deltaTime);
-    }
-
     if (combat.GetIsStrongAttackHit()) {
         combat.ClearStrongAttackHit();
-        player.GetGame()->OnStrongAttacked(movement.GetPlayerNum());
+        player.GetGame()->OnStrongAttacked(
+            movement.GetPlayerNum());
     }
 }
+
+void PlayerStateMachine::UpdateAirSlamAttacking(
+    Player& player,
+    PlayerMovement& movement,
+    PlayerCombat& combat,
+    float deltaTime)
+{
+    const bool didReachGround =
+        movement.UpdateAirSlamMovement(
+            player,
+            combat,
+            deltaTime);
+    if (!didReachGround) {
+        return;
+    }
+
+    const bool didHitEnemy =
+        combat.ResolveAirSlamImpact(
+            player,
+            movement,
+            deltaTime);
+    if (didHitEnemy) {
+        player.GetGame()->OnAirSlamAttackHit(
+            movement.GetPlayerNum());
+    }
+
+    combat.ClearStrongAttackHit();
+    mAttackDirectionTarget = nullptr;
+    movement.ClearStrongAttackDirectionOverride();
+    player.SetShouldJudgeLanding(true);
+    StartIdle();
+}
+
 
 void PlayerStateMachine::UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
                                            PlayerStatus& status, float deltaTime)
 {
-    movement.MoveDuringKnockBack(player, deltaTime);
+    movement.ApplyKnockBackMovement(player, deltaTime);
 
     status.UpdateDamageTimer(deltaTime);
     if (status.GetDamageTimer() <= 0.0f) {
@@ -102,28 +248,44 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
                                                      float deltaTime)
 {
     const float specialChargingTimerPrev = combat.GetSpecialChargingTimer();
+    const float chargeDurationSeconds =
+        combat.GetChargedAttackChargeDurationSeconds();
+    const float firstJewelConsumptionTimeSeconds =
+        chargeDurationSeconds * (2.0f / 3.0f);
+    const float secondJewelConsumptionTimeSeconds =
+        chargeDurationSeconds * (1.0f / 3.0f);
 
     combat.ReduceSpecialChargingTimer(deltaTime);
 
-    if (specialChargingTimerPrev >= 2.0f && combat.GetSpecialChargingTimer() <= 2.0f) {
+    const float specialChargingTimer =
+        combat.GetSpecialChargingTimer();
+    if (specialChargingTimerPrev >= firstJewelConsumptionTimeSeconds &&
+        specialChargingTimer < firstJewelConsumptionTimeSeconds) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 10000, 0, 1000);
         jewelGauge.Consume(1);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 1.0f && combat.GetSpecialChargingTimer() <= 1.0f) {
+    }
+    if (specialChargingTimerPrev >= secondJewelConsumptionTimeSeconds &&
+        specialChargingTimer < secondJewelConsumptionTimeSeconds) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 20000, 0, 1000);
         jewelGauge.Consume(1);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    } else if (specialChargingTimerPrev >= 0.0f && combat.GetSpecialChargingTimer() <= 0.0f) {
+    }
+    if (specialChargingTimerPrev >= 0.0f && specialChargingTimer < 0.0f) {
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 30000, 0, 1000);
         player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
     }
 
-    if (combat.GetSpecialChargingTimer() <= 0.0f) {
+    if (specialChargingTimer <= 0.0f) {
         combat.SetCanSpecialAttack(true);
     }
 
-    if (combat.GetSpecialChargingTimer() <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
+    if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
+
+
+
+        player.RequestStrongAttackAnimation();
     }
 
     if (input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
@@ -132,7 +294,11 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
 }
 
 void PlayerStateMachine::UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat,
-                                                   PlayerStatus& status, float deltaTime)
+                                                    PlayerStatus& status, float deltaTime)
 {
-    combat.UpdateContinuousAttacking(player, movement, status, deltaTime);
+    const bool didAttack =
+        combat.UpdateContinuousAttacking(player, movement, status, deltaTime);
+    if (didAttack) {
+        player.RequestNextWeakAttackAnimation();
+    }
 }

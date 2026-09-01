@@ -1,13 +1,19 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <string>
 
 class Actor;
 
+struct StageActorPlacement {
+    glm::vec3 worldPosition{0.0f};
+    glm::vec3 surfaceNormal{0.0f, 1.0f, 0.0f};
+};
+
 enum class StageActorType {
+    Planet,
     Enemy,
     Platform,
-    MovingPlatform,
     Crystal,
     NPC,
     BoatParts,
@@ -15,7 +21,11 @@ enum class StageActorType {
     BoatArrivalPoint,
     FallRespawnPoint,
     Key,
-    Star
+    Star,
+    StageObject,
+    TutorialTrigger,
+    JewelItem,
+    HazardActor
 };
 
 struct StageActorRef {
@@ -32,6 +42,6 @@ struct StageActorInstance {
 
 struct StageActorTypeInfo {
     StageActorType type;
-    const char* sequenceName;
-    const char* displayName;
+    std::string sequenceName;
+    std::string displayName;
 };
