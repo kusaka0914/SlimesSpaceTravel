@@ -1,0 +1,69 @@
+planets:
+  - center: [51.15775, -10.373855, 21.843506]
+    scale: [4, 4, 4]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 4
+      - 4
+    textureSideBlendWidth: 0.05
+    stageNum: 0
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/blackPlatform.png
+  - center: [52.15775, 0.1224668, 9.041753]
+    scale: [4, 1, 4]
+    color: [1.0, 0.0, 0.0, 1.0]
+    model: planet_3.obj
+    rocketSpawnCondition: AllBoatPartsCollected
+    textureTiling:
+      - 4
+      - 1
+    textureSideBlendWidth: 0.05
+    stageNum: 1
+    canAttractNearbyPlayer: false
+    reactsToOverheadGravityRay: false
+    textureOverride: textures/blackPlatform.png
+enemies:
+  - {editorName: 新しい通常敵, type: boss_5, currentPlanetNum: 0, theta: -2.48507, phi: -1.1335412, height: 0.29436684, pos: [-1.44, -3.89, -1.11], upVec: [-0.20261456, -0.85845953, -0.47116295], scale: [1.5, 2, 1.5], modelPath: enemy_red.obj, facingYaw: -2.2351742e-08, rotation: [0, 0, 0], rotationQuat: [0.11216893, -0.028081063, -0.24122274, 0.96355665]}
+keys: []
+crystals: []
+boats: []
+boatArrivalPoints: []
+boatParts: []
+players:
+  - pos:
+      - 0.2612877
+      - -1.4415166
+      - -2.6952615
+    currentPlanetNum: 1
+    theta: -1.474155
+    phi: -0.48918217
+    height: -0.9323175
+    facingYaw: 2.9823875
+    rotation:
+      - 0
+      - 2.9823875
+      - 0
+    upVec:
+      - 0.03982065
+      - -0.9033509
+      - -0.4270498
+    rotationQuat:
+      - -0.21979164
+      - 0.97282076
+      - 0.0040259263
+      - 0.072768115
+  - pos: [4.0, 7.5, 0.0]
+    currentPlanetNum: 0
+star: [{currentPlanetNum: 0, theta: -2.3147247, phi: 0.36082476, height: -0.048448086, isActive: false, pos: [-2.5036125, 1.3950796, -2.720375], upVec: [-0.63842535, 0.3464186, -0.6873189], modelPath: star_red.glb}]
+NPCs: []
+platforms:
+  - {currentPlanetNum: 1, theta: 1.5909323, phi: -0.22591539, height: -1.0085697, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.06, -0.67, 4.17], upVec: [0, -1, 0], platformId: platform_1, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
+  - {currentPlanetNum: 1, theta: 1.5844718, phi: -0.41796124, height: 4.560451, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [-0.1, -1.83, 7.31], upVec: [0, -1, 0], platformId: platform_2, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
+  - {currentPlanetNum: 0, theta: -0.7488542, phi: 1.2317675, height: 3.7555861, facingYaw: -0, rotation: [0, 0, 0], scale: [1, 0.2, 1], modelPath: platform.obj, pos: [1.06, 7.29, -1.76], upVec: [0, -1, 0], platformId: platform_3, rotationQuat: [0, 0, 0, 1], components: {fadeOnStand: {fadeOutDuration: 1, reappearDelay: 2}}, textureTiling: [1, 1], textureOverride: textures/glass.png}
+movingPlatforms: []
+fallRespawnPoints: []
+hazardActors: []
+jewelItems: []

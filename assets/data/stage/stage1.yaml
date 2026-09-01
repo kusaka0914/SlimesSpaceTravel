@@ -1,373 +1,3592 @@
 planets:
-  - center: [0, 0, 0]
-    scale: [8, 8, 8]
+  - center: [0, 4.6491623e-05, 0]
+    scale: [2, 8, 8]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
-    shape: Sphere
     rocketSpawnCondition: AllBoatPartsCollected
-  - center: [32, 0, 0]
-    scale: [4, 4, 4]
+    textureTiling:
+      - 4
+      - 8
+    textureSideBlendWidth: 0.05
+    stageNum: 0
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+  - center: [44.42074, 50.59924, 0]
+    scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
-    shape: Sphere
     rocketSpawnCondition: AllEnemiesDead
-  - center: [64, 0, 0]
+    textureTiling:
+      - 3.4641016
+      - 6
+    textureSideBlendWidth: 0.05
+    stageNum: 1
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+  - center: [47.9321, 11.178402, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
-    shape: Sphere
+    textureTiling:
+      - 4
+      - 8
+    textureSideBlendWidth: 0.05
+    rocketSpawnCondition: ""
+    stageNum: 2
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+  - center:
+      - 11.713653
+      - 43.692368
+      - 1.9073486e-06
+    scale:
+      - 2
+      - 8
+      - 8
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    stageNum: 3
+    rocketSpawnCondition: ""
+    textureTiling:
+      - 4
+      - 8
+    textureSideBlendWidth: 0.05
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
 enemies:
-  - type: normal
-    theta: 1.973047
-    phi: 0.675763
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: -2.842698
-    phi: -0.111576
-    height: 1
-    currentPlanetNum: 1
   - type: normal
     theta: 2.272954
     phi: -0.578284
     height: 1
     currentPlanetNum: 1
+    pos:
+      - -1.83
+      - -1.63
+      - 1.9
+    facingYaw: 4.3888573e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9987646
+      - -0.03163071
+      - 0.038324885
+    rotationQuat:
+      - 0.6956976
+      - 0.01333618
+      - 0.01376519
+      - 0.71807903
+    modelPath: enemy.obj
   - type: normal
-    theta: 1.331762
-    phi: -0.528396
-    height: 1
+    theta: -2.1809852
+    phi: 0.10503345
+    height: 0.62964475
     currentPlanetNum: 1
+    pos:
+      - -2.1
+      - 3.1
+      - -1.36
+    facingYaw: -2.4330799e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99979424
+      - 0.014326261
+      - -0.014363487
+    rotationQuat:
+      - 0.71213603
+      - -0.0051146504
+      - -0.00504187
+      - 0.7020048
+    modelPath: enemy.obj
   - type: normal
-    theta: 0.204886
-    phi: 1.007358
-    height: 1
+    theta: 2.2557383
+    phi: 0.8845734
+    height: 1.140594
     currentPlanetNum: 1
+    pos:
+      - -1.73
+      - 2.41
+      - 1.52
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99832666
+      - 0.04881763
+      - 0.030995684
+    rotationQuat:
+      - 0.7240819
+      - 0.011224407
+      - 0.010688943
+      - 0.68953985
+    modelPath: enemy.obj
   - type: normal
-    theta: 2.354361
-    phi: 0.060486
-    height: 1
+    theta: -2.6610897
+    phi: -1.1275616
+    height: 1.2215185
     currentPlanetNum: 1
-  - type: normal
-    theta: -1.88965
-    phi: -0.998213
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.263585
-    phi: -0.856111
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.027116
-    phi: -0.135222
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.536649
-    phi: 1.382983
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: -1.373556
-    phi: -0.239034
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: -1.761338
-    phi: 0.375625
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 0
-    phi: 0.277311
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 0.75125
-    phi: 0.034148
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: -0.580512
-    phi: 0.512216
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: -0.478069
-    phi: -0.135222
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.400058
-    phi: 0.443256
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.385288
-    phi: 1.570796
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 0.341477
-    phi: -0.135222
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 0.580512
-    phi: 0.525433
-    height: 1
-    currentPlanetNum: 1
-  - type: normal
-    theta: 1.67324
-    phi: -0.039231
-    height: 1
-    currentPlanetNum: 1
-  - type: boss
-    theta: -0.684602
-    phi: -0.155907
-    height: 0
+    pos:
+      - -1.82
+      - -3.43
+      - -0.96
+    facingYaw: -2.788147e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99803257
+      - -0.061037548
+      - -0.014335948
+    rotationQuat:
+      - 0.68516713
+      - -0.0049115224
+      - -0.005221057
+      - 0.72835064
+    modelPath: enemy.obj
+  - editorName: 新しいボス敵
+    type: boss
     currentPlanetNum: 2
+    theta: -3.0781858
+    phi: 0.08128901
+    height: 0.43351984
+    pos:
+      - -4.41
+      - 0.36
+      - -0.28
+    upVec:
+      - -0.99304086
+      - 0.115030766
+      - 0.025257528
+    facingYaw: 2.0208652
+    rotation:
+      - 2.9419293
+      - -1.1148987
+      - -2.994898
+    rotationQuat:
+      - -0.4039418
+      - -0.568417
+      - 0.62797016
+      - -0.3455238
+    scale:
+      - 1.5
+      - 2
+      - 1.5
+    modelPath: enemy_yellow.obj
+  - type: normal
+    theta: -1.910462
+    phi: -0.72552204
+    height: 1.8449967
+    currentPlanetNum: 1
+    pos:
+      - -1.59
+      - -1.78
+      - -3.46
+    facingYaw: -3.0267984e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99591464
+      - -0.061168917
+      - -0.06642723
+    rotationQuat:
+      - 0.6847113
+      - -0.022766886
+      - -0.02420811
+      - 0.72805643
+    modelPath: enemy.obj
+  - type: normal
+    theta: 2.0314734
+    phi: 0.066740274
+    height: 1.6917329
+    currentPlanetNum: 1
+    pos:
+      - -1.6375237
+      - 0.24620438
+      - 3.2995136
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9747279
+      - 0.014442941
+      - 0.2229284
+    modelPath: enemy.obj
+  - type: normal
+    theta: 2.2569184
+    phi: -1.0275687
+    height: 2.356143
+    currentPlanetNum: 1
+    pos:
+      - -1.4265442
+      - -3.7290535
+      - 1.7421582
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9537855
+      - -0.27227134
+      - 0.12712836
+    modelPath: enemy.obj
+  - type: normal
+    theta: -1.9909681
+    phi: 0.55877906
+    height: 2.2377172
+    currentPlanetNum: 1
+    pos:
+      - -1.4657173
+      - 2.2466316
+      - -3.2806349
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.95693445
+      - 0.15925753
+      - -0.2427213
+    modelPath: enemy.obj
+  - type: normal
+    theta: -1.8794837
+    phi: -0.0020413555
+    height: 2.4923768
+    currentPlanetNum: 1
+    pos:
+      - -1.3648186
+      - -0.009170532
+      - -4.2800274
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.94628215
+      - -0.0055270125
+      - -0.32329482
+    modelPath: enemy.obj
+  - type: normal
+    theta: -2.1500084
+    phi: -0.89114726
+    height: 2.2535071
+    currentPlanetNum: 1
+    pos:
+      - -1.4633331
+      - -3.3083496
+      - -2.237365
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9583449
+      - -0.23259662
+      - -0.16575299
+    modelPath: enemy.obj
+  - type: normal
+    theta: 1.9420737
+    phi: -0.45273474
+    height: 2.3555999
+    currentPlanetNum: 1
+    pos:
+      - -1.4210358
+      - -1.9052544
+      - 3.6499195
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9531077
+      - -0.1418738
+      - 0.2673154
+    modelPath: enemy.obj
+  - type: normal
+    theta: 2.0025144
+    phi: 0.5143428
+    height: 2.1279774
+    currentPlanetNum: 1
+    pos:
+      - -1.5037956
+      - 2.0308113
+      - 3.2641387
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.96175086
+      - 0.14605819
+      - 0.23173775
+    modelPath: enemy.obj
+  - type: normal
+    theta: 2.1275892
+    phi: 1.0352457
+    height: 2.72339
+    currentPlanetNum: 1
+    pos:
+      - -1.2738228
+      - 4.0620575
+      - 2.0463324
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.92971206
+      - 0.3264139
+      - 0.1705569
+    modelPath: enemy.obj
+  - type: normal
+    theta: 3.0986593
+    phi: 1.2622062
+    height: 2.5096107
+    currentPlanetNum: 1
+    pos:
+      - -1.3683777
+      - 4.296589
+      - 0.05878514
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.94692606
+      - 0.32142806
+      - 0.003872879
+    modelPath: enemy.obj
+  - type: normal
+    theta: -2.009593
+    phi: 0.91201735
+    height: 2.7837543
+    currentPlanetNum: 1
+    pos:
+      - -1.2441254
+      - 3.7827072
+      - -2.650959
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9220199
+      - 0.31704205
+      - -0.22217944
+    modelPath: enemy.obj
+  - type: normal
+    theta: -3.1303205
+    phi: -1.3143737
+    height: 2.8318906
+    currentPlanetNum: 1
+    pos:
+      - -1.23
+      - -4.67
+      - -0.01
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9240127
+      - -0.3823429
+      - -0.0037875606
+    modelPath: enemy.obj
+  - type: normal
+    theta: 1.8303075
+    phi: -0.11298735
+    height: 2.8039355
+    currentPlanetNum: 1
+    pos:
+      - -1.2248688
+      - -0.5416298
+      - 4.613473
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.92231417
+      - -0.042098716
+      - 0.3841411
+    modelPath: enemy.obj
+  - type: normal
+    theta: 1.9492662
+    phi: -0.85919213
+    height: 2.9041624
+    currentPlanetNum: 1
+    pos:
+      - -1.1833801
+      - -3.713997
+      - 2.9760122
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9133858
+      - -0.31638604
+      - 0.25617653
+    modelPath: enemy.obj
+  - type: normal
+    theta: -1.9210329
+    phi: -0.7510496
+    height: 2.840551
+    currentPlanetNum: 1
+    pos:
+      - -1.2140656
+      - -3.3032227
+      - -3.3235066
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.91967094
+      - -0.2704121
+      - -0.2847503
+    modelPath: enemy.obj
+  - type: normal
+    theta: -1.8258404
+    phi: 0.305485
+    height: 2.8986115
+    currentPlanetNum: 1
+    pos:
+      - -1.1786423
+      - 1.4732857
+      - -4.520689
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9155582
+      - 0.1279155
+      - -0.38130134
+    modelPath: enemy.obj
+  - type: normal
+    theta: 2.6268077
+    phi: 0.1313401
+    height: 0.2456305
+    currentPlanetNum: 1
+    pos:
+      - -1.9377594
+      - 0.2940941
+      - 1.0961084
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99786705
+      - 0.020665923
+      - 0.061921693
+    modelPath: enemy.obj
+  - type: normal
+    theta: -2.8094826
+    phi: -0.8045316
+    height: 0.8135612
+    currentPlanetNum: 1
+    pos:
+      - -1.8444481
+      - -2.0271873
+      - -0.6361208
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.99175274
+      - -0.12281309
+      - -0.036653884
+    modelPath: enemy.obj
+  - type: normal
+    theta: -2.180813
+    phi: -0.08825079
+    height: 1.1194925
+    currentPlanetNum: 1
+    pos:
+      - -1.7801437
+      - -0.2749405
+      - -2.546906
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9869306
+      - -0.01342184
+      - -0.1605859
+    modelPath: enemy.obj
+  - type: normal
+    theta: -2.3001237
+    phi: 0.5062704
+    height: 1.07317
+    currentPlanetNum: 1
+    pos:
+      - -1.7909775
+      - 1.4902382
+      - -2.003987
+    facingYaw: 1.1874363e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.9882003
+      - 0.09204825
+      - -0.122423306
+    modelPath: enemy.obj
 keys:
   - currentPlanetNum: 1
     theta: 0
     phi: -0.530965
     height: 0.1
-crystals:
-  - type: little
-    currentPlanetNum: 0
-    theta: 1.891925
-    phi: -0.627311
-    height: 0.05
-  - type: big
-    currentPlanetNum: 0
-    theta: 0.309124
-    phi: -0.334648
-    height: 0.87
+    pos:
+      - 1.81
+      - -1.06
+      - 0
+    facingYaw: 1.8377248e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 2
+      - 2
+      - 2
+    upVec:
+      - 0.9998886
+      - -0.014856123
+      - 0.0014670104
+    rotationQuat:
+      - -0.70183444
+      - -0.000514793
+      - 0.00052251155
+      - 0.7123397
+crystals: []
 boats:
-  - theta: 0
-    phi: 0
-    height: 0
-    startPlanet: 0
+  - startPlanet: 0
+    destPlanet: 3
+    destStage: 0
+    theta: -0.023540327
+    phi: 0.042714715
+    height: 14.146238
+    facingYaw: 1.7763568e-15
+    pos:
+      - 9.13
+      - 3.95
+      - -0.87
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    rotationQuat:
+      - -0.70710665
+      - 1.053671e-08
+      - -1.0536713e-08
+      - 0.7071069
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    travelSpeed: 10
+  - startPlanet: 3
     destPlanet: 1
+    destStage: 0
+    theta: 0.54062873
+    phi: -0.05604329
+    height: 5.283442
+    facingYaw: 1.7763568e-15
+    pos:
+      - 10.31
+      - -1.38
+      - 3.44
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    rotation:
+      - 0
+      - 0
+      - 0
+    rotationQuat:
+      - -0.70710665
+      - 1.053671e-08
+      - -1.0536713e-08
+      - 0.7071069
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    travelSpeed: 10
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+  - startPlanet: 1
+    destPlanet: 2
+    destStage: 0
+    theta: 0.8950717
+    phi: 0.67947906
+    height: 2.0631275
+    facingYaw: -1.67347e-08
+    pos:
+      - 2
+      - -0.5
+      - -1.16
+    upVec:
+      - 0.99973696
+      - -0.014351349
+      - 0.017892009
+    rotation:
+      - 0
+      - 0
+      - 0
+    rotationQuat:
+      - -0.70198566
+      - -0.006280475
+      - 0.006371267
+      - 0.71213496
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    travelSpeed: 10
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+boatParts: []
+players:
+  - pos: [1.1971725, -4.632353, 4.246785]
+    currentPlanetNum: 0
+    theta: 1.2960258
+    phi: -0.80972266
+    height: 4.3974295
+    facingYaw: 5.468004
+    rotation:
+      - 0
+      - 5.468004
+      - 0
+    upVec:
+      - 0.9506044
+      - -0.2282197
+      - 0.21039721
+    rotationQuat:
+      - -0.59812033
+      - -0.3696813
+      - -0.16775629
+      - 0.6909744
+  - pos: [-1.9945179, 7.6850224, -0.06215492]
+    currentPlanetNum: 0
+    theta: -3.1104398
+    phi: 1.3167474
+    height: -0.060129642
+    facingYaw: 0.073444605
+    rotation:
+      - 0
+      - 0.073444605
+      - 0
+    upVec:
+      - -0.26194394
+      - 0.9650677
+      - -0.005464886
+    rotationQuat:
+      - 0.99054694
+      - 0.00214443
+      - -0.036752813
+      - 0.13214232
+star:
   - theta: 0
     phi: 0
-    height: 0
-    startPlanet: 1
-    destPlanet: 2
-boatParts:
-  - type: parts1
-    currentPlanetNum: 0
-    theta: 3.141593
-    phi: 1.128796
-    height: 3.59
-  - type: parts2
-    currentPlanetNum: 0
-    theta: 0.961
-    phi: 0.468
-    height: 3.3
-  - type: parts3
-    currentPlanetNum: 0
-    theta: -1.225
-    phi: -0.496
-    height: 3.3
-  - type: parts4
-    currentPlanetNum: 0
-    theta: 0.317
-    phi: -0.36
-    height: 1.59
-  - type: parts5
-    currentPlanetNum: 0
-    theta: 1.897
-    phi: -0.622
-    height: 0.1
-players:
-  - pos: [3.0, 7.5, 0.0]
-    currentPlanetNum: 0
-    modelPath: player.obj
-  - pos: [4.0, 7.5, 0.0]
-    currentPlanetNum: 0
-    modelPath: player.obj
-star:
-  - theta: 0.0
-    phi: 0.0
-    height: 0.0
+    height: 1.1500015
     currentPlanetNum: 2
-    modelPath: star.obj
+    modelPath: star_yellow.glb
+    pos:
+      - 5.15
+      - 0
+      - 0
+    facingYaw: -1.5708017
+    rotation:
+      - 0
+      - 1.5707964
+      - 0
+    scale:
+      - 0.3
+      - 0.3
+      - 0.3
+    upVec:
+      - 0.99999523
+      - -0.002183844
+      - -0.0021971734
+    rotationQuat:
+      - -0.49890226
+      - -0.4999981
+      - -0.5000047
+      - 0.5010927
 NPCs:
-  - theta: -0.580512
-    phi: 1.126875
-    height: 0
+  - theta: -0.5460176
+    phi: 1.1324955
+    height: -0.060674667
     type: spaceSlime
     name: BoatPartsNPC
-    talkTexts: [星を探している？残念だがこの惑星にはそんなものないぞ。, あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。, そこに行ってみたらどうだ？, 隣の惑星に行くならそこらへんに落ちている\nパーツを拾ってロケットで行くんだな！]
-  - theta: 1.843978
-    phi: -0.819546
-    height: 0.196
-    type: spaceSlime
-    name: CrystalTutorialNPC
-    talkTexts: [これはクリスタル！\n攻撃して壊せるよ！, 中にアイテムが隠れてるかもしれないから\n見つけたらどんどん壊してね！]
-  - theta: 0.341478
-    phi: -0.614659
-    height: 0
-    type: spaceSlime
-    name: BigCrystalTutorialNPC
-    talkTexts: [大きなクリスタルは空中溜め攻撃で壊せるよ！, 空中溜め攻撃はジャンプして強攻撃長押し！\n溜まったら離して！, "溜め攻撃の後、疲れて動けなくなっちゃうから\n弱攻撃ボタンを連打して素早く回復しよう！"]
-  - theta: 3.03915
-    phi: -0.460995
-    height: 0
-    type: spaceSlime
-    name: JumpDodgeTutorialNPC
-    talkTexts: [遠い足場に乗りたい時はジャンプした後に回避！]
-  - theta: 1.80983
-    phi: 0.495141
-    height: 0
+    talkTexts:
+      - 星を探している？残念だがこの惑星にはそんなものないぞ。
+      - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。"
+      - "そこに行ってみたらどうだ？\n隣の惑星に行くためのロケットを探しな！"
+      - "そうだな...まずはあいつのところまで行ってみたらどうだ？\n移動とジャンプを使えば行けるぞ！"
+      - "そうだそうだ。見たい場所が見えないとき、\nカメラを回転するといいぞ！覚えておきな！"
+    pos:
+      - 1.42
+      - -3.56
+      - 4.21
+    facingYaw: 2.296081
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.97210854
+      - -0.14747725
+      - 0.18236095
+    modelPath: spaceSlime.obj
+    radius: 0.75
+    rotationQuat:
+      - -0.20302449
+      - 0.66413116
+      - 0.62051785
+      - 0.3642367
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: を
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: している？
+            ruby: false
+          - text: 残
+            ruby: true
+            reading: ざん
+          - text: 念
+            ruby: true
+            reading: ねん
+          - text: だがこの
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: にはそんなものないぞ。
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: あー、
+            ruby: false
+          - text: 確
+            ruby: true
+            reading: たし
+          - text: か
+            ruby: false
+          - text: 近
+            ruby: true
+            reading: ちか
+          - text: くの
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: にいいものを
+            ruby: false
+          - text: 持
+            ruby: true
+            reading: も
+          - text: "っている\nでっかいやつがいるって"
+            ruby: false
+          - text: 噂
+            ruby: true
+            reading: うわさ
+          - text: を
+            ruby: false
+          - text: 聞
+            ruby: true
+            reading: き
+          - text: いたことあるな。
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そこに
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "ってみたらどうだ？\n"
+            ruby: false
+          - text: 隣
+            ruby: true
+            reading: となり
+          - text: の
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: くためのロケットを
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: しな！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: そうだな...まずはあいつのところまで
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "ってみたらどうだ？\n"
+            ruby: false
+          - text: 移
+            ruby: true
+            reading: い
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: とジャンプを
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: えば
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるぞ！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: そうだそうだ。
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: たい
+            ruby: false
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 所
+            ruby: true
+            reading: しょ
+          - text: が
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: "えないとき、\nカメラを"
+            ruby: false
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: 転
+            ruby: true
+            reading: てん
+          - text: するといいぞ！
+            ruby: false
+          - text: 覚
+            ruby: true
+            reading: おぼ
+          - text: えておきな！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 4
+          text: あいつのところまで行ってみろ！
+      rubies:
+        - talkIndex: 4
+          segments:
+            - text: あいつのところまで
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: ってみろ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    currentPlanetNum: 0
+    forceTalkOnArrival: true
+    talkCameraFocus:
+      - talkIndex: 3
+        sequence: NPCs
+        index: 1
+  - theta: -0.63021153
+    phi: 0.5423254
+    height: -0.08914423
     type: spaceSlime
     name: JumpTutorialNPC
-    talkTexts: [高い足場に乗りたい時はジャンプ！]
-  - theta: 2.561081
-    phi: 0.97321
-    height: 0
-    type: spaceSlime
-    name: WallTutorialNPC
-    talkTexts: [緩やかな壁は歩けるんだよぉ〜楽しいねぇ〜]
+    talkTexts:
+      - ""
+    pos:
+      - 4.5
+      - -1.29
+      - 0.14
+    facingYaw: 2.4558797
+    rotation:
+      - 0
+      - 0.7317284
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 1
+      - -1.1920928e-07
+      - 0
+    modelPath: spaceSlime.obj
+    radius: 0.75
+    rotationQuat:
+      - -0.2377142
+      - 0.66595197
+      - 0.66595185
+      - 0.23771423
+    proximityMessage:
+      mode: always
+      variants:
+        - talkIndex: 0
+          text: ジャンプでここまで来て！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプでここまで
+              ruby: false
+            - text: 来
+              ruby: true
+              reading: き
+            - text: て！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    currentPlanetNum: 0
+    forceTalkOnArrival: false
+  - modelPath: spaceSlime.obj
+    currentPlanetNum: 3
+    theta: 0.45561814
+    phi: -1.0211418
+    height: 3.5424895
+    facingYaw: 0
+    radius: 0.75
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    name: 新しいNPC
+    talkTexts:
+      - ""
+    pos:
+      - 2.6
+      - -4.77
+      - 0.88
+    upVec:
+      - 1
+      - -1.19209275e-07
+      - 0
+    forceTalkOnArrival: false
+    proximityMessage:
+      mode: always
+      variants:
+        - talkIndex: 0
+          text: 遠い足場にはジャンプして回避！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: 遠
+              ruby: true
+              reading: とお
+            - text: い
+              ruby: false
+            - text: 足
+              ruby: true
+              reading: あし
+            - text: 場
+              ruby: true
+              reading: ば
+            - text: にはジャンプして
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 避
+              ruby: true
+              reading: ひ
+            - text: ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+  - modelPath: spaceSlime.obj
+    currentPlanetNum: 1
+    theta: 0.019271871
+    phi: -0.7914767
+    height: 0.66386247
+    facingYaw: 0
+    radius: 0.75
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    name: 新しいNPC
+    talkTexts:
+      - "ジュエルを1個使うと回復、\n2個使うと連続攻撃か溜め攻撃ができるよ！"
+      - "ジュエルは30秒に1個作られて、2個まで増えるんだ！\n敵が落とすジュエルを拾えば6個まで持てるよ！"
+    pos:
+      - 1.87
+      - -1.9
+      - 0.04
+    upVec:
+      - 0.99356365
+      - -0.11320151
+      - 0.004088799
+    forceTalkOnArrival: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: ジュエルを使えば特殊技を出せるよ！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: ジュエルを
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: えば
+              ruby: false
+            - text: 特
+              ruby: true
+              reading: とく
+            - text: 殊
+              ruby: true
+              reading: しゅ
+            - text: 技
+              ruby: true
+              reading: わざ
+            - text: を
+              ruby: false
+            - text: 出
+              ruby: true
+              reading: だ
+            - text: せるよ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: ジュエルを1
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: うと
+            ruby: false
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: 復
+            ruby: true
+            reading: ふく
+          - text: "、\n2"
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: うと
+            ruby: false
+          - text: 連
+            ruby: true
+            reading: れん
+          - text: 続
+            ruby: true
+            reading: ぞく
+          - text: 攻
+            ruby: true
+            reading: こう
+          - text: 撃
+            ruby: true
+            reading: げき
+          - text: か
+            ruby: false
+          - text: 溜
+            ruby: true
+            reading: た
+          - text: め
+            ruby: false
+          - text: 攻
+            ruby: true
+            reading: こう
+          - text: 撃
+            ruby: true
+            reading: げき
+          - text: ができるよ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ジュエルは30
+            ruby: false
+          - text: 秒
+            ruby: true
+            reading: びょう
+          - text: に1
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: られて、2
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: まで
+            ruby: false
+          - text: 増
+            ruby: true
+            reading: ふ
+          - text: "えるんだ！\n"
+            ruby: false
+          - text: 敵
+            ruby: true
+            reading: てき
+          - text: が
+            ruby: false
+          - text: 落
+            ruby: true
+            reading: お
+          - text: とすジュエルを
+            ruby: false
+          - text: 拾
+            ruby: true
+            reading: ひろ
+          - text: えば6
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: まで
+            ruby: false
+          - text: 持
+            ruby: true
+            reading: も
+          - text: てるよ！
+            ruby: false
 platforms:
   - currentPlanetNum: 0
-    theta: 3.141593
-    phi: 0.939608
-    height: -0.245
-    facingYaw: -3.142
+    theta: 1.0494097
+    phi: 0.01994101
+    height: 2.8906236
+    facingYaw: -0.7851746
     scale:
-      - 0.5
-      - 0.5
-      - 0.5
+      - 1
+      - 0.75999814
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - 2.42
+      - -2.41
+      - 2.02
+    rotation:
+      - 6.689822e-09
+      - 0.7851746
+      - -6.174248e-08
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.6533117
+      - -0.27052504
+      - -0.270525
+      - 0.6533118
+    platformId: legacy_platforms_7
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.0003359
+      - 1.3750904
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 2.91
+      - -1.05
+      - 0.72
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 1.0003138
+      - 1
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: legacy_platforms_8
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.0003359
+      - 2.0304143
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 3.62
+      - 0.25
+      - 2.2
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 1.0003138
+      - 1
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_1
+  - currentPlanetNum: 0
+    theta: 1.0494097
+    phi: 0.01994101
+    height: 2.8906236
+    facingYaw: 0.78801614
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - -0.9947703
+      - 0.10019605
+      - -0.019820986
+    pos:
+      - -6.19
+      - 3.83
+      - -1.53
+    rotation:
+      - -0.028102864
+      - -0.78781873
+      - -0.080462
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6822769
+      - 0.2506917
+      - -0.29085454
+      - 0.62213796
+    platformId: platform_2
+    components:
+      pressureSwitch:
+        inactiveOpacity: 0.2
+        targets:
+          - platform_1
+        remainsOnAfterPressed: false
+        enemyTargets: []
+        hideTargets: []
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+  - currentPlanetNum: 0
+    theta: 1.0494097
+    phi: 0.01994101
+    height: 2.8906236
+    facingYaw: -0.7851747
+    scale:
+      - 1
+      - 1.0585048
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - -2.15
+      - -1.28
+      - 2.86
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6533118
+      - -0.27052504
+      - 0.27052504
+      - 0.6533118
+    platformId: platform_3
+  - currentPlanetNum: 0
+    theta: -2.334077
+    phi: 0.36538857
+    height: 0.93243814
+    facingYaw: 0.78517455
+    scale:
+      - 1
+      - 1.9866325
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -0.99723196
+      - 0.034769297
+      - -0.06572279
+    pos:
+      - -2.95
+      - -0.81
+      - -1.09
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_4
+    rotationQuat:
+      - 0.65549886
+      - 0.24377498
+      - -0.29615185
+      - 0.65052986
+  - currentPlanetNum: 0
+    theta: 3.07684
+    phi: 1.0536447
+    height: 1.665479
+    facingYaw: 0.78517467
+    scale:
+      - 1
+      - 2.419743
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -0.99437326
+      - 0.10588895
+      - 0.0030532177
+    pos:
+      - -3.87
+      - 3.57
+      - -1.54
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_5
+    rotationQuat:
+      - 0.6874207
+      - 0.25685
+      - -0.28354418
+      - 0.6173197
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.1776116
+      - 2.9901476
+      - 3.2790415
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 3.76
+      - 1.04
+      - -0.01
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_6
+  - currentPlanetNum: 0
+    theta: 0.038756523
+    phi: 0.37385318
+    height: 5.2564435
+    facingYaw: -0.8554586
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.5762787e-07
+      - -5.9604645e-08
+    pos:
+      - 7.64
+      - 2.6
+      - -2.4
+    rotation:
+      - -1.02144575e-07
+      - 0.8554588
+      - -4.3960176e-07
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_7
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.6434034
+      - -0.29331198
+      - -0.29331192
+      - 0.64340365
+    components:
+      latchedGroupSwitch:
+        groupId: stage1_planet1
+        targets:
+          - sequence: boats
+            index: 0
+        hideTargets: []
+  - currentPlanetNum: 0
+    theta: -0.28730252
+    phi: 0.12781243
+    height: 5.0965357
+    facingYaw: -0.8462935
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -8.940697e-08
+    pos:
+      - 7.66
+      - 1.31
+      - -3.82
+    rotation:
+      - -1.3957585e-07
+      - 0.8462937
+      - -4.5507963e-07
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_8
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.64474076
+      - -0.29036045
+      - -0.29036042
+      - 0.644741
+    components:
+      latchedGroupSwitch:
+        groupId: stage1_planet1
+        targets: []
+        hideTargets: []
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: -0.7851746
+    scale:
+      - 1
+      - 0.75999814
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - 1.84
+      - -4.6
+      - 0.27
+    rotation:
+      - 6.689822e-09
+      - 0.7851746
+      - -6.174248e-08
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.6533117
+      - -0.27052504
+      - -0.270525
+      - 0.6533118
+    platformId: platform_9
+  - currentPlanetNum: 3
+    theta: -0.99602073
+    phi: -0.30839428
+    height: 1.2140507
+    facingYaw: -0.85060734
+    scale:
+      - 1.0003359
+      - 1.3750904
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 2.85
+      - -1.67
+      - -4.4
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 1.0003138
+      - 1
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_10
+  - currentPlanetNum: 3
+    theta: -0.53696233
+    phi: 0.8425314
+    height: 1.7973293
+    facingYaw: -0.85060734
+    scale:
+      - 1.0003359
+      - 2.132948
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 3.41
+      - 4.45
+      - -2.03
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 1.0003138
+      - 1
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_11
+  - currentPlanetNum: 3
+    theta: -2.9790776
+    phi: 0.60753906
+    height: 4.448301
+    facingYaw: 0.79940665
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - -0.9947703
+      - 0.10019618
+      - -0.019820958
+    pos:
+      - -6.16
+      - 4.34
+      - -1.01
+    rotation:
+      - -0.028430061
+      - -0.7992047
+      - -0.08000307
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.68060935
+      - 0.25423086
+      - -0.29473555
+      - 0.62070006
+    platformId: platform_12
+    components:
+      pressureSwitch:
+        inactiveOpacity: 0.2
+        targets:
+          - platform_11
+        remainsOnAfterPressed: false
+        enemyTargets: []
+        hideTargets: []
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+  - currentPlanetNum: 3
+    theta: 2.0887835
+    phi: -0.09777949
+    height: 0.34949288
+    facingYaw: -0.7851747
+    scale:
+      - 1
+      - 1.0585048
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - -2.12
+      - -0.42
+      - 3.72
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6533118
+      - -0.27052504
+      - 0.27052504
+      - 0.6533118
+    platformId: platform_13
+  - currentPlanetNum: 3
+    theta: -2.5329742
+    phi: -0.4569789
+    height: 0.9782601
+    facingYaw: 0.78517455
+    scale:
+      - 1
+      - 1.9866325
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -0.99723196
+      - 0.034769297
+      - -0.06572279
+    pos:
+      - -2.87
+      - -1.72
+      - -2
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_14
+    rotationQuat:
+      - 0.65549886
+      - 0.24377498
+      - -0.29615185
+      - 0.65052986
+  - currentPlanetNum: 3
+    theta: -2.881963
+    phi: 0.79866415
+    height: 2.1158984
+    facingYaw: 0.78517467
+    scale:
+      - 1
+      - 2.419743
+      - 1.0000001
+    modelPath: platform.obj
+    upVec:
+      - -0.99437326
+      - 0.10588895
+      - 0.0030532177
+    pos:
+      - -3.84
+      - 4.08
+      - -1.02
+    rotation:
+      - 0
+      - 0.7851746
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_15
+    rotationQuat:
+      - 0.6874207
+      - 0.25685
+      - -0.28354418
+      - 0.6173197
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
+    scale:
+      - 2.4785843
+      - 2.9901476
+      - 2.8480449
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 4.04
+      - 0.46
+      - 3.57
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_16
+  - currentPlanetNum: 3
+    theta: 0.5492466
+    phi: 0.30622298
+    height: 5.315322
+    facingYaw: 2.3032894
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.5762793e-07
+      - -8.940698e-08
+    pos:
+      - 8.21
+      - 2.29
+      - 3.93
+    rotation:
+      - -3.1415925
+      - -0.83830345
+      - 3.141592
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_17
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.28778228
+      - 0.6458959
+      - 0.6458956
+      - 0.28778234
+    components:
+      latchedGroupSwitch:
+        groupId: stage1_planet2
+        targets:
+          - sequence: boats
+            index: 1
+        hideTargets: []
+  - currentPlanetNum: 3
+    theta: 0.40818188
+    phi: 0.1889368
+    height: 5.1148405
+    facingYaw: 2.3065395
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -4.7683716e-07
+      - -8.940697e-08
+    pos:
+      - 9.2
+      - 0.55
+      - 5.58
+    rotation:
+      - -3.1415925
+      - -0.8350533
+      - 3.141592
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_18
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.2867323
+      - 0.6463627
+      - 0.6463624
+      - 0.28673235
+    components:
+      latchedGroupSwitch:
+        groupId: stage1_planet2
+        targets: []
+        hideTargets: []
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060734
+    scale:
+      - 1.6499327
+      - 3.9134552
+      - 1.7202996
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 4.89
+      - 4.16
+      - -0.66
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_19
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060775
+    scale:
+      - 1.6499327
+      - 3.2723978
+      - 1.7674162
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - 0
+      - 0
+    pos:
+      - 4.42
+      - 2.15
+      - -3.02
+    rotation:
+      - 0
+      - 0.8506076
+      - 0
+    textureTiling:
+      - 1.6499327
+      - 1.7674159
+    rotationQuat:
+      - 0.64411306
+      - 0.29175055
+      - 0.29175055
+      - -0.64411306
+    platformId: platform_20
+    components:
+      jumpToggle:
+        initiallyVisible: true
+    debugDisabled: true
+  - currentPlanetNum: 0
+    theta: -0.28730252
+    phi: 0.12781243
+    height: 5.0965357
+    facingYaw: -0.8494247
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.5762787e-07
+      - -2.9802322e-08
+    pos:
+      - 6.68
+      - 2.59
+      - 1.79
+    rotation:
+      - -2.1478398e-08
+      - 0.84942496
+      - -3.3679538e-07
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_21
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.6442854
+      - -0.29136956
+      - -0.29136947
+      - 0.6442856
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_22
+          - platform_23
+          - platform_24
+          - platform_25
+        enemyTargets: []
+        hideTargets: []
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 2.4387145
+    scale:
+      - 0.46601468
+      - 0.29901484
+      - 0.17203003
     modelPath: curvePlatform.obj
     upVec:
-      - -0.5909515
-      - 0.8066904
-      - 0.0051955623
+      - -0.99983
+      - 0.014071824
+      - -0.011923702
+    pos:
+      - 7.53
+      - 3.18
+      - -4.2
+    rotation:
+      - -3.125965
+      - -0.7028181
+      - -0.024174964
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.2411934
+      - -0.6577261
+      - 0.6699714
+      - -0.24568368
+    platformId: platform_22
   - currentPlanetNum: 0
-    theta: -1.190649
-    phi: -0.444701
-    height: 2.699
-    facingYaw: 1.334
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -2.438845
     scale:
-      - 1
-      - 0.2
-      - 1
+      - 0.46807468
+      - 0.29901484
+      - 0.17202997
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.99956554
+      - -0.022487164
+      - 0.019054621
+    pos:
+      - 2.09
+      - 5.26
+      - -5.95
+    rotation:
+      - 3.1166222
+      - 0.70259434
+      - 3.1029615
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - 0.24701056
+      - 0.6735897
+      - 0.65402
+      - -0.23983434
+    platformId: platform_23
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 2.4387074
+    scale:
+      - 0.4713845
+      - 0.29901484
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.99984455
+      - 0.013454199
+      - -0.011400163
+    pos:
+      - 2.2
+      - 5.18
+      - -5.9
+    rotation:
+      - -3.1266513
+      - -0.70283055
+      - -0.023113726
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - -0.2412929
+      - -0.6579973
+      - 0.66970503
+      - -0.24558596
+    platformId: platform_24
+  - currentPlanetNum: 0
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: 0.6984948
+    scale:
+      - 0.46536788
+      - 0.29901502
+      - 0.17202999
+    modelPath: curvePlatform.obj
+    upVec:
+      - 0.99978936
+      - 0.01565957
+      - -0.013269603
+    pos:
+      - -3.28
+      - 5.07
+      - -6.07
+    rotation:
+      - -0.017327314
+      - -0.6984208
+      - -3.1147888
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - 0.6711797
+      - -0.24450068
+      - -0.23947363
+      - -0.6575634
+    platformId: platform_25
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
+    scale:
+      - 1.24
+      - 2.99
+      - 1.42
     modelPath: platform.obj
     upVec:
-      - 0.33460563
-      - -0.43328178
-      - -0.8368428
-  - currentPlanetNum: 0
-    theta: 2.883379
-    phi: -0.63836
-    height: -0.49
-    facingYaw: -0.318
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 5.32
+      - 2.4
+      - 3.87
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_26
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060775
     scale:
-      - 1
-      - 1
-      - 1
+      - 1.24
+      - 2.99
+      - 1.42
     modelPath: platform.obj
     upVec:
-      - -0.76277417
-      - -0.60426146
-      - 0.23031178
-  - currentPlanetNum: 0
-    theta: -3.141593
-    phi: -0.720431
-    height: 0.411
-    facingYaw: -0.286
+      - 1
+      - 0
+      - 0
+    pos:
+      - 6.32
+      - 0.52
+      - 5.52
+    rotation:
+      - 0
+      - 0.8506076
+      - 0
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - 0.64411306
+      - 0.29175055
+      - 0.29175055
+      - -0.64411306
+    platformId: platform_27
+  - currentPlanetNum: 3
+    theta: 0.72371554
+    phi: 0.08511593
+    height: 2.2377412
+    facingYaw: -0.85060734
     scale:
-      - 1
-      - 1
-      - 1
+      - 1.24
+      - 2.99
+      - 1.4577267
     modelPath: platform.obj
     upVec:
-      - -0.755814
-      - -0.65477455
-      - -0.003950139
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    pos:
+      - 7.34
+      - -1.37
+      - 3.37
+    rotation:
+      - -2.9541619e-08
+      - 0.8506076
+      - -2.0968263e-07
+    textureTiling:
+      - 2.4785843
+      - 2.8480449
+    rotationQuat:
+      - -0.64411306
+      - -0.29175043
+      - -0.2917504
+      - 0.6441132
+    platformId: platform_28
+  - currentPlanetNum: 3
+    theta: 0.5492466
+    phi: 0.30622298
+    height: 5.315322
+    facingYaw: 2.3124971
+    scale:
+      - 0.5569991
+      - 0.12775151
+      - 0.5513343
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - -3.5762793e-07
+      - -1.4901163e-07
+    pos:
+      - 6.94
+      - 0.44
+      - 1.86
+    rotation:
+      - -3.1415925
+      - -0.8290958
+      - 3.141592
+    textureTiling:
+      - 1
+      - 1
+    platformId: platform_29
+    textureOverride: textures/Crystal_MAT_BaseColor.png
+    rotationQuat:
+      - -0.2848057
+      - 0.64721394
+      - 0.64721364
+      - 0.28480572
+    components:
+      pressureSwitch:
+        remainsOnAfterPressed: true
+        inactiveOpacity: 0.2
+        targets:
+          - platform_30
+          - platform_31
+        enemyTargets: []
+        hideTargets: []
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: -0.7851746
+    scale:
+      - 0.3089877
+      - 0.44090968
+      - 0.2576997
+    modelPath: curvePlatform.obj
+    upVec:
+      - 1
+      - -1.19209275e-07
+      - 0
+    pos:
+      - 2.08
+      - -4
+      - 0.87
+    rotation:
+      - 6.689822e-09
+      - 0.7851746
+      - -6.174248e-08
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.6533117
+      - -0.27052504
+      - -0.270525
+      - 0.6533118
+    platformId: platform_30
+  - currentPlanetNum: 3
+    theta: 0.2036585
+    phi: -1.1926925
+    height: 0.22606882
+    facingYaw: 0.81265366
+    scale:
+      - 0.3089877
+      - 0.39799264
+      - 0.22065791
+    modelPath: curvePlatform.obj
+    upVec:
+      - -0.999503
+      - -0.022295475
+      - -0.022285432
+    pos:
+      - 10.01
+      - -2.48
+      - 2.4
+    rotation:
+      - -0.032408442
+      - -0.81239134
+      - -3.0957594
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6390611
+      - 0.2754001
+      - -0.28364265
+      - 0.6597746
+    platformId: platform_31
   - currentPlanetNum: 0
-    theta: 0.315594
-    phi: -0.344284
-    height: 0.563
+    theta: -0.5523795
+    phi: 0.08754171
+    height: 2.3078227
+    facingYaw: -0.85060775
+    scale:
+      - 1.6557144
+      - 3.3802917
+      - 1.693341
+    modelPath: platform.obj
+    upVec:
+      - 1
+      - 0
+      - 0
+    pos:
+      - 4.36
+      - 2.07
+      - -3.02
+    rotation:
+      - 0
+      - 0.8506076
+      - 0
+    textureTiling:
+      - 2.4785843
+      - 3.2790415
+    rotationQuat:
+      - 0.64411306
+      - 0.29175055
+      - 0.29175055
+      - -0.64411306
+    platformId: platform_32
+stageObjects: []
+tutorialTriggers:
+  - currentPlanetNum: 0
+    tutorialId: split_switch
+    theta: -0.54565513
+    phi: 0.08152652
+    height: 3.174387
+    scale:
+      - 1.0433857
+      - 0.6487986
+      - 1.1810732
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 4.7
+      - -0.96
+      - 0.57
+    facingYaw: 0.72607154
+    rotation:
+      - 1.4522733e-09
+      - -0.72607154
+      - -2.5559308e-07
+    rotationQuat:
+      - -0.6610197
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+  - currentPlanetNum: 0
+    tutorialId: switch_success
+    theta: -2.9007094
+    phi: 0.5252856
+    height: 5.6282964
+    scale:
+      - 0.41417444
+      - 0.6487984
+      - 0.47100267
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - -6.41
+      - 3.81
+      - -1.56
+    facingYaw: -0.7980493
+    rotation:
+      - -0.028390434
+      - 0.7978479
+      - -0.12071074
+    upVec:
+      - -0.9947703
+      - 0.10019632
+      - -0.0198209
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+    rotationQuat:
+      - 0.6859748
+      - -0.2673563
+      - 0.28202268
+      - 0.61516047
+    requiredCompletedTutorialId: split_switch
+  - currentPlanetNum: 0
+    tutorialId: union
+    theta: -0.16046982
+    phi: 0.2405816
+    height: 5.0407767
+    scale:
+      - 2.6684296
+      - 0.65
+      - 3.577879
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 6.75
+      - 1.68
+      - -1.09
+    facingYaw: 2.311618
+    rotation:
+      - 3.1415925
+      - -0.82997465
+      - 3.1415923
+    upVec:
+      - 1
+      - -3.5762787e-07
+      - -1.1920929e-07
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+    rotationQuat:
+      - -0.2850901
+      - 0.6470887
+      - 0.64708847
+      - 0.28509012
+    debugDisabled: true
+  - currentPlanetNum: 0
+    tutorialId: fix_switch_tutorial
+    theta: -0.54565513
+    phi: 0.08152652
+    height: 3.174387
+    scale:
+      - 0.45032015
+      - 0.64879906
+      - 0.4805702
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 7.39
+      - 2.59
+      - 1.82
+    facingYaw: 0.72607154
+    rotation:
+      - 1.4522733e-09
+      - -0.72607154
+      - -2.5559308e-07
+    rotationQuat:
+      - -0.6610197
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+  - currentPlanetNum: 0
+    tutorialId: double_switch_tutorial
+    theta: -0.54565513
+    phi: 0.08152652
+    height: 3.174387
+    scale:
+      - 1.486991
+      - 0.64879924
+      - 1.4975554
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 8.24
+      - 1.95
+      - -3.09
+    facingYaw: 0.72607154
+    rotation:
+      - 1.4522733e-09
+      - -0.72607154
+      - -2.5559308e-07
+    rotationQuat:
+      - -0.6610197
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+boatArrivalPoints:
+  - currentPlanetNum: 3
+    theta: 1.1879112
+    phi: -0.96344066
+    height: 4.1049743
     facingYaw: 0
-    scale:
-      - 1.4
-      - 0.2
-      - 1.4
     modelPath: platform.obj
-    upVec:
-      - 0.8978751
-      - -0.3300485
-      - 0.29135638
-  - currentPlanetNum: 0
-    theta: -1.821837
-    phi: -0.710085
-    height: 2.7
-    facingYaw: -1.406
+    rotation:
+      - 0
+      - 0
+      - 0
     scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - 2.95
+      - -6.69
+      - 2.31
     upVec:
-      - -0.18925916
-      - -0.6468051
-      - -0.73879915
-  - currentPlanetNum: 0
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
-    facingYaw: 0.258
+      - 0.9630306
+      - -0.22487189
+      - 0.14834075
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 1
+    theta: 3.1011112
+    phi: -0.39845797
+    height: 0.12297106
+    facingYaw: 0
+    modelPath: platform.obj
+    rotation:
+      - 0
+      - 0
+      - 0
     scale:
-      - 1
-      - 0.2
-      - 1
-    modelPath: platform.obj
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - -6.66
+      - -0.03
+      - -1.27
     upVec:
-      - -0.34776092
-      - -0.88650805
-      - -0.3052309
-  - currentPlanetNum: 0
-    theta: 1.664041
-    phi: 0.308421
-    height: 0.452
-    facingYaw: -0.1
+      - -0.9989821
+      - -0.04492308
+      - 0.0040987986
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 2
+    theta: 0.06930165
+    phi: -0.22359039
+    height: 1.8950877
+    facingYaw: 1.8626449e-09
+    modelPath: platform.obj
+    rotation:
+      - 0
+      - 0
+      - 0
     scale:
-      - 1
-      - 1
-      - 1
-    modelPath: platform.obj
+      - 0.4
+      - 0.4
+      - 0.4
+    pos:
+      - 5.73
+      - -1.31
+      - 0.4
     upVec:
-      - -0.088604964
-      - 0.2969458
-      - 0.95077455
-  - currentPlanetNum: 0
-    theta: 1.405827
-    phi: 0.681396
-    height: 1
-    facingYaw: -0.631
-    scale:
+      - 0.972767
+      - -0.22173202
+      - 0.06752251
+    textureTiling:
       - 1
-      - 1.41
       - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.12930916
-      - 0.62522095
-      - 0.7696609
-  - currentPlanetNum: 0
-    theta: 0.946782
-    phi: 0.451873
-    height: 1.342
-    facingYaw: 0.287
-    scale:
-      - 1
-      - 1.73
-      - 1
-    modelPath: platform.obj
-    upVec:
-      - 0.5271148
-      - 0.43639275
-      - 0.72918546
+    rotationQuat:
+      - -0.62324685
+      - -0.021065632
+      - 0.02640764
+      - 0.78129524

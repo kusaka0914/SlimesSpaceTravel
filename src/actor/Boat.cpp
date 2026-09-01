@@ -2,8 +2,18 @@
 #include "Game.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
+#include "actor/Player.h"
 #include "component/FocusComponent.h"
 #include "system/AudioSystem.h"
+
+#include <algorithm>
+#include <cmath>
+
+namespace {
+constexpr const char* BaseLaunchSequenceId = "launch_rocket_from_base";
+constexpr float BaseLaunchDurationSeconds = 2.0f;
+constexpr float BaseLaunchDistance = 7.0f;
+}
 
 Boat::Boat(Game* game)
     : Actor(game),
@@ -11,15 +21,19 @@ Boat::Boat(Game* game)
       mIsMoving(false),
       mIsActivePrev(false),
       mDestStage(0),
-      mTransitionTimer(0.0f),
       mProgress(0.0f),
+      mTravelSpeed(10.0f),
+      mTravelDistance(0.0f),
+      mTravelledDistance(0.0f),
+      mDestMargin(4.0f),
       mStartPos(0.0f),
       mDestPos(0.0f),
+      mLaunchSequenceId(BaseLaunchSequenceId),
       mFocusComponent(nullptr),
       mArrivalPoint(nullptr)
 {
     mIsActive = mGame->IsInBase();
-    // mIsActive = true;
+
     AddFocusComponent();
 }
 
@@ -36,10 +50,76 @@ void Boat::Initialize()
     mDestPos = CalculateDestPos();
 }
 
+void Boat::SetDestPlanet(Planet* destPlanet)
+{
+    mDestPlanet = destPlanet;
+    RefreshDestination();
+}
+
+void Boat::SetArrivalPoint(BoatArrivalPoint* arrivalPoint)
+{
+    mArrivalPoint = arrivalPoint;
+    RefreshDestination();
+}
+
+void Boat::SetTravelSpeed(float travelSpeed)
+{
+    mTravelSpeed = std::max(0.1f, travelSpeed);
+}
+
+void Boat::SetTravelSpeedFromLegacyDuration(float travelDuration)
+{
+    const float safeDuration = std::max(0.1f, travelDuration);
+    const float travelDistance = glm::length(mDestPos - mPos);
+    if (travelDistance <= 0.000001f) {
+        return;
+    }
+
+    SetTravelSpeed(travelDistance / safeDuration);
+}
+
+void Boat::SetDestMargin(float destMargin)
+{
+    mDestMargin = std::max(0.0f, destMargin);
+    RefreshDestination();
+}
+
+void Boat::RefreshDestination()
+{
+    if (!mIsMoving) {
+        mDestPos = CalculateDestPos();
+    }
+}
+
+BoatArrivalPoint* Boat::ResolveArrivalPoint() const
+{
+    if (mArrivalPoint && mArrivalPoint->GetIsActive()) {
+        return mArrivalPoint;
+    }
+
+    if (!mDestPlanet) {
+        return nullptr;
+    }
+
+    BoatArrivalPoint* uniqueArrivalPoint = nullptr;
+    for (BoatArrivalPoint* arrivalPoint :
+         mDestPlanet->GetBoatArrivalPoints()) {
+        if (!arrivalPoint || !arrivalPoint->GetIsActive()) {
+            continue;
+        }
+
+        if (uniqueArrivalPoint) {
+            return nullptr;
+        }
+        uniqueArrivalPoint = arrivalPoint;
+    }
+    return uniqueArrivalPoint;
+}
+
 glm::vec3 Boat::CalculateDestPos() const
 {
-    if (mArrivalPoint) {
-        return mArrivalPoint->GetPos();
+    if (BoatArrivalPoint* arrivalPoint = ResolveArrivalPoint()) {
+        return arrivalPoint->GetPos();
     }
 
     if (!mDestPlanet) {
@@ -47,10 +127,16 @@ glm::vec3 Boat::CalculateDestPos() const
     }
 
     const glm::vec3 destPlanetCenter = mDestPlanet->GetPos();
-    const glm::vec3 toDestPlanet = glm::normalize(destPlanetCenter - mPos);
+    glm::vec3 toDestPlanet = destPlanetCenter - mPos;
+    if (glm::length(toDestPlanet) < 1e-6f) {
+        toDestPlanet = glm::vec3(0.0f, -1.0f, 0.0f);
+    } else {
+        toDestPlanet = glm::normalize(toDestPlanet);
+    }
 
-    constexpr float destMargin = 4.0f;
-    const glm::vec3 destPos = destPlanetCenter - toDestPlanet * (mDestPlanet->GetRadius() + destMargin);
+    const glm::vec3 destPos =
+        destPlanetCenter -
+        toDestPlanet * (mDestPlanet->GetRadius() + mDestMargin);
     return destPos;
 }
 
@@ -62,7 +148,9 @@ void Boat::UpdateActor(float deltaTime)
         OnShown();
     }
 
-    if (mIsMoving) {
+    if (mIsLaunchingFromBase) {
+        UpdateBaseLaunch(deltaTime);
+    } else if (mIsMoving) {
         UpdateMoving(deltaTime);
     }
 
@@ -74,6 +162,48 @@ void Boat::StartFocus()
     mFocusComponent->StartFocus();
 }
 
+bool Boat::ShouldRenderUnavailablePreview() const
+{
+    constexpr float completedTravelProgress = 1.0f;
+    return !mIsActive &&
+           !mIsMoving &&
+           mProgress < completedTravelProgress &&
+           !mIsDebugDisabled &&
+           IsProgressVisibleForCurrentMode();
+}
+
+void Boat::BoardPlayer(Player* player)
+{
+    if (!player || HasBoardedPlayer(player)) {
+        return;
+    }
+
+    mBoardedPlayers.push_back(player);
+}
+
+bool Boat::UnboardPlayer(Player* player)
+{
+    if (!player || mIsMoving) {
+        return false;
+    }
+
+    const auto boardedPlayer = std::find(
+        mBoardedPlayers.begin(),
+        mBoardedPlayers.end(),
+        player);
+    if (boardedPlayer == mBoardedPlayers.end()) {
+        return false;
+    }
+
+    mBoardedPlayers.erase(boardedPlayer);
+    return true;
+}
+
+bool Boat::HasBoardedPlayer(const Player* player) const
+{
+    return player && std::find(mBoardedPlayers.begin(), mBoardedPlayers.end(), player) != mBoardedPlayers.end();
+}
+
 void Boat::OnShown() const
 {
     mGame->GetAudioSystem()->PlaySE("show_boat_se");
@@ -81,24 +211,45 @@ void Boat::OnShown() const
 
 void Boat::UpdateMoving(float deltaTime)
 {
-    const bool hasArrived = mProgress >= 1.0f;
-    if (hasArrived) {
-        FinishMoving();
-        return;
-    }
-
     UpdateMovement(deltaTime);
+    if (mProgress >= 1.0f) {
+        FinishMoving();
+    }
 }
 
 void Boat::UpdateMovement(float deltaTime)
 {
-    mTransitionTimer += deltaTime;
+    if (mTravelDistance <= 0.000001f) {
+        mProgress = 1.0f;
+        mPos = mDestPos;
+        return;
+    }
 
-    constexpr float transitionDuration = 3.0f;
-    const float t = glm::min(1.0f, mTransitionTimer / transitionDuration);
-    mProgress = glm::smoothstep(0.0f, 1.0f, t);
-
+    const float travelStep =
+        mTravelSpeed * std::max(0.0f, deltaTime);
+    mTravelledDistance =
+        std::min(mTravelDistance, mTravelledDistance + travelStep);
+    mProgress = mTravelledDistance / mTravelDistance;
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
+}
+
+void Boat::UpdateBaseLaunch(float deltaTime)
+{
+    mBaseLaunchElapsedSeconds += std::max(0.0f, deltaTime);
+    const float progress = std::clamp(
+        mBaseLaunchElapsedSeconds / BaseLaunchDurationSeconds,
+        0.0f,
+        1.0f);
+
+
+
+    const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
+    mPos = glm::mix(mStartPos, mBaseLaunchEndPos, easedProgress);
+
+    if (progress >= 1.0f) {
+        mIsLaunchingFromBase = false;
+        mIsMoving = false;
+    }
 }
 
 void Boat::FinishMoving()
@@ -113,9 +264,31 @@ void Boat::FinishMoving()
 void Boat::StartTravel()
 {
     if (mGame->IsInBase()) {
+        if (mIsLaunchingFromBase) {
+            return;
+        }
+
+        mStartPos = mPos;
+        glm::vec3 launchDirection = GetUpVec();
+        if (glm::length(launchDirection) <= 0.000001f) {
+            launchDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+        } else {
+            launchDirection = glm::normalize(launchDirection);
+        }
+        mBaseLaunchEndPos = mStartPos + launchDirection * BaseLaunchDistance;
+        mBaseLaunchElapsedSeconds = 0.0f;
+        mIsLaunchingFromBase = true;
+
+
+        mIsMoving = true;
         mGame->OnBoatStageChangeRequested(mDestStage);
         return;
     }
 
+    mStartPos = mPos;
+    mDestPos = CalculateDestPos();
+    mTravelDistance = glm::length(mDestPos - mStartPos);
+    mTravelledDistance = 0.0f;
+    mProgress = 0.0f;
     mIsMoving = true;
 }

@@ -12,8 +12,25 @@ class PlayerStatus;
 class PlayerAttackResolver {
 public:
     void ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, PlayerCombat& combat,
-                       const std::vector<Enemy*>& hitEnemies, float deltaTime) const;
+                       const std::vector<Enemy*>& hitEnemies,
+                       bool didHitHazardActor,
+                       float deltaTime) const;
 
     void ResolveSpecialAttack(Player& player, PlayerJewelGauge& jewelGauge,
-                              const std::vector<Enemy*>& hitEnemies, float deltaTime) const;
+                              const std::vector<Enemy*>& hitEnemies,
+                              float chargedAttackDamage,
+                              float deltaTime) const;
+    bool ResolveAirSlamAttack(
+        Player& player,
+        const PlayerMovement& movement,
+        PlayerCombat& combat,
+        const std::vector<Enemy*>& hitEnemies,
+        float deltaTime) const;
+    bool ResolveAirDodgeAttack(
+        Player& player,
+        const PlayerMovement& movement,
+        const std::vector<Enemy*>& hitEnemies,
+        float damage,
+        float enemyPushSpeed,
+        float enemyPushDampingPerSecond) const;
 };

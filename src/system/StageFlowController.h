@@ -4,13 +4,16 @@
 
 class Game;
 class GameWorld;
+enum class StagePhysicsReloadMode;
 
 class StageFlowController {
 public:
     StageFlowController();
 
-    void LoadData(Game& game, bool isLoadPlayer);
-    void ReloadCurrentStage(Game& game);
+    bool LoadData(Game& game);
+    bool ReloadCurrentStage(
+        Game& game,
+        StagePhysicsReloadMode physicsReloadMode);
     void ChangeStage(GameWorld& world, int stageNum);
     void ReturnToBase(Game& game);
 

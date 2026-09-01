@@ -1,0 +1,47 @@
+playerCamera:
+  distance: 6
+  pitchDegrees: -52.546
+  targetHeight: 2.45
+  splitScreenTargetHeight: 1.5
+  fieldOfView: 60
+  splitScreenFieldOfView: 55
+  yawSensitivity: 1.5707963
+  pitchSensitivityDegrees: 90
+  minPitchDegrees: -80
+  maxPitchDegrees: 0
+  upSmoothingSpeed: 4.2
+  targetSmoothingSpeed: 3
+  attackTargetSmoothingSpeed: 6
+  autoFollowDelaySeconds: 0.5
+  autoFollowRotationDurationSeconds: 1
+  autoFollowMinimumLateralInput: 0.35
+  autoFollowMaximumBackwardInput: 0.35
+  autoFollowDelayAfterManualInputSeconds: 0.75
+  backwardFacingLookAheadDistance: 2
+  backwardFacingFramingActivationDelaySeconds: 0.5
+  backwardFacingFramingMinimumBackwardInput: 0.35
+  surfaceTraversalAutoAlignAngleDegrees: 100
+  surfaceTraversalAutoAlignMinimumMovementInput: 0.35
+  backwardFacingFramingStartAngleDegrees: 60
+  backwardFacingFramingEndAngleDegrees: 72
+  backwardFacingFramingSmoothingSpeed: 4
+  talk:
+    distance: 2.9
+    pitchDegrees: -46
+    targetHeight: 0.9
+    fieldOfView: 55
+    transitionInDuration: 0.6
+    transitionOutDuration: 0.45
+  bossDefeat:
+    distance: 6
+    cameraHeight: 1.5
+    targetHeight: 0.5
+    fieldOfView: 45
+    starDistance: 6
+    starCameraHeight: 1.5
+    starTargetHeight: 0.35
+  boatRide:
+    distance: 20
+    cameraHeight: 9
+    targetHeight: 1
+    fieldOfView: 55

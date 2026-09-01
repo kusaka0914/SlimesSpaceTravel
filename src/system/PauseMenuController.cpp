@@ -16,32 +16,73 @@ void PauseMenuController::Close()
     mIsOpen = false;
 }
 
-void PauseMenuController::MoveSelection(int delta)
+void PauseMenuController::MoveSelection(const Game& game, int delta)
 {
-    constexpr int menuItemCount = 4;
-    mSelectedIndex = (mSelectedIndex + delta + menuItemCount) % menuItemCount;
+    constexpr int menuItemCount = 6;
+
+
+    for (int attempt = 0; attempt < menuItemCount; ++attempt) {
+        mSelectedIndex =
+            (mSelectedIndex + delta + menuItemCount) % menuItemCount;
+        if (IsItemEnabled(game, mSelectedIndex)) {
+            return;
+        }
+    }
 }
 
 void PauseMenuController::ExecuteSelectedItem(Game& game)
 {
+    if (!IsItemEnabled(game, mSelectedIndex)) {
+        return;
+    }
+
     switch (mSelectedIndex) {
     case 0:
         Close();
         break;
 
     case 1:
-        game.ReturnToBase();
+        game.TogglePlayerControlStyle();
         break;
 
     case 2:
-        game.OpenFeedbackForm();
+        if (game.GetIsPlayer2Joined()) {
+            game.ReturnToSinglePlayer();
+        } else {
+            game.TryCreatePlayer2();
+        }
         break;
 
     case 3:
+        game.ReturnToBase();
+        break;
+
+    case 4:
+        if (game.IsReviewBuild()) {
+            Close();
+            game.ToggleDebugEditor();
+        } else {
+            game.OpenFeedbackForm();
+        }
+        break;
+
+    case 5:
         game.FinishGame();
         break;
 
     default:
         break;
+    }
+}
+
+bool PauseMenuController::IsItemEnabled(const Game& game, int index)
+{
+    switch (index) {
+    case 2:
+        return game.CanStartTwoPlayerFromPauseMenu();
+    case 3:
+        return game.CanReturnToBaseFromPauseMenu();
+    default:
+        return true;
     }
 }

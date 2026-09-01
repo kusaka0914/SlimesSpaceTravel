@@ -2,15 +2,165 @@
 
 #include "Game.h"
 #include "Stage.h"
-#include "actor/Planet.h"
+#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "imgui.h"
 
-#include <string>
+#include <utility>
+#include <vector>
 
 StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
     : DebugPanel(context),
-      mCreateService(context)
+      mCreateService(context),
+      mUGCPlatformCellService(context),
+      mPlacementResolver(context),
+      mUGCPlatformEditController(
+          context,
+          mUGCPlatformCellService,
+          mPlacementResolver),
+      mPlacementController(
+          context,
+          mCreateService,
+          mUGCPlatformCellService,
+          mPlacementResolver),
+      mUGCPresetController(
+          context,
+          mCreateService,
+          mUGCPlatformCellService,
+          mPlacementController),
+      mJewelItemCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mHazardActorCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mBoatArrivalPointCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mEnemyCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mNPCCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mTutorialTriggerCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mStageObjectCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mPlanetCreationForm(
+          mCreateService),
+      mPlatformCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mCrystalCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mBoatPartsCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mBoatCreationForm(
+          context,
+          mCreateService,
+          mPlacementController),
+      mStarCreationForm(
+          context,
+          mCreateService,
+          mPlacementController)
 {
+}
+
+void StageAddActorPanel::SetSelectionController(
+    StageSelectionController* selectionController)
+{
+    mPlacementController.SetSelectionController(selectionController);
+    mUGCPlatformEditController.SetSelectionController(selectionController);
+    mUGCPresetController.SetSelectionController(selectionController);
+}
+
+void StageAddActorPanel::SetPushUndoCallback(
+    std::function<void()> pushUndoCallback)
+{
+    mUGCPlatformEditController.SetPushUndoCallback(pushUndoCallback);
+    mUGCPresetController.SetPushUndoCallback(pushUndoCallback);
+    mPlacementController.SetPushUndoCallback(
+        std::move(pushUndoCallback));
+}
+
+bool StageAddActorPanel::ActivateUGCPreset(UGCPresetKind presetKind)
+{
+    return mUGCPresetController.ActivatePreset(presetKind);
+}
+
+bool StageAddActorPanel::TryEraseUGCPlatformCell()
+{
+    return mUGCPlatformEditController.TryEraseCell();
+}
+
+void StageAddActorPanel::EndUGCEraseGesture()
+{
+    mUGCPlatformEditController.EndEraseGesture();
+}
+
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(
+    const StageActorRef& actorRef,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController.TryTranslateCells(
+        actorRef,
+        worldDelta);
+}
+
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController.TryTranslateCells(
+        actorRefs,
+        worldDelta);
+}
+
+bool StageAddActorPanel::TryTranslateUGCMovingPlatformDestinations(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController.TryTranslateMovingPlatformDestinations(
+        actorRefs,
+        worldDelta);
+}
+
+bool StageAddActorPanel::TrySaveUGCMovingPlatformDestinationTranslation(
+    const std::vector<StageActorRef>& actorRefs,
+    const glm::vec3& worldDelta)
+{
+    return mUGCPlatformEditController
+        .TrySaveMovingPlatformDestinationTranslation(actorRefs, worldDelta);
+}
+
+bool StageAddActorPanel::BeginDuplicatePlacement(
+    const StageActorRef& sourceRef)
+{
+    return mPlacementController.BeginDuplicatePlacement(sourceRef);
+}
+
+void StageAddActorPanel::UpdatePlacement()
+{
+    mPlacementController.UpdatePlacement();
+}
+
+void StageAddActorPanel::CancelPlacement()
+{
+    mPlacementController.CancelPlacement();
 }
 
 void StageAddActorPanel::Draw()
@@ -19,293 +169,54 @@ void StageAddActorPanel::Draw()
         return;
     }
 
-    if (ImGui::TreeNode("惑星追加")) {
-        const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
-        const char* planetModels[] = {"planet.obj", "planet_2.obj", "planet_3.obj"};
+    if (!mContext.assetCatalog) {
+        ImGui::TextDisabled("アセットカタログを利用できません");
+        return;
+    }
+    mContext.assetCatalog->EnsureScanned();
 
-        ImGui::Combo("惑星モデル", &mSelectedPlanetModelIndex, planetModelLabels, IM_ARRAYSIZE(planetModelLabels));
+    mBoatArrivalPointCreationForm.Draw();
+    mJewelItemCreationForm.Draw();
+    mHazardActorCreationForm.Draw();
 
-        if (ImGui::Button("惑星を追加")) {
-            mCreateService.AddPlanet(planetModels[mSelectedPlanetModelIndex]);
+    if (mPlacementController.IsPlacementActive()) {
+        ImGui::SeparatorText("連続配置中");
+        ImGui::Text(
+            "配置対象: %s",
+            mPlacementController.GetPlacementDisplayName().c_str());
+        ImGui::TextWrapped("ゲーム画面をクリックするたびに追加します。");
+        if (ImGui::Button("追加解除") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            CancelPlacement();
         }
-
-        ImGui::TreePop();
+        ImGui::SameLine();
+        ImGui::TextDisabled("ESCでも解除");
+        if (!mPlacementController.GetPlacementStatus().empty()) {
+            ImGui::TextWrapped(
+                "%s",
+                mPlacementController.GetPlacementStatus().c_str());
+        }
+        ImGui::Separator();
     }
 
-    if (ImGui::TreeNode("敵追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    mStageObjectCreationForm.Draw();
 
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、敵を追加できません");
-            ImGui::TreePop();
-            return;
-        }
+    mPlanetCreationForm.Draw();
 
-        DrawPlanetCombo("敵の追加先惑星", mSelectedEnemyPlanetIndex);
-
-        const char* enemyTypeLabels[] = {"通常敵", "ボス敵", "動かない敵", "動かない大きい敵"};
-        const char* enemyTypes[] = {"normal", "boss", "normalFixed", "bigFixed"};
-
-        ImGui::Combo("敵タイプ", &mSelectedEnemyTypeIndex, enemyTypeLabels, IM_ARRAYSIZE(enemyTypeLabels));
-
-        const bool canAddEnemy = mSelectedEnemyPlanetIndex >= 0;
-
-        if (!canAddEnemy) {
-            ImGui::Text("敵を追加するには、追加先の惑星を選択してください");
-            ImGui::BeginDisabled();
-        }
-
-        if (ImGui::Button("敵を追加")) {
-            mCreateService.AddEnemy(enemyTypes[mSelectedEnemyTypeIndex], mSelectedEnemyPlanetIndex);
-        }
-
-        if (!canAddEnemy) {
-            ImGui::EndDisabled();
-        }
-
-        ImGui::TreePop();
-    }
-
-    if (ImGui::TreeNode("足場追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、足場を追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("追加先の惑星##platform", mSelectedPlatformPlanetIndex);
-
-            const char* platformModelLabels[] = {"通常足場", "カーブ足場", "細い足場"};
-            const char* platformModels[] = {"platform.obj", "curvePlatform.obj", "platform_thin.obj"};
-
-            ImGui::Combo("モデル##platform", &mSelectedPlatformModelIndex, platformModelLabels,
-                         IM_ARRAYSIZE(platformModelLabels));
-
-            ImGui::SliderFloat("スケールX##platform", &mPlatformScale.x, 0.1f, 30.0f, "%.2f");
-            ImGui::SliderFloat("スケールY##platform", &mPlatformScale.y, 0.1f, 30.0f, "%.2f");
-            ImGui::SliderFloat("スケールZ##platform", &mPlatformScale.z, 0.1f, 30.0f, "%.2f");
-
-            const bool canAddPlatform = mSelectedPlatformPlanetIndex >= 0;
-
-            if (!canAddPlatform) {
-                ImGui::Text("足場を追加するには、追加先の惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("足場を追加")) {
-                mCreateService.AddPlatform(mSelectedPlatformPlanetIndex, platformModels[mSelectedPlatformModelIndex],
-                                           mPlatformScale);
-            }
-
-            if (!canAddPlatform) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::TreeNode("クリスタル追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、クリスタルを追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("クリスタルの追加先惑星", mSelectedCrystalPlanetIndex);
-
-            const char* crystalTypeLabels[] = {"小さいクリスタル", "大きいクリスタル"};
-            const char* crystalTypes[] = {"little", "big"};
-
-            ImGui::Combo("クリスタルタイプ", &mSelectedCrystalTypeIndex, crystalTypeLabels,
-                         IM_ARRAYSIZE(crystalTypeLabels));
-
-            const bool canAddCrystal = mSelectedCrystalPlanetIndex >= 0;
-
-            if (!canAddCrystal) {
-                ImGui::Text("クリスタルを追加するには、追加先の惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("クリスタルを追加")) {
-                mCreateService.AddCrystal(crystalTypes[mSelectedCrystalTypeIndex], mSelectedCrystalPlanetIndex);
-            }
-
-            if (!canAddCrystal) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::TreeNode("NPC追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、NPCを追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("NPCの追加先惑星", mSelectedNPCPlanetIndex);
-
-            const char* npcTypeLabels[] = {"宇宙スライム", "母スライム", "プレイヤー型", "悪い母スライム",
-                                           "博士スライム"};
-
-            const char* npcTypes[] = {"spaceSlime", "motherSlime", "player", "badMotherSlime", "doctorSlime"};
-
-            ImGui::Combo("NPCタイプ", &mSelectedNPCTypeIndex, npcTypeLabels, IM_ARRAYSIZE(npcTypeLabels));
-
-            const bool canAddNPC = mSelectedNPCPlanetIndex >= 0;
-
-            if (!canAddNPC) {
-                ImGui::Text("NPCを追加するには、追加先の惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("NPCを追加")) {
-                mCreateService.AddNPC(npcTypes[mSelectedNPCTypeIndex], mSelectedNPCPlanetIndex);
-            }
-
-            if (!canAddNPC) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::TreeNode("ボートパーツ追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、ボートパーツを追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("ボートパーツの追加先惑星", mSelectedBoatPartsPlanetIndex);
-
-            const char* boatPartsTypeLabels[] = {"パーツ1", "パーツ2", "パーツ3", "パーツ4", "パーツ5"};
-            const char* boatPartsTypes[] = {"parts1", "parts2", "parts3", "parts4", "parts5"};
-
-            ImGui::Combo("ボートパーツタイプ", &mSelectedBoatPartsTypeIndex, boatPartsTypeLabels,
-                         IM_ARRAYSIZE(boatPartsTypeLabels));
-
-            const bool canAddBoatParts = mSelectedBoatPartsPlanetIndex >= 0;
-
-            if (!canAddBoatParts) {
-                ImGui::Text("ボートパーツを追加するには、追加先の惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("ボートパーツを追加")) {
-                mCreateService.AddBoatParts(boatPartsTypes[mSelectedBoatPartsTypeIndex], mSelectedBoatPartsPlanetIndex);
-            }
-
-            if (!canAddBoatParts) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::TreeNode("ボート追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、ボートを追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("ボートの開始惑星", mSelectedBoatStartPlanetIndex);
-            DrawPlanetCombo("ボートの移動先惑星", mSelectedBoatDestPlanetIndex);
-
-            ImGui::InputInt("移動先ステージ", &mSelectedBoatDestStage);
-
-            const bool canAddBoat = mSelectedBoatStartPlanetIndex >= 0 && mSelectedBoatDestPlanetIndex >= 0;
-
-            if (!canAddBoat) {
-                ImGui::Text("ボートを追加するには、開始惑星と移動先惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("ボートを追加")) {
-                mCreateService.AddBoat(mSelectedBoatStartPlanetIndex, mSelectedBoatDestPlanetIndex,
-                                       mSelectedBoatDestStage);
-            }
-
-            if (!canAddBoat) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-
-    if (ImGui::TreeNode("星追加")) {
-        const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-
-        if (planets.empty()) {
-            ImGui::Text("惑星が存在しないため、星を追加できません");
-            ImGui::TreePop();
-        } else {
-            DrawPlanetCombo("星の追加先惑星", mSelectedStarPlanetIndex);
-
-            const bool canAddStar = mSelectedStarPlanetIndex >= 0;
-
-            if (!canAddStar) {
-                ImGui::Text("星を追加するには、追加先の惑星を選択してください");
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::Button("星を追加")) {
-                mCreateService.AddStar(mSelectedStarPlanetIndex);
-            }
-
-            if (!canAddStar) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::TreePop();
-        }
-    }
-}
-
-void StageAddActorPanel::DrawPlanetCombo(const char* label, int& selectedPlanetIndex)
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        selectedPlanetIndex = -1;
+    if (!mEnemyCreationForm.Draw()) {
         return;
     }
 
-    const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
+    mPlatformCreationForm.Draw();
 
-    if (selectedPlanetIndex >= static_cast<int>(planets.size())) {
-        selectedPlanetIndex = -1;
-    }
+    mCrystalCreationForm.Draw();
 
-    std::string previewText = "未選択";
-    if (selectedPlanetIndex >= 0) {
-        previewText = "惑星 " + std::to_string(selectedPlanetIndex);
-    }
+    mNPCCreationForm.Draw();
 
-    if (ImGui::BeginCombo(label, previewText.c_str())) {
-        for (int i = 0; i < static_cast<int>(planets.size()); ++i) {
-            Planet* planet = planets[i];
-            if (!planet) {
-                continue;
-            }
+    mTutorialTriggerCreationForm.Draw();
 
-            std::string itemLabel = "惑星 " + std::to_string(i);
-            bool isSelected = selectedPlanetIndex == i;
+    mBoatPartsCreationForm.Draw();
 
-            if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
-                selectedPlanetIndex = i;
-            }
+    mBoatCreationForm.Draw();
 
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-
-        ImGui::EndCombo();
-    }
+    mStarCreationForm.Draw();
 }

@@ -15,7 +15,6 @@ planets:
     model: planet_3.obj
     stageNum: 1
     shape: Sphere
-    # rocketSpawnCondition: AllBoatPartsCollected
   - type: stage1planet2
     center: [32.0, 0.0, 0.0]
     radius: 4.0
@@ -23,7 +22,6 @@ planets:
     model: planet.obj
     stageNum: 1
     shape: Sphere
-    # rocketSpawnCondition: AllEnemiesDead
   - type: stage1planet3
     center: [64.0, 0.0, 0.0]
     radius: 4.0

@@ -1,7 +1,14 @@
 #include "Star.h"
 #include "Game.h"
+#include "actor/Planet.h"
+#include "actor/Player.h"
 #include "component/CollectableComponent.h"
+#include "system/ParticleSystem.h"
 
+#include <algorithm>
+#include <cmath>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <yaml-cpp/yaml.h>
 
 Star::Star(Game* game)
@@ -11,10 +18,34 @@ Star::Star(Game* game)
     AddCollectableComponent();
 }
 
-void Star::ApplyConfig()
+void Star::Initialize()
 {
-    YAML::Node starRoot = YAML::LoadFile("../assets/data/actor/stars.yaml");
+    Actor::Initialize();
 
+
+    mIsUpVecInitialized = true;
+}
+
+glm::quat Star::GetRenderModelRotationOffset() const
+{
+
+
+
+
+    const std::string& modelPath = GetModelPath();
+    const std::size_t extensionStart = modelPath.find_last_of('.');
+    if (extensionStart == std::string::npos ||
+        modelPath.substr(extensionStart) != ".glb") {
+        return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    return glm::angleAxis(
+        glm::half_pi<float>(),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+}
+
+void Star::ApplyConfig(const YAML::Node& starRoot)
+{
     if (!starRoot["stars"] || !starRoot["stars"].IsSequence()) {
         return;
     }
@@ -25,18 +56,104 @@ void Star::ApplyConfig()
 
         const float scale = starNode["scale"] ? starNode["scale"].as<float>() : 0.0f;
         SetScale(glm::vec3(scale));
+
+        const YAML::Node collection = starNode["collectionAnimation"];
+        if (collection) {
+            mCollectionSettings.orbitDuration = collection["orbitDuration"].as<float>(mCollectionSettings.orbitDuration);
+            mCollectionSettings.orbitStartRadius = collection["orbitStartRadius"].as<float>(mCollectionSettings.orbitStartRadius);
+            mCollectionSettings.orbitSpinDegreesPerSecond = collection["orbitSpinDegreesPerSecond"].as<float>(mCollectionSettings.orbitSpinDegreesPerSecond);
+            mCollectionSettings.finalHeight = collection["finalHeight"].as<float>(mCollectionSettings.finalHeight);
+            mCollectionSettings.waitAbovePlayerDuration = collection["waitAbovePlayerDuration"].as<float>(mCollectionSettings.waitAbovePlayerDuration);
+            mCollectionSettings.fallDuration = collection["fallDuration"].as<float>(mCollectionSettings.fallDuration);
+        }
     }
+}
+
+bool Star::StartCollectionPreview(Player* player)
+{
+    if (!player || mCollectionState != CollectionState::Waiting) {
+        return false;
+    }
+
+    mPreviewOriginalActive = mIsActive;
+    mPreviewOriginalPos = GetPos();
+    mPreviewOriginalUp = GetUpVec();
+    mPreviewOriginalFacingYaw = GetFacingYaw();
+    mIsActive = true;
+    mObtainingPlayer = player;
+    mCollectionTimer = 0.0f;
+    mCollectionState = CollectionState::Orbiting;
+    mIsCollectionPreview = true;
+    mCollectionBaseFacingYaw = GetFacingYaw();
+    mObtainingPlayer->StartStarCollectionCelebration(
+        CalculateCollectionAnimationDurationSeconds());
+    return true;
 }
 
 void Star::AddCollectableComponent()
 {
     std::unique_ptr<CollectableComponent> collectableComponent = std::make_unique<CollectableComponent>(this, 100);
     mCollectableComponent = collectableComponent.get();
+
+
+
+    mCollectableComponent->SetCanPickupWhileAttacking(true);
+    mCollectableComponent->SetPickupRadius(1.5f);
     AddComponent(std::move(collectableComponent));
 }
 
 void Star::UpdateActor(float deltaTime)
 {
+    if (!mIsActive) {
+        mGlowEmitTimer = 0.0f;
+        mSparkleEmitTimer = 0.0f;
+        return;
+    }
+
+    if (mCollectionState != CollectionState::Waiting) {
+        UpdateCollectionAnimation(deltaTime);
+        return;
+    }
+
+    ParticleSystem* particleSystem = mGame ? mGame->GetParticleSystem() : nullptr;
+
+    mGlowEmitTimer -= deltaTime;
+    if (mGlowEmitTimer <= 0.0f && particleSystem) {
+        ParticleSpawnContext glowContext;
+        glowContext.position = GetPos();
+        glowContext.normal = GetUpVec();
+        glowContext.direction = GetForwardVec();
+        glowContext.scale = 1.0f;
+        particleSystem->Emit("star_glow", glowContext);
+
+        constexpr float glowEmitInterval = 0.5f;
+        mGlowEmitTimer = glowEmitInterval;
+    }
+
+    mSparkleEmitTimer -= deltaTime;
+    if (mSparkleEmitTimer <= 0.0f) {
+        if (particleSystem) {
+            mSparklePhase += 2.17f;
+
+            const float ringRadius = 0.55f + std::sin(mSparklePhase * 1.37f) * 0.2f;
+            const glm::vec3 ringOffset =
+                GetForwardVec() * std::cos(mSparklePhase) * ringRadius +
+                GetLeftVec() * std::sin(mSparklePhase) * ringRadius;
+            const glm::vec3 heightOffset =
+                GetUpVec() * std::sin(mSparklePhase * 1.71f) * 0.38f;
+
+            ParticleSpawnContext context;
+            context.position = GetPos() + ringOffset + heightOffset;
+            context.normal = GetUpVec();
+            context.direction = GetForwardVec();
+            context.scale = 1.0f;
+            particleSystem->Emit("star_sparkle", context);
+        }
+
+        constexpr float sparkleEmitInterval = 0.13f;
+        mSparkleEmitTimer = sparkleEmitInterval;
+    }
+
     const bool shouldStartOnObtained = mCollectableComponent->GetIsObtained() && mIsActive;
     if (shouldStartOnObtained) {
         OnObtained();
@@ -45,6 +162,149 @@ void Star::UpdateActor(float deltaTime)
 
 void Star::OnObtained()
 {
+    if (mCollectionState != CollectionState::Waiting) {
+        return;
+    }
+
+    mObtainingPlayer = mCollectableComponent
+        ? mCollectableComponent->GetObtainingPlayer()
+        : nullptr;
+    if (!mObtainingPlayer && mGame) {
+        mObtainingPlayer = mGame->GetMainPlayer();
+    }
+
+
+
+
+    const bool shouldUseMainGameCollectionPlacement =
+        mGame && !mGame->GetIsUGCMode();
+    if (mObtainingPlayer && shouldUseMainGameCollectionPlacement) {
+        mObtainingPlayer->ForceGroundedForCinematicAt(
+            GetCurrentPlanet(),
+            GetPos(),
+            GetUpVec());
+    }
+
+
+
+    mCollectionState = CollectionState::Orbiting;
+    mCollectionTimer = 0.0f;
+    mCollectionBaseFacingYaw = GetFacingYaw();
+
+    if (mObtainingPlayer) {
+        mObtainingPlayer->StartStarCollectionCelebration(
+            CalculateCollectionAnimationDurationSeconds());
+    }
+
+
+    if (mGame) {
+        mGame->OnStarObtained();
+    }
+}
+
+void Star::UpdateCollectionAnimation(float deltaTime)
+{
+    if (!mObtainingPlayer || !mObtainingPlayer->GetIsActive()) {
+        FinishCollection();
+        return;
+    }
+
+    glm::vec3 up = mObtainingPlayer->GetUpVec();
+    if (glm::dot(up, up) < 0.000001f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
+
+    glm::vec3 forward = mObtainingPlayer->GetForwardVec();
+    forward -= up * glm::dot(forward, up);
+    if (glm::dot(forward, forward) < 0.000001f) {
+        forward = glm::vec3(0.0f, 0.0f, -1.0f);
+    } else {
+        forward = glm::normalize(forward);
+    }
+    glm::vec3 left = glm::normalize(glm::cross(up, forward));
+
+    const float orbitDuration = std::max(0.01f, mCollectionSettings.orbitDuration);
+    const float orbitStartRadius = std::max(0.0f, mCollectionSettings.orbitStartRadius);
+    const float orbitSpinRadiansPerSecond = glm::radians(
+        mCollectionSettings.orbitSpinDegreesPerSecond);
+    const float finalHeight = std::max(0.0f, mCollectionSettings.finalHeight);
+    const float waitAbovePlayerDuration = std::max(0.0f, mCollectionSettings.waitAbovePlayerDuration);
+    const float fallDuration = std::max(0.01f, mCollectionSettings.fallDuration);
+
+    mCollectionTimer += std::max(0.0f, deltaTime);
+    const glm::vec3 playerPos = mObtainingPlayer->GetPos();
+
+    if (mCollectionState == CollectionState::Orbiting) {
+        const float progress = glm::clamp(mCollectionTimer / orbitDuration, 0.0f, 1.0f);
+        const float angle = glm::two_pi<float>() * progress;
+        const float radius = orbitStartRadius * (1.0f - progress);
+        const float height = finalHeight * progress;
+        SetPos(playerPos +
+               (forward * std::cos(angle) + left * std::sin(angle)) * radius +
+               up * height);
+        SetUpVec(up);
+        SetFacingYaw(
+            mCollectionBaseFacingYaw + orbitSpinRadiansPerSecond * mCollectionTimer);
+
+        if (progress >= 1.0f) {
+            mCollectionState = CollectionState::WaitingAbovePlayer;
+            mCollectionTimer = 0.0f;
+        }
+        return;
+    }
+
+    if (mCollectionState == CollectionState::WaitingAbovePlayer) {
+        SetPos(playerPos + up * finalHeight);
+        SetUpVec(up);
+        SetFacingYaw(mCollectionBaseFacingYaw);
+        if (mCollectionTimer >= waitAbovePlayerDuration) {
+            mCollectionState = CollectionState::Falling;
+            mCollectionTimer = 0.0f;
+        }
+        return;
+    }
+
+    const float progress = glm::clamp(mCollectionTimer / fallDuration, 0.0f, 1.0f);
+    SetPos(playerPos + up * glm::mix(finalHeight, 0.2f, progress));
+    SetUpVec(up);
+    SetFacingYaw(mCollectionBaseFacingYaw);
+    if (progress >= 1.0f) {
+        FinishCollection();
+    }
+}
+
+void Star::FinishCollection()
+{
+    if (mObtainingPlayer) {
+        mObtainingPlayer->StopStarCollectionCelebration();
+    }
+
+    if (mIsCollectionPreview) {
+        SetPos(mPreviewOriginalPos);
+        SetUpVec(mPreviewOriginalUp);
+        SetFacingYaw(mPreviewOriginalFacingYaw);
+        mIsActive = mPreviewOriginalActive;
+        mIsCollectionPreview = false;
+        mCollectionState = CollectionState::Waiting;
+        mCollectionTimer = 0.0f;
+        mObtainingPlayer = nullptr;
+        return;
+    }
+
     mIsActive = false;
-    mGame->OnStarObtained();
+    mCollectionState = CollectionState::Waiting;
+    mCollectionTimer = 0.0f;
+    mObtainingPlayer = nullptr;
+    if (mGame) {
+        mGame->OnStarCollectionAnimationFinished();
+    }
+}
+
+float Star::CalculateCollectionAnimationDurationSeconds() const
+{
+    return std::max(0.01f, mCollectionSettings.orbitDuration) +
+           std::max(0.0f, mCollectionSettings.waitAbovePlayerDuration) +
+           std::max(0.01f, mCollectionSettings.fallDuration);
 }

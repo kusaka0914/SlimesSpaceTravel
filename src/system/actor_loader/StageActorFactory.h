@@ -32,7 +32,7 @@ public:
                                    const std::function<void(TActor*, const YAML::Node&)>& applyAfterStageOverride = {});
 
     template <class TActor>
-    void LoadActorSequence(const char* path, const std::string& sequenceName,
+    void LoadActorSequence(const YAML::Node& stageRoot, const std::string& sequenceName,
                            const std::function<void(Planet*)>& clearFromPlanet,
                            const std::function<TActor*(const YAML::Node&, int)>& createActor);
 
@@ -105,7 +105,7 @@ TActor* StageActorFactory::CreatePlacedActorFromStageNode(
 }
 
 template <class TActor>
-void StageActorFactory::LoadActorSequence(const char* path, const std::string& sequenceName,
+void StageActorFactory::LoadActorSequence(const YAML::Node& stageRoot, const std::string& sequenceName,
                                           const std::function<void(Planet*)>& clearFromPlanet,
                                           const std::function<TActor*(const YAML::Node&, int)>& createActor)
 {
@@ -113,9 +113,7 @@ void StageActorFactory::LoadActorSequence(const char* path, const std::string& s
         return;
     }
 
-    YAML::Node root = YAML::LoadFile(path);
-
-    if (!root[sequenceName] || !root[sequenceName].IsSequence()) {
+    if (!stageRoot[sequenceName] || !stageRoot[sequenceName].IsSequence()) {
         return;
     }
 
@@ -125,9 +123,12 @@ void StageActorFactory::LoadActorSequence(const char* path, const std::string& s
         }
     }
 
-    const YAML::Node sequence = root[sequenceName];
+    const YAML::Node sequence = stageRoot[sequenceName];
 
     for (std::size_t i = 0; i < sequence.size(); ++i) {
-        createActor(sequence[i], static_cast<int>(i));
+        TActor* actor = createActor(sequence[i], static_cast<int>(i));
+        if (actor) {
+            actor->SetStageSequenceName(sequenceName);
+        }
     }
 }

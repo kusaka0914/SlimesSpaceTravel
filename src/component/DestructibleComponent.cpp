@@ -33,7 +33,9 @@ void DestructibleComponent::TryApplyDamage()
             continue;
         }
 
-        ApplyDamage(player->GetAttack());
+        ApplyDamage(
+            player->CalculateOutgoingAttackDamage(
+                player->GetAttack()));
     }
 }
 

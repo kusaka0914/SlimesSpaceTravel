@@ -4,9 +4,9 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/FallRespawnPoint.h"
-#include "actor/MovingPlatform.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
 #include "utils/MathUtils.h"
 
@@ -39,11 +39,17 @@ void StageCollisionBuilder::CreateStageCollisionBodies(
         CreateStaticMeshBody(world, planet, rigidBodies, triangleMeshShapes, triangleMeshes);
 
         for (Platform* platform : planet->GetPlatforms()) {
-            CreateStaticMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            if (platform && platform->UsesKinematicPhysics()) {
+                CreateKinematicMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            } else {
+                CreateStaticMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+            }
         }
 
-        for (MovingPlatform* platform : planet->GetMovingPlatforms()) {
-            CreateKinematicMeshBody(world, platform, rigidBodies, triangleMeshShapes, triangleMeshes);
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            if (stageObject && stageObject->GetCollisionEnabled()) {
+                CreateStaticMeshBody(world, stageObject, rigidBodies, triangleMeshShapes, triangleMeshes);
+            }
         }
     }
 }
@@ -53,22 +59,25 @@ void StageCollisionBuilder::CreateStaticMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !world || !mGame || !mGame->GetMeshLoadSystem()) {
+    if (!actor || !actor->IsExplicitlyActive() || actor->IsDebugDisabled() || !world || !mGame ||
+        !mGame->GetMeshLoadSystem()) {
         return;
     }
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
-
-    std::vector<float> pos;
-    std::vector<unsigned int> idx;
-
-    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
-        idx.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
+            actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
+        collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
+    auto triangleMesh = CreateTriangleMesh(
+        actorScale,
+        collisionGeometry->positions,
+        collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;
@@ -99,22 +108,25 @@ void StageCollisionBuilder::CreateKinematicMeshBody(
     std::vector<std::unique_ptr<btBvhTriangleMeshShape>>& triangleMeshShapes,
     std::vector<std::unique_ptr<btTriangleMesh>>& triangleMeshes) const
 {
-    if (!actor || !world || !mGame || !mGame->GetMeshLoadSystem()) {
+    if (!actor || !actor->IsExplicitlyActive() || actor->IsDebugDisabled() || !world || !mGame ||
+        !mGame->GetMeshLoadSystem()) {
         return;
     }
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
-
-    std::vector<float> pos;
-    std::vector<unsigned int> idx;
-
-    if (!mGame->GetMeshLoadSystem()->LoadMeshPositionsAndIndices(actorModelPath.c_str(), pos, idx) || pos.size() < 9 ||
-        idx.size() < 3) {
+    const CollisionMeshGeometry* collisionGeometry =
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
+            actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
+        collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(actorScale, pos, idx);
+    auto triangleMesh = CreateTriangleMesh(
+        actorScale,
+        collisionGeometry->positions,
+        collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;
@@ -159,7 +171,38 @@ void StageCollisionBuilder::SyncKinematicBodies(
             continue;
         }
 
-        if (!dynamic_cast<MovingPlatform*>(actor)) {
+        Platform* platform = dynamic_cast<Platform*>(actor);
+        StageObject* stageObject =
+            dynamic_cast<StageObject*>(actor);
+        if (!platform && !stageObject) {
+            continue;
+        }
+
+        const bool collisionEnabled =
+            platform
+                ? platform->GetCollisionEnabled()
+                : stageObject->GetCollisionEnabled();
+        const bool shouldBeInWorld =
+            actor->GetIsActive() &&
+            collisionEnabled;
+        const bool isInWorld = rigidBody->isInWorld();
+
+        if (!shouldBeInWorld) {
+            if (isInWorld) {
+                world->removeRigidBody(rigidBody.get());
+            }
+            continue;
+        }
+
+        if (!isInWorld) {
+            world->addRigidBody(
+                rigidBody.get(),
+                static_cast<short>(btBroadphaseProxy::DefaultFilter),
+                static_cast<short>(-1));
+        }
+
+        if (!platform ||
+            !platform->UsesKinematicPhysics()) {
             continue;
         }
 
@@ -184,7 +227,7 @@ btTransform StageCollisionBuilder::CreateActorTransform(Game* game, Actor* actor
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
-    if (dynamic_cast<Platform*>(actor) || dynamic_cast<MovingPlatform*>(actor) ||
+    if (dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor) ||
         dynamic_cast<FallRespawnPoint*>(actor)) {
         if (!game || !game->GetMathUtils()) {
             return actorTransform;

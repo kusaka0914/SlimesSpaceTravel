@@ -14,7 +14,9 @@ public:
     static const std::vector<StageActorTypeInfo>& GetTypeInfos();
 
     static std::vector<StageActorInstance> CollectAllActorInstances(Stage* stage);
-    static std::vector<StageActorRef> CollectAllTargets(Stage* stage);
+    static std::vector<StageActorRef> CollectAllTargets(
+        Stage* stage,
+        bool includePlanets = false);
 
     static std::optional<StageActorRef> FindTargetForActor(Stage* stage, Actor* actor);
     static Actor* FindActorByRef(Stage* stage, const StageActorRef& target);
@@ -23,4 +25,5 @@ public:
 
     static std::string GetSequenceName(StageActorType type);
     static const char* GetTypeLabel(StageActorType type);
+    static std::string GetTypeLabel(const StageActorRef& actorRef);
 };

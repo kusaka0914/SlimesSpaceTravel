@@ -8,10 +8,8 @@ BoatArrivalPoint::BoatArrivalPoint(Game* game)
 {
 }
 
-void BoatArrivalPoint::ApplyConfig()
+void BoatArrivalPoint::ApplyConfig(const YAML::Node& root)
 {
-    YAML::Node root = YAML::LoadFile("../assets/data/actor/boatarrivalpoints.yaml");
-
     if (!root["boatArrivalPoints"] || !root["boatArrivalPoints"].IsSequence()) {
         return;
     }

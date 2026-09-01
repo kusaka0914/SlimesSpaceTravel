@@ -10,26 +10,36 @@
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Key.h"
-#include "actor/MovingPlatform.h"
+#include "actor/JewelItem.h"
+#include "actor/HazardActor.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
+#include "gfx/render3d/NPCProximityMessageRenderer.h"
 #include "gfx/render3d/PlayerEffectRenderer.h"
+#include "system/sequence/SequenceSystem.h"
 
 #include <GL/glew.h>
 
 SceneObjectRenderer::SceneObjectRenderer(const Renderer3D* renderer, const PlayerEffectRenderer* playerEffectRenderer,
-                                         const DebugLabelRenderer* debugLabelRenderer)
+                                         const DebugLabelRenderer* debugLabelRenderer,
+                                         const NPCProximityMessageRenderer* npcProximityMessageRenderer)
     : mRenderer(renderer),
       mPlayerEffectRenderer(playerEffectRenderer),
-      mDebugLabelRenderer(debugLabelRenderer)
+      mDebugLabelRenderer(debugLabelRenderer),
+      mNPCProximityMessageRenderer(npcProximityMessageRenderer)
 {
 }
 
-void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
+void SceneObjectRenderer::DrawSceneObjects(
+    const glm::mat4& viewMat,
+    const Player* viewportPlayer) const
 {
     if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !mRenderer->GetGame()->GetCurrentStage()) {
         return;
@@ -37,11 +47,36 @@ void SceneObjectRenderer::DrawSceneObjects(const glm::mat4& viewMat) const
 
     std::vector<Planet*> planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
-    DrawPlanets(planets);
-    DrawActorOnPlanets(planets, viewMat);
+    const SequenceSystem* sequenceSystem =
+        mRenderer->GetGame()->GetSequenceSystem();
+    const bool shouldDrawPlayers =
+        !sequenceSystem ||
+        !sequenceSystem->IsCinematicChainPlaying();
 
-    if (mPlayerEffectRenderer) {
-        mPlayerEffectRenderer->DrawPlayers(viewMat);
+    DrawPlanets(planets);
+    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
+    DrawCharacterShadows(planets, shouldDrawPlayers);
+
+    if (mPlayerEffectRenderer && shouldDrawPlayers) {
+        mPlayerEffectRenderer->DrawPlayers(
+            viewMat,
+            mRenderer->GetGame()->GetPlayers(),
+            mRenderer->GetGame()->GetIsDebugEditorShowing(),
+            mRenderer->GetGame()->GetPhysicsSystem());
+
+        const Player* mergeGuideTargetPlayer = nullptr;
+        float mergeGuideRadiusWorldUnits = 0.0f;
+        if (mRenderer->GetGame()->TryResolvePlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits)) {
+            mPlayerEffectRenderer->DrawPlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits);
+        }
+    }
+
+    if (mNPCProximityMessageRenderer) {
+        mNPCProximityMessageRenderer->Draw(viewMat, planets);
     }
 
     if (mRenderer->GetGame()->GetIsDebugEditorShowing() && mDebugLabelRenderer) {
@@ -56,7 +91,10 @@ void SceneObjectRenderer::DrawPlanets(const std::vector<Planet*>& planets) const
     mRenderer->TryDrawActors(planets, false);
 }
 
-void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets, const glm::mat4& viewMat) const
+void SceneObjectRenderer::DrawActorOnPlanets(
+    const std::vector<Planet*>& planets,
+    const glm::mat4& viewMat,
+    const Player* viewportPlayer) const
 {
     glUniform1f(mRenderer->GetShader3D()->GetLocToonLevels(), 3.0f);
     glUniform1f(mRenderer->GetShader3D()->GetLocToonStrength(), 0.6f);
@@ -66,24 +104,98 @@ void SceneObjectRenderer::DrawActorOnPlanets(const std::vector<Planet*>& planets
             continue;
         }
 
-        if (mPlayerEffectRenderer) {
-            for (Enemy* enemy : planet->GetEnemies()) {
-                mPlayerEffectRenderer->DrawEnemyWithEffects(enemy, viewMat);
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (mRenderer->IsActorInsideView(enemy)) {
+                mRenderer->TryDrawActor(enemy, true);
             }
         }
 
-        mRenderer->TryDrawActors(planet->GetBoats());
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && boat->ShouldRenderUnavailablePreview()) {
+                constexpr float unavailableRocketOpacity = 0.2f;
+                mRenderer->DrawInactiveActorPreview(
+                    boat,
+                    unavailableRocketOpacity);
+                continue;
+            }
+            mRenderer->TryDrawActor(boat);
+        }
         mRenderer->TryDrawActors(planet->GetBoatParts());
         mRenderer->TryDrawActors(planet->GetCrystals());
         mRenderer->TryDrawActors(planet->GetPlatforms());
-        mRenderer->TryDrawActors(planet->GetMovingPlatforms());
+        mRenderer->TryDrawActors(planet->GetStageObjects());
         mRenderer->TryDrawActors(planet->GetNPCs());
+        mRenderer->TryDrawActors(planet->GetJewelItems());
+        mRenderer->TryDrawActors(planet->GetHazardActors());
+        if (mRenderer->GetGame()->GetIsDebugEditorShowing()) {
+            mRenderer->TryDrawActors(
+                planet->GetTutorialTriggers());
+        }
         mRenderer->TryDrawActor(planet->GetKey());
         mRenderer->TryDrawActor(planet->GetStar());
 
         if (mRenderer->GetGame()->GetIsDebugMode()) {
             mRenderer->TryDrawActors(planet->GetBoatArrivalPoints());
             mRenderer->TryDrawActors(planet->GetFallRespawnPoints());
+        }
+
+    }
+
+    mRenderer->TryDrawActors(
+        mRenderer->GetGame()->GetRuntimeJewelItems());
+
+    if (!mPlayerEffectRenderer) {
+        return;
+    }
+
+    const Player* effectReferencePlayer = viewportPlayer
+        ? viewportPlayer
+        : mRenderer->GetGame()->GetControlledPlayer();
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            mPlayerEffectRenderer->DrawEnemyEffects(
+                enemy, viewMat, effectReferencePlayer);
+        }
+    }
+}
+
+void SceneObjectRenderer::DrawCharacterShadows(
+    const std::vector<Planet*>& planets,
+    bool shouldDrawPlayers) const
+{
+    if (!mRenderer || !mRenderer->GetGame()) {
+        return;
+    }
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (!mRenderer->IsActorInsideView(enemy)) {
+                continue;
+            }
+            mRenderer->DrawBlobShadow(enemy);
+        }
+        for (NPC* npc : planet->GetNPCs()) {
+            if (!mRenderer->IsActorInsideView(npc)) {
+                continue;
+            }
+            mRenderer->DrawBlobShadow(npc);
+        }
+    }
+
+    if (!shouldDrawPlayers) {
+        return;
+    }
+
+    for (Player* player : mRenderer->GetGame()->GetPlayers()) {
+        if (player && player->GetIsActive()) {
+            mRenderer->DrawBlobShadow(player);
         }
     }
 }

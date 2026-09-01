@@ -11,10 +11,10 @@ Crystal::Crystal(Game* game)
     AddDestructibleComponent();
 }
 
-void Crystal::ApplyConfig(const std::string& type)
+void Crystal::ApplyConfig(
+    const YAML::Node& crystalRoot,
+    const std::string& type)
 {
-    YAML::Node crystalRoot = YAML::LoadFile("../assets/data/actor/crystals.yaml");
-
     if (!crystalRoot["crystals"] || !crystalRoot["crystals"].IsSequence()) {
         return;
     }

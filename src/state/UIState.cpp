@@ -1,15 +1,9 @@
 #include "UIState.h"
-#include "Game.h"
 
-UIState::UIState(Game* game)
-    : mGame(game),
+UIState::UIState()
+    : mIsOperationUIShow(true),
       mTalkUIIndex(0),
-      mIsBattleTutorialShown(false),
-      mIsJustDodgeTutorialShown(false),
-      mIsSpecialAttackTutorialShown(false),
-      mCurrentTalkWith(TalkWith::Opening),
-      mCurrentTutorialKind(TutorialKind::None),
-      mIsOperationUIShow(true)
+      mCurrentTalkWith(TalkWith::Opening)
 {
 }
 
@@ -22,7 +16,6 @@ void UIState::StartTalkWith(TalkWith talkWith)
 void UIState::FinishTutorial()
 {
     mTalkUIIndex = 0;
-    mCurrentTutorialKind = TutorialKind::None;
 }
 
 void UIState::FinishTalkWith()

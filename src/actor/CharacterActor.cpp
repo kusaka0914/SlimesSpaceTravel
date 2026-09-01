@@ -1,7 +1,16 @@
 #include "CharacterActor.h"
 #include "Game.h"
-#include "actor/MovingPlatform.h"
+#include "actor/Platform.h"
 #include "system/PhysicsSystem.h"
+
+namespace {
+constexpr float landingRayStartOffset = 0.1f;
+constexpr float landingRayLength = 0.2f;
+constexpr float excludedSurfaceDetectionLengthMultiplier = 4.0f;
+constexpr float excludedSurfaceDetectionRayLength =
+    landingRayLength * excludedSurfaceDetectionLengthMultiplier;
+constexpr float walkableGroundNormalMinimumUpDot = 0.65f;
+}
 
 CharacterActor::CharacterActor(Game* game)
     : Actor(game),
@@ -14,11 +23,46 @@ CharacterActor::CharacterActor(Game* game)
 
 void CharacterActor::UpdateActor(float deltaTime)
 {
-    ApplyGroundActorMovement();
+    ApplyGroundActorTransformMovement();
+
+    if (mAttachedPlatform) {
+        mVelocity = glm::vec3(0.0f);
+        ApplyGroundActorConveyorMovement();
+        return;
+    }
 
     if (mShouldJudgeLanding) {
         JudgeLanding();
     }
+
+    ApplyGroundActorConveyorMovement();
+}
+
+void CharacterActor::AttachToPlatform(Platform* platform)
+{
+    if (!platform) {
+        return;
+    }
+
+    mAttachedPlatform = platform;
+    mGroundActor = platform;
+    mOnGround = true;
+    mShouldJudgeLanding = false;
+    mVelocity = glm::vec3(0.0f);
+}
+
+void CharacterActor::DetachFromPlatform()
+{
+    if (!mAttachedPlatform) {
+        return;
+    }
+
+    if (mGroundActor == mAttachedPlatform) {
+        mGroundActor = nullptr;
+    }
+    mAttachedPlatform = nullptr;
+    mOnGround = false;
+    mShouldJudgeLanding = true;
 }
 
 void CharacterActor::JudgeLanding()
@@ -31,37 +75,41 @@ void CharacterActor::JudgeLanding()
     const glm::vec3 backOffset = -mFacingForwardVec * bodyOffset;
 
     if (mOnGround) {
-        // 体中央でのレイキャスト
-        if (TryLandByRay(glm::vec3(0.0f), glm::vec3(0.0f))) {
+        if (ResolveLandingByRay(glm::vec3(0.0f), glm::vec3(0.0f)) !=
+            LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体後ろ側でのレイキャスト
-        if (TryLandByRay(backOffset, frontOffset)) {
+        if (ResolveLandingByRay(backOffset, frontOffset) !=
+            LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体前側でのレイキャスト
-        if (TryLandByRay(frontOffset, backOffset)) {
+        if (ResolveLandingByRay(frontOffset, backOffset) !=
+            LandingRayResolution::NoHit) {
             return;
         }
     } else {
-        // 体前側でのレイキャスト
-        if (TryLandByRay(frontOffset, backOffset)) {
+        if (ResolveLandingByRay(frontOffset, backOffset) !=
+            LandingRayResolution::NoHit) {
             return;
         }
 
-        // 体中央でのレイキャスト
-        if (TryLandByRay(glm::vec3(0.0f), glm::vec3(0.0f))) {
+        if (ResolveLandingByRay(glm::vec3(0.0f), glm::vec3(0.0f)) !=
+            LandingRayResolution::NoHit) {
             return;
         }
     }
+
+    NotLand();
 }
 
-bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& hitPosCorrection)
+CharacterActor::LandingRayResolution CharacterActor::ResolveLandingByRay(
+    const glm::vec3& rayOffset,
+    const glm::vec3& hitPosCorrection)
 {
     if (glm::length(mUpVec) < 1e-6f) {
-        return false;
+        return LandingRayResolution::NoHit;
     }
 
     const RayInfo rayInfo = CreateRayInfo(rayOffset);
@@ -71,12 +119,12 @@ bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& h
     const glm::vec3 rayToPos(rayInfo.rayTo.x(), rayInfo.rayTo.y(), rayInfo.rayTo.z());
 
     if (glm::length(rayToPos - rayFromPos) < 1e-6f) {
-        return false;
+        return LandingRayResolution::NoHit;
     }
 
     const btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
     if (!bulletWorld) {
-        return false;
+        return LandingRayResolution::NoHit;
     }
 
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayInfo.rayFrom, rayInfo.rayTo);
@@ -88,18 +136,72 @@ bool CharacterActor::TryLandByRay(const glm::vec3& rayOffset, const glm::vec3& h
     bulletWorld->rayTest(rayInfo.rayFrom, rayInfo.rayTo, rayCallback);
 
     if (!rayCallback.hasHit()) {
-        return false;
+        return LandingRayResolution::NoHit;
     }
 
-    if (rayCallback.m_collisionObject) {
-        mGroundActor = static_cast<Actor*>(rayCallback.m_collisionObject->getUserPointer());
+    Actor* hitActor =
+        rayCallback.m_collisionObject
+            ? static_cast<Actor*>(
+                  rayCallback.m_collisionObject->getUserPointer())
+            : nullptr;
+
+    if (hitActor && !hitActor->ShouldAffectGravityDirection()) {
+        mGroundActor = nullptr;
+        mVelocity = glm::vec3(0.0f);
+        UpdateFallbackUpVec();
+        NotLand();
+        return LandingRayResolution::AppliedPlanetFallback;
+    }
+
+    const btVector3 bulletHitNormal = rayCallback.m_hitNormalWorld;
+    const glm::vec3 hitNormal(
+        bulletHitNormal.x(),
+        bulletHitNormal.y(),
+        bulletHitNormal.z());
+    if (!ShouldAcceptLandingSurface(hitActor, hitNormal)) {
+        return LandingRayResolution::NoHit;
+    }
+
+    if (!IsWalkableGroundNormal(hitNormal, mUpVec)) {
+        return LandingRayResolution::NoHit;
     }
 
     const btVector3 hitPt = rayCallback.m_hitPointWorld;
     const glm::vec3 hitPos(hitPt.x(), hitPt.y(), hitPt.z());
 
-    Land(hitPos + hitPosCorrection);
-    return true;
+    const float hitDistanceFromRayStart =
+        glm::length(hitPos - rayFromPos);
+    constexpr float landingDistanceTolerance = 0.0001f;
+    if (hitDistanceFromRayStart >
+        landingRayLength + landingDistanceTolerance) {
+        return LandingRayResolution::NoHit;
+    }
+
+    PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
+    const glm::vec3 desiredLandingPosition =
+        hitPos +
+        hitPosCorrection;
+    const ActorMovementCollisionResult landingCollision =
+        physicsSystem->ResolveMovementCollision(
+            this,
+            desiredLandingPosition - mPos,
+            desiredLandingPosition);
+    if (landingCollision.hasUnresolvedStageOverlap) {
+        return LandingRayResolution::NoHit;
+    }
+
+    const bool wasLandingMovementBlockedByNonGround =
+        landingCollision.didHitStage &&
+        !IsWalkableGroundNormal(
+            landingCollision.blockingNormal,
+            mUpVec);
+    if (wasLandingMovementBlockedByNonGround) {
+        return LandingRayResolution::NoHit;
+    }
+
+    mGroundActor = hitActor;
+    Land(landingCollision.resolvedPosition);
+    return LandingRayResolution::Landed;
 }
 
 CharacterActor::RayInfo CharacterActor::CreateRayInfo(const glm::vec3& rayOffset) const
@@ -107,9 +209,10 @@ CharacterActor::RayInfo CharacterActor::CreateRayInfo(const glm::vec3& rayOffset
     const glm::vec3 up = glm::normalize(mUpVec);
     const glm::vec3 rayCenter = mPos + rayOffset;
 
-    constexpr float margin = 0.1f;
-    const glm::vec3 rayFromPos = rayCenter + up * margin;
-    const glm::vec3 rayToPos = rayCenter - up * margin;
+    const glm::vec3 rayFromPos =
+        rayCenter + up * landingRayStartOffset;
+    const glm::vec3 rayToPos =
+        rayFromPos - up * excludedSurfaceDetectionRayLength;
 
     const btVector3 rayFrom(rayFromPos.x, rayFromPos.y, rayFromPos.z);
     const btVector3 rayTo(rayToPos.x, rayToPos.y, rayToPos.z);
@@ -132,10 +235,38 @@ void CharacterActor::NotLand()
     mOnGround = false;
 }
 
+bool CharacterActor::IsWalkableGroundNormal(
+    const glm::vec3& hitNormal,
+    const glm::vec3& upDirection)
+{
+    const float hitNormalLength = glm::length(hitNormal);
+    const float upDirectionLength = glm::length(upDirection);
+    if (hitNormalLength < 1e-6f ||
+        upDirectionLength < 1e-6f) {
+        return false;
+    }
+
+    const glm::vec3 normalizedHitNormal =
+        hitNormal /
+        hitNormalLength;
+    const glm::vec3 normalizedUpDirection =
+        upDirection /
+        upDirectionLength;
+    return glm::dot(
+               normalizedHitNormal,
+               normalizedUpDirection) >=
+           walkableGroundNormalMinimumUpDot;
+}
+
 void CharacterActor::ApplyGravity(float deltaTime)
 {
     constexpr float gravity = 9.8f;
-    mVelocity -= mUpVec * gravity * deltaTime;
+    ApplyGravity(deltaTime, gravity);
+}
+
+void CharacterActor::ApplyGravity(float deltaTime, float gravityAcceleration)
+{
+    mVelocity -= mUpVec * gravityAcceleration * deltaTime;
     mPos += mVelocity * deltaTime;
 }
 
@@ -157,23 +288,53 @@ void CharacterActor::SetBaseScale(const glm::vec3& scale)
     mScale = scale;
 }
 
-void CharacterActor::ApplyGroundActorMovement()
+void CharacterActor::ApplyGroundActorTransformMovement()
 {
     if (!mOnGround || !mGroundActor) {
         return;
     }
 
-    MovingPlatform* movingPlatform = dynamic_cast<MovingPlatform*>(mGroundActor);
-
-    if (!movingPlatform) {
+    Platform* platform = dynamic_cast<Platform*>(mGroundActor);
+    if (!platform) {
         return;
     }
 
-    const glm::vec3 platformDelta = movingPlatform->GetFrameDelta();
+    const glm::vec3 platformDelta =
+        platform->GetTransformFrameDelta(mPos);
 
-    if (glm::length(platformDelta) < 1e-6f) {
+    ApplyExternalGroundMovement(platformDelta);
+}
+
+void CharacterActor::ApplyGroundActorConveyorMovement()
+{
+    if (!mOnGround || !mGroundActor) {
         return;
     }
 
-    mPos += platformDelta;
+    Platform* platform = dynamic_cast<Platform*>(mGroundActor);
+    if (!platform || !platform->GetConveyorComponent()) {
+        return;
+    }
+
+    ApplyExternalGroundMovement(platform->GetConveyorFrameDelta());
+}
+
+void CharacterActor::ApplyExternalGroundMovement(
+    const glm::vec3& movementDelta)
+{
+    if (glm::length(movementDelta) < 1e-6f) {
+        return;
+    }
+
+    if (!mGame || !mGame->GetPhysicsSystem()) {
+        mPos += movementDelta;
+        return;
+    }
+
+    const ActorMovementCollisionResult collisionResult =
+        mGame->GetPhysicsSystem()->ResolveMovementCollision(
+            this,
+            movementDelta,
+            mPos + movementDelta);
+    mPos = collisionResult.resolvedPosition;
 }

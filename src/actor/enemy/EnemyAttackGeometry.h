@@ -1,0 +1,65 @@
+#pragma once
+
+#include <glm/glm.hpp>
+
+class Enemy;
+class Planet;
+
+struct EnemyAttackFrame {
+    glm::vec3 origin{0.0f};
+    glm::vec3 up{0.0f, 1.0f, 0.0f};
+    glm::vec3 forward{0.0f, 0.0f, 1.0f};
+    glm::vec3 left{1.0f, 0.0f, 0.0f};
+};
+
+struct EnemyMeleeAttackPreviewArea {
+
+
+    float forwardStartOffset = 0.0f;
+    float forwardLength = 0.0f;
+    float halfWidth = 0.0f;
+};
+
+EnemyAttackFrame ResolveEnemyAttackFrame(const Enemy& enemy);
+float CalculateEnemyAttackFrontOffset(
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame);
+EnemyMeleeAttackPreviewArea CalculateEnemyMeleeAttackPreviewArea(
+    const Enemy& enemy,
+    const EnemyAttackFrame& attackFrame);
+
+bool IsPositionInsideMeleeAttack(
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float forwardLength,
+    float halfWidth);
+bool IsPositionInsideFanAttack(
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range,
+    float angleRadians);
+
+bool IsPositionInsideRadialAttack(
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range);
+
+
+
+bool IsPositionInsideSphereSurfaceMeleeAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float forwardLength,
+    float halfWidth);
+bool IsPositionInsideSphereSurfaceFanAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range,
+    float angleRadians);
+bool IsPositionInsideSphereSurfaceRadialAttack(
+    const Planet& planet,
+    const EnemyAttackFrame& attackFrame,
+    const glm::vec3& position,
+    float range);

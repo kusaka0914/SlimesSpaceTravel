@@ -1,6 +1,12 @@
 #pragma once
 
 #include "gfx/debug/DebugPanel.h"
+#include "gfx/debug/stage/StagePlanetYamlWriter.h"
+
+#include <array>
+#include <functional>
+#include <string>
+#include <vector>
 
 class Actor;
 class Planet;
@@ -10,8 +16,21 @@ public:
     explicit StagePlanetPanel(DebugEditorContext& context);
 
     void Draw() override;
+    void DrawSelectedPlanet(Planet* selectedPlanet);
     void Save();
+    void SaveEditorAuthoredTransforms();
+    void SetSaveDependentActorTransformsCallback(
+        std::function<void()> callback);
 
 private:
-    void UpdateActorsOnPlanetSurface(Planet* planet);
+    void DrawTexturePicker(Planet* planet, std::size_t planetIndex);
+    void DrawBackTexturePicker(Planet* planet, std::size_t planetIndex);
+    void DrawTextureTilingEditor(Planet* planet, std::size_t planetIndex);
+private:
+    Planet* mFocusedPlanet = nullptr;
+    StagePlanetYamlWriter mYamlWriter;
+    std::array<char, 128> mTextureAssetFilter = {};
+    std::string mTextureAssetStatus;
+    bool mHasPendingTransformEdit = false;
+    std::function<void()> mSaveDependentActorTransformsCallback;
 };

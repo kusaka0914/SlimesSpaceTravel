@@ -7,6 +7,10 @@ public:
     bool IsAlive() const { return mHp > 0.0f; }
     bool IsDead() const { return !IsAlive(); }
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; }
+    bool ShouldBlinkWhileInvincible() const
+    {
+        return IsInvincible() && mShouldBlinkWhileInvincible;
+    }
     bool IsTired() const { return mIsTired; }
 
     void ConfigureHp(float hp);
@@ -32,8 +36,8 @@ public:
     void StartDamageCooldown(float seconds);
     void ReduceDamageCooldown(float deltaTime);
 
-    void StartInvincible();
-    void StartInvincible(float seconds);
+    void StartDamageInvincibility();
+    void StartDodgeInvincibility(float seconds);
     void ClearInvincible();
 
     void StartTired();
@@ -51,5 +55,6 @@ private:
     float mDefaultDamageTimer = 1.0f;
     float mInvincibleTimer = -1.0f;
     float mDefaultInvincibleTimer = 2.0f;
+    bool mShouldBlinkWhileInvincible = false;
     bool mIsTired = false;
 };

@@ -14,8 +14,9 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Star.h"
+#include "actor/StageObject.h"
+#include "actor/TutorialTrigger.h"
 #include "gfx/Shader3D.h"
-#include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
@@ -34,6 +35,10 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
         return;
     }
 
+    if (mRenderer->GetGame()->GetIsUGCMode()) {
+        return;
+    }
+
     const std::vector<Planet*>& planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
     for (Planet* planet : planets) {
@@ -41,12 +46,18 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
             continue;
         }
 
-        for (Platform* platform : planet->GetPlatforms()) {
-            DrawDebugLabel(viewMat, platform, "足場 " + std::to_string(platform->GetStageYamlIndex()));
-        }
-
         for (NPC* npc : planet->GetNPCs()) {
             DrawDebugLabel(viewMat, npc, "NPC " + std::to_string(npc->GetStageYamlIndex()));
+        }
+
+        for (TutorialTrigger* trigger :
+             planet->GetTutorialTriggers()) {
+            DrawDebugLabel(
+                viewMat,
+                trigger,
+                "Tutorial Trigger " +
+                    std::to_string(
+                        trigger->GetStageYamlIndex()));
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
@@ -63,6 +74,13 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
 
         for (Boat* boat : planet->GetBoats()) {
             DrawDebugLabel(viewMat, boat, "ボート " + std::to_string(boat->GetStageYamlIndex()));
+        }
+
+        for (StageObject* stageObject : planet->GetStageObjects()) {
+            DrawDebugLabel(
+                viewMat,
+                stageObject,
+                stageObject->GetModelPath() + " " + std::to_string(stageObject->GetStageYamlIndex()));
         }
 
         if (planet->GetKey()) {
@@ -91,9 +109,8 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto quadIt = vertexArrays.find("quad");
-    if (quadIt == vertexArrays.end()) {
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (!quad) {
         glDeleteTextures(1, &textTexture);
         return;
     }
@@ -108,7 +125,7 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
     glUniform1i(shader->GetLocUseTexture(), 1);
     glUniform4f(shader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     const float labelHeight = actor->GetRadius() * actor->GetScale().y + 0.8f;
     constexpr float baseHeight = 0.5f;
@@ -118,7 +135,8 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
     const float width = baseHeight * aspect;
 
     const glm::mat4 billboard =
-        mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, actor, labelHeight, 0.0f, width, height);
+        mRenderer->CreateBillboard(
+            viewMat, actor, labelHeight, 0.0f, width, height);
 
     glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

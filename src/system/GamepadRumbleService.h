@@ -2,6 +2,8 @@
 
 #include <SDL.h>
 
+#include <vector>
+
 class GamepadRumbleService {
 public:
     ~GamepadRumbleService();
@@ -10,11 +12,17 @@ public:
     void Shutdown();
     void UpdateConnection();
 
-    void VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int duration);
+    void VibrateForPlayer(
+        int playerNum,
+        int lowFrequency,
+        int highFrequency,
+        int durationMilliseconds);
 
-    SDL_GameController* GetController() const { return mController; }
-    bool IsConnected() const { return mController != nullptr; }
+    SDL_GameController* GetController() const { return GetControllerForPlayer(1); }
+    SDL_GameController* GetControllerForPlayer(int playerNum) const;
+    bool IsConnected() const { return !mControllers.empty(); }
+    bool HasControllerForPlayer(int playerNum) const;
 
 private:
-    SDL_GameController* mController = nullptr;
+    std::vector<SDL_GameController*> mControllers;
 };

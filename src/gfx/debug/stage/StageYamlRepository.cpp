@@ -1,7 +1,10 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 
 #include "Game.h"
+#include "Stage.h"
+#include "actor/Planet.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -35,13 +38,35 @@ bool StageYamlRepository::LoadCurrentStage(DebugEditorContext& context, YAML::No
     return true;
 }
 
-bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, const YAML::Node& config)
+bool StageYamlRepository::SaveCurrentStage(
+    DebugEditorContext& context,
+    YAML::Node config,
+    bool preserveRuntimePlanetCenters)
 {
     const std::string filePath = GetCurrentStageYamlPath(context);
 
     if (filePath.empty()) {
         std::cerr << "Current stage yaml path is empty" << std::endl;
         return false;
+    }
+
+
+
+
+
+    if (preserveRuntimePlanetCenters &&
+        context.game && context.game->GetCurrentStage() &&
+        config["planets"] && config["planets"].IsSequence()) {
+        const auto& planets = context.game->GetCurrentStage()->GetPlanets();
+        const std::size_t count = std::min(planets.size(), config["planets"].size());
+        for (std::size_t index = 0; index < count; ++index) {
+            const Planet* planet = planets[index];
+            if (!planet) continue;
+            const glm::vec3 center = planet->GetPos();
+            config["planets"][index]["center"][0] = center.x;
+            config["planets"][index]["center"][1] = center.y;
+            config["planets"][index]["center"][2] = center.z;
+        }
     }
 
     return SaveYamlFile(filePath, config);
@@ -129,46 +154,5 @@ bool StageYamlRepository::WriteCurrentStageTextAtomically(DebugEditorContext& co
         }
     }
 
-    return true;
-}
-
-bool StageYamlRepository::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
-{
-    std::ofstream file(filePath);
-
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file << config;
-    return true;
-}
-
-bool StageYamlRepository::RemoveSequenceElement(YAML::Node& config, const std::string& sequenceName, int index)
-{
-    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
-        std::cerr << "Invalid yaml sequence: " << sequenceName << std::endl;
-        return false;
-    }
-
-    YAML::Node oldSeq = config[sequenceName];
-
-    if (index < 0 || index >= static_cast<int>(oldSeq.size())) {
-        std::cerr << "Delete index out of range: " << index << std::endl;
-        return false;
-    }
-
-    YAML::Node newSeq(YAML::NodeType::Sequence);
-
-    for (int i = 0; i < static_cast<int>(oldSeq.size()); ++i) {
-        if (i == index) {
-            continue;
-        }
-
-        newSeq.push_back(oldSeq[i]);
-    }
-
-    config[sequenceName] = newSeq;
     return true;
 }

@@ -3,205 +3,463 @@ title:
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
-  - id: startTextForGameController
-    type: text
-    posRatio: [0.5, 0.75]
-    scaleRatio: [0.000625, 1.0]
-    text: ["START: X"]
-  - id: startTextForKeyBoard
-    type: text
-    posRatio: [0.5, 0.75]
-    scaleRatio: [0.000625, 1.0]
-    text: ["START: K"]
+    rotationDegrees: 0
 opening:
   - id: bgTexture
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
+    rotationDegrees: 0
   - id: openingText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: ["ある草原のど真ん中\nスライムはママと仲良く暮らしていました。", "ママはいつもお仕事で大忙し\nそれでもスライムを愛しているため一生懸命働いていました。", "ある日、スライムはいつものように\nママのお見送りをしていました。"]
+    text:
+      - "ある草原のど真ん中\nスライムはママと仲良く暮らしていました。"
+      - "ママスライムはいつもお仕事で忙しく、\n朝早く家を出て、夕方になるまで帰ってきません。"
+      - "それでも毎朝、家を出る前には必ず\nスライムの頭を優しくなでてくれました。 "
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: talkWithMotherText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: ["スライム: ママ、いってらっしゃい！", "ママ: いってきます。\nスライム、いい子にしてるんだよ。", "ママ: !?", "ママ: ううっ...", ママが突然倒れこんでしまいました。, "スライム: どうしたの！？ママ！"]
+    text:
+      - "ママ: じゃあ、お仕事に行ってくるね。"
+      - "スライム: うん！ ママ、いってらっしゃい！"
+      - "ママ: いい子にしてるんだよ。"
+      - "スライム: はーい！"
+      - それが、二人にとっていつもの朝でした。
+      - ――その日も、いつもと同じ朝になるはずでした。
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: talkWithDoctorText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
-    text: [スライムは急いでドクターを呼びました。, "ドクター: これは、私にはどうしても治せない\nとてもとても複雑な病気だよ。", "ドクター: きっともう目覚めることはないだろう。", "スライム: ほ、ほんとなの、？", スライムは泣き出してしまいました。, "スライム: どうにか治す方法はないの？", "ドクター: ごめんな、普通の方法じゃ治らないんだ。\nただ...", "スライム: ただ...？", "ドクター: 一つだけ方法はあるんだが、\nこれはとても難しい方法なんだ。", "ドクター: この世界の宇宙になんでも願いを叶えてくれる\n星が存在するという話は聞いたことあるかな？", "スライム: 聞いたことないや、、", "ドクター: そうか、もしその星を全て集めて、\nお母さんの病気が治ることを願うことができれば...", "スライム: じゃあ僕が集めてくるよ！", "ドクター: ダメだダメだ！\nおまえさん、宇宙がどれだけ危険なのか分かっているのか！", "スライム: じゃあドクターはママを助けてくれるの？", "ドクター: ...", "スライム: ママを助けられるのは僕しかいない！", "そういうとスライムはすぐに家を飛び出し、\nロケットに乗り込んで宇宙へと旅立ちました。"]
-  - id: skipTextForKeyBoard
+    text:
+      - ママスライムが家を出ようとした、そのときです。
+      - "ママ: うっ……"
+      - 突然、ママスライムがその場に倒れました。
+      - "スライム: ママ！？"
+      - スライムは慌てて駆け寄りました。
+      - "スライム: ママ！ どうしたの！？ ママ！"
+      - "何度呼びかけても、ママスライムは目を開けません。\nスライムは急いでお医者さんを呼びました。"
+      - "お医者さん: ……これは、とても複雑な病気だ。"
+      - "スライム: 治せる？"
+      - お医者さんは少し黙ってから、首を横に振りました。
+      - "お医者さん: ごめんな。今の私には治すことができない。"
+      - "スライム: そんな……"
+      - "お医者さん: このままでは、\nきみのママは目を覚まさないかもしれない。"
+      - スライムの目から、大粒の涙がこぼれました。
+      - "スライム: いやだよ……。\nママ、ずっと頑張ってたのに……。"
+      - "スライム: お願い！ 何か方法はないの？\nどんな方法でもいいから！"
+      - "スライムが何度も何度も頼むと、お医者さんはしばらく考え込み、\n小さな声で言いました。"
+      - "お医者さん: 昔から、この宇宙のどこかに\n不思議な星があると言われているんだ。"
+      - "スライム: 星？"
+      - "お医者さん: ああ、全部で五つだそうだ。"
+      - "お医者さん: その五つをすべて集めた者は、\nたった一つだけ、どんな願いでも叶えてもらえるという。"
+      - スライムは涙をぬぐいました。
+      - "スライム: じゃあ、その星を集めたら……"
+      - "お医者さん: ママを助けられるかもしれない。"
+      - スライムはすぐに立ち上がりました。
+      - "スライム: じゃあ僕が集めてくる！"
+      - "お医者さん: 待ちなさい！"
+      - お医者さんは驚いてスライムを止めました。
+      - "お医者さん: 宇宙がどれだけ危険な場所か分かっているのか？"
+      - "スライム: 分からない。"
+      - "お医者さん: だったら――"
+      - "スライム: じゃあお医者さんは、ママを助けられるの？"
+      - お医者さんは何も答えることができませんでした。
+      - スライムはママのそばへ行きました。
+      - "そして、いつも頭をなでてもらっていたように、\n今度はスライムがママの頭をそっとなでました。"
+      - "スライム: ママ。\nちょっとだけ待っててね。"
+      - "スライム: 僕が絶対に集めて帰ってくるから。"
+      - "スライムは家を飛び出しました。\n草原を走り抜け、その先にある小さなロケットへと向かいます。"
+      - "生まれて初めて見る宇宙。\nどんな星があるのかも、"
+      - "どんな危険が待っているのかも、\nスライムには何も分かりません。"
+      - それでも、怖くはありませんでした。
+      - "ママを助けたい。\nただ、その気持ちだけを胸に――"
+      - スライムはロケットに乗り込みました。
+      - "スライム: 待っててね、ママ！"
+      - ロケットは大きな音を立てて空へ飛び上がります。
+      - "草原はどんどん小さくなり、\nやがて青い空を抜け、"
+      - スライムは広い広い宇宙へと旅立っていきました。
+      - "五つの星を探す、\n長い長い冒険の始まりです。"
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
+ending:
+  - id: bgTexture
+    type: texture
+    posRatio: [0, 0]
+    scaleRatio: [1, 1]
+    rotationDegrees: 0
+  - id: endingText
     type: text
-    posRatio: [0.7872, 0.0102]
-    scaleRatio: [0.0003, 1.0]
-    text: ["スキップする: Enter"]
-  - id: skipTextForGameController
+    posRatio: [0.065, 0.14]
+    scaleRatio: [0.000333333, 1.0]
+    text:
+      - "長い長い宇宙の旅の末、\nスライムはついに5つすべての星を集めました。"
+      - "傷だらけになりながらも、\nスライムは5つの星を大事そうに抱えていました。"
+      - "スライム: やっと……やっと集まった！"
+      - "すると、5つの星がスライムの手の中から\nふわりと浮かび上がりました。"
+      - "星たちは空中でくるくると回りはじめ、\nやがてまぶしい光となって一つに重なりました。"
+      - そして、どこからともなく声が聞こえてきました。
+      - "？？？: 5つの星を集めし者よ。\nあなたの願いを一つだけ叶えましょう。"
+      - スライムは迷いませんでした。
+      - "スライム: ママを助けて！"
+      - 少しの間、あたりが静かになりました。
+      - "？？？: たくさんのお宝も、強い力もいらないのですか？"
+      - "スライム: いらないよ！"
+      - スライムは大きな声で答えました。
+      - "スライム: 僕はママに、もう一度会いたい！"
+      - その瞬間、5つの星がこれまでで一番強く輝きました。
+      - "光は一本の大きな流れとなって、はるか遠く、\nスライムの暮らしていた草原へと飛んでいきました。"
+      - "スライム: ママ……！"
+      - "スライムは急いでロケットに乗り込み、\n故郷へと向かいました。"
+      - そして――
+      - "長い旅を終えて家の前に行くと、\nお医者さんが立っていました。"
+      - スライムは息を切らしながら聞きました。
+      - "スライム: ママは！？"
+      - "お医者さんは何も言わず、\nにっこり笑って奥の部屋を見ていました。"
+      - スライムが恐る恐る部屋へ入ると――
+      - "ママ: おかえり。"
+      - "そこには、ベッドの上で笑っている\nママスライムがいました。"
+      - "スライム: ……ママ？"
+      - "ママ: ずいぶん遠くまで行ってたみたいだね。"
+      - "スライム: ママ！！"
+      - スライムは勢いよくママに飛びつきました。
+      - "スライム: うわあああん！ ママぁ！"
+      - "ママ: よしよし。心配かけちゃったね。"
+      - "スライム: ぼく、星をいっぱい探して……\nいろんなところに行って……怖いこともいっぱいあって……！"
+      - "泣きながら一生懸命話すスライムを、\nママは優しく抱きしめました。"
+      - "ママ: 頑張ったんだね。"
+      - "スライム: うん……！"
+      - "しばらくして、スライムが落ち着くと、\nママは言いました。"
+      - "ママ: でもね。\nもう一人で、こんな危ないことしちゃダメだよ。"
+      - "スライム: ……はーい。"
+      - お医者さんはその様子を見ながら笑いました。
+      - "お医者さん: まったく。\n本当に宇宙を飛び回って星を集めてくるとはな。"
+      - スライムはちょっとだけ得意そうに胸を張りました。
+      - "スライム: だって、ママを助けられるのは\n僕しかいなかったから！"
+      - "ママ: そうだったね。"
+      - ママは笑いました。
+      - "次の日。\nいつもの草原に朝がやってきました。"
+      - ママスライムは家の前で準備をしていました。
+      - "ママ: じゃあ、お仕事に行ってくるね。"
+      - "スライムは少しだけ不安そうな顔をしました。\nそんなスライムを見て、ママは優しく頭をなでました。"
+      - "ママ: 大丈夫。今日はちゃんと帰ってくるよ。"
+      - "スライムはしばらくママを見つめていましたが、\nやがていつもの笑顔になりました。"
+      - "スライム: うん！"
+      - そして大きく手を振りました。
+      - "スライム: ママ、いってらっしゃい！"
+      - "ママ: いってきます。"
+      - "草原の向こうへ進んでいくママを、\nスライムはいつまでも見送っていました。"
+      - "ふと空を見上げると、\nそこには5つの小さな光が輝いていました。"
+      - スライムはそれを見て、にっこり笑いました。
+      - こうして、スライムの長い長い宇宙の旅は終わりました。
+      - でも――
+      - "宇宙には、スライムがまだ知らない星が\nたくさんあります。"
+      - "もしかするといつか、\n今度は誰かを助けるためではなく、"
+      - 自分の知らない世界を見つけるために、
+      - もう一度宇宙へ飛び出す日が来るのかもしれません。
+      - おしまい
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
+credits:
+  - id: bgTexture
+    type: texture
+    posRatio: [0, 0]
+    scaleRatio: [1, 1]
+    rotationDegrees: 0
+  - id: creditsText
     type: text
-    posRatio: [0.8312, 0.0102]
-    scaleRatio: [0.0003, 1.0]
-    text: ["スキップする: +"]
+    posRatio: [0.5, 0.43]
+    scaleRatio: [0.0005, 1.0]
+    text:
+      - "Slime's Space Travel\n\n制作\n草方 拓海\n\n遊んでくれてありがとう！\n\n決定ボタンでタイトルへ"
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 gameOver:
   - id: gameOverText
     type: text
     posRatio: [0.5, 0.444]
     scaleRatio: [0.000625, 1.0]
-    text: [ゲームオーバー！]
-  - id: restartTextForGameController
+    text:
+      - ゲームオーバー！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: restartText
     type: text
     posRatio: [0.5, 0.6111]
     scaleRatio: [0.0003125, 1.0]
-    text: ["直前からリスタート: X"]
-  - id: restartTextForKeyBoard
+    text:
+      - 直前からリスポーンします
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+ugcClearResult:
+  - id: titleText
     type: text
-    posRatio: [0.5, 0.6111]
-    scaleRatio: [0.0003125, 1.0]
-    text: ["直前からリスタート: K"]
+    posRatio: [0.5, 0.30]
+    scaleRatio: [0.00052, 1.0]
+    text:
+      - ステージクリア！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: retryText
+    type: text
+    posRatio: [0.5, 0.46]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - もう一度遊ぶ
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnEditorText
+    type: text
+    posRatio: [0.5, 0.55]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - 編集に戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnTitleText
+    type: text
+    posRatio: [0.5, 0.64]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - タイトルに戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 default:
-  - id: operationSupportTextForGameController
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド非表示 -:メニュー表示 A:ジャンプ B:回避 Y:弱攻撃 X:強攻撃 L + Y or X:スペシャル攻撃 R:回復 空中でX長押し→離す:溜め攻撃]
-  - id: operationSupportTextForKeyBoard
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text: [ESC:メニュー表示 WASD:移動 左右←→:カメラ回転 Space:ジャンプ U:回避 J:弱攻撃 K:強攻撃 N + J or K:スペシャル攻撃 M:回復 空中でK長押し→離す:溜め攻撃]
-  - id: operationSupportHiddenText
-    type: text
-    posRatio: [0.0125, 0.9762]
-    scaleRatio: [0.00015, 1.0]
-    text: [+:操作ガイド表示]
   - id: hpTexture
     type: texture
-    posRatio: [0.01875, 0.01875]
-    scaleRatio: [0.03, 0.03]
+    posRatio: [0.018194482, 0.018749999]
+    scaleRatio: [0.029999996, 0.03]
+    rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.015, 0.05]
-    scaleRatio: [0.06, 0.06]
+    posRatio: [0.009531784, 0.07929999]
+    scaleRatio: [0.05, 0.050000004]
+    rotationDegrees: 0
   - id: talkableTextForGameController
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: ["会話: X"]
+    text:
+      - "はなす: X"
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: talkableTextForKeyBoard
     type: text
-    posRatio: [0.5, 0.558]
+    posRatio: [0.5, 0.5738201]
     scaleRatio: [0.0003125, 1.0]
-    text: ["会話: K"]
+    text:
+      - "はなす: K"
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: remainPartsText
     type: text
-    posRatio: [0.2, 0.015]
-    scaleRatio: [0.0003125, 1.0]
-    text: ["残りのパーツ数: "]
+    posRatio: [0.22378886, 0.014999998]
+    scaleRatio: [0.00031249996, 1.0]
+    text:
+      - "のこりのパーツ数: "
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
 state:
-  - id: battleTutorialTextForGameController
-    type: text
-    posRatio: [0.065, 0.14]
-    scaleRatio: [0.000333333, 1.0]
-    text: ["この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！", 戦闘の基本としては敵に近づいてYまたはXで攻撃します！, "Yは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！", "Xは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！", "まずはY→Y→YまたはY→Y→Xのコンボを使って、\n敵に3回攻撃してみましょう！"]
-  - id: battleTutorialTextForKeyBoard
-    type: text
-    posRatio: [0.065, 0.14]
-    scaleRatio: [0.000333333, 1.0]
-    text: ["この惑星は敵が多そうですね...\nということで敵の倒し方を伝授します！", 戦闘の基本としては敵に近づいてJまたはKで攻撃します！, "Jは弱攻撃で攻撃力が低いですが、\n一定方向に連続して攻撃することができます！", "Kは強攻撃で攻撃力が高く、\n攻撃後の隙が大きいですが全方向に攻撃することができます！", "まずはJ→J→JまたはJ→J→Kのコンボを使って、\n敵に3回攻撃してみましょう！"]
-  - id: breakTutorialText
-    type: text
-    posRatio: [0.065, 0.14]
-    scaleRatio: [0.000333333, 1.0]
-    text: ["3回攻撃できましたね！\n敵の頭上にあったガードがなくなったことに気づきましたか？", "というのも、敵に3回攻撃を当てると\nガードを1個破壊することができるのです！", "全てのガードを破壊することで\n敵を空中に打ち上げることができます！", 空中の敵を攻撃する時は空中乱舞か空中溜め攻撃を使います！, 空中乱舞はジャンプ中に弱攻撃を連打できるというものです！, "空中溜め攻撃は大きなクリスタルを壊すときに使った技です！\n強力ですが、攻撃後に少しの間動けなくなります！", "動けない時に弱攻撃ボタンを連打することで\n早く動けるようになるため、忘れずに連打しましょう！", "非常に強い技なので、ガードを全破壊して空中乱舞と\n空中溜め攻撃でサクサク敵を倒していきましょう！"]
-  - id: jewelTutorialTextForGameController
-    type: text
-    posRatio: [0.065, 0.74]
-    scaleRatio: [0.000333333, 1.0]
-    text: ["ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？", "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。", "まずRを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。", "またLを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。", "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！", "そしてLを押しながらXでジュエルを2個消費して、\n溜め状態になります！", 溜め状態中はLもXも離したままで大丈夫ですよ！, "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！", "溜まったらXを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！", "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！", "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！", "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"]
-  - id: jewelTutorialTextForKeyBoard
-    type: text
-    posRatio: [0.065, 0.74]
-    scaleRatio: [0.000333333, 1.0]
-    text: ["ちょっと失礼！左上の青いジュエル、\n何に使うんだろうとお困りではないですか？", "このジュエルは一定時間経過で生成されるもので、\n最大2個まで所持することができます。", "まずMを押すとジュエルを1個消費して、\n自分の体力を1個回復させることができます。", "またNを押しながらYでジュエルを1個消費して、\n一定時間自分の前にいる敵を連続で自動攻撃します。", "自動攻撃の時、攻撃に集中して\n回避ができなくなるので注意してください！", "そしてNを押しながらXでジュエルを2個消費して、\n溜め状態になります！", 溜め状態中はNもKも離したままで大丈夫ですよ！, "溜め状態の時、溜めに集中して\n回避しか使えなくなるので注意してください！", "溜まったらKを押すことで敵のガードを全て破壊し、\n大ダメージを与える地上溜め攻撃を繰り出せます！", "敵が攻撃する瞬間に地上溜め攻撃を当てるとダメージが2倍に\nなってジュエルが全回復します！", "ジュエルは使っても時間経過により復活するので\nどんどん使っていくのをおすすめします！", "それではこれまで学んだことを活かして\n全ての敵を倒してみましょう！"]
-  - id: justDodgeTutorialText
-    type: text
-    posRatio: [0.065, 0.14]
-    scaleRatio: [0.000333333, 1.0]
-    text: [さあ、ここが最後の惑星です！, この惑星にはとても大きなボスがいます。, "ボスは体力が多いため、倒すのに苦労すると思います！\nということで新技を伝授します！", "敵が攻撃した瞬間に、敵に向かって回避をすることで\nジャスト回避をすることができます！", "ジャスト回避が成功すると、敵のガードを全破壊し、\nジュエルを1個回復することができます！", "回復したいけどジュエルが足りない、\nそんな窮地に立たされた時に狙ってみてください！", さあ、ボスを倒しに行きましょう！]
   - id: stageClearText
     type: text
-    posRatio: [0.5, 0.333]
-    scaleRatio: [0.000625, 1.0]
-    text: [Thank You For Playing！]
+    posRatio: [0.50000006, 0.2141653]
+    scaleRatio: [0.00032500003, 1.0]
+    text:
+      - STAR GET！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: ugcClearVerificationGuideText
+    type: text
+    posRatio: [0.9, 0.055]
+    scaleRatio: [0.00024, 1.0]
+    text:
+      - ゴールできれば完成！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: recommendReduceTiredTextForGameController
     type: text
     posRatio: [0.5, 0.558]
     scaleRatio: [0.0003125, 1.0]
-    text: [Y連打で疲労回復！]
+    text:
+      - Y連打で疲労回復！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: recommendReduceTiredTextForKeyBoard
     type: text
     posRatio: [0.5, 0.558]
-    scaleRatio: [0.0003125, 1.0]
-    text: [J連打で疲労回復！]
+    scaleRatio: [0.00031249996, 1.0]
+    text:
+      - J連打で疲労回復！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: loadingText
     type: text
     posRatio: [0.01875, 0.9222]
     scaleRatio: [0.0003125, 1.0]
-    text: [Loading...]
+    text:
+      - Loading...
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: false
+    rotationDegrees: 0
   - id: loadingTexture
     type: texture
     posRatio: [0.01875, 0.8555]
     scaleRatio: [0.0625, 0.0755]
+    rotationDegrees: 0
   - id: talkBgTexture
     type: texture
     posRatio: [0.0375, 0.0555]
     scaleRatio: [0.75, 0.25]
+    rotationDegrees: 0
   - id: talkText
     type: text
     posRatio: [0.065, 0.14]
     scaleRatio: [0.000333333, 1.0]
+    rubyScaleRatio: 0.36
+    rubyGapRatio: -0.46
+    centerBased: false
+    rotationDegrees: 0
 pauseMenu:
   - id: overlayBg
     type: texture
     posRatio: [0, 0]
     scaleRatio: [1, 1]
+    rotationDegrees: 0
   - id: panelBg
     type: texture
-    posRatio: [0.29, 0.21]
-    scaleRatio: [0.42, 0.58]
+    posRatio: [0.2494735, 0.21826094]
+    scaleRatio: [0.501053, 0.56347793]
+    rotationDegrees: 0
   - id: titleText
     type: text
-    posRatio: [0.5, 0.3028]
+    posRatio: [0.50000006, 0.275]
     scaleRatio: [0.0003801, 1.0]
-    text: [メニュー]
+    text:
+      - ""
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: resumeText
     type: text
-    posRatio: [0.5, 0.4072]
+    posRatio: [0.5009458, 0.3196028]
     scaleRatio: [0.0003072, 1.0]
-    text: [ゲームに戻る]
+    text:
+      - ゲームにもどる
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: controlStyleText
+    type: text
+    posRatio: [0.49999994, 0.3925688]
+    scaleRatio: [0.0003072, 1.0]
+    text:
+      - "操作スタイル: "
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: twoPlayerText
+    type: text
+    posRatio: [0.4999999, 0.46796587]
+    scaleRatio: [0.00030719998, 1.0]
+    text:
+      - ふたりであそぶ
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: returnBaseText
     type: text
-    posRatio: [0.5, 0.4826]
-    scaleRatio: [0.0003072, 1.0]
-    text: [拠点に戻る]
+    posRatio: [0.49999994, 0.5376902]
+    scaleRatio: [0.00030719998, 1.0]
+    text:
+      - 拠点にもどる
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: feedbackText
     type: text
-    posRatio: [0.5, 0.558]
-    scaleRatio: [0.0003072, 1.0]
-    text: [感想を書く]
+    posRatio: [0.49999994, 0.6114665]
+    scaleRatio: [0.00030719987, 1.0]
+    text:
+      - 感想をかく
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: quitText
     type: text
-    posRatio: [0.5, 0.6334]
-    scaleRatio: [0.0003072, 1.0]
-    text: [ゲーム終了]
+    posRatio: [0.49999985, 0.68038064]
+    scaleRatio: [0.00030719995, 1.0]
+    text:
+      - 保存してゲームをやめる
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: operationTextForKeyBoard
     type: text
-    posRatio: [0.5, 0.732]
+    posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
-    text: [↑↓:選択 Enter:決定 ESC:閉じる]
+    text:
+      - ""
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
   - id: operationTextForGameController
     type: text
-    posRatio: [0.5, 0.732]
+    posRatio: [0.5, 0.75]
     scaleRatio: [0.00022, 1.0]
-    text: [↑↓:選択 A:決定 -:閉じる]
+    text:
+      - ""
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0

@@ -13,6 +13,10 @@ public:
     EnemyStatus();
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
+    void SetIsNormalHitKnockBackEnabled(bool isEnabled)
+    {
+        mIsNormalHitKnockBackEnabled = isEnabled;
+    }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
@@ -28,6 +32,7 @@ public:
     void SetHpZero() { mHealth.SetHpZero(); }
 
     void SetDefaultLaunchedTimer(float defaultLaunchedTimer) { mDefaultLaunchedTimer = defaultLaunchedTimer; }
+    void SetLaunchHeight(float launchHeight) { mLaunchHeight = launchHeight; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
     void SetAttack(float attack) { mAttack = attack; }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
@@ -36,6 +41,10 @@ public:
         mDefaultStandByAttackTimer = defaultStandByAttackTimer;
     }
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
+    void SetAttackPreparationRange(float attackPreparationRange)
+    {
+        mAttackPreparationRange = attackPreparationRange;
+    }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
@@ -71,10 +80,15 @@ public:
     void ClearIsCountered() { mIsCountered = false; }
 
     void ClearHitPlayers() { mHitPlayers.clear(); }
+    bool HasHitAnyPlayer() const { return !mHitPlayers.empty(); }
     bool HasHitPlayer(Player* player) const { return mHitPlayers.contains(player); }
     void AddHitPlayer(Player* player) { mHitPlayers.insert(player); }
 
     bool GetIsBoss() const { return mIsBoss; }
+    bool IsNormalHitKnockBackEnabled() const
+    {
+        return mIsNormalHitKnockBackEnabled;
+    }
     bool GetCanCountered() const { return mCanCountered; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
@@ -88,11 +102,13 @@ public:
     float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2.0f); }
     float GetStandByAttackTimer() const { return mStandByAttackTimer; }
     float GetDetectionRange() const { return mDetectionRange; }
+    float GetAttackPreparationRange() const { return mAttackPreparationRange; }
     float GetMoveSpeed() const { return mMoveSpeed; }
     float GetKnockBackSpeed() const { return mKnockBackSpeed; }
     float GetAttackSpeed() const { return mAttackSpeed; }
     float GetDefaultStandByAttackTimer() const { return mDefaultStandByAttackTimer; }
     float GetDefaultLaunchedTimer() const { return mDefaultLaunchedTimer; }
+    float GetLaunchHeight() const { return mLaunchHeight; }
     float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
     float GetAttackMotionTimer() const { return mAttackMotionTimer; }
     float GetDyingTimer() const { return mDyingTimer; }
@@ -117,6 +133,7 @@ private:
 
     bool mIsCountered;
     bool mIsBoss;
+    bool mIsNormalHitKnockBackEnabled = true;
     bool mIsHit;
     bool mIsStrongAttacked;
     bool mIsJustBeforeAttack;
@@ -124,6 +141,7 @@ private:
 
     float mAttack;
     float mDetectionRange;
+    float mAttackPreparationRange;
     float mMoveSpeed;
     float mKnockBackSpeed;
     float mAttackSpeed;
@@ -132,6 +150,7 @@ private:
     float mDefaultStandByAttackTimer;
     float mLaunchedTimer;
     float mDefaultLaunchedTimer;
+    float mLaunchHeight;
     float mAttackMotionTimer;
     float mDefaultAttackMotionTimer;
     float mDyingTimer;

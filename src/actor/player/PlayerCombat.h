@@ -4,6 +4,7 @@
 #include "actor/player/PlayerAttackResolver.h"
 #include "actor/player/PlayerTypes.h"
 
+#include <cstdint>
 #include <vector>
 
 class Player;
@@ -11,38 +12,75 @@ class PlayerInput;
 class PlayerJewelGauge;
 class PlayerMovement;
 class PlayerStatus;
+class PhysicsSystem;
 
 class PlayerCombat {
 public:
+    explicit PlayerCombat(PhysicsSystem& physicsSystem);
+
     bool IsAttacking() const;
-    bool CanMoveDuringAttack() const { return mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking; }
+    std::uint64_t GetResolvedAttackSequence() const
+    {
+        return mResolvedAttackSequence;
+    }
+    bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
+    bool CanMoveDuringAttack() const
+    {
+        return mAirAttackMovementUnlockedByDodge ||
+               (mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking);
+    }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
-    bool IsAirAttackFloating() const { return mAirAttackFloatingTimer > 0.0f; }
+    bool IsAirAttacking() const { return mIsAirAttacking; }
+    bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
+    bool CanStartAirAttack() const
+    {
+        return mAirAttackCount < maximumAirAttackCount;
+    }
 
-    void StartAttacking(Player& player, const PlayerInput& input, PlayerMovement& movement, PlayerStatus& status,
-                        float deltaTime);
-    void StartCharging(Player& player);
-    void StartStrongAttacking(Player& player, float deltaTime);
-    void FinishCharging(Player& player, const PlayerMovement& movement);
+    void StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
+                        PlayerStatus& status, float deltaTime);
+    void StartAssistStrongAttacking(Player& player, float deltaTime);
     void FinishSpecialAttackCharging();
+    void StartAirSlamAttack();
+    bool ResolveAirSlamImpact(
+        Player& player,
+        PlayerMovement& movement,
+        float deltaTime);
 
     void Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime);
-    void UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+    bool UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
+    void AdvanceContinuousAttackDuration(float deltaTime);
+    bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 
     void StartSpecialAttackCharging();
     void StartContinuousAttacking();
+    void EndContinuousAttacking();
     void StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime);
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
+    void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
     void CancelSpecialAttack();
+    void CancelCurrentAttack();
+    void CancelAirAttackForDodge();
     void OnLanded();
+    void PrepareAssistAirCombo();
+    bool RegisterAirWeakAttackHit();
+    void ResetAirWeakAttackHitCount();
+    void StartAirDodgeAttack();
+    void UpdateAirDodgeAttack(
+        Player& player,
+        PlayerMovement& movement,
+        const glm::vec3& movementStart,
+        const glm::vec3& movementEnd);
+    void EndAirDodgeAttack();
+    void StartGroundWeakAttackCooldown();
+    void StartAirWeakAttackCooldown();
 
-    void UpdateAirAttackFloatingTimer(float deltaTime);
     void UpdateAttackCooldown(float deltaTime);
     void UpdateAttackMoveLock(PlayerStatus& status, float deltaTime);
     void UpdateAttackDodgeLock(float deltaTime);
@@ -50,9 +88,15 @@ public:
 
     void SetAttack(float attack) { mAttack = attack; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
-    void SetAttackCooldown(float attackCooldown) { mAttackCooldown = attackCooldown; }
+    void SetGroundWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mGroundWeakAttackCooldownSeconds = cooldownSeconds;
+    }
+    void SetAirWeakAttackCooldownSeconds(float cooldownSeconds)
+    {
+        mAirWeakAttackCooldownSeconds = cooldownSeconds;
+    }
     void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
-    void SetDefaultAttackPressTimer(float defaultAttackPressTimer) { mDefaultAttackPressTimer = defaultAttackPressTimer; }
     void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
     void SetNormalAttackAngle(float normalAttackAngle) { mNormalAttackAngle = normalAttackAngle; }
@@ -60,18 +104,50 @@ public:
     void SetWideAttackRange(float wideAttackRange) { mWideAttackRange = wideAttackRange; }
     void SetWideAttackAngle(float wideAttackAngle) { mWideAttackAngle = wideAttackAngle; }
     void SetWideAttack(float wideAttack) { mWideAttack = wideAttack; }
+    void SetAirDodgeAttackDamage(float damage) { mAirDodgeAttackDamage = damage; }
+    void SetAirDodgeHorizontalHitboxScale(float scale) { mAirDodgeHorizontalHitboxScale = scale; }
+    void SetAirDodgeVerticalHitboxScale(float scale) { mAirDodgeVerticalHitboxScale = scale; }
+    void SetAirDodgeEnemyPushSpeed(float speed) { mAirDodgeEnemyPushSpeed = speed; }
+    void SetAirDodgeEnemyPushDampingPerSecond(float dampingPerSecond)
+    {
+        mAirDodgeEnemyPushDampingPerSecond = dampingPerSecond;
+    }
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
+    void SetChargedAttackRange(float chargedAttackRange) { mChargedAttackRange = chargedAttackRange; }
+    void SetChargedAttackAngle(float chargedAttackAngle) { mChargedAttackAngle = chargedAttackAngle; }
+    void SetChargedAttackDamage(float chargedAttackDamage) { mChargedAttackDamage = chargedAttackDamage; }
+    void SetChargedAttackChargeDurationSeconds(float chargeDurationSeconds)
+    {
+        mChargedAttackChargeDurationSeconds = chargeDurationSeconds;
+    }
+    void SetContinuousAttackRange(float continuousAttackRange) { mContinuousAttackRange = continuousAttackRange; }
+    void SetContinuousAttackAngle(float continuousAttackAngle) { mContinuousAttackAngle = continuousAttackAngle; }
+    void SetContinuousAttackDamage(float continuousAttackDamage) { mContinuousAttackDamage = continuousAttackDamage; }
+    void SetContinuousAttackIntervalSeconds(float attackIntervalSeconds)
+    {
+        mContinuousAttackIntervalSeconds = attackIntervalSeconds;
+    }
+    void SetContinuousAttackDurationSeconds(float attackDurationSeconds)
+    {
+        mContinuousAttackDurationSeconds = attackDurationSeconds;
+    }
     void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer) { mDefaultStrongAttackTimer = defaultStrongAttackTimer; }
     void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
+    void SetAttackHitDelay(float attackHitDelay) { mAttackHitDelay = attackHitDelay; }
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
     void SetStrongAttackHit(bool value) { mIsStrongAttackHit = value; }
-    void ResetAttackComboIndex() { mAttackComboIndex = 0; }
+    void ResetGroundAttackCombo()
+    {
+        mAttackComboIndex = 0;
+        mComboKeepTimer = -1.0f;
+    }
 
     PlayerAttackKind GetAttackKind() const { return mAttackKind; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
+    bool GetIsAssistStrongAttack() const { return mIsAssistStrongAttack; }
     bool GetIsCharged() const { return mIsCharged; }
     bool GetCanSpecialAttack() const { return mCanSpecialAttack; }
     bool GetIsStrongAttackHit() const { return mIsStrongAttackHit; }
@@ -79,15 +155,20 @@ public:
     float GetAttack() const { return mAttack; }
     float GetAttackSpeed() const { return mAttackSpeed; }
     float GetAttackCooldownRemaining() const { return mAttackCooldownRemaining; }
-    float GetAttackCooldown() const { return mAttackCooldown; }
+    float GetGroundWeakAttackCooldownSeconds() const
+    {
+        return mGroundWeakAttackCooldownSeconds;
+    }
+    float GetAirWeakAttackCooldownSeconds() const
+    {
+        return mAirWeakAttackCooldownSeconds;
+    }
     float GetLastAttackCooldown() const { return mLastAttackCooldown; }
-    float GetDefaultAttackPressTimer() const { return mDefaultAttackPressTimer; }
     float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
     float GetAttackMoveLockRemaining() const { return mAttackMoveLockRemaining; }
     float GetAttackDodgeLockRemaining() const { return mAttackDodgeLockRemaining; }
     float GetAttackMotionTimer() const { return mAttackMotionTimer; }
     float GetStrongAttackTimer() const { return mStrongAttackTimer; }
-    float GetAttackPressTimer() const { return mAttackPressTimer; }
     float GetSpecialChargingTimer() const { return mSpecialChargingTimer; }
     float GetContinuousAttackingTimer() const { return mContinuousAttackingTimer; }
     float GetComboKeepTimer() const { return mComboKeepTimer; }
@@ -99,15 +180,32 @@ public:
     float GetWideAttackRange() const { return mWideAttackRange; }
     float GetWideAttackAngle() const { return mWideAttackAngle; }
     float GetWideAttack() const { return mWideAttack; }
+    float GetAirDodgeAttackDamage() const { return mAirDodgeAttackDamage; }
+    float GetAirDodgeHorizontalHitboxScale() const { return mAirDodgeHorizontalHitboxScale; }
+    float GetAirDodgeVerticalHitboxScale() const { return mAirDodgeVerticalHitboxScale; }
+    float GetAirDodgeEnemyPushSpeed() const { return mAirDodgeEnemyPushSpeed; }
+    float GetAirDodgeEnemyPushDampingPerSecond() const
+    {
+        return mAirDodgeEnemyPushDampingPerSecond;
+    }
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
+    float GetChargedAttackRange() const { return mChargedAttackRange; }
+    float GetChargedAttackAngle() const { return mChargedAttackAngle; }
+    float GetChargedAttackDamage() const { return mChargedAttackDamage; }
+    float GetChargedAttackChargeDurationSeconds() const { return mChargedAttackChargeDurationSeconds; }
+    float GetContinuousAttackRange() const { return mContinuousAttackRange; }
+    float GetContinuousAttackAngle() const { return mContinuousAttackAngle; }
+    float GetContinuousAttackDamage() const { return mContinuousAttackDamage; }
+    float GetContinuousAttackIntervalSeconds() const { return mContinuousAttackIntervalSeconds; }
+    float GetContinuousAttackDurationSeconds() const { return mContinuousAttackDurationSeconds; }
     float GetDefaultStrongAttackTimer() const { return mDefaultStrongAttackTimer; }
     float GetDefaultAttackMotionTimer() const { return mDefaultAttackMotionTimer; }
+    float GetAttackHitDelay() const { return mAttackHitDelay; }
     const std::vector<PlayerRaySegment>& GetRayCasts() const { return mRayCasts; }
 
     void ReduceAttackMotionTimer(float deltaTime) { mAttackMotionTimer -= deltaTime; }
-    void ReduceAttackPressTimer(float deltaTime) { mAttackPressTimer -= deltaTime; }
     void ReduceStrongAttackTimer(float deltaTime) { mStrongAttackTimer -= deltaTime; }
     void ReduceSpecialChargingTimer(float deltaTime) { mSpecialChargingTimer -= deltaTime; }
     void ReduceContinuousAttackingTimer(float deltaTime) { mContinuousAttackingTimer -= deltaTime; }
@@ -115,32 +213,50 @@ public:
     void SetContinuousAttackingCooldown(float value) { mContinuousAttackingCooldown = value; }
     float GetContinuousAttackingCooldown() const { return mContinuousAttackingCooldown; }
     void ClearStrongAttackHit() { mIsStrongAttackHit = false; }
+    bool CanAcceptMovementInput() const;
+
+private:
+    static constexpr int maximumAirAttackCount = 3;
+    static constexpr int airWeakAttackHitsForBreak = 3;
+
+    void StartAttackHitDelay();
+    void ClearPendingAttackHit();
+    void ConfigureStrongAttack();
+    void StartGroundFinisherCooldown();
 
 private:
     PlayerAttackKind mAttackKind = PlayerAttackKind::Normal;
 
     bool mIsStrongAttackHit = false;
+    bool mIsAssistStrongAttack = false;
     bool mIsStrongAttacked = false;
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
+    // 空中弱攻撃は着地まで移動を止める。ただし回避でキャンセルした
+    // 場合だけ、次の空中弱攻撃を開始するまで移動を許可する。
+    bool mAirAttackMovementUnlockedByDodge = false;
+    bool mIsAirDodgeAttackActive = false;
+    bool mHasPendingAttackHit = false;
 
     int mAttackComboIndex = 0;
+    int mAirAttackCount = 0;
+    int mAirWeakAttackHitCount = 0;
 
     float mAttackStartHeight = 0.0f;
     float mAttack = 10.0f;
     float mAttackSpeed = 5.0f;
     float mAttackCooldownRemaining = 0.0f;
-    float mAttackCooldown = 0.3f;
+    float mGroundWeakAttackCooldownSeconds = 0.0f;
+    float mAirWeakAttackCooldownSeconds = 0.19f;
     float mLastAttackCooldown = 1.0f;
     float mAttackMoveLockRemaining = -1.0f;
     float mAttackDodgeLockRemaining = 0.0f;
     float mAttackMotionTimer = -1.0f;
     float mDefaultAttackMotionTimer = 0.3f;
-    float mAirAttackFloatingTimer = -1.0f;
+    float mAttackHitDelay = 0.5f;
+    float mAttackHitDelayRemaining = -1.0f;
     float mSpecialAttackCooldown = 30.0f;
-    float mAttackPressTimer = -1.0f;
-    float mDefaultAttackPressTimer = 0.0f;
     float mStrongAttackTimer = -1.0f;
     float mDefaultStrongAttackTimer = 0.06f;
     float mComboKeepTimer = -1.0f;
@@ -152,14 +268,31 @@ private:
     float mWideAttackRange = 2.8f;
     float mWideAttackAngle = -0.2f;
     float mWideAttack = 5.0f;
+    float mAirDodgeAttackDamage = 5.0f;
+    float mAirDodgeHorizontalHitboxScale = 1.0f;
+    float mAirDodgeVerticalHitboxScale = 2.0f;
+    float mAirDodgeEnemyPushSpeed = 6.0f;
+    float mAirDodgeEnemyPushDampingPerSecond = 8.0f;
     float mStrongAttackRange = 6.0f;
     float mStrongAttack = 50.0f;
     float mStrongAttackSpeed = 100.0f;
+    float mChargedAttackRange = 2.6f;
+    float mChargedAttackAngle = 6.283f;
+    float mChargedAttackDamage = 50.0f;
+    float mChargedAttackChargeDurationSeconds = 3.0f;
+    float mContinuousAttackRange = 2.0f;
+    float mContinuousAttackAngle = 6.283f;
+    float mContinuousAttackDamage = 2.5f;
+    float mContinuousAttackIntervalSeconds = 0.25f;
+    float mContinuousAttackDurationSeconds = 6.0f;
     float mSpecialChargingTimer = -1.0f;
     float mContinuousAttackingTimer = -1.0f;
     float mContinuousAttackingCooldown = -1.0f;
 
     std::vector<PlayerRaySegment> mRayCasts;
+    std::vector<Enemy*> mAirDodgeHitEnemies;
+
+    std::uint64_t mResolvedAttackSequence = 0;
 
     PlayerAttackHitDetector mHitDetector;
     PlayerAttackResolver mAttackResolver;

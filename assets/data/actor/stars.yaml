@@ -1,3 +1,10 @@
 stars:
   - modelPath: star.obj
     scale: 0.3
+    collectionAnimation:
+      orbitDuration: 1.2
+      orbitStartRadius: 1.35
+      orbitSpinDegreesPerSecond: 800
+      finalHeight: 2.15
+      waitAbovePlayerDuration: 0.5
+      fallDuration: 0.2

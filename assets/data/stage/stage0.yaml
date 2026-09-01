@@ -1,21 +1,307 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
-    scale: [10.0, 10.0, 10.0]
+  - center: [0, 0, 0]
+    scale: [30, 3, 30]
     color: [1.0, 1.0, 1.0, 1.0]
-    shape: Ellipse
-    model: selectField.obj
+    model: planet_3.obj
+    textureOverride: textures/planet.png
+    textureTiling:
+      - 30
+      - 3
+    rocketSpawnCondition: ""
+    backTextureOverride: textures/planet_dry.png
+    textureSideBlendWidth: 0.05
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
+    stageNum: 0
+  - center:
+      - -27.1
+      - -75.48419
+      - -36.12
+    scale:
+      - 10
+      - 10
+      - 10
+    color:
+      - 1
+      - 1
+      - 1
+      - 1
+    model: planet.obj
+    stageNum: 1
+    rocketSpawnCondition: ""
+    textureTiling:
+      - 10
+      - 10
+    textureSideBlendWidth: 0.05
+    textureOverride: textures/planet_moon.png
+    canAttractNearbyPlayer: true
+    reactsToOverheadGravityRay: false
 boats:
-  - currentPlanetNum: 0
-    theta: -1.570796
+  - theta: -1.570796
     phi: 0.811034
     height: 3.793
+    destStage: 4
+    facingYaw: -1.6000001
+    pos:
+      - 1.4
+      - 28.34
+      - -14.58
+    rotation:
+      - 0
+      - -1.6
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0
+      - 1
+      - 0
+    startPlanet: 0
+    destPlanet: 0
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.69670665
+      - 0
+      - 0.71735615
+      - 0
+    travelSpeed: 0.69957227
+  - startPlanet: 0
+    destPlanet: 0
+    destStage: 2
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.605703
+    pos:
+      - -13.9
+      - 8.32
+      - -0.81
+    rotation:
+      - -0.0052359877
+      - -1.6057029
+      - 0.1256637
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.07845921
+      - 0.9969173
+      - 0
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6941228
+      - -0.028241191
+      - 0.7187852
+      - 0.0272722
+    travelSpeed: 5.9266663
+  - startPlanet: 0
+    destPlanet: 0
+    destStage: 3
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.6057037
+    pos:
+      - 14.09
+      - 8.45
+      - -3.51
+    rotation:
+      - -0.0052359877
+      - -1.6057029
+      - 0.1256637
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.033396665
+      - 0.9994407
+      - -0.0017385667
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.6945506
+      - 0.011409699
+      - 0.71924955
+      - -0.012226486
+    travelSpeed: 5.733228
+  - startPlanet: 0
+    destPlanet: 0
+    destStage: 5
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.5359125
+    pos:
+      - -0.33
+      - -13.53
+      - 4.34
+    rotation:
+      - 0.06169799
+      - 1.5358474
+      - 3.1145892
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - 0.007386752
+      - -0.99997276
+      - -1.1052669e-05
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.0026529422
+      - -0.6946618
+      - -0.0025696573
+      - 0.71932703
+    travelSpeed: 6.5957127
+  - startPlanet: 1
+    destPlanet: 1
+    destStage: 6
+    theta: 1.1441694
+    phi: -1.5473151
+    height: 0.2928381
+    facingYaw: -1.5359126
+    pos:
+      - 0.1
+      - -10.29
+      - 0.22
+    rotation:
+      - 0.06169799
+      - 1.5358474
+      - 3.1145892
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.032779902
+      - -0.9993858
+      - -0.012397026
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.01609748
+      - -0.694633
+      - 0.0069294646
+      - 0.7191508
+    visibleIfStageCleared: 5
+    travelSpeed: 8.0166235
+  - startPlanet: 0
+    destPlanet: 0
     destStage: 1
-    facingYaw: -1.6
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -1.605703
+    pos:
+      - -0.45
+      - 40.28
+      - 3.53
+    rotation:
+      - -0.0052359877
+      - -1.6057029
+      - 0.1256637
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.00058960234
+      - 0.9999394
+      - 0.010997062
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.69464666
+      - 0.0036075858
+      - 0.7193301
+      - 0.004160167
+    travelSpeed: 2.1456282
+  - startPlanet: 1
+    destPlanet: 0
+    destStage: 0
+    theta: 2.7283754
+    phi: 1.4311695
+    height: 0.19925785
+    facingYaw: -1.5358474
+    pos:
+      - -1.3
+      - 10.1
+      - 0.57
+    rotation:
+      - 0
+      - 1.5358474
+      - 0
+    scale:
+      - 0.8
+      - 0.8
+      - 0.8
+    upVec:
+      - -0.12796757
+      - 0.9901831
+      - 0.0562285
+    destMargin: 4
+    launchSequenceId: launch_rocket_from_base
+    modelPath: boat.obj
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.71633106
+      - -0.024400396
+      - 0.6942344
+      - 0.065673806
+    visibleIfStageCleared: 5
+    travelSpeed: 8.0166235
 players:
   - currentPlanetNum: 0
-    theta: 1.570796
-    phi: 0.558599
-    height: -6.783
+    theta: 1.570679
+    phi: 0.15509969
+    height: -13.777088
+    pos:
+      - 0.0018813743
+      - 2.5060925
+      - 16.028173
+    facingYaw: 0.000120162964
+    rotation:
+      - 0
+      - 0.000120162964
+      - 0
+    upVec:
+      - 0.0005695741
+      - 0.9978954
+      - 0.06484274
   - currentPlanetNum: 0
     playerNum: 2
     theta: 1.570796
@@ -28,18 +314,3677 @@ NPCs:
     height: 3.238
     type: spaceSlime
     name: RocketGuideNPC
-    talkTexts: [こちら惑星マルッコイ行きロケット〜まもなく発射します〜。\nお乗りの方はお急ぎください〜。]
+    talkTexts:
+      - "見知らぬスライムさんだ！やっほ～！\nきみは...地上から来たのかな？"
+      - "でも、一体どうしてこんなところまで？\nなにがあったか教えてくれる？"
+      - "今、エレベーターが流行ってるみたいだよ！\nほら！あそこにも！"
+      - あれに乗ったら動くのかなぁ～？
+      - "あの子のエレベーターが帰ってきたみたいだよ！\n使ってみたら～？"
+      - "工事が終わって裏側に行けるようになったよ...！\n最後の星がある惑星には裏から行けるけど..."
+      - 裏側はこことは雰囲気が違うから気を付けて...！
+      - "そんなことがあったんだね..！\nよし分かった！僕も協力するよ！"
+      - "じゃあまずはほかの惑星に行って、\n星を探さないとね...！"
+      - "あの子、ロケットの場所を知ってたはず！\nまずはあの子に聞いてみて～！"
+      - "おかえり！すべての星を集めれたんだね！\nきみは本当にすごいよ！"
+      - それで、ママはどうだった？
+      - 治ったんだ！よかったね～！
+      - "ここにはもう用がないかもしれないけど...\nよかったらまた遊びに来てよ！"
+      - "あ！そうだそうだ！\n裏から月に行けるようになったんだ！"
+      - "強い敵と戦えるみたいだから暇だったら\n行ってみてよ！"
+    pos:
+      - -0.03
+      - 2.58
+      - 14.88
+    facingYaw: 3.1313503
+    rotation:
+      - -1.8871484
+      - 1.3045033
+      - -1.0284376
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.00046408235
+      - 0.99861556
+      - 0.052600224
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 2
+        sequence: platforms
+        index: 10
+      - talkIndex: 3
+        sequence: platforms
+        index: 10
+      - talkIndex: 4
+        sequence: NPCs
+        index: 5
+      - talkIndex: 9
+        sequence: NPCs
+        index: 1
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 見
+            ruby: true
+            reading: み
+          - text: 知
+            ruby: true
+            reading: し
+          - text: "らぬスライムさんだ！やっほ～！\nきみは..."
+            ruby: false
+          - text: 地
+            ruby: true
+            reading: ち
+          - text: 上
+            ruby: true
+            reading: じょう
+          - text: から
+            ruby: false
+          - text: 来
+            ruby: true
+            reading: き
+          - text: たのかな？
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: でも、
+            ruby: false
+          - text: 一
+            ruby: true
+            reading: いっ
+          - text: 体
+            ruby: true
+            reading: たい
+          - text: "どうしてこんなところまで？\nなにがあったか"
+            ruby: false
+          - text: 教
+            ruby: true
+            reading: おし
+          - text: えてくれる？
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 今
+            ruby: true
+            reading: いま
+          - text: 、エレベーターが
+            ruby: false
+          - text: 流行
+            ruby: true
+            reading: はや
+          - text: "ってるみたいだよ！\nほら！あそこにも！"
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: あれに
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: ったら
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: くのかなぁ～？
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: あの
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: のエレベーターが
+            ruby: false
+          - text: 帰
+            ruby: true
+            reading: かえ
+          - text: "ってきたみたいだよ！\n"
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: ってみたら～？
+            ruby: false
+      - talkIndex: 5
+        segments:
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: が
+            ruby: false
+          - text: 終
+            ruby: true
+            reading: お
+          - text: わって
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "けるようになったよ...！\n"
+            ruby: false
+          - text: 最
+            ruby: true
+            reading: さい
+          - text: 後
+            ruby: true
+            reading: ご
+          - text: の
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: がある
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: には
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: から
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるけど...
+            ruby: false
+      - talkIndex: 6
+        segments:
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: はこことは
+            ruby: false
+          - text: 雰
+            ruby: true
+            reading: ふん
+          - text: 囲
+            ruby: true
+            reading: い
+          - text: 気
+            ruby: true
+            reading: き
+          - text: が
+            ruby: false
+          - text: 違
+            ruby: true
+            reading: ちが
+          - text: うから
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: を
+            ruby: false
+          - text: 付
+            ruby: true
+            reading: つ
+          - text: けて...！
+            ruby: false
+      - talkIndex: 7
+        segments:
+          - text: "そんなことがあったんだね..！\nよし"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: わ
+          - text: かった！
+            ruby: false
+          - text: 僕
+            ruby: true
+            reading: ぼく
+          - text: も
+            ruby: false
+          - text: 協
+            ruby: true
+            reading: きょう
+          - text: 力
+            ruby: true
+            reading: りょく
+          - text: するよ！
+            ruby: false
+      - talkIndex: 8
+        segments:
+          - text: じゃあまずはほかの
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "って、\n"
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: を
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: さないとね...！
+            ruby: false
+      - talkIndex: 9
+        segments:
+          - text: あの
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: 、ロケットの
+            ruby: false
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 所
+            ruby: true
+            reading: しょ
+          - text: を
+            ruby: false
+          - text: 知
+            ruby: true
+            reading: し
+          - text: "ってたはず！\nまずはあの"
+            ruby: false
+          - text: 子
+            ruby: true
+            reading: こ
+          - text: に
+            ruby: false
+          - text: 聞
+            ruby: true
+            reading: き
+          - text: いてみて～！
+            ruby: false
+      - talkIndex: 10
+        segments:
+          - text: おかえり！すべての
+            ruby: false
+          - text: 星
+            ruby: true
+            reading: ほし
+          - text: を
+            ruby: false
+          - text: 集
+            ruby: true
+            reading: あつ
+          - text: "めれたんだね！\nきみは"
+            ruby: false
+          - text: 本
+            ruby: true
+            reading: ほん
+          - text: 当
+            ruby: true
+            reading: とう
+          - text: にすごいよ！
+            ruby: false
+      - talkIndex: 11
+        segments:
+          - text: それで、ママはどうだった？
+            ruby: false
+      - talkIndex: 12
+        segments:
+          - text: 治
+            ruby: true
+            reading: なお
+          - text: ったんだ！よかったね～！
+            ruby: false
+      - talkIndex: 13
+        segments:
+          - text: ここにはもう
+            ruby: false
+          - text: 用
+            ruby: true
+            reading: よう
+          - text: "がないかもしれないけど...\nよかったらまた"
+            ruby: false
+          - text: 遊
+            ruby: true
+            reading: あそ
+          - text: びに
+            ruby: false
+          - text: 来
+            ruby: true
+            reading: き
+          - text: てよ！
+            ruby: false
+      - talkIndex: 14
+        segments:
+          - text: "あ！そうだそうだ！\n"
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: から
+            ruby: false
+          - text: 月
+            ruby: true
+            reading: つき
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるようになったんだ！
+            ruby: false
+      - talkIndex: 15
+        segments:
+          - text: 強
+            ruby: true
+            reading: つよ
+          - text: い
+            ruby: false
+          - text: 敵
+            ruby: true
+            reading: てき
+          - text: と
+            ruby: false
+          - text: 戦
+            ruby: true
+            reading: たたか
+          - text: えるみたいだから
+            ruby: false
+          - text: 暇
+            ruby: true
+            reading: ひま
+          - text: "だったら\n"
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: ってみてよ！
+            ruby: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 2
+      - talkIndex: 3
+        stage: 2
+      - talkIndex: 4
+        stage: 3
+      - talkIndex: 5
+        stage: 4
+      - talkIndex: 6
+        stage: 4
+      - talkIndex: 10
+        stage: 5
+      - talkIndex: 11
+        stage: 5
+      - talkIndex: 12
+        stage: 5
+      - talkIndex: 13
+        stage: 5
+      - talkIndex: 14
+        stage: 5
+      - talkIndex: 15
+        stage: 5
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 3
+          text: 動くかなぁ～？
+        - talkIndex: 4
+          text: エレベーター使ってみたら～？
+        - talkIndex: 6
+          text: 裏側に行くなら気を付けて...！
+        - talkIndex: 9
+          text: あの子にきいてみて～！
+        - talkIndex: 15
+          text: 裏から月に行けるよ！
+      rubies:
+        - talkIndex: 3
+          segments:
+            - text: 動
+              ruby: true
+              reading: うご
+            - text: くかなぁ～？
+              ruby: false
+        - talkIndex: 4
+          segments:
+            - text: エレベーター
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: ってみたら～？
+              ruby: false
+        - talkIndex: 6
+          segments:
+            - text: 裏
+              ruby: true
+              reading: うら
+            - text: 側
+              ruby: true
+              reading: がわ
+            - text: に
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: くなら
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: を
+              ruby: false
+            - text: 付
+              ruby: true
+              reading: つ
+            - text: けて...！
+              ruby: false
+        - talkIndex: 9
+          segments:
+            - text: あの
+              ruby: false
+            - text: 子
+              ruby: true
+              reading: こ
+            - text: にきいてみて～！
+              ruby: false
+        - talkIndex: 15
+          segments:
+            - text: 裏
+              ruby: true
+              reading: うら
+            - text: から
+              ruby: false
+            - text: 月
+              ruby: true
+              reading: つき
+            - text: に
+              ruby: false
+            - text: 行
+              ruby: true
+              reading: い
+            - text: けるよ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.0051255054
+      - -0.00036701324
+      - 0.9996407
+      - 0.026307682
+    forceTalkOnArrival: true
+    talkEndingAfterPages:
+      - talkIndex: 6
+    talkOpeningAfterPages:
+      - talkIndex: 1
   - currentPlanetNum: 0
     theta: 3.141593
     phi: 0.588003
     height: -6.394
     type: spaceSlime
     name: BaseGuideNPC
-    talkTexts: [ここはロケット発着所！\n他の惑星に行きたいならこの上のロケット乗り場からどうぞ！]
+    talkTexts:
+      - 他の惑星に行くロケットはこの上だよ！
+      - ジャンプで階段をのぼってね！
+      - 行けたみたいだね！よかった～！
+      - "ロケットは何回でも使えるから\n気が向いたらまた使ってね！"
+    pos:
+      - -9.92
+      - 2.65
+      - 9.34
+    facingYaw: 2.3429108
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.03808537
+      - 0.9986393
+      - 0.03562487
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: boats
+        index: 1
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 他
+            ruby: true
+            reading: ほか
+          - text: の
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: くロケットはこの
+            ruby: false
+          - text: 上
+            ruby: true
+            reading: うえ
+          - text: だよ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ジャンプで
+            ruby: false
+          - text: 階
+            ruby: true
+            reading: かい
+          - text: 段
+            ruby: true
+            reading: だん
+          - text: をのぼってね！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けたみたいだね！よかった～！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: ロケットは
+            ruby: false
+          - text: 何
+            ruby: true
+            reading: なん
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: でも
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: "えるから\n"
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: が
+            ruby: false
+          - text: 向
+            ruby: true
+            reading: む
+          - text: いたらまた
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: ってね！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: ジャンプで階段登って！
+        - talkIndex: 3
+          text: また使ってね！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: また
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: ってね！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.38899174
+      - -0.02448142
+      - 0.9208719
+      - 0.009001648
+    forceTalkOnArrival: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 2
+      - talkIndex: 3
+        stage: 2
   - currentPlanetNum: 0
-    theta: 0.0
+    theta: 0
     phi: -1.570796
     height: -7.5
     type: spaceSlime
     name: BackSideNPC
-    talkTexts: [ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。]
+    talkTexts:
+      - ムッ！よくぞ私に気がついた。\n今日から君も裏側のスライムだ。
+    pos:
+      - -0
+      - -2.99
+      - 0
+    facingYaw: 0.08020258
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.0027979533
+      - -0.9999949
+      - 0.0016212873
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: ムッ！よくぞ
+            ruby: false
+          - text: 私
+            ruby: true
+            reading: わたし
+          - text: に
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: がついた。\n
+            ruby: false
+          - text: 今日
+            ruby: true
+            reading: きょう
+          - text: から
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: も
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: のスライムだ。
+            ruby: false
+    rotationQuat:
+      - 0.0014303537
+      - 0.04009162
+      - 0.00075390557
+      - 0.99919474
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - あっちにロケットがあるんだけど...
+      - ジャンプじゃ届かないんだよねぇ...
+    pos:
+      - 14.35
+      - 8.52
+      - 6.16
+    facingYaw: 3.9562256
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -8.742266e-08
+      - 0.9999985
+      - -0.001745375
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: boats
+        index: 2
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あっちにロケットがあるんだけど...
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ジャンプじゃ
+            ruby: false
+          - text: 届
+            ruby: true
+            reading: とど
+          - text: かないんだよねぇ...
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: 行ける方法ないかなぁ～
+        - talkIndex: 1
+          text: 行ける方法ないかなぁ～
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: 行
+              ruby: true
+              reading: い
+            - text: ける
+              ruby: false
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 法
+              ruby: true
+              reading: ほう
+            - text: ないかなぁ～
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 行
+              ruby: true
+              reading: い
+            - text: ける
+              ruby: false
+            - text: 方
+              ruby: true
+              reading: ほう
+            - text: 法
+              ruby: true
+              reading: ほう
+            - text: ないかなぁ～
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - 0.39614666
+      - -0.0003457526
+      - 0.91818684
+      - -0.0008012735
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - "このでっかい家、全部僕の家だよ！\nいいでしょ～！"
+      - "ん？中に入りたい？\nダメダメ！君ももっとビッグになるんだね！"
+      - 屋上に行けるエレベーター作っちゃった～！
+      - ...勝手に使わないでね？
+      - きみ、ビッグだねぇ～！
+      - きみもこの大きい家。一緒に住む？
+    pos:
+      - -8.32
+      - 2.84
+      - 3.57
+    facingYaw: 0.45263052
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 1
+      - 1
+    upVec:
+      - -0.029765548
+      - 0.9994759
+      - 0.012732478
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: このでっかい
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: 、
+            ruby: false
+          - text: 全
+            ruby: true
+            reading: ぜん
+          - text: 部
+            ruby: true
+            reading: ぶ
+          - text: 僕
+            ruby: true
+            reading: ぼく
+          - text: の
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: "だよ！\nいいでしょ～！"
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ん？
+            ruby: false
+          - text: 中
+            ruby: true
+            reading: なか
+          - text: に
+            ruby: false
+          - text: 入
+            ruby: true
+            reading: はい
+          - text: "りたい？\nダメダメ！"
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: ももっとビッグになるんだね！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 屋
+            ruby: true
+            reading: おく
+          - text: 上
+            ruby: true
+            reading: じょう
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるエレベーター
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: っちゃった～！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: ...
+            ruby: false
+          - text: 勝手
+            ruby: true
+            reading: かって
+          - text: に
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: わないでね？
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: きみ、ビッグだねぇ～！
+            ruby: false
+      - talkIndex: 5
+        segments:
+          - text: きみもこの
+            ruby: false
+          - text: 大
+            ruby: true
+            reading: おお
+          - text: きい
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: 。
+            ruby: false
+          - text: 一
+            ruby: true
+            reading: いっ
+          - text: 緒
+            ruby: true
+            reading: しょ
+          - text: に
+            ruby: false
+          - text: 住
+            ruby: true
+            reading: す
+          - text: む？
+            ruby: false
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 2
+      - talkIndex: 3
+        stage: 2
+      - talkIndex: 4
+        stage: 5
+      - talkIndex: 5
+        stage: 5
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: 使わないでねっ？
+        - talkIndex: 1
+          text: ビッグになるんだね！
+        - talkIndex: 2
+          text: 使わないでねっ？
+        - talkIndex: 3
+          text: 使わないでねっ？
+        - talkIndex: 5
+          text: 一緒に住む？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ビッグになるんだね！
+              ruby: false
+        - talkIndex: 2
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: わないでねっ？
+              ruby: false
+        - talkIndex: 5
+          segments:
+            - text: 一
+              ruby: true
+              reading: いっ
+            - text: 緒
+              ruby: true
+              reading: しょ
+            - text: に
+              ruby: false
+            - text: 住
+              ruby: true
+              reading: す
+            - text: む？
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - 0.97439337
+      - 0.00954343
+      - -0.2242665
+      - 0.01307737
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - "エレベーターが帰ってきたの！\nこれに乗ったら上に行けるよ！"
+      - ここにあったエレベーター、知らない..？
+    pos:
+      - -2.75
+      - 7.52
+      - -12.22
+    facingYaw: 2.023314
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0
+      - 1
+      - 0
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: エレベーターが
+            ruby: false
+          - text: 帰
+            ruby: true
+            reading: かえ
+          - text: "ってきたの！\nこれに"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: ったら
+            ruby: false
+          - text: 上
+            ruby: true
+            reading: うえ
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるよ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ここにあったエレベーター、
+            ruby: false
+          - text: 知
+            ruby: true
+            reading: し
+          - text: らない..？
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 3
+    talkStageClearConditions:
+      - talkIndex: 0
+        stage: 3
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: エレベーター使っていいよ～！
+        - talkIndex: 1
+          text: エレベーターどこ～？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: エレベーター
+              ruby: false
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: っていいよ～！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: エレベーターどこ～？
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.5304568
+      - 0
+      - 0.847712
+      - 0
+    visibleIfStageCleared: 2
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: -1.695151
+    phi: 0.915979
+    height: 3.238
+    type: spaceSlime
+    name: RocketGuideNPC
+    talkTexts:
+      - 発着所の裏側はただいま工事中だよ～！
+      - "工事が終わったらこの壁壊すから\nもうちょっと待ってて～！"
+    pos:
+      - -0.23
+      - 2.3
+      - 18.79
+    facingYaw: 1.825092
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.0010087903
+      - 0.99653196
+      - 0.08320572
+    radius: 0.75
+    modelPath: spaceSlime.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 発
+            ruby: true
+            reading: はっ
+          - text: 着
+            ruby: true
+            reading: ちゃく
+          - text: 所
+            ruby: true
+            reading: じょ
+          - text: の
+            ruby: false
+          - text: 裏
+            ruby: true
+            reading: うら
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: はただいま
+            ruby: false
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: 中
+            ruby: true
+            reading: ちゅう
+          - text: だよ～！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 工
+            ruby: true
+            reading: こう
+          - text: 事
+            ruby: true
+            reading: じ
+          - text: が
+            ruby: false
+          - text: 終
+            ruby: true
+            reading: お
+          - text: わったらこの
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: 壊
+            ruby: true
+            reading: こわ
+          - text: "すから\nもうちょっと"
+            ruby: false
+          - text: 待
+            ruby: true
+            reading: ま
+          - text: ってて～！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 1
+          text: 工事終わるまで待って～！
+      rubies:
+        - talkIndex: 1
+          segments:
+            - text: 工
+              ruby: true
+              reading: こう
+            - text: 事
+              ruby: true
+              reading: じ
+            - text: 終
+              ruby: true
+              reading: お
+            - text: わるまで
+              ruby: false
+            - text: 待
+              ruby: true
+              reading: ま
+            - text: って～！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -0.61121976
+      - -0.025872009
+      - 0.79036474
+      - 0.032629717
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - 見知らぬスライム、ウラ発着所へ何の用だ？
+      - 他の惑星に行きたい？なら自分で探してみな！
+      - "見つけられたみたいだなぁ！\nたいしたもんだ！"
+      - "だが残念なことにここにはもうロケットはねぇ！\nすまないな！"
+    pos:
+      - -0.24
+      - -2.95
+      - 4.54
+    facingYaw: 0.041370153
+    rotation:
+      - -3.0921311
+      - -0.681663
+      - 0.009189834
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.0010243242
+      - -0.99987596
+      - 0.01571816
+    radius: 0.75
+    modelPath: spaceSlimeReverse.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 見
+            ruby: true
+            reading: み
+          - text: 知
+            ruby: true
+            reading: し
+          - text: らぬスライム、ウラ
+            ruby: false
+          - text: 発
+            ruby: true
+            reading: はっ
+          - text: 着
+            ruby: true
+            reading: ちゃく
+          - text: 所
+            ruby: true
+            reading: じょ
+          - text: へ
+            ruby: false
+          - text: 何
+            ruby: true
+            reading: なん
+          - text: の
+            ruby: false
+          - text: 用
+            ruby: true
+            reading: よう
+          - text: だ？
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 他
+            ruby: true
+            reading: ほか
+          - text: の
+            ruby: false
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: きたい？なら
+            ruby: false
+          - text: 自
+            ruby: true
+            reading: じ
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: で
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: してみな！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: 見
+            ruby: true
+            reading: み
+          - text: "つけられたみたいだなぁ！\nたいしたもんだ！"
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: だが
+            ruby: false
+          - text: 残
+            ruby: true
+            reading: ざん
+          - text: 念
+            ruby: true
+            reading: ねん
+          - text: "なことにここにはもうロケットはねぇ！\nすまないな！"
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: 自分で探しな！
+        - talkIndex: 3
+          text: すまないな！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 自
+              ruby: true
+              reading: じ
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: で
+              ruby: false
+            - text: 探
+              ruby: true
+              reading: さが
+            - text: しな！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: すまないな！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.000349541
+      - 0.020678936
+      - 0.007868235
+      - 0.99975514
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 5
+      - talkIndex: 3
+        stage: 5
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - "くるなくるな！\nここは俺の家だぞ！"
+      - 屋根が低いからって絶対上に乗るなよ！
+      - おおおまえっ...俺の家乗ったろぉ...？
+      - 高かったんだぞぉ..どうしてくれるんだよぉ...！
+    pos:
+      - 10.43
+      - -2.51
+      - 12.08
+    facingYaw: 2.2767124
+    rotation:
+      - -3.0921311
+      - -0.681663
+      - 0.009189834
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.042781807
+      - -0.9978955
+      - 0.048729334
+    radius: 0.75
+    modelPath: spaceSlimeReverse.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: "くるなくるな！\nここは"
+            ruby: false
+          - text: 俺
+            ruby: true
+            reading: おれ
+          - text: の
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: だぞ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 屋
+            ruby: true
+            reading: や
+          - text: 根
+            ruby: true
+            reading: ね
+          - text: が
+            ruby: false
+          - text: 低
+            ruby: true
+            reading: ひく
+          - text: いからって
+            ruby: false
+          - text: 絶
+            ruby: true
+            reading: ぜっ
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 上
+            ruby: true
+            reading: うえ
+          - text: に
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: るなよ！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: おおおまえっ...
+            ruby: false
+          - text: 俺
+            ruby: true
+            reading: おれ
+          - text: の
+            ruby: false
+          - text: 家
+            ruby: true
+            reading: いえ
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: ったろぉ...？
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: 高
+            ruby: true
+            reading: たか
+          - text: かったんだぞぉ..どうしてくれるんだよぉ...！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: 絶対家の上に乗るなよ！
+        - talkIndex: 3
+          text: 高かったのに...シクシク...
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 絶
+              ruby: true
+              reading: ぜっ
+            - text: 対
+              ruby: true
+              reading: たい
+            - text: 家
+              ruby: true
+              reading: いえ
+            - text: の
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: うえ
+            - text: に
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: るなよ！
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: かったのに...シクシク...
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - 0.013148578
+      - 0.9072491
+      - 0.029655185
+      - 0.4193409
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 5
+      - talkIndex: 3
+        stage: 5
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - "月ってほんとでかいよな！\n一体何があるんだろうな！"
+      - "って誰だ誰だ！\n俺のひとりごとを聞くんじゃない！"
+      - あ～あ、月に行ってみてぇなぁ～
+      - あれ...？あんなの前からあったか...？
+    pos:
+      - -10.57
+      - -2.56
+      - 10.89
+    facingYaw: 3.9533834
+    rotation:
+      - -3.0921311
+      - -0.681663
+      - 0.009189834
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.041220322
+      - -0.9982565
+      - 0.04224733
+    radius: 0.75
+    modelPath: spaceSlimeReverse.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: 月
+            ruby: true
+            reading: つき
+          - text: "ってほんとでかいよな！\n"
+            ruby: false
+          - text: 一
+            ruby: true
+            reading: いっ
+          - text: 体
+            ruby: true
+            reading: たい
+          - text: 何
+            ruby: true
+            reading: なに
+          - text: があるんだろうな！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: って
+            ruby: false
+          - text: 誰
+            ruby: true
+            reading: だれ
+          - text: だ
+            ruby: false
+          - text: 誰
+            ruby: true
+            reading: だれ
+          - text: "だ！\n"
+            ruby: false
+          - text: 俺
+            ruby: true
+            reading: おれ
+          - text: のひとりごとを
+            ruby: false
+          - text: 聞
+            ruby: true
+            reading: き
+          - text: くんじゃない！
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: あ～あ、
+            ruby: false
+          - text: 月
+            ruby: true
+            reading: つき
+          - text: に
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: ってみてぇなぁ～
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: あれ...？あんなの
+            ruby: false
+          - text: 前
+            ruby: true
+            reading: まえ
+          - text: からあったか...？
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: 月には何があるんだろうなぁ...
+        - talkIndex: 3
+          text: あんなのあったか？
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: 月
+              ruby: true
+              reading: つき
+            - text: には
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なに
+            - text: があるんだろうなぁ...
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: あんなのあったか？
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - 0.011262617
+      - 0.91817653
+      - -0.027292889
+      - -0.39507005
+    talkCameraFocus:
+      - talkIndex: 3
+        sequence: platforms
+        index: 8
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 5
+      - talkIndex: 3
+        stage: 5
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - "こ...こんなウラまでよく来たな！\n（うまそうなやつだ...）"
+      - "ま..まぁ何もない村だがゆっくりしてってよ！\n（あとでいただくとしよう...）"
+      - "ちょっと君！いいこと教えてあげるからこっちに来なさい！\n（腹減った...もう我慢できない...）"
+    pos:
+      - -13.19
+      - -2.34
+      - -12.8
+    facingYaw: 4.682138
+    rotation:
+      - -3.0921311
+      - -0.681663
+      - 0.009189834
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - -0.05685842
+      - -0.99686074
+      - -0.055099394
+    radius: 0.75
+    modelPath: spaceSlimeReverse.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: こ...こんなウラまでよく
+            ruby: false
+          - text: 来
+            ruby: true
+            reading: き
+          - text: "たな！\n（うまそうなやつだ...）"
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: ま..まぁ
+            ruby: false
+          - text: 何
+            ruby: true
+            reading: なに
+          - text: もない
+            ruby: false
+          - text: 村
+            ruby: true
+            reading: むら
+          - text: "だがゆっくりしてってよ！\n（あとでいただくとしよう...）"
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: ちょっと
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: ！いいこと
+            ruby: false
+          - text: 教
+            ruby: true
+            reading: おし
+          - text: えてあげるからこっちに
+            ruby: false
+          - text: 来
+            ruby: true
+            reading: き
+          - text: "なさい！\n（"
+            ruby: false
+          - text: 腹
+            ruby: true
+            reading: はら
+          - text: 減
+            ruby: true
+            reading: へ
+          - text: った...もう
+            ruby: false
+          - text: 我
+            ruby: true
+            reading: が
+          - text: 慢
+            ruby: true
+            reading: まん
+          - text: できない...）
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: ゆっくりしてってよ...ジュルリ
+        - talkIndex: 2
+          text: さぁ...こっちにきなさい...グヘヘ
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ゆっくりしてってよ...ジュルリ
+              ruby: false
+        - talkIndex: 2
+          segments:
+            - text: さぁ...こっちにきなさい...グヘヘ
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.039599247
+      - 0.71770376
+      - -0.0012526021
+      - -0.6952206
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 5
+    forceTalkOnArrival: false
+  - currentPlanetNum: 0
+    theta: 3.141593
+    phi: 0.588003
+    height: -6.394
+    type: spaceSlime
+    name: BaseGuideNPC
+    talkTexts:
+      - "よぉ、こんな危険なところにお前ひとりか？\nずいぶん弱っちぃ見た目してんなぁ！"
+      - "フッ、ここのやつらにはせいぜい気を付けるんだな！\n気を抜けば...フフフ"
+      - ここのやつら、お前の噂してたぞ！
+      - "お前、意外とやるんだな！\n認めるぜ！"
+    pos:
+      - 12.84
+      - -2.34
+      - -13.16
+    facingYaw: 1.6232425
+    rotation:
+      - -3.0921311
+      - -0.681663
+      - 0.009189834
+    scale:
+      - 0.25
+      - 0.25
+      - 0.25
+    upVec:
+      - 0.055293486
+      - -0.9968605
+      - -0.05667336
+    radius: 0.75
+    modelPath: spaceSlimeReverse.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: よぉ、こんな
+            ruby: false
+          - text: 危
+            ruby: true
+            reading: き
+          - text: 険
+            ruby: true
+            reading: けん
+          - text: なところにお
+            ruby: false
+          - text: 前
+            ruby: true
+            reading: まえ
+          - text: "ひとりか？\nずいぶん"
+            ruby: false
+          - text: 弱
+            ruby: true
+            reading: よわ
+          - text: っちぃ
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: た
+            ruby: false
+          - text: 目
+            ruby: true
+            reading: め
+          - text: してんなぁ！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: フッ、ここのやつらにはせいぜい
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: を
+            ruby: false
+          - text: 付
+            ruby: true
+            reading: つ
+          - text: "けるんだな！\n"
+            ruby: false
+          - text: 気
+            ruby: true
+            reading: き
+          - text: を
+            ruby: false
+          - text: 抜
+            ruby: true
+            reading: ぬ
+          - text: けば...フフフ
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: ここのやつら、お
+            ruby: false
+          - text: 前
+            ruby: true
+            reading: まえ
+          - text: の
+            ruby: false
+          - text: 噂
+            ruby: true
+            reading: うわさ
+          - text: してたぞ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: お
+            ruby: false
+          - text: 前
+            ruby: true
+            reading: まえ
+          - text: 、
+            ruby: false
+          - text: 意
+            ruby: true
+            reading: い
+          - text: 外
+            ruby: true
+            reading: がい
+          - text: "とやるんだな！\n"
+            ruby: false
+          - text: 認
+            ruby: true
+            reading: みと
+          - text: めるぜ！
+            ruby: false
+    proximityMessage:
+      mode: afterTalk
+      variants:
+        - talkIndex: 0
+          text: ジャンプで階段登って！
+        - talkIndex: 1
+          text: ここのやつらには気をつけろよ...フフフ
+        - talkIndex: 3
+          text: お前のこと認めるぜ！
+      rubies:
+        - talkIndex: 0
+          segments:
+            - text: ジャンプで
+              ruby: false
+            - text: 階
+              ruby: true
+              reading: かい
+            - text: 段
+              ruby: true
+              reading: だん
+            - text: 登
+              ruby: true
+              reading: のぼ
+            - text: って！
+              ruby: false
+        - talkIndex: 1
+          segments:
+            - text: ここのやつらには
+              ruby: false
+            - text: 気
+              ruby: true
+              reading: き
+            - text: をつけろよ...フフフ
+              ruby: false
+        - talkIndex: 3
+          segments:
+            - text: お
+              ruby: false
+            - text: 前
+              ruby: true
+              reading: まえ
+            - text: のこと
+              ruby: false
+            - text: 認
+              ruby: true
+              reading: みと
+            - text: めるぜ！
+              ruby: false
+      range: 3
+      height: 1.8
+      scale: 1
+    rotationQuat:
+      - -0.0396161
+      - 0.7253748
+      - 0.0005818323
+      - 0.68721294
+    talkStageClearConditions:
+      - talkIndex: 2
+        stage: 5
+      - talkIndex: 3
+        stage: 5
+    forceTalkOnArrival: false
+stageObjects:
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [5.9114194, 2.334428, 5.979225], pos: [0.45, 4.43, -14.86], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: CarAssets/box.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 1.8], upVec: [0, 1, 0], textureTiling: [1, 1], rotationQuat: [1, 0, 0, 0]}
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: CarAssets/cone-flat.fbx, collision: true, rotation: [0, 0, 0], scale: [0.01, 0.01, 0.01], pos: [21, 0, 2.78], upVec: [0, 1, 0], textureTiling: [1, 1], rotationQuat: [1, 0, 0, 0]}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/building-a.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.07853982
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -13.26
+      - 2.29
+      - 0.95
+    upVec:
+      - -0.078459226
+      - 0.9969174
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9992291
+      - 0
+      - 0
+      - 0.039259877
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5777775
+    modelPath: HouseAssets/building-skyscraper-d.fbx
+    collision: true
+    rotation:
+      - 0
+      - 1.5777776
+      - 0
+    scale:
+      - 0.04000002
+      - 0.04000002
+      - 0.04000002
+    pos:
+      - 0.32
+      - 7.49
+      - -14.69
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -0.70463425
+      - 0
+      - 0.7095707
+      - 0
+    affectsGravityDirection: false
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [4.5679984, 2.0588229, 4.6613183], pos: [0.21, 5.46, -14.86], upVec: [0, 1, 0], textureTiling: [4.5679984, 4.6613183], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: HouseAssets/building-h.fbx
+    collision: true
+    rotation:
+      - -3.1398473
+      - 0
+      - 3.1415927
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 12.69
+      - 2.42
+      - 7.26
+    upVec:
+      - -8.742266e-08
+      - 0.99999857
+      - -0.0017453751
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 7.553601e-08
+      - -4.3777263e-08
+      - 0.99999964
+      - -0.0008726878
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: FantasyAssets/stairs-stone-corner.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.07853982
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -13.29
+      - 2.04
+      - 8.57
+    upVec:
+      - -0.078459226
+      - 0.9969174
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.9992291
+      - 0
+      - 0
+      - 0.039259877
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415174
+    modelPath: HouseAssets/building-h.fbx
+    collision: true
+    rotation:
+      - -3.1398542
+      - -7.5335745e-05
+      - 3.1081896
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 12.63
+      - 2.42
+      - -2.7
+    upVec:
+      - 0.03339667
+      - 0.99944067
+      - -0.0017385663
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - -5.21388e-05
+      - 0.016700715
+      - 0.99986017
+      - -0.00086853385
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/chimney-medium.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - -8.74
+      - 2.29
+      - -15.1
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CityAssets/chimney-medium.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 10.4
+      - 2.29
+      - -15.1
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 2.7648636e-10
+    modelPath: CarAssets/suv-luxury.fbx
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 0
+      - 0.07679449
+    scale:
+      - 0.012531349
+      - 0.012531349
+      - 0.01253135
+    pos:
+      - 13.07
+      - 2.61
+      - 3.66
+    upVec:
+      - -0.07671921
+      - 0.99705124
+      - 0.0017401904
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9992625
+      - 0.00086945423
+      - 3.3401055e-05
+      - 0.038387947
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0.07058063
+    modelPath: HouseAssets/building-e.fbx
+    collision: true
+    rotation:
+      - 0.0767207
+      - -0.07037364
+      - 0.077717096
+    scale:
+      - 0.050857753
+      - 0.05085775
+      - 0.050857756
+    pos:
+      - -13.5
+      - 2.07
+      - 15.59
+    upVec:
+      - -0.08278364
+      - 0.9936304
+      - 0.07645586
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9978395
+      - 0.039664008
+      - -0.033638205
+      - 0.040144324
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1415925
+    modelPath: HouseAssets/building-h.fbx
+    collision: true
+    rotation:
+      - 0.057595864
+      - -3.1415927
+      - 0.036651913
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 13.42
+      - 2.01
+      - 17.72
+    upVec:
+      - 0.036643874
+      - 0.9976713
+      - 0.057525903
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.0005280994
+      - 0.018347818
+      - 0.99941754
+      - 0.02877002
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: FantasyAssets/stairs-wide-stone-handrail.fbx
+    collision: true
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.050857753
+      - 0.050857753
+      - 0.050857756
+    pos:
+      - 0.24
+      - 1.18
+      - -6.43
+    upVec:
+      - 0
+      - 1
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 9.313226e-10
+    modelPath: CarAssets/delivery.fbx
+    collision: true
+    rotation:
+      - -0.07679449
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -17.61
+      - 1.87
+      - 13
+    upVec:
+      - -0.11146895
+      - 0.99083906
+      - 0.07624092
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.99770486
+      - 0.038088396
+      - 0.0021357273
+      - 0.05594422
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/truck-flat.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.54
+      - 2.58
+      - 4.49
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9984408
+      - 0
+      - 0
+      - 0.055821504
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/truck.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.47
+      - 2.58
+      - 2.31
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9984408
+      - 0
+      - 0
+      - 0.055821504
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/firetruck.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.41
+      - 2.58
+      - -0.17
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9984408
+      - 0
+      - 0
+      - 0.055821504
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    modelPath: CarAssets/van.fbx
+    collision: true
+    rotation:
+      - 0
+      - -0
+      - 0.11170107
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -18.37
+      - 2.58
+      - -2.7
+    upVec:
+      - -0.11146893
+      - 0.9937679
+      - 0
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 0.9984408
+      - 0
+      - 0
+      - 0.055821504
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0.09424778], scale: [4.5679984, 0.055122286, 4.300166], pos: [-20.4, 2.11, 0.81], upVec: [-0.09410833, 0.9955621, 0], textureTiling: [4.5679984, 4.300166], textureOverride: textures/selectFieldTex.png, rotationQuat: [0.9988899, 0, 0, 0.04710645]}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: CarAssets/truck-flat.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -23.05
+      - 1.82
+      - 4.49
+    upVec:
+      - -0.099319786
+      - 0.99505556
+      - 8.682797e-09
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 7.518865e-08
+      - -0.04972139
+      - 0.99876314
+      - 8.089889e-09
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: CarAssets/truck.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.98
+      - 1.82
+      - 2.31
+    upVec:
+      - -0.099319786
+      - 0.99505556
+      - 8.682797e-09
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 7.518865e-08
+      - -0.04972139
+      - 0.99876314
+      - 8.089889e-09
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: CarAssets/firetruck.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.92
+      - 1.82
+      - -0.17
+    upVec:
+      - -0.099319786
+      - 0.99505556
+      - 8.682797e-09
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 7.518865e-08
+      - -0.04972139
+      - 0.99876314
+      - 8.089889e-09
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: CarAssets/van.fbx
+    collision: true
+    rotation:
+      - 0
+      - 3.1415927
+      - -0.099483766
+    scale:
+      - 0.008137241
+      - 0.008137242
+      - 0.008137242
+    pos:
+      - -22.88
+      - 2.06
+      - -2.7
+    upVec:
+      - -0.099319786
+      - 0.99505556
+      - 8.682797e-09
+    textureTiling:
+      - 1
+      - 1
+    rotationQuat:
+      - 7.518865e-08
+      - -0.04972139
+      - 0.99876314
+      - 8.089889e-09
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 27.03856
+      - 30.443556
+      - 0.96222866
+    pos:
+      - 17.41
+      - 2.42
+      - 0.7
+    upVec:
+      - 0.07671921
+      - 0.99705124
+      - -0.0017401972
+    textureTiling:
+      - 27.03856
+      - 27.04
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -3.332588e-05
+      - 0.038387947
+      - 0.9992625
+      - -0.0008694605
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.1415925
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 3.1415927
+      - 0.07679449
+    scale:
+      - 27.03856
+      - 31.514084
+      - 0.9622287
+    pos:
+      - -21.88
+      - 2.42
+      - 0.7
+    upVec:
+      - 0.07671921
+      - 0.99705124
+      - -0.0017401972
+    textureTiling:
+      - 27.03856
+      - 27.04
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -3.332588e-05
+      - 0.038387947
+      - 0.9992625
+      - -0.0008694605
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5707964
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 1.5707964
+      - 0.07679449
+    scale:
+      - 24.795946
+      - 30.791155
+      - 0.96222866
+    pos:
+      - -0.78
+      - 2.44
+      - -20.03
+    upVec:
+      - 0.0017402023
+      - 0.99705124
+      - 0.07671903
+    textureTiling:
+      - 24.795942
+      - 27.04
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -0.7065616
+      - -0.02652765
+      - 0.706609
+      - 0.02776089
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5707964
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 1.5707964
+      - 0.07679449
+    scale:
+      - 24.795944
+      - 31.827467
+      - 0.9622287
+    pos:
+      - 0.22
+      - 1.5
+      - 21.31
+    upVec:
+      - 0.0017402023
+      - 0.99705124
+      - 0.07671903
+    textureTiling:
+      - 24.795942
+      - 27.04
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -0.7065616
+      - -0.02652765
+      - 0.706609
+      - 0.02776089
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5708871
+    modelPath: VillageAssets/Bell_Tower.fbx
+    collision: true
+    rotation:
+      - 0.46840653
+      - 1.5708876
+      - 1.5708992
+    scale:
+      - 3.9858127
+      - 3.9858131
+      - 3.9858112
+    pos:
+      - -0.39
+      - -2.95
+      - -0.14
+    upVec:
+      - -0.009229034
+      - -7.1287155e-05
+      - -0.99995744
+    textureTiling:
+      - 3.9858122
+      - 3.9858108
+    rotationQuat:
+      - 0.50226146
+      - -0.49768236
+      - -0.49769244
+      - 0.50234246
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.1384308
+    modelPath: VillageAssets/Blacksmith.fbx
+    collision: true
+    rotation:
+      - 3.1050496
+      - -0.0031597426
+      - 1.6459125
+    scale:
+      - 1.67404
+      - 1.6740409
+      - 1.6740403
+    pos:
+      - 21.27
+      - -2.05
+      - -0.78
+    upVec:
+      - 0.996523
+      - 0.07488048
+      - 0.036534805
+    textureTiling:
+      - 1.6740404
+      - 1.6740406
+    rotationQuat:
+      - 0.011266898
+      - 0.6799635
+      - 0.73301655
+      - 0.014469417
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.0712242
+    modelPath: VillageAssets/House_1.fbx
+    collision: true
+    rotation:
+      - -2.3814087
+      - -0.051036637
+      - 1.6054871
+    scale:
+      - 1.67404
+      - 1.6740409
+      - 1.6740403
+    pos:
+      - 14.51
+      - -2.16
+      - -14.71
+    upVec:
+      - 0.72305405
+      - 0.060266323
+      - -0.6881576
+    textureTiling:
+      - 1.6740404
+      - 1.6740406
+    rotationQuat:
+      - -0.27470985
+      - 0.6381341
+      - 0.6742905
+      - -0.25030318
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.6683418
+    modelPath: VillageAssets/Mill.fbx
+    collision: true
+    rotation:
+      - -1.5831755
+      - -0.12583269
+      - 1.5583131
+    scale:
+      - 1.67404
+      - 1.6740409
+      - 1.6740403
+    pos:
+      - -2.81
+      - -1.88
+      - -22.45
+    upVec:
+      - 0.013944387
+      - 0.12532687
+      - -0.9920175
+    textureTiling:
+      - 1.6740404
+      - 1.6740406
+    rotationQuat:
+      - 0.5304314
+      - -0.47416723
+      - -0.5303829
+      - 0.46097943
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0.11896881
+    modelPath: VillageAssets/Inn.fbx
+    collision: true
+    rotation:
+      - -0.78226465
+      - -0.08458493
+      - 1.5152162
+    scale:
+      - 1.975367
+      - 1.9753683
+      - 1.994614
+    pos:
+      - -15.97
+      - -1.71
+      - -15.38
+    upVec:
+      - -0.7049155
+      - 0.09886372
+      - -0.70236754
+    textureTiling:
+      - 1.975367
+      - 1.994614
+    rotationQuat:
+      - 0.68209237
+      - -0.24985312
+      - -0.29014117
+      - 0.6230101
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 0.001175966
+    modelPath: VillageAssets/Inn.fbx
+    collision: true
+    rotation:
+      - 0.03601516
+      - -0.0011751952
+      - 1.4897873
+    scale:
+      - 1.67404
+      - 1.6740409
+      - 1.6740403
+    pos:
+      - -20.54
+      - -2.16
+      - -0.09
+    upVec:
+      - -0.9960777
+      - 0.080825746
+      - 0.036007352
+    textureTiling:
+      - 1.6740404
+      - 1.6740406
+    rotationQuat:
+      - 0.7350335
+      - 0.013636001
+      - 0.011774651
+      - 0.6777914
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -3.0454643
+    modelPath: VillageAssets/Stable.fbx
+    collision: true
+    rotation:
+      - 2.3680549
+      - 0.06887823
+      - 1.4967002
+    scale:
+      - 1.67404
+      - 1.6740409
+      - 1.6740403
+    pos:
+      - -15.52
+      - -1.94
+      - 15.57
+    upVec:
+      - 0.71704006
+      - -0.005010128
+      - 0.69701403
+    textureTiling:
+      - 1.6740404
+      - 1.6740406
+    rotationQuat:
+      - 0.29794955
+      - 0.66944194
+      - 0.639313
+      - 0.23313637
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 1.5707964
+    modelPath: platform.obj
+    collision: true
+    rotation:
+      - -0.0017453292
+      - 1.5707964
+      - 0.07679449
+    scale:
+      - 24.795946
+      - 30.791155
+      - 0.96222866
+    pos:
+      - 0.22
+      - 2.42
+      - -20.03
+    upVec:
+      - 0.0017402023
+      - 0.99705124
+      - 0.07671903
+    textureTiling:
+      - 24.795942
+      - 27.04
+    hiddenIfStageCleared: 4
+    rotationQuat:
+      - -0.7065616
+      - -0.02652765
+      - 0.706609
+      - 0.02776089
+platforms:
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1, endpointWaitSeconds: 0}}, platformId: legacy_platforms_0}
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.01274696
+      - 0.0122
+      - 0.012188368
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - -0.256217
+      - 6.5346794
+      - 0
+    pos:
+      - -7.830537
+      - 2.99
+      - 0.36
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - -7.830537
+      - 2.99
+      - 0.36
+    endLocalPos:
+      - -8.086754
+      - 9.524679
+      - 0.36
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 2
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+    components:
+      movement:
+        startLocalPos: [-7.830537, 2.99, 0.36]
+        endLocalPos: [-8.086754, 9.524679, 0.36]
+        moveOffset: [-0.256217, 6.5346794, 0]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_1
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.01
+      - 0.01
+      - 0.01
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: false
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 4
+      - 0
+      - 0
+    pos:
+      - 12.548045
+      - 2.75
+      - 0.95
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - 12.123759
+      - 2.75
+      - 0.95
+    endLocalPos:
+      - 16.12376
+      - 2.75
+      - 0.95
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 3
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+    components:
+      movement:
+        startLocalPos: [12.548045, 2.75, 0.95]
+        endLocalPos: [12.55, 8.59317, 0.95]
+        moveOffset: [0.0019550323, 5.84317, 0]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_2
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.009688355
+      - 0.00915366
+      - 0.009144933
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0.0041673183
+      - 20.641449
+      - 0
+    pos:
+      - -3.2441673
+      - 7.563903
+      - -14.08
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - -3.2441673
+      - 7.6
+      - -14.08
+    endLocalPos:
+      - -3.24
+      - 28.24145
+      - -14.08
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 3
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+    components:
+      movement:
+        startLocalPos: [-3.2441673, 7.563903, -14.08]
+        endLocalPos: [-3.24, 28.241447, -14.08]
+        moveOffset: [0.0041673183, 20.677544, 0]
+        moveDuration: 10
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_3
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0.025639225
+      - 0.009752016
+      - 0.022279285
+    modelPath: FantasyAssets/fountain-square.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - -0.0038073063
+      - -0.00024032593
+      - 0.0010485649
+    pos:
+      - -0.25619268
+      - -13.319759
+      - 5.2889514
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - -0.25619268
+      - -13.319759
+      - 5.2889514
+    endLocalPos:
+      - -0.26
+      - -13.32
+      - 5.29
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [-0.25619268, -13.319759, 5.2889514]
+        endLocalPos: [-0.26, -13.32, 5.29]
+        moveOffset: [-0.0038073063, -0.00024032593, 0.0010485649]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_4
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0.01729244
+      - 0.009752016
+      - 0.015239483
+    modelPath: FantasyAssets/fountain-square.fbx
+    moveOnPlayer: false
+    moveDuration: 10
+    returnDelay: 1
+    moveOffset:
+      - 4
+      - 0
+      - -22.606728
+    pos:
+      - 6.03475
+      - -13.229958
+      - 15.22627
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - 6.03475
+      - -13.229958
+      - 15.22627
+    endLocalPos:
+      - 10.03475
+      - -13.229958
+      - -7.380458
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [6.03475, -13.229958, 15.22627]
+        endLocalPos: [10.03475, -13.229958, -7.380458]
+        moveOffset: [4, 0, -22.606728]
+        moveDuration: 10
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_5
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0.01729244
+      - 0.009752016
+      - 0.015239483
+    modelPath: FantasyAssets/fountain-square.fbx
+    moveOnPlayer: false
+    moveDuration: 10
+    returnDelay: 1
+    moveOffset:
+      - 0.0001411438
+      - 0
+      - -17.420383
+    pos:
+      - 11.878756
+      - -11.89
+      - 7.285682
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - 11.878756
+      - -11.89
+      - 7.285682
+    endLocalPos:
+      - 11.878897
+      - -11.89
+      - -10.134701
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [11.878756, -11.89, 7.285682]
+        endLocalPos: [11.878897, -11.89, -10.134701]
+        moveOffset: [0.0001411438, 0, -17.420383]
+        moveDuration: 10
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_6
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0.012760647
+      - 0.004853579
+      - 0.0110884
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0
+      - -10.493734
+      - 0
+    pos:
+      - -0.6693135
+      - -3.0080986
+      - 9.398526
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - -0.6693135
+      - -3.0080986
+      - 9.398526
+    endLocalPos:
+      - -0.6693135
+      - -13.501833
+      - 9.398526
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [-0.6693135, -3.0080986, 9.398526]
+        endLocalPos: [-0.6693135, -13.501833, 9.398526]
+        moveOffset: [0, -10.493734, 0]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    visibleIfStageCleared: 5
+    platformId: legacy_platforms_7
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0.012760647
+      - 0.004853579
+      - 0.0110884
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 0
+      - -10.493734
+      - 0
+    pos:
+      - -3.814686
+      - -13.484959
+      - 6.369206
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - -0.6693135
+      - -3.0080986
+      - 9.398526
+    endLocalPos:
+      - -0.6693135
+      - -13.501833
+      - 9.398526
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [-3.814686, -13.484959, 6.369206]
+        endLocalPos: [-19.21046, -92.77774, -36.0141]
+        moveOffset: [-15.395775, -79.292786, -42.383305]
+        moveDuration: 20
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    visibleIfStageCleared: 5
+    platformId: legacy_platforms_8
+  - currentPlanetNum: 1
+    theta: 0.7214547
+    phi: 1.2328695
+    height: 6.994728
+    facingYaw: 3.130676
+    rotation:
+      - -3.1415815
+      - -0.010916606
+      - 0.0073867
+    scale:
+      - 0
+      - 0
+      - 0
+    modelPath: FantasyAssets/fountain-square.fbx
+    moveOnPlayer: true
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - -0.0038073063
+      - -0.00024032593
+      - 0.0010485649
+    pos:
+      - 4.230486
+      - 16.033577
+      - 3.721325
+    rotationQuat:
+      - -2.5685844e-05
+      - 0.9999783
+      - 0.0036933161
+      - 0.0054582255
+    upVec:
+      - 0.0073867515
+      - -0.9999727
+      - -1.105267e-05
+    startLocalPos:
+      - -0.25619268
+      - -13.319759
+      - 5.2889514
+    endLocalPos:
+      - -0.26
+      - -13.32
+      - 5.29
+    textureTiling:
+      - 1
+      - 1
+    components:
+      movement:
+        startLocalPos: [4.230486, 16.033577, 3.721325]
+        endLocalPos: [-0.26000023, -13.32, 5.290001]
+        moveOffset: [-4.490486, -29.353577, 1.568676]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_9
+  - currentPlanetNum: 0
+    theta: 0
+    phi: 0
+    height: 1
+    facingYaw: -0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 0.01
+      - 0.01
+      - 0.01
+    modelPath: FantasyAssets/fountain-round.fbx
+    moveOnPlayer: false
+    moveDuration: 3
+    returnDelay: 1
+    moveOffset:
+      - 4
+      - 0
+      - 0
+    pos:
+      - 12.332556
+      - 2.75
+      - 10.895617
+    upVec:
+      - 0
+      - 1
+      - 0
+    startLocalPos:
+      - 12.123759
+      - 2.75
+      - 0.95
+    endLocalPos:
+      - 16.12376
+      - 2.75
+      - 0.95
+    textureTiling:
+      - 1
+      - 1
+    visibleIfStageCleared: 2
+    rotationQuat:
+      - 1
+      - 0
+      - 0
+      - 0
+    components:
+      movement:
+        startLocalPos: [12.332556, 2.75, 10.895617]
+        endLocalPos: [12.33, 8.59317, 10.9]
+        moveOffset: [-0.0025558472, 5.84317, 0.004383087]
+        moveDuration: 3
+        moveOnPlayer: true
+        returnDelay: 1
+        endpointWaitSeconds: 0
+    platformId: legacy_platforms_10
