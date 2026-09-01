@@ -10,7 +10,6 @@
 #include "gfx/UIRenderer.h"
 #include "gfx/VertexArray.h"
 #include "system/UILoadSystem.h"
-#include "utils/MathUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -50,14 +49,11 @@ void NPCProximityMessageRenderer::DrawMessage(
     const glm::mat4& viewMat,
     const NPC* npc) const
 {
-    auto& renderer =
-        *const_cast<Renderer3D*>(mRenderer);
-    auto& vertexArrays = renderer.GetVertexArrays();
-    auto& textures = renderer.GetTextures();
-
-    const auto quadIt = vertexArrays.find("quad");
-    const auto backgroundIt = textures.find("npcMessageBg");
-    if (quadIt == vertexArrays.end() || backgroundIt == textures.end()) {
+    const Renderer3D& renderer = *mRenderer;
+    VertexArray* quad = renderer.FindVertexArray("quad");
+    const GLuint backgroundTexture =
+        renderer.FindTexture("npcMessageBg");
+    if (!quad || backgroundTexture == 0) {
         return;
     }
 
@@ -146,13 +142,13 @@ void NPCProximityMessageRenderer::DrawMessage(
         1.0f,
         1.0f,
         1.0f);
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, backgroundIt->second);
+    glBindTexture(GL_TEXTURE_2D, backgroundTexture);
     glUniform1i(shader->GetLocDiffuseTexture(), 0);
     const glm::mat4 backgroundBillboard =
-        renderer.GetGame()->GetMathUtils()->CreateBillBoard(
+        renderer.CreateBillboard(
             viewMat,
             center,
             npc->GetUpVec(),
@@ -167,7 +163,7 @@ void NPCProximityMessageRenderer::DrawMessage(
 
     glBindTexture(GL_TEXTURE_2D, textTexture);
     const glm::mat4 textBillboard =
-        renderer.GetGame()->GetMathUtils()->CreateBillBoard(
+        renderer.CreateBillboard(
             viewMat,
             center + npc->GetUpVec() * (0.04f * scale),
             npc->GetUpVec(),

@@ -1,5 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Player.h"
@@ -68,7 +70,7 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         combat,
         deltaTime);
 
-    if (TryRecover(player, input, jewelGauge, status)) {
+    if (TryRecover(player, input, combat, jewelGauge, status)) {
         return;
     }
 
@@ -141,7 +143,7 @@ bool PlayerStateMachine::TryStartAssistBrokenEnemyAirCombo(
     }
 
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
             player);
     if (!target) {
         return false;
@@ -234,7 +236,7 @@ bool PlayerStateMachine::TryStartAssistAirSlamAttack(
 
     constexpr float assistAirSlamLaunchedTimerThresholdSeconds = 1.0f;
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
             player,
             assistAirSlamLaunchedTimerThresholdSeconds);
     if (!target) {
@@ -375,11 +377,17 @@ bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, Pla
     return true;
 }
 
-bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerJewelGauge& jewelGauge,
-                                    PlayerStatus& status)
+bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerCombat& combat,
+                                    PlayerJewelGauge& jewelGauge, PlayerStatus& status)
 {
-    const bool canRecover = input.GetRecoverPressed() && !input.GetRecoverPressedPrev() && jewelGauge.CanConsume(1) &&
-                            status.GetHp() != status.GetMaxHp();
+    const bool isPreparingSpecialAttack =
+        combat.IsSpecialCharging() || combat.GetCanSpecialAttack();
+    const bool canRecover =
+        !isPreparingSpecialAttack &&
+        input.GetRecoverPressed() &&
+        !input.GetRecoverPressedPrev() &&
+        jewelGauge.CanConsume(1) &&
+        status.GetHp() != status.GetMaxHp();
     if (!canRecover) {
         return false;
     }
@@ -449,13 +457,15 @@ bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& i
 {
     const bool canContinuousAttacking = player.GetOnGround() &&
                                         input.GetSpecialAttackPressed() && input.GetWideAttackPressed() &&
-                                        !input.GetWideAttackPressedPrev() && jewelGauge.CanConsume(1);
+                                        !input.GetWideAttackPressedPrev() &&
+                                        jewelGauge.CanConsume(
+                                            PlayerJewelGauge::ContinuousAttackCost);
     if (!canContinuousAttacking) {
         return false;
     }
 
     input.ClearAttackBuffer();
-    jewelGauge.Consume(1);
+    jewelGauge.Consume(PlayerJewelGauge::ContinuousAttackCost);
     combat.StartContinuousAttacking();
     return true;
 }
@@ -541,7 +551,7 @@ bool PlayerStateMachine::TryStartAssistAirDodgeAttack(
     }
 
     Enemy* target =
-        PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+        PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
             player);
     if (!target ||
         !movement.StartDodgeMovementTowards(
@@ -595,14 +605,14 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
     const float attackAngle =
         isNormalAttack ? combat.GetNormalAttackAngle() : combat.GetWideAttackAngle();
     if (player.GetGame()->IsAssistControlStyle()) {
-        const bool requireAirborneTarget = !player.GetOnGround();
+        const bool requireLaunchedTarget = !player.GetOnGround();
 
         // 敵への自動方向転換はアシスト操作時だけ行う。
         mAttackDirectionTarget = PlayerTargetingAssist::FindAttackTarget(
             player,
             attackRange,
             attackAngle,
-            requireAirborneTarget);
+            requireLaunchedTarget);
 
         if (mAttackDirectionTarget) {
             PlayerTargetingAssist::FaceTarget(

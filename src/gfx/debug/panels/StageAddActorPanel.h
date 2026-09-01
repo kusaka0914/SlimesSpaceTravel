@@ -49,6 +49,7 @@ public:
     bool BeginDuplicatePlacement(const StageActorRef& sourceRef);
     bool ActivateUGCPreset(UGCPresetKind presetKind);
     bool TryEraseUGCPlatformCell();
+    void EndUGCEraseGesture();
     bool TryTranslateUGCPlatformCells(
         const StageActorRef& actorRef,
         const glm::vec3& worldDelta);

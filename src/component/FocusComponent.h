@@ -11,6 +11,7 @@ public:
     void StartFocus();
 
     float GetFocusTimer() const { return mFocusTimer; }
+    bool HasReachedRevealMoment() const;
 
 private:
     void UpdateFocusTimer(float deltaTime);

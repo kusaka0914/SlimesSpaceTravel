@@ -45,6 +45,11 @@ void PauseMenuRenderer::Draw()
         const bool selected = enabled && selectedIndex == i;
 
         std::string label = textInfo->texts[0];
+        if (menuTextIds[i] == "feedbackText" && mGame->IsReviewBuild()) {
+            label = mGame->GetIsDebugEditorShowing()
+                ? "エディターを閉じる"
+                : "エディターを開く";
+        }
         if (menuTextIds[i] == "controlStyleText") {
             label += mGame->IsAssistControlStyle() ? "アシスト" : "スタンダード";
         }

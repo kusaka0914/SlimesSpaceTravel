@@ -1200,7 +1200,7 @@ tutorials:
     textScaleRatio: 0.000333333
     pages:
       - id: introduction
-        text: "左上のジュエルを1個使うと、回復か連続攻撃、\n2個使うと溜め攻撃ができるよ！"
+        text: "左上のジュエルを1個使うと回復、\n2個使うと連続攻撃か溜め攻撃ができるよ！"
         ruby:
           common:
             - text: 左
@@ -1217,7 +1217,7 @@ tutorials:
             - text: 使
               ruby: true
               reading: つか
-            - text: うと、
+            - text: うと
               ruby: false
             - text: 回
               ruby: true
@@ -1225,7 +1225,15 @@ tutorials:
             - text: 復
               ruby: true
               reading: ふく
-            - text: か
+            - text: "、\n2"
+              ruby: false
+            - text: 個
+              ruby: true
+              reading: こ
+            - text: 使
+              ruby: true
+              reading: つか
+            - text: うと
               ruby: false
             - text: 連
               ruby: true
@@ -1239,15 +1247,7 @@ tutorials:
             - text: 撃
               ruby: true
               reading: げき
-            - text: "、\n2"
-              ruby: false
-            - text: 個
-              ruby: true
-              reading: こ
-            - text: 使
-              ruby: true
-              reading: つか
-            - text: うと
+            - text: か
               ruby: false
             - text: 溜
               ruby: true
@@ -1264,7 +1264,7 @@ tutorials:
               ruby: false
         advance: confirm
       - id: generation
-        text: "ジュエルは30秒に1個作られて、2個まで増えるよ！\n敵が落とすジュエルを拾えば10個まで持てるよ！"
+        text: "ジュエルは30秒に1個作られて、2個まで増えるよ！\n敵が落とすジュエルを拾えば6個まで持てるよ！"
         ruby:
           common:
             - text: ジュエルは30
@@ -1305,7 +1305,7 @@ tutorials:
             - text: 拾
               ruby: true
               reading: ひろ
-            - text: えば10
+            - text: えば6
               ruby: false
             - text: 個
               ruby: true
@@ -1664,6 +1664,8 @@ tutorials:
         text: "そうだ！君はスライムだから分裂できるんじゃない？\n操作するスライムを切り替えてみようよ！"
         controllerText: "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
         keyboardText: "そうだ！君はスライムだから分裂できるんじゃない？\nIを押して分身を作って、切り替えてみようよ！"
+        controllerObjectiveText: ZRを押して分裂してみよう
+        keyboardObjectiveText: Iを押して分裂してみよう
         ruby:
           common:
             - text: そうだ！
@@ -1787,7 +1789,7 @@ tutorials:
               reading: か
             - text: えてみようよ！
               ruby: false
-        advance: playerSplitMerge
+        advance: playerSplit
       - id: switched
         text: "おっ！分裂できたね！\nちょっと小さくなったけどそっくりだ！"
         ruby:
@@ -1810,6 +1812,8 @@ tutorials:
         advance: confirm
       - id: find_switch
         text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗ってみよう！"
+        objectiveText: どこかに押せるスイッチがないか、探してみよう
+        objectivePlatformId: platform_2
         ruby:
           common:
             - text: 分
@@ -1843,7 +1847,12 @@ tutorials:
               reading: の
             - text: ってみよう！
               ruby: false
-        advance: confirm
+        advance: approachPressureSwitch
+      - id: press_switch
+        text: ""
+        objectiveText: スイッチを押して道を開こう
+        objectivePlatformId: platform_2
+        advance: pressPressureSwitch
   - id: switch_success
     name: スイッチ押し成功
     repeat: onceEver
@@ -1880,6 +1889,8 @@ tutorials:
         text: ""
         controllerText: さっそくZLで切り替えて見てみようよ！
         keyboardText: さっそくYで切り替えて見てみようよ！
+        controllerObjectiveText: ZLを押して、もう一体に切り替えてみよう
+        keyboardObjectiveText: Yを押して、もう一体に切り替えてみよう
         ruby:
           controller:
             - text: さっそくZLで
@@ -2031,6 +2042,8 @@ tutorials:
         text: ""
         controllerText: じゃあもう一度ZRを押して合体してみよう！
         keyboardText: じゃあもう一度Iを押して合体してみよう！
+        controllerObjectiveText: ZRを押して合体してみよう
+        keyboardObjectiveText: Iを押して合体してみよう
         ruby:
           controller:
             - text: じゃあもう
@@ -2080,7 +2093,7 @@ tutorials:
               reading: たい
             - text: してみよう！
               ruby: false
-        advance: playerSplitMerge
+        advance: playerMerge
       - id: page_4
         text: "ナイス合体！これで1つになれたから\nもう一度分身して、2人でスイッチを押そう！"
         ruby:
@@ -2120,3 +2133,99 @@ tutorials:
             - text: そう！
               ruby: false
         advance: confirm
+  - id: fix_switch_tutorial
+    name: 一度押すだけスイッチ
+    repeat: onceEver
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: page_1
+        text: "この絵柄のスイッチは一度押すだけでいいよ！\n降りてほかのところを見よう！"
+        ruby:
+          common:
+            - text: この
+              ruby: false
+            - text: 絵
+              ruby: true
+              reading: え
+            - text: 柄
+              ruby: true
+              reading: がら
+            - text: のスイッチは
+              ruby: false
+            - text: 一
+              ruby: true
+              reading: いち
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: 押
+              ruby: true
+              reading: お
+            - text: "すだけでいいよ！\n"
+              ruby: false
+            - text: 降
+              ruby: true
+              reading: お
+            - text: りてほかのところを
+              ruby: false
+            - text: 見
+              ruby: true
+              reading: み
+            - text: よう！
+              ruby: false
+        advance: confirm
+        focus:
+          sequence: platforms
+          index: 22
+  - id: double_switch_tutorial
+    name: 2人用スイッチ
+    repeat: onceEver
+    textXRatio: 0.065
+    textYRatio: 0.14
+    textScaleRatio: 0.000333333
+    pages:
+      - id: page_1
+        text: "これは2つのスイッチに、1人ずつ乗らなきゃいけないよ！\n分身に切り替えてここまで連れてこよう！"
+        ruby:
+          common:
+            - text: これは2つのスイッチに、1
+              ruby: false
+            - text: 人
+              ruby: true
+              reading: り
+            - text: ずつ
+              ruby: false
+            - text: 乗
+              ruby: true
+              reading: の
+            - text: "らなきゃいけないよ！\n"
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: に
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えてここまで
+              ruby: false
+            - text: 連
+              ruby: true
+              reading: つ
+            - text: れてこよう！
+              ruby: false
+        advance: confirm
+        focus:
+          sequence: platforms
+          index: 8

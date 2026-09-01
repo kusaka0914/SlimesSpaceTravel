@@ -76,6 +76,7 @@ public:
     void SetActionState(ActionState actionState) { mActionState = actionState; }
 
     bool IsJustBeforeAttack(const EnemyStatus& status) const;
+    bool IsAttackImpactActive(const EnemyStatus& status) const;
     bool ShouldPreservePreparationTimer() const
     {
         return mShouldPreservePreparationTimer;

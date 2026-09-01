@@ -4,9 +4,12 @@
 
 class Player;
 class PlayerMovement;
+class InputSystem;
 
 class PlayerInput {
 public:
+    explicit PlayerInput(InputSystem& inputSystem);
+
     void ProcessActor(Player& player, const PlayerMovement& movement);
     void ProcessGameController(Player& player, const PlayerMovement& movement);
     void ProcessKeyboard(Player& player, const PlayerMovement& movement);
@@ -47,10 +50,13 @@ public:
 
 private:
     void ApplyTutorialInputRestriction(Player& player);
+    void UpdateRecoverInput(const Player& player);
     void CaptureAttackInput();
     void ClearNonControlledPlayerInput();
 
 private:
+    InputSystem& mInputSystem;
+
     bool mDodgePressed = false;
     bool mDodgePressedPrev = false;
     bool mJumpPressed = false;

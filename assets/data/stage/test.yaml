@@ -41,7 +41,7 @@ planets:
       - 0
     scale:
       - 4
-      - 4
+      - 1.2
       - 4
     color:
       - 1
@@ -2411,10 +2411,8 @@ platforms:
         targets:
           - platform_9
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -2.1821268
     phi: 0.6397896
@@ -2514,10 +2512,8 @@ platforms:
         targets:
           - legacy_platforms_9
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
   - currentPlanetNum: 0
     theta: -2.673445
     phi: 0.44203264
@@ -2648,10 +2644,31 @@ platforms:
         targets:
           - legacy_platforms_12
         remainsOnAfterPressed: false
-        enemyTargets:
-          []
-        hideTargets:
-          []
+        enemyTargets: []
+        hideTargets: []
+  - currentPlanetNum: 3
+    theta: -1.3234977
+    phi: 1.5539522
+    height: -3.002572
+    facingYaw: 0
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    pos:
+      - 0.0041122437
+      - 0.9972863
+      - -0.01628828
+    upVec:
+      - 0.011457252
+      - 0.99982214
+      - -0.014980959
+    platformId: platform_11
 stageObjects:
   - currentPlanetNum: 0
     theta: 0
@@ -2891,5 +2908,4 @@ tutorialTriggers:
       - talkIndex: 2
         condition: playerSwitch
 boatArrivalPoints: []
-jewelItems:
-  []
+jewelItems: []

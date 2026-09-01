@@ -21,6 +21,14 @@ public:
         float collisionCenterHeight,
         ActorCollisionFilter actorCollisionFilter) const;
 
+    bool DoesSweepHitBlockingStage(
+        btDiscreteDynamicsWorld* world,
+        btConvexShape* actorShape,
+        const Actor& actor,
+        const glm::vec3& fromPosition,
+        const glm::vec3& toPosition,
+        float collisionCenterHeight) const;
+
 private:
     struct StageSweepResolution {
         glm::vec3 position{0.0f};

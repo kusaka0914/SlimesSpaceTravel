@@ -146,6 +146,40 @@ void RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell()
         "other moving cell remains");
 }
 
+void ReusingMovingSourceRegionRemovesMultipleDestinationCells()
+{
+    YAML::Node stageConfig;
+    UGCPlatformCell firstMovingCell = CreateCell(2, 1, 3, "moving");
+    firstMovingCell.movementDeltaCells = glm::ivec3(4, 2, -1);
+    UGCPlatformDocument::AddFootprint(stageConfig, firstMovingCell, 1);
+
+    UGCPlatformCell secondMovingCell = CreateCell(3, 1, 3, "moving");
+    secondMovingCell.movementDeltaCells = glm::ivec3(4, 2, -1);
+    UGCPlatformDocument::AddFootprint(stageConfig, secondMovingCell, 1);
+
+    UGCGeneratedPlatformRegion sourceRegion;
+    sourceRegion.planetIndex = 2;
+    sourceRegion.gridSize = 2.0f;
+    sourceRegion.gridLayer = 1;
+    sourceRegion.minimumX = 2;
+    sourceRegion.minimumZ = 3;
+    sourceRegion.maximumX = 3;
+    sourceRegion.maximumZ = 3;
+
+    ExpectTrue(
+        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
+            stageConfig, sourceRegion, glm::ivec3(6, 3, 2)),
+        "first destination removed");
+    ExpectTrue(
+        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
+            stageConfig, sourceRegion, glm::ivec3(7, 3, 2)),
+        "second destination removed with original region");
+    ExpectEqual(
+        std::size_t{0},
+        stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
+        "all moving cells removed");
+}
+
 void LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells()
 {
     YAML::Node stageConfig;
@@ -415,6 +449,9 @@ void RegisterUGCPlatformDocumentTests(
     tests.emplace_back(
         "UGCPlatformDocument.RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell",
         RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell);
+    tests.emplace_back(
+        "UGCPlatformDocument.ReusingMovingSourceRegionRemovesMultipleDestinationCells",
+        ReusingMovingSourceRegionRemovesMultipleDestinationCells);
     tests.emplace_back("UGCPlatformDocument.LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells", LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells);
     tests.emplace_back(
         "UGCPlatformDocument.LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing",

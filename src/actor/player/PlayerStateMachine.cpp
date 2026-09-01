@@ -1,5 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
 #include "actor/Player.h"
 #include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"

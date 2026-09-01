@@ -653,3 +653,28 @@ ActorMovementCollisionResult PhysicsSystem::ResolveMovementCollision(
         mPlayerCollisionCenterHeight * collisionScaleMultiplier,
         actorCollisionFilter);
 }
+
+bool PhysicsSystem::DoesActorSweepHitBlockingStage(
+    const Actor& actor,
+    const glm::vec3& fromPosition,
+    const glm::vec3& toPosition) const
+{
+    if (!mBulletWorld || !mPlayerShape || !mActorCollisionResolver) {
+        return false;
+    }
+
+    const float collisionScaleMultiplier =
+        actor.GetCollisionScaleMultiplier();
+    btUniformScalingShape scaledPlayerShape(
+        mPlayerShape.get(),
+        collisionScaleMultiplier);
+
+    SyncKinematicBodies();
+    return mActorCollisionResolver->DoesSweepHitBlockingStage(
+        mBulletWorld.get(),
+        &scaledPlayerShape,
+        actor,
+        fromPosition,
+        toPosition,
+        mPlayerCollisionCenterHeight * collisionScaleMultiplier);
+}

@@ -9,27 +9,35 @@
 #include "actor/Player.h"
 
 #include "system/AudioSystem.h"
+#include "system/scene/ArrivalSceneFlow.h"
+#include "system/scene/EndingCreditsFlow.h"
+#include "system/scene/OpeningStoryFlow.h"
 #include "system/scene/SceneTransitionController.h"
 #include "system/scene/TalkController.h"
 #include "system/scene/TutorialController.h"
 #include "system/sequence/SequenceSystem.h"
 #include "system/ending/EndingRollConfig.h"
+#include "system/story/StorybookConfig.h"
+#include "system/UILoadSystem.h"
 
 #include <SDL2/SDL_mixer.h>
 #include <glm/glm.hpp>
 
 #include <utility>
 
-SceneSystem::SceneSystem(Game* game)
+SceneSystem::SceneSystem(Game* game, const UILoadSystem& uiLoadSystem)
     : mGame(game),
+      mUILoadSystem(uiLoadSystem),
       mFadeTimer(-1.0f),
       mClearTimer(-1.0f),
       mIsFadeOut(false),
       mHasPendingStageChange(false),
       mNextStageNum(-1)
 {
-    mGameProgressState = std::make_unique<GameProgressState>(game);
-    mUIState = std::make_unique<UIState>(game);
+    mGameProgressState = std::make_unique<GameProgressState>();
+    mUIState = std::make_unique<UIState>();
+    mStorybookConfig = std::make_unique<StorybookConfig>();
+    ReloadStorybookConfig();
 
     CreateControllers();
 }
@@ -43,6 +51,22 @@ void SceneSystem::CreateControllers()
     mTalkController =
         std::make_unique<TalkController>(mGame, mGameProgressState.get(), mUIState.get(), mTalkingNPC, mTalkingPlayer);
     mTutorialController = std::make_unique<TutorialController>(mGame, mGameProgressState.get(), mUIState.get());
+    mArrivalSceneFlow = std::make_unique<ArrivalSceneFlow>(
+        *mGame,
+        *this,
+        *mTalkController,
+        *mTutorialController);
+    mOpeningStoryFlow = std::make_unique<OpeningStoryFlow>(
+        *mGame,
+        *this,
+        *mUIState,
+        *mTalkController,
+        [this]() { mArrivalSceneFlow->SuppressForcedTalkOnce(); });
+    mEndingCreditsFlow = std::make_unique<EndingCreditsFlow>(
+        *mGame,
+        *this,
+        *mGameProgressState,
+        *mUIState);
 }
 
 void SceneSystem::Update(float deltaTime)
@@ -57,19 +81,13 @@ void SceneSystem::Update(float deltaTime)
             RestartGame();
         }
     }
-    if (IsCredits() && mFadeTimer < 0.0f) {
-        mCreditsElapsed += deltaTime;
-        EndingRollConfig endingRoll;
-        EndingRollConfigIO::Load(endingRoll);
-        if (mCreditsElapsed >= endingRoll.totalDuration) {
-            FinishCredits();
-        }
-    }
+    mEndingCreditsFlow->UpdateCredits(deltaTime);
     mTutorialController->Update(deltaTime);
     mTalkController->Update(deltaTime);
+    AdvanceOpeningStoryIfComplete();
+    FinishEndingStoryIfComplete();
     UpdateClearTimer(deltaTime);
-    UpdateArrivalTutorials();
-    UpdateForcedArrivalTalk();
+    mArrivalSceneFlow->Update();
 }
 
 bool SceneSystem::OnConfirmPressed(int playerNum)
@@ -105,21 +123,25 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
 
     case GameProgressState::SceneState::Talking:
     {
-
+        if (mTutorialController->HasActiveTutorial()) {
+            mTutorialController->TryAdvanceFromConfirm();
+            return true;
+        }
 
         const Player* talkingPlayer = GetTalkingPlayer();
         if (talkingPlayer && talkingPlayer->GetPlayerNum() != playerNum) {
             return false;
         }
-        if (mTutorialController->HasActiveTutorial()) {
-            mTutorialController->TryAdvanceFromConfirm();
-        } else {
-            mTalkController->TryAdvanceTalkFromConfirm();
-        }
+        mTalkController->TryAdvanceTalkFromConfirm();
         return true;
     }
 
     case GameProgressState::SceneState::Playing:
+        if (mTutorialController->HasActiveTutorial()) {
+            // 操作目標の実行中はA/Spaceも通常操作に使うため、
+            // 同じ入力で別の会話を開始しない。
+            return false;
+        }
         return mTalkController->TryStartTalkWithNPC(playerNum);
 
     case GameProgressState::SceneState::GameOver:
@@ -203,7 +225,7 @@ void SceneSystem::OnStartPressed()
 
 
 
-        if (mHasOpeningResume) {
+        if (mOpeningStoryFlow->HasResume()) {
             FinishOpeningStory();
         } else {
             StartFadeIn();
@@ -221,11 +243,26 @@ void SceneSystem::OnStartPressed()
 
 void SceneSystem::StartOpening()
 {
+    ReloadStorybookConfig();
     mTransitionController->StartOpening();
+}
+
+bool SceneSystem::IsShowingTutorialConversation() const
+{
+    return mTutorialController &&
+           mTutorialController->IsShowingConversation();
+}
+
+bool SceneSystem::IsShowingTutorialObjective() const
+{
+    return mTutorialController &&
+           mTutorialController->IsShowingActionObjective();
 }
 
 void SceneSystem::StartEnding()
 {
+    ReloadStorybookConfig();
+    mUIState->StartTalkWith(UIState::TalkWith::Ending);
     mTransitionController->StartEnding();
 }
 
@@ -289,7 +326,20 @@ void SceneSystem::DebugEnterEnding()
 void SceneSystem::DebugStartCredits()
 {
     ResetForDebugScene(GameProgressState::SceneState::Credits);
-    mCreditsElapsed = 0.0f;
+    mEndingCreditsFlow->Reset();
+}
+
+void SceneSystem::ClearActorReferencesForStageReload()
+{
+    if (mTutorialController) {
+        mTutorialController->Stop(false);
+    }
+    if (mTalkController) {
+        mTalkController->ClearActorReferencesForStageReload();
+    } else {
+        mTalkingNPC = nullptr;
+        mTalkingPlayer = nullptr;
+    }
 }
 
 void SceneSystem::ResetForDebugScene(
@@ -314,8 +364,9 @@ void SceneSystem::ApplyDebugSceneState(
     mGameOverTimer = -1.0f;
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
-    mHasPendingForcedArrivalTalk = false;
-    mHasReachedArrivalDestination = false;
+    mOpeningStoryFlow->Reset();
+    mEndingCreditsFlow->Reset();
+    mArrivalSceneFlow->Reset();
 
     mUIState->StartTalkWith(UIState::TalkWith::Opening);
     mGameProgressState->SetCurrentSceneState(destinationScene);
@@ -339,18 +390,30 @@ void SceneSystem::StartPlayingScene()
 
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
-    mIsFinishingOpeningStory = false;
-
-
-
-
-
-    mHasPendingForcedArrivalTalk = !mSuppressForcedArrivalTalkOnce;
-    mSuppressForcedArrivalTalkOnce = false;
-    mHasReachedArrivalDestination = false;
+    mOpeningStoryFlow->PreparePlayingScene();
+    mArrivalSceneFlow->PreparePlayingScene();
 
     for (Player* player : mGame->GetPlayers()) {
         player->SetInputAvailableTimer(0.15f);
+    }
+}
+
+void SceneSystem::FinishFocusingScene()
+{
+    if (!mTutorialController ||
+        !mTutorialController->ResumeAfterFocus()) {
+        StartPlayingScene();
+        return;
+    }
+
+    if (!IsPlaying()) {
+        return;
+    }
+
+    for (Player* player : mGame->GetPlayers()) {
+        if (player) {
+            player->SetInputAvailableTimer(0.15f);
+        }
     }
 }
 
@@ -368,161 +431,66 @@ bool SceneSystem::StartOpeningAfterTalkPage(
     NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
     std::size_t sourceTalkPageIndex)
 {
-    if (!talkingNPC || !talkingPlayer || resumeTalkPageIndex < 0 ||
-        !mGame ||
-        mGame->HasCompletedNPCOpeningTrigger(
-            talkingNPC, sourceTalkPageIndex)) {
-        return false;
-    }
-
-    mOpeningReturnStageNum = mGame->GetCurrentStageNum();
-    mOpeningReturnStageYamlPath = mGame->GetCurrentStageYamlPath();
-    mOpeningResumeNPCConversationId =
-        mGame->GetNPCConversationId(talkingNPC);
-    mOpeningResumePlayerIndex = 0;
-    const std::vector<Player*>& players = mGame->GetPlayers();
-    for (std::size_t index = 0; index < players.size(); ++index) {
-        if (players[index] == talkingPlayer) {
-            mOpeningResumePlayerIndex = static_cast<int>(index);
-            break;
-        }
-    }
-
-
-
-    mGame->MarkNPCOpeningTriggerCompleted(
-        talkingNPC, sourceTalkPageIndex);
-
-    // オープニングは全画面UIなので別ステージを読込む必要がない。同期読込によるフェード開始前の停止を避ける。
-
-
-
-
-
-
-    mOpeningResumeNPC = nullptr;
-    mOpeningResumePlayer = nullptr;
-    mOpeningResumeTalkPageIndex = resumeTalkPageIndex;
-    mHasOpeningResume = true;
-    mIsFinishingOpeningStory = false;
-    mUIState->StartTalkWith(UIState::TalkWith::Opening);
-    StartOpening();
-    return true;
+    return mOpeningStoryFlow->StartAfterTalkPage(
+        talkingNPC,
+        talkingPlayer,
+        resumeTalkPageIndex,
+        sourceTalkPageIndex);
 }
 
 void SceneSystem::FinishOpeningStory()
 {
-
-    // 最終ページ後は毎フレーム呼ばれるため、最初の遷移要求を後続フレームで上書きしない。
-
-
-
-    if (mIsFinishingOpeningStory) {
-        return;
-    }
-    mIsFinishingOpeningStory = true;
-
-    if (!mHasOpeningResume || mOpeningReturnStageNum < 0 ||
-        mOpeningReturnStageYamlPath.empty() ||
-        mOpeningResumeNPCConversationId.empty() ||
-        mOpeningResumeTalkPageIndex < 0) {
-        mIsFinishingOpeningStory = false;
-        StartFadeIn();
-        return;
-    }
-
-    const int resumeTalkPageIndex = mOpeningResumeTalkPageIndex;
-    const int returnStageNum = mOpeningReturnStageNum;
-    const int resumePlayerIndex = mOpeningResumePlayerIndex;
-    const std::string returnStageYamlPath = mOpeningReturnStageYamlPath;
-    const std::string resumeNPCConversationId =
-        mOpeningResumeNPCConversationId;
-    mOpeningResumeNPC = nullptr;
-    mOpeningResumePlayer = nullptr;
-    mOpeningResumeTalkPageIndex = -1;
-    mOpeningReturnStageNum = -1;
-    mOpeningReturnStageYamlPath.clear();
-    mOpeningResumeNPCConversationId.clear();
-    mHasOpeningResume = false;
-    mSuppressForcedArrivalTalkOnce = true;
-
-    if (!RequestFadeAction([this, returnStageNum, returnStageYamlPath,
-                            resumeNPCConversationId, resumePlayerIndex,
-                            resumeTalkPageIndex]() {
-        const bool isAlreadyOnReturnStage =
-            mGame->GetCurrentStageNum() == returnStageNum &&
-            mGame->GetCurrentStageYamlPath() == returnStageYamlPath;
-        if (!isAlreadyOnReturnStage &&
-            !mGame->LoadStageForScene(returnStageNum, returnStageYamlPath)) {
-            mIsFinishingOpeningStory = false;
-            StartPlayingScene();
-            return;
-        }
-
-        NPC* resumeNPC =
-            mGame->FindNPCByConversationId(resumeNPCConversationId);
-        const std::vector<Player*>& players = mGame->GetPlayers();
-        Player* resumePlayer =
-            resumePlayerIndex >= 0 &&
-                    resumePlayerIndex < static_cast<int>(players.size())
-                ? players[resumePlayerIndex]
-                : mGame->GetMainPlayer();
-        if (!resumeNPC || !resumePlayer || !resumeNPC->GetIsActive() ||
-            !resumePlayer->GetIsActive()) {
-            mIsFinishingOpeningStory = false;
-            StartPlayingScene();
-            return;
-        }
-        mIsFinishingOpeningStory = false;
-        mTalkController->ResumeTalkWithNPC(
-            resumeNPC, resumePlayer, resumeTalkPageIndex);
-    })) {
-        mIsFinishingOpeningStory = false;
-    }
+    mOpeningStoryFlow->Finish();
 }
 
 bool SceneSystem::StartEndingAfterTalkPage(
     NPC* talkingNPC, std::size_t sourceTalkPageIndex)
 {
-    if (!talkingNPC || !mGame ||
-        !mGame->AreAllMainStagesCleared() ||
-        mGame->HasCompletedNPCEndingTrigger(
-            talkingNPC, sourceTalkPageIndex)) {
-        return false;
-    }
-
-    mGame->MarkNPCEndingTriggerCompleted(
-        talkingNPC, sourceTalkPageIndex);
-    mUIState->StartTalkWith(UIState::TalkWith::Ending);
-    StartEnding();
-    return true;
+    return mEndingCreditsFlow->StartEndingAfterTalkPage(
+        talkingNPC,
+        sourceTalkPageIndex);
 }
 
 void SceneSystem::FinishEndingStory()
 {
-    RequestFadeAction([this]() { StartCredits(); });
+    mEndingCreditsFlow->FinishEnding();
 }
 
 void SceneSystem::StartCredits()
 {
-    mUIState->FinishTalkWith();
-    mCreditsElapsed = 0.0f;
-    mGameProgressState->SetCurrentSceneState(
-        GameProgressState::SceneState::Credits);
+    mEndingCreditsFlow->StartCredits();
 }
 
 void SceneSystem::FinishCredits()
 {
-    RequestFadeAction([this]() {
-        mCreditsElapsed = 0.0f;
+    mEndingCreditsFlow->FinishCredits();
+}
 
+void SceneSystem::ReloadStorybookConfig()
+{
+    StorybookConfig loadedConfig;
+    if (loadedConfig.Load()) {
+        *mStorybookConfig = std::move(loadedConfig);
+    }
+}
 
+void SceneSystem::ReloadEndingRollConfig()
+{
+    mEndingCreditsFlow->ReloadConfig();
+}
 
-        mGame->MarkEndingRollCompleted();
-        mUIState->FinishTalkWith();
-        mGameProgressState->SetCurrentSceneState(
-            GameProgressState::SceneState::Title);
-    });
+std::string SceneSystem::FindStorybookPageImage(
+    const std::string& trackId,
+    int pageIndex) const
+{
+    return mStorybookConfig
+        ? mStorybookConfig->GetPageImage(trackId, pageIndex)
+        : std::string{};
+}
+
+const EndingRollConfig& SceneSystem::GetEndingRollConfig() const
+{
+    return mEndingCreditsFlow->GetConfig();
 }
 
 bool SceneSystem::TryStartTutorial(
@@ -562,8 +530,19 @@ bool SceneSystem::RequestPlayerRespawn(Player* player)
         return false;
     }
 
-    const bool requested = mTransitionController->RequestFadeAction([this, player]() {
-        player->RespawnAtRestartPoint();
+    const int playerNum = player->GetPlayerNum();
+    const bool requested = mTransitionController->RequestFadeAction([this, playerNum]() {
+        Player* respawningPlayer = nullptr;
+        for (Player* currentPlayer : mGame->GetPlayers()) {
+            if (currentPlayer && currentPlayer->GetPlayerNum() == playerNum) {
+                respawningPlayer = currentPlayer;
+                break;
+            }
+        }
+
+        if (respawningPlayer) {
+            respawningPlayer->RespawnAtRestartPoint();
+        }
         StartPlayingScene();
     });
 
@@ -589,138 +568,89 @@ void SceneSystem::RequestStageChange(int stageNum)
 {
     mTalkingNPC = nullptr;
     mTalkingPlayer = nullptr;
-    mOpeningResumeNPC = nullptr;
-    mOpeningResumePlayer = nullptr;
-    mOpeningResumeTalkPageIndex = -1;
-    mHasOpeningResume = false;
-    mOpeningReturnStageNum = -1;
-    mOpeningReturnStageYamlPath.clear();
-    mOpeningResumeNPCConversationId.clear();
-    mHasPendingForcedArrivalTalk = true;
-    mHasReachedArrivalDestination = false;
-    mSuppressForcedArrivalTalkOnce = false;
+    mOpeningStoryFlow->PrepareStageChange();
+    mArrivalSceneFlow->PrepareStageChange();
     mTransitionController->RequestStageChange(stageNum);
+}
+
+void SceneSystem::AdvanceOpeningStoryIfComplete()
+{
+    if (!IsOpening() || mFadeTimer >= 0.0f) {
+        return;
+    }
+
+    const UIState::TalkWith talkWith = mUIState->GetCurrentTalkWith();
+    const char* textId = nullptr;
+    switch (talkWith) {
+    case UIState::TalkWith::Opening:
+        textId = "openingText";
+        break;
+    case UIState::TalkWith::Mother:
+        textId = "talkWithMotherText";
+        break;
+    case UIState::TalkWith::Doctor:
+        textId = "talkWithDoctorText";
+        break;
+    default:
+        return;
+    }
+
+    if (mUIState->GetTalkUIIndex() <
+        GetSceneTalkPageCount("opening", textId)) {
+        return;
+    }
+
+    switch (talkWith) {
+    case UIState::TalkWith::Opening:
+        mUIState->StartTalkWith(UIState::TalkWith::Mother);
+        break;
+    case UIState::TalkWith::Mother:
+        mUIState->StartTalkWith(UIState::TalkWith::Doctor);
+        break;
+    case UIState::TalkWith::Doctor:
+        FinishOpeningStory();
+        break;
+    default:
+        break;
+    }
+}
+
+void SceneSystem::FinishEndingStoryIfComplete()
+{
+    if (!IsEnding() || mFadeTimer >= 0.0f ||
+        mUIState->GetCurrentTalkWith() != UIState::TalkWith::Ending) {
+        return;
+    }
+
+    if (mUIState->GetTalkUIIndex() <
+        GetSceneTalkPageCount("ending", "endingText")) {
+        return;
+    }
+
+    FinishEndingStory();
+}
+
+int SceneSystem::GetSceneTalkPageCount(
+    const char* sceneName,
+    const char* textId) const
+{
+    const UILoadSystem::TextInfo* textInfo =
+        mUILoadSystem.GetTextInfo(sceneName, textId);
+    return textInfo
+        ? static_cast<int>(textInfo->texts.size())
+        : 0;
+}
+
+float SceneSystem::GetCreditsElapsed() const
+{
+    return mEndingCreditsFlow
+        ? mEndingCreditsFlow->GetCreditsElapsed()
+        : 0.0f;
 }
 
 void SceneSystem::OnBoatArrived(Boat* boat)
 {
-    Stage* currentStage = mGame->GetCurrentStage();
-    if (!currentStage) {
-        return;
-    }
-
-    Player* mainPlayer = mGame->GetMainPlayer();
-    for (Player* player : mGame->GetPlayers()) {
-        if (!player) {
-            continue;
-        }
-
-        const bool isInactiveSoloClone =
-            !mGame->GetIsPlayer2Joined() &&
-            !mGame->GetIsPlayerSplit() &&
-            player != mainPlayer;
-        if (isInactiveSoloClone) {
-            continue;
-        }
-
-        player->OnBoatArrived(boat);
-    }
-
-    mHasPendingForcedArrivalTalk = true;
-    mHasReachedArrivalDestination = true;
-
-    // 到着直後には1人分裂の合体が続くため、入力の所有者が確定した次フレームでチュートリアルを始める。
-
-
-
-
-    mHasPendingArrivalTutorials = true;
-}
-
-void SceneSystem::UpdateArrivalTutorials()
-{
-    if (!mHasPendingArrivalTutorials || !IsPlaying()) {
-        return;
-    }
-
-    Player* controlledPlayer = mGame->GetControlledPlayer();
-    if (!controlledPlayer || !controlledPlayer->GetIsActive() ||
-        !controlledPlayer->GetOnGround()) {
-        return;
-    }
-
-    mHasPendingArrivalTutorials = false;
-    mTutorialController->TryStartBattleTutorial();
-    mTutorialController->TryStartJustDodgeTutorial();
-}
-
-void SceneSystem::UpdateForcedArrivalTalk()
-{
-    if (!mHasPendingForcedArrivalTalk || !IsPlaying() ||
-        mFadeTimer >= 0.0f || mIsFadeOut) {
-        return;
-    }
-
-    SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-    if (sequenceSystem && sequenceSystem->IsPlaying()) {
-        return;
-    }
-
-    Player* talkingPlayer = mGame->GetControlledPlayer();
-    if (!talkingPlayer || !talkingPlayer->GetIsActive() ||
-        (mHasReachedArrivalDestination &&
-         !talkingPlayer->GetOnGround())) {
-        return;
-    }
-
-    mHasPendingForcedArrivalTalk = false;
-    mHasReachedArrivalDestination = false;
-    NPC* arrivalNPC = FindForcedArrivalTalkNPC();
-    if (arrivalNPC) {
-        StartTalkWithNPC(arrivalNPC, talkingPlayer);
-    }
-}
-
-NPC* SceneSystem::FindForcedArrivalTalkNPC() const
-{
-    Player* controlledPlayer = mGame->GetControlledPlayer();
-    Planet* arrivalPlanet =
-        controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
-    const auto findInPlanet = [this](Planet* planet) -> NPC* {
-        if (!planet) {
-            return nullptr;
-        }
-        for (NPC* npc : planet->GetNPCs()) {
-            if (npc && npc->GetIsActive() &&
-                npc->GetForcesTalkOnArrival() &&
-                !npc->GetResolvedTalkTexts().empty() &&
-                !mGame->HasShownNPCConversation(npc)) {
-                return npc;
-            }
-        }
-        return nullptr;
-    };
-
-    if (NPC* arrivalNPC = findInPlanet(arrivalPlanet)) {
-        return arrivalNPC;
-    }
-
-    // ステージ開始演出中は現在惑星が未解決になることがある。1回限りの到着会話を失わないよう、ステージ全体から設定済みNPCを探す。
-
-
-
-
-    Stage* stage = mGame->GetCurrentStage();
-    if (stage) {
-        for (Planet* planet : stage->GetPlanets()) {
-            if (planet != arrivalPlanet) {
-                if (NPC* arrivalNPC = findInPlanet(planet)) {
-                    return arrivalNPC;
-                }
-            }
-        }
-    }
-    return nullptr;
+    mArrivalSceneFlow->OnBoatArrived(boat);
 }
 
 void SceneSystem::OnStageClear()
@@ -738,6 +668,21 @@ void SceneSystem::OnStageClear()
 
     // 音声を読み込めなかった場合だけ、従来の待ち時間を安全策として使う。
     mClearTimer = 12.0f;
+}
+
+void SceneSystem::OnUGCStageClear()
+{
+    mGameProgressState->SetCurrentSceneState(
+        GameProgressState::SceneState::StageClear);
+    Mix_HaltMusic();
+    if (mGame->GetAudioSystem()) {
+        mGame->GetAudioSystem()->PlaySE("clear_se");
+    }
+
+    // UGCは星の獲得演出完了を起点に専用結果画面へ遷移するため、
+    // SceneSystemの通常ステージ用タイマーでは拠点へ戻さない。
+    mClearTimer = -1.0f;
+    mClearAudioChannel = -1;
 }
 
 void SceneSystem::OnEnemyLaunched()

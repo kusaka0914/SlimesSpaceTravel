@@ -1,5 +1,5 @@
 planets:
-  - center: [0, 0, 0]
+  - center: [0, 4.6491623e-05, 0]
     scale: [2, 8, 8]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -11,7 +11,7 @@ planets:
     stageNum: 0
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [44.42074, 50.6, 0]
+  - center: [44.42074, 50.59924, 0]
     scale: [2, 6, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet.obj
@@ -23,7 +23,7 @@ planets:
     stageNum: 1
     canAttractNearbyPlayer: true
     reactsToOverheadGravityRay: false
-  - center: [47.9321, 11.178522, 0]
+  - center: [47.9321, 11.178402, 0]
     scale: [4, 4, 4]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -38,7 +38,7 @@ planets:
   - center:
       - 11.713653
       - 43.692368
-      - 4.7683716e-07
+      - 1.9073486e-06
     scale:
       - 2
       - 8
@@ -693,41 +693,6 @@ keys:
       - 0.7123397
 crystals: []
 boats:
-  - startPlanet: 2
-    destPlanet: 2
-    destStage: 0
-    theta: -2.6349576
-    phi: 0.36575687
-    height: 0.25032997
-    facingYaw: -1.8253922e-07
-    pos:
-      - -3.47
-      - 1.52
-      - -1.93
-    upVec:
-      - 0.999446
-      - 0.0039598737
-      - 0.033046503
-    rotation:
-      - 0
-      - 0
-      - 0
-    rotationQuat:
-      - 0.7084094
-      - 0.01170849
-      - -0.011662064
-      - -0.70560825
-    scale:
-      - 0.8
-      - 0.8
-      - 0.8
-    destMargin: 4
-    launchSequenceId: launch_rocket_from_base
-    modelPath: boat.obj
-    textureTiling:
-      - 1
-      - 1
-    travelSpeed: 1.350638
   - startPlanet: 0
     destPlanet: 3
     destStage: 0
@@ -806,9 +771,9 @@ boats:
     height: 2.0631275
     facingYaw: -1.67347e-08
     pos:
-      - 2.95
-      - 3.81
-      - 3.68
+      - 2
+      - -0.5
+      - -1.16
     upVec:
       - 0.99973696
       - -0.014351349
@@ -910,8 +875,9 @@ NPCs:
     talkTexts:
       - 星を探している？残念だがこの惑星にはそんなものないぞ。
       - "あー、確か近くの惑星にいいものを持っている\nでっかいやつがいるって噂を聞いたことあるな。"
-      - そこに行ってみたらどうだ？
-      - 隣の惑星にはロケットで行くんだな！
+      - "そこに行ってみたらどうだ？\n隣の惑星に行くためのロケットを探しな！"
+      - "そうだな...まずはあいつのところまで行ってみたらどうだ？\n移動とジャンプを使えば行けるぞ！"
+      - "そうだそうだ。見たい場所が見えないとき、\nカメラを回転するといいぞ！覚えておきな！"
     pos:
       - 1.42
       - -3.56
@@ -1009,10 +975,8 @@ NPCs:
           - text: 行
             ruby: true
             reading: い
-          - text: ってみたらどうだ？
+          - text: "ってみたらどうだ？\n"
             ruby: false
-      - talkIndex: 3
-        segments:
           - text: 隣
             ruby: true
             reading: となり
@@ -1024,33 +988,104 @@ NPCs:
           - text: 星
             ruby: true
             reading: せい
-          - text: にはロケットで
+          - text: に
             ruby: false
           - text: 行
             ruby: true
             reading: い
-          - text: くんだな！
+          - text: くためのロケットを
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: しな！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: そうだな...まずはあいつのところまで
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: "ってみたらどうだ？\n"
+            ruby: false
+          - text: 移
+            ruby: true
+            reading: い
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: とジャンプを
+            ruby: false
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: えば
+            ruby: false
+          - text: 行
+            ruby: true
+            reading: い
+          - text: けるぞ！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: そうだそうだ。
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: たい
+            ruby: false
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 所
+            ruby: true
+            reading: しょ
+          - text: が
+            ruby: false
+          - text: 見
+            ruby: true
+            reading: み
+          - text: "えないとき、\nカメラを"
+            ruby: false
+          - text: 回
+            ruby: true
+            reading: かい
+          - text: 転
+            ruby: true
+            reading: てん
+          - text: するといいぞ！
+            ruby: false
+          - text: 覚
+            ruby: true
+            reading: おぼ
+          - text: えておきな！
             ruby: false
     proximityMessage:
       mode: afterTalk
       variants:
-        - talkIndex: 3
-          text: ロケットで行くんだな！
+        - talkIndex: 4
+          text: あいつのところまで行ってみろ！
       rubies:
-        - talkIndex: 3
+        - talkIndex: 4
           segments:
-            - text: ロケットで
+            - text: あいつのところまで
               ruby: false
             - text: 行
               ruby: true
               reading: い
-            - text: くんだな！
+            - text: ってみろ！
               ruby: false
       range: 3
       height: 1.8
       scale: 1
     currentPlanetNum: 0
     forceTalkOnArrival: true
+    talkCameraFocus:
+      - talkIndex: 3
+        sequence: NPCs
+        index: 1
   - theta: -0.63021153
     phi: 0.5423254
     height: -0.08914423
@@ -1059,9 +1094,9 @@ NPCs:
     talkTexts:
       - ""
     pos:
-      - 3.18
-      - -2.36
-      - 2.67
+      - 4.5
+      - -1.29
+      - 0.14
     facingYaw: 2.4558797
     rotation:
       - 0
@@ -1086,32 +1121,16 @@ NPCs:
       mode: always
       variants:
         - talkIndex: 0
-          text: 高い足場に乗りたい時はジャンプ！
+          text: ジャンプでここまで来て！
       rubies:
         - talkIndex: 0
           segments:
-            - text: 高
-              ruby: true
-              reading: たか
-            - text: い
+            - text: ジャンプでここまで
               ruby: false
-            - text: 足
+            - text: 来
               ruby: true
-              reading: あし
-            - text: 場
-              ruby: true
-              reading: ば
-            - text: に
-              ruby: false
-            - text: 乗
-              ruby: true
-              reading: の
-            - text: りたい
-              ruby: false
-            - text: 時
-              ruby: true
-              reading: とき
-            - text: はジャンプ！
+              reading: き
+            - text: て！
               ruby: false
       range: 3
       height: 1.8
@@ -1186,8 +1205,8 @@ NPCs:
       - 0.25
     name: 新しいNPC
     talkTexts:
-      - "ジュエルを1個使うと、回復か連続攻撃、\n2個使うと溜め攻撃ができるよ！"
-      - "ジュエルは30秒に1個作られて、2個まで増えるんだ！\n敵が落とすジュエルを拾えば10個まで持てるよ！"
+      - "ジュエルを1個使うと回復、\n2個使うと連続攻撃か溜め攻撃ができるよ！"
+      - "ジュエルは30秒に1個作られて、2個まで増えるんだ！\n敵が落とすジュエルを拾えば6個まで持てるよ！"
     pos:
       - 1.87
       - -1.9
@@ -1242,7 +1261,7 @@ NPCs:
           - text: 使
             ruby: true
             reading: つか
-          - text: うと、
+          - text: うと
             ruby: false
           - text: 回
             ruby: true
@@ -1250,7 +1269,15 @@ NPCs:
           - text: 復
             ruby: true
             reading: ふく
-          - text: か
+          - text: "、\n2"
+            ruby: false
+          - text: 個
+            ruby: true
+            reading: こ
+          - text: 使
+            ruby: true
+            reading: つか
+          - text: うと
             ruby: false
           - text: 連
             ruby: true
@@ -1264,15 +1291,7 @@ NPCs:
           - text: 撃
             ruby: true
             reading: げき
-          - text: "、\n2"
-            ruby: false
-          - text: 個
-            ruby: true
-            reading: こ
-          - text: 使
-            ruby: true
-            reading: つか
-          - text: うと
+          - text: か
             ruby: false
           - text: 溜
             ruby: true
@@ -1327,7 +1346,7 @@ NPCs:
           - text: 拾
             ruby: true
             reading: ひろ
-          - text: えば10
+          - text: えば6
             ruby: false
           - text: 個
             ruby: true
@@ -1634,7 +1653,7 @@ platforms:
         groupId: stage1_planet1
         targets:
           - sequence: boats
-            index: 1
+            index: 0
         hideTargets: []
   - currentPlanetNum: 0
     theta: -0.28730252
@@ -1967,7 +1986,7 @@ platforms:
         groupId: stage1_planet2
         targets:
           - sequence: boats
-            index: 2
+            index: 1
         hideTargets: []
   - currentPlanetNum: 3
     theta: 0.40818188
@@ -2131,8 +2150,8 @@ platforms:
       - -0.011923702
     pos:
       - 7.53
-      - 3.2
-      - -4.24
+      - 3.18
+      - -4.2
     rotation:
       - -3.125965
       - -0.7028181
@@ -2162,8 +2181,8 @@ platforms:
       - 0.019054621
     pos:
       - 2.09
-      - 5.3
-      - -5.99
+      - 5.26
+      - -5.95
     rotation:
       - 3.1166222
       - 0.70259434
@@ -2193,8 +2212,8 @@ platforms:
       - -0.011400163
     pos:
       - 2.2
-      - 5.27
-      - -5.96
+      - 5.18
+      - -5.9
     rotation:
       - -3.1266513
       - -0.70283055
@@ -2212,32 +2231,32 @@ platforms:
     theta: -0.5523795
     phi: 0.08754171
     height: 2.3078227
-    facingYaw: 0.6858318
+    facingYaw: 0.6984948
     scale:
-      - 0.4613373
-      - 0.29901487
+      - 0.46536788
+      - 0.29901502
       - 0.17202999
     modelPath: curvePlatform.obj
     upVec:
       - 0.99978936
-      - 0.01565963
+      - 0.01565957
       - -0.013269603
     pos:
-      - -3.2
-      - 5.1
-      - -6.12
+      - -3.28
+      - 5.07
+      - -6.07
     rotation:
-      - -0.0171464
-      - -0.68575966
-      - -3.1150723
+      - -0.017327314
+      - -0.6984208
+      - -3.1147888
     textureTiling:
       - 2.4785843
       - 3.2790415
     rotationQuat:
-      - 0.67268246
-      - -0.24033244
-      - -0.23521927
-      - -0.65909827
+      - 0.6711797
+      - -0.24450068
+      - -0.23947363
+      - -0.6575634
     platformId: platform_25
   - currentPlanetNum: 3
     theta: 0.72371554
@@ -2439,32 +2458,32 @@ platforms:
     theta: -0.5523795
     phi: 0.08754171
     height: 2.3078227
-    facingYaw: -0.85060734
+    facingYaw: -0.85060775
     scale:
-      - 1.7460092
+      - 1.6557144
       - 3.3802917
-      - 1.5283791
+      - 1.693341
     modelPath: platform.obj
     upVec:
       - 1
-      - -2.3841858e-07
-      - -2.9802322e-08
+      - 0
+      - 0
     pos:
       - 4.36
-      - 2.03
-      - -3.23
+      - 2.07
+      - -3.02
     rotation:
-      - -2.9541619e-08
+      - 0
       - 0.8506076
-      - -2.0968263e-07
+      - 0
     textureTiling:
       - 2.4785843
       - 3.2790415
     rotationQuat:
+      - 0.64411306
+      - 0.29175055
+      - 0.29175055
       - -0.64411306
-      - -0.29175043
-      - -0.2917504
-      - 0.6441132
     platformId: platform_32
 stageObjects: []
 tutorialTriggers:
@@ -3082,6 +3101,414 @@ tutorialTriggers:
       - 0.64708847
       - 0.28509012
     debugDisabled: true
+  - currentPlanetNum: 0
+    tutorialId: fix_switch_tutorial
+    theta: -0.54565513
+    phi: 0.08152652
+    height: 3.174387
+    scale:
+      - 0.45032015
+      - 0.64879906
+      - 0.4805702
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 7.39
+      - 2.59
+      - 1.82
+    facingYaw: 0.72607154
+    rotation:
+      - 1.4522733e-09
+      - -0.72607154
+      - -2.5559308e-07
+    rotationQuat:
+      - -0.6610197
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
+  - currentPlanetNum: 0
+    tutorialId: double_switch_tutorial
+    theta: -0.54565513
+    phi: 0.08152652
+    height: 3.174387
+    scale:
+      - 1.486991
+      - 0.64879924
+      - 1.4975554
+    talkTexts:
+      - "あれれ...この足場、透明だよ...！\nこのままでは乗れなさそう...！"
+      - "惑星の反対側にスイッチがありそうだけど...\n壁があっていけないね..."
+      - "そうだ！君はスライムだから分裂できるんじゃない？\nZRを押して分身を作って、切り替えてみようよ！"
+      - "おっ！上手く分裂できてる！ナイス！\nこれがあなたの分身！そっくりだね！"
+      - "分身も同様に動かすことができるから\nまずはスイッチを探し、乗って起動してみよう！"
+    pos:
+      - 8.24
+      - 1.95
+      - -3.09
+    facingYaw: 0.72607154
+    rotation:
+      - 1.4522733e-09
+      - -0.72607154
+      - -2.5559308e-07
+    rotationQuat:
+      - -0.6610197
+      - 0.2511034
+      - 0.25110334
+      - 0.6610199
+    upVec:
+      - 1
+      - -2.3841858e-07
+      - -2.9802322e-08
+    modelPath: platform.obj
+    talkRubies:
+      - talkIndex: 0
+        segments:
+          - text: あれれ...この
+            ruby: false
+          - text: 足
+            ruby: true
+            reading: あし
+          - text: 場
+            ruby: true
+            reading: ば
+          - text: 、
+            ruby: false
+          - text: 透
+            ruby: true
+            reading: とう
+          - text: 明
+            ruby: true
+            reading: めい
+          - text: "だよ...！\nこのままでは"
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: れなさそう...！
+            ruby: false
+      - talkIndex: 1
+        segments:
+          - text: 惑
+            ruby: true
+            reading: わく
+          - text: 星
+            ruby: true
+            reading: せい
+          - text: の
+            ruby: false
+          - text: 反
+            ruby: true
+            reading: はん
+          - text: 対
+            ruby: true
+            reading: たい
+          - text: 側
+            ruby: true
+            reading: がわ
+          - text: "にスイッチがありそうだけど...\n"
+            ruby: false
+          - text: 壁
+            ruby: true
+            reading: かべ
+          - text: があっていけないね...
+            ruby: false
+      - talkIndex: 2
+        segments:
+          - text: そうだ！
+            ruby: false
+          - text: 君
+            ruby: true
+            reading: きみ
+          - text: はスライムだから
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できるんじゃない？\nZRを"
+            ruby: false
+          - text: 押
+            ruby: true
+            reading: お
+          - text: して
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: を
+            ruby: false
+          - text: 作
+            ruby: true
+            reading: つく
+          - text: って、
+            ruby: false
+          - text: 切
+            ruby: true
+            reading: き
+          - text: り
+            ruby: false
+          - text: 替
+            ruby: true
+            reading: か
+          - text: えてみようよ！
+            ruby: false
+      - talkIndex: 3
+        segments:
+          - text: おっ！
+            ruby: false
+          - text: 上手
+            ruby: true
+            reading: うま
+          - text: く
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 裂
+            ruby: true
+            reading: れつ
+          - text: "できてる！ナイス！\nこれがあなたの"
+            ruby: false
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: ！そっくりだね！
+            ruby: false
+      - talkIndex: 4
+        segments:
+          - text: 分
+            ruby: true
+            reading: ぶん
+          - text: 身
+            ruby: true
+            reading: しん
+          - text: も
+            ruby: false
+          - text: 同
+            ruby: true
+            reading: どう
+          - text: 様
+            ruby: true
+            reading: よう
+          - text: に
+            ruby: false
+          - text: 動
+            ruby: true
+            reading: うご
+          - text: "かすことができるから\nまずはスイッチを"
+            ruby: false
+          - text: 探
+            ruby: true
+            reading: さが
+          - text: し、
+            ruby: false
+          - text: 乗
+            ruby: true
+            reading: の
+          - text: って
+            ruby: false
+          - text: 起
+            ruby: true
+            reading: き
+          - text: 動
+            ruby: true
+            reading: どう
+          - text: してみよう！
+            ruby: false
+    talkCameraFocus:
+      - talkIndex: 0
+        sequence: platforms
+        index: 4
+    talkAdvanceConditions:
+      - talkIndex: 2
+        condition: playerSwitch
 boatArrivalPoints:
   - currentPlanetNum: 3
     theta: 1.1879112

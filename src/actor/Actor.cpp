@@ -70,6 +70,17 @@ void Actor::ProcessInput()
 
 void Actor::ProcessActor() {}
 
+bool Actor::IsProgressVisibleForCurrentMode() const
+{
+    return IsProgressVisibilitySatisfied() ||
+           (mGame && mGame->GetIsDebugEditorShowing());
+}
+
+bool Actor::ShouldUpdateUpVecEveryFrame() const
+{
+    return mGame && mGame->GetIsDebugMode();
+}
+
 void Actor::Update(float deltaTime)
 {
     if (mIsDebugDisabled ||

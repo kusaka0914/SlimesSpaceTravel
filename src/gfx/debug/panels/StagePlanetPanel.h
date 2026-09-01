@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/debug/DebugPanel.h"
+#include "gfx/debug/stage/StagePlanetYamlWriter.h"
 
 #include <array>
 #include <functional>
@@ -22,12 +23,12 @@ public:
         std::function<void()> callback);
 
 private:
-    bool SaveYaml(bool shouldSaveEditorTransform);
     void DrawTexturePicker(Planet* planet, std::size_t planetIndex);
     void DrawBackTexturePicker(Planet* planet, std::size_t planetIndex);
     void DrawTextureTilingEditor(Planet* planet, std::size_t planetIndex);
 private:
     Planet* mFocusedPlanet = nullptr;
+    StagePlanetYamlWriter mYamlWriter;
     std::array<char, 128> mTextureAssetFilter = {};
     std::string mTextureAssetStatus;
     bool mHasPendingTransformEdit = false;

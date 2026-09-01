@@ -13,8 +13,8 @@
 
 namespace {
 constexpr std::array<float, 3> jewelDropChances = {
+    0.15f,
     0.30f,
-    0.50f,
     1.00f,
 };
 }

@@ -481,7 +481,6 @@ void Renderer3D::DrawScene(
                     glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
             }
 
-
             SetUniforms(viewMat, projMat, cameraPos);
         }
     }
@@ -727,11 +726,18 @@ void Renderer3D::TryDrawActor(Actor* actor, bool useOrient) const
 
 void Renderer3D::DrawUGCPlacementPreviewActor(Actor* actor) const
 {
+    DrawInactiveActorPreview(actor, 0.42f);
+}
+
+void Renderer3D::DrawInactiveActorPreview(
+    Actor* actor,
+    float opacity) const
+{
     if (!actor) {
         return;
     }
 
-    mActorOpacityMultiplier = 0.42f;
+    mActorOpacityMultiplier = glm::clamp(opacity, 0.0f, 1.0f);
     DrawActor(actor);
     mActorOpacityMultiplier = 1.0f;
 }
@@ -817,11 +823,7 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     }
 
     constexpr float maximumShadowDistance = 12.0f;
-
-
     constexpr float distanceFade = 1.0f;
-
-
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale =
         1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);
@@ -925,9 +927,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     const std::string& renderTextureOverridePath =
         actor->GetRenderTextureOverridePath();
     if (!renderTextureOverridePath.empty()) {
-        textureOverride =
-            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
-                renderTextureOverridePath);
+        textureOverride = GetOrLoadTextureOverride(
+            renderTextureOverridePath);
     }
 
     GLuint backTextureOverride = 0;
@@ -935,9 +936,8 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     if (planet &&
         planet->GetPlanetShape() == Planet::PlanetShape::Ellipse &&
         !planet->GetBackTextureOverridePath().empty()) {
-        backTextureOverride =
-            const_cast<Renderer3D*>(this)->GetOrLoadTextureOverride(
-                planet->GetBackTextureOverridePath());
+        backTextureOverride = GetOrLoadTextureOverride(
+            planet->GetBackTextureOverridePath());
     }
 
     if (backTextureOverride != 0) {
@@ -996,7 +996,23 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         1.0f);
 }
 
-GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath)
+VertexArray* Renderer3D::FindVertexArray(
+    const std::string& name) const
+{
+    const auto vertexArray = mVertexArrays.find(name);
+    return vertexArray != mVertexArrays.end()
+        ? vertexArray->second.get()
+        : nullptr;
+}
+
+GLuint Renderer3D::FindTexture(const std::string& name) const
+{
+    const auto texture = mTextures.find(name);
+    return texture != mTextures.end() ? texture->second : 0;
+}
+
+GLuint Renderer3D::GetOrLoadTextureOverride(
+    const std::string& assetRelativePath) const
 {
     if (assetRelativePath.empty()) {
         return 0;
@@ -1064,16 +1080,46 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     EndTransparentDraw();
 }
 
+glm::mat4 Renderer3D::CreateBillboard(
+    const glm::mat4& viewMat,
+    const Actor* actor,
+    float upMargin,
+    float rightMargin,
+    float width,
+    float height) const
+{
+    if (!mGame || !mGame->GetMathUtils()) {
+        return glm::mat4(1.0f);
+    }
+    return mGame->GetMathUtils()->CreateBillBoard(
+        viewMat, actor, upMargin, rightMargin, width, height);
+}
+
+glm::mat4 Renderer3D::CreateBillboard(
+    const glm::mat4& viewMat,
+    const glm::vec3& centerPosition,
+    const glm::vec3& upDirection,
+    float width,
+    float height) const
+{
+    if (!mGame || !mGame->GetMathUtils()) {
+        return glm::mat4(1.0f);
+    }
+    return mGame->GetMathUtils()->CreateBillBoard(
+        viewMat, centerPosition, upDirection, width, height);
+}
+
 glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const
 {
-    const glm::vec3 scale = actor->GetScale() * scaleMultiplier;
+    const glm::vec3 position = actor->GetRenderPosition();
+    const glm::vec3 scale = actor->GetRenderScale() * scaleMultiplier;
 
     if (useOrient) {
-        return glm::translate(glm::mat4(1.0f), actor->GetPos()) * mGame->GetMathUtils()->CreateOrient(actor) *
+        return glm::translate(glm::mat4(1.0f), position) * mGame->GetMathUtils()->CreateOrient(actor) *
                glm::scale(glm::mat4(1.0f), scale);
     }
 
-    return glm::translate(glm::mat4(1.0f), actor->GetPos()) * glm::scale(glm::mat4(1.0f), scale);
+    return glm::translate(glm::mat4(1.0f), position) * glm::scale(glm::mat4(1.0f), scale);
 }
 
 void Renderer3D::DrawActorSelectionUnderlay(

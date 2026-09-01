@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/ui/UICanvasEditHistory.h"
 #include "system/UILoadSystem.h"
 
 #include "imgui.h"
@@ -72,12 +73,6 @@ private:
         bool operator==(const ElementReference& other) const = default;
     };
 
-    struct UndoState {
-        std::vector<UILoadSystem::CustomElement> customElements;
-        std::unordered_map<std::string, UILoadSystem::TextureInfo> textureInfos;
-        std::unordered_map<std::string, UILoadSystem::TextInfo> textInfos;
-    };
-
     void ValidateSelection(const UILoadSystem* uiLoadSystem);
     void HandleShortcuts(UILoadSystem* uiLoadSystem, std::string& statusMessage);
     void UpdateCanvasSelection(const UILoadSystem* uiLoadSystem);
@@ -125,7 +120,7 @@ private:
     std::optional<ElementReference> mPrimarySelection;
     Operation mOperation = Operation::Translate;
 
-    std::vector<UndoState> mUndoStack;
+    UICanvasEditHistory mEditHistory;
 
     bool mIsBoxMouseDown = false;
     bool mIsBoxSelecting = false;
@@ -138,5 +133,5 @@ private:
     bool mIsUsingGizmo = false;
     glm::mat4 mEditingMatrix = glm::mat4(1.0f);
     glm::mat4 mTransformStartSelectionMatrix = glm::mat4(1.0f);
-    UndoState mTransformStartState;
+    UICanvasEditSnapshot mTransformStartState;
 };

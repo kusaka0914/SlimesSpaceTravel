@@ -17,7 +17,7 @@ class Game;
 class Player;
 class UIShader;
 class VertexArray;
-class DebugUIRenderer;
+class UIDebugEditorBridge;
 class SceneUIRenderer;
 class HudRenderer;
 class StateUIRenderer;
@@ -75,6 +75,7 @@ public:
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
     void NotifyUGCEditorTutorialReturnedFromPlaytest();
+    void ClearDebugActorReferencesForStageReload();
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
 
     bool SaveDebugEditorSession(
@@ -90,6 +91,14 @@ public:
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
     int GetFbWidth() const { return mFbWidth; }
     int GetFbHeight() const { return mFbHeight; }
+    bool CalculateTextSize(
+        const std::string& text,
+        float scale,
+        int& outWidth,
+        int& outHeight) const
+    {
+        return MeasureText(text, scale, outWidth, outHeight);
+    }
 
     void SetCustomUIElementVisible(const std::string& screen, const std::string& id, bool visible);
     void SetCustomUIScreenVisible(const std::string& screen, bool visible);
@@ -280,7 +289,7 @@ private:
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
 
-    std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
+    std::unique_ptr<UIDebugEditorBridge> mDebugEditorBridge;
 
     std::unique_ptr<SceneUIRenderer> mSceneUIRenderer;
     std::unique_ptr<HudRenderer> mHudRenderer;

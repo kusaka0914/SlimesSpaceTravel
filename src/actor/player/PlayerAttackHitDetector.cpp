@@ -21,6 +21,12 @@ using EnemyCollisionGeometry::ModelBounds;
 using EnemyCollisionGeometry::TryCreateModelBounds;
 }
 
+PlayerAttackHitDetector::PlayerAttackHitDetector(
+    PhysicsSystem& physicsSystem)
+    : mPhysicsSystem(physicsSystem)
+{
+}
+
 std::vector<Enemy*> PlayerAttackHitDetector::FindHitEnemies(Player& player, const PlayerCombat& combat) const
 {
     std::vector<Enemy*> hitEnemies;
@@ -71,14 +77,6 @@ IsGroundedEnemyWithinAirAttackHeight(
     const Player& player,
     const Enemy& enemy) const
 {
-    const PhysicsSystem* physicsSystem =
-        player.GetGame()
-            ? player.GetGame()->GetPhysicsSystem()
-            : nullptr;
-    if (!physicsSystem) {
-        return false;
-    }
-
     const glm::vec3 playerUp = player.GetUpVec();
     const float playerUpLengthSquared =
         glm::dot(playerUp, playerUp);
@@ -97,7 +95,7 @@ IsGroundedEnemyWithinAirAttackHeight(
     }
 
     const float scaledPlayerHalfHeight =
-        physicsSystem->GetPlayerCollisionHeight() *
+        mPhysicsSystem.GetPlayerCollisionHeight() *
         player.GetCollisionScaleMultiplier() *
         0.5f;
     constexpr float airAttackDownwardReach = 0.35f;
@@ -162,19 +160,15 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
     std::vector<Enemy*> hitEnemies;
 
     Planet* currentPlanet = player.GetCurrentPlanet();
-    PhysicsSystem* physicsSystem =
-        player.GetGame()
-            ? player.GetGame()->GetPhysicsSystem()
-            : nullptr;
-    if (!currentPlanet || !physicsSystem) {
+    if (!currentPlanet) {
         return hitEnemies;
     }
 
     const float playerHorizontalRadius =
         0.5f *
         std::max(
-            physicsSystem->GetPlayerCollisionWidth(),
-            physicsSystem->GetPlayerCollisionDepth()) *
+            mPhysicsSystem.GetPlayerCollisionWidth(),
+            mPhysicsSystem.GetPlayerCollisionDepth()) *
         player.GetCollisionScaleMultiplier() *
         std::max(0.0f, horizontalHitboxScale);
     const glm::vec3 playerUp = player.GetUpVec();
@@ -353,26 +347,18 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
         return false;
     }
 
-    const PhysicsSystem* physicsSystem =
-        player.GetGame()
-            ? player.GetGame()->GetPhysicsSystem()
-            : nullptr;
-    if (!physicsSystem) {
-        return false;
-    }
-
     const float collisionScaleMultiplier =
         player.GetCollisionScaleMultiplier();
     const float horizontalCollisionRadius =
         0.5f *
         std::max(
-            physicsSystem->GetPlayerCollisionWidth(),
-            physicsSystem->GetPlayerCollisionDepth()) *
+            mPhysicsSystem.GetPlayerCollisionWidth(),
+            mPhysicsSystem.GetPlayerCollisionDepth()) *
         collisionScaleMultiplier *
         std::max(0.0f, horizontalHitboxScale);
     const float verticalCollisionHalfHeight =
         0.5f *
-        physicsSystem->GetPlayerCollisionHeight() *
+        mPhysicsSystem.GetPlayerCollisionHeight() *
         collisionScaleMultiplier;
     glm::vec3 playerUpDirection = player.GetUpVec();
     const float playerUpLength = glm::length(playerUpDirection);
@@ -397,9 +383,6 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
             std::max(
                 0.0f,
                 1.0f - verticalAxisAlignment * verticalAxisAlignment));
-
-
-
 
         expansion[axisIndex] =
             horizontalCollisionRadius * horizontalAxisAlignment +

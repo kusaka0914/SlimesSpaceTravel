@@ -2,9 +2,14 @@
 
 #include "Game.h"
 #include "actor/Player.h"
+#include "actor/Planet.h"
+#include "actor/Platform.h"
+#include "component/PlatformPressureSwitchComponent.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
+
+#include <glm/glm.hpp>
 
 TutorialController::TutorialController(
     Game* game,
@@ -19,8 +24,9 @@ TutorialController::TutorialController(
 void TutorialController::Update(float)
 {
     if (!HasActiveTutorial() || !mGameProgressState ||
+        !mIsActionObjectiveActive ||
         mGameProgressState->GetSceneState() !=
-            GameProgressState::SceneState::Talking) {
+            GameProgressState::SceneState::Playing) {
         return;
     }
 
@@ -34,7 +40,7 @@ bool TutorialController::TryStart(
 {
     const TutorialDefinition* definition =
         mLibrary.Find(tutorialId);
-    if (!definition ||
+    if (HasActiveTutorial() || !definition ||
         definition->GetPagesForControlStyle(
             mGame && mGame->IsAssistControlStyle()).empty() ||
         !mGame || !mGameProgressState || !mUIState) {
@@ -69,6 +75,7 @@ bool TutorialController::TryStart(
     }
     mShouldRecordActiveTutorialCompletion =
         !ignoreRepeatPolicy;
+    mIsActionObjectiveActive = false;
 
     mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
     mUIState->SetTalkUIIndex(0);
@@ -122,6 +129,7 @@ void TutorialController::Stop(bool returnToPlaying)
     mActiveTutorialId.clear();
     mTutorialPlayer = nullptr;
     mActionPlayerAtPageStart = nullptr;
+    mIsActionObjectiveActive = false;
     mShouldRecordActiveTutorialCompletion = false;
     if (mUIState) {
         mUIState->FinishTutorial();
@@ -131,14 +139,38 @@ void TutorialController::Stop(bool returnToPlaying)
     }
 }
 
+bool TutorialController::ResumeAfterFocus()
+{
+    if (!HasActiveTutorial() || !mGameProgressState) {
+        return false;
+    }
+
+    const GameProgressState::SceneState resumedState =
+        mIsActionObjectiveActive
+            ? GameProgressState::SceneState::Playing
+            : GameProgressState::SceneState::Talking;
+    mGameProgressState->SetCurrentSceneState(resumedState);
+
+    if (!mIsActionObjectiveActive &&
+        mGame && mGame->GetAudioSystem()) {
+        mGame->GetAudioSystem()->PlaySE("message_se");
+    }
+    return true;
+}
+
 void TutorialController::TryAdvanceFromConfirm()
 {
-    if (!HasActiveTutorial() ||
-        GetCurrentAdvanceCondition() !=
-            TutorialAdvanceCondition::Confirm) {
+    if (!HasActiveTutorial() || mIsActionObjectiveActive) {
         return;
     }
-    AdvancePage();
+
+    if (GetCurrentAdvanceCondition() ==
+        TutorialAdvanceCondition::Confirm) {
+        AdvancePage();
+        return;
+    }
+
+    BeginActionObjective();
 }
 
 void TutorialController::TryStartBattleTutorial()
@@ -215,13 +247,33 @@ void TutorialController::OnPlayerSplitMergeSucceeded()
         return;
     }
 
-    mTutorialPlayer = mGame ? mGame->GetControlledPlayer() : nullptr;
-    AdvancePage();
+    if (GetCurrentAdvanceCondition() ==
+        TutorialAdvanceCondition::PlayerSplitMerge) {
+        AdvanceAfterCompletedAction();
+        return;
+    }
+    TryAdvanceFromCompletedAction();
 }
 
 bool TutorialController::HasActiveTutorial() const
 {
     return GetActiveDefinition() != nullptr;
+}
+
+bool TutorialController::IsShowingConversation() const
+{
+    return HasActiveTutorial() && !mIsActionObjectiveActive &&
+           mGameProgressState &&
+           mGameProgressState->GetSceneState() ==
+               GameProgressState::SceneState::Talking;
+}
+
+bool TutorialController::IsShowingActionObjective() const
+{
+    return HasActiveTutorial() && mIsActionObjectiveActive &&
+           mGameProgressState &&
+           mGameProgressState->GetSceneState() ==
+               GameProgressState::SceneState::Playing;
 }
 
 bool TutorialController::HasCompletedTutorial(
@@ -234,9 +286,7 @@ bool TutorialController::HasCompletedTutorial(
 
 bool TutorialController::IsWaitingForPlayerAction() const
 {
-    return HasActiveTutorial() && mGameProgressState &&
-           mGameProgressState->GetSceneState() ==
-               GameProgressState::SceneState::Talking &&
+    return IsShowingActionObjective() &&
            GetCurrentAdvanceCondition() !=
                TutorialAdvanceCondition::Confirm;
 }
@@ -257,9 +307,15 @@ bool TutorialController::IsWaitingForPlayerJump() const
 
 bool TutorialController::IsWaitingForPlayerSplitMerge() const
 {
-    return IsWaitingForPlayerAction() &&
-           GetCurrentAdvanceCondition() ==
-               TutorialAdvanceCondition::PlayerSplitMerge;
+    if (!IsWaitingForPlayerAction()) {
+        return false;
+    }
+
+    const TutorialAdvanceCondition condition =
+        GetCurrentAdvanceCondition();
+    return condition == TutorialAdvanceCondition::PlayerSplitMerge ||
+           condition == TutorialAdvanceCondition::PlayerSplit ||
+           condition == TutorialAdvanceCondition::PlayerMerge;
 }
 
 const TutorialDefinition*
@@ -307,7 +363,21 @@ void TutorialController::AdvancePage()
         return;
     }
 
-    CaptureCurrentPageActionBaseline();
+    mIsActionObjectiveActive = false;
+    const TutorialPage* nextPage = GetCurrentPage();
+    const bool startsDirectlyAsObjective =
+        nextPage &&
+        nextPage->advanceCondition !=
+            TutorialAdvanceCondition::Confirm &&
+        !nextPage->HasConversationText(
+            mGame && mGame->IsGameControllerConnected());
+    if (startsDirectlyAsObjective) {
+        BeginActionObjective();
+        return;
+    }
+
+    mGameProgressState->SetCurrentSceneState(
+        GameProgressState::SceneState::Talking);
     if (mGame && mGame->GetAudioSystem()) {
         mGame->GetAudioSystem()->PlaySE("message_se");
     }
@@ -324,6 +394,7 @@ void TutorialController::FinishActiveTutorial()
     mActiveTutorialId.clear();
     mTutorialPlayer = nullptr;
     mActionPlayerAtPageStart = nullptr;
+    mIsActionObjectiveActive = false;
     mShouldRecordActiveTutorialCompletion = false;
     if (mUIState) {
         mUIState->FinishTutorial();
@@ -342,6 +413,21 @@ void TutorialController::CaptureCurrentPageActionBaseline()
             ? mActionPlayerAtPageStart->GetJumpSequence()
             : 0;
     mHasJumpStartedOnCurrentPage = false;
+}
+
+void TutorialController::BeginActionObjective()
+{
+    if (!mGameProgressState ||
+        GetCurrentAdvanceCondition() ==
+            TutorialAdvanceCondition::Confirm) {
+        return;
+    }
+
+    CaptureCurrentPageActionBaseline();
+    mIsActionObjectiveActive = true;
+    mGameProgressState->SetCurrentSceneState(
+        GameProgressState::SceneState::Playing);
+    TryAdvanceFromCompletedAction();
 }
 
 bool TutorialController::TryAdvanceFromCompletedAction()
@@ -367,17 +453,109 @@ bool TutorialController::TryAdvanceFromCompletedAction()
             return false;
         }
 
-        AdvancePage();
+        AdvanceAfterCompletedAction();
         return true;
     }
 
     case TutorialAdvanceCondition::PlayerSplitMerge:
         return false;
 
+    case TutorialAdvanceCondition::PlayerSplit:
+        if (!mGame || !mGame->GetIsPlayerSplit()) {
+            return false;
+        }
+        AdvanceAfterCompletedAction();
+        return true;
+
+    case TutorialAdvanceCondition::PlayerMerge:
+        if (!mGame || mGame->GetIsPlayerSplit()) {
+            return false;
+        }
+        AdvanceAfterCompletedAction();
+        return true;
+
+    case TutorialAdvanceCondition::ApproachPressureSwitch:
+        if (!IsTutorialPlayerNearPressureSwitch()) {
+            return false;
+        }
+        AdvanceAfterCompletedAction();
+        return true;
+
+    case TutorialAdvanceCondition::PressPressureSwitch:
+        if (!IsTutorialPlayerPressingPressureSwitch()) {
+            return false;
+        }
+        AdvanceAfterCompletedAction();
+        return true;
+
     case TutorialAdvanceCondition::Confirm:
     default:
         return false;
     }
+}
+
+void TutorialController::AdvanceAfterCompletedAction()
+{
+    if (mGame && mGame->GetControlledPlayer()) {
+        mTutorialPlayer = mGame->GetControlledPlayer();
+    }
+    AdvancePage();
+}
+
+const Platform* TutorialController::FindObjectivePressureSwitch() const
+{
+    const TutorialPage* page = GetCurrentPage();
+    if (!page || page->objectivePlatformId.empty()) {
+        return nullptr;
+    }
+
+    const Player* player =
+        mGame ? mGame->GetControlledPlayer() : nullptr;
+    if (!player) {
+        player = mTutorialPlayer;
+    }
+    const Planet* planet = player ? player->GetCurrentPlanet() : nullptr;
+    if (!planet) {
+        return nullptr;
+    }
+
+    for (const Platform* platform : planet->GetPlatforms()) {
+        if (platform &&
+            platform->GetPlatformId() == page->objectivePlatformId &&
+            platform->GetPressureSwitchComponent()) {
+            return platform;
+        }
+    }
+    return nullptr;
+}
+
+bool TutorialController::IsTutorialPlayerNearPressureSwitch() const
+{
+    const Player* player =
+        mGame ? mGame->GetControlledPlayer() : nullptr;
+    if (!player) {
+        player = mTutorialPlayer;
+    }
+    const Platform* pressureSwitch =
+        FindObjectivePressureSwitch();
+    if (!player || !pressureSwitch) {
+        return false;
+    }
+
+    constexpr float discoveryDistanceWorldUnits = 3.0f;
+    const glm::vec3 offset =
+        pressureSwitch->GetPos() - player->GetPos();
+    return glm::dot(offset, offset) <=
+           discoveryDistanceWorldUnits *
+               discoveryDistanceWorldUnits;
+}
+
+bool TutorialController::IsTutorialPlayerPressingPressureSwitch() const
+{
+    const Platform* platform = FindObjectivePressureSwitch();
+    const PlatformPressureSwitchComponent* pressureSwitch =
+        platform ? platform->GetPressureSwitchComponent() : nullptr;
+    return pressureSwitch && pressureSwitch->GetIsPressed();
 }
 
 TutorialAdvanceCondition

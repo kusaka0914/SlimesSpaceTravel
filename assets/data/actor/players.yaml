@@ -1,5 +1,5 @@
 players:
-  - hp: 10
+  - hp: 6
     scale: 0.0025
     attack: 10
     attackSpeed: 3

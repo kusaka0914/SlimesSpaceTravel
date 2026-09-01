@@ -46,7 +46,7 @@ bool IsValidEnemy(const Player& player, const Enemy* enemy)
             enemy->GetPos());
 }
 
-bool IsActiveAirborneEnemyOnCurrentPlanet(
+bool IsActiveLaunchedEnemyOnCurrentPlanet(
     const Player& player,
     const Enemy* enemy)
 {
@@ -57,11 +57,11 @@ bool IsActiveAirborneEnemyOnCurrentPlanet(
         enemy->GetIsActive() &&
         enemy->IsAlive() &&
         !enemy->GetIsDead() &&
-        !enemy->IsOnGround() &&
+        enemy->IsLaunched() &&
         enemy->GetCurrentPlanet() == planet;
 }
 
-bool IsAirborneEnemyNearRecovery(
+bool IsLaunchedEnemyNearRecovery(
     const Enemy& enemy,
     float maximumLaunchedTimerSeconds)
 {
@@ -103,7 +103,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
     const Player& player,
     float attackRange,
     float attackAngle,
-    bool requireAirborneTarget)
+    bool requireLaunchedTarget)
 {
     Planet* planet = player.GetCurrentPlanet();
     if (!planet || attackRange <= 0.0f) {
@@ -127,7 +127,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
             continue;
         }
 
-        if (requireAirborneTarget && enemy->IsOnGround()) {
+        if (requireLaunchedTarget && !enemy->IsLaunched()) {
             continue;
         }
 
@@ -210,8 +210,8 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
             continue;
         }
 
-        // アシストStrongは、ガードを全破壊されて空中にいる敵だけを対象にする。
-        if (enemy->GetBreakCount() != 0 || enemy->IsOnGround()) {
+        // アシストStrongは、ガードを全破壊されて打ち上げ状態の敵だけを対象にする。
+        if (enemy->GetBreakCount() != 0 || !enemy->IsLaunched()) {
             continue;
         }
 
@@ -257,7 +257,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     return nearestAnyDirectionTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
+Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
     const Player& player)
 {
     Planet* planet = player.GetCurrentPlanet();
@@ -270,7 +270,7 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
         std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsActiveAirborneEnemyOnCurrentPlanet(
+        if (!IsActiveLaunchedEnemyOnCurrentPlanet(
                 player,
                 enemy)) {
             continue;
@@ -289,7 +289,7 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTargetOnCurrentPlanet(
     return nearestTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
+Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
     const Player& player,
     float maximumLaunchedTimerSeconds)
 {
@@ -303,10 +303,10 @@ Enemy* PlayerTargetingAssist::FindNearestAirborneTargetNearRecoveryOnCurrentPlan
     float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsActiveAirborneEnemyOnCurrentPlanet(
+        if (!IsActiveLaunchedEnemyOnCurrentPlanet(
                 player,
                 enemy) ||
-            !IsAirborneEnemyNearRecovery(
+            !IsLaunchedEnemyNearRecovery(
                 *enemy,
                 maximumLaunchedTimerSeconds)) {
             continue;

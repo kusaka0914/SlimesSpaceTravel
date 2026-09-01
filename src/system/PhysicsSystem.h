@@ -31,8 +31,7 @@ struct ActorMovementCollisionResult {
 enum class ActorCollisionFilter {
     AllActors,
     IgnoreAirborneEnemies,
-
-
+    IgnoreEnemies,
     StopAtEnemies
 };
 
@@ -79,6 +78,11 @@ public:
         const glm::vec3& desiredPos,
         ActorCollisionFilter actorCollisionFilter =
             ActorCollisionFilter::AllActors);
+
+    bool DoesActorSweepHitBlockingStage(
+        const Actor& actor,
+        const glm::vec3& fromPosition,
+        const glm::vec3& toPosition) const;
 
     std::optional<RayHitActor> PickActorByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;
     std::vector<RayHitActor> PickActorsByRay(const glm::vec3& rayFrom, const glm::vec3& rayTo) const;

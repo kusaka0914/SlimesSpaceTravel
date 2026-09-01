@@ -26,7 +26,9 @@ void PlaytestIsRejectedOutsideUGCMode()
 {
     UGCSessionState sessionState;
 
-    ExpectFalse(sessionState.StartPlaytest(), "playtest start result");
+    ExpectFalse(
+        sessionState.StartPlaytest(UGCPlaytestPurpose::EditorPreview),
+        "playtest start result");
     ExpectFalse(sessionState.IsModeActive(), "mode active");
 }
 
@@ -36,7 +38,8 @@ void PlaytestHidesEditingViews()
     sessionState.EnterEditor();
     sessionState.ToggleDebugPanel();
 
-    const bool wasStarted = sessionState.StartPlaytest();
+    const bool wasStarted = sessionState.StartPlaytest(
+        UGCPlaytestPurpose::EditorPreview);
 
     ExpectTrue(wasStarted, "playtest start result");
     ExpectTrue(sessionState.IsPlaytestActive(), "playtest active");
@@ -62,7 +65,7 @@ void VerificationRequiresActiveModeAndFileName()
     ExpectFalse(
         sessionState.IsVerificationActive(),
         "verification before playtest");
-    sessionState.StartPlaytest();
+    sessionState.StartPlaytest(UGCPlaytestPurpose::ClearVerification);
     ExpectTrue(sessionState.IsVerificationActive(), "verification active");
 }
 
@@ -94,6 +97,21 @@ void NormalPlaytestClearCompletionHasEmptyVerificationFile()
 
     ExpectTrue(workFileName.has_value(), "completion exists");
     ExpectTrue(workFileName->empty(), "verification file is empty");
+}
+
+void SavedWorkClearResultTracksSelection()
+{
+    UGCSessionState sessionState;
+    sessionState.EnterEditor();
+    sessionState.StartPlaytest(UGCPlaytestPurpose::SavedWork);
+    sessionState.ShowClearResult();
+
+    ExpectTrue(sessionState.IsClearResultShowing(), "clear result showing");
+    ExpectEqual(0, sessionState.GetClearResultSelection(), "initial selection");
+    sessionState.MoveClearResultSelection(-1, 3);
+    ExpectEqual(2, sessionState.GetClearResultSelection(), "wrapped selection");
+    sessionState.MoveClearResultSelection(1, 3);
+    ExpectEqual(0, sessionState.GetClearResultSelection(), "forward selection");
 }
 
 void ReturnToEditorCancelsPendingVerification()
@@ -143,6 +161,7 @@ void RegisterUGCSessionStateTests(
     tests.emplace_back("UGCSessionState.VerificationRequiresActiveModeAndFileName", VerificationRequiresActiveModeAndFileName);
     tests.emplace_back("UGCSessionState.ClearCompletionReturnsVerificationFileOnce", ClearCompletionReturnsVerificationFileOnce);
     tests.emplace_back("UGCSessionState.NormalPlaytestClearCompletionHasEmptyVerificationFile", NormalPlaytestClearCompletionHasEmptyVerificationFile);
+    tests.emplace_back("UGCSessionState.SavedWorkClearResultTracksSelection", SavedWorkClearResultTracksSelection);
     tests.emplace_back("UGCSessionState.ReturnToEditorCancelsPendingVerification", ReturnToEditorCancelsPendingVerification);
     tests.emplace_back("UGCSessionState.ExitClearsAllVisibleUGCState", ExitClearsAllVisibleUGCState);
 }

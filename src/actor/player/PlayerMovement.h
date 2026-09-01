@@ -7,13 +7,24 @@ class PlayerCombat;
 class PlayerGrounding;
 class PlayerInput;
 class Planet;
+class PhysicsSystem;
+class MathUtils;
 
 class PlayerMovement {
 public:
+    PlayerMovement(
+        PhysicsSystem& physicsSystem,
+        MathUtils& mathUtils);
+
     bool CanDodge(const PlayerCombat& combat) const;
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
+    void LockMovementDirectionForCameraAutoAlign(
+        const PlayerInput& input,
+        const glm::vec3& upDirection);
+    void UnlockMovementDirectionForCameraAutoAlign();
+    bool ConsumeCameraAutoAlignCancellationRequest();
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);
     void FaceDirection(Player& player, const glm::vec3& facingDirection);
@@ -51,7 +62,9 @@ public:
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
     void ClearStrongAttackDirectionOverride();
 
-    void StartKnockBack(const glm::vec3& from) { mKnockBackFrom = from; }
+    void StartKnockBack(
+        Player& player,
+        const glm::vec3& damageSourcePosition);
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
     void RestoreAirDodge()
     {
@@ -140,6 +153,9 @@ public:
     void ReduceDodgeTimer(float deltaTime) { mDodgeTimer -= deltaTime; }
 
 private:
+    PhysicsSystem& mPhysicsSystem;
+    MathUtils& mMathUtils;
+
     enum class DodgeTrajectory {
         Straight,
         FollowEllipseSurface,
@@ -184,6 +200,8 @@ private:
     bool mHasStrongAttackDirectionOverride = false;
     bool mHasEllipseAirborneStartSurfaceNormal = false;
     bool mCanStartJumpApexHover = false;
+    bool mIsCameraAutoAlignMovementDirectionLocked = false;
+    bool mHasCameraAutoAlignCancellationRequest = false;
 
     int mCurrentPlanetNum = 0;
     int mPlayerNum = 1;
@@ -215,7 +233,9 @@ private:
 
     glm::vec3 mForwardVec = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 mLeftVec = glm::vec3(-1.0f, 0.0f, 0.0f);
-    glm::vec3 mKnockBackFrom = glm::vec3(0.0f);
+    glm::vec3 mCameraAutoAlignMovementDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec2 mCameraAutoAlignStartInputDirection = glm::vec2(0.0f, 1.0f);
+    glm::vec3 mKnockBackDirection = glm::vec3(0.0f);
     glm::vec3 mEllipseAirborneStartSurfaceNormal =
         glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);

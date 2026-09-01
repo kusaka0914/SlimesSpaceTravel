@@ -13,6 +13,7 @@ class EnemyBehaviorController;
 class EnemyDamageHandler;
 class EnemyMovement;
 class Game;
+class GameWorld;
 class Player;
 struct EnemyAttackPreview;
 struct EnemyConfig;
@@ -27,6 +28,8 @@ public:
 
     void UpdateActor(float deltaTime) override;
     bool ShouldRenderSolidWhite() const override;
+    glm::quat GetRenderModelRotationOffset() const override;
+    glm::vec3 GetRenderScale() const override;
 
     void ApplyDamage(float damage, Player* player);
     void ApplyBreak(float deltaTime, bool isAllBreak = false);
@@ -35,7 +38,9 @@ public:
         float pushSpeed,
         float pushDampingPerSecond);
     void DefeatImmediately();
-    void ApplyConfig(const std::string& type);
+    void ApplyConfig(const EnemyConfig& config);
+    void StartNormalHitReaction();
+    void StartBossHitReaction();
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
     void SetIsNormalHitKnockBackEnabled(bool isEnabled)
@@ -107,6 +112,10 @@ public:
     void SetLifeState(LifeState lifeState) { mStateMachine->SetLifeState(lifeState); }
 
     ActionState GetActionState() const { return mStateMachine->GetActionState(); }
+    bool IsLaunched() const
+    {
+        return mStateMachine->GetActionState() == ActionState::Launched;
+    }
     void SetActionState(ActionState actionState) { mStateMachine->SetActionState(actionState); }
 
     bool IsAlive() const { return mStateMachine->IsAlive(); }
@@ -130,6 +139,10 @@ public:
     {
         return mLastGroundedUpDirection;
     }
+    bool HasRecordedGroundedTransform() const
+    {
+        return mHasRecordedGroundedTransform;
+    }
 
     const glm::vec3& GetVelocity() const { return mVelocity; }
     void SetVelocity(const glm::vec3& velocity) { mVelocity = velocity; }
@@ -147,6 +160,10 @@ public:
         return mStateMachine->GetActionState() ==
             ActionState::PreparingAttack;
     }
+    bool ShouldDrawAttackImpactFlash() const
+    {
+        return mStateMachine->IsAttackImpactActive(mStatus);
+    }
 
     bool IsSteepGroundForEnemy(const glm::vec3& hitNormal, const glm::vec3& up) const
     {
@@ -162,8 +179,20 @@ protected:
     bool ShouldUpdateUpVecEveryFrame() const override;
 
 private:
+    friend class GameWorld;
+
+    enum class HitReactionKind {
+        None,
+        NormalEnemySpin,
+        BossSquashStretch,
+    };
+
     bool CanUseReducedUpdateRate() const;
-    void ApplyEnemyConfig(const EnemyConfig& config);
+    void SetShouldUseFullRateUpdate(bool shouldUseFullRateUpdate)
+    {
+        mShouldUseFullRateUpdate = shouldUseFullRateUpdate;
+    }
+    void UpdateHitReaction(float deltaTime);
 
 private:
     EnemyStatus mStatus;
@@ -177,4 +206,7 @@ private:
     glm::vec3 mLastGroundedUpDirection{0.0f, 1.0f, 0.0f};
     bool mHasRecordedGroundedTransform = false;
     bool mShouldDropJewelOnDeath = false;
+    bool mShouldUseFullRateUpdate = true;
+    HitReactionKind mHitReactionKind = HitReactionKind::None;
+    float mHitReactionElapsedSeconds = 0.0f;
 };

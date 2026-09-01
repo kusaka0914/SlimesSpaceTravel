@@ -1,11 +1,9 @@
 #include "UIState.h"
-#include "Game.h"
 
-UIState::UIState(Game* game)
+UIState::UIState()
     : mIsOperationUIShow(true),
       mTalkUIIndex(0),
-      mCurrentTalkWith(TalkWith::Opening),
-      mGame(game)
+      mCurrentTalkWith(TalkWith::Opening)
 {
 }
 

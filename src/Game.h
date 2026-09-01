@@ -1,7 +1,8 @@
 #pragma once
 
 #include "actor/player/PlayerTypes.h"
-#include "gfx/debug/ugc/UGCSessionState.h"
+#include "gfx/performance/FramePerformanceTracker.h"
+#include "system/UGCModeRuntime.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -35,10 +36,13 @@ class StageFlowController;
 class GamepadRumbleService;
 class ParticleSystem;
 class SequenceSystem;
-class StageProgressSystem;
-class EditorBuildRestartService;
 class EnemyJewelDropSystem;
-class GpuDurationTimer;
+class GameFrameRenderer;
+class UGCModeController;
+class PlayerConfigurationController;
+class GameProgressController;
+class UGCPreviewController;
+class DebugEditorSessionController;
 
 enum class InputDeviceType {
     KeyboardMouse,
@@ -50,43 +54,28 @@ enum class StagePhysicsReloadMode {
     SkipRebuild,
 };
 
-struct FramePerformanceMetrics {
-    float totalMilliseconds = 0.0f;
-    float gameUpdateMilliseconds = 0.0f;
-    float firstViewportRenderMilliseconds = 0.0f;
-    float secondViewportRenderMilliseconds = 0.0f;
-    float firstViewportGpuMilliseconds = 0.0f;
-    float secondViewportGpuMilliseconds = 0.0f;
-    float gameUiCpuMilliseconds = 0.0f;
-    float gameUiGpuMilliseconds = 0.0f;
-    float editorUiCpuMilliseconds = 0.0f;
-    float editorUiGpuMilliseconds = 0.0f;
-    float presentationWaitMilliseconds = 0.0f;
-    int renderedViewportCount = 0;
-    bool hasFirstViewportGpuMeasurement = false;
-    bool hasSecondViewportGpuMeasurement = false;
-    bool hasGameUiGpuMeasurement = false;
-    bool hasEditorUiGpuMeasurement = false;
-};
-
-class Game {
+class Game : public UGCModeRuntime {
 public:
     Game();
     ~Game();
 
     bool Initialize(
-        bool isDebugMode,
+        bool areDebugToolsEnabled,
+        bool shouldStartInDebugStage,
         const std::string& editorSessionPath = {},
         const std::string& editorRestartErrorLogPath = {});
     void RunLoop();
     void Shutdown();
 
-    void LoadData(bool isLoadPlayer);
+    void LoadData();
 
 
     void ReloadCurrentStage(
-        StagePhysicsReloadMode physicsReloadMode =
-            StagePhysicsReloadMode::Rebuild);
+        StagePhysicsReloadMode physicsReloadMode);
+    void ReloadCurrentStage() override
+    {
+        ReloadCurrentStage(StagePhysicsReloadMode::Rebuild);
+    }
     void ReloadUIData();
     void ChangeStage(int stageNum);
     bool HasStageIntroCinematic(int stageNum) const;
@@ -99,20 +88,15 @@ public:
     bool StartUGCMode();
     bool StartUGCEditorTutorial();
     bool FinishUGCEditorTutorial(bool wasCompleted);
-    bool GetIsUGCEditorTutorialActive() const
-    {
-        return mIsUGCEditorTutorialActive;
-    }
+    bool GetIsUGCEditorTutorialActive() const;
     void OpenUGCWorkBrowser();
     void CloseUGCWorkBrowser();
     void MoveTitleMenuSelection(int delta);
     void ExecuteTitleMenuSelection();
     int GetTitleMenuSelection() const { return mTitleMenuSelection; }
-    bool GetIsUGCWorkBrowserShowing() const
-    {
-        return mUGCSessionState.IsWorkBrowserShowing();
-    }
+    bool GetIsUGCWorkBrowserShowing() const;
     void StartUGCPlaytest();
+    void StartUGCSavedWorkPlaytest();
     void UndoUGCEdit();
     void RedoUGCEdit();
     void ToggleUGCEraser();
@@ -124,9 +108,13 @@ public:
     void StartUGCClearVerification(const std::string& workFileName);
     void ReturnToUGCEditor();
     void ExitUGCMode();
+    void MoveUGCClearResultSelection(int delta);
+    void ExecuteUGCClearResultSelection();
+    bool GetIsUGCClearResultShowing() const;
+    int GetUGCClearResultSelection() const;
     bool RestoreDebugEditorStage(int stageNum, const std::string& yamlPath);
     void TogglePauseMenu();
-    void ClosePauseMenu();
+    void ClosePauseMenu() override;
     bool CanOpenPauseMenu() const;
     void MovePauseMenuSelection(int delta);
     void ExecutePauseMenuItem();
@@ -138,8 +126,11 @@ public:
     bool CanReturnToBaseFromPauseMenu() const;
     void ToggleDebugEditor();
     void ToggleFreeCameraMode();
-    void SetFreeCameraMode(bool isEnabled);
-    void SetDebugEditorShowing(bool isShowing) { mIsDebugEditorShowing = isShowing; }
+    void SetFreeCameraMode(bool isEnabled) override;
+    void SetDebugEditorShowing(bool isShowing) override
+    {
+        mIsDebugEditorShowing = isShowing;
+    }
     void TogglePlayerControlStyle();
     void SetPlayerControlStyle(PlayerControlStyle controlStyle);
     bool RequestEditorBuildAndRestart(std::string& outErrorMessage);
@@ -148,6 +139,7 @@ public:
     void OnBoatArrived(Boat* boat);
     void OnPlayerCurrentPlanetChanged(Player& player);
     void OnStarObtained();
+    void OnStarCollectionAnimationFinished();
     void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();
     void RequestEnemyJewelDrop(const Enemy& defeatedEnemy);
@@ -157,6 +149,7 @@ public:
     void OnPlayerApplyDamage(int playerNum);
     void OnPlayerAttackHit(int playerNum);
     void OnStrongAttacked(int playerNum);
+    void OnAirSlamAttackHit(int playerNum);
     void OnPlayerCounter(int playerNum);
     void SynchronizeSoloSplitResources(const Player& sourcePlayer);
     void VibrateControllerForPlayer(
@@ -169,16 +162,19 @@ public:
 
     void FinishGame();
     void RestartGame();
-    void StartPlayingScene();
+    void StartPlayingScene() override;
+    void StartUGCStageClearPresentation() override;
     void StartFocusingScene();
+    void FinishFocusingScene();
 
     void AddActor(std::unique_ptr<Actor> actor);
-    void RemoveActor(Actor* actor);
-    void RemoveAllActor();
-
     void AddPlayer(Player* player);
     void RemoveAllPlayer();
     bool TogglePlayerSplit();
+    void SetPlayerSplitMergeButtonHeld(bool isHeld);
+    bool TryResolvePlayerMergeGuide(
+        const Player*& targetPlayer,
+        float& radiusWorldUnits) const;
     bool SwitchControlledPlayer();
     bool CanTogglePlayerSplit() const;
     bool CanSwitchControlledPlayer() const;
@@ -203,7 +199,7 @@ public:
     const std::vector<JewelItem*>& GetRuntimeJewelItems() const;
     Player* GetMainPlayer() const;
     Player* GetControlledPlayer() const;
-    int GetControlledPlayerIndex() const { return mControlledPlayerIndex; }
+    int GetControlledPlayerIndex() const;
 
     const std::vector<Stage*>& GetStages() const;
     Stage* GetCurrentStage() const;
@@ -213,81 +209,34 @@ public:
     std::string GetNPCConversationId(const NPC* npc) const;
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
-    bool GetIsUGCMode() const { return mUGCSessionState.IsModeActive(); }
-    bool GetIsUGCPlaytestActive() const
-    {
-        return mUGCSessionState.IsPlaytestActive();
-    }
-    bool GetIsUGCClearVerificationActive() const
-    {
-        return mUGCSessionState.IsVerificationActive();
-    }
+    bool GetIsUGCMode() const;
+    bool GetIsUGCPlaytestActive() const;
+    bool GetIsUGCClearVerificationActive() const;
 
 
-    bool GetIsUGCDebugEditorShowing() const
-    {
-        return mUGCSessionState.IsDebugPanelShowing();
-    }
-    bool GetIsUGCOrthographicView() const
-    {
-        return mUGCSessionState.IsOrthographicView();
-    }
-    void SetIsUGCOrthographicView(bool isOrthographic)
-    {
-        mUGCSessionState.SetOrthographicView(isOrthographic);
-    }
-    float GetUGCOrthographicHalfHeight() const
-    {
-        return mUGCOrthographicHalfHeight;
-    }
-    unsigned int GetUGCPreviewTexture() const
-    {
-        return mUGCPreviewTexture;
-    }
+    bool GetIsUGCDebugEditorShowing() const;
+    bool GetIsUGCOrthographicView() const;
+    void SetIsUGCOrthographicView(bool isOrthographic);
+    float GetUGCOrthographicHalfHeight() const;
+    unsigned int GetUGCPreviewTexture() const;
     void SetUGCPreviewRenderSize(int width, int height);
     void AdjustUGCPreviewYaw(float yawDeltaRadians);
-    float GetUGCPreviewYawRadians() const
-    {
-        return mUGCPreviewYawRadians;
-    }
-    void ToggleUGCPreviewVerticalView()
-    {
-        mIsUGCPreviewViewedFromBelow = !mIsUGCPreviewViewedFromBelow;
-    }
-    bool GetIsUGCPreviewViewedFromBelow() const
-    {
-        return mIsUGCPreviewViewedFromBelow;
-    }
-    float GetUGCPreviewFocusY() const { return mUGCPreviewFocusY; }
-    void SetUGCPreviewEditLayer(int gridLayer)
-    {
-        mUGCPreviewEditLayer = gridLayer;
-    }
-    int GetUGCPreviewEditLayer() const { return mUGCPreviewEditLayer; }
+    float GetUGCPreviewYawRadians() const;
+    void ToggleUGCPreviewVerticalView();
+    bool GetIsUGCPreviewViewedFromBelow() const;
+    float GetUGCPreviewFocusY() const;
+    void SetUGCPreviewEditLayer(int gridLayer);
+    int GetUGCPreviewEditLayer() const;
     void SetUGCPlatformPlacementPreview(
-        const std::optional<glm::vec3>& position)
-    {
-        mUGCPlatformPlacementPreviewPosition = position;
-    }
-    const std::optional<glm::vec3>& GetUGCPlatformPlacementPreview() const
-    {
-        return mUGCPlatformPlacementPreviewPosition;
-    }
+        const std::optional<glm::vec3>& position);
+    const std::optional<glm::vec3>& GetUGCPlatformPlacementPreview() const;
     void SetUGCMovingPlatformPathPreview(
         const std::optional<glm::vec3>& startPosition,
-        const std::optional<glm::vec3>& destinationPosition)
-    {
-        mUGCMovingPlatformPathStartPosition = startPosition;
-        mUGCMovingPlatformPathDestinationPosition = destinationPosition;
-    }
-    const std::optional<glm::vec3>& GetUGCMovingPlatformPathStartPosition() const
-    {
-        return mUGCMovingPlatformPathStartPosition;
-    }
-    const std::optional<glm::vec3>& GetUGCMovingPlatformPathDestinationPosition() const
-    {
-        return mUGCMovingPlatformPathDestinationPosition;
-    }
+        const std::optional<glm::vec3>& destinationPosition);
+    const std::optional<glm::vec3>&
+        GetUGCMovingPlatformPathStartPosition() const;
+    const std::optional<glm::vec3>&
+        GetUGCMovingPlatformPathDestinationPosition() const;
     void SetUGCPlacementModelPreview(
         const std::optional<glm::vec3>& position,
         const std::string& modelPath = "",
@@ -298,35 +247,20 @@ public:
         const std::string& modelPath,
         const glm::vec3& scale,
         const std::string& textureOverridePath = "");
-    Actor* GetUGCPlacementModelPreview() const
-    {
-        return mUGCPlacementModelPreviewActor.get();
-    }
-    const std::vector<glm::vec3>& GetUGCPlacementModelPreviewPositions() const
-    {
-        return mUGCPlacementModelPreviewPositions;
-    }
-    void SetUGCOrthographicHalfHeight(float halfHeight)
-    {
-        mUGCOrthographicHalfHeight =
-            halfHeight > 0.1f ? halfHeight : 0.1f;
-    }
-    float GetUGCGridSize() const { return mUGCGridSize; }
+    Actor* GetUGCPlacementModelPreview() const;
+    const std::vector<glm::vec3>&
+        GetUGCPlacementModelPreviewPositions() const;
+    void SetUGCOrthographicHalfHeight(float halfHeight) override;
+    float GetUGCGridSize() const;
     float GetLastDeltaTime() const { return mLastDeltaTime; }
-    const FramePerformanceMetrics& GetFramePerformanceMetrics() const
-    {
-        return mFramePerformanceMetrics;
-    }
+    const FramePerformanceMetrics& GetFramePerformanceMetrics() const;
     void RecordViewportRenderDurationMilliseconds(
         int viewportIndex,
         float durationMilliseconds);
     void RecordViewportGpuDurationMilliseconds(
         int viewportIndex,
         float durationMilliseconds);
-    void SetUGCGridSize(float gridSize)
-    {
-        mUGCGridSize = gridSize > 0.01f ? gridSize : 0.01f;
-    }
+    void SetUGCGridSize(float gridSize);
     bool IsEditorKeyboardInputCaptured() const;
     bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const;
@@ -351,9 +285,10 @@ public:
     {
         return mOverheadGravityRayLength;
     }
-    bool GetIsPlayer2Joined() const { return mIsPlayer2Joined; }
-    bool GetIsPlayerSplit() const { return mIsPlayerSplit; }
+    bool GetIsPlayer2Joined() const;
+    bool GetIsPlayerSplit() const;
     bool GetIsDebugMode() const { return mIsDebugMode; }
+    bool IsReviewBuild() const;
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
     bool HasSelectedPlayerControlStyle() const;
@@ -392,51 +327,37 @@ public:
 private:
     bool InitializeGLFW();
     void InitializeGameController();
-    void CreateGameSystems();
+    bool CreateGameSystems();
     void CreateStages(int stageCount);
 
     void ProcessInput();
     void ProcessActorsInput();
-    void BeginFramePerformanceMeasurement();
-    void PollGpuPerformanceMeasurements();
-
     void UpdateGame();
     void UpdateActors(float deltaTime);
 
-    void GenerateOutput();
-    void DrawGameFrame();
-    bool EnsureEditorGameRenderTarget(int width, int height);
-    void DestroyEditorGameRenderTarget();
-    bool EnsureUGCPreviewRenderTarget();
-    void DestroyUGCPreviewRenderTarget();
-    void DrawUGCPreviewFrame();
     void ProcessPendingUGCClearCompletion();
-    void CompleteUGCModeExit(bool shouldOpenWorkBrowser);
 
-    void CreatePlayer2();
     void CheckGameControllerConnected();
-    bool CanChangeSoloPlayerConfiguration() const;
-    bool SplitPlayer();
-    bool MergePlayer();
-    bool AreSplitPlayersCloseEnoughToMerge() const;
-    bool MergePlayerInto(int targetPlayerIndex);
-    void SelectControlledPlayer(int playerIndex);
     void UpdatePendingSoloSplitControlSwitch(float deltaTime);
-    bool LoadDebugStage(int stageNum, const std::string& yamlPath);
-    bool StartUGCModeWithStage(
-        const std::string& yamlPath,
-        bool isTutorial);
-    bool HasSeenUGCEditorTutorial() const;
+    bool LoadDebugStage(
+        int stageNum,
+        const std::string& yamlPath) override;
+    bool IsTitleScene() const override;
+    void SetDebugCameraPose(const CameraPose& pose) override;
+    bool RequestSceneFadeAction(
+        const std::function<void()>& fadeAction) override;
+    void NotifyUGCTutorialReturnedFromPlaytest() override;
+    void CompleteUGCVerification(
+        const std::string& workFileName) override;
+    bool HasProgressFlag(const std::string& progressId) const override;
+    void MarkProgressFlag(const std::string& progressId) override;
+    void EnterTitleAtFadeMidpoint() override;
+    void TryChangeBGM() override;
     bool PrepareInitialSceneForDebug();
     void RestoreDebugEditorSessionAtStartup(
         const std::string& editorSessionPath,
         const std::string& editorRestartErrorLogPath);
     void SavePersistentDebugEditorSession();
-    std::string BuildNPCConversationId(const NPC* npc) const;
-    std::string BuildNPCOpeningTriggerId(
-        const NPC* npc, std::size_t talkPageIndex) const;
-    std::string BuildNPCEndingTriggerId(
-        const NPC* npc, std::size_t talkPageIndex) const;
 
 private:
     GLFWwindow* mWindow = nullptr;
@@ -449,8 +370,14 @@ private:
     std::unique_ptr<AudioSystem> mAudioSystem;
     std::unique_ptr<UIRenderer> mUIRenderer;
     std::unique_ptr<Renderer3D> mRenderer3D;
-    std::unique_ptr<GpuDurationTimer> mGameUiGpuTimer;
-    std::unique_ptr<GpuDurationTimer> mEditorUiGpuTimer;
+    std::unique_ptr<GameFrameRenderer> mFrameRenderer;
+    std::unique_ptr<UGCModeController> mUGCModeController;
+    std::unique_ptr<PlayerConfigurationController>
+        mPlayerConfigurationController;
+    std::unique_ptr<GameProgressController> mProgressController;
+    std::unique_ptr<UGCPreviewController> mUGCPreviewController;
+    std::unique_ptr<DebugEditorSessionController>
+        mDebugEditorSessionController;
     std::unique_ptr<PhysicsSystem> mPhysicsSystem;
     std::unique_ptr<CameraSystem> mCameraSystem;
     std::unique_ptr<ActorLoadSystem> mActorLoadSystem;
@@ -460,8 +387,6 @@ private:
     std::unique_ptr<InputSystem> mInputSystem;
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
-    std::unique_ptr<StageProgressSystem> mStageProgressSystem;
-    std::unique_ptr<EditorBuildRestartService> mEditorBuildRestartService;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
 
     float mHitStopTimer = -1.0f;
@@ -470,47 +395,15 @@ private:
 
     double mLastTime = 0.0;
     float mLastDeltaTime = 0.0f;
-    FramePerformanceMetrics mFramePerformanceMetrics;
+    FramePerformanceTracker mFramePerformanceTracker;
 
-    bool mIsPlayer2Joined = false;
-    bool mIsPlayerSplit = false;
-    int mControlledPlayerIndex = 0;
-    float mPendingSoloSplitControlSwitchTimer = -1.0f;
     bool mIsDebugEditorShowing = false;
-    UGCSessionState mUGCSessionState;
-    std::optional<std::string> mPendingUGCClearTransitionWorkFileName;
-    bool mIsUGCClearTransitionInProgress = false;
     int mTitleMenuSelection = 0;
-    float mUGCGridSize = 1.0f;
-    float mUGCOrthographicHalfHeight = 20.0f;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
-    bool mIsUGCEditorTutorialActive = false;
-
-    unsigned int mEditorGameFramebuffer = 0;
-    unsigned int mEditorGameTexture = 0;
-    unsigned int mEditorGameDepthBuffer = 0;
-    int mEditorGameRenderWidth = 0;
-    int mEditorGameRenderHeight = 0;
-    unsigned int mUGCPreviewFramebuffer = 0;
-    unsigned int mUGCPreviewTexture = 0;
-    unsigned int mUGCPreviewDepthBuffer = 0;
-    int mUGCPreviewRenderWidth = 0;
-    int mUGCPreviewRenderHeight = 0;
-    int mRequestedUGCPreviewRenderWidth = 960;
-    int mRequestedUGCPreviewRenderHeight = 540;
-    int mUGCPreviewEditLayer = 0;
-    std::optional<glm::vec3> mUGCPlatformPlacementPreviewPosition;
-    std::optional<glm::vec3> mUGCMovingPlatformPathStartPosition;
-    std::optional<glm::vec3> mUGCMovingPlatformPathDestinationPosition;
-    std::unique_ptr<Actor> mUGCPlacementModelPreviewActor;
-    std::vector<glm::vec3> mUGCPlacementModelPreviewPositions;
-    float mUGCPreviewYawRadians = 0.0f;
-    float mUGCPreviewFocusY = 0.0f;
-    bool mHasUGCPreviewFocusY = false;
-    bool mIsUGCPreviewViewedFromBelow = false;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;
     bool mIsInputModifierHeld = false;
+
 };

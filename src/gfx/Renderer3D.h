@@ -56,11 +56,12 @@ public:
 
     Game* GetGame() const { return mGame; }
     Shader3D* GetShader3D() const { return mShader3D; }
-    std::unordered_map<std::string, std::unique_ptr<VertexArray>>& GetVertexArrays() { return mVertexArrays; }
-    std::unordered_map<std::string, GLuint>& GetTextures() { return mTextures; }
+    VertexArray* FindVertexArray(const std::string& name) const;
+    GLuint FindTexture(const std::string& name) const;
     GLuint GetAttackRangeVAO() const { return mAttackRangeVAO; }
     GLuint GetAttackRangeVBO() const { return mAttackRangeVBO; }
-    GLuint GetOrLoadTextureOverride(const std::string& assetRelativePath);
+    GLuint GetOrLoadTextureOverride(
+        const std::string& assetRelativePath) const;
 
     GLuint CreateTextTextureFor3D(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
                                   float textScale) const
@@ -82,6 +83,9 @@ public:
     void TryDrawActor(Actor* actor, bool useOrient = true) const;
     void DrawActor(Actor* actor, bool useOrient = true) const;
     void DrawUGCPlacementPreviewActor(Actor* actor) const;
+    void DrawInactiveActorPreview(
+        Actor* actor,
+        float opacity) const;
     void DrawBlobShadow(const CharacterActor* actor) const;
     bool IsActorInsideView(const Actor* actor) const;
 
@@ -102,6 +106,19 @@ public:
     }
 
     void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
+    glm::mat4 CreateBillboard(
+        const glm::mat4& viewMat,
+        const Actor* actor,
+        float upMargin,
+        float rightMargin,
+        float width,
+        float height) const;
+    glm::mat4 CreateBillboard(
+        const glm::mat4& viewMat,
+        const glm::vec3& centerPosition,
+        const glm::vec3& upDirection,
+        float width,
+        float height) const;
 
 private:
     void InitializeAttackRangeBuffer();
@@ -135,7 +152,7 @@ private:
 
     GLuint mAttackRangeVAO;
     GLuint mAttackRangeVBO;
-    std::unordered_set<std::string> mFailedTextureOverrides;
+    mutable std::unordered_set<std::string> mFailedTextureOverrides;
     mutable std::array<glm::vec4, 6> mViewFrustumPlanes{};
     mutable bool mHasValidViewFrustum = false;
     mutable bool mEmphasizeUGCLayers = false;

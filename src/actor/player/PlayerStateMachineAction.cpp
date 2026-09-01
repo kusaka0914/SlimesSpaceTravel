@@ -1,5 +1,7 @@
 #include "actor/player/PlayerStateMachine.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -78,11 +80,16 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
     }
 
     if (combat.HasPendingAttackHit()) {
+        const bool targetMatchesPlayerAttackHeight =
+            player.GetOnGround() ||
+            (mAttackDirectionTarget &&
+             mAttackDirectionTarget->IsLaunched());
         const bool hasValidDirectionTarget =
             mAttackDirectionTarget &&
             mAttackDirectionTarget->GetIsActive() &&
             mAttackDirectionTarget->IsAlive() &&
             !mAttackDirectionTarget->GetIsDead() &&
+            targetMatchesPlayerAttackHeight &&
             mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
 
         if (hasValidDirectionTarget) {
@@ -138,7 +145,7 @@ void PlayerStateMachine::UpdateStrongAttacking(
         mAttackDirectionTarget->GetIsActive() &&
         mAttackDirectionTarget->IsAlive() &&
         !mAttackDirectionTarget->GetIsDead() &&
-        !mAttackDirectionTarget->IsOnGround() &&
+        mAttackDirectionTarget->IsLaunched() &&
         mAttackDirectionTarget->GetCurrentPlanet() == player.GetCurrentPlanet();
 
     if (hasValidStrongTarget) {
@@ -213,7 +220,7 @@ void PlayerStateMachine::UpdateAirSlamAttacking(
             movement,
             deltaTime);
     if (didHitEnemy) {
-        player.GetGame()->OnStrongAttacked(
+        player.GetGame()->OnAirSlamAttackHit(
             movement.GetPlayerNum());
     }
 

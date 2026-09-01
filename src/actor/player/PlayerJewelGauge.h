@@ -2,6 +2,8 @@
 
 class PlayerJewelGauge {
 public:
+    static constexpr int ContinuousAttackCost = 2;
+
     bool CanConsume(int amount) const;
     bool Consume(int amount);
     void Add(int value);
@@ -20,6 +22,6 @@ public:
 private:
     int mCount = 2;
     static constexpr int automaticRecoveryMaxCount = 2;
-    static constexpr int itemPickupMaxCount = 10;
+    static constexpr int itemPickupMaxCount = 6;
     float mRecoverTimer = -1.0f;
 };

@@ -47,17 +47,32 @@ void SceneObjectRenderer::DrawSceneObjects(
 
     std::vector<Planet*> planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
 
-    DrawPlanets(planets);
-    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
-    DrawCharacterShadows(planets);
-
     const SequenceSystem* sequenceSystem =
         mRenderer->GetGame()->GetSequenceSystem();
-    const bool isStageStartCinematicPlaying =
-        sequenceSystem &&
-        sequenceSystem->IsCinematicChainPlaying();
-    if (mPlayerEffectRenderer && !isStageStartCinematicPlaying) {
-        mPlayerEffectRenderer->DrawPlayers(viewMat);
+    const bool shouldDrawPlayers =
+        !sequenceSystem ||
+        !sequenceSystem->IsCinematicChainPlaying();
+
+    DrawPlanets(planets);
+    DrawActorOnPlanets(planets, viewMat, viewportPlayer);
+    DrawCharacterShadows(planets, shouldDrawPlayers);
+
+    if (mPlayerEffectRenderer && shouldDrawPlayers) {
+        mPlayerEffectRenderer->DrawPlayers(
+            viewMat,
+            mRenderer->GetGame()->GetPlayers(),
+            mRenderer->GetGame()->GetIsDebugEditorShowing(),
+            mRenderer->GetGame()->GetPhysicsSystem());
+
+        const Player* mergeGuideTargetPlayer = nullptr;
+        float mergeGuideRadiusWorldUnits = 0.0f;
+        if (mRenderer->GetGame()->TryResolvePlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits)) {
+            mPlayerEffectRenderer->DrawPlayerMergeGuide(
+                mergeGuideTargetPlayer,
+                mergeGuideRadiusWorldUnits);
+        }
     }
 
     if (mNPCProximityMessageRenderer) {
@@ -95,7 +110,16 @@ void SceneObjectRenderer::DrawActorOnPlanets(
             }
         }
 
-        mRenderer->TryDrawActors(planet->GetBoats());
+        for (Boat* boat : planet->GetBoats()) {
+            if (boat && boat->ShouldRenderUnavailablePreview()) {
+                constexpr float unavailableRocketOpacity = 0.2f;
+                mRenderer->DrawInactiveActorPreview(
+                    boat,
+                    unavailableRocketOpacity);
+                continue;
+            }
+            mRenderer->TryDrawActor(boat);
+        }
         mRenderer->TryDrawActors(planet->GetBoatParts());
         mRenderer->TryDrawActors(planet->GetCrystals());
         mRenderer->TryDrawActors(planet->GetPlatforms());
@@ -124,22 +148,24 @@ void SceneObjectRenderer::DrawActorOnPlanets(
         return;
     }
 
-
-
-
+    const Player* effectReferencePlayer = viewportPlayer
+        ? viewportPlayer
+        : mRenderer->GetGame()->GetControlledPlayer();
     for (Planet* planet : planets) {
         if (!planet) {
             continue;
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
-            mPlayerEffectRenderer->DrawEnemyEffects(enemy, viewMat, viewportPlayer);
+            mPlayerEffectRenderer->DrawEnemyEffects(
+                enemy, viewMat, effectReferencePlayer);
         }
     }
 }
 
 void SceneObjectRenderer::DrawCharacterShadows(
-    const std::vector<Planet*>& planets) const
+    const std::vector<Planet*>& planets,
+    bool shouldDrawPlayers) const
 {
     if (!mRenderer || !mRenderer->GetGame()) {
         return;
@@ -150,11 +176,21 @@ void SceneObjectRenderer::DrawCharacterShadows(
             continue;
         }
         for (Enemy* enemy : planet->GetEnemies()) {
+            if (!mRenderer->IsActorInsideView(enemy)) {
+                continue;
+            }
             mRenderer->DrawBlobShadow(enemy);
         }
         for (NPC* npc : planet->GetNPCs()) {
+            if (!mRenderer->IsActorInsideView(npc)) {
+                continue;
+            }
             mRenderer->DrawBlobShadow(npc);
         }
+    }
+
+    if (!shouldDrawPlayers) {
+        return;
     }
 
     for (Player* player : mRenderer->GetGame()->GetPlayers()) {

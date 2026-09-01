@@ -40,17 +40,25 @@ public:
     static constexpr float SplitBodyScaleMultiplier = 0.8f;
     static constexpr float SplitAttackMultiplier = 0.6f;
 
-    void ApplyConfig();
+    void ApplyConfig(const PlayerConfig& config);
 
     void Initialize() override;
     void ProcessActor() override;
     void UpdateActor(float deltaTime) override;
     bool ShouldRenderSolidWhite() const override;
+    glm::vec3 GetRenderPosition() const override;
+    glm::vec3 GetRenderScale() const override;
+    glm::quat GetRenderModelRotationOffset() const override;
 
     void ApplyDamage(Enemy* enemy, float deltaTime);
     void ApplyDamageFromActor(
         const glm::vec3& damageSourcePosition,
         float damage);
+    void StartDamageKnockBack(
+        const glm::vec3& damageSourcePosition);
+    void StartNormalHitReaction();
+    void StartStarCollectionCelebration(float durationSeconds);
+    void StopStarCollectionCelebration();
 
     void ApplyFallDamageAndRespawn(float damage);
     void OnBoatArrived(Boat* boat);
@@ -108,6 +116,21 @@ public:
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection)
     {
         mMovement.SetCameraForwardDirection(forwardDirection, upDirection);
+    }
+
+    void LockMovementDirectionForCameraAutoAlign()
+    {
+        mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec());
+    }
+
+    void UnlockMovementDirectionForCameraAutoAlign()
+    {
+        mMovement.UnlockMovementDirectionForCameraAutoAlign();
+    }
+
+    bool ConsumeCameraAutoAlignCancellationRequest()
+    {
+        return mMovement.ConsumeCameraAutoAlignCancellationRequest();
     }
 
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
@@ -333,6 +356,9 @@ public:
 
     float GetCameraYaw() const { return mInput.GetCameraYaw(); }
 
+    float GetMoveForwardInput() const { return mInput.GetMoveForward(); }
+    float GetMoveLeftInput() const { return mInput.GetMoveLeft(); }
+
     float GetAttackSpeed() const { return mCombat.GetAttackSpeed(); }
 
     float GetMaxHp() const { return mStatus.GetMaxHp(); }
@@ -512,7 +538,8 @@ public:
     void RefreshFallbackUpVec() { UpdateFallbackUpVec(); }
 
 private:
-    void ApplyPlayerConfig(const PlayerConfig& config);
+    void UpdateNormalHitReaction(float deltaTime);
+    void UpdateStarCollectionCelebration(float deltaTime);
     void RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState);
 
     bool ShouldAcceptLandingSurface(
@@ -543,5 +570,8 @@ private:
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
     bool mIsSplitForm = false;
+    float mNormalHitReactionElapsedSeconds = -1.0f;
+    float mStarCollectionCelebrationElapsedSeconds = -1.0f;
+    float mStarCollectionCelebrationDurationSeconds = 0.0f;
     std::uint64_t mJumpSequence = 0;
 };

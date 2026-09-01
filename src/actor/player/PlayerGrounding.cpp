@@ -1,5 +1,7 @@
 #include "actor/player/PlayerGrounding.h"
 
+#include "Game.h"
+
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -8,6 +10,11 @@
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
+
+PlayerGrounding::PlayerGrounding(PhysicsSystem& physicsSystem)
+    : mPhysicsSystem(physicsSystem)
+{
+}
 
 void PlayerGrounding::OnLanded(Player& player, PlayerMovement& movement, PlayerCombat& combat)
 {
@@ -52,7 +59,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
 
     btCollisionWorld::ClosestRayResultCallback cb(btVector3(from.x, from.y, from.z), btVector3(to.x, to.y, to.z));
 
-    auto* bulletWorld = player.GetGame()->GetPhysicsSystem()->GetBulletWorld();
+    auto* bulletWorld = mPhysicsSystem.GetBulletWorld();
     if (!bulletWorld) {
         return;
     }
@@ -85,7 +92,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
 
     const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
     const ActorMovementCollisionResult collisionResult =
-        player.GetGame()->GetPhysicsSystem()->ResolveMovementCollision(
+        mPhysicsSystem.ResolveMovementCollision(
             &player,
             hitPos - player.GetPos(),
             hitPos);

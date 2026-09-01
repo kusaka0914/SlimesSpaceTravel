@@ -10,10 +10,9 @@ class Stage;
 class GameWorld {
 public:
     void CreateStages(int stageCount);
+    void SwapRuntimeState(GameWorld& other) noexcept;
 
     void AddActor(std::unique_ptr<Actor> actor);
-    void RemoveActor(Actor* actor);
-    void RemoveAllActors();
 
     void AddPlayer(Player* player);
     void RemoveAllPlayers();
@@ -37,6 +36,8 @@ public:
     bool IsInBase() const { return mCurrentStageNum == 0; }
 
 private:
+    void RefreshEnemyUpdatePriorities();
+
     std::vector<Player*> mPlayers;
     std::vector<std::unique_ptr<Actor>> mActors;
     std::vector<Stage*> mStages;
@@ -44,4 +45,5 @@ private:
 
     Stage* mCurrentStage = nullptr;
     int mCurrentStageNum = 0;
+    float mEnemyUpdatePriorityRefreshRemainingSeconds = 0.0f;
 };

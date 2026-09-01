@@ -4,7 +4,13 @@
 
 #include <string>
 
+namespace YAML {
+class Node;
+}
+
 class EnemyConfigLoader {
 public:
-    static EnemyConfig Load(const std::string& path, const std::string& type);
+    static EnemyConfig Parse(
+        const YAML::Node& enemyRoot,
+        const std::string& type);
 };

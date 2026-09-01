@@ -2,13 +2,11 @@
 
 #include <string>
 
-class Game;
-
 class UIState {
 public:
     enum class TalkWith { None, Opening, Mother, Doctor, Ending, NPC };
 
-    UIState(Game* game);
+    UIState();
     void IncTalkUIIndex() { mTalkUIIndex++; }
     void StartTalkWith(TalkWith talkWith);
     void FinishTutorial();
@@ -33,5 +31,4 @@ private:
     int mTalkUIIndex;
 
     TalkWith mCurrentTalkWith;
-    Game* mGame;
 };

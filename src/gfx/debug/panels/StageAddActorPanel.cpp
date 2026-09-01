@@ -107,6 +107,11 @@ bool StageAddActorPanel::TryEraseUGCPlatformCell()
     return mUGCPlatformEditController.TryEraseCell();
 }
 
+void StageAddActorPanel::EndUGCEraseGesture()
+{
+    mUGCPlatformEditController.EndEraseGesture();
+}
+
 bool StageAddActorPanel::TryTranslateUGCPlatformCells(
     const StageActorRef& actorRef,
     const glm::vec3& worldDelta)

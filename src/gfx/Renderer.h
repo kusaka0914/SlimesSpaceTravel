@@ -15,6 +15,8 @@ public:
     Renderer(Game* game);
     virtual ~Renderer();
 
+    bool IsInitialized() const { return mIsInitialized; }
+
 protected:
     void RegisterTexture(const std::string& path, const std::string& name);
     GLuint CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
@@ -23,12 +25,14 @@ protected:
 
 private:
     void Initialize();
-    void InitializeFont();
+    bool InitializeFont();
     void InitializeVertexArrays();
 
 protected:
     Game* mGame;
     TTF_Font* mFont;
+    bool mDidInitializeTtf = false;
+    bool mIsInitialized = false;
     std::unordered_map<std::string, std::unique_ptr<VertexArray>> mVertexArrays;
-    std::unordered_map<std::string, GLuint> mTextures;
+    mutable std::unordered_map<std::string, GLuint> mTextures;
 };

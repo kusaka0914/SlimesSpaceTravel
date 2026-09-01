@@ -58,6 +58,10 @@ TalkController::TalkController(Game* game, GameProgressState* gameProgressState,
 
 void TalkController::Update(float deltaTime)
 {
+    if (FinishTalkIfComplete()) {
+        return;
+    }
+
     if (mGameProgressState->GetSceneState() != GameProgressState::SceneState::Talking ||
         mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC ||
         !mTalkingNPC || !mTalkingPlayer ||
@@ -93,6 +97,32 @@ void TalkController::Update(float deltaTime)
     constexpr float talkFacingSmoothingSpeed = 7.0f;
     mTalkingPlayer->FaceDirection(
         RotateTowards(currentDirection, targetDirection, up, talkFacingSmoothingSpeed, deltaTime));
+}
+
+bool TalkController::FinishTalkIfComplete()
+{
+    if (!mGameProgressState || !mUIState ||
+        mGameProgressState->GetSceneState() !=
+            GameProgressState::SceneState::Talking ||
+        mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC) {
+        return false;
+    }
+
+    const int talkPageIndex = mUIState->GetTalkUIIndex();
+    const bool hasRemainingPage =
+        mTalkingNPC && talkPageIndex >= 0 &&
+        talkPageIndex <
+            static_cast<int>(mTalkingNPC->GetResolvedTalkTexts().size());
+    if (hasRemainingPage) {
+        return false;
+    }
+
+    if (mTalkingNPC) {
+        mTalkingNPC->MarkTalkCompletedThisVisit();
+    }
+    mGame->StartPlayingScene();
+    mUIState->FinishTalkWith();
+    return true;
 }
 
 void TalkController::TryAdvanceTalkFromConfirm()
@@ -169,6 +199,16 @@ void TalkController::ResumeTalkWithNPC(
     mUIState->SetTalkUIIndex(talkPageIndex);
     mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
     CaptureCurrentPageActionBaseline();
+}
+
+void TalkController::ClearActorReferencesForStageReload()
+{
+    mTalkingNPC = nullptr;
+    mTalkingPlayer = nullptr;
+    mActionPlayerAtPageStart = nullptr;
+    mControlledPlayerIndexAtPageStart = -1;
+    mJumpSequenceAtPageStart = 0;
+    mHasJumpStartedOnCurrentPage = false;
 }
 
 TalkPageAdvanceCondition

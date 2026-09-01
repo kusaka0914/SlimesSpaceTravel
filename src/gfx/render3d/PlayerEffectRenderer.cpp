@@ -1,10 +1,10 @@
 #include "gfx/render3d/PlayerEffectRenderer.h"
 
 #include "gfx/Renderer3D.h"
-#include "Game.h"
 #include "gfx/VertexArray.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyAttackGeometry.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
@@ -12,7 +12,6 @@
 #include "gfx/Shader3D.h"
 #include "system/PhysicsSystem.h"
 #include "system/physics/EllipsoidCollisionShapeGeometry.h"
-#include "utils/MathUtils.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +23,13 @@
 #include <initializer_list>
 
 namespace {
+const glm::vec4 attackWarningFillColor(1.0f, 0.1f, 0.1f, 0.18f);
+const glm::vec4 attackWarningEdgeColor(1.0f, 0.1f, 0.1f, 0.75f);
+const glm::vec4 attackImpactFillColor(1.0f, 1.0f, 1.0f, 0.62f);
+const glm::vec4 attackImpactEdgeColor(1.0f);
+const glm::vec4 mergeGuideFillColor(0.2f, 0.9f, 1.0f, 0.16f);
+const glm::vec4 mergeGuideEdgeColor(0.35f, 1.0f, 0.75f, 0.9f);
+
 bool ShouldFollowSphereSurface(const Planet* planet)
 {
     return planet && planet->GetPlanetShape() ==
@@ -61,12 +67,8 @@ float CalculateEnemyGuardHeight(const Enemy& enemy)
         const float modelTop =
             glm::dot(modelBounds.center - enemy.GetPos(), up) +
             EnemyCollisionGeometry::CalculateSupportDistance(modelBounds, up);
-
-
         return modelTop + 0.25f;
     }
-
-
     return enemy.GetRadius() * 0.8f;
 }
 }
@@ -76,22 +78,23 @@ PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
 {
 }
 
-void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
+void PlayerEffectRenderer::DrawPlayers(
+    const glm::mat4& viewMat,
+    const std::vector<Player*>& players,
+    bool isDebugEditorShowing,
+    const PhysicsSystem* physicsSystem) const
 {
-    if (!mRenderer || !mRenderer->GetGame()) {
+    if (!mRenderer) {
         return;
     }
 
-    const std::vector<Player*>& players = mRenderer->GetGame()->GetPlayers();
     if (players.empty() || !players[0]) {
         return;
     }
 
     mRenderer->TryDrawActor(players[0]);
-    DrawPlayerCollisionShape(players[0]);
-
-
-
+    DrawPlayerCollisionShape(
+        players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
     const bool hasPlayer2 = players.size() >= 2 && players[1];
@@ -100,27 +103,132 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat) const
     }
 
     mRenderer->TryDrawActor(players[1]);
-    DrawPlayerCollisionShape(players[1]);
-
-
-
+    DrawPlayerCollisionShape(
+        players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
 }
 
-void PlayerEffectRenderer::DrawPlayerCollisionShape(
-    const Player* player) const
+void PlayerEffectRenderer::DrawPlayerMergeGuide(
+    const Player* targetPlayer,
+    float radiusWorldUnits) const
 {
-    if (!mRenderer || !player || !player->GetIsActive()) {
+    if (!mRenderer ||
+        !targetPlayer ||
+        !targetPlayer->GetIsActive() ||
+        radiusWorldUnits <= 0.0f) {
         return;
     }
 
-    Game* game = mRenderer->GetGame();
-    if (!game || !game->GetIsDebugEditorShowing()) {
-        return;
+    const Platform* groundPlatform = nullptr;
+    if (targetPlayer->GetOnGround()) {
+        groundPlatform = dynamic_cast<const Platform*>(
+            targetPlayer->GetGroundActor());
     }
 
-    const PhysicsSystem* physicsSystem = game->GetPhysicsSystem();
-    if (!physicsSystem) {
+    glm::vec3 up = targetPlayer->GetUpVec();
+    if (groundPlatform) {
+        up = groundPlatform->GetUpVec();
+    }
+    if (glm::dot(up, up) <= 0.000001f) {
+        up = glm::vec3(0.0f, 1.0f, 0.0f);
+    } else {
+        up = glm::normalize(up);
+    }
+
+    glm::vec3 forward = targetPlayer->GetFacingForwardVec();
+    forward -= up * glm::dot(forward, up);
+    if (glm::dot(forward, forward) <= 0.000001f) {
+        glm::vec3 fallbackAxis(1.0f, 0.0f, 0.0f);
+        if (std::abs(up.y) < 0.9f) {
+            fallbackAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+        forward = glm::cross(fallbackAxis, up);
+    }
+    forward = glm::normalize(forward);
+    const glm::vec3 left = glm::normalize(glm::cross(up, forward));
+
+    constexpr float surfaceOffsetWorldUnits = 0.06f;
+    const glm::vec3 center = targetPlayer->GetPos();
+    const Planet* planet = targetPlayer->GetCurrentPlanet();
+    const bool shouldFollowPlanetSurface =
+        !groundPlatform &&
+        planet &&
+        planet->GetPlanetShape() != Planet::PlanetShape::Normal;
+    float playerSurfaceOffset = 0.0f;
+    if (shouldFollowPlanetSurface) {
+        const Planet::EllipseSurfaceProjection centerProjection =
+            planet->CalculateEllipseSurfaceProjection(center);
+        playerSurfaceOffset = glm::dot(
+            center - centerProjection.position,
+            centerProjection.outwardNormal);
+    }
+
+    const auto resolveSurfacePoint =
+        [planet,
+         shouldFollowPlanetSurface,
+         playerSurfaceOffset,
+         surfaceOffsetWorldUnits,
+         up](const glm::vec3& point) {
+            if (!shouldFollowPlanetSurface) {
+                return point + up * surfaceOffsetWorldUnits;
+            }
+            const Planet::EllipseSurfaceProjection projection =
+                planet->CalculateEllipseSurfaceProjection(point);
+            return projection.position +
+                   projection.outwardNormal *
+                       (playerSurfaceOffset + surfaceOffsetWorldUnits);
+        };
+
+    constexpr int segmentCount = 72;
+    std::vector<glm::vec3> fillVertices;
+    fillVertices.reserve(segmentCount + 2);
+    fillVertices.push_back(resolveSurfacePoint(center));
+    for (int segmentIndex = 0;
+         segmentIndex <= segmentCount;
+         ++segmentIndex) {
+        const float angle =
+            glm::two_pi<float>() *
+            static_cast<float>(segmentIndex) /
+            static_cast<float>(segmentCount);
+        const glm::vec3 direction =
+            forward * std::cos(angle) + left * std::sin(angle);
+        fillVertices.push_back(resolveSurfacePoint(
+            center + direction * radiusWorldUnits));
+    }
+    mRenderer->DrawAttackRangeVertices(
+        fillVertices, GL_TRIANGLE_FAN, mergeGuideFillColor);
+
+    constexpr float edgeThicknessWorldUnits = 0.08f;
+    const float innerRadius = std::max(
+        0.0f,
+        radiusWorldUnits - edgeThicknessWorldUnits);
+    std::vector<glm::vec3> edgeVertices;
+    edgeVertices.reserve((segmentCount + 1) * 2);
+    for (int segmentIndex = 0;
+         segmentIndex <= segmentCount;
+         ++segmentIndex) {
+        const float angle =
+            glm::two_pi<float>() *
+            static_cast<float>(segmentIndex) /
+            static_cast<float>(segmentCount);
+        const glm::vec3 direction =
+            forward * std::cos(angle) + left * std::sin(angle);
+        edgeVertices.push_back(resolveSurfacePoint(
+            center + direction * radiusWorldUnits));
+        edgeVertices.push_back(resolveSurfacePoint(
+            center + direction * innerRadius));
+    }
+    mRenderer->DrawAttackRangeVertices(
+        edgeVertices, GL_TRIANGLE_STRIP, mergeGuideEdgeColor);
+}
+
+void PlayerEffectRenderer::DrawPlayerCollisionShape(
+    const Player* player,
+    bool isDebugEditorShowing,
+    const PhysicsSystem* physicsSystem) const
+{
+    if (!mRenderer || !player || !player->GetIsActive() ||
+        !isDebugEditorShowing || !physicsSystem) {
         return;
     }
 
@@ -249,10 +357,7 @@ void PlayerEffectRenderer::DrawEnemyEffects(
         return;
     }
 
-    Game* game = mRenderer->GetGame();
-    const Player* controlledPlayer = viewportPlayer
-        ? viewportPlayer
-        : (game ? game->GetControlledPlayer() : nullptr);
+    const Player* controlledPlayer = viewportPlayer;
     const Planet* playerPlanet =
         controlledPlayer
             ? controlledPlayer->GetCurrentPlanet()
@@ -265,25 +370,33 @@ void PlayerEffectRenderer::DrawEnemyEffects(
         DrawEnemyHp(viewMat, enemy);
     }
 
-    if (enemy->IsAlive() &&
-        enemy->IsOnGround() &&
+    const bool shouldDrawAttackWarning =
         enemy->ShouldDrawAttackPreview() &&
         enemy->GetStandByAttackTimer() > 0.0f &&
-        enemy->GetStandByAttackTimer() <= 1.0f) {
+        enemy->GetStandByAttackTimer() <= 1.0f;
+    const bool shouldDrawAttackImpactFlash =
+        enemy->ShouldDrawAttackImpactFlash();
+    if (enemy->IsAlive() &&
+        enemy->IsOnGround() &&
+        (shouldDrawAttackWarning || shouldDrawAttackImpactFlash)) {
         EnemyAttackPreview preview;
         if (enemy->GetBehaviorAttackPreview(preview) &&
             (preview.shape == EnemyAttackPreviewShape::Fan ||
              preview.shape == EnemyAttackPreviewShape::Radial)) {
-            DrawEnemyFanAttackRange(enemy, preview.range, preview.angleRadians);
+            DrawEnemyFanAttackRange(
+                enemy,
+                preview.range,
+                preview.angleRadians,
+                shouldDrawAttackImpactFlash);
         } else {
-            DrawEnemyAttackRange(enemy);
+            DrawEnemyAttackRange(enemy, shouldDrawAttackImpactFlash);
         }
     }
 }
 
 void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D()) {
+    if (!mRenderer || !mRenderer->GetShader3D()) {
         return;
     }
 
@@ -291,15 +404,14 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
         return;
     }
 
-    auto& textures = const_cast<Renderer3D*>(mRenderer)->GetTextures();
-    auto texIt = textures.find("tired_star");
-    if (texIt == textures.end()) {
+    const GLuint tiredStarTexture =
+        mRenderer->FindTexture("tired_star");
+    if (tiredStarTexture == 0) {
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto quadIt = vertexArrays.find("quad");
-    if (quadIt == vertexArrays.end()) {
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (!quad) {
         return;
     }
 
@@ -308,12 +420,12 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texIt->second);
+    glBindTexture(GL_TEXTURE_2D, tiredStarTexture);
     glUniform1i(shader->GetLocDiffuseTexture(), 0);
     glUniform1i(shader->GetLocUseTexture(), 1);
     glUniform4f(shader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     constexpr int starCount = 3;
     constexpr float orbitRadius = 0.35f;
@@ -354,7 +466,8 @@ void PlayerEffectRenderer::DrawTiredEffect(const glm::mat4& viewMat, const Playe
         const glm::vec3 orbitOffset = forward * std::cos(angle) * orbitRadius + left * std::sin(angle) * orbitRadius;
         const float scale = starSize * (1.0f + 0.15f * std::sin(time * 8.0f + static_cast<float>(i)));
 
-        glm::mat4 billboard = mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, center + orbitOffset, up, scale, scale);
+        const glm::mat4 billboard = mRenderer->CreateBillboard(
+            viewMat, center + orbitOffset, up, scale, scale);
 
         glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -378,11 +491,16 @@ void PlayerEffectRenderer::DrawPlayerAttackRange(Player* player) const
         glm::normalize(player->GetLeftVec()),
         player->GetAttackRange(),
         player->GetAttackAngle(),
-        0.06f);
+        0.06f,
+        attackWarningFillColor,
+        attackWarningEdgeColor);
 }
 
 void PlayerEffectRenderer::DrawEnemyFanAttackRange(
-    Enemy* enemy, float range, float angleRadians) const
+    Enemy* enemy,
+    float range,
+    float angleRadians,
+    bool shouldFlashWhite) const
 {
     if (!mRenderer || !enemy) {
         return;
@@ -392,6 +510,12 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
     attackFrame.origin +=
         attackFrame.forward *
         CalculateEnemyAttackFrontOffset(*enemy, attackFrame);
+    const glm::vec4& fillColor = shouldFlashWhite
+        ? attackImpactFillColor
+        : attackWarningFillColor;
+    const glm::vec4& edgeColor = shouldFlashWhite
+        ? attackImpactEdgeColor
+        : attackWarningEdgeColor;
     DrawFanAttackRange(
         enemy->GetCurrentPlanet(),
         attackFrame.origin,
@@ -400,12 +524,16 @@ void PlayerEffectRenderer::DrawEnemyFanAttackRange(
         attackFrame.left,
         range,
         angleRadians,
-        0.56f);
+        0.56f,
+        fillColor,
+        edgeColor);
 }
 
 void PlayerEffectRenderer::DrawFanAttackRange(
     const Planet* planet, const glm::vec3& center, const glm::vec3& up, const glm::vec3& forward,
-    const glm::vec3& left, float range, float angleRadians, float yOffset) const
+    const glm::vec3& left, float range, float angleRadians, float yOffset,
+    const glm::vec4& fillColor,
+    const glm::vec4& edgeColor) const
 {
     if (!mRenderer || range <= 0.0f || angleRadians <= 0.0f) {
         return;
@@ -436,7 +564,8 @@ void PlayerEffectRenderer::DrawFanAttackRange(
             surfacePoint(center + dir * range + up * yOffset));
     }
 
-    mRenderer->DrawAttackRangeVertices(fanVertices, GL_TRIANGLE_FAN, glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+    mRenderer->DrawAttackRangeVertices(
+        fanVertices, GL_TRIANGLE_FAN, fillColor);
 
     constexpr float thickness = 0.08f;
     const float innerRadius = std::max(0.0f, range - thickness);
@@ -456,10 +585,13 @@ void PlayerEffectRenderer::DrawFanAttackRange(
             center + dir * innerRadius + up * yOffset));
     }
 
-    mRenderer->DrawAttackRangeVertices(edgeVertices, GL_TRIANGLE_STRIP, glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+    mRenderer->DrawAttackRangeVertices(
+        edgeVertices, GL_TRIANGLE_STRIP, edgeColor);
 }
 
-void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
+void PlayerEffectRenderer::DrawEnemyAttackRange(
+    Enemy* enemy,
+    bool shouldFlashWhite) const
 {
     if (!mRenderer || !enemy) {
         return;
@@ -482,6 +614,12 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
 
     constexpr float yOffset = 0.56f;
     constexpr float thickness = 0.08f;
+    const glm::vec4& fillColor = shouldFlashWhite
+        ? attackImpactFillColor
+        : attackWarningFillColor;
+    const glm::vec4& edgeColor = shouldFlashWhite
+        ? attackImpactEdgeColor
+        : attackWarningEdgeColor;
     const glm::vec3 start =
         attackFrame.origin +
         attackFrame.forward * previewArea.forwardStartOffset +
@@ -515,9 +653,6 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
         };
         constexpr int lengthSegments = 24;
         constexpr int widthSegments = 8;
-        const glm::vec4 fillColor(1.0f, 0.1f, 0.1f, 0.18f);
-        const glm::vec4 edgeColor(1.0f, 0.1f, 0.1f, 0.75f);
-
         for (int lengthIndex = 0;
              lengthIndex < lengthSegments;
              ++lengthIndex) {
@@ -594,7 +729,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         fillVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.18f));
+        fillColor);
 
     const std::vector<glm::vec3> leftEdgeVertices{
         start + attackFrame.left * previewArea.halfWidth,
@@ -604,7 +739,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         leftEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const std::vector<glm::vec3> rightEdgeVertices{
         start - attackFrame.left * previewArea.halfWidth,
@@ -614,7 +749,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         rightEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const glm::vec3 innerStart =
         start + attackFrame.forward * thickness;
@@ -626,7 +761,7 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         startEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 
     const glm::vec3 innerEnd =
         end - attackFrame.forward * thickness;
@@ -638,12 +773,12 @@ void PlayerEffectRenderer::DrawEnemyAttackRange(Enemy* enemy) const
     mRenderer->DrawAttackRangeVertices(
         endEdgeVertices,
         GL_TRIANGLE_STRIP,
-        glm::vec4(1.0f, 0.1f, 0.1f, 0.75f));
+        edgeColor);
 }
 
 void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy* enemy) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy ||
+    if (!mRenderer || !mRenderer->GetShader3D() || !enemy ||
         !enemy->IsAlive()) {
         return;
     }
@@ -653,11 +788,9 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
         return;
     }
 
-    auto& textures = const_cast<Renderer3D*>(mRenderer)->GetTextures();
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto guardIt = textures.find("guard");
-    auto quadIt = vertexArrays.find("quad");
-    if (guardIt == textures.end() || quadIt == vertexArrays.end()) {
+    const GLuint guardTexture = mRenderer->FindTexture("guard");
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (guardTexture == 0 || !quad) {
         return;
     }
 
@@ -666,9 +799,9 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, guardIt->second);
+    glBindTexture(GL_TEXTURE_2D, guardTexture);
     glUniform1i(shader->GetLocUseTexture(), 1);
-    quadIt->second->SetActive();
+    quad->SetActive();
 
     const float upMargin = CalculateEnemyGuardHeight(*enemy);
     constexpr float guardWidth = 0.5f;
@@ -677,7 +810,8 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
     for (int i = 0; i < breakCount; i++) {
         const float rightMargin = (i - (breakCount - 1) * 0.5f) * 0.4f;
         glm::mat4 billboard =
-            mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
+            mRenderer->CreateBillboard(
+                viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
         glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
@@ -688,20 +822,19 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
 
 void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !enemy) {
+    if (!mRenderer || !mRenderer->GetShader3D() || !enemy) {
         return;
     }
 
-    auto& vertexArrays = const_cast<Renderer3D*>(mRenderer)->GetVertexArrays();
-    auto hpBarIt = vertexArrays.find("hpBar");
-    if (hpBarIt == vertexArrays.end()) {
+    VertexArray* hpBar = mRenderer->FindVertexArray("hpBar");
+    if (!hpBar) {
         return;
     }
 
     Shader3D* shader = mRenderer->GetShader3D();
 
     mRenderer->StartTransparentDraw();
-    hpBarIt->second->SetActive();
+    hpBar->SetActive();
 
     constexpr float rightMargin = -0.5f;
 
@@ -710,7 +843,8 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
     const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
     constexpr float hpHeight = 0.1f;
 
-    glm::mat4 billboard = mRenderer->GetGame()->GetMathUtils()->CreateBillBoard(viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
+    const glm::mat4 billboard = mRenderer->CreateBillboard(
+        viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
     glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
 
     std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};

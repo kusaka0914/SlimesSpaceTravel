@@ -4,6 +4,12 @@ project(game)
 set(CMAKE_CXX_STANDARD 20)
 include(CTest)
 
+option(
+    GAME_REVIEW_BUILD
+    "Enable debug tools while preserving the normal title-screen startup"
+    OFF
+)
+
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
@@ -62,10 +68,23 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPreviewStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCClearTransitionStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerCameraSettingsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/CameraShakeEffectTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TutorialObjectiveTextTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/OperationGuideVisibilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -77,11 +96,29 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorToolState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorMenuState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewPanelState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSelectionDragState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSwitchConnectionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCClearTransitionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/performance/FramePerformanceTracker.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UGCModeController.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CameraShakeEffect.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tutorial/TutorialLibrary.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -93,6 +130,9 @@ if (BUILD_TESTING)
     )
     if (MSVC)
         target_compile_options(game_tests PRIVATE /utf-8 /MP)
+    endif()
+    if (WIN32)
+        target_link_libraries(game_tests PRIVATE windowsapp)
     endif()
     add_test(NAME game_tests COMMAND game_tests)
 endif()
@@ -143,6 +183,21 @@ if (WIN32)
         USES_TERMINAL
     )
 
+    if (GAME_REVIEW_BUILD)
+        add_custom_target(package_windows_review
+            COMMAND powershell
+                -NoProfile
+                -ExecutionPolicy Bypass
+                -File ${CMAKE_CURRENT_SOURCE_DIR}/scripts/Create-WindowsDistribution.ps1
+                -BuildDirectory ${CMAKE_BINARY_DIR}
+                -Configuration $<CONFIG>
+                -OutputDirectory ${CMAKE_CURRENT_SOURCE_DIR}/dist-review
+                -SkipBuild
+            DEPENDS game
+            USES_TERMINAL
+        )
+    endif()
+
 endif()
 
 if (APPLE)
@@ -179,3 +234,6 @@ set_target_properties(editor_restart_helper PROPERTIES
 )
 
 target_compile_definitions(game PRIVATE SDL_MAIN_HANDLED)
+if (GAME_REVIEW_BUILD)
+    target_compile_definitions(game PRIVATE GAME_REVIEW_BUILD=1)
+endif()

@@ -6,7 +6,6 @@
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCombat.h"
 #include "actor/enemy/EnemyConfig.h"
-#include "actor/enemy/EnemyConfigLoader.h"
 #include "actor/enemy/EnemyDamageHandler.h"
 #include "actor/enemy/EnemyMovement.h"
 #include "actor/enemy/EnemyStateMachine.h"
@@ -15,13 +14,29 @@
 #include "system/SceneSystem.h"
 
 #include <algorithm>
+#include <cmath>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <limits>
 
 namespace {
 constexpr float dormantEnemyUpdateIntervalSeconds = 0.25f;
-constexpr float minimumFullRateDistance = 30.0f;
-constexpr float fullRateDistanceMargin = 5.0f;
 constexpr float groundedPositionEpsilon = 0.0001f;
+constexpr float normalEnemySpinDurationSeconds = 0.42f;
+constexpr float bossSquashDurationSeconds = 0.10f;
+constexpr float bossStretchDurationSeconds = 0.12f;
+constexpr float bossRecoveryDurationSeconds = 0.16f;
+constexpr float bossHitReactionDurationSeconds =
+    bossSquashDurationSeconds +
+    bossStretchDurationSeconds +
+    bossRecoveryDurationSeconds;
+
+float CalculateSmoothstep(float progress)
+{
+    const float clampedProgress = glm::clamp(progress, 0.0f, 1.0f);
+    return clampedProgress * clampedProgress *
+           (3.0f - 2.0f * clampedProgress);
+}
 
 Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
 {
@@ -63,7 +78,9 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
 Enemy::Enemy(Game* game)
     : CharacterActor(game),
       mStateMachine(std::make_unique<EnemyStateMachine>()),
-      mMovement(std::make_unique<EnemyMovement>()),
+      mMovement(std::make_unique<EnemyMovement>(
+          *game->GetPhysicsSystem(),
+          *game->GetMathUtils())),
       mCombat(std::make_unique<EnemyCombat>()),
       mDamageHandler(std::make_unique<EnemyDamageHandler>()),
       mBehaviorController(std::make_unique<EnemyBehaviorController>())
@@ -81,51 +98,23 @@ float Enemy::ResolveMinimumUpdateIntervalSeconds() const
 
 bool Enemy::CanUseReducedUpdateRate() const
 {
-    Game* game = GetGame();
     Planet* planet = GetCurrentPlanet();
-    if (!game ||
-        !planet ||
+    if (!planet ||
+        mShouldUseFullRateUpdate ||
         !mStateMachine->IsAlive() ||
         mStateMachine->GetActionState() != ActionState::Idle ||
+        mHitReactionKind != HitReactionKind::None ||
         !mOnGround ||
         !mHasRecordedGroundedTransform ||
         GetGroundActor() != planet ||
         GetIsEditorSelected()) {
         return false;
     }
-
-    const float fullRateDistance =
-        std::max(
-            minimumFullRateDistance,
-            GetDetectionRange() + fullRateDistanceMargin);
-    const float fullRateDistanceSquared =
-        fullRateDistance * fullRateDistance;
-
-    for (Player* player : game->GetPlayers()) {
-        if (!player ||
-            !player->GetIsActive() ||
-            !player->IsAlive() ||
-            player->GetCurrentPlanet() != planet) {
-            continue;
-        }
-
-        const glm::vec3 enemyToPlayer =
-            player->GetPos() - GetPos();
-        const float distanceSquared =
-            glm::dot(enemyToPlayer, enemyToPlayer);
-        if (distanceSquared <= fullRateDistanceSquared) {
-            return false;
-        }
-    }
-
     return true;
 }
 
 bool Enemy::ShouldUpdateUpVecEveryFrame() const
 {
-
-
-
     if (GetIsBoss() && GetLifeState() == LifeState::Dying) {
         return false;
     }
@@ -148,19 +137,10 @@ bool Enemy::ShouldAcceptLandingSurface(
 {
     (void)surfaceNormal;
 
-
-
-
     return dynamic_cast<Enemy*>(surfaceActor) == nullptr;
 }
 
-void Enemy::ApplyConfig(const std::string& type)
-{
-    const EnemyConfig config = EnemyConfigLoader::Load("../assets/data/actor/enemies.yaml", type);
-    ApplyEnemyConfig(config);
-}
-
-void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
+void Enemy::ApplyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
     SetIsNormalHitKnockBackEnabled(
@@ -194,6 +174,7 @@ void Enemy::ApplyEnemyConfig(const EnemyConfig& config)
 void Enemy::UpdateActor(float deltaTime)
 {
     CharacterActor::UpdateActor(deltaTime);
+    UpdateHitReaction(deltaTime);
 
     if (mStateMachine->IsAlive() &&
         (mOnGround || !mHasRecordedGroundedTransform)) {
@@ -208,6 +189,10 @@ void Enemy::UpdateActor(float deltaTime)
     if (!GetGame()->GetSceneSystem()->IsPlaying()) {
         return;
     }
+
+    mMovement->SeparateAfterOverlappingEnemyLanding(
+        *this,
+        deltaTime);
 
     mStatus.SetNearestPlayer(
         FindNearestPlayerOnSameSurfaceFace(*this));
@@ -236,6 +221,7 @@ bool Enemy::ShouldRenderSolidWhite() const
     constexpr float recoveryWarningDurationSeconds = 1.5f;
     const float launchedTimerSeconds = mStatus.GetLaunchedTimer();
     const bool shouldBlink =
+        mStateMachine->GetActionState() == ActionState::Launched &&
         launchedTimerSeconds >= 0.0f &&
         launchedTimerSeconds <= recoveryWarningDurationSeconds;
     if (!shouldBlink) {
@@ -251,9 +237,112 @@ bool Enemy::ShouldRenderSolidWhite() const
     return (blinkPhase % 2) != 0;
 }
 
+glm::quat Enemy::GetRenderModelRotationOffset() const
+{
+    if (mHitReactionKind != HitReactionKind::NormalEnemySpin) {
+        return Actor::GetRenderModelRotationOffset();
+    }
+
+    const float progress = glm::clamp(
+        mHitReactionElapsedSeconds /
+            normalEnemySpinDurationSeconds,
+        0.0f,
+        1.0f);
+    const float angleRadians =
+        glm::two_pi<float>() * CalculateSmoothstep(progress);
+    return glm::angleAxis(
+        angleRadians,
+        glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+glm::vec3 Enemy::GetRenderScale() const
+{
+    const glm::vec3 baseScale = GetScale();
+    if (mHitReactionKind != HitReactionKind::BossSquashStretch) {
+        return baseScale;
+    }
+
+    const glm::vec3 normalScaleMultiplier(1.0f);
+    const glm::vec3 squashScaleMultiplier(1.18f, 0.72f, 1.18f);
+    const glm::vec3 stretchScaleMultiplier(0.92f, 1.12f, 0.92f);
+
+    glm::vec3 reactionScaleMultiplier(1.0f);
+    if (mHitReactionElapsedSeconds < bossSquashDurationSeconds) {
+        const float progress = CalculateSmoothstep(
+            mHitReactionElapsedSeconds /
+            bossSquashDurationSeconds);
+        reactionScaleMultiplier = glm::mix(
+            normalScaleMultiplier,
+            squashScaleMultiplier,
+            progress);
+    } else if (mHitReactionElapsedSeconds <
+               bossSquashDurationSeconds + bossStretchDurationSeconds) {
+        const float stretchElapsedSeconds =
+            mHitReactionElapsedSeconds - bossSquashDurationSeconds;
+        const float progress = CalculateSmoothstep(
+            stretchElapsedSeconds /
+            bossStretchDurationSeconds);
+        reactionScaleMultiplier = glm::mix(
+            squashScaleMultiplier,
+            stretchScaleMultiplier,
+            progress);
+    } else {
+        const float recoveryElapsedSeconds =
+            mHitReactionElapsedSeconds -
+            bossSquashDurationSeconds -
+            bossStretchDurationSeconds;
+        const float progress = CalculateSmoothstep(
+            recoveryElapsedSeconds /
+            bossRecoveryDurationSeconds);
+        reactionScaleMultiplier = glm::mix(
+            stretchScaleMultiplier,
+            normalScaleMultiplier,
+            progress);
+    }
+
+    return baseScale * reactionScaleMultiplier;
+}
+
+void Enemy::StartNormalHitReaction()
+{
+    mHitReactionKind = HitReactionKind::NormalEnemySpin;
+    mHitReactionElapsedSeconds = 0.0f;
+}
+
+void Enemy::StartBossHitReaction()
+{
+    mHitReactionKind = HitReactionKind::BossSquashStretch;
+    mHitReactionElapsedSeconds = 0.0f;
+}
+
+void Enemy::UpdateHitReaction(float deltaTime)
+{
+    if (mHitReactionKind == HitReactionKind::None) {
+        return;
+    }
+
+    mHitReactionElapsedSeconds += std::max(0.0f, deltaTime);
+    const float durationSeconds =
+        mHitReactionKind == HitReactionKind::NormalEnemySpin
+            ? normalEnemySpinDurationSeconds
+            : bossHitReactionDurationSeconds;
+    if (mHitReactionElapsedSeconds < durationSeconds) {
+        return;
+    }
+
+    mHitReactionKind = HitReactionKind::None;
+    mHitReactionElapsedSeconds = 0.0f;
+}
+
 void Enemy::ApplyDamage(float damage, Player* player)
 {
-    mDamageHandler->ApplyDamage(*this, mStatus, *mStateMachine, damage, player);
+    mDamageHandler->ApplyDamage(
+        *this,
+        mStatus,
+        *mStateMachine,
+        *mMovement,
+        damage,
+        player);
 }
 
 void Enemy::DefeatImmediately()

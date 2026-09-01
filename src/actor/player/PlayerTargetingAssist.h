@@ -10,15 +10,15 @@ public:
         const Player& player,
         float attackRange,
         float attackAngle,
-        bool requireAirborneTarget);
+        bool requireLaunchedTarget);
 
     static Enemy* FindAssistStrongTarget(
         const Player& player,
         float maxDistance,
         float attackAngle);
-    static Enemy* FindNearestAirborneTargetOnCurrentPlanet(
+    static Enemy* FindNearestLaunchedTargetOnCurrentPlanet(
         const Player& player);
-    static Enemy* FindNearestAirborneTargetNearRecoveryOnCurrentPlanet(
+    static Enemy* FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
         const Player& player,
         float maximumLaunchedTimerSeconds);
 

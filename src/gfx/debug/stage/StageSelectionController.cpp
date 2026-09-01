@@ -47,19 +47,21 @@ void StageSelectionController::SetBoxSelectionEnabled(bool isEnabled)
     }
 }
 
-void StageSelectionController::DrawBoxSelectionRect() const
+std::optional<StageSelectionScreenRect>
+StageSelectionController::FindActiveBoxSelectionScreenRect() const
 {
     if (!mIsBoxSelecting || !mBoxSelectMoved) {
-        return;
+        return std::nullopt;
     }
 
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
-
-    const ImVec2 rectMin(std::min(mBoxSelectStart.x, mBoxSelectEnd.x), std::min(mBoxSelectStart.y, mBoxSelectEnd.y));
-    const ImVec2 rectMax(std::max(mBoxSelectStart.x, mBoxSelectEnd.x), std::max(mBoxSelectStart.y, mBoxSelectEnd.y));
-
-    drawList->AddRectFilled(rectMin, rectMax, IM_COL32(255, 150, 0, 45));
-    drawList->AddRect(rectMin, rectMax, IM_COL32(255, 150, 0, 220), 0.0f, 0, 2.0f);
+    return StageSelectionScreenRect{
+        .minimum = ImVec2(
+            std::min(mBoxSelectStart.x, mBoxSelectEnd.x),
+            std::min(mBoxSelectStart.y, mBoxSelectEnd.y)),
+        .maximum = ImVec2(
+            std::max(mBoxSelectStart.x, mBoxSelectEnd.x),
+            std::max(mBoxSelectStart.y, mBoxSelectEnd.y)),
+    };
 }
 
 void StageSelectionController::ApplyEditorSelectionFlags()

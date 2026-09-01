@@ -1,9 +1,11 @@
 #include "gfx/debug/panels/StorybookDebugPanel.h"
 
 #include "gfx/UIRenderer.h"
+#include "Game.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "imgui.h"
 #include "system/UILoadSystem.h"
+#include "system/SceneSystem.h"
 
 #include <array>
 #include <cstddef>
@@ -29,6 +31,9 @@ void StorybookDebugPanel::Reload()
         mContext.uiRenderer->GetUILoadSystem()->ReloadUIInfo("../assets/data/ui/ui.yaml");
     }
     mStatus = mConfig.Load() ? "storybook.yaml を読み込みました" : "読み込みに失敗しました";
+    if (mContext.game && mContext.game->GetSceneSystem()) {
+        mContext.game->GetSceneSystem()->ReloadStorybookConfig();
+    }
     mConfig.RemoveTrack("openingIntro");
     mConfig.RemoveTrack("openingMother");
     mConfig.RemoveTrack("openingDoctor");
@@ -59,6 +64,10 @@ void StorybookDebugPanel::Draw()
         const bool savedText = mContext.uiRenderer->GetUILoadSystem()->SaveUIInfo("../assets/data/ui/ui.yaml");
         const bool savedImages = mConfig.Save();
         mStatus = savedText && savedImages ? "会話文と画像設定を保存しました" : "保存に失敗しました";
+        if (savedImages && mContext.game &&
+            mContext.game->GetSceneSystem()) {
+            mContext.game->GetSceneSystem()->ReloadStorybookConfig();
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("再読込")) Reload();

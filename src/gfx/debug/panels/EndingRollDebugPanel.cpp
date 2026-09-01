@@ -1,8 +1,10 @@
 #include "gfx/debug/panels/EndingRollDebugPanel.h"
 
 #include "gfx/UIRenderer.h"
+#include "Game.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
 #include "imgui.h"
+#include "system/SceneSystem.h"
 
 #include <algorithm>
 #include <array>
@@ -34,6 +36,9 @@ void EndingRollDebugPanel::Reload()
 {
     if (EndingRollConfigIO::Load(mConfig)) {
         mStatus = "ending_roll.yaml を読み込みました";
+        if (mContext.game && mContext.game->GetSceneSystem()) {
+            mContext.game->GetSceneSystem()->ReloadEndingRollConfig();
+        }
         mSelectedImageIndex = std::clamp(mSelectedImageIndex, -1, static_cast<int>(mConfig.imageEvents.size()) - 1);
     } else {
         mStatus = "設定ファイルの読み込みに失敗しました";
@@ -43,7 +48,12 @@ void EndingRollDebugPanel::Reload()
 void EndingRollDebugPanel::Draw()
 {
     if (ImGui::Button("YAMLへ保存")) {
-        mStatus = EndingRollConfigIO::Save(mConfig) ? "保存しました。クリア後のエンドロールにも反映されます" : "保存に失敗しました";
+        const bool wasSaved = EndingRollConfigIO::Save(mConfig);
+        mStatus = wasSaved ? "保存しました。クリア後のエンドロールにも反映されます" : "保存に失敗しました";
+        if (wasSaved && mContext.game &&
+            mContext.game->GetSceneSystem()) {
+            mContext.game->GetSceneSystem()->ReloadEndingRollConfig();
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("再読込")) {

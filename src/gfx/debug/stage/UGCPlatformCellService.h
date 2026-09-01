@@ -2,6 +2,7 @@
 
 #include "gfx/debug/stage/StageActorNodeFactory.h"
 #include "gfx/debug/stage/StageEditorTypes.h"
+#include "gfx/debug/stage/UGCPlatformDocument.h"
 
 #include <glm/glm.hpp>
 #include <string>
@@ -42,6 +43,12 @@ public:
         const glm::vec3& worldDelta);
     bool RemoveMovingPlatformDestinationCell(
         const StageActorRef& generatedPlatformRef,
+        const glm::vec3& destinationWorldPosition);
+    bool ResolveMovingPlatformRegion(
+        const StageActorRef& generatedPlatformRef,
+        UGCGeneratedPlatformRegion& outRegion) const;
+    bool RemoveMovingPlatformDestinationCell(
+        const UGCGeneratedPlatformRegion& sourceRegion,
         const glm::vec3& destinationWorldPosition);
     bool RemoveCellAtGridPosition(
         int planetIndex,

@@ -1,285 +1,77 @@
 #include "gfx/debug/ugc/UGCWorkPanel.h"
 
+#include "gfx/debug/ugc/UGCEditorMenuState.h"
+#include "gfx/debug/ugc/UGCEditorToolState.h"
+
 #include "Game.h"
 #include "gfx/debug/DebugEditorContext.h"
-#include "gfx/debug/stage/StageYamlRepository.h"
-#include "gfx/debug/ugc/UGCWorkMetadata.h"
 #include "imgui.h"
 
 #include <algorithm>
 #include <utility>
-#include <yaml-cpp/yaml.h>
 
 UGCWorkPanel::UGCWorkPanel(
     DebugEditorContext& context,
+    UGCEditorMenuState& menuState,
+    UGCEditorToolState& toolState,
     std::function<void()> reloadSelectedWork)
     : mContext(context),
-      mFileService(context),
-      mReloadSelectedWork(std::move(reloadSelectedWork))
+      mMenuState(menuState),
+      mToolState(toolState),
+      mController(context, mState, std::move(reloadSelectedWork))
 {
 }
 
-void UGCWorkPanel::RefreshWorkList()
+void UGCWorkPanel::RequestManagementOpen()
 {
-    const std::optional<std::vector<std::string>> foundFileNames =
-        mFileService.FindSavedWorkFileNames();
-    if (!foundFileNames) {
-        mWorkFileNames.clear();
-        mSelectedWorkIndex = -1;
-        return;
-    }
-
-    mWorkFileNames = *foundFileNames;
-    if (mWorkFileNames.empty()) {
-        mSelectedWorkIndex = -1;
-    } else {
-        mSelectedWorkIndex = std::clamp(
-            mSelectedWorkIndex,
-            0,
-            static_cast<int>(mWorkFileNames.size()) - 1);
-    }
-    mHasLoadedWorkList = true;
+    mMenuState.RequestWorkManagementOpen();
 }
 
-void UGCWorkPanel::SetWorkNameInput(const std::string& workName)
+bool UGCWorkPanel::IsManagementOpen() const
 {
-    mWorkName.fill('\0');
-    const std::size_t copiedCharacterCount = std::min(
-        workName.size(),
-        mWorkName.size() - 1);
-    std::copy_n(
-        workName.begin(),
-        copiedCharacterCount,
-        mWorkName.begin());
+    return mMenuState.HasWorkManagementOpenRequest() ||
+        ImGui::IsPopupOpen(
+            "作品管理###UGCWorkManagement",
+            ImGuiPopupFlags_AnyPopupLevel);
 }
 
-void UGCWorkPanel::SetCurrentWork(
-    const std::string& fileName,
-    const std::string& displayName)
+bool UGCWorkPanel::SaveCurrentWork()
 {
-    mCurrentWorkFileName = fileName;
-    mCurrentWorkDisplayName = displayName;
-    SetWorkNameInput(displayName);
-    mIsNamingNewSave = false;
+    if (!mState.hasLoadedWorkList) {
+        mController.RefreshWorkList();
+    }
+    mController.SynchronizeCurrentWorkIdentity();
+
+    const bool wasSaved = mState.currentWorkFileName
+        ? mController.OverwriteCurrentWork()
+        : mController.SaveAsNamedWork();
+    mToolState.statusMessage = wasSaved
+        ? "作品を保存しました"
+        : "作品を保存できませんでした: " + mState.saveErrorMessage;
+    return wasSaved;
 }
 
-void UGCWorkPanel::SynchronizeCurrentWorkIdentity()
+void UGCWorkPanel::StartVerification()
 {
-    if (mHasSynchronizedCurrentWork) {
-        return;
-    }
-    mHasSynchronizedCurrentWork = true;
-
-    YAML::Node stageYaml;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
-        return;
-    }
-
-    const std::optional<std::string> savedDisplayName =
-        UGCWorkMetadata::FindDisplayName(stageYaml);
-    std::optional<std::string> savedFileName =
-        UGCWorkMetadata::FindFileName(stageYaml);
-    if (!savedFileName && savedDisplayName) {
-        savedFileName =
-            mFileService.CreateWorkFileName(*savedDisplayName);
-    }
-    if (!savedFileName ||
-        std::find(
-            mWorkFileNames.begin(),
-            mWorkFileNames.end(),
-            *savedFileName) == mWorkFileNames.end()) {
-        if (savedDisplayName) {
-            SetWorkNameInput(*savedDisplayName);
-        }
-        return;
-    }
-
-    SetCurrentWork(
-        *savedFileName,
-        savedDisplayName.value_or(
-            mFileService.ResolveDisplayName(*savedFileName)));
+    mController.StartVerification(mToolState.statusMessage);
 }
 
-bool UGCWorkPanel::SaveWorkToFile(
-    const std::string& displayName,
-    const std::string& fileName)
+bool UGCWorkPanel::CompleteVerification(const std::string& workFileName)
 {
-    if (!mFileService.SaveCurrentWork(
-            displayName,
-            fileName,
-            mSaveErrorMessage)) {
-        return false;
-    }
-
-    SetCurrentWork(fileName, displayName);
-    mShouldRefreshWorkList = true;
-    return true;
-}
-
-bool UGCWorkPanel::SaveAsNamedWork()
-{
-    const std::string displayName = mWorkName.data();
-    return SaveWorkToFile(
-        displayName,
-        mFileService.CreateWorkFileName(displayName));
-}
-
-bool UGCWorkPanel::OverwriteCurrentWork()
-{
-    return mCurrentWorkFileName &&
-        SaveWorkToFile(
-            mCurrentWorkDisplayName,
-            *mCurrentWorkFileName);
-}
-
-bool UGCWorkPanel::SaveCurrentWorkForVerification(
-    std::string& outWorkFileName,
-    std::string& outErrorMessage)
-{
-    if (!mCurrentWorkFileName) {
-        outWorkFileName.clear();
-        outErrorMessage = "先に作品名を付けて保存してください";
-        return false;
-    }
-    if (!OverwriteCurrentWork()) {
-        outWorkFileName.clear();
-        outErrorMessage = mSaveErrorMessage;
-        return false;
-    }
-
-    outWorkFileName = *mCurrentWorkFileName;
-    outErrorMessage.clear();
-    return true;
-}
-
-void UGCWorkPanel::StartVerification(std::string& outStatusMessage)
-{
-    if (!mHasLoadedWorkList) {
-        RefreshWorkList();
-    }
-    SynchronizeCurrentWorkIdentity();
-
-    YAML::Node stageYaml;
-    const bool wasLoaded =
-        StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
-    if (!wasLoaded || !UGCWorkMetadata::HasGoal(stageYaml)) {
-        outStatusMessage = "完成チェックにはゴールを置いてください";
-        return;
-    }
-
-    std::string workFileName;
-    std::string saveErrorMessage;
-    if (!SaveCurrentWorkForVerification(
-            workFileName, saveErrorMessage)) {
-        outStatusMessage =
-            "下書きを保存できませんでした: " + saveErrorMessage;
-        return;
-    }
-    mContext.game->StartUGCClearVerification(workFileName);
-}
-
-bool UGCWorkPanel::CompleteVerification(
-    const std::string& workFileName)
-{
-    const bool wasCompleted =
-        mFileService.CompleteVerification(workFileName);
-    RefreshWorkList();
-    return wasCompleted;
+    return mController.CompleteVerification(workFileName);
 }
 
 bool UGCWorkPanel::HasUnsavedChanges() const
 {
-    return mFileService.HasUnsavedChanges();
+    return mController.HasUnsavedChanges();
 }
 
-const std::string* UGCWorkPanel::FindSelectedWorkFileName() const
+void UGCWorkPanel::DrawManagement()
 {
-    if (mSelectedWorkIndex < 0 ||
-        mSelectedWorkIndex >= static_cast<int>(mWorkFileNames.size())) {
-        return nullptr;
+    if (mMenuState.ConsumeWorkManagementOpenRequest()) {
+        ImGui::OpenPopup("作品管理###UGCWorkManagement");
     }
-    return &mWorkFileNames[mSelectedWorkIndex];
-}
-
-bool UGCWorkPanel::CopySelectedWorkToWorkingFile()
-{
-    const std::string* selectedFileName = FindSelectedWorkFileName();
-    if (!selectedFileName) {
-        return false;
-    }
-    const std::string copiedFileName = *selectedFileName;
-    if (!mFileService.CopyToWorkingFile(copiedFileName)) {
-        return false;
-    }
-
-    SetCurrentWork(
-        copiedFileName,
-        mFileService.ResolveDisplayName(copiedFileName));
-    return true;
-}
-
-bool UGCWorkPanel::LoadSelectedWork()
-{
-    if (!CopySelectedWorkToWorkingFile()) {
-        return false;
-    }
-    mReloadSelectedWork();
-    return true;
-}
-
-bool UGCWorkPanel::CreateNewWorkingStage()
-{
-    if (!mFileService.ResetWorkingStage(mSaveErrorMessage)) {
-        return false;
-    }
-
-    mCurrentWorkFileName.reset();
-    mCurrentWorkDisplayName.clear();
-    SetWorkNameInput("新しいステージ");
-    mIsNamingNewSave = true;
-    mHasSynchronizedCurrentWork = true;
-    mReloadSelectedWork();
-    return true;
-}
-
-bool UGCWorkPanel::DuplicateSelectedWork()
-{
-    const std::string* selectedFileName = FindSelectedWorkFileName();
-    if (!selectedFileName ||
-        !mFileService.DuplicateWork(*selectedFileName)) {
-        return false;
-    }
-    RefreshWorkList();
-    return true;
-}
-
-bool UGCWorkPanel::DeleteSelectedWork()
-{
-    const std::string* selectedFileName = FindSelectedWorkFileName();
-    if (!selectedFileName) {
-        return false;
-    }
-    const std::string deletedFileName = *selectedFileName;
-    const bool wasDeleted = mFileService.DeleteWork(deletedFileName);
-    if (wasDeleted &&
-        mCurrentWorkFileName == deletedFileName) {
-        mCurrentWorkFileName.reset();
-        mCurrentWorkDisplayName.clear();
-        mIsNamingNewSave = true;
-    }
-    RefreshWorkList();
-    return wasDeleted;
-}
-
-bool UGCWorkPanel::IsSelectedWorkVerified() const
-{
-    const std::string* selectedFileName = FindSelectedWorkFileName();
-    return selectedFileName &&
-        mFileService.IsClearVerified(*selectedFileName);
-}
-
-void UGCWorkPanel::DrawManagement(std::string& outStatusMessage)
-{
+    std::string& outStatusMessage = mToolState.statusMessage;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 panelSize(
         std::min(860.0f, viewport->WorkSize.x - 64.0f),
@@ -324,11 +116,11 @@ void UGCWorkPanel::DrawManagement(std::string& outStatusMessage)
         ImGui::PopStyleVar(5);
         return;
     }
-    if (!mHasLoadedWorkList || mShouldRefreshWorkList) {
-        RefreshWorkList();
-        mShouldRefreshWorkList = false;
+    if (!mState.hasLoadedWorkList || mState.shouldRefreshWorkList) {
+        mController.RefreshWorkList();
+        mState.shouldRefreshWorkList = false;
     }
-    SynchronizeCurrentWorkIdentity();
+    mController.SynchronizeCurrentWorkIdentity();
 
     ImGui::SetWindowFontScale(1.18f);
     ImGui::TextUnformatted("作品を保存・開く");
@@ -350,10 +142,10 @@ void UGCWorkPanel::DrawManagement(std::string& outStatusMessage)
         ImGui::OpenPopup("新しく作りますか###UGCNewWorkConfirmation");
     }
     ImGui::SameLine();
-    const bool hasSelectedWork = FindSelectedWorkFileName() != nullptr;
+    const bool hasSelectedWork = mController.FindSelectedWorkFileName() != nullptr;
     ImGui::BeginDisabled(!hasSelectedWork);
     if (ImGui::Button("選んだ作品を開く", ImVec2(188.0f, 46.0f))) {
-        const bool wasLoaded = LoadSelectedWork();
+        const bool wasLoaded = mController.LoadSelectedWork();
         outStatusMessage = wasLoaded
             ? "作品を開きました"
             : "作品を開けませんでした";
@@ -363,7 +155,7 @@ void UGCWorkPanel::DrawManagement(std::string& outStatusMessage)
     }
     ImGui::SameLine();
     if (ImGui::Button("複製する", ImVec2(130.0f, 46.0f))) {
-        outStatusMessage = DuplicateSelectedWork()
+        outStatusMessage = mController.DuplicateSelectedWork()
             ? "作品を複製しました"
             : "作品を複製できませんでした";
     }
@@ -415,26 +207,26 @@ void UGCWorkPanel::DrawCurrentWorkSaveControls(
         ImGuiWindowFlags_NoScrollbar |
             ImGuiWindowFlags_NoScrollWithMouse);
 
-    const char* workStatusLabel = mCurrentWorkFileName
+    const char* workStatusLabel = mState.currentWorkFileName
         ? "編集中の作品"
         : "まだ保存されていない作品";
     ImGui::TextUnformatted(workStatusLabel);
 
-    if (mCurrentWorkFileName && !mIsNamingNewSave) {
+    if (mState.currentWorkFileName && !mState.isNamingNewSave) {
         ImGui::SameLine();
         ImGui::TextColored(
             ImVec4(0.56f, 0.84f, 1.0f, 1.0f),
             "「%s」",
-            mCurrentWorkDisplayName.c_str());
+            mState.currentWorkDisplayName.c_str());
         if (ImGui::Button("上書き保存", ImVec2(160.0f, 38.0f))) {
-            outStatusMessage = OverwriteCurrentWork()
+            outStatusMessage = mController.OverwriteCurrentWork()
                 ? "作品を上書き保存しました"
-                : "作品を保存できませんでした: " + mSaveErrorMessage;
+                : "作品を保存できませんでした: " + mState.saveErrorMessage;
         }
         ImGui::SameLine();
         if (ImGui::Button("別名で保存", ImVec2(160.0f, 38.0f))) {
-            SetWorkNameInput(mCurrentWorkDisplayName + " コピー");
-            mIsNamingNewSave = true;
+            mController.SetWorkNameInput(mState.currentWorkDisplayName + " コピー");
+            mState.isNamingNewSave = true;
         }
         ImGui::EndChild();
         return;
@@ -443,22 +235,22 @@ void UGCWorkPanel::DrawCurrentWorkSaveControls(
     ImGui::SetNextItemWidth(-164.0f);
     const bool shouldSaveWithEnter = ImGui::InputText(
         "###UGCWorkName",
-        mWorkName.data(),
-        mWorkName.size(),
+        mState.workName.data(),
+        mState.workName.size(),
         ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::SameLine();
     const bool wasSaveButtonPressed = ImGui::Button(
-        mCurrentWorkFileName ? "別名で保存" : "名前を付けて保存",
+        mState.currentWorkFileName ? "別名で保存" : "名前を付けて保存",
         ImVec2(152.0f, 0.0f));
     if (shouldSaveWithEnter || wasSaveButtonPressed) {
-        outStatusMessage = SaveAsNamedWork()
+        outStatusMessage = mController.SaveAsNamedWork()
             ? "作品を保存しました"
-            : "作品を保存できませんでした: " + mSaveErrorMessage;
+            : "作品を保存できませんでした: " + mState.saveErrorMessage;
     }
-    if (mCurrentWorkFileName && mIsNamingNewSave) {
+    if (mState.currentWorkFileName && mState.isNamingNewSave) {
         if (ImGui::Button("やめる")) {
-            SetWorkNameInput(mCurrentWorkDisplayName);
-            mIsNamingNewSave = false;
+            mController.SetWorkNameInput(mState.currentWorkDisplayName);
+            mState.isNamingNewSave = false;
         }
     } else {
         ImGui::TextDisabled("作品名を入力してください");
@@ -472,7 +264,7 @@ void UGCWorkPanel::DrawSavedWorkList(float listHeight)
         "###UGCManagementWorkList",
         ImVec2(0.0f, listHeight),
         ImGuiChildFlags_Borders);
-    if (mWorkFileNames.empty()) {
+    if (mState.workFileNames.empty()) {
         const ImVec2 availableSize = ImGui::GetContentRegionAvail();
         const char* emptyMessage = "保存した作品はまだありません";
         const ImVec2 messageSize = ImGui::CalcTextSize(emptyMessage);
@@ -485,20 +277,20 @@ void UGCWorkPanel::DrawSavedWorkList(float listHeight)
     }
 
     for (int index = 0;
-         index < static_cast<int>(mWorkFileNames.size());
+         index < static_cast<int>(mState.workFileNames.size());
          ++index) {
-        const std::string& fileName = mWorkFileNames[index];
+        const std::string& fileName = mState.workFileNames[index];
         const std::string displayName =
-            mFileService.ResolveDisplayName(fileName);
+            mController.ResolveDisplayName(fileName);
         ImGui::PushID(index);
         if (ImGui::Selectable(
                 displayName.c_str(),
-                mSelectedWorkIndex == index,
+                mState.selectedWorkIndex == index,
                 0,
                 ImVec2(0.0f, 48.0f))) {
-            mSelectedWorkIndex = index;
+            mState.selectedWorkIndex = index;
         }
-        if (mFileService.IsClearVerified(fileName)) {
+        if (mController.IsWorkVerified(fileName)) {
             const char* verifiedLabel = "完成チェック済み";
             const float labelWidth = ImGui::CalcTextSize(verifiedLabel).x;
             const float labelPositionX =
@@ -525,9 +317,9 @@ void UGCWorkPanel::DrawManagementDeleteConfirmation(
         return;
     }
 
-    const std::string* selectedFileName = FindSelectedWorkFileName();
+    const std::string* selectedFileName = mController.FindSelectedWorkFileName();
     const std::string selectedWorkName = selectedFileName
-        ? mFileService.ResolveDisplayName(*selectedFileName)
+        ? mController.ResolveDisplayName(*selectedFileName)
         : std::string();
     ImGui::Text("「%s」を削除しますか？", selectedWorkName.c_str());
     ImGui::TextDisabled("削除した作品は元に戻せません。");
@@ -537,7 +329,7 @@ void UGCWorkPanel::DrawManagementDeleteConfirmation(
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.78f, 0.16f, 0.20f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.46f, 0.08f, 0.12f, 1.0f));
     if (ImGui::Button("削除する", ImVec2(132.0f, 42.0f))) {
-        outStatusMessage = DeleteSelectedWork()
+        outStatusMessage = mController.DeleteSelectedWork()
             ? "作品を削除しました"
             : "作品を削除できませんでした";
         ImGui::CloseCurrentPopup();
@@ -569,10 +361,10 @@ bool UGCWorkPanel::DrawNewWorkConfirmation(
 
     bool wasCreated = false;
     if (ImGui::Button("新しく作る", ImVec2(142.0f, 42.0f))) {
-        wasCreated = CreateNewWorkingStage();
+        wasCreated = mController.CreateNewWorkingStage();
         outStatusMessage = wasCreated
             ? "新しいステージを開きました"
-            : "新しいステージを開けませんでした: " + mSaveErrorMessage;
+            : "新しいステージを開けませんでした: " + mState.saveErrorMessage;
         if (wasCreated) {
             ImGui::CloseCurrentPopup();
         }
@@ -588,8 +380,8 @@ bool UGCWorkPanel::DrawNewWorkConfirmation(
 
 void UGCWorkPanel::DrawBrowser()
 {
-    if (!mHasLoadedWorkList) {
-        RefreshWorkList();
+    if (!mState.hasLoadedWorkList) {
+        mController.RefreshWorkList();
     }
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -673,13 +465,13 @@ void UGCWorkPanel::DrawBrowser()
         "完成チェック済みの作品を選んで、遊ぶか続きを作るか選べます。");
     ImGui::Separator();
 
-    if (!IsSelectedWorkVerified()) {
-        mSelectedWorkIndex = -1;
+    if (!mController.IsSelectedWorkVerified()) {
+        mState.selectedWorkIndex = -1;
         for (int index = 0;
-             index < static_cast<int>(mWorkFileNames.size());
+             index < static_cast<int>(mState.workFileNames.size());
              ++index) {
-            if (mFileService.IsClearVerified(mWorkFileNames[index])) {
-                mSelectedWorkIndex = index;
+            if (mController.IsWorkVerified(mState.workFileNames[index])) {
+                mState.selectedWorkIndex = index;
                 break;
             }
         }
@@ -695,22 +487,22 @@ void UGCWorkPanel::DrawBrowser()
         ImVec2(0.0f, listHeight),
         ImGuiChildFlags_Borders);
     for (int index = 0;
-         index < static_cast<int>(mWorkFileNames.size());
+         index < static_cast<int>(mState.workFileNames.size());
          ++index) {
-        const std::string& fileName = mWorkFileNames[index];
-        if (!mFileService.IsClearVerified(fileName)) {
+        const std::string& fileName = mState.workFileNames[index];
+        if (!mController.IsWorkVerified(fileName)) {
             continue;
         }
         ++verifiedWorkCount;
         const std::string displayName =
-            mFileService.ResolveDisplayName(fileName);
+            mController.ResolveDisplayName(fileName);
         ImGui::PushID(index);
         if (ImGui::Selectable(
                 displayName.c_str(),
-                mSelectedWorkIndex == index,
+                mState.selectedWorkIndex == index,
                 0,
                 ImVec2(0.0f, 48.0f))) {
-            mSelectedWorkIndex = index;
+            mState.selectedWorkIndex = index;
         }
         const char* verifiedLabel = "完成チェック済み";
         const float verifiedLabelWidth =
@@ -736,23 +528,23 @@ void UGCWorkPanel::DrawBrowser()
     }
     ImGui::EndChild();
 
-    ImGui::BeginDisabled(!IsSelectedWorkVerified());
+    ImGui::BeginDisabled(!mController.IsSelectedWorkVerified());
     ImGui::SetItemDefaultFocus();
     if (ImGui::Button("あそぶ", ImVec2(140.0f, 46.0f))) {
-        if (CopySelectedWorkToWorkingFile() &&
+        if (mController.CopySelectedWorkToWorkingFile() &&
             mContext.game->StartUGCMode()) {
-            mContext.game->StartUGCPlaytest();
+            mContext.game->StartUGCSavedWorkPlaytest();
         }
     }
     ImGui::SameLine();
     if (ImGui::Button("つづきから作る", ImVec2(170.0f, 46.0f))) {
-        if (CopySelectedWorkToWorkingFile()) {
+        if (mController.CopySelectedWorkToWorkingFile()) {
             mContext.game->StartUGCMode();
         }
     }
     ImGui::SameLine();
     if (ImGui::Button("複製する", ImVec2(110.0f, 46.0f))) {
-        DuplicateSelectedWork();
+        mController.DuplicateSelectedWork();
     }
     ImGui::SameLine();
     ImGui::PushStyleColor(
@@ -805,9 +597,9 @@ void UGCWorkPanel::DrawBrowser()
             ImGuiWindowFlags_AlwaysAutoResize |
                 ImGuiWindowFlags_NoSavedSettings)) {
         const std::string* selectedFileName =
-            FindSelectedWorkFileName();
+            mController.FindSelectedWorkFileName();
         const std::string selectedWorkName = selectedFileName
-            ? mFileService.ResolveDisplayName(*selectedFileName)
+            ? mController.ResolveDisplayName(*selectedFileName)
             : std::string();
         ImGui::Text(
             "「%s」を削除しますか？",
@@ -824,7 +616,7 @@ void UGCWorkPanel::DrawBrowser()
             ImGuiCol_ButtonActive,
             ImVec4(0.46f, 0.08f, 0.12f, 1.0f));
         if (ImGui::Button("削除する", ImVec2(132.0f, 42.0f))) {
-            DeleteSelectedWork();
+            mController.DeleteSelectedWork();
             ImGui::CloseCurrentPopup();
         }
         ImGui::PopStyleColor(3);

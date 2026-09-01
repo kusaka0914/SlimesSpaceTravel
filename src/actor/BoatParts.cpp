@@ -11,10 +11,10 @@ BoatParts::BoatParts(Game* game)
     AddCollectableComponent();
 }
 
-void BoatParts::ApplyConfig(const std::string& type)
+void BoatParts::ApplyConfig(
+    const YAML::Node& boatPartsRoot,
+    const std::string& type)
 {
-    YAML::Node boatPartsRoot = YAML::LoadFile("../assets/data/actor/boatparts.yaml");
-
     if (!boatPartsRoot["boatParts"] || !boatPartsRoot["boatParts"].IsSequence()) {
         return;
     }

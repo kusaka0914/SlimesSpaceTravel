@@ -231,7 +231,7 @@ bool UICanvasEditorController::DuplicateSelected(
         }
     }
     if (sourceIndices.empty()) {
-        mUndoStack.pop_back();
+        mEditHistory.DiscardLatest();
         statusMessage = "コード連携UIは複製できません";
         return false;
     }
@@ -251,7 +251,7 @@ bool UICanvasEditorController::DuplicateSelected(
     }
 
     if (duplicatedElements.empty()) {
-        mUndoStack.pop_back();
+        mEditHistory.DiscardLatest();
         statusMessage = "要素の複製に失敗しました";
         return false;
     }
@@ -282,7 +282,7 @@ bool UICanvasEditorController::DeleteSelected(
         }
     }
     if (deleteIndices.empty()) {
-        mUndoStack.pop_back();
+        mEditHistory.DiscardLatest();
         statusMessage = "コード連携UIは削除できません";
         return false;
     }
@@ -294,7 +294,7 @@ bool UICanvasEditorController::DeleteSelected(
     }
 
     if (!deleted) {
-        mUndoStack.pop_back();
+        mEditHistory.DiscardLatest();
         statusMessage = "UIの削除に失敗しました";
         return false;
     }
@@ -310,16 +310,9 @@ bool UICanvasEditorController::RestoreUndo(
     UILoadSystem* uiLoadSystem,
     std::string& statusMessage)
 {
-    if (!uiLoadSystem || mUndoStack.empty()) {
+    if (!uiLoadSystem || !mEditHistory.RestoreLatest(*uiLoadSystem)) {
         return false;
     }
-
-    UndoState undoState = std::move(mUndoStack.back());
-    mUndoStack.pop_back();
-    uiLoadSystem->GetCustomElements() = std::move(undoState.customElements);
-    uiLoadSystem->GetEditableTextureInfos() = std::move(undoState.textureInfos);
-    uiLoadSystem->GetEditableTextInfos() = std::move(undoState.textInfos);
-    uiLoadSystem->ClearCustomVisibilityOverrides();
     ClearSelection();
 
     const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
@@ -634,7 +627,7 @@ void UICanvasEditorController::DrawGizmo(
 
     if (mIsUsingGizmo) {
         mIsUsingGizmo = false;
-        mTransformStartState = UndoState{};
+        mTransformStartState = UICanvasEditSnapshot{};
         const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
         const bool savedExistingUI =
             uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
@@ -1132,15 +1125,7 @@ void UICanvasEditorController::PushUndo(const UILoadSystem* uiLoadSystem)
         return;
     }
 
-    UndoState undoState;
-    undoState.customElements = uiLoadSystem->GetCustomElements();
-    undoState.textureInfos = uiLoadSystem->GetEditableTextureInfos();
-    undoState.textInfos = uiLoadSystem->GetEditableTextInfos();
-    mUndoStack.push_back(std::move(undoState));
-    constexpr std::size_t MaxUndoCount = 20;
-    if (mUndoStack.size() > MaxUndoCount) {
-        mUndoStack.erase(mUndoStack.begin());
-    }
+    mEditHistory.Capture(*uiLoadSystem);
 }
 
 void UICanvasEditorController::SelectElementsInBox(

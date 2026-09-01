@@ -5,6 +5,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "system/ActorLoadSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/actor_loader/StageActorCreationService.h"
 
 StageActorRuntimeCreationService::StageActorRuntimeCreationService(
     DebugEditorContext& context)
@@ -33,19 +34,21 @@ bool StageActorRuntimeCreationService::CreateActor(
     if (!actorLoadSystem) {
         return false;
     }
+    StageActorCreationService& creationService =
+        actorLoadSystem->GetCreationService();
 
     switch (actorRef.type) {
     case StageActorType::Planet:
-        return actorLoadSystem->CreatePlanetFromStageNode(actorNode) != nullptr;
+        return creationService.CreatePlanet(actorNode) != nullptr;
     case StageActorType::Enemy:
-        return actorLoadSystem->CreateEnemyFromStageNode(
+        return creationService.CreateEnemy(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::Platform: {
         Platform* platform =
             actorRef.sequenceName == "movingPlatforms"
-                ? actorLoadSystem->CreateLegacyMovingPlatformFromStageNode(
+                ? creationService.CreateLegacyMovingPlatform(
                       actorNode, stageYamlIndex)
-                : actorLoadSystem->CreatePlatformFromStageNode(
+                : creationService.CreatePlatform(
                       actorNode, stageYamlIndex);
         if (!platform) {
             return false;
@@ -56,40 +59,40 @@ bool StageActorRuntimeCreationService::CreateActor(
         return true;
     }
     case StageActorType::Crystal:
-        return actorLoadSystem->CreateCrystalFromStageNode(
+        return creationService.CreateCrystal(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::NPC:
-        return actorLoadSystem->CreateNPCFromStageNode(
+        return creationService.CreateNPC(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::BoatParts:
-        return actorLoadSystem->CreateBoatPartsFromStageNode(
+        return creationService.CreateBoatParts(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::Boat:
-        return actorLoadSystem->CreateBoatFromStageNode(
+        return creationService.CreateBoat(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::BoatArrivalPoint:
-        return actorLoadSystem->CreateBoatArrivalPointFromStageNode(
+        return creationService.CreateBoatArrivalPoint(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::FallRespawnPoint:
-        return actorLoadSystem->CreateFallRespawnPointFromStageNode(
+        return creationService.CreateFallRespawnPoint(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::Key:
-        return actorLoadSystem->CreateKeyFromStageNode(
+        return creationService.CreateKey(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::Star:
-        return actorLoadSystem->CreateStarFromStageNode(
+        return creationService.CreateStar(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::StageObject:
-        return actorLoadSystem->CreateStageObjectFromStageNode(
+        return creationService.CreateStageObject(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::TutorialTrigger:
-        return actorLoadSystem->CreateTutorialTriggerFromStageNode(
+        return creationService.CreateTutorialTrigger(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::JewelItem:
-        return actorLoadSystem->CreateJewelItemFromStageNode(
+        return creationService.CreateJewelItem(
                    actorNode, stageYamlIndex) != nullptr;
     case StageActorType::HazardActor:
-        return actorLoadSystem->CreateHazardActorFromStageNode(
+        return creationService.CreateHazardActor(
                    actorNode, stageYamlIndex) != nullptr;
     }
 

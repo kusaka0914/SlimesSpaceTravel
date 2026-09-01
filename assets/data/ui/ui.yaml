@@ -211,6 +211,47 @@ gameOver:
     rubyGapRatio: 0
     centerBased: true
     rotationDegrees: 0
+ugcClearResult:
+  - id: titleText
+    type: text
+    posRatio: [0.5, 0.30]
+    scaleRatio: [0.00052, 1.0]
+    text:
+      - ステージクリア！
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: retryText
+    type: text
+    posRatio: [0.5, 0.46]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - もう一度遊ぶ
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnEditorText
+    type: text
+    posRatio: [0.5, 0.55]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - 編集に戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
+  - id: returnTitleText
+    type: text
+    posRatio: [0.5, 0.64]
+    scaleRatio: [0.00032, 1.0]
+    text:
+      - タイトルに戻る
+    rubyScaleRatio: 0.48
+    rubyGapRatio: 0
+    centerBased: true
+    rotationDegrees: 0
 default:
   - id: hpTexture
     type: texture
@@ -268,7 +309,7 @@ state:
     posRatio: [0.9, 0.055]
     scaleRatio: [0.00024, 1.0]
     text:
-      - "ゴールできれば完成！"
+      - ゴールできれば完成！
     rubyScaleRatio: 0.48
     rubyGapRatio: 0
     centerBased: true
@@ -329,8 +370,8 @@ pauseMenu:
     rotationDegrees: 0
   - id: panelBg
     type: texture
-    posRatio: [0.29000002, 0.21826096]
-    scaleRatio: [0.41999993, 0.563478]
+    posRatio: [0.2494735, 0.21826094]
+    scaleRatio: [0.501053, 0.56347793]
     rotationDegrees: 0
   - id: titleText
     type: text

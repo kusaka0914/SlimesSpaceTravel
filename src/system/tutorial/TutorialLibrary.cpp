@@ -152,6 +152,22 @@ const std::string& TutorialPage::ResolveText(
     return variant.empty() ? text : variant;
 }
 
+const std::string& TutorialPage::ResolveObjectiveText(
+    bool usesController) const
+{
+    const std::string& deviceVariant =
+        usesController
+            ? controllerObjectiveText
+            : keyboardObjectiveText;
+    if (!deviceVariant.empty()) {
+        return deviceVariant;
+    }
+    if (!objectiveText.empty()) {
+        return objectiveText;
+    }
+    return ResolveText(usesController);
+}
+
 const std::vector<RubyTextSegment>&
 TutorialPage::ResolveRubySegments(bool usesController) const
 {
@@ -238,6 +254,18 @@ bool TutorialLibrary::Load()
                     page.keyboardText = ReadString(
                         pageNode,
                         "keyboardText");
+                    page.objectiveText = ReadString(
+                        pageNode,
+                        "objectiveText");
+                    page.controllerObjectiveText = ReadString(
+                        pageNode,
+                        "controllerObjectiveText");
+                    page.keyboardObjectiveText = ReadString(
+                        pageNode,
+                        "keyboardObjectiveText");
+                    page.objectivePlatformId = ReadString(
+                        pageNode,
+                        "objectivePlatformId");
                     page.advanceCondition =
                         ParseTutorialAdvanceConditionId(
                             ReadString(
@@ -380,6 +408,21 @@ bool TutorialLibrary::Save()
                 pageNode["keyboardText"] =
                     page.keyboardText;
             }
+            if (!page.objectiveText.empty()) {
+                pageNode["objectiveText"] = page.objectiveText;
+            }
+            if (!page.controllerObjectiveText.empty()) {
+                pageNode["controllerObjectiveText"] =
+                    page.controllerObjectiveText;
+            }
+            if (!page.keyboardObjectiveText.empty()) {
+                pageNode["keyboardObjectiveText"] =
+                    page.keyboardObjectiveText;
+            }
+            if (!page.objectivePlatformId.empty()) {
+                pageNode["objectivePlatformId"] =
+                    page.objectivePlatformId;
+            }
             if (!page.text.empty() &&
                 JoinRubyBaseText(page.rubySegments) == page.text) {
                 pageNode["ruby"]["common"] =
@@ -445,6 +488,21 @@ bool TutorialLibrary::Save()
                 }
                 if (!page.keyboardText.empty()) {
                     pageNode["keyboardText"] = page.keyboardText;
+                }
+                if (!page.objectiveText.empty()) {
+                    pageNode["objectiveText"] = page.objectiveText;
+                }
+                if (!page.controllerObjectiveText.empty()) {
+                    pageNode["controllerObjectiveText"] =
+                        page.controllerObjectiveText;
+                }
+                if (!page.keyboardObjectiveText.empty()) {
+                    pageNode["keyboardObjectiveText"] =
+                        page.keyboardObjectiveText;
+                }
+                if (!page.objectivePlatformId.empty()) {
+                    pageNode["objectivePlatformId"] =
+                        page.objectivePlatformId;
                 }
                 if (!page.text.empty() &&
                     JoinRubyBaseText(page.rubySegments) == page.text) {
@@ -608,6 +666,14 @@ const char* GetTutorialAdvanceConditionId(
         return "jump";
     case TutorialAdvanceCondition::PlayerSplitMerge:
         return "playerSplitMerge";
+    case TutorialAdvanceCondition::ApproachPressureSwitch:
+        return "approachPressureSwitch";
+    case TutorialAdvanceCondition::PressPressureSwitch:
+        return "pressPressureSwitch";
+    case TutorialAdvanceCondition::PlayerSplit:
+        return "playerSplit";
+    case TutorialAdvanceCondition::PlayerMerge:
+        return "playerMerge";
     case TutorialAdvanceCondition::Confirm:
     default:
         return "confirm";
@@ -625,6 +691,18 @@ TutorialAdvanceCondition ParseTutorialAdvanceConditionId(
     }
     if (conditionId == "playerSplitMerge") {
         return TutorialAdvanceCondition::PlayerSplitMerge;
+    }
+    if (conditionId == "approachPressureSwitch") {
+        return TutorialAdvanceCondition::ApproachPressureSwitch;
+    }
+    if (conditionId == "pressPressureSwitch") {
+        return TutorialAdvanceCondition::PressPressureSwitch;
+    }
+    if (conditionId == "playerSplit") {
+        return TutorialAdvanceCondition::PlayerSplit;
+    }
+    if (conditionId == "playerMerge") {
+        return TutorialAdvanceCondition::PlayerMerge;
     }
     return TutorialAdvanceCondition::Confirm;
 }

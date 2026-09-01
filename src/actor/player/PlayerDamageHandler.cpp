@@ -1,5 +1,7 @@
 #include "actor/player/PlayerDamageHandler.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -56,11 +58,11 @@ void ApplyDamageAndKnockBack(
             ? damage
             : damage * airborneDamageMultiplier;
     status.TakeDamage(appliedDamage);
-    movement.StartKnockBack(damageSourcePosition);
+    player.StartDamageKnockBack(damageSourcePosition);
     movement.ClearStrongAttackDirectionOverride();
     stateMachine.ClearAttackDirectionTarget();
-    player.SetShouldJudgeLanding(true);
     stateMachine.ChangeState(PlayerActionState::KnockedBack);
+    player.StartNormalHitReaction();
 
     player.GetGame()->OnPlayerApplyDamage(movement.GetPlayerNum());
 

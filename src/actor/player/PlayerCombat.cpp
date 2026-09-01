@@ -1,5 +1,7 @@
 #include "actor/player/PlayerCombat.h"
 
+#include "Game.h"
+
 #include "actor/Enemy.h"
 #include "actor/HazardActor.h"
 #include "actor/Planet.h"
@@ -17,6 +19,11 @@
 namespace {
 constexpr float attackDodgeCancelDelaySeconds = 0.5f;
 constexpr float airWeakAttackDamageMultiplier = 2.0f;
+}
+
+PlayerCombat::PlayerCombat(PhysicsSystem& physicsSystem)
+    : mHitDetector(physicsSystem)
+{
 }
 
 bool PlayerCombat::IsAttacking() const

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/Actor.h"
+#include <yaml-cpp/yaml.h>
 
 class Game;
 class CollectableComponent;
@@ -11,7 +12,7 @@ public:
     Key(Game* game);
     void UpdateActor(float deltaTime) override;
 
-    void ApplyConfig();
+    void ApplyConfig(const YAML::Node& configRoot);
 
     CollectableComponent* GetCollectableComponent() const { return mCollectableComponent; }
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }

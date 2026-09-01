@@ -10,16 +10,22 @@
 #include <string>
 
 class Game;
+class UILoadSystem;
 class NPC;
 class Player;
 class Boat;
+class ArrivalSceneFlow;
+class EndingCreditsFlow;
+class OpeningStoryFlow;
 class SceneTransitionController;
+class StorybookConfig;
 class TalkController;
 class TutorialController;
+struct EndingRollConfig;
 
 class SceneSystem {
 public:
-    explicit SceneSystem(Game* game);
+    SceneSystem(Game* game, const UILoadSystem& uiLoadSystem);
     ~SceneSystem();
 
     void Update(float deltaTime);
@@ -38,7 +44,9 @@ public:
     void DebugEnterOpening();
     void DebugEnterEnding();
     void DebugStartCredits();
+    void ClearActorReferencesForStageReload();
     void StartPlayingScene();
+    void FinishFocusingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     bool StartOpeningAfterTalkPage(
         NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
@@ -48,6 +56,8 @@ public:
     void FinishEndingStory();
     void StartCredits();
     void FinishCredits();
+    void ReloadStorybookConfig();
+    void ReloadEndingRollConfig();
     bool TryStartTutorial(
         const std::string& tutorialId,
         Player* tutorialPlayer = nullptr);
@@ -63,6 +73,7 @@ public:
     void RequestStageChange(int stageNum);
     void OnBoatArrived(Boat* boat);
     void OnStageClear();
+    void OnUGCStageClear();
     void OnEnemyLaunched();
     void OnStrongAttacked();
     void OnLanded();
@@ -97,15 +108,22 @@ public:
     bool IsWaitingForTutorialPlayerSplitMerge() const;
 
     bool HasActiveTutorial() const;
+    bool IsShowingTutorialConversation() const;
+    bool IsShowingTutorialObjective() const;
     bool IsTutorialActive(
         const std::string& tutorialId) const;
     bool CanStartTalkWithNPC(const Player* player) const;
 
     bool GetHasPendingStageChange() const { return mHasPendingStageChange; }
     float GetFadeTimer() const { return mFadeTimer; }
+    bool IsFadingOut() const { return mIsFadeOut; }
     UIState::TalkWith GetCurrentTalkWith() const { return mUIState->GetCurrentTalkWith(); }
     int GetTalkUIIndex() const { return mUIState->GetTalkUIIndex(); }
-    float GetCreditsElapsed() const { return mCreditsElapsed; }
+    float GetCreditsElapsed() const;
+    std::string FindStorybookPageImage(
+        const std::string& trackId,
+        int pageIndex) const;
+    const EndingRollConfig& GetEndingRollConfig() const;
     PlayerControlStyle GetSelectedBattleStyle() const
     {
         return mSelectedBattleStyle;
@@ -127,12 +145,15 @@ private:
     void ResetForDebugScene(
         GameProgressState::SceneState destinationScene);
     void UpdateClearTimer(float deltaTime);
-    void UpdateArrivalTutorials();
-    void UpdateForcedArrivalTalk();
-    NPC* FindForcedArrivalTalkNPC() const;
+    void AdvanceOpeningStoryIfComplete();
+    void FinishEndingStoryIfComplete();
+    int GetSceneTalkPageCount(
+        const char* sceneName,
+        const char* textId) const;
 
 private:
     Game* mGame;
+    const UILoadSystem& mUILoadSystem;
 
     std::unique_ptr<GameProgressState> mGameProgressState;
     std::unique_ptr<UIState> mUIState;
@@ -140,6 +161,10 @@ private:
     std::unique_ptr<SceneTransitionController> mTransitionController;
     std::unique_ptr<TalkController> mTalkController;
     std::unique_ptr<TutorialController> mTutorialController;
+    std::unique_ptr<OpeningStoryFlow> mOpeningStoryFlow;
+    std::unique_ptr<EndingCreditsFlow> mEndingCreditsFlow;
+    std::unique_ptr<ArrivalSceneFlow> mArrivalSceneFlow;
+    std::unique_ptr<StorybookConfig> mStorybookConfig;
 
     float mFadeTimer;
     float mClearTimer;
@@ -153,18 +178,4 @@ private:
     NPC* mTalkingNPC = nullptr;
     Player* mTalkingPlayer = nullptr;
     PlayerControlStyle mSelectedBattleStyle = PlayerControlStyle::Assist;
-    bool mHasPendingForcedArrivalTalk = false;
-    bool mHasReachedArrivalDestination = false;
-    bool mHasPendingArrivalTutorials = false;
-    bool mSuppressForcedArrivalTalkOnce = false;
-    NPC* mOpeningResumeNPC = nullptr;
-    Player* mOpeningResumePlayer = nullptr;
-    int mOpeningResumeTalkPageIndex = -1;
-    bool mHasOpeningResume = false;
-    int mOpeningReturnStageNum = -1;
-    int mOpeningResumePlayerIndex = 0;
-    std::string mOpeningReturnStageYamlPath;
-    std::string mOpeningResumeNPCConversationId;
-    bool mIsFinishingOpeningStory = false;
-    float mCreditsElapsed = 0.0f;
 };

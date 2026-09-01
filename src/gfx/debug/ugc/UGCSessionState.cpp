@@ -11,6 +11,8 @@ void UGCSessionState::EnterEditor()
     mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = true;
+    mIsClearResultShowing = false;
+    mClearResultSelection = 0;
 }
 
 void UGCSessionState::ToggleDebugPanel()
@@ -20,7 +22,7 @@ void UGCSessionState::ToggleDebugPanel()
     }
 }
 
-bool UGCSessionState::StartPlaytest()
+bool UGCSessionState::StartPlaytest(UGCPlaytestPurpose purpose)
 {
     if (!mIsModeActive) {
         return false;
@@ -28,6 +30,9 @@ bool UGCSessionState::StartPlaytest()
     mIsPlaytestActive = true;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = false;
+    mIsClearResultShowing = false;
+    mClearResultSelection = 0;
+    mPlaytestPurpose = purpose;
     return true;
 }
 
@@ -52,6 +57,8 @@ bool UGCSessionState::ReturnToEditor()
     mIsPlaytestActive = false;
     mIsDebugPanelShowing = false;
     mIsOrthographicView = true;
+    mIsClearResultShowing = false;
+    mClearResultSelection = 0;
     return true;
 }
 
@@ -64,6 +71,8 @@ void UGCSessionState::Exit()
     mIsClearCompletionPending = false;
     mIsWorkBrowserShowing = false;
     mIsOrthographicView = false;
+    mIsClearResultShowing = false;
+    mClearResultSelection = 0;
 }
 
 void UGCSessionState::OpenWorkBrowser()
@@ -99,6 +108,24 @@ std::optional<std::string> UGCSessionState::ConsumeClearCompletion()
     return workFileName;
 }
 
+void UGCSessionState::ShowClearResult()
+{
+    if (!mIsModeActive || !mIsPlaytestActive) {
+        return;
+    }
+    mIsClearResultShowing = true;
+    mClearResultSelection = 0;
+}
+
+void UGCSessionState::MoveClearResultSelection(int delta, int itemCount)
+{
+    if (!mIsClearResultShowing || delta == 0 || itemCount <= 0) {
+        return;
+    }
+    mClearResultSelection =
+        (mClearResultSelection + delta + itemCount) % itemCount;
+}
+
 bool UGCSessionState::IsModeActive() const
 {
     return mIsModeActive;
@@ -113,6 +140,21 @@ bool UGCSessionState::IsVerificationActive() const
 {
     return mIsModeActive && mIsPlaytestActive &&
         !mVerificationWorkFileName.empty();
+}
+
+bool UGCSessionState::IsClearResultShowing() const
+{
+    return mIsClearResultShowing;
+}
+
+int UGCSessionState::GetClearResultSelection() const
+{
+    return mClearResultSelection;
+}
+
+UGCPlaytestPurpose UGCSessionState::GetPlaytestPurpose() const
+{
+    return mPlaytestPurpose;
 }
 
 bool UGCSessionState::IsDebugPanelShowing() const

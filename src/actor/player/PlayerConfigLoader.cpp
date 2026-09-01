@@ -47,7 +47,6 @@ PlayerAnimationPlaybackMode ParsePlaybackMode(const YAML::Node& animationNode,
         }
     }
 
-
     if (animationNode["loop"]) {
         return animationNode["loop"].as<bool>() ? PlayerAnimationPlaybackMode::BaseLoop
                                                 : PlayerAnimationPlaybackMode::OneShot;
@@ -118,13 +117,17 @@ void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefin
 
 PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
 {
+    const YAML::Node playerRoot = YAML::LoadFile(filePath);
+    return Parse(playerRoot);
+}
+
+PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
+{
     PlayerConfig config;
 
-    const YAML::Node playerRoot = YAML::LoadFile(filePath);
     if (!playerRoot["players"] || !playerRoot["players"].IsSequence()) {
         return config;
     }
-
 
     for (const YAML::Node& playerNode : playerRoot["players"]) {
         config.hp = ReadFloat(playerNode, "hp", config.hp);

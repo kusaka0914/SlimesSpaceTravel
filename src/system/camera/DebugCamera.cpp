@@ -1,6 +1,7 @@
 #include "system/camera/DebugCamera.h"
 
 #include "Game.h"
+#include "system/InputSystem.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -52,22 +53,22 @@ void DebugCamera::ProcessInput()
     mMousePitchDelta = 0.0f;
     mFastMove = false;
 
-    if (!mGame || !mGame->GetWindow()) {
+    if (!mGame || !mGame->GetInputSystem()) {
         return;
     }
+    const InputSystem& inputSystem = *mGame->GetInputSystem();
 
     if (mGame->GetIsUGCMode()) {
-        GLFWwindow* window = mGame->GetWindow();
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        if (inputSystem.IsKeyPressed(GLFW_KEY_A)) {
             mMoveRight -= 1.0f;
         }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        if (inputSystem.IsKeyPressed(GLFW_KEY_D)) {
             mMoveRight += 1.0f;
         }
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        if (inputSystem.IsKeyPressed(GLFW_KEY_W)) {
             mMoveUp += 1.0f;
         }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        if (inputSystem.IsKeyPressed(GLFW_KEY_S)) {
             mMoveUp -= 1.0f;
         }
 
@@ -80,47 +81,45 @@ void DebugCamera::ProcessInput()
         return;
     }
 
-    GLFWwindow* window = mGame->GetWindow();
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_W)) {
         mMoveForward += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_S)) {
         mMoveForward -= 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_A)) {
         mMoveRight -= 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_D)) {
         mMoveRight += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_E)) {
         mMoveUp += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_Q)) {
         mMoveUp -= 1.0f;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_LEFT)) {
         mYawInput += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_RIGHT)) {
         mYawInput -= 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_UP)) {
         mPitchInput += 1.0f;
     }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_DOWN)) {
         mPitchInput -= 1.0f;
     }
 
-    mFastMove = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-                glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+    mFastMove = inputSystem.IsKeyPressed(GLFW_KEY_LEFT_SHIFT) ||
+                inputSystem.IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
 
-    const bool isRotatingWithMouse = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-    double cursorX = 0.0;
-    double cursorY = 0.0;
-    glfwGetCursorPos(window, &cursorX, &cursorY);
+    const bool isRotatingWithMouse =
+        inputSystem.IsMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT);
+    const double cursorX = inputSystem.GetCursorX();
+    const double cursorY = inputSystem.GetCursorY();
 
     if (isRotatingWithMouse && mWasRotatingWithMouse) {
         constexpr float mouseSensitivity = 0.0035f;

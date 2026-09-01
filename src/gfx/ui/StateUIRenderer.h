@@ -19,6 +19,7 @@ public:
 
 private:
     void DrawActiveTutorial();
+    void DrawActionObjective();
     void DrawActiveTutorialVideo(
         const TutorialVideoSettings& videoSettings,
         const std::string& playbackKey);
