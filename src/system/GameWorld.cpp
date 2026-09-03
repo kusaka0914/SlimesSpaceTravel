@@ -63,6 +63,7 @@ void GameWorld::ProcessActorsInput()
     }
 }
 
+// ステージ再読込に備え、GameWorldの実行時状態を所有権ごと交換する。
 void GameWorld::SwapRuntimeState(GameWorld& other) noexcept
 {
     using std::swap;
@@ -86,8 +87,11 @@ void GameWorld::ProcessPlayerInput(Player* player)
 
 void GameWorld::UpdateActors(float deltaTime)
 {
+    // 敵が多い場合の負荷を抑えるため、一定間隔で
+    // プレイヤーに近い敵をフルレート更新対象として選び直す。
     mEnemyUpdatePriorityRefreshRemainingSeconds -=
         std::max(0.0f, deltaTime);
+
     if (mEnemyUpdatePriorityRefreshRemainingSeconds <= 0.0f) {
         RefreshEnemyUpdatePriorities();
         mEnemyUpdatePriorityRefreshRemainingSeconds =
@@ -140,6 +144,7 @@ void GameWorld::RefreshEnemyUpdatePriorities()
 
     const std::size_t selectedEnemyCount =
         std::min(fullRateEnemyCount, enemyDistances.size());
+    // 全敵の並び替えは不要なため、近い敵だけを部分的にソートする。
     std::partial_sort(
         enemyDistances.begin(),
         enemyDistances.begin() + selectedEnemyCount,

@@ -68,9 +68,7 @@ Game::Game()
       mIsFreeCameraMode(false),
       mIsDebugMode(false)
 {
-    mUGCModeController = std::make_unique<UGCModeController>(*this);
-    mUGCPreviewController =
-        std::make_unique<UGCPreviewController>(this);
+
 }
 
 Game::~Game() = default;
@@ -130,7 +128,22 @@ bool Game::InitializeGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    mWindow = glfwCreateWindow(800, 450, "Slime'sSpaceTravel", nullptr, nullptr);
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* primaryVideoMode = primaryMonitor
+        ? glfwGetVideoMode(primaryMonitor)
+        : nullptr;
+    const int windowWidth = primaryVideoMode
+        ? primaryVideoMode->width
+        : 800;
+    const int windowHeight = primaryVideoMode
+        ? primaryVideoMode->height
+        : 450;
+    mWindow = glfwCreateWindow(
+        windowWidth,
+        windowHeight,
+        "Slime's Space Travel",
+        primaryVideoMode ? primaryMonitor : nullptr,
+        nullptr);
     if (!mWindow) {
         glfwTerminate();
         return false;
@@ -155,6 +168,8 @@ void Game::InitializeGameController()
 
 bool Game::CreateGameSystems()
 {
+    mUGCModeController = std::make_unique<UGCModeController>(*this);
+    mUGCPreviewController = std::make_unique<UGCPreviewController>(this);
     mWorld = std::make_unique<GameWorld>();
     mPauseMenuController = std::make_unique<PauseMenuController>();
     mStageFlowController = std::make_unique<StageFlowController>();
@@ -263,8 +278,6 @@ void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
     }
 
     if (mEnemyJewelDropSystem) {
-        // Runtime drops are owned by the old GameWorld. Their non-owning
-        // render references must not survive a successful world swap.
         mEnemyJewelDropSystem->ClearRuntimeDrops();
     }
 
