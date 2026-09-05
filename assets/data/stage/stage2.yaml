@@ -9,10 +9,10 @@ planets:
       - 2
     textureSideBlendWidth: 0.05
     stageNum: 0
-    canAttractNearbyPlayer: true
+    canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/stoneTex.png
-  - center: [3.673129, 12.712966, -42.231804]
+  - center: [3.673129, 12.712966, -42.231808]
     scale: [6, 2, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -22,7 +22,7 @@ planets:
     textureSideBlendWidth: 0.05
     rocketSpawnCondition: ""
     stageNum: 1
-    canAttractNearbyPlayer: true
+    canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/stoneTex.png
   - center:
@@ -2028,7 +2028,8 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 1
     pos:
       - 4.16
@@ -2095,8 +2096,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet1
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 4
     pos:
       - -13.229219
@@ -2399,8 +2402,10 @@ platforms:
           - platform_5
           - platform_7
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 5
     pos:
       - -0.02
@@ -2435,9 +2440,12 @@ platforms:
           - platform_39
           - platform_3
         remainsOnAfterPressed: true
-        enemyTargets: []
-        hideTargets: []
-      enemyClearUnlock: {}
+        enemyTargets:
+          []
+        hideTargets:
+          []
+      enemyClearUnlock:
+        {}
   - currentPlanetNum: 6
     pos:
       - -16.18602
@@ -2652,7 +2660,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 6
     pos:
       - 1.95
@@ -2682,8 +2691,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage2_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     pos:
       - -2.91
@@ -2835,8 +2846,10 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     pos:
       - -8.612755

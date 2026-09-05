@@ -3,11 +3,26 @@
 #include "Game.h"
 #include "VertexArray.h"
 #include "actor/Actor.h"
+#include "actor/Boat.h"
+#include "actor/BoatParts.h"
 #include "actor/CharacterActor.h"
+#include "actor/Crystal.h"
+#include "actor/Enemy.h"
+#include "actor/HazardActor.h"
+#include "actor/JewelItem.h"
+#include "actor/Key.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
+#include "actor/Star.h"
+#include "actor/StageObject.h"
 #include "animation/SkeletalAnimationConstants.h"
 #include "component/PlatformMovementComponent.h"
+#include "gfx/DirectionalShadowMap.h"
+#include "gfx/DirectionalShadowShader.h"
+#include "gfx/EnvironmentDecorationRenderer.h"
+#include "gfx/PlanetAtmosphereRenderer.h"
 #include "gfx/Shader3D.h"
 #include "gfx/render3d/DebugLabelRenderer.h"
 #include "gfx/render3d/NPCProximityMessageRenderer.h"
@@ -18,6 +33,7 @@
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/sequence/SequenceSystem.h"
 #include "Stage.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/mesh/LoadedMesh.h"
@@ -32,6 +48,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <memory>
@@ -42,6 +59,63 @@ constexpr float EditorSelectionRed = 1.0f;
 constexpr float EditorSelectionGreen = 0.45f;
 constexpr float EditorSelectionBlue = 0.0f;
 constexpr float EditorSelectionAlpha = 1.0f;
+
+struct EmissiveAppearance {
+    glm::vec3 color{1.0f};
+    float intensity = 0.0f;
+};
+
+struct SurfaceLightingAppearance {
+    float minimumReflectance = 0.0f;
+    float rimBoost = 0.0f;
+};
+
+SurfaceLightingAppearance ResolveSurfaceLightingAppearance(
+    const Actor* actor)
+{
+    if (dynamic_cast<const Platform*>(actor)) {
+        return {0.055f, 0.055f};
+    }
+    if (dynamic_cast<const StageObject*>(actor)) {
+        return {0.025f, 0.025f};
+    }
+    return {};
+}
+
+EmissiveAppearance ResolveEmissiveAppearance(const Actor* actor)
+{
+    if (dynamic_cast<const Star*>(actor)) {
+        return {glm::vec3(1.0f, 0.82f, 0.28f), 1.35f};
+    }
+    if (dynamic_cast<const JewelItem*>(actor)) {
+        return {glm::vec3(0.45f, 0.75f, 1.0f), 0.85f};
+    }
+    if (dynamic_cast<const Crystal*>(actor)) {
+        return {glm::vec3(0.38f, 0.68f, 1.0f), 0.55f};
+    }
+    if (dynamic_cast<const Player*>(actor)) {
+        return {glm::vec3(0.65f, 0.9f, 1.0f), 0.22f};
+    }
+    return {};
+}
+
+bool UsesTransparentShadowMaterial(const Actor* actor)
+{
+    if (!actor) {
+        return false;
+    }
+
+    std::string texturePath = actor->GetRenderTextureOverridePath();
+    std::transform(
+        texturePath.begin(),
+        texturePath.end(),
+        texturePath.begin(),
+        [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+        });
+    return texturePath.find("glass") != std::string::npos ||
+           texturePath.find("transparent") != std::string::npos;
+}
 
 using SDLSurfacePtr =
     std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>;
@@ -170,6 +244,15 @@ Renderer3D::~Renderer3D() = default;
 
 void Renderer3D::Shutdown()
 {
+    if (mDirectionalShadowMap) {
+        mDirectionalShadowMap->Shutdown();
+    }
+    if (mPlanetAtmosphereRenderer) {
+        mPlanetAtmosphereRenderer->Shutdown();
+    }
+    if (mEnvironmentDecorationRenderer) {
+        mEnvironmentDecorationRenderer->Shutdown();
+    }
     if (mRenderViewportController) {
         mRenderViewportController->Shutdown();
     }
@@ -391,6 +474,12 @@ void Renderer3D::Initialize()
 
     InitializeAttackRangeBuffer();
     InitializeRenderModules();
+    mDirectionalShadowMap =
+        std::make_unique<DirectionalShadowMap>();
+    mPlanetAtmosphereRenderer =
+        std::make_unique<PlanetAtmosphereRenderer>();
+    mEnvironmentDecorationRenderer =
+        std::make_unique<EnvironmentDecorationRenderer>(mGame);
 }
 
 void Renderer3D::Draw() const
@@ -411,6 +500,114 @@ void Renderer3D::Draw() const
     glUseProgram(mShader3D->GetShaderProgram());
     mRenderViewportController->DrawGameScreen(static_cast<float>(framebufferWidth),
                                               static_cast<float>(framebufferHeight));
+}
+
+void Renderer3D::RenderGameplayShadowMap() const
+{
+    if (!mGame || !mGame->GetCurrentStage() ||
+        mGame->GetSceneSystem()->IsTitle() ||
+        mGame->GetSceneSystem()->IsBattleStyleSelection()) {
+        return;
+    }
+
+    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    if (controlledPlayer) {
+        RenderShadowMap(controlledPlayer->GetRenderPosition());
+        return;
+    }
+
+    const std::vector<Planet*>& planets =
+        mGame->GetCurrentStage()->GetPlanets();
+    if (!planets.empty() && planets.front()) {
+        RenderShadowMap(planets.front()->GetPos());
+    }
+}
+
+void Renderer3D::RenderShadowMap(
+    const glm::vec3& focusPosition) const
+{
+    if (!mGame || !mGame->GetCurrentStage()) {
+        return;
+    }
+    const std::vector<Planet*>& planets =
+        mGame->GetCurrentStage()->GetPlanets();
+    const bool shouldDrawEnvironment =
+        !mGame->GetIsUGCMode() && mEnvironmentDecorationRenderer;
+    if (shouldDrawEnvironment) {
+        mEnvironmentDecorationRenderer->Prepare(planets);
+    }
+
+    if (
+        !mDirectionalShadowMap ||
+        !mDirectionalShadowMap->Begin(
+            focusPosition,
+            mLightingSettings.sunDirection)) {
+        return;
+    }
+
+    const auto drawActors =
+        [this, &focusPosition](const auto& actors, bool useOrient) {
+            for (auto* actor : actors) {
+                DrawActorToShadowMap(actor, useOrient, focusPosition);
+            }
+        };
+
+    for (Planet* planet : planets) {
+        if (!planet) {
+            continue;
+        }
+        DrawActorToShadowMap(planet, false, focusPosition);
+        drawActors(planet->GetEnemies(), true);
+        for (Boat* boat : planet->GetBoats()) {
+            if (!boat || boat->ShouldRenderUnavailablePreview()) {
+                continue;
+            }
+            DrawActorToShadowMap(boat, true, focusPosition);
+        }
+        drawActors(planet->GetBoatParts(), true);
+        drawActors(planet->GetCrystals(), true);
+        drawActors(planet->GetPlatforms(), true);
+        drawActors(planet->GetStageObjects(), true);
+        drawActors(planet->GetNPCs(), true);
+        drawActors(planet->GetJewelItems(), true);
+        drawActors(planet->GetHazardActors(), true);
+        DrawActorToShadowMap(planet->GetKey(), true, focusPosition);
+        DrawActorToShadowMap(planet->GetStar(), true, focusPosition);
+    }
+    drawActors(mGame->GetRuntimeJewelItems(), true);
+
+    const SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
+    const bool shouldDrawPlayers =
+        !sequenceSystem || !sequenceSystem->IsCinematicChainPlaying();
+    if (shouldDrawPlayers) {
+        drawActors(mGame->GetPlayers(), true);
+    }
+
+    if (shouldDrawEnvironment) {
+        DirectionalShadowShader* shadowShader =
+            mDirectionalShadowMap->GetShader();
+        if (shadowShader) {
+            mEnvironmentDecorationRenderer->DrawShadow(
+                *shadowShader,
+                focusPosition);
+        }
+    }
+
+    mDirectionalShadowMap->End();
+}
+
+void Renderer3D::DrawEnvironmentDecorations() const
+{
+    if (!mGame || mGame->GetIsUGCMode() ||
+        !mGame->GetCurrentStage() ||
+        !mEnvironmentDecorationRenderer || !mShader3D) {
+        return;
+    }
+    mEnvironmentDecorationRenderer->Prepare(
+        mGame->GetCurrentStage()->GetPlanets());
+    mEnvironmentDecorationRenderer->Draw(
+        *mShader3D,
+        mCurrentCameraPosition);
 }
 
 void Renderer3D::DrawScene(
@@ -443,12 +640,25 @@ void Renderer3D::DrawScene(
     }
 
     glUseProgram(mShader3D->GetShaderProgram());
+    mCurrentCameraPosition = cameraPos;
     mEmphasizeUGCLayers = emphasizesUGCLayers;
     mDimNonEditingUGCLayers = dimsNonEditingUGCLayers;
     mUGCEditLayer = ugcEditLayer;
     UpdateViewFrustum(projMat * viewMat);
     SetUniforms(viewMat, projMat, cameraPos);
     mSceneObjectRenderer->DrawSceneObjects(viewMat, viewportPlayer);
+
+    if (mPlanetAtmosphereRenderer && mGame &&
+        mGame->GetCurrentStage()) {
+        mPlanetAtmosphereRenderer->Draw(
+            mGame->GetCurrentStage()->GetPlanets(),
+            viewMat,
+            projMat,
+            cameraPos,
+            mLightingSettings.sunDirection);
+        glUseProgram(mShader3D->GetShaderProgram());
+        SetUniforms(viewMat, projMat, cameraPos);
+    }
 
     if (mGame && mGame->GetIsUGCMode() &&
         mGame->GetIsDebugEditorShowing()) {
@@ -684,12 +894,43 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniformMatrix4fv(mShader3D->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
 
     glUniform3f(mShader3D->GetLocViewPos(), cameraPos.x, cameraPos.y, cameraPos.z);
-    glUniform3f(mShader3D->GetLocLightPos(), cameraPos.x, cameraPos.y, cameraPos.z);
-    glUniform3f(mShader3D->GetLocLightColor(), 0.5f, 0.5f, 0.5f);
-
-    glUniform1f(mShader3D->GetLocAmbientStrength(), 0.8f);
-    glUniform1f(mShader3D->GetLocRimStrength(), 0.20f);
-    glUniform1f(mShader3D->GetLocRimPower(), 2.5f);
+    glUniform3fv(
+        mShader3D->GetLocSunDirection(),
+        1,
+        glm::value_ptr(mLightingSettings.sunDirection));
+    glUniform3fv(
+        mShader3D->GetLocSunColor(),
+        1,
+        glm::value_ptr(mLightingSettings.sunColor));
+    glUniform1f(
+        mShader3D->GetLocSunIntensity(),
+        mLightingSettings.sunIntensity);
+    glUniform3fv(
+        mShader3D->GetLocEnvironmentColor(),
+        1,
+        glm::value_ptr(mLightingSettings.environmentColor));
+    glUniform1f(
+        mShader3D->GetLocDayEnvironmentIntensity(),
+        mLightingSettings.dayEnvironmentIntensity);
+    glUniform1f(
+        mShader3D->GetLocNightEnvironmentIntensity(),
+        mLightingSettings.nightEnvironmentIntensity);
+    glUniform3fv(
+        mShader3D->GetLocRimColor(),
+        1,
+        glm::value_ptr(mLightingSettings.rimColor));
+    glUniform1f(
+        mShader3D->GetLocDayRimStrength(),
+        mLightingSettings.dayRimStrength);
+    glUniform1f(
+        mShader3D->GetLocNightRimStrength(),
+        mLightingSettings.nightRimStrength);
+    glUniform1f(
+        mShader3D->GetLocRimPower(),
+        mLightingSettings.rimPower);
+    glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
+    glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
+    glUniform1i(mShader3D->GetLocIsUnlit(), 0);
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     glUniform1i(mShader3D->GetLocBackTexture(), 1);
     glUniform1f(mShader3D->GetLocTextureSideBlendWidth(), 0.05f);
@@ -698,6 +939,41 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
         1.0f,
         1.0f,
         1.0f);
+    glUniform1i(mShader3D->GetLocApplyOutputGamma(), 0);
+    glUniform3f(
+        mShader3D->GetLocEmissiveColor(),
+        1.0f,
+        1.0f,
+        1.0f);
+    glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1i(mShader3D->GetLocUseInstancing(), 0);
+    const bool shadowsAvailable =
+        mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable();
+    glUniform1i(
+        mShader3D->GetLocShadowsEnabled(),
+        shadowsAvailable ? 1 : 0);
+    if (shadowsAvailable) {
+        const DirectionalShadowSettings& shadowSettings =
+            mDirectionalShadowMap->GetSettings();
+        glUniformMatrix4fv(
+            mShader3D->GetLocLightSpaceMatrix(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(
+                mDirectionalShadowMap->GetLightSpaceMatrix()));
+        glUniform1f(
+            mShader3D->GetLocShadowMinimumBias(),
+            shadowSettings.minimumBias);
+        glUniform1f(
+            mShader3D->GetLocShadowMaximumBias(),
+            shadowSettings.maximumBias);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(
+            GL_TEXTURE_2D,
+            mDirectionalShadowMap->GetDepthTexture());
+        glUniform1i(mShader3D->GetLocShadowMap(), 2);
+        glActiveTexture(GL_TEXTURE0);
+    }
     SetSkinningEnabled(false);
 }
 
@@ -744,6 +1020,13 @@ void Renderer3D::DrawInactiveActorPreview(
 
 void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 {
+    // Directional shadows already contain characters. Drawing the legacy
+    // surface decal as well can make it intersect nearby walls and flicker as
+    // the camera moves, especially on small spherical planets.
+    if (mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable()) {
+        return;
+    }
+
     if (!actor || !actor->GetIsActive() ||
         actor->GetRenderOpacity() <= 0.001f || !mGame) {
         return;
@@ -893,6 +1176,25 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         layerBrightness,
         layerBrightness);
 
+    const EmissiveAppearance emissiveAppearance =
+        ResolveEmissiveAppearance(actor);
+    glUniform3fv(
+        mShader3D->GetLocEmissiveColor(),
+        1,
+        glm::value_ptr(emissiveAppearance.color));
+    glUniform1f(
+        mShader3D->GetLocEmissiveIntensity(),
+        emissiveAppearance.intensity);
+
+    const SurfaceLightingAppearance surfaceLightingAppearance =
+        ResolveSurfaceLightingAppearance(actor);
+    glUniform1f(
+        mShader3D->GetLocMaterialMinimumReflectance(),
+        surfaceLightingAppearance.minimumReflectance);
+    glUniform1f(
+        mShader3D->GetLocMaterialRimBoost(),
+        surfaceLightingAppearance.rimBoost);
+
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
 
@@ -911,6 +1213,11 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
             1.0f,
             1.0f,
             1.0f);
+        glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+        glUniform1f(
+            mShader3D->GetLocMaterialMinimumReflectance(),
+            0.0f);
+        glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
         return;
     }
 
@@ -994,6 +1301,16 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         1.0f,
         1.0f,
         1.0f);
+    glUniform3f(
+        mShader3D->GetLocEmissiveColor(),
+        1.0f,
+        1.0f,
+        1.0f);
+    glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
+    glUniform1f(
+        mShader3D->GetLocMaterialMinimumReflectance(),
+        0.0f);
+    glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
 }
 
 VertexArray* Renderer3D::FindVertexArray(
@@ -1043,7 +1360,9 @@ GLuint Renderer3D::GetOrLoadTextureOverride(
     const std::filesystem::path fullPath =
         std::filesystem::path("../assets") / relativePath;
     TextureLoader textureLoader;
-    const GLuint textureID = textureLoader.LoadTexture(fullPath.string().c_str());
+    const GLuint textureID = textureLoader.LoadTexture(
+        fullPath.string().c_str(),
+        TextureColorSpace::SRGB);
     if (textureID == 0) {
         mFailedTextureOverrides.insert(normalizedPath);
         return 0;
@@ -1273,4 +1592,77 @@ void Renderer3D::SetSkinningEnabled(bool isEnabled) const
     }
 
     glUniform1i(mShader3D->GetLocUseSkinning(), isEnabled ? 1 : 0);
+}
+
+void Renderer3D::DrawActorToShadowMap(
+    Actor* actor,
+    bool useOrient,
+    const glm::vec3& focusPosition) const
+{
+    if (!actor || !actor->GetIsActive() ||
+        actor->GetRenderOpacity() < 0.999f ||
+        UsesTransparentShadowMaterial(actor) ||
+        !mDirectionalShadowMap) {
+        return;
+    }
+
+    const DirectionalShadowSettings& shadowSettings =
+        mDirectionalShadowMap->GetSettings();
+    const glm::vec3 absoluteScale = glm::abs(actor->GetRenderScale());
+    const float maximumScale = std::max(
+        absoluteScale.x,
+        std::max(absoluteScale.y, absoluteScale.z));
+    const float actorBoundsRadius =
+        std::max(actor->GetRadius(), 1.0f) * maximumScale;
+    const float maximumCasterDistance =
+        shadowSettings.projectionHalfExtent * 1.6f + actorBoundsRadius;
+    if (glm::distance(actor->GetRenderPosition(), focusPosition) >
+        maximumCasterDistance) {
+        return;
+    }
+
+    const std::vector<LoadedMesh>* meshes = actor->GetMeshes();
+    DirectionalShadowShader* shadowShader =
+        mDirectionalShadowMap->GetShader();
+    if (!meshes || meshes->empty() || !shadowShader) {
+        return;
+    }
+
+    const glm::mat4 model =
+        CreateActorModelMatrix(actor, useOrient, 1.0f);
+    glUniformMatrix4fv(
+        shadowShader->GetLocModel(),
+        1,
+        GL_FALSE,
+        glm::value_ptr(model));
+
+    const std::vector<glm::mat4>* skinningMatrices =
+        actor->GetSkinningMatrices();
+    const bool hasSkinningMatrices =
+        skinningMatrices && !skinningMatrices->empty();
+    if (hasSkinningMatrices) {
+        const std::size_t uploadCount = std::min(
+            skinningMatrices->size(),
+            SkeletalAnimationConstants::MaxShaderBoneCount);
+        glUniformMatrix4fv(
+            shadowShader->GetLocBoneTransforms(),
+            static_cast<GLsizei>(uploadCount),
+            GL_FALSE,
+            glm::value_ptr(skinningMatrices->front()));
+    }
+
+    for (const LoadedMesh& mesh : *meshes) {
+        const bool useSkinning =
+            hasSkinningMatrices && mesh.hasBoneInfluences;
+        glUniform1i(
+            shadowShader->GetLocUseSkinning(),
+            useSkinning ? 1 : 0);
+        glBindVertexArray(mesh.VAO);
+        glDrawElements(
+            GL_TRIANGLES,
+            mesh.indexCount,
+            GL_UNSIGNED_INT,
+            nullptr);
+    }
+    glUniform1i(shadowShader->GetLocUseSkinning(), 0);
 }

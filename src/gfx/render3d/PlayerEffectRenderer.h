@@ -32,6 +32,11 @@ private:
         bool isDebugEditorShowing,
         const PhysicsSystem* physicsSystem) const;
     void DrawTiredEffect(const glm::mat4& viewMat, const Player* player) const;
+    void DrawPlayerSplitGuard(
+        const glm::mat4& viewMat,
+        const Player* player,
+        int guardCount,
+        int maximumGuardCount) const;
     void DrawPlayerAttackRange(Player* player) const;
     void DrawEnemyAttackRange(Enemy* enemy, bool shouldFlashWhite) const;
     void DrawEnemyFanAttackRange(

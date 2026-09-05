@@ -371,9 +371,9 @@ enemies:
     height: 2.1279774
     currentPlanetNum: 1
     pos:
-      - -1.5037956
-      - 2.0308113
-      - 3.2641387
+      - -1.5
+      - 2.02
+      - 3.27
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -578,9 +578,9 @@ enemies:
     height: 0.2456305
     currentPlanetNum: 1
     pos:
-      - -1.9377594
-      - 0.2940941
-      - 1.0961084
+      - -1.94
+      - 0.3
+      - 1.09
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -624,10 +624,10 @@ enemies:
     height: 1.1194925
     currentPlanetNum: 1
     pos:
-      - -1.7801437
-      - -0.2749405
-      - -2.546906
-    facingYaw: 1.1874363e-08
+      - -1.78
+      - -0.27
+      - -2.55
+    facingYaw: -0
     rotation:
       - 0
       - 0
@@ -637,19 +637,24 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.9869306
-      - -0.01342184
-      - -0.1605859
+      - -1
+      - -1.19209275e-07
+      - 0
     modelPath: enemy.obj
+    rotationQuat:
+      - 0.7071068
+      - 0
+      - 0
+      - 0.7071068
   - type: normal
     theta: -2.3001237
     phi: 0.5062704
     height: 1.07317
     currentPlanetNum: 1
     pos:
-      - -1.7909775
-      - 1.4902382
-      - -2.003987
+      - -1.79
+      - 1.49
+      - -2
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -1489,8 +1494,10 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1654,7 +1661,8 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.28730252
     phi: 0.12781243
@@ -1690,8 +1698,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1822,8 +1832,10 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -1987,7 +1999,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -2023,8 +2036,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2132,8 +2147,10 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2390,8 +2407,10 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925

@@ -81,7 +81,8 @@ bool Game::Initialize(
 {
     mIsDebugMode = areDebugToolsEnabled;
 
-    if (!InitializeGLFW()) {
+    const bool shouldUseFullscreen = !shouldStartInDebugStage;
+    if (!InitializeGLFW(shouldUseFullscreen)) {
         return false;
     }
 
@@ -118,7 +119,7 @@ bool Game::Initialize(
     return true;
 }
 
-bool Game::InitializeGLFW()
+bool Game::InitializeGLFW(bool shouldUseFullscreen)
 {
     if (!glfwInit()) {
         return false;
@@ -132,17 +133,23 @@ bool Game::InitializeGLFW()
     const GLFWvidmode* primaryVideoMode = primaryMonitor
         ? glfwGetVideoMode(primaryMonitor)
         : nullptr;
-    const int windowWidth = primaryVideoMode
+    constexpr int debugWindowWidth = 800;
+    constexpr int debugWindowHeight = 450;
+    const int windowWidth = shouldUseFullscreen && primaryVideoMode
         ? primaryVideoMode->width
-        : 800;
-    const int windowHeight = primaryVideoMode
+        : debugWindowWidth;
+    const int windowHeight = shouldUseFullscreen && primaryVideoMode
         ? primaryVideoMode->height
-        : 450;
+        : debugWindowHeight;
+    GLFWmonitor* windowMonitor =
+        shouldUseFullscreen && primaryVideoMode
+            ? primaryMonitor
+            : nullptr;
     mWindow = glfwCreateWindow(
         windowWidth,
         windowHeight,
         "Slime's Space Travel",
-        primaryVideoMode ? primaryMonitor : nullptr,
+        windowMonitor,
         nullptr);
     if (!mWindow) {
         glfwTerminate();
@@ -918,6 +925,27 @@ bool Game::TryResolvePlayerMergeGuide(
     }
     return mPlayerConfigurationController->TryResolveMergeGuide(
         targetPlayer, radiusWorldUnits);
+}
+
+bool Game::TryConsumePlayerSplitGuard(const Player& damagedPlayer)
+{
+    return mPlayerConfigurationController &&
+           mPlayerConfigurationController->TryConsumeSplitGuard(
+               damagedPlayer);
+}
+
+int Game::GetPlayerSplitGuardCount() const
+{
+    return mPlayerConfigurationController
+        ? mPlayerConfigurationController->GetSplitGuardCount()
+        : 0;
+}
+
+int Game::GetMaximumPlayerSplitGuardCount() const
+{
+    return mPlayerConfigurationController
+        ? mPlayerConfigurationController->GetMaximumSplitGuardCount()
+        : 0;
 }
 
 bool Game::CanTogglePlayerSplit() const

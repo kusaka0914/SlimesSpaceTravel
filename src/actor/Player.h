@@ -38,7 +38,6 @@ public:
     explicit Player(Game* game);
 
     static constexpr float SplitBodyScaleMultiplier = 0.8f;
-    static constexpr float SplitAttackMultiplier = 0.6f;
 
     void ApplyConfig(const PlayerConfig& config);
 
@@ -57,6 +56,9 @@ public:
     void StartDamageKnockBack(
         const glm::vec3& damageSourcePosition);
     void StartNormalHitReaction();
+    void MoveTowardForMergeRecall(
+        const glm::vec3& targetPosition,
+        float deltaTime);
     void StartStarCollectionCelebration(float durationSeconds);
     void StopStarCollectionCelebration();
 
@@ -420,6 +422,18 @@ public:
     {
         return mCombat.GetAirDodgeEnemyPushDampingPerSecond();
     }
+    float GetAirWeakEnemyLiftHeight() const
+    {
+        return mCombat.GetAirWeakEnemyLiftHeight();
+    }
+    float GetAirComboDodgePlayerLiftHeight() const
+    {
+        return mCombat.GetAirComboDodgePlayerLiftHeight();
+    }
+    float GetAirComboDodgeEnemyLiftHeight() const
+    {
+        return mCombat.GetAirComboDodgeEnemyLiftHeight();
+    }
 
     float GetStrongAttackRange() const { return mCombat.GetStrongAttackRange(); }
 
@@ -481,6 +495,18 @@ public:
     float GetAirSlamRiseHeight() const { return mMovement.GetAirSlamRiseHeight(); }
     float GetAirSlamRiseDurationSeconds() const { return mMovement.GetAirSlamRiseDurationSeconds(); }
     float GetAirSlamHoverDurationSeconds() const { return mMovement.GetAirSlamHoverDurationSeconds(); }
+    float GetAirSlamEnemyDownwardSpeed() const
+    {
+        return mCombat.GetAirSlamEnemyDownwardSpeed();
+    }
+    float GetAirSlamFullDamageHeight() const
+    {
+        return mCombat.GetAirSlamFullDamageHeight();
+    }
+    float GetAirSlamMinimumDamageRatio() const
+    {
+        return mCombat.GetAirSlamMinimumDamageRatio();
+    }
 
     bool WasPlanetGravityFallbackAppliedThisJump() const
     {
@@ -570,6 +596,7 @@ private:
     bool mUseSecondAttackAnimationNext = false;
     bool mControlLocked = false;
     bool mIsSplitForm = false;
+    bool mWasMergeRecallWalking = false;
     float mNormalHitReactionElapsedSeconds = -1.0f;
     float mStarCollectionCelebrationElapsedSeconds = -1.0f;
     float mStarCollectionCelebrationDurationSeconds = 0.0f;

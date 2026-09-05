@@ -37,6 +37,15 @@ public:
         const glm::vec3& dodgeDirection,
         float pushSpeed,
         float pushDampingPerSecond);
+    void ApplyAirComboLift(float liftHeight);
+    bool StartGravitySlam(
+        Player& player,
+        float downwardSpeed,
+        float maximumDamage,
+        float fullDamageHeight,
+        float minimumDamageRatio,
+        float groundImpactRadius,
+        bool shouldPlayImpactFeedback);
     void DefeatImmediately();
     void ApplyConfig(const EnemyConfig& config);
     void StartNormalHitReaction();
@@ -188,6 +197,9 @@ private:
     };
 
     bool CanUseReducedUpdateRate() const;
+    Player* ResolvePursuitTarget();
+    void RegisterPlayerAttackForAggro(Player* attackingPlayer);
+    void ResetSoloSplitAggro();
     void SetShouldUseFullRateUpdate(bool shouldUseFullRateUpdate)
     {
         mShouldUseFullRateUpdate = shouldUseFullRateUpdate;
@@ -207,6 +219,9 @@ private:
     bool mHasRecordedGroundedTransform = false;
     bool mShouldDropJewelOnDeath = false;
     bool mShouldUseFullRateUpdate = true;
+    Player* mSoloSplitAggroOverridePlayer = nullptr;
+    Player* mSoloSplitAggroHitPlayer = nullptr;
+    int mSoloSplitAggroHitCount = 0;
     HitReactionKind mHitReactionKind = HitReactionKind::None;
     float mHitReactionElapsedSeconds = 0.0f;
 };

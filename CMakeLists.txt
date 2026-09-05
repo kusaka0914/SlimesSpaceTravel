@@ -85,6 +85,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TutorialObjectiveTextTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/OperationGuideVisibilityTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerSplitGuardStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -119,6 +120,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerSplitGuardState.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src

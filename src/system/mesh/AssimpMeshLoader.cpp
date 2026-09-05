@@ -236,7 +236,9 @@ unsigned int LoadDiffuseTexture(const aiScene& scene, const aiMesh& sourceMesh, 
     const std::size_t lastSlash = basePath.find_last_of("/\\");
     const std::string directory = lastSlash != std::string::npos ? basePath.substr(0, lastSlash + 1) : "";
     const std::string fullTexturePath = directory + relativeTexturePath;
-    return textureLoader->LoadTexture(fullTexturePath.c_str());
+    return textureLoader->LoadTexture(
+        fullTexturePath.c_str(),
+        TextureColorSpace::SRGB);
 }
 
 LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const char* modelPath,

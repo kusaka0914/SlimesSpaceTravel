@@ -26,6 +26,10 @@ public:
     void UnlockMovementDirectionForCameraAutoAlign();
     bool ConsumeCameraAutoAlignCancellationRequest();
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
+    bool MoveTowardPosition(
+        Player& player,
+        const glm::vec3& targetPosition,
+        float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);
     void FaceDirection(Player& player, const glm::vec3& facingDirection);
 
@@ -57,6 +61,7 @@ public:
         float deltaTime);
     void CancelAirborneActionHover();
     void StartAirSlamMovement(Player& player);
+    void StartAirSlamEnemyFallWatch(Player& player);
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
@@ -147,6 +152,11 @@ public:
     float GetAirSlamRiseHeight() const { return mAirSlamRiseHeight; }
     float GetAirSlamRiseDurationSeconds() const { return mAirSlamRiseDurationSeconds; }
     float GetAirSlamHoverDurationSeconds() const { return mAirSlamHoverDurationSeconds; }
+    bool IsAirSlamFalling() const
+    {
+        return mAirSlamMovementPhase ==
+               AirSlamMovementPhase::Falling;
+    }
     const glm::vec3& GetForwardVec() const { return mForwardVec; }
     const glm::vec3& GetDodgeDirection() const { return mDodgeDir; }
 
@@ -164,6 +174,7 @@ private:
     enum class AirSlamMovementPhase {
         Rising,
         Hovering,
+        WatchingEnemyFall,
         Falling,
     };
 
@@ -184,6 +195,9 @@ private:
         const Player& player,
         const PlayerInput& input,
         float deltaTime) const;
+    bool ApplyWalkingMovement(
+        Player& player,
+        const glm::vec3& movementDelta);
     void ApplyJumpGravityMovement(
         Player& player,
         const glm::vec3& inputMovementDelta,
@@ -217,6 +231,7 @@ private:
     float mAirSlamHoverDurationSeconds = 0.3f;
     float mAirSlamPhaseRemainingSeconds = 0.0f;
     AirSlamMovementPhase mAirSlamMovementPhase = AirSlamMovementPhase::Falling;
+    bool mHasStartedAirSlamEnemyFallWatch = false;
     float mMoveSpeed = 10.2f;
     float mMaximumStepHeight = 0.3f;
     float mKnockBackSpeed = 0.0f;

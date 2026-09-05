@@ -168,6 +168,9 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("airDodgeVerticalHitboxScale", player.GetAirDodgeVerticalHitboxScale());
     set("airDodgeEnemyPushSpeed", player.GetAirDodgeEnemyPushSpeed());
     set("airDodgeEnemyPushDampingPerSecond", player.GetAirDodgeEnemyPushDampingPerSecond());
+    set("airWeakEnemyLiftHeight", player.GetAirWeakEnemyLiftHeight());
+    set("airComboDodgePlayerLiftHeight", player.GetAirComboDodgePlayerLiftHeight());
+    set("airComboDodgeEnemyLiftHeight", player.GetAirComboDodgeEnemyLiftHeight());
     set("normalAttackRange", player.GetNormalAttackRange());
     set("normalAttackAngle", player.GetNormalAttackAngle());
     set("normalAttack", player.GetNormalAttack());
@@ -177,6 +180,9 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("strongAttackRange", player.GetStrongAttackRange());
     set("strongAttack", player.GetStrongAttack());
     set("strongAttackSpeed", player.GetStrongAttackSpeed());
+    set("airSlamEnemyDownwardSpeed", player.GetAirSlamEnemyDownwardSpeed());
+    set("airSlamFullDamageHeight", player.GetAirSlamFullDamageHeight());
+    set("airSlamMinimumDamageRatio", player.GetAirSlamMinimumDamageRatio());
     set("chargedAttackRange", player.GetChargedAttackRange());
     set("chargedAttackAngle", player.GetChargedAttackAngle());
     set("chargedAttackDamage", player.GetChargedAttackDamage());

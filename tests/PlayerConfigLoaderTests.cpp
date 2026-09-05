@@ -59,7 +59,13 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         "    airDodgeHorizontalHitboxScale: 1.25\n"
         "    airDodgeVerticalHitboxScale: 2.75\n"
         "    airDodgeEnemyPushSpeed: 7.5\n"
-        "    airDodgeEnemyPushDampingPerSecond: 4.5\n");
+        "    airDodgeEnemyPushDampingPerSecond: 4.5\n"
+        "    airWeakEnemyLiftHeight: 0.6\n"
+        "    airComboDodgePlayerLiftHeight: 0.9\n"
+        "    airComboDodgeEnemyLiftHeight: 1.1\n"
+        "    airSlamEnemyDownwardSpeed: 19\n"
+        "    airSlamFullDamageHeight: 7\n"
+        "    airSlamMinimumDamageRatio: 0.25\n");
 
     const PlayerConfig config =
         PlayerConfigLoader::Load(configFile.PathText());
@@ -100,6 +106,36 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         config.airDodgeEnemyPushDampingPerSecond,
         0.0001f,
         "air dodge enemy push damping");
+    ExpectNear(
+        0.6f,
+        config.airWeakEnemyLiftHeight,
+        0.0001f,
+        "air weak enemy lift height");
+    ExpectNear(
+        0.9f,
+        config.airComboDodgePlayerLiftHeight,
+        0.0001f,
+        "air combo dodge player lift height");
+    ExpectNear(
+        1.1f,
+        config.airComboDodgeEnemyLiftHeight,
+        0.0001f,
+        "air combo dodge enemy lift height");
+    ExpectNear(
+        19.0f,
+        config.airSlamEnemyDownwardSpeed,
+        0.0001f,
+        "air slam enemy downward speed");
+    ExpectNear(
+        7.0f,
+        config.airSlamFullDamageHeight,
+        0.0001f,
+        "air slam full damage height");
+    ExpectNear(
+        0.25f,
+        config.airSlamMinimumDamageRatio,
+        0.0001f,
+        "air slam minimum damage ratio");
 }
 
 void ParsedPlayerYamlProducesConfigWithoutFileAccess()

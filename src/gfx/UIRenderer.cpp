@@ -108,12 +108,17 @@ void UIRenderer::RegisterUITextures()
     RegisterTexture(basePath + "special.png", "special");
     RegisterTexture(basePath + "skyBox.png", "skyBox");
     RegisterTexture(basePath + "jewel.png", "jewel");
+    RegisterTexture(basePath + "guard.png", "guard");
 }
 
 void UIRenderer::DrawGameContent()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
     mRenderedUIElements.clear();
+    if (mGame->GetIsGameUIHidden()) {
+        return;
+    }
+
     glViewport(0, 0, mFbWidth, mFbHeight);
     glUseProgram(mUIShader->GetShaderProgram());
 

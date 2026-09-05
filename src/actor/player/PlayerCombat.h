@@ -34,6 +34,10 @@ public:
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
     bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
+    bool IsEnhancedAirDodgeAttackActive() const
+    {
+        return mIsEnhancedAirDodgeAttackActive;
+    }
     bool CanStartAirAttack() const
     {
         return mAirAttackCount < maximumAirAttackCount;
@@ -48,6 +52,9 @@ public:
         Player& player,
         PlayerMovement& movement,
         float deltaTime);
+    bool UpdateAirSlamContact(
+        Player& player,
+        const PlayerMovement& movement);
 
     void Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
@@ -111,6 +118,30 @@ public:
     void SetAirDodgeEnemyPushDampingPerSecond(float dampingPerSecond)
     {
         mAirDodgeEnemyPushDampingPerSecond = dampingPerSecond;
+    }
+    void SetAirWeakEnemyLiftHeight(float height)
+    {
+        mAirWeakEnemyLiftHeight = height;
+    }
+    void SetAirComboDodgePlayerLiftHeight(float height)
+    {
+        mAirComboDodgePlayerLiftHeight = height;
+    }
+    void SetAirComboDodgeEnemyLiftHeight(float height)
+    {
+        mAirComboDodgeEnemyLiftHeight = height;
+    }
+    void SetAirSlamEnemyDownwardSpeed(float speed)
+    {
+        mAirSlamEnemyDownwardSpeed = speed;
+    }
+    void SetAirSlamFullDamageHeight(float height)
+    {
+        mAirSlamFullDamageHeight = height;
+    }
+    void SetAirSlamMinimumDamageRatio(float ratio)
+    {
+        mAirSlamMinimumDamageRatio = ratio;
     }
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
@@ -188,6 +219,30 @@ public:
     {
         return mAirDodgeEnemyPushDampingPerSecond;
     }
+    float GetAirWeakEnemyLiftHeight() const
+    {
+        return mAirWeakEnemyLiftHeight;
+    }
+    float GetAirComboDodgePlayerLiftHeight() const
+    {
+        return mAirComboDodgePlayerLiftHeight;
+    }
+    float GetAirComboDodgeEnemyLiftHeight() const
+    {
+        return mAirComboDodgeEnemyLiftHeight;
+    }
+    float GetAirSlamEnemyDownwardSpeed() const
+    {
+        return mAirSlamEnemyDownwardSpeed;
+    }
+    float GetAirSlamFullDamageHeight() const
+    {
+        return mAirSlamFullDamageHeight;
+    }
+    float GetAirSlamMinimumDamageRatio() const
+    {
+        return mAirSlamMinimumDamageRatio;
+    }
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
@@ -237,6 +292,9 @@ private:
     // 場合だけ、次の空中弱攻撃を開始するまで移動を許可する。
     bool mAirAttackMovementUnlockedByDodge = false;
     bool mIsAirDodgeAttackActive = false;
+    bool mHasAirWeakHitForNextDodge = false;
+    bool mIsEnhancedAirDodgeAttackActive = false;
+    bool mDidAirSlamContactEnemy = false;
     bool mHasPendingAttackHit = false;
 
     int mAttackComboIndex = 0;
@@ -273,6 +331,12 @@ private:
     float mAirDodgeVerticalHitboxScale = 2.0f;
     float mAirDodgeEnemyPushSpeed = 6.0f;
     float mAirDodgeEnemyPushDampingPerSecond = 8.0f;
+    float mAirWeakEnemyLiftHeight = 0.45f;
+    float mAirComboDodgePlayerLiftHeight = 0.8f;
+    float mAirComboDodgeEnemyLiftHeight = 0.8f;
+    float mAirSlamEnemyDownwardSpeed = 18.0f;
+    float mAirSlamFullDamageHeight = 6.0f;
+    float mAirSlamMinimumDamageRatio = 0.3f;
     float mStrongAttackRange = 6.0f;
     float mStrongAttack = 50.0f;
     float mStrongAttackSpeed = 100.0f;
@@ -291,6 +355,7 @@ private:
 
     std::vector<PlayerRaySegment> mRayCasts;
     std::vector<Enemy*> mAirDodgeHitEnemies;
+    std::vector<Enemy*> mAirSlamHitEnemies;
 
     std::uint64_t mResolvedAttackSequence = 0;
 

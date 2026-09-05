@@ -150,6 +150,12 @@ void Player::ApplyConfig(const PlayerConfig& config)
         config.airDodgeEnemyPushSpeed);
     mCombat.SetAirDodgeEnemyPushDampingPerSecond(
         config.airDodgeEnemyPushDampingPerSecond);
+    mCombat.SetAirWeakEnemyLiftHeight(
+        config.airWeakEnemyLiftHeight);
+    mCombat.SetAirComboDodgePlayerLiftHeight(
+        config.airComboDodgePlayerLiftHeight);
+    mCombat.SetAirComboDodgeEnemyLiftHeight(
+        config.airComboDodgeEnemyLiftHeight);
 
     mCombat.SetNormalAttackRange(config.normalAttackRange);
     mCombat.SetNormalAttackAngle(config.normalAttackAngle);
@@ -179,6 +185,12 @@ void Player::ApplyConfig(const PlayerConfig& config)
         config.airSlamRiseDurationSeconds);
     mMovement.SetAirSlamHoverDurationSeconds(
         config.airSlamHoverDurationSeconds);
+    mCombat.SetAirSlamEnemyDownwardSpeed(
+        config.airSlamEnemyDownwardSpeed);
+    mCombat.SetAirSlamFullDamageHeight(
+        config.airSlamFullDamageHeight);
+    mCombat.SetAirSlamMinimumDamageRatio(
+        config.airSlamMinimumDamageRatio);
 
     mCombat.SetSpecialAttackCooldown(config.specialAttackCooldown);
     mStatus.SetDefaultInvincibleTimer(config.defaultInvincibleTimer);
@@ -267,6 +279,24 @@ glm::quat Player::GetRenderModelRotationOffset() const
 void Player::StartNormalHitReaction()
 {
     mNormalHitReactionElapsedSeconds = 0.0f;
+}
+
+void Player::MoveTowardForMergeRecall(
+    const glm::vec3& targetPosition,
+    float deltaTime)
+{
+    if (!GetIsActive() ||
+        !IsAlive() ||
+        mStateMachine.GetActionState() != PlayerActionState::Idle) {
+        return;
+    }
+
+    mWasMergeRecallWalking =
+        mMovement.MoveTowardPosition(
+            *this,
+            targetPosition,
+            deltaTime) ||
+        mWasMergeRecallWalking;
 }
 
 void Player::StartStarCollectionCelebration(float durationSeconds)
@@ -501,7 +531,7 @@ void Player::UpdateActor(float deltaTime)
                                   std::abs(mInput.GetMoveLeft()) > movementInputDeadZone;
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
                             !IsAttachedToPlatform() &&
-                            hasMovementInput;
+                            (hasMovementInput || mWasMergeRecallWalking);
 
     if (didLand) {
         mParticleEffectController.EmitLanding(*this, landingSpeed);
@@ -515,6 +545,7 @@ void Player::UpdateActor(float deltaTime)
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
     RequestEnteredActionAnimation(previousActionState, currentActionState);
     mAnimationController.Update(deltaTime);
+    mWasMergeRecallWalking = false;
 }
 
 void Player::RequestEnteredActionAnimation(PlayerActionState previousState, PlayerActionState currentState)
@@ -566,9 +597,7 @@ void Player::SetSplitForm(bool isSplitForm)
 
 float Player::CalculateOutgoingAttackDamage(float baseDamage) const
 {
-    const float attackMultiplier =
-        mIsSplitForm ? SplitAttackMultiplier : 1.0f;
-    return baseDamage * attackMultiplier;
+    return baseDamage;
 }
 
 void Player::RequestNextWeakAttackAnimation()
@@ -834,6 +863,12 @@ void Player::OnLanded()
 void Player::OnUpVecUpdateFailed()
 {
     if (mPlanetGravityController.IsJumpGravityActive()) {
+        const Planet* currentPlanet = GetCurrentPlanet();
+        if (currentPlanet &&
+            currentPlanet->GetPlanetShape() ==
+                Planet::PlanetShape::Sphere) {
+            RefreshFallbackUpVec();
+        }
         return;
     }
 

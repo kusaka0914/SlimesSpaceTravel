@@ -1,13 +1,13 @@
 enemies:
   - type: common
     knockBackSpeed: 8
-    defaultLaunchedTimer: 4
+    defaultLaunchedTimer: 5
     launchHeight: 2.02
     detectionRange: 10
   - type: normal
     displayName: 通常敵
     behaviorProfile: legacyMelee
-    hp: 60
+    hp: 80
     modelPath: enemy.obj
     scale: 0.25
     speed: 1
@@ -71,8 +71,8 @@ enemies:
     isBoss: true
     behaviorProfile: bossMelee
     hp: 400
-    modelPath: enemy.obj
-    scale: 10
+    modelPath: enemy_yellow.obj
+    scale: 1.5
     speed: 3
     attack: 1
     breakCountMax: 3

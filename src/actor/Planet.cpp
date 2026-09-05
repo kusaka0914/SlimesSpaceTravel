@@ -3,7 +3,9 @@
 #include "actor/Boat.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <filesystem>
 
 Planet::Planet(Game* game)
     : Actor(game),
@@ -57,6 +59,84 @@ int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
     return node[key] ? node[key].as<int>() : defaultValue;
 }
 
+float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
+{
+    return node[key] ? node[key].as<float>() : defaultValue;
+}
+
+std::string ToLower(std::string text)
+{
+    std::transform(
+        text.begin(),
+        text.end(),
+        text.begin(),
+        [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+        });
+    return text;
+}
+
+Planet::VisualSettings ResolveDefaultVisualSettings(
+    const std::string& modelPath,
+    const std::string& texturePath)
+{
+    Planet::VisualSettings settings;
+    const std::string visualIdentity =
+        ToLower(modelPath + "|" + texturePath);
+
+    const bool isDecorationFreeTheme =
+        visualIdentity.find("blackplatform") != std::string::npos ||
+        visualIdentity.find("slimeplatform") != std::string::npos;
+    if (isDecorationFreeTheme) {
+        settings.biome = Planet::Biome::None;
+        settings.atmosphereColor = glm::vec3(0.22f, 0.42f, 0.78f);
+        settings.atmosphereStrength = 0.12f;
+        settings.decorationDensity = 0.0f;
+        return settings;
+    }
+
+    const bool isRockyTheme =
+        visualIdentity.find("dry") != std::string::npos ||
+        visualIdentity.find("stone") != std::string::npos ||
+        visualIdentity.find("moon") != std::string::npos;
+    if (isRockyTheme) {
+        settings.biome = Planet::Biome::Rocky;
+        settings.atmosphereColor = glm::vec3(0.34f, 0.46f, 0.68f);
+        settings.atmosphereStrength = 0.14f;
+        settings.decorationDensity = 0.0f;
+        return settings;
+    }
+
+    settings.biome = Planet::Biome::Grassland;
+    settings.atmosphereColor = glm::vec3(0.22f, 0.58f, 0.95f);
+    settings.atmosphereStrength = 0.20f;
+    settings.decorationDensity = 0.0f;
+    return settings;
+}
+
+Planet::Biome ParseBiome(
+    const YAML::Node& visualNode,
+    Planet::Biome defaultBiome)
+{
+    if (!visualNode || !visualNode["biome"]) {
+        return defaultBiome;
+    }
+
+    const std::string biomeName =
+        ToLower(visualNode["biome"].as<std::string>());
+    if (biomeName == "grass" || biomeName == "grassland") {
+        return Planet::Biome::Grassland;
+    }
+    if (biomeName == "rock" || biomeName == "rocky" ||
+        biomeName == "wasteland") {
+        return Planet::Biome::Rocky;
+    }
+    if (biomeName == "none") {
+        return Planet::Biome::None;
+    }
+    return defaultBiome;
+}
+
 int FindShortestScaleAxisIndex(const glm::vec3& absoluteScale)
 {
     int shortestAxisIndex = 0;
@@ -87,6 +167,30 @@ void Planet::ApplyConfig(const YAML::Node& node)
 
     const std::string textureOverride = ReadString(node, "textureOverride", "");
     SetTextureOverridePath(textureOverride);
+    mVisualSettings = ResolveDefaultVisualSettings(modelPath, textureOverride);
+    const YAML::Node visualNode = node["visual"];
+    if (visualNode && visualNode.IsMap()) {
+        mVisualSettings.biome =
+            ParseBiome(visualNode, mVisualSettings.biome);
+        mVisualSettings.atmosphereColor = ReadVec3(
+            visualNode,
+            "atmosphereColor",
+            mVisualSettings.atmosphereColor);
+        mVisualSettings.atmosphereStrength = glm::clamp(
+            ReadFloat(
+                visualNode,
+                "atmosphereStrength",
+                mVisualSettings.atmosphereStrength),
+            0.0f,
+            1.0f);
+        mVisualSettings.decorationDensity = glm::clamp(
+            ReadFloat(
+                visualNode,
+                "decorationDensity",
+                mVisualSettings.decorationDensity),
+            0.0f,
+            2.0f);
+    }
     SetBackTextureOverridePath(
         ReadString(node, "backTextureOverride", ""));
     SetTextureSideBlendWidth(

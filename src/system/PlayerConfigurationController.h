@@ -1,6 +1,7 @@
 #pragma once
 
 #include "system/PlayerControlConfigurationState.h"
+#include "system/PlayerSplitGuardState.h"
 
 #include <glm/glm.hpp>
 
@@ -45,6 +46,9 @@ public:
     bool TryResolveMergeGuide(
         const Player*& targetPlayer,
         float& radiusWorldUnits) const;
+    bool TryConsumeSplitGuard(const Player& damagedPlayer);
+    int GetSplitGuardCount() const;
+    int GetMaximumSplitGuardCount() const;
     void UpdateSplitMergeTransition(float deltaTime);
     bool IsSplitMergeTransitionActive() const;
     bool SwitchControlledPlayer();
@@ -94,6 +98,7 @@ private:
         const glm::vec3& splitDirection) const;
     bool BeginSoloMergeTransition();
     void UpdatePendingSoloMergeRequest();
+    void UpdateMergeRecall(float deltaTime);
     Player* FindMergeGuideTargetPlayer() const;
     void UpdateSoloSplitTransition(float progress);
     void UpdateSoloMergeTransition(float progress);
@@ -123,4 +128,5 @@ private:
     SplitMergeTransitionState mSplitMergeTransition;
     bool mIsSplitMergeButtonHeld = false;
     bool mIsMergeGuideRequested = false;
+    PlayerSplitGuardState mSplitGuardState;
 };

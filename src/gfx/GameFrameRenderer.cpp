@@ -3,6 +3,7 @@
 #include "gfx/GameFrameRenderer.h"
 
 #include "gfx/Renderer3D.h"
+#include "gfx/PostProcessRenderer.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/debug/ugc/UGCPreviewController.h"
 #include "gfx/performance/GpuDurationTimer.h"
@@ -29,6 +30,9 @@ GameFrameRenderer::GameFrameRenderer(
       mCameraSystem(cameraSystem),
       mUGCPreviewController(ugcPreviewController),
       mPerformanceTracker(performanceTracker),
+      mGamePostProcessRenderer(std::make_unique<PostProcessRenderer>()),
+      mUGCPreviewPostProcessRenderer(
+          std::make_unique<PostProcessRenderer>()),
       mGameUiGpuTimer(std::make_unique<GpuDurationTimer>()),
       mEditorUiGpuTimer(std::make_unique<GpuDurationTimer>())
 {
@@ -51,10 +55,10 @@ void GameFrameRenderer::Render(
         mRenderTargets.EnsureEditorGameTarget(
             framebufferWidth, framebufferHeight);
     if (shouldRenderEditorGameView) {
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            mRenderTargets.GetEditorGameFramebuffer());
-        DrawGameFrame();
+        DrawGameFrame(
+            mRenderTargets.GetEditorGameFramebuffer(),
+            framebufferWidth,
+            framebufferHeight);
 
         const int previewWidth =
             mUGCPreviewController.GetRenderWidth();
@@ -84,8 +88,7 @@ void GameFrameRenderer::Render(
             std::chrono::duration<float, std::milli>(
                 std::chrono::steady_clock::now() - editorUiStartTime).count());
     } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        DrawGameFrame();
+        DrawGameFrame(0, framebufferWidth, framebufferHeight);
         if (renderState.isDebugEditorShowing) {
             const auto editorUiStartTime = std::chrono::steady_clock::now();
             mEditorUiGpuTimer->Begin();
@@ -139,6 +142,12 @@ void GameFrameRenderer::Shutdown()
     if (mEditorUiGpuTimer) {
         mEditorUiGpuTimer->Shutdown();
     }
+    if (mGamePostProcessRenderer) {
+        mGamePostProcessRenderer->Shutdown();
+    }
+    if (mUGCPreviewPostProcessRenderer) {
+        mUGCPreviewPostProcessRenderer->Shutdown();
+    }
     mRenderTargets.Shutdown();
 }
 
@@ -147,14 +156,20 @@ unsigned int GameFrameRenderer::GetUGCPreviewTexture() const
     return mRenderTargets.GetUGCPreviewTexture();
 }
 
-void GameFrameRenderer::DrawGameFrame()
+void GameFrameRenderer::DrawGameFrame(
+    unsigned int destinationFramebuffer,
+    int framebufferWidth,
+    int framebufferHeight)
 {
-    int framebufferWidth = 0;
-    int framebufferHeight = 0;
-    glfwGetFramebufferSize(
-        &mWindow,
-        &framebufferWidth,
-        &framebufferHeight);
+    mRenderer3D.RenderGameplayShadowMap();
+    const bool isPostProcessActive =
+        mGamePostProcessRenderer &&
+        mGamePostProcessRenderer->BeginScene(
+            framebufferWidth,
+            framebufferHeight);
+    if (!isPostProcessActive) {
+        glBindFramebuffer(GL_FRAMEBUFFER, destinationFramebuffer);
+    }
     glViewport(0, 0, framebufferWidth, framebufferHeight);
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -167,6 +182,13 @@ void GameFrameRenderer::DrawGameFrame()
     glEnable(GL_DEPTH_TEST);
 
     mRenderer3D.Draw();
+
+    if (isPostProcessActive) {
+        mGamePostProcessRenderer->CompositeTo(
+            destinationFramebuffer,
+            framebufferWidth,
+            framebufferHeight);
+    }
 
     glDisable(GL_DEPTH_TEST);
     const auto gameUiStartTime = std::chrono::steady_clock::now();
@@ -188,6 +210,16 @@ void GameFrameRenderer::DrawUGCPreviewFrame(
         return;
     }
 
+    const bool isPostProcessActive =
+        mUGCPreviewPostProcessRenderer &&
+        mUGCPreviewPostProcessRenderer->BeginScene(
+            previewWidth,
+            previewHeight);
+    if (!isPostProcessActive) {
+        glBindFramebuffer(
+            GL_FRAMEBUFFER,
+            mRenderTargets.GetUGCPreviewFramebuffer());
+    }
     glViewport(0, 0, previewWidth, previewHeight);
     glClearColor(0.025f, 0.035f, 0.075f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -242,10 +274,19 @@ void GameFrameRenderer::DrawUGCPreviewFrame(
         0.1f,
         1000.0f);
 
+    mRenderer3D.RenderShadowMap(previewTarget);
+
     mRenderer3D.DrawScene(
         view,
         projection,
         previewPosition,
         UGCSceneLayerRenderMode::HighlightEditingLayerWithoutDimming,
         mUGCPreviewController.GetEditLayer());
+
+    if (isPostProcessActive) {
+        mUGCPreviewPostProcessRenderer->CompositeTo(
+            mRenderTargets.GetUGCPreviewFramebuffer(),
+            previewWidth,
+            previewHeight);
+    }
 }

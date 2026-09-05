@@ -222,6 +222,21 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
                 playerNode,
                 "airDodgeEnemyPushDampingPerSecond",
                 config.airDodgeEnemyPushDampingPerSecond);
+        config.airWeakEnemyLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airWeakEnemyLiftHeight",
+                config.airWeakEnemyLiftHeight);
+        config.airComboDodgePlayerLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airComboDodgePlayerLiftHeight",
+                config.airComboDodgePlayerLiftHeight);
+        config.airComboDodgeEnemyLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airComboDodgeEnemyLiftHeight",
+                config.airComboDodgeEnemyLiftHeight);
 
         config.normalAttackRange = ReadFloat(playerNode, "normalAttackRange", config.normalAttackRange);
         config.normalAttackAngle = ReadFloat(playerNode, "normalAttackAngle", config.normalAttackAngle);
@@ -269,6 +284,21 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
                 playerNode,
                 "airSlamHoverDurationSeconds",
                 config.airSlamHoverDurationSeconds);
+        config.airSlamEnemyDownwardSpeed =
+            ReadFloat(
+                playerNode,
+                "airSlamEnemyDownwardSpeed",
+                config.airSlamEnemyDownwardSpeed);
+        config.airSlamFullDamageHeight =
+            ReadFloat(
+                playerNode,
+                "airSlamFullDamageHeight",
+                config.airSlamFullDamageHeight);
+        config.airSlamMinimumDamageRatio =
+            ReadFloat(
+                playerNode,
+                "airSlamMinimumDamageRatio",
+                config.airSlamMinimumDamageRatio);
 
         config.specialAttackCooldown = ReadFloat(playerNode, "specialAttackCooldown", config.specialAttackCooldown);
         config.defaultInvincibleTimer = ReadFloat(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);

@@ -41,11 +41,16 @@ void ApplyDamageAndKnockBack(
         return;
     }
 
+    Game* game = player.GetGame();
+    const bool wasBlockedBySplitGuard =
+        game && game->TryConsumePlayerSplitGuard(player);
+
     const bool wasChargedAttackInterrupted =
         combat.GetCanSpecialAttack();
     const bool shouldStartTiredLock =
-        wasChargedAttackInterrupted ||
-        ShouldStartRandomDamageTiredLock();
+        !wasBlockedBySplitGuard &&
+        (wasChargedAttackInterrupted ||
+         ShouldStartRandomDamageTiredLock());
     if (shouldStartTiredLock) {
         combat.StartTiredLock(
             status,
@@ -57,14 +62,21 @@ void ApplyDamageAndKnockBack(
         player.GetOnGround()
             ? damage
             : damage * airborneDamageMultiplier;
-    status.TakeDamage(appliedDamage);
+    if (wasBlockedBySplitGuard) {
+        status.StartDamageCooldown();
+        status.StartDamageInvincibility();
+    } else {
+        status.TakeDamage(appliedDamage);
+    }
     player.StartDamageKnockBack(damageSourcePosition);
     movement.ClearStrongAttackDirectionOverride();
     stateMachine.ClearAttackDirectionTarget();
     stateMachine.ChangeState(PlayerActionState::KnockedBack);
     player.StartNormalHitReaction();
 
-    player.GetGame()->OnPlayerApplyDamage(movement.GetPlayerNum());
+    if (game) {
+        game->OnPlayerApplyDamage(movement.GetPlayerNum());
+    }
 
     combat.CancelSpecialAttack();
     input.ClearAttackBuffer();

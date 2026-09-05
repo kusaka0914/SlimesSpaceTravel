@@ -54,6 +54,7 @@ void SceneObjectRenderer::DrawSceneObjects(
         !sequenceSystem->IsCinematicChainPlaying();
 
     DrawPlanets(planets);
+    mRenderer->DrawEnvironmentDecorations();
     DrawActorOnPlanets(planets, viewMat, viewportPlayer);
     DrawCharacterShadows(planets, shouldDrawPlayers);
 
@@ -75,7 +76,8 @@ void SceneObjectRenderer::DrawSceneObjects(
         }
     }
 
-    if (mNPCProximityMessageRenderer) {
+    if (!mRenderer->GetGame()->GetIsGameUIHidden() &&
+        mNPCProximityMessageRenderer) {
         mNPCProximityMessageRenderer->Draw(viewMat, planets);
     }
 

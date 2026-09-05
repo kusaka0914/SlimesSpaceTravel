@@ -210,6 +210,15 @@ void PlayerStateMachine::UpdateAirSlamAttacking(
             player,
             combat,
             deltaTime);
+    if (movement.IsAirSlamFalling()) {
+        const bool didStartEnemyGravitySlam =
+            combat.UpdateAirSlamContact(
+                player,
+                movement);
+        if (didStartEnemyGravitySlam) {
+            movement.StartAirSlamEnemyFallWatch(player);
+        }
+    }
     if (!didReachGround) {
         return;
     }

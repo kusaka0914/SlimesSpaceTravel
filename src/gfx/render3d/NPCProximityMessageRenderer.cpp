@@ -136,6 +136,7 @@ void NPCProximityMessageRenderer::DrawMessage(
     glDisable(GL_DEPTH_TEST);
     glUniform2f(shader->GetLocTextureTiling(), 1.0f, 1.0f);
     glUniform1i(shader->GetLocUseTexture(), 1);
+    glUniform1i(shader->GetLocIsUnlit(), 1);
     glUniform4f(
         shader->GetLocObjectColor(),
         1.0f,
@@ -177,6 +178,7 @@ void NPCProximityMessageRenderer::DrawMessage(
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glUniform1i(shader->GetLocUseTexture(), 0);
+    glUniform1i(shader->GetLocIsUnlit(), 0);
     glEnable(GL_DEPTH_TEST);
     renderer.EndTransparentDraw();
     glDeleteTextures(1, &textTexture);

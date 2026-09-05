@@ -141,6 +141,7 @@ void PlayerConfigurationController::Reset()
     mSplitMergeTransition = {};
     mIsSplitMergeButtonHeld = false;
     mIsMergeGuideRequested = false;
+    mSplitGuardState.Reset();
 }
 
 void PlayerConfigurationController::ConfigureAddedPlayer(Player& player)
@@ -290,10 +291,39 @@ bool PlayerConfigurationController::TryResolveMergeGuide(
     return true;
 }
 
+bool PlayerConfigurationController::TryConsumeSplitGuard(
+    const Player& damagedPlayer)
+{
+    if (mIsSecondPlayerJoined ||
+        !mControlState.IsPlayerSplit() ||
+        GetControlledPlayer() == &damagedPlayer) {
+        return false;
+    }
+
+    const std::vector<Player*>& players = mWorld.GetPlayers();
+    const bool isActiveSplitPlayer =
+        std::find(players.begin(), players.end(), &damagedPlayer) !=
+            players.end() &&
+        damagedPlayer.GetIsActive();
+    return isActiveSplitPlayer && mSplitGuardState.ConsumeOne();
+}
+
+int PlayerConfigurationController::GetSplitGuardCount() const
+{
+    return mSplitGuardState.GetCount();
+}
+
+int PlayerConfigurationController::GetMaximumSplitGuardCount() const
+{
+    return PlayerSplitGuardState::MaximumGuardCount;
+}
+
 void PlayerConfigurationController::UpdateSplitMergeTransition(
     float deltaTime)
 {
+    mSplitGuardState.Update(deltaTime);
     UpdatePendingSoloMergeRequest();
+    UpdateMergeRecall(deltaTime);
     if (!IsSplitMergeTransitionActive()) {
         return;
     }
@@ -318,6 +348,29 @@ void PlayerConfigurationController::UpdateSplitMergeTransition(
     if (progress >= 1.0f) {
         CompleteSoloMergeTransition();
     }
+}
+
+void PlayerConfigurationController::UpdateMergeRecall(float deltaTime)
+{
+    if (!mIsMergeGuideRequested ||
+        !mIsSplitMergeButtonHeld ||
+        IsSplitMergeTransitionActive()) {
+        return;
+    }
+
+    Player* controlledPlayer = GetControlledPlayer();
+    Player* recalledPlayer = FindMergeGuideTargetPlayer();
+    if (!controlledPlayer ||
+        !recalledPlayer ||
+        !controlledPlayer->GetCurrentPlanet() ||
+        controlledPlayer->GetCurrentPlanet() !=
+            recalledPlayer->GetCurrentPlanet()) {
+        return;
+    }
+
+    recalledPlayer->MoveTowardForMergeRecall(
+        controlledPlayer->GetPos(),
+        deltaTime);
 }
 
 bool PlayerConfigurationController::IsSplitMergeTransitionActive() const

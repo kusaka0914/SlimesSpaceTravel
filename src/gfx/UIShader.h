@@ -8,6 +8,11 @@ public:
     ~UIShader();
 
     void Initialize();
+    int GetLocConvertSrgbToLinear() const
+    {
+        return mLocConvertSrgbToLinear;
+    }
 
 private:
+    int mLocConvertSrgbToLinear = -1;
 };

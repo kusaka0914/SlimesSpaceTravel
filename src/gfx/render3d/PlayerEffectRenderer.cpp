@@ -2,6 +2,7 @@
 
 #include "gfx/Renderer3D.h"
 #include "gfx/VertexArray.h"
+#include "Game.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -97,6 +98,32 @@ void PlayerEffectRenderer::DrawPlayers(
         players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
+    const Game* game = mRenderer->GetGame();
+    const bool shouldDrawSplitGuard =
+        game &&
+        !game->GetIsGameUIHidden() &&
+        game->GetIsPlayerSplit() &&
+        !game->GetIsPlayer2Joined();
+    const int splitGuardCount =
+        shouldDrawSplitGuard
+            ? game->GetPlayerSplitGuardCount()
+            : 0;
+    const int maximumSplitGuardCount =
+        shouldDrawSplitGuard
+            ? game->GetMaximumPlayerSplitGuardCount()
+            : 0;
+    const Player* controlledPlayer =
+        shouldDrawSplitGuard
+            ? game->GetControlledPlayer()
+            : nullptr;
+    if (players[0] != controlledPlayer) {
+        DrawPlayerSplitGuard(
+            viewMat,
+            players[0],
+            splitGuardCount,
+            maximumSplitGuardCount);
+    }
+
     const bool hasPlayer2 = players.size() >= 2 && players[1];
     if (!hasPlayer2) {
         return;
@@ -106,6 +133,90 @@ void PlayerEffectRenderer::DrawPlayers(
     DrawPlayerCollisionShape(
         players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
+    if (players[1] != controlledPlayer) {
+        DrawPlayerSplitGuard(
+            viewMat,
+            players[1],
+            splitGuardCount,
+            maximumSplitGuardCount);
+    }
+}
+
+void PlayerEffectRenderer::DrawPlayerSplitGuard(
+    const glm::mat4& viewMat,
+    const Player* player,
+    int guardCount,
+    int maximumGuardCount) const
+{
+    if (!mRenderer ||
+        !mRenderer->GetShader3D() ||
+        !player ||
+        !player->GetIsActive() ||
+        maximumGuardCount <= 0) {
+        return;
+    }
+
+    const GLuint guardTexture = mRenderer->FindTexture("guard");
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (guardTexture == 0 || !quad) {
+        return;
+    }
+
+    Shader3D* shader = mRenderer->GetShader3D();
+    mRenderer->StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, guardTexture);
+    glUniform1i(shader->GetLocUseTexture(), 1);
+    quad->SetActive();
+
+    const float playerHeight = std::max(
+        player->GetRadius(),
+        player->GetScale().y);
+    const float upMargin = playerHeight + 0.35f;
+    constexpr float guardSize = 0.38f;
+    constexpr float guardGap = 0.34f;
+    for (int guardIndex = 0;
+         guardIndex < maximumGuardCount;
+         ++guardIndex) {
+        const float rightMargin =
+            (guardIndex - (maximumGuardCount - 1) * 0.5f) *
+            guardGap;
+        constexpr float depletedGuardOpacity = 0.2f;
+        const float guardOpacity =
+            guardIndex < guardCount
+                ? 1.0f
+                : depletedGuardOpacity;
+        glUniform4f(
+            shader->GetLocObjectColor(),
+            1.0f,
+            1.0f,
+            1.0f,
+            guardOpacity);
+        const glm::mat4 billboard =
+            mRenderer->CreateBillboard(
+                viewMat,
+                player,
+                upMargin,
+                rightMargin,
+                guardSize,
+                guardSize);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(billboard));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    glUniform4f(
+        shader->GetLocObjectColor(),
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f);
+    glUniform1i(shader->GetLocUseTexture(), 0);
+    mRenderer->EndTransparentDraw();
 }
 
 void PlayerEffectRenderer::DrawPlayerMergeGuide(
@@ -365,7 +476,9 @@ void PlayerEffectRenderer::DrawEnemyEffects(
     const bool isEnemyOnPlayerPlanet =
         playerPlanet &&
         enemy->GetCurrentPlanet() == playerPlanet;
-    if (isEnemyOnPlayerPlanet) {
+    const bool shouldDrawEnemyStatusUI =
+        !mRenderer->GetGame()->GetIsGameUIHidden();
+    if (isEnemyOnPlayerPlanet && shouldDrawEnemyStatusUI) {
         DrawEnemyGuard(viewMat, enemy);
         DrawEnemyHp(viewMat, enemy);
     }

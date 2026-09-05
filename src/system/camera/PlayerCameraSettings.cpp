@@ -33,6 +33,11 @@ void PlayerCameraSettings::Normalize()
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
     attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
+    airSlamDistanceMultiplier = glm::clamp(airSlamDistanceMultiplier, 1.0f, 3.0f);
+    airSlamPitchDegrees = glm::clamp(airSlamPitchDegrees, -89.0f, 0.0f);
+    airSlamDistanceSmoothingSpeed =
+        glm::clamp(airSlamDistanceSmoothingSpeed, 0.0f, 50.0f);
+    airSlamReturnDelaySeconds = glm::clamp(airSlamReturnDelaySeconds, 0.0f, 10.0f);
     autoFollowDelaySeconds = glm::clamp(autoFollowDelaySeconds, 0.0f, 5.0f);
     autoFollowRotationDurationSeconds =
         glm::clamp(autoFollowRotationDurationSeconds, 0.05f, 5.0f);
@@ -125,6 +130,18 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             ReadFloat(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
         loadedSettings.attackTargetSmoothingSpeed =
             ReadFloat(cameraNode, "attackTargetSmoothingSpeed", loadedSettings.attackTargetSmoothingSpeed);
+        loadedSettings.airSlamDistanceMultiplier =
+            ReadFloat(cameraNode, "airSlamDistanceMultiplier",
+                      loadedSettings.airSlamDistanceMultiplier);
+        loadedSettings.airSlamPitchDegrees =
+            ReadFloat(cameraNode, "airSlamPitchDegrees",
+                      loadedSettings.airSlamPitchDegrees);
+        loadedSettings.airSlamDistanceSmoothingSpeed =
+            ReadFloat(cameraNode, "airSlamDistanceSmoothingSpeed",
+                      loadedSettings.airSlamDistanceSmoothingSpeed);
+        loadedSettings.airSlamReturnDelaySeconds =
+            ReadFloat(cameraNode, "airSlamReturnDelaySeconds",
+                      loadedSettings.airSlamReturnDelaySeconds);
         loadedSettings.autoFollowDelaySeconds =
             ReadFloat(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
         loadedSettings.autoFollowRotationDurationSeconds =
@@ -252,6 +269,14 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
                 << normalizedSettings.targetSmoothingSpeed;
         emitter << YAML::Key << "attackTargetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.attackTargetSmoothingSpeed;
+        emitter << YAML::Key << "airSlamDistanceMultiplier" << YAML::Value
+                << normalizedSettings.airSlamDistanceMultiplier;
+        emitter << YAML::Key << "airSlamPitchDegrees" << YAML::Value
+                << normalizedSettings.airSlamPitchDegrees;
+        emitter << YAML::Key << "airSlamDistanceSmoothingSpeed" << YAML::Value
+                << normalizedSettings.airSlamDistanceSmoothingSpeed;
+        emitter << YAML::Key << "airSlamReturnDelaySeconds" << YAML::Value
+                << normalizedSettings.airSlamReturnDelaySeconds;
         emitter << YAML::Key << "autoFollowDelaySeconds" << YAML::Value
                 << normalizedSettings.autoFollowDelaySeconds;
         emitter << YAML::Key << "autoFollowRotationDurationSeconds" << YAML::Value

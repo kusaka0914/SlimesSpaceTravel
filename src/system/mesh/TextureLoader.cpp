@@ -5,7 +5,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "thirdParty/stb_image.h"
 
-unsigned int TextureLoader::LoadTexture(const char* path) const
+unsigned int TextureLoader::LoadTexture(
+    const char* path,
+    TextureColorSpace colorSpace) const
 {
     unsigned int texID = 0;
     glGenTextures(1, &texID);
@@ -27,10 +29,34 @@ unsigned int TextureLoader::LoadTexture(const char* path) const
         return 0;
     }
 
-    const GLenum format = (channelCount == 3) ? GL_RGB : GL_RGBA;
+    GLenum format = GL_RGBA;
+    if (channelCount == 1) {
+        format = GL_RED;
+    } else if (channelCount == 2) {
+        format = GL_RG;
+    } else if (channelCount == 3) {
+        format = GL_RGB;
+    }
+    GLenum internalFormat = format;
+    if (colorSpace == TextureColorSpace::SRGB) {
+        if (format == GL_RGB) {
+            internalFormat = GL_SRGB8;
+        } else if (format == GL_RGBA) {
+            internalFormat = GL_SRGB8_ALPHA8;
+        }
+    }
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        internalFormat,
+        width,
+        height,
+        0,
+        format,
+        GL_UNSIGNED_BYTE,
+        data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);

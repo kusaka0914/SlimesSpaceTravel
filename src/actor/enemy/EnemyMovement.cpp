@@ -6,6 +6,8 @@
 #include "actor/Player.h"
 #include "actor/enemy/EnemyStateMachine.h"
 #include "actor/enemy/EnemyStatus.h"
+#include "system/AudioSystem.h"
+#include "system/ParticleSystem.h"
 #include "system/PhysicsSystem.h"
 #include "utils/MathUtils.h"
 
@@ -20,6 +22,7 @@ constexpr float fallBlockSecondsBeforeGroundedEnemyPush = 0.08f;
 constexpr float fallBlockSecondsBeforeEnemyOverlap = 0.20f;
 constexpr float groundedEnemyPushSpeedWorldUnitsPerSecond = 1.2f;
 constexpr float postLandingSeparationSpeedWorldUnitsPerSecond = 0.8f;
+constexpr float ellipseFaceInteriorBoundaryRatio = 0.60f;
 
 bool TryNormalizeDirection(
     const glm::vec3& direction,
@@ -84,7 +87,7 @@ Planet::EllipseSurfaceFace ResolveAllowedEllipseHemisphere(
         referencePosition);
 }
 
-bool IsWithinCurrentEllipseFaceMovementArea(
+float CalculateCurrentEllipseFaceInteriorRatio(
     const Enemy& enemy,
     const glm::vec3& requestedPosition)
 {
@@ -92,7 +95,7 @@ bool IsWithinCurrentEllipseFaceMovementArea(
     if (!planet ||
         planet->GetPlanetShape() !=
             Planet::PlanetShape::Ellipse) {
-        return true;
+        return 1.0f;
     }
 
 
@@ -131,11 +134,93 @@ bool IsWithinCurrentEllipseFaceMovementArea(
 
 
 
-    constexpr float faceInteriorBoundaryRatio = 0.45f;
     return allowedHemisphere ==
                Planet::EllipseSurfaceFace::Front
-        ? projectedVerticalRatio >= faceInteriorBoundaryRatio
-        : projectedVerticalRatio <= -faceInteriorBoundaryRatio;
+        ? projectedVerticalRatio
+        : -projectedVerticalRatio;
+}
+
+bool IsWithinCurrentEllipseFaceMovementArea(
+    const Enemy& enemy,
+    const glm::vec3& requestedPosition)
+{
+    return CalculateCurrentEllipseFaceInteriorRatio(
+               enemy,
+               requestedPosition) >=
+           ellipseFaceInteriorBoundaryRatio;
+}
+
+glm::vec3 AdjustTrackingMovementForEllipseBoundary(
+    const Enemy& enemy,
+    const glm::vec3& requestedMovement)
+{
+    const Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet ||
+        planet->GetPlanetShape() !=
+            Planet::PlanetShape::Ellipse ||
+        IsWithinCurrentEllipseFaceMovementArea(
+            enemy,
+            enemy.GetPos() + requestedMovement)) {
+        return requestedMovement;
+    }
+
+    const float movementLength = glm::length(requestedMovement);
+    glm::vec3 requestedDirection;
+    if (movementLength <= 0.000001f ||
+        !TryNormalizeDirection(
+            requestedMovement,
+            requestedDirection)) {
+        return requestedMovement;
+    }
+
+    const glm::vec3 absoluteScale = glm::abs(planet->GetScale());
+    int verticalAxisIndex = 0;
+    if (absoluteScale.y < absoluteScale[verticalAxisIndex]) {
+        verticalAxisIndex = 1;
+    }
+    if (absoluteScale.z < absoluteScale[verticalAxisIndex]) {
+        verticalAxisIndex = 2;
+    }
+
+    glm::vec3 verticalAxis(0.0f);
+    verticalAxis[verticalAxisIndex] = 1.0f;
+
+    const glm::vec3 surfaceUp =
+        planet->CalculateEllipseSurfaceProjection(enemy.GetPos())
+            .outwardNormal;
+    glm::vec3 inwardBoundaryDirection;
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            verticalAxis,
+            surfaceUp,
+            inwardBoundaryDirection)) {
+        return requestedMovement;
+    }
+
+    if (ResolveAllowedEllipseHemisphere(enemy, *planet) ==
+        Planet::EllipseSurfaceFace::Back) {
+        inwardBoundaryDirection = -inwardBoundaryDirection;
+    }
+
+    const float inwardComponent =
+        glm::dot(requestedDirection, inwardBoundaryDirection);
+    glm::vec3 boundarySlideDirection =
+        requestedDirection -
+        inwardBoundaryDirection * std::min(0.0f, inwardComponent);
+
+    // 境界の接線だけでは曲率によって次の点がわずかに制限外へ出る。
+    // 小さな内向き成分を加えて、境界上の追跡を安定させる。
+    constexpr float inwardSafetyRatio = 0.08f;
+    boundarySlideDirection +=
+        inwardBoundaryDirection * inwardSafetyRatio;
+
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            boundarySlideDirection,
+            surfaceUp,
+            boundarySlideDirection)) {
+        return requestedMovement;
+    }
+
+    return boundarySlideDirection * movementLength;
 }
 
 glm::vec3 ClampAirborneMovementToCurrentEllipseFaceMovementArea(
@@ -151,6 +236,20 @@ glm::vec3 ClampAirborneMovementToCurrentEllipseFaceMovementArea(
     }
 
     const glm::vec3 currentPosition = enemy.GetPos();
+    const float currentInteriorRatio =
+        CalculateCurrentEllipseFaceInteriorRatio(
+            enemy,
+            currentPosition);
+    const float requestedInteriorRatio =
+        CalculateCurrentEllipseFaceInteriorRatio(
+            enemy,
+            currentPosition + requestedMovement);
+    if (currentInteriorRatio <
+            ellipseFaceInteriorBoundaryRatio &&
+        requestedInteriorRatio > currentInteriorRatio) {
+        return requestedMovement;
+    }
+
     if (IsWithinCurrentEllipseFaceMovementArea(
             enemy,
             currentPosition + requestedMovement)) {
@@ -209,6 +308,17 @@ glm::vec3 ClampToCurrentEllipseFaceMovementArea(
     if (!IsWithinCurrentEllipseFaceMovementArea(
             enemy,
             currentPosition)) {
+        const float currentInteriorRatio =
+            CalculateCurrentEllipseFaceInteriorRatio(
+                enemy,
+                currentPosition);
+        const float requestedInteriorRatio =
+            CalculateCurrentEllipseFaceInteriorRatio(
+                enemy,
+                requestedPosition);
+        if (requestedInteriorRatio > currentInteriorRatio) {
+            return requestedPosition;
+        }
         return currentPosition;
     }
 
@@ -316,6 +426,10 @@ void EnemyMovement::FaceNearestPlayerImmediately(Enemy& enemy, const EnemyStatus
 
 void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float deltaTime)
 {
+    Player* nearestPlayer = status.GetNearestPlayer();
+    if (!nearestPlayer) {
+        return;
+    }
 
 
 
@@ -327,11 +441,18 @@ void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float 
         return;
     }
 
-    const glm::vec3 moveDelta =
+    const glm::vec3 requestedMoveDelta =
         tangentialMoveDirection *
         status.GetMoveSpeed() *
         deltaTime;
-    enemy.SetPos(CalculateCollisionAdjustedPos(enemy, moveDelta));
+    const glm::vec3 moveDelta =
+        AdjustTrackingMovementForEllipseBoundary(
+            enemy,
+            requestedMoveDelta);
+    enemy.SetPos(
+        CalculateCollisionAdjustedPos(
+            enemy,
+            moveDelta));
 }
 
 bool EnemyMovement::MoveTowardPlayerQuickly(
@@ -365,9 +486,16 @@ bool EnemyMovement::MoveTowardPlayerQuickly(
         std::max(0.0f, speed) * deltaTime,
         distanceToPlayer - clampedStopDistance);
     const glm::vec3 previousPosition = enemy.GetPos();
-    enemy.SetPos(CalculateCollisionAdjustedPos(
-        enemy,
-        moveDirection * requestedMoveDistance));
+    const glm::vec3 requestedMoveDelta =
+        moveDirection * requestedMoveDistance;
+    const glm::vec3 moveDelta =
+        AdjustTrackingMovementForEllipseBoundary(
+            enemy,
+            requestedMoveDelta);
+    enemy.SetPos(
+        CalculateCollisionAdjustedPos(
+            enemy,
+            moveDelta));
 
     constexpr float minimumMovementDistance = 0.0001f;
     const float actualMovementDistance = glm::length(
@@ -492,6 +620,10 @@ void EnemyMovement::ApplyAirDodgePush(
     float pushSpeed,
     float pushDampingPerSecond)
 {
+    if (mIsGravitySlamActive) {
+        return;
+    }
+
     glm::vec3 tangentialPushDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
             dodgeDirection,
@@ -505,6 +637,262 @@ void EnemyMovement::ApplyAirDodgePush(
         std::max(0.0f, pushSpeed);
     mAirDodgePushDampingPerSecond =
         std::max(0.0f, pushDampingPerSecond);
+}
+
+void EnemyMovement::ApplyAirComboLift(
+    Enemy& enemy,
+    float liftHeight)
+{
+    if (mIsGravitySlamActive) {
+        return;
+    }
+
+    glm::vec3 upDirection;
+    if (!TryNormalizeDirection(
+            enemy.GetUpVec(),
+            upDirection)) {
+        return;
+    }
+
+    constexpr float gravityAcceleration = 9.8f;
+    const float safeLiftHeight =
+        std::max(0.0f, liftHeight);
+    if (enemy.GetLaunchedTimer() >= 0.0f) {
+        const glm::vec3 liftMovement =
+            upDirection * safeLiftHeight;
+        enemy.SetPos(
+            CalculateCollisionAdjustedPos(
+                enemy,
+                liftMovement));
+        return;
+    }
+
+    const float upwardSpeed = std::sqrt(
+        2.0f *
+        gravityAcceleration *
+        safeLiftHeight);
+    enemy.SetVelocity(
+        enemy.GetVelocity() +
+        upDirection * upwardSpeed);
+    enemy.SetShouldJudgeLandingForEnemy(false);
+}
+
+bool EnemyMovement::StartGravitySlam(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyStateMachine& stateMachine,
+    Player& player,
+    float downwardSpeed,
+    float maximumDamage,
+    float fullDamageHeight,
+    float minimumDamageRatio,
+    float groundImpactRadius,
+    bool shouldPlayImpactFeedback)
+{
+    if (mIsGravitySlamActive) {
+        return false;
+    }
+
+    glm::vec3 upDirection;
+    if (!TryNormalizeDirection(
+            enemy.GetUpVec(),
+            upDirection)) {
+        return false;
+    }
+
+    Planet* planet = enemy.GetCurrentPlanet();
+    if (planet &&
+        planet->GetPlanetShape() !=
+            Planet::PlanetShape::Normal) {
+        mGravitySlamStartHeight =
+            planet->CalculateEllipseSurfaceProjection(
+                enemy.GetPos()).distance;
+    } else if (enemy.HasRecordedGroundedTransform()) {
+        mGravitySlamStartHeight = std::max(
+            0.0f,
+            glm::dot(
+                enemy.GetPos() -
+                    enemy.GetLastGroundedPosition(),
+                upDirection));
+    } else {
+        mGravitySlamStartHeight = 0.0f;
+    }
+    mGravitySlamMaximumDamage =
+        std::max(0.0f, maximumDamage);
+    mGravitySlamFullDamageHeight =
+        std::max(0.001f, fullDamageHeight);
+    mGravitySlamMinimumDamageRatio =
+        glm::clamp(minimumDamageRatio, 0.0f, 1.0f);
+    mGravitySlamGroundImpactRadius =
+        std::max(0.0f, groundImpactRadius);
+    mGravitySlamAttacker = &player;
+    mIsGravitySlamActive = true;
+    mShouldPlayGravitySlamImpactFeedback =
+        shouldPlayImpactFeedback;
+
+    mAirDodgePushVelocity = glm::vec3(0.0f);
+    mHasCompletedLaunchApexWait = true;
+    status.ClearLaunchedTimer();
+    stateMachine.StartLaunched(enemy);
+    enemy.SetVelocity(
+        -upDirection *
+        std::max(0.0f, downwardSpeed));
+    enemy.SetOnGroundForEnemy(false);
+    enemy.SetShouldJudgeLandingForEnemy(false);
+    return true;
+}
+
+void EnemyMovement::ResolveGravitySlamImpact(
+    Enemy& enemy,
+    EnemyStatus& status)
+{
+    if (!mIsGravitySlamActive) {
+        return;
+    }
+
+    Player* attacker = mGravitySlamAttacker;
+    const float heightRatio = glm::clamp(
+        mGravitySlamStartHeight /
+            mGravitySlamFullDamageHeight,
+        0.0f,
+        1.0f);
+    const float damageRatio = glm::mix(
+        mGravitySlamMinimumDamageRatio,
+        1.0f,
+        heightRatio);
+    const float baseDamage =
+        mGravitySlamMaximumDamage * damageRatio;
+
+    mIsGravitySlamActive = false;
+    mGravitySlamAttacker = nullptr;
+    const bool shouldPlayImpactFeedback =
+        mShouldPlayGravitySlamImpactFeedback;
+    mShouldPlayGravitySlamImpactFeedback = false;
+
+    if (!attacker ||
+        !enemy.IsAlive()) {
+        return;
+    }
+
+    ParticleSystem* particleSystem =
+        enemy.GetGame()->GetParticleSystem();
+    if (particleSystem) {
+        ParticleSpawnContext context;
+        context.position = enemy.GetPos();
+        context.normal = enemy.GetUpVec();
+        context.direction = enemy.GetUpVec();
+        context.scale = glm::mix(1.0f, 1.8f, heightRatio);
+        particleSystem->Emit("landing_dust", context);
+    }
+
+    enemy.SetIsStrongAttacked(true);
+    enemy.ApplyDamage(
+        attacker->CalculateOutgoingAttackDamage(baseDamage),
+        attacker);
+    ApplyGravitySlamGroundImpactDamage(
+        enemy,
+        *attacker,
+        baseDamage);
+    if (enemy.IsAlive()) {
+        StartGravitySlamImpactKnockBack(
+            enemy,
+            status,
+            *attacker);
+    }
+    enemy.GetGame()->GetAudioSystem()->PlaySE(
+        "attack_air_se");
+    if (shouldPlayImpactFeedback) {
+        enemy.GetGame()->OnAirSlamAttackHit(
+            attacker->GetPlayerNum());
+    }
+}
+
+void EnemyMovement::ApplyGravitySlamGroundImpactDamage(
+    Enemy& slammedEnemy,
+    Player& attacker,
+    float slamDamage) const
+{
+    Planet* planet = slammedEnemy.GetCurrentPlanet();
+    if (!planet || mGravitySlamGroundImpactRadius <= 0.0f) {
+        return;
+    }
+
+    constexpr float groundEnemyDamageRatio = 0.5f;
+    const float groundEnemyDamage =
+        attacker.CalculateOutgoingAttackDamage(
+            std::max(0.0f, slamDamage) *
+            groundEnemyDamageRatio);
+
+    for (Enemy* groundedEnemy : planet->GetEnemies()) {
+        if (!groundedEnemy ||
+            groundedEnemy == &slammedEnemy ||
+            !groundedEnemy->IsAlive() ||
+            !groundedEnemy->GetIsActive() ||
+            !groundedEnemy->IsOnGround() ||
+            !planet->ArePositionsOnSameSurfaceFace(
+                slammedEnemy.GetPos(),
+                groundedEnemy->GetPos())) {
+            continue;
+        }
+
+        const float distanceFromImpact = glm::distance(
+            slammedEnemy.GetPos(),
+            groundedEnemy->GetPos());
+        const float targetRadius =
+            std::max(0.0f, groundedEnemy->GetRadius());
+        if (distanceFromImpact >
+            mGravitySlamGroundImpactRadius + targetRadius) {
+            continue;
+        }
+
+        groundedEnemy->ApplyDamage(
+            groundEnemyDamage,
+            &attacker);
+    }
+}
+
+void EnemyMovement::StartGravitySlamImpactKnockBack(
+    Enemy& enemy,
+    EnemyStatus& status,
+    const Player& attacker)
+{
+    glm::vec3 tangentialKnockBackDirection;
+    const glm::vec3 awayFromAttacker =
+        enemy.GetPos() - attacker.GetPos();
+    if (!TryProjectDirectionOntoSurfaceTangent(
+            awayFromAttacker,
+            enemy.GetUpVec(),
+            tangentialKnockBackDirection) &&
+        !TryProjectDirectionOntoSurfaceTangent(
+            attacker.GetFacingForwardVec(),
+            enemy.GetUpVec(),
+            tangentialKnockBackDirection) &&
+        !TryProjectDirectionOntoSurfaceTangent(
+            enemy.GetFacingForwardVec(),
+            enemy.GetUpVec(),
+            tangentialKnockBackDirection)) {
+        return;
+    }
+
+    constexpr float gravitySlamHorizontalKnockBackMultiplier = 0.4f;
+    status.SetKnockBackFrom(
+        tangentialKnockBackDirection *
+        gravitySlamHorizontalKnockBackMultiplier);
+
+    glm::vec3 upDirection;
+    if (!TryNormalizeDirection(
+            enemy.GetUpVec(),
+            upDirection)) {
+        return;
+    }
+
+    constexpr float upwardSpeedRatio = 0.5f;
+    enemy.SetVelocity(
+        upDirection *
+        status.GetKnockBackSpeed() *
+        upwardSpeedRatio);
+    enemy.NotLand();
+    enemy.SetShouldJudgeLandingForEnemy(false);
 }
 
 void EnemyMovement::UpdateAirDodgePushMovement(
@@ -574,6 +962,7 @@ void EnemyMovement::LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateM
     enemy.GetGame()->OnEnemyLaunched();
 
     mAirDodgePushVelocity = glm::vec3(0.0f);
+    mHasCompletedLaunchApexWait = false;
 
     constexpr float gravityAcceleration = 9.8f;
     const float launchHeight =
@@ -633,6 +1022,7 @@ void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMac
             return;
         }
 
+        mHasCompletedLaunchApexWait = true;
         stateMachine.FinishLaunched(enemy, status);
         return;
     }
@@ -640,6 +1030,7 @@ void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMac
     const glm::vec3 prevVelocity = enemy.GetVelocity();
     ApplyGravityWithContinuousCollision(
         enemy,
+        status,
         deltaTime);
 
     if (enemy.IsOnGround()) {
@@ -654,7 +1045,8 @@ void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMac
     const bool isTop = vPrev > 0.0f && vNow <= 0.0f;
     const bool shouldWaitAtLaunchApex =
         stateMachine.GetActionState() ==
-        EnemyStateMachine::ActionState::Launched;
+            EnemyStateMachine::ActionState::Launched &&
+        !mHasCompletedLaunchApexWait;
     if (isTop && shouldWaitAtLaunchApex) {
         status.SetLaunchedTimer(status.GetDefaultLaunchedTimer());
     }
@@ -662,6 +1054,7 @@ void EnemyMovement::UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMac
 
 void EnemyMovement::ApplyGravityWithContinuousCollision(
     Enemy& enemy,
+    EnemyStatus& status,
     float deltaTime)
 {
     glm::vec3 upDirection;
@@ -801,6 +1194,7 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
         enemy.SetShouldJudgeLandingForEnemy(true);
         enemy.Land(faceConstrainedPosition);
         mEnemyBlockedFallSeconds = 0.0f;
+        ResolveGravitySlamImpact(enemy, status);
         return;
     }
 
@@ -925,6 +1319,45 @@ void EnemyMovement::SeparateAfterOverlappingEnemyLanding(
         CalculateCollisionAdjustedPos(
             enemy,
             separationDelta));
+}
+
+void EnemyMovement::RestoreGroundedEnemyInsideMovementArea(
+    Enemy& enemy)
+{
+    Planet* planet = enemy.GetCurrentPlanet();
+    if (!planet ||
+        planet->GetPlanetShape() !=
+            Planet::PlanetShape::Ellipse ||
+        !enemy.IsAlive() ||
+        !enemy.IsOnGround() ||
+        !enemy.HasRecordedGroundedTransform() ||
+        IsWithinCurrentEllipseFaceMovementArea(
+            enemy,
+            enemy.GetPos())) {
+        return;
+    }
+
+    const glm::vec3& lastGroundedPosition =
+        enemy.GetLastGroundedPosition();
+    if (!IsWithinCurrentEllipseFaceMovementArea(
+            enemy,
+            lastGroundedPosition)) {
+        return;
+    }
+
+    enemy.SetPos(lastGroundedPosition);
+
+    glm::vec3 upDirection;
+    if (TryNormalizeDirection(
+            enemy.GetUpVec(),
+            upDirection)) {
+        enemy.SetVelocity(
+            upDirection *
+            glm::dot(enemy.GetVelocity(), upDirection));
+    } else {
+        enemy.SetVelocity(glm::vec3(0.0f));
+    }
+    mAirDodgePushVelocity = glm::vec3(0.0f);
 }
 
 glm::vec3 EnemyMovement::CalculateCollisionAdjustedPos(Enemy& enemy, const glm::vec3& moveDelta)

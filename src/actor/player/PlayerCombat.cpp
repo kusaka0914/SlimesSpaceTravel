@@ -18,7 +18,6 @@
 
 namespace {
 constexpr float attackDodgeCancelDelaySeconds = 0.5f;
-constexpr float airWeakAttackDamageMultiplier = 2.0f;
 }
 
 PlayerCombat::PlayerCombat(PhysicsSystem& physicsSystem)
@@ -48,6 +47,9 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
             return;
         }
 
+        // 直前の空中弱だけを条件にするため、新しい空中弱を開始した時点で
+        // 前回の命中結果を破棄する。この攻撃が当たれば判定時に再設定される。
+        mHasAirWeakHitForNextDodge = false;
         player.RestartAirborneGravityFallbackDelay();
         ResetGroundAttackCombo();
         ++mAirAttackCount;
@@ -56,9 +58,7 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         mAttackAngle = mWideAttackAngle;
         mAttackCooldownRemaining =
             mAirWeakAttackCooldownSeconds;
-        mAttack =
-            mWideAttack *
-            airWeakAttackDamageMultiplier;
+        mAttack = mWideAttack;
         mIsAirAttacking = true;
         movement.CancelJumpApexHover();
         movement.CancelAirborneActionHover();
@@ -113,12 +113,53 @@ void PlayerCombat::ConfigureStrongAttack()
 
 void PlayerCombat::StartAirSlamAttack()
 {
+    mHasAirWeakHitForNextDodge = false;
+    mDidAirSlamContactEnemy = false;
+    mAirSlamHitEnemies.clear();
     EndContinuousAttacking();
     ConfigureStrongAttack();
     mIsAssistStrongAttack = false;
     mIsStrongAttacked = true;
     mIsCharged = true;
     ClearPendingAttackHit();
+}
+
+bool PlayerCombat::UpdateAirSlamContact(
+    Player& player,
+    const PlayerMovement& movement)
+{
+    const std::vector<Enemy*> touchingEnemies =
+        mHitDetector.FindEnemiesInRadius(
+            player,
+            mStrongAttackRange);
+
+    std::vector<Enemy*> newlyHitEnemies;
+    for (Enemy* enemy : touchingEnemies) {
+        if (!enemy ||
+            enemy->IsOnGround() ||
+            std::find(
+                mAirSlamHitEnemies.begin(),
+                mAirSlamHitEnemies.end(),
+                enemy) != mAirSlamHitEnemies.end()) {
+            continue;
+        }
+
+        mAirSlamHitEnemies.emplace_back(enemy);
+        newlyHitEnemies.emplace_back(enemy);
+    }
+
+    const bool didStartGravitySlam =
+        mAttackResolver.ResolveAirSlamContact(
+            player,
+            movement,
+            newlyHitEnemies,
+            mAirSlamEnemyDownwardSpeed,
+            mStrongAttack,
+            mAirSlamFullDamageHeight,
+            mAirSlamMinimumDamageRatio,
+            !mDidAirSlamContactEnemy);
+    mDidAirSlamContactEnemy |= didStartGravitySlam;
+    return didStartGravitySlam;
 }
 
 bool PlayerCombat::ResolveAirSlamImpact(
@@ -133,18 +174,31 @@ bool PlayerCombat::ResolveAirSlamImpact(
             player,
             mStrongAttackRange);
 
+    bool didHitGroundedEnemy = false;
+    if (!mDidAirSlamContactEnemy) {
+        didHitGroundedEnemy =
+            mAttackResolver.ResolveAirSlamAttack(
+                player,
+                movement,
+                *this,
+                hitEnemies,
+                deltaTime);
+    }
+
     const bool didHitEnemy =
-        mAttackResolver.ResolveAirSlamAttack(
-            player,
-            movement,
-            *this,
-            hitEnemies,
-            deltaTime);
+        mDidAirSlamContactEnemy ||
+        didHitGroundedEnemy;
+    if (!didHitEnemy) {
+        player.GetGame()->GetAudioSystem()->PlaySE(
+            "attack_miss_se");
+    }
 
     mIsStrongAttackHit = didHitEnemy;
     mIsStrongAttacked = false;
     mIsCharged = false;
-    return didHitEnemy;
+    mDidAirSlamContactEnemy = false;
+    mAirSlamHitEnemies.clear();
+    return didHitGroundedEnemy;
 }
 
 void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
@@ -426,6 +480,7 @@ void PlayerCombat::OnLanded()
     mIsAirAttacking = false;
     mAirAttackMovementUnlockedByDodge = false;
     mAirAttackCount = 0;
+    mHasAirWeakHitForNextDodge = false;
     ResetAirWeakAttackHitCount();
     EndAirDodgeAttack();
 }
@@ -433,12 +488,14 @@ void PlayerCombat::OnLanded()
 void PlayerCombat::PrepareAssistAirCombo()
 {
     mAirAttackCount = 0;
+    mHasAirWeakHitForNextDodge = false;
     ResetAirWeakAttackHitCount();
     mIsAirAttacking = false;
 }
 
 bool PlayerCombat::RegisterAirWeakAttackHit()
 {
+    mHasAirWeakHitForNextDodge = true;
     ++mAirWeakAttackHitCount;
     if (mAirWeakAttackHitCount < airWeakAttackHitsForBreak) {
         return false;
@@ -456,6 +513,9 @@ void PlayerCombat::ResetAirWeakAttackHitCount()
 void PlayerCombat::StartAirDodgeAttack()
 {
     mIsAirDodgeAttackActive = true;
+    mIsEnhancedAirDodgeAttackActive =
+        mHasAirWeakHitForNextDodge;
+    mHasAirWeakHitForNextDodge = false;
     mAirDodgeHitEnemies.clear();
 }
 
@@ -498,7 +558,10 @@ void PlayerCombat::UpdateAirDodgeAttack(
             newlyHitEnemies,
             mAirDodgeAttackDamage,
             mAirDodgeEnemyPushSpeed,
-            mAirDodgeEnemyPushDampingPerSecond);
+            mAirDodgeEnemyPushDampingPerSecond,
+            mIsEnhancedAirDodgeAttackActive
+                ? mAirComboDodgeEnemyLiftHeight
+                : 0.0f);
     if (didHitEnemy) {
         mAirAttackCount = 0;
         ResetAirWeakAttackHitCount();
@@ -511,6 +574,7 @@ void PlayerCombat::UpdateAirDodgeAttack(
 void PlayerCombat::EndAirDodgeAttack()
 {
     mIsAirDodgeAttackActive = false;
+    mIsEnhancedAirDodgeAttackActive = false;
     mAirDodgeHitEnemies.clear();
 }
 

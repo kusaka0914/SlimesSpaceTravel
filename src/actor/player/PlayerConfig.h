@@ -33,6 +33,9 @@ struct PlayerConfig {
     float airDodgeVerticalHitboxScale = 2.0f;
     float airDodgeEnemyPushSpeed = 6.0f;
     float airDodgeEnemyPushDampingPerSecond = 8.0f;
+    float airWeakEnemyLiftHeight = 0.45f;
+    float airComboDodgePlayerLiftHeight = 0.8f;
+    float airComboDodgeEnemyLiftHeight = 0.8f;
 
     float normalAttackRange = 2.8f;
     float normalAttackAngle = 0.8f;
@@ -48,6 +51,9 @@ struct PlayerConfig {
     float airSlamRiseHeight = 1.0f;
     float airSlamRiseDurationSeconds = 0.5f;
     float airSlamHoverDurationSeconds = 0.3f;
+    float airSlamEnemyDownwardSpeed = 18.0f;
+    float airSlamFullDamageHeight = 5.0f;
+    float airSlamMinimumDamageRatio = 0.3f;
 
     float chargedAttackRange = 2.6f;
     float chargedAttackAngle = 6.283f;

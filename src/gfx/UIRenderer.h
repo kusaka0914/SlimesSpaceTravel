@@ -154,6 +154,10 @@ public:
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
                             float gap, int count, float screenTopY = 0.0f, float uiScale = 1.0f);
+    void DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
+                                 const std::string& textureName, float gap, int activeSlotCount,
+                                 int totalSlotCount, float inactiveSlotOpacity,
+                                 float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     void DrawTalkUI(const std::vector<std::string>& texts, int talkIndex,
@@ -177,7 +181,8 @@ public:
         float height,
         const std::string& textureName,
         bool flipVertical = false,
-        float rotationDegrees = 0.0f);
+        float rotationDegrees = 0.0f,
+        float opacity = 1.0f);
     void DrawTextureHandle(
         float x,
         float y,

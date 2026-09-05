@@ -148,7 +148,12 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             bool isHit = false;
 
             for (Enemy* enemy : hitEnemies) {
+                if (!enemy) {
+                    continue;
+                }
                 ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
+                enemy->ApplyAirComboLift(
+                    combat.GetAirWeakEnemyLiftHeight());
                 isHit = true;
             }
 
@@ -216,9 +221,6 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
 
     const float groundedEnemyDamage =
         combat.GetNormalAttack();
-    const float airborneEnemyDamage =
-        combat.GetStrongAttack();
-
     bool didHitEnemy = false;
     for (Enemy* enemy : hitEnemies) {
         if (!enemy || enemy->GetIsDead() ||
@@ -226,20 +228,14 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
             continue;
         }
 
-        const bool shouldKnockBackEnemy =
-            !enemy->IsOnGround();
-        if (shouldKnockBackEnemy) {
-            enemy->SetIsStrongAttacked(true);
+        // 空中敵へのダメージは接触時ではなく、敵が惑星へ衝突した時に確定する。
+        if (!enemy->IsOnGround()) {
+            continue;
         }
-
-        const float airSlamDamage =
-            shouldKnockBackEnemy
-                ? airborneEnemyDamage
-                : groundedEnemyDamage;
 
         ApplyDamageWithHitEffect(
             *enemy,
-            airSlamDamage,
+            groundedEnemyDamage,
             player,
             1.45f);
         combat.SetStrongAttackHit(true);
@@ -247,8 +243,56 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
     }
 
     if (!didHitEnemy) {
-        player.GetGame()->GetAudioSystem()->PlaySE(
-            "attack_miss_se");
+        return false;
+    }
+
+    player.GetGame()->OnPlayerAttackHit(
+        movement.GetPlayerNum());
+    player.GetGame()->GetAudioSystem()->PlaySE(
+        "attack_air_se");
+    return true;
+}
+
+bool PlayerAttackResolver::ResolveAirSlamContact(
+    Player& player,
+    const PlayerMovement& movement,
+    const std::vector<Enemy*>& hitEnemies,
+    float enemyDownwardSpeed,
+    float maximumDamage,
+    float fullDamageHeight,
+    float minimumDamageRatio,
+    bool shouldAssignImpactFeedback) const
+{
+    bool didHitEnemy = false;
+    bool canAssignImpactFeedback =
+        shouldAssignImpactFeedback;
+    for (Enemy* enemy : hitEnemies) {
+        if (!enemy ||
+            enemy->GetIsDead() ||
+            !enemy->GetIsActive() ||
+            enemy->IsOnGround()) {
+            continue;
+        }
+
+        const bool didStartGravitySlam =
+            enemy->StartGravitySlam(
+                player,
+                enemyDownwardSpeed,
+                maximumDamage,
+                fullDamageHeight,
+                minimumDamageRatio,
+                player.GetStrongAttackRange(),
+                canAssignImpactFeedback);
+        if (!didStartGravitySlam) {
+            continue;
+        }
+
+        canAssignImpactFeedback = false;
+        EmitAttackHitEffect(player, *enemy, 1.45f);
+        didHitEnemy = true;
+    }
+
+    if (!didHitEnemy) {
         return false;
     }
 
@@ -265,7 +309,8 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
     const std::vector<Enemy*>& hitEnemies,
     float damage,
     float enemyPushSpeed,
-    float enemyPushDampingPerSecond) const
+    float enemyPushDampingPerSecond,
+    float enemyLiftHeight) const
 {
     bool didHitEnemy = false;
     for (Enemy* enemy : hitEnemies) {
@@ -283,6 +328,9 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
             movement.GetDodgeDirection(),
             enemyPushSpeed,
             enemyPushDampingPerSecond);
+        if (enemyLiftHeight > 0.0f) {
+            enemy->ApplyAirComboLift(enemyLiftHeight);
+        }
         didHitEnemy = true;
     }
 
