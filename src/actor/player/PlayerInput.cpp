@@ -140,6 +140,12 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
 {
     Game* game = player.GetGame();
 
+    const bool usesSecondPlayerDebugKeyboardControls =
+        game->GetIsDebugMode() &&
+        game->GetIsPlayer2Joined() &&
+        !game->IsGameControllerConnected() &&
+        movement.GetPlayerNum() == 2;
+
     if (game->GetIsPlayer2Joined()) {
         if (game->HasGameControllerForPlayer(movement.GetPlayerNum())) {
             return;
@@ -164,16 +170,29 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         return;
     }
 
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_W)) {
+    const int forwardKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_UP
+        : GLFW_KEY_W;
+    const int backwardKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_DOWN
+        : GLFW_KEY_S;
+    const int leftKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_LEFT
+        : GLFW_KEY_A;
+    const int rightKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_RIGHT
+        : GLFW_KEY_D;
+
+    if (mInputSystem.IsKeyPressed(forwardKey)) {
         mMoveForward -= 1.0f;
     }
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_S)) {
+    if (mInputSystem.IsKeyPressed(backwardKey)) {
         mMoveForward += 1.0f;
     }
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_A)) {
+    if (mInputSystem.IsKeyPressed(leftKey)) {
         mMoveLeft -= 1.0f;
     }
-    if (mInputSystem.IsKeyPressed(GLFW_KEY_D)) {
+    if (mInputSystem.IsKeyPressed(rightKey)) {
         mMoveLeft += 1.0f;
     }
 
@@ -185,11 +204,27 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mMoveLeft = moveInput.x;
     mMoveForward = moveInput.y;
 
-    mJumpPressed = mInputSystem.IsKeyPressed(GLFW_KEY_SPACE);
-    mAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_K);
-    mWideAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_J);
-    mDodgePressed = mInputSystem.IsKeyPressed(GLFW_KEY_U);
-    mSpecialAttackPressed = mInputSystem.IsKeyPressed(GLFW_KEY_N);
+    const int jumpKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_RIGHT_SHIFT
+        : GLFW_KEY_SPACE;
+    const int attackKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_SLASH
+        : GLFW_KEY_K;
+    const int wideAttackKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_PERIOD
+        : GLFW_KEY_J;
+    const int dodgeKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_RIGHT_CONTROL
+        : GLFW_KEY_U;
+    const int specialAttackKey = usesSecondPlayerDebugKeyboardControls
+        ? GLFW_KEY_RIGHT_ALT
+        : GLFW_KEY_N;
+
+    mJumpPressed = mInputSystem.IsKeyPressed(jumpKey);
+    mAttackPressed = mInputSystem.IsKeyPressed(attackKey);
+    mWideAttackPressed = mInputSystem.IsKeyPressed(wideAttackKey);
+    mDodgePressed = mInputSystem.IsKeyPressed(dodgeKey);
+    mSpecialAttackPressed = mInputSystem.IsKeyPressed(specialAttackKey);
 }
 
 void PlayerInput::UpdateRecoverInput(const Player& player)

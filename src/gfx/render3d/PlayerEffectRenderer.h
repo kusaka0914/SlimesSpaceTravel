@@ -36,7 +36,8 @@ private:
         const glm::mat4& viewMat,
         const Player* player,
         int guardCount,
-        int maximumGuardCount) const;
+        int maximumGuardCount,
+        const PhysicsSystem* physicsSystem) const;
     void DrawPlayerAttackRange(Player* player) const;
     void DrawEnemyAttackRange(Enemy* enemy, bool shouldFlashWhite) const;
     void DrawEnemyFanAttackRange(

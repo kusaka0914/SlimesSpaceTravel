@@ -26,6 +26,7 @@ struct PlayerConfigurationDependencies {
     GamepadRumbleService& gamepadService;
     PauseMenuController& pauseMenuController;
     PhysicsSystem& physicsSystem;
+    bool allowsKeyboardOnlyTwoPlayer = false;
 };
 
 class PlayerConfigurationController {
@@ -123,6 +124,7 @@ private:
     GamepadRumbleService& mGamepadService;
     PauseMenuController& mPauseMenuController;
     PhysicsSystem& mPhysicsSystem;
+    bool mAllowsKeyboardOnlyTwoPlayer = false;
     bool mIsSecondPlayerJoined = false;
     PlayerControlConfigurationState mControlState;
     SplitMergeTransitionState mSplitMergeTransition;

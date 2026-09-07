@@ -171,6 +171,9 @@ void GameFrameRenderer::DrawGameFrame(
         glBindFramebuffer(GL_FRAMEBUFFER, destinationFramebuffer);
     }
     glViewport(0, 0, framebufferWidth, framebufferHeight);
+    glDisable(GL_SCISSOR_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0);
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -221,6 +224,9 @@ void GameFrameRenderer::DrawUGCPreviewFrame(
             mRenderTargets.GetUGCPreviewFramebuffer());
     }
     glViewport(0, 0, previewWidth, previewHeight);
+    glDisable(GL_SCISSOR_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0);
     glClearColor(0.025f, 0.035f, 0.075f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);

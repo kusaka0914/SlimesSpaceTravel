@@ -73,9 +73,13 @@ void PostProcessRenderer::CompositeTo(
     const GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
     const GLboolean wasBlendEnabled = glIsEnabled(GL_BLEND);
     const GLboolean wasCullFaceEnabled = glIsEnabled(GL_CULL_FACE);
+    const GLboolean wasScissorTestEnabled = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean wasDepthWriteEnabled = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &wasDepthWriteEnabled);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE);
+    glDisable(GL_SCISSOR_TEST);
     glDepthMask(GL_FALSE);
 
     glUseProgram(mShader->GetShaderProgram());
@@ -128,15 +132,26 @@ void PostProcessRenderer::CompositeTo(
 
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(0);
-    glDepthMask(GL_TRUE);
+    glDepthMask(wasDepthWriteEnabled);
     if (wasDepthTestEnabled == GL_TRUE) {
         glEnable(GL_DEPTH_TEST);
+    } else {
+        glDisable(GL_DEPTH_TEST);
     }
     if (wasBlendEnabled == GL_TRUE) {
         glEnable(GL_BLEND);
+    } else {
+        glDisable(GL_BLEND);
     }
     if (wasCullFaceEnabled == GL_TRUE) {
         glEnable(GL_CULL_FACE);
+    } else {
+        glDisable(GL_CULL_FACE);
+    }
+    if (wasScissorTestEnabled == GL_TRUE) {
+        glEnable(GL_SCISSOR_TEST);
+    } else {
+        glDisable(GL_SCISSOR_TEST);
     }
     mIsSceneActive = false;
 }

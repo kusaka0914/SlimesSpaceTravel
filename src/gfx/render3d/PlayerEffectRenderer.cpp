@@ -121,7 +121,8 @@ void PlayerEffectRenderer::DrawPlayers(
             viewMat,
             players[0],
             splitGuardCount,
-            maximumSplitGuardCount);
+            maximumSplitGuardCount,
+            physicsSystem);
     }
 
     const bool hasPlayer2 = players.size() >= 2 && players[1];
@@ -138,7 +139,8 @@ void PlayerEffectRenderer::DrawPlayers(
             viewMat,
             players[1],
             splitGuardCount,
-            maximumSplitGuardCount);
+            maximumSplitGuardCount,
+            physicsSystem);
     }
 }
 
@@ -146,7 +148,8 @@ void PlayerEffectRenderer::DrawPlayerSplitGuard(
     const glm::mat4& viewMat,
     const Player* player,
     int guardCount,
-    int maximumGuardCount) const
+    int maximumGuardCount,
+    const PhysicsSystem* physicsSystem) const
 {
     if (!mRenderer ||
         !mRenderer->GetShader3D() ||
@@ -163,6 +166,7 @@ void PlayerEffectRenderer::DrawPlayerSplitGuard(
     }
 
     Shader3D* shader = mRenderer->GetShader3D();
+    glUniform1i(shader->GetLocIsUnlit(), 1);
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
@@ -170,12 +174,21 @@ void PlayerEffectRenderer::DrawPlayerSplitGuard(
     glUniform1i(shader->GetLocUseTexture(), 1);
     quad->SetActive();
 
-    const float playerHeight = std::max(
-        player->GetRadius(),
-        player->GetScale().y);
-    const float upMargin = playerHeight + 0.35f;
     constexpr float guardSize = 0.38f;
     constexpr float guardGap = 0.34f;
+    constexpr float guardBottomGap = 0.08f;
+    constexpr float fallbackPlayerTopHeight = 0.22f;
+    float playerTopHeight = fallbackPlayerTopHeight;
+    if (physicsSystem) {
+        const float collisionScaleMultiplier =
+            player->GetCollisionScaleMultiplier();
+        playerTopHeight =
+            (physicsSystem->GetPlayerCollisionCenterHeight() +
+             physicsSystem->GetPlayerCollisionHeight() * 0.5f) *
+            collisionScaleMultiplier;
+    }
+    const float upMargin =
+        playerTopHeight + guardBottomGap + guardSize * 0.5f;
     for (int guardIndex = 0;
          guardIndex < maximumGuardCount;
          ++guardIndex) {
@@ -217,6 +230,7 @@ void PlayerEffectRenderer::DrawPlayerSplitGuard(
         1.0f);
     glUniform1i(shader->GetLocUseTexture(), 0);
     mRenderer->EndTransparentDraw();
+    glUniform1i(shader->GetLocIsUnlit(), 0);
 }
 
 void PlayerEffectRenderer::DrawPlayerMergeGuide(
@@ -909,6 +923,7 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
 
     Shader3D* shader = mRenderer->GetShader3D();
 
+    glUniform1i(shader->GetLocIsUnlit(), 1);
     mRenderer->StartTransparentDraw();
 
     glActiveTexture(GL_TEXTURE0);
@@ -931,11 +946,17 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
 
     glUniform1i(shader->GetLocUseTexture(), 0);
     mRenderer->EndTransparentDraw();
+    glUniform1i(shader->GetLocIsUnlit(), 0);
 }
 
 void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 {
     if (!mRenderer || !mRenderer->GetShader3D() || !enemy) {
+        return;
+    }
+
+    const float maximumHp = enemy->GetMaxHp();
+    if (maximumHp <= 0.0f) {
         return;
     }
 
@@ -946,23 +967,46 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
 
     Shader3D* shader = mRenderer->GetShader3D();
 
+    glUniform1i(shader->GetLocIsUnlit(), 1);
     mRenderer->StartTransparentDraw();
     hpBar->SetActive();
 
     constexpr float rightMargin = -0.5f;
-
-
     const float upMargin = CalculateEnemyGuardHeight(*enemy) + 0.40f;
-    const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
+    constexpr float maximumHpWidth = 1.0f;
     constexpr float hpHeight = 0.1f;
 
-    const glm::mat4 billboard = mRenderer->CreateBillboard(
-        viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
-    glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
-
-    std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};
-    glUniform4fv(shader->GetLocObjectColor(), 1, hpGreen.data());
+    const glm::mat4 maximumHpBillboard = mRenderer->CreateBillboard(
+        viewMat, enemy, upMargin, rightMargin, maximumHpWidth, hpHeight);
+    glUniformMatrix4fv(
+        shader->GetLocModel(),
+        1,
+        GL_FALSE,
+        glm::value_ptr(maximumHpBillboard));
+    glUniform4f(shader->GetLocObjectColor(), 0.0f, 0.35f, 0.0f, 0.30f);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+    const float remainingHpRatio = glm::clamp(
+        enemy->GetHp() / maximumHp,
+        0.0f,
+        1.0f);
+    if (remainingHpRatio > 0.0f) {
+        const glm::mat4 remainingHpBillboard = mRenderer->CreateBillboard(
+            viewMat,
+            enemy,
+            upMargin,
+            rightMargin,
+            remainingHpRatio,
+            hpHeight);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(remainingHpBillboard));
+        glUniform4f(shader->GetLocObjectColor(), 0.0f, 1.0f, 0.0f, 1.0f);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
     mRenderer->EndTransparentDraw();
+    glUniform1i(shader->GetLocIsUnlit(), 0);
 }

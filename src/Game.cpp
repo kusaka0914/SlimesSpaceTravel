@@ -46,6 +46,7 @@
 #include <cmath>
 #include <iterator>
 #include <iostream>
+#include <thread>
 
 namespace {
 
@@ -157,6 +158,7 @@ bool Game::InitializeGLFW(bool shouldUseFullscreen)
     }
 
     glfwMakeContextCurrent(mWindow);
+    glfwSwapInterval(1);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
@@ -230,6 +232,7 @@ bool Game::CreateGameSystems()
                 .gamepadService = *mGamepadRumbleService,
                 .pauseMenuController = *mPauseMenuController,
                 .physicsSystem = *mPhysicsSystem,
+                .allowsKeyboardOnlyTwoPlayer = mIsDebugMode,
             });
 
     mFrameRenderer = std::make_unique<GameFrameRenderer>(
@@ -308,6 +311,12 @@ void Game::ReloadUIData()
 
 void Game::RunLoop()
 {
+    constexpr int maximumFramesPerSecond = 60;
+    const auto minimumFrameDuration =
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(
+                1.0 / static_cast<double>(maximumFramesPerSecond)));
+
     while (!glfwWindowShouldClose(mWindow)) {
         const auto frameStartTime = std::chrono::steady_clock::now();
         mFramePerformanceTracker.BeginFrame();
@@ -334,6 +343,11 @@ void Game::RunLoop()
         mFramePerformanceTracker.RecordTotalDuration(
             std::chrono::duration<float, std::milli>(
                 std::chrono::steady_clock::now() - frameStartTime).count());
+
+        // VSync can be overridden by the graphics driver. Keep a software
+        // limit as a fallback so the game never drives the GPU unchecked.
+        std::this_thread::sleep_until(
+            frameStartTime + minimumFrameDuration);
     }
 }
 

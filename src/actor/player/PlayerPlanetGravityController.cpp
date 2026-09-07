@@ -24,6 +24,11 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
+    if (mShouldPreservePlatformTakeoffDirection &&
+        !player.GetOnGround()) {
+        return;
+    }
+
 
 
 
@@ -200,6 +205,10 @@ glm::vec3 PlayerPlanetGravityController::
 CalculateAirbornePhysicsUpDirection(
     const Player& player) const
 {
+    if (mShouldPreservePlatformTakeoffDirection) {
+        return mPlatformTakeoffUpDirection;
+    }
+
     if (mIsOverheadGravityRayActive &&
         glm::length(mOverheadGravityUpDirection) > 0.000001f) {
         return glm::normalize(mOverheadGravityUpDirection);
@@ -252,7 +261,8 @@ bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
 
 void PlayerPlanetGravityController::OnJumpStarted(
     Player& player,
-    PlayerMovement& movement)
+    PlayerMovement& movement,
+    bool tookOffFromPlatform)
 {
 
 
@@ -263,7 +273,11 @@ void PlayerPlanetGravityController::OnJumpStarted(
 
 
 
-    if (mIsOverheadGravityRayActive) {
+    const bool shouldPreservePlatformTakeoffDirection =
+        mShouldPreservePlatformTakeoffDirection ||
+        tookOffFromPlatform;
+    if (mIsOverheadGravityRayActive &&
+        !shouldPreservePlatformTakeoffDirection) {
         mIsJumpSwitchingActive = true;
         return;
     }
@@ -287,7 +301,19 @@ void PlayerPlanetGravityController::OnJumpStarted(
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection =
+        shouldPreservePlatformTakeoffDirection;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    if (mShouldPreservePlatformTakeoffDirection) {
+        const glm::vec3 takeoffUpDirection = player.GetUpVec();
+        if (glm::length(takeoffUpDirection) > 0.000001f) {
+            mPlatformTakeoffUpDirection =
+                glm::normalize(takeoffUpDirection);
+        }
+        mSmoothedUpInitialized = false;
+        return;
+    }
 
     const Planet* currentPlanet =
         player.GetCurrentPlanet();
@@ -362,7 +388,9 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
 
@@ -389,8 +417,10 @@ void PlayerPlanetGravityController::OnRespawned()
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection = false;
     mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 }
 

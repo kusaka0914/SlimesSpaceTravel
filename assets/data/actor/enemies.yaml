@@ -69,6 +69,7 @@ enemies:
   - type: boss
     displayName: ボス敵1
     isBoss: true
+    isBossEncounter: true
     behaviorProfile: bossMelee
     hp: 400
     modelPath: enemy_yellow.obj
@@ -126,6 +127,7 @@ enemies:
     displayName: ボス敵2
     behaviorProfile: bossMelee
     isBoss: true
+    isBossEncounter: true
     hp: 600
     modelPath: enemy.obj
     scale: 1
@@ -158,6 +160,7 @@ enemies:
     displayName: 弱いボス敵
     behaviorProfile: bossMelee
     isBoss: false
+    isBossEncounter: false
     hp: 200
     modelPath: enemy.obj
     scale: 0.5
@@ -190,6 +193,7 @@ enemies:
     displayName: ボス敵3
     behaviorProfile: bossMelee
     isBoss: true
+    isBossEncounter: true
     normalHitKnockBackEnabled: false
     hp: 800
     modelPath: enemy.obj
@@ -228,6 +232,7 @@ enemies:
     displayName: 弱いボス敵2
     behaviorProfile: bossMelee
     isBoss: false
+    isBossEncounter: false
     normalHitKnockBackEnabled: false
     hp: 300
     modelPath: enemy.obj
@@ -266,6 +271,7 @@ enemies:
     displayName: ボス敵4
     behaviorProfile: bossMelee
     isBoss: true
+    isBossEncounter: true
     normalHitKnockBackEnabled: false
     hp: 1200
     modelPath: enemy.obj
@@ -307,6 +313,7 @@ enemies:
     displayName: ボス敵5
     behaviorProfile: bossMelee
     isBoss: true
+    isBossEncounter: true
     normalHitKnockBackEnabled: false
     hp: 2000
     modelPath: enemy.obj
@@ -348,6 +355,7 @@ enemies:
     displayName: ボス敵6
     behaviorProfile: bossMelee
     isBoss: true
+    isBossEncounter: true
     normalHitKnockBackEnabled: false
     hp: 10000
     modelPath: enemy.obj

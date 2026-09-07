@@ -168,6 +168,10 @@ EnemyPresetDefinition ReadPreset(
         node,
         "isBoss",
         preset.id == "boss");
+    preset.isBossEncounter = ReadValue<bool>(
+        node,
+        "isBossEncounter",
+        preset.isBoss);
     preset.isNormalHitKnockBackEnabled = ReadValue<bool>(
         node,
         "normalHitKnockBackEnabled",
@@ -278,6 +282,7 @@ void WritePreset(
     node["displayName"] = preset.displayName;
     node["behaviorProfile"] = preset.behaviorProfile;
     node["isBoss"] = preset.isBoss;
+    node["isBossEncounter"] = preset.isBossEncounter;
     node["normalHitKnockBackEnabled"] =
         preset.isNormalHitKnockBackEnabled;
     node["hp"] = preset.hp;

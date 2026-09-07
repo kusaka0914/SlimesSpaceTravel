@@ -17,7 +17,7 @@ void main()
     vec3 viewDirection = normalize(viewPosition - worldPosition);
     vec3 lightDirection = normalize(-sunDirection);
     float fresnel = pow(
-        1.0 - abs(dot(normal, viewDirection)),
+        clamp(1.0 - abs(dot(normal, viewDirection)), 0.0, 1.0),
         max(atmospherePower, 0.01));
     float sunAlignment = dot(normal, lightDirection);
     float nightAmount = 1.0 - smoothstep(-0.30, 0.30, sunAlignment);

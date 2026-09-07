@@ -28,10 +28,12 @@ uniform float nightRimStrength;
 uniform float rimPower;
 uniform float materialMinimumReflectance;
 uniform float materialRimBoost;
+uniform float materialDarkSurfaceLightBoost;
 uniform bool isUnlit;
 uniform float toonLevels;
 uniform float toonStrength;
 uniform vec3 colorMultiplier;
+uniform float colorSaturation;
 uniform bool applyOutputGamma;
 uniform vec3 emissiveColor;
 uniform float emissiveIntensity;
@@ -132,22 +134,43 @@ void main()
     vec3 diffuseLight = finalDiffuse * sunColor * sunIntensity;
     float shadow = CalculateShadow(fragPos, norm, lightDir);
 
-    float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = pow(rim, rimPower);
+    // Normalized vectors can have a dot product slightly above one due to
+    // rounding. A negative pow base can produce NaN and contaminate bloom.
+    float rim = clamp(1.0 - dot(viewDir, norm), 0.0, 1.0);
+    rim = pow(rim, max(rimPower, 0.01));
     float rimStrength = mix(
         dayRimStrength,
         nightRimStrength,
         nightAmount) + materialRimBoost;
     vec3 rimLight = rimStrength * rim * rimColor;
 
+    float baseLuminance = dot(
+        clamp(baseColor.rgb, 0.0, 1.0),
+        vec3(0.2126, 0.7152, 0.0722));
+    float darkSurfaceAmount =
+        1.0 - smoothstep(0.20, 0.70, baseLuminance);
+    vec3 darkSurfaceLight =
+        environmentColor *
+        materialDarkSurfaceLightBoost *
+        darkSurfaceAmount;
+
     vec3 lighting = environmentLight +
-        diffuseLight * (1.0 - shadow) + rimLight;
+        diffuseLight * (1.0 - shadow) +
+        rimLight +
+        darkSurfaceLight;
     vec3 visibleBaseColor = max(
         baseColor.rgb,
         vec3(materialMinimumReflectance));
     vec3 finalColor = visibleBaseColor * lighting;
     finalColor += baseColor.rgb * emissiveColor * emissiveIntensity;
     finalColor *= colorMultiplier;
+    float luminance = dot(
+        finalColor,
+        vec3(0.2126, 0.7152, 0.0722));
+    finalColor = mix(
+        vec3(luminance),
+        finalColor,
+        clamp(colorSaturation, 0.0, 1.0));
     if (applyOutputGamma) {
         finalColor = pow(
             clamp(finalColor, 0.0, 1.0),

@@ -186,7 +186,10 @@ void EnemyPresetDebugPanel::Draw()
         "表示名",
         mPresetDisplayNameBuffer.data(),
         mPresetDisplayNameBuffer.size());
-    ImGui::Checkbox("ボスとして扱う", &mEditedPreset.isBoss);
+    ImGui::Checkbox("ボスの攻撃・耐性を使う", &mEditedPreset.isBoss);
+    ImGui::Checkbox(
+        "ボス戦のBGM・撃破演出を使う",
+        &mEditedPreset.isBossEncounter);
     ImGui::Checkbox(
         "通常攻撃でノックバックする",
         &mEditedPreset.isNormalHitKnockBackEnabled);

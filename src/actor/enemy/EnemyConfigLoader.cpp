@@ -36,6 +36,10 @@ void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
     config.isBoss = ReadBool(enemyNode, "isBoss", config.isBoss);
+    config.isBossEncounter = ReadBool(
+        enemyNode,
+        "isBossEncounter",
+        config.isBoss);
     config.isNormalHitKnockBackEnabled = ReadBool(
         enemyNode,
         "normalHitKnockBackEnabled",
@@ -199,6 +203,7 @@ EnemyConfig EnemyConfigLoader::Parse(
 {
     EnemyConfig config;
     config.isBoss = type == "boss";
+    config.isBossEncounter = config.isBoss;
 
     if (!enemyRoot["enemies"] || !enemyRoot["enemies"].IsSequence()) {
         return config;

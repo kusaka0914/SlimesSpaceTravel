@@ -61,6 +61,7 @@ bool DirectionalShadowMap::Begin(
     mWasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST) == GL_TRUE;
     mWasBlendEnabled = glIsEnabled(GL_BLEND) == GL_TRUE;
     mWasCullFaceEnabled = glIsEnabled(GL_CULL_FACE) == GL_TRUE;
+    mWasScissorTestEnabled = glIsEnabled(GL_SCISSOR_TEST) == GL_TRUE;
 
     glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
     glViewport(
@@ -68,9 +69,11 @@ bool DirectionalShadowMap::Begin(
         0,
         mSettings.mapResolution,
         mSettings.mapResolution);
-    glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
+    glDisable(GL_SCISSOR_TEST);
+    glClearDepth(1.0);
+    glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -114,6 +117,11 @@ void DirectionalShadowMap::End()
         glCullFace(mPreviousCullFaceMode);
     } else {
         glDisable(GL_CULL_FACE);
+    }
+    if (mWasScissorTestEnabled) {
+        glEnable(GL_SCISSOR_TEST);
+    } else {
+        glDisable(GL_SCISSOR_TEST);
     }
     mIsPassActive = false;
     mHasRenderedDepth = true;

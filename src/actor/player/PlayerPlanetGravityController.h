@@ -14,7 +14,8 @@ public:
 
     void OnJumpStarted(
         Player& player,
-        PlayerMovement& movement);
+        PlayerMovement& movement,
+        bool tookOffFromPlatform);
 
     void RestartFallbackDelayForAirborneAction(
         const Player& player);
@@ -32,6 +33,10 @@ public:
     bool ShouldAcceptLandingSurface(
         const glm::vec3& surfaceNormal) const;
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
+    bool ShouldPreservePlatformTakeoffDirection() const
+    {
+        return mShouldPreservePlatformTakeoffDirection;
+    }
 
 private:
     void SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet);
@@ -106,8 +111,10 @@ private:
     bool mUseEllipseSurfaceGravity = false;
     bool mIsNearbySurfaceAttractionActive = false;
     bool mIsNearbySurfaceAttractionPullActive = false;
+    bool mShouldPreservePlatformTakeoffDirection = false;
     Planet* mLastLandedPlanet = nullptr;
     glm::vec3 mOverheadGravityUpDirection{0.0f, 1.0f, 0.0f};
+    glm::vec3 mPlatformTakeoffUpDirection{0.0f, 1.0f, 0.0f};
 
     // Actor::UpdateUpVecによる毎フレームの書き換えに影響されないよう、
     // 補間中の上方向をこのクラスで保持する。

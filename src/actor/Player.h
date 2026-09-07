@@ -572,6 +572,8 @@ private:
         Actor* surfaceActor,
         const glm::vec3& surfaceNormal) const override;
 
+    bool ShouldUpdateUpVecEveryFrame() const override;
+
     void OnLanded() override;
     void OnUpVecUpdateFailed() override;
     void OnGroundSurfaceDetected() override;

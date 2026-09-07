@@ -24,6 +24,10 @@ public:
     int GetLocRimPower() const { return mLocRimPower; }
     int GetLocMaterialMinimumReflectance() const { return mLocMaterialMinimumReflectance; }
     int GetLocMaterialRimBoost() const { return mLocMaterialRimBoost; }
+    int GetLocMaterialDarkSurfaceLightBoost() const
+    {
+        return mLocMaterialDarkSurfaceLightBoost;
+    }
     int GetLocIsUnlit() const { return mLocIsUnlit; }
     int GetLocUseSkinning() const { return mLocUseSkinning; }
     int GetLocUseInstancing() const { return mLocUseInstancing; }
@@ -36,6 +40,7 @@ public:
         return mLocTextureSideBlendWidth;
     }
     int GetLocColorMultiplier() const { return mLocColorMultiplier; }
+    int GetLocColorSaturation() const { return mLocColorSaturation; }
     int GetLocApplyOutputGamma() const { return mLocApplyOutputGamma; }
     int GetLocEmissiveColor() const { return mLocEmissiveColor; }
     int GetLocEmissiveIntensity() const { return mLocEmissiveIntensity; }
@@ -61,6 +66,7 @@ private:
     int mLocRimPower;
     int mLocMaterialMinimumReflectance;
     int mLocMaterialRimBoost;
+    int mLocMaterialDarkSurfaceLightBoost;
     int mLocIsUnlit;
     int mLocUseSkinning;
     int mLocUseInstancing;
@@ -70,6 +76,7 @@ private:
     int mLocBackTexture;
     int mLocTextureSideBlendWidth;
     int mLocColorMultiplier;
+    int mLocColorSaturation;
     int mLocApplyOutputGamma;
     int mLocEmissiveColor;
     int mLocEmissiveIntensity;

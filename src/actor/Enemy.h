@@ -52,6 +52,10 @@ public:
     void StartBossHitReaction();
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
+    void SetIsBossEncounter(bool isBossEncounter)
+    {
+        mIsBossEncounter = isBossEncounter;
+    }
     void SetIsNormalHitKnockBackEnabled(bool isEnabled)
     {
         mStatus.SetIsNormalHitKnockBackEnabled(isEnabled);
@@ -86,6 +90,7 @@ public:
 
     bool GetIsDead() const { return mStateMachine->IsDead(); }
     bool GetIsBoss() const { return mStatus.GetIsBoss(); }
+    bool IsBossEncounter() const { return mIsBossEncounter; }
     bool IsNormalHitKnockBackEnabled() const
     {
         return mStatus.IsNormalHitKnockBackEnabled();
@@ -217,6 +222,7 @@ private:
     glm::vec3 mLastGroundedPosition{0.0f};
     glm::vec3 mLastGroundedUpDirection{0.0f, 1.0f, 0.0f};
     bool mHasRecordedGroundedTransform = false;
+    bool mIsBossEncounter = false;
     bool mShouldDropJewelOnDeath = false;
     bool mShouldUseFullRateUpdate = true;
     Player* mSoloSplitAggroOverridePlayer = nullptr;

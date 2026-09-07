@@ -49,6 +49,7 @@ private:
     bool mWasDepthTestEnabled = false;
     bool mWasBlendEnabled = false;
     bool mWasCullFaceEnabled = false;
+    bool mWasScissorTestEnabled = false;
     bool mWasDepthWriteEnabled = true;
     bool mIsPassActive = false;
     bool mHasRenderedDepth = false;

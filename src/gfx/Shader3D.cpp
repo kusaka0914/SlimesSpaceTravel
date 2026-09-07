@@ -38,6 +38,10 @@ void Shader3D::Initialize()
         glGetUniformLocation(mShaderProgram, "materialMinimumReflectance");
     mLocMaterialRimBoost =
         glGetUniformLocation(mShaderProgram, "materialRimBoost");
+    mLocMaterialDarkSurfaceLightBoost =
+        glGetUniformLocation(
+            mShaderProgram,
+            "materialDarkSurfaceLightBoost");
     mLocIsUnlit = glGetUniformLocation(mShaderProgram, "isUnlit");
     mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
     mLocUseInstancing =
@@ -52,6 +56,8 @@ void Shader3D::Initialize()
         glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
     mLocColorMultiplier =
         glGetUniformLocation(mShaderProgram, "colorMultiplier");
+    mLocColorSaturation =
+        glGetUniformLocation(mShaderProgram, "colorSaturation");
     mLocApplyOutputGamma =
         glGetUniformLocation(mShaderProgram, "applyOutputGamma");
     mLocEmissiveColor =

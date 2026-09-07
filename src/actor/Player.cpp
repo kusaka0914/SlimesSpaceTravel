@@ -483,6 +483,8 @@ void Player::UpdateActor(float deltaTime)
     }
 
     const bool wasOnGroundBeforeLandingCheck = GetOnGround();
+    const bool wasStandingOnPlatformBeforeLandingCheck =
+        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
     const glm::vec3 velocityBeforeLandingCheck = GetVelocity();
     const glm::vec3 upBeforeLandingCheck = GetUpVec();
 
@@ -496,7 +498,8 @@ void Player::UpdateActor(float deltaTime)
 
         mPlanetGravityController.OnJumpStarted(
             *this,
-            mMovement);
+            mMovement,
+            wasStandingOnPlatformBeforeLandingCheck);
     }
 
     float landingSpeed = 0.0f;
@@ -507,6 +510,8 @@ void Player::UpdateActor(float deltaTime)
     }
 
     const bool wasOnGroundBeforeStateUpdate = GetOnGround();
+    const bool wasStandingOnPlatformBeforeStateUpdate =
+        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
     const PlayerActionState previousActionState = mStateMachine.GetActionState();
 
     mPlanetGravityController.Update(*this, mMovement, deltaTime);
@@ -521,7 +526,8 @@ void Player::UpdateActor(float deltaTime)
     if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
         mPlanetGravityController.OnJumpStarted(
             *this,
-            mMovement);
+            mMovement,
+            wasStandingOnPlatformBeforeStateUpdate);
     }
 
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
@@ -645,12 +651,15 @@ void Player::ApplyDamageFromActor(
 void Player::StartDamageKnockBack(
     const glm::vec3& damageSourcePosition)
 {
+    const bool wasStandingOnPlatform =
+        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
     mMovement.StartKnockBack(
         *this,
         damageSourcePosition);
     mPlanetGravityController.OnJumpStarted(
         *this,
-        mMovement);
+        mMovement,
+        wasStandingOnPlatform);
 }
 
 void Player::AddJewelFromItem()
@@ -843,6 +852,12 @@ bool Player::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& su
     }
 
     return mPlanetGravityController.ShouldAcceptLandingSurface(surfaceNormal);
+}
+
+bool Player::ShouldUpdateUpVecEveryFrame() const
+{
+    return !mPlanetGravityController
+        .ShouldPreservePlatformTakeoffDirection();
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const

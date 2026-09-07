@@ -154,6 +154,7 @@ bool Enemy::ShouldAcceptLandingSurface(
 void Enemy::ApplyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
+    SetIsBossEncounter(config.isBossEncounter);
     SetIsNormalHitKnockBackEnabled(
         config.isNormalHitKnockBackEnabled);
     SetKnockBackSpeed(config.knockBackSpeed);
@@ -416,6 +417,10 @@ Player* Enemy::ResolvePursuitTarget()
             continue;
         }
         return player;
+    }
+
+    if (CanPursuePlayerOnCurrentSurface(*this, controlledPlayer)) {
+        return controlledPlayer;
     }
 
     return nullptr;

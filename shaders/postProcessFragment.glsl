@@ -17,6 +17,17 @@ const int BRIGHT_EXTRACTION_PASS = 0;
 const int BLUR_PASS = 1;
 const int COMPOSITE_PASS = 2;
 
+vec3 SanitizeHdrColor(vec3 color)
+{
+    // One non-finite scene pixel otherwise spreads across every blur pass.
+    for (int channel = 0; channel < 3; ++channel) {
+        if (isnan(color[channel]) || isinf(color[channel])) {
+            color[channel] = 0.0;
+        }
+    }
+    return max(color, vec3(0.0));
+}
+
 vec3 ExtractBrightColor(vec3 sceneColor)
 {
     float brightness = max(sceneColor.r, max(sceneColor.g, sceneColor.b));
@@ -77,7 +88,8 @@ void main()
 {
     if (renderPass == BRIGHT_EXTRACTION_PASS) {
         fragColor = vec4(
-            ExtractBrightColor(texture(sceneTexture, texCoord).rgb),
+            ExtractBrightColor(SanitizeHdrColor(
+                texture(sceneTexture, texCoord).rgb)),
             1.0);
         return;
     }
@@ -86,8 +98,8 @@ void main()
         return;
     }
 
-    vec3 hdrColor = texture(sceneTexture, texCoord).rgb;
-    hdrColor += texture(bloomTexture, texCoord).rgb * bloomStrength;
+    vec3 hdrColor = SanitizeHdrColor(texture(sceneTexture, texCoord).rgb);
+    hdrColor += SanitizeHdrColor(texture(bloomTexture, texCoord).rgb) * bloomStrength;
     vec3 toneMappedColor = ApplyAcesToneMapping(hdrColor * exposure);
     vec3 displayColor = pow(toneMappedColor, vec3(1.0 / 2.2));
     fragColor = vec4(displayColor, 1.0);

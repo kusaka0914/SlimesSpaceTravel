@@ -779,13 +779,17 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
     mLifeState = LifeState::Dying;
     enemy.SetShouldDropJewelOnDeath(
-        !status.GetIsBoss());
+        !enemy.IsBossEncounter());
     constexpr float normalEnemyDyingDuration = 1.0f;
     constexpr float bossDyingDuration = 3.0f;
-    status.SetDyingTimer(status.GetIsBoss() ? bossDyingDuration : normalEnemyDyingDuration);
+    float dyingDuration = normalEnemyDyingDuration;
+    if (enemy.IsBossEncounter()) {
+        dyingDuration = bossDyingDuration;
+    }
+    status.SetDyingTimer(dyingDuration);
     status.SetHpZero();
 
-    if (status.GetIsBoss()) {
+    if (enemy.IsBossEncounter()) {
         enemy.SetVelocity(glm::vec3(0.0f));
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
@@ -826,7 +830,7 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
         enemy.GetCurrentPlanet()->OnEnemyDead();
     }
 
-    if (!status.GetIsBoss() || !enemy.GetCurrentPlanet()) {
+    if (!enemy.IsBossEncounter() || !enemy.GetCurrentPlanet()) {
         return;
     }
 

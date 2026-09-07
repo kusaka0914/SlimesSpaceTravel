@@ -68,18 +68,29 @@ struct EmissiveAppearance {
 struct SurfaceLightingAppearance {
     float minimumReflectance = 0.0f;
     float rimBoost = 0.0f;
+    float darkSurfaceLightBoost = 0.0f;
 };
 
 SurfaceLightingAppearance ResolveSurfaceLightingAppearance(
     const Actor* actor)
 {
     if (dynamic_cast<const Platform*>(actor)) {
-        return {0.055f, 0.055f};
+        return {0.055f, 0.105f, 0.20f};
     }
     if (dynamic_cast<const StageObject*>(actor)) {
-        return {0.025f, 0.025f};
+        return {0.025f, 0.025f, 0.0f};
     }
     return {};
+}
+
+float ResolveColorSaturation(const Actor* actor)
+{
+    const Planet* planet = dynamic_cast<const Planet*>(actor);
+    if (planet &&
+        planet->GetVisualSettings().biome == Planet::Biome::Grassland) {
+        return 0.85f;
+    }
+    return 1.0f;
 }
 
 EmissiveAppearance ResolveEmissiveAppearance(const Actor* actor)
@@ -930,6 +941,9 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
         mLightingSettings.rimPower);
     glUniform1f(mShader3D->GetLocMaterialMinimumReflectance(), 0.0f);
     glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
+    glUniform1f(
+        mShader3D->GetLocMaterialDarkSurfaceLightBoost(),
+        0.0f);
     glUniform1i(mShader3D->GetLocIsUnlit(), 0);
     glUniform1i(mShader3D->GetLocUseBackTexture(), 0);
     glUniform1i(mShader3D->GetLocBackTexture(), 1);
@@ -939,6 +953,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
         1.0f,
         1.0f,
         1.0f);
+    glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
     glUniform1i(mShader3D->GetLocApplyOutputGamma(), 0);
     glUniform3f(
         mShader3D->GetLocEmissiveColor(),
@@ -1175,6 +1190,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         layerBrightness,
         layerBrightness,
         layerBrightness);
+    glUniform1f(
+        mShader3D->GetLocColorSaturation(),
+        ResolveColorSaturation(actor));
 
     const EmissiveAppearance emissiveAppearance =
         ResolveEmissiveAppearance(actor);
@@ -1194,6 +1212,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
     glUniform1f(
         mShader3D->GetLocMaterialRimBoost(),
         surfaceLightingAppearance.rimBoost);
+    glUniform1f(
+        mShader3D->GetLocMaterialDarkSurfaceLightBoost(),
+        surfaceLightingAppearance.darkSurfaceLightBoost);
 
     const glm::mat4 model = CreateActorModelMatrix(actor, useOrient, 1.0f);
     glUniformMatrix4fv(mShader3D->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
@@ -1213,11 +1234,15 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
             1.0f,
             1.0f,
             1.0f);
+        glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
         glUniform1f(mShader3D->GetLocEmissiveIntensity(), 0.0f);
         glUniform1f(
             mShader3D->GetLocMaterialMinimumReflectance(),
             0.0f);
         glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
+        glUniform1f(
+            mShader3D->GetLocMaterialDarkSurfaceLightBoost(),
+            0.0f);
         return;
     }
 
@@ -1301,6 +1326,7 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         1.0f,
         1.0f,
         1.0f);
+    glUniform1f(mShader3D->GetLocColorSaturation(), 1.0f);
     glUniform3f(
         mShader3D->GetLocEmissiveColor(),
         1.0f,
@@ -1311,6 +1337,9 @@ void Renderer3D::DrawActor(Actor* actor, bool useOrient) const
         mShader3D->GetLocMaterialMinimumReflectance(),
         0.0f);
     glUniform1f(mShader3D->GetLocMaterialRimBoost(), 0.0f);
+    glUniform1f(
+        mShader3D->GetLocMaterialDarkSurfaceLightBoost(),
+        0.0f);
 }
 
 VertexArray* Renderer3D::FindVertexArray(

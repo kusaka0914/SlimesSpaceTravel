@@ -25,6 +25,8 @@ void NPCProximityMessageRenderer::Draw(
     const glm::mat4& viewMat,
     const std::vector<Planet*>& planets) const
 {
+    return;
+
     if (!mRenderer || !mRenderer->GetGame() ||
         !mRenderer->GetShader3D()) {
         return;

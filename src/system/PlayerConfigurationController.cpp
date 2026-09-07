@@ -131,7 +131,9 @@ PlayerConfigurationController::PlayerConfigurationController(
       mProgressController(dependencies.progressController),
       mGamepadService(dependencies.gamepadService),
       mPauseMenuController(dependencies.pauseMenuController),
-      mPhysicsSystem(dependencies.physicsSystem)
+      mPhysicsSystem(dependencies.physicsSystem),
+      mAllowsKeyboardOnlyTwoPlayer(
+          dependencies.allowsKeyboardOnlyTwoPlayer)
 {
 }
 
@@ -172,7 +174,11 @@ void PlayerConfigurationController::SynchronizeAfterStageReload()
 
 void PlayerConfigurationController::JoinSecondPlayer()
 {
-    if (mIsSecondPlayerJoined || !mGamepadService.IsConnected()) {
+    const bool canJoinWithoutController =
+        mAllowsKeyboardOnlyTwoPlayer &&
+        !mGamepadService.IsConnected();
+    if (mIsSecondPlayerJoined ||
+        (!mGamepadService.IsConnected() && !canJoinWithoutController)) {
         return;
     }
 
@@ -203,7 +209,8 @@ bool PlayerConfigurationController::CanStartTwoPlayerFromPauseMenu() const
 {
     return mIsSecondPlayerJoined ||
            (mProgressController.IsStageCleared(1) &&
-            mGamepadService.IsConnected());
+            (mGamepadService.IsConnected() ||
+             mAllowsKeyboardOnlyTwoPlayer));
 }
 
 bool PlayerConfigurationController::ToggleSplit()
