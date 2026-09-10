@@ -120,7 +120,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: false
       - id: combo
-        text: "敵を連続で3回攻撃すると、\n敵の頭上のガードを1つ破壊できるんだ！"
+        text: "敵を攻撃すると、どんどん敵のガードを減らせるよ！\nガードは敵の頭上の青いバーのことね！"
         ruby:
           common:
             - text: 敵
@@ -128,24 +128,23 @@ tutorials:
               reading: てき
             - text: を
               ruby: false
-            - text: 連
-              ruby: true
-              reading: れん
-            - text: 続
-              ruby: true
-              reading: ぞく
-            - text: で3
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
             - text: 攻
               ruby: true
               reading: こう
             - text: 撃
               ruby: true
               reading: げき
-            - text: "すると、\n"
+            - text: すると、どんどん
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: のガードを
+              ruby: false
+            - text: 減
+              ruby: true
+              reading: へ
+            - text: "らせるよ！\nガードは"
               ruby: false
             - text: 敵
               ruby: true
@@ -158,15 +157,12 @@ tutorials:
             - text: 上
               ruby: true
               reading: じょう
-            - text: のガードを1つ
+            - text: の
               ruby: false
-            - text: 破
+            - text: 青
               ruby: true
-              reading: は
-            - text: 壊
-              ruby: true
-              reading: かい
-            - text: できるんだ！
+              reading: あお
+            - text: いバーのことね！
               ruby: false
         advance: confirm
         video:
@@ -926,36 +922,90 @@ tutorials:
           loop: true
           preserveAspectRatio: true
           flipVertical: true
-      - id: air_strong_attack
-        text: ""
-        controllerText: "そして、敵が白く点滅した時に空中でXを押すと、\n一番強い攻撃が出せるよ！"
-        keyboardText: "そして、敵が白く点滅した時に空中でKを押すと、\n一番強い攻撃が出せるよ！"
+      - id: page_6
+        text: "空中では攻撃するたびに敵が高く高く上がっていくよ！\n何度も攻撃してできるだけ高くまで上げてね！"
         ruby:
-          controller:
-            - text: そして、
+          common:
+            - text: 空
+              ruby: true
+              reading: くう
+            - text: 中
+              ruby: true
+              reading: ちゅう
+            - text: では
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: するたびに
               ruby: false
             - text: 敵
               ruby: true
               reading: てき
             - text: が
               ruby: false
-            - text: 白
+            - text: 高
               ruby: true
-              reading: しろ
+              reading: たか
             - text: く
               ruby: false
-            - text: 点
+            - text: 高
               ruby: true
-              reading: てん
-            - text: 滅
-              ruby: true
-              reading: めつ
-            - text: した
+              reading: たか
+            - text: く
               ruby: false
-            - text: 時
+            - text: 上
               ruby: true
-              reading: とき
-            - text: に
+              reading: あ
+            - text: "がっていくよ！\n"
+              ruby: false
+            - text: 何
+              ruby: true
+              reading: なん
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: も
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: してできるだけ
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: くまで
+              ruby: false
+            - text: 上
+              ruby: true
+              reading: あ
+            - text: げてね！
+              ruby: false
+        advance: confirm
+        video:
+          asset: videos/battle_air_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
+      - id: air_strong_attack
+        text: ""
+        controllerText: "そして、空中でXを押すと、敵を惑星に叩きつけ\n一番強い攻撃が出せるよ！"
+        keyboardText: "そして、空中でKを押すと、敵を惑星に叩きつけて大ダメージ！\n高ければ高いほどダメージが大きくなるよ！"
+        ruby:
+          controller:
+            - text: そして、
               ruby: false
             - text: 空
               ruby: true
@@ -968,7 +1018,25 @@ tutorials:
             - text: 押
               ruby: true
               reading: お
-            - text: "すと、\n"
+            - text: すと、
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: を
+              ruby: false
+            - text: 惑
+              ruby: true
+              reading: わく
+            - text: 星
+              ruby: true
+              reading: せい
+            - text: に
+              ruby: false
+            - text: 叩
+              ruby: true
+              reading: たた
+            - text: "きつけ\n"
               ruby: false
             - text: 一
               ruby: true
@@ -997,29 +1065,6 @@ tutorials:
           keyboard:
             - text: そして、
               ruby: false
-            - text: 敵
-              ruby: true
-              reading: てき
-            - text: が
-              ruby: false
-            - text: 白
-              ruby: true
-              reading: しろ
-            - text: く
-              ruby: false
-            - text: 点
-              ruby: true
-              reading: てん
-            - text: 滅
-              ruby: true
-              reading: めつ
-            - text: した
-              ruby: false
-            - text: 時
-              ruby: true
-              reading: とき
-            - text: に
-              ruby: false
             - text: 空
               ruby: true
               reading: くう
@@ -1031,31 +1076,45 @@ tutorials:
             - text: 押
               ruby: true
               reading: お
-            - text: "すと、\n"
+            - text: すと、
               ruby: false
-            - text: 一
+            - text: 敵
               ruby: true
-              reading: いち
-            - text: 番
-              ruby: true
-              reading: ばん
-            - text: 強
-              ruby: true
-              reading: つよ
-            - text: い
+              reading: てき
+            - text: を
               ruby: false
-            - text: 攻
+            - text: 惑
               ruby: true
-              reading: こう
-            - text: 撃
+              reading: わく
+            - text: 星
               ruby: true
-              reading: げき
-            - text: が
+              reading: せい
+            - text: に
               ruby: false
-            - text: 出
+            - text: 叩
               ruby: true
-              reading: だ
-            - text: せるよ！
+              reading: たた
+            - text: きつけて
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: "ダメージ！\n"
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: ければ
+              ruby: false
+            - text: 高
+              ruby: true
+              reading: たか
+            - text: いほどダメージが
+              ruby: false
+            - text: 大
+              ruby: true
+              reading: おお
+            - text: きくなるよ！
               ruby: false
         advance: confirm
         video:
@@ -1070,8 +1129,8 @@ tutorials:
           flipVertical: true
       - id: break_summary
         text: ""
-        controllerText: "ガードを壊して打ち上げる！空中でY→Y→Y→Bを繰り返す！\n点滅したらX！これでどんどん敵を倒していこう！"
-        keyboardText: "ガードを壊して打ち上げる！空中でJ→J→J→Uを繰り返す！\n点滅したらK！これでどんどん敵を倒していこう！"
+        controllerText: "ガードを壊して打ち上げる！空中でY→Y→Y→Bを繰り返す！\n高く上げて最後はXで叩きつけ！これで敵を倒していこう！"
+        keyboardText: "ガードを壊して打ち上げる！空中でJ→J→J→Uを繰り返す！\n高く上げて最後はKで叩きつけ！これで敵を倒していこう！"
         ruby:
           controller:
             - text: ガードを
@@ -1109,13 +1168,28 @@ tutorials:
               reading: かえ
             - text: "す！\n"
               ruby: false
-            - text: 点
+            - text: 高
               ruby: true
-              reading: てん
-            - text: 滅
+              reading: たか
+            - text: く
+              ruby: false
+            - text: 上
               ruby: true
-              reading: めつ
-            - text: したらX！これでどんどん
+              reading: あ
+            - text: げて
+              ruby: false
+            - text: 最
+              ruby: true
+              reading: さい
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: はXで
+              ruby: false
+            - text: 叩
+              ruby: true
+              reading: たた
+            - text: きつけ！これで
               ruby: false
             - text: 敵
               ruby: true
@@ -1163,13 +1237,28 @@ tutorials:
               reading: かえ
             - text: "す！\n"
               ruby: false
-            - text: 点
+            - text: 高
               ruby: true
-              reading: てん
-            - text: 滅
+              reading: たか
+            - text: く
+              ruby: false
+            - text: 上
               ruby: true
-              reading: めつ
-            - text: したらK！これでどんどん
+              reading: あ
+            - text: げて
+              ruby: false
+            - text: 最
+              ruby: true
+              reading: さい
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: はKで
+              ruby: false
+            - text: 叩
+              ruby: true
+              reading: たた
+            - text: きつけ！これで
               ruby: false
             - text: 敵
               ruby: true
@@ -1560,6 +1649,201 @@ tutorials:
           loop: true
           preserveAspectRatio: true
           flipVertical: true
+      - id: page_6
+        text: "あと、分身すると敵は分身を狙うようになるよ！\n分身は最大3回までガードできるんだ！"
+        ruby:
+          common:
+            - text: あと、
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: すると
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: は
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: を
+              ruby: false
+            - text: 狙
+              ruby: true
+              reading: ねら
+            - text: "うようになるよ！\n"
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: は
+              ruby: false
+            - text: 最
+              ruby: true
+              reading: さい
+            - text: 大
+              ruby: true
+              reading: だい
+            - text: 3
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: までガードできるんだ！
+              ruby: false
+        advance: confirm
+        video:
+          asset: videos/battle_split_tutorial.mp4
+          xRatio: 0.0435
+          yRatio: 0.2023
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: false
+      - id: page_7
+        text: "でもそれ以降はダメージを受けちゃうんだ...！\n分身のガードを回復したいときは合体してね！"
+        ruby:
+          common:
+            - text: でもそれ
+              ruby: false
+            - text: 以
+              ruby: true
+              reading: い
+            - text: 降
+              ruby: true
+              reading: こう
+            - text: はダメージを
+              ruby: false
+            - text: 受
+              ruby: true
+              reading: う
+            - text: "けちゃうんだ...！\n"
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: のガードを
+              ruby: false
+            - text: 回
+              ruby: true
+              reading: かい
+            - text: 復
+              ruby: true
+              reading: ふく
+            - text: したいときは
+              ruby: false
+            - text: 合
+              ruby: true
+              reading: がっ
+            - text: 体
+              ruby: true
+              reading: たい
+            - text: してね！
+              ruby: false
+        advance: confirm
+        video:
+          asset: videos/battle_split_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
+      - id: page_8
+        text: "何度か攻撃するとあなたを狙うようになるから、\n狙われたら分身に切り替えて攻撃を繰り返そう！"
+        ruby:
+          common:
+            - text: 何
+              ruby: true
+              reading: なん
+            - text: 度
+              ruby: true
+              reading: ど
+            - text: か
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: するとあなたを
+              ruby: false
+            - text: 狙
+              ruby: true
+              reading: ねら
+            - text: "うようになるから、\n"
+              ruby: false
+            - text: 狙
+              ruby: true
+              reading: ねら
+            - text: われたら
+              ruby: false
+            - text: 分
+              ruby: true
+              reading: ぶん
+            - text: 身
+              ruby: true
+              reading: しん
+            - text: に
+              ruby: false
+            - text: 切
+              ruby: true
+              reading: き
+            - text: り
+              ruby: false
+            - text: 替
+              ruby: true
+              reading: か
+            - text: えて
+              ruby: false
+            - text: 攻
+              ruby: true
+              reading: こう
+            - text: 撃
+              ruby: true
+              reading: げき
+            - text: を
+              ruby: false
+            - text: 繰
+              ruby: true
+              reading: く
+            - text: り
+              ruby: false
+            - text: 返
+              ruby: true
+              reading: かえ
+            - text: そう！
+              ruby: false
+        advance: confirm
+        video:
+          asset: videos/battle_split_tutorial.mp4
+          xRatio: 0.54
+          yRatio: 0.03
+          widthRatio: 0.38
+          heightRatio: 0.21375
+          rotationDegrees: 0
+          loop: true
+          preserveAspectRatio: true
+          flipVertical: true
       - id: finish
         text: "さあ、これまでやってきたことを使って、\nボスを倒しに行こう！"
         ruby:
@@ -1582,16 +1866,6 @@ tutorials:
             - text: こう！
               ruby: false
         advance: confirm
-        video:
-          asset: videos/battle_counter_tutorial.mp4
-          xRatio: 0.54
-          yRatio: 0.03
-          widthRatio: 0.38
-          heightRatio: 0.21375
-          rotationDegrees: 0
-          loop: true
-          preserveAspectRatio: true
-          flipVertical: true
   - id: split_switch
     name: 分身とスイッチ
     repeat: onceEver

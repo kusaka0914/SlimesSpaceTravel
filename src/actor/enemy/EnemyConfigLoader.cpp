@@ -27,6 +27,10 @@ std::string ReadString(const YAML::Node& node, const char* key, const std::strin
 
 void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
+    config.guardValuePerSegment = ReadFloat(
+        enemyNode,
+        "guardValuePerSegment",
+        config.guardValuePerSegment);
     config.knockBackSpeed = ReadFloat(enemyNode, "knockBackSpeed", config.knockBackSpeed);
     config.defaultLaunchedTimer = ReadFloat(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
     config.launchHeight = ReadFloat(enemyNode, "launchHeight", config.launchHeight);
@@ -36,6 +40,10 @@ void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
     config.isBoss = ReadBool(enemyNode, "isBoss", config.isBoss);
+    config.isBossEncounter = ReadBool(
+        enemyNode,
+        "isBossEncounter",
+        config.isBoss);
     config.isNormalHitKnockBackEnabled = ReadBool(
         enemyNode,
         "normalHitKnockBackEnabled",
@@ -46,7 +54,10 @@ void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
     config.attack = ReadFloat(enemyNode, "attack", config.attack);
     config.radius = ReadFloat(enemyNode, "radius", config.radius);
 
-    config.breakCountMax = ReadInt(enemyNode, "breakCountMax", config.breakCountMax);
+    config.guardSegmentCount = ReadInt(
+        enemyNode,
+        "breakCountMax",
+        config.guardSegmentCount);
     config.modelPath = ReadString(enemyNode, "modelPath", config.modelPath);
 
     config.defaultStandByAttackTimer =
@@ -199,6 +210,7 @@ EnemyConfig EnemyConfigLoader::Parse(
 {
     EnemyConfig config;
     config.isBoss = type == "boss";
+    config.isBossEncounter = config.isBoss;
 
     if (!enemyRoot["enemies"] || !enemyRoot["enemies"].IsSequence()) {
         return config;

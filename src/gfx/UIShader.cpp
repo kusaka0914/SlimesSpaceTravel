@@ -17,4 +17,6 @@ void UIShader::Initialize()
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
+    mLocConvertSrgbToLinear =
+        glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
 }

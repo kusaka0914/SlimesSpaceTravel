@@ -281,8 +281,18 @@ void Actor::UpdateUpVec()
         UpdateFallbackUpVec();
     }
 
+    glm::vec3 groundSearchUp = mUpVec;
+    if (mCurrentPlanet &&
+        mCurrentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Sphere) {
+        groundSearchUp =
+            ActorGroundResolver::CalculateFallbackUpVec(
+                mCurrentPlanet,
+                mPos);
+    }
+
     const glm::vec3 averageUpVec = ActorGroundResolver::CalculateAverageNormal(
-        mGame, mPos, mUpVec, mForwardVec, mLeftVec,
+        mGame, mPos, groundSearchUp, mForwardVec, mLeftVec,
         [this](const glm::vec3& hitNormal, const glm::vec3& up) { return CheckDotAngleSteep(hitNormal, up); },
         [this]() { OnGroundSurfaceDetected(); },
         [this]() { OnCastSucceeded(); });

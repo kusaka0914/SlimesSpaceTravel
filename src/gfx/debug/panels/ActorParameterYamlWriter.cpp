@@ -85,7 +85,12 @@ void WriteEnemyValues(
     SetSequenceValue(config, sequenceName, index, "scale", enemy.GetScale().x);
     SetSequenceValue(config, sequenceName, index, "speed", enemy.GetMoveSpeed());
     SetSequenceValue(config, sequenceName, index, "attack", enemy.GetAttack());
-    SetSequenceValue(config, sequenceName, index, "breakCountMax", enemy.GetBreakCountMax());
+    SetSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "breakCountMax",
+        enemy.GetGuardSegmentCount());
     SetSequenceValue(config, sequenceName, index, "radius", enemy.GetRadius());
     SetSequenceValue(config, sequenceName, index, "defaultStandByAttackTimer", enemy.GetDefaultStandByAttackTimer());
     SetSequenceValue(config, sequenceName, index, "defaultAttackMotionTimer", enemy.GetDefaultAttackMotionTimer());
@@ -168,6 +173,9 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("airDodgeVerticalHitboxScale", player.GetAirDodgeVerticalHitboxScale());
     set("airDodgeEnemyPushSpeed", player.GetAirDodgeEnemyPushSpeed());
     set("airDodgeEnemyPushDampingPerSecond", player.GetAirDodgeEnemyPushDampingPerSecond());
+    set("airWeakEnemyLiftHeight", player.GetAirWeakEnemyLiftHeight());
+    set("airComboDodgePlayerLiftHeight", player.GetAirComboDodgePlayerLiftHeight());
+    set("airComboDodgeEnemyLiftHeight", player.GetAirComboDodgeEnemyLiftHeight());
     set("normalAttackRange", player.GetNormalAttackRange());
     set("normalAttackAngle", player.GetNormalAttackAngle());
     set("normalAttack", player.GetNormalAttack());
@@ -177,6 +185,9 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     set("strongAttackRange", player.GetStrongAttackRange());
     set("strongAttack", player.GetStrongAttack());
     set("strongAttackSpeed", player.GetStrongAttackSpeed());
+    set("airSlamEnemyDownwardSpeed", player.GetAirSlamEnemyDownwardSpeed());
+    set("airSlamFullDamageHeight", player.GetAirSlamFullDamageHeight());
+    set("airSlamMinimumDamageRatio", player.GetAirSlamMinimumDamageRatio());
     set("chargedAttackRange", player.GetChargedAttackRange());
     set("chargedAttackAngle", player.GetChargedAttackAngle());
     set("chargedAttackDamage", player.GetChargedAttackDamage());

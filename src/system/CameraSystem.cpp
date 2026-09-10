@@ -276,6 +276,7 @@ void CameraSystem::ResetForStageChange()
     mKeyboardYawInput = 0.0f;
     mKeyboardPitchInput = 0.0f;
     mPlayerPitchOffsetsDegrees.clear();
+    mAirSlamCameraStates.clear();
     mPlayerShakeEffects.clear();
     mPlayerCamera.Reset();
     mTalkCameraBlend = 0.0f;
@@ -343,6 +344,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
 
     UpdateTalkCameraTransition(deltaTime);
     mBossDefeatSequence.Update(deltaTime);
+    UpdateAirSlamCameraStates(deltaTime);
 
     if (mCinematicCamera.IsActive()) {
         mCinematicCamera.Update(deltaTime);
@@ -411,6 +413,61 @@ void CameraSystem::UpdateCamera(float deltaTime)
                          allowsMovementCameraAssist);
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
+}
+
+void CameraSystem::UpdateAirSlamCameraStates(float deltaTime)
+{
+    const std::vector<Player*>& players = mGame->GetPlayers();
+    mAirSlamCameraStates.resize(players.size());
+
+    const float safeDeltaTime = std::max(0.0f, deltaTime);
+    const float smoothingAmount = 1.0f - std::exp(
+        -mPlayerCameraSettings.airSlamDistanceSmoothingSpeed * safeDeltaTime);
+
+    for (std::size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
+        AirSlamCameraState& cameraState = mAirSlamCameraStates[playerIndex];
+        const Player* player = players[playerIndex];
+        const bool isAirSlamAttacking =
+            player && player->GetActionState() == PlayerActionState::AirSlamAttacking;
+
+        if (isAirSlamAttacking) {
+            cameraState.isWaitingForLanding = true;
+            cameraState.returnDelayRemainingSeconds = 0.0f;
+        } else if (cameraState.isWaitingForLanding &&
+                   player && player->GetOnGround()) {
+            cameraState.isWaitingForLanding = false;
+            cameraState.returnDelayRemainingSeconds =
+                mPlayerCameraSettings.airSlamReturnDelaySeconds;
+        } else if (!cameraState.isWaitingForLanding) {
+            cameraState.returnDelayRemainingSeconds = std::max(
+                0.0f,
+                cameraState.returnDelayRemainingSeconds - safeDeltaTime);
+        }
+
+        const bool shouldKeepPulledBack =
+            isAirSlamAttacking ||
+            cameraState.isWaitingForLanding ||
+            cameraState.returnDelayRemainingSeconds > 0.0f;
+        const float targetBlend = shouldKeepPulledBack ? 1.0f : 0.0f;
+        cameraState.distanceBlend = glm::mix(
+            cameraState.distanceBlend,
+            targetBlend,
+            smoothingAmount);
+
+        const float targetPitchBlend =
+            isAirSlamAttacking ? 1.0f : 0.0f;
+        cameraState.pitchBlend = glm::mix(
+            cameraState.pitchBlend,
+            targetPitchBlend,
+            smoothingAmount);
+
+        if (std::abs(cameraState.distanceBlend - targetBlend) < 0.001f) {
+            cameraState.distanceBlend = targetBlend;
+        }
+        if (std::abs(cameraState.pitchBlend - targetPitchBlend) < 0.001f) {
+            cameraState.pitchBlend = targetPitchBlend;
+        }
+    }
 }
 
 void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
@@ -798,8 +855,19 @@ float CameraSystem::GetEasedTalkPageFocusBlend() const
 glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
 {
     const float talkBlend = player && player == mTalkCameraPlayer ? GetEasedTalkCameraBlend() : 0.0f;
+    const float airSlamDistanceBlend =
+        playerIndex >= 0 &&
+        static_cast<std::size_t>(playerIndex) < mAirSlamCameraStates.size()
+            ? mAirSlamCameraStates[static_cast<std::size_t>(playerIndex)].distanceBlend
+            : 0.0f;
+    const float airSlamDistanceMultiplier = glm::mix(
+        1.0f,
+        mPlayerCameraSettings.airSlamDistanceMultiplier,
+        airSlamDistanceBlend);
+    const float normalDistance =
+        mPlayerCameraSettings.distance * airSlamDistanceMultiplier;
     const float distance =
-        glm::mix(mPlayerCameraSettings.distance, mPlayerCameraSettings.talkDistance, talkBlend);
+        glm::mix(normalDistance, mPlayerCameraSettings.talkDistance, talkBlend);
     const float pitchOffset =
         playerIndex >= 0 &&
         static_cast<std::size_t>(playerIndex) < mPlayerPitchOffsetsDegrees.size()
@@ -809,8 +877,17 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
         mPlayerCameraSettings.pitchDegrees + pitchOffset,
         mPlayerCameraSettings.minPitchDegrees,
         mPlayerCameraSettings.maxPitchDegrees);
+    const float airSlamPitchBlend =
+        playerIndex >= 0 &&
+        static_cast<std::size_t>(playerIndex) < mAirSlamCameraStates.size()
+            ? mAirSlamCameraStates[static_cast<std::size_t>(playerIndex)].pitchBlend
+            : 0.0f;
+    const float actionPitchDegrees = glm::mix(
+        normalPitchDegrees,
+        mPlayerCameraSettings.airSlamPitchDegrees,
+        airSlamPitchBlend);
     const float pitchDegrees =
-        glm::mix(normalPitchDegrees, mPlayerCameraSettings.talkPitchDegrees, talkBlend);
+        glm::mix(actionPitchDegrees, mPlayerCameraSettings.talkPitchDegrees, talkBlend);
     const float normalTargetHeight =
         mGame && mGame->GetIsPlayer2Joined()
             ? mPlayerCameraSettings.splitScreenTargetHeight

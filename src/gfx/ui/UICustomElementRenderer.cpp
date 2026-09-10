@@ -24,6 +24,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <limits>
 #include <optional>
+#include <unordered_map>
 
 void UIRenderer::DrawCustomElement(
     const UILoadSystem::CustomElement& element,
@@ -443,20 +444,20 @@ void UIRenderer::DrawCustomUI()
 
 
 
-    const auto getOperationGuideVerticalOffset = [&]() {
-        if (!isTwoPlayer) {
-            return 0.0f;
-        }
-
-
-
-
-        constexpr float positionScale = 1.0f;
+    struct CustomScreenLayout {
+        float scale = 1.0f;
+        float verticalOffset = 0.0f;
+    };
+    const auto calculateCustomScreenLayout =
+        [&](const std::string& screen,
+            float viewportHeight,
+            bool alwaysAnchorToBottom,
+            float preferredVerticalOffset) {
         constexpr float viewportPadding = 12.0f;
         float minY = std::numeric_limits<float>::max();
         float maxY = std::numeric_limits<float>::lowest();
         for (const UILoadSystem::CustomElement* candidate : sortedElements) {
-            if (!candidate || candidate->screen != "operation") {
+            if (!candidate || candidate->screen != screen) {
                 continue;
             }
 
@@ -489,28 +490,69 @@ void UIRenderer::DrawCustomUI()
                 }
             }
 
-            const float y = mFbWidth * candidate->yRatio * positionScale;
+            const float y = mFbWidth * candidate->yRatio;
             const float top = candidate->centerBased ? y - height * 0.5f : y;
             minY = std::min(minY, top);
             maxY = std::max(maxY, top + height);
         }
 
         if (minY > maxY) {
-            return 0.0f;
+            return CustomScreenLayout{};
         }
 
-        const float viewportHeight = mFbHeight * 0.5f;
-        float offset = 0.0f;
-        if (maxY > viewportHeight - viewportPadding) {
-            offset = viewportHeight - viewportPadding - maxY;
+        const float availableHeight =
+            std::max(1.0f, viewportHeight - viewportPadding * 2.0f);
+        const float contentHeight = std::max(1.0f, maxY - minY);
+        const float scale = std::min(1.0f, availableHeight / contentHeight);
+        const float scaledMinY = minY * scale;
+        const float scaledMaxY = maxY * scale;
+        float verticalOffset = alwaysAnchorToBottom
+            ? viewportHeight - viewportPadding - scaledMaxY
+            : preferredVerticalOffset;
+        if (scaledMaxY + verticalOffset >
+            viewportHeight - viewportPadding) {
+            verticalOffset =
+                viewportHeight - viewportPadding - scaledMaxY;
         }
-        if (minY + offset < viewportPadding) {
-            offset += viewportPadding - (minY + offset);
+        if (scaledMinY + verticalOffset < viewportPadding) {
+            verticalOffset +=
+                viewportPadding - (scaledMinY + verticalOffset);
         }
-        return offset;
+        return CustomScreenLayout{scale, verticalOffset};
     };
-    const float operationGuideVerticalOffset =
-        getOperationGuideVerticalOffset();
+    const float operationGuideViewportHeight =
+        isTwoPlayer
+            ? static_cast<float>(mFbHeight) * 0.5f
+            : static_cast<float>(mFbHeight);
+    const CustomScreenLayout operationGuideLayout =
+        calculateCustomScreenLayout(
+            "operation",
+            operationGuideViewportHeight,
+            true,
+            0.0f);
+    constexpr float authoredAspectRatio = 16.0f / 9.0f;
+    const float authoredViewportHeight =
+        static_cast<float>(mFbWidth) / authoredAspectRatio;
+    const float centeredAuthoredViewportTop = std::max(
+        0.0f,
+        (static_cast<float>(mFbHeight) - authoredViewportHeight) * 0.5f);
+    std::unordered_map<std::string, CustomScreenLayout> screenLayouts;
+    for (const UILoadSystem::CustomElement* element : sortedElements) {
+        if (!element || element->screen == "operation" ||
+            element->screen == "ugc" ||
+            screenLayouts.contains(element->screen)) {
+            continue;
+        }
+        screenLayouts.emplace(
+            element->screen,
+            calculateCustomScreenLayout(
+                element->screen,
+                static_cast<float>(mFbHeight),
+                false,
+                element->screen == "title"
+                    ? centeredAuthoredViewportTop
+                    : 0.0f));
+    }
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
         if (!element) {
@@ -658,10 +700,10 @@ void UIRenderer::DrawCustomUI()
                 resolvePlayerTextOverride(players[0]);
             DrawCustomElement(
                 *element,
-                operationGuideVerticalOffset,
-                1.0f,
+                operationGuideLayout.verticalOffset,
+                operationGuideLayout.scale,
                 false,
-                1.0f,
+                operationGuideLayout.scale,
                 players[0],
                 getOperationGuideOpacity(*element, players[0]),
                 player1TextOverride);
@@ -670,10 +712,10 @@ void UIRenderer::DrawCustomUI()
             DrawCustomElement(
                 *element,
                 static_cast<float>(mFbHeight) * 0.5f +
-                    operationGuideVerticalOffset,
-                1.0f,
+                    operationGuideLayout.verticalOffset,
+                operationGuideLayout.scale,
                 false,
-                1.0f,
+                operationGuideLayout.scale,
                 players[1],
                 getOperationGuideOpacity(*element, players[1]),
                 player2TextOverride);
@@ -681,17 +723,36 @@ void UIRenderer::DrawCustomUI()
         }
         const std::string* operationTextOverride =
             resolvePlayerTextOverride(operationPlayer);
+        const bool isOperationElement = element->screen == "operation";
+        const auto screenLayout = screenLayouts.find(element->screen);
+        const CustomScreenLayout elementLayout = isOperationElement
+            ? operationGuideLayout
+            : (screenLayout != screenLayouts.end()
+                   ? screenLayout->second
+                   : CustomScreenLayout{});
         DrawCustomElement(
             *element,
-            0.0f,
-            1.0f,
+            elementLayout.verticalOffset,
+            elementLayout.scale,
             false,
-            -1.0f,
-            element->screen == "operation" ? operationPlayer : nullptr,
+            elementLayout.scale,
+            isOperationElement ? operationPlayer : nullptr,
             getOperationGuideOpacity(*element, operationPlayer),
             operationTextOverride);
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
+            if (elementLayout.scale != 1.0f ||
+                elementLayout.verticalOffset != 0.0f) {
+                screenTransform.size *= elementLayout.scale;
+                screenTransform.center.y =
+                    elementLayout.verticalOffset +
+                    screenTransform.center.y * elementLayout.scale;
+                if (!element->centerBased) {
+                    screenTransform.center.x =
+                        mFbWidth * element->xRatio +
+                        screenTransform.size.x * 0.5f;
+                }
+            }
             RecordRenderedUIElement(
                 RenderedUIElementSource::Custom,
                 element->screen,
@@ -744,6 +805,18 @@ void UIRenderer::DrawUGCForegroundCustomUI(
         const float height = viewportSize.x * element->heightRatio;
         float x = viewportMin.x + viewportSize.x * element->xRatio;
         float y = viewportMin.y + viewportSize.x * element->yRatio;
+        if (element->id == "menuIcon2_copy_copy2") {
+            constexpr float authoredGroupBottomRatio = 0.5755f;
+            constexpr float playHotkeyBottomMargin = 8.0f;
+            const float authoredBottomRatio =
+                element->yRatio + element->heightRatio;
+            const float adjustedBottomMargin = std::max(
+                0.0f,
+                playHotkeyBottomMargin + viewportSize.x *
+                    (authoredGroupBottomRatio - authoredBottomRatio));
+            y = viewportMin.y + viewportSize.y - height -
+                adjustedBottomMargin;
+        }
         if (element->centerBased) {
             x -= width * 0.5f;
             y -= height * 0.5f;

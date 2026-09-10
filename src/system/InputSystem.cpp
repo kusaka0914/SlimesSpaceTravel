@@ -43,6 +43,15 @@ bool IsKeyboardMovementPressed(const InputSystem& inputSystem)
            inputSystem.IsKeyPressed(GLFW_KEY_D);
 }
 
+bool IsSecondPlayerDebugKeyboardMovementPressed(
+    const InputSystem& inputSystem)
+{
+    return inputSystem.IsKeyPressed(GLFW_KEY_UP) ||
+           inputSystem.IsKeyPressed(GLFW_KEY_DOWN) ||
+           inputSystem.IsKeyPressed(GLFW_KEY_LEFT) ||
+           inputSystem.IsKeyPressed(GLFW_KEY_RIGHT);
+}
+
 bool IsKeyboardOrMouseInputActive(const InputSystem& inputSystem)
 {
     constexpr std::array<int, 30> TrackedKeys = {
@@ -252,15 +261,24 @@ bool InputSystem::IsMovementInputPressedForPlayer(
         return IsControllerMovementPressed(*this);
     }
 
-    const bool usesKeyboard =
-        isTwoPlayerMode
-            ? (isControllerConnected
-                   ? player->GetPlayerNum() == 2
-                   : player->GetPlayerNum() == 1)
-            : (!isControllerConnected &&
-               mGame->GetControlledPlayer() == player);
-    return usesKeyboard &&
-           IsKeyboardMovementPressed(*this);
+    if (!isTwoPlayerMode) {
+        return !isControllerConnected &&
+               mGame->GetControlledPlayer() == player &&
+               IsKeyboardMovementPressed(*this);
+    }
+
+    if (isControllerConnected) {
+        return player->GetPlayerNum() == 2 &&
+               IsKeyboardMovementPressed(*this);
+    }
+
+    if (!mGame->GetIsDebugMode()) {
+        return false;
+    }
+
+    return player->GetPlayerNum() == 1
+        ? IsKeyboardMovementPressed(*this)
+        : IsSecondPlayerDebugKeyboardMovementPressed(*this);
 }
 
 void InputSystem::ProcessGameInput()
@@ -787,7 +805,12 @@ void InputSystem::ProcessPlayerJoinInput()
 {
     const bool qPressed = IsKeyPressed(GLFW_KEY_Q);
     if (qPressed && !mQPressedPrev) {
-        if (mGame->IsGameControllerConnected() && !mGame->GetIsPlayer2Joined()) {
+        const bool canJoinWithoutController =
+            mGame->GetIsDebugMode() &&
+            !mGame->IsGameControllerConnected();
+        if ((mGame->IsGameControllerConnected() ||
+             canJoinWithoutController) &&
+            !mGame->GetIsPlayer2Joined()) {
             mGame->TryCreatePlayer2();
         }
     }

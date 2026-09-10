@@ -43,6 +43,8 @@ void RegisterPlayerConfigLoaderTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterEnemyConfigLoaderTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterEnemyGuardGaugeTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerControlConfigurationStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterFramePerformanceTrackerTests(
@@ -60,6 +62,8 @@ void RegisterTutorialObjectiveTextTests(
 void RegisterOperationGuideVisibilityTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerJewelGaugeTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterPlayerSplitGuardStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
@@ -84,6 +88,7 @@ int main()
     RegisterStageProgressSystemTests(tests);
     RegisterPlayerConfigLoaderTests(tests);
     RegisterEnemyConfigLoaderTests(tests);
+    RegisterEnemyGuardGaugeTests(tests);
     RegisterPlayerControlConfigurationStateTests(tests);
     RegisterFramePerformanceTrackerTests(tests);
     RegisterUGCModeControllerTests(tests);
@@ -93,6 +98,7 @@ int main()
     RegisterTutorialObjectiveTextTests(tests);
     RegisterOperationGuideVisibilityTests(tests);
     RegisterPlayerJewelGaugeTests(tests);
+    RegisterPlayerSplitGuardStateTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

@@ -214,7 +214,7 @@ gameOver:
 ugcClearResult:
   - id: titleText
     type: text
-    posRatio: [0.5, 0.30]
+    posRatio: [0.5, 0.3]
     scaleRatio: [0.00052, 1.0]
     text:
       - ステージクリア！
@@ -255,13 +255,18 @@ ugcClearResult:
 default:
   - id: hpTexture
     type: texture
-    posRatio: [0.018194482, 0.018749999]
-    scaleRatio: [0.029999996, 0.03]
+    posRatio: [0.015635636, 0.01875]
+    scaleRatio: [0.029999992, 0.03]
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.009531784, 0.07929999]
-    scaleRatio: [0.05, 0.050000004]
+    posRatio: [0.0115788905, 0.079299994]
+    scaleRatio: [0.04, 0.04]
+    rotationDegrees: 0
+  - id: splitGuardTexture
+    type: texture
+    posRatio: [0.014649404, 0.16078468]
+    scaleRatio: [0.029999992, 0.03]
     rotationDegrees: 0
   - id: talkableTextForGameController
     type: text

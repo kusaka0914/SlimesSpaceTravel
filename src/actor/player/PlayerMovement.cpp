@@ -722,6 +722,45 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
             input,
             deltaTime);
 
+    (void)ApplyWalkingMovement(player, movementDelta);
+}
+
+bool PlayerMovement::MoveTowardPosition(
+    Player& player,
+    const glm::vec3& targetPosition,
+    float deltaTime)
+{
+    if (!player.GetOnGround() ||
+        player.IsAttachedToPlatform()) {
+        return false;
+    }
+
+    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
+    glm::vec3 movementDirection;
+    if (!TryNormalizeDirection(
+            ProjectOntoPlane(
+                targetPosition - player.GetPos(),
+                upDirection),
+            movementDirection)) {
+        return false;
+    }
+
+    FaceDirection(player, movementDirection);
+    const glm::vec3 movementDelta =
+        movementDirection *
+        mMoveSpeed *
+        std::max(0.0f, deltaTime);
+    return ApplyWalkingMovement(player, movementDelta);
+}
+
+bool PlayerMovement::ApplyWalkingMovement(
+    Player& player,
+    const glm::vec3& movementDelta)
+{
+    if (player.IsAttachedToPlatform()) {
+        return false;
+    }
+
     const glm::vec3 positionBeforeMovement =
         player.GetPos();
     const AppliedPlayerMovement normalMovement =
@@ -730,11 +769,15 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
             player,
             movementDelta);
     if (player.IsAttachedToPlatform()) {
-        return;
+        const glm::vec3 appliedMovement =
+            player.GetPos() - positionBeforeMovement;
+        return glm::dot(appliedMovement, appliedMovement) > 0.000001f;
     }
     if (!normalMovement.didHitStage ||
         !player.GetOnGround()) {
-        return;
+        const glm::vec3 appliedMovement =
+            player.GetPos() - positionBeforeMovement;
+        return glm::dot(appliedMovement, appliedMovement) > 0.000001f;
     }
 
     glm::vec3 blockingNormal;
@@ -744,7 +787,9 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
         player.IsWalkableGroundNormal(
             blockingNormal,
             GetNormalizedUpDirection(player))) {
-        return;
+        const glm::vec3 appliedMovement =
+            player.GetPos() - positionBeforeMovement;
+        return glm::dot(appliedMovement, appliedMovement) > 0.000001f;
     }
 
     const glm::vec3 normalResolvedPosition =
@@ -756,6 +801,9 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
         normalResolvedPosition,
         movementDelta,
         mMaximumStepHeight);
+    const glm::vec3 appliedMovement =
+        player.GetPos() - positionBeforeMovement;
+    return glm::dot(appliedMovement, appliedMovement) > 0.000001f;
 }
 
 glm::vec3 PlayerMovement::CalculateInputMovementDelta(
@@ -834,6 +882,16 @@ void PlayerMovement::ApplyDodgeMovement(
                     dodgeSpeed,
                     deltaTime);
         }
+    }
+    if (!player.GetOnGround() &&
+        combat.IsEnhancedAirDodgeAttackActive()) {
+        const glm::vec3 upDirection =
+            GetAirbornePhysicsUpDirection(player);
+        const float liftSpeed =
+            combat.GetAirComboDodgePlayerLiftHeight() /
+            dodgeMovementDuration;
+        movementDelta +=
+            upDirection * liftSpeed * deltaTime;
     }
 
     const ActorCollisionFilter actorCollisionFilter =
@@ -1421,6 +1479,24 @@ void PlayerMovement::StartAirSlamMovement(Player& player)
         AirSlamMovementPhase::Rising;
     mAirSlamPhaseRemainingSeconds =
         riseDurationSeconds;
+    mHasStartedAirSlamEnemyFallWatch = false;
+}
+
+void PlayerMovement::StartAirSlamEnemyFallWatch(Player& player)
+{
+    if (player.GetOnGround() ||
+        mAirSlamMovementPhase != AirSlamMovementPhase::Falling ||
+        mHasStartedAirSlamEnemyFallWatch) {
+        return;
+    }
+
+    constexpr float enemyFallWatchDurationSeconds = 0.4f;
+    player.SetVelocity(glm::vec3(0.0f));
+    mAirSlamMovementPhase =
+        AirSlamMovementPhase::WatchingEnemyFall;
+    mAirSlamPhaseRemainingSeconds =
+        enemyFallWatchDurationSeconds;
+    mHasStartedAirSlamEnemyFallWatch = true;
 }
 
 bool PlayerMovement::UpdateAirSlamMovement(
@@ -1473,6 +1549,22 @@ bool PlayerMovement::UpdateAirSlamMovement(
 
     if (mAirSlamMovementPhase ==
         AirSlamMovementPhase::Hovering) {
+        player.SetVelocity(glm::vec3(0.0f));
+        mAirSlamPhaseRemainingSeconds =
+            std::max(
+                0.0f,
+                mAirSlamPhaseRemainingSeconds -
+                    deltaTime);
+        if (mAirSlamPhaseRemainingSeconds > 0.0f) {
+            return false;
+        }
+
+        mAirSlamMovementPhase =
+            AirSlamMovementPhase::Falling;
+    }
+
+    if (mAirSlamMovementPhase ==
+        AirSlamMovementPhase::WatchingEnemyFall) {
         player.SetVelocity(glm::vec3(0.0f));
         mAirSlamPhaseRemainingSeconds =
             std::max(

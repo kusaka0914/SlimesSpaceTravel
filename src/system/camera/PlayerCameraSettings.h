@@ -7,7 +7,7 @@ struct PlayerCameraSettings {
     float pitchDegrees = -57.29578f;
     float targetHeight = 1.5f;
     float splitScreenTargetHeight = 1.5f;
-    float fieldOfViewDegrees = 60.0f;
+    float fieldOfViewDegrees = 55.0f;
     float splitScreenFieldOfViewDegrees = 55.0f;
     float yawSensitivity = 1.570796327f;
     float pitchSensitivityDegrees = 90.0f;
@@ -16,6 +16,10 @@ struct PlayerCameraSettings {
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
     float attackTargetSmoothingSpeed = 6.0f;
+    float airSlamDistanceMultiplier = 1.35f;
+    float airSlamPitchDegrees = -75.0f;
+    float airSlamDistanceSmoothingSpeed = 6.0f;
+    float airSlamReturnDelaySeconds = 1.0f;
     float autoFollowDelaySeconds = 0.5f;
     float autoFollowRotationDurationSeconds = 1.0f;
     float autoFollowMinimumLateralInput = 0.35f;
