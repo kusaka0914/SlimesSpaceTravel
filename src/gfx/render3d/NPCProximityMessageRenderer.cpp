@@ -60,7 +60,9 @@ void NPCProximityMessageRenderer::DrawMessage(
     int textPixelWidth = 0;
     int textPixelHeight = 0;
     int baseTextPixelHeight = 0;
-    const SDL_Color textColor{35, 35, 42, 255};
+    // 3D描画はUI描画と異なり、この後にACESトーンマッピングとガンマ変換を通る。
+    // 通常会話のRGB(35, 35, 42)と最終表示を揃えるため、変換前の色を補正する。
+    const SDL_Color textColor{6, 6, 7, 255};
     float rubyScaleRatio = 0.36f;
     float rubyGapRatio = -0.46f;
     if (UIRenderer* uiRenderer =
@@ -136,6 +138,7 @@ void NPCProximityMessageRenderer::DrawMessage(
     glDisable(GL_DEPTH_TEST);
     glUniform2f(shader->GetLocTextureTiling(), 1.0f, 1.0f);
     glUniform1i(shader->GetLocUseTexture(), 1);
+    glUniform1i(shader->GetLocIsUnlit(), 1);
     glUniform4f(
         shader->GetLocObjectColor(),
         1.0f,
@@ -177,6 +180,7 @@ void NPCProximityMessageRenderer::DrawMessage(
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glUniform1i(shader->GetLocUseTexture(), 0);
+    glUniform1i(shader->GetLocIsUnlit(), 0);
     glEnable(GL_DEPTH_TEST);
     renderer.EndTransparentDraw();
     glDeleteTextures(1, &textTexture);

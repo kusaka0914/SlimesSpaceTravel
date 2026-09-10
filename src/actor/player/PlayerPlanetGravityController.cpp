@@ -24,6 +24,22 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
+    if (mShouldPreservePlatformTakeoffDirection &&
+        !player.GetOnGround()) {
+        const float takeoffVerticalSpeed = glm::dot(
+            player.GetVelocity(),
+            mPlatformTakeoffUpDirection);
+        if (takeoffVerticalSpeed >= 0.0f) {
+            return;
+        }
+
+        // 足場付近の惑星側面へ上昇中から曲がるのを防ぎつつ、
+        // 下降開始後は近接吸引と重力フォールバックを再開する。
+        mShouldPreservePlatformTakeoffDirection = false;
+        mNoGroundRayDuration = 0.0f;
+        mSmoothedUpInitialized = false;
+    }
+
 
 
 
@@ -105,13 +121,11 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    // 球形惑星も楕円惑星と同様に、近接時は表面法線を物理的な上方向
-    // として使う。見た目の回転が完了するのを待って落下しないよう、
-    // 引力方向だけは即時に切り替える。
+    // 球形惑星では接地レイが外れても、惑星中心から求めた表面法線を
+    // 維持する。古いUp方向へ落下して惑星から離れることを防ぐ。
     if (currentPlanet &&
         currentPlanet->GetPlanetShape() ==
-            Planet::PlanetShape::Sphere &&
-        mIsNearbySurfaceAttractionActive) {
+            Planet::PlanetShape::Sphere) {
         const glm::vec3 targetUp =
             ActorGroundResolver::CalculateFallbackUpVec(
                 currentPlanet,
@@ -202,12 +216,24 @@ glm::vec3 PlayerPlanetGravityController::
 CalculateAirbornePhysicsUpDirection(
     const Player& player) const
 {
+    if (mShouldPreservePlatformTakeoffDirection) {
+        return mPlatformTakeoffUpDirection;
+    }
+
     if (mIsOverheadGravityRayActive &&
         glm::length(mOverheadGravityUpDirection) > 0.000001f) {
         return glm::normalize(mOverheadGravityUpDirection);
     }
 
     const Planet* currentPlanet = player.GetCurrentPlanet();
+
+    if (currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Sphere) {
+        return ActorGroundResolver::CalculateFallbackUpVec(
+            currentPlanet,
+            player.GetPos());
+    }
 
     if (ShouldUseEllipseSurfaceGravity(player) && currentPlanet) {
         return currentPlanet
@@ -246,7 +272,8 @@ bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
 
 void PlayerPlanetGravityController::OnJumpStarted(
     Player& player,
-    PlayerMovement& movement)
+    PlayerMovement& movement,
+    bool tookOffFromPlatform)
 {
 
 
@@ -257,7 +284,11 @@ void PlayerPlanetGravityController::OnJumpStarted(
 
 
 
-    if (mIsOverheadGravityRayActive) {
+    const bool shouldPreservePlatformTakeoffDirection =
+        mShouldPreservePlatformTakeoffDirection ||
+        tookOffFromPlatform;
+    if (mIsOverheadGravityRayActive &&
+        !shouldPreservePlatformTakeoffDirection) {
         mIsJumpSwitchingActive = true;
         return;
     }
@@ -281,7 +312,19 @@ void PlayerPlanetGravityController::OnJumpStarted(
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection =
+        shouldPreservePlatformTakeoffDirection;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    if (mShouldPreservePlatformTakeoffDirection) {
+        const glm::vec3 takeoffUpDirection = player.GetUpVec();
+        if (glm::length(takeoffUpDirection) > 0.000001f) {
+            mPlatformTakeoffUpDirection =
+                glm::normalize(takeoffUpDirection);
+        }
+        mSmoothedUpInitialized = false;
+        return;
+    }
 
     const Planet* currentPlanet =
         player.GetCurrentPlanet();
@@ -356,7 +399,9 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection = false;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
 
@@ -383,8 +428,10 @@ void PlayerPlanetGravityController::OnRespawned()
     mUseEllipseSurfaceGravity = false;
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
+    mShouldPreservePlatformTakeoffDirection = false;
     mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+    mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 }
 

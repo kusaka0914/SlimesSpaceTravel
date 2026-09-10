@@ -8,6 +8,7 @@ struct GLFWwindow;
 class CameraSystem;
 class FramePerformanceTracker;
 class GpuDurationTimer;
+class PostProcessRenderer;
 class Renderer3D;
 class UGCPreviewController;
 class UIRenderer;
@@ -37,7 +38,10 @@ public:
     unsigned int GetUGCPreviewTexture() const;
 
 private:
-    void DrawGameFrame();
+    void DrawGameFrame(
+        unsigned int destinationFramebuffer,
+        int framebufferWidth,
+        int framebufferHeight);
     void DrawUGCPreviewFrame(const GameFrameRenderState& renderState);
 
     GLFWwindow& mWindow;
@@ -47,6 +51,8 @@ private:
     UGCPreviewController& mUGCPreviewController;
     FramePerformanceTracker& mPerformanceTracker;
     GameRenderTargets mRenderTargets;
+    std::unique_ptr<PostProcessRenderer> mGamePostProcessRenderer;
+    std::unique_ptr<PostProcessRenderer> mUGCPreviewPostProcessRenderer;
     std::unique_ptr<GpuDurationTimer> mGameUiGpuTimer;
     std::unique_ptr<GpuDurationTimer> mEditorUiGpuTimer;
 };

@@ -37,8 +37,10 @@ void UIRenderer::DrawSkyBox(int renderWidth, int renderHeight)
     mFbWidth = renderWidth;
     mFbHeight = renderHeight;
     glUseProgram(mUIShader->GetShaderProgram());
+    glUniform1i(mUIShader->GetLocConvertSrgbToLinear(), 1);
 
     DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
+    glUniform1i(mUIShader->GetLocConvertSrgbToLinear(), 0);
 
     mFbWidth = previousFramebufferWidth;
     mFbHeight = previousFramebufferHeight;
@@ -400,8 +402,25 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
                                     const std::string& textureName, float gap, int count, float screenTopY,
                                     float uiScale)
 {
+    DrawLinedUpTextureSlots(
+        sceneName,
+        UIName,
+        textureName,
+        gap,
+        count,
+        count,
+        1.0f,
+        screenTopY,
+        uiScale);
+}
+
+void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
+                                         const std::string& textureName, float gap, int activeSlotCount,
+                                         int totalSlotCount, float inactiveSlotOpacity, float screenTopY,
+                                         float uiScale)
+{
     const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
+    if (!textureInfo || totalSlotCount <= 0) {
         return;
     }
 
@@ -415,9 +434,12 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
 
     const float textureGap = gap * uiScale;
 
-    float currentX = textureX;
+    const int visibleActiveSlotCount = std::clamp(activeSlotCount, 0, totalSlotCount);
+    const float visibleInactiveSlotOpacity = std::clamp(inactiveSlotOpacity, 0.0f, 1.0f);
 
-    while (count > 0) {
+    for (int slotIndex = 0; slotIndex < totalSlotCount; ++slotIndex) {
+        const float currentX = textureX + textureGap * slotIndex;
+        const float opacity = slotIndex < visibleActiveSlotCount ? 1.0f : visibleInactiveSlotOpacity;
         DrawTexture(
             currentX,
             textureY,
@@ -425,7 +447,8 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
             textureHeight,
             textureName,
             false,
-            textureInfo->rotationDegrees);
+            textureInfo->rotationDegrees,
+            opacity);
         RecordRenderedUIElement(
             RenderedUIElementSource::CodeBoundTexture,
             sceneName,
@@ -435,8 +458,6 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
                 textureY + textureHeight * 0.5f),
             glm::vec2(textureWidth, textureHeight),
             textureInfo->rotationDegrees);
-        currentX += textureGap;
-        count--;
     }
 }
 
@@ -908,7 +929,8 @@ void UIRenderer::DrawTexture(
     float height,
     const std::string& textureName,
     bool flipVertical,
-    float rotationDegrees)
+    float rotationDegrees,
+    float opacity)
 {
     const auto textureIt = mTextures.find(textureName);
     if (textureIt == mTextures.end()) {
@@ -922,7 +944,8 @@ void UIRenderer::DrawTexture(
         height,
         textureIt->second,
         flipVertical,
-        rotationDegrees);
+        rotationDegrees,
+        opacity);
 }
 
 void UIRenderer::DrawTextureHandle(

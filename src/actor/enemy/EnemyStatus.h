@@ -1,6 +1,6 @@
 #pragma once
 
-#include "actor/enemy/EnemyBreakGauge.h"
+#include "actor/enemy/EnemyGuardGauge.h"
 #include "actor/enemy/EnemyHealth.h"
 
 #include <glm/glm.hpp>
@@ -20,11 +20,29 @@ public:
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
-    void SetBreakCount(int breakCount) { mBreakGauge.SetCount(breakCount); }
-    void SetBreakCountMax(int breakCountMax) { mBreakGauge.SetMax(breakCountMax); }
-    void ResetBreakCount() { mBreakGauge.Reset(); }
-    void DecrementBreakCount() { mBreakGauge.Decrease(); }
-    void BreakAll() { mBreakGauge.BreakAll(); }
+    void ConfigureGuard(int segmentCount, float guardValuePerSegment)
+    {
+        mGuardGauge.Configure(segmentCount, guardValuePerSegment);
+    }
+    void SetGuardSegmentCount(int segmentCount)
+    {
+        mGuardGauge.SetSegmentCount(segmentCount);
+    }
+    EnemyGuardDamageResult ApplyGuardDamage(float guardDamage)
+    {
+        return mGuardGauge.ApplyDamage(guardDamage);
+    }
+    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(
+        float minimumGuardDamage)
+    {
+        return mGuardGauge.ApplyDamageEnsuringCurrentSegmentBreak(
+            minimumGuardDamage);
+    }
+    EnemyGuardDamageResult BreakGuard()
+    {
+        return mGuardGauge.BreakAll();
+    }
+    void ResetGuard() { mGuardGauge.Reset(); }
 
     void SetHp(float hp) { mHealth.SetHp(hp); }
     void SetMaxHp(float maxHp) { mHealth.SetMaxHp(maxHp); }
@@ -93,8 +111,16 @@ public:
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
 
-    int GetBreakCount() const { return mBreakGauge.GetCount(); }
-    int GetBreakCountMax() const { return mBreakGauge.GetMax(); }
+    float GetCurrentGuard() const { return mGuardGauge.GetCurrentGuard(); }
+    float GetMaxGuard() const { return mGuardGauge.GetMaxGuard(); }
+    float GetGuardValuePerSegment() const
+    {
+        return mGuardGauge.GetGuardValuePerSegment();
+    }
+    int GetGuardSegmentCount() const
+    {
+        return mGuardGauge.GetSegmentCount();
+    }
 
     float GetHp() const { return mHealth.GetHp(); }
     float GetMaxHp() const { return mHealth.GetMaxHp(); }
@@ -121,15 +147,15 @@ public:
 
     EnemyHealth& GetHealth() { return mHealth; }
     const EnemyHealth& GetHealth() const { return mHealth; }
-    EnemyBreakGauge& GetBreakGauge() { return mBreakGauge; }
-    const EnemyBreakGauge& GetBreakGauge() const { return mBreakGauge; }
+    EnemyGuardGauge& GetGuardGauge() { return mGuardGauge; }
+    const EnemyGuardGauge& GetGuardGauge() const { return mGuardGauge; }
 
     bool IsHp0() const { return mHealth.IsDead(); }
-    bool IsBreakCountEmpty() const { return mBreakGauge.IsEmpty(); }
+    bool IsGuardEmpty() const { return mGuardGauge.IsEmpty(); }
 
 private:
     EnemyHealth mHealth;
-    EnemyBreakGauge mBreakGauge;
+    EnemyGuardGauge mGuardGauge;
 
     bool mIsCountered;
     bool mIsBoss;

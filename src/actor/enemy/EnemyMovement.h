@@ -7,6 +7,7 @@
 class Enemy;
 class EnemyStateMachine;
 class EnemyStatus;
+class Player;
 class PhysicsSystem;
 class MathUtils;
 
@@ -46,12 +47,27 @@ public:
         const glm::vec3& dodgeDirection,
         float pushSpeed,
         float pushDampingPerSecond);
+    void ApplyAirComboLift(
+        Enemy& enemy,
+        float liftHeight);
+    bool StartGravitySlam(
+        Enemy& enemy,
+        EnemyStatus& status,
+        EnemyStateMachine& stateMachine,
+        Player& player,
+        float downwardSpeed,
+        float maximumDamage,
+        float fullDamageHeight,
+        float minimumDamageRatio,
+        float groundImpactRadius,
+        bool shouldPlayImpactFeedback);
 
     void LaunchIntoAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
     void UpdateInAir(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine, float deltaTime);
     void SeparateAfterOverlappingEnemyLanding(
         Enemy& enemy,
         float deltaTime);
+    void RestoreGroundedEnemyInsideMovementArea(Enemy& enemy);
 
     glm::vec3 CalculateCollisionAdjustedPos(Enemy& enemy, const glm::vec3& moveDelta);
 
@@ -60,6 +76,7 @@ private:
     MathUtils& mMathUtils;
     void ApplyGravityWithContinuousCollision(
         Enemy& enemy,
+        EnemyStatus& status,
         float deltaTime);
     void UpdateAirDodgePushMovement(
         Enemy& enemy,
@@ -71,10 +88,30 @@ private:
         Enemy& fallingEnemy,
         Enemy& groundedEnemy,
         float deltaTime);
+    void ResolveGravitySlamImpact(
+        Enemy& enemy,
+        EnemyStatus& status);
+    void ApplyGravitySlamGroundImpactDamage(
+        Enemy& slammedEnemy,
+        Player& attacker,
+        float slamDamage) const;
+    void StartGravitySlamImpactKnockBack(
+        Enemy& enemy,
+        EnemyStatus& status,
+        const Player& attacker);
 
     EnemyGrounding mGrounding;
     glm::vec3 mAirDodgePushVelocity{0.0f};
     float mAirDodgePushDampingPerSecond = 8.0f;
     float mEnemyBlockedFallSeconds = 0.0f;
     bool mShouldSeparateAfterLanding = false;
+    bool mHasCompletedLaunchApexWait = false;
+    bool mIsGravitySlamActive = false;
+    bool mShouldPlayGravitySlamImpactFeedback = false;
+    Player* mGravitySlamAttacker = nullptr;
+    float mGravitySlamStartHeight = 0.0f;
+    float mGravitySlamMaximumDamage = 0.0f;
+    float mGravitySlamFullDamageHeight = 1.0f;
+    float mGravitySlamMinimumDamageRatio = 0.0f;
+    float mGravitySlamGroundImpactRadius = 0.0f;
 };

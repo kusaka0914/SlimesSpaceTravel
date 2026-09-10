@@ -1,5 +1,8 @@
+#include <GL/glew.h>
+
 #include "gfx/debug/panels/UIDebugPanel.h"
 
+#include "Game.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
@@ -94,6 +97,18 @@ void UIDebugPanel::DrawUIEditor(UILoadSystem* uiLoadSystem)
         break;
     }
 
+    bool isGameUIHidden = mContext.game->GetIsGameUIHidden();
+    if (ImGui::Checkbox(
+            "ゲームUIを一時的に非表示",
+            &isGameUIHidden)) {
+        mContext.game->SetGameUIHidden(isGameUIHidden);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "デバッグエディターを閉じても状態を維持します。ゲーム再起動で表示状態に戻ります。");
+    }
+
+    ImGui::SameLine();
     bool previewEnabled = mContext.uiRenderer->GetCustomUIPreviewEnabled();
     if (ImGui::Checkbox("エディタ中は全要素をプレビュー", &previewEnabled)) {
         mContext.uiRenderer->SetCustomUIPreviewEnabled(previewEnabled);
@@ -797,6 +812,7 @@ std::string UIDebugPanel::GetDisplayName(const std::string& key) const
         {"gameOver.gameOverText", "ゲームオーバー文字"},
         {"default.hpTexture", "HP UI"},
         {"default.jewelTexture", "ジュエル UI"},
+        {"default.splitGuardTexture", "分身ガード UI"},
         {"state.stageClearText", "ステージクリア文字"},
         {"state.loadingTexture", "ロード画面画像"},
         {"state.talkBgTexture", "会話背景画像"},

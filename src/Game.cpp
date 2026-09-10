@@ -46,6 +46,7 @@
 #include <cmath>
 #include <iterator>
 #include <iostream>
+#include <thread>
 
 namespace {
 
@@ -68,9 +69,7 @@ Game::Game()
       mIsFreeCameraMode(false),
       mIsDebugMode(false)
 {
-    mUGCModeController = std::make_unique<UGCModeController>(*this);
-    mUGCPreviewController =
-        std::make_unique<UGCPreviewController>(this);
+
 }
 
 Game::~Game() = default;
@@ -83,7 +82,8 @@ bool Game::Initialize(
 {
     mIsDebugMode = areDebugToolsEnabled;
 
-    if (!InitializeGLFW()) {
+    const bool shouldUseFullscreen = !shouldStartInDebugStage;
+    if (!InitializeGLFW(shouldUseFullscreen)) {
         return false;
     }
 
@@ -120,7 +120,7 @@ bool Game::Initialize(
     return true;
 }
 
-bool Game::InitializeGLFW()
+bool Game::InitializeGLFW(bool shouldUseFullscreen)
 {
     if (!glfwInit()) {
         return false;
@@ -130,13 +130,35 @@ bool Game::InitializeGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    mWindow = glfwCreateWindow(800, 450, "Slime'sSpaceTravel", nullptr, nullptr);
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* primaryVideoMode = primaryMonitor
+        ? glfwGetVideoMode(primaryMonitor)
+        : nullptr;
+    constexpr int debugWindowWidth = 800;
+    constexpr int debugWindowHeight = 450;
+    const int windowWidth = shouldUseFullscreen && primaryVideoMode
+        ? primaryVideoMode->width
+        : debugWindowWidth;
+    const int windowHeight = shouldUseFullscreen && primaryVideoMode
+        ? primaryVideoMode->height
+        : debugWindowHeight;
+    GLFWmonitor* windowMonitor =
+        shouldUseFullscreen && primaryVideoMode
+            ? primaryMonitor
+            : nullptr;
+    mWindow = glfwCreateWindow(
+        windowWidth,
+        windowHeight,
+        "Slime's Space Travel",
+        windowMonitor,
+        nullptr);
     if (!mWindow) {
         glfwTerminate();
         return false;
     }
 
     glfwMakeContextCurrent(mWindow);
+    glfwSwapInterval(1);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
@@ -155,6 +177,8 @@ void Game::InitializeGameController()
 
 bool Game::CreateGameSystems()
 {
+    mUGCModeController = std::make_unique<UGCModeController>(*this);
+    mUGCPreviewController = std::make_unique<UGCPreviewController>(this);
     mWorld = std::make_unique<GameWorld>();
     mPauseMenuController = std::make_unique<PauseMenuController>();
     mStageFlowController = std::make_unique<StageFlowController>();
@@ -208,6 +232,7 @@ bool Game::CreateGameSystems()
                 .gamepadService = *mGamepadRumbleService,
                 .pauseMenuController = *mPauseMenuController,
                 .physicsSystem = *mPhysicsSystem,
+                .allowsKeyboardOnlyTwoPlayer = mIsDebugMode,
             });
 
     mFrameRenderer = std::make_unique<GameFrameRenderer>(
@@ -263,8 +288,6 @@ void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
     }
 
     if (mEnemyJewelDropSystem) {
-        // Runtime drops are owned by the old GameWorld. Their non-owning
-        // render references must not survive a successful world swap.
         mEnemyJewelDropSystem->ClearRuntimeDrops();
     }
 
@@ -288,6 +311,12 @@ void Game::ReloadUIData()
 
 void Game::RunLoop()
 {
+    constexpr int maximumFramesPerSecond = 60;
+    const auto minimumFrameDuration =
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(
+                1.0 / static_cast<double>(maximumFramesPerSecond)));
+
     while (!glfwWindowShouldClose(mWindow)) {
         const auto frameStartTime = std::chrono::steady_clock::now();
         mFramePerformanceTracker.BeginFrame();
@@ -314,6 +343,11 @@ void Game::RunLoop()
         mFramePerformanceTracker.RecordTotalDuration(
             std::chrono::duration<float, std::milli>(
                 std::chrono::steady_clock::now() - frameStartTime).count());
+
+        // VSync can be overridden by the graphics driver. Keep a software
+        // limit as a fallback so the game never drives the GPU unchecked.
+        std::this_thread::sleep_until(
+            frameStartTime + minimumFrameDuration);
     }
 }
 
@@ -905,6 +939,27 @@ bool Game::TryResolvePlayerMergeGuide(
     }
     return mPlayerConfigurationController->TryResolveMergeGuide(
         targetPlayer, radiusWorldUnits);
+}
+
+bool Game::TryConsumePlayerSplitGuard(const Player& damagedPlayer)
+{
+    return mPlayerConfigurationController &&
+           mPlayerConfigurationController->TryConsumeSplitGuard(
+               damagedPlayer);
+}
+
+int Game::GetPlayerSplitGuardCount() const
+{
+    return mPlayerConfigurationController
+        ? mPlayerConfigurationController->GetSplitGuardCount()
+        : 0;
+}
+
+int Game::GetMaximumPlayerSplitGuardCount() const
+{
+    return mPlayerConfigurationController
+        ? mPlayerConfigurationController->GetMaximumSplitGuardCount()
+        : 0;
 }
 
 bool Game::CanTogglePlayerSplit() const

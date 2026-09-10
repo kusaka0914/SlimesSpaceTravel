@@ -309,18 +309,27 @@ bool EditorModelThumbnailRenderer::GenerateThumbnail(
         shader->GetLocViewPos(),
         1,
         glm::value_ptr(cameraPosition));
-    const glm::vec3 lightPosition =
-        cameraPosition + glm::vec3(-modelRadius, modelRadius, 0.0f);
+    const glm::vec3 sunDirection = glm::normalize(
+        glm::vec3(0.35f, -1.0f, 0.25f));
     glUniform3fv(
-        shader->GetLocLightPos(),
+        shader->GetLocSunDirection(),
         1,
-        glm::value_ptr(lightPosition));
-    glUniform3f(shader->GetLocLightColor(), 1.0f, 1.0f, 1.0f);
-    glUniform1f(shader->GetLocAmbientStrength(), 0.55f);
+        glm::value_ptr(sunDirection));
+    glUniform3f(shader->GetLocSunColor(), 1.0f, 0.92f, 0.82f);
+    glUniform1f(shader->GetLocSunIntensity(), 1.1f);
+    glUniform3f(shader->GetLocEnvironmentColor(), 0.42f, 0.52f, 0.72f);
+    glUniform1f(shader->GetLocDayEnvironmentIntensity(), 0.42f);
+    glUniform1f(shader->GetLocNightEnvironmentIntensity(), 0.42f);
     glUniform1f(shader->GetLocToonLevels(), 4.0f);
     glUniform1f(shader->GetLocToonStrength(), 0.35f);
-    glUniform1f(shader->GetLocRimStrength(), 0.18f);
+    glUniform3f(shader->GetLocRimColor(), 0.72f, 0.84f, 1.0f);
+    glUniform1f(shader->GetLocDayRimStrength(), 0.18f);
+    glUniform1f(shader->GetLocNightRimStrength(), 0.18f);
     glUniform1f(shader->GetLocRimPower(), 2.5f);
+    glUniform1f(shader->GetLocMaterialMinimumReflectance(), 0.0f);
+    glUniform1f(shader->GetLocMaterialRimBoost(), 0.0f);
+    glUniform1i(shader->GetLocIsUnlit(), 0);
+    glUniform1i(shader->GetLocApplyOutputGamma(), 1);
     glUniform1i(shader->GetLocUseSkinning(), 0);
     glUniform1i(shader->GetLocUseBackTexture(), 0);
     glUniform2f(shader->GetLocTextureTiling(), 1.0f, 1.0f);

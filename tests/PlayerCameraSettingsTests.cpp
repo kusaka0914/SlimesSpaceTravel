@@ -50,6 +50,7 @@ void AutoFollowSettingsLoadFromYaml()
     const TemporaryPlayerCameraSettingsFile settingsFile;
     settingsFile.Write(
         "playerCamera:\n"
+        "  airSlamPitchDegrees: -76\n"
         "  autoFollowDelaySeconds: 0.65\n"
         "  autoFollowRotationDurationSeconds: 1.25\n"
         "  autoFollowMinimumLateralInput: 0.4\n"
@@ -68,6 +69,8 @@ void AutoFollowSettingsLoadFromYaml()
     const PlayerCameraSettingsRepository repository(settingsFile.PathText());
 
     ExpectTrue(repository.Load(settings), "camera settings load succeeds");
+    ExpectNear(-76.0f, settings.airSlamPitchDegrees, 0.0001f,
+               "air slam pitch angle");
     ExpectNear(0.65f, settings.autoFollowDelaySeconds, 0.0001f,
                "auto-follow input delay");
     ExpectNear(1.25f, settings.autoFollowRotationDurationSeconds, 0.0001f,
@@ -99,6 +102,7 @@ void AutoFollowSettingsLoadFromYaml()
 void AutoFollowSettingsNormalizeToSupportedRanges()
 {
     PlayerCameraSettings settings;
+    settings.airSlamPitchDegrees = -120.0f;
     settings.autoFollowDelaySeconds = -1.0f;
     settings.autoFollowRotationDurationSeconds = 0.0f;
     settings.autoFollowMinimumLateralInput = 2.0f;
@@ -115,6 +119,8 @@ void AutoFollowSettingsNormalizeToSupportedRanges()
 
     settings.Normalize();
 
+    ExpectNear(-89.0f, settings.airSlamPitchDegrees, 0.0001f,
+               "normalized air slam pitch angle");
     ExpectNear(0.0f, settings.autoFollowDelaySeconds, 0.0001f,
                "normalized auto-follow input delay");
     ExpectNear(0.05f, settings.autoFollowRotationDurationSeconds, 0.0001f,
@@ -149,6 +155,7 @@ void AutoFollowSettingsSurviveSaveAndReload()
     const PlayerCameraSettingsRepository repository(settingsFile.PathText());
 
     PlayerCameraSettings settingsToSave;
+    settingsToSave.airSlamPitchDegrees = -74.0f;
     settingsToSave.autoFollowDelaySeconds = 0.7f;
     settingsToSave.autoFollowRotationDurationSeconds = 1.4f;
     settingsToSave.autoFollowMinimumLateralInput = 0.55f;
@@ -167,6 +174,8 @@ void AutoFollowSettingsSurviveSaveAndReload()
 
     PlayerCameraSettings reloadedSettings;
     ExpectTrue(repository.Load(reloadedSettings), "saved camera settings reload succeeds");
+    ExpectNear(-74.0f, reloadedSettings.airSlamPitchDegrees, 0.0001f,
+               "saved air slam pitch angle");
     ExpectNear(0.7f, reloadedSettings.autoFollowDelaySeconds, 0.0001f,
                "saved auto-follow input delay");
     ExpectNear(1.4f, reloadedSettings.autoFollowRotationDurationSeconds, 0.0001f,

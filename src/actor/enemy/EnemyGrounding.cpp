@@ -1,6 +1,7 @@
 #include "actor/enemy/EnemyGrounding.h"
 
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
@@ -77,11 +78,19 @@ bool EnemyGrounding::HasGroundBelow(const Enemy& enemy, const glm::vec3& checkPo
         return true;
     }
 
-    if (glm::length(enemy.GetUpVec()) < 1e-6f) {
+    glm::vec3 groundSearchUp = enemy.GetUpVec();
+    const Planet* currentPlanet = enemy.GetCurrentPlanet();
+    if (currentPlanet &&
+        currentPlanet->GetPlanetShape() ==
+            Planet::PlanetShape::Sphere) {
+        groundSearchUp = checkPos - currentPlanet->GetPos();
+    }
+
+    if (glm::length(groundSearchUp) < 1e-6f) {
         return true;
     }
 
-    const glm::vec3 up = glm::normalize(enemy.GetUpVec());
+    const glm::vec3 up = glm::normalize(groundSearchUp);
 
     constexpr float rayStartOffset = 0.3f;
     constexpr float rayLength = 1.2f;

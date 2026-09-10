@@ -8,12 +8,14 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in ivec4 aBoneIndices;
 layout (location = 4) in vec4 aBoneWeights;
+layout (location = 5) in mat4 instanceModel;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 uniform bool useSkinning;
+uniform bool useInstancing;
 uniform mat4 boneTransforms[MAX_BONE_COUNT];
 
 out vec3 fragPos;
@@ -55,10 +57,11 @@ void main()
         }
     }
 
-    vec4 worldPosition = model * localPosition;
+    mat4 activeModel = useInstancing ? instanceModel : model;
+    vec4 worldPosition = activeModel * localPosition;
 
     fragPos = worldPosition.xyz;
-    normal = mat3(transpose(inverse(model))) * localNormal;
+    normal = mat3(transpose(inverse(activeModel))) * localNormal;
     texCoord = aTexCoord;
     localFragPos = localPosition.xyz;
 

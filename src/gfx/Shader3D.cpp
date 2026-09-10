@@ -19,15 +19,33 @@ void Shader3D::Initialize()
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
-    mLocLightPos = glGetUniformLocation(mShaderProgram, "lightPos");
-    mLocLightColor = glGetUniformLocation(mShaderProgram, "lightColor");
+    mLocSunDirection = glGetUniformLocation(mShaderProgram, "sunDirection");
+    mLocSunColor = glGetUniformLocation(mShaderProgram, "sunColor");
+    mLocSunIntensity = glGetUniformLocation(mShaderProgram, "sunIntensity");
+    mLocEnvironmentColor = glGetUniformLocation(mShaderProgram, "environmentColor");
+    mLocDayEnvironmentIntensity =
+        glGetUniformLocation(mShaderProgram, "dayEnvironmentIntensity");
+    mLocNightEnvironmentIntensity =
+        glGetUniformLocation(mShaderProgram, "nightEnvironmentIntensity");
     mLocViewPos = glGetUniformLocation(mShaderProgram, "viewPos");
-    mLocAmbientStrength = glGetUniformLocation(mShaderProgram, "ambientStrength");
     mLocToonLevels = glGetUniformLocation(mShaderProgram, "toonLevels");
     mLocToonStrength = glGetUniformLocation(mShaderProgram, "toonStrength");
-    mLocRimStrength = glGetUniformLocation(mShaderProgram, "rimStrength");
+    mLocRimColor = glGetUniformLocation(mShaderProgram, "rimColor");
+    mLocDayRimStrength = glGetUniformLocation(mShaderProgram, "dayRimStrength");
+    mLocNightRimStrength = glGetUniformLocation(mShaderProgram, "nightRimStrength");
     mLocRimPower = glGetUniformLocation(mShaderProgram, "rimPower");
+    mLocMaterialMinimumReflectance =
+        glGetUniformLocation(mShaderProgram, "materialMinimumReflectance");
+    mLocMaterialRimBoost =
+        glGetUniformLocation(mShaderProgram, "materialRimBoost");
+    mLocMaterialDarkSurfaceLightBoost =
+        glGetUniformLocation(
+            mShaderProgram,
+            "materialDarkSurfaceLightBoost");
+    mLocIsUnlit = glGetUniformLocation(mShaderProgram, "isUnlit");
     mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
+    mLocUseInstancing =
+        glGetUniformLocation(mShaderProgram, "useInstancing");
     mLocBoneTransforms = glGetUniformLocation(mShaderProgram, "boneTransforms[0]");
     mLocTextureTiling = glGetUniformLocation(mShaderProgram, "textureTiling");
     mLocUseBackTexture =
@@ -38,4 +56,21 @@ void Shader3D::Initialize()
         glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
     mLocColorMultiplier =
         glGetUniformLocation(mShaderProgram, "colorMultiplier");
+    mLocColorSaturation =
+        glGetUniformLocation(mShaderProgram, "colorSaturation");
+    mLocApplyOutputGamma =
+        glGetUniformLocation(mShaderProgram, "applyOutputGamma");
+    mLocEmissiveColor =
+        glGetUniformLocation(mShaderProgram, "emissiveColor");
+    mLocEmissiveIntensity =
+        glGetUniformLocation(mShaderProgram, "emissiveIntensity");
+    mLocLightSpaceMatrix =
+        glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
+    mLocShadowMap = glGetUniformLocation(mShaderProgram, "shadowMap");
+    mLocShadowsEnabled =
+        glGetUniformLocation(mShaderProgram, "shadowsEnabled");
+    mLocShadowMinimumBias =
+        glGetUniformLocation(mShaderProgram, "shadowMinimumBias");
+    mLocShadowMaximumBias =
+        glGetUniformLocation(mShaderProgram, "shadowMaximumBias");
 }

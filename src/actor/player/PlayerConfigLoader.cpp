@@ -202,6 +202,11 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
                 playerNode,
                 "airDodgeAttackDamage",
                 config.airDodgeAttackDamage);
+        config.airDodgeGuardDamage =
+            ReadFloat(
+                playerNode,
+                "airDodgeGuardDamage",
+                config.airDodgeGuardDamage);
         config.airDodgeHorizontalHitboxScale =
             ReadFloat(
                 playerNode,
@@ -222,17 +227,44 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
                 playerNode,
                 "airDodgeEnemyPushDampingPerSecond",
                 config.airDodgeEnemyPushDampingPerSecond);
+        config.airWeakEnemyLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airWeakEnemyLiftHeight",
+                config.airWeakEnemyLiftHeight);
+        config.airComboDodgePlayerLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airComboDodgePlayerLiftHeight",
+                config.airComboDodgePlayerLiftHeight);
+        config.airComboDodgeEnemyLiftHeight =
+            ReadFloat(
+                playerNode,
+                "airComboDodgeEnemyLiftHeight",
+                config.airComboDodgeEnemyLiftHeight);
 
         config.normalAttackRange = ReadFloat(playerNode, "normalAttackRange", config.normalAttackRange);
         config.normalAttackAngle = ReadFloat(playerNode, "normalAttackAngle", config.normalAttackAngle);
         config.normalAttack = ReadFloat(playerNode, "normalAttack", config.normalAttack);
+        config.groundCombo1GuardDamage = ReadFloat(
+            playerNode, "groundCombo1GuardDamage", config.groundCombo1GuardDamage);
+        config.groundCombo2GuardDamage = ReadFloat(
+            playerNode, "groundCombo2GuardDamage", config.groundCombo2GuardDamage);
+        config.groundCombo3GuardDamage = ReadFloat(
+            playerNode, "groundCombo3GuardDamage", config.groundCombo3GuardDamage);
 
         config.wideAttackRange = ReadFloat(playerNode, "wideAttackRange", config.wideAttackRange);
         config.wideAttackAngle = ReadFloat(playerNode, "wideAttackAngle", config.wideAttackAngle);
         config.wideAttack = ReadFloat(playerNode, "wideAttack", config.wideAttack);
+        config.groundWideGuardDamage = ReadFloat(
+            playerNode, "groundWideGuardDamage", config.groundWideGuardDamage);
+        config.airWeakGuardDamage = ReadFloat(
+            playerNode, "airWeakGuardDamage", config.airWeakGuardDamage);
 
         config.strongAttackRange = ReadFloat(playerNode, "strongAttackRange", config.strongAttackRange);
         config.strongAttack = ReadFloat(playerNode, "strongAttack", config.strongAttack);
+        config.strongAttackGuardDamage = ReadFloat(
+            playerNode, "strongAttackGuardDamage", config.strongAttackGuardDamage);
         config.strongAttackSpeed = ReadFloat(playerNode, "strongAttackSpeed", config.strongAttackSpeed);
         config.chargedAttackRange = ReadFloat(playerNode, "chargedAttackRange", config.chargedAttackRange);
         config.chargedAttackAngle = ReadFloat(playerNode, "chargedAttackAngle", config.chargedAttackAngle);
@@ -248,6 +280,11 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
             ReadFloat(playerNode, "continuousAttackAngle", config.continuousAttackAngle);
         config.continuousAttackDamage =
             ReadFloat(playerNode, "continuousAttackDamage", config.continuousAttackDamage);
+        config.continuousAttackGuardDamage =
+            ReadFloat(
+                playerNode,
+                "continuousAttackGuardDamage",
+                config.continuousAttackGuardDamage);
         config.continuousAttackIntervalSeconds =
             ReadFloat(
                 playerNode,
@@ -269,6 +306,26 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
                 playerNode,
                 "airSlamHoverDurationSeconds",
                 config.airSlamHoverDurationSeconds);
+        config.airSlamEnemyDownwardSpeed =
+            ReadFloat(
+                playerNode,
+                "airSlamEnemyDownwardSpeed",
+                config.airSlamEnemyDownwardSpeed);
+        config.airSlamFullDamageHeight =
+            ReadFloat(
+                playerNode,
+                "airSlamFullDamageHeight",
+                config.airSlamFullDamageHeight);
+        config.airSlamMinimumDamageRatio =
+            ReadFloat(
+                playerNode,
+                "airSlamMinimumDamageRatio",
+                config.airSlamMinimumDamageRatio);
+        config.airSlamGuardDamage =
+            ReadFloat(
+                playerNode,
+                "airSlamGuardDamage",
+                config.airSlamGuardDamage);
 
         config.specialAttackCooldown = ReadFloat(playerNode, "specialAttackCooldown", config.specialAttackCooldown);
         config.defaultInvincibleTimer = ReadFloat(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);

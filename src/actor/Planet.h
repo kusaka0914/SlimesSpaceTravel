@@ -26,6 +26,19 @@ class HazardActor;
 
 class Planet : public Actor {
 public:
+    enum class Biome {
+        None,
+        Grassland,
+        Rocky,
+    };
+
+    struct VisualSettings {
+        Biome biome = Biome::None;
+        glm::vec3 atmosphereColor{0.28f, 0.62f, 1.0f};
+        float atmosphereStrength = 0.22f;
+        float decorationDensity = 1.0f;
+    };
+
     struct EllipseSurfaceProjection {
         glm::vec3 position{0.0f};
         glm::vec3 outwardNormal{0.0f, 1.0f, 0.0f};
@@ -179,6 +192,10 @@ public:
     Key* GetKey() const { return mActorRegistry.GetKey(); }
     Star* GetStar() const { return mActorRegistry.GetStar(); }
     PlanetShape GetPlanetShape() const;
+    const VisualSettings& GetVisualSettings() const
+    {
+        return mVisualSettings;
+    }
 
 private:
     int mStageNum;
@@ -193,4 +210,5 @@ private:
     std::string mBackTextureOverridePath;
     float mTextureSideBlendWidth = 0.05f;
     bool mCanAttractNearbyPlayer = true;
+    VisualSettings mVisualSettings;
 };

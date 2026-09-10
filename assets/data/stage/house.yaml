@@ -1,12 +1,10 @@
 planets:
-  - center: [0.0, 0.0, 0.0]
+  - center: [0, -36.49, 0]
     scale: [1.0, 1.0, 1.0]
     color: [1.0, 1.0, 1.0]
     model: house.obj
-
 players:
   - pos: [100.0, 100.0, 100.0]
-
 NPCs:
   - type: player
     pos: [4.0, 0.3, 4.0]

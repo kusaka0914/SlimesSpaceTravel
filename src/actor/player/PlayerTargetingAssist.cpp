@@ -211,7 +211,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
         }
 
         // アシストStrongは、ガードを全破壊されて打ち上げ状態の敵だけを対象にする。
-        if (enemy->GetBreakCount() != 0 || !enemy->IsLaunched()) {
+        if (enemy->GetCurrentGuard() > 0.0f || !enemy->IsLaunched()) {
             continue;
         }
 
