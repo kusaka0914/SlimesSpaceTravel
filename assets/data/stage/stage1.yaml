@@ -371,9 +371,9 @@ enemies:
     height: 2.1279774
     currentPlanetNum: 1
     pos:
-      - -1.5037956
-      - 2.0308113
-      - 3.2641387
+      - -1.5
+      - 2.02
+      - 3.27
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -578,9 +578,9 @@ enemies:
     height: 0.2456305
     currentPlanetNum: 1
     pos:
-      - -1.9377594
-      - 0.2940941
-      - 1.0961084
+      - -1.94
+      - 0.3
+      - 1.09
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -624,10 +624,10 @@ enemies:
     height: 1.1194925
     currentPlanetNum: 1
     pos:
-      - -1.7801437
-      - -0.2749405
-      - -2.546906
-    facingYaw: 1.1874363e-08
+      - -1.78
+      - -0.27
+      - -2.55
+    facingYaw: -0
     rotation:
       - 0
       - 0
@@ -637,19 +637,24 @@ enemies:
       - 0.25
       - 0.25
     upVec:
-      - -0.9869306
-      - -0.01342184
-      - -0.1605859
+      - -1
+      - -1.19209275e-07
+      - 0
     modelPath: enemy.obj
+    rotationQuat:
+      - 0.7071068
+      - 0
+      - 0
+      - 0.7071068
   - type: normal
     theta: -2.3001237
     phi: 0.5062704
     height: 1.07317
     currentPlanetNum: 1
     pos:
-      - -1.7909775
-      - 1.4902382
-      - -2.003987
+      - -1.79
+      - 1.49
+      - -2
     facingYaw: 1.1874363e-08
     rotation:
       - 0
@@ -3561,9 +3566,9 @@ boatArrivalPoints:
       - 1
       - 1
   - currentPlanetNum: 2
-    theta: 0.06930165
-    phi: -0.22359039
-    height: 1.8950877
+    theta: 0.069694966
+    phi: -0.22423096
+    height: 1.8914337
     facingYaw: 1.8626449e-09
     modelPath: platform.obj
     rotation:

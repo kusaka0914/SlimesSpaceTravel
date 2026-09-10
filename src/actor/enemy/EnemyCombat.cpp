@@ -49,33 +49,97 @@ std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
 }
 }
 
-void EnemyCombat::ApplyBreak(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyStateMachine& stateMachine,
-                             float deltaTime, bool isAllBreak)
+EnemyGuardDamageResult EnemyCombat::ApplyGuardDamage(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    EnemyStateMachine& stateMachine,
+    float guardDamage,
+    float deltaTime)
 {
     if (!stateMachine.IsAlive(enemy)) {
-        return;
+        return {};
     }
 
-    if (isAllBreak) {
-        status.BreakAll();
-    } else {
-        status.DecrementBreakCount();
+    const EnemyGuardDamageResult damageResult =
+        status.ApplyGuardDamage(guardDamage);
+    LaunchWhenGuardBreaks(
+        enemy,
+        status,
+        movement,
+        stateMachine,
+        damageResult,
+        deltaTime);
+    return damageResult;
+}
+
+EnemyGuardDamageResult
+EnemyCombat::ApplyGuardDamageEnsuringCurrentSegmentBreak(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    EnemyStateMachine& stateMachine,
+    float minimumGuardDamage,
+    float deltaTime)
+{
+    if (!stateMachine.IsAlive(enemy)) {
+        return {};
     }
 
-    enemy.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
+    const EnemyGuardDamageResult damageResult =
+        status.ApplyGuardDamageEnsuringCurrentSegmentBreak(
+            minimumGuardDamage);
+    LaunchWhenGuardBreaks(
+        enemy,
+        status,
+        movement,
+        stateMachine,
+        damageResult,
+        deltaTime);
+    return damageResult;
+}
 
+EnemyGuardDamageResult EnemyCombat::BreakGuard(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    EnemyStateMachine& stateMachine,
+    float deltaTime)
+{
+    if (!stateMachine.IsAlive(enemy)) {
+        return {};
+    }
+
+    const EnemyGuardDamageResult damageResult = status.BreakGuard();
+    LaunchWhenGuardBreaks(
+        enemy,
+        status,
+        movement,
+        stateMachine,
+        damageResult,
+        deltaTime);
+    return damageResult;
+}
+
+void EnemyCombat::LaunchWhenGuardBreaks(
+    Enemy& enemy,
+    EnemyStatus& status,
+    EnemyMovement& movement,
+    EnemyStateMachine& stateMachine,
+    const EnemyGuardDamageResult& damageResult,
+    float deltaTime)
+{
     const bool canStartLaunch =
         enemy.IsOnGround() ||
         stateMachine.GetActionState() ==
             EnemyStateMachine::ActionState::KnockedBack;
     // 通常ノックバックの小さな浮きは地上コンボの途中状態なので、
     // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
-    if (status.IsBreakCountEmpty() && canStartLaunch) {
+    if (damageResult.wasFullyBroken && canStartLaunch) {
         movement.LaunchIntoAir(enemy, status, stateMachine, deltaTime);
         if (!status.GetIsBoss()) {
             enemy.StartNormalHitReaction();
         }
-        return;
     }
 }
 

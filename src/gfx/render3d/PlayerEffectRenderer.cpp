@@ -2,6 +2,7 @@
 
 #include "gfx/Renderer3D.h"
 #include "gfx/VertexArray.h"
+#include "Game.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -29,6 +30,14 @@ const glm::vec4 attackImpactFillColor(1.0f, 1.0f, 1.0f, 0.62f);
 const glm::vec4 attackImpactEdgeColor(1.0f);
 const glm::vec4 mergeGuideFillColor(0.2f, 0.9f, 1.0f, 0.16f);
 const glm::vec4 mergeGuideEdgeColor(0.35f, 1.0f, 0.75f, 0.9f);
+const glm::vec4 enemyGuardColor(
+    62.0f / 255.0f,
+    166.0f / 255.0f,
+    1.0f,
+    1.0f);
+constexpr float enemyStatusBarHeight = 0.10f;
+constexpr float enemyStatusBarGap = 0.08f;
+constexpr float enemyStatusBarLeftMargin = -0.5f;
 
 bool ShouldFollowSphereSurface(const Planet* planet)
 {
@@ -71,6 +80,37 @@ float CalculateEnemyGuardHeight(const Enemy& enemy)
     }
     return enemy.GetRadius() * 0.8f;
 }
+
+void ConfigureEnemyStatusBarShader(Shader3D& shader)
+{
+    glUniform1i(shader.GetLocIsUnlit(), 1);
+    glUniform1i(shader.GetLocUseTexture(), 0);
+    glUniform1i(shader.GetLocUseBackTexture(), 0);
+    glUniform1i(shader.GetLocUseInstancing(), 0);
+    glUniform1i(shader.GetLocUseSkinning(), 0);
+    glUniform2f(shader.GetLocTextureTiling(), 1.0f, 1.0f);
+    glUniform3f(shader.GetLocColorMultiplier(), 1.0f, 1.0f, 1.0f);
+    glUniform1f(shader.GetLocColorSaturation(), 1.0f);
+    glUniform1i(shader.GetLocApplyOutputGamma(), 0);
+    glUniform3f(shader.GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
+    glUniform1f(shader.GetLocEmissiveIntensity(), 0.0f);
+}
+
+void RestoreEnemyStatusBarShader(Shader3D& shader)
+{
+    glUniform4f(shader.GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+    glUniform1i(shader.GetLocUseTexture(), 0);
+    glUniform1i(shader.GetLocUseBackTexture(), 0);
+    glUniform1i(shader.GetLocUseInstancing(), 0);
+    glUniform1i(shader.GetLocUseSkinning(), 0);
+    glUniform2f(shader.GetLocTextureTiling(), 1.0f, 1.0f);
+    glUniform3f(shader.GetLocColorMultiplier(), 1.0f, 1.0f, 1.0f);
+    glUniform1f(shader.GetLocColorSaturation(), 1.0f);
+    glUniform1i(shader.GetLocApplyOutputGamma(), 0);
+    glUniform3f(shader.GetLocEmissiveColor(), 1.0f, 1.0f, 1.0f);
+    glUniform1f(shader.GetLocEmissiveIntensity(), 0.0f);
+    glUniform1i(shader.GetLocIsUnlit(), 0);
+}
 }
 
 PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
@@ -97,6 +137,33 @@ void PlayerEffectRenderer::DrawPlayers(
         players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
+    const Game* game = mRenderer->GetGame();
+    const bool shouldDrawSplitGuard =
+        game &&
+        !game->GetIsGameUIHidden() &&
+        game->GetIsPlayerSplit() &&
+        !game->GetIsPlayer2Joined();
+    const int splitGuardCount =
+        shouldDrawSplitGuard
+            ? game->GetPlayerSplitGuardCount()
+            : 0;
+    const int maximumSplitGuardCount =
+        shouldDrawSplitGuard
+            ? game->GetMaximumPlayerSplitGuardCount()
+            : 0;
+    const Player* controlledPlayer =
+        shouldDrawSplitGuard
+            ? game->GetControlledPlayer()
+            : nullptr;
+    if (players[0] != controlledPlayer) {
+        DrawPlayerSplitGuard(
+            viewMat,
+            players[0],
+            splitGuardCount,
+            maximumSplitGuardCount,
+            physicsSystem);
+    }
+
     const bool hasPlayer2 = players.size() >= 2 && players[1];
     if (!hasPlayer2) {
         return;
@@ -106,6 +173,103 @@ void PlayerEffectRenderer::DrawPlayers(
     DrawPlayerCollisionShape(
         players[1], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[1]);
+    if (players[1] != controlledPlayer) {
+        DrawPlayerSplitGuard(
+            viewMat,
+            players[1],
+            splitGuardCount,
+            maximumSplitGuardCount,
+            physicsSystem);
+    }
+}
+
+void PlayerEffectRenderer::DrawPlayerSplitGuard(
+    const glm::mat4& viewMat,
+    const Player* player,
+    int guardCount,
+    int maximumGuardCount,
+    const PhysicsSystem* physicsSystem) const
+{
+    if (!mRenderer ||
+        !mRenderer->GetShader3D() ||
+        !player ||
+        !player->GetIsActive() ||
+        maximumGuardCount <= 0) {
+        return;
+    }
+
+    const GLuint guardTexture = mRenderer->FindTexture("guard");
+    VertexArray* quad = mRenderer->FindVertexArray("quad");
+    if (guardTexture == 0 || !quad) {
+        return;
+    }
+
+    Shader3D* shader = mRenderer->GetShader3D();
+    glUniform1i(shader->GetLocIsUnlit(), 1);
+    mRenderer->StartTransparentDraw();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, guardTexture);
+    glUniform1i(shader->GetLocUseTexture(), 1);
+    quad->SetActive();
+
+    constexpr float guardSize = 0.38f;
+    constexpr float guardGap = 0.34f;
+    constexpr float guardBottomGap = 0.08f;
+    constexpr float fallbackPlayerTopHeight = 0.22f;
+    float playerTopHeight = fallbackPlayerTopHeight;
+    if (physicsSystem) {
+        const float collisionScaleMultiplier =
+            player->GetCollisionScaleMultiplier();
+        playerTopHeight =
+            (physicsSystem->GetPlayerCollisionCenterHeight() +
+             physicsSystem->GetPlayerCollisionHeight() * 0.5f) *
+            collisionScaleMultiplier;
+    }
+    const float upMargin =
+        playerTopHeight + guardBottomGap + guardSize * 0.5f;
+    for (int guardIndex = 0;
+         guardIndex < maximumGuardCount;
+         ++guardIndex) {
+        const float rightMargin =
+            (guardIndex - (maximumGuardCount - 1) * 0.5f) *
+            guardGap;
+        constexpr float depletedGuardOpacity = 0.2f;
+        const float guardOpacity =
+            guardIndex < guardCount
+                ? 1.0f
+                : depletedGuardOpacity;
+        glUniform4f(
+            shader->GetLocObjectColor(),
+            1.0f,
+            1.0f,
+            1.0f,
+            guardOpacity);
+        const glm::mat4 billboard =
+            mRenderer->CreateBillboard(
+                viewMat,
+                player,
+                upMargin,
+                rightMargin,
+                guardSize,
+                guardSize);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(billboard));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    glUniform4f(
+        shader->GetLocObjectColor(),
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f);
+    glUniform1i(shader->GetLocUseTexture(), 0);
+    mRenderer->EndTransparentDraw();
+    glUniform1i(shader->GetLocIsUnlit(), 0);
 }
 
 void PlayerEffectRenderer::DrawPlayerMergeGuide(
@@ -365,7 +529,9 @@ void PlayerEffectRenderer::DrawEnemyEffects(
     const bool isEnemyOnPlayerPlanet =
         playerPlanet &&
         enemy->GetCurrentPlanet() == playerPlanet;
-    if (isEnemyOnPlayerPlanet) {
+    const bool shouldDrawEnemyStatusUI =
+        !mRenderer->GetGame()->GetIsGameUIHidden();
+    if (isEnemyOnPlayerPlanet && shouldDrawEnemyStatusUI) {
         DrawEnemyGuard(viewMat, enemy);
         DrawEnemyHp(viewMat, enemy);
     }
@@ -783,46 +949,88 @@ void PlayerEffectRenderer::DrawEnemyGuard(const glm::mat4& viewMat, const Enemy*
         return;
     }
 
-    const int breakCount = enemy->GetBreakCount();
-    if (breakCount == 0) {
+    const float currentGuard = enemy->GetCurrentGuard();
+    const float guardValuePerSegment = enemy->GetGuardValuePerSegment();
+    const int segmentCount = enemy->GetGuardSegmentCount();
+    if (currentGuard <= 0.0f || guardValuePerSegment <= 0.0f ||
+        segmentCount <= 0) {
         return;
     }
 
-    const GLuint guardTexture = mRenderer->FindTexture("guard");
-    VertexArray* quad = mRenderer->FindVertexArray("quad");
-    if (guardTexture == 0 || !quad) {
+    VertexArray* guardBar = mRenderer->FindVertexArray("hpBar");
+    if (!guardBar) {
         return;
     }
 
     Shader3D* shader = mRenderer->GetShader3D();
-
+    ConfigureEnemyStatusBarShader(*shader);
     mRenderer->StartTransparentDraw();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, guardTexture);
-    glUniform1i(shader->GetLocUseTexture(), 1);
-    quad->SetActive();
+    guardBar->SetActive();
 
     const float upMargin = CalculateEnemyGuardHeight(*enemy);
-    constexpr float guardWidth = 0.5f;
-    constexpr float guardHeight = 0.5f;
+    constexpr float segmentWidth = 0.32f;
+    constexpr float segmentGap = 0.04f;
 
-    for (int i = 0; i < breakCount; i++) {
-        const float rightMargin = (i - (breakCount - 1) * 0.5f) * 0.4f;
-        glm::mat4 billboard =
-            mRenderer->CreateBillboard(
-                viewMat, enemy, upMargin, rightMargin, guardWidth, guardHeight);
-        glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
+    for (int segmentIndex = 0; segmentIndex < segmentCount; ++segmentIndex) {
+        const float segmentLeft =
+            enemyStatusBarLeftMargin +
+            static_cast<float>(segmentIndex) * (segmentWidth + segmentGap);
+        const glm::mat4 backgroundBillboard = mRenderer->CreateBillboard(
+            viewMat,
+            enemy,
+            upMargin,
+            segmentLeft,
+            segmentWidth,
+            enemyStatusBarHeight);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(backgroundBillboard));
+        glUniform4f(shader->GetLocObjectColor(), 0.0f, 0.20f, 0.28f, 0.40f);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        const float segmentGuard = glm::clamp(
+            currentGuard -
+                static_cast<float>(segmentIndex) * guardValuePerSegment,
+            0.0f,
+            guardValuePerSegment);
+        const float fillRatio = segmentGuard / guardValuePerSegment;
+        if (fillRatio <= 0.0f) {
+            continue;
+        }
+
+        const glm::mat4 remainingGuardBillboard = mRenderer->CreateBillboard(
+            viewMat,
+            enemy,
+            upMargin,
+            segmentLeft,
+            segmentWidth * fillRatio,
+            enemyStatusBarHeight);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(remainingGuardBillboard));
+        glUniform4fv(
+            shader->GetLocObjectColor(),
+            1,
+            &enemyGuardColor[0]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 
-    glUniform1i(shader->GetLocUseTexture(), 0);
     mRenderer->EndTransparentDraw();
+    RestoreEnemyStatusBarShader(*shader);
 }
 
 void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* enemy) const
 {
     if (!mRenderer || !mRenderer->GetShader3D() || !enemy) {
+        return;
+    }
+
+    const float maximumHp = enemy->GetMaxHp();
+    if (maximumHp <= 0.0f) {
         return;
     }
 
@@ -833,23 +1041,52 @@ void PlayerEffectRenderer::DrawEnemyHp(const glm::mat4& viewMat, const Enemy* en
 
     Shader3D* shader = mRenderer->GetShader3D();
 
+    ConfigureEnemyStatusBarShader(*shader);
     mRenderer->StartTransparentDraw();
     hpBar->SetActive();
 
-    constexpr float rightMargin = -0.5f;
+    const float upMargin =
+        CalculateEnemyGuardHeight(*enemy) +
+        enemyStatusBarHeight +
+        enemyStatusBarGap;
+    constexpr float maximumHpWidth = 1.0f;
 
-
-    const float upMargin = CalculateEnemyGuardHeight(*enemy) + 0.40f;
-    const float hpWidth = enemy->GetHp() / enemy->GetMaxHp();
-    constexpr float hpHeight = 0.1f;
-
-    const glm::mat4 billboard = mRenderer->CreateBillboard(
-        viewMat, enemy, upMargin, rightMargin, hpWidth, hpHeight);
-    glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
-
-    std::vector<GLfloat> hpGreen{0.0f, 1.0f, 0.0f, 1.0f};
-    glUniform4fv(shader->GetLocObjectColor(), 1, hpGreen.data());
+    const glm::mat4 maximumHpBillboard = mRenderer->CreateBillboard(
+        viewMat,
+        enemy,
+        upMargin,
+        enemyStatusBarLeftMargin,
+        maximumHpWidth,
+        enemyStatusBarHeight);
+    glUniformMatrix4fv(
+        shader->GetLocModel(),
+        1,
+        GL_FALSE,
+        glm::value_ptr(maximumHpBillboard));
+    glUniform4f(shader->GetLocObjectColor(), 0.0f, 0.35f, 0.0f, 0.30f);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+    const float remainingHpRatio = glm::clamp(
+        enemy->GetHp() / maximumHp,
+        0.0f,
+        1.0f);
+    if (remainingHpRatio > 0.0f) {
+        const glm::mat4 remainingHpBillboard = mRenderer->CreateBillboard(
+            viewMat,
+            enemy,
+            upMargin,
+            enemyStatusBarLeftMargin,
+            remainingHpRatio,
+            enemyStatusBarHeight);
+        glUniformMatrix4fv(
+            shader->GetLocModel(),
+            1,
+            GL_FALSE,
+            glm::value_ptr(remainingHpBillboard));
+        glUniform4f(shader->GetLocObjectColor(), 0.0f, 1.0f, 0.0f, 1.0f);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
     mRenderer->EndTransparentDraw();
+    RestoreEnemyStatusBarShader(*shader);
 }

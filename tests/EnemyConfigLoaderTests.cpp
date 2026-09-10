@@ -37,6 +37,52 @@ void ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig()
         "selected enemy move speed");
 }
 
+void LegacyBreakCountMaxConfiguresGuardSegments()
+{
+    const YAML::Node enemyRoot = YAML::Load(
+        "enemies:\n"
+        "  - type: common\n"
+        "    guardValuePerSegment: 25\n"
+        "  - type: guard\n"
+        "    breakCountMax: 3\n");
+
+    const EnemyConfig config =
+        EnemyConfigLoader::Parse(enemyRoot, "guard");
+
+    ExpectEqual(3, config.guardSegmentCount, "legacy breakCountMax segment count");
+    ExpectNear(25.0f, config.guardValuePerSegment, 0.0001f, "common guard value per segment");
+}
+
+void WeakBossCombatConfigDoesNotStartBossEncounterPresentation()
+{
+    const YAML::Node enemyRoot = YAML::Load(
+        "enemies:\n"
+        "  - type: boss_weak\n"
+        "    isBoss: true\n"
+        "    isBossEncounter: false\n");
+
+    const EnemyConfig config =
+        EnemyConfigLoader::Parse(enemyRoot, "boss_weak");
+
+    ExpectTrue(config.isBoss, "weak boss combat behavior");
+    ExpectFalse(
+        config.isBossEncounter,
+        "weak boss encounter presentation");
+}
+
+void BossConfigStartsBossEncounterPresentationByDefault()
+{
+    const YAML::Node enemyRoot = YAML::Load(
+        "enemies:\n"
+        "  - type: boss_custom\n"
+        "    isBoss: true\n");
+
+    const EnemyConfig config =
+        EnemyConfigLoader::Parse(enemyRoot, "boss_custom");
+
+    ExpectTrue(config.isBossEncounter, "boss encounter presentation");
+}
+
 }
 
 void RegisterEnemyConfigLoaderTests(
@@ -45,4 +91,13 @@ void RegisterEnemyConfigLoaderTests(
     tests.emplace_back(
         "EnemyConfigLoader.ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig",
         ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig);
+    tests.emplace_back(
+        "EnemyConfigLoader.LegacyBreakCountMaxConfiguresGuardSegments",
+        LegacyBreakCountMaxConfiguresGuardSegments);
+    tests.emplace_back(
+        "EnemyConfigLoader.WeakBossCombatConfigDoesNotStartBossEncounterPresentation",
+        WeakBossCombatConfigDoesNotStartBossEncounterPresentation);
+    tests.emplace_back(
+        "EnemyConfigLoader.BossConfigStartsBossEncounterPresentationByDefault",
+        BossConfigStartsBossEncounterPresentationByDefault);
 }

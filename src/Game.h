@@ -175,6 +175,9 @@ public:
     bool TryResolvePlayerMergeGuide(
         const Player*& targetPlayer,
         float& radiusWorldUnits) const;
+    bool TryConsumePlayerSplitGuard(const Player& damagedPlayer);
+    int GetPlayerSplitGuardCount() const;
+    int GetMaximumPlayerSplitGuardCount() const;
     bool SwitchControlledPlayer();
     bool CanTogglePlayerSplit() const;
     bool CanSwitchControlledPlayer() const;
@@ -209,6 +212,8 @@ public:
     std::string GetNPCConversationId(const NPC* npc) const;
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
+    void SetGameUIHidden(bool isHidden) { mIsGameUIHidden = isHidden; }
+    bool GetIsGameUIHidden() const { return mIsGameUIHidden; }
     bool GetIsUGCMode() const;
     bool GetIsUGCPlaytestActive() const;
     bool GetIsUGCClearVerificationActive() const;
@@ -325,7 +330,7 @@ public:
     void SetInputModifierHeld(bool isHeld) { mIsInputModifierHeld = isHeld; }
 
 private:
-    bool InitializeGLFW();
+    bool InitializeGLFW(bool shouldUseFullscreen);
     void InitializeGameController();
     bool CreateGameSystems();
     void CreateStages(int stageCount);
@@ -398,6 +403,7 @@ private:
     FramePerformanceTracker mFramePerformanceTracker;
 
     bool mIsDebugEditorShowing = false;
+    bool mIsGameUIHidden = false;
     int mTitleMenuSelection = 0;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;

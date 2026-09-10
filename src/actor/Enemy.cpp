@@ -38,11 +38,28 @@ float CalculateSmoothstep(float progress)
            (3.0f - 2.0f * clampedProgress);
 }
 
-Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
+bool CanPursuePlayerOnCurrentSurface(
+    const Enemy& enemy,
+    const Player* player)
 {
     Game* game = enemy.GetGame();
     Planet* planet = enemy.GetCurrentPlanet();
-    if (!game || !planet) {
+    if (!game || !planet || !player) {
+        return false;
+    }
+
+    return player->GetIsActive() &&
+        player->IsAlive() &&
+        player->GetCurrentPlanet() == planet &&
+        planet->ArePositionsOnSameSurfaceFace(
+            enemy.GetPos(),
+            player->GetPos());
+}
+
+Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
+{
+    Game* game = enemy.GetGame();
+    if (!game) {
         return nullptr;
     }
 
@@ -50,13 +67,7 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
     float nearestDistanceSquared =
         std::numeric_limits<float>::max();
     for (Player* player : game->GetPlayers()) {
-        if (!player ||
-            !player->GetIsActive() ||
-            !player->IsAlive() ||
-            player->GetCurrentPlanet() != planet ||
-            !planet->ArePositionsOnSameSurfaceFace(
-                enemy.GetPos(),
-                player->GetPos())) {
+        if (!CanPursuePlayerOnCurrentSurface(enemy, player)) {
             continue;
         }
 
@@ -143,6 +154,7 @@ bool Enemy::ShouldAcceptLandingSurface(
 void Enemy::ApplyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
+    SetIsBossEncounter(config.isBossEncounter);
     SetIsNormalHitKnockBackEnabled(
         config.isNormalHitKnockBackEnabled);
     SetKnockBackSpeed(config.knockBackSpeed);
@@ -158,8 +170,9 @@ void Enemy::ApplyConfig(const EnemyConfig& config)
     SetAttack(config.attack);
     SetRadius(config.radius);
 
-    SetBreakCountMax(config.breakCountMax);
-    SetBreakCount(config.breakCountMax);
+    mStatus.ConfigureGuard(
+        config.guardSegmentCount,
+        config.guardValuePerSegment);
 
     SetModelPath(config.modelPath);
 
@@ -194,8 +207,7 @@ void Enemy::UpdateActor(float deltaTime)
         *this,
         deltaTime);
 
-    mStatus.SetNearestPlayer(
-        FindNearestPlayerOnSameSurfaceFace(*this));
+    mStatus.SetNearestPlayer(ResolvePursuitTarget());
 
     switch (mStateMachine->GetLifeState()) {
     case LifeState::Alive:
@@ -210,6 +222,8 @@ void Enemy::UpdateActor(float deltaTime)
     case LifeState::Dead:
         break;
     }
+
+    mMovement->RestoreGroundedEnemyInsideMovementArea(*this);
 }
 
 bool Enemy::ShouldRenderSolidWhite() const
@@ -336,6 +350,7 @@ void Enemy::UpdateHitReaction(float deltaTime)
 
 void Enemy::ApplyDamage(float damage, Player* player)
 {
+    RegisterPlayerAttackForAggro(player);
     mDamageHandler->ApplyDamage(
         *this,
         mStatus,
@@ -355,9 +370,41 @@ void Enemy::DefeatImmediately()
     mStateMachine->FinishDying(*this, mStatus);
 }
 
-void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
+EnemyGuardDamageResult Enemy::ApplyGuardDamage(
+    float guardDamage,
+    float deltaTime)
 {
-    mCombat->ApplyBreak(*this, mStatus, *mMovement, *mStateMachine, deltaTime, isAllBreak);
+    return mCombat->ApplyGuardDamage(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        guardDamage,
+        deltaTime);
+}
+
+EnemyGuardDamageResult
+Enemy::ApplyGuardDamageEnsuringCurrentSegmentBreak(
+    float minimumGuardDamage,
+    float deltaTime)
+{
+    return mCombat->ApplyGuardDamageEnsuringCurrentSegmentBreak(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        minimumGuardDamage,
+        deltaTime);
+}
+
+EnemyGuardDamageResult Enemy::BreakGuard(float deltaTime)
+{
+    return mCombat->BreakGuard(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        deltaTime);
 }
 
 void Enemy::ApplyAirDodgePush(
@@ -365,8 +412,7 @@ void Enemy::ApplyAirDodgePush(
     float pushSpeed,
     float pushDampingPerSecond)
 {
-    if (GetIsBoss() ||
-        IsOnGround() ||
+    if (IsOnGround() ||
         !IsAlive()) {
         return;
     }
@@ -376,6 +422,117 @@ void Enemy::ApplyAirDodgePush(
         dodgeDirection,
         pushSpeed,
         pushDampingPerSecond);
+}
+
+Player* Enemy::ResolvePursuitTarget()
+{
+    Game* game = GetGame();
+    const bool isSoloSplit =
+        game &&
+        game->GetIsPlayerSplit() &&
+        !game->GetIsPlayer2Joined();
+    if (!isSoloSplit) {
+        ResetSoloSplitAggro();
+        return FindNearestPlayerOnSameSurfaceFace(*this);
+    }
+
+    if (mSoloSplitAggroOverridePlayer &&
+        CanPursuePlayerOnCurrentSurface(
+            *this,
+            mSoloSplitAggroOverridePlayer)) {
+        return mSoloSplitAggroOverridePlayer;
+    }
+
+    Player* controlledPlayer = game->GetControlledPlayer();
+    for (Player* player : game->GetPlayers()) {
+        if (player == controlledPlayer ||
+            !CanPursuePlayerOnCurrentSurface(*this, player)) {
+            continue;
+        }
+        return player;
+    }
+
+    if (CanPursuePlayerOnCurrentSurface(*this, controlledPlayer)) {
+        return controlledPlayer;
+    }
+
+    return nullptr;
+}
+
+void Enemy::RegisterPlayerAttackForAggro(Player* attackingPlayer)
+{
+    Game* game = GetGame();
+    const bool isControlledSoloSplitPlayer =
+        game &&
+        attackingPlayer &&
+        game->GetIsPlayerSplit() &&
+        !game->GetIsPlayer2Joined() &&
+        game->GetControlledPlayer() == attackingPlayer;
+    if (!isControlledSoloSplitPlayer) {
+        return;
+    }
+
+    if (mSoloSplitAggroOverridePlayer == attackingPlayer) {
+        return;
+    }
+
+    if (mSoloSplitAggroHitPlayer != attackingPlayer) {
+        mSoloSplitAggroHitPlayer = attackingPlayer;
+        mSoloSplitAggroHitCount = 0;
+    }
+
+    ++mSoloSplitAggroHitCount;
+    constexpr int hitsRequiredToTakeAggro = 3;
+    if (mSoloSplitAggroHitCount < hitsRequiredToTakeAggro) {
+        return;
+    }
+
+    mSoloSplitAggroOverridePlayer = attackingPlayer;
+    mSoloSplitAggroHitCount = 0;
+}
+
+void Enemy::ResetSoloSplitAggro()
+{
+    mSoloSplitAggroOverridePlayer = nullptr;
+    mSoloSplitAggroHitPlayer = nullptr;
+    mSoloSplitAggroHitCount = 0;
+}
+
+void Enemy::ApplyAirComboLift(float liftHeight)
+{
+    if (IsOnGround() ||
+        !IsAlive()) {
+        return;
+    }
+
+    mMovement->ApplyAirComboLift(*this, liftHeight);
+}
+
+bool Enemy::StartGravitySlam(
+    Player& player,
+    float downwardSpeed,
+    float maximumDamage,
+    float fullDamageHeight,
+    float minimumDamageRatio,
+    float groundImpactRadius,
+    bool shouldPlayImpactFeedback)
+{
+    if (IsOnGround() ||
+        !IsAlive()) {
+        return false;
+    }
+
+    return mMovement->StartGravitySlam(
+        *this,
+        mStatus,
+        *mStateMachine,
+        player,
+        downwardSpeed,
+        maximumDamage,
+        fullDamageHeight,
+        minimumDamageRatio,
+        groundImpactRadius,
+        shouldPlayImpactFeedback);
 }
 
 const char* Enemy::GetCurrentBehaviorActionType() const

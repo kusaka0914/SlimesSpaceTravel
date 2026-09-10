@@ -183,7 +183,7 @@ bool UGCEditorChromeRenderer::DrawControls()
         for (const UILoadSystem::CustomElement& element :
              mContext.uiRenderer->GetUILoadSystem()->GetCustomElements()) {
             if (element.screen == "ugc" && element.id == id) {
-                return UGCControlLayout{
+                UGCControlLayout layout{
                     ImVec2(
                         mainViewport->WorkPos.x +
                             mainViewport->WorkSize.x * element.xRatio,
@@ -196,6 +196,20 @@ bool UGCEditorChromeRenderer::DrawControls()
                         std::max(
                             1.0f,
                             mainViewport->WorkSize.x * element.heightRatio))};
+                if (element.id == "play") {
+                    constexpr float authoredGroupBottomRatio = 0.5755f;
+                    constexpr float bottomMargin = 16.0f;
+                    const float authoredBottomRatio =
+                        element.yRatio + element.heightRatio;
+                    const float adjustedBottomMargin = std::max(
+                        0.0f,
+                        bottomMargin + mainViewport->WorkSize.x *
+                            (authoredGroupBottomRatio - authoredBottomRatio));
+                    layout.position.y =
+                        gameViewportMax.y - adjustedBottomMargin -
+                        layout.size.y;
+                }
+                return layout;
             }
         }
         return UGCControlLayout{fallbackPosition, fallbackSize};

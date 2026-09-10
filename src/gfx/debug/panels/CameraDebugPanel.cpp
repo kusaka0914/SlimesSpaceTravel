@@ -137,6 +137,30 @@ void CameraDebugPanel::Draw()
             ImGui::SeparatorText("攻撃時アシスト");
             playerCameraChanged |= ImGui::DragFloat(
                 "対象への追従速度##AttackCamera", &playerCameraSettings.attackTargetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "空中強攻撃時の距離倍率##AirSlamCamera",
+                &playerCameraSettings.airSlamDistanceMultiplier,
+                0.05f,
+                1.0f,
+                3.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "空中強攻撃時の見下ろし角度##AirSlamCamera",
+                &playerCameraSettings.airSlamPitchDegrees,
+                0.5f,
+                -89.0f,
+                0.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "空中強攻撃時の距離変更速度##AirSlamCamera",
+                &playerCameraSettings.airSlamDistanceSmoothingSpeed,
+                0.1f,
+                0.0f,
+                50.0f);
+            playerCameraChanged |= ImGui::DragFloat(
+                "着地後に距離を戻すまでの時間（秒）##AirSlamCamera",
+                &playerCameraSettings.airSlamReturnDelaySeconds,
+                0.05f,
+                0.0f,
+                10.0f);
 
             ImGui::TreePop();
         }

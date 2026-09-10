@@ -114,6 +114,10 @@ void HudRenderer::DrawPlayerStatusUIForPlayer(
     if (jewelCount > 0) {
         DrawJewelUI(jewelCount, screenTopY, uiScale);
     }
+
+    if (!mGame->GetIsPlayer2Joined()) {
+        DrawSplitGuardUI(screenTopY, uiScale);
+    }
 }
 
 void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, float screenHeight)
@@ -151,6 +155,33 @@ void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
 {
     const float jewelGap = mRenderer->GetFbWidth() / 20.0f;
     mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
+}
+
+void HudRenderer::DrawSplitGuardUI(
+    float screenTopY,
+    float uiScale)
+{
+    const int maximumGuardCount =
+        mGame->GetMaximumPlayerSplitGuardCount();
+    if (maximumGuardCount <= 0) {
+        return;
+    }
+
+    const int guardCount =
+        mGame->GetPlayerSplitGuardCount();
+    const float guardGap =
+        mRenderer->GetFbWidth() * 0.025f;
+    constexpr float depletedGuardOpacity = 0.2f;
+    mRenderer->DrawLinedUpTextureSlots(
+        "default",
+        "splitGuardTexture",
+        "guard",
+        guardGap,
+        guardCount,
+        maximumGuardCount,
+        depletedGuardOpacity,
+        screenTopY,
+        uiScale);
 }
 
 void HudRenderer::UpdateTalkableUIVisibility(

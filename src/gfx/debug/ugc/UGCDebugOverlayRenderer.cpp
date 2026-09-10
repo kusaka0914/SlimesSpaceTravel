@@ -111,7 +111,7 @@ void UGCDebugOverlayRenderer::Draw()
                  mContext.uiRenderer->GetUILoadSystem()->
                      GetCustomElements()) {
                 if (element.screen == "ugc" && element.id == id) {
-                    return UGCControlLayout{
+                    UGCControlLayout layout{
                         ImVec2(
                             viewportMin.x +
                                 viewportSize.x * element.xRatio,
@@ -122,6 +122,21 @@ void UGCDebugOverlayRenderer::Draw()
                                 viewportSize.x * element.widthRatio),
                             std::max(1.0f,
                                 viewportSize.x * element.heightRatio))};
+                    if (element.id == "play") {
+                        constexpr float authoredGroupBottomRatio = 0.5755f;
+                        constexpr float bottomMargin = 6.0f;
+                        const float authoredBottomRatio =
+                            element.yRatio + element.heightRatio;
+                        const float adjustedBottomMargin = std::max(
+                            0.0f,
+                            bottomMargin + viewportSize.x *
+                                (authoredGroupBottomRatio -
+                                 authoredBottomRatio));
+                        layout.position.y =
+                            viewportMax.y - adjustedBottomMargin -
+                            layout.size.y;
+                    }
+                    return layout;
                 }
             }
             return UGCControlLayout{fallbackPosition, fallbackSize};
@@ -393,6 +408,9 @@ void UGCDebugOverlayRenderer::Draw()
     ImGui::SetNextWindowPos(
         playLayout.position,
         ImGuiCond_Always);
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_WindowPadding,
+        ImVec2(0.0f, 0.0f));
     ImGui::Begin("###UGCDebugPlay", nullptr, overlayFlags);
     if (drawActionIcon(
             "play",
@@ -401,9 +419,11 @@ void UGCDebugOverlayRenderer::Draw()
             playLayout.size)) {
         mContext.game->StartUGCPlaytest();
         ImGui::End();
+        ImGui::PopStyleVar();
         return;
     }
     ImGui::End();
+    ImGui::PopStyleVar();
 
     if (!mWorkPanel.IsManagementOpen()) {
         mSceneOverlayRenderer.DrawBackgroundGuides();

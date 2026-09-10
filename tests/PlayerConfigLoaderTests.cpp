@@ -56,10 +56,17 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         "    groundWeakAttackCooldownSeconds: 0.35\n"
         "    airWeakAttackCooldownSeconds: 0.65\n"
         "    airDodgeAttackDamage: 8.5\n"
+        "    airDodgeGuardDamage: 4.5\n"
         "    airDodgeHorizontalHitboxScale: 1.25\n"
         "    airDodgeVerticalHitboxScale: 2.75\n"
         "    airDodgeEnemyPushSpeed: 7.5\n"
-        "    airDodgeEnemyPushDampingPerSecond: 4.5\n");
+        "    airDodgeEnemyPushDampingPerSecond: 4.5\n"
+        "    airWeakEnemyLiftHeight: 0.6\n"
+        "    airComboDodgePlayerLiftHeight: 0.9\n"
+        "    airComboDodgeEnemyLiftHeight: 1.1\n"
+        "    airSlamEnemyDownwardSpeed: 19\n"
+        "    airSlamFullDamageHeight: 7\n"
+        "    airSlamMinimumDamageRatio: 0.25\n");
 
     const PlayerConfig config =
         PlayerConfigLoader::Load(configFile.PathText());
@@ -81,6 +88,11 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         0.0001f,
         "air dodge attack damage");
     ExpectNear(
+        4.5f,
+        config.airDodgeGuardDamage,
+        0.0001f,
+        "air dodge guard damage");
+    ExpectNear(
         1.25f,
         config.airDodgeHorizontalHitboxScale,
         0.0001f,
@@ -100,6 +112,61 @@ void AirDodgeAttackParametersLoadIndependentlyFromWeakAttack()
         config.airDodgeEnemyPushDampingPerSecond,
         0.0001f,
         "air dodge enemy push damping");
+    ExpectNear(
+        0.6f,
+        config.airWeakEnemyLiftHeight,
+        0.0001f,
+        "air weak enemy lift height");
+    ExpectNear(
+        0.9f,
+        config.airComboDodgePlayerLiftHeight,
+        0.0001f,
+        "air combo dodge player lift height");
+    ExpectNear(
+        1.1f,
+        config.airComboDodgeEnemyLiftHeight,
+        0.0001f,
+        "air combo dodge enemy lift height");
+    ExpectNear(
+        19.0f,
+        config.airSlamEnemyDownwardSpeed,
+        0.0001f,
+        "air slam enemy downward speed");
+    ExpectNear(
+        7.0f,
+        config.airSlamFullDamageHeight,
+        0.0001f,
+        "air slam full damage height");
+    ExpectNear(
+        0.25f,
+        config.airSlamMinimumDamageRatio,
+        0.0001f,
+        "air slam minimum damage ratio");
+}
+
+void GuardDamageParametersLoadFromPlayerConfig()
+{
+    const YAML::Node playerRoot = YAML::Load(
+        "players:\n"
+        "  - groundCombo1GuardDamage: 4\n"
+        "    groundCombo2GuardDamage: 6\n"
+        "    groundCombo3GuardDamage: 12\n"
+        "    groundWideGuardDamage: 7\n"
+        "    airWeakGuardDamage: 8\n"
+        "    strongAttackGuardDamage: 21\n"
+        "    airSlamGuardDamage: 11\n"
+        "    continuousAttackGuardDamage: 3\n");
+
+    const PlayerConfig config = PlayerConfigLoader::Parse(playerRoot);
+
+    ExpectNear(4.0f, config.groundCombo1GuardDamage, 0.0001f, "combo one guard damage");
+    ExpectNear(6.0f, config.groundCombo2GuardDamage, 0.0001f, "combo two guard damage");
+    ExpectNear(12.0f, config.groundCombo3GuardDamage, 0.0001f, "combo three guard damage");
+    ExpectNear(7.0f, config.groundWideGuardDamage, 0.0001f, "ground wide guard damage");
+    ExpectNear(8.0f, config.airWeakGuardDamage, 0.0001f, "air weak guard damage");
+    ExpectNear(21.0f, config.strongAttackGuardDamage, 0.0001f, "strong attack guard damage");
+    ExpectNear(11.0f, config.airSlamGuardDamage, 0.0001f, "air slam guard damage");
+    ExpectNear(3.0f, config.continuousAttackGuardDamage, 0.0001f, "continuous attack guard damage");
 }
 
 void ParsedPlayerYamlProducesConfigWithoutFileAccess()
@@ -130,4 +197,7 @@ void RegisterPlayerConfigLoaderTests(
     tests.emplace_back(
         "PlayerConfigLoader.ParsedPlayerYamlProducesConfigWithoutFileAccess",
         ParsedPlayerYamlProducesConfigWithoutFileAccess);
+    tests.emplace_back(
+        "PlayerConfigLoader.GuardDamageParametersLoadFromPlayerConfig",
+        GuardDamageParametersLoadFromPlayerConfig);
 }

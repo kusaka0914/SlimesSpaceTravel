@@ -82,9 +82,17 @@ void UGCPreviewRenderer::DrawPreviewOverlay()
         return;
     }
 
+    constexpr float previewBottomMargin = 14.0f;
+    constexpr float previewHeaderHeight = 24.0f;
+    const float maximumWidthFromViewportHeight = std::max(
+        1.0f,
+        (mContext.gameViewport.height - previewBottomMargin -
+         previewHeaderHeight) * 16.0f / 9.0f);
     const float maximumPreviewWidth = std::max(
         1.0f,
-        mContext.gameViewport.width * 0.5f);
+        std::min(
+            mContext.gameViewport.width * 0.5f,
+            maximumWidthFromViewportHeight));
     const float minimumPreviewWidth =
         std::min(180.0f, maximumPreviewWidth);
     if (!mPanelState.HasInitializedWidth()) {
@@ -116,23 +124,39 @@ void UGCPreviewRenderer::DrawPreviewOverlay()
         mContext.gameViewport.x +
             mContext.gameViewport.width - previewWidth - 14.0f,
         mContext.gameViewport.y +
-            mContext.gameViewport.height - previewHeight - 14.0f);
+            mContext.gameViewport.height - previewHeight -
+            previewBottomMargin);
     if (previewElement) {
-        previewWidth = std::max(
+        const float configuredPreviewWidth = std::max(
             1.0f,
             mContext.gameViewport.width *
                 previewElement->widthRatio);
-        previewHeight = std::max(
-            1.0f,
-            mContext.gameViewport.width *
-                previewElement->heightRatio);
-        previewMin = ImVec2(
+        previewWidth = std::min(
+            configuredPreviewWidth,
+            maximumPreviewWidth);
+        const float configuredAspectRatio =
+            previewElement->widthRatio /
+            std::max(previewElement->heightRatio, 0.0001f);
+        previewHeight = previewWidth /
+            std::max(configuredAspectRatio, 0.0001f);
+        const float configuredX =
             mContext.gameViewport.x +
-                mContext.gameViewport.width *
-                    previewElement->xRatio,
-            mContext.gameViewport.y +
-                mContext.gameViewport.width *
-                    previewElement->yRatio);
+            mContext.gameViewport.width * previewElement->xRatio;
+        constexpr float authoredPreviewBottomRatio = 0.57f;
+        const float authoredBottomRatio =
+            previewElement->yRatio + previewElement->heightRatio;
+        const float adjustedBottomMargin = std::max(
+            0.0f,
+            previewBottomMargin + mContext.gameViewport.width *
+                (authoredPreviewBottomRatio - authoredBottomRatio));
+        const float minimumX = mContext.gameViewport.x + 14.0f;
+        const float maximumX =
+            mContext.gameViewport.x + mContext.gameViewport.width -
+            previewWidth - 14.0f;
+        previewMin = ImVec2(
+            glm::clamp(configuredX, minimumX, std::max(minimumX, maximumX)),
+            mContext.gameViewport.y + mContext.gameViewport.height -
+                previewHeight - adjustedBottomMargin);
     }
     mPanelState.SetWidth(
         previewWidth,

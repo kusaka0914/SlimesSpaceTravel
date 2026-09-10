@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer.h"
+#include "gfx/LightingSettings.h"
 #include "text/RubyText.h"
 
 #include <GL/glew.h>
@@ -17,11 +18,14 @@
 class Actor;
 class CharacterActor;
 class DebugLabelRenderer;
+class DirectionalShadowMap;
+class EnvironmentDecorationRenderer;
 class Enemy;
 class Game;
 class NPCProximityMessageRenderer;
 class Player;
 class PlayerEffectRenderer;
+class PlanetAtmosphereRenderer;
 class ParticleRenderer;
 class Planet;
 class RenderViewportController;
@@ -44,6 +48,9 @@ public:
     void Initialize();
     void Shutdown();
     void Draw() const;
+    void RenderGameplayShadowMap() const;
+    void RenderShadowMap(const glm::vec3& focusPosition) const;
+    void DrawEnvironmentDecorations() const;
 
     void DrawScene(
         const glm::mat4& viewMat,
@@ -62,6 +69,11 @@ public:
     GLuint GetAttackRangeVBO() const { return mAttackRangeVBO; }
     GLuint GetOrLoadTextureOverride(
         const std::string& assetRelativePath) const;
+    LightingSettings& GetLightingSettings() { return mLightingSettings; }
+    const LightingSettings& GetLightingSettings() const
+    {
+        return mLightingSettings;
+    }
 
     GLuint CreateTextTextureFor3D(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
                                   float textScale) const
@@ -138,14 +150,22 @@ private:
 
     bool UploadActorSkinningMatrices(const Actor* actor) const;
     void SetSkinningEnabled(bool isEnabled) const;
+    void DrawActorToShadowMap(
+        Actor* actor,
+        bool useOrient,
+        const glm::vec3& focusPosition) const;
 
 private:
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;
 
     std::unique_ptr<RenderViewportController> mRenderViewportController;
+    std::unique_ptr<DirectionalShadowMap> mDirectionalShadowMap;
+    std::unique_ptr<EnvironmentDecorationRenderer>
+        mEnvironmentDecorationRenderer;
     std::unique_ptr<SceneObjectRenderer> mSceneObjectRenderer;
     std::unique_ptr<PlayerEffectRenderer> mPlayerEffectRenderer;
+    std::unique_ptr<PlanetAtmosphereRenderer> mPlanetAtmosphereRenderer;
     std::unique_ptr<DebugLabelRenderer> mDebugLabelRenderer;
     std::unique_ptr<NPCProximityMessageRenderer> mNPCProximityMessageRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;
@@ -159,4 +179,6 @@ private:
     mutable bool mDimNonEditingUGCLayers = false;
     mutable int mUGCEditLayer = 0;
     mutable float mActorOpacityMultiplier = 1.0f;
+    mutable glm::vec3 mCurrentCameraPosition{0.0f};
+    LightingSettings mLightingSettings;
 };

@@ -2,7 +2,7 @@
 
 EnemyStatus::EnemyStatus()
     : mHealth(),
-      mBreakGauge(),
+      mGuardGauge(),
       mIsCountered(false),
       mIsBoss(false),
       mIsHit(false),

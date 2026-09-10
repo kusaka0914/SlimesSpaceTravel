@@ -3,7 +3,7 @@ playerCamera:
   pitchDegrees: -52.546
   targetHeight: 2.45
   splitScreenTargetHeight: 1.5
-  fieldOfView: 60
+  fieldOfView: 55
   splitScreenFieldOfView: 55
   yawSensitivity: 1.5707963
   pitchSensitivityDegrees: 90
@@ -12,6 +12,10 @@ playerCamera:
   upSmoothingSpeed: 4.2
   targetSmoothingSpeed: 3
   attackTargetSmoothingSpeed: 6
+  airSlamDistanceMultiplier: 1.35
+  airSlamPitchDegrees: -75
+  airSlamDistanceSmoothingSpeed: 6
+  airSlamReturnDelaySeconds: 1
   autoFollowDelaySeconds: 0.5
   autoFollowRotationDurationSeconds: 1
   autoFollowMinimumLateralInput: 0.35

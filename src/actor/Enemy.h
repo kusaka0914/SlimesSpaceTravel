@@ -32,25 +32,46 @@ public:
     glm::vec3 GetRenderScale() const override;
 
     void ApplyDamage(float damage, Player* player);
-    void ApplyBreak(float deltaTime, bool isAllBreak = false);
+    EnemyGuardDamageResult ApplyGuardDamage(
+        float guardDamage,
+        float deltaTime);
+    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(
+        float minimumGuardDamage,
+        float deltaTime);
+    EnemyGuardDamageResult BreakGuard(float deltaTime);
     void ApplyAirDodgePush(
         const glm::vec3& dodgeDirection,
         float pushSpeed,
         float pushDampingPerSecond);
+    void ApplyAirComboLift(float liftHeight);
+    bool StartGravitySlam(
+        Player& player,
+        float downwardSpeed,
+        float maximumDamage,
+        float fullDamageHeight,
+        float minimumDamageRatio,
+        float groundImpactRadius,
+        bool shouldPlayImpactFeedback);
     void DefeatImmediately();
     void ApplyConfig(const EnemyConfig& config);
     void StartNormalHitReaction();
     void StartBossHitReaction();
 
     void SetIsBoss(bool isBoss) { mStatus.SetIsBoss(isBoss); }
+    void SetIsBossEncounter(bool isBossEncounter)
+    {
+        mIsBossEncounter = isBossEncounter;
+    }
     void SetIsNormalHitKnockBackEnabled(bool isEnabled)
     {
         mStatus.SetIsNormalHitKnockBackEnabled(isEnabled);
     }
     void SetIsStrongAttacked(bool isStrongAttacked) { mStatus.SetIsStrongAttacked(isStrongAttacked); }
 
-    void SetBreakCount(int breakCount) { mStatus.SetBreakCount(breakCount); }
-    void SetBreakCountMax(int breakCountMax) { mStatus.SetBreakCountMax(breakCountMax); }
+    void SetGuardSegmentCount(int segmentCount)
+    {
+        mStatus.SetGuardSegmentCount(segmentCount);
+    }
 
     void SetHp(float hp) { mStatus.SetHp(hp); }
     void SetMaxHp(float maxHp) { mStatus.SetMaxHp(maxHp); }
@@ -77,13 +98,19 @@ public:
 
     bool GetIsDead() const { return mStateMachine->IsDead(); }
     bool GetIsBoss() const { return mStatus.GetIsBoss(); }
+    bool IsBossEncounter() const { return mIsBossEncounter; }
     bool IsNormalHitKnockBackEnabled() const
     {
         return mStatus.IsNormalHitKnockBackEnabled();
     }
     bool GetCanCountered() const { return mStatus.GetCanCountered(); }
 
-    int GetBreakCount() const { return mStatus.GetBreakCount(); }
+    float GetCurrentGuard() const { return mStatus.GetCurrentGuard(); }
+    float GetMaxGuard() const { return mStatus.GetMaxGuard(); }
+    float GetGuardValuePerSegment() const
+    {
+        return mStatus.GetGuardValuePerSegment();
+    }
 
     float GetHp() const { return mStatus.GetHp(); }
     float GetMaxHp() const { return mStatus.GetMaxHp(); }
@@ -91,7 +118,10 @@ public:
     float GetAttackRange() const { return mStatus.GetAttackRange(); }
     float GetStandByAttackTimer() const { return mStatus.GetStandByAttackTimer(); }
 
-    int GetBreakCountMax() const { return mStatus.GetBreakCountMax(); }
+    int GetGuardSegmentCount() const
+    {
+        return mStatus.GetGuardSegmentCount();
+    }
 
     float GetDetectionRange() const { return mStatus.GetDetectionRange(); }
     float GetAttackPreparationRange() const
@@ -188,6 +218,9 @@ private:
     };
 
     bool CanUseReducedUpdateRate() const;
+    Player* ResolvePursuitTarget();
+    void RegisterPlayerAttackForAggro(Player* attackingPlayer);
+    void ResetSoloSplitAggro();
     void SetShouldUseFullRateUpdate(bool shouldUseFullRateUpdate)
     {
         mShouldUseFullRateUpdate = shouldUseFullRateUpdate;
@@ -205,8 +238,12 @@ private:
     glm::vec3 mLastGroundedPosition{0.0f};
     glm::vec3 mLastGroundedUpDirection{0.0f, 1.0f, 0.0f};
     bool mHasRecordedGroundedTransform = false;
+    bool mIsBossEncounter = false;
     bool mShouldDropJewelOnDeath = false;
     bool mShouldUseFullRateUpdate = true;
+    Player* mSoloSplitAggroOverridePlayer = nullptr;
+    Player* mSoloSplitAggroHitPlayer = nullptr;
+    int mSoloSplitAggroHitCount = 0;
     HitReactionKind mHitReactionKind = HitReactionKind::None;
     float mHitReactionElapsedSeconds = 0.0f;
 };

@@ -1,5 +1,5 @@
 planets:
-  - center: [3.9521134, 2.8908253e-06, -42.231804]
+  - center: [3.9521134, 0.3100505, -42.231804]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -69,7 +69,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: true
     textureOverride: textures/planet_dry.png
-  - center: [-9.542546, -0.7502558, -6.2830496]
+  - center: [-9.541998, -0.7502558, -6.2830496]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -95,7 +95,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/planet_dry.png
-  - center: [71.45571, -9.047985e-05, 23.639824]
+  - center: [73.47009, -9.05445e-05, 15.826933]
     scale: [6, 2, 6]
     color: [1.0, 0.0, 0.0, 1.0]
     model: planet_3.obj
@@ -178,48 +178,18 @@ enemies:
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
-    currentPlanetNum: 5
-    theta: -0.28321463
-    phi: -0.5889735
-    height: 0.19926593
-    pos:
-      - 2.76
-      - -1.74
-      - -0.81
-    upVec:
-      - 0.015585067
-      - -0.99860823
-      - -0.050387006
-    modelPath: enemy.obj
-  - editorName: 新しい通常敵
-    type: boss_weak
     currentPlanetNum: 9
     theta: 0.9056238
     phi: -0.44521698
     height: -0.033457488
     pos:
-      - 2.1
-      - -1.63
-      - 2.68
+      - 2.3
+      - -1.92
+      - 0.93
     upVec:
       - 0.14016801
       - -0.97451514
       - 0.17513797
-    modelPath: enemy.obj
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 9
-    theta: -0.70755756
-    phi: -0.56671315
-    height: -0.025331108
-    pos:
-      - 2.1
-      - -1.76
-      - -1.79
-    upVec:
-      - 0.13122854
-      - -0.9851838
-      - -0.11041753
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
@@ -338,21 +308,6 @@ enemies:
       - -0.21545385
       - -0.9745131
       - 0.06248045
-    modelPath: enemy.obj
-  - editorName: 新しい通常敵
-    type: boss_weak
-    currentPlanetNum: 5
-    theta: -1.1355625
-    phi: -0.15867206
-    height: -0.58608866
-    pos:
-      - 2.25
-      - -0.86
-      - -4.85
-    upVec:
-      - 0.2358988
-      - -0.82411575
-      - -0.51496106
     modelPath: enemy.obj
   - editorName: 新しい通常敵
     type: boss_weak
@@ -1127,7 +1082,7 @@ keys:
       - 2
       - 2
 crystals:
-  - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -4.0039515, pos: [0.085523844, 1.9924335, 0.084285736], upVec: [0.023796992, 0.99968386, 0.00811883]}
+  - {type: little, currentPlanetNum: 0, theta: 0.77810717, phi: 1.5106027, height: -0.0071662003, pos: [0.09, 1.99, 0.08], upVec: [0.023796992, 0.99968386, 0.00811883]}
 boats:
   - {startPlanet: 4, destPlanet: 6, destStage: 0, theta: 0.45893067, phi: -0.012919813, height: 31.9273, facingYaw: 0, pos: [34, -0.49, 16.8], upVec: [0, -1, 0], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
   - {startPlanet: 10, destPlanet: 3, destStage: 0, theta: -3.0091338, phi: -1.1927763, height: -3.8784285, facingYaw: 0, pos: [-0.78, -1.97, -0.1], upVec: [-0.043304242, -0.9989078, -0.017552216], travelSpeed: 10, destMargin: 4, launchSequenceId: launch_rocket_from_base, modelPath: boat.obj, textureTiling: [1, 1]}
@@ -1158,9 +1113,9 @@ boatArrivalPoints:
       - 1
       - 1
   - currentPlanetNum: 6
-    theta: 2.9060497
-    phi: -1.5103772
-    height: 2.2516327
+    theta: 1.8508548
+    phi: -0.4785704
+    height: 4.376511
     facingYaw: 0
     modelPath: platform.obj
     rotation:
@@ -1172,9 +1127,9 @@ boatArrivalPoints:
       - 0.4
       - 0.4
     pos:
-      - -0.25
-      - -4.25
-      - 0.06
+      - -0.07
+      - -4.29
+      - -0.89
     upVec:
       - -0.025092775
       - -0.99968386
@@ -1185,13 +1140,13 @@ boatArrivalPoints:
 boatParts: []
 players:
   - pos:
-      - 0.7319901
-      - -1.907393
-      - 1.4565926
+      - 1.23
+      - -1.93
+      - 2.79
     currentPlanetNum: 0
-    theta: 1.1051221
-    phi: -0.8636022
-    height: -3.4908926
+    theta: 1.1569593
+    phi: -0.5638126
+    height: 0.2043
     facingYaw: 3.626681
     rotation:
       - 0
@@ -1206,23 +1161,29 @@ players:
       - 0.9697606
       - 0.010460966
       - -0.23892507
-  - pos: [4.0, 7.5, 0.0]
+  - pos:
+      - 4
+      - 7.19
+      - 0
     currentPlanetNum: 0
+    theta: 0
+    phi: 1.0631047
+    height: 5.5486035
 star:
   - {currentPlanetNum: 3, theta: 0.7404166, phi: -1.2475072, height: -3.9153843, isActive: false, pos: [0.02, -0.08, 0.02], upVec: [0.02592474, -0.9992376, 0.029190011], modelPath: star_blue.glb}
 NPCs:
-  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.7024887, phi: -0.5617859, height: -2.7080855, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["しってる～？\n分身してるときは攻撃力も半分になっちゃうんだ～！", "だから敵と戦うときは合体したほうがいいよ～！\n2人で戦うならいいけどね～！"], pos: [-0.06, -1.51, 4.17], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: "しってる～？\n", ruby: false}, {text: 分, ruby: true, reading: ぶん}, {text: 身, ruby: true, reading: しん}, {text: してるときは, ruby: false}, {text: 攻, ruby: true, reading: こう}, {text: 撃, ruby: true, reading: げき}, {text: 力, ruby: true, reading: りょく}, {text: も, ruby: false}, {text: 半, ruby: true, reading: はん}, {text: 分, ruby: true, reading: ぶん}, {text: になっちゃうんだ～！, ruby: false}]}, {talkIndex: 1, segments: [{text: だから, ruby: false}, {text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: "したほうがいいよ～！\n2", ruby: false}, {text: 人, ruby: true, reading: ひと}, {text: で, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うならいいけどね～！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 敵と戦うときは合体したほうがいいよ～！}], rubies: [{talkIndex: 1, segments: [{text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: したほうがいいよ～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
+  - {modelPath: spaceSlime.obj, currentPlanetNum: 0, theta: 1.5851718, phi: -0.3304535, height: -0.042547163, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: ["しってる～？\n分身してるときは攻撃力も半分になっちゃうんだ～！", "だから敵と戦うときは合体したほうがいいよ～！\n2人で戦うならいいけどね～！"], pos: [-0.06, -1.42, 4.14], upVec: [-0.02306387, -0.9851837, 0.16994473], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: "しってる～？\n", ruby: false}, {text: 分, ruby: true, reading: ぶん}, {text: 身, ruby: true, reading: しん}, {text: してるときは, ruby: false}, {text: 攻, ruby: true, reading: こう}, {text: 撃, ruby: true, reading: げき}, {text: 力, ruby: true, reading: りょく}, {text: も, ruby: false}, {text: 半, ruby: true, reading: はん}, {text: 分, ruby: true, reading: ぶん}, {text: になっちゃうんだ～！, ruby: false}]}, {talkIndex: 1, segments: [{text: だから, ruby: false}, {text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: "したほうがいいよ～！\n2", ruby: false}, {text: 人, ruby: true, reading: ひと}, {text: で, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うならいいけどね～！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 敵と戦うときは合体したほうがいいよ～！}], rubies: [{talkIndex: 1, segments: [{text: 敵, ruby: true, reading: てき}, {text: と, ruby: false}, {text: 戦, ruby: true, reading: たたか}, {text: うときは, ruby: false}, {text: 合, ruby: true, reading: がっ}, {text: 体, ruby: true, reading: たい}, {text: したほうがいいよ～！, ruby: false}]}], range: 3, height: 1.8, scale: 1}}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: -1.59115, phi: 0.8946725, height: -3.539135, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.25], name: 新しいNPC, talkTexts: [表から見えなくても、裏から見えることもあるよ！, ほら！あのスイッチとか！], pos: [-0.03, 1.92, -1.54], upVec: [2.2551054e-05, 0.9958164, -0.09137756], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}, {talkIndex: 1, segments: [{text: ほら！あのスイッチとか！, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 表から見えなくても、裏から見えることもあるよ！}], rubies: [{talkIndex: 1, segments: [{text: 表, ruby: true, reading: おもて}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えなくても、, ruby: false}, {text: 裏, ruby: true, reading: うら}, {text: から, ruby: false}, {text: 見, ruby: true, reading: み}, {text: えることもあるよ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 1, sequence: platforms, index: 46}]}
   - {modelPath: spaceSlime.obj, currentPlanetNum: 7, theta: 2.0152936, phi: -0.31607372, height: -1.5378351, facingYaw: 0, radius: 0.75, scale: [0.25, 0.25, 0.26], name: 新しいNPC, talkTexts: [そこの足場、乗ったら動くんだけど消えちゃうんだよね..., 消えるちょっと前にジャンプしたらいけないかな？], pos: [-1.83, -1.39, 3.82], upVec: [-0.14265211, -0.9456535, 0.29221565], forceTalkOnArrival: false, talkRubies: [{talkIndex: 0, segments: [{text: そこの, ruby: false}, {text: 足, ruby: true, reading: あし}, {text: 場, ruby: true, reading: ば}, {text: 、, ruby: false}, {text: 乗, ruby: true, reading: の}, {text: ったら, ruby: false}, {text: 動, ruby: true, reading: うご}, {text: くんだけど, ruby: false}, {text: 消, ruby: true, reading: き}, {text: えちゃうんだよね..., ruby: false}]}, {talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプしたらいけないかな？, ruby: false}]}], proximityMessage: {mode: afterTalk, variants: [{talkIndex: 1, text: 消えるちょっと前にジャンプ！}], rubies: [{talkIndex: 1, segments: [{text: 消, ruby: true, reading: き}, {text: えるちょっと, ruby: false}, {text: 前, ruby: true, reading: まえ}, {text: にジャンプ！, ruby: false}]}], range: 3, height: 1.8, scale: 1}, talkCameraFocus: [{talkIndex: 0, sequence: platforms, index: 41}]}
 platforms:
   - currentPlanetNum: 0
     pos:
-      - 3.09
-      - -0.83
-      - 5.67
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
+      - 2.91
+      - -1.14
+      - 5.34
+    theta: 1.0719384
+    phi: -0.18530479
+    height: 0.6359297
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1231,7 +1192,7 @@ platforms:
     scale:
       - 1
       - 0.2
-      - 1.5077295
+      - 1.8362108
     modelPath: platform.obj
     upVec:
       - 0
@@ -1250,11 +1211,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 4.27
-      - -0.84
+      - -1.15
       - 7.82
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
+    theta: 1.0710016
+    phi: -0.12836634
+    height: 3.0894961
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1286,11 +1247,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 5.23
-      - -0.86
+      - -1.17
       - 9.55
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
+    theta: 1.0697637
+    phi: -0.107048236
+    height: 5.0100613
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1322,11 +1283,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 6.2
-      - -0.9
+      - -1.21
       - 11.22
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
+    theta: 1.0659709
+    phi: -0.0941155
+    height: 6.9161863
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1358,11 +1319,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 5.43
-      - -0.9
+      - -1.21
       - 13.88
-    theta: -2.424334
-    phi: -1.090234
-    height: 2.7
+    theta: 1.19789
+    phi: -0.08100993
+    height: 8.980511
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1394,11 +1355,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 4.68
-      - -0.89
+      - -1.2
       - 16.57
-    theta: 1.2956716
-    phi: -0.051661205
-    height: 11.2492695
+    theta: 1.2955282
+    phi: -0.06958383
+    height: 11.27865
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1430,11 +1391,11 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - 4.34
-      - -0.89
+      - -1.2
       - 21.91
-    theta: 1.2458067
-    phi: -0.040951032
-    height: 15.749912
+    theta: 1.3752446
+    phi: -0.053676162
+    height: 16.378002
     facingYaw: -1.0698878
     rotation:
       - 0
@@ -1610,7 +1571,7 @@ platforms:
   - currentPlanetNum: 5
     pos:
       - -4.51
-      - -1.04
+      - -0.9
       - 4.41
     theta: -2.760749
     phi: -0.17518698
@@ -2177,44 +2138,12 @@ platforms:
       - 0.8760726
   - currentPlanetNum: 6
     pos:
-      - 5.71
-      - -0.87
-      - 1.68
-    theta: 0.28614634
-    phi: -0.14514114
-    height: 0.3518225
-    facingYaw: -0.20908959
-    rotation:
-      - 0.06974094
-      - 0.20859593
-      - 0.18458134
-    scale:
-      - 1
-      - 0.2
-      - 1.5077295
-    modelPath: platform.obj
-    upVec:
-      - 0.16890328
-      - -0.9832721
-      - 0.06817385
-    platformId: platform_46
-    textureTiling:
-      - 1
-      - 1
-    textureOverride: textures/roadTex.png
-    rotationQuat:
-      - -0.08798904
-      - -0.10679843
-      - 0.024937572
-      - 0.99006575
-  - currentPlanetNum: 6
-    pos:
-      - 9.701599
+      - 7.6872177
       - -0.090623885
-      - 5.509245
-    theta: 0.031689465
-    phi: -0.023269238
-    height: 4.855345
+      - 13.322135
+    theta: 1.0474408
+    phi: -0.0058918963
+    height: 9.381324
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2242,13 +2171,13 @@ platforms:
     components:
       movement:
         startLocalPos:
-          - 9.701599
+          - 7.6872177
           - -0.090623885
-          - 5.509245
+          - 13.322135
         endLocalPos:
-          - 11.01503
+          - 9.0006485
           - -0.27672234
-          - -0.42892647
+          - 7.3839636
         moveOffset:
           - 1.3134308
           - -0.18609846
@@ -2262,12 +2191,12 @@ platforms:
         reappearDelay: 2
   - currentPlanetNum: 6
     pos:
-      - 15.163773
-      - 0.3304502
-      - 0.52733994
-    theta: 0.3945289
-    phi: 0.042963285
-    height: 9.217444
+      - 13.149391
+      - 0.3304345
+      - 8.340231
+    theta: 0.56523573
+    phi: 0.021218544
+    height: 9.576648
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2295,17 +2224,17 @@ platforms:
     components:
       movement:
         startLocalPos:
-          - 15.163773
-          - 0.3304502
-          - 0.52733994
+          - 13.149391
+          - 0.3304345
+          - 8.340231
         endLocalPos:
-          - 13.858627
+          - 11.844246
           - 0.7015537
-          - 6.635706
+          - 14.448596
         moveOffset:
           - -1.3051453
-          - 0.3711035
-          - 6.108366
+          - 0.3711192
+          - 6.108365
         moveDuration: 6
         moveOnPlayer: false
         returnDelay: 1
@@ -2315,12 +2244,12 @@ platforms:
         reappearDelay: 2
   - currentPlanetNum: 6
     pos:
-      - 18.270546
+      - 16.256165
       - 1.3224912
-      - 7.1383514
-    theta: 0.108731374
-    phi: 0.059687298
-    height: 13.54445
+      - 14.9512415
+    theta: 0.74360794
+    phi: 0.059807073
+    height: 16.138367
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2348,13 +2277,13 @@ platforms:
     components:
       movement:
         startLocalPos:
-          - 18.270546
+          - 16.256165
           - 1.3224912
-          - 7.1383514
+          - 14.9512415
         endLocalPos:
-          - 19.54766
+          - 17.53328
           - 1.141538
-          - 1.3644009
+          - 9.177291
         moveOffset:
           - 1.2771149
           - -0.18095315
@@ -2421,12 +2350,12 @@ platforms:
         reappearDelay: 2
   - currentPlanetNum: 6
     pos:
-      - 22.81334
-      - 1.5943127
-      - 2.28129
-    theta: 0.10463543
-    phi: -0.027374335
-    height: 17.335732
+      - 20.8
+      - 1.59
+      - 10.09
+    theta: 0.45183596
+    phi: 0.06885208
+    height: 17.190329
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2588,12 +2517,12 @@ platforms:
       - 0.99006575
   - currentPlanetNum: 6
     pos:
-      - 24.739738
+      - 22.725357
       - 1.9327557
-      - 2.6940727
-    theta: 0.11343659
-    phi: -0.011107922
-    height: 19.294561
+      - 10.506963
+    theta: 0.43307275
+    phi: 0.077044
+    height: 19.131294
     facingYaw: -0.20908959
     rotation:
       - 0.06974094
@@ -2621,13 +2550,13 @@ platforms:
     components:
       movement:
         startLocalPos:
-          - 24.739738
+          - 22.725357
           - 1.9327557
-          - 2.6940727
+          - 10.506963
         endLocalPos:
-          - 25.301163
+          - 23.286781
           - -1.2516086
-          - 2.937006
+          - 10.749896
         moveOffset:
           - 0.56142426
           - -3.1843643
@@ -3405,7 +3334,7 @@ platforms:
           []
         enemyTargets:
           - sequence: enemies
-            index: 6
+            index: 4
         hideTargets:
           []
     rotationQuat:
@@ -3571,6 +3500,91 @@ platforms:
         moveOnPlayer: true
         returnDelay: 1
         endpointWaitSeconds: 0
+  - currentPlanetNum: 6
+    pos:
+      - -1.5
+      - -1.4
+      - 5.22
+    theta: 1.2001042
+    phi: -0.0774939
+    height: 4.2379255
+    facingYaw: -1.7864103
+    rotation:
+      - 3.0149446
+      - 1.3534963
+      - 2.997045
+    scale:
+      - 1.0000001
+      - 0.20000003
+      - 2.451703
+    modelPath: platform.obj
+    upVec:
+      - -0.02083788
+      - -0.99941194
+      - 0.027231697
+    platformId: platform_3
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/roadTex.png
+    rotationQuat:
+      - 0.004074315
+      - 0.77888155
+      - -0.016656294
+      - -0.6269367
+  - currentPlanetNum: 6
+    pos:
+      - 3.8897781
+      - -1.398414
+      - 6.346348
+    theta: 0.56523573
+    phi: 0.021218544
+    height: 9.576648
+    facingYaw: -0.20908959
+    rotation:
+      - 0.06974094
+      - 0.20859593
+      - 0.18458134
+    scale:
+      - 1
+      - 0.2
+      - 1
+    modelPath: platform.obj
+    upVec:
+      - 0.16890328
+      - -0.9832721
+      - 0.06817385
+    platformId: platform_4
+    textureTiling:
+      - 1
+      - 1
+    textureOverride: textures/glass.png
+    rotationQuat:
+      - -0.08798904
+      - -0.10679843
+      - 0.024937572
+      - 0.99006575
+    components:
+      movement:
+        startLocalPos:
+          - 3.8897781
+          - -1.398414
+          - 6.346348
+        endLocalPos:
+          - 3.1089172
+          - -0.92938226
+          - 12.567595
+        moveOffset:
+          - -0.7808609
+          - 0.46903175
+          - 6.2212467
+        moveDuration: 6
+        moveOnPlayer: false
+        returnDelay: 1
+        endpointWaitSeconds: 0
+      fadeOnStand:
+        fadeOutDuration: 1
+        reappearDelay: 2
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []
@@ -3620,9 +3634,9 @@ jewelItems:
       - 1
       - 1
   - currentPlanetNum: 0
-    theta: 0.2674415
-    phi: 1.5286353
-    height: -4.0050325
+    theta: 0.26744154
+    phi: 1.52088
+    height: -0.31697083
     facingYaw: 0
     modelPath: crystal.obj
     textureOverride: textures/jewel.png
@@ -3631,9 +3645,9 @@ jewelItems:
       - 0.22
       - 0.22
     pos:
-      - 0.08109546
-      - 1.9931946
-      - 0.022220612
+      - 0.08
+      - 1.68
+      - 0.02
     upVec:
       - 0.019971855
       - 0.9996839
@@ -3642,9 +3656,9 @@ jewelItems:
       - 1
       - 1
   - currentPlanetNum: 6
-    theta: 2.1027339
-    phi: 0.8934384
-    height: -3.5370088
+    theta: 1.8676978
+    phi: 0.19809161
+    height: 3.974274
     facingYaw: 0
     modelPath: crystal.obj
     textureOverride: textures/jewel.png
@@ -3653,9 +3667,9 @@ jewelItems:
       - 0.22
       - 0.22
     pos:
-      - -0.7829437
-      - 1.9192399
-      - 1.3303547
+      - -0.86
+      - 1.92
+      - 1.4
     upVec:
       - -0.047378596
       - 0.9957889
@@ -3664,9 +3678,9 @@ jewelItems:
       - 1
       - 1
   - currentPlanetNum: 6
-    theta: -1.0130634
-    phi: 0.8445528
-    height: -3.452426
+    theta: 1.744488
+    phi: 0.28610313
+    height: 1.4717712
     facingYaw: 0
     modelPath: crystal.obj
     textureOverride: textures/jewel.png
@@ -3675,9 +3689,9 @@ jewelItems:
       - 0.22
       - 0.22
     pos:
-      - 0.89538574
-      - 1.9047555
-      - -1.4353828
+      - 0.82
+      - 1.9
+      - -1.36
     upVec:
       - 0.0527265
       - 0.99505186

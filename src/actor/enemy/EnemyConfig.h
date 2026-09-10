@@ -35,6 +35,7 @@ struct EnemyBossManeuverConfig {
 
 struct EnemyConfig {
     bool isBoss = false;
+    bool isBossEncounter = false;
     bool isNormalHitKnockBackEnabled = true;
 
     float hp = 80.0f;
@@ -43,7 +44,8 @@ struct EnemyConfig {
     float attack = 5.0f;
     float radius = 0.75f;
 
-    int breakCountMax = 1;
+    int guardSegmentCount = 1;
+    float guardValuePerSegment = 20.0f;
 
     std::string modelPath;
 

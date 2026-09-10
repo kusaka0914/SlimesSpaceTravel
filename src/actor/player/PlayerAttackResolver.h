@@ -26,11 +26,23 @@ public:
         PlayerCombat& combat,
         const std::vector<Enemy*>& hitEnemies,
         float deltaTime) const;
+    bool ResolveAirSlamContact(
+        Player& player,
+        const PlayerMovement& movement,
+        const std::vector<Enemy*>& hitEnemies,
+        float enemyDownwardSpeed,
+        float maximumDamage,
+        float fullDamageHeight,
+        float minimumDamageRatio,
+        bool shouldAssignImpactFeedback) const;
     bool ResolveAirDodgeAttack(
         Player& player,
         const PlayerMovement& movement,
         const std::vector<Enemy*>& hitEnemies,
         float damage,
+        float guardDamage,
         float enemyPushSpeed,
-        float enemyPushDampingPerSecond) const;
+        float enemyPushDampingPerSecond,
+        float enemyLiftHeight,
+        float deltaTime) const;
 };

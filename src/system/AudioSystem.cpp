@@ -121,7 +121,7 @@ void AudioSystem::TryChangeBGM()
             currentPlanet->GetEnemies().end(),
             [](const Enemy* enemy) {
                 return enemy && enemy->GetIsActive() &&
-                       enemy->GetIsBoss() && enemy->IsAlive();
+                       enemy->IsBossEncounter() && enemy->IsAlive();
             });
     if (hasLivingBoss) {
         PlayBGMIfChanged("boss_bgm");

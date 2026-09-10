@@ -93,6 +93,13 @@ public:
     glm::vec3 GetPlayerCameraPos(int playerNum) const;
 
 private:
+    struct AirSlamCameraState {
+        float distanceBlend = 0.0f;
+        float pitchBlend = 0.0f;
+        float returnDelayRemainingSeconds = 0.0f;
+        bool isWaitingForLanding = false;
+    };
+
     void UpdateCamera(float deltaTime);
     void BeginBossDefeatSequence(
         Enemy* boss,
@@ -102,6 +109,7 @@ private:
     void UpdateTalkCameraAim();
     void UpdateTalkPageFocus(float deltaTime);
     void UpdatePlayerPitchOffsets(float deltaTime);
+    void UpdateAirSlamCameraStates(float deltaTime);
     int GetPrimaryPlayerIndex() const;
     float GetEasedTalkCameraBlend() const;
     float GetEasedTalkPageFocusBlend() const;
@@ -137,6 +145,7 @@ private:
     float mKeyboardPitchInput = 0.0f;
     float mTalkCameraBlend = 0.0f;
     std::vector<float> mPlayerPitchOffsetsDegrees;
+    std::vector<AirSlamCameraState> mAirSlamCameraStates;
     std::vector<CameraShakeEffect> mPlayerShakeEffects;
     Player* mTalkCameraPlayer = nullptr;
     bool mHasTalkCameraTarget = false;
