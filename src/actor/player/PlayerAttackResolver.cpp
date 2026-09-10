@@ -85,6 +85,12 @@ void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float 
         &player);
     EmitAttackHitEffect(player, enemy, effectScale);
 }
+
+bool CanReceiveGroundGuardDamage(const Enemy& enemy)
+{
+    return enemy.IsOnGround() ||
+           enemy.GetActionState() == Enemy::ActionState::KnockedBack;
+}
 }
 
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
@@ -121,72 +127,54 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
     if (combat.GetAttackKind() != PlayerAttackKind::Strong) {
         player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
         combat.StartAfterAttackReaction(player, movement, status);
-
-        const bool isGroundComboFinisher =
-            player.GetOnGround() &&
-            combat.GetAttackComboIndex() == 3;
-        if (isGroundComboFinisher) {
-            for (Enemy* enemy : hitEnemies) {
-                const bool canBreakGuardAsGroundCombo =
-                    enemy &&
-                    (enemy->IsOnGround() ||
-                     enemy->GetActionState() ==
-                         Enemy::ActionState::KnockedBack);
-                if (canBreakGuardAsGroundCombo) {
-                    // 通常被弾の小さな上向きノックバックより先に、
-                    // 地上コンボ最終段のガード破壊を確定する。通常ノックバックで
-                    // 一時的に浮いていても、同じ3段コンボの継続として扱う。
-                    enemy->ApplyBreak(deltaTime);
-                }
-                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
-            }
-        } else if (player.GetOnGround()) {
-            for (Enemy* enemy : hitEnemies) {
-                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
-            }
-        } else {
-            bool isHit = false;
-
-            for (Enemy* enemy : hitEnemies) {
-                if (!enemy) {
-                    continue;
-                }
-                ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
-                enemy->ApplyAirComboLift(
-                    combat.GetAirWeakEnemyLiftHeight());
-                isHit = true;
+        const bool isPlayerGrounded = player.GetOnGround();
+        const float guardDamage =
+            combat.CalculateCurrentGuardDamage(isPlayerGrounded);
+        const bool shouldEnsureCurrentGuardSegmentBreak =
+            combat.ShouldEnsureCurrentGuardSegmentBreak(
+                isPlayerGrounded);
+        bool didBreakGuardSegment = false;
+        bool didHitEnemy = false;
+        for (Enemy* enemy : hitEnemies) {
+            if (!enemy || enemy->GetIsDead() || !enemy->GetIsActive()) {
+                continue;
             }
 
-            if (isHit) {
-                const bool shouldBreakEnemies =
-                    combat.RegisterAirWeakAttackHit();
-                movement.RestoreAirDodge();
-                player.GetGame()->GetAudioSystem()->PlaySE(
-                    shouldBreakEnemies
-                        ? "destroy_se"
-                        : "attack_se");
-                if (shouldBreakEnemies) {
-                    for (Enemy* enemy : hitEnemies) {
-                        if (enemy && !enemy->GetIsDead()) {
-                            enemy->ApplyBreak(deltaTime);
-                        }
-                    }
-                }
-            } else {
-                player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
+            if (CanReceiveGroundGuardDamage(*enemy)) {
+                const EnemyGuardDamageResult guardDamageResult =
+                    shouldEnsureCurrentGuardSegmentBreak
+                        ? enemy
+                              ->ApplyGuardDamageEnsuringCurrentSegmentBreak(
+                                  guardDamage,
+                                  deltaTime)
+                        : enemy->ApplyGuardDamage(
+                              guardDamage,
+                              deltaTime);
+                didBreakGuardSegment |=
+                    guardDamageResult.DidBreakSegment();
             }
+            ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
+            if (!isPlayerGrounded) {
+                enemy->ApplyAirComboLift(combat.GetAirWeakEnemyLiftHeight());
+            }
+            didHitEnemy = true;
+        }
 
+        if (!didHitEnemy) {
+            player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
             return;
         }
 
-        if (combat.GetAttackComboIndex() != 3) {
-            player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
-            return;
+        if (!isPlayerGrounded) {
+            combat.RecordAirWeakAttackHit();
+            movement.RestoreAirDodge();
         }
 
-        combat.ResetGroundAttackCombo();
-        player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
-
+        player.GetGame()->GetAudioSystem()->PlaySE(
+            didBreakGuardSegment ? "destroy_se" : "attack_se");
+        if (combat.GetAttackComboIndex() == 3) {
+            combat.ResetGroundAttackCombo();
+        }
         return;
     }
 
@@ -207,7 +195,11 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         hitAirborneEnemy = true;
     }
 
-    player.GetGame()->GetAudioSystem()->PlaySE(hitAirborneEnemy ? "attack_air_se" : "attack_miss_se");
+    const char* strongAttackSound = "attack_miss_se";
+    if (hitAirborneEnemy) {
+        strongAttackSound = "attack_air_se";
+    }
+    player.GetGame()->GetAudioSystem()->PlaySE(strongAttackSound);
 }
 
 bool PlayerAttackResolver::ResolveAirSlamAttack(
@@ -217,11 +209,10 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
     const std::vector<Enemy*>& hitEnemies,
     float deltaTime) const
 {
-    (void)deltaTime;
-
     const float groundedEnemyDamage =
         combat.GetNormalAttack();
     bool didHitEnemy = false;
+    bool didBreakGuardSegment = false;
     for (Enemy* enemy : hitEnemies) {
         if (!enemy || enemy->GetIsDead() ||
             !enemy->GetIsActive()) {
@@ -233,6 +224,11 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
             continue;
         }
 
+        const EnemyGuardDamageResult guardDamageResult =
+            enemy->ApplyGuardDamage(
+                combat.GetAirSlamGuardDamage(),
+                deltaTime);
+        didBreakGuardSegment |= guardDamageResult.DidBreakSegment();
         ApplyDamageWithHitEffect(
             *enemy,
             groundedEnemyDamage,
@@ -249,7 +245,7 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(
     player.GetGame()->OnPlayerAttackHit(
         movement.GetPlayerNum());
     player.GetGame()->GetAudioSystem()->PlaySE(
-        "attack_air_se");
+        didBreakGuardSegment ? "destroy_se" : "attack_air_se");
     return true;
 }
 
@@ -298,8 +294,7 @@ bool PlayerAttackResolver::ResolveAirSlamContact(
 
     player.GetGame()->OnPlayerAttackHit(
         movement.GetPlayerNum());
-    player.GetGame()->GetAudioSystem()->PlaySE(
-        "attack_air_se");
+    player.GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
     return true;
 }
 
@@ -308,17 +303,26 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
     const PlayerMovement& movement,
     const std::vector<Enemy*>& hitEnemies,
     float damage,
+    float guardDamage,
     float enemyPushSpeed,
     float enemyPushDampingPerSecond,
-    float enemyLiftHeight) const
+    float enemyLiftHeight,
+    float deltaTime) const
 {
     bool didHitEnemy = false;
+    bool didBreakGuardSegment = false;
     for (Enemy* enemy : hitEnemies) {
         if (!enemy || enemy->GetIsDead() ||
             !enemy->GetIsActive()) {
             continue;
         }
 
+        if (CanReceiveGroundGuardDamage(*enemy)) {
+            const EnemyGuardDamageResult guardDamageResult =
+                enemy->ApplyGuardDamage(guardDamage, deltaTime);
+            didBreakGuardSegment |=
+                guardDamageResult.DidBreakSegment();
+        }
         ApplyDamageWithHitEffect(
             *enemy,
             damage,
@@ -340,7 +344,8 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(
 
     player.GetGame()->OnPlayerAttackHit(
         movement.GetPlayerNum());
-    player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
+    player.GetGame()->GetAudioSystem()->PlaySE(
+        didBreakGuardSegment ? "destroy_se" : "attack_se");
     return true;
 }
 
@@ -352,13 +357,15 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
     constexpr float counterDamageMultiplier = 2.0f;
 
     for (Enemy* enemy : hitEnemies) {
-        if (enemy->GetIsDead()) {
+        if (!enemy || enemy->GetIsDead()) {
             continue;
         }
 
         if (enemy->GetOnGround()) {
-            while (enemy->GetBreakCount()) {
-                enemy->ApplyBreak(deltaTime);
+            const EnemyGuardDamageResult guardDamageResult =
+                enemy->BreakGuard(deltaTime);
+            if (guardDamageResult.DidBreakSegment()) {
+                player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
             }
         }
 

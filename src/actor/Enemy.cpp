@@ -170,8 +170,9 @@ void Enemy::ApplyConfig(const EnemyConfig& config)
     SetAttack(config.attack);
     SetRadius(config.radius);
 
-    SetBreakCountMax(config.breakCountMax);
-    SetBreakCount(config.breakCountMax);
+    mStatus.ConfigureGuard(
+        config.guardSegmentCount,
+        config.guardValuePerSegment);
 
     SetModelPath(config.modelPath);
 
@@ -369,9 +370,41 @@ void Enemy::DefeatImmediately()
     mStateMachine->FinishDying(*this, mStatus);
 }
 
-void Enemy::ApplyBreak(float deltaTime, bool isAllBreak)
+EnemyGuardDamageResult Enemy::ApplyGuardDamage(
+    float guardDamage,
+    float deltaTime)
 {
-    mCombat->ApplyBreak(*this, mStatus, *mMovement, *mStateMachine, deltaTime, isAllBreak);
+    return mCombat->ApplyGuardDamage(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        guardDamage,
+        deltaTime);
+}
+
+EnemyGuardDamageResult
+Enemy::ApplyGuardDamageEnsuringCurrentSegmentBreak(
+    float minimumGuardDamage,
+    float deltaTime)
+{
+    return mCombat->ApplyGuardDamageEnsuringCurrentSegmentBreak(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        minimumGuardDamage,
+        deltaTime);
+}
+
+EnemyGuardDamageResult Enemy::BreakGuard(float deltaTime)
+{
+    return mCombat->BreakGuard(
+        *this,
+        mStatus,
+        *mMovement,
+        *mStateMachine,
+        deltaTime);
 }
 
 void Enemy::ApplyAirDodgePush(

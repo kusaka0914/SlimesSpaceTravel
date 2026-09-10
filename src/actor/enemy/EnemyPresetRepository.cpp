@@ -184,10 +184,10 @@ EnemyPresetDefinition ReadPreset(
     preset.scale = ReadValue<float>(node, "scale", preset.scale);
     preset.moveSpeed = ReadValue<float>(node, "speed", preset.moveSpeed);
     preset.attack = ReadValue<float>(node, "attack", preset.attack);
-    preset.breakCountMax = ReadValue<int>(
+    preset.guardSegmentCount = ReadValue<int>(
         node,
         "breakCountMax",
-        preset.breakCountMax);
+        preset.guardSegmentCount);
     preset.radius = ReadValue<float>(node, "radius", preset.radius);
     preset.attackIntervalSeconds = ReadValue<float>(
         node,
@@ -290,7 +290,7 @@ void WritePreset(
     node["scale"] = preset.scale;
     node["speed"] = preset.moveSpeed;
     node["attack"] = preset.attack;
-    node["breakCountMax"] = preset.breakCountMax;
+    node["breakCountMax"] = preset.guardSegmentCount;
     node["radius"] = preset.radius;
     node["defaultStandByAttackTimer"] =
         preset.attackIntervalSeconds;

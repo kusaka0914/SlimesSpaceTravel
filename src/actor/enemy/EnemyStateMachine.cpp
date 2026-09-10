@@ -840,7 +840,7 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
 
 void EnemyStateMachine::FinishLaunched(Enemy& enemy, EnemyStatus& status)
 {
-    status.ResetBreakCount();
+    status.ResetGuard();
     enemy.SetShouldJudgeLandingForEnemy(true);
     status.ClearLaunchedTimer();
 }

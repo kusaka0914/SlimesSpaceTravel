@@ -25,8 +25,6 @@ void NPCProximityMessageRenderer::Draw(
     const glm::mat4& viewMat,
     const std::vector<Planet*>& planets) const
 {
-    return;
-
     if (!mRenderer || !mRenderer->GetGame() ||
         !mRenderer->GetShader3D()) {
         return;
@@ -62,7 +60,9 @@ void NPCProximityMessageRenderer::DrawMessage(
     int textPixelWidth = 0;
     int textPixelHeight = 0;
     int baseTextPixelHeight = 0;
-    const SDL_Color textColor{35, 35, 42, 255};
+    // 3D描画はUI描画と異なり、この後にACESトーンマッピングとガンマ変換を通る。
+    // 通常会話のRGB(35, 35, 42)と最終表示を揃えるため、変換前の色を補正する。
+    const SDL_Color textColor{6, 6, 7, 255};
     float rubyScaleRatio = 0.36f;
     float rubyGapRatio = -0.46f;
     if (UIRenderer* uiRenderer =

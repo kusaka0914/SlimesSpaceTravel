@@ -481,7 +481,6 @@ void PlayerCombat::OnLanded()
     mAirAttackMovementUnlockedByDodge = false;
     mAirAttackCount = 0;
     mHasAirWeakHitForNextDodge = false;
-    ResetAirWeakAttackHitCount();
     EndAirDodgeAttack();
 }
 
@@ -489,25 +488,7 @@ void PlayerCombat::PrepareAssistAirCombo()
 {
     mAirAttackCount = 0;
     mHasAirWeakHitForNextDodge = false;
-    ResetAirWeakAttackHitCount();
     mIsAirAttacking = false;
-}
-
-bool PlayerCombat::RegisterAirWeakAttackHit()
-{
-    mHasAirWeakHitForNextDodge = true;
-    ++mAirWeakAttackHitCount;
-    if (mAirWeakAttackHitCount < airWeakAttackHitsForBreak) {
-        return false;
-    }
-
-    ResetAirWeakAttackHitCount();
-    return true;
-}
-
-void PlayerCombat::ResetAirWeakAttackHitCount()
-{
-    mAirWeakAttackHitCount = 0;
 }
 
 void PlayerCombat::StartAirDodgeAttack()
@@ -523,7 +504,8 @@ void PlayerCombat::UpdateAirDodgeAttack(
     Player& player,
     PlayerMovement& movement,
     const glm::vec3& movementStart,
-    const glm::vec3& movementEnd)
+    const glm::vec3& movementEnd,
+    float deltaTime)
 {
     if (!mIsAirDodgeAttackActive) {
         return;
@@ -557,18 +539,64 @@ void PlayerCombat::UpdateAirDodgeAttack(
             movement,
             newlyHitEnemies,
             mAirDodgeAttackDamage,
+            mAirDodgeGuardDamage,
             mAirDodgeEnemyPushSpeed,
             mAirDodgeEnemyPushDampingPerSecond,
             mIsEnhancedAirDodgeAttackActive
                 ? mAirComboDodgeEnemyLiftHeight
-                : 0.0f);
+                : 0.0f,
+            deltaTime);
     if (didHitEnemy) {
         mAirAttackCount = 0;
-        ResetAirWeakAttackHitCount();
         // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
         // 外した場合は現在の回避を最後にして、着地まで再使用できない。
         movement.RestoreAirDodge();
     }
+}
+
+float PlayerCombat::CalculateCurrentGuardDamage(bool isPlayerGrounded) const
+{
+    if (IsContinuousAttacking()) {
+        return mContinuousAttackGuardDamage;
+    }
+
+    if (!isPlayerGrounded) {
+        return mAirWeakGuardDamage;
+    }
+
+    // 地上強攻撃は、単発でも弱攻撃コンボの最終段と同じ扱いにする。
+    if (mAttackKind == PlayerAttackKind::Normal) {
+        return mGroundCombo3GuardDamage;
+    }
+
+    if (mAttackKind != PlayerAttackKind::Wide) {
+        return mGroundWideGuardDamage;
+    }
+
+    if (mAttackComboIndex == 1) {
+        return mGroundCombo1GuardDamage;
+    }
+    if (mAttackComboIndex == 2) {
+        return mGroundCombo2GuardDamage;
+    }
+    if (mAttackComboIndex >= 3) {
+        return mGroundCombo3GuardDamage;
+    }
+    return mGroundWideGuardDamage;
+}
+
+bool PlayerCombat::ShouldEnsureCurrentGuardSegmentBreak(
+    bool isPlayerGrounded) const
+{
+    if (!isPlayerGrounded || IsContinuousAttacking()) {
+        return false;
+    }
+
+    const bool isThirdGroundAttack =
+        mAttackComboIndex >= 3 &&
+        (mAttackKind == PlayerAttackKind::Normal ||
+         mAttackKind == PlayerAttackKind::Wide);
+    return isThirdGroundAttack;
 }
 
 void PlayerCombat::EndAirDodgeAttack()

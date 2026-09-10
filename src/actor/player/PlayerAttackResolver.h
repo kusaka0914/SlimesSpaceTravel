@@ -40,7 +40,9 @@ public:
         const PlayerMovement& movement,
         const std::vector<Enemy*>& hitEnemies,
         float damage,
+        float guardDamage,
         float enemyPushSpeed,
         float enemyPushDampingPerSecond,
-        float enemyLiftHeight) const;
+        float enemyLiftHeight,
+        float deltaTime) const;
 };

@@ -17,6 +17,7 @@ players:
     dodgeCooldownTime: 0.4
     dodgeDistance: 2
     airDodgeAttackDamage: 5
+    airDodgeGuardDamage: 5
     airDodgeHorizontalHitboxScale: 3
     airDodgeVerticalHitboxScale: 10
     airDodgeEnemyPushSpeed: 6
@@ -27,11 +28,17 @@ players:
     normalAttackRange: 3
     normalAttackAngle: 6.283
     normalAttack: 10
+    groundCombo1GuardDamage: 5
+    groundCombo2GuardDamage: 5
+    groundCombo3GuardDamage: 10
     wideAttackRange: 3
     wideAttackAngle: 6.283
     wideAttack: 5
+    groundWideGuardDamage: 5
+    airWeakGuardDamage: 6.666667
     strongAttackRange: 4.6
     strongAttack: 50
+    strongAttackGuardDamage: 20
     strongAttackSpeed: 50
     airSlamRiseHeight: 8
     airSlamRiseDurationSeconds: 0.5
@@ -39,6 +46,7 @@ players:
     airSlamEnemyDownwardSpeed: 18
     airSlamFullDamageHeight: 5
     airSlamMinimumDamageRatio: 0.3
+    airSlamGuardDamage: 10
     chargedAttackRange: 4.6
     chargedAttackAngle: 6.283
     chargedAttackDamage: 50
@@ -46,6 +54,7 @@ players:
     continuousAttackRange: 3
     continuousAttackAngle: 6.283
     continuousAttackDamage: 2.5
+    continuousAttackGuardDamage: 2.5
     continuousAttackIntervalSeconds: 0.25
     continuousAttackDurationSeconds: 6
     specialAttackCooldown: 30

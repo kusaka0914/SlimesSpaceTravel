@@ -12,7 +12,7 @@ planets:
     canAttractNearbyPlayer: false
     reactsToOverheadGravityRay: false
     textureOverride: textures/stoneTex.png
-  - center: [3.673129, 12.712966, -42.231808]
+  - center: [22.06573, 11.665603, -42.231808]
     scale: [6, 2, 6]
     color: [0.0, 1.0, 0.0, 1.0]
     model: planet_2.obj
@@ -266,13 +266,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: -2.1273816
-    phi: 0.5612175
-    height: -2.7060065
+    theta: -2.3380644
+    phi: 0.65070504
+    height: -0.042134795
     pos:
-      - -1.473253
-      - 1.7531204
-      - -2.3678021
+      - -1.65
+      - 1.82
+      - -1.71
     upVec:
       - -0.08995284
       - 0.98518395
@@ -281,13 +281,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: -0.46124247
-    phi: 0.6078878
-    height: -2.8661616
+    theta: -0.85925233
+    phi: 1.0960798
+    height: -0.018588616
     pos:
-      - 2.3036125
-      - 1.7898445
-      - -1.1448889
+      - 0.66
+      - 1.97
+      - -0.76
     upVec:
       - 0.14524092
       - 0.9868535
@@ -296,13 +296,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: 1.2674378
-    phi: 0.6503775
-    height: -2.9971287
+    theta: 1.9864113
+    phi: 0.7001939
+    height: -0.041560736
     pos:
-      - 0.7139132
-      - 1.8181992
-      - 2.280727
+      - -0.88
+      - 1.85
+      - 1.99
     upVec:
       - 0.042991456
       - 0.9898146
@@ -311,13 +311,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: 2.8059254
-    phi: 0.5560506
-    height: -2.6873076
+    theta: 2.7651894
+    phi: 0.5002232
+    height: -0.05232281
     pos:
-      - -2.66
-      - 1.75
-      - 0.93
+      - -2.86
+      - 1.7
+      - 1.13
     upVec:
       - -0.17171142
       - 0.9833753
@@ -1060,13 +1060,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: -2.733943
-    phi: 0.5746613
-    height: -2.7541277
+    theta: -2.8491094
+    phi: 0.5485366
+    height: -0.049195576
     pos:
-      - -2.5012493
-      - 1.7642956
-      - -1.0801392
+      - -2.71
+      - 1.75
+      - -0.82
     upVec:
       - -0.15762284
       - 0.98518384
@@ -1075,13 +1075,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: -1.3485461
-    phi: 0.711862
-    height: -3.1648498
+    theta: -1.9167383
+    phi: 0.8426875
+    height: -0.03485968
     pos:
-      - 0.4731698
-      - 1.852047
-      - -2.0938263
+      - -0.57
+      - 1.91
+      - -1.59
     upVec:
       - 0.030723613
       - 0.9911114
@@ -1090,13 +1090,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: 0.26874244
-    phi: 0.76999044
-    height: -3.3023076
+    theta: 1.0387391
+    phi: 1.231454
+    height: 0.017023038
     pos:
-      - 1.8672028
-      - 1.8779402
-      - 0.51423645
+      - 0.36
+      - 2.02
+      - 0.61
     upVec:
       - 0.11199447
       - 0.9932728
@@ -1105,13 +1105,13 @@ enemies:
   - editorName: 新しい通常敵
     type: normal
     currentPlanetNum: 1
-    theta: 2.1289968
-    phi: 0.61134785
-    height: -2.8772855
+    theta: 2.3876138
+    phi: 0.52242017
+    height: -0.048998892
     pos:
-      - -1.3544025
-      - 1.7923498
-      - 2.1689682
+      - -2.16
+      - 1.72
+      - 2.03
     upVec:
       - -0.084782675
       - 0.98685324
@@ -1930,8 +1930,14 @@ players:
       - 0.24091685
       - 0.114769325
       - 0.9632598
-  - pos: [4.0, 7.5, 0.0]
-    currentPlanetNum: 0
+  - pos:
+      - -6.15
+      - 0.86
+      - -0.78
+    currentPlanetNum: 1
+    theta: -3.0149665
+    phi: 0.13846105
+    height: 0.53625125
 star:
   - currentPlanetNum: 7
     theta: 1.8946981e-05
@@ -2031,44 +2037,44 @@ platforms:
         hideTargets: []
   - currentPlanetNum: 1
     pos:
-      - 4.16
-      - -0.67
-      - -0.24
-    theta: -3.1277735
-    phi: -1.1125243
-    height: 5.326668
-    facingYaw: -0.00040731727
+      - -5
+      - 0.38
+      - 0
+    theta: 3.135593
+    phi: 0.07512801
+    height: -0.8549642
+    facingYaw: 3.1293938
     rotation:
-      - 0.00752977
-      - 0.00040730575
-      - 3.1415927
+      - 3.1340623
+      - -0.012198404
+      - -3.1415038
     scale:
       - 0.5
       - 0.6301155
       - 0.6118268
     modelPath: curvePlatform.obj
     upVec:
-      - -3.0668994e-06
-      - -0.9999716
-      - 0.0075296974
+      - -3.0664419e-06
+      - -0.99997175
+      - 0.0075296997
     platformId: platform_1
     textureTiling:
       - 1
       - 1
     rotationQuat:
-      - 7.667329e-07
-      - -0.00020365143
-      - 0.0037648762
-      - 0.9999929
+      - 0.0037648154
+      - 0.9999743
+      - 2.1430023e-05
+      - 0.006099288
     textureOverride: textures/roadTex.png
   - currentPlanetNum: 1
     pos:
       - -0.29
       - 1.81
       - 0.03
-    theta: -0.23874503
-    phi: -1.2779626
-    height: 4.6801925
+    theta: 3.0385156
+    phi: 1.4097617
+    height: -0.20493239
     facingYaw: 2.6953075
     rotation:
       - 3.141578
@@ -2834,6 +2840,7 @@ platforms:
         inactiveOpacity: 0.2
         targets:
           - platform_1
+          - legacy_platforms_0
         remainsOnAfterPressed: false
         enemyTargets: []
         hideTargets: []

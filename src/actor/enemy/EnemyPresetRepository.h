@@ -29,7 +29,7 @@ struct EnemyPresetDefinition {
     float scale = 0.25f;
     float moveSpeed = 1.0f;
     float attack = 5.0f;
-    int breakCountMax = 1;
+    int guardSegmentCount = 1;
     float radius = 0.75f;
     float attackIntervalSeconds = 0.0f;
     float attackMotionDurationSeconds = 0.0f;

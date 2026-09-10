@@ -27,6 +27,10 @@ std::string ReadString(const YAML::Node& node, const char* key, const std::strin
 
 void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
+    config.guardValuePerSegment = ReadFloat(
+        enemyNode,
+        "guardValuePerSegment",
+        config.guardValuePerSegment);
     config.knockBackSpeed = ReadFloat(enemyNode, "knockBackSpeed", config.knockBackSpeed);
     config.defaultLaunchedTimer = ReadFloat(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
     config.launchHeight = ReadFloat(enemyNode, "launchHeight", config.launchHeight);
@@ -50,7 +54,10 @@ void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
     config.attack = ReadFloat(enemyNode, "attack", config.attack);
     config.radius = ReadFloat(enemyNode, "radius", config.radius);
 
-    config.breakCountMax = ReadInt(enemyNode, "breakCountMax", config.breakCountMax);
+    config.guardSegmentCount = ReadInt(
+        enemyNode,
+        "breakCountMax",
+        config.guardSegmentCount);
     config.modelPath = ReadString(enemyNode, "modelPath", config.modelPath);
 
     config.defaultStandByAttackTimer =

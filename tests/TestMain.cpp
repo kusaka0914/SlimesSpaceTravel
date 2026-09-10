@@ -43,6 +43,8 @@ void RegisterPlayerConfigLoaderTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterEnemyConfigLoaderTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterEnemyGuardGaugeTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerControlConfigurationStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterFramePerformanceTrackerTests(
@@ -86,6 +88,7 @@ int main()
     RegisterStageProgressSystemTests(tests);
     RegisterPlayerConfigLoaderTests(tests);
     RegisterEnemyConfigLoaderTests(tests);
+    RegisterEnemyGuardGaugeTests(tests);
     RegisterPlayerControlConfigurationStateTests(tests);
     RegisterFramePerformanceTrackerTests(tests);
     RegisterUGCModeControllerTests(tests);

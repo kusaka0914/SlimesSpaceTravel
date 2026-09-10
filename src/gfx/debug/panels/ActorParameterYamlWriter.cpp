@@ -85,7 +85,12 @@ void WriteEnemyValues(
     SetSequenceValue(config, sequenceName, index, "scale", enemy.GetScale().x);
     SetSequenceValue(config, sequenceName, index, "speed", enemy.GetMoveSpeed());
     SetSequenceValue(config, sequenceName, index, "attack", enemy.GetAttack());
-    SetSequenceValue(config, sequenceName, index, "breakCountMax", enemy.GetBreakCountMax());
+    SetSequenceValue(
+        config,
+        sequenceName,
+        index,
+        "breakCountMax",
+        enemy.GetGuardSegmentCount());
     SetSequenceValue(config, sequenceName, index, "radius", enemy.GetRadius());
     SetSequenceValue(config, sequenceName, index, "defaultStandByAttackTimer", enemy.GetDefaultStandByAttackTimer());
     SetSequenceValue(config, sequenceName, index, "defaultAttackMotionTimer", enemy.GetDefaultAttackMotionTimer());

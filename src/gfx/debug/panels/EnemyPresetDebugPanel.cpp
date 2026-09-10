@@ -315,7 +315,7 @@ void EnemyPresetDebugPanel::Draw()
         "%.1f");
     ImGui::DragInt(
         "ブレイク回数",
-        &mEditedPreset.breakCountMax,
+        &mEditedPreset.guardSegmentCount,
         0.1f,
         0,
         100);

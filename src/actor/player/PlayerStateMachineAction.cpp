@@ -22,7 +22,8 @@ void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, Playe
         player,
         movement,
         movementStart,
-        player.GetPos());
+        player.GetPos(),
+        deltaTime);
 
     movement.ReduceDodgeTimer(deltaTime);
     if (movement.GetDodgeTimer() <= 0.0f) {

@@ -1,5 +1,6 @@
 enemies:
   - type: common
+    guardValuePerSegment: 20
     knockBackSpeed: 8
     defaultLaunchedTimer: 5
     launchHeight: 2.02
@@ -357,12 +358,12 @@ enemies:
     isBoss: true
     isBossEncounter: true
     normalHitKnockBackEnabled: false
-    hp: 10000
+    hp: 4000
     modelPath: enemy.obj
     scale: 1
     speed: 3
     attack: 1
-    breakCountMax: 5
+    breakCountMax: 6
     radius: 1.5
     defaultStandByAttackTimer: 1
     defaultAttackMotionTimer: 1

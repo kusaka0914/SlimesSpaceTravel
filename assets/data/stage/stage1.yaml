@@ -3566,9 +3566,9 @@ boatArrivalPoints:
       - 1
       - 1
   - currentPlanetNum: 2
-    theta: 0.06930165
-    phi: -0.22359039
-    height: 1.8950877
+    theta: 0.069694966
+    phi: -0.22423096
+    height: 1.8914337
     facingYaw: 1.8626449e-09
     modelPath: platform.obj
     rotation:

@@ -37,6 +37,22 @@ void ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig()
         "selected enemy move speed");
 }
 
+void LegacyBreakCountMaxConfiguresGuardSegments()
+{
+    const YAML::Node enemyRoot = YAML::Load(
+        "enemies:\n"
+        "  - type: common\n"
+        "    guardValuePerSegment: 25\n"
+        "  - type: guard\n"
+        "    breakCountMax: 3\n");
+
+    const EnemyConfig config =
+        EnemyConfigLoader::Parse(enemyRoot, "guard");
+
+    ExpectEqual(3, config.guardSegmentCount, "legacy breakCountMax segment count");
+    ExpectNear(25.0f, config.guardValuePerSegment, 0.0001f, "common guard value per segment");
+}
+
 void WeakBossCombatConfigDoesNotStartBossEncounterPresentation()
 {
     const YAML::Node enemyRoot = YAML::Load(
@@ -75,6 +91,9 @@ void RegisterEnemyConfigLoaderTests(
     tests.emplace_back(
         "EnemyConfigLoader.ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig",
         ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig);
+    tests.emplace_back(
+        "EnemyConfigLoader.LegacyBreakCountMaxConfiguresGuardSegments",
+        LegacyBreakCountMaxConfiguresGuardSegments);
     tests.emplace_back(
         "EnemyConfigLoader.WeakBossCombatConfigDoesNotStartBossEncounterPresentation",
         WeakBossCombatConfigDoesNotStartBossEncounterPresentation);

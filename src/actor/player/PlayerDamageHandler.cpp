@@ -98,7 +98,9 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
     if (canPerformJustDodgeCounter) {
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 
-        enemy->ApplyBreak(deltaTime);
+        enemy->ApplyGuardDamage(
+            enemy->GetGuardValuePerSegment(),
+            deltaTime);
         enemy->FlipCanCountered();
 
         player.GetGame()->GetAudioSystem()->PlaySE("just_dodge_se");

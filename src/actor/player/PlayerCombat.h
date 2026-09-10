@@ -76,14 +76,14 @@ public:
     void CancelAirAttackForDodge();
     void OnLanded();
     void PrepareAssistAirCombo();
-    bool RegisterAirWeakAttackHit();
-    void ResetAirWeakAttackHitCount();
+    void RecordAirWeakAttackHit() { mHasAirWeakHitForNextDodge = true; }
     void StartAirDodgeAttack();
     void UpdateAirDodgeAttack(
         Player& player,
         PlayerMovement& movement,
         const glm::vec3& movementStart,
-        const glm::vec3& movementEnd);
+        const glm::vec3& movementEnd,
+        float deltaTime);
     void EndAirDodgeAttack();
     void StartGroundWeakAttackCooldown();
     void StartAirWeakAttackCooldown();
@@ -108,10 +108,16 @@ public:
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
     void SetNormalAttackAngle(float normalAttackAngle) { mNormalAttackAngle = normalAttackAngle; }
     void SetNormalAttack(float normalAttack) { mNormalAttack = normalAttack; }
+    void SetGroundCombo1GuardDamage(float guardDamage) { mGroundCombo1GuardDamage = guardDamage; }
+    void SetGroundCombo2GuardDamage(float guardDamage) { mGroundCombo2GuardDamage = guardDamage; }
+    void SetGroundCombo3GuardDamage(float guardDamage) { mGroundCombo3GuardDamage = guardDamage; }
     void SetWideAttackRange(float wideAttackRange) { mWideAttackRange = wideAttackRange; }
     void SetWideAttackAngle(float wideAttackAngle) { mWideAttackAngle = wideAttackAngle; }
     void SetWideAttack(float wideAttack) { mWideAttack = wideAttack; }
+    void SetGroundWideGuardDamage(float guardDamage) { mGroundWideGuardDamage = guardDamage; }
+    void SetAirWeakGuardDamage(float guardDamage) { mAirWeakGuardDamage = guardDamage; }
     void SetAirDodgeAttackDamage(float damage) { mAirDodgeAttackDamage = damage; }
+    void SetAirDodgeGuardDamage(float guardDamage) { mAirDodgeGuardDamage = guardDamage; }
     void SetAirDodgeHorizontalHitboxScale(float scale) { mAirDodgeHorizontalHitboxScale = scale; }
     void SetAirDodgeVerticalHitboxScale(float scale) { mAirDodgeVerticalHitboxScale = scale; }
     void SetAirDodgeEnemyPushSpeed(float speed) { mAirDodgeEnemyPushSpeed = speed; }
@@ -143,8 +149,10 @@ public:
     {
         mAirSlamMinimumDamageRatio = ratio;
     }
+    void SetAirSlamGuardDamage(float guardDamage) { mAirSlamGuardDamage = guardDamage; }
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
+    void SetStrongAttackGuardDamage(float guardDamage) { mStrongAttackGuardDamage = guardDamage; }
     void SetStrongAttackSpeed(float strongAttackSpeed) { mStrongAttackSpeed = strongAttackSpeed; }
     void SetChargedAttackRange(float chargedAttackRange) { mChargedAttackRange = chargedAttackRange; }
     void SetChargedAttackAngle(float chargedAttackAngle) { mChargedAttackAngle = chargedAttackAngle; }
@@ -156,6 +164,7 @@ public:
     void SetContinuousAttackRange(float continuousAttackRange) { mContinuousAttackRange = continuousAttackRange; }
     void SetContinuousAttackAngle(float continuousAttackAngle) { mContinuousAttackAngle = continuousAttackAngle; }
     void SetContinuousAttackDamage(float continuousAttackDamage) { mContinuousAttackDamage = continuousAttackDamage; }
+    void SetContinuousAttackGuardDamage(float guardDamage) { mContinuousAttackGuardDamage = guardDamage; }
     void SetContinuousAttackIntervalSeconds(float attackIntervalSeconds)
     {
         mContinuousAttackIntervalSeconds = attackIntervalSeconds;
@@ -211,7 +220,10 @@ public:
     float GetWideAttackRange() const { return mWideAttackRange; }
     float GetWideAttackAngle() const { return mWideAttackAngle; }
     float GetWideAttack() const { return mWideAttack; }
+    float CalculateCurrentGuardDamage(bool isPlayerGrounded) const;
+    bool ShouldEnsureCurrentGuardSegmentBreak(bool isPlayerGrounded) const;
     float GetAirDodgeAttackDamage() const { return mAirDodgeAttackDamage; }
+    float GetAirDodgeGuardDamage() const { return mAirDodgeGuardDamage; }
     float GetAirDodgeHorizontalHitboxScale() const { return mAirDodgeHorizontalHitboxScale; }
     float GetAirDodgeVerticalHitboxScale() const { return mAirDodgeVerticalHitboxScale; }
     float GetAirDodgeEnemyPushSpeed() const { return mAirDodgeEnemyPushSpeed; }
@@ -243,8 +255,10 @@ public:
     {
         return mAirSlamMinimumDamageRatio;
     }
+    float GetAirSlamGuardDamage() const { return mAirSlamGuardDamage; }
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }
+    float GetStrongAttackGuardDamage() const { return mStrongAttackGuardDamage; }
     float GetStrongAttackSpeed() const { return mStrongAttackSpeed; }
     float GetChargedAttackRange() const { return mChargedAttackRange; }
     float GetChargedAttackAngle() const { return mChargedAttackAngle; }
@@ -272,7 +286,6 @@ public:
 
 private:
     static constexpr int maximumAirAttackCount = 3;
-    static constexpr int airWeakAttackHitsForBreak = 3;
 
     void StartAttackHitDelay();
     void ClearPendingAttackHit();
@@ -299,7 +312,6 @@ private:
 
     int mAttackComboIndex = 0;
     int mAirAttackCount = 0;
-    int mAirWeakAttackHitCount = 0;
 
     float mAttackStartHeight = 0.0f;
     float mAttack = 10.0f;
@@ -323,10 +335,16 @@ private:
     float mNormalAttackRange = 2.8f;
     float mNormalAttackAngle = 0.8f;
     float mNormalAttack = 10.0f;
+    float mGroundCombo1GuardDamage = 5.0f;
+    float mGroundCombo2GuardDamage = 5.0f;
+    float mGroundCombo3GuardDamage = 10.0f;
     float mWideAttackRange = 2.8f;
     float mWideAttackAngle = -0.2f;
     float mWideAttack = 5.0f;
+    float mGroundWideGuardDamage = 5.0f;
+    float mAirWeakGuardDamage = 6.666667f;
     float mAirDodgeAttackDamage = 5.0f;
+    float mAirDodgeGuardDamage = 5.0f;
     float mAirDodgeHorizontalHitboxScale = 1.0f;
     float mAirDodgeVerticalHitboxScale = 2.0f;
     float mAirDodgeEnemyPushSpeed = 6.0f;
@@ -337,8 +355,10 @@ private:
     float mAirSlamEnemyDownwardSpeed = 18.0f;
     float mAirSlamFullDamageHeight = 6.0f;
     float mAirSlamMinimumDamageRatio = 0.3f;
+    float mAirSlamGuardDamage = 10.0f;
     float mStrongAttackRange = 6.0f;
     float mStrongAttack = 50.0f;
+    float mStrongAttackGuardDamage = 20.0f;
     float mStrongAttackSpeed = 100.0f;
     float mChargedAttackRange = 2.6f;
     float mChargedAttackAngle = 6.283f;
@@ -347,6 +367,7 @@ private:
     float mContinuousAttackRange = 2.0f;
     float mContinuousAttackAngle = 6.283f;
     float mContinuousAttackDamage = 2.5f;
+    float mContinuousAttackGuardDamage = 2.5f;
     float mContinuousAttackIntervalSeconds = 0.25f;
     float mContinuousAttackDurationSeconds = 6.0f;
     float mSpecialChargingTimer = -1.0f;

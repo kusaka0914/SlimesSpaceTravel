@@ -29,6 +29,7 @@ struct PlayerConfig {
     float dodgeCooldownTime = 0.3f;
     float dodgeDistance = 3.0f;
     float airDodgeAttackDamage = 5.0f;
+    float airDodgeGuardDamage = 5.0f;
     float airDodgeHorizontalHitboxScale = 1.0f;
     float airDodgeVerticalHitboxScale = 2.0f;
     float airDodgeEnemyPushSpeed = 6.0f;
@@ -40,13 +41,19 @@ struct PlayerConfig {
     float normalAttackRange = 2.8f;
     float normalAttackAngle = 0.8f;
     float normalAttack = 10.0f;
+    float groundCombo1GuardDamage = 5.0f;
+    float groundCombo2GuardDamage = 5.0f;
+    float groundCombo3GuardDamage = 10.0f;
 
     float wideAttackRange = 2.8f;
     float wideAttackAngle = -0.2f;
     float wideAttack = 5.0f;
+    float groundWideGuardDamage = 5.0f;
+    float airWeakGuardDamage = 6.666667f;
 
     float strongAttackRange = 6.0f;
     float strongAttack = 50.0f;
+    float strongAttackGuardDamage = 20.0f;
     float strongAttackSpeed = 100.0f;
     float airSlamRiseHeight = 1.0f;
     float airSlamRiseDurationSeconds = 0.5f;
@@ -54,6 +61,7 @@ struct PlayerConfig {
     float airSlamEnemyDownwardSpeed = 18.0f;
     float airSlamFullDamageHeight = 5.0f;
     float airSlamMinimumDamageRatio = 0.3f;
+    float airSlamGuardDamage = 10.0f;
 
     float chargedAttackRange = 2.6f;
     float chargedAttackAngle = 6.283f;
@@ -63,6 +71,7 @@ struct PlayerConfig {
     float continuousAttackRange = 2.0f;
     float continuousAttackAngle = 6.283f;
     float continuousAttackDamage = 2.5f;
+    float continuousAttackGuardDamage = 2.5f;
     float continuousAttackIntervalSeconds = 0.25f;
     float continuousAttackDurationSeconds = 6.0f;
 

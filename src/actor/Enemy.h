@@ -32,7 +32,13 @@ public:
     glm::vec3 GetRenderScale() const override;
 
     void ApplyDamage(float damage, Player* player);
-    void ApplyBreak(float deltaTime, bool isAllBreak = false);
+    EnemyGuardDamageResult ApplyGuardDamage(
+        float guardDamage,
+        float deltaTime);
+    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(
+        float minimumGuardDamage,
+        float deltaTime);
+    EnemyGuardDamageResult BreakGuard(float deltaTime);
     void ApplyAirDodgePush(
         const glm::vec3& dodgeDirection,
         float pushSpeed,
@@ -62,8 +68,10 @@ public:
     }
     void SetIsStrongAttacked(bool isStrongAttacked) { mStatus.SetIsStrongAttacked(isStrongAttacked); }
 
-    void SetBreakCount(int breakCount) { mStatus.SetBreakCount(breakCount); }
-    void SetBreakCountMax(int breakCountMax) { mStatus.SetBreakCountMax(breakCountMax); }
+    void SetGuardSegmentCount(int segmentCount)
+    {
+        mStatus.SetGuardSegmentCount(segmentCount);
+    }
 
     void SetHp(float hp) { mStatus.SetHp(hp); }
     void SetMaxHp(float maxHp) { mStatus.SetMaxHp(maxHp); }
@@ -97,7 +105,12 @@ public:
     }
     bool GetCanCountered() const { return mStatus.GetCanCountered(); }
 
-    int GetBreakCount() const { return mStatus.GetBreakCount(); }
+    float GetCurrentGuard() const { return mStatus.GetCurrentGuard(); }
+    float GetMaxGuard() const { return mStatus.GetMaxGuard(); }
+    float GetGuardValuePerSegment() const
+    {
+        return mStatus.GetGuardValuePerSegment();
+    }
 
     float GetHp() const { return mStatus.GetHp(); }
     float GetMaxHp() const { return mStatus.GetMaxHp(); }
@@ -105,7 +118,10 @@ public:
     float GetAttackRange() const { return mStatus.GetAttackRange(); }
     float GetStandByAttackTimer() const { return mStatus.GetStandByAttackTimer(); }
 
-    int GetBreakCountMax() const { return mStatus.GetBreakCountMax(); }
+    int GetGuardSegmentCount() const
+    {
+        return mStatus.GetGuardSegmentCount();
+    }
 
     float GetDetectionRange() const { return mStatus.GetDetectionRange(); }
     float GetAttackPreparationRange() const

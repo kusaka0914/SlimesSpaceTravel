@@ -193,10 +193,10 @@ void EnemyParameterDebugPanel::Draw()
             }
         }
 
-        int breakCountMax = normalEnemy->GetBreakCountMax();
-        if (ImGui::SliderInt("ブレイク回数##normal", &breakCountMax, 0, 10)) {
+        int guardSegmentCount = normalEnemy->GetGuardSegmentCount();
+        if (ImGui::SliderInt("ガード数##normal", &guardSegmentCount, 0, 10)) {
             for (Enemy* enemy : normalEnemies) {
-                enemy->SetBreakCountMax(breakCountMax);
+                enemy->SetGuardSegmentCount(guardSegmentCount);
             }
         }
 
@@ -309,9 +309,9 @@ void EnemyParameterDebugPanel::Draw()
             bossEnemy->SetAttack(attack);
         }
 
-        int breakCountMax = bossEnemy->GetBreakCountMax();
-        if (ImGui::SliderInt("ブレイク回数##boss", &breakCountMax, 0, 10)) {
-            bossEnemy->SetBreakCountMax(breakCountMax);
+        int guardSegmentCount = bossEnemy->GetGuardSegmentCount();
+        if (ImGui::SliderInt("ガード数##boss", &guardSegmentCount, 0, 10)) {
+            bossEnemy->SetGuardSegmentCount(guardSegmentCount);
         }
 
         float radius = bossEnemy->GetRadius();

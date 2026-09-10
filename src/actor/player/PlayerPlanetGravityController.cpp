@@ -26,7 +26,18 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
 
     if (mShouldPreservePlatformTakeoffDirection &&
         !player.GetOnGround()) {
-        return;
+        const float takeoffVerticalSpeed = glm::dot(
+            player.GetVelocity(),
+            mPlatformTakeoffUpDirection);
+        if (takeoffVerticalSpeed >= 0.0f) {
+            return;
+        }
+
+        // 足場付近の惑星側面へ上昇中から曲がるのを防ぎつつ、
+        // 下降開始後は近接吸引と重力フォールバックを再開する。
+        mShouldPreservePlatformTakeoffDirection = false;
+        mNoGroundRayDuration = 0.0f;
+        mSmoothedUpInitialized = false;
     }
 
 

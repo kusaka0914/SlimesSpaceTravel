@@ -142,6 +142,7 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mMovement.SetDodgeCooldownTime(config.dodgeCooldownTime);
     mMovement.SetDodgeDistance(config.dodgeDistance);
     mCombat.SetAirDodgeAttackDamage(config.airDodgeAttackDamage);
+    mCombat.SetAirDodgeGuardDamage(config.airDodgeGuardDamage);
     mCombat.SetAirDodgeHorizontalHitboxScale(
         config.airDodgeHorizontalHitboxScale);
     mCombat.SetAirDodgeVerticalHitboxScale(
@@ -160,13 +161,19 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mCombat.SetNormalAttackRange(config.normalAttackRange);
     mCombat.SetNormalAttackAngle(config.normalAttackAngle);
     mCombat.SetNormalAttack(config.normalAttack);
+    mCombat.SetGroundCombo1GuardDamage(config.groundCombo1GuardDamage);
+    mCombat.SetGroundCombo2GuardDamage(config.groundCombo2GuardDamage);
+    mCombat.SetGroundCombo3GuardDamage(config.groundCombo3GuardDamage);
 
     mCombat.SetWideAttackRange(config.wideAttackRange);
     mCombat.SetWideAttackAngle(config.wideAttackAngle);
     mCombat.SetWideAttack(config.wideAttack);
+    mCombat.SetGroundWideGuardDamage(config.groundWideGuardDamage);
+    mCombat.SetAirWeakGuardDamage(config.airWeakGuardDamage);
 
     mCombat.SetStrongAttackRange(config.strongAttackRange);
     mCombat.SetStrongAttack(config.strongAttack);
+    mCombat.SetStrongAttackGuardDamage(config.strongAttackGuardDamage);
     mCombat.SetStrongAttackSpeed(config.strongAttackSpeed);
     mCombat.SetChargedAttackRange(config.chargedAttackRange);
     mCombat.SetChargedAttackAngle(config.chargedAttackAngle);
@@ -176,6 +183,8 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mCombat.SetContinuousAttackRange(config.continuousAttackRange);
     mCombat.SetContinuousAttackAngle(config.continuousAttackAngle);
     mCombat.SetContinuousAttackDamage(config.continuousAttackDamage);
+    mCombat.SetContinuousAttackGuardDamage(
+        config.continuousAttackGuardDamage);
     mCombat.SetContinuousAttackIntervalSeconds(
         config.continuousAttackIntervalSeconds);
     mCombat.SetContinuousAttackDurationSeconds(
@@ -191,6 +200,7 @@ void Player::ApplyConfig(const PlayerConfig& config)
         config.airSlamFullDamageHeight);
     mCombat.SetAirSlamMinimumDamageRatio(
         config.airSlamMinimumDamageRatio);
+    mCombat.SetAirSlamGuardDamage(config.airSlamGuardDamage);
 
     mCombat.SetSpecialAttackCooldown(config.specialAttackCooldown);
     mStatus.SetDefaultInvincibleTimer(config.defaultInvincibleTimer);
