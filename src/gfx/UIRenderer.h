@@ -191,9 +191,11 @@ public:
         GLuint textureHandle,
         bool flipVertical = false,
         float rotationDegrees = 0.0f,
-        float opacity = 1.0f);
+        float opacity = 1.0f,
+        glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f});
 
 private:
+    void DrawTalkAdvancePrompt();
     void Initialize();
     void InitImGui();
     void RegisterUITextures();

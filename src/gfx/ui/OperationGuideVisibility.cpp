@@ -11,6 +11,14 @@ bool IsStrongAttackGuide(std::string_view elementId)
     return elementId == "buttonX" || elementId == "buttonTextX";
 }
 
+bool IsSoloPlayerConfigurationGuide(std::string_view elementId)
+{
+    return elementId == "buttonB_copy_copy2" ||
+           elementId == "buttonTextB_copy2_copy2" ||
+           elementId == "buttonB_copy_copy2_copy" ||
+           elementId == "buttonTextB_copy2_copy2_copy";
+}
+
 bool IsCombatGuide(std::string_view elementId)
 {
     return IsStrongAttackGuide(elementId) ||
@@ -24,6 +32,11 @@ bool ShouldShowOperationGuideElement(
     std::string_view elementId,
     const OperationGuideDisplayState& displayState)
 {
+    if (displayState.isTwoPlayerMode &&
+        IsSoloPlayerConfigurationGuide(elementId)) {
+        return false;
+    }
+
     const bool usesPhasedTutorialGuide =
         !displayState.isUGCPlaytestActive &&
         displayState.currentStageNumber == 1;

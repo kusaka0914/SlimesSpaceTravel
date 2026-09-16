@@ -422,40 +422,31 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: false
       - id: combo
-        text: "連打して敵を連続で3回攻撃すると、\n敵の頭上のガードを1つ破壊できるんだ！"
+        text: "敵を攻撃すると、どんどん敵のガードを減らせるよ！\nガードは敵の頭上の青いバーのことね！"
         ruby:
           common:
-            - text: 連
-              ruby: true
-              reading: れん
-            - text: 打
-              ruby: true
-              reading: だ
-            - text: して
-              ruby: false
             - text: 敵
               ruby: true
               reading: てき
             - text: を
               ruby: false
-            - text: 連
-              ruby: true
-              reading: れん
-            - text: 続
-              ruby: true
-              reading: ぞく
-            - text: で3
-              ruby: false
-            - text: 回
-              ruby: true
-              reading: かい
             - text: 攻
               ruby: true
               reading: こう
             - text: 撃
               ruby: true
               reading: げき
-            - text: "すると、\n"
+            - text: すると、どんどん
+              ruby: false
+            - text: 敵
+              ruby: true
+              reading: てき
+            - text: のガードを
+              ruby: false
+            - text: 減
+              ruby: true
+              reading: へ
+            - text: "らせるよ！\nガードは"
               ruby: false
             - text: 敵
               ruby: true
@@ -468,15 +459,12 @@ tutorials:
             - text: 上
               ruby: true
               reading: じょう
-            - text: のガードを1つ
+            - text: の
               ruby: false
-            - text: 破
+            - text: 青
               ruby: true
-              reading: は
-            - text: 壊
-              ruby: true
-              reading: かい
-            - text: できるんだ！
+              reading: あお
+            - text: いバーのことね！
               ruby: false
         advance: confirm
         video:
@@ -549,7 +537,7 @@ tutorials:
           preserveAspectRatio: true
           flipVertical: true
       - id: lets_try
-        text: "打ち上げ後も連打で攻撃できるから、\n敵の攻撃をよけるのに集中しながら連打しよう！"
+        text: "打ち上げ後も連打で攻撃、最後は惑星に叩きつけられるから\n敵の攻撃をよけるのに集中しながら連打しよう！"
         ruby:
           common:
             - text: 打
@@ -581,7 +569,28 @@ tutorials:
             - text: 撃
               ruby: true
               reading: げき
-            - text: "できるから、\n"
+            - text: 、
+              ruby: false
+            - text: 最
+              ruby: true
+              reading: さい
+            - text: 後
+              ruby: true
+              reading: ご
+            - text: は
+              ruby: false
+            - text: 惑
+              ruby: true
+              reading: わく
+            - text: 星
+              ruby: true
+              reading: せい
+            - text: に
+              ruby: false
+            - text: 叩
+              ruby: true
+              reading: たた
+            - text: "きつけられるから\n"
               ruby: false
             - text: 敵
               ruby: true

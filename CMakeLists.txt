@@ -78,6 +78,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyConfigLoaderTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyGuardGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerInputDeviceRoutingTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
@@ -113,6 +114,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyConfigLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyGuardGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerInputDeviceRouting.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/performance/FramePerformanceTracker.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UGCModeController.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
@@ -172,6 +174,7 @@ if (WIN32)
         mfreadwrite
         mfuuid
         ole32
+        imm32
     )
 
     add_custom_target(package_windows

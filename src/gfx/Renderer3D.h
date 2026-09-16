@@ -136,6 +136,7 @@ private:
     void InitializeAttackRangeBuffer();
     void InitializeRenderModules();
     void UpdateViewFrustum(const glm::mat4& viewProjectionMatrix) const;
+    glm::vec3 ResolveSunDirectionForCurrentStage() const;
 
     void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;

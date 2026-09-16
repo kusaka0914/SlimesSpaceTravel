@@ -339,6 +339,8 @@ private:
     void ProcessActorsInput();
     void UpdateGame();
     void UpdateActors(float deltaTime);
+    void UpdateMouseCursorVisibility();
+    void UpdateTextInputMethodAvailability();
 
     void ProcessPendingUGCClearCompletion();
 
@@ -407,6 +409,7 @@ private:
     int mTitleMenuSelection = 0;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+    std::optional<bool> mWasTextInputMethodAllowed;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;

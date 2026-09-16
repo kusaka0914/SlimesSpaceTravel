@@ -10,10 +10,9 @@ uniform bool convertSrgbToLinear;
 
 void main()
 {
-    vec4 baseColor = (useTexture != 0) ? texture(diffuseTexture, texCoord) : objectColor;
-    if (useTexture != 0) {
-        baseColor.a *= objectColor.a;
-    }
+    vec4 baseColor = (useTexture != 0)
+        ? texture(diffuseTexture, texCoord) * objectColor
+        : objectColor;
     if (convertSrgbToLinear) {
         baseColor.rgb = pow(baseColor.rgb, vec3(2.2));
     }

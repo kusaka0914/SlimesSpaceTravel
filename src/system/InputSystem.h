@@ -16,6 +16,7 @@ public:
     bool IsMouseButtonPressed(int button) const;
     int GetControllerAxis(int playerNum, int axis) const;
     bool IsControllerButtonPressed(int playerNum, int button) const;
+    bool IsAnyControllerButtonPressed(int button) const;
     bool HasControllerInput(int playerNum) const;
     double GetCursorX() const { return mSnapshot.cursorX; }
     double GetCursorY() const { return mSnapshot.cursorY; }
@@ -36,10 +37,10 @@ private:
     void ProcessUGCClearResultInput();
     void ProcessUGCEditorCursorInput();
     void ProcessUGCEditorCommandInput();
-    void ProcessSceneConfirmInput(bool allowsSceneAction);
+    bool ProcessSceneConfirmInput(bool allowsSceneAction);
     void ProcessDebugEditorToggleInput();
     void ProcessFreeCameraToggleInput();
-    void ProcessStartInput();
+    void ProcessStartInput(bool allowsStartAction);
 
 private:
     struct InputSnapshot {
@@ -74,7 +75,7 @@ private:
     bool mPauseMenuUpPressedPrev = false;
     bool mPauseMenuDownPressedPrev = false;
     bool mPauseMenuConfirmPressedPrev = false;
-    bool mControllerConfirmPressedPrev = false;
+    std::array<bool, 2> mControllerConfirmPressedPrev{};
     bool mWasUGCEditorCursorActive = false;
     bool mUGCEditorControllerClickPressedPrev = false;
     bool mUGCEditorUndoPressedPrev = false;

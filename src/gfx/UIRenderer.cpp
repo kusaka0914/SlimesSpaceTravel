@@ -13,6 +13,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "system/SceneSystem.h"
+#include "system/InputSystem.h"
 #include "system/text/JapaneseRubyGenerator.h"
 #include "system/CameraSystem.h"
 #include "system/sequence/SequenceSystem.h"
@@ -257,11 +258,31 @@ void UIRenderer::DrawUGCWorkBrowser()
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
+    // 一覧はゲームパッドのフォーカス移動で操作できるため、
+    // ImGuiがゲーム側で隠したOSカーソルを再表示しないようにする。
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+    if (const InputSystem* inputSystem = mGame->GetInputSystem()) {
+        const bool upPressed =
+            inputSystem->IsKeyPressed(GLFW_KEY_UP) ||
+            inputSystem->IsKeyPressed(GLFW_KEY_W);
+        const bool downPressed =
+            inputSystem->IsKeyPressed(GLFW_KEY_DOWN) ||
+            inputSystem->IsKeyPressed(GLFW_KEY_S);
+        io.AddKeyEvent(ImGuiKey_UpArrow, upPressed);
+        io.AddKeyEvent(ImGuiKey_DownArrow, downPressed);
+    }
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     mDebugEditorBridge->DrawWorkBrowser();
+    if (!mGame->GetIsUGCWorkBrowserShowing()) {
+        // W/Sで一覧を閉じた場合も、合成した方向入力を次の画面へ残さない。
+        io.AddKeyEvent(ImGuiKey_UpArrow, false);
+        io.AddKeyEvent(ImGuiKey_DownArrow, false);
+    }
     EndImGuiFrame();
+    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);

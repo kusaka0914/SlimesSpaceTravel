@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "actor/Player.h"
 #include "system/CameraSystem.h"
+#include "system/PlayerInputDeviceRouting.h"
 #include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
@@ -20,16 +21,18 @@ namespace {
 constexpr int controllerMovementDeadZone =
     static_cast<int>(0.25f * 32767.0f);
 
-bool IsControllerMovementPressed(const InputSystem& inputSystem)
+bool IsControllerMovementPressed(
+    const InputSystem& inputSystem,
+    int playerNum)
 {
-    if (!inputSystem.HasControllerInput(1)) {
+    if (!inputSystem.HasControllerInput(playerNum)) {
         return false;
     }
 
     const int horizontalAxis = inputSystem.GetControllerAxis(
-        1, SDL_CONTROLLER_AXIS_LEFTX);
+        playerNum, SDL_CONTROLLER_AXIS_LEFTX);
     const int verticalAxis = inputSystem.GetControllerAxis(
-        1, SDL_CONTROLLER_AXIS_LEFTY);
+        playerNum, SDL_CONTROLLER_AXIS_LEFTY);
 
     return std::abs(horizontalAxis) >= controllerMovementDeadZone ||
            std::abs(verticalAxis) >= controllerMovementDeadZone;
@@ -104,29 +107,31 @@ bool IsKeyboardOrMouseInputActive(const InputSystem& inputSystem)
 
 bool IsGameControllerInputActive(const InputSystem& inputSystem)
 {
-    if (!inputSystem.HasControllerInput(1)) {
-        return false;
-    }
-
-    for (int button = 0; button < SDL_CONTROLLER_BUTTON_MAX; ++button) {
-        if (inputSystem.IsControllerButtonPressed(1, button)) {
-            return true;
+    for (int playerNum = 1; playerNum <= 2; ++playerNum) {
+        if (!inputSystem.HasControllerInput(playerNum)) {
+            continue;
         }
-    }
 
-    constexpr Sint16 AxisActivityThreshold = 8000;
-    for (int axis = 0; axis < SDL_CONTROLLER_AXIS_MAX; ++axis) {
-        const auto controllerAxis =
-            static_cast<SDL_GameControllerAxis>(axis);
-        const int axisValue = inputSystem.GetControllerAxis(
-            1, controllerAxis);
-        const bool isTrigger =
-            controllerAxis == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
-            controllerAxis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
-        if ((isTrigger && axisValue > AxisActivityThreshold) ||
-            (!isTrigger && std::abs(static_cast<int>(axisValue)) >
-                               AxisActivityThreshold)) {
-            return true;
+        for (int button = 0; button < SDL_CONTROLLER_BUTTON_MAX; ++button) {
+            if (inputSystem.IsControllerButtonPressed(playerNum, button)) {
+                return true;
+            }
+        }
+
+        constexpr Sint16 axisActivityThreshold = 8000;
+        for (int axis = 0; axis < SDL_CONTROLLER_AXIS_MAX; ++axis) {
+            const auto controllerAxis =
+                static_cast<SDL_GameControllerAxis>(axis);
+            const int axisValue = inputSystem.GetControllerAxis(
+                playerNum, controllerAxis);
+            const bool isTrigger =
+                controllerAxis == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
+                controllerAxis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
+            if ((isTrigger && axisValue > axisActivityThreshold) ||
+                (!isTrigger && std::abs(static_cast<int>(axisValue)) >
+                                   axisActivityThreshold)) {
+                return true;
+            }
         }
     }
     return false;
@@ -235,6 +240,12 @@ bool InputSystem::IsControllerButtonPressed(
                                       [static_cast<std::size_t>(button)];
 }
 
+bool InputSystem::IsAnyControllerButtonPressed(int button) const
+{
+    return IsControllerButtonPressed(1, button) ||
+           IsControllerButtonPressed(2, button);
+}
+
 bool InputSystem::HasControllerInput(int playerNum) const
 {
     const int playerIndex = playerNum - 1;
@@ -249,36 +260,32 @@ bool InputSystem::IsMovementInputPressedForPlayer(
         return false;
     }
 
-    const bool isControllerConnected =
-        mGame->IsGameControllerConnected();
-    const bool isTwoPlayerMode = mGame->GetIsPlayer2Joined();
-    const bool usesController =
-        isControllerConnected &&
-        (isTwoPlayerMode
-             ? player->GetPlayerNum() == 1
-             : mGame->GetControlledPlayer() == player);
-    if (usesController) {
-        return IsControllerMovementPressed(*this);
-    }
+    const int playerNum = player->GetPlayerNum();
+    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    const PlayerInputDevice inputDevice = ResolvePlayerInputDevice(
+        playerNum,
+        {
+            .isTwoPlayerMode = mGame->GetIsPlayer2Joined(),
+            .isDebugMode = mGame->GetIsDebugMode(),
+            .hasControllerOne = HasControllerInput(1),
+            .hasControllerTwo = HasControllerInput(2),
+            .controlledPlayerNum = controlledPlayer
+                ? controlledPlayer->GetPlayerNum()
+                : 1,
+        });
 
-    if (!isTwoPlayerMode) {
-        return !isControllerConnected &&
-               mGame->GetControlledPlayer() == player &&
-               IsKeyboardMovementPressed(*this);
+    const int controllerPlayerNum =
+        ResolveControllerPlayerNum(inputDevice);
+    if (controllerPlayerNum != 0) {
+        return IsControllerMovementPressed(*this, controllerPlayerNum);
     }
-
-    if (isControllerConnected) {
-        return player->GetPlayerNum() == 2 &&
-               IsKeyboardMovementPressed(*this);
+    if (inputDevice == PlayerInputDevice::PrimaryKeyboard) {
+        return IsKeyboardMovementPressed(*this);
     }
-
-    if (!mGame->GetIsDebugMode()) {
-        return false;
+    if (inputDevice == PlayerInputDevice::SecondaryKeyboard) {
+        return IsSecondPlayerDebugKeyboardMovementPressed(*this);
     }
-
-    return player->GetPlayerNum() == 1
-        ? IsKeyboardMovementPressed(*this)
-        : IsSecondPlayerDebugKeyboardMovementPressed(*this);
+    return false;
 }
 
 void InputSystem::ProcessGameInput()
@@ -296,6 +303,7 @@ void InputSystem::ProcessGameInput()
 
     if (mGame->GetIsUGCClearResultShowing()) {
         ProcessUGCClearResultInput();
+        ProcessStartInput(false);
         return;
     }
 
@@ -328,10 +336,15 @@ void InputSystem::ProcessGameInput()
     ProcessTitleMenuInput();
     ProcessBattleStyleSelectionInput();
     // ポーズ決定もAを使うため、そのフレームの入力を会話開始へ流さない。
-    ProcessSceneConfirmInput(
+    const bool didExecuteSceneConfirm = ProcessSceneConfirmInput(
         !wasPauseMenuOpen && !isUGCEditorActive && !wasTitleMenuActive);
     ProcessFreeCameraToggleInput();
-    ProcessStartInput();
+    const bool allowsStartAction =
+        !wasPauseMenuOpen &&
+        !wasTitleMenuActive &&
+        !mGame->GetIsUGCWorkBrowserShowing() &&
+        !didExecuteSceneConfirm;
+    ProcessStartInput(allowsStartAction);
 }
 
 void InputSystem::SuppressOneShotInputUntilReleased()
@@ -358,7 +371,7 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mPauseMenuUpPressedPrev = true;
     mPauseMenuDownPressedPrev = true;
     mPauseMenuConfirmPressedPrev = true;
-    mControllerConfirmPressedPrev = true;
+    mControllerConfirmPressedPrev.fill(true);
     mUGCEditorUndoPressedPrev = true;
     mUGCEditorRedoPressedPrev = true;
     mUGCEditorEraserPressedPrev = true;
@@ -394,7 +407,7 @@ void InputSystem::ProcessUGCModeInput()
 
     const bool keyboardPressed = IsKeyPressed(GLFW_KEY_C);
     const bool controllerPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_X);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_X);
     const bool ugcModePressed = keyboardPressed || controllerPressed;
 
     if (ugcModePressed && !mUGCModePressedPrev) {
@@ -404,7 +417,7 @@ void InputSystem::ProcessUGCModeInput()
 
     const bool browserKeyboardPressed = IsKeyPressed(GLFW_KEY_V);
     const bool browserControllerPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_Y);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_Y);
     const bool browserPressed =
         browserKeyboardPressed || browserControllerPressed;
     if (browserPressed && !mUGCWorkBrowserPressedPrev) {
@@ -419,14 +432,18 @@ void InputSystem::ProcessUGCClearResultInput()
     const bool upPressed =
         IsKeyPressed(GLFW_KEY_UP) ||
         IsKeyPressed(GLFW_KEY_W) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP) ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) <
+            -directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) <
             -directionThreshold;
     const bool downPressed =
         IsKeyPressed(GLFW_KEY_DOWN) ||
         IsKeyPressed(GLFW_KEY_S) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) >
+            directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) >
             directionThreshold;
     const bool directionPressed = upPressed || downPressed;
     if (directionPressed && !mUGCClearResultDirectionPressedPrev) {
@@ -436,7 +453,8 @@ void InputSystem::ProcessUGCClearResultInput()
 
     const bool confirmPressed =
         IsKeyPressed(GLFW_KEY_SPACE) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
+        IsKeyPressed(GLFW_KEY_ENTER) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_A);
     if (confirmPressed && !mUGCClearResultConfirmPressedPrev) {
         mGame->ExecuteUGCClearResultSelection();
     }
@@ -456,12 +474,16 @@ void InputSystem::ProcessTitleMenuInput()
     constexpr Sint16 directionThreshold = 16000;
     const bool upPressed =
         IsKeyPressed(GLFW_KEY_UP) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
-        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold;
+        IsKeyPressed(GLFW_KEY_W) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold;
     const bool downPressed =
         IsKeyPressed(GLFW_KEY_DOWN) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
-        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold;
+        IsKeyPressed(GLFW_KEY_S) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold;
     const bool directionPressed = upPressed || downPressed;
     if (directionPressed && !mTitleMenuDirectionPressedPrev) {
         mGame->MoveTitleMenuSelection(upPressed ? -1 : 1);
@@ -469,8 +491,9 @@ void InputSystem::ProcessTitleMenuInput()
     mTitleMenuDirectionPressedPrev = directionPressed;
 
     const bool confirmPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A) ||
-        IsKeyPressed(GLFW_KEY_SPACE);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_A) ||
+        IsKeyPressed(GLFW_KEY_SPACE) ||
+        IsKeyPressed(GLFW_KEY_ENTER);
     if (confirmPressed && !mTitleMenuConfirmPressedPrev) {
         mGame->ExecuteTitleMenuSelection();
     }
@@ -731,7 +754,7 @@ void InputSystem::ProcessPauseToggleInput()
 
     const bool escapePressed = IsKeyPressed(GLFW_KEY_ESCAPE);
     const bool controllerBackPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_BACK);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_BACK);
 
     const bool returnToUGCEditorPressed =
         escapePressed || controllerBackPressed;
@@ -758,16 +781,17 @@ void InputSystem::ProcessPauseMenuInput()
     const bool upPressed =
         IsKeyPressed(GLFW_KEY_UP) ||
         IsKeyPressed(GLFW_KEY_W) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_UP);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP);
 
     const bool downPressed =
         IsKeyPressed(GLFW_KEY_DOWN) ||
         IsKeyPressed(GLFW_KEY_S) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN);
 
     const bool confirmPressed =
         IsKeyPressed(GLFW_KEY_SPACE) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
+        IsKeyPressed(GLFW_KEY_ENTER) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_A);
 
     if (upPressed && !mPauseMenuUpPressedPrev) {
         mGame->MovePauseMenuSelection(-1);
@@ -900,22 +924,30 @@ void InputSystem::ProcessBattleStyleSelectionInput()
         IsKeyPressed(GLFW_KEY_UP) ||
         IsKeyPressed(GLFW_KEY_A) ||
         IsKeyPressed(GLFW_KEY_W) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_LEFT) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_LEFT) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP) ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX) <
             -DirectionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTX) <
+            -DirectionThreshold ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) <
+            -DirectionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) <
             -DirectionThreshold;
     const bool nextDirectionPressed =
         IsKeyPressed(GLFW_KEY_RIGHT) ||
         IsKeyPressed(GLFW_KEY_DOWN) ||
         IsKeyPressed(GLFW_KEY_D) ||
         IsKeyPressed(GLFW_KEY_S) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) ||
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_RIGHT) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX) >
             DirectionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTX) >
+            DirectionThreshold ||
         GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) >
+            DirectionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) >
             DirectionThreshold;
     const bool directionPressed =
         previousDirectionPressed || nextDirectionPressed;
@@ -927,46 +959,63 @@ void InputSystem::ProcessBattleStyleSelectionInput()
     mBattleStyleDirectionPressedPrev = directionPressed;
 }
 
-void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
+bool InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
 {
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
     if (!sceneSystem) {
-        return;
+        return false;
     }
 
     const bool canProcessSceneAction =
         allowsSceneAction &&
         !mGame->GetIsUGCWorkBrowserShowing();
 
-    const bool controllerConfirmPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A);
+    const std::array<bool, 2> controllerConfirmPressed = {
+        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A),
+        IsControllerButtonPressed(2, SDL_CONTROLLER_BUTTON_A),
+    };
 
     const bool keyboardConfirmPressed =
-        IsKeyPressed(GLFW_KEY_SPACE);
+        IsKeyPressed(GLFW_KEY_SPACE) ||
+        IsKeyPressed(GLFW_KEY_ENTER);
 
     const Player* controlledPlayer = mGame->GetControlledPlayer();
     const int controlledPlayerNum =
         controlledPlayer ? controlledPlayer->GetPlayerNum() : 1;
     const bool isTwoPlayerMode = mGame->GetIsPlayer2Joined();
+    bool didExecuteSceneConfirm = false;
 
-    if (canProcessSceneAction &&
-        controllerConfirmPressed &&
-        !mControllerConfirmPressedPrev) {
-        const int controllerPlayerNum =
-            isTwoPlayerMode ? 1 : controlledPlayerNum;
-        if (sceneSystem->OnConfirmPressed(controllerPlayerNum)) {
-            SuppressPlayerJumpUntilReleased(
-                *mGame,
-                controllerPlayerNum);
+    for (int controllerIndex = 0; controllerIndex < 2; ++controllerIndex) {
+        const int controllerPlayerNum = controllerIndex + 1;
+        const bool canControllerConfirm =
+            canProcessSceneAction &&
+            controllerConfirmPressed[static_cast<std::size_t>(controllerIndex)] &&
+            !mControllerConfirmPressedPrev[static_cast<std::size_t>(controllerIndex)] &&
+            (controllerPlayerNum == 1 || isTwoPlayerMode);
+        if (!canControllerConfirm) {
+            continue;
+        }
+
+        const int actionPlayerNum =
+            isTwoPlayerMode ? controllerPlayerNum : controlledPlayerNum;
+        if (sceneSystem->OnConfirmPressed(actionPlayerNum)) {
+            didExecuteSceneConfirm = true;
+            SuppressPlayerJumpUntilReleased(*mGame, actionPlayerNum);
+            break;
         }
     }
 
+    const bool playerTwoUsesController =
+        isTwoPlayerMode && HasControllerInput(2);
     if (canProcessSceneAction &&
+        !didExecuteSceneConfirm &&
+        !playerTwoUsesController &&
         keyboardConfirmPressed &&
         !mKeyboardConfirmPressedPrev) {
         const int keyboardPlayerNum =
             isTwoPlayerMode ? 2 : controlledPlayerNum;
         if (sceneSystem->OnConfirmPressed(keyboardPlayerNum)) {
+            didExecuteSceneConfirm = true;
             SuppressPlayerJumpUntilReleased(
                 *mGame,
                 keyboardPlayerNum);
@@ -975,6 +1024,7 @@ void InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
 
     mControllerConfirmPressedPrev = controllerConfirmPressed;
     mKeyboardConfirmPressedPrev = keyboardConfirmPressed;
+    return didExecuteSceneConfirm;
 }
 
 void InputSystem::ProcessDebugEditorToggleInput()
@@ -996,7 +1046,7 @@ void InputSystem::ProcessFreeCameraToggleInput()
     mLPressedPrev = lPressed;
 }
 
-void InputSystem::ProcessStartInput()
+void InputSystem::ProcessStartInput(bool allowsStartAction)
 {
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
     if (!sceneSystem) {
@@ -1004,10 +1054,10 @@ void InputSystem::ProcessStartInput()
     }
 
     const bool startPressed =
-        IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_START) ||
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_START) ||
         IsKeyPressed(GLFW_KEY_ENTER);
 
-    if (startPressed && !mStartPressedPrev) {
+    if (allowsStartAction && startPressed && !mStartPressedPrev) {
         sceneSystem->OnStartPressed();
     }
 

@@ -5,12 +5,31 @@
 #include "actor/Player.h"
 #include "actor/player/PlayerMovement.h"
 #include "system/InputSystem.h"
+#include "system/PlayerInputDeviceRouting.h"
 #include "system/SceneSystem.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
 #include <cmath>
 #include <glm/glm.hpp>
+
+namespace {
+PlayerInputDeviceContext CreatePlayerInputDeviceContext(
+    const Game& game,
+    const InputSystem& inputSystem)
+{
+    const Player* controlledPlayer = game.GetControlledPlayer();
+    return {
+        .isTwoPlayerMode = game.GetIsPlayer2Joined(),
+        .isDebugMode = game.GetIsDebugMode(),
+        .hasControllerOne = inputSystem.HasControllerInput(1),
+        .hasControllerTwo = inputSystem.HasControllerInput(2),
+        .controlledPlayerNum = controlledPlayer
+            ? controlledPlayer->GetPlayerNum()
+            : 1,
+    };
+}
+}
 
 PlayerInput::PlayerInput(InputSystem& inputSystem)
     : mInputSystem(inputSystem)
@@ -90,19 +109,12 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
 {
     Game* game = player.GetGame();
 
-    if (!game->GetIsPlayer2Joined() &&
-        game->GetControlledPlayer() != &player) {
-        return;
-    }
-
-
-
-
+    const PlayerInputDevice inputDevice = ResolvePlayerInputDevice(
+        movement.GetPlayerNum(),
+        CreatePlayerInputDeviceContext(*game, mInputSystem));
     const int controllerPlayerNum =
-        game->GetIsPlayer2Joined()
-            ? movement.GetPlayerNum()
-            : 1;
-    if (!mInputSystem.HasControllerInput(controllerPlayerNum)) {
+        ResolveControllerPlayerNum(inputDevice);
+    if (controllerPlayerNum == 0) {
         return;
     }
 
@@ -140,21 +152,15 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
 {
     Game* game = player.GetGame();
 
-    const bool usesSecondPlayerDebugKeyboardControls =
-        game->GetIsDebugMode() &&
-        game->GetIsPlayer2Joined() &&
-        !game->IsGameControllerConnected() &&
-        movement.GetPlayerNum() == 2;
-
-    if (game->GetIsPlayer2Joined()) {
-        if (game->HasGameControllerForPlayer(movement.GetPlayerNum())) {
-            return;
-        }
-    } else {
-        if (game->IsGameControllerConnected() ||
-            game->GetControlledPlayer() != &player) {
-            return;
-        }
+    const PlayerInputDevice inputDevice = ResolvePlayerInputDevice(
+        movement.GetPlayerNum(),
+        CreatePlayerInputDeviceContext(*game, mInputSystem));
+    const bool usesPrimaryKeyboard =
+        inputDevice == PlayerInputDevice::PrimaryKeyboard;
+    const bool usesSecondaryKeyboard =
+        inputDevice == PlayerInputDevice::SecondaryKeyboard;
+    if (!usesPrimaryKeyboard && !usesSecondaryKeyboard) {
+        return;
     }
 
     mMoveForward = 0.0f;
@@ -170,16 +176,16 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         return;
     }
 
-    const int forwardKey = usesSecondPlayerDebugKeyboardControls
+    const int forwardKey = usesSecondaryKeyboard
         ? GLFW_KEY_UP
         : GLFW_KEY_W;
-    const int backwardKey = usesSecondPlayerDebugKeyboardControls
+    const int backwardKey = usesSecondaryKeyboard
         ? GLFW_KEY_DOWN
         : GLFW_KEY_S;
-    const int leftKey = usesSecondPlayerDebugKeyboardControls
+    const int leftKey = usesSecondaryKeyboard
         ? GLFW_KEY_LEFT
         : GLFW_KEY_A;
-    const int rightKey = usesSecondPlayerDebugKeyboardControls
+    const int rightKey = usesSecondaryKeyboard
         ? GLFW_KEY_RIGHT
         : GLFW_KEY_D;
 
@@ -204,19 +210,19 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mMoveLeft = moveInput.x;
     mMoveForward = moveInput.y;
 
-    const int jumpKey = usesSecondPlayerDebugKeyboardControls
+    const int jumpKey = usesSecondaryKeyboard
         ? GLFW_KEY_RIGHT_SHIFT
         : GLFW_KEY_SPACE;
-    const int attackKey = usesSecondPlayerDebugKeyboardControls
+    const int attackKey = usesSecondaryKeyboard
         ? GLFW_KEY_SLASH
         : GLFW_KEY_K;
-    const int wideAttackKey = usesSecondPlayerDebugKeyboardControls
+    const int wideAttackKey = usesSecondaryKeyboard
         ? GLFW_KEY_PERIOD
         : GLFW_KEY_J;
-    const int dodgeKey = usesSecondPlayerDebugKeyboardControls
+    const int dodgeKey = usesSecondaryKeyboard
         ? GLFW_KEY_RIGHT_CONTROL
         : GLFW_KEY_U;
-    const int specialAttackKey = usesSecondPlayerDebugKeyboardControls
+    const int specialAttackKey = usesSecondaryKeyboard
         ? GLFW_KEY_RIGHT_ALT
         : GLFW_KEY_N;
 

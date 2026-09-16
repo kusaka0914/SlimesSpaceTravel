@@ -359,6 +359,11 @@ state:
     posRatio: [0.0375, 0.0555]
     scaleRatio: [0.75, 0.25]
     rotationDegrees: 0
+  - id: talkAdvancePrompt
+    type: texture
+    posRatio: [0.721875, 0.22675]
+    scaleRatio: [0.046875, 0.075]
+    rotationDegrees: 0
   - id: talkText
     type: text
     posRatio: [0.065, 0.14]

@@ -816,6 +816,7 @@ std::string UIDebugPanel::GetDisplayName(const std::string& key) const
         {"state.stageClearText", "ステージクリア文字"},
         {"state.loadingTexture", "ロード画面画像"},
         {"state.talkBgTexture", "会話背景画像"},
+        {"state.talkAdvancePrompt", "会話送りアイコン"},
         {"state.talkText", "会話本文"},
     };
 

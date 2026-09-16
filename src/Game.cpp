@@ -1,3 +1,9 @@
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <GL/glew.h>
 
 #include "Game.h"
@@ -38,6 +44,12 @@
 #include "imgui.h"
 
 #include "utils/MathUtils.h"
+
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <imm.h>
+#endif
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -116,6 +128,8 @@ bool Game::Initialize(
 
     mLastTime = glfwGetTime();
     glEnable(GL_DEPTH_TEST);
+    UpdateMouseCursorVisibility();
+    UpdateTextInputMethodAvailability();
 
     return true;
 }
@@ -330,6 +344,7 @@ void Game::RunLoop()
         mFramePerformanceTracker.RecordGameUpdateDuration(
             std::chrono::duration<float, std::milli>(
                 gameUpdateEndTime - gameUpdateStartTime).count());
+        UpdateMouseCursorVisibility();
 
         const GameFrameRenderState renderState{
             .isDebugEditorShowing = mIsDebugEditorShowing,
@@ -339,6 +354,7 @@ void Game::RunLoop()
             .deltaTimeSeconds = mLastDeltaTime,
         };
         mFrameRenderer->Render(renderState);
+        UpdateTextInputMethodAvailability();
 
         mFramePerformanceTracker.RecordTotalDuration(
             std::chrono::duration<float, std::milli>(
@@ -692,6 +708,52 @@ void Game::UpdateActors(float deltaTime)
     if (mEnemyJewelDropSystem) {
         mEnemyJewelDropSystem->SpawnPendingDrops();
     }
+}
+
+void Game::UpdateMouseCursorVisibility()
+{
+    if (!mWindow) {
+        return;
+    }
+
+    const bool shouldShowMouseCursor = mIsDebugEditorShowing;
+    const int desiredCursorMode = shouldShowMouseCursor
+        ? GLFW_CURSOR_NORMAL
+        : GLFW_CURSOR_HIDDEN;
+    if (glfwGetInputMode(mWindow, GLFW_CURSOR) != desiredCursorMode) {
+        glfwSetInputMode(mWindow, GLFW_CURSOR, desiredCursorMode);
+    }
+}
+
+void Game::UpdateTextInputMethodAvailability()
+{
+#ifdef _WIN32
+    if (!mWindow) {
+        return;
+    }
+
+    const bool shouldAllowTextInput = IsEditorKeyboardInputCaptured();
+    if (mWasTextInputMethodAllowed == shouldAllowTextInput) {
+        return;
+    }
+
+    HWND windowHandle = glfwGetWin32Window(mWindow);
+    if (!windowHandle) {
+        return;
+    }
+
+    if (shouldAllowTextInput) {
+        ImmAssociateContextEx(windowHandle, nullptr, IACE_DEFAULT);
+    } else {
+        if (HIMC inputContext = ImmGetContext(windowHandle)) {
+            ImmSetOpenStatus(inputContext, FALSE);
+            ImmReleaseContext(windowHandle, inputContext);
+        }
+        ImmAssociateContextEx(windowHandle, nullptr, 0);
+    }
+
+    mWasTextInputMethodAllowed = shouldAllowTextInput;
+#endif
 }
 
 void Game::SetUGCPreviewRenderSize(int width, int height)
