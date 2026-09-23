@@ -6,6 +6,7 @@ struct OperationGuideDisplayState {
     int currentStageNumber = 0;
     int currentPlanetNumber = 0;
     bool isUGCPlaytestActive = false;
+    bool isTwoPlayerMode = false;
 };
 
 bool ShouldShowOperationGuideElement(

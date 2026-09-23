@@ -666,6 +666,8 @@ const char* GetTutorialAdvanceConditionId(
         return "jump";
     case TutorialAdvanceCondition::PlayerSplitMerge:
         return "playerSplitMerge";
+    case TutorialAdvanceCondition::ReachPressureSwitchSide:
+        return "reachPressureSwitchSide";
     case TutorialAdvanceCondition::ApproachPressureSwitch:
         return "approachPressureSwitch";
     case TutorialAdvanceCondition::PressPressureSwitch:
@@ -691,6 +693,9 @@ TutorialAdvanceCondition ParseTutorialAdvanceConditionId(
     }
     if (conditionId == "playerSplitMerge") {
         return TutorialAdvanceCondition::PlayerSplitMerge;
+    }
+    if (conditionId == "reachPressureSwitchSide") {
+        return TutorialAdvanceCondition::ReachPressureSwitchSide;
     }
     if (conditionId == "approachPressureSwitch") {
         return TutorialAdvanceCondition::ApproachPressureSwitch;

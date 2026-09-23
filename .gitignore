@@ -2,6 +2,9 @@ build/
 dist/
 build-review/
 dist-review/
+build-tgs/
+dist-tgs/
+dist-tgs-updated/
 .cursor/
 .vscode/
 .vs/

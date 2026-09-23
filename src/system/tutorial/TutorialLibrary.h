@@ -10,6 +10,7 @@ enum class TutorialAdvanceCondition {
     PlayerSwitch,
     Jump,
     PlayerSplitMerge,
+    ReachPressureSwitchSide,
     ApproachPressureSwitch,
     PressPressureSwitch,
     PlayerSplit,

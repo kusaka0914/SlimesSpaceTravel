@@ -43,6 +43,7 @@ class PlayerConfigurationController;
 class GameProgressController;
 class UGCPreviewController;
 class DebugEditorSessionController;
+class TgsExperienceController;
 
 enum class InputDeviceType {
     KeyboardMouse,
@@ -161,6 +162,7 @@ public:
     Player* FindNearestPlayer(Actor* actor) const;
 
     void FinishGame();
+    void ReturnToTitleFromPauseMenu();
     void RestartGame();
     void StartPlayingScene() override;
     void StartUGCStageClearPresentation() override;
@@ -294,6 +296,12 @@ public:
     bool GetIsPlayerSplit() const;
     bool GetIsDebugMode() const { return mIsDebugMode; }
     bool IsReviewBuild() const;
+    bool IsTgsBuild() const;
+    bool IsTgsThankYouScreenVisible() const;
+    bool IsTgsRemainingTimeNoticeVisible() const;
+    bool ShouldBlockInputForTgsPresentation() const;
+    void EndTgsExperienceNow();
+    void SkipTgsExperienceToRemainingTimeNotice();
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
     bool HasSelectedPlayerControlStyle() const;
@@ -339,6 +347,11 @@ private:
     void ProcessActorsInput();
     void UpdateGame();
     void UpdateActors(float deltaTime);
+    void UpdateMouseCursorVisibility();
+    void UpdateTextInputMethodAvailability();
+    void UpdateTgsExperience(float elapsedSeconds);
+    void ResetTgsExperienceAtTitle();
+    int ResolveCurrentPlanetNumberForTgsLog() const;
 
     void ProcessPendingUGCClearCompletion();
 
@@ -393,6 +406,8 @@ private:
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
+    std::unique_ptr<TgsExperienceController> mTgsExperienceController;
+    bool mTgsReturnConfirmPressedPrev = false;
 
     float mHitStopTimer = -1.0f;
     float mGroundNormalRayLength = 5.0f;
@@ -407,6 +422,7 @@ private:
     int mTitleMenuSelection = 0;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
+    std::optional<bool> mWasTextInputMethodAllowed;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;

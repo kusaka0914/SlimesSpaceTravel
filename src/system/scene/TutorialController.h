@@ -30,6 +30,7 @@ public:
         const std::string& tutorialId,
         std::size_t pageIndex);
     void Stop(bool returnToPlaying = true);
+    void ResetForNewSession();
     bool ResumeAfterFocus();
     void TryAdvanceFromConfirm();
 
@@ -73,6 +74,7 @@ private:
     bool TryAdvanceFromCompletedAction();
     void AdvanceAfterCompletedAction();
     const Platform* FindObjectivePressureSwitch() const;
+    bool IsTutorialPlayerOnPressureSwitchSide() const;
     bool IsTutorialPlayerNearPressureSwitch() const;
     bool IsTutorialPlayerPressingPressureSwitch() const;
     TutorialAdvanceCondition GetCurrentAdvanceCondition() const;

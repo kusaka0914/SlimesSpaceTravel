@@ -6,6 +6,7 @@
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
+#include "system/CameraSystem.h"
 #include "system/InputSystem.h"
 #include "system/SceneSystem.h"
 
@@ -335,6 +336,12 @@ bool TalkController::CanStartTalkWithNPC(
     const Player* player) const
 {
     if (!player) {
+        return false;
+    }
+
+    const CameraSystem* cameraSystem =
+        mGame ? mGame->GetCameraSystem() : nullptr;
+    if (cameraSystem && !cameraSystem->AllowsPlayerInput()) {
         return false;
     }
 

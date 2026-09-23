@@ -305,7 +305,8 @@ void UIRenderer::DrawCustomUI()
     const OperationGuideDisplayState operationGuideDisplayState{
         mGame->GetCurrentStageNum(),
         operationPlayer ? operationPlayer->GetCurrentPlanetNum() : 0,
-        isUGCPlaytestActive};
+        isUGCPlaytestActive,
+        isTwoPlayer};
 
     std::optional<bool> canTogglePlayerSplit;
     const auto getOperationGuideOpacity =

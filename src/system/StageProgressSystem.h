@@ -8,9 +8,13 @@ class StageProgressSystem {
 public:
     StageProgressSystem();
     explicit StageProgressSystem(std::filesystem::path savePath);
+    StageProgressSystem(
+        std::filesystem::path savePath,
+        bool isPersistenceEnabled);
 
     bool Load();
     bool Save() const;
+    void Reset();
 
     bool IsStageCleared(int stageNum) const;
     bool MarkStageCleared(int stageNum);
@@ -41,4 +45,5 @@ private:
     bool mHasCompletedEndingRoll = false;
     bool mHasSelectedPlayerControlStyle = false;
     bool mIsAssistControlStyleSelected = false;
+    bool mIsPersistenceEnabled = true;
 };

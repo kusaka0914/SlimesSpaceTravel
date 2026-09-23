@@ -15,17 +15,24 @@ StageProgressSystem::StageProgressSystem()
 
 StageProgressSystem::StageProgressSystem(
     std::filesystem::path savePath)
-    : mSavePath(std::move(savePath))
+    : StageProgressSystem(std::move(savePath), true)
+{
+}
+
+StageProgressSystem::StageProgressSystem(
+    std::filesystem::path savePath,
+    bool isPersistenceEnabled)
+    : mSavePath(std::move(savePath)),
+      mIsPersistenceEnabled(isPersistenceEnabled)
 {
 }
 
 bool StageProgressSystem::Load()
 {
-    mClearedStages.clear();
-    mShownConversationIds.clear();
-    mHasCompletedEndingRoll = false;
-    mHasSelectedPlayerControlStyle = false;
-    mIsAssistControlStyleSelected = false;
+    Reset();
+    if (!mIsPersistenceEnabled) {
+        return true;
+    }
 
     std::ifstream input(mSavePath);
     if (!input.is_open()) {
@@ -84,6 +91,10 @@ bool StageProgressSystem::Load()
 
 bool StageProgressSystem::Save() const
 {
+    if (!mIsPersistenceEnabled) {
+        return true;
+    }
+
     const std::filesystem::path& savePath = mSavePath;
     std::error_code error;
     if (savePath.has_parent_path()) {
@@ -121,6 +132,15 @@ bool StageProgressSystem::Save() const
 
     file << root;
     return true;
+}
+
+void StageProgressSystem::Reset()
+{
+    mClearedStages.clear();
+    mShownConversationIds.clear();
+    mHasCompletedEndingRoll = false;
+    mHasSelectedPlayerControlStyle = false;
+    mIsAssistControlStyleSelected = false;
 }
 
 bool StageProgressSystem::IsStageCleared(int stageNum) const

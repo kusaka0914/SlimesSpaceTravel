@@ -9,6 +9,15 @@ option(
     "Enable debug tools while preserving the normal title-screen startup"
     OFF
 )
+option(
+    GAME_TGS_BUILD
+    "Build the self-contained ten-minute TGS exhibition version"
+    OFF
+)
+
+if (GAME_REVIEW_BUILD AND GAME_TGS_BUILD)
+    message(FATAL_ERROR "GAME_REVIEW_BUILD and GAME_TGS_BUILD cannot both be enabled")
+endif()
 
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
@@ -78,6 +87,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyConfigLoaderTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyGuardGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerInputDeviceRoutingTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
@@ -87,6 +97,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/OperationGuideVisibilityTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerSplitGuardStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TgsExperienceControllerTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
@@ -113,6 +124,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyConfigLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyGuardGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerControlConfigurationState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerInputDeviceRouting.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/performance/FramePerformanceTracker.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UGCModeController.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
@@ -123,6 +135,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerSplitGuardState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tgs/TgsExperienceController.cpp
     )
     target_include_directories(game_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -172,6 +185,7 @@ if (WIN32)
         mfreadwrite
         mfuuid
         ole32
+        imm32
     )
 
     add_custom_target(package_windows
@@ -196,6 +210,21 @@ if (WIN32)
                 -BuildDirectory ${CMAKE_BINARY_DIR}
                 -Configuration $<CONFIG>
                 -OutputDirectory ${CMAKE_CURRENT_SOURCE_DIR}/dist-review
+                -SkipBuild
+            DEPENDS game
+            USES_TERMINAL
+        )
+    endif()
+
+    if (GAME_TGS_BUILD)
+        add_custom_target(package_windows_tgs
+            COMMAND powershell
+                -NoProfile
+                -ExecutionPolicy Bypass
+                -File ${CMAKE_CURRENT_SOURCE_DIR}/scripts/Create-WindowsDistribution.ps1
+                -BuildDirectory ${CMAKE_BINARY_DIR}
+                -Configuration $<CONFIG>
+                -OutputDirectory ${CMAKE_CURRENT_SOURCE_DIR}/dist-tgs
                 -SkipBuild
             DEPENDS game
             USES_TERMINAL
@@ -240,4 +269,7 @@ set_target_properties(editor_restart_helper PROPERTIES
 target_compile_definitions(game PRIVATE SDL_MAIN_HANDLED)
 if (GAME_REVIEW_BUILD)
     target_compile_definitions(game PRIVATE GAME_REVIEW_BUILD=1)
+endif()
+if (GAME_TGS_BUILD)
+    target_compile_definitions(game PRIVATE GAME_TGS_BUILD=1)
 endif()

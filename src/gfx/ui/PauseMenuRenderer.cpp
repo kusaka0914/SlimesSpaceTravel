@@ -51,7 +51,7 @@ void PauseMenuRenderer::Draw()
                 : "エディターを開く";
         }
         if (menuTextIds[i] == "controlStyleText") {
-            label += mGame->IsAssistControlStyle() ? "アシスト" : "スタンダード";
+            label += mGame->IsAssistControlStyle() ? "らくらく" : "こまかく";
         }
         if (isTwoPlayerEntry && mGame->GetIsPlayer2Joined()) {
             label = "ひとりであそぶ";
