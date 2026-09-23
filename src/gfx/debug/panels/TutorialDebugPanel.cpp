@@ -64,6 +64,8 @@ const char* GetAdvanceConditionLabel(
         return "ジャンプして着地したら進む";
     case TutorialAdvanceCondition::PlayerSplitMerge:
         return "分裂または合体が成功したら進む";
+    case TutorialAdvanceCondition::ReachPressureSwitchSide:
+        return "スイッチがある側まで回り込んだら進む";
     case TutorialAdvanceCondition::ApproachPressureSwitch:
         return "スイッチへ近づいたら進む";
     case TutorialAdvanceCondition::PressPressureSwitch:
@@ -439,6 +441,7 @@ void TutorialDebugPanel::DrawPageEditor(
         "プレイヤー切替が成功したら進む",
         "ジャンプして着地したら進む",
         "分裂または合体が成功したら進む",
+        "スイッチがある側まで回り込んだら進む",
         "スイッチへ近づいたら進む",
         "スイッチを押したら進む",
         "分裂状態になったら進む",

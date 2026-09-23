@@ -131,6 +131,11 @@ std::filesystem::path ResolveUGCTutorialStageFile()
     return FindRootDirectory() / "ugc_tutorial_stage.yaml";
 }
 
+std::filesystem::path ResolveTgsPlayLogDirectory()
+{
+    return FindRootDirectory() / "tgs_playlogs";
+}
+
 bool PrepareFromPackagedAssets(
     const std::filesystem::path& assetDataDirectory,
     std::string& outErrorMessage)

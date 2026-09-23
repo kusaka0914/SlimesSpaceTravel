@@ -59,6 +59,7 @@ constexpr float EditorSelectionRed = 1.0f;
 constexpr float EditorSelectionGreen = 0.45f;
 constexpr float EditorSelectionBlue = 0.0f;
 constexpr float EditorSelectionAlpha = 1.0f;
+constexpr int VerticallyInvertedSunStageNumber = 0;
 
 struct EmissiveAppearance {
     glm::vec3 color{1.0f};
@@ -552,7 +553,7 @@ void Renderer3D::RenderShadowMap(
         !mDirectionalShadowMap ||
         !mDirectionalShadowMap->Begin(
             focusPosition,
-            mLightingSettings.sunDirection)) {
+            ResolveSunDirectionForCurrentStage())) {
         return;
     }
 
@@ -666,7 +667,7 @@ void Renderer3D::DrawScene(
             viewMat,
             projMat,
             cameraPos,
-            mLightingSettings.sunDirection);
+            ResolveSunDirectionForCurrentStage());
         glUseProgram(mShader3D->GetShaderProgram());
         SetUniforms(viewMat, projMat, cameraPos);
     }
@@ -898,6 +899,16 @@ void Renderer3D::InitializeRenderModules()
     mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);
 }
 
+glm::vec3 Renderer3D::ResolveSunDirectionForCurrentStage() const
+{
+    glm::vec3 sunDirection = mLightingSettings.sunDirection;
+    if (mGame &&
+        mGame->GetCurrentStageNum() == VerticallyInvertedSunStageNumber) {
+        sunDirection.y = -sunDirection.y;
+    }
+    return sunDirection;
+}
+
 void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
                              const glm::vec3& cameraPos) const
 {
@@ -908,7 +919,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniform3fv(
         mShader3D->GetLocSunDirection(),
         1,
-        glm::value_ptr(mLightingSettings.sunDirection));
+        glm::value_ptr(ResolveSunDirectionForCurrentStage()));
     glUniform3fv(
         mShader3D->GetLocSunColor(),
         1,

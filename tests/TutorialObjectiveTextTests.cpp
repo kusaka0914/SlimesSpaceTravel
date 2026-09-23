@@ -89,6 +89,10 @@ void LibraryLoadsObjectiveTextAndActionConditions()
             << "tutorials:\n"
             << "  - id: objective_test\n"
             << "    pages:\n"
+            << "      - id: reach_side\n"
+            << "        objectiveText: Reach the far side\n"
+            << "        objectivePlatformId: platform_2\n"
+            << "        advance: reachPressureSwitchSide\n"
             << "      - id: approach\n"
             << "        text: Find switch\n"
             << "        controllerObjectiveText: Controller goal\n"
@@ -108,28 +112,32 @@ void LibraryLoadsObjectiveTextAndActionConditions()
         library.Find("objective_test");
     ExpectTrue(definition != nullptr, "loaded tutorial definition");
     ExpectEqual(
-        static_cast<std::size_t>(2),
+        static_cast<std::size_t>(3),
         definition->pages.size(),
         "loaded objective page count");
     ExpectEqual(
-        static_cast<int>(TutorialAdvanceCondition::ApproachPressureSwitch),
+        static_cast<int>(TutorialAdvanceCondition::ReachPressureSwitchSide),
         static_cast<int>(definition->pages[0].advanceCondition),
+        "reach pressure switch side condition");
+    ExpectEqual(
+        static_cast<int>(TutorialAdvanceCondition::ApproachPressureSwitch),
+        static_cast<int>(definition->pages[1].advanceCondition),
         "approach pressure switch condition");
     ExpectEqual(
         std::string("Controller goal"),
-        definition->pages[0].ResolveObjectiveText(true),
+        definition->pages[1].ResolveObjectiveText(true),
         "loaded controller objective");
     ExpectEqual(
         std::string("platform_2"),
-        definition->pages[0].objectivePlatformId,
+        definition->pages[1].objectivePlatformId,
         "loaded objective platform id");
     ExpectEqual(
         static_cast<int>(TutorialAdvanceCondition::PressPressureSwitch),
-        static_cast<int>(definition->pages[1].advanceCondition),
+        static_cast<int>(definition->pages[2].advanceCondition),
         "press pressure switch condition");
     ExpectEqual(
         std::string("Common goal"),
-        definition->pages[1].ResolveObjectiveText(false),
+        definition->pages[2].ResolveObjectiveText(false),
         "loaded common objective");
 
     ExpectEqual(

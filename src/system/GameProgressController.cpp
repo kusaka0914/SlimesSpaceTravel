@@ -3,6 +3,7 @@
 #include "actor/NPC.h"
 #include "system/GameWorld.h"
 #include "system/PhysicsSystem.h"
+#include "system/UserDataPaths.h"
 
 namespace {
 constexpr int firstMainStageNumber = 1;
@@ -20,10 +21,14 @@ std::string BuildCompletedTutorialId(const std::string& tutorialId)
 GameProgressController::GameProgressController(
     GameWorld& world,
     PhysicsSystem& physicsSystem,
-    const std::string& currentStageYamlPath)
+    const std::string& currentStageYamlPath,
+    bool isPersistenceEnabled)
     : mWorld(world),
       mPhysicsSystem(physicsSystem),
-      mCurrentStageYamlPath(currentStageYamlPath)
+      mCurrentStageYamlPath(currentStageYamlPath),
+      mProgress(
+          UserDataPaths::ResolveStageProgressFile(),
+          isPersistenceEnabled)
 {
 }
 
@@ -35,6 +40,11 @@ bool GameProgressController::Load()
 bool GameProgressController::Save() const
 {
     return mProgress.Save();
+}
+
+void GameProgressController::ResetForNewSession()
+{
+    mProgress.Reset();
 }
 
 bool GameProgressController::HasSelectedPlayerControlStyle() const

@@ -15,6 +15,8 @@ public:
     void DrawCredits();
     void DrawGameOver();
     void DrawUGCClearResult();
+    void DrawTgsThankYou();
+    void DrawTgsRemainingTimeNotice();
 
 private:
     void DrawStorybookPage(

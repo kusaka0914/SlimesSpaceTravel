@@ -101,6 +101,36 @@ void UGCPlaytestsShowAllUnlockedActions()
         ShouldShowOperationGuideElement("buttonY", ugcPlaytest),
         "combat guide in UGC playtest");
 }
+
+void TwoPlayerModeHidesSoloConfigurationGuides()
+{
+    OperationGuideDisplayState displayState = AtLocation(2, 0);
+    displayState.isTwoPlayerMode = true;
+
+    ExpectFalse(
+        ShouldShowOperationGuideElement(
+            "buttonB_copy_copy2",
+            displayState),
+        "player switch button in two player mode");
+    ExpectFalse(
+        ShouldShowOperationGuideElement(
+            "buttonTextB_copy2_copy2",
+            displayState),
+        "player switch text in two player mode");
+    ExpectFalse(
+        ShouldShowOperationGuideElement(
+            "buttonB_copy_copy2_copy",
+            displayState),
+        "split button in two player mode");
+    ExpectFalse(
+        ShouldShowOperationGuideElement(
+            "buttonTextB_copy2_copy2_copy",
+            displayState),
+        "split text in two player mode");
+    ExpectTrue(
+        ShouldShowOperationGuideElement("buttonA", displayState),
+        "unrelated guide in two player mode");
+}
 }
 
 void RegisterOperationGuideVisibilityTests(
@@ -121,4 +151,7 @@ void RegisterOperationGuideVisibilityTests(
     tests.emplace_back(
         "OperationGuideVisibility.UGCShowsAll",
         UGCPlaytestsShowAllUnlockedActions);
+    tests.emplace_back(
+        "OperationGuideVisibility.TwoPlayerModeHidesSoloConfigurationGuides",
+        TwoPlayerModeHidesSoloConfigurationGuides);
 }

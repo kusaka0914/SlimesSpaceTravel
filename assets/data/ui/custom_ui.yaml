@@ -488,6 +488,53 @@ elements:
       - 0
       - 1
   - screen: battleStyleSelection
+    id: easyRecommendationText
+    name: ラクラクおすすめ文言
+    type: text
+    visibleByDefault: false
+    centerBased: true
+    flipVertical: true
+    zOrder: 5
+    rotationDegrees: 0
+    posRatio:
+      - 0.3765
+      - 0.215
+    sizeRatio:
+      - 0.2
+      - 0.04
+    textScaleRatio: 0.00016
+    text: はじめての人におすすめ！
+    texture: ""
+    usesInputDeviceVariants: false
+    keyboardText: ""
+    gameControllerText: ""
+    keyboardModifierText: ""
+    gameControllerModifierText: ""
+    keyboardTexture: ""
+    gameControllerTexture: ""
+    keyboardFlipVertical: true
+    gameControllerFlipVertical: true
+    shadowEnabled: false
+    shadowOffsetXRatio: 0.0015
+    shadowOffsetYRatio: 0.0015
+    outlineEnabled: true
+    outlineWidthRatio: 0.00065
+    color:
+      - 1
+      - 0.72
+      - 0.08
+      - 1
+    shadowColor:
+      - 0
+      - 0
+      - 0
+      - 0.65
+    outlineColor:
+      - 0
+      - 0
+      - 0
+      - 1
+  - screen: battleStyleSelection
     id: easySelection
     name: ラクラク選択表示
     type: panel

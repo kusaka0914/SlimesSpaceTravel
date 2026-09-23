@@ -76,7 +76,9 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
     DrawSceneTexture("state", "talkBgTexture", "textBg");
 
     const auto talkTextInfo = mUILoadSystem->GetTextInfo("state", "talkText");
-    if (!talkTextInfo) {
+    const auto talkBgTextureInfo =
+        mUILoadSystem->GetTextureInfo("state", "talkBgTexture");
+    if (!talkTextInfo || !talkBgTextureInfo) {
         return;
     }
 
@@ -110,19 +112,20 @@ void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
             texts[index],
             talkTextInfo->centerBased,
             talkTextInfo->rotationDegrees);
-        return;
+    } else {
+        DrawTextForElement(
+            "state",
+            "talkText",
+            x,
+            y,
+            scale,
+            texts[index],
+            talkTextInfo->centerBased,
+            talkTextColor,
+            talkTextInfo->rotationDegrees);
     }
 
-    DrawTextForElement(
-        "state",
-        "talkText",
-        x,
-        y,
-        scale,
-        texts[index],
-        talkTextInfo->centerBased,
-        talkTextColor,
-        talkTextInfo->rotationDegrees);
+    DrawTalkAdvancePrompt();
 }
 
 void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
@@ -212,19 +215,85 @@ void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
             textInfo->texts[talkUIIndex],
             textInfo->centerBased,
             textInfo->rotationDegrees);
+    } else {
+        DrawTextForElement(
+            screen,
+            id,
+            mFbWidth * textInfo->xRatio,
+            mFbHeight * textInfo->yRatio,
+            mFbWidth * textInfo->scaleRatio,
+            textInfo->texts[talkUIIndex],
+            textInfo->centerBased,
+            talkTextColor,
+            textInfo->rotationDegrees);
+    }
+
+    DrawTalkAdvancePrompt();
+}
+
+void UIRenderer::DrawTalkAdvancePrompt()
+{
+    SceneSystem* sceneSystem = mGame->GetSceneSystem();
+    if (!sceneSystem ||
+        sceneSystem->IsWaitingForTutorialPlayerAction()) {
         return;
     }
 
-    DrawTextForElement(
-        screen,
-        id,
-        mFbWidth * textInfo->xRatio,
-        mFbHeight * textInfo->yRatio,
-        mFbWidth * textInfo->scaleRatio,
-        textInfo->texts[talkUIIndex],
-        textInfo->centerBased,
-        talkTextColor,
-        textInfo->rotationDegrees);
+    const UILoadSystem::TextureInfo* promptTextureInfo =
+        mUILoadSystem->GetTextureInfo("state", "talkAdvancePrompt");
+    if (!promptTextureInfo) {
+        return;
+    }
+
+    const bool usesController =
+        mGame->IsGameControllerConnected() &&
+        mGame->GetLastUsedInputDevice() ==
+            InputDeviceType::GameController;
+    const std::string texturePath =
+        usesController
+            ? "textures/Inputs/switch_button_a.png"
+            : "textures/Inputs/Keyboard/keyboard_space.png";
+    if (!RegisterCustomUITexture(texturePath)) {
+        return;
+    }
+
+    const GLuint textureHandle =
+        GetCustomUITextureHandle(texturePath);
+    if (textureHandle == 0) {
+        return;
+    }
+
+    const float iconX = mFbWidth * promptTextureInfo->xRatio;
+    const float iconY = mFbHeight * promptTextureInfo->yRatio;
+    const float iconWidth =
+        mFbWidth * promptTextureInfo->widthRatio;
+    const float iconHeight =
+        mFbHeight * promptTextureInfo->heightRatio;
+
+    constexpr glm::vec4 talkPromptColor{
+        35.0f / 255.0f,
+        35.0f / 255.0f,
+        42.0f / 255.0f,
+        0.9f};
+    DrawTextureHandle(
+        iconX,
+        iconY,
+        iconWidth,
+        iconHeight,
+        textureHandle,
+        false,
+        promptTextureInfo->rotationDegrees,
+        1.0f,
+        talkPromptColor);
+    RecordRenderedUIElement(
+        RenderedUIElementSource::CodeBoundTexture,
+        "state",
+        "talkAdvancePrompt",
+        glm::vec2(
+            iconX + iconWidth * 0.5f,
+            iconY + iconHeight * 0.5f),
+        glm::vec2(iconWidth, iconHeight),
+        promptTextureInfo->rotationDegrees);
 }
 
 bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)
@@ -956,7 +1025,8 @@ void UIRenderer::DrawTextureHandle(
     GLuint textureHandle,
     bool flipVertical,
     float rotationDegrees,
-    float opacity)
+    float opacity,
+    glm::vec4 tint)
 {
     if (textureHandle == 0) {
         return;
@@ -979,9 +1049,11 @@ void UIRenderer::DrawTextureHandle(
     glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
     glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
     glUniform1i(mUIShader->GetLocUseTexture(), 1);
-    glUniform4f(
-        mUIShader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f,
-        std::clamp(opacity, 0.0f, 1.0f));
+    tint.a *= std::clamp(opacity, 0.0f, 1.0f);
+    glUniform4fv(
+        mUIShader->GetLocObjectColor(),
+        1,
+        glm::value_ptr(tint));
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
