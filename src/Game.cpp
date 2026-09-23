@@ -36,6 +36,7 @@
 #include "system/UserDataPaths.h"
 #include "system/UGCModeController.h"
 #include "system/sequence/SequenceSystem.h"
+#include "system/tgs/TgsExperienceController.h"
 
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
@@ -71,6 +72,13 @@ std::string BuildStageIntroCinematicId(int stageNum)
     return "enter_stage" + std::to_string(stageNum);
 }
 
+std::string ResolveControlStyleLogName(PlayerControlStyle controlStyle)
+{
+    return controlStyle == PlayerControlStyle::Assist
+        ? "assist"
+        : "standard";
+}
+
 }
 
 Game::Game()
@@ -99,11 +107,13 @@ bool Game::Initialize(
         return false;
     }
 
-    std::string userDataErrorMessage;
-    if (!UserDataPaths::PrepareFromPackagedAssets(
-            "../assets/data",
-            userDataErrorMessage)) {
-        std::cerr << userDataErrorMessage << '\n';
+    if (!IsTgsBuild()) {
+        std::string userDataErrorMessage;
+        if (!UserDataPaths::PrepareFromPackagedAssets(
+                "../assets/data",
+                userDataErrorMessage)) {
+            std::cerr << userDataErrorMessage << '\n';
+        }
     }
 
     if (!CreateGameSystems()) {
@@ -191,6 +201,13 @@ void Game::InitializeGameController()
 
 bool Game::CreateGameSystems()
 {
+    if (IsTgsBuild()) {
+        mTgsExperienceController =
+            std::make_unique<TgsExperienceController>(
+                TgsExperienceConfig{},
+                UserDataPaths::ResolveTgsPlayLogDirectory());
+    }
+
     mUGCModeController = std::make_unique<UGCModeController>(*this);
     mUGCPreviewController = std::make_unique<UGCPreviewController>(this);
     mWorld = std::make_unique<GameWorld>();
@@ -226,7 +243,8 @@ bool Game::CreateGameSystems()
     mProgressController = std::make_unique<GameProgressController>(
         *mWorld,
         *mPhysicsSystem,
-        mStageFlowController->GetCurrentStageYamlPath());
+        mStageFlowController->GetCurrentStageYamlPath(),
+        !IsTgsBuild());
     mProgressController->Load();
     if (mProgressController->HasSelectedPlayerControlStyle()) {
         mPlayerControlStyle =
@@ -432,6 +450,22 @@ void Game::ProcessInput()
 
     if (mInputSystem) {
         mInputSystem->CaptureFrameInput();
+        const bool isTgsReturnConfirmPressed =
+            mInputSystem->IsKeyPressed(GLFW_KEY_ENTER) ||
+            mInputSystem->IsKeyPressed(GLFW_KEY_KP_ENTER) ||
+            mInputSystem->IsKeyPressed(GLFW_KEY_SPACE);
+        const bool canReturnFromTgsThankYou =
+            IsTgsThankYouScreenVisible() && mSceneSystem &&
+            mSceneSystem->GetFadeTimer() <= -1.0f &&
+            !mSceneSystem->IsFadingOut();
+        if (canReturnFromTgsThankYou && isTgsReturnConfirmPressed &&
+            !mTgsReturnConfirmPressedPrev) {
+            mTgsExperienceController->RequestReturnToTitle();
+        }
+        mTgsReturnConfirmPressedPrev = isTgsReturnConfirmPressed;
+        if (ShouldBlockInputForTgsPresentation()) {
+            return;
+        }
         mInputSystem->ProcessGameInput();
     }
 
@@ -631,9 +665,14 @@ void Game::UpdateGame()
     CheckGameControllerConnected();
 
     const double currentTime = glfwGetTime();
-    const float deltaTime = std::min(0.04f, static_cast<float>(currentTime - mLastTime));
+    const float elapsedSeconds = std::max(
+        0.0f,
+        static_cast<float>(currentTime - mLastTime));
+    const float deltaTime = std::min(0.04f, elapsedSeconds);
     mLastTime = currentTime;
     mLastDeltaTime = deltaTime;
+
+    UpdateTgsExperience(elapsedSeconds);
 
     ProcessPendingUGCClearCompletion();
 
@@ -668,7 +707,8 @@ void Game::UpdateGame()
     bool cameraUpdated = false;
     const bool shouldUpdateEntireWorld =
         (mSceneSystem->CanUpdateWorld() || mSceneSystem->IsStageClear()) &&
-        !GetIsUGCClearResultShowing();
+        !GetIsUGCClearResultShowing() &&
+        !ShouldBlockInputForTgsPresentation();
     const bool shouldUpdateTutorialPlayer =
         mSceneSystem->IsWaitingForTutorialPlayerJump();
 
@@ -700,6 +740,83 @@ void Game::UpdateGame()
         mCameraSystem->Update(deltaTime);
     }
 
+}
+
+void Game::UpdateTgsExperience(float elapsedSeconds)
+{
+    if (!mTgsExperienceController || !mSceneSystem) {
+        return;
+    }
+
+    if (mTgsExperienceController->GetPhase() ==
+            TgsExperienceController::Phase::WaitingForSession &&
+        mSceneSystem->IsPlaying() &&
+        mSceneSystem->GetFadeTimer() <= -1.0f &&
+        !mSceneSystem->IsFadingOut()) {
+        mTgsExperienceController->StartSession(
+            GetIsPlayer2Joined() ? 2 : 1,
+            ResolveControlStyleLogName(mPlayerControlStyle));
+    }
+
+    if (mTgsExperienceController->IsPlaying()) {
+        mTgsExperienceController->UpdateProgress(
+            GetCurrentStageNum(),
+            ResolveCurrentPlanetNumberForTgsLog(),
+            GetIsPlayer2Joined() ? 2 : 1,
+            ResolveControlStyleLogName(mPlayerControlStyle));
+    }
+    const bool isSceneTransitionActive =
+        mSceneSystem->GetFadeTimer() > -1.0f ||
+        mSceneSystem->IsFadingOut();
+    const bool shouldPauseThankYouTimer =
+        mTgsExperienceController->IsThankYouScreenVisible() &&
+        isSceneTransitionActive;
+    if (!shouldPauseThankYouTimer) {
+        mTgsExperienceController->Update(elapsedSeconds);
+    }
+
+    if (mTgsExperienceController->IsEndingSession()) {
+        mTgsExperienceController->SaveSessionLog();
+        ClosePauseMenu();
+        mSceneSystem->RequestFadeAction([this]() {
+            mTgsExperienceController->ShowThankYouScreen();
+        });
+        return;
+    }
+
+    if (mTgsExperienceController->ShouldReturnToTitle()) {
+        mSceneSystem->RequestFadeAction([this]() {
+            ResetTgsExperienceAtTitle();
+        });
+    }
+}
+
+void Game::ResetTgsExperienceAtTitle()
+{
+    ClosePauseMenu();
+    if (mSequenceSystem) {
+        mSequenceSystem->Stop(true);
+    }
+    if (mPlayerConfigurationController) {
+        mPlayerConfigurationController->ReturnToSinglePlayer();
+        mPlayerConfigurationController->Reset();
+    }
+    if (mProgressController) {
+        mProgressController->ResetForNewSession();
+    }
+    mSceneSystem->ResetTutorialsForNewSession();
+
+    mPlayerControlStyle = PlayerControlStyle::Standard;
+    mTitleMenuSelection = 0;
+    mSceneSystem->EnterTitleAtFadeMidpoint();
+    mTgsExperienceController->ResetForNextSession();
+    mInputSystem->SuppressOneShotInputUntilReleased();
+}
+
+int Game::ResolveCurrentPlanetNumberForTgsLog() const
+{
+    const Player* mainPlayer = GetMainPlayer();
+    return mainPlayer ? mainPlayer->GetCurrentPlanetNum() : -1;
 }
 
 void Game::UpdateActors(float deltaTime)
@@ -754,6 +871,48 @@ void Game::UpdateTextInputMethodAvailability()
 
     mWasTextInputMethodAllowed = shouldAllowTextInput;
 #endif
+}
+
+bool Game::IsTgsBuild() const
+{
+#ifdef GAME_TGS_BUILD
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool Game::IsTgsThankYouScreenVisible() const
+{
+    return mTgsExperienceController &&
+           mTgsExperienceController->IsThankYouScreenVisible();
+}
+
+bool Game::IsTgsRemainingTimeNoticeVisible() const
+{
+    return mTgsExperienceController &&
+           mTgsExperienceController
+               ->IsRemainingTimeNoticeVisible();
+}
+
+bool Game::ShouldBlockInputForTgsPresentation() const
+{
+    return mTgsExperienceController &&
+           mTgsExperienceController->ShouldBlockGameInput();
+}
+
+void Game::SkipTgsExperienceToRemainingTimeNotice()
+{
+    if (mTgsExperienceController) {
+        mTgsExperienceController->SkipToRemainingTimeNotice();
+    }
+}
+
+void Game::EndTgsExperienceNow()
+{
+    if (mTgsExperienceController) {
+        mTgsExperienceController->EndSessionNow();
+    }
 }
 
 void Game::SetUGCPreviewRenderSize(int width, int height)
@@ -1254,7 +1413,8 @@ void Game::OpenUGCWorkBrowser()
 
 void Game::MoveTitleMenuSelection(int delta)
 {
-    if (!mSceneSystem || !mSceneSystem->IsTitle() || delta == 0) {
+    if (!mSceneSystem || !mSceneSystem->IsTitle() ||
+        mSceneSystem->IsTransitionActive() || delta == 0) {
         return;
     }
 
@@ -1266,7 +1426,8 @@ void Game::MoveTitleMenuSelection(int delta)
 
 void Game::ExecuteTitleMenuSelection()
 {
-    if (!mSceneSystem || !mSceneSystem->IsTitle()) {
+    if (!mSceneSystem || !mSceneSystem->IsTitle() ||
+        mSceneSystem->IsTransitionActive()) {
         return;
     }
 
@@ -1508,6 +1669,9 @@ void Game::SetStageCleared(int stageNum, bool isCleared)
     if (mProgressController) {
         mProgressController->SetStageCleared(stageNum, isCleared);
     }
+    if (isCleared && mTgsExperienceController) {
+        mTgsExperienceController->RecordStageCleared(stageNum);
+    }
 }
 
 bool Game::HasCompletedTutorial(const std::string& tutorialId) const
@@ -1614,6 +1778,9 @@ void Game::OnLanded()
 
 void Game::OnPlayerDied()
 {
+    if (mTgsExperienceController) {
+        mTgsExperienceController->RecordPlayerDeath();
+    }
     mSceneSystem->OnPlayerDied();
 }
 
@@ -1643,6 +1810,42 @@ void Game::FinishGame()
         mProgressController->Save();
     }
     glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+}
+
+void Game::ReturnToTitleFromPauseMenu()
+{
+    ClosePauseMenu();
+    if (mTgsExperienceController) {
+        mTgsExperienceController->SaveSessionLogBeforeTitleReturn();
+    }
+    if (mProgressController) {
+        mProgressController->Save();
+    }
+
+    if (GetIsUGCMode()) {
+        ExitUGCMode();
+        return;
+    }
+
+    mSceneSystem->RequestFadeAction([this]() {
+        if (mTgsExperienceController) {
+            ResetTgsExperienceAtTitle();
+            return;
+        }
+
+        if (mSequenceSystem) {
+            mSequenceSystem->Stop(true);
+        }
+        if (mPlayerConfigurationController) {
+            mPlayerConfigurationController->ReturnToSinglePlayer();
+            mPlayerConfigurationController->Reset();
+        }
+
+        mTitleMenuSelection = 0;
+        mSceneSystem->EnterTitleAtFadeMidpoint();
+        mAudioSystem->TryChangeBGM();
+        mInputSystem->SuppressOneShotInputUntilReleased();
+    });
 }
 
 void Game::RestartGame()

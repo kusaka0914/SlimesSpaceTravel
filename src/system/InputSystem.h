@@ -11,6 +11,7 @@ public:
 
     void CaptureFrameInput();
     void ProcessGameInput();
+    void SuppressOneShotInputUntilReleased();
     bool IsMovementInputPressedForPlayer(const Player* player) const;
     bool IsKeyPressed(int key) const;
     bool IsMouseButtonPressed(int button) const;
@@ -22,11 +23,12 @@ public:
     double GetCursorY() const { return mSnapshot.cursorY; }
 
 private:
-    void SuppressOneShotInputUntilReleased();
     void SuppressUGCPlayShortcutUntilReleased();
     void UpdateLastUsedInputDevice();
+    bool ProcessTgsEndShortcutInput();
     void ProcessPauseToggleInput();
     void ProcessPauseMenuInput();
+    void SuppressAllPlayerJumpInputUntilReleased();
     void ProcessDebugReloadInput();
     void ProcessPlayerJoinInput();
     void ProcessPlayerSplitInput();
@@ -61,6 +63,8 @@ private:
     bool mPPressedPrev = false;
     bool mLPressedPrev = false;
     bool mQPressedPrev = false;
+    bool mTgsEndShortcutPressedPrev = false;
+    bool mTgsNoticeShortcutPressedPrev = false;
     bool mPlayerSplitPressedPrev = false;
     bool mPlayerSwitchPressedPrev = false;
     bool mBattleStyleDirectionPressedPrev = false;

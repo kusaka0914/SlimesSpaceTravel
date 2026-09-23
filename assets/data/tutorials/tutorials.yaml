@@ -2095,7 +2095,7 @@ tutorials:
         advance: confirm
       - id: find_switch
         text: "分身も同様に動かすことができるから\nまずはスイッチを探し、乗ってみよう！"
-        objectiveText: どこかに押せるスイッチがないか、探してみよう
+        objectiveText: 惑星の側面を通って、見えない向こう側まで回り込もう！
         objectivePlatformId: platform_2
         ruby:
           common:
@@ -2130,6 +2130,11 @@ tutorials:
               reading: の
             - text: ってみよう！
               ruby: false
+        advance: reachPressureSwitchSide
+      - id: search_switch
+        text: ""
+        objectiveText: スイッチを探して、上に乗ってみよう！
+        objectivePlatformId: platform_2
         advance: approachPressureSwitch
       - id: press_switch
         text: ""

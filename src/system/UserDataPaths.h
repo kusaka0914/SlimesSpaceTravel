@@ -10,6 +10,7 @@ std::filesystem::path ResolveStageProgressFile();
 std::filesystem::path ResolveUGCWorkingStageFile();
 std::filesystem::path ResolveUGCSavedWorkDirectory();
 std::filesystem::path ResolveUGCTutorialStageFile();
+std::filesystem::path ResolveTgsPlayLogDirectory();
 
 bool PrepareFromPackagedAssets(
     const std::filesystem::path& assetDataDirectory,

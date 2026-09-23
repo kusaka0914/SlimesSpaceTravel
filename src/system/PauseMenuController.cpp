@@ -67,7 +67,7 @@ void PauseMenuController::ExecuteSelectedItem(Game& game)
         break;
 
     case 5:
-        game.FinishGame();
+        game.ReturnToTitleFromPauseMenu();
         break;
 
     default:

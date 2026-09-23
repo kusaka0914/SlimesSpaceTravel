@@ -295,11 +295,17 @@ void InputSystem::ProcessGameInput()
     }
 
     if (mGame->IsEditorKeyboardInputCaptured()) {
+        UpdateLastUsedInputDevice();
+        ProcessUGCEditorCursorInput();
         SuppressOneShotInputUntilReleased();
         return;
     }
 
     UpdateLastUsedInputDevice();
+
+    if (ProcessTgsEndShortcutInput()) {
+        return;
+    }
 
     if (mGame->GetIsUGCClearResultShowing()) {
         ProcessUGCClearResultInput();
@@ -357,6 +363,8 @@ void InputSystem::SuppressOneShotInputUntilReleased()
     mPPressedPrev = true;
     mLPressedPrev = true;
     mQPressedPrev = true;
+    mTgsEndShortcutPressedPrev = true;
+    mTgsNoticeShortcutPressedPrev = true;
     mPlayerSplitPressedPrev = true;
     mPlayerSwitchPressedPrev = true;
     mBattleStyleDirectionPressedPrev = true;
@@ -778,15 +786,20 @@ void InputSystem::ProcessPauseToggleInput()
 
 void InputSystem::ProcessPauseMenuInput()
 {
+    constexpr Sint16 directionThreshold = 16000;
     const bool upPressed =
         IsKeyPressed(GLFW_KEY_UP) ||
         IsKeyPressed(GLFW_KEY_W) ||
-        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) < -directionThreshold;
 
     const bool downPressed =
         IsKeyPressed(GLFW_KEY_DOWN) ||
         IsKeyPressed(GLFW_KEY_S) ||
-        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+        IsAnyControllerButtonPressed(SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold ||
+        GetControllerAxis(2, SDL_CONTROLLER_AXIS_LEFTY) > directionThreshold;
 
     const bool confirmPressed =
         IsKeyPressed(GLFW_KEY_SPACE) ||
@@ -803,11 +816,21 @@ void InputSystem::ProcessPauseMenuInput()
 
     if (confirmPressed && !mPauseMenuConfirmPressedPrev) {
         mGame->ExecutePauseMenuItem();
+        SuppressAllPlayerJumpInputUntilReleased();
     }
 
     mPauseMenuUpPressedPrev = upPressed;
     mPauseMenuDownPressedPrev = downPressed;
     mPauseMenuConfirmPressedPrev = confirmPressed;
+}
+
+void InputSystem::SuppressAllPlayerJumpInputUntilReleased()
+{
+    for (Player* player : mGame->GetPlayers()) {
+        if (player) {
+            player->SuppressJumpUntilReleased();
+        }
+    }
 }
 
 void InputSystem::ProcessDebugReloadInput()
@@ -1025,6 +1048,34 @@ bool InputSystem::ProcessSceneConfirmInput(bool allowsSceneAction)
     mControllerConfirmPressedPrev = controllerConfirmPressed;
     mKeyboardConfirmPressedPrev = keyboardConfirmPressed;
     return didExecuteSceneConfirm;
+}
+
+bool InputSystem::ProcessTgsEndShortcutInput()
+{
+    const bool isShiftPressed =
+        IsKeyPressed(GLFW_KEY_LEFT_SHIFT) ||
+        IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
+    const bool isQPressed = IsKeyPressed(GLFW_KEY_Q);
+    const bool isShortcutPressed =
+        mGame->IsTgsBuild() && isShiftPressed && isQPressed;
+    const bool isNoticeShortcutPressed =
+        mGame->IsTgsBuild() && isShiftPressed &&
+        IsKeyPressed(GLFW_KEY_W);
+
+    if (isShortcutPressed && !mTgsEndShortcutPressedPrev) {
+        mGame->EndTgsExperienceNow();
+    }
+
+    mTgsEndShortcutPressedPrev = isShortcutPressed;
+    if (isNoticeShortcutPressed && !mTgsNoticeShortcutPressedPrev) {
+        mGame->SkipTgsExperienceToRemainingTimeNotice();
+    }
+    mTgsNoticeShortcutPressedPrev = isNoticeShortcutPressed;
+    if (isShortcutPressed) {
+        // Q 単体の2P参加判定へ、終了ショートカットを流さない。
+        mQPressedPrev = true;
+    }
+    return isShortcutPressed || isNoticeShortcutPressed;
 }
 
 void InputSystem::ProcessDebugEditorToggleInput()

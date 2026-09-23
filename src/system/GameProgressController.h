@@ -15,10 +15,12 @@ public:
     GameProgressController(
         GameWorld& world,
         PhysicsSystem& physicsSystem,
-        const std::string& currentStageYamlPath);
+        const std::string& currentStageYamlPath,
+        bool isPersistenceEnabled = true);
 
     bool Load();
     bool Save() const;
+    void ResetForNewSession();
 
     bool HasSelectedPlayerControlStyle() const;
     PlayerControlStyle GetSelectedPlayerControlStyle() const;

@@ -268,6 +268,10 @@ void SceneSystem::StartEnding()
 
 void SceneSystem::StartBattleStyleSelection()
 {
+    if (IsTransitionActive()) {
+        return;
+    }
+
     if (mGame->HasSelectedPlayerControlStyle()) {
 
         RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
@@ -310,6 +314,13 @@ void SceneSystem::DebugEnterTitle()
 void SceneSystem::EnterTitleAtFadeMidpoint()
 {
     ApplyDebugSceneState(GameProgressState::SceneState::Title);
+}
+
+void SceneSystem::ResetTutorialsForNewSession()
+{
+    if (mTutorialController) {
+        mTutorialController->ResetForNewSession();
+    }
 }
 
 void SceneSystem::DebugEnterOpening()

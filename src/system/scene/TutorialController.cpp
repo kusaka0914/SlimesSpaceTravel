@@ -139,6 +139,13 @@ void TutorialController::Stop(bool returnToPlaying)
     }
 }
 
+void TutorialController::ResetForNewSession()
+{
+    Stop(false);
+    mShownOnceTutorialIds.clear();
+    mCompletedTutorialIds.clear();
+}
+
 bool TutorialController::ResumeAfterFocus()
 {
     if (!HasActiveTutorial() || !mGameProgressState) {
@@ -474,6 +481,13 @@ bool TutorialController::TryAdvanceFromCompletedAction()
         AdvanceAfterCompletedAction();
         return true;
 
+    case TutorialAdvanceCondition::ReachPressureSwitchSide:
+        if (!IsTutorialPlayerOnPressureSwitchSide()) {
+            return false;
+        }
+        AdvanceAfterCompletedAction();
+        return true;
+
     case TutorialAdvanceCondition::ApproachPressureSwitch:
         if (!IsTutorialPlayerNearPressureSwitch()) {
             return false;
@@ -527,6 +541,39 @@ const Platform* TutorialController::FindObjectivePressureSwitch() const
         }
     }
     return nullptr;
+}
+
+bool TutorialController::IsTutorialPlayerOnPressureSwitchSide() const
+{
+    const Player* player =
+        mGame ? mGame->GetControlledPlayer() : nullptr;
+    if (!player) {
+        player = mTutorialPlayer;
+    }
+    const Platform* pressureSwitch =
+        FindObjectivePressureSwitch();
+    const Planet* planet = player ? player->GetCurrentPlanet() : nullptr;
+    if (!player || !pressureSwitch || !planet) {
+        return false;
+    }
+
+    const glm::vec3 playerFromPlanet =
+        player->GetPos() - planet->GetPos();
+    const glm::vec3 switchFromPlanet =
+        pressureSwitch->GetPos() - planet->GetPos();
+    constexpr float minimumDirectionLengthSquared = 0.0001f;
+    if (glm::dot(playerFromPlanet, playerFromPlanet) <
+            minimumDirectionLengthSquared ||
+        glm::dot(switchFromPlanet, switchFromPlanet) <
+            minimumDirectionLengthSquared) {
+        return false;
+    }
+
+    const glm::vec3 playerDirection =
+        glm::normalize(playerFromPlanet);
+    const glm::vec3 switchDirection =
+        glm::normalize(switchFromPlanet);
+    return glm::dot(playerDirection, switchDirection) >= 0.0f;
 }
 
 bool TutorialController::IsTutorialPlayerNearPressureSwitch() const

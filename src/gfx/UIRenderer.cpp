@@ -110,6 +110,7 @@ void UIRenderer::RegisterUITextures()
     RegisterTexture(basePath + "skyBox.png", "skyBox");
     RegisterTexture(basePath + "jewel.png", "jewel");
     RegisterTexture(basePath + "guard.png", "guard");
+    RegisterTexture(basePath + "tgs/QR_540300.png", "tgsQrCode");
 }
 
 void UIRenderer::DrawGameContent()
@@ -131,6 +132,14 @@ void UIRenderer::DrawGameContent()
     const bool isStartCinematicPlaying =
         sequenceSystem &&
         sequenceSystem->IsCinematicChainPlaying();
+
+    if (mGame->IsTgsThankYouScreenVisible()) {
+        mSceneUIRenderer->DrawTgsThankYou();
+        mStateUIRenderer->DrawTransitionUI();
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        return;
+    }
 
     if (!isStartCinematicPlaying && sceneSystem->IsTitle()) {
         mSceneUIRenderer->DrawTitle();
@@ -198,6 +207,10 @@ void UIRenderer::DrawGameContent()
         mPauseMenuRenderer->Draw();
     }
 
+    if (mGame->IsTgsRemainingTimeNoticeVisible()) {
+        mSceneUIRenderer->DrawTgsRemainingTimeNotice();
+    }
+
 
 
     mStateUIRenderer->DrawTransitionUI();
@@ -215,6 +228,18 @@ void UIRenderer::DrawDebugEditor(
         return;
     }
 
+    const bool isUGCEditor =
+        mGame->GetIsUGCMode() &&
+        !mGame->GetIsUGCDebugEditorShowing();
+    ImGuiIO& io = ImGui::GetIO();
+    const bool wasGamepadNavigationEnabled =
+        (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0;
+    if (isUGCEditor) {
+        // Aはカーソル位置のクリックとして送信するため、
+        // 同じ入力で別のフォーカス項目を決定させない。
+        io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
+    }
+
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, mFbWidth, mFbHeight);
@@ -225,8 +250,7 @@ void UIRenderer::DrawDebugEditor(
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    if (mGame->GetIsUGCMode() &&
-        !mGame->GetIsUGCDebugEditorShowing()) {
+    if (isUGCEditor) {
         mDebugEditorBridge->DrawEditor(
             gameViewTexture,
             gameViewWidth,
@@ -240,10 +264,9 @@ void UIRenderer::DrawDebugEditor(
             false);
     }
     EndImGuiFrame();
-
-
-
-
+    if (wasGamepadNavigationEnabled) {
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    }
     mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
@@ -282,6 +305,7 @@ void UIRenderer::DrawUGCWorkBrowser()
         io.AddKeyEvent(ImGuiKey_DownArrow, false);
     }
     EndImGuiFrame();
+
     io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
 
     glEnable(GL_DEPTH_TEST);

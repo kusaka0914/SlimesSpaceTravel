@@ -104,6 +104,32 @@ void InvalidProgressFileReturnsFailureWithoutPartialState()
     ExpectFalse(progress.IsStageCleared(1), "invalid stage state");
 }
 
+void TransientProgressNeverReadsOrWritesPersistentFile()
+{
+    const TemporaryProgressFile fixture;
+    fixture.Write("clearedStages: [4]\n");
+    StageProgressSystem progress(fixture.FilePath(), false);
+
+    ExpectTrue(progress.Load(), "transient progress load result");
+    ExpectFalse(
+        progress.IsStageCleared(4),
+        "transient progress ignores persistent file");
+    ExpectTrue(
+        progress.MarkStageCleared(2),
+        "transient stage state changes in memory");
+
+    StageProgressSystem persistentProgress(fixture.FilePath());
+    ExpectTrue(
+        persistentProgress.Load(),
+        "persistent progress reload result");
+    ExpectTrue(
+        persistentProgress.IsStageCleared(4),
+        "persistent file remains unchanged");
+    ExpectFalse(
+        persistentProgress.IsStageCleared(2),
+        "transient stage was not written");
+}
+
 }
 
 void RegisterStageProgressSystemTests(
@@ -118,4 +144,7 @@ void RegisterStageProgressSystemTests(
     tests.emplace_back(
         "StageProgressSystem.InvalidFileReturnsFailureWithoutPartialState",
         InvalidProgressFileReturnsFailureWithoutPartialState);
+    tests.emplace_back(
+        "StageProgressSystem.TransientProgressDoesNotTouchPersistentFile",
+        TransientProgressNeverReadsOrWritesPersistentFile);
 }

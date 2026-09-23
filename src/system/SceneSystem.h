@@ -41,6 +41,7 @@ public:
     void ConfirmBattleStyleSelection();
     void DebugEnterTitle();
     void EnterTitleAtFadeMidpoint();
+    void ResetTutorialsForNewSession();
     void DebugEnterOpening();
     void DebugEnterEnding();
     void DebugStartCredits();
@@ -117,6 +118,11 @@ public:
     bool GetHasPendingStageChange() const { return mHasPendingStageChange; }
     float GetFadeTimer() const { return mFadeTimer; }
     bool IsFadingOut() const { return mIsFadeOut; }
+    bool IsTransitionActive() const
+    {
+        return mFadeTimer > -1.0f || mIsFadeOut ||
+               mHasPendingStageChange;
+    }
     UIState::TalkWith GetCurrentTalkWith() const { return mUIState->GetCurrentTalkWith(); }
     int GetTalkUIIndex() const { return mUIState->GetTalkUIIndex(); }
     float GetCreditsElapsed() const;

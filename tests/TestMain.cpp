@@ -67,6 +67,8 @@ void RegisterPlayerJewelGaugeTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterPlayerSplitGuardStateTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterTgsExperienceControllerTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 
 int main()
 {
@@ -102,6 +104,7 @@ int main()
     RegisterOperationGuideVisibilityTests(tests);
     RegisterPlayerJewelGaugeTests(tests);
     RegisterPlayerSplitGuardStateTests(tests);
+    RegisterTgsExperienceControllerTests(tests);
 
     int failedTestCount = 0;
     for (const auto& [testName, runTest] : tests) {

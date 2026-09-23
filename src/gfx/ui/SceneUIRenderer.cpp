@@ -7,6 +7,7 @@
 #include "system/ending/EndingRollConfig.h"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 
 SceneUIRenderer::SceneUIRenderer(Game* game, UIRenderer* renderer)
@@ -139,6 +140,85 @@ void SceneUIRenderer::DrawUGCClearResult()
                 ? glm::vec4(255.0f, 230.0f, 0.0f, 255.0f)
                 : glm::vec4(255.0f));
     }
+}
+
+void SceneUIRenderer::DrawTgsThankYou()
+{
+    const float framebufferWidth =
+        static_cast<float>(mRenderer->GetFbWidth());
+    const float framebufferHeight =
+        static_cast<float>(mRenderer->GetFbHeight());
+    mRenderer->DrawSkyBox(
+        mRenderer->GetFbWidth(),
+        mRenderer->GetFbHeight());
+
+    const float qrSize =
+        std::min(framebufferWidth, framebufferHeight) * 0.30f;
+    const float qrX = (framebufferWidth - qrSize) * 0.5f;
+    const float qrY = framebufferHeight * 0.34f;
+    mRenderer->DrawTexture(
+        qrX,
+        qrY,
+        qrSize,
+        qrSize,
+        "tgsQrCode");
+
+    UIRenderer::TextEffect textEffect;
+    textEffect.shadowEnabled = true;
+    textEffect.shadowOffset = glm::vec2(3.0f, 3.0f);
+    textEffect.shadowColor = glm::vec4(0.0f, 0.0f, 0.0f, 220.0f);
+    textEffect.outlineEnabled = true;
+    textEffect.outlineWidth = 2.0f;
+    textEffect.outlineColor = glm::vec4(0.0f, 0.0f, 0.0f, 255.0f);
+    const float textScale = framebufferWidth * 0.00040f;
+    mRenderer->DrawText(
+        framebufferWidth * 0.5f,
+        framebufferHeight * 0.24f,
+        textScale,
+        "遊んでくれてありがとうございました！",
+        true,
+        glm::vec4(255.0f),
+        0.0f,
+        &textEffect);
+    mRenderer->DrawText(
+        framebufferWidth * 0.5f,
+        framebufferHeight * 0.70f,
+        textScale,
+        "製品版無料ダウンロードはこちらから！",
+        true,
+        glm::vec4(255.0f),
+        0.0f,
+        &textEffect);
+}
+
+void SceneUIRenderer::DrawTgsRemainingTimeNotice()
+{
+    const float framebufferWidth =
+        static_cast<float>(mRenderer->GetFbWidth());
+    const float framebufferHeight =
+        static_cast<float>(mRenderer->GetFbHeight());
+    const float panelWidth = framebufferWidth * 0.48f;
+    const float panelHeight = framebufferHeight * 0.12f;
+    mRenderer->DrawBG(
+        (framebufferWidth - panelWidth) * 0.5f,
+        (framebufferHeight - panelHeight) * 0.5f,
+        panelWidth,
+        panelHeight,
+        {0.0f, 0.0f, 0.0f, 0.72f});
+
+    UIRenderer::TextEffect textEffect;
+    textEffect.shadowEnabled = true;
+    textEffect.shadowOffset = glm::vec2(2.0f, 2.0f);
+    textEffect.shadowColor = glm::vec4(0.0f, 0.0f, 0.0f, 230.0f);
+    mRenderer->DrawText(
+        framebufferWidth * 0.5f,
+        framebufferHeight * 0.5f,
+        framebufferWidth * 0.00038f,
+        "体験時間 残り1分",
+        true,
+        glm::vec4(255.0f),
+        0.0f,
+        &textEffect);
 }
 
 void SceneUIRenderer::DrawOpeningIntro()
