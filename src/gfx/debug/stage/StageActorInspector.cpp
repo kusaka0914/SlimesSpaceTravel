@@ -83,8 +83,6 @@ void StageActorInspector::Draw()
         const std::vector<StageActorInstance> selectedActors =
             mSelectionController.CollectSelectedActorInstances();
         mStageActorAssetEditor.DrawBulkTextureOverrideEditor(selectedActors);
-        ImGui::TextDisabled(
-            "変更後は上部の「ステージを保存」で保存してください。");
         return;
     }
 
@@ -165,8 +163,6 @@ void StageActorInspector::Draw()
 
     if (surfacePlanet &&
         surfacePlanet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
-        ImGui::TextDisabled(
-            "移動ギズモ: 赤・青は球面方向 / 緑は表面からの高さ");
     }
 
     ImGui::Separator();
@@ -290,8 +286,6 @@ bool StageActorInspector::DrawActorTypeSettings(
                 "%.2f")) {
             hazardActor->SetTriggerRadius(triggerRadius);
         }
-        ImGui::TextDisabled(
-            "判定はアクターの各軸スケールと回転に追従します。");
 
         float damage = hazardActor->GetDamage();
         if (ImGui::DragFloat(
@@ -472,8 +466,6 @@ bool StageActorInspector::DrawActorTypeSettings(
                     !previewsStart)) {
                 movement->SetEditorPreviewPoint(1);
             }
-            ImGui::TextDisabled(
-                "編集する地点を選ぶと足場がそこへ表示されます。下の位置入力やギズモで動かせます。");
         } else {
             glm::vec3 moveOffset = movement->GetMoveOffset();
             if (ImGui::DragFloat3(
@@ -504,10 +496,6 @@ bool StageActorInspector::DrawActorTypeSettings(
                     !previewsStart)) {
                 movement->SetEditorPreviewPoint(1);
             }
-            ImGui::TextDisabled(
-                "選択した地点へ足場を固定し、移動ギズモで調整できます。");
-            ImGui::TextDisabled(
-                "従来モードでは出発地点と到着地点の間を自動で往復します。");
         }
     }
 
@@ -780,8 +768,6 @@ void StageActorInspector::DrawCommonActorSettings(
             isCleared
                 ? "現在はクリア済みのため表示されます。"
                 : "未クリアですが、エディター表示中は確認用に表示されます。");
-    } else {
-        ImGui::TextDisabled("条件なし：常に表示されます。");
     }
 
     int hiddenIfStageCleared = actor->GetHiddenIfStageCleared();
@@ -841,8 +827,6 @@ void StageActorInspector::DrawCommonActorSettings(
             isCleared
                 ? "現在はクリア済みのため、ゲーム中は非表示になります。"
                 : "現在は未クリアのため、ゲーム中も表示されます。");
-        ImGui::TextDisabled(
-            "エディターを開いている間は、配置確認のため表示されたままです。");
     }
 
     if (actor->GetVisibleIfStageCleared() >= 0 &&
@@ -878,8 +862,6 @@ void StageActorInspector::DrawCommonActorSettings(
                 hasAppearedRocket
                     ? "ロケット出現済みのため、ゲーム中は非表示になります。"
                     : "ロケット出現前のため、ゲーム中も表示されます。");
-            ImGui::TextDisabled(
-                "エディターを開いている間は、配置確認のため表示と当たり判定を維持します。");
         }
     }
 
@@ -901,8 +883,6 @@ void StageActorInspector::DrawCommonActorSettings(
         }
         ImGui::TextDisabled(
             "OFFの物体へ接地判定レイが当たると、接地せず惑星の重力方向へ即座に戻します。");
-        ImGui::TextDisabled(
-            "見た目と当たり判定には影響しません。");
 
         bool shouldReactToOverheadGravityRay =
             actor->ShouldReactToOverheadGravityRay();
@@ -914,8 +894,6 @@ void StageActorInspector::DrawCommonActorSettings(
             actor->SetShouldReactToOverheadGravityRay(
                 shouldReactToOverheadGravityRay);
         }
-        ImGui::TextDisabled(
-            "ONにすると、空中のプレイヤーが頭上へ飛ばしたレイでこの面を検出し、面法線へ重力方向を切り替えます。");
     }
 
     float theta = actor->GetTheta();
@@ -1091,8 +1069,6 @@ void StageActorInspector::DrawCommonActorSettings(
             actor->SetTextureTiling(glm::vec2(1.0f));
         }
 
-        ImGui::TextDisabled(
-            "X/Zスケール変更時に自動追従します。手動で微調整することもできます。");
     }
 
     if (placementChanged || posChanged) {

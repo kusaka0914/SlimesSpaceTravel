@@ -401,10 +401,6 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
     ImGui::Checkbox(
         "キーボード・ゲームパッドで内容を切り替える",
         &element.usesInputDeviceVariants);
-    if (element.usesInputDeviceVariants) {
-        ImGui::TextDisabled(
-            "デバイス用の内容が空の場合は共通の内容を表示します。");
-    }
 
     if (element.type == UILoadSystem::CustomElementType::Text) {
         ImGui::SliderFloat("文字サイズ", &element.textScaleRatio, 0.00005f, 0.003f, "%.7f");
@@ -477,8 +473,6 @@ void UIDebugPanel::DrawCustomElementInspector(UILoadSystem* uiLoadSystem)
         }
 
         ImGui::SeparatorText("L系入力を押している間");
-        ImGui::TextDisabled(
-            "デバイス別表示のチェックに関係なく、L/N入力中に使用します。");
         std::snprintf(
             keyboardModifierTextBuffer.data(),
             keyboardModifierTextBuffer.size(),
@@ -571,8 +565,6 @@ void UIDebugPanel::DrawExistingTextureInspector(UILoadSystem* uiLoadSystem)
 
     UILoadSystem::TextureInfo& textureInfo = textureInfoIt->second;
     ImGui::Text("編集: %s", mSelectedExistingElementKey.c_str());
-    ImGui::TextDisabled(
-        "ゲームコードと連携して表示されるUIです。");
     ImGui::SeparatorText("名前とID");
     ImGui::Text("表示名: %s", GetDisplayName(mSelectedExistingElementKey).c_str());
     ImGui::Text("画面ID: %s", ExtractScreenId(mSelectedExistingElementKey).c_str());
@@ -591,9 +583,6 @@ void UIDebugPanel::DrawExistingTextureInspector(UILoadSystem* uiLoadSystem)
         "%.1f°");
 
     ImGui::SeparatorText("表示方式");
-    ImGui::TextWrapped(
-        "画像アセットと表示条件はゲームコードから渡されます。"
-        "配置・拡縮・回転はほかのUIと同じ操作で編集できます。");
     DrawCodeBoundElementProtection();
 }
 
@@ -610,8 +599,6 @@ void UIDebugPanel::DrawExistingTextInspector(UILoadSystem* uiLoadSystem)
 
     UILoadSystem::TextInfo& textInfo = textInfoIt->second;
     ImGui::Text("編集: %s", mSelectedExistingElementKey.c_str());
-    ImGui::TextDisabled(
-        "ゲームコードと連携して表示されるUIです。");
     ImGui::SeparatorText("名前とID");
     ImGui::Text("表示名: %s", GetDisplayName(mSelectedExistingElementKey).c_str());
     ImGui::Text("画面ID: %s", ExtractScreenId(mSelectedExistingElementKey).c_str());

@@ -182,8 +182,6 @@ void PlayerParameterDebugPanel::Draw()
                 "足元基準: 下端 %.2f / 上端 %.2f",
                 collisionBottomHeight,
                 collisionTopHeight);
-            ImGui::TextDisabled(
-                "水色の楕円体が実際の判定です。3軸と向きに追従します。");
         }
 
         ImGui::TreePop();
@@ -208,8 +206,6 @@ void PlayerParameterDebugPanel::Draw()
             player->SetMaximumStepHeight(
                 maximumStepHeight);
         }
-        ImGui::TextDisabled(
-            "0にすると段差の自動乗り越えを無効にします。");
 
         ImGui::SeparatorText("ジャンプ");
 
@@ -267,7 +263,6 @@ void PlayerParameterDebugPanel::Draw()
                 airDodgePostHoverDurationSeconds);
         }
 
-        ImGui::TextDisabled("上昇時間を短くすると素早く上がり、落下時間を長くするとゆっくり落ちます。");
 
         ImGui::SeparatorText("重力方向判定");
 
@@ -283,8 +278,6 @@ void PlayerParameterDebugPanel::Draw()
             mContext.game->SetGroundNormalRayLength(
                 groundNormalRayLength);
         }
-        ImGui::TextDisabled(
-            "プレイヤーを含む全アクターの上方向判定へ即時反映されます。");
 
         float overheadGravityRayLength =
             mContext.game->GetOverheadGravityRayLength();
@@ -298,8 +291,6 @@ void PlayerParameterDebugPanel::Draw()
             mContext.game->SetOverheadGravityRayLength(
                 overheadGravityRayLength);
         }
-        ImGui::TextDisabled(
-            "「頭上重力レイに反応する」がONのアクターを検出する距離です。");
 
         float dodgeDuration = player->GetDodgeDuration();
         if (ImGui::SliderFloat("回避時間", &dodgeDuration, 0.0f, 3.0f, "%.2f")) {
@@ -392,8 +383,6 @@ void PlayerParameterDebugPanel::Draw()
             player->SetAirWeakAttackCooldownSeconds(
                 airWeakAttackCooldownSeconds);
         }
-        ImGui::TextDisabled(
-            "攻撃動作が終わった時点から、次の攻撃までの時間です。");
 
         ImGui::TreePop();
     }
@@ -435,8 +424,6 @@ void PlayerParameterDebugPanel::Draw()
             player->SetAirDodgeVerticalHitboxScale(
                 verticalHitboxScale);
         }
-        ImGui::TextDisabled(
-            "プレイヤーの衝突判定を基準に、回避中の軌道全体を判定します。");
 
         float enemyPushSpeed =
             player->GetAirDodgeEnemyPushSpeed();
@@ -462,8 +449,6 @@ void PlayerParameterDebugPanel::Draw()
             player->SetAirDodgeEnemyPushDampingPerSecond(
                 enemyPushDampingPerSecond);
         }
-        ImGui::TextDisabled(
-            "減衰を大きくすると、敵が早く止まります。");
 
         ImGui::TreePop();
     }
@@ -633,8 +618,6 @@ void PlayerParameterDebugPanel::Draw()
                 "%.2f")) {
             player->SetAttackHitDelay(attackHitDelaySeconds);
         }
-        ImGui::TextDisabled(
-            "弱攻撃を含む、判定遅延を使うすべての攻撃に反映されます。");
 
         float lastAttackCooldown = player->GetLastAttackCooldown();
         if (ImGui::SliderFloat("最終攻撃クールタイム", &lastAttackCooldown, 0.0f, 5.0f, "%.2f")) {

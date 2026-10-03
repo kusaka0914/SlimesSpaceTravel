@@ -92,8 +92,6 @@ void StageNPCInspector::Draw(
                 npc->SetForcesTalkOnArrival(forcesTalkOnArrival);
             }
             ImGui::TextDisabled(
-                "拠点・惑星への到着演出後、現在のクリア状況に対応する会話が未読なら一度だけ開始します。");
-            ImGui::TextDisabled(
                 "有効にできるNPCはステージ内で1人だけです。到着した惑星に所属する場合だけ開始します。");
 
             float talkRadius = npc->GetRadius();
@@ -108,17 +106,11 @@ void StageNPCInspector::Draw(
                     "%.2f")) {
                 npc->SetRadius(std::max(0.1f, talkRadius));
             }
-            ImGui::TextDisabled(
-                "実際の会話可能距離は、この半径に0.5を加えた値です。");
         } else {
             mAssetEditor.DrawActorModelPicker(
                 npc,
                 sequenceName,
                 listIndex);
-            ImGui::TextDisabled(
-                "モデルの位置・回転・スケールが、そのままトリガー範囲になります。");
-            ImGui::TextDisabled(
-                "箱型モデル以外では、モデル全体を囲む箱として判定します。");
 
             TutorialController* tutorialController =
                 mContext.game && mContext.game->GetSceneSystem()
@@ -251,14 +243,6 @@ void StageNPCInspector::Draw(
                         npc->SetProximityMessageScale(proximityScale);
                     }
 
-                    ImGui::TextDisabled("エディターを開いている間は、距離や会話済みに関係なくプレビュー表示します。");
-                    if (proximityMessageMode == static_cast<int>(NPCProximityMessageMode::AfterTalk)) {
-                        ImGui::TextDisabled(
-                            "会話を最後まで読んだ後は再び話しかけられず、近づくとこの一言を表示します。");
-                    } else {
-                        ImGui::TextDisabled("このNPCには話しかけられず、近づくとこの一言だけを表示します。");
-                    }
-                    ImGui::TextDisabled("一言の内容は、下にある各通常会話の設定内で入力します。");
                 }
             }
 
@@ -266,7 +250,6 @@ void StageNPCInspector::Draw(
             const std::vector<StageActorInstance> talkFocusCandidates =
                 StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
 
-            ImGui::TextDisabled("ルビは全会話に自動生成されます。必要な箇所だけ読みを修正できます。");
 
             for (std::size_t talkIndex = 0; talkIndex < talkTexts.size(); ++talkIndex) {
                 std::array<char, 1024> talkTextBuffer = {};
@@ -350,8 +333,6 @@ void StageNPCInspector::Draw(
                         }
                         ImGui::EndCombo();
                     }
-                } else {
-                    ImGui::TextDisabled("この会話は未クリア時の通常会話に含まれます。");
                 }
 
                 bool startsOpeningAfterPage =
@@ -365,8 +346,6 @@ void StageNPCInspector::Draw(
                     npc->SetTalkStartsOpeningAfterPage(
                         talkIndex, startsOpeningAfterPage);
                 }
-                ImGui::TextDisabled(
-                    "ストーリー終了後、フェードを挟んで次の会話ページへ戻ります。");
 
                 bool startsEndingAfterPage =
                     npc->GetTalkStartsEndingAfterPage(talkIndex);
@@ -394,10 +373,7 @@ void StageNPCInspector::Draw(
                                                      static_cast<TalkPageAdvanceCondition>(advanceCondition));
                     }
 
-                    if (advanceCondition == static_cast<int>(TalkPageAdvanceCondition::Confirm)) {
-                        ImGui::TextDisabled("通常の会話と同じく、決定ボタンで次へ進みます。");
-                    } else {
-                        ImGui::TextDisabled("操作が成功するまで決定ボタンでは進みません。");
+                    if (advanceCondition != static_cast<int>(TalkPageAdvanceCondition::Confirm)) {
                         ImGui::TextDisabled("待機中は操作中のプレイヤーだけが動き、敵や足場ギミックは停止します。");
                     }
                 }
@@ -462,7 +438,6 @@ void StageNPCInspector::Draw(
                             ImGui::TreePop();
                         }
                     }
-                    ImGui::TextDisabled("この通常会話がクリア状況によって選ばれたときに使われます。");
                 }
 
                 const NPCTalkCameraFocusTarget* currentFocus = npc->GetTalkCameraFocusTarget(talkIndex);
@@ -522,7 +497,6 @@ void StageNPCInspector::Draw(
                     }
                     ImGui::EndCombo();
                 }
-                ImGui::TextDisabled("設定した会話が表示された間だけ、選択対象へカメラが滑らかに移動します。");
                 if (talkTexts.size() > 1 && ImGui::Button(("この会話を削除##placedNPCTalkDelete" +
                                                            std::to_string(yamlIndex) + "_" + std::to_string(talkIndex))
                                                               .c_str())) {
@@ -539,6 +513,5 @@ void StageNPCInspector::Draw(
             if (proximityMessageMode != static_cast<int>(NPCProximityMessageMode::Disabled)) {
                 ImGui::TextDisabled("同じ条件に複数ページある場合、最後のページに設定した頭上一言を優先します。");
             }
-            ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
         }
     }

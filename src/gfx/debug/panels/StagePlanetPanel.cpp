@@ -203,8 +203,6 @@ void StagePlanetPanel::Draw()
                 planet->SetCanAttractNearbyPlayer(
                     canAttractNearbyPlayer);
             }
-            ImGui::TextDisabled(
-                "OFFでも、ロケット移動や明示的な所属変更ではこの惑星へ移動できます。");
 
             bool shouldReactToOverheadGravityRay =
                 planet->ShouldReactToOverheadGravityRay();
@@ -216,8 +214,6 @@ void StagePlanetPanel::Draw()
                 planet->SetShouldReactToOverheadGravityRay(
                     shouldReactToOverheadGravityRay);
             }
-            ImGui::TextDisabled(
-                "ONにすると、空中のプレイヤーが頭上からこの惑星を検出した際に、当たった面の法線へ重力方向を切り替えます。");
 
             ImGui::SeparatorText("ロケット出現条件");
             const char* spawnConditionLabels[] = {
@@ -541,8 +537,6 @@ void StagePlanetPanel::DrawBackTexturePicker(
             "%.3f")) {
         planet->SetTextureSideBlendWidth(blendWidth);
     }
-    ImGui::TextDisabled(
-        "0に近いほど中心でくっきり切り替わり、大きいほど滑らかに混ざります。");
 
     if (!selectedTexture.empty() &&
         mContext.game &&
@@ -592,6 +586,4 @@ void StagePlanetPanel::DrawTextureTilingEditor(Planet* planet, std::size_t plane
         planet->SetTextureTiling(glm::vec2(1.0f));
     }
 
-    ImGui::TextDisabled(
-        "スケール変更時に自動追従します。横はX/Zの一周方向、縦はY方向です。");
 }

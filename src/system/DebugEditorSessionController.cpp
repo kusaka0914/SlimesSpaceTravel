@@ -57,14 +57,15 @@ DebugEditorSessionController::RestoreAtStartup(
 
     if (!editorRestartErrorLogPath.empty()) {
         mUIRenderer.SetEditorRestartStatus(
-            "Build failed. See log: " + editorRestartErrorLogPath,
+            "ビルドに失敗しました。ログを確認してください: " +
+                editorRestartErrorLogPath,
             true);
         return {};
     }
 
     if (hasExplicitRestartSession) {
         mUIRenderer.SetEditorRestartStatus(
-            "Build completed. The editor session was restored.",
+            "ビルドが完了し、エディターの状態を復元しました。",
             false);
         std::error_code removeError;
         std::filesystem::remove(sessionFilePath, removeError);
@@ -72,7 +73,7 @@ DebugEditorSessionController::RestoreAtStartup(
     }
 
     mUIRenderer.SetEditorRestartStatus(
-        "The previous debug session was restored.",
+        "前回のデバッグエディターの状態を復元しました。",
         false);
     return {};
 }

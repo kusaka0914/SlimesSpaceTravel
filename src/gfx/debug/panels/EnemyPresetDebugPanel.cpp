@@ -121,9 +121,6 @@ void EnemyPresetDebugPanel::Draw()
         return;
     }
 
-    ImGui::TextWrapped(
-        "何度も配置する敵の基準値です。保存すると敵追加の一覧へ自動で反映されます。");
-
     if (ImGui::Button("再読み込み")) {
         ReloadPresets();
     }
@@ -193,8 +190,6 @@ void EnemyPresetDebugPanel::Draw()
     ImGui::Checkbox(
         "通常攻撃でノックバックする",
         &mEditedPreset.isNormalHitKnockBackEnabled);
-    ImGui::TextDisabled(
-        "移動と追跡は共通動作です。攻撃構成だけをプリセットごとに保存します。");
     ImGui::DragFloat(
         "攻撃準備を始める距離",
         &mEditedPreset.attackPreparationRange,
@@ -202,15 +197,11 @@ void EnemyPresetDebugPanel::Draw()
         0.0f,
         100.0f,
         "%.2f");
-    ImGui::TextDisabled(
-        "プレイヤーとの距離がこの値以下になると、攻撃待機タイマーを開始します。");
     DrawAttackEditor();
 
     if (ImGui::TreeNodeEx(
             "ボスの攻撃前後行動",
             ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::TextDisabled(
-            "ボスとして扱う敵だけが使用します。攻撃本体の抽選確率とは独立しています。");
         ImGui::SeparatorText("攻撃前の急接近");
         ImGui::DragFloat(
             "発生確率 (%)##preAttackApproach",
@@ -233,8 +224,6 @@ void EnemyPresetDebugPanel::Draw()
             0.0f,
             100.0f,
             "%.2f");
-        ImGui::TextDisabled(
-            "攻撃範囲表示の直前に抽選します。接近中は攻撃待機タイマーを停止します。");
 
         ImGui::SeparatorText("攻撃後の急退避");
         ImGui::DragFloat(
@@ -280,8 +269,6 @@ void EnemyPresetDebugPanel::Draw()
             0.0f,
             100.0f,
             "%.1f%%");
-        ImGui::TextDisabled(
-            "退避後は停止し、通常歩行へ戻るか、準備待ちなしの急接近攻撃へ移ります。");
         ImGui::TreePop();
     }
 

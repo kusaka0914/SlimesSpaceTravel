@@ -189,7 +189,6 @@ void StageAddActorPanel::Draw()
             CancelPlacement();
         }
         ImGui::SameLine();
-        ImGui::TextDisabled("ESCでも解除");
         if (!mPlacementController.GetPlacementStatus().empty()) {
             ImGui::TextWrapped(
                 "%s",
