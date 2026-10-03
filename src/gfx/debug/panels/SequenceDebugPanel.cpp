@@ -81,7 +81,7 @@ SequenceDebugPanel::SequenceDebugPanel(DebugEditorContext& context)
 void SequenceDebugPanel::Draw()
 {
     if (!mContext.game || !mContext.game->GetSequenceSystem()) {
-        ImGui::TextUnformatted("SequenceSystemが利用できません。");
+        ImGui::TextUnformatted("演出シーケンス機能を利用できません。");
         return;
     }
 
@@ -310,7 +310,12 @@ void SequenceDebugPanel::DrawClipInspector(
     if (clip.type == SequenceClipType::ActorMove) {
         ImGui::DragFloat("移動時間", &clip.duration, 0.05f, 0.01f, 999.0f, "%.2f 秒");
 
-        const char* easingItems[] = {"Linear", "Ease In", "Ease Out", "Ease In Out"};
+        const char* easingItems[] = {
+            "線形",
+            "イーズイン",
+            "イーズアウト",
+            "イーズイン・アウト",
+        };
         mEasingIndex = static_cast<int>(clip.easing);
         if (ImGui::Combo("補間", &mEasingIndex, easingItems, IM_ARRAYSIZE(easingItems))) {
             clip.easing = static_cast<SequenceEasing>(mEasingIndex);

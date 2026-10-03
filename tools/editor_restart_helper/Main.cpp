@@ -67,14 +67,14 @@ bool ParseArguments(
 
     if (!parentProcessId || !buildDirectory || !configuration ||
         !gameExecutable || !sessionFile || !buildLog) {
-        outErrorMessage = "The build restart helper is missing required arguments.";
+        outErrorMessage = "ビルド再起動用プログラムに必要な引数がありません。";
         return false;
     }
 
     try {
         outArguments.parentProcessId = std::stoul(*parentProcessId);
     } catch (const std::exception&) {
-        outErrorMessage = "The parent process ID is invalid.";
+        outErrorMessage = "呼び出し元のプロセスIDが不正です。";
         return false;
     }
 

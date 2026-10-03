@@ -41,7 +41,7 @@ bool EditorSessionRepository::Save(
             std::filesystem::create_directories(parentDirectory, directoryError);
         }
         if (directoryError) {
-            outErrorMessage = "Failed to create the editor session directory: " +
+            outErrorMessage = "エディター状態の保存フォルダーを作成できませんでした: " +
                               directoryError.message();
             return false;
         }
@@ -104,19 +104,19 @@ bool EditorSessionRepository::Save(
 
         std::ofstream output(filePath, std::ios::binary | std::ios::trunc);
         if (!output) {
-            outErrorMessage = "Failed to open the editor session file for writing: " +
+            outErrorMessage = "エディター状態の保存ファイルを開けませんでした: " +
                               filePath.string();
             return false;
         }
 
         output << emitter.c_str();
         if (!output.good()) {
-            outErrorMessage = "Failed while writing the editor session file: " +
+            outErrorMessage = "エディター状態の保存中に書き込みが失敗しました: " +
                               filePath.string();
             return false;
         }
     } catch (const std::exception& exception) {
-        outErrorMessage = "Failed to save the editor session: " +
+        outErrorMessage = "エディターの状態を保存できませんでした: " +
                           std::string(exception.what());
         return false;
     }
@@ -135,7 +135,7 @@ bool EditorSessionRepository::Load(
         const YAML::Node root = YAML::LoadFile(filePath.string());
         const int formatVersion = root["formatVersion"].as<int>(0);
         if (formatVersion != EditorSessionState::CurrentFormatVersion) {
-            outErrorMessage = "Unsupported editor session format version: " +
+            outErrorMessage = "未対応のエディター状態ファイルです。形式バージョン: " +
                               std::to_string(formatVersion);
             return false;
         }
@@ -144,7 +144,7 @@ bool EditorSessionRepository::Load(
         const YAML::Node editorNode = root["editor"];
         const YAML::Node cameraNode = root["sceneCamera"];
         if (!stageNode || !editorNode || !cameraNode) {
-            outErrorMessage = "The editor session file is missing required sections.";
+            outErrorMessage = "エディター状態ファイルに必要な項目がありません。";
             return false;
         }
 
@@ -162,7 +162,7 @@ bool EditorSessionRepository::Load(
         if (!ReadVector3(cameraNode["position"], loadedState.sceneCameraPose.position) ||
             !ReadVector3(cameraNode["target"], loadedState.sceneCameraPose.target) ||
             !ReadVector3(cameraNode["up"], loadedState.sceneCameraPose.up)) {
-            outErrorMessage = "The editor session contains an invalid scene camera pose.";
+            outErrorMessage = "エディター状態ファイルのシーンカメラ情報が不正です。";
             return false;
         }
         loadedState.sceneCameraPose.fieldOfViewDegrees =
@@ -179,7 +179,7 @@ bool EditorSessionRepository::Load(
                  !orientationNode ||
                  !orientationNode.IsSequence() ||
                  orientationNode.size() != 4)) {
-                outErrorMessage = "The editor session contains an invalid player debug pose.";
+                outErrorMessage = "エディター状態ファイルのプレイヤー位置情報が不正です。";
                 return false;
             }
             if (loadedState.hasPlayerDebugPose) {
@@ -202,7 +202,7 @@ bool EditorSessionRepository::Load(
 
         outSessionState = std::move(loadedState);
     } catch (const std::exception& exception) {
-        outErrorMessage = "Failed to load the editor session: " +
+        outErrorMessage = "エディターの状態を読み込めませんでした: " +
                           std::string(exception.what());
         return false;
     }

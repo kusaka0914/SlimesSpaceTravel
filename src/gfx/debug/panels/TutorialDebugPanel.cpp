@@ -229,8 +229,6 @@ void TutorialDebugPanel::DrawTutorialEditor(
     }
 
     ImGui::Text("ID: %s", definition->id.c_str());
-    ImGui::TextDisabled(
-        "IDはトリガーやコードから参照されるため、作成後は固定です。");
     DrawStringInput<256>("表示名", definition->displayName);
 
     int repeatPolicyIndex =
@@ -420,8 +418,6 @@ void TutorialDebugPanel::DrawPageEditor(
         ImGui::TreePop();
     };
 
-    ImGui::TextDisabled(
-        "ルビは本文変更時に自動生成されます。必要な箇所だけ読みを修正できます。");
     drawRubyReadingEditor("共通テキストのルビを修正", page.rubySegments);
     if (!page.controllerText.empty()) {
         drawRubyReadingEditor(
@@ -592,8 +588,6 @@ void TutorialDebugPanel::DrawVideoEditor(
     if (ImGui::Button("動画一覧を更新")) {
         mContext.assetCatalog->Refresh();
     }
-    ImGui::TextDisabled(
-        "MP4はassets/videosへ置くと一覧に表示されます。動画音声は再生しません。");
 
     if (!page.video.IsEnabled()) {
         return;

@@ -57,8 +57,6 @@ void StagePlacementPanel::DrawObjectList()
     const std::vector<ActorGroup> groups = CollectActorGroups();
 
     ImGui::SeparatorText("オブジェクト一覧");
-    ImGui::TextDisabled("一覧またはゲーム画面のモデルをクリックして選択します。");
-    ImGui::TextDisabled("同じ場所を続けてクリックすると、手前から奥へ選択を切り替えます。");
 
     bool hasAnyActor = false;
     for (const ActorGroup& group : groups) {

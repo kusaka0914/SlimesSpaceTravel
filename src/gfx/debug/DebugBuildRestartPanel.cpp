@@ -23,13 +23,13 @@ void DebugBuildRestartPanel::Draw()
         return;
     }
 
-    if (ImGui::Button("Build & Restart")) {
+    if (ImGui::Button("ビルドして再起動")) {
         std::string restartErrorMessage;
         if (!mContext.game ||
             !mContext.game->RequestEditorBuildAndRestart(restartErrorMessage)) {
             SetStatus(restartErrorMessage, true);
         } else {
-            SetStatus("Building...", false);
+            SetStatus("ビルド中...", false);
         }
     }
 

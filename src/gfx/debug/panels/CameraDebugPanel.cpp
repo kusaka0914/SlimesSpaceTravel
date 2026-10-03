@@ -253,8 +253,6 @@ void CameraDebugPanel::Draw()
                 cameraSystem->SetBoatRideCameraPreviewEnabled(
                     previewEnabled);
             }
-            ImGui::TextDisabled(
-                "現在のステージで最初に見つかったロケットを使用します。");
 
             ImGui::TreePop();
         }
@@ -283,8 +281,6 @@ void CameraDebugPanel::Draw()
 
         if (mContext.game->GetIsFreeCameraMode()) {
             ImGui::TextDisabled("調整結果はフリーカメラを終了すると確認できます");
-        } else {
-            ImGui::TextDisabled("変更はゲーム画面へ即時反映されます。確定するには保存してください");
         }
 
         if (ImGui::TreeNode("フリーカメラ")) {

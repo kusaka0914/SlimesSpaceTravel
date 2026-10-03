@@ -9,12 +9,56 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、
 描画、物理連携、キャラクター制御、カメラ、アニメーション、
 ステージ管理、開発用エディタなど、ゲームを構成する主要システムを実装しています。
 
-- **プレイ映像:** https://youtu.be/GYYkx0_Y8g8?si=9aH_WY7Vdzd2oqSv
+- **プレイ映像:** https://youtu.be/fcE3nDOE_2A
 - **実行ファイル:** https://github.com/kusaka0914/SlimesSpaceTravel/releases
 - **開発要点書:** [summary.pdf](summary.pdf)
 - **ポートフォリオサイト（他の制作物についても掲載しています。）:** https://kusaka0914.github.io
 
 <img width="1280" alt="Slime's Space Travel" src="https://github.com/user-attachments/assets/28071dbf-166d-465a-a26b-8b4e9404c04b" />
+
+---
+
+## 実行・ビルド
+
+- 実行する場合: GitHub Releasesの配布版を使用してください
+- Windowsでビルドする場合: `build_windows.bat` を実行してください
+- ビルド完了後は、以下の実行ファイルを起動できます。
+
+`out/build/windows-x64-release/Release/game.exe`
+
+必要な `assets` / `shaders` もビルド時に自動配置されます。
+- 詳細なビルド条件はREADME下部の「Windowsでのビルド」を参照してください
+
+---
+
+## 生成AIの利用について
+
+本作では、以下の範囲で生成AIを利用しています。
+
+### 画像アセット
+生成AIで作成した画像を、以下の用途の一部で使用しています。
+
+- UI用画像
+- オープニング演出用画像
+- その他、一部の2Dテクスチャ素材
+
+3Dモデル、アニメーションについては生成AIで生成したものではありません。
+
+### プログラム開発
+プログラムの設計・実装の主体は自身とし、主に以下の用途で生成AIを利用しています。
+
+- 自身で設計・実装したコードを提示し、責務分割・依存関係・可読性などの観点からレビューや改善案を相談
+- プレイヤー向けステージ作成機能を中心に、自身で考えた設計案や実装方針について妥当性を確認し、実装方法の候補を相談
+- その他の一部機能について、リファレンス等を調査しても解決方法を決めきれなかった場合に、考え方や実装方針を相談
+
+特にステージ作成機能では、
+`UGCEditorInteractionController`、`UGCPreviewController` などを実装する過程で、
+2D操作と3D空間の対応や編集処理などの実装方針を検討する際に利用しています。
+
+生成AIからコード例が提示された場合も、そのままソースコードへコピーして使用していません。
+各処理がなぜ必要なのかを確認し、必要に応じて公式リファレンス等で仕様を調べ、
+内容と構造を理解した上で、自身の設計へ採用するかを判断しています。
+採用する場合も、自身で実装し、最終的な動作確認を行っています。
 
 ---
 
@@ -384,19 +428,25 @@ zipを展開し、実行ファイルを起動してください。
 
 ---
 
-## ソースからのビルド
+## Windowsでのビルド
 
-ビルドにはCMake、
-依存ライブラリ管理にはvcpkgを使用しています。
+### 必要環境
 
-```bash
-cmake -S . -B build \
-  -DCMAKE_TOOLCHAIN_FILE=<vcpkgのパス>/scripts/buildsystems/vcpkg.cmake
+- Windows 10 / 11 64bit
+- Visual Studio 2022
+  - 「C++によるデスクトップ開発」
+- Git
+- インターネット接続（初回ビルド時）
 
-cmake --build build --config Release
-```
+### ビルド方法
 
-依存ライブラリは [vcpkg.json](vcpkg.json) にまとめています。
+`build_windows.bat` を実行してください。
+
+初回実行時は、必要に応じて vcpkg を自動取得し、
+`vcpkg.json` に記載された依存ライブラリを取得したうえで、
+Windows x64 Release版をビルドします。
+
+2回目以降は取得済みのvcpkgを再利用します。
 
 ---
 

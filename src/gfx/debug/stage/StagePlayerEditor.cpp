@@ -99,8 +99,6 @@ void StagePlayerEditor::DrawSpawnEditor()
         ImGui::TextUnformatted(mPlayerSpawnStatus.c_str());
     }
 
-    ImGui::TextDisabled(
-        "このボタンは現在のステージYAMLへ直接保存します。次回ステージ開始時から反映されます。");
 }
 
 bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)

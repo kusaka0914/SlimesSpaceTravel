@@ -83,6 +83,4 @@ void PerformanceDebugPanel::Draw()
         "画面提示待機: %.3f ms",
         metrics.presentationWaitMilliseconds);
 
-    ImGui::TextDisabled(
-        "GPU時間は完了済みの過去フレームから非同期に取得します。");
 }

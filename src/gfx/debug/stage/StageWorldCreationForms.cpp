@@ -138,8 +138,6 @@ void StageObjectCreationForm::Draw()
                 ImGui::TextUnformatted(mStatus.c_str());
             }
 
-            ImGui::TextDisabled(
-                "assets/models 内の対応モデルは自動的にこの一覧へ反映されます。");
         }
         ImGui::TreePop();
     }
@@ -259,8 +257,6 @@ void StagePlatformCreationForm::Draw()
             if (!mRideMovingPlatformStatus.empty()) {
                 ImGui::TextUnformatted(mRideMovingPlatformStatus.c_str());
             }
-            ImGui::TextDisabled(
-                "追加後は「配置」から出発地点と到着地点を調整できます。");
 
             ImGui::TreePop();
         }
