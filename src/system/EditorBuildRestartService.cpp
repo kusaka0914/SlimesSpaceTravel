@@ -65,7 +65,7 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
         executablePathBuffer.data(),
         static_cast<DWORD>(executablePathBuffer.size()));
     if (pathLength == 0 || pathLength >= executablePathBuffer.size()) {
-        outErrorMessage = "Failed to resolve the running game executable path.";
+        outErrorMessage = "実行中のゲームのパスを取得できませんでした。";
         return {};
     }
 
@@ -79,7 +79,7 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
     _NSGetExecutablePath(nullptr, &requiredSize);
     std::string executablePathBuffer(requiredSize, '\0');
     if (_NSGetExecutablePath(executablePathBuffer.data(), &requiredSize) != 0) {
-        outErrorMessage = "Failed to resolve the running game executable path.";
+        outErrorMessage = "実行中のゲームのパスを取得できませんでした。";
         return {};
     }
 
@@ -94,7 +94,7 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
         executablePathBuffer.data(),
         executablePathBuffer.size() - 1);
     if (pathLength <= 0) {
-        outErrorMessage = "Failed to resolve the running game executable path.";
+        outErrorMessage = "実行中のゲームのパスを取得できませんでした。";
         return {};
     }
 
@@ -140,7 +140,7 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
     }
 
     if (!std::filesystem::is_regular_file(runtimePaths.helperExecutable)) {
-        outErrorMessage = "The build restart helper was not found: " +
+        outErrorMessage = "ビルド再起動用プログラムが見つかりません: " +
                           runtimePaths.helperExecutable.string();
         return false;
     }
@@ -172,7 +172,7 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
         &startupInfo,
         &processInformation);
     if (!wasProcessCreated) {
-        outErrorMessage = "Failed to launch the build restart helper. Windows error: " +
+        outErrorMessage = "ビルド再起動用プログラムを起動できませんでした。Windowsエラー: " +
                           std::to_string(GetLastError());
         return false;
     }
@@ -182,7 +182,7 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
 #else
     const pid_t helperProcessId = fork();
     if (helperProcessId < 0) {
-        outErrorMessage = "Failed to fork the build restart helper process.";
+        outErrorMessage = "ビルド再起動用プロセスを開始できませんでした。";
         return false;
     }
 
@@ -240,7 +240,7 @@ bool EditorBuildRestartService::ResolveRuntimePaths(
         resolvedPaths.buildDirectory,
         canonicalError);
     if (canonicalError || resolvedPaths.buildDirectory.empty()) {
-        outErrorMessage = "Failed to resolve the CMake build directory: " +
+        outErrorMessage = "CMakeのビルドフォルダーを取得できませんでした: " +
                           canonicalError.message();
         return false;
     }

@@ -139,7 +139,8 @@ bool SequenceSystem::StartCinematicChain(
     if (!mGame->GetCameraSystem()->PlayCinematic(
             mCinematicSequenceChain.front(),
             true)) {
-        mLastError = "Failed to play camera sequence: " + mCinematicSequenceChain.front();
+        mLastError = "カメラ演出を再生できませんでした: " +
+                     mCinematicSequenceChain.front();
         ClearCinematicChain();
         mLocksPlayerControl = false;
         mActiveSequenceId.clear();
@@ -331,7 +332,8 @@ void SequenceSystem::UpdateCinematicChain()
     if (mCinematicSequenceIndex < mCinematicSequenceChain.size()) {
         const std::string& nextCinematic = mCinematicSequenceChain[mCinematicSequenceIndex];
         if (!cameraSystem->PlayCinematic(nextCinematic, true)) {
-            mLastError = "Failed to play camera sequence: " + nextCinematic;
+            mLastError = "カメラ演出を再生できませんでした: " +
+                         nextCinematic;
             RequestCinematicReturnFade();
         }
         return;

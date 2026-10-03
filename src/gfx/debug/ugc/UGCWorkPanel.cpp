@@ -125,8 +125,6 @@ void UGCWorkPanel::DrawManagement()
     ImGui::SetWindowFontScale(1.18f);
     ImGui::TextUnformatted("作品を保存・開く");
     ImGui::SetWindowFontScale(1.0f);
-    ImGui::TextDisabled(
-        "今作っているステージを保存したり、保存済みの作品を開いたりできます。");
     ImGui::Separator();
 
     DrawCurrentWorkSaveControls(outStatusMessage);
@@ -461,8 +459,6 @@ void UGCWorkPanel::DrawBrowser()
     ImGui::SetWindowFontScale(1.18f);
     ImGui::TextUnformatted("つくったステージであそぶ");
     ImGui::SetWindowFontScale(1.0f);
-    ImGui::TextDisabled(
-        "完成チェック済みの作品を選んで、遊ぶか続きを作るか選べます。");
     ImGui::Separator();
 
     if (!mController.IsSelectedWorkVerified()) {

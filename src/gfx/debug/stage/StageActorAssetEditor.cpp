@@ -100,8 +100,6 @@ void StageActorAssetEditor::DrawActorModelPicker(
         }
     }
     ImGui::EndChild();
-    ImGui::TextDisabled(
-        "見た目と当たり判定へ即時反映されます。変更後は「保存する」を押してください。");
     ImGui::TreePop();
 }
 
@@ -161,7 +159,6 @@ void StageActorAssetEditor::DrawNPCModelPicker(
         }
     }
     ImGui::EndChild();
-    ImGui::TextDisabled("変更後、左側の「保存する」でステージへ保存してください。");
     ImGui::TreePop();
 }
 
@@ -223,8 +220,6 @@ void StageActorAssetEditor::DrawBoatModelPicker(
         }
     }
     ImGui::EndChild();
-    ImGui::TextDisabled(
-        "変更後、左側の「保存する」でステージへ保存してください。");
     ImGui::TreePop();
 }
 

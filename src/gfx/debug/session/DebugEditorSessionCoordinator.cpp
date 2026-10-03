@@ -96,14 +96,14 @@ bool DebugEditorSessionCoordinator::Restore(
 
     if (!mContext.game) {
         outErrorMessage =
-            "The game is not available while restoring the editor session.";
+            "エディターの状態を復元するためのゲーム情報を利用できません。";
         return false;
     }
 
     if (!mContext.game->RestoreDebugEditorStage(
             sessionState.stageNumber,
             sessionState.stageYamlPath)) {
-        outErrorMessage = "Failed to restore the edited stage: " +
+        outErrorMessage = "編集中のステージを復元できませんでした: " +
                           sessionState.stageYamlPath;
         return false;
     }

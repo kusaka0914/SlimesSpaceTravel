@@ -14,7 +14,12 @@
 #include <vector>
 
 namespace {
-constexpr const char* easingLabels[] = {"Linear", "Ease In", "Ease Out", "Ease In Out"};
+constexpr const char* easingLabels[] = {
+    "線形",
+    "イーズイン",
+    "イーズアウト",
+    "イーズイン・アウト",
+};
 constexpr const char* transitionModeLabels[] = {"滑らか", "瞬時切り替え（カット）"};
 
 template <std::size_t BufferSize>
@@ -221,8 +226,6 @@ void CinematicSequenceDebugPanel::Draw()
                     "空のID、または既に使われているIDには変更できません";
             }
         }
-        ImGui::TextDisabled(
-            "IDは演出シーケンスやコードから参照されます。");
 
         ImGui::Checkbox("ループ", &sequence->loop);
         ImGui::DragFloat("終了位置の保持時間", &sequence->endHoldDuration, 0.05f, 0.0f, 30.0f);
@@ -274,7 +277,6 @@ void CinematicSequenceDebugPanel::Draw()
         ImGui::Combo("補間", &mEasingIndex, easingLabels, IM_ARRAYSIZE(easingLabels));
         if (isCutTransition) {
             ImGui::EndDisabled();
-            ImGui::TextDisabled("カットでは指定時刻まで前のカメラを保持し、瞬時に切り替えます");
         }
 
         if (ImGui::Button("現在のカメラを追加")) {
@@ -348,7 +350,6 @@ void CinematicSequenceDebugPanel::Draw()
         }
     }
 
-    ImGui::TextDisabled("ゲーム側からは CameraSystem::PlayCinematic(\"シーケンスID\") で再生できます");
     ImGui::EndChild();
 }
 

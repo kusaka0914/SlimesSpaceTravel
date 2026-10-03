@@ -253,12 +253,8 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(
             mStageActorYamlWriter.SaveAllActorStates();
             RequestPhysicsWorldRebuild();
         }
-        ImGui::TextDisabled(
-            "ONでは、同じ惑星の敵が全滅するまでこのスイッチを薄く表示し、衝突と起動を無効にします。");
     }
 
-    ImGui::TextDisabled(
-        "必要な機能を追加して組み合わせます。移動を有効にすると設定欄が表示されます。");
 
     if (!mPlatformTypeChangeStatus.empty()) {
         ImGui::TextUnformatted(mPlatformTypeChangeStatus.c_str());
@@ -603,8 +599,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
                 &reappearDelay, 0.05f, 0.0f, 30.0f, "%.2f")) {
             fade->SetReappearDelay(reappearDelay);
         }
-        ImGui::TextDisabled(
-            "完全に透明になると当たり判定がなくなり、待ち時間後に再表示します。");
     }
 
     if (PlatformJumpToggleComponent* toggle =
@@ -668,8 +662,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
                 &speed, 0.05f, 0.0f, 100.0f, "%.2f")) {
             movement->SetSpeed(speed);
         }
-        ImGui::TextDisabled(
-            "中心から見た前後左右のうち、乗った側へ移動します。");
     }
 
     if (PlatformRotationComponent* rotation =
@@ -717,8 +709,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
     if (PlatformPressureSwitchComponent* pressureSwitch =
             platform->GetPressureSwitchComponent()) {
         ImGui::SeparatorText("1人用スイッチ");
-        ImGui::TextDisabled(
-            "ONにしたとき、配置物の表示と非表示を同時に切り替えられます。");
 
         bool shouldRemainOnAfterPressed =
             pressureSwitch->ShouldRemainOnAfterPressed();
@@ -733,8 +723,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
                 shouldRemainOnAfterPressed);
             mStageActorYamlWriter.SaveAllActorStates();
         }
-        ImGui::TextDisabled(
-            "OFFの場合は乗っている間だけON、ONの場合はステージを出るまで保持します。");
 
         float inactiveOpacity =
             pressureSwitch->GetInactiveOpacity();
@@ -747,8 +735,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
                 "%.2f")) {
             pressureSwitch->SetInactiveOpacity(inactiveOpacity);
         }
-        ImGui::TextDisabled(
-            "OFF時の足場は薄く表示され、敵は完全に停止・非表示になります。");
 
         std::vector<std::string> targetIds =
             pressureSwitch->GetTargetPlatformIds();
@@ -760,7 +746,7 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
         const std::vector<StageActorInstance> instances =
             StageActorQuery::CollectAllActorInstances(
                 mContext.game->GetCurrentStage());
-        ImGui::SeparatorText("ONで表示する足場・敵");
+        ImGui::SeparatorText("有効時に表示する足場・敵");
         for (const StageActorInstance& instance : instances) {
             Platform* target =
                 dynamic_cast<Platform*>(instance.actor);
@@ -949,8 +935,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
     if (PlatformEnemyClearUnlockComponent* enemyClearUnlock =
             platform->GetEnemyClearUnlockComponent()) {
         ImGui::SeparatorText("敵全滅後に解放");
-        ImGui::TextDisabled(
-            "このスイッチと同じ惑星にいる有効な敵をすべて倒すと、不透明になって使用可能になります。");
         if (!mContext.game->GetIsDebugEditorShowing()) {
             ImGui::Text(
                 "現在の状態: %s",
@@ -963,10 +947,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
     if (PlatformLatchedGroupSwitchComponent* latchedSwitch =
             platform->GetLatchedGroupSwitchComponent()) {
         ImGui::SeparatorText("2個連動・保持スイッチ");
-        ImGui::TextDisabled(
-            "別々のプレイヤーが同じグループIDのスイッチを1個ずつ押すと、配置物の表示状態が切り替わります。");
-        ImGui::TextDisabled(
-            "一度押したスイッチは、プレイヤーが離れてもONのままです。");
 
         const auto preservePreviousGroupSettings =
             [this, platform, latchedSwitch]() {
@@ -1100,8 +1080,6 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
             return;
         }
 
-        ImGui::TextDisabled(
-            "このスイッチがグループの表示・非表示対象を管理します。");
 
         std::vector<PlatformRevealTarget> revealTargets =
             latchedSwitch->GetRevealTargets();
@@ -1238,7 +1216,5 @@ void StagePlatformEditor::DrawPlatformBehaviorEditors(
                 latchedSwitch->SetHideTargets(targets);
             });
 
-        ImGui::TextDisabled(
-            "編集モード中はスイッチの記録状態を更新しません。");
     }
 }

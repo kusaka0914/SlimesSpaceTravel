@@ -19,20 +19,20 @@
 
 namespace {
 constexpr const char* blendModeLabels[] = {
-    "Alpha",
-    "Additive",
+    "アルファ合成",
+    "加算合成",
 };
 
 constexpr const char* renderModeLabels[] = {
-    "Billboard",
-    "Velocity Aligned",
+    "ビルボード",
+    "速度方向に整列",
 };
 
 constexpr const char* directionModeLabels[] = {
-    "Fixed",
-    "Sphere",
-    "Hemisphere",
-    "Cone",
+    "固定方向",
+    "全方向（球状）",
+    "半球方向",
+    "円すい方向",
 };
 
 constexpr const char* previewPositionLabels[] = {
@@ -180,7 +180,7 @@ ParticleEffectDebugPanel::ParticleEffectDebugPanel(DebugEditorContext& context)
 void ParticleEffectDebugPanel::Draw()
 {
     if (!mContext.game || !mContext.game->GetParticleSystem()) {
-        ImGui::TextUnformatted("ParticleSystemがありません");
+        ImGui::TextUnformatted("パーティクル機能を利用できません");
         return;
     }
 
@@ -349,8 +349,6 @@ void ParticleEffectDebugPanel::DrawEffectEditor(
     }
 
     ImGui::Text("ID: %s", mSelectedEffectId.c_str());
-    ImGui::TextDisabled(
-        "IDはコードから参照されるため、作成後は固定です。");
     DrawStringInput<256>("表示名", definition->displayName);
 
     ImGui::TextDisabled(
@@ -365,7 +363,7 @@ void ParticleEffectDebugPanel::DrawEffectEditor(
         DrawPreviewControls(particleSystem);
     }
 
-    ImGui::SeparatorText("Emitter");
+    ImGui::SeparatorText("エミッター");
     DrawEmitterList(particleSystem);
     DrawEmitterInspector(particleSystem);
 
@@ -400,7 +398,7 @@ void ParticleEffectDebugPanel::DrawPreviewControls(ParticleSystem& particleSyste
         ImGui::DragFloat3("放出方向", &mPreviewDirection.x, 0.02f);
     }
 
-    ImGui::Checkbox("選択したEmitterだけ再生", &mPreviewSelectedEmitterOnly);
+    ImGui::Checkbox("選択したエミッターだけ再生", &mPreviewSelectedEmitterOnly);
 
     if (ImGui::Button("1回再生")) {
         EmitPreview(particleSystem);
@@ -443,12 +441,12 @@ void ParticleEffectDebugPanel::DrawEmitterList(
         return;
     }
 
-    if (ImGui::Button("Emitter追加")) {
+    if (ImGui::Button("エミッター追加")) {
         effectDefinition->emitters.push_back(CreateDefaultEmitter());
         SelectEmitter(
             particleSystem,
             static_cast<int>(effectDefinition->emitters.size()) - 1);
-        mStatusMessage = "Emitterを追加しました";
+        mStatusMessage = "エミッターを追加しました";
     }
 
     ImGui::SameLine();
@@ -461,7 +459,7 @@ void ParticleEffectDebugPanel::DrawEmitterList(
         ImGui::BeginDisabled();
     }
 
-    if (ImGui::Button("Emitter複製") && hasSelectedEmitter) {
+    if (ImGui::Button("エミッター複製") && hasSelectedEmitter) {
         const ParticleEmitterDefinition copy =
             effectDefinition->emitters[mSelectedEmitterIndex];
 
@@ -469,12 +467,12 @@ void ParticleEffectDebugPanel::DrawEmitterList(
         SelectEmitter(
             particleSystem,
             static_cast<int>(effectDefinition->emitters.size()) - 1);
-        mStatusMessage = "Emitterを複製しました";
+        mStatusMessage = "エミッターを複製しました";
     }
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Emitter削除") && hasSelectedEmitter) {
+    if (ImGui::Button("エミッター削除") && hasSelectedEmitter) {
         effectDefinition->emitters.erase(
             effectDefinition->emitters.begin() + mSelectedEmitterIndex);
 
@@ -488,7 +486,7 @@ void ParticleEffectDebugPanel::DrawEmitterList(
                     static_cast<int>(effectDefinition->emitters.size()) - 1));
         }
 
-        mStatusMessage = "Emitterを削除しました";
+        mStatusMessage = "エミッターを削除しました";
     }
 
     if (!hasSelectedEmitter) {
@@ -560,7 +558,7 @@ void ParticleEffectDebugPanel::DrawEmitterInspector(
         mSelectedEmitterIndex <
             static_cast<int>(effectDefinition->emitters.size());
     if (!hasSelectedEmitter) {
-        ImGui::TextDisabled("一覧からEmitterを選択してください");
+        ImGui::TextDisabled("一覧からエミッターを選択してください");
         return;
     }
 
@@ -568,9 +566,9 @@ void ParticleEffectDebugPanel::DrawEmitterInspector(
         effectDefinition->emitters[mSelectedEmitterIndex];
 
     ImGui::Separator();
-    ImGui::Text("Emitter %d の設定", mSelectedEmitterIndex + 1);
+    ImGui::Text("エミッター %d の設定", mSelectedEmitterIndex + 1);
     ImGui::SameLine();
-    if (ImGui::Button("このEmitterを1回再生")) {
+    if (ImGui::Button("このエミッターを1回再生")) {
         const ParticleSpawnContext context = BuildPreviewContext();
         particleSystem.EmitEmitter(emitter, context);
     }
@@ -923,7 +921,7 @@ void ParticleEffectDebugPanel::EmitPreview(ParticleSystem& particleSystem)
         if (!definition ||
             mSelectedEmitterIndex < 0 ||
             mSelectedEmitterIndex >= static_cast<int>(definition->emitters.size())) {
-            mStatusMessage = "Emitterを選択してください";
+            mStatusMessage = "エミッターを選択してください";
             return;
         }
 

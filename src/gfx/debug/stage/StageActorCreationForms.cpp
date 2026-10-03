@@ -214,8 +214,6 @@ void StageNPCCreationForm::Draw()
             ImGui::Text(
                 "選択中のモデル: %s",
                 mSelectedModel.empty() ? "未選択" : mSelectedModel.c_str());
-            ImGui::TextDisabled(
-                "assets/models 内の対応モデルは自動的にこの一覧へ反映されます。");
 
             ImGui::InputText("NPC名", mName.data(), mName.size());
             ImGui::DragFloat(
@@ -454,8 +452,6 @@ void StageTutorialTriggerCreationForm::Draw()
                     mStatus.c_str());
             }
             ImGui::TextDisabled(
-                "箱型モデルを使うと、モデルの位置・回転・スケールと反応範囲が一致します。");
-            ImGui::TextDisabled(
                 "ゲーム中は見えず、衝突しません。内部に入ると一度だけ開始します。");
         }
 
@@ -573,8 +569,6 @@ void StageJewelItemCreationForm::Draw()
     if (!canAdd) {
         ImGui::EndDisabled();
     }
-    ImGui::TextDisabled(
-        "追加解除まで、ゲーム画面をクリックするたびに配置できます。");
     ImGui::TreePop();
 }
 
@@ -641,8 +635,6 @@ void StageHazardActorCreationForm::Draw()
         0.01f,
         100.0f,
         "%.2f");
-    ImGui::TextDisabled(
-        "判定はアクターの各軸スケールと回転に追従します。");
     ImGui::DragFloat(
         "ダメージ##hazardActor",
         &mDamage,
@@ -705,8 +697,6 @@ void StageHazardActorCreationForm::Draw()
     if (!canAdd) {
         ImGui::EndDisabled();
     }
-    ImGui::TextDisabled(
-        "追加解除まで、ゲーム画面をクリックするたびに配置できます");
     ImGui::TreePop();
 }
 
@@ -816,7 +806,5 @@ void StageBoatArrivalPointCreationForm::Draw()
         ImGui::EndDisabled();
     }
 
-    ImGui::TextDisabled(
-        "追加後は一覧・クリック選択・ギズモ・複製・削除を利用できます。");
     ImGui::TreePop();
 }

@@ -100,11 +100,11 @@ void EndingRollDebugPanel::DrawSettings()
     DrawStringInput<8192>("スタッフロール", mConfig.creditsText, true);
 
     ImGui::Separator();
-    ImGui::TextUnformatted("最後の全画面End画像");
-    DrawImagePicker("End画像", mConfig.endImagePath);
-    ImGui::DragFloat("End表示開始", &mConfig.endImageStartTime, 0.1f, 0.0f, 600.0f, "%.1f 秒");
-    ImGui::DragFloat("Endフェードイン", &mConfig.endImageFadeInDuration, 0.01f, 0.0f, 30.0f, "%.2f 秒");
-    ImGui::DragFloat("End表示時間", &mConfig.endImageHoldDuration, 0.1f, 0.5f, 600.0f, "%.1f 秒");
+    ImGui::TextUnformatted("最後に表示する全画面画像");
+    DrawImagePicker("終了画面の画像", mConfig.endImagePath);
+    ImGui::DragFloat("終了画面の表示開始", &mConfig.endImageStartTime, 0.1f, 0.0f, 600.0f, "%.1f 秒");
+    ImGui::DragFloat("終了画面のフェードイン", &mConfig.endImageFadeInDuration, 0.01f, 0.0f, 30.0f, "%.2f 秒");
+    ImGui::DragFloat("終了画面の表示時間", &mConfig.endImageHoldDuration, 0.1f, 0.5f, 600.0f, "%.1f 秒");
 
     ImGui::Separator();
     ImGui::TextUnformatted("出現画像イベント");

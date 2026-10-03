@@ -310,9 +310,6 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
         ImGui::EndDisabled();
         ImGui::TextDisabled(
             "複製元にするオブジェクトを1つだけ選択してください。");
-    } else {
-        ImGui::TextDisabled(
-            "モデルやコンポーネントを維持し、位置と所属惑星をクリック先へ変更します。");
     }
 
     if (!mDuplicatePlacementStatus.empty()) {
@@ -410,8 +407,6 @@ void StageEditorPanel::DrawPlayerPlanetDebugMover()
             : "未設定";
 
     ImGui::SeparatorText("プレイヤー所属惑星");
-    ImGui::TextDisabled(
-        "選択した惑星へプレイヤーをデバッグ移動します。");
     if (!ImGui::BeginCombo(
             "現在の惑星##stageDebugPlayerPlanet",
             preview.c_str())) {
@@ -452,10 +447,6 @@ void StageEditorPanel::DrawStageClearProgressEditor()
     }
 
     ImGui::SeparatorText("ステージクリア状況");
-    ImGui::TextDisabled(
-        "チェックを変更すると即座に反映され、次回起動時にも保持されます。");
-    ImGui::TextDisabled(
-        "NPC会話・頭上の一言・クリア条件付きオブジェクトの判定に使用されます。");
 
     const int currentStageNum = mContext.game->GetCurrentStageNum();
     const int stageCount =
