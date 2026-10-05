@@ -42,9 +42,10 @@ public:
     const glm::vec3& GetViewDirection() const;
 
 private:
-    bool TryIntersectDragPlane(
+    bool TryIntersectEditLayerPlane(
         const glm::vec3& rayFrom,
         const glm::vec3& rayTo,
+        float planeHeight,
         glm::vec3& outIntersection) const;
     void UpdateSelectionDrag();
     void SyncEditLayerToPickedActor();
