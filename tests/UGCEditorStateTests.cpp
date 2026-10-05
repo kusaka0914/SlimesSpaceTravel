@@ -83,6 +83,8 @@ void DragResetClearsAllTransientMovement()
     UGCSelectionDragState state;
     state.isDragging = true;
     state.hasMoved = true;
+    state.dragStartCell = glm::ivec3(3, 0, 5);
+    state.appliedHorizontalCellDelta = glm::ivec3(2, 0, 1);
     state.appliedDelta = glm::vec3(1.0f, 2.0f, 3.0f);
     state.actorRefs.push_back(
         StageActorRef{StageActorType::Platform, 2, "platforms", "platform"});
@@ -92,6 +94,12 @@ void DragResetClearsAllTransientMovement()
     ExpectFalse(state.isDragging, "dragging reset");
     ExpectFalse(state.hasMoved, "movement reset");
     ExpectTrue(state.actorRefs.empty(), "actor references reset");
+    ExpectTrue(
+        state.dragStartCell == glm::ivec3(0),
+        "drag start cell reset");
+    ExpectTrue(
+        state.appliedHorizontalCellDelta == glm::ivec3(0),
+        "applied horizontal cell delta reset");
     ExpectNear(0.0f, state.appliedDelta.x, 0.0001f, "x delta reset");
 }
 

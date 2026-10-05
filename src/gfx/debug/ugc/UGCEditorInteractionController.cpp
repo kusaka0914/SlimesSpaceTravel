@@ -15,6 +15,7 @@
 #include "gfx/debug/stage/StageEditCommandController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/stage/UGCPlatformGrid.h"
 #include "gfx/debug/ugc/UGCSwitchConnectionState.h"
 #include "system/CameraSystem.h"
 #include "imgui.h"
@@ -165,21 +166,19 @@ void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
     mToolState.statusMessage = "選んだものを1マス動かしました";
 }
 
-bool UGCEditorInteractionController::TryIntersectDragPlane(
+bool UGCEditorInteractionController::TryIntersectEditLayerPlane(
     const glm::vec3& rayFrom,
     const glm::vec3& rayTo,
+    float planeHeight,
     glm::vec3& outIntersection) const
 {
     const glm::vec3 rayDirection = rayTo - rayFrom;
-    const float denominator = glm::dot(
-        rayDirection, mDragState.planeNormal);
-    if (std::abs(denominator) <= 0.000001f) {
+    if (std::abs(rayDirection.y) <= 0.000001f) {
         return false;
     }
 
-    const float rayParameter = glm::dot(
-        mDragState.planePoint - rayFrom,
-        mDragState.planeNormal) / denominator;
+    const float rayParameter =
+        (planeHeight - rayFrom.y) / rayDirection.y;
     if (rayParameter < 0.0f || rayParameter > 1.0f) {
         return false;
     }
@@ -214,19 +213,15 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
             return;
         }
 
-        const CameraPose cameraPose =
-            mContext.game->GetCameraSystem()->GetDebugCameraPose();
-        glm::vec3 planeNormal = cameraPose.position - cameraPose.target;
-        if (glm::length(planeNormal) <= 0.000001f) {
-            return;
-        }
-        mDragState.planeNormal = glm::normalize(planeNormal);
+        const float gridSize = mContext.game->GetUGCGridSize();
+        const float planeHeight =
+            static_cast<float>(mToolState.editLayer) * gridSize;
         const glm::vec3 selectionCenter =
             mSelectionController.CalculateSelectedActorsCenter();
-        mDragState.planePoint = selectionCenter;
 
         glm::vec3 intersection;
-        if (!TryIntersectDragPlane(rayFrom, rayTo, intersection)) {
+        if (!TryIntersectEditLayerPlane(
+                rayFrom, rayTo, planeHeight, intersection)) {
             return;
         }
 
@@ -234,8 +229,9 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
         mDragState.isMovingPlatformDestination =
             mSelectionController.IsMovingPlatformDestinationSelected();
         mDragState.hasMoved = false;
-        mDragState.offset =
-            selectionCenter - intersection;
+        mDragState.dragStartCell =
+            UGCPlatformGrid::CalculateGridPosition(intersection, gridSize);
+        mDragState.appliedHorizontalCellDelta = glm::ivec3(0);
         mDragState.initialCenter = selectionCenter;
         mDragState.appliedDelta = glm::vec3(0.0f);
         mDragState.savedDelta = glm::vec3(0.0f);
@@ -294,6 +290,8 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
         mDragState.isDragging = false;
         mDragState.isMovingPlatformDestination = false;
         mDragState.hasMoved = false;
+        mDragState.dragStartCell = glm::ivec3(0);
+        mDragState.appliedHorizontalCellDelta = glm::ivec3(0);
         mDragState.appliedDelta = glm::vec3(0.0f);
         mDragState.savedDelta = glm::vec3(0.0f);
         mDragState.actorRefs.clear();
@@ -303,29 +301,29 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
     glm::vec3 rayFrom;
     glm::vec3 rayTo;
     glm::vec3 intersection;
+    const float gridSize = mContext.game->GetUGCGridSize();
+    const float planeHeight =
+        static_cast<float>(mToolState.editLayer) * gridSize;
     if (!mSelectionController.TryCreateMouseRay(rayFrom, rayTo) ||
-        !TryIntersectDragPlane(rayFrom, rayTo, intersection)) {
+        !TryIntersectEditLayerPlane(
+            rayFrom, rayTo, planeHeight, intersection)) {
         return;
     }
 
-    const float gridSize = mContext.game->GetUGCGridSize();
-    const glm::vec3 unsnappedTarget =
-        intersection + mDragState.offset;
-    const glm::vec3 unsnappedDelta =
-        unsnappedTarget - mDragState.initialCenter;
-    const glm::vec3 snappedTarget =
-        mDragState.initialCenter + glm::vec3(
-            std::round(unsnappedDelta.x / gridSize) * gridSize,
-            std::round(unsnappedDelta.y / gridSize) * gridSize,
-            std::round(unsnappedDelta.z / gridSize) * gridSize);
-    const glm::vec3 currentCenter = mDragState.isMovingPlatformDestination
-        ? mSelectionController
-              .CalculateSelectedMovingPlatformDestinationsCenter()
-        : mSelectionController.CalculateSelectedActorsCenter();
-    const glm::vec3 movementDelta = snappedTarget - currentCenter;
-    if (glm::length(movementDelta) <= 0.000001f) {
+    const glm::ivec3 currentCell =
+        UGCPlatformGrid::CalculateGridPosition(intersection, gridSize);
+    glm::ivec3 horizontalCellDelta =
+        currentCell - mDragState.dragStartCell;
+    horizontalCellDelta.y = 0;
+    const glm::ivec3 unappliedCellDelta =
+        horizontalCellDelta - mDragState.appliedHorizontalCellDelta;
+    if (unappliedCellDelta.x == 0 && unappliedCellDelta.z == 0) {
         return;
     }
+    const glm::vec3 movementDelta(
+        static_cast<float>(unappliedCellDelta.x) * gridSize,
+        0.0f,
+        static_cast<float>(unappliedCellDelta.z) * gridSize);
 
     if (!mDragState.hasMoved) {
         mEditCommandController.PushUndo();
@@ -337,6 +335,7 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
     } else {
         mSelectionController.MoveSelectedActorsByDelta(movementDelta);
     }
+    mDragState.appliedHorizontalCellDelta = horizontalCellDelta;
     mDragState.appliedDelta += movementDelta;
 }
 
@@ -387,7 +386,6 @@ void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
             mDragState.appliedDelta += layerMovement;
         }
 
-        mDragState.planePoint += layerMovement;
     }
 
     mToolState.editLayer = nextLayer;
@@ -596,6 +594,10 @@ const glm::vec3& UGCEditorViewController::GetViewDirection() const
 
 void UGCEditorInteractionController::UpdateSceneInteraction()
 {
+    if (!mToolState.isEraserMode ||
+        !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        mStageAddActorPanel.EndUGCEraseGesture();
+    }
     if (mStageAddActorPanel.IsPlacementActive()) {
         mStageAddActorPanel.UpdatePlacement();
     } else {
@@ -615,10 +617,6 @@ void UGCEditorInteractionController::UpdateSceneInteraction()
         if (allowsSelectionInteraction &&
             !mSelectionController.IsBoxSelectionGestureActive()) {
             UpdateSelectionDrag();
-        }
-        if (mToolState.isEraserMode && !isChoosingSwitchTarget &&
-            !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            mStageAddActorPanel.EndUGCEraseGesture();
         }
         if (mToolState.isEraserMode && !isChoosingSwitchTarget &&
             ImGui::IsMouseDown(ImGuiMouseButton_Left)) {

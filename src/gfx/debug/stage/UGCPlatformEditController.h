@@ -47,6 +47,7 @@ private:
     StageSelectionController* mSelectionController = nullptr;
     std::function<void()> mPushUndoCallback;
     int mGridLayer = 0;
+    bool mHasPushedEraseStrokeUndo = false;
     std::optional<glm::ivec3> mLastErasedCell;
     std::optional<UGCGeneratedPlatformRegion>
         mMovingDestinationEraseRegion;
