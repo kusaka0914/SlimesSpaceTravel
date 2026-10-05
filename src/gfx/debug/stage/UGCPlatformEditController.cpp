@@ -94,8 +94,9 @@ bool UGCPlatformEditController::TryEraseCell()
             *mLastErasedCell == erasedDestinationCell) {
             return false;
         }
-        if (mPushUndoCallback) {
+        if (!mHasPushedEraseStrokeUndo && mPushUndoCallback) {
             mPushUndoCallback();
+            mHasPushedEraseStrokeUndo = true;
         }
         const bool removed = mPlatformCellService
             .RemoveMovingPlatformDestinationCell(
@@ -126,8 +127,9 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
-    if (mPushUndoCallback) {
+    if (!mHasPushedEraseStrokeUndo && mPushUndoCallback) {
         mPushUndoCallback();
+        mHasPushedEraseStrokeUndo = true;
     }
     const bool removed = mPlatformCellService.RemoveCellAtGridPosition(
         0,
@@ -143,6 +145,7 @@ bool UGCPlatformEditController::TryEraseCell()
 
 void UGCPlatformEditController::EndEraseGesture()
 {
+    mHasPushedEraseStrokeUndo = false;
     mLastErasedCell.reset();
     mMovingDestinationEraseRegion.reset();
     mMovingDestinationEraseLayer.reset();

@@ -302,9 +302,14 @@ void StageActorPlacementController::UpdatePlacement()
         return;
     }
 
+    const bool usesPlatformFootprint =
+        mPlacementDisplayName == "通常足場" ||
+        mPlacementDisplayName == "消える足場" ||
+        mPlacementDisplayName == "くっつき足場" ||
+        mPlacementDisplayName == "移動足場：出発点" ||
+        mPlacementDisplayName == "移動足場：到着点";
     if (mContext.game->GetIsUGCMode() &&
-        mSnapPlacementToGridIntersections) {
-        // 保存するセルはグリッド角だが、生成される足場はセル中心に置かれる。ゴーストも完成後の位置を表示する。
+        mSnapPlacementToGridIntersections && !usesPlatformFootprint) {
         const float gridSize = mContext.game->GetUGCGridSize();
         placement.worldPosition = UGCPlatformGrid::SnapToGridIntersections(
             placement.worldPosition, gridSize, mUGCEditLayer);
@@ -328,17 +333,8 @@ void StageActorPlacementController::UpdatePlacement()
 
     glm::vec3 previewPosition = placement.worldPosition;
     if (mContext.game->GetIsUGCMode() && mShowUGCPlatformPreview) {
-
-
-
         const float gridSize = mContext.game->GetUGCGridSize();
         glm::vec3 previewModelScale = mUGCPlacementPreviewModelScale;
-        const bool usesPlatformFootprint =
-            mPlacementDisplayName == "通常足場" ||
-            mPlacementDisplayName == "消える足場" ||
-            mPlacementDisplayName == "くっつき足場" ||
-            mPlacementDisplayName == "移動足場：出発点" ||
-            mPlacementDisplayName == "移動足場：到着点";
         if (usesPlatformFootprint) {
             previewPosition =
                 UGCPlatformGrid::CalculateFootprintPreviewPosition(
@@ -470,8 +466,6 @@ void StageActorPlacementController::UpdateMovingPlatformStrokePlacement()
     }
 
     const float gridSize = mContext.game->GetUGCGridSize();
-    placement.worldPosition = UGCPlatformGrid::SnapToGridIntersections(
-        placement.worldPosition, gridSize, mUGCEditLayer);
     const glm::vec3 hoveredFootprintCenter =
         UGCPlatformGrid::CalculateFootprintPreviewPosition(
             placement.worldPosition,
