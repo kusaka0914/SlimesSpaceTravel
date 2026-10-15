@@ -378,8 +378,8 @@ void Game::RunLoop()
             std::chrono::duration<float, std::milli>(
                 std::chrono::steady_clock::now() - frameStartTime).count());
 
-        // VSync can be overridden by the graphics driver. Keep a software
-        // limit as a fallback so the game never drives the GPU unchecked.
+        // Graphics Driverの設定によってVSyncが上書きされる場合があるため、
+        // GPUが無制限に動作しないようFallbackとしてSoftware側でもFPSを制限する。
         std::this_thread::sleep_until(
             frameStartTime + minimumFrameDuration);
     }

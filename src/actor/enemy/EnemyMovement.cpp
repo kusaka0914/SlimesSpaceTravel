@@ -256,9 +256,10 @@ glm::vec3 ClampAirborneMovementToCurrentEllipseFaceMovementArea(
         return requestedMovement;
     }
 
-    // The face boundary limits travel along the ellipse, not movement toward
-    // its surface. Keeping the normal component prevents an airborne enemy
-    // from being suspended when its knockback reaches the face boundary.
+    // 面の境界では楕円体表面に沿った移動だけを制限し、
+    // 表面へ向かう移動成分は残す。
+    // これにより、空中のEnemyがKnockbackで境界へ到達した際に
+    // 空中で停止してしまうことを防ぐ。
     const glm::vec3 normalMovement =
         upDirection *
         glm::dot(requestedMovement, upDirection);

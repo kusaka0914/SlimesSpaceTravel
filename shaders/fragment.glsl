@@ -134,8 +134,8 @@ void main()
     vec3 diffuseLight = finalDiffuse * sunColor * sunIntensity;
     float shadow = CalculateShadow(fragPos, norm, lightDir);
 
-    // Normalized vectors can have a dot product slightly above one due to
-    // rounding. A negative pow base can produce NaN and contaminate bloom.
+    // 正規化済みVectorでも丸め誤差によって内積がわずかに1を超える場合がある。
+    // その結果powの底が負になるとNaNが発生し、Bloom処理へ影響するためClampする。
     float rim = clamp(1.0 - dot(viewDir, norm), 0.0, 1.0);
     rim = pow(rim, max(rimPower, 0.01));
     float rimStrength = mix(

@@ -1046,13 +1046,6 @@ void Renderer3D::DrawInactiveActorPreview(
 
 void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 {
-    // Directional shadows already contain characters. Drawing the legacy
-    // surface decal as well can make it intersect nearby walls and flicker as
-    // the camera moves, especially on small spherical planets.
-    if (mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable()) {
-        return;
-    }
-
     if (!actor || !actor->GetIsActive() ||
         actor->GetRenderOpacity() <= 0.001f || !mGame) {
         return;

@@ -19,7 +19,8 @@ const int COMPOSITE_PASS = 2;
 
 vec3 SanitizeHdrColor(vec3 color)
 {
-    // One non-finite scene pixel otherwise spreads across every blur pass.
+    // NaNやInfを含むPixelはBlur Passごとに周囲へ広がるため、
+    // Post Processの前に有限値へ補正する。
     for (int channel = 0; channel < 3; ++channel) {
         if (isnan(color[channel]) || isinf(color[channel])) {
             color[channel] = 0.0;
