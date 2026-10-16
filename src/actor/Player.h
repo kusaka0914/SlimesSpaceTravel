@@ -126,6 +126,7 @@ public:
     bool IsSpecialCharging() const { return mCombat.IsSpecialCharging(); }
     bool IsContinuousAttacking() const { return mCombat.IsContinuousAttacking(); }
     std::uint64_t GetResolvedAttackSequence() const { return mCombat.GetResolvedAttackSequence(); }
+    bool HasPendingAttackHit() const { return mCombat.HasPendingAttackHit(); }
     void SetAttack(float attack) { mCombat.SetAttack(attack); }
     void SetAttackSpeed(float attackSpeed) { mCombat.SetAttackSpeed(attackSpeed); }
     void SetGroundWeakAttackCooldownSeconds(float cooldownSeconds)

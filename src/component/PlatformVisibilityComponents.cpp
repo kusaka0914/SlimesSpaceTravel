@@ -1,22 +1,11 @@
 #include "component/PlatformVisibilityComponents.h"
 
 #include "Game.h"
-#include "Stage.h"
-#include "actor/Actor.h"
-#include "actor/Boat.h"
-#include "actor/Enemy.h"
-#include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
-#include "component/PlatformMovementComponent.h"
-#include "system/ActorLoadSystem.h"
-#include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <cmath>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <iterator>
 
 namespace {
 

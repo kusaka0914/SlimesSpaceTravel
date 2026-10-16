@@ -1,7 +1,5 @@
 #include "effect/particle/ParticleConfigLoader.h"
 
-#include <yaml-cpp/yaml.h>
-
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -10,13 +8,13 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 namespace {
 std::string ToLower(std::string value)
 {
-    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
-        return static_cast<char>(std::tolower(character));
-    });
+    std::transform(value.begin(), value.end(), value.begin(),
+                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return value;
 }
 
@@ -41,6 +39,7 @@ ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& d
         return defaultValue;
     }
 
+    // 固定値とmin/maxの範囲指定を同じ設定項目で扱う。
     if (node.IsScalar()) {
         const float value = node.as<float>();
         return {value, value};
@@ -54,6 +53,7 @@ ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& d
         result.max = node["max"].as<float>();
     }
 
+    // 上下限を逆に記述した設定も、範囲として読み込む。
     if (result.min > result.max) {
         std::swap(result.min, result.max);
     }
@@ -88,6 +88,7 @@ glm::vec4 ReadVec4(const YAML::Node& node, const glm::vec4& defaultValue)
     };
 }
 
+// 列挙値の表記は大文字・小文字を区別せず、未知の値には各モードの既定値を使う。
 ParticleBlendMode ParseBlendMode(const std::string& value)
 {
     return ToLower(value) == "alpha" ? ParticleBlendMode::Alpha : ParticleBlendMode::Additive;
@@ -96,9 +97,8 @@ ParticleBlendMode ParseBlendMode(const std::string& value)
 ParticleRenderMode ParseRenderMode(const std::string& value)
 {
     const std::string lowerValue = ToLower(value);
-    return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned"
-               ? ParticleRenderMode::VelocityAligned
-               : ParticleRenderMode::Billboard;
+    return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned" ? ParticleRenderMode::VelocityAligned
+                                                                               : ParticleRenderMode::Billboard;
 }
 
 ParticleDirectionMode ParseDirectionMode(const std::string& value)
@@ -166,8 +166,7 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
     definition.spreadAngleDegrees = ReadFloat(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
     definition.gravity = ReadFloat(emitterNode, "gravity", definition.gravity);
     definition.drag = std::max(0.0f, ReadFloat(emitterNode, "drag", definition.drag));
-    definition.velocityStretch =
-        std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
+    definition.velocityStretch = std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
 
     definition.positionOffset = ReadVec3(emitterNode["positionOffset"], definition.positionOffset);
     definition.startColor = ReadVec4(emitterNode["colorStart"], definition.startColor);
@@ -238,11 +237,10 @@ void EmitEmitterDefinition(YAML::Emitter& emitter, const ParticleEmitterDefiniti
 
     emitter << YAML::EndMap;
 }
-}
+} // namespace
 
-bool ParticleConfigLoader::Load(
-    const std::string& filePath,
-    std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions)
+bool ParticleConfigLoader::Load(const std::string& filePath,
+                                std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions)
 {
     try {
         const YAML::Node root = YAML::LoadFile(filePath);
@@ -260,16 +258,19 @@ bool ParticleConfigLoader::Load(
             const YAML::Node effectNode = effectEntry.second;
             const YAML::Node emittersNode = effectNode["emitters"];
 
+            // エミッター列がない定義だけを除外し、残りのエフェクトは読み込みを続ける。
             if (!emittersNode || !emittersNode.IsSequence()) {
                 std::cerr << "Particle effect '" << effectId << "' has no emitter sequence.\n";
                 continue;
             }
 
             ParticleEffectDefinition effectDefinition;
-            effectDefinition.displayName =
-                ReadString(effectNode, "name", effectId);
+            effectDefinition.displayName = ReadString(effectNode, "name", effectId);
+
             for (const YAML::Node& emitterNode : emittersNode) {
                 ParticleEmitterDefinition emitterDefinition = ReadEmitterDefinition(emitterNode);
+
+                // 描画用テクスチャが未指定、または粒子を生成しないエミッターは登録しない。
                 if (emitterDefinition.texturePath.empty() || emitterDefinition.count <= 0) {
                     continue;
                 }
@@ -281,6 +282,7 @@ bool ParticleConfigLoader::Load(
             }
         }
 
+        // 変換途中の例外で呼び出し元の定義を失わないよう、全件の読み込み後に置き換える。
         outDefinitions = std::move(loadedDefinitions);
         return true;
     } catch (const YAML::Exception& exception) {
@@ -289,9 +291,8 @@ bool ParticleConfigLoader::Load(
     }
 }
 
-bool ParticleConfigLoader::Save(
-    const std::string& filePath,
-    const std::unordered_map<std::string, ParticleEffectDefinition>& definitions)
+bool ParticleConfigLoader::Save(const std::string& filePath,
+                                const std::unordered_map<std::string, ParticleEffectDefinition>& definitions)
 {
     try {
         const std::filesystem::path outputPath(filePath);
@@ -307,6 +308,7 @@ bool ParticleConfigLoader::Save(
             effectIds.push_back(effectId);
         }
 
+        // unordered_mapの走査順に依存しない出力にし、保存ごとの差分を抑える。
         std::sort(effectIds.begin(), effectIds.end());
 
         YAML::Emitter emitter;
@@ -318,9 +320,7 @@ bool ParticleConfigLoader::Save(
 
             emitter << YAML::Key << effectId << YAML::Value << YAML::BeginMap;
             emitter << YAML::Key << "name" << YAML::Value
-                    << (effectDefinition.displayName.empty()
-                            ? effectId
-                            : effectDefinition.displayName);
+                    << (effectDefinition.displayName.empty() ? effectId : effectDefinition.displayName);
             emitter << YAML::Key << "emitters" << YAML::Value << YAML::BeginSeq;
 
             for (const ParticleEmitterDefinition& emitterDefinition : effectDefinition.emitters) {
