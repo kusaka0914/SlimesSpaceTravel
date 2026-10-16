@@ -8,8 +8,7 @@
 #include "actor/enemy/behavior/actions/EnemyRadialAttackAction.h"
 #include "actor/enemy/behavior/actions/EnemyTripleChargeAttackAction.h"
 
-std::unique_ptr<EnemyBehaviorAction> EnemyBehaviorActionFactory::Create(
-    const EnemyBehaviorActionConfig& config)
+std::unique_ptr<EnemyBehaviorAction> EnemyBehaviorActionFactory::Create(const EnemyBehaviorActionConfig& config)
 {
     if (config.type == "idle") {
         return std::make_unique<EnemyIdleAction>(config);

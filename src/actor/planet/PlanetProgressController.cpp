@@ -68,8 +68,7 @@ void PlanetProgressController::OnEnemyDead(const PlanetActorRegistry& actorRegis
 bool PlanetProgressController::CheckIsAllEnemiesDead(const PlanetActorRegistry& actorRegistry) const
 {
     for (Enemy* enemy : actorRegistry.GetEnemies()) {
-        if (!enemy || !enemy->GetIsActive() ||
-            enemy->GetIsDead()) {
+        if (!enemy || !enemy->GetIsActive() || enemy->GetIsDead()) {
             continue;
         }
 

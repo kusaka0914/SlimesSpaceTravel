@@ -23,31 +23,23 @@ void PlayerJewelGauge::Add(int value)
         return;
     }
 
-    mCount = std::min(
-        mCount + value,
-        automaticRecoveryMaxCount);
+    mCount = std::min(mCount + value, automaticRecoveryMaxCount);
 }
 
 void PlayerJewelGauge::AddFromItem(int value)
 {
-    mCount = std::clamp(
-        mCount + value,
-        0,
-        itemPickupMaxCount);
+    mCount = std::clamp(mCount + value, 0, itemPickupMaxCount);
 }
 
 void PlayerJewelGauge::RestoreFull()
 {
-    mCount = std::max(
-        mCount,
-        automaticRecoveryMaxCount);
+    mCount = std::max(mCount, automaticRecoveryMaxCount);
     mRecoverTimer = -1.0f;
 }
 
 bool PlayerJewelGauge::ShouldStartRecoverTimer() const
 {
-    return mCount < automaticRecoveryMaxCount &&
-           mRecoverTimer <= 0.0f;
+    return mCount < automaticRecoveryMaxCount && mRecoverTimer <= 0.0f;
 }
 
 void PlayerJewelGauge::StartRecoverTimer(float seconds)

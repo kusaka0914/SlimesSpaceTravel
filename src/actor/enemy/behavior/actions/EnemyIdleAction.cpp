@@ -22,6 +22,5 @@ EnemyBehaviorActionResult EnemyIdleAction::Update(EnemyBehaviorContext& context,
 {
     (void)deltaTime;
     context.stateMachine.UpdateIdle(context.enemy, context.status, context.combat);
-    return CanContinue(context) ? EnemyBehaviorActionResult::Running
-                                : EnemyBehaviorActionResult::Finished;
+    return CanContinue(context) ? EnemyBehaviorActionResult::Running : EnemyBehaviorActionResult::Finished;
 }

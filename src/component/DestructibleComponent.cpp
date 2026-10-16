@@ -1,4 +1,5 @@
-#include "DestructibleComponent.h"
+#include "component/DestructibleComponent.h"
+
 #include "Game.h"
 #include "actor/Player.h"
 #include "system/AudioSystem.h"
@@ -33,9 +34,7 @@ void DestructibleComponent::TryApplyDamage()
             continue;
         }
 
-        ApplyDamage(
-            player->CalculateOutgoingAttackDamage(
-                player->GetAttack()));
+        ApplyDamage(player->CalculateOutgoingAttackDamage(player->GetAttack()));
     }
 }
 

@@ -76,10 +76,7 @@ public:
 
 protected:
     float GetWeight() const { return mConfig.weight; }
-    float GetParameter(const std::string& name, float fallback) const
-    {
-        return mConfig.GetParameter(name, fallback);
-    }
+    float GetParameter(const std::string& name, float fallback) const { return mConfig.GetParameter(name, fallback); }
 
 private:
     EnemyBehaviorActionConfig mConfig;

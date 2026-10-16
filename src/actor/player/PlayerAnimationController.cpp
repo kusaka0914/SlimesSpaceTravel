@@ -42,7 +42,7 @@ std::string GetAnimationNameSuffix(const std::string& normalizedName)
     const std::size_t separatorPosition = normalizedName.find_last_of("|:/\\");
     return separatorPosition == std::string::npos ? normalizedName : normalizedName.substr(separatorPosition + 1);
 }
-}
+} // namespace
 
 void PlayerAnimationController::Configure(PlayerAnimationDefinitions animationDefinitions)
 {
@@ -184,8 +184,7 @@ void PlayerAnimationController::PlayBaseAnimation()
 }
 
 void PlayerAnimationController::PlayResolvedAnimation(const std::string& animationId,
-                                                       const ResolvedAnimation& animation,
-                                                       bool shouldRestart)
+                                                      const ResolvedAnimation& animation, bool shouldRestart)
 {
     if (!animation.clip) {
         return;

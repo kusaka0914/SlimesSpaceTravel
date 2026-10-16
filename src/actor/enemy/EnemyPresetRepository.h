@@ -55,31 +55,22 @@ class EnemyPresetRepository {
 public:
     // common以外のプリセットを読み込み、成功時だけoutPresetsを置き換える。
     // 失敗時はfalseを返してoutErrorMessageへ理由を設定し、元のoutPresetsを保持する。
-    static bool Load(
-        const std::string& filePath,
-        std::vector<EnemyPresetDefinition>& outPresets,
-        std::string& outErrorMessage);
+    static bool Load(const std::string& filePath, std::vector<EnemyPresetDefinition>& outPresets,
+                     std::string& outErrorMessage);
 
     // 既存YAMLへ保存する。originalPresetIdが空なら追加、指定時はそのIDを置換し、攻撃確率も正規化する。
     // 成功時はtrueで更新番号を進める。falseを返す場合はoutErrorMessageへ理由を設定する。
-    static bool Save(
-        const std::string& filePath,
-        const std::string& originalPresetId,
-        const EnemyPresetDefinition& preset,
-        std::string& outErrorMessage);
+    static bool Save(const std::string& filePath, const std::string& originalPresetId,
+                     const EnemyPresetDefinition& preset, std::string& outErrorMessage);
 
     // sourceIdに_copyと連番を付け、指定一覧と重複しないIDを返す。空のsourceIdはenemyとして扱う。
-    static std::string CreateUniqueId(
-        const std::string& sourceId,
-        const std::vector<EnemyPresetDefinition>& presets);
+    static std::string CreateUniqueId(const std::string& sourceId, const std::vector<EnemyPresetDefinition>& presets);
 
     // 指定タイプの初期設定を返す。編集対象外のタイプはmeleeAttackへ置き換える。
-    static EnemyAttackPresetDefinition CreateDefaultAttack(
-        const std::string& attackType);
+    static EnemyAttackPresetDefinition CreateDefaultAttack(const std::string& attackType);
 
     // 負の確率を0にし、合計100%へ正規化する。合計がほぼ0なら均等配分し、空配列は変更しない。
-    static void NormalizeAttackProbabilities(
-        std::vector<EnemyAttackPresetDefinition>& attacks);
+    static void NormalizeAttackProbabilities(std::vector<EnemyAttackPresetDefinition>& attacks);
 
     // このプロセス内でSaveが成功するたびに増える更新番号。外部からのファイル変更は検出しない。
     static std::uint64_t GetRevision();

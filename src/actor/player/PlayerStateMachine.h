@@ -42,11 +42,7 @@ private:
                          PlayerStatus& status, float deltaTime);
     void UpdateStrongAttacking(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                PlayerStatus& status, float deltaTime);
-    void UpdateAirSlamAttacking(
-        Player& player,
-        PlayerMovement& movement,
-        PlayerCombat& combat,
-        float deltaTime);
+    void UpdateAirSlamAttacking(Player& player, PlayerMovement& movement, PlayerCombat& combat, float deltaTime);
     void UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat, PlayerStatus& status,
                            float deltaTime);
     void UpdateSpecialAttackCharging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
@@ -59,34 +55,18 @@ private:
 
     bool TryStartAssistStrongAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                                     float deltaTime);
-    bool TryStartAssistBrokenEnemyAirCombo(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerCombat& combat,
-        PlayerStatus& status,
-        float deltaTime);
-    bool TryStartAssistAirSlamAttack(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerCombat& combat);
-    bool TryStartAirSlamAttack(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerCombat& combat,
-        float deltaTime);
-    bool ApplyIdleGravity(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerCombat& combat,
-        float deltaTime);
+    bool TryStartAssistBrokenEnemyAirCombo(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                           PlayerCombat& combat, PlayerStatus& status, float deltaTime);
+    bool TryStartAssistAirSlamAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                     PlayerCombat& combat);
+    bool TryStartAirSlamAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                               float deltaTime);
+    bool ApplyIdleGravity(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
+                          float deltaTime);
     bool TryStartJumping(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          float deltaTime);
-    bool TryRecover(Player& player, PlayerInput& input, PlayerCombat& combat,
-                    PlayerJewelGauge& jewelGauge, PlayerStatus& status);
+    bool TryRecover(Player& player, PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
+                    PlayerStatus& status);
     void UpdateIdleMovement(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                             PlayerStatus& status, bool wasInputMovementApplied, float deltaTime);
     bool TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge);
@@ -99,12 +79,8 @@ private:
                                    float deltaTime);
     bool TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                          PlayerStatus& status);
-    bool TryStartAssistAirDodgeAttack(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerCombat& combat,
-        PlayerStatus& status);
+    bool TryStartAssistAirDodgeAttack(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                      PlayerCombat& combat, PlayerStatus& status);
     bool TryStartAttack(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerCombat& combat,
                         PlayerStatus& status, float deltaTime);
 

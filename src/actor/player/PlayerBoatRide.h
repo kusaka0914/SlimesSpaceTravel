@@ -10,12 +10,7 @@ class PlayerRespawn;
 class PlayerBoatRide {
 public:
     // deltaTimeは秒。降船入力を先に扱い、乗船・追従を更新する。
-    void Update(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerRespawn& respawn,
-        float deltaTime);
+    void Update(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerRespawn& respawn, float deltaTime);
 
     // boatは非null。船の位置へ合わせ、Playerを非アクティブにする。
     void FollowMovingBoat(Player& player, Boat* boat) const;

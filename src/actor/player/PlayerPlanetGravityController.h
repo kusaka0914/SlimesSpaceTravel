@@ -15,14 +15,10 @@ public:
     void Update(Player& player, PlayerMovement& movement, float deltaTime);
 
     // 離陸時に重力切替を開始する。tookOffFromPlatformなら上昇中は離陸時の重力方向を保持する。
-    void OnJumpStarted(
-        Player& player,
-        PlayerMovement& movement,
-        bool tookOffFromPlatform);
+    void OnJumpStarted(Player& player, PlayerMovement& movement, bool tookOffFromPlatform);
 
     // 空中行動に合わせて接地レイ未検出の待ち時間を戻す。接地中・切替無効時は何もしない。
-    void RestartFallbackDelayForAirborneAction(
-        const Player& player);
+    void RestartFallbackDelayForAirborneAction(const Player& player);
 
     void OnGroundRayCastSucceeded();
 
@@ -35,48 +31,24 @@ public:
     bool ShouldUseEllipseSurfaceGravity(const Player& player) const;
 
     // 物理計算用の単位上方向。描画の補間方向とは異なる場合があり、有効な方向なしではY上向きを返す。
-    glm::vec3 CalculateAirbornePhysicsUpDirection(
-        const Player& player) const;
-    bool ShouldAcceptLandingSurface(
-        const glm::vec3& surfaceNormal) const;
+    glm::vec3 CalculateAirbornePhysicsUpDirection(const Player& player) const;
+    bool ShouldAcceptLandingSurface(const glm::vec3& surfaceNormal) const;
     bool WasFallbackAppliedThisJump() const { return mFallbackAppliedThisJump; }
-    bool ShouldPreservePlatformTakeoffDirection() const
-    {
-        return mShouldPreservePlatformTakeoffDirection;
-    }
+    bool ShouldPreservePlatformTakeoffDirection() const { return mShouldPreservePlatformTakeoffDirection; }
 
 private:
     void SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet);
 
     void ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const;
 
-    bool TryActivateOverheadGravityRay(
-        Player& player,
-        PlayerMovement& movement,
-        float deltaTime);
+    bool TryActivateOverheadGravityRay(Player& player, PlayerMovement& movement, float deltaTime);
 
-    void UpdateEllipseAirborneGravity(
-        Player& player,
-        bool isDodging,
-        float deltaTime);
-    bool ShouldActivateEllipseSurfaceGravity(
-        const Player& player,
-        const Planet& planet) const;
-    void ApplyEllipseSurfaceAttraction(
-        Player& player,
-        const Planet& planet,
-        float deltaTime) const;
-    Planet* SelectNearbyAttractingPlanet(
-        Player& player,
-        PlayerMovement& movement);
-    void ApplyNearbySurfaceAttraction(
-        Player& player,
-        const Planet& planet,
-        float deltaTime) const;
-    void SmoothAirborneUpVec(
-        Player& player,
-        const glm::vec3& targetUp,
-        float deltaTime);
+    void UpdateEllipseAirborneGravity(Player& player, bool isDodging, float deltaTime);
+    bool ShouldActivateEllipseSurfaceGravity(const Player& player, const Planet& planet) const;
+    void ApplyEllipseSurfaceAttraction(Player& player, const Planet& planet, float deltaTime) const;
+    Planet* SelectNearbyAttractingPlanet(Player& player, PlayerMovement& movement);
+    void ApplyNearbySurfaceAttraction(Player& player, const Planet& planet, float deltaTime) const;
+    void SmoothAirborneUpVec(Player& player, const glm::vec3& targetUp, float deltaTime);
 
     Planet* ResolvePlanetFromGroundActor(Actor* groundActor) const;
     Planet* ResolveFallbackPlanet(const Player& player) const;

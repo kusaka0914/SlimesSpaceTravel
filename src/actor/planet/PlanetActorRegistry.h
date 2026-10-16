@@ -88,12 +88,9 @@ public:
     Star* GetStar() const { return mStar; }
 
 private:
-    template <class TActor>
-    static void RemovePointer(std::vector<TActor*>& actors, TActor* actor)
+    template <class TActor> static void RemovePointer(std::vector<TActor*>& actors, TActor* actor)
     {
-        actors.erase(
-            std::remove(actors.begin(), actors.end(), actor),
-            actors.end());
+        actors.erase(std::remove(actors.begin(), actors.end(), actor), actors.end());
     }
 
     std::vector<Enemy*> mEnemies;

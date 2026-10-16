@@ -22,13 +22,7 @@ public:
 
     // 配置物からの被弾を処理する。無敵中は無視し、成立時はノックバックと攻撃中断を反映する。
     // damageSourcePositionはワールド座標。空中ではダメージを2倍にする。
-    static void ApplyFromActor(
-        Player& player,
-        PlayerInput& input,
-        PlayerMovement& movement,
-        PlayerStateMachine& stateMachine,
-        PlayerCombat& combat,
-        PlayerStatus& status,
-        const glm::vec3& damageSourcePosition,
-        float damage);
+    static void ApplyFromActor(Player& player, PlayerInput& input, PlayerMovement& movement,
+                               PlayerStateMachine& stateMachine, PlayerCombat& combat, PlayerStatus& status,
+                               const glm::vec3& damageSourcePosition, float damage);
 };

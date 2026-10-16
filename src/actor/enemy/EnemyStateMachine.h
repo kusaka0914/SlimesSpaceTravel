@@ -43,25 +43,16 @@ public:
     void UpdateDying(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
 
     void UpdateIdle(Enemy& enemy, EnemyStatus& status, EnemyCombat& combat);
-    void UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat, float deltaTime);
+    void UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
+                        float deltaTime);
     void UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
-    void UpdatePreAttackApproach(
-        Enemy& enemy,
-        EnemyStatus& status,
-        EnemyMovement& movement,
-        float deltaTime);
-    void UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat, float deltaTime);
+    void UpdatePreAttackApproach(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
+    void UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
+                         float deltaTime);
     void UpdateKnockedBack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
     void UpdatePostAttackRetreatDelay(float deltaTime);
-    void UpdatePostAttackRetreat(
-        Enemy& enemy,
-        EnemyStatus& status,
-        EnemyMovement& movement,
-        float deltaTime);
-    void UpdatePostRetreatRecovery(
-        Enemy& enemy,
-        EnemyStatus& status,
-        float deltaTime);
+    void UpdatePostAttackRetreat(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, float deltaTime);
+    void UpdatePostRetreatRecovery(Enemy& enemy, EnemyStatus& status, float deltaTime);
 
     void StartIdle(Enemy& enemy);
     void StartTracking(Enemy& enemy);
@@ -102,18 +93,12 @@ public:
     // 予兆未通知で、攻撃準備の残り時間が1秒以下かを返す。通知済みフラグは変更しない。
     bool IsJustBeforeAttack(const EnemyStatus& status) const;
     bool IsAttackImpactActive(const EnemyStatus& status) const;
-    bool ShouldPreservePreparationTimer() const
-    {
-        return mShouldPreservePreparationTimer;
-    }
+    bool ShouldPreservePreparationTimer() const { return mShouldPreservePreparationTimer; }
     bool IsProgressing(const EnemyStatus& status) const;
     bool IsAlive() const { return mLifeState == LifeState::Alive; }
     bool IsDead() const { return mLifeState == LifeState::Dead; }
     bool IsAlive(const Enemy& enemy) const;
-    const EnemyAttackFrame& GetActiveAttackFrame() const
-    {
-        return mActiveAttackFrame;
-    }
+    const EnemyAttackFrame& GetActiveAttackFrame() const { return mActiveAttackFrame; }
 
 private:
     bool ShouldTriggerProbability(float probabilityPercent);

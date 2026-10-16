@@ -23,29 +23,19 @@ public:
     bool IsAttacking() const;
 
     // 判定を実行するたびに増える攻撃番号。障害物が同じ攻撃へ重複反応するのを防ぐために使う。
-    std::uint64_t GetResolvedAttackSequence() const
-    {
-        return mResolvedAttackSequence;
-    }
+    std::uint64_t GetResolvedAttackSequence() const { return mResolvedAttackSequence; }
     bool HasPendingAttackHit() const { return mHasPendingAttackHit; }
     bool CanMoveDuringAttack() const
     {
-        return mAirAttackMovementUnlockedByDodge ||
-               (mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking);
+        return mAirAttackMovementUnlockedByDodge || (mAttackMoveLockRemaining <= 0.0f && !mIsAirAttacking);
     }
     bool CanDodgeDuringAttack() const { return mAttackDodgeLockRemaining <= 0.0f; }
     bool IsSpecialCharging() const { return mSpecialChargingTimer >= 0.0f; }
     bool IsContinuousAttacking() const { return mContinuousAttackingTimer >= 0.0f; }
     bool IsAirAttacking() const { return mIsAirAttacking; }
     bool IsAirDodgeAttackActive() const { return mIsAirDodgeAttackActive; }
-    bool IsEnhancedAirDodgeAttackActive() const
-    {
-        return mIsEnhancedAirDodgeAttackActive;
-    }
-    bool CanStartAirAttack() const
-    {
-        return mAirAttackCount < maximumAirAttackCount;
-    }
+    bool IsEnhancedAirDodgeAttackActive() const { return mIsEnhancedAirDodgeAttackActive; }
+    bool CanStartAirAttack() const { return mAirAttackCount < maximumAirAttackCount; }
 
     // Normal/Wide入力と接地状態から攻撃を設定し、遅延命中判定を予約する。
     // クールダウンの確認は呼び出し側で行う。
@@ -56,15 +46,10 @@ public:
     void StartAirSlamAttack();
 
     // 着地衝撃を解決して叩き落とし状態を終了する。trueは今回、接地中の敵に命中したことを表す。
-    bool ResolveAirSlamImpact(
-        Player& player,
-        PlayerMovement& movement,
-        float deltaTime);
+    bool ResolveAirSlamImpact(Player& player, PlayerMovement& movement, float deltaTime);
 
     // 今回初めて触れた空中の敵だけを叩き落とす。1体以上で開始できればtrue。
-    bool UpdateAirSlamContact(
-        Player& player,
-        const PlayerMovement& movement);
+    bool UpdateAirSlamContact(Player& player, const PlayerMovement& movement);
 
     void Attack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
@@ -104,12 +89,8 @@ public:
     void StartAirDodgeAttack();
 
     // ワールド座標の移動区間で命中を調べる。同じ回避中は同じ敵へ重複適用せず、命中時に空中回避を回復する。
-    void UpdateAirDodgeAttack(
-        Player& player,
-        PlayerMovement& movement,
-        const glm::vec3& movementStart,
-        const glm::vec3& movementEnd,
-        float deltaTime);
+    void UpdateAirDodgeAttack(Player& player, PlayerMovement& movement, const glm::vec3& movementStart,
+                              const glm::vec3& movementEnd, float deltaTime);
     void EndAirDodgeAttack();
     void StartGroundWeakAttackCooldown();
     void StartAirWeakAttackCooldown();
@@ -125,10 +106,7 @@ public:
     {
         mGroundWeakAttackCooldownSeconds = cooldownSeconds;
     }
-    void SetAirWeakAttackCooldownSeconds(float cooldownSeconds)
-    {
-        mAirWeakAttackCooldownSeconds = cooldownSeconds;
-    }
+    void SetAirWeakAttackCooldownSeconds(float cooldownSeconds) { mAirWeakAttackCooldownSeconds = cooldownSeconds; }
     void SetLastAttackCooldown(float lastAttackCooldown) { mLastAttackCooldown = lastAttackCooldown; }
     void SetSpecialAttackCooldown(float specialAttackCooldown) { mSpecialAttackCooldown = specialAttackCooldown; }
     void SetNormalAttackRange(float normalAttackRange) { mNormalAttackRange = normalAttackRange; }
@@ -151,30 +129,12 @@ public:
     {
         mAirDodgeEnemyPushDampingPerSecond = dampingPerSecond;
     }
-    void SetAirWeakEnemyLiftHeight(float height)
-    {
-        mAirWeakEnemyLiftHeight = height;
-    }
-    void SetAirComboDodgePlayerLiftHeight(float height)
-    {
-        mAirComboDodgePlayerLiftHeight = height;
-    }
-    void SetAirComboDodgeEnemyLiftHeight(float height)
-    {
-        mAirComboDodgeEnemyLiftHeight = height;
-    }
-    void SetAirSlamEnemyDownwardSpeed(float speed)
-    {
-        mAirSlamEnemyDownwardSpeed = speed;
-    }
-    void SetAirSlamFullDamageHeight(float height)
-    {
-        mAirSlamFullDamageHeight = height;
-    }
-    void SetAirSlamMinimumDamageRatio(float ratio)
-    {
-        mAirSlamMinimumDamageRatio = ratio;
-    }
+    void SetAirWeakEnemyLiftHeight(float height) { mAirWeakEnemyLiftHeight = height; }
+    void SetAirComboDodgePlayerLiftHeight(float height) { mAirComboDodgePlayerLiftHeight = height; }
+    void SetAirComboDodgeEnemyLiftHeight(float height) { mAirComboDodgeEnemyLiftHeight = height; }
+    void SetAirSlamEnemyDownwardSpeed(float speed) { mAirSlamEnemyDownwardSpeed = speed; }
+    void SetAirSlamFullDamageHeight(float height) { mAirSlamFullDamageHeight = height; }
+    void SetAirSlamMinimumDamageRatio(float ratio) { mAirSlamMinimumDamageRatio = ratio; }
     void SetAirSlamGuardDamage(float guardDamage) { mAirSlamGuardDamage = guardDamage; }
     void SetStrongAttackRange(float strongAttackRange) { mStrongAttackRange = strongAttackRange; }
     void SetStrongAttack(float strongAttack) { mStrongAttack = strongAttack; }
@@ -199,8 +159,14 @@ public:
     {
         mContinuousAttackDurationSeconds = attackDurationSeconds;
     }
-    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer) { mDefaultStrongAttackTimer = defaultStrongAttackTimer; }
-    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
+    void SetDefaultStrongAttackTimer(float defaultStrongAttackTimer)
+    {
+        mDefaultStrongAttackTimer = defaultStrongAttackTimer;
+    }
+    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
+    {
+        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
+    }
     void SetAttackHitDelay(float attackHitDelay) { mAttackHitDelay = attackHitDelay; }
     void SetAttackCooldownRemaining(float value) { mAttackCooldownRemaining = value; }
     void SetCanSpecialAttack(bool value) { mCanSpecialAttack = value; }
@@ -221,14 +187,8 @@ public:
     float GetAttack() const { return mAttack; }
     float GetAttackSpeed() const { return mAttackSpeed; }
     float GetAttackCooldownRemaining() const { return mAttackCooldownRemaining; }
-    float GetGroundWeakAttackCooldownSeconds() const
-    {
-        return mGroundWeakAttackCooldownSeconds;
-    }
-    float GetAirWeakAttackCooldownSeconds() const
-    {
-        return mAirWeakAttackCooldownSeconds;
-    }
+    float GetGroundWeakAttackCooldownSeconds() const { return mGroundWeakAttackCooldownSeconds; }
+    float GetAirWeakAttackCooldownSeconds() const { return mAirWeakAttackCooldownSeconds; }
     float GetLastAttackCooldown() const { return mLastAttackCooldown; }
     float GetSpecialAttackCooldown() const { return mSpecialAttackCooldown; }
     float GetAttackMoveLockRemaining() const { return mAttackMoveLockRemaining; }
@@ -253,34 +213,13 @@ public:
     float GetAirDodgeHorizontalHitboxScale() const { return mAirDodgeHorizontalHitboxScale; }
     float GetAirDodgeVerticalHitboxScale() const { return mAirDodgeVerticalHitboxScale; }
     float GetAirDodgeEnemyPushSpeed() const { return mAirDodgeEnemyPushSpeed; }
-    float GetAirDodgeEnemyPushDampingPerSecond() const
-    {
-        return mAirDodgeEnemyPushDampingPerSecond;
-    }
-    float GetAirWeakEnemyLiftHeight() const
-    {
-        return mAirWeakEnemyLiftHeight;
-    }
-    float GetAirComboDodgePlayerLiftHeight() const
-    {
-        return mAirComboDodgePlayerLiftHeight;
-    }
-    float GetAirComboDodgeEnemyLiftHeight() const
-    {
-        return mAirComboDodgeEnemyLiftHeight;
-    }
-    float GetAirSlamEnemyDownwardSpeed() const
-    {
-        return mAirSlamEnemyDownwardSpeed;
-    }
-    float GetAirSlamFullDamageHeight() const
-    {
-        return mAirSlamFullDamageHeight;
-    }
-    float GetAirSlamMinimumDamageRatio() const
-    {
-        return mAirSlamMinimumDamageRatio;
-    }
+    float GetAirDodgeEnemyPushDampingPerSecond() const { return mAirDodgeEnemyPushDampingPerSecond; }
+    float GetAirWeakEnemyLiftHeight() const { return mAirWeakEnemyLiftHeight; }
+    float GetAirComboDodgePlayerLiftHeight() const { return mAirComboDodgePlayerLiftHeight; }
+    float GetAirComboDodgeEnemyLiftHeight() const { return mAirComboDodgeEnemyLiftHeight; }
+    float GetAirSlamEnemyDownwardSpeed() const { return mAirSlamEnemyDownwardSpeed; }
+    float GetAirSlamFullDamageHeight() const { return mAirSlamFullDamageHeight; }
+    float GetAirSlamMinimumDamageRatio() const { return mAirSlamMinimumDamageRatio; }
     float GetAirSlamGuardDamage() const { return mAirSlamGuardDamage; }
     float GetStrongAttackRange() const { return mStrongAttackRange; }
     float GetStrongAttack() const { return mStrongAttack; }

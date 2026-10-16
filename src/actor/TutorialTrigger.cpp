@@ -153,7 +153,6 @@ void TutorialTrigger::UpdateActor(float)
     const bool isPlayerSplit = mGame->GetIsPlayerSplit();
     if (mHasObservedPlayerSplitState && !mWasPlayerSplit && isPlayerSplit && requiresSplitPlayer &&
         hasPlayerInsideTrigger) {
-
         mRequiresExitAfterSplittingInside = true;
     }
     mHasObservedPlayerSplitState = true;

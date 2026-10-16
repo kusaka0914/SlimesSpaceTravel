@@ -3,7 +3,6 @@
 #include "animation/SkeletalAnimationData.h"
 
 #include <glm/glm.hpp>
-
 #include <vector>
 
 // スケルトンのクリップ再生とキーフレーム補間を行い、描画用のボーン変換行列を計算する。

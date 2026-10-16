@@ -79,9 +79,7 @@ void PlayerRespawn::RestoreRestartFacingDirection(Player& player) const
 
     // 到着先で上方向が変わっても、保存した向きの接線成分だけを復元する。
     glm::vec3 tangentFacing =
-        mRestartFacingDirection -
-        glm::dot(mRestartFacingDirection, normalizedUpDirection) *
-            normalizedUpDirection;
+        mRestartFacingDirection - glm::dot(mRestartFacingDirection, normalizedUpDirection) * normalizedUpDirection;
     if (glm::length(tangentFacing) <= 0.000001f) {
         return;
     }
@@ -125,11 +123,7 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
         return;
     }
 
-    auto hit =
-        player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(
-            &player,
-            prevPos,
-            player.GetPos());
+    auto hit = player.GetGame()->GetPhysicsSystem()->CheckFallRespawnBySweep(&player, prevPos, player.GetPos());
 
     if (!hit || !hit->actor) {
         return;
@@ -144,13 +138,9 @@ void PlayerRespawn::CheckFallRespawn(Player& player, PlayerStateMachine& stateMa
     ApplyFallDamageAndRespawn(player, status, point->GetDamage());
 }
 
-bool PlayerRespawn::UpdateMissingGroundSurfaceRespawn(
-    Player& player,
-    const PlayerStatus& status,
-    float deltaTime)
+bool PlayerRespawn::UpdateMissingGroundSurfaceRespawn(Player& player, const PlayerStatus& status, float deltaTime)
 {
-    const bool groundSurfaceDetectedThisFrame =
-        mGroundSurfaceDetectedThisFrame;
+    const bool groundSurfaceDetectedThisFrame = mGroundSurfaceDetectedThisFrame;
     mGroundSurfaceDetectedThisFrame = false;
 
     if (!player.GetIsActive() || !status.IsAlive() || mRespawnFadeRequested) {
@@ -158,17 +148,14 @@ bool PlayerRespawn::UpdateMissingGroundSurfaceRespawn(
     }
 
     const bool hasGroundSupport =
-        player.GetOnGround() ||
-        groundSurfaceDetectedThisFrame ||
-        player.IsEllipseAirborneGravityActive();
+        player.GetOnGround() || groundSurfaceDetectedThisFrame || player.IsEllipseAirborneGravityActive();
     if (hasGroundSupport) {
         mMissingGroundSurfaceDurationSeconds = 0.0f;
         return false;
     }
 
     mMissingGroundSurfaceDurationSeconds += std::max(0.0f, deltaTime);
-    if (mMissingGroundSurfaceDurationSeconds <
-        missingGroundSurfaceRespawnDelaySeconds) {
+    if (mMissingGroundSurfaceDurationSeconds < missingGroundSurfaceRespawnDelaySeconds) {
         return false;
     }
 

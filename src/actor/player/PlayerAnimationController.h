@@ -4,7 +4,6 @@
 #include "animation/AnimationPlayer.h"
 
 #include <glm/glm.hpp>
-
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -43,8 +42,7 @@ private:
 
     void ResolveAnimationClips();
     void PlayBaseAnimation();
-    void PlayResolvedAnimation(const std::string& animationId, const ResolvedAnimation& animation,
-                               bool shouldRestart);
+    void PlayResolvedAnimation(const std::string& animationId, const ResolvedAnimation& animation, bool shouldRestart);
 
     const ResolvedAnimation* FindResolvedAnimation(std::string_view animationId) const;
     const AnimationClip* FindAnimationClip(const std::string& requestedName) const;

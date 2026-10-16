@@ -1,7 +1,6 @@
 #include "actor/player/PlayerGrounding.h"
 
 #include "Game.h"
-
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -70,11 +69,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
         return;
     }
 
-    Actor* hitActor =
-        cb.m_collisionObject
-            ? static_cast<Actor*>(
-                  cb.m_collisionObject->getUserPointer())
-            : nullptr;
+    Actor* hitActor = cb.m_collisionObject ? static_cast<Actor*>(cb.m_collisionObject->getUserPointer()) : nullptr;
     if (hitActor && !hitActor->ShouldAffectGravityDirection()) {
         player.SetVelocity(glm::vec3(0.0f));
         player.RefreshFallbackUpVec();
@@ -82,20 +77,14 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
         return;
     }
 
-    const glm::vec3 hitNormal(
-        cb.m_hitNormalWorld.x(),
-        cb.m_hitNormalWorld.y(),
-        cb.m_hitNormalWorld.z());
+    const glm::vec3 hitNormal(cb.m_hitNormalWorld.x(), cb.m_hitNormalWorld.y(), cb.m_hitNormalWorld.z());
     if (!player.IsWalkableGroundNormal(hitNormal, up)) {
         return;
     }
 
     const glm::vec3 hitPos(cb.m_hitPointWorld.x(), cb.m_hitPointWorld.y(), cb.m_hitPointWorld.z());
     const ActorMovementCollisionResult collisionResult =
-        mPhysicsSystem.ResolveMovementCollision(
-            &player,
-            hitPos - player.GetPos(),
-            hitPos);
+        mPhysicsSystem.ResolveMovementCollision(&player, hitPos - player.GetPos(), hitPos);
 
     // レイの命中位置に置けても、衝突解決でめり込みが残る場合は接地を採用しない。
     if (collisionResult.hasUnresolvedStageOverlap) {
@@ -103,10 +92,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
     }
 
     const bool wasSnapBlockedByNonGround =
-        collisionResult.didHitStage &&
-        !player.IsWalkableGroundNormal(
-            collisionResult.blockingNormal,
-            up);
+        collisionResult.didHitStage && !player.IsWalkableGroundNormal(collisionResult.blockingNormal, up);
     if (wasSnapBlockedByNonGround) {
         return;
     }

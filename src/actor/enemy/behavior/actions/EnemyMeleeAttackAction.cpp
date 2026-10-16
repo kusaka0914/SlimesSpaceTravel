@@ -24,19 +24,17 @@ EnemyBehaviorActionResult EnemyMeleeAttackAction::Update(EnemyBehaviorContext& c
 {
     switch (context.stateMachine.GetActionState()) {
     case EnemyStateMachine::ActionState::PreparingAttack:
-        context.stateMachine.UpdatePreparingAttack(
-            context.enemy, context.status, context.movement, deltaTime);
+        context.stateMachine.UpdatePreparingAttack(context.enemy, context.status, context.movement, deltaTime);
         break;
 
     case EnemyStateMachine::ActionState::Attacking:
-        context.stateMachine.UpdateAttacking(
-            context.enemy, context.status, context.movement, context.combat, deltaTime);
+        context.stateMachine.UpdateAttacking(context.enemy, context.status, context.movement, context.combat,
+                                             deltaTime);
         break;
 
     default:
         return EnemyBehaviorActionResult::Finished;
     }
 
-    return CanContinue(context) ? EnemyBehaviorActionResult::Running
-                                : EnemyBehaviorActionResult::Finished;
+    return CanContinue(context) ? EnemyBehaviorActionResult::Running : EnemyBehaviorActionResult::Finished;
 }

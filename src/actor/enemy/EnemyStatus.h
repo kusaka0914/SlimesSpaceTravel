@@ -14,10 +14,7 @@ public:
     EnemyStatus();
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
-    void SetIsNormalHitKnockBackEnabled(bool isEnabled)
-    {
-        mIsNormalHitKnockBackEnabled = isEnabled;
-    }
+    void SetIsNormalHitKnockBackEnabled(bool isEnabled) { mIsNormalHitKnockBackEnabled = isEnabled; }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
@@ -26,24 +23,13 @@ public:
     {
         mGuardGauge.Configure(segmentCount, guardValuePerSegment);
     }
-    void SetGuardSegmentCount(int segmentCount)
+    void SetGuardSegmentCount(int segmentCount) { mGuardGauge.SetSegmentCount(segmentCount); }
+    EnemyGuardDamageResult ApplyGuardDamage(float guardDamage) { return mGuardGauge.ApplyDamage(guardDamage); }
+    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(float minimumGuardDamage)
     {
-        mGuardGauge.SetSegmentCount(segmentCount);
+        return mGuardGauge.ApplyDamageEnsuringCurrentSegmentBreak(minimumGuardDamage);
     }
-    EnemyGuardDamageResult ApplyGuardDamage(float guardDamage)
-    {
-        return mGuardGauge.ApplyDamage(guardDamage);
-    }
-    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(
-        float minimumGuardDamage)
-    {
-        return mGuardGauge.ApplyDamageEnsuringCurrentSegmentBreak(
-            minimumGuardDamage);
-    }
-    EnemyGuardDamageResult BreakGuard()
-    {
-        return mGuardGauge.BreakAll();
-    }
+    EnemyGuardDamageResult BreakGuard() { return mGuardGauge.BreakAll(); }
     void ResetGuard() { mGuardGauge.Reset(); }
 
     void SetHp(float hp) { mHealth.SetHp(hp); }
@@ -55,16 +41,16 @@ public:
     void SetLaunchHeight(float launchHeight) { mLaunchHeight = launchHeight; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
     void SetAttack(float attack) { mAttack = attack; }
-    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
+    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
+    {
+        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
+    }
     void SetDefaultStandByAttackTimer(float defaultStandByAttackTimer)
     {
         mDefaultStandByAttackTimer = defaultStandByAttackTimer;
     }
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
-    void SetAttackPreparationRange(float attackPreparationRange)
-    {
-        mAttackPreparationRange = attackPreparationRange;
-    }
+    void SetAttackPreparationRange(float attackPreparationRange) { mAttackPreparationRange = attackPreparationRange; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
@@ -107,24 +93,15 @@ public:
     void AddHitPlayer(Player* player) { mHitPlayers.insert(player); }
 
     bool GetIsBoss() const { return mIsBoss; }
-    bool IsNormalHitKnockBackEnabled() const
-    {
-        return mIsNormalHitKnockBackEnabled;
-    }
+    bool IsNormalHitKnockBackEnabled() const { return mIsNormalHitKnockBackEnabled; }
     bool GetCanCountered() const { return mCanCountered; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
 
     float GetCurrentGuard() const { return mGuardGauge.GetCurrentGuard(); }
     float GetMaxGuard() const { return mGuardGauge.GetMaxGuard(); }
-    float GetGuardValuePerSegment() const
-    {
-        return mGuardGauge.GetGuardValuePerSegment();
-    }
-    int GetGuardSegmentCount() const
-    {
-        return mGuardGauge.GetSegmentCount();
-    }
+    float GetGuardValuePerSegment() const { return mGuardGauge.GetGuardValuePerSegment(); }
+    int GetGuardSegmentCount() const { return mGuardGauge.GetSegmentCount(); }
 
     float GetHp() const { return mHealth.GetHp(); }
     float GetMaxHp() const { return mHealth.GetMaxHp(); }

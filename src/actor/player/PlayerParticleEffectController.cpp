@@ -31,7 +31,7 @@ ParticleSystem* GetParticleSystem(Player& player)
     Game* game = player.GetGame();
     return game ? game->GetParticleSystem() : nullptr;
 }
-}
+} // namespace
 
 void PlayerParticleEffectController::UpdateWalking(Player& player, bool isWalking)
 {
@@ -44,10 +44,7 @@ void PlayerParticleEffectController::UpdateWalking(Player& player, bool isWalkin
     mWasWalking = isWalking;
 }
 
-void PlayerParticleEffectController::UpdateSpecialCharging(
-    Player& player,
-    bool isCharging,
-    float deltaTime)
+void PlayerParticleEffectController::UpdateSpecialCharging(Player& player, bool isCharging, float deltaTime)
 {
     if (!isCharging) {
         mWasSpecialCharging = false;
@@ -81,8 +78,7 @@ void PlayerParticleEffectController::EmitLanding(Player& player, float landingSp
         return;
     }
 
-    const glm::vec3 upDirection =
-        SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 upDirection = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
 
     ParticleSpawnContext context;
     context.position = player.GetPos() + upDirection * 0.05f;
@@ -107,8 +103,7 @@ void PlayerParticleEffectController::EmitSpecialCharge(Player& player)
         return;
     }
 
-    const glm::vec3 upDirection =
-        SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 upDirection = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
 
     ParticleSpawnContext context;
     context.position = player.GetPos() + upDirection * 0.18f;
@@ -125,18 +120,14 @@ void PlayerParticleEffectController::EmitWalkStart(Player& player)
         return;
     }
 
-    const glm::vec3 upDirection =
-        SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
-    const glm::vec3 forwardDirection =
-        SafeNormalize(player.GetFacingForwardVec(), glm::vec3(0.0f, 0.0f, 1.0f));
-    const glm::vec3 emissionDirection =
-        SafeNormalize(-forwardDirection + upDirection * 0.25f, upDirection);
+    const glm::vec3 upDirection = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 forwardDirection = SafeNormalize(player.GetFacingForwardVec(), glm::vec3(0.0f, 0.0f, 1.0f));
+    const glm::vec3 emissionDirection = SafeNormalize(-forwardDirection + upDirection * 0.25f, upDirection);
 
     const float radius = glm::max(0.1f, player.GetRadius());
 
     ParticleSpawnContext context;
-    context.position =
-        player.GetPos() + upDirection * 0.06f - forwardDirection * radius * 0.30f;
+    context.position = player.GetPos() + upDirection * 0.06f - forwardDirection * radius * 0.30f;
     context.normal = upDirection;
     context.direction = emissionDirection;
     context.scale = 1.0f;

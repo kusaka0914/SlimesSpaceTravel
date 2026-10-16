@@ -21,17 +21,13 @@ public:
     EnemyGuardDamageResult ApplyDamage(float guardDamage);
 
     // minimumGuardDamage以上、かつ現在区画を破壊できるダメージを適用する。ガードなしでは空の結果。
-    EnemyGuardDamageResult ApplyDamageEnsuringCurrentSegmentBreak(
-        float minimumGuardDamage);
+    EnemyGuardDamageResult ApplyDamageEnsuringCurrentSegmentBreak(float minimumGuardDamage);
     EnemyGuardDamageResult BreakAll();
     void Reset();
 
     float GetCurrentGuard() const { return mCurrentGuard; }
     float GetMaxGuard() const;
-    float GetGuardValuePerSegment() const
-    {
-        return mGuardValuePerSegment;
-    }
+    float GetGuardValuePerSegment() const { return mGuardValuePerSegment; }
     int GetSegmentCount() const { return mSegmentCount; }
     bool IsEmpty() const { return mCurrentGuard <= 0.0f; }
 

@@ -47,14 +47,12 @@ void EnemyRadialAttackAction::Enter(EnemyBehaviorContext& context)
     }
 }
 
-EnemyBehaviorActionResult EnemyRadialAttackAction::Update(
-    EnemyBehaviorContext& context, float deltaTime)
+EnemyBehaviorActionResult EnemyRadialAttackAction::Update(EnemyBehaviorContext& context, float deltaTime)
 {
     const EnemyStateMachine::ActionState state = context.stateMachine.GetActionState();
 
     if (state == EnemyStateMachine::ActionState::PreparingAttack) {
-        context.stateMachine.UpdatePreparingAttack(
-            context.enemy, context.status, context.movement, deltaTime);
+        context.stateMachine.UpdatePreparingAttack(context.enemy, context.status, context.movement, deltaTime);
 
         if (context.stateMachine.GetActionState() == EnemyStateMachine::ActionState::Attacking) {
             context.status.SetAttackMotionTimer(mAttackDuration);
@@ -73,17 +71,12 @@ EnemyBehaviorActionResult EnemyRadialAttackAction::Update(
     }
 
     if (!mHasAppliedDamage) {
-        context.combat.TryApplyGroundRadialAttack(
-            context.enemy,
-            context.status,
-            context.stateMachine,
-            mRange,
-            deltaTime);
+        context.combat.TryApplyGroundRadialAttack(context.enemy, context.status, context.stateMachine, mRange,
+                                                  deltaTime);
         mHasAppliedDamage = true;
 
         // ジャスト回避でガードが破壊されるとLaunchedへ移るため、被弾処理後に状態を確認する。
-        if (context.stateMachine.GetActionState() !=
-            EnemyStateMachine::ActionState::Attacking) {
+        if (context.stateMachine.GetActionState() != EnemyStateMachine::ActionState::Attacking) {
             return EnemyBehaviorActionResult::Finished;
         }
     }

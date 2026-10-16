@@ -8,13 +8,8 @@
 
 #include <glm/glm.hpp>
 
-void EnemyDamageHandler::ApplyDamage(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyStateMachine& stateMachine,
-    EnemyMovement& movement,
-    float damage,
-    Player* player)
+void EnemyDamageHandler::ApplyDamage(Enemy& enemy, EnemyStatus& status, EnemyStateMachine& stateMachine,
+                                     EnemyMovement& movement, float damage, Player* player)
 {
     (void)player;
 
@@ -50,11 +45,8 @@ void EnemyDamageHandler::ApplyDamage(
     }
 
     const bool canRestartNormalHitKnockBack =
-        enemy.IsOnGround() ||
-        stateMachine.GetActionState() ==
-            EnemyStateMachine::ActionState::KnockedBack;
-    if (status.IsNormalHitKnockBackEnabled() &&
-        canRestartNormalHitKnockBack) {
+        enemy.IsOnGround() || stateMachine.GetActionState() == EnemyStateMachine::ActionState::KnockedBack;
+    if (status.IsNormalHitKnockBackEnabled() && canRestartNormalHitKnockBack) {
         constexpr float knockBackTimer = 0.04f;
         stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
         movement.StartNormalHitKnockBack(enemy, status);
@@ -77,9 +69,7 @@ void EnemyDamageHandler::ApplyCounter(Enemy& enemy, EnemyStatus& status, EnemySt
     }
 
     status.ClearIsCountered();
-    status.AddDamage(
-        player->CalculateOutgoingAttackDamage(
-            player->GetAttack() * 2.0f));
+    status.AddDamage(player->CalculateOutgoingAttackDamage(player->GetAttack() * 2.0f));
     status.SetStandByAttackTimer(-1.0f);
 
     if (status.IsHp0()) {

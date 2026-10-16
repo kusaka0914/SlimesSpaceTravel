@@ -14,9 +14,7 @@ class MathUtils;
 // 位置・方向はワールド空間。deltaTimeは秒。
 class PlayerMovement {
 public:
-    PlayerMovement(
-        PhysicsSystem& physicsSystem,
-        MathUtils& mathUtils);
+    PlayerMovement(PhysicsSystem& physicsSystem, MathUtils& mathUtils);
 
     bool CanDodge(const PlayerCombat& combat) const;
 
@@ -24,9 +22,7 @@ public:
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
 
     // カメラ自動回転中の移動方向を接平面上に固定する。有効な入力方向・上方向がなければ何もしない。
-    void LockMovementDirectionForCameraAutoAlign(
-        const PlayerInput& input,
-        const glm::vec3& upDirection);
+    void LockMovementDirectionForCameraAutoAlign(const PlayerInput& input, const glm::vec3& upDirection);
     void UnlockMovementDirectionForCameraAutoAlign();
 
     // 入力方向の大きな変更による自動回転の解除要求を返し、要求を消費する。
@@ -36,10 +32,7 @@ public:
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
 
     // ワールド位置へ接平面上を移動し、実際に変位が生じたらtrue。空中・床への固定中はfalse。
-    bool MoveTowardPosition(
-        Player& player,
-        const glm::vec3& targetPosition,
-        float deltaTime);
+    bool MoveTowardPosition(Player& player, const glm::vec3& targetPosition, float deltaTime);
     void UpdateFacingDirectionFromInput(Player& player, const PlayerInput& input);
     void FaceDirection(Player& player, const glm::vec3& facingDirection);
 
@@ -51,24 +44,16 @@ public:
     // 上昇・下降で異なる重力と頂点の滞空を適用し、衝突を解決して位置・速度を更新する。
     void ApplyJumpGravity(Player& player, float deltaTime);
     void StopAirborneVerticalMovement(Player& player) const;
-    void ApplyJumpGravityAndInputMovement(
-        Player& player,
-        const PlayerInput& input,
-        float deltaTime);
+    void ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime);
 
     // 上昇・滞空・落下の段階を進める。接地済み、または今回の落下で着地した場合にtrue。
-    bool UpdateAirSlamMovement(
-        Player& player,
-        const PlayerCombat& combat,
-        float deltaTime);
+    bool UpdateAirSlamMovement(Player& player, const PlayerCombat& combat, float deltaTime);
 
     // 回避方向と時間を設定し、速度を0にする。回避可能かの確認は呼び出し側で行う。
     void StartDodgeMovement(Player& player, const PlayerInput& input);
 
     // ワールド位置へ向かう直線回避を設定する。方向を決められなければfalse。
-    bool StartDodgeMovementTowards(
-        Player& player,
-        const glm::vec3& targetPosition);
+    bool StartDodgeMovementTowards(Player& player, const glm::vec3& targetPosition);
 
     // 床との固定を解除し、上昇速度とこのフレームの移動を反映する。通常の着地判定は停止する。
     void StartJumpMovement(Player& player, float deltaTime);
@@ -77,9 +62,7 @@ public:
     void StartAirborneActionHover(float durationSeconds);
 
     // 滞空中は物理上方向の速度成分を除去してtrue。接地中・時間切れなら解除してfalse。
-    bool UpdateAirborneActionHover(
-        Player& player,
-        float deltaTime);
+    bool UpdateAirborneActionHover(Player& player, float deltaTime);
     void CancelAirborneActionHover();
     void StartAirSlamMovement(Player& player);
     void StartAirSlamEnemyFallWatch(Player& player);
@@ -90,9 +73,7 @@ public:
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
     void ClearStrongAttackDirectionOverride();
 
-    void StartKnockBack(
-        Player& player,
-        const glm::vec3& damageSourcePosition);
+    void StartKnockBack(Player& player, const glm::vec3& damageSourcePosition);
     void StartDodgeLock(float seconds) { mDodgeCooldownRemaining = seconds; }
     void RestoreAirDodge()
     {
@@ -107,10 +88,7 @@ public:
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
     void SetMaximumStepHeight(float maximumStepHeight)
     {
-        mMaximumStepHeight =
-            maximumStepHeight > 0.0f
-                ? maximumStepHeight
-                : 0.0f;
+        mMaximumStepHeight = maximumStepHeight > 0.0f ? maximumStepHeight : 0.0f;
     }
     void SetDodgeDuration(float dodgeDuration) { mDodgeDuration = dodgeDuration; }
     void SetDodgeCooldownTime(float dodgeCooldownTime) { mDodgeCooldownDuration = dodgeCooldownTime; }
@@ -121,26 +99,15 @@ public:
     void SetJumpFallDuration(float duration) { mJumpFallDuration = duration; }
     void SetJumpApexHoverDurationSeconds(float durationSeconds)
     {
-        mJumpApexHoverDurationSeconds =
-            durationSeconds > 0.0f
-                ? durationSeconds
-                : 0.0f;
+        mJumpApexHoverDurationSeconds = durationSeconds > 0.0f ? durationSeconds : 0.0f;
     }
-    void SetAirWeakAttackPostHoverDurationSeconds(
-        float durationSeconds)
+    void SetAirWeakAttackPostHoverDurationSeconds(float durationSeconds)
     {
-        mAirWeakAttackPostHoverDurationSeconds =
-            durationSeconds > 0.0f
-                ? durationSeconds
-                : 0.0f;
+        mAirWeakAttackPostHoverDurationSeconds = durationSeconds > 0.0f ? durationSeconds : 0.0f;
     }
-    void SetAirDodgePostHoverDurationSeconds(
-        float durationSeconds)
+    void SetAirDodgePostHoverDurationSeconds(float durationSeconds)
     {
-        mAirDodgePostHoverDurationSeconds =
-            durationSeconds > 0.0f
-                ? durationSeconds
-                : 0.0f;
+        mAirDodgePostHoverDurationSeconds = durationSeconds > 0.0f ? durationSeconds : 0.0f;
     }
     void SetAirSlamRiseHeight(float riseHeight) { mAirSlamRiseHeight = riseHeight; }
     void SetAirSlamRiseDurationSeconds(float durationSeconds) { mAirSlamRiseDurationSeconds = durationSeconds; }
@@ -160,26 +127,13 @@ public:
     float GetJumpHeight() const { return mJumpHeight; }
     float GetJumpAscentDuration() const { return mJumpAscentDuration; }
     float GetJumpFallDuration() const { return mJumpFallDuration; }
-    float GetJumpApexHoverDurationSeconds() const
-    {
-        return mJumpApexHoverDurationSeconds;
-    }
-    float GetAirWeakAttackPostHoverDurationSeconds() const
-    {
-        return mAirWeakAttackPostHoverDurationSeconds;
-    }
-    float GetAirDodgePostHoverDurationSeconds() const
-    {
-        return mAirDodgePostHoverDurationSeconds;
-    }
+    float GetJumpApexHoverDurationSeconds() const { return mJumpApexHoverDurationSeconds; }
+    float GetAirWeakAttackPostHoverDurationSeconds() const { return mAirWeakAttackPostHoverDurationSeconds; }
+    float GetAirDodgePostHoverDurationSeconds() const { return mAirDodgePostHoverDurationSeconds; }
     float GetAirSlamRiseHeight() const { return mAirSlamRiseHeight; }
     float GetAirSlamRiseDurationSeconds() const { return mAirSlamRiseDurationSeconds; }
     float GetAirSlamHoverDurationSeconds() const { return mAirSlamHoverDurationSeconds; }
-    bool IsAirSlamFalling() const
-    {
-        return mAirSlamMovementPhase ==
-               AirSlamMovementPhase::Falling;
-    }
+    bool IsAirSlamFalling() const { return mAirSlamMovementPhase == AirSlamMovementPhase::Falling; }
     const glm::vec3& GetForwardVec() const { return mForwardVec; }
     const glm::vec3& GetDodgeDirection() const { return mDodgeDir; }
 
@@ -201,37 +155,19 @@ private:
         Falling,
     };
 
-    void StartDodgeMovementInDirection(
-        Player& player,
-        const glm::vec3& dodgeDirection,
-        DodgeTrajectory trajectory);
-    glm::vec3 CalculateEllipseDodgeMovementDelta(
-        Player& player,
-        const Planet& planet,
-        float dodgeSpeed,
-        float deltaTime);
-    float CalculateAirborneGravityAcceleration(
-        const Player& player) const;
-    float CalculateAirborneGravityAcceleration(
-        float verticalSpeed) const;
-    glm::vec3 CalculateInputMovementDelta(
-        const Player& player,
-        const PlayerInput& input,
-        float deltaTime) const;
-    bool ApplyWalkingMovement(
-        Player& player,
-        const glm::vec3& movementDelta);
-    void ApplyJumpGravityMovement(
-        Player& player,
-        const glm::vec3& inputMovementDelta,
-        float deltaTime);
+    void StartDodgeMovementInDirection(Player& player, const glm::vec3& dodgeDirection, DodgeTrajectory trajectory);
+    glm::vec3 CalculateEllipseDodgeMovementDelta(Player& player, const Planet& planet, float dodgeSpeed,
+                                                 float deltaTime);
+    float CalculateAirborneGravityAcceleration(const Player& player) const;
+    float CalculateAirborneGravityAcceleration(float verticalSpeed) const;
+    glm::vec3 CalculateInputMovementDelta(const Player& player, const PlayerInput& input, float deltaTime) const;
+    bool ApplyWalkingMovement(Player& player, const glm::vec3& movementDelta);
+    void ApplyJumpGravityMovement(Player& player, const glm::vec3& inputMovementDelta, float deltaTime);
     void RecordEllipseAirborneStartSurfaceNormal(const Player& player);
-    glm::vec3 ClampEllipseAirborneMovementToSurfaceTravelLimit(
-        const Planet& planet,
-        const glm::vec3& currentPosition,
-        const glm::vec3& physicsUpDirection,
-        const glm::vec3& requestedMovement,
-        bool& wasMovementClamped) const;
+    glm::vec3 ClampEllipseAirborneMovementToSurfaceTravelLimit(const Planet& planet, const glm::vec3& currentPosition,
+                                                               const glm::vec3& physicsUpDirection,
+                                                               const glm::vec3& requestedMovement,
+                                                               bool& wasMovementClamped) const;
 
     bool mHasUsedDodge = false;
     bool mHasStrongAttackDirectionOverride = false;
@@ -273,8 +209,7 @@ private:
     glm::vec3 mCameraAutoAlignMovementDirection = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec2 mCameraAutoAlignStartInputDirection = glm::vec2(0.0f, 1.0f);
     glm::vec3 mKnockBackDirection = glm::vec3(0.0f);
-    glm::vec3 mEllipseAirborneStartSurfaceNormal =
-        glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 mEllipseAirborneStartSurfaceNormal = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 mDodgeDir = glm::vec3(0.0f);
     DodgeTrajectory mDodgeTrajectory = DodgeTrajectory::Straight;
     glm::vec3 mStrongAttackDirectionOverride = glm::vec3(0.0f);

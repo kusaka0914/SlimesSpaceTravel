@@ -14,12 +14,10 @@ namespace {
 bool IsAttackAction(const EnemyBehaviorAction& action)
 {
     const std::string_view actionType = action.GetType();
-    return actionType == "meleeAttack" ||
-           actionType == "tripleChargeAttack" ||
-           actionType == "fanAttack" ||
+    return actionType == "meleeAttack" || actionType == "tripleChargeAttack" || actionType == "fanAttack" ||
            actionType == "radialAttack";
 }
-}
+} // namespace
 
 EnemyBehaviorController::EnemyBehaviorController()
     : mRandomEngine(std::random_device{}())
@@ -58,8 +56,8 @@ void EnemyBehaviorController::Configure(const EnemyBehaviorConfig& config)
     }
 }
 
-void EnemyBehaviorController::Update(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
-                                     EnemyCombat& combat, EnemyStateMachine& stateMachine, float deltaTime)
+void EnemyBehaviorController::Update(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
+                                     EnemyStateMachine& stateMachine, float deltaTime)
 {
     EnemyBehaviorContext context{enemy, status, movement, combat, stateMachine};
 
@@ -82,8 +80,7 @@ void EnemyBehaviorController::Update(Enemy& enemy, EnemyStatus& status, EnemyMov
     }
 
     SwitchAction(nullptr, context);
-    if (wasUpdatingAttack &&
-        stateMachine.TryStartPostAttackRetreat(enemy, status)) {
+    if (wasUpdatingAttack && stateMachine.TryStartPostAttackRetreat(enemy, status)) {
         return;
     }
     SwitchAction(SelectAction(context), context);
@@ -101,8 +98,7 @@ bool EnemyBehaviorController::GetCurrentAttackPreview(EnemyAttackPreview& previe
 
 EnemyBehaviorAction* EnemyBehaviorController::SelectAction(const EnemyBehaviorContext& context)
 {
-    const auto selectFrom = [this, &context](
-                                const std::vector<std::unique_ptr<EnemyBehaviorAction>>& actions) {
+    const auto selectFrom = [this, &context](const std::vector<std::unique_ptr<EnemyBehaviorAction>>& actions) {
         std::vector<EnemyBehaviorAction*> candidates;
         std::vector<double> weights;
 

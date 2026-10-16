@@ -294,7 +294,6 @@ void Player::RecoverFromFatigue()
 
 void Player::OnAttachedToAdhesivePlatform()
 {
-
     // 接着直後は空中行動を解除し、接地状態として移動・攻撃の担当へ通知する。
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
@@ -428,7 +427,6 @@ Player::LandingUpdateResult Player::UpdateGrounding(float deltaTime)
 
     // 歩いて床を離れた場合も、ジャンプと同様に離陸時の重力方向を引き継ぐ。
     if (didWalkOffGround) {
-
         mPlanetGravityController.OnJumpStarted(*this, mMovement, wasStandingOnPlatformBeforeLandingCheck);
     }
 
@@ -669,7 +667,6 @@ void Player::ForceGroundedForCinematic()
         Planet* planet = GetCurrentPlanet();
         glm::vec3 fallbackPosition;
         if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
-
             const Planet::EllipseSurfaceProjection surface = planet->CalculateEllipseSurfaceProjection(GetPos());
             fallbackPosition = surface.position + surface.outwardNormal * GetHeight();
         } else {

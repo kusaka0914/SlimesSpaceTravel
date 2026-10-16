@@ -7,10 +7,9 @@
 #include "actor/player/PlayerMovement.h"
 
 #include <cmath>
+#include <glm/glm.hpp>
 #include <limits>
 #include <vector>
-
-#include <glm/glm.hpp>
 
 namespace {
 constexpr float directionEpsilonSquared = 0.000001f;
@@ -34,36 +33,19 @@ glm::vec3 ProjectOntoTangentPlane(const glm::vec3& direction, const glm::vec3& u
 bool IsValidEnemy(const Player& player, const Enemy* enemy)
 {
     const Planet* planet = player.GetCurrentPlanet();
-    return
-        enemy &&
-        planet &&
-        enemy->GetIsActive() &&
-        enemy->IsAlive() &&
-        !enemy->GetIsDead() &&
-        enemy->GetCurrentPlanet() == planet &&
-        planet->ArePositionsOnSameSurfaceFace(
-            player.GetPos(),
-            enemy->GetPos());
+    return enemy && planet && enemy->GetIsActive() && enemy->IsAlive() && !enemy->GetIsDead() &&
+           enemy->GetCurrentPlanet() == planet &&
+           planet->ArePositionsOnSameSurfaceFace(player.GetPos(), enemy->GetPos());
 }
 
-bool IsActiveLaunchedEnemyOnCurrentPlanet(
-    const Player& player,
-    const Enemy* enemy)
+bool IsActiveLaunchedEnemyOnCurrentPlanet(const Player& player, const Enemy* enemy)
 {
     const Planet* planet = player.GetCurrentPlanet();
-    return
-        enemy &&
-        planet &&
-        enemy->GetIsActive() &&
-        enemy->IsAlive() &&
-        !enemy->GetIsDead() &&
-        enemy->IsLaunched() &&
-        enemy->GetCurrentPlanet() == planet;
+    return enemy && planet && enemy->GetIsActive() && enemy->IsAlive() && !enemy->GetIsDead() && enemy->IsLaunched() &&
+           enemy->GetCurrentPlanet() == planet;
 }
 
-bool IsLaunchedEnemyNearRecovery(
-    const Enemy& enemy,
-    float maximumLaunchedTimerSeconds)
+bool IsLaunchedEnemyNearRecovery(const Enemy& enemy, float maximumLaunchedTimerSeconds)
 {
     const float launchedTimerSeconds = enemy.GetLaunchedTimer();
     if (launchedTimerSeconds >= 0.0f) {
@@ -78,29 +60,19 @@ bool IsLaunchedEnemyNearRecovery(
     return glm::dot(enemy.GetVelocity(), upDirection) <= 0.0f;
 }
 
-float CalculateDistanceSquaredToEnemySurface(
-    const Player& player,
-    const Enemy& enemy)
+float CalculateDistanceSquaredToEnemySurface(const Player& player, const Enemy& enemy)
 {
     EnemyCollisionGeometry::ModelBounds modelBounds;
-    const glm::vec3 closestPoint =
-        EnemyCollisionGeometry::TryCreateModelBounds(
-            enemy,
-            modelBounds)
-            ? EnemyCollisionGeometry::CalculateClosestPoint(
-                  modelBounds,
-                  player.GetPos())
-            : enemy.GetPos();
+    const glm::vec3 closestPoint = EnemyCollisionGeometry::TryCreateModelBounds(enemy, modelBounds)
+                                       ? EnemyCollisionGeometry::CalculateClosestPoint(modelBounds, player.GetPos())
+                                       : enemy.GetPos();
     const glm::vec3 offset = closestPoint - player.GetPos();
     return glm::dot(offset, offset);
 }
-}
+} // namespace
 
-Enemy* PlayerTargetingAssist::FindAttackTarget(
-    const Player& player,
-    float attackRange,
-    float attackAngle,
-    bool requireLaunchedTarget)
+Enemy* PlayerTargetingAssist::FindAttackTarget(const Player& player, float attackRange, float attackAngle,
+                                               bool requireLaunchedTarget)
 {
     Planet* planet = player.GetCurrentPlanet();
     if (!planet || attackRange <= 0.0f) {
@@ -108,8 +80,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
     }
 
     glm::vec3 normalizedFacingDirection;
-    const bool hasFacingDirection =
-        TryNormalize(player.GetFacingForwardVec(), normalizedFacingDirection);
+    const bool hasFacingDirection = TryNormalize(player.GetFacingForwardVec(), normalizedFacingDirection);
 
     const float facingThreshold = std::cos(attackAngle * 0.5f);
 
@@ -129,8 +100,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
         }
 
         const glm::vec3 toEnemyCenter = enemy->GetPos() - player.GetPos();
-        const float distanceSquared =
-            CalculateDistanceSquaredToEnemySurface(player, *enemy);
+        const float distanceSquared = CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > attackRange * attackRange) {
             continue;
         }
@@ -155,8 +125,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
             directionToTarget = normalizedFacingDirection;
         }
 
-        const float facingDot =
-            glm::dot(normalizedFacingDirection, directionToTarget);
+        const float facingDot = glm::dot(normalizedFacingDirection, directionToTarget);
 
         if (facingDot < facingThreshold) {
             continue;
@@ -177,10 +146,7 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
     return nearestAnyDirectionTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
-    const Player& player,
-    float maxDistance,
-    float attackAngle)
+Enemy* PlayerTargetingAssist::FindAssistStrongTarget(const Player& player, float maxDistance, float attackAngle)
 {
     Planet* planet = player.GetCurrentPlanet();
     if (!planet || maxDistance <= 0.0f) {
@@ -188,8 +154,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     }
 
     glm::vec3 normalizedFacingDirection;
-    const bool hasFacingDirection =
-        TryNormalize(player.GetFacingForwardVec(), normalizedFacingDirection);
+    const bool hasFacingDirection = TryNormalize(player.GetFacingForwardVec(), normalizedFacingDirection);
 
     const float facingThreshold = std::cos(attackAngle * 0.5f);
     const float maxDistanceSquared = maxDistance * maxDistance;
@@ -211,8 +176,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
         }
 
         const glm::vec3 toEnemyCenter = enemy->GetPos() - player.GetPos();
-        const float distanceSquared =
-            CalculateDistanceSquaredToEnemySurface(player, *enemy);
+        const float distanceSquared = CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared > maxDistanceSquared) {
             continue;
         }
@@ -231,8 +195,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
             directionToTarget = normalizedFacingDirection;
         }
 
-        const float facingDot =
-            glm::dot(normalizedFacingDirection, directionToTarget);
+        const float facingDot = glm::dot(normalizedFacingDirection, directionToTarget);
 
         if (facingDot < facingThreshold) {
             continue;
@@ -252,8 +215,7 @@ Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     return nearestAnyDirectionTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
-    const Player& player)
+Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(const Player& player)
 {
     Planet* planet = player.GetCurrentPlanet();
     if (!planet) {
@@ -261,18 +223,14 @@ Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
     }
 
     Enemy* nearestTarget = nullptr;
-    float nearestDistanceSquared =
-        std::numeric_limits<float>::max();
+    float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsActiveLaunchedEnemyOnCurrentPlanet(
-                player,
-                enemy)) {
+        if (!IsActiveLaunchedEnemyOnCurrentPlanet(player, enemy)) {
             continue;
         }
 
-        const float distanceSquared =
-            CalculateDistanceSquaredToEnemySurface(player, *enemy);
+        const float distanceSquared = CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared >= nearestDistanceSquared) {
             continue;
         }
@@ -284,13 +242,11 @@ Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetOnCurrentPlanet(
     return nearestTarget;
 }
 
-Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(
-    const Player& player,
-    float maximumLaunchedTimerSeconds)
+Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlanet(const Player& player,
+                                                                                   float maximumLaunchedTimerSeconds)
 {
     Planet* planet = player.GetCurrentPlanet();
-    if (!planet ||
-        maximumLaunchedTimerSeconds < 0.0f) {
+    if (!planet || maximumLaunchedTimerSeconds < 0.0f) {
         return nullptr;
     }
 
@@ -298,17 +254,12 @@ Enemy* PlayerTargetingAssist::FindNearestLaunchedTargetNearRecoveryOnCurrentPlan
     float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!IsActiveLaunchedEnemyOnCurrentPlanet(
-                player,
-                enemy) ||
-            !IsLaunchedEnemyNearRecovery(
-                *enemy,
-                maximumLaunchedTimerSeconds)) {
+        if (!IsActiveLaunchedEnemyOnCurrentPlanet(player, enemy) ||
+            !IsLaunchedEnemyNearRecovery(*enemy, maximumLaunchedTimerSeconds)) {
             continue;
         }
 
-        const float distanceSquared =
-            CalculateDistanceSquaredToEnemySurface(player, *enemy);
+        const float distanceSquared = CalculateDistanceSquaredToEnemySurface(player, *enemy);
         if (distanceSquared >= nearestDistanceSquared) {
             continue;
         }

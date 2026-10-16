@@ -1,8 +1,7 @@
 #include "actor/enemy/EnemyConfigLoader.h"
 
-#include <yaml-cpp/yaml.h>
-
 #include <utility>
+#include <yaml-cpp/yaml.h>
 
 namespace {
 float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
@@ -27,10 +26,7 @@ std::string ReadString(const YAML::Node& node, const char* key, const std::strin
 
 void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
-    config.guardValuePerSegment = ReadFloat(
-        enemyNode,
-        "guardValuePerSegment",
-        config.guardValuePerSegment);
+    config.guardValuePerSegment = ReadFloat(enemyNode, "guardValuePerSegment", config.guardValuePerSegment);
     config.knockBackSpeed = ReadFloat(enemyNode, "knockBackSpeed", config.knockBackSpeed);
     config.defaultLaunchedTimer = ReadFloat(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
     config.launchHeight = ReadFloat(enemyNode, "launchHeight", config.launchHeight);
@@ -40,75 +36,43 @@ void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
     config.isBoss = ReadBool(enemyNode, "isBoss", config.isBoss);
-    config.isBossEncounter = ReadBool(
-        enemyNode,
-        "isBossEncounter",
-        config.isBoss);
-    config.isNormalHitKnockBackEnabled = ReadBool(
-        enemyNode,
-        "normalHitKnockBackEnabled",
-        config.isNormalHitKnockBackEnabled);
+    config.isBossEncounter = ReadBool(enemyNode, "isBossEncounter", config.isBoss);
+    config.isNormalHitKnockBackEnabled =
+        ReadBool(enemyNode, "normalHitKnockBackEnabled", config.isNormalHitKnockBackEnabled);
     config.hp = ReadFloat(enemyNode, "hp", config.hp);
     config.scale = ReadFloat(enemyNode, "scale", config.scale);
     config.moveSpeed = ReadFloat(enemyNode, "speed", config.moveSpeed);
     config.attack = ReadFloat(enemyNode, "attack", config.attack);
     config.radius = ReadFloat(enemyNode, "radius", config.radius);
 
-    config.guardSegmentCount = ReadInt(
-        enemyNode,
-        "breakCountMax",
-        config.guardSegmentCount);
+    config.guardSegmentCount = ReadInt(enemyNode, "breakCountMax", config.guardSegmentCount);
     config.modelPath = ReadString(enemyNode, "modelPath", config.modelPath);
 
     config.defaultStandByAttackTimer =
         ReadFloat(enemyNode, "defaultStandByAttackTimer", config.defaultStandByAttackTimer);
-    config.defaultAttackMotionTimer =
-        ReadFloat(enemyNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
+    config.defaultAttackMotionTimer = ReadFloat(enemyNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
     config.attackSpeed = ReadFloat(enemyNode, "attackSpeed", config.attackSpeed);
-    config.attackPreparationRange = ReadFloat(
-        enemyNode,
-        "attackPreparationRange",
-        config.radius + 1.5f);
+    config.attackPreparationRange = ReadFloat(enemyNode, "attackPreparationRange", config.radius + 1.5f);
     config.bossManeuver.preAttackApproachProbabilityPercent = ReadFloat(
-        enemyNode,
-        "preAttackApproachProbabilityPercent",
-        config.bossManeuver.preAttackApproachProbabilityPercent);
-    config.bossManeuver.preAttackApproachSpeed = ReadFloat(
-        enemyNode,
-        "preAttackApproachSpeed",
-        config.bossManeuver.preAttackApproachSpeed);
-    config.bossManeuver.preAttackApproachStopDistance = ReadFloat(
-        enemyNode,
-        "preAttackApproachStopDistance",
-        config.bossManeuver.preAttackApproachStopDistance);
+        enemyNode, "preAttackApproachProbabilityPercent", config.bossManeuver.preAttackApproachProbabilityPercent);
+    config.bossManeuver.preAttackApproachSpeed =
+        ReadFloat(enemyNode, "preAttackApproachSpeed", config.bossManeuver.preAttackApproachSpeed);
+    config.bossManeuver.preAttackApproachStopDistance =
+        ReadFloat(enemyNode, "preAttackApproachStopDistance", config.bossManeuver.preAttackApproachStopDistance);
     config.bossManeuver.postAttackRetreatProbabilityPercent = ReadFloat(
-        enemyNode,
-        "postAttackRetreatProbabilityPercent",
-        config.bossManeuver.postAttackRetreatProbabilityPercent);
-    config.bossManeuver.postAttackRetreatDelaySeconds = ReadFloat(
-        enemyNode,
-        "postAttackRetreatDelaySeconds",
-        config.bossManeuver.postAttackRetreatDelaySeconds);
-    config.bossManeuver.postAttackRetreatSpeed = ReadFloat(
-        enemyNode,
-        "postAttackRetreatSpeed",
-        config.bossManeuver.postAttackRetreatSpeed);
-    config.bossManeuver.postAttackRetreatDistance = ReadFloat(
-        enemyNode,
-        "postAttackRetreatDistance",
-        config.bossManeuver.postAttackRetreatDistance);
-    config.bossManeuver.postRetreatRecoverySeconds = ReadFloat(
-        enemyNode,
-        "postRetreatRecoverySeconds",
-        config.bossManeuver.postRetreatRecoverySeconds);
+        enemyNode, "postAttackRetreatProbabilityPercent", config.bossManeuver.postAttackRetreatProbabilityPercent);
+    config.bossManeuver.postAttackRetreatDelaySeconds =
+        ReadFloat(enemyNode, "postAttackRetreatDelaySeconds", config.bossManeuver.postAttackRetreatDelaySeconds);
+    config.bossManeuver.postAttackRetreatSpeed =
+        ReadFloat(enemyNode, "postAttackRetreatSpeed", config.bossManeuver.postAttackRetreatSpeed);
+    config.bossManeuver.postAttackRetreatDistance =
+        ReadFloat(enemyNode, "postAttackRetreatDistance", config.bossManeuver.postAttackRetreatDistance);
+    config.bossManeuver.postRetreatRecoverySeconds =
+        ReadFloat(enemyNode, "postRetreatRecoverySeconds", config.bossManeuver.postRetreatRecoverySeconds);
     config.bossManeuver.postRetreatFollowupApproachProbabilityPercent =
-        ReadFloat(
-            enemyNode,
-            "postRetreatFollowupApproachProbabilityPercent",
-            config.bossManeuver
-                .postRetreatFollowupApproachProbabilityPercent);
-    config.behavior.profileName =
-        ReadString(enemyNode, "behaviorProfile", config.behavior.profileName);
+        ReadFloat(enemyNode, "postRetreatFollowupApproachProbabilityPercent",
+                  config.bossManeuver.postRetreatFollowupApproachProbabilityPercent);
+    config.behavior.profileName = ReadString(enemyNode, "behaviorProfile", config.behavior.profileName);
 }
 
 EnemyBehaviorConfig CreateLegacyMeleeBehavior()
@@ -123,9 +87,7 @@ EnemyBehaviorConfig CreateLegacyMeleeBehavior()
     return behavior;
 }
 
-void AppendBehaviorActions(
-    EnemyBehaviorConfig& behavior,
-    const YAML::Node& actionsNode)
+void AppendBehaviorActions(EnemyBehaviorConfig& behavior, const YAML::Node& actionsNode)
 {
     for (const YAML::Node& actionNode : actionsNode) {
         if (!actionNode.IsMap()) {
@@ -149,7 +111,6 @@ void AppendBehaviorActions(
             try {
                 action.parameters[key] = entry.second.as<float>();
             } catch (const YAML::BadConversion&) {
-
             }
         }
 
@@ -160,11 +121,9 @@ void AppendBehaviorActions(
 void ApplyBehaviorProfile(EnemyConfig& config, const YAML::Node& root)
 {
     const YAML::Node profiles = root["behaviorProfiles"];
-    const YAML::Node profileNode =
-        profiles && profiles.IsMap() ? profiles[config.behavior.profileName] : YAML::Node();
+    const YAML::Node profileNode = profiles && profiles.IsMap() ? profiles[config.behavior.profileName] : YAML::Node();
 
-    if (!profileNode || !profileNode.IsMap() ||
-        !profileNode["actions"] || !profileNode["actions"].IsSequence()) {
+    if (!profileNode || !profileNode.IsMap() || !profileNode["actions"] || !profileNode["actions"].IsSequence()) {
         config.behavior = CreateLegacyMeleeBehavior();
         return;
     }
@@ -176,10 +135,7 @@ void ApplyBehaviorProfile(EnemyConfig& config, const YAML::Node& root)
     config.behavior = behavior.actions.empty() ? CreateLegacyMeleeBehavior() : std::move(behavior);
 }
 
-bool ApplyPresetAttacks(
-    EnemyConfig& config,
-    const YAML::Node& enemyNode,
-    const std::string& enemyType)
+bool ApplyPresetAttacks(EnemyConfig& config, const YAML::Node& enemyNode, const std::string& enemyType)
 {
     const YAML::Node attacksNode = enemyNode["attacks"];
     if (!attacksNode || !attacksNode.IsSequence()) {
@@ -195,18 +151,15 @@ bool ApplyPresetAttacks(
     AppendBehaviorActions(behavior, attacksNode);
 
     if (behavior.actions.size() == 2) {
-        behavior.actions.push_back(
-            EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
+        behavior.actions.push_back(EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
     }
 
     config.behavior = std::move(behavior);
     return true;
 }
-}
+} // namespace
 
-EnemyConfig EnemyConfigLoader::Parse(
-    const YAML::Node& enemyRoot,
-    const std::string& type)
+EnemyConfig EnemyConfigLoader::Parse(const YAML::Node& enemyRoot, const std::string& type)
 {
     EnemyConfig config;
     config.isBoss = type == "boss";
@@ -231,8 +184,7 @@ EnemyConfig EnemyConfigLoader::Parse(
         }
     }
 
-    if (!selectedEnemyNode ||
-        !ApplyPresetAttacks(config, selectedEnemyNode, type)) {
+    if (!selectedEnemyNode || !ApplyPresetAttacks(config, selectedEnemyNode, type)) {
         ApplyBehaviorProfile(config, enemyRoot);
     }
     return config;

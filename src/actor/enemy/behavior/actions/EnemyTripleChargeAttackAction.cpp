@@ -7,8 +7,7 @@
 #include <algorithm>
 #include <cmath>
 
-EnemyTripleChargeAttackAction::EnemyTripleChargeAttackAction(
-    const EnemyBehaviorActionConfig& config)
+EnemyTripleChargeAttackAction::EnemyTripleChargeAttackAction(const EnemyBehaviorActionConfig& config)
     : EnemyBehaviorAction(config)
 {
     mChargeCount = std::max(1, static_cast<int>(std::lround(GetParameter("chargeCount", 3.0f))));
@@ -43,14 +42,12 @@ void EnemyTripleChargeAttackAction::Enter(EnemyBehaviorContext& context)
     mCompletedCharges = 0;
 }
 
-EnemyBehaviorActionResult EnemyTripleChargeAttackAction::Update(
-    EnemyBehaviorContext& context, float deltaTime)
+EnemyBehaviorActionResult EnemyTripleChargeAttackAction::Update(EnemyBehaviorContext& context, float deltaTime)
 {
     const EnemyStateMachine::ActionState state = context.stateMachine.GetActionState();
 
     if (state == EnemyStateMachine::ActionState::PreparingAttack) {
-        context.stateMachine.UpdatePreparingAttack(
-            context.enemy, context.status, context.movement, deltaTime);
+        context.stateMachine.UpdatePreparingAttack(context.enemy, context.status, context.movement, deltaTime);
         return EnemyBehaviorActionResult::Running;
     }
 
@@ -58,8 +55,7 @@ EnemyBehaviorActionResult EnemyTripleChargeAttackAction::Update(
         return EnemyBehaviorActionResult::Finished;
     }
 
-    context.stateMachine.UpdateAttacking(
-        context.enemy, context.status, context.movement, context.combat, deltaTime);
+    context.stateMachine.UpdateAttacking(context.enemy, context.status, context.movement, context.combat, deltaTime);
 
     if (context.stateMachine.GetActionState() == EnemyStateMachine::ActionState::Attacking) {
         return EnemyBehaviorActionResult::Running;

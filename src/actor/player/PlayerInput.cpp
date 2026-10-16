@@ -1,7 +1,6 @@
 #include "actor/player/PlayerInput.h"
 
 #include "Game.h"
-
 #include "actor/Player.h"
 #include "actor/player/PlayerMovement.h"
 #include "system/InputSystem.h"
@@ -14,9 +13,7 @@
 #include <glm/glm.hpp>
 
 namespace {
-PlayerInputDeviceContext CreatePlayerInputDeviceContext(
-    const Game& game,
-    const InputSystem& inputSystem)
+PlayerInputDeviceContext CreatePlayerInputDeviceContext(const Game& game, const InputSystem& inputSystem)
 {
     const Player* controlledPlayer = game.GetControlledPlayer();
     return {
@@ -24,12 +21,10 @@ PlayerInputDeviceContext CreatePlayerInputDeviceContext(
         .isDebugMode = game.GetIsDebugMode(),
         .hasControllerOne = inputSystem.HasControllerInput(1),
         .hasControllerTwo = inputSystem.HasControllerInput(2),
-        .controlledPlayerNum = controlledPlayer
-            ? controlledPlayer->GetPlayerNum()
-            : 1,
+        .controlledPlayerNum = controlledPlayer ? controlledPlayer->GetPlayerNum() : 1,
     };
 }
-}
+} // namespace
 
 PlayerInput::PlayerInput(InputSystem& inputSystem)
     : mInputSystem(inputSystem)
@@ -38,20 +33,17 @@ PlayerInput::PlayerInput(InputSystem& inputSystem)
 
 void PlayerInput::ProcessActor(Player& player, const PlayerMovement& movement)
 {
-    const bool isNonControlledSoloPlayer =
-        !player.GetGame()->GetIsPlayer2Joined() &&
-        player.GetGame()->GetPlayers().size() >= 2 &&
-        player.GetGame()->GetControlledPlayer() != &player;
+    const bool isNonControlledSoloPlayer = !player.GetGame()->GetIsPlayer2Joined() &&
+                                           player.GetGame()->GetPlayers().size() >= 2 &&
+                                           player.GetGame()->GetControlledPlayer() != &player;
     if (isNonControlledSoloPlayer) {
         ClearNonControlledPlayerInput();
         return;
     }
 
     if (mInputAvailableTimer >= 0.0f) {
-        SceneSystem* sceneSystem =
-            player.GetGame()->GetSceneSystem();
-        if (sceneSystem &&
-            sceneSystem->IsWaitingForTutorialPlayerJump()) {
+        SceneSystem* sceneSystem = player.GetGame()->GetSceneSystem();
+        if (sceneSystem && sceneSystem->IsWaitingForTutorialPlayerJump()) {
             mJumpPressed = false;
             ApplyTutorialInputRestriction(player);
         }
@@ -85,10 +77,8 @@ void PlayerInput::ClearNonControlledPlayerInput()
 
 void PlayerInput::ApplyTutorialInputRestriction(Player& player)
 {
-    SceneSystem* sceneSystem =
-        player.GetGame()->GetSceneSystem();
-    if (!sceneSystem ||
-        !sceneSystem->IsWaitingForTutorialPlayerJump()) {
+    SceneSystem* sceneSystem = player.GetGame()->GetSceneSystem();
+    if (!sceneSystem || !sceneSystem->IsWaitingForTutorialPlayerJump()) {
         return;
     }
 
@@ -109,11 +99,9 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
 {
     Game* game = player.GetGame();
 
-    const PlayerInputDevice inputDevice = ResolvePlayerInputDevice(
-        movement.GetPlayerNum(),
-        CreatePlayerInputDeviceContext(*game, mInputSystem));
-    const int controllerPlayerNum =
-        ResolveControllerPlayerNum(inputDevice);
+    const PlayerInputDevice inputDevice =
+        ResolvePlayerInputDevice(movement.GetPlayerNum(), CreatePlayerInputDeviceContext(*game, mInputSystem));
+    const int controllerPlayerNum = ResolveControllerPlayerNum(inputDevice);
     if (controllerPlayerNum == 0) {
         return;
     }
@@ -121,12 +109,8 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
 
-    mMoveForward = mInputSystem.GetControllerAxis(
-        controllerPlayerNum,
-        SDL_CONTROLLER_AXIS_LEFTY) * scale;
-    mMoveLeft = mInputSystem.GetControllerAxis(
-        controllerPlayerNum,
-        SDL_CONTROLLER_AXIS_LEFTX) * scale;
+    mMoveForward = mInputSystem.GetControllerAxis(controllerPlayerNum, SDL_CONTROLLER_AXIS_LEFTY) * scale;
+    mMoveLeft = mInputSystem.GetControllerAxis(controllerPlayerNum, SDL_CONTROLLER_AXIS_LEFTX) * scale;
 
     if (std::abs(mMoveForward) < deadZone) {
         mMoveForward = 0.0f;
@@ -136,29 +120,22 @@ void PlayerInput::ProcessGameController(Player& player, const PlayerMovement& mo
         mMoveLeft = 0.0f;
     }
 
-    mJumpPressed = mInputSystem.IsControllerButtonPressed(
-        controllerPlayerNum, SDL_CONTROLLER_BUTTON_A);
-    mAttackPressed = mInputSystem.IsControllerButtonPressed(
-        controllerPlayerNum, SDL_CONTROLLER_BUTTON_X);
-    mWideAttackPressed = mInputSystem.IsControllerButtonPressed(
-        controllerPlayerNum, SDL_CONTROLLER_BUTTON_Y);
-    mDodgePressed = mInputSystem.IsControllerButtonPressed(
-        controllerPlayerNum, SDL_CONTROLLER_BUTTON_B);
-    mSpecialAttackPressed = mInputSystem.IsControllerButtonPressed(
-        controllerPlayerNum, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+    mJumpPressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_A);
+    mAttackPressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_X);
+    mWideAttackPressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_Y);
+    mDodgePressed = mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_B);
+    mSpecialAttackPressed =
+        mInputSystem.IsControllerButtonPressed(controllerPlayerNum, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
 }
 
 void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement)
 {
     Game* game = player.GetGame();
 
-    const PlayerInputDevice inputDevice = ResolvePlayerInputDevice(
-        movement.GetPlayerNum(),
-        CreatePlayerInputDeviceContext(*game, mInputSystem));
-    const bool usesPrimaryKeyboard =
-        inputDevice == PlayerInputDevice::PrimaryKeyboard;
-    const bool usesSecondaryKeyboard =
-        inputDevice == PlayerInputDevice::SecondaryKeyboard;
+    const PlayerInputDevice inputDevice =
+        ResolvePlayerInputDevice(movement.GetPlayerNum(), CreatePlayerInputDeviceContext(*game, mInputSystem));
+    const bool usesPrimaryKeyboard = inputDevice == PlayerInputDevice::PrimaryKeyboard;
+    const bool usesSecondaryKeyboard = inputDevice == PlayerInputDevice::SecondaryKeyboard;
     if (!usesPrimaryKeyboard && !usesSecondaryKeyboard) {
         return;
     }
@@ -176,18 +153,10 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
         return;
     }
 
-    const int forwardKey = usesSecondaryKeyboard
-        ? GLFW_KEY_UP
-        : GLFW_KEY_W;
-    const int backwardKey = usesSecondaryKeyboard
-        ? GLFW_KEY_DOWN
-        : GLFW_KEY_S;
-    const int leftKey = usesSecondaryKeyboard
-        ? GLFW_KEY_LEFT
-        : GLFW_KEY_A;
-    const int rightKey = usesSecondaryKeyboard
-        ? GLFW_KEY_RIGHT
-        : GLFW_KEY_D;
+    const int forwardKey = usesSecondaryKeyboard ? GLFW_KEY_UP : GLFW_KEY_W;
+    const int backwardKey = usesSecondaryKeyboard ? GLFW_KEY_DOWN : GLFW_KEY_S;
+    const int leftKey = usesSecondaryKeyboard ? GLFW_KEY_LEFT : GLFW_KEY_A;
+    const int rightKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT : GLFW_KEY_D;
 
     if (mInputSystem.IsKeyPressed(forwardKey)) {
         mMoveForward -= 1.0f;
@@ -210,21 +179,11 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
     mMoveLeft = moveInput.x;
     mMoveForward = moveInput.y;
 
-    const int jumpKey = usesSecondaryKeyboard
-        ? GLFW_KEY_RIGHT_SHIFT
-        : GLFW_KEY_SPACE;
-    const int attackKey = usesSecondaryKeyboard
-        ? GLFW_KEY_SLASH
-        : GLFW_KEY_K;
-    const int wideAttackKey = usesSecondaryKeyboard
-        ? GLFW_KEY_PERIOD
-        : GLFW_KEY_J;
-    const int dodgeKey = usesSecondaryKeyboard
-        ? GLFW_KEY_RIGHT_CONTROL
-        : GLFW_KEY_U;
-    const int specialAttackKey = usesSecondaryKeyboard
-        ? GLFW_KEY_RIGHT_ALT
-        : GLFW_KEY_N;
+    const int jumpKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_SHIFT : GLFW_KEY_SPACE;
+    const int attackKey = usesSecondaryKeyboard ? GLFW_KEY_SLASH : GLFW_KEY_K;
+    const int wideAttackKey = usesSecondaryKeyboard ? GLFW_KEY_PERIOD : GLFW_KEY_J;
+    const int dodgeKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_CONTROL : GLFW_KEY_U;
+    const int specialAttackKey = usesSecondaryKeyboard ? GLFW_KEY_RIGHT_ALT : GLFW_KEY_N;
 
     mJumpPressed = mInputSystem.IsKeyPressed(jumpKey);
     mAttackPressed = mInputSystem.IsKeyPressed(attackKey);
@@ -235,14 +194,10 @@ void PlayerInput::ProcessKeyboard(Player& player, const PlayerMovement& movement
 
 void PlayerInput::UpdateRecoverInput(const Player& player)
 {
-    const bool isCombinationRecoveryRequested =
-        mSpecialAttackPressed && mJumpPressed;
+    const bool isCombinationRecoveryRequested = mSpecialAttackPressed && mJumpPressed;
     const bool isAssistRecoveryRequested =
-        player.GetGame()->IsAssistControlStyle() &&
-        mAttackPressed &&
-        !mSpecialAttackPressed;
-    mRecoverPressed =
-        isCombinationRecoveryRequested || isAssistRecoveryRequested;
+        player.GetGame()->IsAssistControlStyle() && mAttackPressed && !mSpecialAttackPressed;
+    mRecoverPressed = isCombinationRecoveryRequested || isAssistRecoveryRequested;
 }
 
 void PlayerInput::CaptureAttackInput()

@@ -1,5 +1,4 @@
 #include "component/PlatformPressureSwitchComponent.h"
-#include "component/PlatformLatchedGroupSwitchComponent.h"
 
 #include "Game.h"
 #include "Stage.h"
@@ -9,8 +8,9 @@
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
-#include "component/PlatformMovementComponent.h"
 #include "component/FocusComponent.h"
+#include "component/PlatformLatchedGroupSwitchComponent.h"
+#include "component/PlatformMovementComponent.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
 #include "system/PhysicsSystem.h"
@@ -27,32 +27,28 @@ constexpr float pressureSwitchContactReleaseGraceSeconds = 0.15f;
 
 bool IsEditorPreview(const Platform* platform)
 {
-    return platform && platform->GetGame() &&
-           platform->GetGame()->GetIsDebugEditorShowing();
+    return platform && platform->GetGame() && platform->GetGame()->GetIsDebugEditorShowing();
 }
 
 Player* FindPlayerOnPlatform(const Platform* platform)
 {
-    if (!platform || !platform->GetGame()) return nullptr;
+    if (!platform || !platform->GetGame()) {
+        return nullptr;
+    }
 
     for (Player* player : platform->GetGame()->GetPlayers()) {
-        if (player && player->GetIsActive() && player->GetOnGround() &&
-            player->GetGroundActor() == platform) {
+        if (player && player->GetIsActive() && player->GetOnGround() && player->GetGroundActor() == platform) {
             return player;
         }
     }
     return nullptr;
 }
 
-bool DoesSupportRayHitPlatformTop(
-    const Player& player,
-    const Platform& platform,
-    const glm::vec3& rayOffset)
+bool DoesSupportRayHitPlatformTop(const Player& player, const Platform& platform, const glm::vec3& rayOffset)
 {
     Game* game = platform.GetGame();
     PhysicsSystem* physicsSystem = game ? game->GetPhysicsSystem() : nullptr;
-    btDiscreteDynamicsWorld* bulletWorld =
-        physicsSystem ? physicsSystem->GetBulletWorld() : nullptr;
+    btDiscreteDynamicsWorld* bulletWorld = physicsSystem ? physicsSystem->GetBulletWorld() : nullptr;
     if (!physicsSystem || !bulletWorld) {
         return false;
     }
@@ -67,41 +63,26 @@ bool DoesSupportRayHitPlatformTop(
     constexpr float walkableSurfaceMinimumUpDot = 0.65f;
 
     const glm::vec3 normalizedUp = glm::normalize(playerUp);
-    const glm::vec3 rayFrom =
-        player.GetPos() + rayOffset + normalizedUp * rayStartOffset;
+    const glm::vec3 rayFrom = player.GetPos() + rayOffset + normalizedUp * rayStartOffset;
     const glm::vec3 rayTo = rayFrom - normalizedUp * rayLength;
     const btVector3 bulletRayFrom(rayFrom.x, rayFrom.y, rayFrom.z);
     const btVector3 bulletRayTo(rayTo.x, rayTo.y, rayTo.z);
-    btCollisionWorld::AllHitsRayResultCallback callback(
-        bulletRayFrom,
-        bulletRayTo);
-    callback.m_collisionFilterGroup =
-        static_cast<short>(btBroadphaseProxy::DefaultFilter);
-    callback.m_collisionFilterMask =
-        static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    btCollisionWorld::AllHitsRayResultCallback callback(bulletRayFrom, bulletRayTo);
+    callback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    callback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     bulletWorld->rayTest(bulletRayFrom, bulletRayTo, callback);
 
-    for (int hitIndex = 0;
-         hitIndex < callback.m_collisionObjects.size();
-         ++hitIndex) {
-        const btCollisionObject* collisionObject =
-            callback.m_collisionObjects[hitIndex];
+    for (int hitIndex = 0; hitIndex < callback.m_collisionObjects.size(); ++hitIndex) {
+        const btCollisionObject* collisionObject = callback.m_collisionObjects[hitIndex];
         const Actor* hitActor =
-            collisionObject
-            ? static_cast<const Actor*>(collisionObject->getUserPointer())
-            : nullptr;
+            collisionObject ? static_cast<const Actor*>(collisionObject->getUserPointer()) : nullptr;
         if (hitActor != &platform) {
             continue;
         }
 
-        const btVector3& bulletHitNormal =
-            callback.m_hitNormalWorld[hitIndex];
-        const glm::vec3 hitNormal(
-            bulletHitNormal.x(),
-            bulletHitNormal.y(),
-            bulletHitNormal.z());
-        if (glm::dot(hitNormal, normalizedUp) >=
-            walkableSurfaceMinimumUpDot) {
+        const btVector3& bulletHitNormal = callback.m_hitNormalWorld[hitIndex];
+        const glm::vec3 hitNormal(bulletHitNormal.x(), bulletHitNormal.y(), bulletHitNormal.z());
+        if (glm::dot(hitNormal, normalizedUp) >= walkableSurfaceMinimumUpDot) {
             return true;
         }
     }
@@ -109,37 +90,26 @@ bool DoesSupportRayHitPlatformTop(
     return false;
 }
 
-bool IsPlayerSupportedByPlatform(
-    const Player& player,
-    const Platform& platform)
+bool IsPlayerSupportedByPlatform(const Player& player, const Platform& platform)
 {
     if (player.GetGroundActor() == &platform) {
         return true;
     }
 
-    PhysicsSystem* physicsSystem =
-        platform.GetGame()
-        ? platform.GetGame()->GetPhysicsSystem()
-        : nullptr;
+    PhysicsSystem* physicsSystem = platform.GetGame() ? platform.GetGame()->GetPhysicsSystem() : nullptr;
     if (!physicsSystem) {
         return false;
     }
     physicsSystem->SyncKinematicBodies();
 
-    const float collisionScaleMultiplier =
-        player.GetCollisionScaleMultiplier();
+    const float collisionScaleMultiplier = player.GetCollisionScaleMultiplier();
     constexpr float footprintExtentRatio = 0.45f;
     const float forwardRayOffset =
-        physicsSystem->GetPlayerCollisionDepth() *
-        collisionScaleMultiplier *
-        footprintExtentRatio;
+        physicsSystem->GetPlayerCollisionDepth() * collisionScaleMultiplier * footprintExtentRatio;
     const float leftRayOffset =
-        physicsSystem->GetPlayerCollisionWidth() *
-        collisionScaleMultiplier *
-        footprintExtentRatio;
+        physicsSystem->GetPlayerCollisionWidth() * collisionScaleMultiplier * footprintExtentRatio;
 
-    glm::vec3 forwardDirection =
-        player.GetFacingForwardVec();
+    glm::vec3 forwardDirection = player.GetFacingForwardVec();
     if (glm::length(forwardDirection) > 0.000001f) {
         forwardDirection = glm::normalize(forwardDirection);
     } else {
@@ -153,38 +123,26 @@ bool IsPlayerSupportedByPlatform(
         leftDirection = glm::vec3(0.0f);
     }
 
-    const glm::vec3 forwardOffset =
-        forwardDirection * forwardRayOffset;
-    const glm::vec3 leftOffset =
-        leftDirection * leftRayOffset;
-    const glm::vec3 rayOffsets[] = {
-        glm::vec3(0.0f),
-        forwardOffset,
-        -forwardOffset,
-        leftOffset,
-        -leftOffset,
-        forwardOffset + leftOffset,
-        forwardOffset - leftOffset,
-        -forwardOffset + leftOffset,
-        -forwardOffset - leftOffset};
+    const glm::vec3 forwardOffset = forwardDirection * forwardRayOffset;
+    const glm::vec3 leftOffset = leftDirection * leftRayOffset;
+    const glm::vec3 rayOffsets[] = {glm::vec3(0.0f),
+                                    forwardOffset,
+                                    -forwardOffset,
+                                    leftOffset,
+                                    -leftOffset,
+                                    forwardOffset + leftOffset,
+                                    forwardOffset - leftOffset,
+                                    -forwardOffset + leftOffset,
+                                    -forwardOffset - leftOffset};
 
-    return std::any_of(
-        std::begin(rayOffsets),
-        std::end(rayOffsets),
-        [&player, &platform](const glm::vec3& rayOffset) {
-            return DoesSupportRayHitPlatformTop(
-                player,
-                platform,
-                rayOffset);
-        });
+    return std::any_of(std::begin(rayOffsets), std::end(rayOffsets), [&player, &platform](const glm::vec3& rayOffset) {
+        return DoesSupportRayHitPlatformTop(player, platform, rayOffset);
+    });
 }
 
-bool IsPlayerPressingPlatform(
-    const Player& player,
-    const Platform& platform)
+bool IsPlayerPressingPlatform(const Player& player, const Platform& platform)
 {
-    if (!player.GetIsActive() ||
-        !IsPlayerSupportedByPlatform(player, platform)) {
+    if (!player.GetIsActive() || !IsPlayerSupportedByPlatform(player, platform)) {
         return false;
     }
 
@@ -197,10 +155,7 @@ bool IsPlayerPressingPlatform(
         return true;
     }
 
-    const float upwardSpeed =
-        glm::dot(
-            player.GetVelocity(),
-            glm::normalize(playerUp));
+    const float upwardSpeed = glm::dot(player.GetVelocity(), glm::normalize(playerUp));
     constexpr float maximumPressingUpwardSpeed = 0.05f;
     return upwardSpeed <= maximumPressingUpwardSpeed;
 }
@@ -212,27 +167,22 @@ Player* FindPlayerPressingPlatform(const Platform* platform)
     }
 
     for (Player* player : platform->GetGame()->GetPlayers()) {
-        if (player &&
-            IsPlayerPressingPlatform(*player, *platform)) {
+        if (player && IsPlayerPressingPlatform(*player, *platform)) {
             return player;
         }
     }
     return nullptr;
 }
 
-}
+} // namespace
 
-PlatformPressureSwitchComponent::PlatformPressureSwitchComponent(
-    Platform* owner,
-    int updateOrder)
+PlatformPressureSwitchComponent::PlatformPressureSwitchComponent(Platform* owner, int updateOrder)
     : Component(owner, updateOrder),
       mPlatform(owner)
 {
 }
 
-PlatformPressureSwitchComponent::~PlatformPressureSwitchComponent()
-{
-}
+PlatformPressureSwitchComponent::~PlatformPressureSwitchComponent() {}
 
 void PlatformPressureSwitchComponent::Update(float deltaTime)
 {
@@ -245,25 +195,19 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     }
 
     const float safeDeltaTime = std::max(0.0f, deltaTime);
-    const bool hasCurrentContact =
-        FindPlayerPressingPlatform(mPlatform) != nullptr;
+    const bool hasCurrentContact = FindPlayerPressingPlatform(mPlatform) != nullptr;
+
+    // 接地レイの一時的な途切れで対象が点滅しないよう、離れた後も短時間だけ押下を維持する。
     if (hasCurrentContact) {
-        mContactGraceRemainingSeconds =
-            pressureSwitchContactReleaseGraceSeconds;
+        mContactGraceRemainingSeconds = pressureSwitchContactReleaseGraceSeconds;
         if (mShouldRemainOnAfterPressed) {
             mHasLatchedOn = true;
         }
     } else {
-        mContactGraceRemainingSeconds =
-            std::max(
-                0.0f,
-                mContactGraceRemainingSeconds -
-                    safeDeltaTime);
+        mContactGraceRemainingSeconds = std::max(0.0f, mContactGraceRemainingSeconds - safeDeltaTime);
     }
 
-    const bool isPressed =
-        mHasLatchedOn || hasCurrentContact ||
-        mContactGraceRemainingSeconds > 0.0f;
+    const bool isPressed = mHasLatchedOn || hasCurrentContact || mContactGraceRemainingSeconds > 0.0f;
     const bool didBecomePressed = isPressed && !mIsPressed;
     mIsPressed = isPressed;
     if (didBecomePressed && !mHasStartedActivationFocus) {
@@ -273,8 +217,7 @@ void PlatformPressureSwitchComponent::Update(float deltaTime)
     ApplyTargetState();
 }
 
-void PlatformPressureSwitchComponent::SetTargetPlatformIds(
-    const std::vector<std::string>& targetPlatformIds)
+void PlatformPressureSwitchComponent::SetTargetPlatformIds(const std::vector<std::string>& targetPlatformIds)
 {
     if (!mPlatform) {
         mTargetPlatformIds.clear();
@@ -285,33 +228,23 @@ void PlatformPressureSwitchComponent::SetTargetPlatformIds(
 
     mTargetPlatformIds.clear();
     for (const std::string& platformId : targetPlatformIds) {
-        if (platformId.empty() ||
-            platformId == mPlatform->GetPlatformId() ||
-            std::find(
-                mTargetPlatformIds.begin(),
-                mTargetPlatformIds.end(),
-                platformId) != mTargetPlatformIds.end()) {
+        if (platformId.empty() || platformId == mPlatform->GetPlatformId() ||
+            std::find(mTargetPlatformIds.begin(), mTargetPlatformIds.end(), platformId) != mTargetPlatformIds.end()) {
             continue;
         }
         mTargetPlatformIds.emplace_back(platformId);
     }
 
-    const bool hasCurrentContact =
-        !IsEditorPreview(mPlatform) &&
-        FindPlayerPressingPlatform(mPlatform) != nullptr;
+    const bool hasCurrentContact = !IsEditorPreview(mPlatform) && FindPlayerPressingPlatform(mPlatform) != nullptr;
     if (hasCurrentContact && mShouldRemainOnAfterPressed) {
         mHasLatchedOn = true;
     }
     mIsPressed = mHasLatchedOn || hasCurrentContact;
-    mContactGraceRemainingSeconds =
-        hasCurrentContact
-            ? pressureSwitchContactReleaseGraceSeconds
-            : 0.0f;
+    mContactGraceRemainingSeconds = hasCurrentContact ? pressureSwitchContactReleaseGraceSeconds : 0.0f;
     ApplyTargetState();
 }
 
-void PlatformPressureSwitchComponent::SetTargetEnemyRefs(
-    const std::vector<PlatformRevealTarget>& targetEnemyRefs)
+void PlatformPressureSwitchComponent::SetTargetEnemyRefs(const std::vector<PlatformRevealTarget>& targetEnemyRefs)
 {
     ClearTargetRuntimeStates();
     mTargetEnemyRefs.clear();
@@ -322,11 +255,8 @@ void PlatformPressureSwitchComponent::SetTargetEnemyRefs(
         }
 
         const bool isDuplicate = std::any_of(
-            mTargetEnemyRefs.begin(),
-            mTargetEnemyRefs.end(),
-            [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName &&
-                       current.yamlIndex == target.yamlIndex;
+            mTargetEnemyRefs.begin(), mTargetEnemyRefs.end(), [&target](const PlatformRevealTarget& current) {
+                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
             });
         if (!isDuplicate) {
             mTargetEnemyRefs.emplace_back(target);
@@ -336,8 +266,7 @@ void PlatformPressureSwitchComponent::SetTargetEnemyRefs(
     ApplyTargetState();
 }
 
-void PlatformPressureSwitchComponent::SetHideTargets(
-    const std::vector<PlatformRevealTarget>& hideTargets)
+void PlatformPressureSwitchComponent::SetHideTargets(const std::vector<PlatformRevealTarget>& hideTargets)
 {
     ClearTargetRuntimeStates();
     mHideTargets.clear();
@@ -347,16 +276,11 @@ void PlatformPressureSwitchComponent::SetHideTargets(
             continue;
         }
 
-        const bool isOwnerTarget =
-            mPlatform &&
-            target.sequenceName == mPlatform->GetStageSequenceName() &&
-            target.yamlIndex == mPlatform->GetStageYamlIndex();
-        const bool isDuplicate = std::any_of(
-            mHideTargets.begin(),
-            mHideTargets.end(),
-            [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName &&
-                       current.yamlIndex == target.yamlIndex;
+        const bool isOwnerTarget = mPlatform && target.sequenceName == mPlatform->GetStageSequenceName() &&
+                                   target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isDuplicate =
+            std::any_of(mHideTargets.begin(), mHideTargets.end(), [&target](const PlatformRevealTarget& current) {
+                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
             });
         if (!isOwnerTarget && !isDuplicate) {
             mHideTargets.emplace_back(target);
@@ -372,8 +296,7 @@ void PlatformPressureSwitchComponent::SetInactiveOpacity(float opacity)
     ApplyTargetState();
 }
 
-void PlatformPressureSwitchComponent::SetShouldRemainOnAfterPressed(
-    bool shouldRemainOnAfterPressed)
+void PlatformPressureSwitchComponent::SetShouldRemainOnAfterPressed(bool shouldRemainOnAfterPressed)
 {
     if (mShouldRemainOnAfterPressed == shouldRemainOnAfterPressed) {
         return;
@@ -385,34 +308,27 @@ void PlatformPressureSwitchComponent::SetShouldRemainOnAfterPressed(
     }
 
     const bool hasCurrentContact =
-        mPlatform && !IsEditorPreview(mPlatform) &&
-        FindPlayerPressingPlatform(mPlatform) != nullptr;
+        mPlatform && !IsEditorPreview(mPlatform) && FindPlayerPressingPlatform(mPlatform) != nullptr;
     if (hasCurrentContact && mShouldRemainOnAfterPressed) {
         mHasLatchedOn = true;
     }
     mIsPressed = mHasLatchedOn || hasCurrentContact;
-    mContactGraceRemainingSeconds =
-        hasCurrentContact
-            ? pressureSwitchContactReleaseGraceSeconds
-            : 0.0f;
+    mContactGraceRemainingSeconds = hasCurrentContact ? pressureSwitchContactReleaseGraceSeconds : 0.0f;
     ApplyTargetState();
 }
 
-Platform* PlatformPressureSwitchComponent::FindTargetPlatform(
-    const std::string& platformId) const
+Platform* PlatformPressureSwitchComponent::FindTargetPlatform(const std::string& platformId) const
 {
-    if (!mPlatform || platformId.empty() ||
-        !mPlatform->GetGame() ||
-        !mPlatform->GetGame()->GetCurrentStage()) {
+    if (!mPlatform || platformId.empty() || !mPlatform->GetGame() || !mPlatform->GetGame()->GetCurrentStage()) {
         return nullptr;
     }
 
-    for (Planet* planet :
-         mPlatform->GetGame()->GetCurrentStage()->GetPlanets()) {
-        if (!planet) continue;
+    for (Planet* planet : mPlatform->GetGame()->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
         for (Platform* platform : planet->GetPlatforms()) {
-            if (platform && platform->GetIsActive() &&
-                platform != mPlatform &&
+            if (platform && platform->GetIsActive() && platform != mPlatform &&
                 platform->GetPlatformId() == platformId) {
                 return platform;
             }
@@ -421,12 +337,9 @@ Platform* PlatformPressureSwitchComponent::FindTargetPlatform(
     return nullptr;
 }
 
-Actor* PlatformPressureSwitchComponent::FindTargetActor(
-    const PlatformRevealTarget& target) const
+Actor* PlatformPressureSwitchComponent::FindTargetActor(const PlatformRevealTarget& target) const
 {
-    if (!mPlatform || !target.IsValid() ||
-        !mPlatform->GetGame() ||
-        !mPlatform->GetGame()->GetActorLoadSystem()) {
+    if (!mPlatform || !target.IsValid() || !mPlatform->GetGame() || !mPlatform->GetGame()->GetActorLoadSystem()) {
         return nullptr;
     }
 
@@ -435,26 +348,20 @@ Actor* PlatformPressureSwitchComponent::FindTargetActor(
     if (!stage) {
         return nullptr;
     }
-    return game->GetActorLoadSystem()
-        ->GetActorLocator()
-        .FindPlacedActor(*stage, target.sequenceName, target.yamlIndex);
+    return game->GetActorLoadSystem()->GetActorLocator().FindPlacedActor(*stage, target.sequenceName, target.yamlIndex);
 }
 
 void PlatformPressureSwitchComponent::ApplyTargetState()
 {
     const bool isEditorPreview = IsEditorPreview(mPlatform);
-    const bool shouldRevealPressedTargets =
-        isEditorPreview ||
-        (mIsPressed && !mIsWaitingForActivationReveal);
+    const bool shouldRevealPressedTargets = isEditorPreview || (mIsPressed && !mIsWaitingForActivationReveal);
     for (const std::string& platformId : mTargetPlatformIds) {
         Platform* target = FindTargetPlatform(platformId);
-        if (!target) continue;
-        target->SetComponentOpacity(
-            this,
-            shouldRevealPressedTargets ? 1.0f : mInactiveOpacity);
-        target->SetComponentCollisionEnabled(
-            this,
-            shouldRevealPressedTargets);
+        if (!target) {
+            continue;
+        }
+        target->SetComponentOpacity(this, shouldRevealPressedTargets ? 1.0f : mInactiveOpacity);
+        target->SetComponentCollisionEnabled(this, shouldRevealPressedTargets);
     }
 
     for (const PlatformRevealTarget& targetRef : mTargetEnemyRefs) {
@@ -463,12 +370,8 @@ void PlatformPressureSwitchComponent::ApplyTargetState()
             continue;
         }
 
-
-
         // 敵はフェードさせず、非アクティブ化で描画・更新・照準・衝突から一括で除外する。
-        targetActor->SetRuntimeActivationEnabled(
-            this,
-            shouldRevealPressedTargets);
+        targetActor->SetRuntimeActivationEnabled(this, shouldRevealPressedTargets);
     }
 
     for (const PlatformRevealTarget& targetRef : mHideTargets) {
@@ -512,18 +415,14 @@ void PlatformPressureSwitchComponent::UpdateFirstActivationReveal()
 
     for (const std::string& platformId : mTargetPlatformIds) {
         Platform* target = FindTargetPlatform(platformId);
-        FocusComponent* focusComponent =
-            target ? target->GetFocusComponent() : nullptr;
-        if (!focusComponent ||
-            !focusComponent->HasReachedRevealMoment()) {
+        FocusComponent* focusComponent = target ? target->GetFocusComponent() : nullptr;
+        if (!focusComponent || !focusComponent->HasReachedRevealMoment()) {
             continue;
         }
 
         mIsWaitingForActivationReveal = false;
-        if (mIsPressed && mPlatform && mPlatform->GetGame() &&
-            mPlatform->GetGame()->GetAudioSystem()) {
-            mPlatform->GetGame()->GetAudioSystem()->PlaySE(
-                "show_boat_se");
+        if (mIsPressed && mPlatform && mPlatform->GetGame() && mPlatform->GetGame()->GetAudioSystem()) {
+            mPlatform->GetGame()->GetAudioSystem()->PlaySE("show_boat_se");
         }
         return;
     }
@@ -552,15 +451,3 @@ void PlatformPressureSwitchComponent::ClearTargetRuntimeStates()
         }
     }
 }
-
-PlatformLatchedGroupSwitchComponent::
-PlatformLatchedGroupSwitchComponent(
-    Platform* owner,
-    int updateOrder)
-    : Component(owner, updateOrder),
-      mPlatform(owner)
-{
-}
-
-PlatformLatchedGroupSwitchComponent::~PlatformLatchedGroupSwitchComponent() =
-    default;

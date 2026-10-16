@@ -28,7 +28,6 @@ void Star::Initialize()
 
 glm::quat Star::GetRenderModelRotationOffset() const
 {
-
     // GLBモデルの向きだけを描画時に補正し、Actorの配置や衝突用の姿勢は変えない。
     const std::string& modelPath = GetModelPath();
     const std::size_t extensionStart = modelPath.find_last_of('.');

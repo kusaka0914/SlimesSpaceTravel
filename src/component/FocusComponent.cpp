@@ -1,4 +1,5 @@
-#include "FocusComponent.h"
+#include "component/FocusComponent.h"
+
 #include "Game.h"
 #include "actor/Actor.h"
 #include "system/CameraSystem.h"
@@ -6,9 +7,13 @@
 namespace {
 constexpr float focusDurationSeconds = 3.0f;
 constexpr float revealTimeRemainingSeconds = 2.0f;
-}
+} // namespace
 
-FocusComponent::FocusComponent(Actor* owner, int updateOrder) : Component(owner, updateOrder), mFocusTimer(-1.0f) {}
+FocusComponent::FocusComponent(Actor* owner, int updateOrder)
+    : Component(owner, updateOrder),
+      mFocusTimer(-1.0f)
+{
+}
 
 void FocusComponent::Update(float deltaTime)
 {
@@ -38,8 +43,7 @@ void FocusComponent::TryShowOwner()
 
 bool FocusComponent::HasReachedRevealMoment() const
 {
-    return mFocusTimer >= 0.0f &&
-           mFocusTimer <= revealTimeRemainingSeconds;
+    return mFocusTimer >= 0.0f && mFocusTimer <= revealTimeRemainingSeconds;
 }
 
 void FocusComponent::TryFinishFocus()
@@ -51,10 +55,10 @@ void FocusComponent::TryFinishFocus()
     mFocusTimer = -1.0f;
 
     Game* game = mOwner ? mOwner->GetGame() : nullptr;
-    CameraSystem* cameraSystem =
-        game ? game->GetCameraSystem() : nullptr;
-    if (!game ||
-        (cameraSystem && cameraSystem->HasActiveRevealFocus())) {
+    CameraSystem* cameraSystem = game ? game->GetCameraSystem() : nullptr;
+
+    // 別の出現注目が継続している間は、このタイマーの終了だけで演出全体を終了しない。
+    if (!game || (cameraSystem && cameraSystem->HasActiveRevealFocus())) {
         return;
     }
 

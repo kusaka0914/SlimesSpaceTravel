@@ -8,10 +8,7 @@ public:
     bool IsAlive() const { return mHp > 0.0f; }
     bool IsDead() const { return !IsAlive(); }
     bool IsInvincible() const { return mInvincibleTimer > 0.0f; }
-    bool ShouldBlinkWhileInvincible() const
-    {
-        return IsInvincible() && mShouldBlinkWhileInvincible;
-    }
+    bool ShouldBlinkWhileInvincible() const { return IsInvincible() && mShouldBlinkWhileInvincible; }
     bool IsTired() const { return mIsTired; }
 
     // 現在HPと最大HPを同じ値で初期化する。

@@ -15,14 +15,12 @@
 #include <memory>
 
 namespace {
-
 const std::string holdSwitchOffTexturePath = "textures/platform_switch_hold_off_red_platform_uv.png";
 const std::string holdSwitchOnTexturePath = "textures/platform_switch_hold_on_blue_platform_uv.png";
 const std::string latchedSwitchOffTexturePath = "textures/platform_switch_latched_off_red_platform_uv.png";
 const std::string latchedSwitchOnTexturePath = "textures/platform_switch_latched_on_blue_platform_uv.png";
 const std::string twoPlayerSwitchOffTexturePath = "textures/platform_switch_two_player_off_red_platform_uv.png";
 const std::string twoPlayerSwitchOnTexturePath = "textures/platform_switch_two_player_on_blue_platform_uv.png";
-
 } // namespace
 
 Platform::Platform(Game* game)

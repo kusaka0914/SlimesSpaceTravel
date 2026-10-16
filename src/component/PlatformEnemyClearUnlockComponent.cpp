@@ -24,32 +24,28 @@ constexpr float pressureSwitchContactReleaseGraceSeconds = 0.15f;
 
 bool IsEditorPreview(const Platform* platform)
 {
-    return platform && platform->GetGame() &&
-           platform->GetGame()->GetIsDebugEditorShowing();
+    return platform && platform->GetGame() && platform->GetGame()->GetIsDebugEditorShowing();
 }
 
 Player* FindPlayerOnPlatform(const Platform* platform)
 {
-    if (!platform || !platform->GetGame()) return nullptr;
+    if (!platform || !platform->GetGame()) {
+        return nullptr;
+    }
 
     for (Player* player : platform->GetGame()->GetPlayers()) {
-        if (player && player->GetIsActive() && player->GetOnGround() &&
-            player->GetGroundActor() == platform) {
+        if (player && player->GetIsActive() && player->GetOnGround() && player->GetGroundActor() == platform) {
             return player;
         }
     }
     return nullptr;
 }
 
-bool DoesSupportRayHitPlatformTop(
-    const Player& player,
-    const Platform& platform,
-    const glm::vec3& rayOffset)
+bool DoesSupportRayHitPlatformTop(const Player& player, const Platform& platform, const glm::vec3& rayOffset)
 {
     Game* game = platform.GetGame();
     PhysicsSystem* physicsSystem = game ? game->GetPhysicsSystem() : nullptr;
-    btDiscreteDynamicsWorld* bulletWorld =
-        physicsSystem ? physicsSystem->GetBulletWorld() : nullptr;
+    btDiscreteDynamicsWorld* bulletWorld = physicsSystem ? physicsSystem->GetBulletWorld() : nullptr;
     if (!physicsSystem || !bulletWorld) {
         return false;
     }
@@ -64,41 +60,26 @@ bool DoesSupportRayHitPlatformTop(
     constexpr float walkableSurfaceMinimumUpDot = 0.65f;
 
     const glm::vec3 normalizedUp = glm::normalize(playerUp);
-    const glm::vec3 rayFrom =
-        player.GetPos() + rayOffset + normalizedUp * rayStartOffset;
+    const glm::vec3 rayFrom = player.GetPos() + rayOffset + normalizedUp * rayStartOffset;
     const glm::vec3 rayTo = rayFrom - normalizedUp * rayLength;
     const btVector3 bulletRayFrom(rayFrom.x, rayFrom.y, rayFrom.z);
     const btVector3 bulletRayTo(rayTo.x, rayTo.y, rayTo.z);
-    btCollisionWorld::AllHitsRayResultCallback callback(
-        bulletRayFrom,
-        bulletRayTo);
-    callback.m_collisionFilterGroup =
-        static_cast<short>(btBroadphaseProxy::DefaultFilter);
-    callback.m_collisionFilterMask =
-        static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    btCollisionWorld::AllHitsRayResultCallback callback(bulletRayFrom, bulletRayTo);
+    callback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    callback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::DefaultFilter);
     bulletWorld->rayTest(bulletRayFrom, bulletRayTo, callback);
 
-    for (int hitIndex = 0;
-         hitIndex < callback.m_collisionObjects.size();
-         ++hitIndex) {
-        const btCollisionObject* collisionObject =
-            callback.m_collisionObjects[hitIndex];
+    for (int hitIndex = 0; hitIndex < callback.m_collisionObjects.size(); ++hitIndex) {
+        const btCollisionObject* collisionObject = callback.m_collisionObjects[hitIndex];
         const Actor* hitActor =
-            collisionObject
-            ? static_cast<const Actor*>(collisionObject->getUserPointer())
-            : nullptr;
+            collisionObject ? static_cast<const Actor*>(collisionObject->getUserPointer()) : nullptr;
         if (hitActor != &platform) {
             continue;
         }
 
-        const btVector3& bulletHitNormal =
-            callback.m_hitNormalWorld[hitIndex];
-        const glm::vec3 hitNormal(
-            bulletHitNormal.x(),
-            bulletHitNormal.y(),
-            bulletHitNormal.z());
-        if (glm::dot(hitNormal, normalizedUp) >=
-            walkableSurfaceMinimumUpDot) {
+        const btVector3& bulletHitNormal = callback.m_hitNormalWorld[hitIndex];
+        const glm::vec3 hitNormal(bulletHitNormal.x(), bulletHitNormal.y(), bulletHitNormal.z());
+        if (glm::dot(hitNormal, normalizedUp) >= walkableSurfaceMinimumUpDot) {
             return true;
         }
     }
@@ -106,37 +87,26 @@ bool DoesSupportRayHitPlatformTop(
     return false;
 }
 
-bool IsPlayerSupportedByPlatform(
-    const Player& player,
-    const Platform& platform)
+bool IsPlayerSupportedByPlatform(const Player& player, const Platform& platform)
 {
     if (player.GetGroundActor() == &platform) {
         return true;
     }
 
-    PhysicsSystem* physicsSystem =
-        platform.GetGame()
-        ? platform.GetGame()->GetPhysicsSystem()
-        : nullptr;
+    PhysicsSystem* physicsSystem = platform.GetGame() ? platform.GetGame()->GetPhysicsSystem() : nullptr;
     if (!physicsSystem) {
         return false;
     }
     physicsSystem->SyncKinematicBodies();
 
-    const float collisionScaleMultiplier =
-        player.GetCollisionScaleMultiplier();
+    const float collisionScaleMultiplier = player.GetCollisionScaleMultiplier();
     constexpr float footprintExtentRatio = 0.45f;
     const float forwardRayOffset =
-        physicsSystem->GetPlayerCollisionDepth() *
-        collisionScaleMultiplier *
-        footprintExtentRatio;
+        physicsSystem->GetPlayerCollisionDepth() * collisionScaleMultiplier * footprintExtentRatio;
     const float leftRayOffset =
-        physicsSystem->GetPlayerCollisionWidth() *
-        collisionScaleMultiplier *
-        footprintExtentRatio;
+        physicsSystem->GetPlayerCollisionWidth() * collisionScaleMultiplier * footprintExtentRatio;
 
-    glm::vec3 forwardDirection =
-        player.GetFacingForwardVec();
+    glm::vec3 forwardDirection = player.GetFacingForwardVec();
     if (glm::length(forwardDirection) > 0.000001f) {
         forwardDirection = glm::normalize(forwardDirection);
     } else {
@@ -150,38 +120,26 @@ bool IsPlayerSupportedByPlatform(
         leftDirection = glm::vec3(0.0f);
     }
 
-    const glm::vec3 forwardOffset =
-        forwardDirection * forwardRayOffset;
-    const glm::vec3 leftOffset =
-        leftDirection * leftRayOffset;
-    const glm::vec3 rayOffsets[] = {
-        glm::vec3(0.0f),
-        forwardOffset,
-        -forwardOffset,
-        leftOffset,
-        -leftOffset,
-        forwardOffset + leftOffset,
-        forwardOffset - leftOffset,
-        -forwardOffset + leftOffset,
-        -forwardOffset - leftOffset};
+    const glm::vec3 forwardOffset = forwardDirection * forwardRayOffset;
+    const glm::vec3 leftOffset = leftDirection * leftRayOffset;
+    const glm::vec3 rayOffsets[] = {glm::vec3(0.0f),
+                                    forwardOffset,
+                                    -forwardOffset,
+                                    leftOffset,
+                                    -leftOffset,
+                                    forwardOffset + leftOffset,
+                                    forwardOffset - leftOffset,
+                                    -forwardOffset + leftOffset,
+                                    -forwardOffset - leftOffset};
 
-    return std::any_of(
-        std::begin(rayOffsets),
-        std::end(rayOffsets),
-        [&player, &platform](const glm::vec3& rayOffset) {
-            return DoesSupportRayHitPlatformTop(
-                player,
-                platform,
-                rayOffset);
-        });
+    return std::any_of(std::begin(rayOffsets), std::end(rayOffsets), [&player, &platform](const glm::vec3& rayOffset) {
+        return DoesSupportRayHitPlatformTop(player, platform, rayOffset);
+    });
 }
 
-bool IsPlayerPressingPlatform(
-    const Player& player,
-    const Platform& platform)
+bool IsPlayerPressingPlatform(const Player& player, const Platform& platform)
 {
-    if (!player.GetIsActive() ||
-        !IsPlayerSupportedByPlatform(player, platform)) {
+    if (!player.GetIsActive() || !IsPlayerSupportedByPlatform(player, platform)) {
         return false;
     }
 
@@ -194,10 +152,7 @@ bool IsPlayerPressingPlatform(
         return true;
     }
 
-    const float upwardSpeed =
-        glm::dot(
-            player.GetVelocity(),
-            glm::normalize(playerUp));
+    const float upwardSpeed = glm::dot(player.GetVelocity(), glm::normalize(playerUp));
     constexpr float maximumPressingUpwardSpeed = 0.05f;
     return upwardSpeed <= maximumPressingUpwardSpeed;
 }
@@ -209,15 +164,22 @@ Player* FindPlayerPressingPlatform(const Platform* platform)
     }
 
     for (Player* player : platform->GetGame()->GetPlayers()) {
-        if (player &&
-            IsPlayerPressingPlatform(*player, *platform)) {
+        if (player && IsPlayerPressingPlatform(*player, *platform)) {
             return player;
         }
     }
     return nullptr;
 }
 
+} // namespace
+
+PlatformEnemyClearUnlockComponent::PlatformEnemyClearUnlockComponent(Platform* owner, int updateOrder)
+    : Component(owner, updateOrder),
+      mPlatform(owner)
+{
 }
+
+PlatformEnemyClearUnlockComponent::~PlatformEnemyClearUnlockComponent() = default;
 
 void PlatformEnemyClearUnlockComponent::Update(float deltaTime)
 {
@@ -244,18 +206,15 @@ void PlatformEnemyClearUnlockComponent::Update(float deltaTime)
     ClearLockedState();
 }
 
-bool PlatformEnemyClearUnlockComponent::
-HasLivingEnemyOnCurrentPlanet() const
+bool PlatformEnemyClearUnlockComponent::HasLivingEnemyOnCurrentPlanet() const
 {
-    const Planet* currentPlanet =
-        mPlatform ? mPlatform->GetCurrentPlanet() : nullptr;
+    const Planet* currentPlanet = mPlatform ? mPlatform->GetCurrentPlanet() : nullptr;
     if (!currentPlanet) {
         return false;
     }
 
     for (const Enemy* enemy : currentPlanet->GetEnemies()) {
-        if (enemy && enemy->GetIsActive() &&
-            !enemy->GetIsDead()) {
+        if (enemy && enemy->GetIsActive() && !enemy->GetIsDead()) {
             return true;
         }
     }
@@ -278,4 +237,3 @@ void PlatformEnemyClearUnlockComponent::ClearLockedState()
         mPlatform->ClearComponentRuntimeState(this);
     }
 }
-

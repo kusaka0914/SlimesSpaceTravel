@@ -94,7 +94,6 @@ void Actor::Update(float deltaTime)
         actorUpdateDeltaTime = mDeferredUpdateSeconds;
         mDeferredUpdateSeconds = 0.0f;
     } else {
-
         mDeferredUpdateSeconds = 0.0f;
     }
 
