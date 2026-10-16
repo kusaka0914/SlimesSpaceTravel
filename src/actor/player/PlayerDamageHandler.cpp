@@ -62,6 +62,8 @@ void ApplyDamageAndKnockBack(
         player.GetOnGround()
             ? damage
             : damage * airborneDamageMultiplier;
+
+    // 分裂ガードでHP減少を防いでも、連続被弾を防ぐ無敵とノックバックは適用する。
     if (wasBlockedBySplitGuard) {
         status.StartDamageCooldown();
         status.StartDamageInvincibility();

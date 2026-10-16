@@ -97,6 +97,7 @@ void PlayerGrounding::SnapToGround(Player& player, float upOffset, float downLen
             hitPos - player.GetPos(),
             hitPos);
 
+    // レイの命中位置に置けても、衝突解決でめり込みが残る場合は接地を採用しない。
     if (collisionResult.hasUnresolvedStageOverlap) {
         return;
     }

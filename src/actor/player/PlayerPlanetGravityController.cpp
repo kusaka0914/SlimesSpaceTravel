@@ -40,9 +40,6 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         mSmoothedUpInitialized = false;
     }
 
-
-
-
     if (TryActivateOverheadGravityRay(
             player,
             movement,
@@ -50,20 +47,15 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-
-
     if (player.GetOnGround()) {
         return;
     }
 
-    // 通常ジャンプ開始後だけ惑星切替を行う。
+    // 離陸通知を受けるまで、近接惑星への切替は行わない。
     if (!mIsJumpSwitchingActive) {
         return;
     }
 
-    // 現在の惑星を含む全惑星から、
-    // プレイヤーとの表面距離が最も短い惑星を取得する。
-    // 別の惑星の方が明確に近くなったら所属惑星を変更する。
     Planet* currentPlanet =
         SelectNearbyAttractingPlanet(player, movement);
 
@@ -81,10 +73,6 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
                 if (mNoGroundRayDuration < fallbackDelay) {
                     return;
                 }
-
-
-
-
 
                 Planet* fallbackPlanet =
                     ResolveFallbackPlanet(player);
@@ -141,10 +129,6 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
         return;
     }
 
-    // currentPlanetは即時変更するが、
-    // upVecと重力方向は徐々に回転させる。
-
-
     if (groundRayHitThisFrame) {
         mNoGroundRayDuration = 0.0f;
         mFallbackGravityActive = false;
@@ -161,8 +145,6 @@ void PlayerPlanetGravityController::Update(Player& player, PlayerMovement& movem
 
         mFallbackAppliedThisJump = true;
         mFallbackGravityActive = true;
-
-
 
         Planet* fallbackPlanet = ResolveFallbackPlanet(player);
         if (fallbackPlanet &&
@@ -261,10 +243,6 @@ bool PlayerPlanetGravityController::ShouldAcceptLandingSurface(
         return true;
     }
 
-
-
-
-
     return CharacterActor::IsWalkableGroundNormal(
         surfaceNormal,
         mOverheadGravityUpDirection);
@@ -276,13 +254,9 @@ void PlayerPlanetGravityController::OnJumpStarted(
     bool tookOffFromPlatform)
 {
 
-
     if (!mLastLandedPlanet) {
         mLastLandedPlanet = player.GetCurrentPlanet();
     }
-
-
-
 
     const bool shouldPreservePlatformTakeoffDirection =
         mShouldPreservePlatformTakeoffDirection ||
@@ -344,8 +318,7 @@ void PlayerPlanetGravityController::OnJumpStarted(
                 ellipseDetachedTakeoffSurfaceDistance;
     }
 
-    // ジャンプ開始時のplayer.GetUpVec()を、
-    // 次のUpdateで補間開始方向として保存する。
+    // 次の補間で離陸後の上方向を取り直し、前回の補間状態を引き継がない。
     mSmoothedUpInitialized = false;
 }
 
@@ -404,8 +377,6 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
     mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;
 
-
-
     Planet* landedPlanet =
         dynamic_cast<Planet*>(player.GetGroundActor());
     if (!landedPlanet) {
@@ -435,8 +406,6 @@ void PlayerPlanetGravityController::OnRespawned()
     mSmoothedUpInitialized = false;
 }
 
-    // 候補惑星の方が現在惑星よりも明確に近い場合だけ
-    // currentPlanetを切り替える。
 void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet)
 {
     if (!nextPlanet) {
@@ -447,7 +416,7 @@ void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovemen
         return;
     }
 
-    // 惑星の所属情報は即時に変更する。
+    // 所属は先に切り替え、姿勢はSmoothAirborneUpVecで徐々に新しい惑星へ向ける。
     ApplyCurrentPlanet(player, movement, nextPlanet);
 
     mFallbackAppliedThisJump = false;
@@ -467,8 +436,6 @@ void PlayerPlanetGravityController::SwitchToPlanet(Player& player, PlayerMovemen
         mEllipseJumpStartSurfaceDistance = 0.0f;
     }
 
-    // ここではSetUpVecしない。
-    // SmoothAirborneUpVecで少しずつ新しい惑星方向へ回す。
 }
 
 void PlayerPlanetGravityController::ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const
@@ -522,6 +489,8 @@ Planet* PlayerPlanetGravityController::SelectNearbyAttractingPlanet(
             selector.CalculateSurfaceDistance(
                 player.GetPos(),
                 *currentPlanet);
+
+        // 僅かな距離差で所属が往復しないよう、新候補が十分近い場合だけ切り替える。
         if (nearest.surfaceDistance + planetSwitchDistanceHysteresis >=
             currentSurfaceDistance) {
             mIsNearbySurfaceAttractionActive =
@@ -733,8 +702,6 @@ void PlayerPlanetGravityController::ApplyEllipseSurfaceAttraction(
     }
     directionToSurface /= directionLength;
 
-
-
     const float attractionStartSurfaceDistance =
         mEllipseJumpStartSurfaceDistance +
         ellipseAttractionStartSurfaceDistance;
@@ -780,10 +747,7 @@ void PlayerPlanetGravityController::SmoothAirborneUpVec(
     const glm::vec3& requestedTargetUp,
     float deltaTime)
 {
-    // 補間開始時だけPlayerの現在方向を取得する。
-    //
-    // 以降はplayer.GetUpVec()を補間元にしない。
-    // Actor::UpdateUpVecが毎フレーム書き換えるため。
+    // Actor::UpdateUpVecの書き換えで補間が巻き戻らないよう、開始時だけPlayerの上方向を取得する。
     if (!mSmoothedUpInitialized) {
         mSmoothedUpVec = player.GetUpVec();
 

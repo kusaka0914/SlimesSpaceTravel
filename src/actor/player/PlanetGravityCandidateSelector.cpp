@@ -49,10 +49,6 @@ float PlanetGravityCandidateSelector::CalculateSurfaceDistance(const glm::vec3& 
     const float surfaceRadius = CalculateApproximateSurfaceRadius(playerPos, planet);
     const float centerDistance = glm::length(playerPos - planet.GetPos());
 
-
-
-
-
     return std::abs(centerDistance - surfaceRadius);
 }
 

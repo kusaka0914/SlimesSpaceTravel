@@ -72,6 +72,7 @@ void PlayerStateMachine::UpdateAttacking(Player& player, PlayerInput& input, Pla
         } else {
             combat.CancelCurrentAttack();
         }
+
         // 空中弱攻撃そのものは着地まで移動不能のままにするが、
         // 回避でキャンセルできた場合は通常操作へ即座に戻す。
         mShouldSkipAirDodgePostHover = wasAirWeakAttacking;
@@ -241,7 +242,6 @@ void PlayerStateMachine::UpdateAirSlamAttacking(
     StartIdle();
 }
 
-
 void PlayerStateMachine::UpdateKnockedBack(Player& player, PlayerMovement& movement, PlayerCombat& combat,
                                            PlayerStatus& status, float deltaTime)
 {
@@ -292,8 +292,6 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
 
     if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
-
-
 
         player.RequestStrongAttackAnimation();
     }

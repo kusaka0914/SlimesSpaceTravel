@@ -232,6 +232,7 @@ const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::str
         }
     }
 
+    // 部分一致は候補が1つの場合だけ採用し、似た名前の別クリップを誤選択しない。
     const AnimationClip* partialMatch = nullptr;
     for (const AnimationClip& animationClip : animationClips) {
         const std::string normalizedClipName = NormalizeClipName(animationClip.name);

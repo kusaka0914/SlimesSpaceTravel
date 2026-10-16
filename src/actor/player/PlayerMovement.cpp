@@ -130,8 +130,6 @@ AppliedPlayerMovement MoveWithCollision(
             desiredPosition,
             actorCollisionFilter);
 
-
-
     const glm::vec3 resolvedPosition =
         collisionResult.hasUnresolvedStageOverlap
             ? positionBeforeMovement
@@ -233,6 +231,7 @@ bool TryStepUpFromGround(
         return false;
     }
 
+    // 通常の衝突解決より前進でき、段差上に着地できる場合だけ、上昇→前進→下降の経路を採用する。
     player.SetPos(positionBeforeMovement);
     const AppliedPlayerMovement upwardMovement =
         MoveWithCollision(
@@ -484,8 +483,6 @@ bool MoveAirSlamDownwardUntilFloorCollision(
             player.GetPos() +
             upDirection * upwardLandingCorrection;
 
-
-
         player.Land(landingPosition);
         player.SetShouldJudgeLanding(true);
         return true;
@@ -545,9 +542,8 @@ void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, cons
     constexpr float movementInputReleaseThreshold = 0.01f;
     if (mIsCameraAutoAlignMovementDirectionLocked) {
         if (movementInputMagnitude <= movementInputReleaseThreshold) {
-            // 表裏遷移の回転中は、スティックが一瞬ニュートラルを
-            // 通っても開始時の進行方向を保持する。解除はカメラの
-            // 回転完了、または明確な入力方向変更時に行う。
+            // 表裏遷移中の一瞬のニュートラル入力では移動方向を解除しない。
+            // カメラ回転完了、または明確な入力方向変更まで固定を保つ。
         } else {
             const glm::vec2 currentInputDirection =
                 movementInput / movementInputMagnitude;
@@ -899,7 +895,7 @@ void PlayerMovement::ApplyDodgeMovement(
             ? ActorCollisionFilter::IgnoreAirborneEnemies
             : ActorCollisionFilter::AllActors;
 
-    // 接触中の薄い壁を1フレームで越えないよう、回避だけ短い区間ごとに衝突を解決する。
+    // 接触中の薄い壁を1フレームで越えないよう、移動を短い区間に分けて衝突を解決する。
     constexpr float maximumDodgeCollisionSubstepDistance = 0.05f;
     (void)MoveWithCollisionSubsteps(
         mPhysicsSystem,
@@ -1084,8 +1080,6 @@ glm::vec3 PlayerMovement::CalculateEllipseDodgeMovementDelta(
             normalizedSurfaceTangentDirection)) {
         mDodgeDir = normalizedSurfaceTangentDirection;
     }
-
-
 
     player.SetVelocity(glm::vec3(0.0f));
 
@@ -1367,6 +1361,7 @@ ClampEllipseAirborneMovementToSurfaceTravelLimit(
         return requestedMovement;
     }
 
+    // 離陸時からの表面法線の回転角で、楕円体上の空中移動範囲を制限する。
     constexpr float maximumSurfaceTravelDegrees = 100.0f;
     const float minimumAllowedNormalDot =
         std::cos(glm::radians(maximumSurfaceTravelDegrees));
@@ -1398,6 +1393,7 @@ ClampEllipseAirborneMovementToSurfaceTravelLimit(
         return requestedMovement;
     }
 
+    // 法線方向の移動は残し、許容範囲内に収まる接線方向の割合を二分探索する。
     float allowedTangentialMultiplier = 0.0f;
     float blockedTangentialMultiplier = 1.0f;
     constexpr int movementLimitSearchIterations = 8;
@@ -1446,6 +1442,7 @@ float PlayerMovement::CalculateAirborneGravityAcceleration(
 float PlayerMovement::CalculateAirborneGravityAcceleration(
     float verticalSpeed) const
 {
+    // 高さhを時間tで落ちる等加速度運動h = a*t*t/2から求め、上昇・下降で時間を使い分ける。
     const float gravityDuration =
         verticalSpeed > 0.0f
             ? std::max(mJumpAscentDuration, 0.05f)

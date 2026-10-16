@@ -247,7 +247,7 @@ void PlayerInput::UpdateRecoverInput(const Player& player)
 
 void PlayerInput::CaptureAttackInput()
 {
-    // L/Nとの同時押しはスペシャル攻撃用なので、通常攻撃として予約しない。
+    // 特殊攻撃用の同時押しを、通常攻撃の先行入力として二重に予約しない。
     if (mSpecialAttackPressed) {
         return;
     }

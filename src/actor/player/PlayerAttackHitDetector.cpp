@@ -224,7 +224,7 @@ std::vector<Enemy*> PlayerAttackHitDetector::FindEnemiesTouchingAirDodgeMovement
             continue;
         }
 
-        // モデルの境界情報がない古いアセットだけ、従来の半径判定に戻す。
+        // モデル境界を取得できない場合も命中を判定できるよう、半径で代用する。
         if (scaledMovementLengthSquared <= geometryEpsilon) {
             continue;
         }
@@ -284,6 +284,8 @@ bool PlayerAttackHitDetector::IsEnemyModelHitByAttack(
 
     const glm::vec3 facingDirection =
         glm::normalize(player.GetFacingForwardVec());
+
+    // 敵の中心だけでは大きなモデルの端を取りこぼすため、境界上の候補点も調べる。
     const std::array<glm::vec3, 9> candidatePoints =
         CreateCandidatePoints(
             enemyBounds,
@@ -370,6 +372,8 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(
     const float verticalCollisionReach =
         verticalCollisionHalfHeight *
         std::max(0.0f, verticalHitboxScale);
+
+    // Playerの判定幅を敵の各ローカル軸へ投影し、移動線分と拡張境界の交差として調べる。
     glm::vec3 expansion(0.0f);
     for (glm::length_t axisIndex = 0;
          axisIndex < enemyBounds.axes.size();

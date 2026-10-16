@@ -26,12 +26,11 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
 
     if (player.IsAttachedToPlatform()) {
 
-
-
         TryStartJumping(player, input, movement, combat, deltaTime);
         return;
     }
 
+    // 同時入力時は、後続の通常行動より先に専用の攻撃開始条件を評価する。
     if (TryStartAssistAirSlamAttack(
             player,
             input,
@@ -219,8 +218,6 @@ bool PlayerStateMachine::TryStartAssistAirSlamAttack(
     const bool hasBufferedWeakAttackRequest =
         input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
 
-
-
     const bool hasWeakAttackRequest =
         hasBufferedWeakAttackRequest ||
         input.GetWideAttackPressed();
@@ -321,7 +318,6 @@ bool PlayerStateMachine::TryStartAirSlamAttack(
         PlayerActionState::AirSlamAttacking);
     return true;
 }
-
 
 bool PlayerStateMachine::ApplyIdleGravity(
     Player& player,
@@ -486,9 +482,6 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
         return false;
     }
 
-
-
-
     if (!player.GetOnGround()) {
         combat.AdvanceContinuousAttackDuration(deltaTime);
         return false;
@@ -625,6 +618,7 @@ bool PlayerStateMachine::TryStartAttack(Player& player, PlayerInput& input, Play
     }
 
     movement.ClearStrongAttackDirectionOverride();
+
     // 回避で解除した空中移動は、新しい攻撃を出した時点で終了する。
     mAllowsAirMovementAfterDodge = false;
     ChangeState(PlayerActionState::Attacking);

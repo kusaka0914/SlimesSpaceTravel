@@ -14,11 +14,15 @@ class PlayerMovement;
 class PlayerStatus;
 class PhysicsSystem;
 
+// 攻撃の予約・コンボ・硬直を管理し、命中探索と結果適用を専用クラスへ委譲する。
+// 時間は秒、攻撃範囲はワールド距離、角度はラジアン。
 class PlayerCombat {
 public:
     explicit PlayerCombat(PhysicsSystem& physicsSystem);
 
     bool IsAttacking() const;
+
+    // 判定を実行するたびに増える攻撃番号。障害物が同じ攻撃へ重複反応するのを防ぐために使う。
     std::uint64_t GetResolvedAttackSequence() const
     {
         return mResolvedAttackSequence;
@@ -43,15 +47,21 @@ public:
         return mAirAttackCount < maximumAirAttackCount;
     }
 
+    // Normal/Wide入力と接地状態から攻撃を設定し、遅延命中判定を予約する。
+    // クールダウンの確認は呼び出し側で行う。
     void StartAttacking(Player& player, PlayerAttackInputKind attackInput, PlayerMovement& movement,
                         PlayerStatus& status, float deltaTime);
     void StartAssistStrongAttacking(Player& player, float deltaTime);
     void FinishSpecialAttackCharging();
     void StartAirSlamAttack();
+
+    // 着地衝撃を解決して叩き落とし状態を終了する。trueは今回、接地中の敵に命中したことを表す。
     bool ResolveAirSlamImpact(
         Player& player,
         PlayerMovement& movement,
         float deltaTime);
+
+    // 今回初めて触れた空中の敵だけを叩き落とす。1体以上で開始できればtrue。
     bool UpdateAirSlamContact(
         Player& player,
         const PlayerMovement& movement);
@@ -60,24 +70,40 @@ public:
     void WideAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StrongAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void SpecialAttack(Player& player, const PlayerMovement& movement, PlayerJewelGauge& jewelGauge, float deltaTime);
+
+    // 継続時間と発生間隔を進め、今回攻撃判定を実行した場合にtrue。命中の成否とは区別する。
     bool UpdateContinuousAttacking(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void AdvanceContinuousAttackDuration(float deltaTime);
+
+    // 予約済みの遅延を進め、今回攻撃判定を実行した場合にtrue。命中の成否とは区別する。
     bool UpdatePendingAttackHit(Player& player, PlayerMovement& movement, PlayerStatus& status, float deltaTime);
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 
     void StartSpecialAttackCharging();
     void StartContinuousAttacking();
     void EndContinuousAttacking();
+
+    // 疲労状態にし、移動・回避・攻撃をlockTime秒間制限する。
     void StartTiredLock(PlayerStatus& status, PlayerMovement& movement, float lockTime);
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
     void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
+
+    // 特殊攻撃の溜め・発動可能状態と連続攻撃を解除する。通常攻撃の予約は解除しない。
     void CancelSpecialAttack();
+
+    // 遅延命中判定、攻撃モーション、移動・回避の硬直、空中攻撃中フラグを解除する。
     void CancelCurrentAttack();
+
+    // 現在の攻撃を中断し、StartAttackingまたはOnLandedが呼ばれるまで空中の入力移動を許可する。
     void CancelAirAttackForDodge();
+
+    // 空中攻撃の回数・命中履歴と回避攻撃をリセットする。通常攻撃の予約は解除しない。
     void OnLanded();
     void PrepareAssistAirCombo();
     void RecordAirWeakAttackHit() { mHasAirWeakHitForNextDodge = true; }
     void StartAirDodgeAttack();
+
+    // ワールド座標の移動区間で命中を調べる。同じ回避中は同じ敵へ重複適用せず、命中時に空中回避を回復する。
     void UpdateAirDodgeAttack(
         Player& player,
         PlayerMovement& movement,
@@ -301,8 +327,8 @@ private:
     bool mIsCharged = false;
     bool mCanSpecialAttack = false;
     bool mIsAirAttacking = false;
-    // 空中弱攻撃は着地まで移動を止める。ただし回避でキャンセルした
-    // 場合だけ、次の空中弱攻撃を開始するまで移動を許可する。
+
+    // 回避キャンセル後に空中弱攻撃の移動ロックを解除し、StartAttackingまたはOnLandedで戻す。
     bool mAirAttackMovementUnlockedByDodge = false;
     bool mIsAirDodgeAttackActive = false;
     bool mHasAirWeakHitForNextDodge = false;

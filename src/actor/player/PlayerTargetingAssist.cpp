@@ -75,9 +75,6 @@ bool IsLaunchedEnemyNearRecovery(
         return false;
     }
 
-
-
-
     return glm::dot(enemy.GetVelocity(), upDirection) <= 0.0f;
 }
 
@@ -138,7 +135,6 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
             continue;
         }
 
-        // PlayerAttackHitDetectorと同じ距離条件を使う。
         const float effectiveRange = attackRange + enemy->GetRadius();
         const float effectiveRangeSquared = effectiveRange * effectiveRange;
         if (distanceSquared > effectiveRangeSquared) {
@@ -180,7 +176,6 @@ Enemy* PlayerTargetingAssist::FindAttackTarget(
     // 正面の攻撃範囲内に誰もいない場合だけ、全方向の最寄りへ振り向く。
     return nearestAnyDirectionTarget;
 }
-
 
 Enemy* PlayerTargetingAssist::FindAssistStrongTarget(
     const Player& player,

@@ -8,6 +8,7 @@ enum class PlayerAnimationPlaybackMode {
     OneShot,
 };
 
+// 論理IDに対応するモデル内のクリップ名と再生方式。IDとの対応はPlayerAnimationDefinitionsで保持する。
 struct PlayerAnimationDefinition {
     std::string clipName;
     PlayerAnimationPlaybackMode playbackMode = PlayerAnimationPlaybackMode::OneShot;

@@ -78,6 +78,8 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
     }
 
     UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+
+    // 各状態の押下開始判定が終わるまで、前フレームの入力を保持する。
     input.EndFrame();
 }
 

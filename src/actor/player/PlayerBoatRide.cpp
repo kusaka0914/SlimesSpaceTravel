@@ -44,10 +44,6 @@ void PlayerBoatRide::Update(
         return;
     }
 
-
-
-
-
     // ボートは編集時にプレイヤーと別の開始惑星へ割り当てられるため、現在惑星だけでなくステージ内の全ボートを調べる。
     for (Planet* planet : currentStage->GetPlanets()) {
         if (!planet) {
@@ -58,7 +54,6 @@ void PlayerBoatRide::Update(
             if (!boat || !boat->GetIsActive()) {
                 continue;
             }
-
 
             // 移動中の近くのボートが、搭乗していないプレイヤーを引き寄せないようにする。
             if (boat->GetIsMoving()) {
@@ -156,13 +151,8 @@ void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
     Game* game = player.GetGame();
     boat->BoardPlayer(&player);
 
-
     // 分裂体はロケット内で待機し、両方が搭乗してから発進する。搭乗時には合体しない。
     player.SetIsActive(false);
-
-
-
-
 
     // 1人分裂中は搭乗した側を非選択にし、残った側へ自動で操作を渡す。
     if (game && game->GetIsPlayerSplit() && !game->GetIsPlayer2Joined()) {
@@ -216,8 +206,6 @@ void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, Pla
 
     player.RefreshFallbackUpVec();
 
-
-
-    // リスタートには接線方向だけを保存する。上方向は到着先惑星から再計算し、出発元の姿勢を持ち込まない。
+    // 到着時の向きを保存し、復元時にその時点の接平面へ投影する。出発元の上方向は引き継がない。
     respawn.CaptureRestartFacingDirection(player);
 }

@@ -76,6 +76,8 @@ void PlayerRespawn::RestoreRestartFacingDirection(Player& player) const
     }
 
     const glm::vec3 normalizedUpDirection = glm::normalize(upDirection);
+
+    // 到着先で上方向が変わっても、保存した向きの接線成分だけを復元する。
     glm::vec3 tangentFacing =
         mRestartFacingDirection -
         glm::dot(mRestartFacingDirection, normalizedUpDirection) *

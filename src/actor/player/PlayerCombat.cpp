@@ -247,8 +247,6 @@ bool PlayerCombat::UpdatePendingAttackHit(Player& player, PlayerMovement& moveme
 
     ClearPendingAttackHit();
 
-
-
     Attack(player, movement, status, deltaTime);
     return true;
 }
@@ -367,9 +365,6 @@ void PlayerCombat::StartAfterAttackReaction(const Player& player, PlayerMovement
     mAttackMotionTimer = mDefaultAttackMotionTimer;
 
     mAttackComboIndex++;
-
-
-
 
     if (mAttackKind == PlayerAttackKind::Normal) {
         if (mAttackComboIndex != 3) {
@@ -548,6 +543,7 @@ void PlayerCombat::UpdateAirDodgeAttack(
             deltaTime);
     if (didHitEnemy) {
         mAirAttackCount = 0;
+
         // 空中回避攻撃を当てた場合だけ、次の空中回避を許可する。
         // 外した場合は現在の回避を最後にして、着地まで再使用できない。
         movement.RestoreAirDodge();

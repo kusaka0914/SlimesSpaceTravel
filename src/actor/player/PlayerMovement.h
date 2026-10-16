@@ -10,6 +10,8 @@ class Planet;
 class PhysicsSystem;
 class MathUtils;
 
+// カメラ基準の移動、ジャンプ・回避・攻撃移動を計算し、衝突解決後の位置と速度をPlayerへ反映する。
+// 位置・方向はワールド空間。deltaTimeは秒。
 class PlayerMovement {
 public:
     PlayerMovement(
@@ -20,12 +22,20 @@ public:
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
+
+    // カメラ自動回転中の移動方向を接平面上に固定する。有効な入力方向・上方向がなければ何もしない。
     void LockMovementDirectionForCameraAutoAlign(
         const PlayerInput& input,
         const glm::vec3& upDirection);
     void UnlockMovementDirectionForCameraAutoAlign();
+
+    // 入力方向の大きな変更による自動回転の解除要求を返し、要求を消費する。
     bool ConsumeCameraAutoAlignCancellationRequest();
+
+    // 入力から移動し、衝突と段差を解決する。接着床に固定中は移動しない。
     void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
+
+    // ワールド位置へ接平面上を移動し、実際に変位が生じたらtrue。空中・床への固定中はfalse。
     bool MoveTowardPosition(
         Player& player,
         const glm::vec3& targetPosition,
@@ -37,31 +47,44 @@ public:
     void ApplyAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyStrongAttackMovement(Player& player, const PlayerCombat& combat, float deltaTime);
     void ApplyKnockBackMovement(Player& player, float deltaTime);
+
+    // 上昇・下降で異なる重力と頂点の滞空を適用し、衝突を解決して位置・速度を更新する。
     void ApplyJumpGravity(Player& player, float deltaTime);
     void StopAirborneVerticalMovement(Player& player) const;
     void ApplyJumpGravityAndInputMovement(
         Player& player,
         const PlayerInput& input,
         float deltaTime);
+
+    // 上昇・滞空・落下の段階を進める。接地済み、または今回の落下で着地した場合にtrue。
     bool UpdateAirSlamMovement(
         Player& player,
         const PlayerCombat& combat,
         float deltaTime);
 
+    // 回避方向と時間を設定し、速度を0にする。回避可能かの確認は呼び出し側で行う。
     void StartDodgeMovement(Player& player, const PlayerInput& input);
+
+    // ワールド位置へ向かう直線回避を設定する。方向を決められなければfalse。
     bool StartDodgeMovementTowards(
         Player& player,
         const glm::vec3& targetPosition);
+
+    // 床との固定を解除し、上昇速度とこのフレームの移動を反映する。通常の着地判定は停止する。
     void StartJumpMovement(Player& player, float deltaTime);
     void ResetEllipseAirborneSurfaceTravel();
     void CancelJumpApexHover();
     void StartAirborneActionHover(float durationSeconds);
+
+    // 滞空中は物理上方向の速度成分を除去してtrue。接地中・時間切れなら解除してfalse。
     bool UpdateAirborneActionHover(
         Player& player,
         float deltaTime);
     void CancelAirborneActionHover();
     void StartAirSlamMovement(Player& player);
     void StartAirSlamEnemyFallWatch(Player& player);
+
+    // ワールド位置への突進方向を設定し、速度を0にして接地と通常の着地判定を解除する。
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
     void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
@@ -235,7 +258,6 @@ private:
     float mMoveSpeed = 10.2f;
     float mMaximumStepHeight = 0.3f;
     float mKnockBackSpeed = 0.0f;
-
 
     float mJumpHeight = 1.8367347f;
     float mJumpAscentDuration = 0.4f;
