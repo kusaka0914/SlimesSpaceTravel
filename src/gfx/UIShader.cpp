@@ -10,7 +10,7 @@ UIShader::~UIShader() {}
 
 void UIShader::Initialize()
 {
-    mShaderProgram = CreateShaderProgram("../shaders/vertex.glsl", "../shaders/UIfragment.glsl");
+    mShaderProgram = CreateShaderProgram("../shaders/common.vert", "../shaders/UI.frag");
     mLocModel = glGetUniformLocation(mShaderProgram, "model");
     mLocView = glGetUniformLocation(mShaderProgram, "view");
     mLocProj = glGetUniformLocation(mShaderProgram, "projection");
