@@ -1,4 +1,4 @@
-#include "BoatArrivalPoint.h"
+#include "actor/BoatArrivalPoint.h"
 
 #include <glm/glm.hpp>
 #include <yaml-cpp/yaml.h>

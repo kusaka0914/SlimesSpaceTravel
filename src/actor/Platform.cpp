@@ -1,13 +1,14 @@
-#include "Platform.h"
+#include "actor/Platform.h"
+
 #include "Game.h"
+#include "component/FocusComponent.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "component/PlatformEnemyClearUnlockComponent.h"
-#include "component/FocusComponent.h"
 #include "component/PlatformLatchedGroupSwitchComponent.h"
 #include "component/PlatformMotionBehaviorComponents.h"
+#include "component/PlatformMovementComponent.h"
 #include "component/PlatformPressureSwitchComponent.h"
 #include "component/PlatformVisibilityComponents.h"
-#include "component/PlatformMovementComponent.h"
 
 #include <algorithm>
 #include <iostream>
@@ -15,20 +16,14 @@
 
 namespace {
 
-const std::string holdSwitchOffTexturePath =
-    "textures/platform_switch_hold_off_red_platform_uv.png";
-const std::string holdSwitchOnTexturePath =
-    "textures/platform_switch_hold_on_blue_platform_uv.png";
-const std::string latchedSwitchOffTexturePath =
-    "textures/platform_switch_latched_off_red_platform_uv.png";
-const std::string latchedSwitchOnTexturePath =
-    "textures/platform_switch_latched_on_blue_platform_uv.png";
-const std::string twoPlayerSwitchOffTexturePath =
-    "textures/platform_switch_two_player_off_red_platform_uv.png";
-const std::string twoPlayerSwitchOnTexturePath =
-    "textures/platform_switch_two_player_on_blue_platform_uv.png";
+const std::string holdSwitchOffTexturePath = "textures/platform_switch_hold_off_red_platform_uv.png";
+const std::string holdSwitchOnTexturePath = "textures/platform_switch_hold_on_blue_platform_uv.png";
+const std::string latchedSwitchOffTexturePath = "textures/platform_switch_latched_off_red_platform_uv.png";
+const std::string latchedSwitchOnTexturePath = "textures/platform_switch_latched_on_blue_platform_uv.png";
+const std::string twoPlayerSwitchOffTexturePath = "textures/platform_switch_two_player_off_red_platform_uv.png";
+const std::string twoPlayerSwitchOnTexturePath = "textures/platform_switch_two_player_on_blue_platform_uv.png";
 
-}
+} // namespace
 
 Platform::Platform(Game* game)
     : Actor(game)
@@ -39,6 +34,8 @@ Platform::Platform(Game* game)
 void Platform::UpdateActor(float deltaTime)
 {
     (void)deltaTime;
+
+    // Actor本体はComponentより先に更新されるため、動く前の変換をここで保存する。
     mFrameStartPos = GetPos();
     mFrameStartOrientation = GetOrientation();
     mConveyorFrameDelta = glm::vec3(0.0f);
@@ -50,8 +47,7 @@ PlatformMovementComponent* Platform::AddMovementComponent()
         return mMovementComponent;
     }
 
-    auto movementComponent =
-        std::make_unique<PlatformMovementComponent>(this);
+    auto movementComponent = std::make_unique<PlatformMovementComponent>(this);
     mMovementComponent = movementComponent.get();
     AddComponent(std::move(movementComponent));
     return mMovementComponent;
@@ -74,7 +70,9 @@ glm::vec3 Platform::GetFrameDelta() const
 
 PlatformFadeOnStandComponent* Platform::AddFadeOnStandComponent()
 {
-    if (mFadeOnStandComponent) return mFadeOnStandComponent;
+    if (mFadeOnStandComponent) {
+        return mFadeOnStandComponent;
+    }
     auto component = std::make_unique<PlatformFadeOnStandComponent>(this);
     mFadeOnStandComponent = component.get();
     AddComponent(std::move(component));
@@ -83,7 +81,9 @@ PlatformFadeOnStandComponent* Platform::AddFadeOnStandComponent()
 
 void Platform::RemoveFadeOnStandComponent()
 {
-    if (!mFadeOnStandComponent) return;
+    if (!mFadeOnStandComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mFadeOnStandComponent);
     RemoveComponent(mFadeOnStandComponent);
     mFadeOnStandComponent = nullptr;
@@ -91,7 +91,9 @@ void Platform::RemoveFadeOnStandComponent()
 
 PlatformJumpToggleComponent* Platform::AddJumpToggleComponent()
 {
-    if (mJumpToggleComponent) return mJumpToggleComponent;
+    if (mJumpToggleComponent) {
+        return mJumpToggleComponent;
+    }
     auto component = std::make_unique<PlatformJumpToggleComponent>(this);
     mJumpToggleComponent = component.get();
     AddComponent(std::move(component));
@@ -100,7 +102,9 @@ PlatformJumpToggleComponent* Platform::AddJumpToggleComponent()
 
 void Platform::RemoveJumpToggleComponent()
 {
-    if (!mJumpToggleComponent) return;
+    if (!mJumpToggleComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mJumpToggleComponent);
     RemoveComponent(mJumpToggleComponent);
     mJumpToggleComponent = nullptr;
@@ -108,7 +112,9 @@ void Platform::RemoveJumpToggleComponent()
 
 PlatformIntervalToggleComponent* Platform::AddIntervalToggleComponent()
 {
-    if (mIntervalToggleComponent) return mIntervalToggleComponent;
+    if (mIntervalToggleComponent) {
+        return mIntervalToggleComponent;
+    }
     auto component = std::make_unique<PlatformIntervalToggleComponent>(this);
     mIntervalToggleComponent = component.get();
     AddComponent(std::move(component));
@@ -117,7 +123,9 @@ PlatformIntervalToggleComponent* Platform::AddIntervalToggleComponent()
 
 void Platform::RemoveIntervalToggleComponent()
 {
-    if (!mIntervalToggleComponent) return;
+    if (!mIntervalToggleComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mIntervalToggleComponent);
     RemoveComponent(mIntervalToggleComponent);
     mIntervalToggleComponent = nullptr;
@@ -125,7 +133,9 @@ void Platform::RemoveIntervalToggleComponent()
 
 PlatformDirectionalMovementComponent* Platform::AddDirectionalMovementComponent()
 {
-    if (mDirectionalMovementComponent) return mDirectionalMovementComponent;
+    if (mDirectionalMovementComponent) {
+        return mDirectionalMovementComponent;
+    }
     auto component = std::make_unique<PlatformDirectionalMovementComponent>(this);
     mDirectionalMovementComponent = component.get();
     AddComponent(std::move(component));
@@ -134,7 +144,9 @@ PlatformDirectionalMovementComponent* Platform::AddDirectionalMovementComponent(
 
 void Platform::RemoveDirectionalMovementComponent()
 {
-    if (!mDirectionalMovementComponent) return;
+    if (!mDirectionalMovementComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mDirectionalMovementComponent);
     RemoveComponent(mDirectionalMovementComponent);
     mDirectionalMovementComponent = nullptr;
@@ -142,7 +154,9 @@ void Platform::RemoveDirectionalMovementComponent()
 
 PlatformRotationComponent* Platform::AddRotationComponent()
 {
-    if (mRotationComponent) return mRotationComponent;
+    if (mRotationComponent) {
+        return mRotationComponent;
+    }
     auto component = std::make_unique<PlatformRotationComponent>(this);
     mRotationComponent = component.get();
     AddComponent(std::move(component));
@@ -151,7 +165,9 @@ PlatformRotationComponent* Platform::AddRotationComponent()
 
 void Platform::RemoveRotationComponent()
 {
-    if (!mRotationComponent) return;
+    if (!mRotationComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mRotationComponent);
     RemoveComponent(mRotationComponent);
     mRotationComponent = nullptr;
@@ -159,7 +175,9 @@ void Platform::RemoveRotationComponent()
 
 PlatformConveyorComponent* Platform::AddConveyorComponent()
 {
-    if (mConveyorComponent) return mConveyorComponent;
+    if (mConveyorComponent) {
+        return mConveyorComponent;
+    }
     auto component = std::make_unique<PlatformConveyorComponent>(this);
     mConveyorComponent = component.get();
     AddComponent(std::move(component));
@@ -168,7 +186,9 @@ PlatformConveyorComponent* Platform::AddConveyorComponent()
 
 void Platform::RemoveConveyorComponent()
 {
-    if (!mConveyorComponent) return;
+    if (!mConveyorComponent) {
+        return;
+    }
     ClearComponentRuntimeState(mConveyorComponent);
     RemoveComponent(mConveyorComponent);
     mConveyorComponent = nullptr;
@@ -199,9 +219,10 @@ void Platform::RemoveAdhesionComponent()
 
 PlatformPressureSwitchComponent* Platform::AddPressureSwitchComponent()
 {
-    if (mPressureSwitchComponent) return mPressureSwitchComponent;
-    auto component =
-        std::make_unique<PlatformPressureSwitchComponent>(this);
+    if (mPressureSwitchComponent) {
+        return mPressureSwitchComponent;
+    }
+    auto component = std::make_unique<PlatformPressureSwitchComponent>(this);
     mPressureSwitchComponent = component.get();
     AddComponent(std::move(component));
     return mPressureSwitchComponent;
@@ -209,21 +230,21 @@ PlatformPressureSwitchComponent* Platform::AddPressureSwitchComponent()
 
 void Platform::RemovePressureSwitchComponent()
 {
-    if (!mPressureSwitchComponent) return;
+    if (!mPressureSwitchComponent) {
+        return;
+    }
     mPressureSwitchComponent->ClearTargetRuntimeStates();
     RemoveComponent(mPressureSwitchComponent);
     mPressureSwitchComponent = nullptr;
 }
 
-PlatformEnemyClearUnlockComponent*
-Platform::AddEnemyClearUnlockComponent()
+PlatformEnemyClearUnlockComponent* Platform::AddEnemyClearUnlockComponent()
 {
     if (mEnemyClearUnlockComponent) {
         return mEnemyClearUnlockComponent;
     }
 
-    auto component =
-        std::make_unique<PlatformEnemyClearUnlockComponent>(this);
+    auto component = std::make_unique<PlatformEnemyClearUnlockComponent>(this);
     mEnemyClearUnlockComponent = component.get();
     AddComponent(std::move(component));
     return mEnemyClearUnlockComponent;
@@ -240,15 +261,13 @@ void Platform::RemoveEnemyClearUnlockComponent()
     mEnemyClearUnlockComponent = nullptr;
 }
 
-PlatformLatchedGroupSwitchComponent*
-Platform::AddLatchedGroupSwitchComponent()
+PlatformLatchedGroupSwitchComponent* Platform::AddLatchedGroupSwitchComponent()
 {
     if (mLatchedGroupSwitchComponent) {
         return mLatchedGroupSwitchComponent;
     }
 
-    auto component =
-        std::make_unique<PlatformLatchedGroupSwitchComponent>(this);
+    auto component = std::make_unique<PlatformLatchedGroupSwitchComponent>(this);
     mLatchedGroupSwitchComponent = component.get();
     AddComponent(std::move(component));
     return mLatchedGroupSwitchComponent;
@@ -268,8 +287,7 @@ void Platform::RemoveLatchedGroupSwitchComponent()
 void Platform::StartFocus()
 {
     if (!mFocusComponent) {
-        auto focusComponent =
-            std::make_unique<FocusComponent>(this, 100);
+        auto focusComponent = std::make_unique<FocusComponent>(this, 100);
         mFocusComponent = focusComponent.get();
         AddComponent(std::move(focusComponent));
     }
@@ -279,19 +297,25 @@ void Platform::StartFocus()
 
 void Platform::SetComponentOpacity(const Component* component, float opacity)
 {
-    if (!component) return;
+    if (!component) {
+        return;
+    }
     mComponentOpacities[component] = glm::clamp(opacity, 0.0f, 1.0f);
 }
 
 void Platform::SetComponentCollisionEnabled(const Component* component, bool enabled)
 {
-    if (!component) return;
+    if (!component) {
+        return;
+    }
     mComponentCollisionStates[component] = enabled;
 }
 
 void Platform::ClearComponentRuntimeState(const Component* component)
 {
-    if (!component) return;
+    if (!component) {
+        return;
+    }
     mComponentOpacities.erase(component);
     mComponentCollisionStates.erase(component);
 }
@@ -321,26 +345,19 @@ glm::vec2 Platform::GetRenderTextureTiling() const
 const std::string& Platform::GetRenderTextureOverridePath() const
 {
     if (mLatchedGroupSwitchComponent) {
-        return mLatchedGroupSwitchComponent->GetIsOn()
-            ? twoPlayerSwitchOnTexturePath
-            : twoPlayerSwitchOffTexturePath;
+        return mLatchedGroupSwitchComponent->GetIsOn() ? twoPlayerSwitchOnTexturePath : twoPlayerSwitchOffTexturePath;
     }
 
     if (!mPressureSwitchComponent) {
         return Actor::GetRenderTextureOverridePath();
     }
 
-    const bool shouldRemainOnAfterPressed =
-        mPressureSwitchComponent->ShouldRemainOnAfterPressed();
+    const bool shouldRemainOnAfterPressed = mPressureSwitchComponent->ShouldRemainOnAfterPressed();
     if (shouldRemainOnAfterPressed) {
-        return mPressureSwitchComponent->GetIsPressed()
-            ? latchedSwitchOnTexturePath
-            : latchedSwitchOffTexturePath;
+        return mPressureSwitchComponent->GetIsPressed() ? latchedSwitchOnTexturePath : latchedSwitchOffTexturePath;
     }
 
-    return mPressureSwitchComponent->GetIsPressed()
-        ? holdSwitchOnTexturePath
-        : holdSwitchOffTexturePath;
+    return mPressureSwitchComponent->GetIsPressed() ? holdSwitchOnTexturePath : holdSwitchOffTexturePath;
 }
 
 bool Platform::GetCollisionEnabled() const
@@ -351,26 +368,26 @@ bool Platform::GetCollisionEnabled() const
 
     for (const auto& [component, enabled] : mComponentCollisionStates) {
         (void)component;
-        if (!enabled) return false;
+        if (!enabled) {
+            return false;
+        }
     }
     return true;
 }
 
 bool Platform::UsesKinematicPhysics() const
 {
-    return mMovementComponent ||
-           mDirectionalMovementComponent ||
-           mRotationComponent;
+    return mMovementComponent || mDirectionalMovementComponent || mRotationComponent;
 }
 
 glm::vec3 Platform::GetTransformFrameDelta(const glm::vec3& worldPoint) const
 {
+    // フレーム開始時の床ローカル位置へ戻し、現在の床変換を適用して乗員の追従量を求める。
     glm::vec3 localPoint = worldPoint - mFrameStartPos;
     if (glm::length(mFrameStartOrientation) > 1e-6f) {
         localPoint = glm::inverse(mFrameStartOrientation) * localPoint;
     }
 
-    const glm::vec3 transformedPoint =
-        GetPos() + GetOrientation() * localPoint;
+    const glm::vec3 transformedPoint = GetPos() + GetOrientation() * localPoint;
     return transformedPoint - worldPoint;
 }

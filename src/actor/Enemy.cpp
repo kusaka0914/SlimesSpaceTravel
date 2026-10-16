@@ -1,7 +1,7 @@
-#include "Enemy.h"
+#include "actor/Enemy.h"
 
-#include "CharacterActor.h"
 #include "Game.h"
+#include "actor/CharacterActor.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCombat.h"
@@ -27,20 +27,15 @@ constexpr float bossSquashDurationSeconds = 0.10f;
 constexpr float bossStretchDurationSeconds = 0.12f;
 constexpr float bossRecoveryDurationSeconds = 0.16f;
 constexpr float bossHitReactionDurationSeconds =
-    bossSquashDurationSeconds +
-    bossStretchDurationSeconds +
-    bossRecoveryDurationSeconds;
+    bossSquashDurationSeconds + bossStretchDurationSeconds + bossRecoveryDurationSeconds;
 
 float CalculateSmoothstep(float progress)
 {
     const float clampedProgress = glm::clamp(progress, 0.0f, 1.0f);
-    return clampedProgress * clampedProgress *
-           (3.0f - 2.0f * clampedProgress);
+    return clampedProgress * clampedProgress * (3.0f - 2.0f * clampedProgress);
 }
 
-bool CanPursuePlayerOnCurrentSurface(
-    const Enemy& enemy,
-    const Player* player)
+bool CanPursuePlayerOnCurrentSurface(const Enemy& enemy, const Player* player)
 {
     Game* game = enemy.GetGame();
     Planet* planet = enemy.GetCurrentPlanet();
@@ -48,12 +43,8 @@ bool CanPursuePlayerOnCurrentSurface(
         return false;
     }
 
-    return player->GetIsActive() &&
-        player->IsAlive() &&
-        player->GetCurrentPlanet() == planet &&
-        planet->ArePositionsOnSameSurfaceFace(
-            enemy.GetPos(),
-            player->GetPos());
+    return player->GetIsActive() && player->IsAlive() && player->GetCurrentPlanet() == planet &&
+           planet->ArePositionsOnSameSurfaceFace(enemy.GetPos(), player->GetPos());
 }
 
 Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
@@ -64,17 +55,14 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
     }
 
     Player* nearestPlayer = nullptr;
-    float nearestDistanceSquared =
-        std::numeric_limits<float>::max();
+    float nearestDistanceSquared = std::numeric_limits<float>::max();
     for (Player* player : game->GetPlayers()) {
         if (!CanPursuePlayerOnCurrentSurface(enemy, player)) {
             continue;
         }
 
-        const glm::vec3 enemyToPlayer =
-            player->GetPos() - enemy.GetPos();
-        const float distanceSquared =
-            glm::dot(enemyToPlayer, enemyToPlayer);
+        const glm::vec3 enemyToPlayer = player->GetPos() - enemy.GetPos();
+        const float distanceSquared = glm::dot(enemyToPlayer, enemyToPlayer);
         if (distanceSquared >= nearestDistanceSquared) {
             continue;
         }
@@ -84,14 +72,12 @@ Player* FindNearestPlayerOnSameSurfaceFace(const Enemy& enemy)
     }
     return nearestPlayer;
 }
-}
+} // namespace
 
 Enemy::Enemy(Game* game)
     : CharacterActor(game),
       mStateMachine(std::make_unique<EnemyStateMachine>()),
-      mMovement(std::make_unique<EnemyMovement>(
-          *game->GetPhysicsSystem(),
-          *game->GetMathUtils())),
+      mMovement(std::make_unique<EnemyMovement>(*game->GetPhysicsSystem(), *game->GetMathUtils())),
       mCombat(std::make_unique<EnemyCombat>()),
       mDamageHandler(std::make_unique<EnemyDamageHandler>()),
       mBehaviorController(std::make_unique<EnemyBehaviorController>())
@@ -102,23 +88,16 @@ Enemy::~Enemy() = default;
 
 float Enemy::ResolveMinimumUpdateIntervalSeconds() const
 {
-    return CanUseReducedUpdateRate()
-        ? dormantEnemyUpdateIntervalSeconds
-        : 0.0f;
+    // 更新間隔を空けた分のdeltaTimeはActorが蓄積するため、タイマーには経過時間がまとめて渡る。
+    return CanUseReducedUpdateRate() ? dormantEnemyUpdateIntervalSeconds : 0.0f;
 }
 
 bool Enemy::CanUseReducedUpdateRate() const
 {
     Planet* planet = GetCurrentPlanet();
-    if (!planet ||
-        mShouldUseFullRateUpdate ||
-        !mStateMachine->IsAlive() ||
-        mStateMachine->GetActionState() != ActionState::Idle ||
-        mHitReactionKind != HitReactionKind::None ||
-        !mOnGround ||
-        !mHasRecordedGroundedTransform ||
-        GetGroundActor() != planet ||
-        GetIsEditorSelected()) {
+    if (!planet || mShouldUseFullRateUpdate || !mStateMachine->IsAlive() ||
+        mStateMachine->GetActionState() != ActionState::Idle || mHitReactionKind != HitReactionKind::None ||
+        !mOnGround || !mHasRecordedGroundedTransform || GetGroundActor() != planet || GetIsEditorSelected()) {
         return false;
     }
     return true;
@@ -130,21 +109,15 @@ bool Enemy::ShouldUpdateUpVecEveryFrame() const
         return false;
     }
 
-    if (!mHasRecordedGroundedTransform ||
-        !mOnGround ||
-        GetGroundActor() != GetCurrentPlanet()) {
+    if (!mHasRecordedGroundedTransform || !mOnGround || GetGroundActor() != GetCurrentPlanet()) {
         return true;
     }
 
-    const glm::vec3 positionChange =
-        GetPos() - mLastGroundedPosition;
-    return glm::dot(positionChange, positionChange) >
-        groundedPositionEpsilon * groundedPositionEpsilon;
+    const glm::vec3 positionChange = GetPos() - mLastGroundedPosition;
+    return glm::dot(positionChange, positionChange) > groundedPositionEpsilon * groundedPositionEpsilon;
 }
 
-bool Enemy::ShouldAcceptLandingSurface(
-    Actor* surfaceActor,
-    const glm::vec3& surfaceNormal) const
+bool Enemy::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& surfaceNormal) const
 {
     (void)surfaceNormal;
 
@@ -155,8 +128,7 @@ void Enemy::ApplyConfig(const EnemyConfig& config)
 {
     SetIsBoss(config.isBoss);
     SetIsBossEncounter(config.isBossEncounter);
-    SetIsNormalHitKnockBackEnabled(
-        config.isNormalHitKnockBackEnabled);
+    SetIsNormalHitKnockBackEnabled(config.isNormalHitKnockBackEnabled);
     SetKnockBackSpeed(config.knockBackSpeed);
     SetDefaultLaunchedTimer(config.defaultLaunchedTimer);
     SetLaunchHeight(config.launchHeight);
@@ -170,9 +142,7 @@ void Enemy::ApplyConfig(const EnemyConfig& config)
     SetAttack(config.attack);
     SetRadius(config.radius);
 
-    mStatus.ConfigureGuard(
-        config.guardSegmentCount,
-        config.guardValuePerSegment);
+    mStatus.ConfigureGuard(config.guardSegmentCount, config.guardValuePerSegment);
 
     SetModelPath(config.modelPath);
 
@@ -189,12 +159,10 @@ void Enemy::UpdateActor(float deltaTime)
     CharacterActor::UpdateActor(deltaTime);
     UpdateHitReaction(deltaTime);
 
-    if (mStateMachine->IsAlive() &&
-        (mOnGround || !mHasRecordedGroundedTransform)) {
+    if (mStateMachine->IsAlive() && (mOnGround || !mHasRecordedGroundedTransform)) {
         mLastGroundedPosition = GetPos();
         if (glm::length(GetUpVec()) > 0.000001f) {
-            mLastGroundedUpDirection =
-                glm::normalize(GetUpVec());
+            mLastGroundedUpDirection = glm::normalize(GetUpVec());
         }
         mHasRecordedGroundedTransform = true;
     }
@@ -203,16 +171,13 @@ void Enemy::UpdateActor(float deltaTime)
         return;
     }
 
-    mMovement->SeparateAfterOverlappingEnemyLanding(
-        *this,
-        deltaTime);
+    mMovement->SeparateAfterOverlappingEnemyLanding(*this, deltaTime);
 
     mStatus.SetNearestPlayer(ResolvePursuitTarget());
 
     switch (mStateMachine->GetLifeState()) {
     case LifeState::Alive:
-        mStateMachine->UpdateAlive(
-            *this, mStatus, *mMovement, *mCombat, *mBehaviorController, deltaTime);
+        mStateMachine->UpdateAlive(*this, mStatus, *mMovement, *mCombat, *mBehaviorController, deltaTime);
         break;
 
     case LifeState::Dying:
@@ -234,19 +199,15 @@ bool Enemy::ShouldRenderSolidWhite() const
 
     constexpr float recoveryWarningDurationSeconds = 1.5f;
     const float launchedTimerSeconds = mStatus.GetLaunchedTimer();
-    const bool shouldBlink =
-        mStateMachine->GetActionState() == ActionState::Launched &&
-        launchedTimerSeconds >= 0.0f &&
-        launchedTimerSeconds <= recoveryWarningDurationSeconds;
+    const bool shouldBlink = mStateMachine->GetActionState() == ActionState::Launched && launchedTimerSeconds >= 0.0f &&
+                             launchedTimerSeconds <= recoveryWarningDurationSeconds;
     if (!shouldBlink) {
         return false;
     }
 
     constexpr float blinkIntervalSeconds = 0.12f;
-    const float warningElapsedSeconds =
-        recoveryWarningDurationSeconds - launchedTimerSeconds;
-    const int blinkPhase =
-        static_cast<int>(warningElapsedSeconds / blinkIntervalSeconds);
+    const float warningElapsedSeconds = recoveryWarningDurationSeconds - launchedTimerSeconds;
+    const int blinkPhase = static_cast<int>(warningElapsedSeconds / blinkIntervalSeconds);
 
     return (blinkPhase % 2) != 0;
 }
@@ -257,16 +218,9 @@ glm::quat Enemy::GetRenderModelRotationOffset() const
         return Actor::GetRenderModelRotationOffset();
     }
 
-    const float progress = glm::clamp(
-        mHitReactionElapsedSeconds /
-            normalEnemySpinDurationSeconds,
-        0.0f,
-        1.0f);
-    const float angleRadians =
-        glm::two_pi<float>() * CalculateSmoothstep(progress);
-    return glm::angleAxis(
-        angleRadians,
-        glm::vec3(1.0f, 0.0f, 0.0f));
+    const float progress = glm::clamp(mHitReactionElapsedSeconds / normalEnemySpinDurationSeconds, 0.0f, 1.0f);
+    const float angleRadians = glm::two_pi<float>() * CalculateSmoothstep(progress);
+    return glm::angleAxis(angleRadians, glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 glm::vec3 Enemy::GetRenderScale() const
@@ -282,36 +236,17 @@ glm::vec3 Enemy::GetRenderScale() const
 
     glm::vec3 reactionScaleMultiplier(1.0f);
     if (mHitReactionElapsedSeconds < bossSquashDurationSeconds) {
-        const float progress = CalculateSmoothstep(
-            mHitReactionElapsedSeconds /
-            bossSquashDurationSeconds);
-        reactionScaleMultiplier = glm::mix(
-            normalScaleMultiplier,
-            squashScaleMultiplier,
-            progress);
-    } else if (mHitReactionElapsedSeconds <
-               bossSquashDurationSeconds + bossStretchDurationSeconds) {
-        const float stretchElapsedSeconds =
-            mHitReactionElapsedSeconds - bossSquashDurationSeconds;
-        const float progress = CalculateSmoothstep(
-            stretchElapsedSeconds /
-            bossStretchDurationSeconds);
-        reactionScaleMultiplier = glm::mix(
-            squashScaleMultiplier,
-            stretchScaleMultiplier,
-            progress);
+        const float progress = CalculateSmoothstep(mHitReactionElapsedSeconds / bossSquashDurationSeconds);
+        reactionScaleMultiplier = glm::mix(normalScaleMultiplier, squashScaleMultiplier, progress);
+    } else if (mHitReactionElapsedSeconds < bossSquashDurationSeconds + bossStretchDurationSeconds) {
+        const float stretchElapsedSeconds = mHitReactionElapsedSeconds - bossSquashDurationSeconds;
+        const float progress = CalculateSmoothstep(stretchElapsedSeconds / bossStretchDurationSeconds);
+        reactionScaleMultiplier = glm::mix(squashScaleMultiplier, stretchScaleMultiplier, progress);
     } else {
         const float recoveryElapsedSeconds =
-            mHitReactionElapsedSeconds -
-            bossSquashDurationSeconds -
-            bossStretchDurationSeconds;
-        const float progress = CalculateSmoothstep(
-            recoveryElapsedSeconds /
-            bossRecoveryDurationSeconds);
-        reactionScaleMultiplier = glm::mix(
-            stretchScaleMultiplier,
-            normalScaleMultiplier,
-            progress);
+            mHitReactionElapsedSeconds - bossSquashDurationSeconds - bossStretchDurationSeconds;
+        const float progress = CalculateSmoothstep(recoveryElapsedSeconds / bossRecoveryDurationSeconds);
+        reactionScaleMultiplier = glm::mix(stretchScaleMultiplier, normalScaleMultiplier, progress);
     }
 
     return baseScale * reactionScaleMultiplier;
@@ -336,10 +271,8 @@ void Enemy::UpdateHitReaction(float deltaTime)
     }
 
     mHitReactionElapsedSeconds += std::max(0.0f, deltaTime);
-    const float durationSeconds =
-        mHitReactionKind == HitReactionKind::NormalEnemySpin
-            ? normalEnemySpinDurationSeconds
-            : bossHitReactionDurationSeconds;
+    const float durationSeconds = mHitReactionKind == HitReactionKind::NormalEnemySpin ? normalEnemySpinDurationSeconds
+                                                                                       : bossHitReactionDurationSeconds;
     if (mHitReactionElapsedSeconds < durationSeconds) {
         return;
     }
@@ -351,13 +284,7 @@ void Enemy::UpdateHitReaction(float deltaTime)
 void Enemy::ApplyDamage(float damage, Player* player)
 {
     RegisterPlayerAttackForAggro(player);
-    mDamageHandler->ApplyDamage(
-        *this,
-        mStatus,
-        *mStateMachine,
-        *mMovement,
-        damage,
-        player);
+    mDamageHandler->ApplyDamage(*this, mStatus, *mStateMachine, *mMovement, damage, player);
 }
 
 void Enemy::DefeatImmediately()
@@ -370,83 +297,49 @@ void Enemy::DefeatImmediately()
     mStateMachine->FinishDying(*this, mStatus);
 }
 
-EnemyGuardDamageResult Enemy::ApplyGuardDamage(
-    float guardDamage,
-    float deltaTime)
+EnemyGuardDamageResult Enemy::ApplyGuardDamage(float guardDamage, float deltaTime)
 {
-    return mCombat->ApplyGuardDamage(
-        *this,
-        mStatus,
-        *mMovement,
-        *mStateMachine,
-        guardDamage,
-        deltaTime);
+    return mCombat->ApplyGuardDamage(*this, mStatus, *mMovement, *mStateMachine, guardDamage, deltaTime);
 }
 
-EnemyGuardDamageResult
-Enemy::ApplyGuardDamageEnsuringCurrentSegmentBreak(
-    float minimumGuardDamage,
-    float deltaTime)
+EnemyGuardDamageResult Enemy::ApplyGuardDamageEnsuringCurrentSegmentBreak(float minimumGuardDamage, float deltaTime)
 {
-    return mCombat->ApplyGuardDamageEnsuringCurrentSegmentBreak(
-        *this,
-        mStatus,
-        *mMovement,
-        *mStateMachine,
-        minimumGuardDamage,
-        deltaTime);
+    return mCombat->ApplyGuardDamageEnsuringCurrentSegmentBreak(*this, mStatus, *mMovement, *mStateMachine,
+                                                                minimumGuardDamage, deltaTime);
 }
 
 EnemyGuardDamageResult Enemy::BreakGuard(float deltaTime)
 {
-    return mCombat->BreakGuard(
-        *this,
-        mStatus,
-        *mMovement,
-        *mStateMachine,
-        deltaTime);
+    return mCombat->BreakGuard(*this, mStatus, *mMovement, *mStateMachine, deltaTime);
 }
 
-void Enemy::ApplyAirDodgePush(
-    const glm::vec3& dodgeDirection,
-    float pushSpeed,
-    float pushDampingPerSecond)
+void Enemy::ApplyAirDodgePush(const glm::vec3& dodgeDirection, float pushSpeed, float pushDampingPerSecond)
 {
-    if (IsOnGround() ||
-        !IsAlive()) {
+    if (IsOnGround() || !IsAlive()) {
         return;
     }
 
-    mMovement->ApplyAirDodgePush(
-        *this,
-        dodgeDirection,
-        pushSpeed,
-        pushDampingPerSecond);
+    mMovement->ApplyAirDodgePush(*this, dodgeDirection, pushSpeed, pushDampingPerSecond);
 }
 
 Player* Enemy::ResolvePursuitTarget()
 {
     Game* game = GetGame();
-    const bool isSoloSplit =
-        game &&
-        game->GetIsPlayerSplit() &&
-        !game->GetIsPlayer2Joined();
+    const bool isSoloSplit = game && game->GetIsPlayerSplit() && !game->GetIsPlayer2Joined();
+
+    // ソロ分裂時は非操作側を優先し、操作側から一定回数攻撃されたら追跡を切り替える。
     if (!isSoloSplit) {
         ResetSoloSplitAggro();
         return FindNearestPlayerOnSameSurfaceFace(*this);
     }
 
-    if (mSoloSplitAggroOverridePlayer &&
-        CanPursuePlayerOnCurrentSurface(
-            *this,
-            mSoloSplitAggroOverridePlayer)) {
+    if (mSoloSplitAggroOverridePlayer && CanPursuePlayerOnCurrentSurface(*this, mSoloSplitAggroOverridePlayer)) {
         return mSoloSplitAggroOverridePlayer;
     }
 
     Player* controlledPlayer = game->GetControlledPlayer();
     for (Player* player : game->GetPlayers()) {
-        if (player == controlledPlayer ||
-            !CanPursuePlayerOnCurrentSurface(*this, player)) {
+        if (player == controlledPlayer || !CanPursuePlayerOnCurrentSurface(*this, player)) {
             continue;
         }
         return player;
@@ -462,12 +355,9 @@ Player* Enemy::ResolvePursuitTarget()
 void Enemy::RegisterPlayerAttackForAggro(Player* attackingPlayer)
 {
     Game* game = GetGame();
-    const bool isControlledSoloSplitPlayer =
-        game &&
-        attackingPlayer &&
-        game->GetIsPlayerSplit() &&
-        !game->GetIsPlayer2Joined() &&
-        game->GetControlledPlayer() == attackingPlayer;
+    const bool isControlledSoloSplitPlayer = game && attackingPlayer && game->GetIsPlayerSplit() &&
+                                             !game->GetIsPlayer2Joined() &&
+                                             game->GetControlledPlayer() == attackingPlayer;
     if (!isControlledSoloSplitPlayer) {
         return;
     }
@@ -500,39 +390,23 @@ void Enemy::ResetSoloSplitAggro()
 
 void Enemy::ApplyAirComboLift(float liftHeight)
 {
-    if (IsOnGround() ||
-        !IsAlive()) {
+    if (IsOnGround() || !IsAlive()) {
         return;
     }
 
     mMovement->ApplyAirComboLift(*this, liftHeight);
 }
 
-bool Enemy::StartGravitySlam(
-    Player& player,
-    float downwardSpeed,
-    float maximumDamage,
-    float fullDamageHeight,
-    float minimumDamageRatio,
-    float groundImpactRadius,
-    bool shouldPlayImpactFeedback)
+bool Enemy::StartGravitySlam(Player& player, float downwardSpeed, float maximumDamage, float fullDamageHeight,
+                             float minimumDamageRatio, float groundImpactRadius, bool shouldPlayImpactFeedback)
 {
-    if (IsOnGround() ||
-        !IsAlive()) {
+    if (IsOnGround() || !IsAlive()) {
         return false;
     }
 
-    return mMovement->StartGravitySlam(
-        *this,
-        mStatus,
-        *mStateMachine,
-        player,
-        downwardSpeed,
-        maximumDamage,
-        fullDamageHeight,
-        minimumDamageRatio,
-        groundImpactRadius,
-        shouldPlayImpactFeedback);
+    return mMovement->StartGravitySlam(*this, mStatus, *mStateMachine, player, downwardSpeed, maximumDamage,
+                                       fullDamageHeight, minimumDamageRatio, groundImpactRadius,
+                                       shouldPlayImpactFeedback);
 }
 
 const char* Enemy::GetCurrentBehaviorActionType() const

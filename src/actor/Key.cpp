@@ -1,4 +1,5 @@
-#include "Key.h"
+#include "actor/Key.h"
+
 #include "Game.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"

@@ -1,4 +1,4 @@
-#include "Player.h"
+#include "actor/Player.h"
 
 #include "Game.h"
 #include "actor/Boat.h"
@@ -33,60 +33,40 @@ struct StarCollectionCelebrationTransform {
 float CalculateSmoothstep(float progress)
 {
     const float clampedProgress = glm::clamp(progress, 0.0f, 1.0f);
-    return clampedProgress * clampedProgress *
-           (3.0f - 2.0f * clampedProgress);
+    return clampedProgress * clampedProgress * (3.0f - 2.0f * clampedProgress);
 }
 
-StarCollectionCelebrationTransform
-CalculateStarCollectionCelebrationTransform(
-    float elapsedSeconds,
-    float durationSeconds)
+StarCollectionCelebrationTransform CalculateStarCollectionCelebrationTransform(float elapsedSeconds,
+                                                                               float durationSeconds)
 {
     StarCollectionCelebrationTransform transform;
     if (elapsedSeconds < 0.0f || durationSeconds <= 0.0f) {
         return transform;
     }
 
-    const float celebrationProgress = glm::clamp(
-        elapsedSeconds / durationSeconds,
-        0.0f,
-        1.0f);
+    const float celebrationProgress = glm::clamp(elapsedSeconds / durationSeconds, 0.0f, 1.0f);
     constexpr float hopCount = 3.0f;
-    const float hopProgress = std::min(
-        celebrationProgress * hopCount,
-        hopCount - 0.0001f);
-    const float progressWithinHop =
-        hopProgress - std::floor(hopProgress);
-    const float hopArc =
-        4.0f * progressWithinHop * (1.0f - progressWithinHop);
+    const float hopProgress = std::min(celebrationProgress * hopCount, hopCount - 0.0001f);
+    const float progressWithinHop = hopProgress - std::floor(hopProgress);
+    const float hopArc = 4.0f * progressWithinHop * (1.0f - progressWithinHop);
 
     constexpr float baseHopHeightWorldUnits = 0.22f;
     constexpr float middleHopHeightBonusWorldUnits = 0.08f;
     const float hopHeightWorldUnits =
-        baseHopHeightWorldUnits +
-        std::sin(glm::pi<float>() * celebrationProgress) *
-            middleHopHeightBonusWorldUnits;
-    transform.heightOffsetWorldUnits =
-        hopArc * hopHeightWorldUnits;
+        baseHopHeightWorldUnits + std::sin(glm::pi<float>() * celebrationProgress) * middleHopHeightBonusWorldUnits;
+    transform.heightOffsetWorldUnits = hopArc * hopHeightWorldUnits;
 
     constexpr float maximumStretch = 0.08f;
-    const float stretch =
-        std::sin(glm::two_pi<float>() * progressWithinHop) *
-        maximumStretch;
-    transform.scaleMultiplier = glm::vec3(
-        1.0f - stretch * 0.45f,
-        1.0f + stretch,
-        1.0f - stretch * 0.45f);
+    const float stretch = std::sin(glm::two_pi<float>() * progressWithinHop) * maximumStretch;
+    transform.scaleMultiplier = glm::vec3(1.0f - stretch * 0.45f, 1.0f + stretch, 1.0f - stretch * 0.45f);
     return transform;
 }
-}
+} // namespace
 
 Player::Player(Game* game)
     : CharacterActor(game),
       mInput(*game->GetInputSystem()),
-      mMovement(
-          *game->GetPhysicsSystem(),
-          *game->GetMathUtils()),
+      mMovement(*game->GetPhysicsSystem(), *game->GetMathUtils()),
       mGrounding(*game->GetPhysicsSystem()),
       mCombat(*game->GetPhysicsSystem())
 {
@@ -117,24 +97,19 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mMovement.SetJumpHeight(config.jumpHeight);
     mMovement.SetJumpAscentDuration(config.jumpAscentDuration);
     mMovement.SetJumpFallDuration(config.jumpFallDuration);
-    mMovement.SetJumpApexHoverDurationSeconds(
-        config.jumpApexHoverDurationSeconds);
-    mMovement.SetAirWeakAttackPostHoverDurationSeconds(
-        config.airWeakAttackPostHoverDurationSeconds);
-    mMovement.SetAirDodgePostHoverDurationSeconds(
-        config.airDodgePostHoverDurationSeconds);
+    mMovement.SetJumpApexHoverDurationSeconds(config.jumpApexHoverDurationSeconds);
+    mMovement.SetAirWeakAttackPostHoverDurationSeconds(config.airWeakAttackPostHoverDurationSeconds);
+    mMovement.SetAirDodgePostHoverDurationSeconds(config.airDodgePostHoverDurationSeconds);
     if (mGame) {
         mGame->SetGroundNormalRayLength(config.groundNormalRayLength);
-        mGame->SetOverheadGravityRayLength(
-            config.overheadGravityRayLength);
+        mGame->SetOverheadGravityRayLength(config.overheadGravityRayLength);
 
         PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
         if (physicsSystem) {
             physicsSystem->SetPlayerCollisionWidth(config.collisionWidth);
             physicsSystem->SetPlayerCollisionHeight(config.collisionHeight);
             physicsSystem->SetPlayerCollisionDepth(config.collisionDepth);
-            physicsSystem->SetPlayerCollisionCenterHeight(
-                config.collisionCenterHeight);
+            physicsSystem->SetPlayerCollisionCenterHeight(config.collisionCenterHeight);
         }
     }
 
@@ -143,20 +118,13 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mMovement.SetDodgeDistance(config.dodgeDistance);
     mCombat.SetAirDodgeAttackDamage(config.airDodgeAttackDamage);
     mCombat.SetAirDodgeGuardDamage(config.airDodgeGuardDamage);
-    mCombat.SetAirDodgeHorizontalHitboxScale(
-        config.airDodgeHorizontalHitboxScale);
-    mCombat.SetAirDodgeVerticalHitboxScale(
-        config.airDodgeVerticalHitboxScale);
-    mCombat.SetAirDodgeEnemyPushSpeed(
-        config.airDodgeEnemyPushSpeed);
-    mCombat.SetAirDodgeEnemyPushDampingPerSecond(
-        config.airDodgeEnemyPushDampingPerSecond);
-    mCombat.SetAirWeakEnemyLiftHeight(
-        config.airWeakEnemyLiftHeight);
-    mCombat.SetAirComboDodgePlayerLiftHeight(
-        config.airComboDodgePlayerLiftHeight);
-    mCombat.SetAirComboDodgeEnemyLiftHeight(
-        config.airComboDodgeEnemyLiftHeight);
+    mCombat.SetAirDodgeHorizontalHitboxScale(config.airDodgeHorizontalHitboxScale);
+    mCombat.SetAirDodgeVerticalHitboxScale(config.airDodgeVerticalHitboxScale);
+    mCombat.SetAirDodgeEnemyPushSpeed(config.airDodgeEnemyPushSpeed);
+    mCombat.SetAirDodgeEnemyPushDampingPerSecond(config.airDodgeEnemyPushDampingPerSecond);
+    mCombat.SetAirWeakEnemyLiftHeight(config.airWeakEnemyLiftHeight);
+    mCombat.SetAirComboDodgePlayerLiftHeight(config.airComboDodgePlayerLiftHeight);
+    mCombat.SetAirComboDodgeEnemyLiftHeight(config.airComboDodgeEnemyLiftHeight);
 
     mCombat.SetNormalAttackRange(config.normalAttackRange);
     mCombat.SetNormalAttackAngle(config.normalAttackAngle);
@@ -178,28 +146,19 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mCombat.SetChargedAttackRange(config.chargedAttackRange);
     mCombat.SetChargedAttackAngle(config.chargedAttackAngle);
     mCombat.SetChargedAttackDamage(config.chargedAttackDamage);
-    mCombat.SetChargedAttackChargeDurationSeconds(
-        config.chargedAttackChargeDurationSeconds);
+    mCombat.SetChargedAttackChargeDurationSeconds(config.chargedAttackChargeDurationSeconds);
     mCombat.SetContinuousAttackRange(config.continuousAttackRange);
     mCombat.SetContinuousAttackAngle(config.continuousAttackAngle);
     mCombat.SetContinuousAttackDamage(config.continuousAttackDamage);
-    mCombat.SetContinuousAttackGuardDamage(
-        config.continuousAttackGuardDamage);
-    mCombat.SetContinuousAttackIntervalSeconds(
-        config.continuousAttackIntervalSeconds);
-    mCombat.SetContinuousAttackDurationSeconds(
-        config.continuousAttackDurationSeconds);
+    mCombat.SetContinuousAttackGuardDamage(config.continuousAttackGuardDamage);
+    mCombat.SetContinuousAttackIntervalSeconds(config.continuousAttackIntervalSeconds);
+    mCombat.SetContinuousAttackDurationSeconds(config.continuousAttackDurationSeconds);
     mMovement.SetAirSlamRiseHeight(config.airSlamRiseHeight);
-    mMovement.SetAirSlamRiseDurationSeconds(
-        config.airSlamRiseDurationSeconds);
-    mMovement.SetAirSlamHoverDurationSeconds(
-        config.airSlamHoverDurationSeconds);
-    mCombat.SetAirSlamEnemyDownwardSpeed(
-        config.airSlamEnemyDownwardSpeed);
-    mCombat.SetAirSlamFullDamageHeight(
-        config.airSlamFullDamageHeight);
-    mCombat.SetAirSlamMinimumDamageRatio(
-        config.airSlamMinimumDamageRatio);
+    mMovement.SetAirSlamRiseDurationSeconds(config.airSlamRiseDurationSeconds);
+    mMovement.SetAirSlamHoverDurationSeconds(config.airSlamHoverDurationSeconds);
+    mCombat.SetAirSlamEnemyDownwardSpeed(config.airSlamEnemyDownwardSpeed);
+    mCombat.SetAirSlamFullDamageHeight(config.airSlamFullDamageHeight);
+    mCombat.SetAirSlamMinimumDamageRatio(config.airSlamMinimumDamageRatio);
     mCombat.SetAirSlamGuardDamage(config.airSlamGuardDamage);
 
     mCombat.SetSpecialAttackCooldown(config.specialAttackCooldown);
@@ -207,10 +166,8 @@ void Player::ApplyConfig(const PlayerConfig& config)
     mStatus.SetDefaultDamageTimer(config.defaultDamageTimer);
     mCombat.SetDefaultAttackMotionTimer(config.defaultAttackMotionTimer);
     mCombat.SetAttackHitDelay(config.attackHitDelay);
-    mCombat.SetGroundWeakAttackCooldownSeconds(
-        config.groundWeakAttackCooldownSeconds);
-    mCombat.SetAirWeakAttackCooldownSeconds(
-        config.airWeakAttackCooldownSeconds);
+    mCombat.SetGroundWeakAttackCooldownSeconds(config.groundWeakAttackCooldownSeconds);
+    mCombat.SetAirWeakAttackCooldownSeconds(config.airWeakAttackCooldownSeconds);
     mCombat.SetLastAttackCooldown(config.lastAttackCooldown);
     mCombat.SetDefaultStrongAttackTimer(config.defaultStrongAttackTimer);
     mMovement.SetKnockBackSpeed(config.knockBackSpeed);
@@ -228,23 +185,19 @@ void Player::Initialize()
 
 bool Player::ShouldRenderSolidWhite() const
 {
-    if (!mStatus.IsAlive() ||
-        !mStatus.ShouldBlinkWhileInvincible()) {
+    if (!mStatus.IsAlive() || !mStatus.ShouldBlinkWhileInvincible()) {
         return false;
     }
 
     constexpr float blinkIntervalSeconds = 0.1f;
-    const int blinkPhase = static_cast<int>(
-        mStatus.GetInvincibleTimer() / blinkIntervalSeconds);
+    const int blinkPhase = static_cast<int>(mStatus.GetInvincibleTimer() / blinkIntervalSeconds);
     return (blinkPhase % 2) == 0;
 }
 
 glm::vec3 Player::GetRenderPosition() const
 {
-    const StarCollectionCelebrationTransform celebrationTransform =
-        CalculateStarCollectionCelebrationTransform(
-            mStarCollectionCelebrationElapsedSeconds,
-            mStarCollectionCelebrationDurationSeconds);
+    const StarCollectionCelebrationTransform celebrationTransform = CalculateStarCollectionCelebrationTransform(
+        mStarCollectionCelebrationElapsedSeconds, mStarCollectionCelebrationDurationSeconds);
 
     glm::vec3 upDirection = GetUpVec();
     const float upLengthSquared = glm::dot(upDirection, upDirection);
@@ -254,18 +207,14 @@ glm::vec3 Player::GetRenderPosition() const
         upDirection /= std::sqrt(upLengthSquared);
     }
 
-    return GetPos() +
-           upDirection * celebrationTransform.heightOffsetWorldUnits;
+    return GetPos() + upDirection * celebrationTransform.heightOffsetWorldUnits;
 }
 
 glm::vec3 Player::GetRenderScale() const
 {
-    const StarCollectionCelebrationTransform celebrationTransform =
-        CalculateStarCollectionCelebrationTransform(
-            mStarCollectionCelebrationElapsedSeconds,
-            mStarCollectionCelebrationDurationSeconds);
-    return Actor::GetRenderScale() *
-           celebrationTransform.scaleMultiplier;
+    const StarCollectionCelebrationTransform celebrationTransform = CalculateStarCollectionCelebrationTransform(
+        mStarCollectionCelebrationElapsedSeconds, mStarCollectionCelebrationDurationSeconds);
+    return Actor::GetRenderScale() * celebrationTransform.scaleMultiplier;
 }
 
 glm::quat Player::GetRenderModelRotationOffset() const
@@ -274,16 +223,9 @@ glm::quat Player::GetRenderModelRotationOffset() const
         return Actor::GetRenderModelRotationOffset();
     }
 
-    const float progress = glm::clamp(
-        mNormalHitReactionElapsedSeconds /
-            normalHitReactionDurationSeconds,
-        0.0f,
-        1.0f);
-    const float angleRadians =
-        glm::two_pi<float>() * CalculateSmoothstep(progress);
-    return glm::angleAxis(
-        angleRadians,
-        glm::vec3(1.0f, 0.0f, 0.0f));
+    const float progress = glm::clamp(mNormalHitReactionElapsedSeconds / normalHitReactionDurationSeconds, 0.0f, 1.0f);
+    const float angleRadians = glm::two_pi<float>() * CalculateSmoothstep(progress);
+    return glm::angleAxis(angleRadians, glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 void Player::StartNormalHitReaction()
@@ -291,29 +233,19 @@ void Player::StartNormalHitReaction()
     mNormalHitReactionElapsedSeconds = 0.0f;
 }
 
-void Player::MoveTowardForMergeRecall(
-    const glm::vec3& targetPosition,
-    float deltaTime)
+void Player::MoveTowardForMergeRecall(const glm::vec3& targetPosition, float deltaTime)
 {
-    if (!GetIsActive() ||
-        !IsAlive() ||
-        mStateMachine.GetActionState() != PlayerActionState::Idle) {
+    if (!GetIsActive() || !IsAlive() || mStateMachine.GetActionState() != PlayerActionState::Idle) {
         return;
     }
 
-    mWasMergeRecallWalking =
-        mMovement.MoveTowardPosition(
-            *this,
-            targetPosition,
-            deltaTime) ||
-        mWasMergeRecallWalking;
+    mWasMergeRecallWalking = mMovement.MoveTowardPosition(*this, targetPosition, deltaTime) || mWasMergeRecallWalking;
 }
 
 void Player::StartStarCollectionCelebration(float durationSeconds)
 {
     mStarCollectionCelebrationElapsedSeconds = 0.0f;
-    mStarCollectionCelebrationDurationSeconds =
-        std::max(0.01f, durationSeconds);
+    mStarCollectionCelebrationDurationSeconds = std::max(0.01f, durationSeconds);
 }
 
 void Player::StopStarCollectionCelebration()
@@ -328,10 +260,8 @@ void Player::UpdateNormalHitReaction(float deltaTime)
         return;
     }
 
-    mNormalHitReactionElapsedSeconds +=
-        std::max(0.0f, deltaTime);
-    if (mNormalHitReactionElapsedSeconds <
-        normalHitReactionDurationSeconds) {
+    mNormalHitReactionElapsedSeconds += std::max(0.0f, deltaTime);
+    if (mNormalHitReactionElapsedSeconds < normalHitReactionDurationSeconds) {
         return;
     }
 
@@ -344,10 +274,8 @@ void Player::UpdateStarCollectionCelebration(float deltaTime)
         return;
     }
 
-    mStarCollectionCelebrationElapsedSeconds +=
-        std::max(0.0f, deltaTime);
-    if (mStarCollectionCelebrationElapsedSeconds <
-        mStarCollectionCelebrationDurationSeconds) {
+    mStarCollectionCelebrationElapsedSeconds += std::max(0.0f, deltaTime);
+    if (mStarCollectionCelebrationElapsedSeconds < mStarCollectionCelebrationDurationSeconds) {
         return;
     }
 
@@ -367,8 +295,7 @@ void Player::RecoverFromFatigue()
 void Player::OnAttachedToAdhesivePlatform()
 {
 
-
-
+    // 接着直後は空中行動を解除し、接地状態として移動・攻撃の担当へ通知する。
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();
@@ -407,16 +334,10 @@ void Player::DebugMoveToPlanet(Planet* planet, int planetIndex)
         return;
     }
 
-    DebugMoveToPosition(
-        planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight()),
-        planet,
-        planetIndex);
+    DebugMoveToPosition(planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight()), planet, planetIndex);
 }
 
-void Player::DebugMoveToPosition(
-    const glm::vec3& worldPosition,
-    Planet* planet,
-    int planetIndex)
+void Player::DebugMoveToPosition(const glm::vec3& worldPosition, Planet* planet, int planetIndex)
 {
     if (!planet || planetIndex < 0) {
         return;
@@ -427,18 +348,14 @@ void Player::DebugMoveToPosition(
     const float centerDistance = glm::length(planetOffset);
     if (centerDistance > positionEpsilon) {
         const glm::vec3 radialDirection = planetOffset / centerDistance;
-        const float theta =
-            std::atan2(radialDirection.z, radialDirection.x);
-        const float phi =
-            std::asin(glm::clamp(radialDirection.y, -1.0f, 1.0f));
+        const float theta = std::atan2(radialDirection.z, radialDirection.x);
+        const float phi = std::asin(glm::clamp(radialDirection.y, -1.0f, 1.0f));
 
         float height = centerDistance - std::abs(planet->GetRadius());
         if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
             const Planet::EllipseSurfaceProjection surfaceProjection =
                 planet->CalculateEllipseSurfaceProjection(worldPosition);
-            height = surfaceProjection.isOutside
-                ? surfaceProjection.distance
-                : -surfaceProjection.distance;
+            height = surfaceProjection.isOutside ? surfaceProjection.distance : -surfaceProjection.distance;
         }
         SetSphericalPlacement(theta, phi, height);
     }
@@ -457,59 +374,62 @@ void Player::UpdateActor(float deltaTime)
 {
     UpdateNormalHitReaction(deltaTime);
     UpdateStarCollectionCelebration(deltaTime);
-
-    if (GetIsActive() && !IsAttachedToPlatform()) {
-        PlatformAdhesionComponent::
-            TryAttachPlayerToAnyPlatformAlongMovement(
-                *this,
-                GetPos());
-    }
-
-    PhysicsSystem* physicsSystem =
-        mGame
-            ? mGame->GetPhysicsSystem()
-            : nullptr;
-    if (GetIsActive() && physicsSystem && !IsAttachedToPlatform()) {
-        const ActorMovementCollisionResult overlapResolution =
-            physicsSystem->ResolveMovementCollision(
-                this,
-                glm::vec3(0.0f),
-                GetPos());
-        SetPos(overlapResolution.resolvedPosition);
-    }
+    ResolvePreUpdateCollisions();
 
     if (mControlLocked) {
-        mVelocity = glm::vec3(0.0f);
-        mParticleEffectController.UpdateSpecialCharging(*this, false, deltaTime);
-        mParticleEffectController.UpdateWalking(*this, false);
-        mAnimationController.RequestAnimation(idleAnimationId, false);
-        mAnimationController.Update(deltaTime);
+        UpdateWhileControlLocked(deltaTime);
         return;
     }
-
     if (mRespawn.UpdateMissingGroundSurfaceRespawn(*this, mStatus, deltaTime)) {
         mVelocity = glm::vec3(0.0f);
         return;
     }
 
+    const LandingUpdateResult landing = UpdateGrounding(deltaTime);
+    const PlayerActionState previousActionState = UpdateActionState(deltaTime);
+    UpdatePresentation(previousActionState, landing, deltaTime);
+}
+
+void Player::ResolvePreUpdateCollisions()
+{
+    if (GetIsActive() && !IsAttachedToPlatform()) {
+        PlatformAdhesionComponent::TryAttachPlayerToAnyPlatformAlongMovement(*this, GetPos());
+    }
+
+    PhysicsSystem* physicsSystem = mGame ? mGame->GetPhysicsSystem() : nullptr;
+    if (GetIsActive() && physicsSystem && !IsAttachedToPlatform()) {
+        const ActorMovementCollisionResult overlapResolution =
+            physicsSystem->ResolveMovementCollision(this, glm::vec3(0.0f), GetPos());
+        SetPos(overlapResolution.resolvedPosition);
+    }
+}
+
+void Player::UpdateWhileControlLocked(float deltaTime)
+{
+    mVelocity = glm::vec3(0.0f);
+    mParticleEffectController.UpdateSpecialCharging(*this, false, deltaTime);
+    mParticleEffectController.UpdateWalking(*this, false);
+    mAnimationController.RequestAnimation(idleAnimationId, false);
+    mAnimationController.Update(deltaTime);
+}
+
+Player::LandingUpdateResult Player::UpdateGrounding(float deltaTime)
+{
     const bool wasOnGroundBeforeLandingCheck = GetOnGround();
-    const bool wasStandingOnPlatformBeforeLandingCheck =
-        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
+    const bool wasStandingOnPlatformBeforeLandingCheck = dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
     const glm::vec3 velocityBeforeLandingCheck = GetVelocity();
     const glm::vec3 upBeforeLandingCheck = GetUpVec();
 
+    // 共通の着地処理は速度をリセットするため、着地直前の速度・上方向を先に保存しておく。
     CharacterActor::UpdateActor(deltaTime);
 
     const bool didLand = !wasOnGroundBeforeLandingCheck && GetOnGround();
-    const bool didWalkOffGround =
-        wasOnGroundBeforeLandingCheck && !GetOnGround();
+    const bool didWalkOffGround = wasOnGroundBeforeLandingCheck && !GetOnGround();
+
+    // 歩いて床を離れた場合も、ジャンプと同様に離陸時の重力方向を引き継ぐ。
     if (didWalkOffGround) {
 
-
-        mPlanetGravityController.OnJumpStarted(
-            *this,
-            mMovement,
-            wasStandingOnPlatformBeforeLandingCheck);
+        mPlanetGravityController.OnJumpStarted(*this, mMovement, wasStandingOnPlatformBeforeLandingCheck);
     }
 
     float landingSpeed = 0.0f;
@@ -519,9 +439,13 @@ void Player::UpdateActor(float deltaTime)
         landingSpeed = std::max(0.0f, -glm::dot(velocityBeforeLandingCheck, normalizedUp));
     }
 
+    return {didLand, landingSpeed};
+}
+
+PlayerActionState Player::UpdateActionState(float deltaTime)
+{
     const bool wasOnGroundBeforeStateUpdate = GetOnGround();
-    const bool wasStandingOnPlatformBeforeStateUpdate =
-        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
+    const bool wasStandingOnPlatformBeforeStateUpdate = dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
     const PlayerActionState previousActionState = mStateMachine.GetActionState();
 
     mPlanetGravityController.Update(*this, mMovement, deltaTime);
@@ -534,28 +458,28 @@ void Player::UpdateActor(float deltaTime)
     }
 
     if (wasOnGroundBeforeStateUpdate && !GetOnGround()) {
-        mPlanetGravityController.OnJumpStarted(
-            *this,
-            mMovement,
-            wasStandingOnPlatformBeforeStateUpdate);
+        mPlanetGravityController.OnJumpStarted(*this, mMovement, wasStandingOnPlatformBeforeStateUpdate);
     }
 
+    return previousActionState;
+}
+
+void Player::UpdatePresentation(PlayerActionState previousActionState, const LandingUpdateResult& landing,
+                                float deltaTime)
+{
     const PlayerActionState currentActionState = mStateMachine.GetActionState();
 
     constexpr float movementInputDeadZone = 0.01f;
     const bool hasMovementInput = std::abs(mInput.GetMoveForward()) > movementInputDeadZone ||
                                   std::abs(mInput.GetMoveLeft()) > movementInputDeadZone;
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
-                            !IsAttachedToPlatform() &&
-                            (hasMovementInput || mWasMergeRecallWalking);
+                            !IsAttachedToPlatform() && (hasMovementInput || mWasMergeRecallWalking);
 
-    if (didLand) {
-        mParticleEffectController.EmitLanding(*this, landingSpeed);
+    if (landing.didLand) {
+        mParticleEffectController.EmitLanding(*this, landing.landingSpeed);
     }
-    const bool isSpecialChargeActive =
-        mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
-    mParticleEffectController.UpdateSpecialCharging(
-        *this, isSpecialChargeActive, deltaTime);
+    const bool isSpecialChargeActive = mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
+    mParticleEffectController.UpdateSpecialCharging(*this, isSpecialChargeActive, deltaTime);
     mParticleEffectController.UpdateWalking(*this, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
@@ -606,8 +530,7 @@ void Player::SetBaseScale(const glm::vec3& scale)
 void Player::SetSplitForm(bool isSplitForm)
 {
     mIsSplitForm = isSplitForm;
-    const float bodyScaleMultiplier =
-        mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f;
+    const float bodyScaleMultiplier = mIsSplitForm ? SplitBodyScaleMultiplier : 1.0f;
     SetScale(GetBaseScale() * bodyScaleMultiplier);
 }
 
@@ -619,9 +542,7 @@ float Player::CalculateOutgoingAttackDamage(float baseDamage) const
 void Player::RequestNextWeakAttackAnimation()
 {
     const std::string_view weakAttackAnimationId =
-        mUseSecondAttackAnimationNext
-            ? secondAttackAnimationId
-            : attackAnimationId;
+        mUseSecondAttackAnimationNext ? secondAttackAnimationId : attackAnimationId;
     mAnimationController.RequestAnimation(weakAttackAnimationId);
     mUseSecondAttackAnimationNext = !mUseSecondAttackAnimationNext;
 }
@@ -640,36 +561,20 @@ void Player::ApplyDamage(Enemy* enemy, float deltaTime)
     }
 }
 
-void Player::ApplyDamageFromActor(
-    const glm::vec3& damageSourcePosition,
-    float damage)
+void Player::ApplyDamageFromActor(const glm::vec3& damageSourcePosition, float damage)
 {
-    PlayerDamageHandler::ApplyFromActor(
-        *this,
-        mInput,
-        mMovement,
-        mStateMachine,
-        mCombat,
-        mStatus,
-        damageSourcePosition,
-        damage);
+    PlayerDamageHandler::ApplyFromActor(*this, mInput, mMovement, mStateMachine, mCombat, mStatus, damageSourcePosition,
+                                        damage);
     if (mGame) {
         mGame->SynchronizeSoloSplitResources(*this);
     }
 }
 
-void Player::StartDamageKnockBack(
-    const glm::vec3& damageSourcePosition)
+void Player::StartDamageKnockBack(const glm::vec3& damageSourcePosition)
 {
-    const bool wasStandingOnPlatform =
-        dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
-    mMovement.StartKnockBack(
-        *this,
-        damageSourcePosition);
-    mPlanetGravityController.OnJumpStarted(
-        *this,
-        mMovement,
-        wasStandingOnPlatform);
+    const bool wasStandingOnPlatform = dynamic_cast<Platform*>(GetGroundActor()) != nullptr;
+    mMovement.StartKnockBack(*this, damageSourcePosition);
+    mPlanetGravityController.OnJumpStarted(*this, mMovement, wasStandingOnPlatform);
 }
 
 void Player::AddJewelFromItem()
@@ -746,9 +651,8 @@ void Player::RespawnAtRestartPoint()
 void Player::Restart()
 {
     mStatus.RestoreFullHp();
-    // Game Over からのリスタートはHPと同様に、消費済みのジュエルも
-    // 通常の満タン値まで戻す。ステージ中の単なる位置リスポーンには
-    // 影響させないため、RespawnAtRestartPoint ではなくここで行う。
+
+    // 通常の位置リスポーンでジュエルが補充されないよう、満タンへの回復はRestartで行う。
     mJewelGauge.RestoreFull();
     RespawnAtRestartPoint();
 }
@@ -759,24 +663,17 @@ void Player::ForceGroundedForCinematic()
         return;
     }
 
-
-
-
+    // 演出中に空中へ残らないよう広めに接地を探索し、失敗時は惑星表面への配置で補う。
     mGrounding.SnapToGround(*this, 20.0f, 100.0f);
     if (!GetOnGround() && GetCurrentPlanet()) {
         Planet* planet = GetCurrentPlanet();
         glm::vec3 fallbackPosition;
         if (planet->GetPlanetShape() == Planet::PlanetShape::Ellipse) {
 
-
-
-            const Planet::EllipseSurfaceProjection surface =
-                planet->CalculateEllipseSurfaceProjection(GetPos());
-            fallbackPosition =
-                surface.position + surface.outwardNormal * GetHeight();
+            const Planet::EllipseSurfaceProjection surface = planet->CalculateEllipseSurfaceProjection(GetPos());
+            fallbackPosition = surface.position + surface.outwardNormal * GetHeight();
         } else {
-            fallbackPosition = planet->CalculateSurfacePos(
-                GetTheta(), GetPhi(), GetHeight());
+            fallbackPosition = planet->CalculateSurfacePos(GetTheta(), GetPhi(), GetHeight());
         }
         SetPos(fallbackPosition);
         RefreshFallbackUpVec();
@@ -798,10 +695,8 @@ void Player::ForceGroundedForCinematic()
     mAnimationController.ResetToAnimation(idleAnimationId);
 }
 
-void Player::ForceGroundedForCinematicAt(
-    Planet* planet,
-    const glm::vec3& surfaceReferencePosition,
-    const glm::vec3& groundUpDirection)
+void Player::ForceGroundedForCinematicAt(Planet* planet, const glm::vec3& surfaceReferencePosition,
+                                         const glm::vec3& groundUpDirection)
 {
     if (!planet) {
         ForceGroundedForCinematic();
@@ -809,8 +704,7 @@ void Player::ForceGroundedForCinematicAt(
     }
 
     constexpr float directionEpsilon = 0.000001f;
-    const glm::vec3 planetOffset =
-        surfaceReferencePosition - planet->GetPos();
+    const glm::vec3 planetOffset = surfaceReferencePosition - planet->GetPos();
     const float planetDistance = glm::length(planetOffset);
     if (planetDistance <= directionEpsilon) {
         ForceGroundedForCinematic();
@@ -823,16 +717,11 @@ void Player::ForceGroundedForCinematicAt(
 
     SetCurrentPlanet(planet);
 
-
-
     constexpr float cinematicGroundClearance = 0.05f;
     SetSphericalPlacement(theta, phi, cinematicGroundClearance);
     const Planet::EllipseSurfaceProjection surface =
-        planet->CalculateEllipseSurfaceProjection(
-            surfaceReferencePosition);
-    SetPos(
-        surface.position +
-        surface.outwardNormal * cinematicGroundClearance);
+        planet->CalculateEllipseSurfaceProjection(surfaceReferencePosition);
+    SetPos(surface.position + surface.outwardNormal * cinematicGroundClearance);
     if (glm::length(groundUpDirection) > directionEpsilon) {
         SetUpVec(glm::normalize(groundUpDirection));
     } else {
@@ -841,7 +730,7 @@ void Player::ForceGroundedForCinematicAt(
     SetVelocity(glm::vec3(0.0f));
     SetOnGround(true);
 
-
+    // 演出用の配置が通常の着地判定に上書きされないようにする。
     SetShouldJudgeLanding(false);
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();
@@ -866,8 +755,7 @@ bool Player::ShouldAcceptLandingSurface(Actor* surfaceActor, const glm::vec3& su
 
 bool Player::ShouldUpdateUpVecEveryFrame() const
 {
-    return !mPlanetGravityController
-        .ShouldPreservePlatformTakeoffDirection();
+    return !mPlanetGravityController.ShouldPreservePlatformTakeoffDirection();
 }
 
 const std::vector<glm::mat4>* Player::GetSkinningMatrices() const
@@ -889,9 +777,7 @@ void Player::OnUpVecUpdateFailed()
 {
     if (mPlanetGravityController.IsJumpGravityActive()) {
         const Planet* currentPlanet = GetCurrentPlanet();
-        if (currentPlanet &&
-            currentPlanet->GetPlanetShape() ==
-                Planet::PlanetShape::Sphere) {
+        if (currentPlanet && currentPlanet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
             RefreshFallbackUpVec();
         }
         return;

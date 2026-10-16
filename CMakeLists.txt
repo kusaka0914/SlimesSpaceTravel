@@ -66,6 +66,8 @@ find_package(yaml-cpp REQUIRED)
 if (BUILD_TESTING)
     add_executable(game_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformIdentifiersTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformConnectionsTests.cpp

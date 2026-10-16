@@ -1,39 +1,13 @@
-#include "NPC.h"
+#include "actor/NPC.h"
+
 #include "Game.h"
-#include "Player.h"
+#include "actor/Player.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"
 
-#include <yaml-cpp/yaml.h>
-
 #include <algorithm>
 #include <cmath>
-
-const char* GetTalkPageAdvanceConditionId(
-    TalkPageAdvanceCondition condition)
-{
-    switch (condition) {
-    case TalkPageAdvanceCondition::PlayerSwitch:
-        return "playerSwitch";
-    case TalkPageAdvanceCondition::Jump:
-        return "jump";
-    case TalkPageAdvanceCondition::Confirm:
-    default:
-        return "confirm";
-    }
-}
-
-TalkPageAdvanceCondition ParseTalkPageAdvanceConditionId(
-    const std::string& conditionId)
-{
-    if (conditionId == "playerSwitch") {
-        return TalkPageAdvanceCondition::PlayerSwitch;
-    }
-    if (conditionId == "jump") {
-        return TalkPageAdvanceCondition::Jump;
-    }
-    return TalkPageAdvanceCondition::Confirm;
-}
+#include <yaml-cpp/yaml.h>
 
 NPC::NPC(Game* game)
     : CharacterActor(game),
@@ -42,9 +16,7 @@ NPC::NPC(Game* game)
     mShouldJudgeLanding = true;
 }
 
-void NPC::ApplyConfig(
-    const YAML::Node& npcRoot,
-    const std::string& type)
+void NPC::ApplyConfig(const YAML::Node& npcRoot, const std::string& type)
 {
     if (!npcRoot["npcs"] || !npcRoot["npcs"].IsSequence()) {
         return;
@@ -69,11 +41,10 @@ void NPC::ApplyConfig(
 
 std::vector<std::size_t> NPC::ResolveTalkIndices() const
 {
-    const int selectedStageCondition =
-        ResolveTalkStageClearCondition();
+    const int selectedStageCondition = ResolveTalkStageClearCondition();
 
     std::vector<std::size_t> resolvedIndices;
-    for (std::size_t index = 0; index < mTalkTexts.size(); ++index) {
+    for (std::size_t index = 0; index < mTalkData.GetTalkTexts().size(); ++index) {
         if (GetTalkStageClearCondition(index) == selectedStageCondition) {
             resolvedIndices.emplace_back(index);
         }
@@ -83,14 +54,13 @@ std::vector<std::size_t> NPC::ResolveTalkIndices() const
 
 int NPC::ResolveTalkStageClearCondition() const
 {
+    // クリア済みの最大ステージ番号の会話群を選ぶ。該当しなければ通常会話（-1）を使う。
     int selectedStageCondition = -1;
 
-    for (std::size_t index = 0; index < mTalkTexts.size(); ++index) {
+    for (std::size_t index = 0; index < mTalkData.GetTalkTexts().size(); ++index) {
         const int stageCondition = GetTalkStageClearCondition(index);
-        if (stageCondition >= 0 && mGame &&
-            mGame->IsStageCleared(stageCondition)) {
-            selectedStageCondition =
-                std::max(selectedStageCondition, stageCondition);
+        if (stageCondition >= 0 && mGame && mGame->IsStageCleared(stageCondition)) {
+            selectedStageCondition = std::max(selectedStageCondition, stageCondition);
         }
     }
     return selectedStageCondition;
@@ -100,13 +70,12 @@ std::vector<std::string> NPC::GetResolvedTalkTexts() const
 {
     std::vector<std::string> resolvedTexts;
     for (std::size_t sourceIndex : ResolveTalkIndices()) {
-        resolvedTexts.emplace_back(mTalkTexts[sourceIndex]);
+        resolvedTexts.emplace_back(mTalkData.GetTalkTexts()[sourceIndex]);
     }
     return resolvedTexts;
 }
 
-const NPCTalkCameraFocusTarget*
-NPC::GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const
+const NPCTalkCameraFocusTarget* NPC::GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const
 {
     const std::vector<std::size_t> indices = ResolveTalkIndices();
     if (resolvedIndex >= indices.size()) {
@@ -115,8 +84,7 @@ NPC::GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const
     return GetTalkCameraFocusTarget(indices[resolvedIndex]);
 }
 
-TalkPageAdvanceCondition
-NPC::GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const
+TalkPageAdvanceCondition NPC::GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const
 {
     const std::vector<std::size_t> indices = ResolveTalkIndices();
     if (resolvedIndex >= indices.size()) {
@@ -125,24 +93,19 @@ NPC::GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const
     return GetTalkAdvanceCondition(indices[resolvedIndex]);
 }
 
-bool NPC::GetResolvedTalkStartsOpeningAfterPage(
-    std::size_t resolvedIndex) const
+bool NPC::GetResolvedTalkStartsOpeningAfterPage(std::size_t resolvedIndex) const
 {
-    const std::optional<std::size_t> sourceIndex =
-        GetResolvedTalkSourceIndex(resolvedIndex);
+    const std::optional<std::size_t> sourceIndex = GetResolvedTalkSourceIndex(resolvedIndex);
     return sourceIndex && GetTalkStartsOpeningAfterPage(*sourceIndex);
 }
 
-bool NPC::GetResolvedTalkStartsEndingAfterPage(
-    std::size_t resolvedIndex) const
+bool NPC::GetResolvedTalkStartsEndingAfterPage(std::size_t resolvedIndex) const
 {
-    const std::optional<std::size_t> sourceIndex =
-        GetResolvedTalkSourceIndex(resolvedIndex);
+    const std::optional<std::size_t> sourceIndex = GetResolvedTalkSourceIndex(resolvedIndex);
     return sourceIndex && GetTalkStartsEndingAfterPage(*sourceIndex);
 }
 
-std::optional<std::size_t> NPC::GetResolvedTalkSourceIndex(
-    std::size_t resolvedIndex) const
+std::optional<std::size_t> NPC::GetResolvedTalkSourceIndex(std::size_t resolvedIndex) const
 {
     const std::vector<std::size_t> indices = ResolveTalkIndices();
     if (resolvedIndex >= indices.size()) {
@@ -151,8 +114,7 @@ std::optional<std::size_t> NPC::GetResolvedTalkSourceIndex(
     return indices[resolvedIndex];
 }
 
-const std::vector<RubyTextSegment>&
-NPC::GetResolvedTalkRubySegments(std::size_t resolvedIndex) const
+const std::vector<RubyTextSegment>& NPC::GetResolvedTalkRubySegments(std::size_t resolvedIndex) const
 {
     static const std::vector<RubyTextSegment> emptySegments;
     const std::vector<std::size_t> indices = ResolveTalkIndices();
@@ -173,88 +135,32 @@ void NPC::UpdateActor(float deltaTime)
     }
 }
 
-void NPC::SetTalkProximityMessageText(
-    std::size_t index,
-    const std::string& text)
+void NPC::SetTalkProximityMessageText(std::size_t index, const std::string& text)
 {
-    if (index >= mTalkTexts.size()) {
-        return;
-    }
-    if (mTalkProximityMessageTexts.size() < mTalkTexts.size()) {
-        mTalkProximityMessageTexts.resize(mTalkTexts.size());
-    }
-
-    std::string sanitizedMessageText = text;
-    std::replace(
-        sanitizedMessageText.begin(),
-        sanitizedMessageText.end(),
-        '\r',
-        ' ');
-    std::replace(
-        sanitizedMessageText.begin(),
-        sanitizedMessageText.end(),
-        '\n',
-        ' ');
-
-    std::size_t escapedNewline = std::string::npos;
-    while ((escapedNewline = sanitizedMessageText.find("\\n")) !=
-           std::string::npos) {
-        sanitizedMessageText.replace(escapedNewline, 2, " ");
-    }
-
-    std::string& currentMessageText =
-        mTalkProximityMessageTexts[index];
-    if (currentMessageText != sanitizedMessageText &&
-        index < mTalkProximityMessageRubySegments.size()) {
-        mTalkProximityMessageRubySegments[index].clear();
-    }
-    currentMessageText = std::move(sanitizedMessageText);
+    mTalkData.SetTalkProximityMessageText(index, text);
 }
 
-void NPC::SetTalkProximityMessageRubySegments(
-    std::size_t index,
-    std::vector<RubyTextSegment> segments)
+void NPC::SetTalkProximityMessageRubySegments(std::size_t index, std::vector<RubyTextSegment> segments)
 {
-    if (index >= mTalkTexts.size()) {
-        return;
-    }
-    if (mTalkProximityMessageRubySegments.size() <
-        mTalkTexts.size()) {
-        mTalkProximityMessageRubySegments.resize(
-            mTalkTexts.size());
-    }
-    mTalkProximityMessageRubySegments[index] =
-        std::move(segments);
+    mTalkData.SetTalkProximityMessageRubySegments(index, std::move(segments));
 }
 
-void NPC::SetTalkProximityMessageRubyReading(
-    std::size_t talkIndex,
-    std::size_t segmentIndex,
-    const std::string& reading)
+void NPC::SetTalkProximityMessageRubyReading(std::size_t talkIndex, std::size_t segmentIndex,
+                                             const std::string& reading)
 {
-    if (talkIndex >=
-            mTalkProximityMessageRubySegments.size() ||
-        segmentIndex >=
-            mTalkProximityMessageRubySegments[talkIndex].size()) {
-        return;
-    }
-    mTalkProximityMessageRubySegments[talkIndex][segmentIndex]
-        .reading = reading;
+    mTalkData.SetTalkProximityMessageRubyReading(talkIndex, segmentIndex, reading);
 }
 
-void NPC::ClearTalkProximityMessageRubySegments(
-    std::size_t index)
+void NPC::ClearTalkProximityMessageRubySegments(std::size_t index)
 {
-    if (index < mTalkProximityMessageRubySegments.size()) {
-        mTalkProximityMessageRubySegments[index].clear();
-    }
+    mTalkData.ClearTalkProximityMessageRubySegments(index);
 }
 
-std::optional<std::size_t>
-NPC::ResolveProximityMessageTalkIndex() const
+std::optional<std::size_t> NPC::ResolveProximityMessageTalkIndex() const
 {
     const std::vector<std::size_t> indices = ResolveTalkIndices();
 
+    // 条件に合うページを末尾から調べ、空でない最後の頭上メッセージを採用する。
     for (auto it = indices.rbegin(); it != indices.rend(); ++it) {
         if (!GetTalkProximityMessageText(*it).empty()) {
             return *it;
@@ -266,22 +172,18 @@ NPC::ResolveProximityMessageTalkIndex() const
 const std::string& NPC::GetResolvedProximityMessageText() const
 {
     static const std::string emptyText;
-    const std::optional<std::size_t> talkIndex =
-        ResolveProximityMessageTalkIndex();
+    const std::optional<std::size_t> talkIndex = ResolveProximityMessageTalkIndex();
     if (!talkIndex) {
         return emptyText;
     }
     return GetTalkProximityMessageText(*talkIndex);
 }
 
-const std::vector<RubyTextSegment>&
-NPC::GetResolvedProximityMessageRubySegments() const
+const std::vector<RubyTextSegment>& NPC::GetResolvedProximityMessageRubySegments() const
 {
     static const std::vector<RubyTextSegment> emptySegments;
-    const std::optional<std::size_t> talkIndex =
-        ResolveProximityMessageTalkIndex();
-    if (!talkIndex ||
-        !HasValidTalkProximityMessageRuby(*talkIndex)) {
+    const std::optional<std::size_t> talkIndex = ResolveProximityMessageTalkIndex();
+    if (!talkIndex || !HasValidTalkProximityMessageRuby(*talkIndex)) {
         return emptySegments;
     }
     return GetTalkProximityMessageRubySegments(*talkIndex);
@@ -307,21 +209,19 @@ bool NPC::CanStartRegularTalk() const
     if (mProximityMessageMode == NPCProximityMessageMode::Always) {
         return false;
     }
-    return mProximityMessageMode != NPCProximityMessageMode::AfterTalk ||
-           !mHasTalkedThisVisit;
+    return mProximityMessageMode != NPCProximityMessageMode::AfterTalk || !mHasTalkedThisVisit;
 }
 
 bool NPC::ShouldShowProximityMessage() const
 {
-    if (GetResolvedProximityMessageText().empty() ||
-        mProximityMessageMode == NPCProximityMessageMode::Disabled) {
+    if (GetResolvedProximityMessageText().empty() || mProximityMessageMode == NPCProximityMessageMode::Disabled) {
         return false;
     }
 
-    const bool isMessageActive =
-        mProximityMessageMode == NPCProximityMessageMode::Always ||
-        (mProximityMessageMode == NPCProximityMessageMode::AfterTalk &&
-         mHasTalkedThisVisit);
+    const bool isMessageActive = mProximityMessageMode == NPCProximityMessageMode::Always ||
+                                 (mProximityMessageMode == NPCProximityMessageMode::AfterTalk && mHasTalkedThisVisit);
+
+    // 編集中は進行条件を満たさなくても、選択中のNPCのメッセージを確認できる。
     if (!isMessageActive && !(mGame && mGame->GetIsDebugEditorShowing())) {
         return false;
     }
@@ -333,8 +233,7 @@ bool NPC::ShouldShowProximityMessage() const
     if (!mGame) {
         return false;
     }
-    if (!mGame->GetSceneSystem() ||
-        !mGame->GetSceneSystem()->IsPlaying()) {
+    if (!mGame->GetSceneSystem() || !mGame->GetSceneSystem()->IsPlaying()) {
         return false;
     }
 

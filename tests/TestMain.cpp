@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+void RegisterNPCTalkDataTests(
+    std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterStageActorNodeFactoryTests(
     std::vector<std::pair<std::string, std::function<void()>>>& tests);
 void RegisterStagePlatformIdentifiersTests(
@@ -73,6 +75,7 @@ void RegisterTgsExperienceControllerTests(
 int main()
 {
     std::vector<std::pair<std::string, std::function<void()>>> tests;
+    RegisterNPCTalkDataTests(tests);
     RegisterStageActorNodeFactoryTests(tests);
     RegisterStagePlatformIdentifiersTests(tests);
     RegisterStagePlatformConnectionsTests(tests);

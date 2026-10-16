@@ -15,8 +15,7 @@ JewelItem::JewelItem(Game* game)
     SetScale(glm::vec3(0.22f));
     SetRadius(0.35f);
 
-    auto collectableComponent =
-        std::make_unique<CollectableComponent>(this, 100);
+    auto collectableComponent = std::make_unique<CollectableComponent>(this, 100);
     mCollectableComponent = collectableComponent.get();
     AddComponent(std::move(collectableComponent));
 }
@@ -27,23 +26,18 @@ void JewelItem::UpdateActor(float deltaTime)
         return;
     }
 
-    if (!mCollectableComponent ||
-        !mCollectableComponent->GetIsObtained()) {
+    if (!mCollectableComponent || !mCollectableComponent->GetIsObtained()) {
         constexpr float rotationSpeedRadiansPerSecond = 1.8f;
-        SetFacingYaw(
-            GetFacingYaw() +
-            rotationSpeedRadiansPerSecond * deltaTime);
+        SetFacingYaw(GetFacingYaw() + rotationSpeedRadiansPerSecond * deltaTime);
         return;
     }
 
-
-
+    // 編集中は回収済みでも資源へ反映せず、配置したアイテムを残す。
     if (mGame && mGame->GetIsDebugEditorShowing()) {
         return;
     }
 
-    Player* obtainingPlayer =
-        mCollectableComponent->GetObtainingPlayer();
+    Player* obtainingPlayer = mCollectableComponent->GetObtainingPlayer();
     if (obtainingPlayer) {
         obtainingPlayer->AddJewelFromItem();
     }
