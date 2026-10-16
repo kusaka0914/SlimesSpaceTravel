@@ -1,47 +1,46 @@
 #version 330 core
 
+// 3DとUIで共用する頂点変換。必要に応じてスキニングとインスタンシングを適用する。
+
 const int MAX_BONE_COUNT = 128;
 const int MAX_BONE_INFLUENCE_COUNT = 4;
 
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
-layout (location = 3) in ivec4 aBoneIndices;
-layout (location = 4) in vec4 aBoneWeights;
-layout (location = 5) in mat4 instanceModel;
+layout(location = 0) in vec3 vertexPosition;
+layout(location = 1) in vec3 vertexNormal;
+layout(location = 2) in vec2 vertexTextureCoordinate;
+layout(location = 3) in ivec4 vertexBoneIndices;
+layout(location = 4) in vec4 vertexBoneWeights;
+layout(location = 5) in mat4 instanceModelMatrix;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+out vec3 worldPosition;
+out vec3 worldNormal;
+out vec2 textureCoordinate;
 
+// スキニング後・モデル変換前の位置。3D描画の表裏テクスチャの切り替えに使う。
+out vec3 localPosition;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
 uniform bool useSkinning;
 uniform bool useInstancing;
 uniform mat4 boneTransforms[MAX_BONE_COUNT];
 
-out vec3 fragPos;
-out vec3 normal;
-out vec2 texCoord;
-out vec3 localFragPos;
-
 void main()
 {
-    vec4 localPosition = vec4(aPos, 1.0);
-    vec3 localNormal = aNormal;
+    vec4 skinnedPosition = vec4(vertexPosition, 1.0);
+    vec3 skinnedNormal = vertexNormal;
 
-    // 各頂点に影響するBoneの変換を重み付きで合成し、
-    // Bind Pose上の頂点位置・法線を現在のPoseへ変形する。
+    // ボーン変換を重み付きで合成し、バインドポーズの頂点と法線を現在のポーズへ変形する。
     if (useSkinning) {
         mat4 skinTransform = mat4(0.0);
         float totalBoneWeight = 0.0;
 
-        for (int influenceIndex = 0;
-             influenceIndex < MAX_BONE_INFLUENCE_COUNT;
-             ++influenceIndex) {
-            int boneIndex = aBoneIndices[influenceIndex];
-            float boneWeight = aBoneWeights[influenceIndex];
+        for (int influenceIndex = 0; influenceIndex < MAX_BONE_INFLUENCE_COUNT; ++influenceIndex) {
+            int boneIndex = vertexBoneIndices[influenceIndex];
+            float boneWeight = vertexBoneWeights[influenceIndex];
 
-            bool isBoneIndexValid =
-                boneIndex >= 0 && boneIndex < MAX_BONE_COUNT;
+            bool isBoneIndexValid = boneIndex >= 0 && boneIndex < MAX_BONE_COUNT;
 
             if (!isBoneIndexValid || boneWeight <= 0.0) {
                 continue;
@@ -51,29 +50,26 @@ void main()
             totalBoneWeight += boneWeight;
         }
 
-        // Weightの合計が1でないデータでも正規化して扱う。
+        // 有効な重みの合計で正規化する。重みがなければ元の頂点と法線を保つ。
         if (totalBoneWeight > 0.0) {
             skinTransform /= totalBoneWeight;
 
-            localPosition = skinTransform * localPosition;
-            localNormal = mat3(skinTransform) * localNormal;
+            skinnedPosition = skinTransform * skinnedPosition;
+            skinnedNormal = mat3(skinTransform) * skinnedNormal;
         }
     }
 
-    // Instancing時はInstanceごとのModel行列、
-    // 通常描画時はUniformのModel行列を使用する。
-    mat4 activeModel = useInstancing ? instanceModel : model;
-    vec4 worldPosition = activeModel * localPosition;
+    // インスタンス描画と通常描画で、モデル行列の取得元を切り替える。
+    mat4 activeModelMatrix = useInstancing ? instanceModelMatrix : modelMatrix;
+    vec4 homogeneousWorldPosition = activeModelMatrix * skinnedPosition;
 
-    fragPos = worldPosition.xyz;
+    worldPosition = homogeneousWorldPosition.xyz;
 
-    // 非一様Scaleがあっても法線方向を正しく変換できるように
-    // Model行列の逆転置行列を使用する。
-    normal = mat3(transpose(inverse(activeModel))) * localNormal;
+    // 非一様スケールでも面に垂直な法線を保つため、モデル行列の逆転置を使う。
+    worldNormal = mat3(transpose(inverse(activeModelMatrix))) * skinnedNormal;
 
-    texCoord = aTexCoord;
-    localFragPos = localPosition.xyz;
+    textureCoordinate = vertexTextureCoordinate;
+    localPosition = skinnedPosition.xyz;
 
-    // World座標からView空間、Clip空間へ変換する。
-    gl_Position = projection * view * worldPosition;
+    gl_Position = projectionMatrix * viewMatrix * homogeneousWorldPosition;
 }

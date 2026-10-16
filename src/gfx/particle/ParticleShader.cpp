@@ -15,8 +15,8 @@ void ParticleShader::Initialize()
         return;
     }
 
-    mLocView = glGetUniformLocation(mShaderProgram, "view");
-    mLocProj = glGetUniformLocation(mShaderProgram, "projection");
+    mLocView = glGetUniformLocation(mShaderProgram, "viewMatrix");
+    mLocProj = glGetUniformLocation(mShaderProgram, "projectionMatrix");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "particleTexture");
     mLocCameraRight = glGetUniformLocation(mShaderProgram, "cameraRight");
     mLocCameraUp = glGetUniformLocation(mShaderProgram, "cameraUp");

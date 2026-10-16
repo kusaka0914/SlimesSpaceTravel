@@ -306,7 +306,7 @@ bool EditorModelThumbnailRenderer::GenerateThumbnail(
         GL_FALSE,
         glm::value_ptr(projectionMatrix));
     glUniform3fv(
-        shader->GetLocViewPos(),
+        shader->GetLocCameraWorldPosition(),
         1,
         glm::value_ptr(cameraPosition));
     const glm::vec3 sunDirection = glm::normalize(

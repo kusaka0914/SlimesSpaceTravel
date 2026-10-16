@@ -7,11 +7,11 @@ PlanetAtmosphereShader::PlanetAtmosphereShader()
     mShaderProgram = CreateShaderProgram(
         "../shaders/planetAtmosphere.vert",
         "../shaders/planetAtmosphere.frag");
-    mLocModel = glGetUniformLocation(mShaderProgram, "model");
-    mLocView = glGetUniformLocation(mShaderProgram, "view");
-    mLocProj = glGetUniformLocation(mShaderProgram, "projection");
-    mLocViewPosition =
-        glGetUniformLocation(mShaderProgram, "viewPosition");
+    mLocModel = glGetUniformLocation(mShaderProgram, "modelMatrix");
+    mLocView = glGetUniformLocation(mShaderProgram, "viewMatrix");
+    mLocProj = glGetUniformLocation(mShaderProgram, "projectionMatrix");
+    mLocCameraWorldPosition =
+        glGetUniformLocation(mShaderProgram, "cameraWorldPosition");
     mLocAtmosphereColor =
         glGetUniformLocation(mShaderProgram, "atmosphereColor");
     mLocAtmosphereStrength =

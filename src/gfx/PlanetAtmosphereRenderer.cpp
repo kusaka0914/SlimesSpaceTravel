@@ -56,7 +56,7 @@ void PlanetAtmosphereRenderer::Draw(
         GL_FALSE,
         glm::value_ptr(projection));
     glUniform3fv(
-        mShader->GetLocViewPosition(),
+        mShader->GetLocCameraWorldPosition(),
         1,
         glm::value_ptr(cameraPosition));
     glUniform1f(

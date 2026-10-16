@@ -7,7 +7,7 @@ DirectionalShadowShader::DirectionalShadowShader()
     mShaderProgram = CreateShaderProgram(
         "../shaders/directionalShadow.vert",
         "../shaders/directionalShadow.frag");
-    mLocModel = glGetUniformLocation(mShaderProgram, "model");
+    mLocModel = glGetUniformLocation(mShaderProgram, "modelMatrix");
     mLocLightSpaceMatrix =
         glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
     mLocUseSkinning =

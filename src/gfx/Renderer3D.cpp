@@ -915,7 +915,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     glUniformMatrix4fv(mShader3D->GetLocView(), 1, GL_FALSE, glm::value_ptr(viewMat));
     glUniformMatrix4fv(mShader3D->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
 
-    glUniform3f(mShader3D->GetLocViewPos(), cameraPos.x, cameraPos.y, cameraPos.z);
+    glUniform3f(mShader3D->GetLocCameraWorldPosition(), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniform3fv(
         mShader3D->GetLocSunDirection(),
         1,
@@ -976,7 +976,7 @@ void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat,
     const bool shadowsAvailable =
         mDirectionalShadowMap && mDirectionalShadowMap->IsAvailable();
     glUniform1i(
-        mShader3D->GetLocShadowsEnabled(),
+        mShader3D->GetLocUseShadows(),
         shadowsAvailable ? 1 : 0);
     if (shadowsAvailable) {
         const DirectionalShadowSettings& shadowSettings =

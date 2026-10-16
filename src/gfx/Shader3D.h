@@ -15,7 +15,7 @@ public:
     int GetLocEnvironmentColor() const { return mLocEnvironmentColor; }
     int GetLocDayEnvironmentIntensity() const { return mLocDayEnvironmentIntensity; }
     int GetLocNightEnvironmentIntensity() const { return mLocNightEnvironmentIntensity; }
-    int GetLocViewPos() const { return mLocViewPos; }
+    int GetLocCameraWorldPosition() const { return mLocCameraWorldPosition; }
     int GetLocToonLevels() const { return mLocToonLevels; }
     int GetLocToonStrength() const { return mLocToonStrength; }
     int GetLocRimColor() const { return mLocRimColor; }
@@ -46,7 +46,7 @@ public:
     int GetLocEmissiveIntensity() const { return mLocEmissiveIntensity; }
     int GetLocLightSpaceMatrix() const { return mLocLightSpaceMatrix; }
     int GetLocShadowMap() const { return mLocShadowMap; }
-    int GetLocShadowsEnabled() const { return mLocShadowsEnabled; }
+    int GetLocUseShadows() const { return mLocUseShadows; }
     int GetLocShadowMinimumBias() const { return mLocShadowMinimumBias; }
     int GetLocShadowMaximumBias() const { return mLocShadowMaximumBias; }
 
@@ -57,7 +57,7 @@ private:
     int mLocEnvironmentColor;
     int mLocDayEnvironmentIntensity;
     int mLocNightEnvironmentIntensity;
-    int mLocViewPos;
+    int mLocCameraWorldPosition;
     int mLocToonStrength;
     int mLocToonLevels;
     int mLocRimColor;
@@ -82,7 +82,7 @@ private:
     int mLocEmissiveIntensity;
     int mLocLightSpaceMatrix;
     int mLocShadowMap;
-    int mLocShadowsEnabled;
+    int mLocUseShadows;
     int mLocShadowMinimumBias;
     int mLocShadowMaximumBias;
 };

@@ -13,9 +13,9 @@ Shader3D::~Shader3D() = default;
 void Shader3D::Initialize()
 {
     mShaderProgram = CreateShaderProgram("../shaders/common.vert", "../shaders/shader3D.frag");
-    mLocModel = glGetUniformLocation(mShaderProgram, "model");
-    mLocView = glGetUniformLocation(mShaderProgram, "view");
-    mLocProj = glGetUniformLocation(mShaderProgram, "projection");
+    mLocModel = glGetUniformLocation(mShaderProgram, "modelMatrix");
+    mLocView = glGetUniformLocation(mShaderProgram, "viewMatrix");
+    mLocProj = glGetUniformLocation(mShaderProgram, "projectionMatrix");
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
@@ -27,7 +27,7 @@ void Shader3D::Initialize()
         glGetUniformLocation(mShaderProgram, "dayEnvironmentIntensity");
     mLocNightEnvironmentIntensity =
         glGetUniformLocation(mShaderProgram, "nightEnvironmentIntensity");
-    mLocViewPos = glGetUniformLocation(mShaderProgram, "viewPos");
+    mLocCameraWorldPosition = glGetUniformLocation(mShaderProgram, "cameraWorldPosition");
     mLocToonLevels = glGetUniformLocation(mShaderProgram, "toonLevels");
     mLocToonStrength = glGetUniformLocation(mShaderProgram, "toonStrength");
     mLocRimColor = glGetUniformLocation(mShaderProgram, "rimColor");
@@ -67,8 +67,8 @@ void Shader3D::Initialize()
     mLocLightSpaceMatrix =
         glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
     mLocShadowMap = glGetUniformLocation(mShaderProgram, "shadowMap");
-    mLocShadowsEnabled =
-        glGetUniformLocation(mShaderProgram, "shadowsEnabled");
+    mLocUseShadows =
+        glGetUniformLocation(mShaderProgram, "useShadows");
     mLocShadowMinimumBias =
         glGetUniformLocation(mShaderProgram, "shadowMinimumBias");
     mLocShadowMaximumBias =
