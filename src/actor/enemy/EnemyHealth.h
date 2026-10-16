@@ -1,5 +1,6 @@
 #pragma once
 
+// 現在HPと最大HPを保持する。値の範囲制限や死亡演出への遷移は担当しない。
 class EnemyHealth {
 public:
     void SetHp(float hp) { mHp = hp; }

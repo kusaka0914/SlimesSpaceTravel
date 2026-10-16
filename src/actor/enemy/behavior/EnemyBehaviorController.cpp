@@ -127,6 +127,7 @@ EnemyBehaviorAction* EnemyBehaviorController::SelectAction(const EnemyBehaviorCo
         return candidates[distribution(mRandomEngine)];
     };
 
+    // 設定済みの行動が現在状態に対応しなくても、基本行動から選び直せるようにする。
     EnemyBehaviorAction* selectedAction = selectFrom(mActions);
     return selectedAction ? selectedAction : selectFrom(mFallbackActions);
 }

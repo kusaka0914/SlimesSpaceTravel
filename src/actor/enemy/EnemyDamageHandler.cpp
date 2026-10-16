@@ -36,8 +36,7 @@ void EnemyDamageHandler::ApplyDamage(
     }
 
     if (status.GetIsStrongAttacked()) {
-        // 強攻撃はプレイヤーから敵への3D方向へ移動するため、時間を2倍にすると
-        // 横・縦のノックバック距離が同じ比率で2倍になる。
+        // 強攻撃では通常被弾用の接線方向への補正を行わず、3Dの押し戻し方向を維持する。
         constexpr float knockBackTimer = 1.0f;
         stateMachine.StartKnockedBack(enemy, status, knockBackTimer);
 

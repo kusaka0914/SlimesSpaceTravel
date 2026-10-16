@@ -76,6 +76,7 @@ bool TryGetSpherePreviewPlaneOffset(
         return false;
     }
 
+    // 惑星中心からの方向を予告平面と交差させ、球面上でも予告と同じ平面座標で判定する。
     planeOffset = planeRadius *
         (positionDirection / denominator - planeNormal);
     return true;
@@ -133,8 +134,6 @@ float CalculateEnemyAttackFrontOffset(
     if (!loadedModel || !loadedModel->hasBounds) {
         return frontOffset;
     }
-
-
 
     const glm::vec3 modelPositiveXAxis = -enemy.GetForwardVec();
     const float frontAxisAlignment =

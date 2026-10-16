@@ -36,6 +36,7 @@ std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
         physicsSystem.GetPlayerCollisionWidth() * scale * 0.5f;
     const glm::vec3 position = player.GetPos();
 
+    // 球面上でPlayerの中心だけが攻撃範囲外でも、衝突形状の端が入る場合を拾う。
     return {
         position,
         position + forward * halfForward,
@@ -133,6 +134,7 @@ void EnemyCombat::LaunchWhenGuardBreaks(
         enemy.IsOnGround() ||
         stateMachine.GetActionState() ==
             EnemyStateMachine::ActionState::KnockedBack;
+
     // 通常ノックバックの小さな浮きは地上コンボの途中状態なので、
     // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
     if (damageResult.wasFullyBroken && canStartLaunch) {

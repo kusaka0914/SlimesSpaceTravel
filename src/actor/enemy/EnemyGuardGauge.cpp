@@ -57,6 +57,8 @@ EnemyGuardGauge::ApplyDamageEnsuringCurrentSegmentBreak(
     float guardRemainingInCurrentSegment =
         std::fmod(mCurrentGuard, mGuardValuePerSegment);
     constexpr float segmentBoundaryEpsilon = 0.0001f;
+
+    // 区画境界では剰余が0になるが、次の区画を破壊するには1区画分のダメージが必要。
     if (guardRemainingInCurrentSegment <= segmentBoundaryEpsilon) {
         guardRemainingInCurrentSegment = mGuardValuePerSegment;
     }

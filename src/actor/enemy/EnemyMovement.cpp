@@ -98,12 +98,6 @@ float CalculateCurrentEllipseFaceInteriorRatio(
         return 1.0f;
     }
 
-
-
-
-
-
-
     const Planet::EllipseSurfaceProjection surfaceProjection =
         planet->CalculateEllipseSurfaceProjection(
             requestedPosition);
@@ -130,9 +124,6 @@ float CalculateCurrentEllipseFaceInteriorRatio(
 
     const Planet::EllipseSurfaceFace allowedHemisphere =
         ResolveAllowedEllipseHemisphere(enemy, *planet);
-
-
-
 
     return allowedHemisphere ==
                Planet::EllipseSurfaceFace::Front
@@ -256,10 +247,7 @@ glm::vec3 ClampAirborneMovementToCurrentEllipseFaceMovementArea(
         return requestedMovement;
     }
 
-    // 面の境界では楕円体表面に沿った移動だけを制限し、
-    // 表面へ向かう移動成分は残す。
-    // これにより、空中のEnemyがKnockbackで境界へ到達した際に
-    // 空中で停止してしまうことを防ぐ。
+    // 境界に達した敵が空中で停止しないよう、接線方向だけを制限し、法線方向の落下を残す。
     const glm::vec3 normalMovement =
         upDirection *
         glm::dot(requestedMovement, upDirection);
@@ -431,8 +419,6 @@ void EnemyMovement::MoveToPlayer(Enemy& enemy, const EnemyStatus& status, float 
     if (!nearestPlayer) {
         return;
     }
-
-
 
     glm::vec3 tangentialMoveDirection;
     if (!TryProjectDirectionOntoSurfaceTangent(
@@ -1122,6 +1108,7 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
         mEnemyBlockedFallSeconds = 0.0f;
     }
 
+    // 下の敵に乗って落下が止まった場合、まず接地中の敵を横へ押して落下経路を空ける。
     if (wasFallBlockedByActor &&
         mEnemyBlockedFallSeconds >=
             fallBlockSecondsBeforeGroundedEnemyPush) {
@@ -1165,6 +1152,7 @@ void EnemyMovement::ApplyGravityWithContinuousCollision(
         }
     }
 
+    // 押しても落下できない状態が続いたら敵との衝突を一時的に無視し、着地後に重なりを解消する。
     if (wasFallBlockedByActor &&
         mEnemyBlockedFallSeconds >=
             fallBlockSecondsBeforeEnemyOverlap) {

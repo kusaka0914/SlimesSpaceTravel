@@ -49,8 +49,6 @@ public:
         bool isOutside = true;
     };
 
-    enum class RocketSpawnCondition { AllEnemiesDead, AllBoatPartsCollected, None };
-
     enum class PlanetShape { Normal, Sphere, Ellipse };
 
     enum class EllipseSurfaceFace {
@@ -100,9 +98,9 @@ public:
     void AddJewelItem(JewelItem* jewelItem) { mActorRegistry.AddJewelItem(jewelItem); }
     void AddHazardActor(HazardActor* hazardActor) { mActorRegistry.AddHazardActor(hazardActor); }
 
-    void RemoveAllEnemy() { mActorRegistry.RemoveAllEnemy(); }
+    void RemoveAllEnemies() { mActorRegistry.RemoveAllEnemies(); }
     void RemoveEnemy(Enemy* enemy) { mActorRegistry.RemoveEnemy(enemy); }
-    void RemoveAllBoat() { mActorRegistry.RemoveAllBoat(); }
+    void RemoveAllBoats() { mActorRegistry.RemoveAllBoats(); }
     void RemoveBoat(Boat* boat) { mActorRegistry.RemoveBoat(boat); }
     void RemoveAllBoatParts() { mActorRegistry.RemoveAllBoatParts(); }
     void RemoveBoatParts(BoatParts* boatParts) { mActorRegistry.RemoveBoatParts(boatParts); }

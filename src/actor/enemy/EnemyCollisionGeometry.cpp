@@ -129,6 +129,7 @@ bool DoesSegmentIntersectExpandedBounds(
     const glm::vec3& segmentEnd,
     const glm::vec3& expansion)
 {
+    // 線分を各軸のスラブへ投影し、全軸に同時に収まるパラメーター区間が残るかを調べる。
     float minimumSegmentTime = 0.0f;
     float maximumSegmentTime = 1.0f;
     const glm::vec3 localStartOffset = segmentStart - bounds.center;

@@ -138,7 +138,7 @@ void StageActorCollectionLoader::LoadTutorialTriggers(const YAML::Node& stageRoo
 void StageActorCollectionLoader::LoadEnemies(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Enemy>(
-        stageRoot, "enemies", [](Planet* planet) { planet->RemoveAllEnemy(); },
+        stageRoot, "enemies", [](Planet* planet) { planet->RemoveAllEnemies(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateEnemy(node, index); });
 }
 
@@ -162,7 +162,7 @@ void StageActorCollectionLoader::LoadPlanets(const YAML::Node& stageRoot)
 void StageActorCollectionLoader::LoadBoats(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Boat>(
-        stageRoot, "boats", [](Planet* planet) { planet->RemoveAllBoat(); },
+        stageRoot, "boats", [](Planet* planet) { planet->RemoveAllBoats(); },
         [this](const YAML::Node& node, int index) { return mCreationService.CreateBoat(node, index); });
 }
 

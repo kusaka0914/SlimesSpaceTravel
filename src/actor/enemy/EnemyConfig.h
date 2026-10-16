@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+// 行動の種類・選択重み・パラメーター。parametersのキーと単位は各行動の実装に従う。
 struct EnemyBehaviorActionConfig {
     std::string type;
     float weight = 1.0f;
@@ -16,11 +17,13 @@ struct EnemyBehaviorActionConfig {
     }
 };
 
+// 行動プロファイル名と実行候補の一覧。行動の生成・選択はEnemyBehaviorControllerが担当する。
 struct EnemyBehaviorConfig {
     std::string profileName = "legacyMelee";
     std::vector<EnemyBehaviorActionConfig> actions;
 };
 
+// ボスの攻撃前接近・攻撃後退避の設定。確率は%、時間は秒、距離はワールド単位。
 struct EnemyBossManeuverConfig {
     float preAttackApproachProbabilityPercent = 0.0f;
     float preAttackApproachSpeed = 12.0f;
@@ -33,6 +36,7 @@ struct EnemyBossManeuverConfig {
     float postRetreatFollowupApproachProbabilityPercent = 0.0f;
 };
 
+// 読み込み後にEnemyへ適用する設定。時間は秒、距離はワールド単位。行動固有の単位は各実装に従う。
 struct EnemyConfig {
     bool isBoss = false;
     bool isBossEncounter = false;

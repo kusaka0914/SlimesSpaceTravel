@@ -67,9 +67,7 @@ glm::vec3 CalculateCinematicSurfacePosition(
         return planet.CalculateSurfacePos(theta, phi, height);
     }
 
-
-
-    // 扁平な惑星で球の半径をそのまま使うと、長軸側の衝突形状に演出用Actorが埋まるため最大半径を使う。
+    // 長軸側でも惑星内部からの投影にならないよう、最大半径より十分外側に基準点を置く。
     const float largestRadius = std::max({
         std::abs(planet.GetScale().x),
         std::abs(planet.GetScale().y),
@@ -207,9 +205,6 @@ void StageBossDefeatActors(Enemy& boss)
         }
     }
 
-
-
-
     if (boss.GetGame()->GetIsPlayer2Joined()) {
         const std::vector<Player*>& players = boss.GetGame()->GetPlayers();
         if (players.size() >= 2 && players[1]) {
@@ -286,7 +281,6 @@ void StageBossDefeatActors(Enemy& boss)
         if (mathUtils &&
             glm::length(starFacingBoss) > directionEpsilon) {
             starFacingBoss = glm::normalize(starFacingBoss);
-
 
             star->SetFacingYaw(
                 mathUtils->GetYawFromDirection(
@@ -563,8 +557,6 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
         return;
     }
 
-
-
     status.DecreaseCanCounteredTimer(deltaTime);
     if (status.GetCanCounteredTimer() <= 0.0f) {
         status.SetCanCountered(false);
@@ -658,8 +650,6 @@ void EnemyStateMachine::UpdatePostRetreatRecovery(
         StartTracking(enemy);
         return;
     }
-
-
 
     // この復帰経路は通常の準備時間を使わず、選択した攻撃の1秒間の範囲予告だけを行う。
     constexpr float attackPreviewDurationSeconds = 1.0f;
@@ -794,8 +784,6 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
 
-
-
         // ボス撃破演出の共通カメラは、両プレイヤーが地面に立っている前提で構図を作る。
         enemy.GetGame()->ForcePlayersGroundedForCinematic();
 
@@ -833,8 +821,6 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
     if (!enemy.IsBossEncounter() || !enemy.GetCurrentPlanet()) {
         return;
     }
-
-
 
 }
 

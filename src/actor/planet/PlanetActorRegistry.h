@@ -38,9 +38,9 @@ public:
     void AddHazardActor(HazardActor* hazardActor) { mHazardActors.emplace_back(hazardActor); }
 
     // 参照だけを解除し、Actorは破棄しない。単体の解除では一致する参照をすべて除き、未登録なら何もしない。
-    void RemoveAllEnemy() { mEnemies.clear(); }
+    void RemoveAllEnemies() { mEnemies.clear(); }
     void RemoveEnemy(Enemy* enemy) { RemovePointer(mEnemies, enemy); }
-    void RemoveAllBoat() { mBoats.clear(); }
+    void RemoveAllBoats() { mBoats.clear(); }
     void RemoveBoat(Boat* boat) { RemovePointer(mBoats, boat); }
     void RemoveAllBoatParts() { mBoatParts.clear(); }
     void RemoveBoatParts(BoatParts* boatParts) { RemovePointer(mBoatParts, boatParts); }

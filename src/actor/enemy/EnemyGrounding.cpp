@@ -41,9 +41,7 @@ glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3&
 
         if (!HasGroundBelow(enemy, checkPos)) {
 
-
-
-
+            // 足場が途切れた区間を二分探索し、粗い探索間隔の分だけ端から離れて止まるのを避ける。
             float safeRatio = lastSafeRatio;
             float unsupportedRatio = checkRatio;
             constexpr int edgeSearchIterations = 10;
