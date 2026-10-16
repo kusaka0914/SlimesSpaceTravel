@@ -652,7 +652,7 @@ void Player::Restart()
 {
     mStatus.RestoreFullHp();
 
-    // 通常の位置リスポーンでジュエルが補充されないよう、満タンへの回復はRestartで行う。
+    // 通常の位置リスポーンではジュエルを補充しないため、回復はRestartで行う。
     mJewelGauge.RestoreFull();
     RespawnAtRestartPoint();
 }

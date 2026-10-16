@@ -29,6 +29,8 @@ template <class KeyType>
 float CalculateInterpolationFactor(const KeyType& currentKey, const KeyType& nextKey, double currentTimeTicks)
 {
     const double intervalTicks = nextKey.timeTicks - currentKey.timeTicks;
+
+    // 重複・逆順のキー時刻では除算せず、現在キーの値を使う。
     if (intervalTicks <= 0.0) {
         return 0.0f;
     }
@@ -137,6 +139,8 @@ void AnimationPlayer::CalculateNodeTransform(const SkeletonNode& node, const glm
         const std::size_t boneIndex = boneIndexIt->second;
         if (boneIndex < mAnimationData->bones.size() && boneIndex < mFinalBoneTransforms.size()) {
             const BoneInfo& bone = mAnimationData->bones[boneIndex];
+
+            // バインド時の頂点を現在のボーン姿勢へ移し、モデル読込時のルート変換を取り除く。
             mFinalBoneTransforms[boneIndex] =
                 mAnimationData->inverseRootTransform * globalTransform * bone.inverseBindTransform;
         }
@@ -159,6 +163,8 @@ glm::mat4 AnimationPlayer::CalculateLocalTransform(const SkeletonNode& node) con
     }
 
     const BoneAnimationChannel& channel = channelIt->second;
+
+    // キーがない成分で元の姿勢を失わないよう、ノードのバインド値を補間の既定値に使う。
     const glm::vec3 position = InterpolatePosition(channel, node.bindPosition);
     const glm::quat rotation = InterpolateRotation(channel, node.bindRotation);
     const glm::vec3 scale = InterpolateScale(channel, node.bindScale);
