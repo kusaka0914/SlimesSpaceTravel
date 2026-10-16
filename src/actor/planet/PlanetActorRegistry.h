@@ -19,8 +19,11 @@ class Star;
 class StageObject;
 class TutorialTrigger;
 
+// 惑星に所属するActorの参照を種類別に保持する。Actorの生成・破棄や所属惑星の設定は行わない。
+// すべて非所有参照のため、Actorを破棄する前に登録を解除すること。
 class PlanetActorRegistry {
 public:
+    // 配列への追加は登録順を保つ。重複とnullptrは除外しない。
     void AddEnemy(Enemy* enemy) { mEnemies.emplace_back(enemy); }
     void AddBoat(Boat* boat) { mBoats.emplace_back(boat); }
     void AddBoatParts(BoatParts* boatParts) { mBoatParts.emplace_back(boatParts); }
@@ -34,6 +37,7 @@ public:
     void AddJewelItem(JewelItem* jewelItem) { mJewelItems.emplace_back(jewelItem); }
     void AddHazardActor(HazardActor* hazardActor) { mHazardActors.emplace_back(hazardActor); }
 
+    // 参照だけを解除し、Actorは破棄しない。単体の解除では一致する参照をすべて除き、未登録なら何もしない。
     void RemoveAllEnemy() { mEnemies.clear(); }
     void RemoveEnemy(Enemy* enemy) { RemovePointer(mEnemies, enemy); }
     void RemoveAllBoat() { mBoats.clear(); }
@@ -46,6 +50,8 @@ public:
     void RemoveNPC(NPC* npc) { RemovePointer(mNPCs, npc); }
     void RemoveAllPlatforms();
     void RemovePlatform(Platform* platform) { RemovePointer(mPlatforms, platform); }
+
+    // 指定したステージシーケンスに属するPlatformの参照をまとめて解除する。nullptrは残す。
     void RemovePlatformsByStageSequence(const std::string& sequenceName);
     void RemoveKey() { mKey = nullptr; }
     void RemoveStar() { mStar = nullptr; }

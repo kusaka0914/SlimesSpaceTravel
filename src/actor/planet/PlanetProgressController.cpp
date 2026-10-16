@@ -108,6 +108,7 @@ bool PlanetProgressController::CheckIsAllBoatPartsCollected(const PlanetActorReg
 
 void PlanetProgressController::StartBoatFocus(const PlanetActorRegistry& actorRegistry) const
 {
+    // 未出現の船も注目演出中に有効化するため、GetIsActiveでは除外しない。
     for (Boat* boat : actorRegistry.GetBoats()) {
         if (!boat || boat->IsDebugDisabled()) {
             continue;
