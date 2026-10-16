@@ -5,8 +5,8 @@
 PlanetAtmosphereShader::PlanetAtmosphereShader()
 {
     mShaderProgram = CreateShaderProgram(
-        "../shaders/planetAtmosphereVertex.glsl",
-        "../shaders/planetAtmosphereFragment.glsl");
+        "../shaders/planetAtmosphere.vert",
+        "../shaders/planetAtmosphere.frag");
     mLocModel = glGetUniformLocation(mShaderProgram, "model");
     mLocView = glGetUniformLocation(mShaderProgram, "view");
     mLocProj = glGetUniformLocation(mShaderProgram, "projection");

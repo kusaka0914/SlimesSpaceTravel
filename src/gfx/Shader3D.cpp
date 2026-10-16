@@ -12,7 +12,7 @@ Shader3D::~Shader3D() = default;
 
 void Shader3D::Initialize()
 {
-    mShaderProgram = CreateShaderProgram("../shaders/vertex.glsl", "../shaders/fragment.glsl");
+    mShaderProgram = CreateShaderProgram("../shaders/common.vert", "../shaders/shader3D.frag");
     mLocModel = glGetUniformLocation(mShaderProgram, "model");
     mLocView = glGetUniformLocation(mShaderProgram, "view");
     mLocProj = glGetUniformLocation(mShaderProgram, "projection");
