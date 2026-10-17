@@ -1,12 +1,14 @@
 #pragma once
 
-#include "Shader.h"
+#include "gfx/Shader.h"
 
+// Actorの材質・ライティング・影・スキニングを描画するGLSLプログラムとuniform位置を保持する。
 class Shader3D : public Shader {
 public:
     Shader3D();
     ~Shader3D();
 
+    // プログラムとuniform位置を設定する。コンストラクタから呼ばれる初期化処理。
     void Initialize();
 
     int GetLocSunDirection() const { return mLocSunDirection; }
@@ -24,10 +26,7 @@ public:
     int GetLocRimPower() const { return mLocRimPower; }
     int GetLocMaterialMinimumReflectance() const { return mLocMaterialMinimumReflectance; }
     int GetLocMaterialRimBoost() const { return mLocMaterialRimBoost; }
-    int GetLocMaterialDarkSurfaceLightBoost() const
-    {
-        return mLocMaterialDarkSurfaceLightBoost;
-    }
+    int GetLocMaterialDarkSurfaceLightBoost() const { return mLocMaterialDarkSurfaceLightBoost; }
     int GetLocIsUnlit() const { return mLocIsUnlit; }
     int GetLocUseSkinning() const { return mLocUseSkinning; }
     int GetLocUseInstancing() const { return mLocUseInstancing; }
@@ -35,10 +34,7 @@ public:
     int GetLocTextureTiling() const { return mLocTextureTiling; }
     int GetLocUseBackTexture() const { return mLocUseBackTexture; }
     int GetLocBackTexture() const { return mLocBackTexture; }
-    int GetLocTextureSideBlendWidth() const
-    {
-        return mLocTextureSideBlendWidth;
-    }
+    int GetLocTextureSideBlendWidth() const { return mLocTextureSideBlendWidth; }
     int GetLocColorMultiplier() const { return mLocColorMultiplier; }
     int GetLocColorSaturation() const { return mLocColorSaturation; }
     int GetLocApplyOutputGamma() const { return mLocApplyOutputGamma; }

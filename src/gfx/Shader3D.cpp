@@ -23,10 +23,8 @@ void Shader3D::Initialize()
     mLocSunColor = glGetUniformLocation(mShaderProgram, "sunColor");
     mLocSunIntensity = glGetUniformLocation(mShaderProgram, "sunIntensity");
     mLocEnvironmentColor = glGetUniformLocation(mShaderProgram, "environmentColor");
-    mLocDayEnvironmentIntensity =
-        glGetUniformLocation(mShaderProgram, "dayEnvironmentIntensity");
-    mLocNightEnvironmentIntensity =
-        glGetUniformLocation(mShaderProgram, "nightEnvironmentIntensity");
+    mLocDayEnvironmentIntensity = glGetUniformLocation(mShaderProgram, "dayEnvironmentIntensity");
+    mLocNightEnvironmentIntensity = glGetUniformLocation(mShaderProgram, "nightEnvironmentIntensity");
     mLocCameraWorldPosition = glGetUniformLocation(mShaderProgram, "cameraWorldPosition");
     mLocToonLevels = glGetUniformLocation(mShaderProgram, "toonLevels");
     mLocToonStrength = glGetUniformLocation(mShaderProgram, "toonStrength");
@@ -34,43 +32,25 @@ void Shader3D::Initialize()
     mLocDayRimStrength = glGetUniformLocation(mShaderProgram, "dayRimStrength");
     mLocNightRimStrength = glGetUniformLocation(mShaderProgram, "nightRimStrength");
     mLocRimPower = glGetUniformLocation(mShaderProgram, "rimPower");
-    mLocMaterialMinimumReflectance =
-        glGetUniformLocation(mShaderProgram, "materialMinimumReflectance");
-    mLocMaterialRimBoost =
-        glGetUniformLocation(mShaderProgram, "materialRimBoost");
-    mLocMaterialDarkSurfaceLightBoost =
-        glGetUniformLocation(
-            mShaderProgram,
-            "materialDarkSurfaceLightBoost");
+    mLocMaterialMinimumReflectance = glGetUniformLocation(mShaderProgram, "materialMinimumReflectance");
+    mLocMaterialRimBoost = glGetUniformLocation(mShaderProgram, "materialRimBoost");
+    mLocMaterialDarkSurfaceLightBoost = glGetUniformLocation(mShaderProgram, "materialDarkSurfaceLightBoost");
     mLocIsUnlit = glGetUniformLocation(mShaderProgram, "isUnlit");
     mLocUseSkinning = glGetUniformLocation(mShaderProgram, "useSkinning");
-    mLocUseInstancing =
-        glGetUniformLocation(mShaderProgram, "useInstancing");
+    mLocUseInstancing = glGetUniformLocation(mShaderProgram, "useInstancing");
     mLocBoneTransforms = glGetUniformLocation(mShaderProgram, "boneTransforms[0]");
     mLocTextureTiling = glGetUniformLocation(mShaderProgram, "textureTiling");
-    mLocUseBackTexture =
-        glGetUniformLocation(mShaderProgram, "useBackTexture");
-    mLocBackTexture =
-        glGetUniformLocation(mShaderProgram, "backTexture");
-    mLocTextureSideBlendWidth =
-        glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
-    mLocColorMultiplier =
-        glGetUniformLocation(mShaderProgram, "colorMultiplier");
-    mLocColorSaturation =
-        glGetUniformLocation(mShaderProgram, "colorSaturation");
-    mLocApplyOutputGamma =
-        glGetUniformLocation(mShaderProgram, "applyOutputGamma");
-    mLocEmissiveColor =
-        glGetUniformLocation(mShaderProgram, "emissiveColor");
-    mLocEmissiveIntensity =
-        glGetUniformLocation(mShaderProgram, "emissiveIntensity");
-    mLocLightSpaceMatrix =
-        glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
+    mLocUseBackTexture = glGetUniformLocation(mShaderProgram, "useBackTexture");
+    mLocBackTexture = glGetUniformLocation(mShaderProgram, "backTexture");
+    mLocTextureSideBlendWidth = glGetUniformLocation(mShaderProgram, "textureSideBlendWidth");
+    mLocColorMultiplier = glGetUniformLocation(mShaderProgram, "colorMultiplier");
+    mLocColorSaturation = glGetUniformLocation(mShaderProgram, "colorSaturation");
+    mLocApplyOutputGamma = glGetUniformLocation(mShaderProgram, "applyOutputGamma");
+    mLocEmissiveColor = glGetUniformLocation(mShaderProgram, "emissiveColor");
+    mLocEmissiveIntensity = glGetUniformLocation(mShaderProgram, "emissiveIntensity");
+    mLocLightSpaceMatrix = glGetUniformLocation(mShaderProgram, "lightSpaceMatrix");
     mLocShadowMap = glGetUniformLocation(mShaderProgram, "shadowMap");
-    mLocUseShadows =
-        glGetUniformLocation(mShaderProgram, "useShadows");
-    mLocShadowMinimumBias =
-        glGetUniformLocation(mShaderProgram, "shadowMinimumBias");
-    mLocShadowMaximumBias =
-        glGetUniformLocation(mShaderProgram, "shadowMaximumBias");
+    mLocUseShadows = glGetUniformLocation(mShaderProgram, "useShadows");
+    mLocShadowMinimumBias = glGetUniformLocation(mShaderProgram, "shadowMinimumBias");
+    mLocShadowMaximumBias = glGetUniformLocation(mShaderProgram, "shadowMaximumBias");
 }

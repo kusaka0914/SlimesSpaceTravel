@@ -1,9 +1,7 @@
-#include "UIRenderer.h"
+#include "gfx/UIRenderer.h"
 
 #include "Game.h"
-#include "actor/Player.h"
 #include "gfx/UIShader.h"
-#include "gfx/VertexArray.h"
 #include "gfx/ui/HudRenderer.h"
 #include "gfx/ui/PauseMenuRenderer.h"
 #include "gfx/ui/SceneUIRenderer.h"
@@ -12,17 +10,9 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "system/SceneSystem.h"
 #include "system/InputSystem.h"
-#include "system/text/JapaneseRubyGenerator.h"
-#include "system/CameraSystem.h"
+#include "system/SceneSystem.h"
 #include "system/sequence/SequenceSystem.h"
-#include <algorithm>
-#include <array>
-#include <filesystem>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <limits>
 
 UIRenderer::UIRenderer(Game* game)
     : Renderer(game),
@@ -55,23 +45,27 @@ void UIRenderer::Shutdown()
 
 void UIRenderer::Initialize()
 {
+    if (!mIsInitialized) {
+        return;
+    }
+
     mUIShaderUnique = std::make_unique<UIShader>();
     mUIShader = mUIShaderUnique.get();
+
+    if (!mUIShader->GetShaderProgram()) {
+        // GameがGLリソースを解放してから終了できるよう、ここではGLFWを終了しない。
+        mIsInitialized = false;
+        return;
+    }
 
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
-    mDebugEditorBridge =
-        std::make_unique<UIDebugEditorBridge>(mGame, this);
+    mDebugEditorBridge = std::make_unique<UIDebugEditorBridge>(mGame, this);
     mSceneUIRenderer = std::make_unique<SceneUIRenderer>(mGame, this);
     mHudRenderer = std::make_unique<HudRenderer>(mGame, this);
     mStateUIRenderer = std::make_unique<StateUIRenderer>(mGame, this);
     mPauseMenuRenderer = std::make_unique<PauseMenuRenderer>(mGame, this);
-
-    if (!mUIShader->GetShaderProgram()) {
-        glfwTerminate();
-        return;
-    }
 
     InitImGui();
 
@@ -129,9 +123,7 @@ void UIRenderer::DrawGameContent()
 
     SceneSystem* sceneSystem = mGame->GetSceneSystem();
     SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-    const bool isStartCinematicPlaying =
-        sequenceSystem &&
-        sequenceSystem->IsCinematicChainPlaying();
+    const bool isStartCinematicPlaying = sequenceSystem && sequenceSystem->IsCinematicChainPlaying();
 
     if (mGame->IsTgsThankYouScreenVisible()) {
         mSceneUIRenderer->DrawTgsThankYou();
@@ -161,40 +153,22 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawGameOver();
     }
 
-
-
-
-    const bool isUGCEditing =
-        mGame->GetIsUGCMode() &&
-        mGame->GetIsDebugEditorShowing();
-    const bool isUGCPlaytestActive =
-        mGame->GetIsUGCPlaytestActive();
-    const bool isUGCClearResultShowing =
-        mGame->GetIsUGCClearResultShowing();
-    const bool shouldDrawDefaultUI =
-        !isStartCinematicPlaying &&
-        !isUGCEditing &&
-        !isUGCPlaytestActive &&
-        (sceneSystem->IsPlaying() ||
-         sceneSystem->IsTutorialActive("jewel_usage"));
-    mHudRenderer->UpdateTalkableUIVisibility(
-        mGame->GetPlayers(),
-        shouldDrawDefaultUI && sceneSystem->IsPlaying());
+    const bool isUGCEditing = mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+    const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
+    const bool isUGCClearResultShowing = mGame->GetIsUGCClearResultShowing();
+    const bool shouldDrawDefaultUI = !isStartCinematicPlaying && !isUGCEditing && !isUGCPlaytestActive &&
+                                     (sceneSystem->IsPlaying() || sceneSystem->IsTutorialActive("jewel_usage"));
+    mHudRenderer->UpdateTalkableUIVisibility(mGame->GetPlayers(), shouldDrawDefaultUI && sceneSystem->IsPlaying());
     if (shouldDrawDefaultUI) {
         mHudRenderer->DrawDefaultUI();
     } else if (!isStartCinematicPlaying && isUGCClearResultShowing) {
         mSceneUIRenderer->DrawUGCClearResult();
-    } else if (!isStartCinematicPlaying && isUGCPlaytestActive &&
-               !sceneSystem->IsStageClear()) {
+    } else if (!isStartCinematicPlaying && isUGCPlaytestActive && !sceneSystem->IsStageClear()) {
         mHudRenderer->DrawUGCPlaytestUI();
     }
 
-    const bool shouldDrawUGCStageClear =
-        isUGCPlaytestActive &&
-        sceneSystem->IsStageClear() &&
-        !isUGCClearResultShowing;
-    if (!isStartCinematicPlaying &&
-        (!isUGCPlaytestActive || shouldDrawUGCStageClear)) {
+    const bool shouldDrawUGCStageClear = isUGCPlaytestActive && sceneSystem->IsStageClear() && !isUGCClearResultShowing;
+    if (!isStartCinematicPlaying && (!isUGCPlaytestActive || shouldDrawUGCStageClear)) {
         mStateUIRenderer->DrawStateUI();
     }
 
@@ -202,8 +176,7 @@ void UIRenderer::DrawGameContent()
         DrawCustomUI();
     }
 
-    if (!isUGCPlaytestActive && !isStartCinematicPlaying &&
-        mGame->GetIsPauseMenuOpen()) {
+    if (!isUGCPlaytestActive && !isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
     }
 
@@ -211,29 +184,21 @@ void UIRenderer::DrawGameContent()
         mSceneUIRenderer->DrawTgsRemainingTimeNotice();
     }
 
-
-
     mStateUIRenderer->DrawTransitionUI();
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 }
 
-void UIRenderer::DrawDebugEditor(
-    GLuint gameViewTexture,
-    int gameViewWidth,
-    int gameViewHeight)
+void UIRenderer::DrawDebugEditor(GLuint gameViewTexture, int gameViewWidth, int gameViewHeight)
 {
     if (!mGame->GetIsDebugEditorShowing()) {
         return;
     }
 
-    const bool isUGCEditor =
-        mGame->GetIsUGCMode() &&
-        !mGame->GetIsUGCDebugEditorShowing();
+    const bool isUGCEditor = mGame->GetIsUGCMode() && !mGame->GetIsUGCDebugEditorShowing();
     ImGuiIO& io = ImGui::GetIO();
-    const bool wasGamepadNavigationEnabled =
-        (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0;
+    const bool wasGamepadNavigationEnabled = (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0;
     if (isUGCEditor) {
         // Aはカーソル位置のクリックとして送信するため、
         // 同じ入力で別のフォーカス項目を決定させない。
@@ -251,17 +216,9 @@ void UIRenderer::DrawDebugEditor(
     ImGui::NewFrame();
 
     if (isUGCEditor) {
-        mDebugEditorBridge->DrawEditor(
-            gameViewTexture,
-            gameViewWidth,
-            gameViewHeight,
-            true);
+        mDebugEditorBridge->DrawEditor(gameViewTexture, gameViewWidth, gameViewHeight, true);
     } else {
-        mDebugEditorBridge->DrawEditor(
-            gameViewTexture,
-            gameViewWidth,
-            gameViewHeight,
-            false);
+        mDebugEditorBridge->DrawEditor(gameViewTexture, gameViewWidth, gameViewHeight, false);
     }
     EndImGuiFrame();
     if (wasGamepadNavigationEnabled) {
@@ -286,12 +243,8 @@ void UIRenderer::DrawUGCWorkBrowser()
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     if (const InputSystem* inputSystem = mGame->GetInputSystem()) {
-        const bool upPressed =
-            inputSystem->IsKeyPressed(GLFW_KEY_UP) ||
-            inputSystem->IsKeyPressed(GLFW_KEY_W);
-        const bool downPressed =
-            inputSystem->IsKeyPressed(GLFW_KEY_DOWN) ||
-            inputSystem->IsKeyPressed(GLFW_KEY_S);
+        const bool upPressed = inputSystem->IsKeyPressed(GLFW_KEY_UP) || inputSystem->IsKeyPressed(GLFW_KEY_W);
+        const bool downPressed = inputSystem->IsKeyPressed(GLFW_KEY_DOWN) || inputSystem->IsKeyPressed(GLFW_KEY_S);
         io.AddKeyEvent(ImGuiKey_UpArrow, upPressed);
         io.AddKeyEvent(ImGuiKey_DownArrow, downPressed);
     }
@@ -312,36 +265,44 @@ void UIRenderer::DrawUGCWorkBrowser()
     glDepthMask(GL_TRUE);
 }
 
-bool UIRenderer::CompleteUGCVerification(
-    const std::string& workFileName)
+bool UIRenderer::CompleteUGCVerification(const std::string& workFileName)
 {
-    return mDebugEditorBridge &&
-        mDebugEditorBridge->CompleteUGCVerification(workFileName);
+    return mDebugEditorBridge && mDebugEditorBridge->CompleteUGCVerification(workFileName);
 }
 
 void UIRenderer::UndoUGCEdit()
 {
-    if (mDebugEditorBridge) mDebugEditorBridge->HandleUndo();
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->HandleUndo();
+    }
 }
 
 void UIRenderer::RedoUGCEdit()
 {
-    if (mDebugEditorBridge) mDebugEditorBridge->HandleRedo();
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->HandleRedo();
+    }
 }
 
 void UIRenderer::ToggleUGCEraser()
 {
-    if (mDebugEditorBridge) mDebugEditorBridge->ToggleEraser();
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->ToggleEraser();
+    }
 }
 
 void UIRenderer::SelectUGCEditorMode()
 {
-    if (mDebugEditorBridge) mDebugEditorBridge->ActivateSelectionMode();
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->ActivateSelectionMode();
+    }
 }
 
 void UIRenderer::OpenUGCEditorMenu()
 {
-    if (mDebugEditorBridge) mDebugEditorBridge->OpenEditorMenu();
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->OpenEditorMenu();
+    }
 }
 
 void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
@@ -379,37 +340,27 @@ void UIRenderer::ClearDebugActorReferencesForStageReload()
     }
 }
 
-bool UIRenderer::SaveDebugEditorSession(
-    const std::string& filePath,
-    std::string& outErrorMessage)
+bool UIRenderer::SaveDebugEditorSession(const std::string& filePath, std::string& outErrorMessage)
 {
     if (!mDebugEditorBridge) {
         outErrorMessage = "The debug editor is not initialized.";
         return false;
     }
 
-    return mDebugEditorBridge->SaveSession(
-        filePath,
-        outErrorMessage);
+    return mDebugEditorBridge->SaveSession(filePath, outErrorMessage);
 }
 
-bool UIRenderer::RestoreDebugEditorSession(
-    const std::string& filePath,
-    std::string& outErrorMessage)
+bool UIRenderer::RestoreDebugEditorSession(const std::string& filePath, std::string& outErrorMessage)
 {
     if (!mDebugEditorBridge) {
         outErrorMessage = "The debug editor is not initialized.";
         return false;
     }
 
-    return mDebugEditorBridge->RestoreSession(
-        filePath,
-        outErrorMessage);
+    return mDebugEditorBridge->RestoreSession(filePath, outErrorMessage);
 }
 
-void UIRenderer::SetEditorRestartStatus(
-    const std::string& message,
-    bool isError)
+void UIRenderer::SetEditorRestartStatus(const std::string& message, bool isError)
 {
     if (mDebugEditorBridge) {
         mDebugEditorBridge->SetBuildRestartStatus(message, isError);

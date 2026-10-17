@@ -3,7 +3,6 @@
 #include "actor/Planet.h"
 
 #include <glm/glm.hpp>
-
 #include <string>
 #include <vector>
 
@@ -12,16 +11,22 @@ class Game;
 struct LoadedModel;
 class Shader3D;
 
+// 惑星のバイオーム装飾を生成し、モデル別のインスタンス描画へまとめる。Game・モデル・惑星は非所有参照。
 class EnvironmentDecorationRenderer {
 public:
     explicit EnvironmentDecorationRenderer(Game* game);
     ~EnvironmentDecorationRenderer();
 
+    // 惑星一覧・描画位置・スケール・モデル・装飾設定の変更時だけ、配置とGPUバッファを再生成する。
     void Prepare(const std::vector<Planet*>& planets);
+
+    // Prepare済みの装飾を視点との距離で絞って描画する。shaderのプログラムを事前に有効化しておくこと。
     void Draw(Shader3D& shader, const glm::vec3& cameraPosition) const;
-    void DrawShadow(
-        DirectionalShadowShader& shader,
-        const glm::vec3& shadowFocusPosition) const;
+
+    // 影用の注目位置から近い装飾を描画する。深度パスとshaderは呼び出し側で開始しておくこと。
+    void DrawShadow(DirectionalShadowShader& shader, const glm::vec3& shadowFocusPosition) const;
+
+    // OpenGLコンテキストが有効な間にインスタンスバッファを解放し、惑星一覧とバッチを空にする。
     void Shutdown();
 
 private:

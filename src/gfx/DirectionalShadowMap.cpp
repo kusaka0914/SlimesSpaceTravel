@@ -3,10 +3,9 @@
 #include "gfx/DirectionalShadowShader.h"
 
 #include <GL/glew.h>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <cmath>
 
 DirectionalShadowMap::DirectionalShadowMap()
     : mShader(std::make_unique<DirectionalShadowShader>())
@@ -15,12 +14,9 @@ DirectionalShadowMap::DirectionalShadowMap()
 
 DirectionalShadowMap::~DirectionalShadowMap() = default;
 
-bool DirectionalShadowMap::Begin(
-    const glm::vec3& focusPosition,
-    const glm::vec3& sunDirection)
+bool DirectionalShadowMap::Begin(const glm::vec3& focusPosition, const glm::vec3& sunDirection)
 {
-    if (!mShader || mShader->GetShaderProgram() == 0 ||
-        !EnsureDepthTarget()) {
+    if (!mShader || mShader->GetShaderProgram() == 0 || !EnsureDepthTarget()) {
         return false;
     }
 
@@ -28,28 +24,17 @@ bool DirectionalShadowMap::Begin(
     if (directionLength <= 0.0001f) {
         return false;
     }
-    const glm::vec3 normalizedSunDirection =
-        sunDirection / directionLength;
-    const glm::vec3 lightPosition =
-        focusPosition -
-        normalizedSunDirection * mSettings.lightDistance;
+    const glm::vec3 normalizedSunDirection = sunDirection / directionLength;
+    const glm::vec3 lightPosition = focusPosition - normalizedSunDirection * mSettings.lightDistance;
     const glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+
+    // 光の方向と上方向が平行に近い場合は、lookAtの基底が退化しない軸へ切り替える。
     const glm::vec3 lightViewUp =
-        std::abs(glm::dot(normalizedSunDirection, worldUp)) > 0.95f
-        ? glm::vec3(1.0f, 0.0f, 0.0f)
-        : worldUp;
-    const glm::mat4 lightView = glm::lookAt(
-        lightPosition,
-        focusPosition,
-        lightViewUp);
+        std::abs(glm::dot(normalizedSunDirection, worldUp)) > 0.95f ? glm::vec3(1.0f, 0.0f, 0.0f) : worldUp;
+    const glm::mat4 lightView = glm::lookAt(lightPosition, focusPosition, lightViewUp);
     const float extent = mSettings.projectionHalfExtent;
-    const glm::mat4 lightProjection = glm::ortho(
-        -extent,
-        extent,
-        -extent,
-        extent,
-        mSettings.nearPlane,
-        mSettings.farPlane);
+    const glm::mat4 lightProjection =
+        glm::ortho(-extent, extent, -extent, extent, mSettings.nearPlane, mSettings.farPlane);
     mLightSpaceMatrix = lightProjection * lightView;
 
     glGetIntegerv(GL_VIEWPORT, mPreviousViewport);
@@ -64,11 +49,7 @@ bool DirectionalShadowMap::Begin(
     mWasScissorTestEnabled = glIsEnabled(GL_SCISSOR_TEST) == GL_TRUE;
 
     glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
-    glViewport(
-        0,
-        0,
-        mSettings.mapResolution,
-        mSettings.mapResolution);
+    glViewport(0, 0, mSettings.mapResolution, mSettings.mapResolution);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDisable(GL_SCISSOR_TEST);
@@ -78,11 +59,7 @@ bool DirectionalShadowMap::Begin(
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glUseProgram(mShader->GetShaderProgram());
-    glUniformMatrix4fv(
-        mShader->GetLocLightSpaceMatrix(),
-        1,
-        GL_FALSE,
-        glm::value_ptr(mLightSpaceMatrix));
+    glUniformMatrix4fv(mShader->GetLocLightSpaceMatrix(), 1, GL_FALSE, glm::value_ptr(mLightSpaceMatrix));
     glUniform1i(mShader->GetLocUseSkinning(), 0);
     glUniform1i(mShader->GetLocUseInstancing(), 0);
     mIsPassActive = true;
@@ -96,11 +73,7 @@ void DirectionalShadowMap::End()
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, mPreviousFramebuffer);
-    glViewport(
-        mPreviousViewport[0],
-        mPreviousViewport[1],
-        mPreviousViewport[2],
-        mPreviousViewport[3]);
+    glViewport(mPreviousViewport[0], mPreviousViewport[1], mPreviousViewport[2], mPreviousViewport[3]);
     glDepthMask(mWasDepthWriteEnabled ? GL_TRUE : GL_FALSE);
     if (mWasDepthTestEnabled) {
         glEnable(GL_DEPTH_TEST);
@@ -144,8 +117,7 @@ void DirectionalShadowMap::Shutdown()
 
 bool DirectionalShadowMap::EnsureDepthTarget()
 {
-    if (mFramebuffer != 0 && mDepthTexture != 0 &&
-        mAllocatedResolution == mSettings.mapResolution) {
+    if (mFramebuffer != 0 && mDepthTexture != 0 && mAllocatedResolution == mSettings.mapResolution) {
         return true;
     }
 
@@ -164,16 +136,8 @@ bool DirectionalShadowMap::EnsureDepthTarget()
     glGenFramebuffers(1, &mFramebuffer);
     glGenTextures(1, &mDepthTexture);
     glBindTexture(GL_TEXTURE_2D, mDepthTexture);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_DEPTH_COMPONENT24,
-        mSettings.mapResolution,
-        mSettings.mapResolution,
-        0,
-        GL_DEPTH_COMPONENT,
-        GL_FLOAT,
-        nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, mSettings.mapResolution, mSettings.mapResolution, 0,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -182,17 +146,10 @@ bool DirectionalShadowMap::EnsureDepthTarget()
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_ATTACHMENT,
-        GL_TEXTURE_2D,
-        mDepthTexture,
-        0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mDepthTexture, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-    const bool isComplete =
-        glCheckFramebufferStatus(GL_FRAMEBUFFER) ==
-        GL_FRAMEBUFFER_COMPLETE;
+    const bool isComplete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
     glBindFramebuffer(GL_FRAMEBUFFER, previousFramebuffer);
     if (!isComplete) {
         return false;

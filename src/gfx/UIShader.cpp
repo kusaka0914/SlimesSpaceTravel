@@ -1,7 +1,9 @@
-#include "UIShader.h"
+#include "gfx/UIShader.h"
+
 #include <GL/glew.h>
 
-UIShader::UIShader() : Shader()
+UIShader::UIShader()
+    : Shader()
 {
     Initialize();
 }
@@ -17,6 +19,5 @@ void UIShader::Initialize()
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
-    mLocConvertSrgbToLinear =
-        glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
+    mLocConvertSrgbToLinear = glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
 }

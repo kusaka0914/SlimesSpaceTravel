@@ -2,6 +2,7 @@
 
 #include "gfx/Shader.h"
 
+// 惑星の大気殻用GLSLプログラムと、視点・光源・大気表現のuniform位置を保持する。
 class PlanetAtmosphereShader final : public Shader {
 public:
     PlanetAtmosphereShader();

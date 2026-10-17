@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 
+// 3D描画の平行光源・環境光・リムライト。sunDirectionはワールド座標での光の進行方向。
 struct LightingSettings {
     glm::vec3 sunDirection = glm::normalize(glm::vec3(-0.35f, 1.0f, -0.25f));
     glm::vec3 sunColor = glm::vec3(1.0f, 0.92f, 0.82f);
@@ -17,6 +18,7 @@ struct LightingSettings {
     float rimPower = 2.5f;
 };
 
+// シャドウマップの解像度・正投影範囲・深度比較バイアス。距離と投影範囲はワールド単位。
 struct DirectionalShadowSettings {
     int mapResolution = 2048;
     float projectionHalfExtent = 42.0f;
