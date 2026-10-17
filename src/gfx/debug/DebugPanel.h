@@ -2,6 +2,7 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 
+// 共有contextを借用するデバッグパネルの基底。各パネルはImGuiフレーム内で描画する。
 class DebugPanel {
 public:
     explicit DebugPanel(DebugEditorContext& context)

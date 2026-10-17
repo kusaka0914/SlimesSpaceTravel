@@ -7,30 +7,21 @@
 namespace {
 std::string ToLower(std::string text)
 {
-    std::transform(
-        text.begin(),
-        text.end(),
-        text.begin(),
-        [](unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-        });
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return text;
 }
 
-bool IsSupportedAssetExtension(
-    EditorAssetType type,
-    const std::filesystem::path& path)
+bool IsSupportedAssetExtension(EditorAssetType type, const std::filesystem::path& path)
 {
     const std::string extension = ToLower(path.extension().string());
 
     switch (type) {
     case EditorAssetType::Model:
-        return extension == ".obj" || extension == ".fbx" ||
-               extension == ".gltf" || extension == ".glb" ||
+        return extension == ".obj" || extension == ".fbx" || extension == ".gltf" || extension == ".glb" ||
                extension == ".dae";
     case EditorAssetType::Texture:
-        return extension == ".png" || extension == ".jpg" ||
-               extension == ".jpeg" || extension == ".bmp" ||
+        return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp" ||
                extension == ".tga";
     case EditorAssetType::Video:
         return extension == ".mp4";
@@ -45,7 +36,7 @@ std::size_t ToIndex(EditorAssetType type)
 {
     return static_cast<std::size_t>(type);
 }
-}
+} // namespace
 
 void EditorAssetCatalog::EnsureScanned()
 {
@@ -65,20 +56,16 @@ void EditorAssetCatalog::Refresh()
     ScanAssetType(EditorAssetType::Texture, "textures");
     ScanAssetType(EditorAssetType::Video, "videos");
 
-    std::sort(
-        mAllAssets.begin(),
-        mAllAssets.end(),
-        [](const EditorAssetInfo& left, const EditorAssetInfo& right) {
-            if (left.type != right.type) {
-                return left.type < right.type;
-            }
-            return left.relativePath < right.relativePath;
-        });
+    std::sort(mAllAssets.begin(), mAllAssets.end(), [](const EditorAssetInfo& left, const EditorAssetInfo& right) {
+        if (left.type != right.type) {
+            return left.type < right.type;
+        }
+        return left.relativePath < right.relativePath;
+    });
 
-    mScanStatus =
-        "モデル " + std::to_string(GetPaths(EditorAssetType::Model).size()) +
-        " / 画像 " + std::to_string(GetPaths(EditorAssetType::Texture).size()) +
-        " / 動画 " + std::to_string(GetPaths(EditorAssetType::Video).size());
+    mScanStatus = "モデル " + std::to_string(GetPaths(EditorAssetType::Model).size()) + " / 画像 " +
+                  std::to_string(GetPaths(EditorAssetType::Texture).size()) + " / 動画 " +
+                  std::to_string(GetPaths(EditorAssetType::Video).size());
     mHasScanned = true;
 }
 
@@ -87,8 +74,7 @@ const std::vector<EditorAssetInfo>& EditorAssetCatalog::GetAllAssets() const
     return mAllAssets;
 }
 
-const std::vector<std::string>& EditorAssetCatalog::GetPaths(
-    EditorAssetType type) const
+const std::vector<std::string>& EditorAssetCatalog::GetPaths(EditorAssetType type) const
 {
     return mPathsByType[ToIndex(type)];
 }
@@ -98,9 +84,7 @@ const std::string& EditorAssetCatalog::GetScanStatus() const
     return mScanStatus;
 }
 
-void EditorAssetCatalog::ScanAssetType(
-    EditorAssetType type,
-    const std::string& directoryName)
+void EditorAssetCatalog::ScanAssetType(EditorAssetType type, const std::string& directoryName)
 {
     const std::filesystem::path assetsRoot("../assets");
     const std::filesystem::path typeRoot = assetsRoot / directoryName;
@@ -110,18 +94,15 @@ void EditorAssetCatalog::ScanAssetType(
     }
 
     std::vector<std::string>& typePaths = mPathsByType[ToIndex(type)];
-    for (std::filesystem::recursive_directory_iterator iterator(typeRoot, error), end;
-         iterator != end && !error;
+    for (std::filesystem::recursive_directory_iterator iterator(typeRoot, error), end; iterator != end && !error;
          iterator.increment(error)) {
-        if (!iterator->is_regular_file(error) ||
-            !IsSupportedAssetExtension(type, iterator->path())) {
+        if (!iterator->is_regular_file(error) || !IsSupportedAssetExtension(type, iterator->path())) {
             continue;
         }
 
-        const std::filesystem::path relativeBase =
-            type == EditorAssetType::Model ? typeRoot : assetsRoot;
-        const std::filesystem::path relativePath =
-            std::filesystem::relative(iterator->path(), relativeBase, error);
+        // モデル読込はmodels基準、画像・動画の読込はassets基準のパスを受け取る。
+        const std::filesystem::path relativeBase = type == EditorAssetType::Model ? typeRoot : assetsRoot;
+        const std::filesystem::path relativePath = std::filesystem::relative(iterator->path(), relativeBase, error);
         if (error) {
             error.clear();
             continue;

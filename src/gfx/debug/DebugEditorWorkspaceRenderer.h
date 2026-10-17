@@ -7,12 +7,10 @@
 
 class AssetBrowserPanel;
 class BasicInfoDebugPanel;
-class DebugBuildRestartPanel;
 class DebugEditorLayoutController;
 class DebugGameViewportRenderer;
 class ParameterDebugPanel;
 class ParticleEffectDebugPanel;
-class PerformanceDebugPanel;
 class SequenceEditorWorkspacePanel;
 class StageAddActorPanel;
 class StageEditCommandController;
@@ -22,6 +20,7 @@ class StageSelectionController;
 class TutorialDebugPanel;
 class UIDebugPanel;
 
+// ワークスペースが借用する共有状態と各機能。生成時にすべての参照を設定する。
 struct DebugEditorWorkspaceDependencies {
     DebugEditorContext& context;
     DebugEditorLayoutController& layoutController;
@@ -40,21 +39,25 @@ struct DebugEditorWorkspaceDependencies {
     StageGizmoController& gizmoController;
 };
 
+// タブ・ゲームビュー・各編集パネルの描画と入力処理の順序を管理する。
+// dependenciesの参照先は所有せず、このインスタンスより長く有効に保つ。
 class DebugEditorWorkspaceRenderer {
 public:
-    explicit DebugEditorWorkspaceRenderer(
-        const DebugEditorWorkspaceDependencies& dependencies);
+    explicit DebugEditorWorkspaceRenderer(const DebugEditorWorkspaceDependencies& dependencies);
 
-    void Draw(
-        unsigned int gameViewTexture,
-        int gameViewWidth,
-        int gameViewHeight);
+    // 借用したゲーム画面テクスチャを表示し、アクティブな編集機能を更新する。寸法は元画像のピクセル数。
+    void Draw(unsigned int gameViewTexture, int gameViewWidth, int gameViewHeight);
 
     DebugEditorShellSessionState CaptureShellState() const;
+
+    // タブ・演出メニューを復元する。タブ番号は有効範囲へ補正し、次回描画で選択を反映する。
     void ApplyShellState(const DebugEditorShellSessionState& shellState);
+
     bool IsUserInterfaceSectionActive() const;
 
 private:
+    void DrawTopBar();
+    void UpdateStageEditing();
     void DrawDockedToolPanel(DebugEditorSection section);
     void DrawDockedAssetBrowser(DebugEditorSection section);
 

@@ -1,12 +1,8 @@
-#include <GL/glew.h>
-
 #include "gfx/debug/DebugEditorWorkspaceRenderer.h"
 
-#include "Game.h"
-#include "Stage.h"
-#include "actor/Planet.h"
-#include "actor/Star.h"
-#include "gfx/debug/DebugBuildRestartPanel.h"
+// GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
+#include <GL/glew.h>
+
 #include "gfx/debug/DebugEditorLayout.h"
 #include "gfx/debug/DebugEditorLayoutController.h"
 #include "gfx/debug/DebugGameViewportRenderer.h"
@@ -14,7 +10,6 @@
 #include "gfx/debug/panels/BasicInfoDebugPanel.h"
 #include "gfx/debug/panels/ParameterDebugPanel.h"
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
-#include "gfx/debug/panels/PerformanceDebugPanel.h"
 #include "gfx/debug/panels/SequenceEditorWorkspacePanel.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
 #include "gfx/debug/panels/StageEditorPanel.h"
@@ -29,8 +24,7 @@
 #include <algorithm>
 #include <string>
 
-DebugEditorWorkspaceRenderer::DebugEditorWorkspaceRenderer(
-    const DebugEditorWorkspaceDependencies& dependencies)
+DebugEditorWorkspaceRenderer::DebugEditorWorkspaceRenderer(const DebugEditorWorkspaceDependencies& dependencies)
     : mContext(dependencies.context),
       mLayoutController(dependencies.layoutController),
       mGameViewportRenderer(dependencies.gameViewportRenderer),
@@ -44,17 +38,14 @@ DebugEditorWorkspaceRenderer::DebugEditorWorkspaceRenderer(
       mStageAddActorPanel(dependencies.stageAddActorPanel),
       mSelectionController(dependencies.selectionController),
       mEditCommandController(dependencies.editCommandController),
-      mStageEditShortcutHandler(
-          dependencies.context,
-          dependencies.selectionController,
-          dependencies.editCommandController),
+      mStageEditShortcutHandler(dependencies.context, dependencies.selectionController,
+                                dependencies.editCommandController),
       mStageEditorPanel(dependencies.stageEditorPanel),
       mGizmoController(dependencies.gizmoController)
 {
 }
 
-DebugEditorShellSessionState
-DebugEditorWorkspaceRenderer::CaptureShellState() const
+DebugEditorShellSessionState DebugEditorWorkspaceRenderer::CaptureShellState() const
 {
     return {
         .activeSectionIndex = static_cast<int>(mActiveSection),
@@ -62,19 +53,15 @@ DebugEditorWorkspaceRenderer::CaptureShellState() const
     };
 }
 
-void DebugEditorWorkspaceRenderer::ApplyShellState(
-    const DebugEditorShellSessionState& shellState)
+void DebugEditorWorkspaceRenderer::ApplyShellState(const DebugEditorShellSessionState& shellState)
 {
-    constexpr int firstSectionIndex =
-        static_cast<int>(DebugEditorSection::BasicInfo);
-    constexpr int lastSectionIndex =
-        static_cast<int>(DebugEditorSection::UserInterface);
-    mActiveSection = static_cast<DebugEditorSection>(std::clamp(
-        shellState.activeSectionIndex,
-        firstSectionIndex,
-        lastSectionIndex));
-    mSequenceEditorPanel.SetSelectedMenuIndex(
-        shellState.sequenceEditorMenuIndex);
+    constexpr int firstSectionIndex = static_cast<int>(DebugEditorSection::BasicInfo);
+    constexpr int lastSectionIndex = static_cast<int>(DebugEditorSection::UserInterface);
+    mActiveSection =
+        static_cast<DebugEditorSection>(std::clamp(shellState.activeSectionIndex, firstSectionIndex, lastSectionIndex));
+    mSequenceEditorPanel.SetSelectedMenuIndex(shellState.sequenceEditorMenuIndex);
+
+    // ImGuiのタブ選択にも次回描画で反映し、保存した画面と表示タブを一致させる。
     mShouldSelectRestoredSection = true;
 }
 
@@ -83,36 +70,42 @@ bool DebugEditorWorkspaceRenderer::IsUserInterfaceSectionActive() const
     return mActiveSection == DebugEditorSection::UserInterface;
 }
 
-void DebugEditorWorkspaceRenderer::Draw(
-    unsigned int gameViewTexture,
-    int gameViewWidth,
-    int gameViewHeight)
+void DebugEditorWorkspaceRenderer::Draw(unsigned int gameViewTexture, int gameViewWidth, int gameViewHeight)
+{
+    // 選択タブによって必要な領域が変わるため、タブの更新後に各領域の寸法を確定する。
+    DrawTopBar();
+    const DebugEditorSection activeSection = mActiveSection;
+    mLayoutController.Resolve(activeSection);
+    mGameViewportRenderer.Draw(activeSection, gameViewTexture, gameViewWidth, gameViewHeight);
+
+    if (activeSection == DebugEditorSection::Stage) {
+        UpdateStageEditing();
+    } else {
+        DrawDockedToolPanel(activeSection);
+    }
+
+    DrawDockedAssetBrowser(activeSection);
+    mLayoutController.DrawResizeHandles(activeSection);
+}
+
+void DebugEditorWorkspaceRenderer::DrawTopBar()
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const bool wasStageSection =
-        mActiveSection == DebugEditorSection::Stage;
-    const float initialTopBarHeight =
-        DebugEditorLayout::CalculateTopBarHeight(wasStageSection);
+    const bool wasStageSection = mActiveSection == DebugEditorSection::Stage;
+    const float initialTopBarHeight = DebugEditorLayout::CalculateTopBarHeight(wasStageSection);
     ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(viewport->WorkSize.x, initialTopBarHeight),
-        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, initialTopBarHeight), ImGuiCond_Always);
 
-    constexpr ImGuiWindowFlags topBarFlags =
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoScrollWithMouse |
-        ImGuiWindowFlags_NoSavedSettings;
+    constexpr ImGuiWindowFlags topBarFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
+                                             ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings;
     ImGui::Begin("デバッグ", nullptr, topBarFlags);
 
     DebugEditorSection activeSection = mActiveSection;
-    bool requestedStageEditor = mStageEditorPanel.ConsumeRequestOpenMainTab();
+    bool hasStageEditorRequest = mStageEditorPanel.ConsumeRequestOpenMainTab();
     const auto restoredTabFlags = [this](DebugEditorSection section) {
-        return mShouldSelectRestoredSection && mActiveSection == section
-            ? ImGuiTabItemFlags_SetSelected
-            : ImGuiTabItemFlags_None;
+        return mShouldSelectRestoredSection && mActiveSection == section ? ImGuiTabItemFlags_SetSelected
+                                                                         : ImGuiTabItemFlags_None;
     };
 
     if (ImGui::BeginTabBar("DebugMainTabs")) {
@@ -142,9 +135,7 @@ void DebugEditorWorkspaceRenderer::Draw(
         }
 
         const ImGuiTabItemFlags stageEditorTabFlags =
-            requestedStageEditor
-                ? ImGuiTabItemFlags_SetSelected
-                : restoredTabFlags(DebugEditorSection::Stage);
+            hasStageEditorRequest ? ImGuiTabItemFlags_SetSelected : restoredTabFlags(DebugEditorSection::Stage);
 
         if (ImGui::BeginTabItem("ステージエディタ", nullptr, stageEditorTabFlags)) {
             activeSection = DebugEditorSection::Stage;
@@ -161,84 +152,58 @@ void DebugEditorWorkspaceRenderer::Draw(
     mShouldSelectRestoredSection = false;
 
     if (activeSection == DebugEditorSection::Stage) {
-        ImGui::SetWindowSize(
-            ImVec2(
-                viewport->WorkSize.x,
-                DebugEditorLayout::StageTopBarHeight),
-            ImGuiCond_Always);
+        ImGui::SetWindowSize(ImVec2(viewport->WorkSize.x, DebugEditorLayout::StageTopBarHeight), ImGuiCond_Always);
         mStageEditorPanel.DrawTopBar();
     }
 
     ImGui::End();
     mActiveSection = activeSection;
-    mLayoutController.Resolve(activeSection);
-    mGameViewportRenderer.Draw(
-        activeSection,
-        gameViewTexture,
-        gameViewWidth,
-        gameViewHeight);
+}
 
+void DebugEditorWorkspaceRenderer::UpdateStageEditing()
+{
+    mStageAddActorPanel.UpdatePlacement();
+    const bool isPlacingActor = mStageAddActorPanel.IsPlacementActive();
 
-    if (activeSection == DebugEditorSection::Stage) {
-        mStageAddActorPanel.UpdatePlacement();
-        const bool isPlacingActor = mStageAddActorPanel.IsPlacementActive();
-        if (!isPlacingActor) {
-            mSelectionController.SetBoxSelectionEnabled(true);
-            mSelectionController.Update();
-        }
-
-        if (mSelectionController.ConsumeRequestOpenPlacement()) {
-            mStageEditorPanel.RequestOpenPlacementTab();
-        }
-
-        if (!isPlacingActor) {
-            mStageEditShortcutHandler.Update();
-        }
-        if (mEditCommandController.ConsumeRequestOpenPlacement()) {
-            mStageEditorPanel.RequestOpenPlacementTab();
-        }
-
-        mSelectionController.ApplyEditorSelectionFlags();
-        DrawStageSelectionOverlay(mSelectionController);
-        if (!isPlacingActor) {
-            mGizmoController.Update();
-        }
-        mStageEditorPanel.Draw();
-    } else {
-        DrawDockedToolPanel(activeSection);
+    // 配置中は同じ入力を選択・ギズモ操作へ渡さず、配置処理を優先する。
+    if (!isPlacingActor) {
+        mSelectionController.SetBoxSelectionEnabled(true);
+        mSelectionController.Update();
     }
 
-    DrawDockedAssetBrowser(activeSection);
-    mLayoutController.DrawResizeHandles(activeSection);
+    if (mSelectionController.ConsumeRequestOpenPlacement()) {
+        mStageEditorPanel.RequestOpenPlacementTab();
+    }
 
+    if (!isPlacingActor) {
+        mStageEditShortcutHandler.Update();
+    }
+    if (mEditCommandController.ConsumeRequestOpenPlacement()) {
+        mStageEditorPanel.RequestOpenPlacementTab();
+    }
+
+    mSelectionController.ApplyEditorSelectionFlags();
+    DrawStageSelectionOverlay(mSelectionController);
+    if (!isPlacingActor) {
+        mGizmoController.Update();
+    }
+    mStageEditorPanel.Draw();
 }
 
 void DebugEditorWorkspaceRenderer::DrawDockedToolPanel(DebugEditorSection section)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const float panelWidth = mContext.layout.rightPanelWidth;
-    const float workspaceTop =
-        viewport->WorkPos.y +
-        DebugEditorLayout::CalculateTopBarHeight(false);
+    const float workspaceTop = viewport->WorkPos.y + DebugEditorLayout::CalculateTopBarHeight(false);
 
-    constexpr ImGuiWindowFlags panelFlags =
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoSavedSettings;
-    ImGui::SetNextWindowPos(
-        ImVec2(
-            viewport->WorkPos.x + viewport->WorkSize.x - panelWidth,
-            workspaceTop),
-        ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(
-            panelWidth,
-            viewport->WorkPos.y + viewport->WorkSize.y - workspaceTop),
-        ImGuiCond_Always);
+    constexpr ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - panelWidth, workspaceTop),
+                            ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(panelWidth, viewport->WorkPos.y + viewport->WorkSize.y - workspaceTop),
+                             ImGuiCond_Always);
 
-    const std::string windowTitle =
-        std::string(mLayoutController.ResolveToolPanelTitle(section)) + "###DebugToolPanel";
+    const std::string windowTitle = std::string(mLayoutController.ResolveToolPanelTitle(section)) + "###DebugToolPanel";
     ImGui::Begin(windowTitle.c_str(), nullptr, panelFlags);
 
     switch (section) {
@@ -271,33 +236,19 @@ void DebugEditorWorkspaceRenderer::DrawDockedAssetBrowser(DebugEditorSection sec
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const bool showsHierarchy = section == DebugEditorSection::Stage;
-    const float hierarchyWidth = showsHierarchy
-        ? DebugEditorLayout::CalculateHierarchyWidth(viewport->WorkSize.x)
-        : 0.0f;
+    const float hierarchyWidth =
+        showsHierarchy ? DebugEditorLayout::CalculateHierarchyWidth(viewport->WorkSize.x) : 0.0f;
     const float toolPanelWidth = mContext.layout.rightPanelWidth;
     const float assetBrowserHeight = mContext.layout.assetBrowserHeight;
-    const float browserWidth =
-        std::max(
-            200.0f,
-            viewport->WorkSize.x - hierarchyWidth - toolPanelWidth);
+    const float browserWidth = std::max(200.0f, viewport->WorkSize.x - hierarchyWidth - toolPanelWidth);
 
-    constexpr ImGuiWindowFlags panelFlags =
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoSavedSettings;
+    constexpr ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
     ImGui::SetNextWindowPos(
-        ImVec2(
-            viewport->WorkPos.x + hierarchyWidth,
-            viewport->WorkPos.y + viewport->WorkSize.y - assetBrowserHeight),
+        ImVec2(viewport->WorkPos.x + hierarchyWidth, viewport->WorkPos.y + viewport->WorkSize.y - assetBrowserHeight),
         ImGuiCond_Always);
-    ImGui::SetNextWindowSize(
-        ImVec2(browserWidth, assetBrowserHeight),
-        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(browserWidth, assetBrowserHeight), ImGuiCond_Always);
     ImGui::Begin("アセット###DebugAssetBrowser", nullptr, panelFlags);
     mAssetBrowserPanel.Draw();
     ImGui::End();
 }
-
-
-

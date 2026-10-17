@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+// ImGui座標で使う編集画面の標準寸法と、初期レイアウトの計算。
 namespace DebugEditorLayout {
 constexpr float StandardTopBarHeight = 72.0f;
 constexpr float StageTopBarHeight = 112.0f;
@@ -9,9 +10,7 @@ constexpr float GameViewportToolbarHeight = 38.0f;
 
 inline float CalculateTopBarHeight(bool showsStageTools)
 {
-    return showsStageTools
-        ? StageTopBarHeight
-        : StandardTopBarHeight;
+    return showsStageTools ? StageTopBarHeight : StandardTopBarHeight;
 }
 
 inline float CalculateHierarchyWidth(float workspaceWidth)
@@ -28,4 +27,4 @@ inline float CalculateAssetBrowserHeight(float workspaceHeight)
 {
     return std::clamp(workspaceHeight * 0.25f, 210.0f, 300.0f);
 }
-}
+} // namespace DebugEditorLayout

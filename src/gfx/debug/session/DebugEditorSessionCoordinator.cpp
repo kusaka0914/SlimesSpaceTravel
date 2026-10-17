@@ -7,7 +7,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/panels/StageEditorPanel.h"
 #include "gfx/debug/panels/StagePlanetPanel.h"
-#include "gfx/debug/session/EditorSessionState.h"
+#include "gfx/debug/session/EditorSessionRepository.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "system/CameraSystem.h"
@@ -16,11 +16,10 @@
 #include <unordered_set>
 #include <vector>
 
-DebugEditorSessionCoordinator::DebugEditorSessionCoordinator(
-    DebugEditorContext& context,
-    StagePlanetPanel& stagePlanetPanel,
-    StageEditorPanel& stageEditorPanel,
-    StageSelectionController& selectionController)
+DebugEditorSessionCoordinator::DebugEditorSessionCoordinator(DebugEditorContext& context,
+                                                             StagePlanetPanel& stagePlanetPanel,
+                                                             StageEditorPanel& stageEditorPanel,
+                                                             StageSelectionController& selectionController)
     : mContext(context),
       mStagePlanetPanel(stagePlanetPanel),
       mStageEditorPanel(stageEditorPanel),
@@ -28,10 +27,8 @@ DebugEditorSessionCoordinator::DebugEditorSessionCoordinator(
 {
 }
 
-bool DebugEditorSessionCoordinator::Save(
-    const std::string& filePath,
-    const DebugEditorShellSessionState& shellState,
-    std::string& outErrorMessage)
+bool DebugEditorSessionCoordinator::Save(const std::string& filePath, const DebugEditorShellSessionState& shellState,
+                                         std::string& outErrorMessage)
 {
     // 実行時の移動は保存せず、編集操作で変更したTransformだけを保存する。
     mStagePlanetPanel.SaveEditorAuthoredTransforms();
@@ -41,22 +38,15 @@ bool DebugEditorSessionCoordinator::Save(
         sessionState.stageNumber = mContext.game->GetCurrentStageNum();
         sessionState.stageYamlPath = mContext.game->GetCurrentStageYamlPath();
         sessionState.activeSectionIndex = shellState.activeSectionIndex;
-        sessionState.sequenceEditorMenuIndex =
-            shellState.sequenceEditorMenuIndex;
-        sessionState.stageEditorMenuIndex =
-            mStageEditorPanel.GetSelectedMenu();
-        sessionState.isEditorShowing =
-            mContext.game->GetIsDebugEditorShowing();
-        sessionState.isSceneView =
-            mContext.game->GetIsFreeCameraMode();
+        sessionState.sequenceEditorMenuIndex = shellState.sequenceEditorMenuIndex;
+        sessionState.stageEditorMenuIndex = mStageEditorPanel.GetSelectedMenu();
+        sessionState.isEditorShowing = mContext.game->GetIsDebugEditorShowing();
+        sessionState.isSceneView = mContext.game->GetIsFreeCameraMode();
         sessionState.rightPanelWidth = mContext.layout.rightPanelWidth;
-        sessionState.assetBrowserHeight =
-            mContext.layout.assetBrowserHeight;
+        sessionState.assetBrowserHeight = mContext.layout.assetBrowserHeight;
 
-        if (CameraSystem* cameraSystem =
-                mContext.game->GetCameraSystem()) {
-            sessionState.sceneCameraPose =
-                cameraSystem->GetDebugCameraPose();
+        if (CameraSystem* cameraSystem = mContext.game->GetCameraSystem()) {
+            sessionState.sceneCameraPose = cameraSystem->GetDebugCameraPose();
         }
 
         if (Player* player = mContext.game->GetMainPlayer()) {
@@ -64,55 +54,38 @@ bool DebugEditorSessionCoordinator::Save(
             sessionState.playerPosition = player->GetPos();
             sessionState.playerUp = player->GetUpVec();
             sessionState.playerOrientation = player->GetOrientation();
-            sessionState.playerPlanetIndex =
-                player->GetCurrentPlanetNum();
+            sessionState.playerPlanetIndex = player->GetCurrentPlanetNum();
         }
 
-        const std::unordered_set<std::string>& selectedKeys =
-            mSelectionController.GetSelectedKeys();
-        sessionState.selectedActorKeys.assign(
-            selectedKeys.begin(),
-            selectedKeys.end());
+        const std::unordered_set<std::string>& selectedKeys = mSelectionController.GetSelectedKeys();
+        sessionState.selectedActorKeys.assign(selectedKeys.begin(), selectedKeys.end());
     }
 
-    return EditorSessionRepository::Save(
-        filePath,
-        sessionState,
-        outErrorMessage);
+    return EditorSessionRepository::Save(filePath, sessionState, outErrorMessage);
 }
 
-bool DebugEditorSessionCoordinator::Restore(
-    const std::string& filePath,
-    DebugEditorShellSessionState& outShellState,
-    std::string& outErrorMessage)
+bool DebugEditorSessionCoordinator::Restore(const std::string& filePath, DebugEditorShellSessionState& outShellState,
+                                            std::string& outErrorMessage)
 {
     EditorSessionState sessionState;
-    if (!EditorSessionRepository::Load(
-            filePath,
-            sessionState,
-            outErrorMessage)) {
+    if (!EditorSessionRepository::Load(filePath, sessionState, outErrorMessage)) {
         return false;
     }
 
     if (!mContext.game) {
-        outErrorMessage =
-            "エディターの状態を復元するためのゲーム情報を利用できません。";
+        outErrorMessage = "エディターの状態を復元するためのゲーム情報を利用できません。";
         return false;
     }
 
-    if (!mContext.game->RestoreDebugEditorStage(
-            sessionState.stageNumber,
-            sessionState.stageYamlPath)) {
-        outErrorMessage = "編集中のステージを復元できませんでした: " +
-                          sessionState.stageYamlPath;
+    // 選択は保存したActorキーから引き直すため、先に復元先のステージを読み込む。
+    if (!mContext.game->RestoreDebugEditorStage(sessionState.stageNumber, sessionState.stageYamlPath)) {
+        outErrorMessage = "編集中のステージを復元できませんでした: " + sessionState.stageYamlPath;
         return false;
     }
 
     outShellState.activeSectionIndex = sessionState.activeSectionIndex;
-    outShellState.sequenceEditorMenuIndex =
-        sessionState.sequenceEditorMenuIndex;
-    mStageEditorPanel.SetSelectedMenu(
-        sessionState.stageEditorMenuIndex);
+    outShellState.sequenceEditorMenuIndex = sessionState.sequenceEditorMenuIndex;
+    mStageEditorPanel.SetSelectedMenu(sessionState.stageEditorMenuIndex);
     mContext.layout.rightPanelWidth = sessionState.rightPanelWidth;
     mContext.layout.assetBrowserHeight = sessionState.assetBrowserHeight;
 
@@ -126,11 +99,9 @@ bool DebugEditorSessionCoordinator::Restore(
         Player* player = mContext.game->GetMainPlayer();
         Stage* currentStage = mContext.game->GetCurrentStage();
         if (player && currentStage) {
-            const std::vector<Planet*>& planets =
-                currentStage->GetPlanets();
+            const std::vector<Planet*>& planets = currentStage->GetPlanets();
             const int planetIndex = sessionState.playerPlanetIndex;
-            if (planetIndex >= 0 &&
-                planetIndex < static_cast<int>(planets.size())) {
+            if (planetIndex >= 0 && planetIndex < static_cast<int>(planets.size())) {
                 player->SetCurrentPlanet(planets[planetIndex]);
                 player->SetCurrentPlanetNum(planetIndex);
             }
@@ -141,14 +112,14 @@ bool DebugEditorSessionCoordinator::Restore(
         }
     }
 
-    std::unordered_set<std::string> selectedKeys(
-        sessionState.selectedActorKeys.begin(),
-        sessionState.selectedActorKeys.end());
+    std::unordered_set<std::string> selectedKeys(sessionState.selectedActorKeys.begin(),
+                                                 sessionState.selectedActorKeys.end());
     if (selectedKeys.empty()) {
         mSelectionController.Clear();
         return true;
     }
 
+    // 単独選択だけActor参照も復元し、複数選択はキー集合として引き継ぐ。
     if (selectedKeys.size() != 1) {
         mSelectionController.SetSelectedKeys(selectedKeys);
         mSelectionController.ConsumeRequestOpenPlacement();
@@ -156,15 +127,10 @@ bool DebugEditorSessionCoordinator::Restore(
     }
 
     const std::vector<StageActorInstance> actorInstances =
-        StageActorQuery::CollectAllActorInstances(
-            mContext.game->GetCurrentStage());
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
     for (const StageActorInstance& actorInstance : actorInstances) {
-        if (actorInstance.actor &&
-            selectedKeys.contains(
-                StageActorQuery::MakeKey(actorInstance.ref))) {
-            mSelectionController.SetSingleSelection(
-                actorInstance.actor,
-                actorInstance.ref);
+        if (actorInstance.actor && selectedKeys.contains(StageActorQuery::MakeKey(actorInstance.ref))) {
+            mSelectionController.SetSingleSelection(actorInstance.actor, actorInstance.ref);
             mSelectionController.ConsumeRequestOpenPlacement();
             return true;
         }
