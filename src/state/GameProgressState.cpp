@@ -1,4 +1,4 @@
-#include "GameProgressState.h"
+#include "state/GameProgressState.h"
 
 GameProgressState::GameProgressState()
     : mIsFirstBreak(false),
