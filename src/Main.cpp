@@ -6,8 +6,7 @@
 
 #ifdef _WIN32
 
-// WindowsŠÂ‹«‚Å‚«”\GPU‚ğ—Dæ‚µ‚Äg—p‚·‚é
-// Ø‚è‘Ö‚¦‰Â”\GPUŠÂ‹«‚Å“à‘ GPU‚ª‘I‘ğ‚³‚ê‚é‚±‚Æ‚É‚æ‚é«”\’á‰º‚ğ–h‚®
+// åˆ‡ã‚Šæ›¿ãˆå¯èƒ½ãªGPUç’°å¢ƒã§é«˜æ€§èƒ½GPUã‚’è¦æ±‚ã™ã‚‹ãŸã‚ã€ãƒ‰ãƒ©ã‚¤ãƒãƒ¼ãŒå‚ç…§ã™ã‚‹ã‚·ãƒ³ãƒœãƒ«ã‚’å…¬é–‹ã™ã‚‹ã€‚
 extern "C" {
 
 __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -17,39 +16,43 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 #endif
 
+namespace {
+
 struct GameLaunchOptions {
-// R¸‚ÉŠJ”­—pƒGƒfƒBƒ^‚àŠm”F‚Å‚«‚é‚æ‚¤AƒŒƒrƒ…[”Å‚Å‚ÍƒfƒoƒbƒOƒc[ƒ‹‚ğ—LŒø‰»‚·‚éB
+    // ãƒ¬ãƒ“ãƒ¥ãƒ¼ç‰ˆã¯ã‚¿ã‚¤ãƒˆãƒ«ã‹ã‚‰èµ·å‹•ã—ã¤ã¤ã€é–‹ç™ºç”¨ã‚¨ãƒ‡ã‚£ã‚¿ãƒ¼ã‚’åˆ©ç”¨å¯èƒ½ã«ã™ã‚‹ã€‚
 #ifdef GAME_REVIEW_BUILD
     bool areDebugToolsEnabled = true;
 #else
     bool areDebugToolsEnabled = false;
 #endif
     bool shouldStartInDebugStage = false;
-    // Build & RestartŒã‚É’¼‘O‚ÌƒGƒfƒBƒ^ó‘Ô‚ğ•œŒ³‚·‚é‚½‚ß‚ÌƒZƒbƒVƒ‡ƒ“ƒtƒ@ƒCƒ‹
+
+    // Build & Restartå¾Œã«ç›´å‰ã®ã‚¨ãƒ‡ã‚£ã‚¿ãƒ¼çŠ¶æ…‹ã‚’å¾©å…ƒã™ã‚‹ãŸã‚ã®ã‚»ãƒƒã‚·ãƒ§ãƒ³ãƒ•ã‚¡ã‚¤ãƒ«ã€‚
     std::string editorSessionPath;
-    // Build & Restart¸”s‚ÉÄ‹N“®Œã‚ÌƒGƒfƒBƒ^‚Ö“n‚·ƒrƒ‹ƒhƒƒO
+
+    // Build & Restartå¤±æ•—æ™‚ã«å†èµ·å‹•å¾Œã®ã‚¨ãƒ‡ã‚£ã‚¿ãƒ¼ã¸æ¸¡ã™ãƒ“ãƒ«ãƒ‰ãƒ­ã‚°ã€‚
     std::string editorRestartErrorLogPath;
 };
 
 GameLaunchOptions ParseLaunchOptions(int argc, const char* argv[])
 {
     GameLaunchOptions launchOptions;
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--debug") == 0) {
+    for (int argumentIndex = 1; argumentIndex < argc; ++argumentIndex) {
+        if (std::strcmp(argv[argumentIndex], "--debug") == 0) {
             launchOptions.areDebugToolsEnabled = true;
             launchOptions.shouldStartInDebugStage = true;
             continue;
         }
 
-        if (std::strcmp(argv[i], "--restore-editor-session") == 0 && i + 1 < argc) {
-            launchOptions.editorSessionPath = argv[++i];
+        if (std::strcmp(argv[argumentIndex], "--restore-editor-session") == 0 && argumentIndex + 1 < argc) {
+            launchOptions.editorSessionPath = argv[++argumentIndex];
             launchOptions.areDebugToolsEnabled = true;
             launchOptions.shouldStartInDebugStage = true;
             continue;
         }
 
-        if (std::strcmp(argv[i], "--editor-restart-error-log") == 0 && i + 1 < argc) {
-            launchOptions.editorRestartErrorLogPath = argv[++i];
+        if (std::strcmp(argv[argumentIndex], "--editor-restart-error-log") == 0 && argumentIndex + 1 < argc) {
+            launchOptions.editorRestartErrorLogPath = argv[++argumentIndex];
         }
     }
 
@@ -58,15 +61,17 @@ GameLaunchOptions ParseLaunchOptions(int argc, const char* argv[])
 
 void UseExecutableDirectoryForPackagedBuild(const char* executablePathText)
 {
-    const std::filesystem::path executablePath =
-        std::filesystem::absolute(executablePathText);
-    const std::filesystem::path executableDirectory =
-        executablePath.parent_path();
+    const std::filesystem::path executablePath = std::filesystem::absolute(executablePathText);
+    const std::filesystem::path executableDirectory = executablePath.parent_path();
+
+    // é…å¸ƒæ§‹æˆãŒæƒã†å ´åˆã ã‘åŸºæº–ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’å¤‰ãˆã€ç›¸å¯¾ãƒ‘ã‚¹ã®assetsãƒ»shadersã‚’è§£æ±ºã§ãã‚‹ã‚ˆã†ã«ã™ã‚‹ã€‚
     if (std::filesystem::is_directory(executableDirectory / "../assets") &&
         std::filesystem::is_directory(executableDirectory / "../shaders")) {
         std::filesystem::current_path(executableDirectory);
     }
 }
+
+} // namespace
 
 int main(int argc, const char* argv[])
 {
@@ -75,11 +80,8 @@ int main(int argc, const char* argv[])
 
     Game game;
 
-    if (game.Initialize(
-            launchOptions.areDebugToolsEnabled,
-            launchOptions.shouldStartInDebugStage,
-            launchOptions.editorSessionPath,
-            launchOptions.editorRestartErrorLogPath)) {
+    if (game.Initialize(launchOptions.areDebugToolsEnabled, launchOptions.shouldStartInDebugStage,
+                        launchOptions.editorSessionPath, launchOptions.editorRestartErrorLogPath)) {
         game.RunLoop();
         game.Shutdown();
     }

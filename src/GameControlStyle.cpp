@@ -4,10 +4,7 @@
 
 void Game::TogglePlayerControlStyle()
 {
-    SetPlayerControlStyle(
-        IsAssistControlStyle()
-            ? PlayerControlStyle::Standard
-            : PlayerControlStyle::Assist);
+    SetPlayerControlStyle(IsAssistControlStyle() ? PlayerControlStyle::Standard : PlayerControlStyle::Assist);
 }
 
 void Game::SetPlayerControlStyle(PlayerControlStyle controlStyle)
@@ -20,6 +17,5 @@ void Game::SetPlayerControlStyle(PlayerControlStyle controlStyle)
 
 bool Game::HasSelectedPlayerControlStyle() const
 {
-    return mProgressController &&
-           mProgressController->HasSelectedPlayerControlStyle();
+    return mProgressController && mProgressController->HasSelectedPlayerControlStyle();
 }

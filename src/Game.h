@@ -6,6 +6,8 @@
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include <cstddef>
+#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
@@ -55,39 +57,67 @@ enum class StagePhysicsReloadMode {
     SkipRebuild,
 };
 
+// ゲームのライフサイクルと各System間の連携を統括する。実行中のステージと所属ActorはGameWorldが所有する。
+// 実行時APIはInitialize成功後に呼ぶ。返却ポインタは非所有で、Actor・Stageは再読み込みで無効になり得る。
 class Game : public UGCModeRuntime {
 public:
     Game();
     ~Game();
 
-    bool Initialize(
-        bool areDebugToolsEnabled,
-        bool shouldStartInDebugStage,
-        const std::string& editorSessionPath = {},
-        const std::string& editorRestartErrorLogPath = {});
+    // ウィンドウ・描画Systemの初期化に失敗した場合は false。成功後にステージを読み込んで実行準備を行う。
+    // areDebugToolsEnabled はツールの利用可否、shouldStartInDebugStage はテストステージ・ウィンドウ起動を指定する。
+    bool Initialize(bool areDebugToolsEnabled, bool shouldStartInDebugStage, const std::string& editorSessionPath = {},
+                    const std::string& editorRestartErrorLogPath = {});
+
+    // Initialize成功後に呼び、終了要求まで入力・更新・描画を繰り返す。終了後はShutdownを呼ぶ。
     void RunLoop();
+
+    // エディター状態を保存し、描画資源・入力デバイス・ウィンドウを解放する。デストラクタからは呼ばない。
     void Shutdown();
 
+    // 現在のYAMLからActorを読み込む。物理ワールドの再構築やBGMの更新は行わない。
     void LoadData();
 
+    // 演出と旧Actorへの参照を解除してステージを再読み込みする。返却済みのActor・Stageポインタは取得し直す。
+    // SkipRebuildでも旧物理参照は解除するが、新しい物理ワールドの構築は呼び出し元が行う。
+    void ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode);
 
-    void ReloadCurrentStage(
-        StagePhysicsReloadMode physicsReloadMode);
-    void ReloadCurrentStage() override
-    {
-        ReloadCurrentStage(StagePhysicsReloadMode::Rebuild);
-    }
+    // 物理ワールドの再構築を含めて現在のステージを再読み込みする。
+    void ReloadCurrentStage() override { ReloadCurrentStage(StagePhysicsReloadMode::Rebuild); }
+
+    // UI定義を読み直す。UIRendererがなければ何もしない。
     void ReloadUIData();
+
+    // 有効なステージ番号なら選択先とYAMLパスを切り替える。Actorの読み込みは別途行う。
     void ChangeStage(int stageNum);
     bool HasStageIntroCinematic(int stageNum) const;
+
+    // enter_stageNのカメラ演出と導入BGMを開始する。定義不足や再生失敗時は false。
     bool StartStageIntroCinematic(int stageNum);
+
+    // 指定YAMLを再読み込みし、対象パスや演出定義などの条件を満たす場合に到着・導入演出を開始する。
+    // 番号が範囲外またはパスが空なら false。
     bool DebugChangeStage(int stageNum, const std::string& yamlPath);
+
+    // デバッグモードで初期ステージを読み直し、タイトルへ切り替える。準備できない場合は false。
     bool DebugEnterTitle();
+
+    // 初期ステージを読み直してオープニングへ切り替える。デバッグモードでなければ false。
     bool DebugEnterOpening();
+
+    // 初期ステージを読み直してエンディングへ切り替える。デバッグモードでなければ false。
     bool DebugEnterEnding();
+
+    // 初期ステージを読み直してエンドロールへ切り替える。デバッグモードでなければ false。
     bool DebugStartCredits();
+
+    // 作業用ステージを読み込んでUGC編集を開始する。ステージの切り替えを受け付けられない場合は false。
     bool StartUGCMode();
+
+    // 練習用ステージをテンプレートから作り直して開始する。準備できない場合は false。
     bool StartUGCEditorTutorial();
+
+    // 完了・スキップの進行フラグを記録し、通常のUGC編集へ移る。通常編集を開始できなければ false。
     bool FinishUGCEditorTutorial(bool wasCompleted);
     bool GetIsUGCEditorTutorialActive() const;
     void OpenUGCWorkBrowser();
@@ -96,6 +126,8 @@ public:
     void ExecuteTitleMenuSelection();
     int GetTitleMenuSelection() const { return mTitleMenuSelection; }
     bool GetIsUGCWorkBrowserShowing() const;
+
+    // 編集中ステージを通常の試遊として開始する。クリア検証はStartUGCClearVerificationで開始する。
     void StartUGCPlaytest();
     void StartUGCSavedWorkPlaytest();
     void UndoUGCEdit();
@@ -106,6 +138,8 @@ public:
     void ZoomUGCEditor(float distanceMultiplier);
     void ChangeUGCEditLayer(int layerDelta);
     void MoveUGCSelectionByGrid(int gridX, int gridZ);
+
+    // 指定した保存作品のクリア検証を開始する。作品名はUGC作品管理で使うファイル名を渡す。
     void StartUGCClearVerification(const std::string& workFileName);
     void ReturnToUGCEditor();
     void ExitUGCMode();
@@ -113,36 +147,54 @@ public:
     void ExecuteUGCClearResultSelection();
     bool GetIsUGCClearResultShowing() const;
     int GetUGCClearResultSelection() const;
+
+    // エディター復元用に指定ステージを読み直す。導入演出は開始せず、不正な番号・空パスには false。
     bool RestoreDebugEditorStage(int stageNum, const std::string& yamlPath);
     void TogglePauseMenu();
     void ClosePauseMenu() override;
     bool CanOpenPauseMenu() const;
     void MovePauseMenuSelection(int delta);
     void ExecutePauseMenuItem();
+
+    // 外部ブラウザーでフィードバックフォームを開く。起動失敗は標準エラー出力へ記録する。
     void OpenFeedbackForm();
+
+    // ポーズメニューを閉じ、拠点へのシーン遷移を要求する。既に拠点なら遷移しない。
     void ReturnToBase();
+
+    // 2人プレイへの参加を試みる。参加条件を満たさない場合は現在の構成を維持する。
     void TryCreatePlayer2();
     void ReturnToSinglePlayer();
     bool CanStartTwoPlayerFromPauseMenu() const;
     bool CanReturnToBaseFromPauseMenu() const;
+
+    // エディター表示を切り替える。通常ステージでは物理ボディの位置も同期し、UGCでは専用パネルへ委譲する。
     void ToggleDebugEditor();
     void ToggleFreeCameraMode();
     void SetFreeCameraMode(bool isEnabled) override;
-    void SetDebugEditorShowing(bool isShowing) override
-    {
-        mIsDebugEditorShowing = isShowing;
-    }
+    void SetDebugEditorShowing(bool isShowing) override { mIsDebugEditorShowing = isShowing; }
     void TogglePlayerControlStyle();
+
+    // 操作方式を変更し、進行管理にも選択済みの方式として記録する。
     void SetPlayerControlStyle(PlayerControlStyle controlStyle);
+
+    // ビルド・再起動を要求する。失敗時は false と説明をoutErrorMessageへ返す。
     bool RequestEditorBuildAndRestart(std::string& outErrorMessage);
 
+    // 拠点にいる場合だけ、Boatが指定した移動先ステージへのシーン遷移を要求する。
     void OnBoatStageChangeRequested(int destStage);
+
+    // 到着演出へ通知し、ソロ分身の合体とBGMの切り替えを行う。Boatは所有しない。
     void OnBoatArrived(Boat* boat);
     void OnPlayerCurrentPlanetChanged(Player& player);
+
+    // UGCではモード固有のゴール処理へ委譲し、通常プレイではクリアを記録してクリア演出を開始する。
     void OnStarObtained();
     void OnStarCollectionAnimationFinished();
     void ForcePlayersGroundedForCinematic();
     void OnEnemyLaunched();
+
+    // 敵の配置からドロップを予約する。Actor走査中の生成を避けるため、実体は更新後に生成する。
     void RequestEnemyJewelDrop(const Enemy& defeatedEnemy);
     void OnLanded();
     void OnPlayerDied();
@@ -152,52 +204,71 @@ public:
     void OnStrongAttacked(int playerNum);
     void OnAirSlamAttackHit(int playerNum);
     void OnPlayerCounter(int playerNum);
-    void SynchronizeSoloSplitResources(const Player& sourcePlayer);
-    void VibrateControllerForPlayer(
-        int playerNum,
-        int lowFrequency,
-        int highFrequency,
-        int durationMilliseconds);
 
+    // ソロ分身間で共有するリソースをsourcePlayerの状態に合わせる。
+    void SynchronizeSoloSplitResources(const Player& sourcePlayer);
+
+    // playerNum は1始まり。低・高周波の強度は0〜65535、時間はミリ秒。対応するデバイスがなければ何もしない。
+    void VibrateControllerForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds);
+
+    // 指定Actorに最も近いPlayerを所有権を移さず返す。有効な探索対象がなければ nullptr。
     Player* FindNearestPlayer(Actor* actor) const;
 
+    // 進行を保存し、実行ループへ終了を要求する。資源解放はShutdownで行う。
     void FinishGame();
+
+    // 進行を保存してタイトルへの遷移を要求する。UGCでは編集モードを終了する。
     void ReturnToTitleFromPauseMenu();
+
+    // Playerをリスタートしてカメラを戻す。待機中Playerは非アクティブのまま維持する。
     void RestartGame();
     void StartPlayingScene() override;
     void StartUGCStageClearPresentation() override;
     void StartFocusingScene();
     void FinishFocusingScene();
 
+    // 非nullのActorを渡し、その所有権をGameWorldへ移す。
     void AddActor(std::unique_ptr<Actor> actor);
+
+    // 所有権を移さずPlayer一覧へ登録し、現在のプレイ人数・分身構成に合わせて状態を設定する。nullptr は無視する。
     void AddPlayer(Player* player);
+
+    // Playerの参照一覧と構成管理をリセットする。Actorとしての実体は削除しない。
     void RemoveAllPlayer();
+
+    // ソロ分身の分裂・合体を要求する。操作できない状態なら false。
     bool TogglePlayerSplit();
     void SetPlayerSplitMergeButtonHeld(bool isHeld);
-    bool TryResolvePlayerMergeGuide(
-        const Player*& targetPlayer,
-        float& radiusWorldUnits) const;
+
+    // 合体ガイドの対象とワールド単位の半径を返す。解決できなければ false、対象はnullptr、半径は0。
+    bool TryResolvePlayerMergeGuide(const Player*& targetPlayer, float& radiusWorldUnits) const;
+
+    // 非操作側のソロ分身への被弾でガードを消費する。対象外・残数不足なら false。
     bool TryConsumePlayerSplitGuard(const Player& damagedPlayer);
     int GetPlayerSplitGuardCount() const;
     int GetMaximumPlayerSplitGuardCount() const;
+
+    // 操作可能な別の分身へ切り替える。切り替え条件を満たさない場合は false。
     bool SwitchControlledPlayer();
     bool CanTogglePlayerSplit() const;
     bool CanSwitchControlledPlayer() const;
     void RequestSoloSplitControlSwitchAfterBoarding();
 
     void SetHitStopTimer(float hitStopTimer) { mHitStopTimer = hitStopTimer; }
-    void SetGroundNormalRayLength(float rayLength)
-    {
-        mGroundNormalRayLength = rayLength > 0.01f ? rayLength : 0.01f;
-    }
+
+    // 接地判定レイの長さをワールド単位で設定し、最小0.01に制限する。
+    void SetGroundNormalRayLength(float rayLength) { mGroundNormalRayLength = rayLength > 0.01f ? rayLength : 0.01f; }
+
+    // 頭上重力レイの長さをワールド単位で設定し、最小0.01に制限する。
     void SetOverheadGravityRayLength(float rayLength)
     {
-        mOverheadGravityRayLength =
-            rayLength > 0.01f ? rayLength : 0.01f;
+        mOverheadGravityRayLength = rayLength > 0.01f ? rayLength : 0.01f;
     }
 
     GLFWwindow* GetWindow() const { return mWindow; }
     SDL_GameController* GetSdlController() const;
+
+    // playerNum は1始まり。対応する接続デバイスがなければ nullptr。返却先は所有しない。
     SDL_GameController* GetSdlControllerForPlayer(int playerNum) const;
 
     const std::vector<Player*>& GetPlayers() const;
@@ -210,8 +281,12 @@ public:
     Stage* GetCurrentStage() const;
     int GetCurrentStageNum() const;
     const std::string& GetCurrentStageYamlPath() const;
+
+    // シーン遷移用にステージとYAMLパスを切り替えて再読み込みする。番号が範囲外またはパスが空なら false。
     bool LoadStageForScene(int stageNum, const std::string& yamlPath);
     std::string GetNPCConversationId(const NPC* npc) const;
+
+    // 現在のステージ内を会話IDで検索する。空ID・対象なしには nullptr。返却NPCは所有しない。
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
     bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
     void SetGameUIHidden(bool isHidden) { mIsGameUIHidden = isHidden; }
@@ -220,13 +295,21 @@ public:
     bool GetIsUGCPlaytestActive() const;
     bool GetIsUGCClearVerificationActive() const;
 
-
     bool GetIsUGCDebugEditorShowing() const;
     bool GetIsUGCOrthographicView() const;
     void SetIsUGCOrthographicView(bool isOrthographic);
+    void SetUGCOrthographicHalfHeight(float halfHeight) override;
     float GetUGCOrthographicHalfHeight() const;
+    void SetUGCGridSize(float gridSize);
+    float GetUGCGridSize() const;
+
+    // プレビュー描画用のOpenGLテクスチャIDを返す。描画担当が未生成なら0。
     unsigned int GetUGCPreviewTexture() const;
+
+    // 描画サイズをピクセル単位で指定し、幅320〜2048・高さ180〜1152に制限する。
     void SetUGCPreviewRenderSize(int width, int height);
+
+    // プレビュー視点のヨー角へラジアン単位の差分を加える。
     void AdjustUGCPreviewYaw(float yawDeltaRadians);
     float GetUGCPreviewYawRadians() const;
     void ToggleUGCPreviewVerticalView();
@@ -234,40 +317,40 @@ public:
     float GetUGCPreviewFocusY() const;
     void SetUGCPreviewEditLayer(int gridLayer);
     int GetUGCPreviewEditLayer() const;
-    void SetUGCPlatformPlacementPreview(
-        const std::optional<glm::vec3>& position);
+
+    // ワールド座標で足場の配置候補を設定する。std::nullopt なら表示を解除する。
+    void SetUGCPlatformPlacementPreview(const std::optional<glm::vec3>& position);
     const std::optional<glm::vec3>& GetUGCPlatformPlacementPreview() const;
-    void SetUGCMovingPlatformPathPreview(
-        const std::optional<glm::vec3>& startPosition,
-        const std::optional<glm::vec3>& destinationPosition);
-    const std::optional<glm::vec3>&
-        GetUGCMovingPlatformPathStartPosition() const;
-    const std::optional<glm::vec3>&
-        GetUGCMovingPlatformPathDestinationPosition() const;
-    void SetUGCPlacementModelPreview(
-        const std::optional<glm::vec3>& position,
-        const std::string& modelPath = "",
-        const glm::vec3& scale = glm::vec3(1.0f),
-        const std::string& textureOverridePath = "");
-    void SetUGCPlacementModelPreviewPositions(
-        const std::vector<glm::vec3>& positions,
-        const std::string& modelPath,
-        const glm::vec3& scale,
-        const std::string& textureOverridePath = "");
+
+    // 移動足場の両端をワールド座標で指定する。未指定の端点はプレビューから除く。
+    void SetUGCMovingPlatformPathPreview(const std::optional<glm::vec3>& startPosition,
+                                         const std::optional<glm::vec3>& destinationPosition);
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathStartPosition() const;
+    const std::optional<glm::vec3>& GetUGCMovingPlatformPathDestinationPosition() const;
+
+    // ワールド座標で配置用モデルを設定する。位置未指定・空モデル名なら破棄し、モデル変更時は作り直す。
+    void SetUGCPlacementModelPreview(const std::optional<glm::vec3>& position, const std::string& modelPath = "",
+                                     const glm::vec3& scale = glm::vec3(1.0f),
+                                     const std::string& textureOverridePath = "");
+
+    // 1つの配置用モデルを複数のワールド位置へ表示する。位置一覧が空ならモデルを破棄する。
+    void SetUGCPlacementModelPreviewPositions(const std::vector<glm::vec3>& positions, const std::string& modelPath,
+                                              const glm::vec3& scale, const std::string& textureOverridePath = "");
+
+    // 配置用Actorを所有権を移さず返す。未設定時は nullptr、モデル変更・解除でポインタは無効になる。
     Actor* GetUGCPlacementModelPreview() const;
-    const std::vector<glm::vec3>&
-        GetUGCPlacementModelPreviewPositions() const;
-    void SetUGCOrthographicHalfHeight(float halfHeight) override;
-    float GetUGCGridSize() const;
+    const std::vector<glm::vec3>& GetUGCPlacementModelPreviewPositions() const;
+
+    // 直近のゲーム更新に使った秒数。長い停止後も最大0.04秒に制限する。
     float GetLastDeltaTime() const { return mLastDeltaTime; }
     const FramePerformanceMetrics& GetFramePerformanceMetrics() const;
-    void RecordViewportRenderDurationMilliseconds(
-        int viewportIndex,
-        float durationMilliseconds);
-    void RecordViewportGpuDurationMilliseconds(
-        int viewportIndex,
-        float durationMilliseconds);
-    void SetUGCGridSize(float gridSize);
+
+    // 指定ビューポートのCPU描画時間をミリ秒単位で計測情報へ記録する。
+    void RecordViewportRenderDurationMilliseconds(int viewportIndex, float durationMilliseconds);
+
+    // 指定ビューポートのGPU描画時間をミリ秒単位で計測情報へ記録する。
+    void RecordViewportGpuDurationMilliseconds(int viewportIndex, float durationMilliseconds);
+
     bool IsEditorKeyboardInputCaptured() const;
     bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const;
@@ -288,10 +371,7 @@ public:
 
     float GetHitStopTimer() const { return mHitStopTimer; }
     float GetGroundNormalRayLength() const { return mGroundNormalRayLength; }
-    float GetOverheadGravityRayLength() const
-    {
-        return mOverheadGravityRayLength;
-    }
+    float GetOverheadGravityRayLength() const { return mOverheadGravityRayLength; }
     bool GetIsPlayer2Joined() const;
     bool GetIsPlayerSplit() const;
     bool GetIsDebugMode() const { return mIsDebugMode; }
@@ -309,6 +389,8 @@ public:
     bool IsInBase() const;
     bool IsStageCleared(int stageNum) const;
     void MarkStageCleared(int stageNum);
+
+    // 進行状態が変わった場合はActorの表示条件と物理を更新する。クリア時は体験版ログにも記録する。
     void SetStageCleared(int stageNum, bool isCleared);
     bool HasCompletedTutorial(const std::string& tutorialId) const;
     void MarkTutorialCompleted(const std::string& tutorialId);
@@ -316,24 +398,17 @@ public:
     void MarkNPCConversationShown(const NPC* npc);
     bool HasSeenBaseIntro() const;
     void MarkBaseIntroSeen();
-    bool HasCompletedNPCOpeningTrigger(
-        const NPC* npc, std::size_t talkPageIndex) const;
-    void MarkNPCOpeningTriggerCompleted(
-        const NPC* npc, std::size_t talkPageIndex);
+    bool HasCompletedNPCOpeningTrigger(const NPC* npc, std::size_t talkPageIndex) const;
+    void MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
     bool AreAllMainStagesCleared() const;
     bool HasCompletedEndingRoll() const;
     void MarkEndingRollCompleted();
-    bool HasCompletedNPCEndingTrigger(
-        const NPC* npc, std::size_t talkPageIndex) const;
-    void MarkNPCEndingTriggerCompleted(
-        const NPC* npc, std::size_t talkPageIndex);
+    bool HasCompletedNPCEndingTrigger(const NPC* npc, std::size_t talkPageIndex) const;
+    void MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
     bool IsGameControllerConnected() const;
     bool HasGameControllerForPlayer(int playerNum) const;
     InputDeviceType GetLastUsedInputDevice() const { return mLastUsedInputDevice; }
-    void RecordInputDeviceUsage(InputDeviceType inputDevice)
-    {
-        mLastUsedInputDevice = inputDevice;
-    }
+    void RecordInputDeviceUsage(InputDeviceType inputDevice) { mLastUsedInputDevice = inputDevice; }
     bool IsInputModifierHeld() const { return mIsInputModifierHeld; }
     void SetInputModifierHeld(bool isHeld) { mIsInputModifierHeld = isHeld; }
 
@@ -357,27 +432,21 @@ private:
 
     void CheckGameControllerConnected();
     void UpdatePendingSoloSplitControlSwitch(float deltaTime);
-    bool LoadDebugStage(
-        int stageNum,
-        const std::string& yamlPath) override;
+    bool LoadDebugStage(int stageNum, const std::string& yamlPath) override;
     bool IsTitleScene() const override;
     void SetDebugCameraPose(const CameraPose& pose) override;
-    bool RequestSceneFadeAction(
-        const std::function<void()>& fadeAction) override;
+    bool RequestSceneFadeAction(const std::function<void()>& fadeAction) override;
     void NotifyUGCTutorialReturnedFromPlaytest() override;
-    void CompleteUGCVerification(
-        const std::string& workFileName) override;
+    void CompleteUGCVerification(const std::string& workFileName) override;
     bool HasProgressFlag(const std::string& progressId) const override;
     void MarkProgressFlag(const std::string& progressId) override;
     void EnterTitleAtFadeMidpoint() override;
     void TryChangeBGM() override;
     bool PrepareInitialSceneForDebug();
-    void RestoreDebugEditorSessionAtStartup(
-        const std::string& editorSessionPath,
-        const std::string& editorRestartErrorLogPath);
+    void RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPath,
+                                            const std::string& editorRestartErrorLogPath);
     void SavePersistentDebugEditorSession();
 
-private:
     GLFWwindow* mWindow = nullptr;
 
     std::unique_ptr<GameWorld> mWorld;
@@ -390,12 +459,10 @@ private:
     std::unique_ptr<Renderer3D> mRenderer3D;
     std::unique_ptr<GameFrameRenderer> mFrameRenderer;
     std::unique_ptr<UGCModeController> mUGCModeController;
-    std::unique_ptr<PlayerConfigurationController>
-        mPlayerConfigurationController;
+    std::unique_ptr<PlayerConfigurationController> mPlayerConfigurationController;
     std::unique_ptr<GameProgressController> mProgressController;
     std::unique_ptr<UGCPreviewController> mUGCPreviewController;
-    std::unique_ptr<DebugEditorSessionController>
-        mDebugEditorSessionController;
+    std::unique_ptr<DebugEditorSessionController> mDebugEditorSessionController;
     std::unique_ptr<PhysicsSystem> mPhysicsSystem;
     std::unique_ptr<CameraSystem> mCameraSystem;
     std::unique_ptr<ActorLoadSystem> mActorLoadSystem;
@@ -407,7 +474,7 @@ private:
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
     std::unique_ptr<TgsExperienceController> mTgsExperienceController;
-    bool mTgsReturnConfirmPressedPrev = false;
+    bool mWasTgsReturnConfirmPressed = false;
 
     float mHitStopTimer = -1.0f;
     float mGroundNormalRayLength = 5.0f;
@@ -427,5 +494,4 @@ private:
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;
     bool mIsInputModifierHeld = false;
-
 };
