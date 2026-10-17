@@ -17,45 +17,42 @@ bool SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
     std::ofstream file(filePath);
     if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: "
-                  << filePath << std::endl;
+        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
         return false;
     }
     file << config;
+
+    // バッファの書き出しやファイルを閉じる際の失敗も、保存失敗として呼び出し元へ返す。
+    file.close();
+    if (!file) {
+        std::cerr << "Failed to write yaml: " << filePath << std::endl;
+        return false;
+    }
     return true;
 }
 
 template <typename T>
-bool SetSequenceValue(
-    YAML::Node& config,
-    const std::string& sequenceName,
-    std::size_t index,
-    const std::string& key,
-    const T& value)
+bool SetSequenceValue(YAML::Node& config, const std::string& sequenceName, std::size_t index, const std::string& key,
+                      const T& value)
 {
     const YAML::Node sequence = config[sequenceName];
     if (!sequence || !sequence.IsSequence() || index >= sequence.size()) {
-        std::cerr << "Invalid yaml location: " << sequenceName
-                  << '[' << index << "]." << key << std::endl;
+        std::cerr << "Invalid yaml location: " << sequenceName << '[' << index << "]." << key << std::endl;
         return false;
     }
     config[sequenceName][index][key] = value;
     return true;
 }
 
-std::optional<std::size_t> FindEntryIndex(
-    const YAML::Node& config,
-    const std::string& sequenceName,
-    const std::string& key,
-    const std::string& expectedValue)
+std::optional<std::size_t> FindEntryIndex(const YAML::Node& config, const std::string& sequenceName,
+                                          const std::string& key, const std::string& expectedValue)
 {
     const YAML::Node sequence = config[sequenceName];
     if (!sequence || !sequence.IsSequence()) {
         return std::nullopt;
     }
     for (std::size_t index = 0; index < sequence.size(); ++index) {
-        if (sequence[index][key] &&
-            sequence[index][key].as<std::string>() == expectedValue) {
+        if (sequence[index][key] && sequence[index][key].as<std::string>() == expectedValue) {
             return index;
         }
     }
@@ -74,10 +71,7 @@ bool LoadYaml(const std::string& filePath, YAML::Node& outConfig)
     }
 }
 
-void WriteEnemyValues(
-    YAML::Node& config,
-    std::size_t index,
-    const Enemy& enemy)
+void WriteEnemyValues(YAML::Node& config, std::size_t index, const Enemy& enemy)
 {
     constexpr const char* sequenceName = "enemies";
     SetSequenceValue(config, sequenceName, index, "hp", enemy.GetMaxHp());
@@ -85,46 +79,32 @@ void WriteEnemyValues(
     SetSequenceValue(config, sequenceName, index, "scale", enemy.GetScale().x);
     SetSequenceValue(config, sequenceName, index, "speed", enemy.GetMoveSpeed());
     SetSequenceValue(config, sequenceName, index, "attack", enemy.GetAttack());
-    SetSequenceValue(
-        config,
-        sequenceName,
-        index,
-        "breakCountMax",
-        enemy.GetGuardSegmentCount());
+    SetSequenceValue(config, sequenceName, index, "breakCountMax", enemy.GetGuardSegmentCount());
     SetSequenceValue(config, sequenceName, index, "radius", enemy.GetRadius());
     SetSequenceValue(config, sequenceName, index, "defaultStandByAttackTimer", enemy.GetDefaultStandByAttackTimer());
     SetSequenceValue(config, sequenceName, index, "defaultAttackMotionTimer", enemy.GetDefaultAttackMotionTimer());
     SetSequenceValue(config, sequenceName, index, "attackSpeed", enemy.GetAttackSpeed());
 }
-}
+} // namespace
 
-ActorParameterYamlWriter::ActorParameterYamlWriter(
-    DebugEditorContext& context)
+ActorParameterYamlWriter::ActorParameterYamlWriter(DebugEditorContext& context)
     : mContext(context)
 {
 }
 
-bool ActorParameterYamlWriter::SaveStarCollectionAnimation(
-    const Star& star) const
+bool ActorParameterYamlWriter::SaveStarCollectionAnimation(const Star& star) const
 {
-    const Star::CollectionAnimationSettings& settings =
-        star.GetCollectionAnimationSettings();
+    const Star::CollectionAnimationSettings& settings = star.GetCollectionAnimationSettings();
     YAML::Node config;
     YAML::Node starConfig;
     starConfig["modelPath"] = star.GetModelPath();
     starConfig["scale"] = star.GetScale().x;
-    starConfig["collectionAnimation"]["orbitDuration"] =
-        settings.orbitDuration;
-    starConfig["collectionAnimation"]["orbitStartRadius"] =
-        settings.orbitStartRadius;
-    starConfig["collectionAnimation"]["orbitSpinDegreesPerSecond"] =
-        settings.orbitSpinDegreesPerSecond;
-    starConfig["collectionAnimation"]["finalHeight"] =
-        settings.finalHeight;
-    starConfig["collectionAnimation"]["waitAbovePlayerDuration"] =
-        settings.waitAbovePlayerDuration;
-    starConfig["collectionAnimation"]["fallDuration"] =
-        settings.fallDuration;
+    starConfig["collectionAnimation"]["orbitDuration"] = settings.orbitDuration;
+    starConfig["collectionAnimation"]["orbitStartRadius"] = settings.orbitStartRadius;
+    starConfig["collectionAnimation"]["orbitSpinDegreesPerSecond"] = settings.orbitSpinDegreesPerSecond;
+    starConfig["collectionAnimation"]["finalHeight"] = settings.finalHeight;
+    starConfig["collectionAnimation"]["waitAbovePlayerDuration"] = settings.waitAbovePlayerDuration;
+    starConfig["collectionAnimation"]["fallDuration"] = settings.fallDuration;
     config["stars"].push_back(starConfig);
     return SaveYamlFile("../assets/data/actor/stars.yaml", config);
 }
@@ -215,9 +195,7 @@ bool ActorParameterYamlWriter::SavePlayer(const Player& player) const
     return SaveYamlFile(filePath, config);
 }
 
-bool ActorParameterYamlWriter::SaveEnemies(
-    const Enemy* normalEnemy,
-    const Enemy* bossEnemy) const
+bool ActorParameterYamlWriter::SaveEnemies(const Enemy* normalEnemy, const Enemy* bossEnemy) const
 {
     if (!normalEnemy && !bossEnemy) {
         return false;
@@ -235,7 +213,8 @@ bool ActorParameterYamlWriter::SaveEnemies(
     const Enemy* commonEnemy = normalEnemy ? normalEnemy : bossEnemy;
     if (commonEnemy && commonIndex) {
         SetSequenceValue(config, sequenceName, *commonIndex, "knockBackSpeed", commonEnemy->GetKnockBackSpeed());
-        SetSequenceValue(config, sequenceName, *commonIndex, "defaultLaunchedTimer", commonEnemy->GetDefaultLaunchedTimer());
+        SetSequenceValue(config, sequenceName, *commonIndex, "defaultLaunchedTimer",
+                         commonEnemy->GetDefaultLaunchedTimer());
         SetSequenceValue(config, sequenceName, *commonIndex, "launchHeight", commonEnemy->GetLaunchHeight());
         SetSequenceValue(config, sequenceName, *commonIndex, "detectionRange", commonEnemy->GetDetectionRange());
     }
@@ -246,12 +225,10 @@ bool ActorParameterYamlWriter::SaveEnemies(
         WriteEnemyValues(config, *bossIndex, *bossEnemy);
     }
 
-    const bool hasRequiredEntries = commonIndex.has_value() &&
-        (!normalEnemy || normalIndex.has_value()) &&
-        (!bossEnemy || bossIndex.has_value());
+    const bool hasRequiredEntries =
+        commonIndex.has_value() && (!normalEnemy || normalIndex.has_value()) && (!bossEnemy || bossIndex.has_value());
     if (!hasRequiredEntries) {
-        std::cerr << "Required enemy type was not found in "
-                  << filePath << std::endl;
+        std::cerr << "Required enemy type was not found in " << filePath << std::endl;
         return false;
     }
     return SaveYamlFile(filePath, config);

@@ -1,15 +1,18 @@
 #include "gfx/debug/panels/ParticleEffectDebugPanel.h"
 
-#include "gfx/UIRenderer.h"
+// GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
+#include <GL/glew.h>
+
 #include "Game.h"
 #include "actor/Player.h"
+#include "gfx/UIRenderer.h"
 #include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
+#include "gfx/debug/panels/DebugPanelTextInput.h"
 #include "imgui.h"
 #include "system/ParticleSystem.h"
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
@@ -41,44 +44,22 @@ constexpr const char* previewPositionLabels[] = {
     "任意座標",
 };
 
-constexpr std::string_view particleTextureAssetPrefix =
-    "textures/particles/";
-
-template <std::size_t BufferSize>
-bool DrawStringInput(const char* label, std::string& text)
-{
-    std::array<char, BufferSize> buffer = {};
-    std::snprintf(buffer.data(), buffer.size(), "%s", text.c_str());
-    if (!ImGui::InputText(label, buffer.data(), buffer.size())) {
-        return false;
-    }
-
-    text = buffer.data();
-    return true;
-}
+constexpr std::string_view particleTextureAssetPrefix = "textures/particles/";
 
 std::string ToLower(std::string text)
 {
-    std::transform(
-        text.begin(),
-        text.end(),
-        text.begin(),
-        [](unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-        });
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return text;
 }
 
-bool TryResolveParticleTexturePath(
-    std::string_view assetPath,
-    std::string& outParticleTexturePath)
+bool TryResolveParticleTexturePath(std::string_view assetPath, std::string& outParticleTexturePath)
 {
     if (!assetPath.starts_with(particleTextureAssetPrefix)) {
         return false;
     }
 
-    outParticleTexturePath =
-        assetPath.substr(particleTextureAssetPrefix.size());
+    outParticleTexturePath = assetPath.substr(particleTextureAssetPrefix.size());
     return !outParticleTexturePath.empty();
 }
 
@@ -133,13 +114,8 @@ ParticleDirectionMode ToDirectionMode(int index)
     }
 }
 
-bool DrawRange(
-    const char* label,
-    ParticleFloatRange& range,
-    float speed,
-    float minimum,
-    float maximum,
-    const char* format)
+bool DrawRange(const char* label, ParticleFloatRange& range, float speed, float minimum, float maximum,
+               const char* format)
 {
     float values[2] = {range.min, range.max};
 
@@ -170,7 +146,7 @@ ParticleEmitterDefinition CreateDefaultEmitter()
     emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
     return emitter;
 }
-}
+} // namespace
 
 ParticleEffectDebugPanel::ParticleEffectDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)
@@ -195,7 +171,7 @@ void ParticleEffectDebugPanel::Draw()
 
     const float deltaTime = std::max(0.0f, ImGui::GetIO().DeltaTime);
 
-    if (mAutoPreview && !mSelectedEffectId.empty()) {
+    if (mIsAutoPreviewEnabled && !mSelectedEffectId.empty()) {
         mAutoPreviewTimer -= deltaTime;
         if (mAutoPreviewTimer <= 0.0f) {
             EmitPreview(particleSystem);
@@ -208,25 +184,22 @@ void ParticleEffectDebugPanel::Draw()
     if (mContext.game->GetIsFreeCameraMode()) {
         particleSystem.Update(deltaTime);
     }
-
 }
 
 void ParticleEffectDebugPanel::DrawToolbar(ParticleSystem& particleSystem)
 {
     if (ImGui::Button("YAMLへ保存")) {
         mStatusMessage =
-            particleSystem.SaveDefinitions()
-                ? "particles.yamlへ保存しました"
-                : "particles.yamlの保存に失敗しました";
+            particleSystem.SaveDefinitions() ? "particles.yamlへ保存しました" : "particles.yamlの保存に失敗しました";
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("再読込")) {
-        const bool loaded = particleSystem.ReloadDefinitions();
+        const bool wasLoaded = particleSystem.ReloadDefinitions();
         particleSystem.Clear();
 
-        if (loaded) {
+        if (wasLoaded) {
             ResetSelectionIfInvalid(particleSystem);
             mStatusMessage = "particles.yamlを再読み込みしました";
         } else {
@@ -241,10 +214,7 @@ void ParticleEffectDebugPanel::DrawToolbar(ParticleSystem& particleSystem)
     }
 
     ImGui::SameLine();
-    ImGui::TextDisabled(
-        "粒子数 %zu / %zu",
-        particleSystem.GetParticleCount(),
-        particleSystem.GetMaxParticleCount());
+    ImGui::TextDisabled("粒子数 %zu / %zu", particleSystem.GetParticleCount(), particleSystem.GetMaxParticleCount());
 
     if (!mStatusMessage.empty()) {
         ImGui::SameLine();
@@ -252,23 +222,16 @@ void ParticleEffectDebugPanel::DrawToolbar(ParticleSystem& particleSystem)
     }
 }
 
-void ParticleEffectDebugPanel::DrawEffectList(
-    ParticleSystem& particleSystem)
+void ParticleEffectDebugPanel::DrawEffectList(ParticleSystem& particleSystem)
 {
-    ImGui::BeginChild(
-        "ParticleEffectList",
-        ImVec2(210.0f, 0.0f),
-        true);
+    ImGui::BeginChild("ParticleEffectList", ImVec2(210.0f, 0.0f), true);
     ImGui::TextUnformatted("パーティクル一覧");
 
-    ImGui::InputTextWithHint(
-        "##NewParticleEffectId",
-        "新しいエフェクトID",
-        mNewEffectIdBuffer,
-        sizeof(mNewEffectIdBuffer));
+    ImGui::InputTextWithHint("##NewParticleEffectId", "新しいエフェクトID", mNewEffectIdBuffer.data(),
+                             mNewEffectIdBuffer.size());
 
     if (ImGui::Button("新規作成", ImVec2(-1.0f, 0.0f))) {
-        const std::string newEffectId(mNewEffectIdBuffer);
+        const std::string newEffectId(mNewEffectIdBuffer.data());
         if (particleSystem.CreateEffect(newEffectId)) {
             SelectEffect(particleSystem, newEffectId);
             mStatusMessage = "エフェクトを作成しました";
@@ -278,16 +241,13 @@ void ParticleEffectDebugPanel::DrawEffectList(
     }
 
     const ParticleEffectDefinition* selectedDefinition =
-        mSelectedEffectId.empty()
-            ? nullptr
-            : particleSystem.FindEffect(mSelectedEffectId);
+        mSelectedEffectId.empty() ? nullptr : particleSystem.FindEffect(mSelectedEffectId);
     if (!selectedDefinition) {
         ImGui::BeginDisabled();
     }
 
-    if (ImGui::Button("選択中を複製", ImVec2(-1.0f, 0.0f)) &&
-        selectedDefinition) {
-        const std::string newEffectId(mNewEffectIdBuffer);
+    if (ImGui::Button("選択中を複製", ImVec2(-1.0f, 0.0f)) && selectedDefinition) {
+        const std::string newEffectId(mNewEffectIdBuffer.data());
         if (particleSystem.CreateEffect(newEffectId, *selectedDefinition)) {
             SelectEffect(particleSystem, newEffectId);
             mStatusMessage = "エフェクトを複製しました";
@@ -296,8 +256,7 @@ void ParticleEffectDebugPanel::DrawEffectList(
         }
     }
 
-    if (ImGui::Button("選択中を削除", ImVec2(-1.0f, 0.0f)) &&
-        selectedDefinition) {
+    if (ImGui::Button("選択中を削除", ImVec2(-1.0f, 0.0f)) && selectedDefinition) {
         if (particleSystem.RemoveEffect(mSelectedEffectId)) {
             mSelectedEffectId.clear();
             mSelectedEmitterIndex = -1;
@@ -311,16 +270,11 @@ void ParticleEffectDebugPanel::DrawEffectList(
 
     ImGui::Separator();
     for (const std::string& effectId : particleSystem.GetEffectIds()) {
-        const ParticleEffectDefinition* definition =
-            particleSystem.FindEffect(effectId);
+        const ParticleEffectDefinition* definition = particleSystem.FindEffect(effectId);
         const std::string displayName =
-            definition && !definition->displayName.empty()
-                ? definition->displayName
-                : effectId;
+            definition && !definition->displayName.empty() ? definition->displayName : effectId;
         const std::string label = displayName + "##" + effectId;
-        if (ImGui::Selectable(
-                label.c_str(),
-                effectId == mSelectedEffectId)) {
+        if (ImGui::Selectable(label.c_str(), effectId == mSelectedEffectId)) {
             SelectEffect(particleSystem, effectId);
         }
         ImGui::TextDisabled("ID: %s", effectId.c_str());
@@ -329,37 +283,26 @@ void ParticleEffectDebugPanel::DrawEffectList(
     ImGui::EndChild();
 }
 
-void ParticleEffectDebugPanel::DrawEffectEditor(
-    ParticleSystem& particleSystem)
+void ParticleEffectDebugPanel::DrawEffectEditor(ParticleSystem& particleSystem)
 {
-    ImGui::BeginChild(
-        "ParticleEffectEditor",
-        ImVec2(0.0f, 0.0f),
-        true);
+    ImGui::BeginChild("ParticleEffectEditor", ImVec2(0.0f, 0.0f), true);
 
     ParticleEffectDefinition* definition =
-        mSelectedEffectId.empty()
-            ? nullptr
-            : particleSystem.FindEffectMutable(mSelectedEffectId);
+        mSelectedEffectId.empty() ? nullptr : particleSystem.FindEffectMutable(mSelectedEffectId);
     if (!definition) {
-        ImGui::TextWrapped(
-            "左側で編集するパーティクルを選択してください。");
+        ImGui::TextWrapped("左側で編集するパーティクルを選択してください。");
         ImGui::EndChild();
         return;
     }
 
     ImGui::Text("ID: %s", mSelectedEffectId.c_str());
-    DrawStringInput<256>("表示名", definition->displayName);
+    DebugPanelTextInput::DrawStringInput<256>("表示名", definition->displayName);
 
-    ImGui::TextDisabled(
-        "保存先: %s",
-        particleSystem.GetDefinitionFilePath().empty()
-            ? "未設定"
-            : particleSystem.GetDefinitionFilePath().c_str());
+    ImGui::TextDisabled("保存先: %s", particleSystem.GetDefinitionFilePath().empty()
+                                          ? "未設定"
+                                          : particleSystem.GetDefinitionFilePath().c_str());
 
-    if (ImGui::CollapsingHeader(
-            "プレビュー",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("プレビュー", ImGuiTreeNodeFlags_DefaultOpen)) {
         DrawPreviewControls(particleSystem);
     }
 
@@ -372,33 +315,23 @@ void ParticleEffectDebugPanel::DrawEffectEditor(
 
 void ParticleEffectDebugPanel::DrawPreviewControls(ParticleSystem& particleSystem)
 {
-    ImGui::Combo(
-        "発生位置",
-        &mPreviewPositionMode,
-        previewPositionLabels,
-        IM_ARRAYSIZE(previewPositionLabels));
+    ImGui::Combo("発生位置", &mPreviewPositionMode, previewPositionLabels, IM_ARRAYSIZE(previewPositionLabels));
 
     if (mPreviewPositionMode == 1) {
-        ImGui::DragFloat(
-            "正面までの距離",
-            &mPreviewForwardDistance,
-            0.05f,
-            0.0f,
-            50.0f,
-            "%.2f");
+        ImGui::DragFloat("正面までの距離", &mPreviewForwardDistance, 0.05f, 0.0f, 50.0f, "%.2f");
     } else if (mPreviewPositionMode == 2) {
         ImGui::DragFloat3("任意座標", &mCustomPreviewPosition.x, 0.05f);
     }
 
     ImGui::DragFloat("全体スケール", &mPreviewScale, 0.02f, 0.0f, 20.0f, "%.2f");
-    ImGui::Checkbox("プレイヤーの上下・正面方向を使う", &mUsePlayerAxes);
+    ImGui::Checkbox("プレイヤーの上下・正面方向を使う", &mUsesPlayerAxes);
 
-    if (!mUsePlayerAxes) {
+    if (!mUsesPlayerAxes) {
         ImGui::DragFloat3("法線", &mPreviewNormal.x, 0.02f);
         ImGui::DragFloat3("放出方向", &mPreviewDirection.x, 0.02f);
     }
 
-    ImGui::Checkbox("選択したエミッターだけ再生", &mPreviewSelectedEmitterOnly);
+    ImGui::Checkbox("選択したエミッターだけ再生", &mShouldPreviewSelectedEmitterOnly);
 
     if (ImGui::Button("1回再生")) {
         EmitPreview(particleSystem);
@@ -412,29 +345,20 @@ void ParticleEffectDebugPanel::DrawPreviewControls(ParticleSystem& particleSyste
         mPreviewPositionMode = 2;
     }
 
-    const bool autoPreviewChanged = ImGui::Checkbox("自動再生", &mAutoPreview);
-    if (autoPreviewChanged && mAutoPreview) {
+    const bool autoPreviewChanged = ImGui::Checkbox("自動再生", &mIsAutoPreviewEnabled);
+    if (autoPreviewChanged && mIsAutoPreviewEnabled) {
         mAutoPreviewTimer = 0.0f;
     }
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(150.0f);
-    ImGui::DragFloat(
-        "再生間隔",
-        &mAutoPreviewInterval,
-        0.02f,
-        0.05f,
-        10.0f,
-        "%.2f秒");
+    ImGui::DragFloat("再生間隔", &mAutoPreviewInterval, 0.02f, 0.05f, 10.0f, "%.2f秒");
 }
 
-void ParticleEffectDebugPanel::DrawEmitterList(
-    ParticleSystem& particleSystem)
+void ParticleEffectDebugPanel::DrawEmitterList(ParticleSystem& particleSystem)
 {
     ParticleEffectDefinition* effectDefinition =
-        mSelectedEffectId.empty()
-            ? nullptr
-            : particleSystem.FindEffectMutable(mSelectedEffectId);
+        mSelectedEffectId.empty() ? nullptr : particleSystem.FindEffectMutable(mSelectedEffectId);
 
     if (!effectDefinition) {
         ImGui::TextDisabled("エフェクトを選択してください");
@@ -443,47 +367,37 @@ void ParticleEffectDebugPanel::DrawEmitterList(
 
     if (ImGui::Button("エミッター追加")) {
         effectDefinition->emitters.push_back(CreateDefaultEmitter());
-        SelectEmitter(
-            particleSystem,
-            static_cast<int>(effectDefinition->emitters.size()) - 1);
+        SelectEmitter(particleSystem, static_cast<int>(effectDefinition->emitters.size()) - 1);
         mStatusMessage = "エミッターを追加しました";
     }
 
     ImGui::SameLine();
 
     const bool hasSelectedEmitter =
-        mSelectedEmitterIndex >= 0 &&
-        mSelectedEmitterIndex < static_cast<int>(effectDefinition->emitters.size());
+        mSelectedEmitterIndex >= 0 && mSelectedEmitterIndex < static_cast<int>(effectDefinition->emitters.size());
 
     if (!hasSelectedEmitter) {
         ImGui::BeginDisabled();
     }
 
     if (ImGui::Button("エミッター複製") && hasSelectedEmitter) {
-        const ParticleEmitterDefinition copy =
-            effectDefinition->emitters[mSelectedEmitterIndex];
+        const ParticleEmitterDefinition copy = effectDefinition->emitters[mSelectedEmitterIndex];
 
         effectDefinition->emitters.push_back(copy);
-        SelectEmitter(
-            particleSystem,
-            static_cast<int>(effectDefinition->emitters.size()) - 1);
+        SelectEmitter(particleSystem, static_cast<int>(effectDefinition->emitters.size()) - 1);
         mStatusMessage = "エミッターを複製しました";
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("エミッター削除") && hasSelectedEmitter) {
-        effectDefinition->emitters.erase(
-            effectDefinition->emitters.begin() + mSelectedEmitterIndex);
+        effectDefinition->emitters.erase(effectDefinition->emitters.begin() + mSelectedEmitterIndex);
 
         if (effectDefinition->emitters.empty()) {
             mSelectedEmitterIndex = -1;
         } else {
-            SelectEmitter(
-                particleSystem,
-                std::min(
-                    mSelectedEmitterIndex,
-                    static_cast<int>(effectDefinition->emitters.size()) - 1));
+            SelectEmitter(particleSystem,
+                          std::min(mSelectedEmitterIndex, static_cast<int>(effectDefinition->emitters.size()) - 1));
         }
 
         mStatusMessage = "エミッターを削除しました";
@@ -494,76 +408,50 @@ void ParticleEffectDebugPanel::DrawEmitterList(
     }
 
     if (hasSelectedEmitter) {
-        if (mSelectedEmitterIndex > 0 &&
-            ImGui::Button("上へ移動")) {
-            std::swap(
-                effectDefinition->emitters[mSelectedEmitterIndex],
-                effectDefinition->emitters[mSelectedEmitterIndex - 1]);
+        if (mSelectedEmitterIndex > 0 && ImGui::Button("上へ移動")) {
+            std::swap(effectDefinition->emitters[mSelectedEmitterIndex],
+                      effectDefinition->emitters[mSelectedEmitterIndex - 1]);
             --mSelectedEmitterIndex;
-            SyncTexturePathBuffer(
-                effectDefinition->emitters[mSelectedEmitterIndex]);
+            SyncTexturePathBuffer(effectDefinition->emitters[mSelectedEmitterIndex]);
         }
 
         ImGui::SameLine();
-        if (mSelectedEmitterIndex + 1 <
-                static_cast<int>(effectDefinition->emitters.size()) &&
+        if (mSelectedEmitterIndex + 1 < static_cast<int>(effectDefinition->emitters.size()) &&
             ImGui::Button("下へ移動")) {
-            std::swap(
-                effectDefinition->emitters[mSelectedEmitterIndex],
-                effectDefinition->emitters[mSelectedEmitterIndex + 1]);
+            std::swap(effectDefinition->emitters[mSelectedEmitterIndex],
+                      effectDefinition->emitters[mSelectedEmitterIndex + 1]);
             ++mSelectedEmitterIndex;
-            SyncTexturePathBuffer(
-                effectDefinition->emitters[mSelectedEmitterIndex]);
+            SyncTexturePathBuffer(effectDefinition->emitters[mSelectedEmitterIndex]);
         }
     }
 
-    ImGui::BeginChild(
-        "ParticleEmitterList",
-        ImVec2(0.0f, 135.0f),
-        true);
-    for (int emitterIndex = 0;
-         emitterIndex < static_cast<int>(effectDefinition->emitters.size());
-         ++emitterIndex) {
-        const ParticleEmitterDefinition& emitter =
-            effectDefinition->emitters[emitterIndex];
+    ImGui::BeginChild("ParticleEmitterList", ImVec2(0.0f, 135.0f), true);
+    for (int emitterIndex = 0; emitterIndex < static_cast<int>(effectDefinition->emitters.size()); ++emitterIndex) {
+        const ParticleEmitterDefinition& emitter = effectDefinition->emitters[emitterIndex];
 
         char label[256];
-        std::snprintf(
-            label,
-            sizeof(label),
-            "%02d  %s  粒子数=%d",
-            emitterIndex + 1,
-            emitter.texturePath.c_str(),
-            emitter.count);
+        std::snprintf(label, sizeof(label), "%02d  %s  粒子数=%d", emitterIndex + 1, emitter.texturePath.c_str(),
+                      emitter.count);
 
-        if (ImGui::Selectable(
-                label,
-                emitterIndex == mSelectedEmitterIndex)) {
+        if (ImGui::Selectable(label, emitterIndex == mSelectedEmitterIndex)) {
             SelectEmitter(particleSystem, emitterIndex);
         }
     }
     ImGui::EndChild();
 }
 
-void ParticleEffectDebugPanel::DrawEmitterInspector(
-    ParticleSystem& particleSystem)
+void ParticleEffectDebugPanel::DrawEmitterInspector(ParticleSystem& particleSystem)
 {
     ParticleEffectDefinition* effectDefinition =
-        mSelectedEffectId.empty()
-            ? nullptr
-            : particleSystem.FindEffectMutable(mSelectedEffectId);
-    const bool hasSelectedEmitter =
-        effectDefinition &&
-        mSelectedEmitterIndex >= 0 &&
-        mSelectedEmitterIndex <
-            static_cast<int>(effectDefinition->emitters.size());
+        mSelectedEffectId.empty() ? nullptr : particleSystem.FindEffectMutable(mSelectedEffectId);
+    const bool hasSelectedEmitter = effectDefinition && mSelectedEmitterIndex >= 0 &&
+                                    mSelectedEmitterIndex < static_cast<int>(effectDefinition->emitters.size());
     if (!hasSelectedEmitter) {
         ImGui::TextDisabled("一覧からエミッターを選択してください");
         return;
     }
 
-    ParticleEmitterDefinition& emitter =
-        effectDefinition->emitters[mSelectedEmitterIndex];
+    ParticleEmitterDefinition& emitter = effectDefinition->emitters[mSelectedEmitterIndex];
 
     ImGui::Separator();
     ImGui::Text("エミッター %d の設定", mSelectedEmitterIndex + 1);
@@ -575,238 +463,107 @@ void ParticleEffectDebugPanel::DrawEmitterInspector(
 
     bool emitterChanged = false;
 
-    if (ImGui::CollapsingHeader(
-            "基本",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("基本", ImGuiTreeNodeFlags_DefaultOpen)) {
         emitterChanged |= DrawTexturePicker(emitter);
 
         int blendModeIndex = ToIndex(emitter.blendMode);
-        if (ImGui::Combo(
-                "ブレンド",
-                &blendModeIndex,
-                blendModeLabels,
-                IM_ARRAYSIZE(blendModeLabels))) {
+        if (ImGui::Combo("ブレンド", &blendModeIndex, blendModeLabels, IM_ARRAYSIZE(blendModeLabels))) {
             emitter.blendMode = ToBlendMode(blendModeIndex);
             emitterChanged = true;
         }
 
         int renderModeIndex = ToIndex(emitter.renderMode);
-        if (ImGui::Combo(
-                "描画方式",
-                &renderModeIndex,
-                renderModeLabels,
-                IM_ARRAYSIZE(renderModeLabels))) {
+        if (ImGui::Combo("描画方式", &renderModeIndex, renderModeLabels, IM_ARRAYSIZE(renderModeLabels))) {
             emitter.renderMode = ToRenderMode(renderModeIndex);
             emitterChanged = true;
         }
     }
 
-    if (ImGui::CollapsingHeader(
-            "発生",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("発生", ImGuiTreeNodeFlags_DefaultOpen)) {
         int directionModeIndex = ToIndex(emitter.directionMode);
-        if (ImGui::Combo(
-                "放出方向",
-                &directionModeIndex,
-                directionModeLabels,
-                IM_ARRAYSIZE(directionModeLabels))) {
+        if (ImGui::Combo("放出方向", &directionModeIndex, directionModeLabels, IM_ARRAYSIZE(directionModeLabels))) {
             emitter.directionMode = ToDirectionMode(directionModeIndex);
             emitterChanged = true;
         }
 
-        emitterChanged |=
-            ImGui::DragInt("粒子数", &emitter.count, 1.0f, 0, 4096);
+        emitterChanged |= ImGui::DragInt("粒子数", &emitter.count, 1.0f, 0, 4096);
         emitter.count = std::max(0, emitter.count);
 
-        emitterChanged |= DrawRange(
-            "寿命 min/max",
-            emitter.lifetime,
-            0.01f,
-            0.001f,
-            60.0f,
-            "%.3f");
-        emitterChanged |= DrawRange(
-            "速度 min/max",
-            emitter.speed,
-            0.02f,
-            0.0f,
-            100.0f,
-            "%.2f");
-        emitterChanged |= ImGui::DragFloat3(
-            "発生位置オフセット",
-            &emitter.positionOffset.x,
-            0.02f);
+        emitterChanged |= DrawRange("寿命 min/max", emitter.lifetime, 0.01f, 0.001f, 60.0f, "%.3f");
+        emitterChanged |= DrawRange("速度 min/max", emitter.speed, 0.02f, 0.0f, 100.0f, "%.2f");
+        emitterChanged |= ImGui::DragFloat3("発生位置オフセット", &emitter.positionOffset.x, 0.02f);
 
         if (emitter.directionMode == ParticleDirectionMode::Cone) {
-            emitterChanged |= ImGui::DragFloat(
-                "コーン角度",
-                &emitter.spreadAngleDegrees,
-                0.5f,
-                0.0f,
-                180.0f,
-                "%.1f");
+            emitterChanged |= ImGui::DragFloat("コーン角度", &emitter.spreadAngleDegrees, 0.5f, 0.0f, 180.0f, "%.1f");
         }
     }
 
-    if (ImGui::CollapsingHeader(
-            "移動",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
-        emitterChanged |= ImGui::DragFloat(
-            "重力",
-            &emitter.gravity,
-            0.02f,
-            -100.0f,
-            100.0f,
-            "%.2f");
-        emitterChanged |= ImGui::DragFloat(
-            "抵抗",
-            &emitter.drag,
-            0.02f,
-            0.0f,
-            100.0f,
-            "%.2f");
+    if (ImGui::CollapsingHeader("移動", ImGuiTreeNodeFlags_DefaultOpen)) {
+        emitterChanged |= ImGui::DragFloat("重力", &emitter.gravity, 0.02f, -100.0f, 100.0f, "%.2f");
+        emitterChanged |= ImGui::DragFloat("抵抗", &emitter.drag, 0.02f, 0.0f, 100.0f, "%.2f");
         emitter.drag = std::max(0.0f, emitter.drag);
     }
 
-    if (ImGui::CollapsingHeader(
-            "見た目",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
-        emitterChanged |= DrawRange(
-            "開始サイズ min/max",
-            emitter.startSize,
-            0.01f,
-            0.0f,
-            100.0f,
-            "%.3f");
-        emitterChanged |= ImGui::DragFloat(
-            "終了サイズ倍率",
-            &emitter.endSizeMultiplier,
-            0.01f,
-            0.0f,
-            20.0f,
-            "%.3f");
-        emitterChanged |= DrawRange(
-            "初期回転 min/max",
-            emitter.rotationDegrees,
-            1.0f,
-            -3600.0f,
-            3600.0f,
-            "%.1f");
-        emitterChanged |= DrawRange(
-            "回転速度 min/max",
-            emitter.angularVelocityDegrees,
-            1.0f,
-            -3600.0f,
-            3600.0f,
-            "%.1f");
-        emitterChanged |= ImGui::DragFloat(
-            "速度方向への伸び",
-            &emitter.velocityStretch,
-            0.02f,
-            0.0f,
-            100.0f,
-            "%.2f");
-        emitter.velocityStretch =
-            std::max(0.0f, emitter.velocityStretch);
+    if (ImGui::CollapsingHeader("見た目", ImGuiTreeNodeFlags_DefaultOpen)) {
+        emitterChanged |= DrawRange("開始サイズ min/max", emitter.startSize, 0.01f, 0.0f, 100.0f, "%.3f");
+        emitterChanged |= ImGui::DragFloat("終了サイズ倍率", &emitter.endSizeMultiplier, 0.01f, 0.0f, 20.0f, "%.3f");
+        emitterChanged |= DrawRange("初期回転 min/max", emitter.rotationDegrees, 1.0f, -3600.0f, 3600.0f, "%.1f");
+        emitterChanged |=
+            DrawRange("回転速度 min/max", emitter.angularVelocityDegrees, 1.0f, -3600.0f, 3600.0f, "%.1f");
+        emitterChanged |= ImGui::DragFloat("速度方向への伸び", &emitter.velocityStretch, 0.02f, 0.0f, 100.0f, "%.2f");
+        emitter.velocityStretch = std::max(0.0f, emitter.velocityStretch);
     }
 
-    if (ImGui::CollapsingHeader(
-            "色",
-            ImGuiTreeNodeFlags_DefaultOpen)) {
-        emitterChanged |=
-            ImGui::ColorEdit4("開始色", &emitter.startColor.x);
-        emitterChanged |=
-            ImGui::ColorEdit4("終了色", &emitter.endColor.x);
+    if (ImGui::CollapsingHeader("色", ImGuiTreeNodeFlags_DefaultOpen)) {
+        emitterChanged |= ImGui::ColorEdit4("開始色", &emitter.startColor.x);
+        emitterChanged |= ImGui::ColorEdit4("終了色", &emitter.endColor.x);
     }
 
-    if (emitterChanged && mAutoPreview) {
+    if (emitterChanged && mIsAutoPreviewEnabled) {
         mAutoPreviewTimer = 0.0f;
     }
 }
 
-bool ParticleEffectDebugPanel::DrawTexturePicker(
-    ParticleEmitterDefinition& emitter)
+bool ParticleEffectDebugPanel::DrawTexturePicker(ParticleEmitterDefinition& emitter)
 {
-    bool changed = false;
+    bool wasChanged = false;
 
-    if (ImGui::InputText(
-            "テクスチャ",
-            mTexturePathBuffer,
-            sizeof(mTexturePathBuffer))) {
-        emitter.texturePath = mTexturePathBuffer;
-        changed = true;
+    if (ImGui::InputText("テクスチャ", mTexturePathBuffer.data(), mTexturePathBuffer.size())) {
+        emitter.texturePath = mTexturePathBuffer.data();
+        wasChanged = true;
     }
 
     std::string droppedTextureAssetPath;
-    if (EditorAssetDragDrop::AcceptPath(
-            EditorAssetType::Texture,
-            droppedTextureAssetPath)) {
-        std::string particleTexturePath;
-        if (TryResolveParticleTexturePath(
-                droppedTextureAssetPath,
-                particleTexturePath)) {
-            emitter.texturePath = particleTexturePath;
-            SyncTexturePathBuffer(emitter);
-            changed = true;
-        } else {
-            mStatusMessage =
-                "particlesフォルダー内の画像を選択してください";
-        }
+    if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Texture, droppedTextureAssetPath)) {
+        wasChanged = ApplyTextureAsset(emitter, droppedTextureAssetPath) || wasChanged;
     }
 
-    ImGui::Button(
-        "画像アセットをここへドロップ##particleTextureDrop",
-        ImVec2(-1.0f, 0.0f));
-    if (EditorAssetDragDrop::AcceptPath(
-            EditorAssetType::Texture,
-            droppedTextureAssetPath)) {
-        std::string particleTexturePath;
-        if (TryResolveParticleTexturePath(
-                droppedTextureAssetPath,
-                particleTexturePath)) {
-            emitter.texturePath = particleTexturePath;
-            SyncTexturePathBuffer(emitter);
-            changed = true;
-        } else {
-            mStatusMessage =
-                "particlesフォルダー内の画像を選択してください";
-        }
+    ImGui::Button("画像アセットをここへドロップ##particleTextureDrop", ImVec2(-1.0f, 0.0f));
+    if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Texture, droppedTextureAssetPath)) {
+        wasChanged = ApplyTextureAsset(emitter, droppedTextureAssetPath) || wasChanged;
     }
 
     if (mContext.assetCatalog) {
         mContext.assetCatalog->EnsureScanned();
 
-        ImGui::InputTextWithHint(
-            "##ParticleTextureFilter",
-            "パーティクル画像を検索",
-            mTextureAssetFilter.data(),
-            mTextureAssetFilter.size());
+        ImGui::InputTextWithHint("##ParticleTextureFilter", "パーティクル画像を検索", mTextureAssetFilter.data(),
+                                 mTextureAssetFilter.size());
 
         const std::string filter = ToLower(mTextureAssetFilter.data());
-        if (ImGui::BeginCombo(
-                "画像アセット",
-                emitter.texturePath.c_str())) {
-            for (const std::string& assetPath :
-                 mContext.assetCatalog->GetPaths(
-                     EditorAssetType::Texture)) {
+        if (ImGui::BeginCombo("画像アセット", emitter.texturePath.c_str())) {
+            for (const std::string& assetPath : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
                 std::string particleTexturePath;
-                if (!TryResolveParticleTexturePath(
-                        assetPath,
-                        particleTexturePath)) {
+                if (!TryResolveParticleTexturePath(assetPath, particleTexturePath)) {
                     continue;
                 }
-                if (!filter.empty() &&
-                    ToLower(particleTexturePath).find(filter) ==
-                        std::string::npos) {
+                if (!filter.empty() && ToLower(particleTexturePath).find(filter) == std::string::npos) {
                     continue;
                 }
 
-                if (ImGui::Selectable(
-                        particleTexturePath.c_str(),
-                        particleTexturePath == emitter.texturePath)) {
+                if (ImGui::Selectable(particleTexturePath.c_str(), particleTexturePath == emitter.texturePath)) {
                     emitter.texturePath = particleTexturePath;
                     SyncTexturePathBuffer(emitter);
-                    changed = true;
+                    wasChanged = true;
                 }
             }
             ImGui::EndCombo();
@@ -814,51 +571,37 @@ bool ParticleEffectDebugPanel::DrawTexturePicker(
     }
 
     if (mContext.uiRenderer && !emitter.texturePath.empty()) {
-        const std::string assetPath =
-            std::string(particleTextureAssetPrefix) +
-            emitter.texturePath;
+        const std::string assetPath = std::string(particleTextureAssetPrefix) + emitter.texturePath;
         if (mContext.uiRenderer->RegisterCustomUITexture(assetPath)) {
-            const unsigned int texture =
-                mContext.uiRenderer->GetCustomUITextureHandle(assetPath);
+            const unsigned int texture = mContext.uiRenderer->GetCustomUITextureHandle(assetPath);
             if (texture != 0) {
                 ImGui::TextUnformatted("テクスチャプレビュー");
-                ImGui::Image(
-                    static_cast<ImTextureID>(texture),
-                    ImVec2(96.0f, 96.0f),
-                    ImVec2(0.0f, 1.0f),
-                    ImVec2(1.0f, 0.0f));
+                ImGui::Image(static_cast<ImTextureID>(texture), ImVec2(96.0f, 96.0f), ImVec2(0.0f, 1.0f),
+                             ImVec2(1.0f, 0.0f));
             }
         }
     }
 
-    return changed;
+    return wasChanged;
 }
 
-void ParticleEffectDebugPanel::SelectEffect(
-    ParticleSystem& particleSystem,
-    const std::string& effectId)
+void ParticleEffectDebugPanel::SelectEffect(ParticleSystem& particleSystem, const std::string& effectId)
 {
     mSelectedEffectId = effectId;
     mSelectedEmitterIndex = -1;
 
-    const ParticleEffectDefinition* definition =
-        particleSystem.FindEffect(effectId);
+    const ParticleEffectDefinition* definition = particleSystem.FindEffect(effectId);
 
     if (definition && !definition->emitters.empty()) {
         SelectEmitter(particleSystem, 0);
     }
 }
 
-void ParticleEffectDebugPanel::SelectEmitter(
-    ParticleSystem& particleSystem,
-    int emitterIndex)
+void ParticleEffectDebugPanel::SelectEmitter(ParticleSystem& particleSystem, int emitterIndex)
 {
-    ParticleEffectDefinition* definition =
-        particleSystem.FindEffectMutable(mSelectedEffectId);
+    ParticleEffectDefinition* definition = particleSystem.FindEffectMutable(mSelectedEffectId);
 
-    if (!definition ||
-        emitterIndex < 0 ||
-        emitterIndex >= static_cast<int>(definition->emitters.size())) {
+    if (!definition || emitterIndex < 0 || emitterIndex >= static_cast<int>(definition->emitters.size())) {
         mSelectedEmitterIndex = -1;
         return;
     }
@@ -891,13 +634,10 @@ ParticleSpawnContext ParticleEffectDebugPanel::BuildPreviewContext() const
     if (mPreviewPositionMode == 0) {
         context.position = player->GetPos() + playerUp * radius * 0.55f;
     } else if (mPreviewPositionMode == 1) {
-        context.position =
-            player->GetPos() +
-            playerUp * radius * 0.55f +
-            playerForward * mPreviewForwardDistance;
+        context.position = player->GetPos() + playerUp * radius * 0.55f + playerForward * mPreviewForwardDistance;
     }
 
-    if (mUsePlayerAxes) {
+    if (mUsesPlayerAxes) {
         context.normal = playerUp;
         context.direction = playerForward;
     }
@@ -914,20 +654,16 @@ void ParticleEffectDebugPanel::EmitPreview(ParticleSystem& particleSystem)
 
     const ParticleSpawnContext context = BuildPreviewContext();
 
-    if (mPreviewSelectedEmitterOnly) {
-        const ParticleEffectDefinition* definition =
-            particleSystem.FindEffect(mSelectedEffectId);
+    if (mShouldPreviewSelectedEmitterOnly) {
+        const ParticleEffectDefinition* definition = particleSystem.FindEffect(mSelectedEffectId);
 
-        if (!definition ||
-            mSelectedEmitterIndex < 0 ||
+        if (!definition || mSelectedEmitterIndex < 0 ||
             mSelectedEmitterIndex >= static_cast<int>(definition->emitters.size())) {
             mStatusMessage = "エミッターを選択してください";
             return;
         }
 
-        particleSystem.EmitEmitter(
-            definition->emitters[mSelectedEmitterIndex],
-            context);
+        particleSystem.EmitEmitter(definition->emitters[mSelectedEmitterIndex], context);
         return;
     }
 
@@ -936,19 +672,14 @@ void ParticleEffectDebugPanel::EmitPreview(ParticleSystem& particleSystem)
     }
 }
 
-void ParticleEffectDebugPanel::SyncTexturePathBuffer(
-    const ParticleEmitterDefinition& emitter)
+void ParticleEffectDebugPanel::SyncTexturePathBuffer(const ParticleEmitterDefinition& emitter)
 {
-    std::strncpy(
-        mTexturePathBuffer,
-        emitter.texturePath.c_str(),
-        sizeof(mTexturePathBuffer) - 1);
+    std::strncpy(mTexturePathBuffer.data(), emitter.texturePath.c_str(), mTexturePathBuffer.size() - 1);
 
-    mTexturePathBuffer[sizeof(mTexturePathBuffer) - 1] = '\0';
+    mTexturePathBuffer[mTexturePathBuffer.size() - 1] = '\0';
 }
 
-void ParticleEffectDebugPanel::ResetSelectionIfInvalid(
-    ParticleSystem& particleSystem)
+void ParticleEffectDebugPanel::ResetSelectionIfInvalid(ParticleSystem& particleSystem)
 {
     if (mSelectedEffectId.empty()) {
         const std::vector<std::string> effectIds = particleSystem.GetEffectIds();
@@ -958,8 +689,7 @@ void ParticleEffectDebugPanel::ResetSelectionIfInvalid(
         return;
     }
 
-    ParticleEffectDefinition* definition =
-        particleSystem.FindEffectMutable(mSelectedEffectId);
+    ParticleEffectDefinition* definition = particleSystem.FindEffectMutable(mSelectedEffectId);
 
     if (!definition) {
         mSelectedEffectId.clear();
@@ -972,8 +702,19 @@ void ParticleEffectDebugPanel::ResetSelectionIfInvalid(
         return;
     }
 
-    if (mSelectedEmitterIndex < 0 ||
-        mSelectedEmitterIndex >= static_cast<int>(definition->emitters.size())) {
+    if (mSelectedEmitterIndex < 0 || mSelectedEmitterIndex >= static_cast<int>(definition->emitters.size())) {
         SelectEmitter(particleSystem, 0);
     }
+}
+
+bool ParticleEffectDebugPanel::ApplyTextureAsset(ParticleEmitterDefinition& emitter, const std::string& assetPath)
+{
+    std::string particleTexturePath;
+    if (!TryResolveParticleTexturePath(assetPath, particleTexturePath)) {
+        mStatusMessage = "particlesフォルダー内の画像を選択してください";
+        return false;
+    }
+    emitter.texturePath = particleTexturePath;
+    SyncTexturePathBuffer(emitter);
+    return true;
 }

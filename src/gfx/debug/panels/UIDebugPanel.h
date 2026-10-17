@@ -6,12 +6,13 @@
 
 #include <array>
 #include <string>
-#include <vector>
 
+// UI定義の一覧とプロパティを編集し、キャンバス操作をUICanvasEditorControllerへ委譲する。
 class UIDebugPanel : public DebugPanel {
 public:
     explicit UIDebugPanel(DebugEditorContext& context);
 
+    // UI定義を直接編集する。明示的な保存操作に加え、キャンバスの複製・削除・ギズモ操作終了時にも保存する。
     void Draw() override;
 
 private:
@@ -30,17 +31,12 @@ private:
     void DrawExistingTextureInspector(UILoadSystem* uiLoadSystem);
     void DrawExistingTextInspector(UILoadSystem* uiLoadSystem);
     void DrawCodeBoundElementProtection();
-    void DrawAssetPicker(
-        std::string& texturePath,
-        bool& flipVertical,
-        const char* widgetId,
-        const char* sectionLabel);
+    void DrawAssetPicker(std::string& texturePath, bool& flipVertical, const char* widgetId, const char* sectionLabel);
     void SaveAllUI(UILoadSystem* uiLoadSystem);
     void ReloadAllUI(UILoadSystem* uiLoadSystem);
 
     std::string GetDisplayName(const std::string& key) const;
 
-private:
     UICanvasEditorController mCanvasEditor;
     int mNewElementType = 0;
     std::array<char, 128> mNewScreen = {"custom"};

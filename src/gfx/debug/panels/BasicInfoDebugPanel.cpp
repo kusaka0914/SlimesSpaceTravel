@@ -1,12 +1,9 @@
-#include <GL/glew.h>
-
 #include "gfx/debug/panels/BasicInfoDebugPanel.h"
 
 #include "gfx/debug/panels/PerformanceDebugPanel.h"
 #include "imgui.h"
 
-BasicInfoDebugPanel::BasicInfoDebugPanel(
-    PerformanceDebugPanel& performancePanel)
+BasicInfoDebugPanel::BasicInfoDebugPanel(PerformanceDebugPanel& performancePanel)
     : mPerformancePanel(performancePanel)
 {
 }

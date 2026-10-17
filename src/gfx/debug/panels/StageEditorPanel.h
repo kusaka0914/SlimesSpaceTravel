@@ -12,25 +12,26 @@ class StageDeleteActorPanel;
 class StageActorYamlWriter;
 class StageSelectionController;
 
+// ステージ編集のメニュー・一覧・インスペクターを連携し、保存・履歴・ステージ切り替えを提供する。
+// 渡された各パネルとControllerは所有しない。
 class StageEditorPanel : public DebugPanel {
 public:
-    StageEditorPanel(
-        DebugEditorContext& context,
-        StageAddActorPanel& addActorPanel,
-        StagePlanetPanel& planetPanel,
-        StagePlacementPanel& placementPanel,
-        StageDeleteActorPanel& deleteActorPanel,
-        StageActorYamlWriter& stageActorYamlWriter,
-        StageSelectionController& selectionController,
-        std::function<bool()> restoreUndo,
-        std::function<bool()> restoreRedo);
+    StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel, StagePlanetPanel& planetPanel,
+                     StagePlacementPanel& placementPanel, StageDeleteActorPanel& deleteActorPanel,
+                     StageActorYamlWriter& stageActorYamlWriter, StageSelectionController& selectionController,
+                     std::function<bool()> restoreUndo, std::function<bool()> restoreRedo);
 
     void Draw() override;
     void DrawTopBar();
 
+    // 選択中の編集へ切り替え、親タブと対象Actorの一覧を開く要求を記録する。
     void RequestOpenPlacementTab();
+
+    // 親タブを開く要求を返し、要求を解除する。
     bool ConsumeRequestOpenMainTab();
     int GetSelectedMenu() const { return mSelectedMenu; }
+
+    // 0:デバッグ状態、1:追加、3:選択中、6:削除。その他は選択中へ戻す。
     void SetSelectedMenu(int selectedMenu);
 
 private:

@@ -3,18 +3,17 @@
 #include "gfx/debug/panels/CinematicSequenceDebugPanel.h"
 #include "gfx/debug/panels/EndingRollDebugPanel.h"
 #include "gfx/debug/panels/SequenceDebugPanel.h"
-#include "gfx/debug/panels/StorybookDebugPanel.h"
 #include "gfx/debug/panels/StarCollectionDebugPanel.h"
+#include "gfx/debug/panels/StorybookDebugPanel.h"
 #include "imgui.h"
 
 #include <algorithm>
 
-SequenceEditorWorkspacePanel::SequenceEditorWorkspacePanel(
-    CinematicSequenceDebugPanel& cinematicCameraPanel,
-    SequenceDebugPanel& sequencePanel,
-    EndingRollDebugPanel& endingRollPanel,
-    StorybookDebugPanel& storybookPanel,
-    StarCollectionDebugPanel& starCollectionPanel)
+SequenceEditorWorkspacePanel::SequenceEditorWorkspacePanel(CinematicSequenceDebugPanel& cinematicCameraPanel,
+                                                           SequenceDebugPanel& sequencePanel,
+                                                           EndingRollDebugPanel& endingRollPanel,
+                                                           StorybookDebugPanel& storybookPanel,
+                                                           StarCollectionDebugPanel& starCollectionPanel)
     : mCinematicCameraPanel(cinematicCameraPanel),
       mSequencePanel(sequencePanel),
       mEndingRollPanel(endingRollPanel),
@@ -36,11 +35,7 @@ void SequenceEditorWorkspacePanel::SetSelectedMenuIndex(int menuIndex)
 void SequenceEditorWorkspacePanel::Draw()
 {
     constexpr const char* menus[] = {
-        "演出シーケンス",
-        "カメラシーケンス",
-        "星獲得",
-        "エンドロール",
-        "絵本演出",
+        "演出シーケンス", "カメラシーケンス", "星獲得", "エンドロール", "絵本演出",
     };
 
     ImGui::BeginChild("SequenceEditorLeft", ImVec2(160.0f, 0.0f), true);

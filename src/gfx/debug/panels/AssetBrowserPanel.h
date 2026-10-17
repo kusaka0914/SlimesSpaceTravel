@@ -13,14 +13,19 @@
 class TutorialVideoPlayer;
 class EditorModelThumbnailRenderer;
 
+// アセットの検索・ドラッグ元・プレビューを提供し、動画サムネイルとプレイヤーを所有する。
+// 生成したOpenGLテクスチャを破棄するため、破棄時にも有効なOpenGLコンテキストが必要。
 class AssetBrowserPanel final : public DebugPanel {
 public:
     explicit AssetBrowserPanel(DebugEditorContext& context);
     ~AssetBrowserPanel() override;
 
+    // ImGuiフレーム内で呼ぶ。表示対象のサムネイルを順次生成し、要求された動画を再生する。
     void Draw() override;
 
 private:
+    void DrawFilters();
+    void DrawAssetTable();
     struct VideoThumbnail {
         GLuint textureHandle = 0;
         int width = 0;

@@ -1,32 +1,20 @@
-#include "gfx/debug/panels/ParameterDebugPanel.h"
+#include "gfx/debug/panels/EnemyParameterDebugPanel.h"
 
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
-#include "actor/Player.h"
-#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
-#include "gfx/debug/panels/CameraDebugPanel.h"
+#include "gfx/debug/panels/EnemyPresetDebugPanel.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
-#include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <optional>
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
 
-
-EnemyParameterDebugPanel::EnemyParameterDebugPanel(
-    DebugEditorContext& context,
-    EnemyPresetDebugPanel& presetPanel)
+EnemyParameterDebugPanel::EnemyParameterDebugPanel(DebugEditorContext& context, EnemyPresetDebugPanel& presetPanel)
     : DebugPanel(context),
       mPresetPanel(presetPanel),
       mYamlWriter(context)
@@ -76,9 +64,7 @@ void EnemyParameterDebugPanel::Draw()
     }
 
     if (ImGui::Button("敵設定を保存")) {
-        mSaveStatusMessage = SaveParameters()
-                                 ? "enemies.yamlへ保存しました"
-                                 : "敵設定を保存できませんでした";
+        mSaveStatusMessage = SaveParameters() ? "enemies.yamlへ保存しました" : "敵設定を保存できませんでした";
     }
     if (!mSaveStatusMessage.empty()) {
         ImGui::SameLine();
@@ -86,9 +72,48 @@ void EnemyParameterDebugPanel::Draw()
     }
     ImGui::Separator();
 
+    DrawCommonSettings(normalEnemy, bossEnemy, allEnemies);
+
+    DrawNormalEnemySettings(normalEnemy, normalEnemies);
+
+    DrawBossEnemySettings(bossEnemy);
+}
+
+bool EnemyParameterDebugPanel::SaveParameters()
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
+    }
+
+    Enemy* normalEnemy = nullptr;
+    Enemy* bossEnemy = nullptr;
+
+    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+        if (!planet) {
+            continue;
+        }
+
+        for (Enemy* enemy : planet->GetEnemies()) {
+            if (!enemy) {
+                continue;
+            }
+
+            if (enemy->GetIsBoss()) {
+                bossEnemy = enemy;
+            } else {
+                normalEnemy = enemy;
+            }
+        }
+    }
+
+    return mYamlWriter.SaveEnemies(normalEnemy, bossEnemy);
+}
+
+void EnemyParameterDebugPanel::DrawCommonSettings(Enemy* normalEnemy, Enemy* bossEnemy,
+                                                  const std::vector<Enemy*>& allEnemies)
+{
     if (ImGui::TreeNode("共通設定")) {
-        Enemy* commonSettingsEnemy =
-            normalEnemy ? normalEnemy : bossEnemy;
+        Enemy* commonSettingsEnemy = normalEnemy ? normalEnemy : bossEnemy;
         if (commonSettingsEnemy) {
             float knockBackSpeed = commonSettingsEnemy->GetKnockBackSpeed();
             if (ImGui::SliderFloat("ノックバック速度", &knockBackSpeed, 0.0f, 30.0f, "%.1f")) {
@@ -112,17 +137,9 @@ void EnemyParameterDebugPanel::Draw()
                 }
             }
 
-            float launchHeight =
-                commonSettingsEnemy->GetLaunchHeight();
-            if (ImGui::SliderFloat(
-                    "打ち上げ高さ",
-                    &launchHeight,
-                    0.0f,
-                    10.0f,
-                    "%.2f")) {
-                launchHeight =
-                    std::round(launchHeight * 100.0f) /
-                    100.0f;
+            float launchHeight = commonSettingsEnemy->GetLaunchHeight();
+            if (ImGui::SliderFloat("打ち上げ高さ", &launchHeight, 0.0f, 10.0f, "%.2f")) {
+                launchHeight = std::round(launchHeight * 100.0f) / 100.0f;
 
                 for (Enemy* enemy : allEnemies) {
                     if (enemy) {
@@ -147,27 +164,22 @@ void EnemyParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
+}
 
+void EnemyParameterDebugPanel::DrawNormalEnemySettings(Enemy* normalEnemy, const std::vector<Enemy*>& normalEnemies)
+{
     if (normalEnemy && ImGui::TreeNode("通常敵")) {
         ImGui::Text("行動プロファイル: %s", normalEnemy->GetBehaviorProfileName().c_str());
         ImGui::Text("現在の行動: %s", normalEnemy->GetCurrentBehaviorActionType());
 
         float initialHp = normalEnemy->GetMaxHp();
-        if (ImGui::SliderFloat(
-                "初期体力（保存対象）##normal",
-                &initialHp,
-                1.0f,
-                999.0f,
-                "%.0f")) {
+        if (ImGui::SliderFloat("初期体力（保存対象）##normal", &initialHp, 1.0f, 999.0f, "%.0f")) {
             for (Enemy* enemy : normalEnemies) {
                 enemy->SetMaxHp(initialHp);
                 enemy->SetHp(initialHp);
             }
         }
-        ImGui::Text(
-            "現在体力: %.0f / %.0f",
-            normalEnemy->GetHp(),
-            normalEnemy->GetMaxHp());
+        ImGui::Text("現在体力: %.0f / %.0f", normalEnemy->GetHp(), normalEnemy->GetMaxHp());
 
         float scale = normalEnemy->GetScale().x;
         if (ImGui::SliderFloat("スケール##normal", &scale, 0.01f, 5.0f, "%.2f")) {
@@ -238,9 +250,9 @@ void EnemyParameterDebugPanel::Draw()
         std::string currentModel = normalEnemy->GetModelPath();
         int selectedModelIndex = 0;
 
-        for (int i = 0; i < IM_ARRAYSIZE(enemyModels); ++i) {
-            if (currentModel == enemyModels[i]) {
-                selectedModelIndex = i;
+        for (int index = 0; index < IM_ARRAYSIZE(enemyModels); ++index) {
+            if (currentModel == enemyModels[index]) {
+                selectedModelIndex = index;
                 break;
             }
         }
@@ -254,13 +266,9 @@ void EnemyParameterDebugPanel::Draw()
                 }
             }
         }
-        ImGui::Button(
-            "モデルアセットをここへドロップ##normalEnemyModelDrop",
-            ImVec2(-1.0f, 0.0f));
+        ImGui::Button("モデルアセットをここへドロップ##normalEnemyModelDrop", ImVec2(-1.0f, 0.0f));
         std::string droppedNormalEnemyModelPath;
-        if (EditorAssetDragDrop::AcceptPath(
-                EditorAssetType::Model,
-                droppedNormalEnemyModelPath)) {
+        if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedNormalEnemyModelPath)) {
             for (Enemy* enemy : normalEnemies) {
                 enemy->SetModelPath(droppedNormalEnemyModelPath);
                 if (mContext.game->GetMeshLoadSystem()) {
@@ -271,25 +279,20 @@ void EnemyParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
+}
 
+void EnemyParameterDebugPanel::DrawBossEnemySettings(Enemy* bossEnemy)
+{
     if (bossEnemy && ImGui::TreeNode("ボス敵")) {
         ImGui::Text("行動プロファイル: %s", bossEnemy->GetBehaviorProfileName().c_str());
         ImGui::Text("現在の行動: %s", bossEnemy->GetCurrentBehaviorActionType());
 
         float initialHp = bossEnemy->GetMaxHp();
-        if (ImGui::SliderFloat(
-                "初期体力（保存対象）##boss",
-                &initialHp,
-                1.0f,
-                9999.0f,
-                "%.0f")) {
+        if (ImGui::SliderFloat("初期体力（保存対象）##boss", &initialHp, 1.0f, 9999.0f, "%.0f")) {
             bossEnemy->SetMaxHp(initialHp);
             bossEnemy->SetHp(initialHp);
         }
-        ImGui::Text(
-            "現在体力: %.0f / %.0f",
-            bossEnemy->GetHp(),
-            bossEnemy->GetMaxHp());
+        ImGui::Text("現在体力: %.0f / %.0f", bossEnemy->GetHp(), bossEnemy->GetMaxHp());
 
         float scale = bossEnemy->GetScale().x;
         if (ImGui::SliderFloat("スケール##boss", &scale, 0.01f, 10.0f, "%.2f")) {
@@ -344,9 +347,9 @@ void EnemyParameterDebugPanel::Draw()
         std::string currentModel = bossEnemy->GetModelPath();
         int selectedModelIndex = 0;
 
-        for (int i = 0; i < IM_ARRAYSIZE(enemyModels); ++i) {
-            if (currentModel == enemyModels[i]) {
-                selectedModelIndex = i;
+        for (int index = 0; index < IM_ARRAYSIZE(enemyModels); ++index) {
+            if (currentModel == enemyModels[index]) {
+                selectedModelIndex = index;
                 break;
             }
         }
@@ -358,13 +361,9 @@ void EnemyParameterDebugPanel::Draw()
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(bossEnemy);
             }
         }
-        ImGui::Button(
-            "モデルアセットをここへドロップ##bossEnemyModelDrop",
-            ImVec2(-1.0f, 0.0f));
+        ImGui::Button("モデルアセットをここへドロップ##bossEnemyModelDrop", ImVec2(-1.0f, 0.0f));
         std::string droppedBossModelPath;
-        if (EditorAssetDragDrop::AcceptPath(
-                EditorAssetType::Model,
-                droppedBossModelPath)) {
+        if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedBossModelPath)) {
             bossEnemy->SetModelPath(droppedBossModelPath);
             if (mContext.game->GetMeshLoadSystem()) {
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(bossEnemy);
@@ -373,35 +372,4 @@ void EnemyParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
-}
-
-bool EnemyParameterDebugPanel::SaveParameters()
-{
-    if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return false;
-    }
-
-    Enemy* normalEnemy = nullptr;
-    Enemy* bossEnemy = nullptr;
-
-    for (Planet* planet :
-         mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (!planet) {
-            continue;
-        }
-
-        for (Enemy* enemy : planet->GetEnemies()) {
-            if (!enemy) {
-                continue;
-            }
-
-            if (enemy->GetIsBoss()) {
-                bossEnemy = enemy;
-            } else {
-                normalEnemy = enemy;
-            }
-        }
-    }
-
-    return mYamlWriter.SaveEnemies(normalEnemy, bossEnemy);
 }

@@ -11,10 +11,12 @@
 
 class ParticleSystem;
 
+// ParticleSystemのエフェクト・エミッター定義を編集し、ワールド上の試し再生と保存を提供する。
 class ParticleEffectDebugPanel : public DebugPanel {
 public:
     explicit ParticleEffectDebugPanel(DebugEditorContext& context);
 
+    // 定義を直接編集する。試し再生は実際の粒子を発生させ、フリーカメラ中は粒子の更新も行う。
     void Draw() override;
 
 private:
@@ -24,6 +26,7 @@ private:
     void DrawPreviewControls(ParticleSystem& particleSystem);
     void DrawEmitterList(ParticleSystem& particleSystem);
     void DrawEmitterInspector(ParticleSystem& particleSystem);
+    bool ApplyTextureAsset(ParticleEmitterDefinition& emitter, const std::string& assetPath);
     bool DrawTexturePicker(ParticleEmitterDefinition& emitter);
 
     void SelectEffect(ParticleSystem& particleSystem, const std::string& effectId);
@@ -35,9 +38,8 @@ private:
     void SyncTexturePathBuffer(const ParticleEmitterDefinition& emitter);
     void ResetSelectionIfInvalid(ParticleSystem& particleSystem);
 
-private:
-    char mNewEffectIdBuffer[128] = "new_effect";
-    char mTexturePathBuffer[256] = "spark_dot.png";
+    std::array<char, 128> mNewEffectIdBuffer = {"new_effect"};
+    std::array<char, 256> mTexturePathBuffer = {"spark_dot.png"};
     std::array<char, 128> mTextureAssetFilter = {};
 
     std::string mSelectedEffectId;
@@ -46,9 +48,9 @@ private:
     int mSelectedEmitterIndex = -1;
     int mPreviewPositionMode = 1;
 
-    bool mPreviewSelectedEmitterOnly = false;
-    bool mAutoPreview = false;
-    bool mUsePlayerAxes = true;
+    bool mShouldPreviewSelectedEmitterOnly = false;
+    bool mIsAutoPreviewEnabled = false;
+    bool mUsesPlayerAxes = true;
 
     float mAutoPreviewInterval = 0.6f;
     float mAutoPreviewTimer = 0.0f;

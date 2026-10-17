@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_set>
 
+// Actorと惑星の削除対象・確認UIを管理し、削除をStageEditCommandControllerへ委譲する。参照先は所有しない。
 class StageDeleteActorPanel : public DebugPanel {
 public:
     StageDeleteActorPanel(DebugEditorContext& context, StageEditCommandController& editCommandController);
@@ -15,7 +16,6 @@ public:
 private:
     void DrawPlanetDeletion();
 
-private:
     StageEditCommandController& mEditCommandController;
     std::unordered_set<std::string> mSelectedKeys;
     int mSelectedPlanetIndex = -1;

@@ -9,6 +9,7 @@
 class Actor;
 class SequenceSystem;
 
+// Actor移動・表示・操作制御・カメラ演出のシーケンスを編集し、ゲーム内でプレビューする。
 class SequenceDebugPanel : public DebugPanel {
 public:
     explicit SequenceDebugPanel(DebugEditorContext& context);
@@ -28,7 +29,6 @@ private:
     static const char* GetClipTypeLabel(SequenceClipType type);
     static std::string GetClipListLabel(const SequenceClip& clip, int index);
 
-private:
     std::array<char, 128> mNewSequenceId = {"new_sequence"};
     std::array<char, 128> mRenameSequenceId = {};
     std::string mSelectedSequenceId;

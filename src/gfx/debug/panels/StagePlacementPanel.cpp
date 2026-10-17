@@ -10,20 +10,13 @@
 
 #include <utility>
 
-StagePlacementPanel::StagePlacementPanel(
-    DebugEditorContext& context,
-    StageSelectionController& selectionController,
-    StageActorYamlWriter& stageActorYamlWriter,
-    Callback pushUndoCallback)
+StagePlacementPanel::StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController,
+                                         StageActorYamlWriter& stageActorYamlWriter, Callback pushUndoCallback)
     : DebugPanel(context),
       mSelectionController(selectionController),
       mStagePlayerEditor(context),
-      mStageActorInspector(
-          context,
-          selectionController,
-          stageActorYamlWriter,
-          mStagePlayerEditor,
-          std::move(pushUndoCallback))
+      mStageActorInspector(context, selectionController, stageActorYamlWriter, mStagePlayerEditor,
+                           std::move(pushUndoCallback))
 {
 }
 
@@ -141,23 +134,18 @@ void StagePlacementPanel::DrawActorList(const ActorGroup& group)
         return;
     }
 
-    for (std::size_t i = 0; i < group.actors.size(); ++i) {
-        const StageActorInstance& instance = group.actors[i];
+    for (std::size_t index = 0; index < group.actors.size(); ++index) {
+        const StageActorInstance& instance = group.actors[index];
         if (!instance.actor) {
             continue;
         }
 
-        const bool selected = mSelectionController.IsSelected(instance.ref);
+        const bool isSelected = mSelectionController.IsSelected(instance.ref);
         const std::string displayLabel =
-            instance.ref.label +
-            (instance.actor->IsDebugDisabled()
-                 ? " [デバッグ非表示]"
-                 : "");
-        const std::string selectableId =
-            displayLabel + "##placementList_" +
-            StageActorQuery::MakeKey(instance.ref);
+            instance.ref.label + (instance.actor->IsDebugDisabled() ? " [デバッグ非表示]" : "");
+        const std::string selectableId = displayLabel + "##placementList_" + StageActorQuery::MakeKey(instance.ref);
 
-        if (ImGui::Selectable(selectableId.c_str(), selected)) {
+        if (ImGui::Selectable(selectableId.c_str(), isSelected)) {
             const ImGuiIO& io = ImGui::GetIO();
             if (io.KeyCtrl || io.KeyShift) {
                 mSelectionController.ToggleSelection(instance.actor, instance.ref);

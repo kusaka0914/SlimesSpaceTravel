@@ -4,6 +4,7 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
+#include "gfx/debug/panels/DebugPanelTextInput.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
@@ -18,19 +19,6 @@
 #include <vector>
 
 namespace {
-template <std::size_t BufferSize>
-bool DrawStringInput(const char* label, std::string& text)
-{
-    std::array<char, BufferSize> buffer = {};
-    std::snprintf(buffer.data(), buffer.size(), "%s", text.c_str());
-    if (!ImGui::InputText(label, buffer.data(), buffer.size())) {
-        return false;
-    }
-
-    text = buffer.data();
-    return true;
-}
-
 struct ActorTargetOption {
     SequenceActorRef ref;
     Actor* actor = nullptr;
@@ -45,23 +33,20 @@ std::vector<ActorTargetOption> CollectActorTargets(Game* game)
     }
 
     const auto& players = game->GetPlayers();
-    for (std::size_t i = 0; i < players.size(); ++i) {
-        if (!players[i]) {
+    for (std::size_t index = 0; index < players.size(); ++index) {
+        if (!players[index]) {
             continue;
         }
         targets.push_back(
-            {{"players", static_cast<int>(i)}, players[i], "プレイヤー " + std::to_string(i + 1)});
+            {{"players", static_cast<int>(index)}, players[index], "プレイヤー " + std::to_string(index + 1)});
     }
 
-    for (const StageActorInstance& instance :
-         StageActorQuery::CollectAllActorInstances(game->GetCurrentStage())) {
+    for (const StageActorInstance& instance : StageActorQuery::CollectAllActorInstances(game->GetCurrentStage())) {
         if (!instance.actor) {
             continue;
         }
-        const std::string stableLabel =
-            instance.ref.sequenceName + " " + std::to_string(instance.ref.yamlIndex);
-        targets.push_back(
-            {{instance.ref.sequenceName, instance.ref.yamlIndex}, instance.actor, stableLabel});
+        const std::string stableLabel = instance.ref.sequenceName + " " + std::to_string(instance.ref.yamlIndex);
+        targets.push_back({{instance.ref.sequenceName, instance.ref.yamlIndex}, instance.actor, stableLabel});
     }
 
     return targets;
@@ -71,7 +56,7 @@ bool Matches(const SequenceActorRef& left, const SequenceActorRef& right)
 {
     return left.group == right.group && left.index == right.index;
 }
-}
+} // namespace
 
 SequenceDebugPanel::SequenceDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)
@@ -116,11 +101,7 @@ void SequenceDebugPanel::DrawSequenceList(SequenceSystem* system)
     if (ImGui::Button("新規作成", ImVec2(-1.0f, 0.0f))) {
         if (system->GetLibrary().Create(mNewSequenceId.data())) {
             mSelectedSequenceId = mNewSequenceId.data();
-            std::snprintf(
-                mRenameSequenceId.data(),
-                mRenameSequenceId.size(),
-                "%s",
-                mSelectedSequenceId.c_str());
+            std::snprintf(mRenameSequenceId.data(), mRenameSequenceId.size(), "%s", mSelectedSequenceId.c_str());
             mSelectedClipIndex = -1;
             mStatusMessage = "シーケンスを作成しました";
         } else {
@@ -129,15 +110,10 @@ void SequenceDebugPanel::DrawSequenceList(SequenceSystem* system)
     }
 
     if (ImGui::Button("選択中を複製", ImVec2(-1.0f, 0.0f))) {
-        GameplaySequence* duplicated =
-            system->GetLibrary().Duplicate(mSelectedSequenceId);
+        GameplaySequence* duplicated = system->GetLibrary().Duplicate(mSelectedSequenceId);
         if (duplicated) {
             mSelectedSequenceId = duplicated->id;
-            std::snprintf(
-                mRenameSequenceId.data(),
-                mRenameSequenceId.size(),
-                "%s",
-                mSelectedSequenceId.c_str());
+            std::snprintf(mRenameSequenceId.data(), mRenameSequenceId.size(), "%s", mSelectedSequenceId.c_str());
             mSelectedClipIndex = -1;
             mStatusMessage = "演出シーケンスを複製しました";
         } else {
@@ -159,18 +135,11 @@ void SequenceDebugPanel::DrawSequenceList(SequenceSystem* system)
     ImGui::Separator();
     for (const std::string& id : system->GetLibrary().GetIds()) {
         const GameplaySequence* sequence = system->GetLibrary().Find(id);
-        const std::string displayName =
-            sequence && !sequence->displayName.empty()
-                ? sequence->displayName
-                : id;
+        const std::string displayName = sequence && !sequence->displayName.empty() ? sequence->displayName : id;
         const std::string label = displayName + "##" + id;
         if (ImGui::Selectable(label.c_str(), id == mSelectedSequenceId)) {
             mSelectedSequenceId = id;
-            std::snprintf(
-                mRenameSequenceId.data(),
-                mRenameSequenceId.size(),
-                "%s",
-                mSelectedSequenceId.c_str());
+            std::snprintf(mRenameSequenceId.data(), mRenameSequenceId.size(), "%s", mSelectedSequenceId.c_str());
             mSelectedClipIndex = -1;
         }
         ImGui::TextDisabled("ID: %s", id.c_str());
@@ -190,12 +159,9 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
         return;
     }
 
-    DrawStringInput<256>("表示名", sequence->displayName);
+    DebugPanelTextInput::DrawStringInput<256>("表示名", sequence->displayName);
 
-    ImGui::InputText(
-        "シーケンスID",
-        mRenameSequenceId.data(),
-        mRenameSequenceId.size());
+    ImGui::InputText("シーケンスID", mRenameSequenceId.data(), mRenameSequenceId.size());
     ImGui::SameLine();
     if (ImGui::Button("IDを変更")) {
         const std::string renamedId(mRenameSequenceId.data());
@@ -208,15 +174,10 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
         if (system->GetLibrary().Rename(previousId, renamedId)) {
             mSelectedSequenceId = renamedId;
             mSelectedClipIndex = -1;
-            mStatusMessage = previousId == renamedId
-                                 ? "シーケンスIDは変更されていません"
-                                 : "シーケンスIDを変更しました";
+            mStatusMessage =
+                previousId == renamedId ? "シーケンスIDは変更されていません" : "シーケンスIDを変更しました";
         } else {
-            std::snprintf(
-                mRenameSequenceId.data(),
-                mRenameSequenceId.size(),
-                "%s",
-                previousId.c_str());
+            std::snprintf(mRenameSequenceId.data(), mRenameSequenceId.size(), "%s", previousId.c_str());
             mStatusMessage = "空のID、または既に使われているIDには変更できません";
         }
     }
@@ -225,8 +186,7 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
     ImGui::Text("長さ: %.2f 秒", sequence->CalculateDuration());
 
     if (ImGui::Button("プレビュー再生")) {
-        mStatusMessage =
-            system->Play(sequence->id, true) ? "プレビューを開始しました" : system->GetLastError();
+        mStatusMessage = system->Play(sequence->id, true) ? "プレビューを開始しました" : system->GetLastError();
     }
     ImGui::SameLine();
     if (ImGui::Button("停止して元に戻す")) {
@@ -235,10 +195,7 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
     }
     ImGui::SameLine();
     if (system->IsPlaying()) {
-        ImGui::Text(
-            "再生中 %.2f / %.2f",
-            system->GetElapsedTime(),
-            system->GetDuration());
+        ImGui::Text("再生中 %.2f / %.2f", system->GetElapsedTime(), system->GetDuration());
     } else if (system->HasPreviewSnapshot()) {
         ImGui::TextUnformatted("プレビュー終了位置（「停止して元に戻す」で復元）");
     }
@@ -279,21 +236,18 @@ void SequenceDebugPanel::DrawSequenceEditor(SequenceSystem* system)
 void SequenceDebugPanel::DrawClipList(GameplaySequence& sequence)
 {
     ImGui::TextUnformatted("タイムライン");
-    for (std::size_t i = 0; i < sequence.clips.size(); ++i) {
-        const std::string label = GetClipListLabel(sequence.clips[i], static_cast<int>(i));
-        if (ImGui::Selectable(label.c_str(), mSelectedClipIndex == static_cast<int>(i))) {
-            mSelectedClipIndex = static_cast<int>(i);
-            mEasingIndex = static_cast<int>(sequence.clips[i].easing);
+    for (std::size_t index = 0; index < sequence.clips.size(); ++index) {
+        const std::string label = GetClipListLabel(sequence.clips[index], static_cast<int>(index));
+        if (ImGui::Selectable(label.c_str(), mSelectedClipIndex == static_cast<int>(index))) {
+            mSelectedClipIndex = static_cast<int>(index);
+            mEasingIndex = static_cast<int>(sequence.clips[index].easing);
         }
     }
 }
 
-void SequenceDebugPanel::DrawClipInspector(
-    SequenceSystem* system,
-    GameplaySequence& sequence)
+void SequenceDebugPanel::DrawClipInspector(SequenceSystem* system, GameplaySequence& sequence)
 {
-    if (mSelectedClipIndex < 0 ||
-        mSelectedClipIndex >= static_cast<int>(sequence.clips.size())) {
+    if (mSelectedClipIndex < 0 || mSelectedClipIndex >= static_cast<int>(sequence.clips.size())) {
         ImGui::TextWrapped("タイムラインからクリップを選択してください。");
         return;
     }
@@ -302,8 +256,7 @@ void SequenceDebugPanel::DrawClipInspector(
     ImGui::Text("種類: %s", GetClipTypeLabel(clip.type));
     ImGui::DragFloat("開始時刻", &clip.startTime, 0.05f, 0.0f, 999.0f, "%.2f 秒");
 
-    if (clip.type == SequenceClipType::ActorMove ||
-        clip.type == SequenceClipType::ActorVisibility) {
+    if (clip.type == SequenceClipType::ActorMove || clip.type == SequenceClipType::ActorVisibility) {
         DrawActorTargetPicker(system, clip);
     }
 
@@ -342,8 +295,7 @@ void SequenceDebugPanel::DrawClipInspector(
                 actor->SetPos(clip.toPosition);
             }
 
-            ImGui::TextDisabled(
-                "既存のステージ配置ギズモで対象を動かし、「現在位置を記録」で取り込めます。");
+            ImGui::TextDisabled("既存のステージ配置ギズモで対象を動かし、「現在位置を記録」で取り込めます。");
         }
     } else if (clip.type == SequenceClipType::ActorVisibility) {
         ImGui::Checkbox("表示する", &clip.visible);
@@ -375,29 +327,27 @@ bool SequenceDebugPanel::DrawActorTargetPicker(SequenceSystem* system, SequenceC
         }
     }
 
-    bool changed = false;
+    bool wasChanged = false;
     if (ImGui::BeginCombo("対象アクター", currentLabel.c_str())) {
         for (const ActorTargetOption& target : targets) {
-            const bool selected = Matches(target.ref, clip.actor);
+            const bool isSelected = Matches(target.ref, clip.actor);
             const std::string itemLabel =
                 target.label + "##" + target.ref.group + ":" + std::to_string(target.ref.index);
-            if (ImGui::Selectable(itemLabel.c_str(), selected)) {
+            if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
                 clip.actor = target.ref;
                 if (clip.type == SequenceClipType::ActorMove && target.actor) {
                     clip.fromPosition = target.actor->GetPos();
                     clip.toPosition = target.actor->GetPos();
                 }
-                changed = true;
+                wasChanged = true;
             }
         }
         ImGui::EndCombo();
     }
 
-    ImGui::TextDisabled(
-        "参照: %s:%d",
-        clip.actor.group.empty() ? "未設定" : clip.actor.group.c_str(),
-        clip.actor.index);
-    return changed;
+    ImGui::TextDisabled("参照: %s:%d", clip.actor.group.empty() ? "未設定" : clip.actor.group.c_str(),
+                        clip.actor.index);
+    return wasChanged;
 }
 
 void SequenceDebugPanel::DrawCameraSequencePicker(SequenceClip& clip)
@@ -406,33 +356,22 @@ void SequenceDebugPanel::DrawCameraSequencePicker(SequenceClip& clip)
         return;
     }
 
-    const CinematicSequenceLibrary& cameraSequenceLibrary =
-        mContext.game->GetCameraSystem()->GetCinematicLibrary();
-    const std::vector<std::string> ids =
-        cameraSequenceLibrary.GetSequenceIds();
+    const CinematicSequenceLibrary& cameraSequenceLibrary = mContext.game->GetCameraSystem()->GetCinematicLibrary();
+    const std::vector<std::string> ids = cameraSequenceLibrary.GetSequenceIds();
 
-    const CinematicSequence* selectedSequence =
-        cameraSequenceLibrary.Find(clip.cameraSequenceId);
+    const CinematicSequence* selectedSequence = cameraSequenceLibrary.Find(clip.cameraSequenceId);
     std::string preview = "未設定";
     if (selectedSequence) {
-        preview = selectedSequence->displayName.empty()
-                      ? selectedSequence->id
-                      : selectedSequence->displayName;
+        preview = selectedSequence->displayName.empty() ? selectedSequence->id : selectedSequence->displayName;
     } else if (!clip.cameraSequenceId.empty()) {
         preview = clip.cameraSequenceId;
     }
     if (ImGui::BeginCombo("カメラ演出", preview.c_str())) {
         for (const std::string& id : ids) {
-            const CinematicSequence* sequence =
-                cameraSequenceLibrary.Find(id);
-            const std::string displayName =
-                sequence && !sequence->displayName.empty()
-                    ? sequence->displayName
-                    : id;
+            const CinematicSequence* sequence = cameraSequenceLibrary.Find(id);
+            const std::string displayName = sequence && !sequence->displayName.empty() ? sequence->displayName : id;
             const std::string label = displayName + "##" + id;
-            if (ImGui::Selectable(
-                    label.c_str(),
-                    id == clip.cameraSequenceId)) {
+            if (ImGui::Selectable(label.c_str(), id == clip.cameraSequenceId)) {
                 clip.cameraSequenceId = id;
             }
             ImGui::TextDisabled("ID: %s", id.c_str());
@@ -502,6 +441,5 @@ std::string SequenceDebugPanel::GetClipListLabel(const SequenceClip& clip, int i
 {
     char timeBuffer[32] = {};
     std::snprintf(timeBuffer, sizeof(timeBuffer), "%.2fs", clip.startTime);
-    return std::string(timeBuffer) + "  " + GetClipTypeLabel(clip.type) +
-           "##sequenceClip" + std::to_string(index);
+    return std::string(timeBuffer) + "  " + GetClipTypeLabel(clip.type) + "##sequenceClip" + std::to_string(index);
 }

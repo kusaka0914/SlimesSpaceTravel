@@ -13,88 +13,37 @@ StageAddActorPanel::StageAddActorPanel(DebugEditorContext& context)
       mCreateService(context),
       mUGCPlatformCellService(context),
       mPlacementResolver(context),
-      mUGCPlatformEditController(
-          context,
-          mUGCPlatformCellService,
-          mPlacementResolver),
-      mPlacementController(
-          context,
-          mCreateService,
-          mUGCPlatformCellService,
-          mPlacementResolver),
-      mUGCPresetController(
-          context,
-          mCreateService,
-          mUGCPlatformCellService,
-          mPlacementController),
-      mJewelItemCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mHazardActorCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mBoatArrivalPointCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mEnemyCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mNPCCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mTutorialTriggerCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mStageObjectCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mPlanetCreationForm(
-          mCreateService),
-      mPlatformCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mCrystalCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mBoatPartsCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mBoatCreationForm(
-          context,
-          mCreateService,
-          mPlacementController),
-      mStarCreationForm(
-          context,
-          mCreateService,
-          mPlacementController)
+      mUGCPlatformEditController(context, mUGCPlatformCellService, mPlacementResolver),
+      mPlacementController(context, mCreateService, mUGCPlatformCellService, mPlacementResolver),
+      mUGCPresetController(context, mCreateService, mUGCPlatformCellService, mPlacementController),
+      mJewelItemCreationForm(context, mCreateService, mPlacementController),
+      mHazardActorCreationForm(context, mCreateService, mPlacementController),
+      mBoatArrivalPointCreationForm(context, mCreateService, mPlacementController),
+      mEnemyCreationForm(context, mCreateService, mPlacementController),
+      mNPCCreationForm(context, mCreateService, mPlacementController),
+      mTutorialTriggerCreationForm(context, mCreateService, mPlacementController),
+      mStageObjectCreationForm(context, mCreateService, mPlacementController),
+      mPlanetCreationForm(mCreateService),
+      mPlatformCreationForm(context, mCreateService, mPlacementController),
+      mCrystalCreationForm(context, mCreateService, mPlacementController),
+      mBoatPartsCreationForm(context, mCreateService, mPlacementController),
+      mBoatCreationForm(context, mCreateService, mPlacementController),
+      mStarCreationForm(context, mCreateService, mPlacementController)
 {
 }
 
-void StageAddActorPanel::SetSelectionController(
-    StageSelectionController* selectionController)
+void StageAddActorPanel::SetSelectionController(StageSelectionController* selectionController)
 {
     mPlacementController.SetSelectionController(selectionController);
     mUGCPlatformEditController.SetSelectionController(selectionController);
     mUGCPresetController.SetSelectionController(selectionController);
 }
 
-void StageAddActorPanel::SetPushUndoCallback(
-    std::function<void()> pushUndoCallback)
+void StageAddActorPanel::SetPushUndoCallback(std::function<void()> pushUndoCallback)
 {
     mUGCPlatformEditController.SetPushUndoCallback(pushUndoCallback);
     mUGCPresetController.SetPushUndoCallback(pushUndoCallback);
-    mPlacementController.SetPushUndoCallback(
-        std::move(pushUndoCallback));
+    mPlacementController.SetPushUndoCallback(std::move(pushUndoCallback));
 }
 
 bool StageAddActorPanel::ActivateUGCPreset(UGCPresetKind presetKind)
@@ -112,43 +61,30 @@ void StageAddActorPanel::EndUGCEraseGesture()
     mUGCPlatformEditController.EndEraseGesture();
 }
 
-bool StageAddActorPanel::TryTranslateUGCPlatformCells(
-    const StageActorRef& actorRef,
-    const glm::vec3& worldDelta)
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(const StageActorRef& actorRef, const glm::vec3& worldDelta)
 {
-    return mUGCPlatformEditController.TryTranslateCells(
-        actorRef,
-        worldDelta);
+    return mUGCPlatformEditController.TryTranslateCells(actorRef, worldDelta);
 }
 
-bool StageAddActorPanel::TryTranslateUGCPlatformCells(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool StageAddActorPanel::TryTranslateUGCPlatformCells(const std::vector<StageActorRef>& actorRefs,
+                                                      const glm::vec3& worldDelta)
 {
-    return mUGCPlatformEditController.TryTranslateCells(
-        actorRefs,
-        worldDelta);
+    return mUGCPlatformEditController.TryTranslateCells(actorRefs, worldDelta);
 }
 
-bool StageAddActorPanel::TryTranslateUGCMovingPlatformDestinations(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool StageAddActorPanel::TryTranslateUGCMovingPlatformDestinations(const std::vector<StageActorRef>& actorRefs,
+                                                                   const glm::vec3& worldDelta)
 {
-    return mUGCPlatformEditController.TryTranslateMovingPlatformDestinations(
-        actorRefs,
-        worldDelta);
+    return mUGCPlatformEditController.TryTranslateMovingPlatformDestinations(actorRefs, worldDelta);
 }
 
-bool StageAddActorPanel::TrySaveUGCMovingPlatformDestinationTranslation(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool StageAddActorPanel::TrySaveUGCMovingPlatformDestinationTranslation(const std::vector<StageActorRef>& actorRefs,
+                                                                        const glm::vec3& worldDelta)
 {
-    return mUGCPlatformEditController
-        .TrySaveMovingPlatformDestinationTranslation(actorRefs, worldDelta);
+    return mUGCPlatformEditController.TrySaveMovingPlatformDestinationTranslation(actorRefs, worldDelta);
 }
 
-bool StageAddActorPanel::BeginDuplicatePlacement(
-    const StageActorRef& sourceRef)
+bool StageAddActorPanel::BeginDuplicatePlacement(const StageActorRef& sourceRef)
 {
     return mPlacementController.BeginDuplicatePlacement(sourceRef);
 }
@@ -181,18 +117,14 @@ void StageAddActorPanel::Draw()
 
     if (mPlacementController.IsPlacementActive()) {
         ImGui::SeparatorText("連続配置中");
-        ImGui::Text(
-            "配置対象: %s",
-            mPlacementController.GetPlacementDisplayName().c_str());
+        ImGui::Text("配置対象: %s", mPlacementController.GetPlacementDisplayName().c_str());
         ImGui::TextWrapped("ゲーム画面をクリックするたびに追加します。");
         if (ImGui::Button("追加解除") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
             CancelPlacement();
         }
         ImGui::SameLine();
         if (!mPlacementController.GetPlacementStatus().empty()) {
-            ImGui::TextWrapped(
-                "%s",
-                mPlacementController.GetPlacementStatus().c_str());
+            ImGui::TextWrapped("%s", mPlacementController.GetPlacementStatus().c_str());
         }
         ImGui::Separator();
     }

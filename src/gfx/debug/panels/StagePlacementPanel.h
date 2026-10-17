@@ -2,8 +2,8 @@
 
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorInspector.h"
-#include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StagePlayerEditor.h"
+#include "gfx/debug/stage/StageSelectionController.h"
 
 #include <functional>
 #include <string>
@@ -12,20 +12,21 @@
 class Actor;
 class StageActorYamlWriter;
 
+// 配置済みActorの一覧・選択・インスペクターを連携する。selectionControllerとYAML Writerは所有しない。
 class StagePlacementPanel : public DebugPanel {
 public:
     using Callback = std::function<void()>;
 
-    StagePlacementPanel(
-        DebugEditorContext& context,
-        StageSelectionController& selectionController,
-        StageActorYamlWriter& stageActorYamlWriter,
-        Callback pushUndoCallback = {});
+    StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController,
+                        StageActorYamlWriter& stageActorYamlWriter, Callback pushUndoCallback = {});
 
+    // 選択対象の設定を編集する。Game・ステージ・アセットカタログが未設定なら編集しない。
     void Draw() override;
     void DrawObjectList();
     void DrawPlayerSpawn();
     void DrawPlayerDebugMover(Actor* selectedActor);
+
+    // 次の一覧描画で選択Actorのカテゴリを開く。Drawで要求を解除するため、一覧を先に描画する。
     void RequestOpenPickedActorPlacement();
 
 private:
@@ -39,7 +40,6 @@ private:
 
     void DrawActorList(const ActorGroup& group);
 
-private:
     StageSelectionController& mSelectionController;
     StagePlayerEditor mStagePlayerEditor;
     StageActorInspector mStageActorInspector;

@@ -1,31 +1,16 @@
-#include "gfx/debug/panels/ParameterDebugPanel.h"
+#include "gfx/debug/panels/PlayerParameterDebugPanel.h"
 
 #include "Game.h"
-#include "Stage.h"
-#include "actor/Enemy.h"
-#include "actor/Planet.h"
 #include "actor/Player.h"
-#include "gfx/debug/assets/EditorAssetCatalog.h"
 #include "gfx/debug/assets/EditorAssetDragDrop.h"
-#include "gfx/debug/panels/CameraDebugPanel.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 
-#include <algorithm>
 #include <cmath>
-#include <cstdio>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <optional>
 #include <string>
-#include <vector>
-#include <yaml-cpp/yaml.h>
 
-
-PlayerParameterDebugPanel::PlayerParameterDebugPanel(
-    DebugEditorContext& context)
+PlayerParameterDebugPanel::PlayerParameterDebugPanel(DebugEditorContext& context)
     : DebugPanel(context),
       mYamlWriter(context)
 {
@@ -43,9 +28,7 @@ void PlayerParameterDebugPanel::Draw()
     }
 
     if (ImGui::Button("プレイヤー設定を保存")) {
-        mSaveStatusMessage = SaveParameters()
-                                 ? "players.yamlへ保存しました"
-                                 : "プレイヤー設定を保存できませんでした";
+        mSaveStatusMessage = SaveParameters() ? "players.yamlへ保存しました" : "プレイヤー設定を保存できませんでした";
     }
     if (!mSaveStatusMessage.empty()) {
         ImGui::SameLine();
@@ -53,21 +36,33 @@ void PlayerParameterDebugPanel::Draw()
     }
     ImGui::Separator();
 
+    DrawBasicSettings(player);
+
+    DrawMovementSettings(player);
+
+    DrawAttackSettings(player);
+
+    DrawTimerSettings(player);
+}
+
+bool PlayerParameterDebugPanel::SaveParameters()
+{
+    if (!mContext.game || mContext.game->GetPlayers().empty()) {
+        return false;
+    }
+
+    return mYamlWriter.SavePlayer(*mContext.game->GetPlayers()[0]);
+}
+
+void PlayerParameterDebugPanel::DrawBasicSettings(Player* player)
+{
     if (ImGui::TreeNode("基本情報")) {
-        int initialHp = static_cast<int>(
-            std::round(player->GetMaxHp()));
-        if (ImGui::SliderInt(
-                "初期体力（保存対象）",
-                &initialHp,
-                1,
-                100)) {
+        int initialHp = static_cast<int>(std::round(player->GetMaxHp()));
+        if (ImGui::SliderInt("初期体力（保存対象）", &initialHp, 1, 100)) {
             player->SetMaxHp(static_cast<float>(initialHp));
             player->SetHp(static_cast<float>(initialHp));
         }
-        ImGui::Text(
-            "現在体力: %.0f / %.0f",
-            player->GetHp(),
-            player->GetMaxHp());
+        ImGui::Text("現在体力: %.0f / %.0f", player->GetHp(), player->GetMaxHp());
 
         float scale = player->GetBaseScale().x;
         if (ImGui::SliderFloat("スケール", &scale, 0.01f, 5.0f, "%.2f")) {
@@ -92,9 +87,9 @@ void PlayerParameterDebugPanel::Draw()
         std::string currentModel = player->GetModelPath();
         int selectedModelIndex = 0;
 
-        for (int i = 0; i < IM_ARRAYSIZE(playerModels); ++i) {
-            if (currentModel == playerModels[i]) {
-                selectedModelIndex = i;
+        for (int index = 0; index < IM_ARRAYSIZE(playerModels); ++index) {
+            if (currentModel == playerModels[index]) {
+                selectedModelIndex = index;
                 break;
             }
         }
@@ -106,13 +101,9 @@ void PlayerParameterDebugPanel::Draw()
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(player);
             }
         }
-        ImGui::Button(
-            "モデルアセットをここへドロップ##playerModelDrop",
-            ImVec2(-1.0f, 0.0f));
+        ImGui::Button("モデルアセットをここへドロップ##playerModelDrop", ImVec2(-1.0f, 0.0f));
         std::string droppedPlayerModelPath;
-        if (EditorAssetDragDrop::AcceptPath(
-                EditorAssetType::Model,
-                droppedPlayerModelPath)) {
+        if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedPlayerModelPath)) {
             player->SetModelPath(droppedPlayerModelPath);
             if (mContext.game->GetMeshLoadSystem()) {
                 mContext.game->GetMeshLoadSystem()->SetActorMesh(player);
@@ -123,70 +114,38 @@ void PlayerParameterDebugPanel::Draw()
         if (physicsSystem) {
             ImGui::SeparatorText("プレイヤー当たり判定");
 
-            float collisionWidth =
-                physicsSystem->GetPlayerCollisionWidth();
-            if (ImGui::DragFloat(
-                    "横幅",
-                    &collisionWidth,
-                    0.01f,
-                    0.1f,
-                    6.0f,
-                    "%.2f")) {
+            float collisionWidth = physicsSystem->GetPlayerCollisionWidth();
+            if (ImGui::DragFloat("横幅", &collisionWidth, 0.01f, 0.1f, 6.0f, "%.2f")) {
                 physicsSystem->SetPlayerCollisionWidth(collisionWidth);
             }
 
-            float collisionHeight =
-                physicsSystem->GetPlayerCollisionHeight();
-            if (ImGui::DragFloat(
-                    "高さ",
-                    &collisionHeight,
-                    0.01f,
-                    0.1f,
-                    6.0f,
-                    "%.2f")) {
+            float collisionHeight = physicsSystem->GetPlayerCollisionHeight();
+            if (ImGui::DragFloat("高さ", &collisionHeight, 0.01f, 0.1f, 6.0f, "%.2f")) {
                 physicsSystem->SetPlayerCollisionHeight(collisionHeight);
             }
 
-            float collisionDepth =
-                physicsSystem->GetPlayerCollisionDepth();
-            if (ImGui::DragFloat(
-                    "奥行き",
-                    &collisionDepth,
-                    0.01f,
-                    0.1f,
-                    6.0f,
-                    "%.2f")) {
+            float collisionDepth = physicsSystem->GetPlayerCollisionDepth();
+            if (ImGui::DragFloat("奥行き", &collisionDepth, 0.01f, 0.1f, 6.0f, "%.2f")) {
                 physicsSystem->SetPlayerCollisionDepth(collisionDepth);
             }
 
-            float collisionCenterHeight =
-                physicsSystem->GetPlayerCollisionCenterHeight();
-            if (ImGui::DragFloat(
-                    "足元から球中心までの高さ",
-                    &collisionCenterHeight,
-                    0.01f,
-                    0.0f,
-                    3.0f,
-                    "%.2f")) {
-                physicsSystem->SetPlayerCollisionCenterHeight(
-                    collisionCenterHeight);
+            float collisionCenterHeight = physicsSystem->GetPlayerCollisionCenterHeight();
+            if (ImGui::DragFloat("足元から球中心までの高さ", &collisionCenterHeight, 0.01f, 0.0f, 3.0f, "%.2f")) {
+                physicsSystem->SetPlayerCollisionCenterHeight(collisionCenterHeight);
             }
 
-            const float collisionHalfHeight =
-                physicsSystem->GetPlayerCollisionHeight() * 0.5f;
-            const float collisionBottomHeight =
-                collisionCenterHeight - collisionHalfHeight;
-            const float collisionTopHeight =
-                collisionCenterHeight + collisionHalfHeight;
-            ImGui::Text(
-                "足元基準: 下端 %.2f / 上端 %.2f",
-                collisionBottomHeight,
-                collisionTopHeight);
+            const float collisionHalfHeight = physicsSystem->GetPlayerCollisionHeight() * 0.5f;
+            const float collisionBottomHeight = collisionCenterHeight - collisionHalfHeight;
+            const float collisionTopHeight = collisionCenterHeight + collisionHalfHeight;
+            ImGui::Text("足元基準: 下端 %.2f / 上端 %.2f", collisionBottomHeight, collisionTopHeight);
         }
 
         ImGui::TreePop();
     }
+}
 
+void PlayerParameterDebugPanel::DrawMovementSettings(Player* player)
+{
     if (ImGui::TreeNode("移動")) {
         float moveSpeed = player->GetMoveSpeed();
         if (ImGui::SliderFloat("移動速度", &moveSpeed, 0.0f, 30.0f, "%.1f")) {
@@ -194,17 +153,9 @@ void PlayerParameterDebugPanel::Draw()
             player->SetMoveSpeed(moveSpeed);
         }
 
-        float maximumStepHeight =
-            player->GetMaximumStepHeight();
-        if (ImGui::DragFloat(
-                "乗り越えられる段差高さ",
-                &maximumStepHeight,
-                0.01f,
-                0.0f,
-                2.0f,
-                "%.2f")) {
-            player->SetMaximumStepHeight(
-                maximumStepHeight);
+        float maximumStepHeight = player->GetMaximumStepHeight();
+        if (ImGui::DragFloat("乗り越えられる段差高さ", &maximumStepHeight, 0.01f, 0.0f, 2.0f, "%.2f")) {
+            player->SetMaximumStepHeight(maximumStepHeight);
         }
 
         ImGui::SeparatorText("ジャンプ");
@@ -224,72 +175,33 @@ void PlayerParameterDebugPanel::Draw()
             player->SetJumpFallDuration(jumpFallDuration);
         }
 
-        float jumpApexHoverDurationSeconds =
-            player->GetJumpApexHoverDurationSeconds();
-        if (ImGui::DragFloat(
-                "頂点での空中待機時間（秒）",
-                &jumpApexHoverDurationSeconds,
-                0.01f,
-                0.0f,
-                2.0f,
-                "%.2f")) {
-            player->SetJumpApexHoverDurationSeconds(
-                jumpApexHoverDurationSeconds);
+        float jumpApexHoverDurationSeconds = player->GetJumpApexHoverDurationSeconds();
+        if (ImGui::DragFloat("頂点での空中待機時間（秒）", &jumpApexHoverDurationSeconds, 0.01f, 0.0f, 2.0f, "%.2f")) {
+            player->SetJumpApexHoverDurationSeconds(jumpApexHoverDurationSeconds);
         }
 
-        float airWeakAttackPostHoverDurationSeconds =
-            player->GetAirWeakAttackPostHoverDurationSeconds();
-        if (ImGui::DragFloat(
-                "空中弱攻撃後の待機時間（秒）",
-                &airWeakAttackPostHoverDurationSeconds,
-                0.01f,
-                0.0f,
-                2.0f,
-                "%.2f")) {
-            player->SetAirWeakAttackPostHoverDurationSeconds(
-                airWeakAttackPostHoverDurationSeconds);
+        float airWeakAttackPostHoverDurationSeconds = player->GetAirWeakAttackPostHoverDurationSeconds();
+        if (ImGui::DragFloat("空中弱攻撃後の待機時間（秒）", &airWeakAttackPostHoverDurationSeconds, 0.01f, 0.0f, 2.0f,
+                             "%.2f")) {
+            player->SetAirWeakAttackPostHoverDurationSeconds(airWeakAttackPostHoverDurationSeconds);
         }
 
-        float airDodgePostHoverDurationSeconds =
-            player->GetAirDodgePostHoverDurationSeconds();
-        if (ImGui::DragFloat(
-                "空中回避後の待機時間（秒）",
-                &airDodgePostHoverDurationSeconds,
-                0.01f,
-                0.0f,
-                2.0f,
-                "%.2f")) {
-            player->SetAirDodgePostHoverDurationSeconds(
-                airDodgePostHoverDurationSeconds);
+        float airDodgePostHoverDurationSeconds = player->GetAirDodgePostHoverDurationSeconds();
+        if (ImGui::DragFloat("空中回避後の待機時間（秒）", &airDodgePostHoverDurationSeconds, 0.01f, 0.0f, 2.0f,
+                             "%.2f")) {
+            player->SetAirDodgePostHoverDurationSeconds(airDodgePostHoverDurationSeconds);
         }
-
 
         ImGui::SeparatorText("重力方向判定");
 
-        float groundNormalRayLength =
-            mContext.game->GetGroundNormalRayLength();
-        if (ImGui::DragFloat(
-                "レイの長さ（中央＋周辺4本）",
-                &groundNormalRayLength,
-                0.05f,
-                0.05f,
-                100.0f,
-                "%.2f")) {
-            mContext.game->SetGroundNormalRayLength(
-                groundNormalRayLength);
+        float groundNormalRayLength = mContext.game->GetGroundNormalRayLength();
+        if (ImGui::DragFloat("レイの長さ（中央＋周辺4本）", &groundNormalRayLength, 0.05f, 0.05f, 100.0f, "%.2f")) {
+            mContext.game->SetGroundNormalRayLength(groundNormalRayLength);
         }
 
-        float overheadGravityRayLength =
-            mContext.game->GetOverheadGravityRayLength();
-        if (ImGui::DragFloat(
-                "頭上重力レイの長さ",
-                &overheadGravityRayLength,
-                0.05f,
-                0.05f,
-                100.0f,
-                "%.2f")) {
-            mContext.game->SetOverheadGravityRayLength(
-                overheadGravityRayLength);
+        float overheadGravityRayLength = mContext.game->GetOverheadGravityRayLength();
+        if (ImGui::DragFloat("頭上重力レイの長さ", &overheadGravityRayLength, 0.05f, 0.05f, 100.0f, "%.2f")) {
+            mContext.game->SetOverheadGravityRayLength(overheadGravityRayLength);
         }
 
         float dodgeDuration = player->GetDodgeDuration();
@@ -318,7 +230,10 @@ void PlayerParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
+}
 
+void PlayerParameterDebugPanel::DrawAttackSettings(Player* player)
+{
     if (ImGui::TreeNode("強攻撃（K / X）")) {
         float normalAttackRange = player->GetNormalAttackRange();
         if (ImGui::SliderFloat("強攻撃範囲", &normalAttackRange, 0.0f, 20.0f, "%.2f")) {
@@ -358,30 +273,16 @@ void PlayerParameterDebugPanel::Draw()
             player->SetWideAttack(wideAttack);
         }
 
-        float groundWeakAttackCooldownSeconds =
-            player->GetGroundWeakAttackCooldownSeconds();
-        if (ImGui::DragFloat(
-                "地上弱攻撃後クールタイム（秒）",
-                &groundWeakAttackCooldownSeconds,
-                0.01f,
-                0.0f,
-                5.0f,
-                "%.2f")) {
-            player->SetGroundWeakAttackCooldownSeconds(
-                groundWeakAttackCooldownSeconds);
+        float groundWeakAttackCooldownSeconds = player->GetGroundWeakAttackCooldownSeconds();
+        if (ImGui::DragFloat("地上弱攻撃後クールタイム（秒）", &groundWeakAttackCooldownSeconds, 0.01f, 0.0f, 5.0f,
+                             "%.2f")) {
+            player->SetGroundWeakAttackCooldownSeconds(groundWeakAttackCooldownSeconds);
         }
 
-        float airWeakAttackCooldownSeconds =
-            player->GetAirWeakAttackCooldownSeconds();
-        if (ImGui::DragFloat(
-                "空中弱攻撃後クールタイム（秒）",
-                &airWeakAttackCooldownSeconds,
-                0.01f,
-                0.0f,
-                5.0f,
-                "%.2f")) {
-            player->SetAirWeakAttackCooldownSeconds(
-                airWeakAttackCooldownSeconds);
+        float airWeakAttackCooldownSeconds = player->GetAirWeakAttackCooldownSeconds();
+        if (ImGui::DragFloat("空中弱攻撃後クールタイム（秒）", &airWeakAttackCooldownSeconds, 0.01f, 0.0f, 5.0f,
+                             "%.2f")) {
+            player->SetAirWeakAttackCooldownSeconds(airWeakAttackCooldownSeconds);
         }
 
         ImGui::TreePop();
@@ -389,65 +290,28 @@ void PlayerParameterDebugPanel::Draw()
 
     if (ImGui::TreeNode("空中回避攻撃（空中U / B）")) {
         float attackDamage = player->GetAirDodgeAttackDamage();
-        if (ImGui::DragFloat(
-                "攻撃力##空中回避攻撃",
-                &attackDamage,
-                0.1f,
-                0.0f,
-                999.0f,
-                "%.1f")) {
+        if (ImGui::DragFloat("攻撃力##空中回避攻撃", &attackDamage, 0.1f, 0.0f, 999.0f, "%.1f")) {
             player->SetAirDodgeAttackDamage(attackDamage);
         }
 
-        float horizontalHitboxScale =
-            player->GetAirDodgeHorizontalHitboxScale();
-        if (ImGui::DragFloat(
-                "横方向の判定倍率",
-                &horizontalHitboxScale,
-                0.05f,
-                0.0f,
-                10.0f,
-                "%.2f")) {
-            player->SetAirDodgeHorizontalHitboxScale(
-                horizontalHitboxScale);
+        float horizontalHitboxScale = player->GetAirDodgeHorizontalHitboxScale();
+        if (ImGui::DragFloat("横方向の判定倍率", &horizontalHitboxScale, 0.05f, 0.0f, 10.0f, "%.2f")) {
+            player->SetAirDodgeHorizontalHitboxScale(horizontalHitboxScale);
         }
 
-        float verticalHitboxScale =
-            player->GetAirDodgeVerticalHitboxScale();
-        if (ImGui::DragFloat(
-                "縦方向の判定倍率",
-                &verticalHitboxScale,
-                0.05f,
-                0.0f,
-                10.0f,
-                "%.2f")) {
-            player->SetAirDodgeVerticalHitboxScale(
-                verticalHitboxScale);
+        float verticalHitboxScale = player->GetAirDodgeVerticalHitboxScale();
+        if (ImGui::DragFloat("縦方向の判定倍率", &verticalHitboxScale, 0.05f, 0.0f, 10.0f, "%.2f")) {
+            player->SetAirDodgeVerticalHitboxScale(verticalHitboxScale);
         }
 
-        float enemyPushSpeed =
-            player->GetAirDodgeEnemyPushSpeed();
-        if (ImGui::DragFloat(
-                "敵を押す初速",
-                &enemyPushSpeed,
-                0.1f,
-                0.0f,
-                30.0f,
-                "%.1f")) {
+        float enemyPushSpeed = player->GetAirDodgeEnemyPushSpeed();
+        if (ImGui::DragFloat("敵を押す初速", &enemyPushSpeed, 0.1f, 0.0f, 30.0f, "%.1f")) {
             player->SetAirDodgeEnemyPushSpeed(enemyPushSpeed);
         }
 
-        float enemyPushDampingPerSecond =
-            player->GetAirDodgeEnemyPushDampingPerSecond();
-        if (ImGui::DragFloat(
-                "押し出し減衰（毎秒）",
-                &enemyPushDampingPerSecond,
-                0.1f,
-                0.0f,
-                30.0f,
-                "%.1f")) {
-            player->SetAirDodgeEnemyPushDampingPerSecond(
-                enemyPushDampingPerSecond);
+        float enemyPushDampingPerSecond = player->GetAirDodgeEnemyPushDampingPerSecond();
+        if (ImGui::DragFloat("押し出し減衰（毎秒）", &enemyPushDampingPerSecond, 0.1f, 0.0f, 30.0f, "%.1f")) {
+            player->SetAirDodgeEnemyPushDampingPerSecond(enemyPushDampingPerSecond);
         }
 
         ImGui::TreePop();
@@ -470,24 +334,12 @@ void PlayerParameterDebugPanel::Draw()
         }
 
         float attackIntervalSeconds = player->GetContinuousAttackIntervalSeconds();
-        if (ImGui::DragFloat(
-                "攻撃間隔（秒）##連続攻撃",
-                &attackIntervalSeconds,
-                0.01f,
-                0.01f,
-                5.0f,
-                "%.2f")) {
+        if (ImGui::DragFloat("攻撃間隔（秒）##連続攻撃", &attackIntervalSeconds, 0.01f, 0.01f, 5.0f, "%.2f")) {
             player->SetContinuousAttackIntervalSeconds(attackIntervalSeconds);
         }
 
         float attackDurationSeconds = player->GetContinuousAttackDurationSeconds();
-        if (ImGui::DragFloat(
-                "継続時間（秒）##連続攻撃",
-                &attackDurationSeconds,
-                0.1f,
-                0.0f,
-                30.0f,
-                "%.1f")) {
+        if (ImGui::DragFloat("継続時間（秒）##連続攻撃", &attackDurationSeconds, 0.1f, 0.0f, 30.0f, "%.1f")) {
             player->SetContinuousAttackDurationSeconds(attackDurationSeconds);
         }
 
@@ -511,13 +363,7 @@ void PlayerParameterDebugPanel::Draw()
         }
 
         float chargeDurationSeconds = player->GetChargedAttackChargeDurationSeconds();
-        if (ImGui::DragFloat(
-                "溜め時間（秒）",
-                &chargeDurationSeconds,
-                0.1f,
-                0.1f,
-                10.0f,
-                "%.1f")) {
+        if (ImGui::DragFloat("溜め時間（秒）", &chargeDurationSeconds, 0.1f, 0.1f, 10.0f, "%.1f")) {
             player->SetChargedAttackChargeDurationSeconds(chargeDurationSeconds);
         }
 
@@ -550,27 +396,13 @@ void PlayerParameterDebugPanel::Draw()
         }
 
         float airSlamRiseDurationSeconds = player->GetAirSlamRiseDurationSeconds();
-        if (ImGui::DragFloat(
-                "上昇時間（秒）##空中X",
-                &airSlamRiseDurationSeconds,
-                0.01f,
-                0.05f,
-                3.0f,
-                "%.2f")) {
-            player->SetAirSlamRiseDurationSeconds(
-                airSlamRiseDurationSeconds);
+        if (ImGui::DragFloat("上昇時間（秒）##空中X", &airSlamRiseDurationSeconds, 0.01f, 0.05f, 3.0f, "%.2f")) {
+            player->SetAirSlamRiseDurationSeconds(airSlamRiseDurationSeconds);
         }
 
         float airSlamHoverDurationSeconds = player->GetAirSlamHoverDurationSeconds();
-        if (ImGui::DragFloat(
-                "空中停止時間（秒）",
-                &airSlamHoverDurationSeconds,
-                0.01f,
-                0.0f,
-                3.0f,
-                "%.2f")) {
-            player->SetAirSlamHoverDurationSeconds(
-                airSlamHoverDurationSeconds);
+        if (ImGui::DragFloat("空中停止時間（秒）", &airSlamHoverDurationSeconds, 0.01f, 0.0f, 3.0f, "%.2f")) {
+            player->SetAirSlamHoverDurationSeconds(airSlamHoverDurationSeconds);
         }
 
         float defaultStrongAttackTimer = player->GetDefaultStrongAttackTimer();
@@ -581,7 +413,10 @@ void PlayerParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
+}
 
+void PlayerParameterDebugPanel::DrawTimerSettings(Player* player)
+{
     if (ImGui::TreeNode("タイマー")) {
         float specialAttackCooldown = player->GetSpecialAttackCooldown();
         if (ImGui::SliderFloat("特殊攻撃クールタイム", &specialAttackCooldown, 0.0f, 60.0f, "%.1f")) {
@@ -607,15 +442,8 @@ void PlayerParameterDebugPanel::Draw()
             player->SetDefaultAttackMotionTimer(defaultAttackMotionTimer);
         }
 
-        float attackHitDelaySeconds =
-            player->GetAttackHitDelay();
-        if (ImGui::DragFloat(
-                "攻撃判定までの時間（秒）",
-                &attackHitDelaySeconds,
-                0.01f,
-                0.0f,
-                5.0f,
-                "%.2f")) {
+        float attackHitDelaySeconds = player->GetAttackHitDelay();
+        if (ImGui::DragFloat("攻撃判定までの時間（秒）", &attackHitDelaySeconds, 0.01f, 0.0f, 5.0f, "%.2f")) {
             player->SetAttackHitDelay(attackHitDelaySeconds);
         }
 
@@ -627,13 +455,4 @@ void PlayerParameterDebugPanel::Draw()
 
         ImGui::TreePop();
     }
-}
-
-bool PlayerParameterDebugPanel::SaveParameters()
-{
-    if (!mContext.game || mContext.game->GetPlayers().empty()) {
-        return false;
-    }
-
-    return mYamlWriter.SavePlayer(*mContext.game->GetPlayers()[0]);
 }

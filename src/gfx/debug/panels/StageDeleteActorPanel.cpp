@@ -40,17 +40,13 @@ void StageDeleteActorPanel::Draw()
 
                 hasItem = true;
 
-                const std::string key =
-                    StageActorQuery::MakeKey(target);
-                bool selected = mSelectedKeys.contains(key);
+                const std::string key = StageActorQuery::MakeKey(target);
+                bool isSelected = mSelectedKeys.contains(key);
 
-                const std::string checkboxLabel =
-                    target.label + "##delete_" + key;
+                const std::string checkboxLabel = target.label + "##delete_" + key;
 
-                if (ImGui::Checkbox(
-                        checkboxLabel.c_str(),
-                        &selected)) {
-                    if (selected) {
+                if (ImGui::Checkbox(checkboxLabel.c_str(), &isSelected)) {
+                    if (isSelected) {
                         mSelectedKeys.insert(key);
                     } else {
                         mSelectedKeys.erase(key);
@@ -65,16 +61,13 @@ void StageDeleteActorPanel::Draw()
             ImGui::TreePop();
         };
 
-        for (const StageActorTypeInfo& info :
-             StageActorQuery::GetTypeInfos()) {
+        for (const StageActorTypeInfo& info : StageActorQuery::GetTypeInfos()) {
             drawCategory(info);
         }
 
         ImGui::Separator();
 
-        ImGui::Text(
-            "選択数: %d",
-            static_cast<int>(mSelectedKeys.size()));
+        ImGui::Text("選択数: %d", static_cast<int>(mSelectedKeys.size()));
 
         const bool canDelete = !mSelectedKeys.empty();
 
@@ -90,19 +83,12 @@ void StageDeleteActorPanel::Draw()
             ImGui::EndDisabled();
         }
 
-        if (ImGui::BeginPopupModal(
-                "削除確認",
-                nullptr,
-                ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text(
-                "選択中のオブジェクトを削除します。よろしいですか？");
-            ImGui::Text(
-                "削除数: %d",
-                static_cast<int>(mSelectedKeys.size()));
+        if (ImGui::BeginPopupModal("削除確認", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("選択中のオブジェクトを削除します。よろしいですか？");
+            ImGui::Text("削除数: %d", static_cast<int>(mSelectedKeys.size()));
 
             if (ImGui::Button("削除する")) {
-                mEditCommandController.DeleteSelectedKeys(
-                    mSelectedKeys);
+                mEditCommandController.DeleteSelectedKeys(mSelectedKeys);
                 mSelectedKeys.clear();
                 ImGui::CloseCurrentPopup();
             }
@@ -122,8 +108,7 @@ void StageDeleteActorPanel::Draw()
 
 void StageDeleteActorPanel::DrawPlanetDeletion()
 {
-    Stage* stage =
-        mContext.game ? mContext.game->GetCurrentStage() : nullptr;
+    Stage* stage = mContext.game ? mContext.game->GetCurrentStage() : nullptr;
     if (!stage) {
         return;
     }
@@ -133,31 +118,20 @@ void StageDeleteActorPanel::DrawPlanetDeletion()
     ImGui::SeparatorText("惑星の削除");
     if (planets.size() <= 1) {
         mSelectedPlanetIndex = -1;
-        ImGui::TextDisabled(
-            "ステージに必要な最後の惑星は削除できません。");
+        ImGui::TextDisabled("ステージに必要な最後の惑星は削除できません。");
         return;
     }
 
-    if (mSelectedPlanetIndex < 0 ||
-        mSelectedPlanetIndex >= static_cast<int>(planets.size())) {
+    if (mSelectedPlanetIndex < 0 || mSelectedPlanetIndex >= static_cast<int>(planets.size())) {
         mSelectedPlanetIndex = 0;
     }
 
-    const std::string planetPreview =
-        "惑星 " + std::to_string(mSelectedPlanetIndex);
-    if (ImGui::BeginCombo(
-            "削除する惑星",
-            planetPreview.c_str())) {
-        for (int planetIndex = 0;
-             planetIndex < static_cast<int>(planets.size());
-             ++planetIndex) {
-            const bool isSelected =
-                planetIndex == mSelectedPlanetIndex;
-            const std::string label =
-                "惑星 " + std::to_string(planetIndex);
-            if (ImGui::Selectable(
-                    label.c_str(),
-                    isSelected)) {
+    const std::string planetPreview = "惑星 " + std::to_string(mSelectedPlanetIndex);
+    if (ImGui::BeginCombo("削除する惑星", planetPreview.c_str())) {
+        for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
+            const bool isSelected = planetIndex == mSelectedPlanetIndex;
+            const std::string label = "惑星 " + std::to_string(planetIndex);
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
                 mSelectedPlanetIndex = planetIndex;
             }
             if (isSelected) {
@@ -167,31 +141,23 @@ void StageDeleteActorPanel::DrawPlanetDeletion()
         ImGui::EndCombo();
     }
 
-    ImGui::TextWrapped(
-        "削除した惑星上の配置物と、その惑星を経路に含む"
-        "ロケットも削除されます。後ろの惑星番号は自動で詰めます。");
+    ImGui::TextWrapped("削除した惑星上の配置物と、その惑星を経路に含む"
+                       "ロケットも削除されます。後ろの惑星番号は自動で詰めます。");
 
     if (ImGui::Button("選択した惑星を削除")) {
         mPendingPlanetIndex = mSelectedPlanetIndex;
         ImGui::OpenPopup("惑星削除確認");
     }
 
-    if (!ImGui::BeginPopupModal(
-            "惑星削除確認",
-            nullptr,
-            ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (!ImGui::BeginPopupModal("惑星削除確認", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         return;
     }
 
-    ImGui::Text(
-        "惑星 %d と関連する配置物を削除します。",
-        mPendingPlanetIndex);
-    ImGui::TextUnformatted(
-        "この操作は Ctrl+Z で元に戻せます。");
+    ImGui::Text("惑星 %d と関連する配置物を削除します。", mPendingPlanetIndex);
+    ImGui::TextUnformatted("この操作は Ctrl+Z で元に戻せます。");
 
     if (ImGui::Button("惑星を削除する")) {
-        if (mEditCommandController.DeletePlanet(
-                mPendingPlanetIndex)) {
+        if (mEditCommandController.DeletePlanet(mPendingPlanetIndex)) {
             mSelectedPlanetIndex = -1;
         }
         mPendingPlanetIndex = -1;

@@ -3,9 +3,7 @@
 #include "gfx/debug/panels/CameraDebugPanel.h"
 #include "imgui.h"
 
-ParameterDebugPanel::ParameterDebugPanel(
-    DebugEditorContext& context,
-    CameraDebugPanel& cameraPanel)
+ParameterDebugPanel::ParameterDebugPanel(DebugEditorContext& context, CameraDebugPanel& cameraPanel)
     : DebugPanel(context),
       mCameraPanel(cameraPanel),
       mPlayerPanel(context),
@@ -20,9 +18,9 @@ void ParameterDebugPanel::Draw()
 
     ImGui::BeginChild("ParameterEditorLeft", ImVec2(160, 0), true);
 
-    for (int i = 0; i < IM_ARRAYSIZE(menus); ++i) {
-        if (ImGui::Selectable(menus[i], mSelectedMenu == i)) {
-            mSelectedMenu = i;
+    for (int index = 0; index < IM_ARRAYSIZE(menus); ++index) {
+        if (ImGui::Selectable(menus[index], mSelectedMenu == index)) {
+            mSelectedMenu = index;
         }
     }
 
@@ -48,5 +46,3 @@ void ParameterDebugPanel::Draw()
 
     ImGui::EndChild();
 }
-
-

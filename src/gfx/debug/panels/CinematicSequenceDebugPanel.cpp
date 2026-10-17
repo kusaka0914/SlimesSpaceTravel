@@ -1,13 +1,13 @@
 #include "gfx/debug/panels/CinematicSequenceDebugPanel.h"
 
 #include "Game.h"
+#include "gfx/debug/panels/DebugPanelTextInput.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
 #include "system/camera/CinematicCameraTypes.h"
 #include "system/camera/CinematicSequenceLibrary.h"
 
 #include <algorithm>
-#include <array>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -21,19 +21,6 @@ constexpr const char* easingLabels[] = {
     "イーズイン・アウト",
 };
 constexpr const char* transitionModeLabels[] = {"滑らか", "瞬時切り替え（カット）"};
-
-template <std::size_t BufferSize>
-bool DrawStringInput(const char* label, std::string& text)
-{
-    std::array<char, BufferSize> buffer = {};
-    std::snprintf(buffer.data(), buffer.size(), "%s", text.c_str());
-    if (!ImGui::InputText(label, buffer.data(), buffer.size())) {
-        return false;
-    }
-
-    text = buffer.data();
-    return true;
-}
 
 CameraEasing ToEasing(int easingIndex)
 {
@@ -67,9 +54,7 @@ int ToEasingIndex(CameraEasing easing)
 
 CameraTransitionMode ToTransitionMode(int transitionModeIndex)
 {
-    return transitionModeIndex == 1
-        ? CameraTransitionMode::Cut
-        : CameraTransitionMode::Smooth;
+    return transitionModeIndex == 1 ? CameraTransitionMode::Cut : CameraTransitionMode::Smooth;
 }
 
 int ToTransitionModeIndex(CameraTransitionMode transitionMode)
@@ -84,10 +69,9 @@ void SortKeyframes(CinematicSequence& sequence)
                          return left.time < right.time;
                      });
 }
-}
+} // namespace
 
-CinematicSequenceDebugPanel::CinematicSequenceDebugPanel(
-    DebugEditorContext& context)
+CinematicSequenceDebugPanel::CinematicSequenceDebugPanel(DebugEditorContext& context)
     : DebugPanel(context)
 {
 }
@@ -103,35 +87,71 @@ void CinematicSequenceDebugPanel::Draw()
     CinematicSequenceLibrary& library = cameraSystem->GetCinematicLibrary();
 
     if (ImGui::Button("YAMLへ保存")) {
-        mStatusMessage = cameraSystem->SaveCinematicSequences()
-                             ? "cinematics.yamlへ保存しました"
-                             : "保存に失敗しました";
+        mStatusMessage =
+            cameraSystem->SaveCinematicSequences() ? "cinematics.yamlへ保存しました" : "保存に失敗しました";
     }
     ImGui::SameLine();
     if (ImGui::Button("再読込")) {
-        const bool loaded = cameraSystem->ReloadCinematicSequences();
+        const bool wasLoaded = cameraSystem->ReloadCinematicSequences();
         mSelectedSequenceId.clear();
         mRenameSequenceIdBuffer[0] = '\0';
         mSelectedKeyframeIndex = -1;
-        mStatusMessage = loaded
-                             ? "cinematics.yamlを再読込しました"
-                             : "再読込に失敗しました";
+        mStatusMessage = wasLoaded ? "cinematics.yamlを再読込しました" : "再読込に失敗しました";
     }
     ImGui::SameLine();
     ImGui::TextUnformatted(mStatusMessage.c_str());
 
     ImGui::Separator();
-    ImGui::BeginChild(
-        "CinematicSequenceList",
-        ImVec2(230.0f, 0.0f),
-        true);
+    DrawSequenceList(cameraSystem, library);
+
+    ImGui::SameLine();
+    DrawSequenceEditor(cameraSystem, library);
+}
+
+void CinematicSequenceDebugPanel::SelectSequence(const std::string& sequenceId)
+{
+    mSelectedSequenceId = sequenceId;
+    mSelectedKeyframeIndex = -1;
+
+    std::strncpy(mRenameSequenceIdBuffer.data(), sequenceId.c_str(), mRenameSequenceIdBuffer.size() - 1);
+    mRenameSequenceIdBuffer[mRenameSequenceIdBuffer.size() - 1] = '\0';
+}
+
+void CinematicSequenceDebugPanel::SelectKeyframe(int keyframeIndex)
+{
+    if (!mContext.game || !mContext.game->GetCameraSystem() || mSelectedSequenceId.empty()) {
+        return;
+    }
+
+    CameraSystem* cameraSystem = mContext.game->GetCameraSystem();
+    CinematicSequence* sequence = cameraSystem->GetCinematicLibrary().FindMutable(mSelectedSequenceId);
+
+    if (!sequence || keyframeIndex < 0 || keyframeIndex >= static_cast<int>(sequence->keyframes.size())) {
+        return;
+    }
+
+    mSelectedKeyframeIndex = keyframeIndex;
+
+    const CinematicCameraKeyframe& keyframe = sequence->keyframes[keyframeIndex];
+    mKeyframeTime = keyframe.time;
+    mKeyframeHoldDurationSeconds = keyframe.holdDurationSeconds;
+    mEasingIndex = ToEasingIndex(keyframe.easing);
+    mTransitionModeIndex = ToTransitionModeIndex(keyframe.transitionMode);
+
+    cameraSystem->SetDebugCameraPose(keyframe.pose);
+
+    if (!mContext.game->GetIsFreeCameraMode()) {
+        mContext.game->ToggleFreeCameraMode();
+    }
+}
+
+void CinematicSequenceDebugPanel::DrawSequenceList(CameraSystem* cameraSystem, CinematicSequenceLibrary& library)
+{
+    ImGui::BeginChild("CinematicSequenceList", ImVec2(230.0f, 0.0f), true);
     ImGui::TextUnformatted("カメラシーケンス一覧");
-    ImGui::InputText(
-        "##newCinematicSequenceId",
-        mNewSequenceIdBuffer,
-        sizeof(mNewSequenceIdBuffer));
+    ImGui::InputText("##newCinematicSequenceId", mNewSequenceIdBuffer.data(), mNewSequenceIdBuffer.size());
     if (ImGui::Button("新規作成", ImVec2(-1.0f, 0.0f))) {
-        const std::string newSequenceId(mNewSequenceIdBuffer);
+        const std::string newSequenceId(mNewSequenceIdBuffer.data());
         if (library.Create(newSequenceId)) {
             SelectSequence(newSequenceId);
             mStatusMessage = "カメラシーケンスを作成しました";
@@ -141,8 +161,7 @@ void CinematicSequenceDebugPanel::Draw()
     }
 
     if (ImGui::Button("選択中を複製", ImVec2(-1.0f, 0.0f))) {
-        CinematicSequence* duplicated =
-            library.Duplicate(mSelectedSequenceId);
+        CinematicSequence* duplicated = library.Duplicate(mSelectedSequenceId);
         if (duplicated) {
             SelectSequence(duplicated->id);
             mStatusMessage = "カメラシーケンスを複製しました";
@@ -151,8 +170,7 @@ void CinematicSequenceDebugPanel::Draw()
         }
     }
 
-    if (ImGui::Button("選択中を削除", ImVec2(-1.0f, 0.0f)) &&
-        !mSelectedSequenceId.empty()) {
+    if (ImGui::Button("選択中を削除", ImVec2(-1.0f, 0.0f)) && !mSelectedSequenceId.empty()) {
         if (cameraSystem->IsCinematicPlaying()) {
             cameraSystem->StopCinematic();
         }
@@ -167,44 +185,35 @@ void CinematicSequenceDebugPanel::Draw()
     ImGui::Separator();
     for (const std::string& sequenceId : library.GetSequenceIds()) {
         const CinematicSequence* sequence = library.Find(sequenceId);
-        const std::string displayName =
-            sequence && !sequence->displayName.empty()
-                ? sequence->displayName
-                : sequenceId;
+        const std::string displayName = sequence && !sequence->displayName.empty() ? sequence->displayName : sequenceId;
         const std::string label = displayName + "##" + sequenceId;
-        if (ImGui::Selectable(
-                label.c_str(),
-                sequenceId == mSelectedSequenceId)) {
+        if (ImGui::Selectable(label.c_str(), sequenceId == mSelectedSequenceId)) {
             SelectSequence(sequenceId);
         }
         ImGui::TextDisabled("ID: %s", sequenceId.c_str());
     }
 
     ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild(
-        "CinematicSequenceEditor",
-        ImVec2(0.0f, 0.0f),
-        true);
+}
+
+void CinematicSequenceDebugPanel::DrawSequenceEditor(CameraSystem* cameraSystem, CinematicSequenceLibrary& library)
+{
+    ImGui::BeginChild("CinematicSequenceEditor", ImVec2(0.0f, 0.0f), true);
 
     CinematicSequence* sequence = mSelectedSequenceId.empty() ? nullptr : library.FindMutable(mSelectedSequenceId);
 
     if (!sequence) {
-        ImGui::TextWrapped(
-            "左側で編集するカメラシーケンスを選択してください。");
+        ImGui::TextWrapped("左側で編集するカメラシーケンスを選択してください。");
     }
 
     if (sequence) {
-        DrawStringInput<256>("表示名", sequence->displayName);
+        DebugPanelTextInput::DrawStringInput<256>("表示名", sequence->displayName);
 
-        ImGui::InputText(
-            "シーケンスID",
-            mRenameSequenceIdBuffer,
-            sizeof(mRenameSequenceIdBuffer));
+        ImGui::InputText("シーケンスID", mRenameSequenceIdBuffer.data(), mRenameSequenceIdBuffer.size());
         ImGui::SameLine();
         if (ImGui::Button("IDを変更")) {
             const std::string previousId = sequence->id;
-            const std::string renamedId(mRenameSequenceIdBuffer);
+            const std::string renamedId(mRenameSequenceIdBuffer.data());
 
             if (cameraSystem->IsCinematicPlaying()) {
                 cameraSystem->StopCinematic();
@@ -213,17 +222,11 @@ void CinematicSequenceDebugPanel::Draw()
             if (library.Rename(previousId, renamedId)) {
                 SelectSequence(renamedId);
                 sequence = library.FindMutable(renamedId);
-                mStatusMessage = previousId == renamedId
-                                     ? "シーケンスIDは変更されていません"
-                                     : "シーケンスIDを変更しました";
-            } else {
-                std::snprintf(
-                    mRenameSequenceIdBuffer,
-                    sizeof(mRenameSequenceIdBuffer),
-                    "%s",
-                    previousId.c_str());
                 mStatusMessage =
-                    "空のID、または既に使われているIDには変更できません";
+                    previousId == renamedId ? "シーケンスIDは変更されていません" : "シーケンスIDを変更しました";
+            } else {
+                std::snprintf(mRenameSequenceIdBuffer.data(), mRenameSequenceIdBuffer.size(), "%s", previousId.c_str());
+                mStatusMessage = "空のID、または既に使われているIDには変更できません";
             }
         }
 
@@ -237,19 +240,9 @@ void CinematicSequenceDebugPanel::Draw()
             const CinematicCameraKeyframe& keyframe = sequence->keyframes[index];
 
             char label[128];
-            const char* transitionLabel =
-                keyframe.transitionMode == CameraTransitionMode::Cut
-                    ? " [カット]"
-                    : "";
-            std::snprintf(
-                label,
-                sizeof(label),
-                "%02d%s  時間 %.2f秒  待機 %.2f秒  FOV %.1f",
-                index,
-                transitionLabel,
-                keyframe.time,
-                keyframe.holdDurationSeconds,
-                keyframe.pose.fieldOfViewDegrees);
+            const char* transitionLabel = keyframe.transitionMode == CameraTransitionMode::Cut ? " [カット]" : "";
+            std::snprintf(label, sizeof(label), "%02d%s  時間 %.2f秒  待機 %.2f秒  FOV %.1f", index, transitionLabel,
+                          keyframe.time, keyframe.holdDurationSeconds, keyframe.pose.fieldOfViewDegrees);
 
             if (ImGui::Selectable(label, index == mSelectedKeyframeIndex)) {
                 SelectKeyframe(index);
@@ -257,20 +250,9 @@ void CinematicSequenceDebugPanel::Draw()
         }
 
         ImGui::DragFloat("キーフレーム時間", &mKeyframeTime, 0.05f, 0.0f, 999.0f);
-        ImGui::DragFloat(
-            "到着後の待機時間（秒）",
-            &mKeyframeHoldDurationSeconds,
-            0.05f,
-            0.0f,
-            999.0f);
-        ImGui::Combo(
-            "遷移方式",
-            &mTransitionModeIndex,
-            transitionModeLabels,
-            IM_ARRAYSIZE(transitionModeLabels));
-        const bool isCutTransition =
-            ToTransitionMode(mTransitionModeIndex) ==
-            CameraTransitionMode::Cut;
+        ImGui::DragFloat("到着後の待機時間（秒）", &mKeyframeHoldDurationSeconds, 0.05f, 0.0f, 999.0f);
+        ImGui::Combo("遷移方式", &mTransitionModeIndex, transitionModeLabels, IM_ARRAYSIZE(transitionModeLabels));
+        const bool isCutTransition = ToTransitionMode(mTransitionModeIndex) == CameraTransitionMode::Cut;
         if (isCutTransition) {
             ImGui::BeginDisabled();
         }
@@ -282,12 +264,10 @@ void CinematicSequenceDebugPanel::Draw()
         if (ImGui::Button("現在のカメラを追加")) {
             CinematicCameraKeyframe keyframe;
             keyframe.time = std::max(0.0f, mKeyframeTime);
-            keyframe.holdDurationSeconds =
-                std::max(0.0f, mKeyframeHoldDurationSeconds);
+            keyframe.holdDurationSeconds = std::max(0.0f, mKeyframeHoldDurationSeconds);
             keyframe.pose = cameraSystem->GetDebugCameraPose();
             keyframe.easing = ToEasing(mEasingIndex);
-            keyframe.transitionMode =
-                ToTransitionMode(mTransitionModeIndex);
+            keyframe.transitionMode = ToTransitionMode(mTransitionModeIndex);
 
             sequence->keyframes.push_back(keyframe);
             SortKeyframes(*sequence);
@@ -306,12 +286,10 @@ void CinematicSequenceDebugPanel::Draw()
         if (ImGui::Button("選択中を上書き") && hasSelectedKeyframe) {
             CinematicCameraKeyframe& keyframe = sequence->keyframes[mSelectedKeyframeIndex];
             keyframe.time = std::max(0.0f, mKeyframeTime);
-            keyframe.holdDurationSeconds =
-                std::max(0.0f, mKeyframeHoldDurationSeconds);
+            keyframe.holdDurationSeconds = std::max(0.0f, mKeyframeHoldDurationSeconds);
             keyframe.pose = cameraSystem->GetDebugCameraPose();
             keyframe.easing = ToEasing(mEasingIndex);
-            keyframe.transitionMode =
-                ToTransitionMode(mTransitionModeIndex);
+            keyframe.transitionMode = ToTransitionMode(mTransitionModeIndex);
 
             SortKeyframes(*sequence);
             mSelectedKeyframeIndex = -1;
@@ -351,48 +329,4 @@ void CinematicSequenceDebugPanel::Draw()
     }
 
     ImGui::EndChild();
-}
-
-void CinematicSequenceDebugPanel::SelectSequence(
-    const std::string& sequenceId)
-{
-    mSelectedSequenceId = sequenceId;
-    mSelectedKeyframeIndex = -1;
-
-    std::strncpy(
-        mRenameSequenceIdBuffer,
-        sequenceId.c_str(),
-        sizeof(mRenameSequenceIdBuffer) - 1);
-    mRenameSequenceIdBuffer[
-        sizeof(mRenameSequenceIdBuffer) - 1] = '\0';
-}
-
-void CinematicSequenceDebugPanel::SelectKeyframe(int keyframeIndex)
-{
-    if (!mContext.game || !mContext.game->GetCameraSystem() || mSelectedSequenceId.empty()) {
-        return;
-    }
-
-    CameraSystem* cameraSystem = mContext.game->GetCameraSystem();
-    CinematicSequence* sequence = cameraSystem->GetCinematicLibrary().FindMutable(mSelectedSequenceId);
-
-    if (!sequence || keyframeIndex < 0 || keyframeIndex >= static_cast<int>(sequence->keyframes.size())) {
-        return;
-    }
-
-    mSelectedKeyframeIndex = keyframeIndex;
-
-    const CinematicCameraKeyframe& keyframe = sequence->keyframes[keyframeIndex];
-    mKeyframeTime = keyframe.time;
-    mKeyframeHoldDurationSeconds =
-        keyframe.holdDurationSeconds;
-    mEasingIndex = ToEasingIndex(keyframe.easing);
-    mTransitionModeIndex =
-        ToTransitionModeIndex(keyframe.transitionMode);
-
-    cameraSystem->SetDebugCameraPose(keyframe.pose);
-
-    if (!mContext.game->GetIsFreeCameraMode()) {
-        mContext.game->ToggleFreeCameraMode();
-    }
 }
