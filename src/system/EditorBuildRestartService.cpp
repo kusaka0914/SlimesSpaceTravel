@@ -16,12 +16,11 @@
 #endif
 
 namespace {
+
 bool IsMultiConfigurationDirectory(const std::filesystem::path& directory)
 {
     const std::string directoryName = directory.filename().string();
-    return directoryName == "Debug" ||
-           directoryName == "Release" ||
-           directoryName == "RelWithDebInfo" ||
+    return directoryName == "Debug" || directoryName == "Release" || directoryName == "RelWithDebInfo" ||
            directoryName == "MinSizeRel";
 }
 
@@ -60,10 +59,8 @@ std::wstring QuoteWindowsArgument(const std::wstring& argument)
 std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
 {
     std::wstring executablePathBuffer(32768, L'\0');
-    const DWORD pathLength = GetModuleFileNameW(
-        nullptr,
-        executablePathBuffer.data(),
-        static_cast<DWORD>(executablePathBuffer.size()));
+    const DWORD pathLength =
+        GetModuleFileNameW(nullptr, executablePathBuffer.data(), static_cast<DWORD>(executablePathBuffer.size()));
     if (pathLength == 0 || pathLength >= executablePathBuffer.size()) {
         outErrorMessage = "実行中のゲームのパスを取得できませんでした。";
         return {};
@@ -89,10 +86,7 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
 std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
 {
     std::array<char, 4096> executablePathBuffer{};
-    const ssize_t pathLength = readlink(
-        "/proc/self/exe",
-        executablePathBuffer.data(),
-        executablePathBuffer.size() - 1);
+    const ssize_t pathLength = readlink("/proc/self/exe", executablePathBuffer.data(), executablePathBuffer.size() - 1);
     if (pathLength <= 0) {
         outErrorMessage = "実行中のゲームのパスを取得できませんでした。";
         return {};
@@ -102,11 +96,10 @@ std::filesystem::path FindCurrentExecutablePath(std::string& outErrorMessage)
     return std::filesystem::path(executablePathBuffer.data());
 }
 #endif
-}
+} // namespace
 
-bool EditorBuildRestartService::ResolveSessionFilePath(
-    std::filesystem::path& outSessionFilePath,
-    std::string& outErrorMessage) const
+bool EditorBuildRestartService::ResolveSessionFilePath(std::filesystem::path& outSessionFilePath,
+                                                       std::string& outErrorMessage) const
 {
     RuntimePaths runtimePaths;
     if (!ResolveRuntimePaths(runtimePaths, outErrorMessage)) {
@@ -117,9 +110,8 @@ bool EditorBuildRestartService::ResolveSessionFilePath(
     return true;
 }
 
-bool EditorBuildRestartService::ResolvePersistentDebugSessionFilePath(
-    std::filesystem::path& outSessionFilePath,
-    std::string& outErrorMessage) const
+bool EditorBuildRestartService::ResolvePersistentDebugSessionFilePath(std::filesystem::path& outSessionFilePath,
+                                                                      std::string& outErrorMessage) const
 {
     RuntimePaths runtimePaths;
     if (!ResolveRuntimePaths(runtimePaths, outErrorMessage)) {
@@ -130,9 +122,8 @@ bool EditorBuildRestartService::ResolvePersistentDebugSessionFilePath(
     return true;
 }
 
-bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
-    const std::filesystem::path& sessionFilePath,
-    std::string& outErrorMessage) const
+bool EditorBuildRestartService::LaunchBuildAndRestartHelper(const std::filesystem::path& sessionFilePath,
+                                                            std::string& outErrorMessage) const
 {
     RuntimePaths runtimePaths;
     if (!ResolveRuntimePaths(runtimePaths, outErrorMessage)) {
@@ -140,8 +131,7 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
     }
 
     if (!std::filesystem::is_regular_file(runtimePaths.helperExecutable)) {
-        outErrorMessage = "ビルド再起動用プログラムが見つかりません: " +
-                          runtimePaths.helperExecutable.string();
+        outErrorMessage = "ビルド再起動用プログラムが見つかりません: " + runtimePaths.helperExecutable.string();
         return false;
     }
 
@@ -150,8 +140,8 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
     std::wstring commandLine = QuoteWindowsArgument(runtimePaths.helperExecutable.wstring());
     commandLine += L" --parent-pid " + parentProcessId;
     commandLine += L" --build-directory " + QuoteWindowsArgument(runtimePaths.buildDirectory.wstring());
-    commandLine += L" --configuration " + QuoteWindowsArgument(
-        std::wstring(runtimePaths.configuration.begin(), runtimePaths.configuration.end()));
+    commandLine += L" --configuration " + QuoteWindowsArgument(std::wstring(runtimePaths.configuration.begin(),
+                                                                            runtimePaths.configuration.end()));
     commandLine += L" --game-executable " + QuoteWindowsArgument(runtimePaths.gameExecutable.wstring());
     commandLine += L" --session-file " + QuoteWindowsArgument(sessionFilePath.wstring());
     commandLine += L" --build-log " + QuoteWindowsArgument(runtimePaths.buildLog.wstring());
@@ -161,19 +151,11 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
     PROCESS_INFORMATION processInformation{};
     std::wstring mutableCommandLine = commandLine;
     const BOOL wasProcessCreated = CreateProcessW(
-        runtimePaths.helperExecutable.c_str(),
-        mutableCommandLine.data(),
-        nullptr,
-        nullptr,
-        FALSE,
-        CREATE_NO_WINDOW,
-        nullptr,
-        runtimePaths.buildDirectory.c_str(),
-        &startupInfo,
-        &processInformation);
+        runtimePaths.helperExecutable.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+        nullptr, runtimePaths.buildDirectory.c_str(), &startupInfo, &processInformation);
     if (!wasProcessCreated) {
-        outErrorMessage = "ビルド再起動用プログラムを起動できませんでした。Windowsエラー: " +
-                          std::to_string(GetLastError());
+        outErrorMessage =
+            "ビルド再起動用プログラムを起動できませんでした。Windowsエラー: " + std::to_string(GetLastError());
         return false;
     }
 
@@ -188,16 +170,11 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
 
     if (helperProcessId == 0) {
         const std::string parentProcessId = std::to_string(getppid());
-        execl(
-            runtimePaths.helperExecutable.c_str(),
-            runtimePaths.helperExecutable.c_str(),
-            "--parent-pid", parentProcessId.c_str(),
-            "--build-directory", runtimePaths.buildDirectory.c_str(),
-            "--configuration", runtimePaths.configuration.c_str(),
-            "--game-executable", runtimePaths.gameExecutable.c_str(),
-            "--session-file", sessionFilePath.c_str(),
-            "--build-log", runtimePaths.buildLog.c_str(),
-            static_cast<char*>(nullptr));
+        execl(runtimePaths.helperExecutable.c_str(), runtimePaths.helperExecutable.c_str(), "--parent-pid",
+              parentProcessId.c_str(), "--build-directory", runtimePaths.buildDirectory.c_str(), "--configuration",
+              runtimePaths.configuration.c_str(), "--game-executable", runtimePaths.gameExecutable.c_str(),
+              "--session-file", sessionFilePath.c_str(), "--build-log", runtimePaths.buildLog.c_str(),
+              static_cast<char*>(nullptr));
         _exit(127);
     }
 #endif
@@ -205,29 +182,23 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(
     return true;
 }
 
-bool EditorBuildRestartService::ResolveRuntimePaths(
-    RuntimePaths& outRuntimePaths,
-    std::string& outErrorMessage) const
+bool EditorBuildRestartService::ResolveRuntimePaths(RuntimePaths& outRuntimePaths, std::string& outErrorMessage) const
 {
     outErrorMessage.clear();
-    const std::filesystem::path gameExecutable =
-        FindCurrentExecutablePath(outErrorMessage);
+    const std::filesystem::path gameExecutable = FindCurrentExecutablePath(outErrorMessage);
     if (gameExecutable.empty()) {
         return false;
     }
 
     const std::filesystem::path executableDirectory = gameExecutable.parent_path();
-    const bool usesMultiConfigurationLayout =
-        IsMultiConfigurationDirectory(executableDirectory);
+    const bool usesMultiConfigurationLayout = IsMultiConfigurationDirectory(executableDirectory);
 
     RuntimePaths resolvedPaths;
     resolvedPaths.gameExecutable = gameExecutable;
-    resolvedPaths.buildDirectory = usesMultiConfigurationLayout
-        ? executableDirectory.parent_path()
-        : executableDirectory;
-    resolvedPaths.configuration = usesMultiConfigurationLayout
-        ? executableDirectory.filename().string()
-        : std::string();
+    resolvedPaths.buildDirectory =
+        usesMultiConfigurationLayout ? executableDirectory.parent_path() : executableDirectory;
+    resolvedPaths.configuration =
+        usesMultiConfigurationLayout ? executableDirectory.filename().string() : std::string();
 #ifdef _WIN32
     resolvedPaths.helperExecutable = executableDirectory / "editor_restart_helper.exe";
 #else
@@ -236,12 +207,9 @@ bool EditorBuildRestartService::ResolveRuntimePaths(
     resolvedPaths.buildLog = resolvedPaths.buildDirectory / "editor_restart_build.log";
 
     std::error_code canonicalError;
-    resolvedPaths.buildDirectory = std::filesystem::weakly_canonical(
-        resolvedPaths.buildDirectory,
-        canonicalError);
+    resolvedPaths.buildDirectory = std::filesystem::weakly_canonical(resolvedPaths.buildDirectory, canonicalError);
     if (canonicalError || resolvedPaths.buildDirectory.empty()) {
-        outErrorMessage = "CMakeのビルドフォルダーを取得できませんでした: " +
-                          canonicalError.message();
+        outErrorMessage = "CMakeのビルドフォルダーを取得できませんでした: " + canonicalError.message();
         return false;
     }
 

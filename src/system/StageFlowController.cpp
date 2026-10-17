@@ -17,9 +17,7 @@ bool StageFlowController::LoadData(Game& game)
     return game.GetActorLoadSystem()->LoadData();
 }
 
-bool StageFlowController::ReloadCurrentStage(
-    Game& game,
-    StagePhysicsReloadMode physicsReloadMode)
+bool StageFlowController::ReloadCurrentStage(Game& game, StagePhysicsReloadMode physicsReloadMode)
 {
     if (!LoadData(game)) {
         return false;

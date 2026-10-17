@@ -199,7 +199,7 @@ bool Game::CreateGameSystems()
     mSceneSystem = std::make_unique<SceneSystem>(this, *mUIRenderer->GetUILoadSystem());
     mMathUtils = std::make_unique<MathUtils>();
     mCameraSystem = std::make_unique<CameraSystem>(this);
-    mMeshLoadSystem = std::make_unique<MeshLoadSystem>(this);
+    mMeshLoadSystem = std::make_unique<MeshLoadSystem>();
     mUGCPreviewController->SetMeshLoadSystem(*mMeshLoadSystem);
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this, *mWorld);
     mPhysicsSystem = std::make_unique<PhysicsSystem>(this);

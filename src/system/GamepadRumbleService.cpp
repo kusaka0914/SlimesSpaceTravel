@@ -7,10 +7,6 @@ GamepadRumbleService::~GamepadRumbleService()
 
 void GamepadRumbleService::Initialize()
 {
-
-
-
-
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS, "0");
@@ -52,12 +48,10 @@ void GamepadRumbleService::UpdateConnection()
     }
 }
 
-SDL_GameController* GamepadRumbleService::GetControllerForPlayer(
-    int playerNum) const
+SDL_GameController* GamepadRumbleService::GetControllerForPlayer(int playerNum) const
 {
     const int controllerIndex = playerNum - 1;
-    if (controllerIndex < 0 ||
-        controllerIndex >= static_cast<int>(mControllers.size())) {
+    if (controllerIndex < 0 || controllerIndex >= static_cast<int>(mControllers.size())) {
         return nullptr;
     }
     return mControllers[static_cast<std::size_t>(controllerIndex)];
@@ -68,7 +62,8 @@ bool GamepadRumbleService::HasControllerForPlayer(int playerNum) const
     return GetControllerForPlayer(playerNum) != nullptr;
 }
 
-void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds)
+void GamepadRumbleService::VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency,
+                                            int durationMilliseconds)
 {
     SDL_GameController* controller = GetControllerForPlayer(playerNum);
     if (!controller) {

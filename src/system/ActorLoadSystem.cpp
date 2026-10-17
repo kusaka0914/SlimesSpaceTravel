@@ -1,4 +1,4 @@
-#include "ActorLoadSystem.h"
+#include "system/ActorLoadSystem.h"
 
 #include "system/GameWorld.h"
 
@@ -11,16 +11,8 @@ ActorLoadSystem::ActorLoadSystem(Game* game, GameWorld& world)
       mBoatCreator(game, mPlacementLoader),
       mPlanetCreator(game),
       mActorFactory(game, mPlacementLoader),
-      mCreationService(
-          mActorFactory,
-          mPlayerLoader,
-          mBoatCreator,
-          mPlanetCreator),
-      mCollectionLoader(
-          game,
-          mActorFactory,
-          mCreationService,
-          mPlayerLoader)
+      mCreationService(mActorFactory, mPlayerLoader, mBoatCreator, mPlanetCreator),
+      mCollectionLoader(game, mActorFactory, mCreationService, mPlayerLoader)
 {
 }
 
@@ -33,6 +25,7 @@ bool ActorLoadSystem::LoadData()
         return false;
     }
 
+    // 読込途中の失敗で現行Actorを失わないよう、以前の所有状態を退避する。
     GameWorld previousWorld;
     mWorld.SwapRuntimeState(previousWorld);
     mWorld.CreateStages(stageCount);
@@ -47,8 +40,7 @@ bool ActorLoadSystem::LoadData()
             return false;
         }
     } catch (const std::exception& exception) {
-        std::cerr << "Failed to build stage actors: "
-                  << exception.what() << '\n';
+        std::cerr << "Failed to build stage actors: " << exception.what() << '\n';
         mWorld.SwapRuntimeState(previousWorld);
         return false;
     } catch (...) {

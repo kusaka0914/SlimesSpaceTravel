@@ -6,11 +6,12 @@
 #include "actor/Player.h"
 
 #include <algorithm>
+#include <glm/glm.hpp>
 #include <limits>
 #include <utility>
-#include <glm/glm.hpp>
 
 namespace {
+
 constexpr std::size_t fullRateEnemyCount = 24;
 constexpr float enemyUpdatePriorityRefreshIntervalSeconds = 0.25f;
 
@@ -18,7 +19,7 @@ struct EnemyDistance {
     Enemy* enemy = nullptr;
     float nearestPlayerDistanceSquared = 0.0f;
 };
-}
+} // namespace
 
 void GameWorld::CreateStages(int stageCount)
 {
@@ -29,10 +30,10 @@ void GameWorld::CreateStages(int stageCount)
     mEnemyUpdatePriorityRefreshRemainingSeconds = 0.0f;
 
     for (int i = 0; i < stageCount; i++) {
-        auto stageUnique = std::make_unique<Stage>();
-        Stage* stage = stageUnique.get();
+        auto ownedStage = std::make_unique<Stage>();
+        Stage* stage = ownedStage.get();
 
-        mStagesUnique.emplace_back(std::move(stageUnique));
+        mStagesUnique.emplace_back(std::move(ownedStage));
         mStages.emplace_back(stage);
 
         if (i == 0) {
@@ -58,12 +59,11 @@ void GameWorld::RemoveAllPlayers()
 
 void GameWorld::ProcessActorsInput()
 {
-    for (const auto& actorUnique : mActors) {
-        actorUnique->ProcessInput();
+    for (const auto& actor : mActors) {
+        actor->ProcessInput();
     }
 }
 
-// ƒXƒe[ƒWÄ“Çž‚É”õ‚¦AGameWorld‚ÌŽÀsŽžó‘Ô‚ðŠ—LŒ ‚²‚ÆŒðŠ·‚·‚éB
 void GameWorld::SwapRuntimeState(GameWorld& other) noexcept
 {
     using std::swap;
@@ -73,9 +73,7 @@ void GameWorld::SwapRuntimeState(GameWorld& other) noexcept
     swap(mStagesUnique, other.mStagesUnique);
     swap(mCurrentStage, other.mCurrentStage);
     swap(mCurrentStageNum, other.mCurrentStageNum);
-    swap(
-        mEnemyUpdatePriorityRefreshRemainingSeconds,
-        other.mEnemyUpdatePriorityRefreshRemainingSeconds);
+    swap(mEnemyUpdatePriorityRefreshRemainingSeconds, other.mEnemyUpdatePriorityRefreshRemainingSeconds);
 }
 
 void GameWorld::ProcessPlayerInput(Player* player)
@@ -87,19 +85,17 @@ void GameWorld::ProcessPlayerInput(Player* player)
 
 void GameWorld::UpdateActors(float deltaTime)
 {
-    // “G‚ª‘½‚¢ê‡‚Ì•‰‰×‚ð—}‚¦‚é‚½‚ßAˆê’èŠÔŠu‚Å
-    // ƒvƒŒƒCƒ„[‚É‹ß‚¢“G‚ðƒtƒ‹ƒŒ[ƒgXV‘ÎÛ‚Æ‚µ‚Ä‘I‚Ñ’¼‚·B
-    mEnemyUpdatePriorityRefreshRemainingSeconds -=
-        std::max(0.0f, deltaTime);
+    // æ•µãŒå¤šã„å ´åˆã®è² è·ã‚’æŠ‘ãˆã‚‹ãŸã‚ã€ä¸€å®šé–“éš”ã§
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã«è¿‘ã„æ•µã‚’ãƒ•ãƒ«ãƒ¬ãƒ¼ãƒˆæ›´æ–°å¯¾è±¡ã¨ã—ã¦é¸ã³ç›´ã™ã€‚
+    mEnemyUpdatePriorityRefreshRemainingSeconds -= std::max(0.0f, deltaTime);
 
     if (mEnemyUpdatePriorityRefreshRemainingSeconds <= 0.0f) {
         RefreshEnemyUpdatePriorities();
-        mEnemyUpdatePriorityRefreshRemainingSeconds =
-            enemyUpdatePriorityRefreshIntervalSeconds;
+        mEnemyUpdatePriorityRefreshRemainingSeconds = enemyUpdatePriorityRefreshIntervalSeconds;
     }
 
-    for (const auto& actorUnique : mActors) {
-        actorUnique->Update(deltaTime);
+    for (const auto& actor : mActors) {
+        actor->Update(deltaTime);
     }
 }
 
@@ -119,44 +115,31 @@ void GameWorld::RefreshEnemyUpdatePriorities()
             continue;
         }
 
-        float nearestPlayerDistanceSquared =
-            std::numeric_limits<float>::max();
+        float nearestPlayerDistanceSquared = std::numeric_limits<float>::max();
         for (const Player* player : mPlayers) {
-            if (!player ||
-                !player->GetIsActive() ||
-                !player->IsAlive()) {
+            if (!player || !player->GetIsActive() || !player->IsAlive()) {
                 continue;
             }
 
-            const glm::vec3 enemyToPlayer =
-                player->GetPos() - enemy->GetPos();
-            nearestPlayerDistanceSquared = std::min(
-                nearestPlayerDistanceSquared,
-                glm::dot(enemyToPlayer, enemyToPlayer));
+            const glm::vec3 enemyToPlayer = player->GetPos() - enemy->GetPos();
+            nearestPlayerDistanceSquared =
+                std::min(nearestPlayerDistanceSquared, glm::dot(enemyToPlayer, enemyToPlayer));
         }
 
-        if (nearestPlayerDistanceSquared <
-            std::numeric_limits<float>::max()) {
-            enemyDistances.push_back(
-                {enemy, nearestPlayerDistanceSquared});
+        if (nearestPlayerDistanceSquared < std::numeric_limits<float>::max()) {
+            enemyDistances.push_back({enemy, nearestPlayerDistanceSquared});
         }
     }
 
-    const std::size_t selectedEnemyCount =
-        std::min(fullRateEnemyCount, enemyDistances.size());
-    // ‘S“G‚Ì•À‚Ñ‘Ö‚¦‚Í•s—v‚È‚½‚ßA‹ß‚¢“G‚¾‚¯‚ð•”•ª“I‚Éƒ\[ƒg‚·‚éB
-    std::partial_sort(
-        enemyDistances.begin(),
-        enemyDistances.begin() + selectedEnemyCount,
-        enemyDistances.end(),
-        [](const EnemyDistance& left, const EnemyDistance& right) {
-            return left.nearestPlayerDistanceSquared <
-                right.nearestPlayerDistanceSquared;
-        });
+    const std::size_t selectedEnemyCount = std::min(fullRateEnemyCount, enemyDistances.size());
 
-    for (std::size_t index = 0;
-         index < selectedEnemyCount;
-         ++index) {
+    // å…¨æ•µã®ä¸¦ã³æ›¿ãˆã¯ä¸è¦ãªãŸã‚ã€è¿‘ã„æ•µã ã‘ã‚’éƒ¨åˆ†çš„ã«ã‚½ãƒ¼ãƒˆã™ã‚‹ã€‚
+    std::partial_sort(enemyDistances.begin(), enemyDistances.begin() + selectedEnemyCount, enemyDistances.end(),
+                      [](const EnemyDistance& left, const EnemyDistance& right) {
+                          return left.nearestPlayerDistanceSquared < right.nearestPlayerDistanceSquared;
+                      });
+
+    for (std::size_t index = 0; index < selectedEnemyCount; ++index) {
         enemyDistances[index].enemy->SetShouldUseFullRateUpdate(true);
     }
 }
@@ -184,7 +167,7 @@ Player* GameWorld::FindNearestPlayer(Actor* actor) const
     }
 
     Player* nearestPlayer = nullptr;
-    float nearestDist = std::numeric_limits<float>::max();
+    float nearestDistanceSquared = std::numeric_limits<float>::max();
 
     for (Player* player : mPlayers) {
         if (!player || !player->GetIsActive()) {
@@ -192,10 +175,10 @@ Player* GameWorld::FindNearestPlayer(Actor* actor) const
         }
 
         const glm::vec3 toPlayer = player->GetPos() - actor->GetPos();
-        const float dist = glm::dot(toPlayer, toPlayer);
+        const float distanceSquared = glm::dot(toPlayer, toPlayer);
 
-        if (dist < nearestDist) {
-            nearestDist = dist;
+        if (distanceSquared < nearestDistanceSquared) {
+            nearestDistanceSquared = distanceSquared;
             nearestPlayer = player;
         }
     }

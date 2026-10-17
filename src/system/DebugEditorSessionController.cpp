@@ -9,10 +9,7 @@
 #include <filesystem>
 #include <iostream>
 
-DebugEditorSessionController::DebugEditorSessionController(
-    bool isDebugMode,
-    GLFWwindow& window,
-    UIRenderer& uiRenderer)
+DebugEditorSessionController::DebugEditorSessionController(bool isDebugMode, GLFWwindow& window, UIRenderer& uiRenderer)
     : mIsDebugMode(isDebugMode),
       mWindow(window),
       mUIRenderer(uiRenderer)
@@ -20,9 +17,8 @@ DebugEditorSessionController::DebugEditorSessionController(
 }
 
 DebugEditorSessionRestoreOutcome
-DebugEditorSessionController::RestoreAtStartup(
-    const std::string& editorSessionPath,
-    const std::string& editorRestartErrorLogPath)
+DebugEditorSessionController::RestoreAtStartup(const std::string& editorSessionPath,
+                                               const std::string& editorRestartErrorLogPath)
 {
     if (!mIsDebugMode) {
         return {};
@@ -32,9 +28,7 @@ DebugEditorSessionController::RestoreAtStartup(
     std::filesystem::path sessionFilePath = editorSessionPath;
     if (!hasExplicitRestartSession) {
         std::string pathErrorMessage;
-        if (!mBuildRestartService.ResolvePersistentDebugSessionFilePath(
-                sessionFilePath,
-                pathErrorMessage)) {
+        if (!mBuildRestartService.ResolvePersistentDebugSessionFilePath(sessionFilePath, pathErrorMessage)) {
             std::cerr << pathErrorMessage << std::endl;
             return {};
         }
@@ -46,35 +40,26 @@ DebugEditorSessionController::RestoreAtStartup(
     }
 
     std::string restoreErrorMessage;
-    if (!mUIRenderer.RestoreDebugEditorSession(
-            sessionFilePath.string(),
-            restoreErrorMessage)) {
+    if (!mUIRenderer.RestoreDebugEditorSession(sessionFilePath.string(), restoreErrorMessage)) {
         std::cerr << restoreErrorMessage << std::endl;
-        mUIRenderer.SetEditorRestartStatus(
-            restoreErrorMessage, true);
+        mUIRenderer.SetEditorRestartStatus(restoreErrorMessage, true);
         return {.shouldShowEditor = true};
     }
 
     if (!editorRestartErrorLogPath.empty()) {
-        mUIRenderer.SetEditorRestartStatus(
-            "ビルドに失敗しました。ログを確認してください: " +
-                editorRestartErrorLogPath,
-            true);
+        mUIRenderer.SetEditorRestartStatus("ビルドに失敗しました。ログを確認してください: " + editorRestartErrorLogPath,
+                                           true);
         return {};
     }
 
     if (hasExplicitRestartSession) {
-        mUIRenderer.SetEditorRestartStatus(
-            "ビルドが完了し、エディターの状態を復元しました。",
-            false);
+        mUIRenderer.SetEditorRestartStatus("ビルドが完了し、エディターの状態を復元しました。", false);
         std::error_code removeError;
         std::filesystem::remove(sessionFilePath, removeError);
         return {};
     }
 
-    mUIRenderer.SetEditorRestartStatus(
-        "前回のデバッグエディターの状態を復元しました。",
-        false);
+    mUIRenderer.SetEditorRestartStatus("前回のデバッグエディターの状態を復元しました。", false);
     return {};
 }
 
@@ -86,36 +71,25 @@ void DebugEditorSessionController::SavePersistentSession()
 
     std::filesystem::path sessionFilePath;
     std::string saveErrorMessage;
-    if (!mBuildRestartService.ResolvePersistentDebugSessionFilePath(
-            sessionFilePath,
-            saveErrorMessage) ||
-        !mUIRenderer.SaveDebugEditorSession(
-            sessionFilePath.string(),
-            saveErrorMessage)) {
+    if (!mBuildRestartService.ResolvePersistentDebugSessionFilePath(sessionFilePath, saveErrorMessage) ||
+        !mUIRenderer.SaveDebugEditorSession(sessionFilePath.string(), saveErrorMessage)) {
         std::cerr << saveErrorMessage << std::endl;
     }
 }
 
-bool DebugEditorSessionController::RequestBuildAndRestart(
-    std::string& outErrorMessage)
+bool DebugEditorSessionController::RequestBuildAndRestart(std::string& outErrorMessage)
 {
     outErrorMessage.clear();
     std::filesystem::path sessionFilePath;
-    if (!mBuildRestartService.ResolveSessionFilePath(
-            sessionFilePath,
-            outErrorMessage)) {
+    if (!mBuildRestartService.ResolveSessionFilePath(sessionFilePath, outErrorMessage)) {
         return false;
     }
 
-    if (!mUIRenderer.SaveDebugEditorSession(
-            sessionFilePath.string(),
-            outErrorMessage)) {
+    if (!mUIRenderer.SaveDebugEditorSession(sessionFilePath.string(), outErrorMessage)) {
         return false;
     }
 
-    if (!mBuildRestartService.LaunchBuildAndRestartHelper(
-            sessionFilePath,
-            outErrorMessage)) {
+    if (!mBuildRestartService.LaunchBuildAndRestartHelper(sessionFilePath, outErrorMessage)) {
         return false;
     }
 

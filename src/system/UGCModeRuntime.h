@@ -5,6 +5,7 @@
 
 struct CameraPose;
 
+// UGCモードからゲーム本体へ要求する操作の境界。実行側の状態を所有しない。
 class UGCModeRuntime {
 public:
     virtual ~UGCModeRuntime() = default;
@@ -13,19 +14,19 @@ public:
     virtual void SetDebugEditorShowing(bool isShowing) = 0;
     virtual void SetFreeCameraMode(bool isEnabled) = 0;
     virtual void ReloadCurrentStage() = 0;
-    virtual bool LoadDebugStage(
-        int stageNumber,
-        const std::string& yamlPath) = 0;
+
+    // 指定Stageを読み込んで選択する。失敗時はfalseを返す。
+    virtual bool LoadDebugStage(int stageNumber, const std::string& yamlPath) = 0;
     virtual void ClosePauseMenu() = 0;
     virtual void SetUGCOrthographicHalfHeight(float halfHeight) = 0;
     virtual void StartPlayingScene() = 0;
     virtual void StartUGCStageClearPresentation() = 0;
     virtual void SetDebugCameraPose(const CameraPose& pose) = 0;
-    virtual bool RequestSceneFadeAction(
-        const std::function<void()>& fadeAction) = 0;
+
+    // フェード中点で実行する処理を予約する。受理時はtrue。参照先は遅延実行まで有効であること。
+    virtual bool RequestSceneFadeAction(const std::function<void()>& fadeAction) = 0;
     virtual void NotifyUGCTutorialReturnedFromPlaytest() = 0;
-    virtual void CompleteUGCVerification(
-        const std::string& workFileName) = 0;
+    virtual void CompleteUGCVerification(const std::string& workFileName) = 0;
     virtual bool HasProgressFlag(const std::string& progressId) const = 0;
     virtual void MarkProgressFlag(const std::string& progressId) = 0;
     virtual void EnterTitleAtFadeMidpoint() = 0;

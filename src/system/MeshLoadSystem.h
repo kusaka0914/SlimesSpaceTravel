@@ -11,26 +11,31 @@
 #include <vector>
 
 class Actor;
-class Game;
 
 struct CollisionMeshGeometry {
     std::vector<float> positions;
     std::vector<unsigned int> indices;
 };
 
+// 描画モデルと衝突用メッシュを読み込み、パス別にキャッシュする。
 class MeshLoadSystem {
 public:
-    explicit MeshLoadSystem(Game* game);
+    MeshLoadSystem();
 
     void Initialize();
+
+    // Actorのモデルパスを解決し、キャッシュ内のモデルを割り当てる。nullptrでは何もしない。
     void SetActorMesh(Actor* actor);
 
     LoadedModel LoadModelFromFile(const char* path);
 
-    const CollisionMeshGeometry* ResolveCollisionMeshGeometry(
-        const std::string& modelFilePath);
+    // キャッシュ内の衝突用メッシュを返す。空パス・読込失敗時はnullptr。失敗したパスは再読込しない。
+    const CollisionMeshGeometry* ResolveCollisionMeshGeometry(const std::string& modelFilePath);
 
+    // キャッシュを検索する。未登録ならnullptrを返し、読込は行わない。
     const LoadedModel* FindLoadedModel(const std::string& modelPath) const;
+
+    // 未登録なら読み込んでキャッシュする。空パスではnullptr、読込失敗時も空のモデルが登録され得る。
     const LoadedModel* ResolveLoadedModel(const std::string& modelPath);
 
 private:
@@ -38,9 +43,6 @@ private:
     void RegisterModel(const std::string& modelPath);
 
     std::string ResolveModelFilePath(const std::string& modelPath) const;
-
-private:
-    Game* mGame;
 
     TextureLoader mTextureLoader;
     AssimpMeshLoader mAssimpMeshLoader;
