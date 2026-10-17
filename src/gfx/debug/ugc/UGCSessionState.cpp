@@ -36,8 +36,7 @@ bool UGCSessionState::StartPlaytest(UGCPlaytestPurpose purpose)
     return true;
 }
 
-bool UGCSessionState::StartVerification(
-    const std::string& workFileName)
+bool UGCSessionState::StartVerification(const std::string& workFileName)
 {
     if (!mIsModeActive || workFileName.empty()) {
         return false;
@@ -122,8 +121,7 @@ void UGCSessionState::MoveClearResultSelection(int delta, int itemCount)
     if (!mIsClearResultShowing || delta == 0 || itemCount <= 0) {
         return;
     }
-    mClearResultSelection =
-        (mClearResultSelection + delta + itemCount) % itemCount;
+    mClearResultSelection = (mClearResultSelection + delta + itemCount) % itemCount;
 }
 
 bool UGCSessionState::IsModeActive() const
@@ -138,8 +136,7 @@ bool UGCSessionState::IsPlaytestActive() const
 
 bool UGCSessionState::IsVerificationActive() const
 {
-    return mIsModeActive && mIsPlaytestActive &&
-        !mVerificationWorkFileName.empty();
+    return mIsModeActive && mIsPlaytestActive && !mVerificationWorkFileName.empty();
 }
 
 bool UGCSessionState::IsClearResultShowing() const

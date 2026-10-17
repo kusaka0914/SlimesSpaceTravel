@@ -14,8 +14,7 @@ void UGCEditorToolState::ActivateSelection()
     activePresetKind.reset();
 }
 
-void UGCEditorToolState::EnterEraser(
-    std::optional<UGCPresetKind> presetToRestore)
+void UGCEditorToolState::EnterEraser(std::optional<UGCPresetKind> presetToRestore)
 {
     if (isEraserMode) {
         return;
@@ -28,9 +27,7 @@ void UGCEditorToolState::EnterEraser(
 void UGCEditorToolState::LeaveEraser(bool didRestorePreviousPreset)
 {
     isEraserMode = false;
-    activePresetKind = didRestorePreviousPreset
-        ? presetBeforeEraser
-        : std::nullopt;
+    activePresetKind = didRestorePreviousPreset ? presetBeforeEraser : std::nullopt;
     presetBeforeEraser.reset();
 }
 

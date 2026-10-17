@@ -10,6 +10,7 @@ namespace {
 
 std::filesystem::path CreateUtf8Path(const std::string& text)
 {
+    // 日本語名を実行環境のロケールではなくUTF-8として解釈する。
     const std::u8string utf8Text(text.begin(), text.end());
     return std::filesystem::path(utf8Text);
 }
@@ -20,38 +21,33 @@ std::string ToUtf8FileName(const std::filesystem::path& path)
     return std::string(utf8Name.begin(), utf8Name.end());
 }
 
-}
+} // namespace
 
 UGCWorkStorage::UGCWorkStorage(UGCWorkStoragePaths paths)
     : mPaths(std::move(paths))
 {
 }
 
-std::filesystem::path UGCWorkStorage::ResolveSavedFilePath(
-    const std::string& fileName) const
+std::filesystem::path UGCWorkStorage::ResolveSavedFilePath(const std::string& fileName) const
 {
     return mPaths.savedWorkDirectory / CreateUtf8Path(fileName);
 }
 
-std::optional<std::vector<std::string>>
-UGCWorkStorage::FindSavedFileNames() const
+std::optional<std::vector<std::string>> UGCWorkStorage::FindSavedFileNames() const
 {
     std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        mPaths.savedWorkDirectory, fileSystemError);
+    std::filesystem::create_directories(mPaths.savedWorkDirectory, fileSystemError);
     if (fileSystemError) {
         return std::nullopt;
     }
 
     std::vector<std::string> fileNames;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(
-             mPaths.savedWorkDirectory, fileSystemError)) {
+         std::filesystem::directory_iterator(mPaths.savedWorkDirectory, fileSystemError)) {
         if (fileSystemError) {
             break;
         }
-        if (entry.is_regular_file() &&
-            entry.path().extension() == ".yaml") {
+        if (entry.is_regular_file() && entry.path().extension() == ".yaml") {
             fileNames.emplace_back(ToUtf8FileName(entry.path()));
         }
     }
@@ -59,82 +55,58 @@ UGCWorkStorage::FindSavedFileNames() const
     return fileNames;
 }
 
-UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(
-    const std::string& fileName,
-    bool shouldOverwrite) const
+UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(const std::string& fileName, bool shouldOverwrite) const
 {
     std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        mPaths.savedWorkDirectory, fileSystemError);
+    std::filesystem::create_directories(mPaths.savedWorkDirectory, fileSystemError);
     if (fileSystemError) {
-        return {
-            UGCWorkCopyFailure::SavedDirectoryCreation,
-            fileSystemError};
+        return {UGCWorkCopyFailure::SavedDirectoryCreation, fileSystemError};
     }
 
-    const std::filesystem::copy_options copyOptions = shouldOverwrite
-        ? std::filesystem::copy_options::overwrite_existing
-        : std::filesystem::copy_options::none;
-    std::filesystem::copy_file(
-        mPaths.workingStageFile,
-        ResolveSavedFilePath(fileName),
-        copyOptions,
-        fileSystemError);
+    const std::filesystem::copy_options copyOptions =
+        shouldOverwrite ? std::filesystem::copy_options::overwrite_existing : std::filesystem::copy_options::none;
+    std::filesystem::copy_file(mPaths.workingStageFile, ResolveSavedFilePath(fileName), copyOptions, fileSystemError);
     if (fileSystemError) {
         return {UGCWorkCopyFailure::FileCopy, fileSystemError};
     }
     return {};
 }
 
-bool UGCWorkStorage::CopySavedFileToWorking(
-    const std::string& fileName) const
+bool UGCWorkStorage::CopySavedFileToWorking(const std::string& fileName) const
 {
     std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        ResolveSavedFilePath(fileName),
-        mPaths.workingStageFile,
-        std::filesystem::copy_options::overwrite_existing,
-        fileSystemError);
+    std::filesystem::copy_file(ResolveSavedFilePath(fileName), mPaths.workingStageFile,
+                               std::filesystem::copy_options::overwrite_existing, fileSystemError);
     return !fileSystemError;
 }
 
-bool UGCWorkStorage::DuplicateSavedFile(
-    const std::string& fileName) const
+bool UGCWorkStorage::DuplicateSavedFile(const std::string& fileName) const
 {
-    const std::filesystem::path sourceFilePath =
-        ResolveSavedFilePath(fileName);
-    const std::string sourceStem =
-        ToUtf8FileName(sourceFilePath.stem());
+    const std::filesystem::path sourceFilePath = ResolveSavedFilePath(fileName);
+    const std::string sourceStem = ToUtf8FileName(sourceFilePath.stem());
     std::string destinationFileName = sourceStem + "_コピー.yaml";
     int suffix = 2;
-    while (std::filesystem::exists(
-        ResolveSavedFilePath(destinationFileName))) {
-        destinationFileName = sourceStem +
-            "_コピー" + std::to_string(suffix++) + ".yaml";
+    while (std::filesystem::exists(ResolveSavedFilePath(destinationFileName))) {
+        destinationFileName = sourceStem + "_コピー" + std::to_string(suffix++) + ".yaml";
     }
 
     std::error_code fileSystemError;
-    std::filesystem::copy_file(
-        sourceFilePath,
-        ResolveSavedFilePath(destinationFileName),
-        std::filesystem::copy_options::none,
-        fileSystemError);
+    std::filesystem::copy_file(sourceFilePath, ResolveSavedFilePath(destinationFileName),
+                               std::filesystem::copy_options::none, fileSystemError);
     return !fileSystemError;
 }
 
 bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const
 {
     std::error_code fileSystemError;
-    const bool wasRemoved = std::filesystem::remove(
-        ResolveSavedFilePath(fileName), fileSystemError);
+    const bool wasRemoved = std::filesystem::remove(ResolveSavedFilePath(fileName), fileSystemError);
     return wasRemoved && !fileSystemError;
 }
 
 bool UGCWorkStorage::IsClearVerified(const std::string& fileName) const
 {
     try {
-        const YAML::Node stageYaml =
-            YAML::LoadFile(ResolveSavedFilePath(fileName).string());
+        const YAML::Node stageYaml = YAML::LoadFile(ResolveSavedFilePath(fileName).string());
         return UGCWorkMetadata::IsClearVerified(stageYaml);
     } catch (const YAML::Exception&) {
         return false;

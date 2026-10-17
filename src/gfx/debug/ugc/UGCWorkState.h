@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+// 作品管理UIの入力・一覧・現在の保存先を保持する。selectedWorkIndexの-1は未選択を表す。
 struct UGCWorkState {
     std::array<char, 96> workName{"新しいステージ"};
     std::vector<std::string> workFileNames;

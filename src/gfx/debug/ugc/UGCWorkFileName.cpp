@@ -7,6 +7,7 @@ namespace {
 
 std::filesystem::path CreateUtf8Path(const std::string& text)
 {
+    // 日本語名を実行環境のロケールではなくUTF-8として解釈する。
     const std::u8string utf8Text(text.begin(), text.end());
     return std::filesystem::path(utf8Text);
 }
@@ -17,7 +18,7 @@ std::string ToUtf8String(const std::filesystem::path& path)
     return std::string(utf8Text.begin(), utf8Text.end());
 }
 
-}
+} // namespace
 
 namespace UGCWorkFileName {
 
@@ -26,15 +27,12 @@ std::string CreateSafeFileName(const std::string& displayName)
     std::string safeName = displayName;
     constexpr const char* invalidCharacters = "<>:\"/\\|?*";
     for (char& character : safeName) {
-        const unsigned char unsignedCharacter =
-            static_cast<unsigned char>(character);
-        if (unsignedCharacter < 32 ||
-            std::strchr(invalidCharacters, character)) {
+        const unsigned char unsignedCharacter = static_cast<unsigned char>(character);
+        if (unsignedCharacter < 32 || std::strchr(invalidCharacters, character)) {
             character = '_';
         }
     }
-    while (!safeName.empty() &&
-           (safeName.back() == ' ' || safeName.back() == '.')) {
+    while (!safeName.empty() && (safeName.back() == ' ' || safeName.back() == '.')) {
         safeName.pop_back();
     }
     if (safeName.empty()) {
@@ -48,4 +46,4 @@ std::string ResolveDisplayName(const std::string& fileName)
     return ToUtf8String(CreateUtf8Path(fileName).stem());
 }
 
-}
+} // namespace UGCWorkFileName

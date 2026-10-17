@@ -27,53 +27,41 @@ void UGCEditorTutorial::RecordViewAdjustment()
     }
 }
 
-void UGCEditorTutorial::RecordLayerChange(
-    int layerDelta,
-    bool hasSelection)
+void UGCEditorTutorial::RecordLayerChange(int layerDelta, bool hasSelection)
 {
-    if (mStep == UGCEditorTutorialStep::RaiseLayer &&
-        layerDelta > 0 && !hasSelection) {
+    if (mStep == UGCEditorTutorialStep::RaiseLayer && layerDelta > 0 && !hasSelection) {
         AdvanceTo(UGCEditorTutorialStep::LowerLayer);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::LowerLayer &&
-        layerDelta < 0 && !hasSelection) {
+    if (mStep == UGCEditorTutorialStep::LowerLayer && layerDelta < 0 && !hasSelection) {
         AdvanceTo(UGCEditorTutorialStep::PlacePlatform);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::RaiseSelectedPlatform &&
-        layerDelta > 0 && hasSelection) {
+    if (mStep == UGCEditorTutorialStep::RaiseSelectedPlatform && layerDelta > 0 && hasSelection) {
         AdvanceTo(UGCEditorTutorialStep::LowerSelectedPlatform);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::LowerSelectedPlatform &&
-        layerDelta < 0 && hasSelection) {
+    if (mStep == UGCEditorTutorialStep::LowerSelectedPlatform && layerDelta < 0 && hasSelection) {
         AdvanceTo(UGCEditorTutorialStep::UndoEdit);
     }
 }
 
-void UGCEditorTutorial::RecordPlacement(
-    UGCPresetKind presetKind,
-    int footprintSideLength)
+void UGCEditorTutorial::RecordPlacement(UGCPresetKind presetKind, int footprintSideLength)
 {
-    if (mStep == UGCEditorTutorialStep::PlacePlatform &&
-        presetKind == UGCPresetKind::NormalPlatform) {
+    if (mStep == UGCEditorTutorialStep::PlacePlatform && presetKind == UGCPresetKind::NormalPlatform) {
         AdvanceTo(UGCEditorTutorialStep::PlaceLargePlatform);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::PlaceLargePlatform &&
-        presetKind == UGCPresetKind::NormalPlatform &&
+    if (mStep == UGCEditorTutorialStep::PlaceLargePlatform && presetKind == UGCPresetKind::NormalPlatform &&
         footprintSideLength > 1) {
         AdvanceTo(UGCEditorTutorialStep::MovePlatform);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::PlaceEnemy &&
-        presetKind == UGCPresetKind::NormalEnemy) {
+    if (mStep == UGCEditorTutorialStep::PlaceEnemy && presetKind == UGCPresetKind::NormalEnemy) {
         AdvanceTo(UGCEditorTutorialStep::PlaceGoal);
         return;
     }
-    if (mStep == UGCEditorTutorialStep::PlaceGoal &&
-        presetKind == UGCPresetKind::GoalStar) {
+    if (mStep == UGCEditorTutorialStep::PlaceGoal && presetKind == UGCPresetKind::GoalStar) {
         AdvanceTo(UGCEditorTutorialStep::StartPlaytest);
     }
 }
@@ -160,8 +148,7 @@ std::string UGCEditorTutorial::GetProgressText() const
     if (mStep == UGCEditorTutorialStep::Complete) {
         return "操作練習 完了";
     }
-    return "操作練習 " + std::to_string(GetCurrentActionNumber()) +
-        "/" + std::to_string(GetActionCount());
+    return "操作練習 " + std::to_string(GetCurrentActionNumber()) + "/" + std::to_string(GetActionCount());
 }
 
 int UGCEditorTutorial::GetCurrentActionNumber() const
@@ -182,14 +169,12 @@ int UGCEditorTutorial::GetActionCount() const
 
 float UGCEditorTutorial::GetProgressRatio() const
 {
-    return static_cast<float>(GetCurrentActionNumber()) /
-        static_cast<float>(GetActionCount());
+    return static_cast<float>(GetCurrentActionNumber()) / static_cast<float>(GetActionCount());
 }
 
 bool UGCEditorTutorial::ShouldHighlightPreset(UGCPresetKind presetKind) const
 {
-    if (mStep == UGCEditorTutorialStep::PlacePlatform ||
-        mStep == UGCEditorTutorialStep::PlaceLargePlatform) {
+    if (mStep == UGCEditorTutorialStep::PlacePlatform || mStep == UGCEditorTutorialStep::PlaceLargePlatform) {
         return presetKind == UGCPresetKind::NormalPlatform;
     }
     if (mStep == UGCEditorTutorialStep::PlaceEnemy) {
@@ -208,21 +193,18 @@ bool UGCEditorTutorial::ShouldHighlightZoom() const
 
 bool UGCEditorTutorial::ShouldHighlightLayerUp() const
 {
-    return mStep == UGCEditorTutorialStep::RaiseLayer ||
-        mStep == UGCEditorTutorialStep::RaiseSelectedPlatform;
+    return mStep == UGCEditorTutorialStep::RaiseLayer || mStep == UGCEditorTutorialStep::RaiseSelectedPlatform;
 }
 
 bool UGCEditorTutorial::ShouldHighlightLayerDown() const
 {
-    return mStep == UGCEditorTutorialStep::LowerLayer ||
-        mStep == UGCEditorTutorialStep::LowerSelectedPlatform;
+    return mStep == UGCEditorTutorialStep::LowerLayer || mStep == UGCEditorTutorialStep::LowerSelectedPlatform;
 }
 
 bool UGCEditorTutorial::ShouldHighlightSelection() const
 {
-    return mStep == UGCEditorTutorialStep::MovePlatform ||
-        mStep == UGCEditorTutorialStep::RaiseSelectedPlatform ||
-        mStep == UGCEditorTutorialStep::LowerSelectedPlatform;
+    return mStep == UGCEditorTutorialStep::MovePlatform || mStep == UGCEditorTutorialStep::RaiseSelectedPlatform ||
+           mStep == UGCEditorTutorialStep::LowerSelectedPlatform;
 }
 
 bool UGCEditorTutorial::ShouldHighlightFootprintOptions() const

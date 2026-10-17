@@ -13,19 +13,15 @@ class UGCPreviewRenderer;
 class UGCSceneOverlayRenderer;
 class UGCWorkPanel;
 
+// デバッグ用のUGC操作パネルを描画する。参照先とサムネイル描画器は所有しない。
 class UGCDebugOverlayRenderer {
 public:
-    UGCDebugOverlayRenderer(
-        DebugEditorContext& context,
-        StageAddActorPanel& stageAddActorPanel,
-        UGCEditorInteractionController& interactionController,
-        UGCPreviewRenderer& previewRenderer,
-        UGCSceneOverlayRenderer& sceneOverlayRenderer,
-        UGCEditorToolState& toolState,
-        UGCEditorMenuState& menuState,
-        UGCWorkPanel& workPanel,
-        EditorModelThumbnailRenderer* modelThumbnailRenderer,
-        std::function<bool()> isAdjustingUGCUI);
+    UGCDebugOverlayRenderer(DebugEditorContext& context, StageAddActorPanel& stageAddActorPanel,
+                            UGCEditorInteractionController& interactionController, UGCPreviewRenderer& previewRenderer,
+                            UGCSceneOverlayRenderer& sceneOverlayRenderer, UGCEditorToolState& toolState,
+                            UGCEditorMenuState& menuState, UGCWorkPanel& workPanel,
+                            EditorModelThumbnailRenderer* modelThumbnailRenderer,
+                            std::function<bool()> isAdjustingUGCUI);
 
     void Draw();
 

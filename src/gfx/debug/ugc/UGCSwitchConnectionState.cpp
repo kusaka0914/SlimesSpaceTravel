@@ -1,8 +1,6 @@
 #include "gfx/debug/ugc/UGCSwitchConnectionState.h"
 
-void UGCSwitchConnectionState::Begin(
-    const StageActorRef& switchRef,
-    UGCSwitchConnectionAction action)
+void UGCSwitchConnectionState::Begin(const StageActorRef& switchRef, UGCSwitchConnectionAction action)
 {
     mSwitchRef = switchRef;
     mAction = action;
@@ -18,8 +16,7 @@ bool UGCSwitchConnectionState::HasPendingConnection() const
     return mSwitchRef.has_value();
 }
 
-const std::optional<StageActorRef>&
-UGCSwitchConnectionState::GetSwitchRef() const
+const std::optional<StageActorRef>& UGCSwitchConnectionState::GetSwitchRef() const
 {
     return mSwitchRef;
 }

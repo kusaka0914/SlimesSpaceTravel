@@ -1,6 +1,7 @@
-#include <GL/glew.h>
-
 #include "gfx/debug/ugc/UGCPreviewController.h"
+
+// GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
+#include <GL/glew.h>
 
 #include "actor/Actor.h"
 #include "system/MeshLoadSystem.h"
@@ -17,8 +18,7 @@ void UGCPreviewController::SetRenderSize(int width, int height)
     mPreviewState.SetRequestedRenderSize(width, height);
 }
 
-void UGCPreviewController::SetMeshLoadSystem(
-    MeshLoadSystem& meshLoadSystem)
+void UGCPreviewController::SetMeshLoadSystem(MeshLoadSystem& meshLoadSystem)
 {
     mMeshLoadSystem = &meshLoadSystem;
 }
@@ -93,43 +93,35 @@ float UGCPreviewController::GetOrthographicHalfHeight() const
     return mOrthographicHalfHeight;
 }
 
-void UGCPreviewController::SetPlatformPlacementPosition(
-    const std::optional<glm::vec3>& position)
+void UGCPreviewController::SetPlatformPlacementPosition(const std::optional<glm::vec3>& position)
 {
     mPlatformPlacementPosition = position;
 }
 
-const std::optional<glm::vec3>&
-UGCPreviewController::GetPlatformPlacementPosition() const
+const std::optional<glm::vec3>& UGCPreviewController::GetPlatformPlacementPosition() const
 {
     return mPlatformPlacementPosition;
 }
 
-void UGCPreviewController::SetMovingPlatformPath(
-    const std::optional<glm::vec3>& startPosition,
-    const std::optional<glm::vec3>& destinationPosition)
+void UGCPreviewController::SetMovingPlatformPath(const std::optional<glm::vec3>& startPosition,
+                                                 const std::optional<glm::vec3>& destinationPosition)
 {
     mMovingPlatformPathStart = startPosition;
     mMovingPlatformPathDestination = destinationPosition;
 }
 
-const std::optional<glm::vec3>&
-UGCPreviewController::GetMovingPlatformPathStart() const
+const std::optional<glm::vec3>& UGCPreviewController::GetMovingPlatformPathStart() const
 {
     return mMovingPlatformPathStart;
 }
 
-const std::optional<glm::vec3>&
-UGCPreviewController::GetMovingPlatformPathDestination() const
+const std::optional<glm::vec3>& UGCPreviewController::GetMovingPlatformPathDestination() const
 {
     return mMovingPlatformPathDestination;
 }
 
-void UGCPreviewController::SetPlacementModel(
-    const std::optional<glm::vec3>& position,
-    const std::string& modelPath,
-    const glm::vec3& scale,
-    const std::string& textureOverridePath)
+void UGCPreviewController::SetPlacementModel(const std::optional<glm::vec3>& position, const std::string& modelPath,
+                                             const glm::vec3& scale, const std::string& textureOverridePath)
 {
     mPlacementModelPositions.clear();
     if (!position || modelPath.empty()) {
@@ -151,19 +143,16 @@ void UGCPreviewController::SetPlacementModel(
     mPlacementModel->SetIsActive(true);
 }
 
-void UGCPreviewController::SetPlacementModelPositions(
-    const std::vector<glm::vec3>& positions,
-    const std::string& modelPath,
-    const glm::vec3& scale,
-    const std::string& textureOverridePath)
+void UGCPreviewController::SetPlacementModelPositions(const std::vector<glm::vec3>& positions,
+                                                      const std::string& modelPath, const glm::vec3& scale,
+                                                      const std::string& textureOverridePath)
 {
     if (positions.empty()) {
         SetPlacementModel(std::nullopt, {}, scale, textureOverridePath);
         return;
     }
 
-    SetPlacementModel(
-        positions.front(), modelPath, scale, textureOverridePath);
+    SetPlacementModel(positions.front(), modelPath, scale, textureOverridePath);
     mPlacementModelPositions = positions;
 }
 
@@ -172,8 +161,7 @@ Actor* UGCPreviewController::GetPlacementModel() const
     return mPlacementModel.get();
 }
 
-const std::vector<glm::vec3>&
-UGCPreviewController::GetPlacementModelPositions() const
+const std::vector<glm::vec3>& UGCPreviewController::GetPlacementModelPositions() const
 {
     return mPlacementModelPositions;
 }

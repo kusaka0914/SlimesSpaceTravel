@@ -9,11 +9,10 @@ enum class UGCSwitchConnectionAction {
     Disconnect,
 };
 
+// 接続先の選択待ちとなっているスイッチと、接続・切断の操作種別を保持する。
 class UGCSwitchConnectionState {
 public:
-    void Begin(
-        const StageActorRef& switchRef,
-        UGCSwitchConnectionAction action);
+    void Begin(const StageActorRef& switchRef, UGCSwitchConnectionAction action);
     void Cancel();
 
     bool HasPendingConnection() const;
@@ -22,6 +21,5 @@ public:
 
 private:
     std::optional<StageActorRef> mSwitchRef;
-    UGCSwitchConnectionAction mAction =
-        UGCSwitchConnectionAction::Connect;
+    UGCSwitchConnectionAction mAction = UGCSwitchConnectionAction::Connect;
 };

@@ -23,9 +23,13 @@ enum class UGCEditorTutorialStep {
     Complete,
 };
 
+// 編集操作の通知に応じてチュートリアルの手順を進め、案内文と強調対象を提供する。
 class UGCEditorTutorial {
 public:
+    // 先頭の案内からチュートリアルを開始し直す。
     void Start();
+
+    // Record系関数は、進行中の手順に対応する操作だけを受け付ける。
     void RecordViewAdjustment();
     void RecordLayerChange(int layerDelta, bool hasSelection);
     void RecordPlacement(UGCPresetKind presetKind, int footprintSideLength);

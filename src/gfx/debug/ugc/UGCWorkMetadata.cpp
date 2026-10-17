@@ -1,9 +1,6 @@
 #include "gfx/debug/ugc/UGCWorkMetadata.h"
 
-void UGCWorkMetadata::PrepareForSave(
-    YAML::Node& stageYaml,
-    const std::string& displayName,
-    const std::string& fileName)
+void UGCWorkMetadata::PrepareForSave(YAML::Node& stageYaml, const std::string& displayName, const std::string& fileName)
 {
     stageYaml["ugcMetadata"]["displayName"] = displayName;
     stageYaml["ugcMetadata"]["fileName"] = fileName;
@@ -12,12 +9,10 @@ void UGCWorkMetadata::PrepareForSave(
     }
 }
 
-std::optional<std::string> UGCWorkMetadata::FindDisplayName(
-    const YAML::Node& stageYaml)
+std::optional<std::string> UGCWorkMetadata::FindDisplayName(const YAML::Node& stageYaml)
 {
     try {
-        const YAML::Node displayName =
-            stageYaml["ugcMetadata"]["displayName"];
+        const YAML::Node displayName = stageYaml["ugcMetadata"]["displayName"];
         if (!displayName || !displayName.IsScalar()) {
             return std::nullopt;
         }
@@ -27,12 +22,10 @@ std::optional<std::string> UGCWorkMetadata::FindDisplayName(
     }
 }
 
-std::optional<std::string> UGCWorkMetadata::FindFileName(
-    const YAML::Node& stageYaml)
+std::optional<std::string> UGCWorkMetadata::FindFileName(const YAML::Node& stageYaml)
 {
     try {
-        const YAML::Node fileName =
-            stageYaml["ugcMetadata"]["fileName"];
+        const YAML::Node fileName = stageYaml["ugcMetadata"]["fileName"];
         if (!fileName || !fileName.IsScalar()) {
             return std::nullopt;
         }
@@ -55,8 +48,7 @@ void UGCWorkMetadata::MarkClearVerified(YAML::Node& stageYaml)
 bool UGCWorkMetadata::IsClearVerified(const YAML::Node& stageYaml)
 {
     try {
-        return stageYaml["ugcMetadata"] &&
-            stageYaml["ugcMetadata"]["isClearVerified"].as<bool>(false);
+        return stageYaml["ugcMetadata"] && stageYaml["ugcMetadata"]["isClearVerified"].as<bool>(false);
     } catch (const YAML::Exception&) {
         return false;
     }

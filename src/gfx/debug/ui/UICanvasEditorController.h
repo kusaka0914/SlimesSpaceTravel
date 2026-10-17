@@ -1,35 +1,25 @@
 #pragma once
 
-#include "gfx/UIRenderer.h"
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/ui/UICanvasEditHistory.h"
-#include "system/UILoadSystem.h"
+#include "gfx/debug/ui/UICanvasElementGeometry.h"
+#include "gfx/debug/ui/UICanvasSelectionController.h"
+#include "gfx/debug/ui/UICanvasTransformController.h"
 
-#include "imgui.h"
-
-#include <glm/glm.hpp>
-#include <optional>
 #include <string>
-#include <vector>
 
-// UIキャンバスの選択・ギズモ操作・複製／削除・Undoと保存を管理する。
+// UIキャンバス編集の窓口。選択・ギズモの更新順序と、複製／削除・Undo・保存の連携を管理する。
 // contextと操作対象のUILoadSystemは所有しない。UpdateはゲームUI描画後のImGuiフレーム内で呼ぶ。
 class UICanvasEditorController {
 public:
-    enum class Operation {
-        Translate,
-        Rotate,
-        Scale,
-    };
-
-    enum class SelectionSource {
-        None,
-        Custom,
-        ExistingTexture,
-        ExistingText,
-    };
+    using Operation = UICanvasOperation;
+    using SelectionSource = UICanvasSelectionSource;
 
     explicit UICanvasEditorController(DebugEditorContext& context);
+
+    // 内部モジュールが本クラスのメンバを参照するため、コピー・移動による参照先のずれを防ぐ。
+    UICanvasEditorController(const UICanvasEditorController&) = delete;
+    UICanvasEditorController& operator=(const UICanvasEditorController&) = delete;
 
     // 選択の検証・入力・選択枠・ギズモを更新する。uiLoadSystemまたはuiRendererが未設定なら何もしない。
     void Update(UILoadSystem* uiLoadSystem, std::string& statusMessage);
@@ -70,69 +60,12 @@ public:
     bool RestoreUndo(UILoadSystem* uiLoadSystem, std::string& statusMessage);
 
 private:
-    struct ElementTransform {
-        glm::vec2 center = glm::vec2(0.0f);
-        glm::vec2 size = glm::vec2(1.0f);
-        float rotationDegrees = 0.0f;
-    };
-
-    struct ElementReference {
-        SelectionSource source = SelectionSource::None;
-        std::size_t customIndex = 0;
-        std::string existingKey;
-
-        bool operator==(const ElementReference& other) const = default;
-    };
-
-    void ValidateSelection(const UILoadSystem* uiLoadSystem);
     void HandleShortcuts(UILoadSystem* uiLoadSystem, std::string& statusMessage);
-    void UpdateCanvasSelection(const UILoadSystem* uiLoadSystem);
-    void DrawSelectionOverlay(const UILoadSystem* uiLoadSystem) const;
-    void DrawGizmo(UILoadSystem* uiLoadSystem, std::string& statusMessage);
-
-    void SetSingleSelection(const ElementReference& element);
-    void ToggleSelection(const ElementReference& element);
-    bool IsSelected(const ElementReference& element) const;
-    bool ResolveElementTransform(const UILoadSystem* uiLoadSystem, const ElementReference& element,
-                                 ElementTransform& outTransform) const;
-    bool GetSelectionBounds(const UILoadSystem* uiLoadSystem, glm::vec2& outMin, glm::vec2& outMax) const;
-
-    static std::optional<ElementReference>
-    ResolveElementReference(const UILoadSystem& uiLoadSystem, const UIRenderer::RenderedUIElement& renderedElement);
-    std::vector<ElementReference> PickElementsAt(const UILoadSystem* uiLoadSystem,
-                                                 const glm::vec2& framebufferPoint) const;
-    bool IsPointInsideElement(const ElementTransform& transform, const glm::vec2& framebufferPoint) const;
-
-    glm::vec2 ImGuiToFramebuffer(const ImVec2& point) const;
-    ImVec2 FramebufferToImGui(const glm::vec2& point) const;
-    glm::mat4 CreateElementMatrix(const ElementTransform& transform) const;
-    glm::mat4 CreateSelectionMatrix(const UILoadSystem* uiLoadSystem) const;
-    bool ResolveTransformStartElement(const ElementReference& element, ElementTransform& outTransform) const;
-    void ApplySelectionMatrix(UILoadSystem* uiLoadSystem, const glm::mat4& selectionMatrix);
-
     void PushUndo(const UILoadSystem* uiLoadSystem);
-    void SelectElementsInBox(const UILoadSystem* uiLoadSystem, const ImVec2& rectMin, const ImVec2& rectMax,
-                             bool isAdditive);
 
-private:
     DebugEditorContext& mContext;
-
-    std::vector<ElementReference> mSelectedElements;
-    std::optional<ElementReference> mPrimarySelection;
-    Operation mOperation = Operation::Translate;
-
     UICanvasEditHistory mEditHistory;
-
-    bool mIsBoxMouseDown = false;
-    bool mIsBoxSelecting = false;
-    ImVec2 mBoxStart = ImVec2(0.0f, 0.0f);
-    ImVec2 mBoxEnd = ImVec2(0.0f, 0.0f);
-
-    bool mHasLastPick = false;
-    ImVec2 mLastPickPosition = ImVec2(0.0f, 0.0f);
-
-    bool mIsUsingGizmo = false;
-    glm::mat4 mEditingMatrix = glm::mat4(1.0f);
-    glm::mat4 mTransformStartSelectionMatrix = glm::mat4(1.0f);
-    UICanvasEditSnapshot mTransformStartState;
+    UICanvasElementGeometry mGeometry;
+    UICanvasSelectionController mSelection;
+    UICanvasTransformController mTransformController;
 };

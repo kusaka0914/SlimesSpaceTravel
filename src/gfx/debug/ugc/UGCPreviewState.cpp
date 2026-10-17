@@ -11,14 +11,12 @@ constexpr int maximumPreviewHeight = 1152;
 constexpr float piRadians = 3.14159265359f;
 constexpr float fullTurnRadians = 6.28318530718f;
 constexpr float focusSmoothingRatePerSecond = 10.0f;
-}
+} // namespace
 
 void UGCPreviewState::SetRequestedRenderSize(int width, int height)
 {
-    mRequestedRenderWidth = std::clamp(
-        width, minimumPreviewWidth, maximumPreviewWidth);
-    mRequestedRenderHeight = std::clamp(
-        height, minimumPreviewHeight, maximumPreviewHeight);
+    mRequestedRenderWidth = std::clamp(width, minimumPreviewWidth, maximumPreviewWidth);
+    mRequestedRenderHeight = std::clamp(height, minimumPreviewHeight, maximumPreviewHeight);
 }
 
 int UGCPreviewState::GetRequestedRenderWidth() const
@@ -76,8 +74,8 @@ float UGCPreviewState::UpdateFocusY(float gridSize, float deltaSeconds)
         return mFocusY;
     }
 
-    const float smoothing = 1.0f - std::exp(
-        -focusSmoothingRatePerSecond * std::max(0.0f, deltaSeconds));
+    // フレーム間隔に依存せず、同じ時間で同程度に目標へ近づく指数補間を使う。
+    const float smoothing = 1.0f - std::exp(-focusSmoothingRatePerSecond * std::max(0.0f, deltaSeconds));
     mFocusY += (targetFocusY - mFocusY) * smoothing;
     return mFocusY;
 }

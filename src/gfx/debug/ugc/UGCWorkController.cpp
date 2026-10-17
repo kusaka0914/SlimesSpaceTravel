@@ -10,10 +10,8 @@
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
-UGCWorkController::UGCWorkController(
-    DebugEditorContext& context,
-    UGCWorkState& state,
-    std::function<void()> reloadSelectedWork)
+UGCWorkController::UGCWorkController(DebugEditorContext& context, UGCWorkState& state,
+                                     std::function<void()> reloadSelectedWork)
     : mContext(context),
       mState(state),
       mFileService(context),
@@ -23,8 +21,7 @@ UGCWorkController::UGCWorkController(
 
 void UGCWorkController::RefreshWorkList()
 {
-    const std::optional<std::vector<std::string>> foundFileNames =
-        mFileService.FindSavedWorkFileNames();
+    const std::optional<std::vector<std::string>> foundFileNames = mFileService.FindSavedWorkFileNames();
     if (!foundFileNames) {
         mState.workFileNames.clear();
         mState.selectedWorkIndex = -1;
@@ -35,10 +32,8 @@ void UGCWorkController::RefreshWorkList()
     if (mState.workFileNames.empty()) {
         mState.selectedWorkIndex = -1;
     } else {
-        mState.selectedWorkIndex = std::clamp(
-            mState.selectedWorkIndex,
-            0,
-            static_cast<int>(mState.workFileNames.size()) - 1);
+        mState.selectedWorkIndex =
+            std::clamp(mState.selectedWorkIndex, 0, static_cast<int>(mState.workFileNames.size()) - 1);
     }
     mState.hasLoadedWorkList = true;
 }
@@ -46,18 +41,11 @@ void UGCWorkController::RefreshWorkList()
 void UGCWorkController::SetWorkNameInput(const std::string& workName)
 {
     mState.workName.fill('\0');
-    const std::size_t copiedCharacterCount = std::min(
-        workName.size(),
-        mState.workName.size() - 1);
-    std::copy_n(
-        workName.begin(),
-        copiedCharacterCount,
-        mState.workName.begin());
+    const std::size_t copiedByteCount = std::min(workName.size(), mState.workName.size() - 1);
+    std::copy_n(workName.begin(), copiedByteCount, mState.workName.begin());
 }
 
-void UGCWorkController::SetCurrentWork(
-    const std::string& fileName,
-    const std::string& displayName)
+void UGCWorkController::SetCurrentWork(const std::string& fileName, const std::string& displayName)
 {
     mState.currentWorkFileName = fileName;
     mState.currentWorkDisplayName = displayName;
@@ -77,39 +65,26 @@ void UGCWorkController::SynchronizeCurrentWorkIdentity()
         return;
     }
 
-    const std::optional<std::string> savedDisplayName =
-        UGCWorkMetadata::FindDisplayName(stageYaml);
-    std::optional<std::string> savedFileName =
-        UGCWorkMetadata::FindFileName(stageYaml);
+    const std::optional<std::string> savedDisplayName = UGCWorkMetadata::FindDisplayName(stageYaml);
+    std::optional<std::string> savedFileName = UGCWorkMetadata::FindFileName(stageYaml);
+    // ファイル名を持たない旧形式の作品は、表示名から保存先を照合する。
     if (!savedFileName && savedDisplayName) {
-        savedFileName =
-            mFileService.CreateWorkFileName(*savedDisplayName);
+        savedFileName = mFileService.CreateWorkFileName(*savedDisplayName);
     }
-    if (!savedFileName ||
-        std::find(
-            mState.workFileNames.begin(),
-            mState.workFileNames.end(),
-            *savedFileName) == mState.workFileNames.end()) {
+    if (!savedFileName || std::find(mState.workFileNames.begin(), mState.workFileNames.end(), *savedFileName) ==
+                              mState.workFileNames.end()) {
         if (savedDisplayName) {
             SetWorkNameInput(*savedDisplayName);
         }
         return;
     }
 
-    SetCurrentWork(
-        *savedFileName,
-        savedDisplayName.value_or(
-            mFileService.ResolveDisplayName(*savedFileName)));
+    SetCurrentWork(*savedFileName, savedDisplayName.value_or(mFileService.ResolveDisplayName(*savedFileName)));
 }
 
-bool UGCWorkController::SaveWorkToFile(
-    const std::string& displayName,
-    const std::string& fileName)
+bool UGCWorkController::SaveWorkToFile(const std::string& displayName, const std::string& fileName)
 {
-    if (!mFileService.SaveCurrentWork(
-            displayName,
-            fileName,
-            mState.saveErrorMessage)) {
+    if (!mFileService.SaveCurrentWork(displayName, fileName, mState.saveErrorMessage)) {
         return false;
     }
 
@@ -121,22 +96,15 @@ bool UGCWorkController::SaveWorkToFile(
 bool UGCWorkController::SaveAsNamedWork()
 {
     const std::string displayName = mState.workName.data();
-    return SaveWorkToFile(
-        displayName,
-        mFileService.CreateWorkFileName(displayName));
+    return SaveWorkToFile(displayName, mFileService.CreateWorkFileName(displayName));
 }
 
 bool UGCWorkController::OverwriteCurrentWork()
 {
-    return mState.currentWorkFileName &&
-        SaveWorkToFile(
-            mState.currentWorkDisplayName,
-            *mState.currentWorkFileName);
+    return mState.currentWorkFileName && SaveWorkToFile(mState.currentWorkDisplayName, *mState.currentWorkFileName);
 }
 
-bool UGCWorkController::SaveCurrentWorkForVerification(
-    std::string& outWorkFileName,
-    std::string& outErrorMessage)
+bool UGCWorkController::SaveCurrentWorkForVerification(std::string& outWorkFileName, std::string& outErrorMessage)
 {
     if (!mState.currentWorkFileName) {
         outWorkFileName.clear();
@@ -162,8 +130,7 @@ void UGCWorkController::StartVerification(std::string& outStatusMessage)
     SynchronizeCurrentWorkIdentity();
 
     YAML::Node stageYaml;
-    const bool wasLoaded =
-        StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
+    const bool wasLoaded = StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
     if (!wasLoaded || !UGCWorkMetadata::HasGoal(stageYaml)) {
         outStatusMessage = "完成チェックにはゴールを置いてください";
         return;
@@ -171,20 +138,16 @@ void UGCWorkController::StartVerification(std::string& outStatusMessage)
 
     std::string workFileName;
     std::string saveErrorMessage;
-    if (!SaveCurrentWorkForVerification(
-            workFileName, saveErrorMessage)) {
-        outStatusMessage =
-            "下書きを保存できませんでした: " + saveErrorMessage;
+    if (!SaveCurrentWorkForVerification(workFileName, saveErrorMessage)) {
+        outStatusMessage = "下書きを保存できませんでした: " + saveErrorMessage;
         return;
     }
     mContext.game->StartUGCClearVerification(workFileName);
 }
 
-bool UGCWorkController::CompleteVerification(
-    const std::string& workFileName)
+bool UGCWorkController::CompleteVerification(const std::string& workFileName)
 {
-    const bool wasCompleted =
-        mFileService.CompleteVerification(workFileName);
+    const bool wasCompleted = mFileService.CompleteVerification(workFileName);
     RefreshWorkList();
     return wasCompleted;
 }
@@ -196,8 +159,7 @@ bool UGCWorkController::HasUnsavedChanges() const
 
 const std::string* UGCWorkController::FindSelectedWorkFileName() const
 {
-    if (mState.selectedWorkIndex < 0 ||
-        mState.selectedWorkIndex >= static_cast<int>(mState.workFileNames.size())) {
+    if (mState.selectedWorkIndex < 0 || mState.selectedWorkIndex >= static_cast<int>(mState.workFileNames.size())) {
         return nullptr;
     }
     return &mState.workFileNames[mState.selectedWorkIndex];
@@ -214,9 +176,7 @@ bool UGCWorkController::CopySelectedWorkToWorkingFile()
         return false;
     }
 
-    SetCurrentWork(
-        copiedFileName,
-        mFileService.ResolveDisplayName(copiedFileName));
+    SetCurrentWork(copiedFileName, mFileService.ResolveDisplayName(copiedFileName));
     return true;
 }
 
@@ -247,8 +207,7 @@ bool UGCWorkController::CreateNewWorkingStage()
 bool UGCWorkController::DuplicateSelectedWork()
 {
     const std::string* selectedFileName = FindSelectedWorkFileName();
-    if (!selectedFileName ||
-        !mFileService.DuplicateWork(*selectedFileName)) {
+    if (!selectedFileName || !mFileService.DuplicateWork(*selectedFileName)) {
         return false;
     }
     RefreshWorkList();
@@ -263,8 +222,7 @@ bool UGCWorkController::DeleteSelectedWork()
     }
     const std::string deletedFileName = *selectedFileName;
     const bool wasDeleted = mFileService.DeleteWork(deletedFileName);
-    if (wasDeleted &&
-        mState.currentWorkFileName == deletedFileName) {
+    if (wasDeleted && mState.currentWorkFileName == deletedFileName) {
         mState.currentWorkFileName.reset();
         mState.currentWorkDisplayName.clear();
         mState.isNamingNewSave = true;
@@ -276,19 +234,15 @@ bool UGCWorkController::DeleteSelectedWork()
 bool UGCWorkController::IsSelectedWorkVerified() const
 {
     const std::string* selectedFileName = FindSelectedWorkFileName();
-    return selectedFileName &&
-        mFileService.IsClearVerified(*selectedFileName);
+    return selectedFileName && mFileService.IsClearVerified(*selectedFileName);
 }
-
 
 bool UGCWorkController::IsWorkVerified(const std::string& fileName) const
 {
     return mFileService.IsClearVerified(fileName);
 }
 
-std::string UGCWorkController::ResolveDisplayName(
-    const std::string& fileName) const
+std::string UGCWorkController::ResolveDisplayName(const std::string& fileName) const
 {
     return mFileService.ResolveDisplayName(fileName);
 }
-
