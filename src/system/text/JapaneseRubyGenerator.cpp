@@ -27,18 +27,14 @@ void AppendSegment(std::vector<RubyTextSegment>& segments, RubyTextSegment segme
 
 bool IsKanji(wchar_t character)
 {
-    return (character >= 0x3400 && character <= 0x4DBF) ||
-           (character >= 0x4E00 && character <= 0x9FFF) ||
-           (character >= 0xF900 && character <= 0xFAFF) ||
-           character == 0x3005;
+    return (character >= 0x3400 && character <= 0x4DBF) || (character >= 0x4E00 && character <= 0x9FFF) ||
+           (character >= 0xF900 && character <= 0xFAFF) || character == 0x3005;
 }
 
 bool IsJapaneseText(wchar_t character)
 {
-    return IsKanji(character) ||
-           (character >= 0x3040 && character <= 0x309F) ||
-           (character >= 0x30A0 && character <= 0x30FF) ||
-           (character >= 0x31F0 && character <= 0x31FF);
+    return IsKanji(character) || (character >= 0x3040 && character <= 0x309F) ||
+           (character >= 0x30A0 && character <= 0x30FF) || (character >= 0x31F0 && character <= 0x31FF);
 }
 
 bool ContainsKanji(std::wstring_view text)
@@ -66,8 +62,7 @@ bool InitializeWindowsRuntime(std::string& errorMessage)
     return false;
 }
 
-bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& segments,
-                        std::string& errorMessage)
+bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& segments, std::string& errorMessage)
 {
     if (run.empty()) {
         return true;
@@ -75,8 +70,7 @@ bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& seg
 
     try {
         const winrt::hstring input(run);
-        const auto words =
-            winrt::Windows::Globalization::JapanesePhoneticAnalyzer::GetWords(input, true);
+        const auto words = winrt::Windows::Globalization::JapanesePhoneticAnalyzer::GetWords(input, true);
 
         std::wstring reconstructed;
         std::vector<RubyTextSegment> generated;
@@ -95,6 +89,7 @@ bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& seg
             AppendSegment(generated, std::move(segment));
         }
 
+        // 解析結果が本文と一致しない場合は、別の文字へ誤ってルビを対応付けないよう破棄する。
         if (reconstructed != run) {
             errorMessage = "読み解析で本文の文字位置を対応付けられませんでした。文章を短く区切ってください。";
             return false;
@@ -112,10 +107,9 @@ bool AnalyzeJapaneseRun(std::wstring_view run, std::vector<RubyTextSegment>& seg
 
 #endif
 
-}
+} // namespace
 
-bool JapaneseRubyGenerator::Generate(const std::string& text,
-                                     std::vector<RubyTextSegment>& segments,
+bool JapaneseRubyGenerator::Generate(const std::string& text, std::vector<RubyTextSegment>& segments,
                                      std::string& errorMessage)
 {
     segments.clear();
@@ -134,17 +128,16 @@ bool JapaneseRubyGenerator::Generate(const std::string& text,
 
     std::size_t position = 0;
     while (position < remaining.size()) {
-        const bool japaneseRun = IsJapaneseText(remaining[position]);
+        const bool isJapaneseRun = IsJapaneseText(remaining[position]);
         std::size_t end = position + 1;
 
-        while (end < remaining.size() &&
-               IsJapaneseText(remaining[end]) == japaneseRun &&
-               (!japaneseRun || end - position < 100)) {
+        while (end < remaining.size() && IsJapaneseText(remaining[end]) == isJapaneseRun &&
+               (!isJapaneseRun || end - position < 100)) {
             ++end;
         }
 
         const std::wstring_view run = remaining.substr(position, end - position);
-        if (japaneseRun) {
+        if (isJapaneseRun) {
             if (!AnalyzeJapaneseRun(run, segments, errorMessage)) {
                 segments.clear();
                 return false;

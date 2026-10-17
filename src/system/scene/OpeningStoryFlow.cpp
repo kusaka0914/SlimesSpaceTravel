@@ -10,37 +10,29 @@
 #include <utility>
 #include <vector>
 
-OpeningStoryFlow::OpeningStoryFlow(
-    Game& game,
-    SceneSystem& sceneSystem,
-    UIState& uiState,
-    TalkController& talkController,
-    std::function<void()> suppressForcedArrivalTalk)
+OpeningStoryFlow::OpeningStoryFlow(Game& game, SceneSystem& sceneSystem, UIState& uiState,
+                                   TalkController& talkController, std::function<void()> suppressForcedArrivalTalk)
     : mGame(game),
       mSceneSystem(sceneSystem),
       mUIState(uiState),
       mTalkController(talkController),
-      mSuppressForcedArrivalTalk(
-          std::move(suppressForcedArrivalTalk))
+      mSuppressForcedArrivalTalk(std::move(suppressForcedArrivalTalk))
 {
 }
 
-bool OpeningStoryFlow::StartAfterTalkPage(
-    NPC* talkingNPC,
-    Player* talkingPlayer,
-    int resumeTalkPageIndex,
-    std::size_t sourceTalkPageIndex)
+bool OpeningStoryFlow::StartAfterTalkPage(NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
+                                          std::size_t sourceTalkPageIndex)
 {
     if (!talkingNPC || !talkingPlayer || resumeTalkPageIndex < 0 ||
-        mGame.HasCompletedNPCOpeningTrigger(
-            talkingNPC, sourceTalkPageIndex)) {
+        mGame.HasCompletedNPCOpeningTrigger(talkingNPC, sourceTalkPageIndex)) {
         return false;
     }
 
     mReturnStageNum = mGame.GetCurrentStageNum();
     mReturnStageYamlPath = mGame.GetCurrentStageYamlPath();
-    mResumeNPCConversationId =
-        mGame.GetNPCConversationId(talkingNPC);
+
+    // Stageの再読込でActorが置き換わるため、再開先はポインターではなくIDで保持する。
+    mResumeNPCConversationId = mGame.GetNPCConversationId(talkingNPC);
     mResumePlayerIndex = 0;
     const std::vector<Player*>& players = mGame.GetPlayers();
     for (std::size_t index = 0; index < players.size(); ++index) {
@@ -50,8 +42,7 @@ bool OpeningStoryFlow::StartAfterTalkPage(
         }
     }
 
-    mGame.MarkNPCOpeningTriggerCompleted(
-        talkingNPC, sourceTalkPageIndex);
+    mGame.MarkNPCOpeningTriggerCompleted(talkingNPC, sourceTalkPageIndex);
     mResumeTalkPageIndex = resumeTalkPageIndex;
     mHasResume = true;
     mIsFinishing = false;
@@ -67,9 +58,7 @@ void OpeningStoryFlow::Finish()
     }
     mIsFinishing = true;
 
-    if (!mHasResume || mReturnStageNum < 0 ||
-        mReturnStageYamlPath.empty() ||
-        mResumeNPCConversationId.empty() ||
+    if (!mHasResume || mReturnStageNum < 0 || mReturnStageYamlPath.empty() || mResumeNPCConversationId.empty() ||
         mResumeTalkPageIndex < 0) {
         mIsFinishing = false;
         mSceneSystem.StartFadeIn();
@@ -80,47 +69,35 @@ void OpeningStoryFlow::Finish()
     const int returnStageNum = mReturnStageNum;
     const int resumePlayerIndex = mResumePlayerIndex;
     const std::string returnStageYamlPath = mReturnStageYamlPath;
-    const std::string resumeNPCConversationId =
-        mResumeNPCConversationId;
+    const std::string resumeNPCConversationId = mResumeNPCConversationId;
     ClearResume();
     if (mSuppressForcedArrivalTalk) {
         mSuppressForcedArrivalTalk();
     }
 
     const bool requested = mSceneSystem.RequestFadeAction(
-        [this, returnStageNum, returnStageYamlPath,
-         resumeNPCConversationId, resumePlayerIndex,
-         resumeTalkPageIndex]() {
+        [this, returnStageNum, returnStageYamlPath, resumeNPCConversationId, resumePlayerIndex, resumeTalkPageIndex]() {
             const bool isAlreadyOnReturnStage =
-                mGame.GetCurrentStageNum() == returnStageNum &&
-                mGame.GetCurrentStageYamlPath() == returnStageYamlPath;
-            if (!isAlreadyOnReturnStage &&
-                !mGame.LoadStageForScene(
-                    returnStageNum, returnStageYamlPath)) {
+                mGame.GetCurrentStageNum() == returnStageNum && mGame.GetCurrentStageYamlPath() == returnStageYamlPath;
+            if (!isAlreadyOnReturnStage && !mGame.LoadStageForScene(returnStageNum, returnStageYamlPath)) {
                 mIsFinishing = false;
                 mSceneSystem.StartPlayingScene();
                 return;
             }
 
-            NPC* resumeNPC =
-                mGame.FindNPCByConversationId(resumeNPCConversationId);
+            NPC* resumeNPC = mGame.FindNPCByConversationId(resumeNPCConversationId);
             const std::vector<Player*>& players = mGame.GetPlayers();
-            Player* resumePlayer =
-                resumePlayerIndex >= 0 &&
-                        resumePlayerIndex < static_cast<int>(players.size())
-                    ? players[resumePlayerIndex]
-                    : mGame.GetMainPlayer();
-            if (!resumeNPC || !resumePlayer ||
-                !resumeNPC->GetIsActive() ||
-                !resumePlayer->GetIsActive()) {
+            Player* resumePlayer = resumePlayerIndex >= 0 && resumePlayerIndex < static_cast<int>(players.size())
+                                       ? players[resumePlayerIndex]
+                                       : mGame.GetMainPlayer();
+            if (!resumeNPC || !resumePlayer || !resumeNPC->GetIsActive() || !resumePlayer->GetIsActive()) {
                 mIsFinishing = false;
                 mSceneSystem.StartPlayingScene();
                 return;
             }
 
             mIsFinishing = false;
-            mTalkController.ResumeTalkWithNPC(
-                resumeNPC, resumePlayer, resumeTalkPageIndex);
+            mTalkController.ResumeTalkWithNPC(resumeNPC, resumePlayer, resumeTalkPageIndex);
         });
     if (!requested) {
         mIsFinishing = false;

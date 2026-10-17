@@ -1,5 +1,6 @@
 #pragma once
 
+// 描画用GPUハンドルとマテリアル値を保持する。コピー・破棄でGPUリソースの複製・解放は行わない。
 struct LoadedMesh {
     unsigned int VAO = 0;
     unsigned int VBO = 0;

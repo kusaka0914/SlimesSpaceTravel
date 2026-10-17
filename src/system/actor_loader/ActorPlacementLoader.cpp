@@ -8,6 +8,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 namespace {
+
 bool HasVec3(const YAML::Node& node, const char* key)
 {
     return node[key] && node[key].IsSequence() && node[key].size() >= 3;
@@ -18,7 +19,7 @@ bool HasVec2(const YAML::Node& node, const char* key)
     return node[key] && node[key].IsSequence() && node[key].size() >= 2;
 }
 
-bool HasQuat(const YAML::Node& node, const char* key)
+bool HasQuaternion(const YAML::Node& node, const char* key)
 {
     return node[key] && node[key].IsSequence() && node[key].size() >= 4;
 }
@@ -31,7 +32,7 @@ glm::vec3 ReadVec3(const YAML::Node& node, const char* key, const glm::vec3& fal
 
     return glm::vec3(node[key][0].as<float>(), node[key][1].as<float>(), node[key][2].as<float>());
 }
-}
+} // namespace
 
 glm::vec3 ActorPlacementLoader::CalculatePos(const YAML::Node& node, const Planet& currentPlanet) const
 {
@@ -44,16 +45,16 @@ glm::vec3 ActorPlacementLoader::CalculatePos(const YAML::Node& node, const Plane
     const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
     const float height = node["height"] ? node["height"].as<float>() : 0.0f;
 
-    glm::vec3 dir(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta));
+    glm::vec3 radialDirection(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta));
 
-    const float len = glm::length(dir);
-    if (len < 1e-6f) {
-        dir = glm::vec3(1.0f, 0.0f, 0.0f);
+    const float directionLength = glm::length(radialDirection);
+    if (directionLength < 1e-6f) {
+        radialDirection = glm::vec3(1.0f, 0.0f, 0.0f);
     } else {
-        dir /= len;
+        radialDirection /= directionLength;
     }
 
-    return currentPlanet.GetPos() + (currentPlanet.GetRadius() + height) * dir;
+    return currentPlanet.GetPos() + (currentPlanet.GetRadius() + height) * radialDirection;
 }
 
 void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML::Node& node, Planet* currentPlanet,
@@ -65,37 +66,21 @@ void ActorPlacementLoader::ApplyPlacementFromStageNode(Actor* actor, const YAML:
 
     actor->SetStageYamlIndex(stageYamlIndex);
 
-    const bool isDebugDisabled =
-        node["debugDisabled"]
-            ? node["debugDisabled"].as<bool>()
-            : false;
+    const bool isDebugDisabled = node["debugDisabled"] ? node["debugDisabled"].as<bool>() : false;
     actor->SetIsDebugDisabled(isDebugDisabled);
 
-    const int visibleIfStageCleared =
-        node["visibleIfStageCleared"]
-            ? node["visibleIfStageCleared"].as<int>()
-            : -1;
+    const int visibleIfStageCleared = node["visibleIfStageCleared"] ? node["visibleIfStageCleared"].as<int>() : -1;
     actor->SetVisibleIfStageCleared(visibleIfStageCleared);
-    const int hiddenIfStageCleared =
-        node["hiddenIfStageCleared"]
-            ? node["hiddenIfStageCleared"].as<int>()
-            : -1;
+    const int hiddenIfStageCleared = node["hiddenIfStageCleared"] ? node["hiddenIfStageCleared"].as<int>() : -1;
     actor->SetHiddenIfStageCleared(hiddenIfStageCleared);
-    actor->SetHiddenWhenRocketAppears(
-        node["hiddenWhenRocketAppears"]
-            ? node["hiddenWhenRocketAppears"].as<bool>()
-            : false);
+    actor->SetHiddenWhenRocketAppears(node["hiddenWhenRocketAppears"] ? node["hiddenWhenRocketAppears"].as<bool>()
+                                                                      : false);
 
     const bool shouldAffectGravityDirection =
-        node["affectsGravityDirection"]
-            ? node["affectsGravityDirection"].as<bool>()
-            : true;
-    actor->SetShouldAffectGravityDirection(
-        shouldAffectGravityDirection);
+        node["affectsGravityDirection"] ? node["affectsGravityDirection"].as<bool>() : true;
+    actor->SetShouldAffectGravityDirection(shouldAffectGravityDirection);
     actor->SetShouldReactToOverheadGravityRay(
-        node["reactsToOverheadGravityRay"]
-            ? node["reactsToOverheadGravityRay"].as<bool>()
-            : false);
+        node["reactsToOverheadGravityRay"] ? node["reactsToOverheadGravityRay"].as<bool>() : false);
 
     const float theta = node["theta"] ? node["theta"].as<float>() : 0.0f;
     const float phi = node["phi"] ? node["phi"].as<float>() : 0.0f;
@@ -137,7 +122,7 @@ void ActorPlacementLoader::ApplyRotationFromStageNode(Actor* actor, const YAML::
         }
     }
 
-    if (HasQuat(node, "rotationQuat")) {
+    if (HasQuaternion(node, "rotationQuat")) {
         const glm::quat orientation(node["rotationQuat"][0].as<float>(), node["rotationQuat"][1].as<float>(),
                                     node["rotationQuat"][2].as<float>(), node["rotationQuat"][3].as<float>());
         if (glm::length(orientation) > 1e-6f) {
@@ -164,10 +149,8 @@ void ActorPlacementLoader::ApplyScaleFromStageNode(Actor* actor, const YAML::Nod
 
     if (HasVec2(node, "textureTiling")) {
         const glm::vec2 currentTiling = actor->GetTextureTiling();
-        const float tilingX =
-            node["textureTiling"][0] ? node["textureTiling"][0].as<float>() : currentTiling.x;
-        const float tilingY =
-            node["textureTiling"][1] ? node["textureTiling"][1].as<float>() : currentTiling.y;
+        const float tilingX = node["textureTiling"][0] ? node["textureTiling"][0].as<float>() : currentTiling.x;
+        const float tilingY = node["textureTiling"][1] ? node["textureTiling"][1].as<float>() : currentTiling.y;
 
         actor->SetTextureTiling(glm::max(glm::vec2(tilingX, tilingY), glm::vec2(0.01f)));
     }

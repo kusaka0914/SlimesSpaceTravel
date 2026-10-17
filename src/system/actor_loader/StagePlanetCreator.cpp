@@ -28,13 +28,11 @@ Planet* StagePlanetCreator::CreateFromStageNode(const YAML::Node& node)
 
     planet->Initialize();
 
-    Planet* planetPtr = planet.get();
+    Planet* createdPlanet = planet.get();
 
-    mGame->GetMeshLoadSystem()->SetActorMesh(planetPtr);
+    mGame->GetMeshLoadSystem()->SetActorMesh(createdPlanet);
     mGame->AddActor(std::move(planet));
-    currentStage->AddPlanet(planetPtr);
+    currentStage->AddPlanet(createdPlanet);
 
-    return planetPtr;
+    return createdPlanet;
 }
-
-

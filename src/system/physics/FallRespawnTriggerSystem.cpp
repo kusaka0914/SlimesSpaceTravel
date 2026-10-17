@@ -11,33 +11,27 @@
 #include <memory>
 
 namespace {
-btTransform CreatePlayerSweepTransform(
-    const Actor& actor,
-    const glm::vec3& position)
+
+btTransform CreatePlayerSweepTransform(const Actor& actor, const glm::vec3& position)
 {
     const glm::quat& actorOrientation = actor.GetOrientation();
 
     btTransform transform;
     transform.setIdentity();
     transform.setOrigin(btVector3(position.x, position.y, position.z));
-    transform.setRotation(
-        btQuaternion(
-            actorOrientation.x,
-            actorOrientation.y,
-            actorOrientation.z,
-            actorOrientation.w));
+    transform.setRotation(btQuaternion(actorOrientation.x, actorOrientation.y, actorOrientation.z, actorOrientation.w));
     return transform;
 }
-}
+} // namespace
 
 FallRespawnTriggerSystem::FallRespawnTriggerSystem(Game* game)
     : mGame(game)
 {
 }
 
-void FallRespawnTriggerSystem::CreateTriggerBodies(
-    btDiscreteDynamicsWorld* world, std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects,
-    std::vector<std::unique_ptr<btCollisionShape>>& triggerShapes) const
+void FallRespawnTriggerSystem::CreateTriggerBodies(btDiscreteDynamicsWorld* world,
+                                                   std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects,
+                                                   std::vector<std::unique_ptr<btCollisionShape>>& triggerShapes) const
 {
     if (!mGame || !mGame->GetCurrentStage() || !world) {
         return;
@@ -56,10 +50,9 @@ void FallRespawnTriggerSystem::CreateTriggerBodies(
     }
 }
 
-void FallRespawnTriggerSystem::CreateTriggerBody(
-    btDiscreteDynamicsWorld* world, FallRespawnPoint* point,
-    std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects,
-    std::vector<std::unique_ptr<btCollisionShape>>& triggerShapes) const
+void FallRespawnTriggerSystem::CreateTriggerBody(btDiscreteDynamicsWorld* world, FallRespawnPoint* point,
+                                                 std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects,
+                                                 std::vector<std::unique_ptr<btCollisionShape>>& triggerShapes) const
 {
     if (!point || !point->GetIsActive() || !world) {
         return;
@@ -110,12 +103,8 @@ void FallRespawnTriggerSystem::SyncTriggerBodies(
 }
 
 std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRespawnBySweep(
-    btDiscreteDynamicsWorld* world,
-    btConvexShape* playerShape,
-    const Actor* actor,
-    const glm::vec3& from,
-    const glm::vec3& to,
-    const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const
+    btDiscreteDynamicsWorld* world, btConvexShape* playerShape, const Actor* actor, const glm::vec3& from,
+    const glm::vec3& to, const std::vector<std::unique_ptr<btCollisionObject>>& triggerObjects) const
 {
     if (!world || !playerShape || !actor) {
         return std::nullopt;
@@ -127,10 +116,8 @@ std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRes
 
     SyncTriggerBodies(world, triggerObjects);
 
-    const btTransform fromTransform =
-        CreatePlayerSweepTransform(*actor, from);
-    const btTransform toTransform =
-        CreatePlayerSweepTransform(*actor, to);
+    const btTransform fromTransform = CreatePlayerSweepTransform(*actor, from);
+    const btTransform toTransform = CreatePlayerSweepTransform(*actor, to);
 
     class FallRespawnSweepCallback : public btCollisionWorld::ClosestConvexResultCallback {
     public:
@@ -151,18 +138,18 @@ std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRes
         }
     };
 
-    FallRespawnSweepCallback cb(fromTransform.getOrigin(), toTransform.getOrigin());
+    FallRespawnSweepCallback sweepCallback(fromTransform.getOrigin(), toTransform.getOrigin());
 
-    cb.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
-    cb.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::SensorTrigger);
+    sweepCallback.m_collisionFilterGroup = static_cast<short>(btBroadphaseProxy::DefaultFilter);
+    sweepCallback.m_collisionFilterMask = static_cast<short>(btBroadphaseProxy::SensorTrigger);
 
-    world->convexSweepTest(playerShape, fromTransform, toTransform, cb);
+    world->convexSweepTest(playerShape, fromTransform, toTransform, sweepCallback);
 
-    if (!cb.hasHit()) {
+    if (!sweepCallback.hasHit()) {
         return std::nullopt;
     }
 
-    Actor* hitActor = static_cast<Actor*>(cb.m_hitCollisionObject->getUserPointer());
+    Actor* hitActor = static_cast<Actor*>(sweepCallback.m_hitCollisionObject->getUserPointer());
 
     if (!hitActor) {
         return std::nullopt;
@@ -171,8 +158,8 @@ std::optional<PhysicsSystem::RayHitActor> FallRespawnTriggerSystem::CheckFallRes
     PhysicsSystem::RayHitActor hit;
     hit.actor = hitActor;
 
-    const btVector3 hitPoint = cb.m_hitPointWorld;
-    const btVector3 hitNormal = cb.m_hitNormalWorld;
+    const btVector3 hitPoint = sweepCallback.m_hitPointWorld;
+    const btVector3 hitNormal = sweepCallback.m_hitNormalWorld;
 
     hit.hitPos = glm::vec3(hitPoint.x(), hitPoint.y(), hitPoint.z());
     hit.hitNormal = glm::vec3(hitNormal.x(), hitNormal.y(), hitNormal.z());

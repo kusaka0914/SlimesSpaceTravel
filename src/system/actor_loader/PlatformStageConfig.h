@@ -67,11 +67,12 @@ struct PlatformBehaviorStageConfig {
     bool hasEnemyClearUnlock = false;
 };
 
+// 床の移動・振る舞い設定。optionalが空なら対応するComponentは追加しない。
 struct PlatformStageConfig {
     std::optional<PlatformMovementStageConfig> movement;
     PlatformBehaviorStageConfig behavior;
 };
 
-PlatformStageConfig ParsePlatformStageConfig(
-    const YAML::Node& platformNode,
-    bool shouldUseLegacyMovementFields = false);
+// ステージの床設定を解析する。指定時は旧形式の移動フィールドも受け付ける。YAML変換例外は伝播する。
+PlatformStageConfig ParsePlatformStageConfig(const YAML::Node& platformNode,
+                                             bool shouldUseLegacyMovementFields = false);

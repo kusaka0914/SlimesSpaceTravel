@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+// 描画メッシュ・骨格アニメーションと、モデル空間の頂点境界を保持する。
 struct LoadedModel {
     std::vector<LoadedMesh> meshes;
     SkeletalAnimationData skeletalAnimation;

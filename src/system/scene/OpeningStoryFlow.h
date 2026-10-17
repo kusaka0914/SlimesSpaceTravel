@@ -11,20 +11,17 @@ class SceneSystem;
 class TalkController;
 class UIState;
 
+// 会話から物語演出へ移り、Stage・NPC・ページを識別情報から解決して会話を再開する。
 class OpeningStoryFlow {
 public:
-    OpeningStoryFlow(
-        Game& game,
-        SceneSystem& sceneSystem,
-        UIState& uiState,
-        TalkController& talkController,
-        std::function<void()> suppressForcedArrivalTalk);
+    OpeningStoryFlow(Game& game, SceneSystem& sceneSystem, UIState& uiState, TalkController& talkController,
+                     std::function<void()> suppressForcedArrivalTalk);
 
-    bool StartAfterTalkPage(
-        NPC* talkingNPC,
-        Player* talkingPlayer,
-        int resumeTalkPageIndex,
-        std::size_t sourceTalkPageIndex);
+    // 0始まりの再開ページ・発火元ページを記録して物語演出を始める。既に実行済み・引数不正ならfalse。
+    bool StartAfterTalkPage(NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
+                            std::size_t sourceTalkPageIndex);
+
+    // 復帰先を識別情報から探して会話を再開するフェードを予約する。再開情報がなければ通常開始へ移る。
     void Finish();
     void Reset();
     void PreparePlayingScene() { mIsFinishing = false; }

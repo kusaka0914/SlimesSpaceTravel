@@ -6,11 +6,12 @@
 #include <yaml-cpp/yaml.h>
 
 namespace {
+
 float ReadFloat(const YAML::Node& node, const char* key, float fallback)
 {
     return node[key] ? node[key].as<float>() : fallback;
 }
-}
+} // namespace
 
 bool EndingRollConfigIO::Load(EndingRollConfig& outConfig, const std::string& path)
 {
@@ -133,7 +134,6 @@ float CalculateEndingRollImageOpacity(const EndingRollImageEvent& event, float e
     const float fadeIn = std::min(event.fadeInDuration, event.visibleDuration * 0.5f);
     const float fadeOut = std::min(event.fadeOutDuration, event.visibleDuration * 0.5f);
     const float fadeInOpacity = fadeIn > 0.0f ? localTime / fadeIn : 1.0f;
-    const float fadeOutOpacity = fadeOut > 0.0f
-        ? (event.visibleDuration - localTime) / fadeOut : 1.0f;
+    const float fadeOutOpacity = fadeOut > 0.0f ? (event.visibleDuration - localTime) / fadeOut : 1.0f;
     return std::clamp(std::min(fadeInOpacity, fadeOutOpacity), 0.0f, 1.0f);
 }

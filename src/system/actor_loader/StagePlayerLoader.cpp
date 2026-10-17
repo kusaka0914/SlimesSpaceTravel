@@ -13,9 +13,7 @@
 #include <utility>
 #include <vector>
 
-StagePlayerLoader::StagePlayerLoader(
-    Game* game,
-    const ActorPlacementLoader& placementLoader)
+StagePlayerLoader::StagePlayerLoader(Game* game, const ActorPlacementLoader& placementLoader)
     : mGame(game),
       mPlacementLoader(placementLoader)
 {
@@ -59,11 +57,11 @@ void StagePlayerLoader::LoadPlayers(const YAML::Node& stageRoot)
         return;
     }
 
+    // 1人プレイでも分裂に使う2体目が必要なため、足りない定義は先頭から補う。
     const YAML::Node fallbackNode = playerNodes[0];
     while (loadedPlayerCount < requiredPlayerCount) {
         const int playerNum = loadedPlayerCount + 1;
-        Player* duplicatedPlayer =
-            CreatePlayerFromStageNode(fallbackNode, playerNum);
+        Player* duplicatedPlayer = CreatePlayerFromStageNode(fallbackNode, playerNum);
         if (!duplicatedPlayer) {
             break;
         }
@@ -76,9 +74,7 @@ void StagePlayerLoader::LoadPlayers(const YAML::Node& stageRoot)
             if (separationLength > 0.000001f) {
                 separationDirection /= separationLength;
                 constexpr float duplicateSpawnSpacing = 1.0f;
-                duplicatedPlayer->SetPos(
-                    firstPlayer->GetPos() +
-                    separationDirection * duplicateSpawnSpacing);
+                duplicatedPlayer->SetPos(firstPlayer->GetPos() + separationDirection * duplicateSpawnSpacing);
                 duplicatedPlayer->Initialize();
                 duplicatedPlayer->RefreshFallbackUpVec();
             }
@@ -88,19 +84,15 @@ void StagePlayerLoader::LoadPlayers(const YAML::Node& stageRoot)
     }
 }
 
-Player* StagePlayerLoader::CreatePlayerFromStageNode(
-    const YAML::Node& node,
-    int playerNum)
+Player* StagePlayerLoader::CreatePlayerFromStageNode(const YAML::Node& node, int playerNum)
 {
     if (!mGame || !mGame->GetCurrentStage()) {
         return nullptr;
     }
 
     const auto& planets = mGame->GetCurrentStage()->GetPlanets();
-    const int currentPlanetNum =
-        node["currentPlanetNum"].as<int>(0);
-    if (currentPlanetNum < 0 ||
-        currentPlanetNum >= static_cast<int>(planets.size())) {
+    const int currentPlanetNum = node["currentPlanetNum"].as<int>(0);
+    if (currentPlanetNum < 0 || currentPlanetNum >= static_cast<int>(planets.size())) {
         return nullptr;
     }
 
@@ -114,20 +106,12 @@ Player* StagePlayerLoader::CreatePlayerFromStageNode(
     player->SetCurrentPlanetNum(currentPlanetNum);
     player->SetCurrentPlanet(currentPlanet);
 
-    mPlacementLoader.ApplyPlacementFromStageNode(
-        player.get(),
-        node,
-        currentPlanet,
-        playerNum - 1,
-        0.0f);
+    mPlacementLoader.ApplyPlacementFromStageNode(player.get(), node, currentPlanet, playerNum - 1, 0.0f);
     mPlacementLoader.ApplyRotationFromStageNode(player.get(), node);
 
-    const glm::vec3 playerFacingDirection =
-        -player->Actor::GetForwardVec();
+    const glm::vec3 playerFacingDirection = -player->Actor::GetForwardVec();
     player->SetFacingForwardVec(playerFacingDirection);
-    player->SetCameraForwardDirection(
-        -playerFacingDirection,
-        player->GetUpVec());
+    player->SetCameraForwardDirection(-playerFacingDirection, player->GetUpVec());
 
     player->ApplyConfig(mPlayerConfig);
     if (node["modelPath"]) {
@@ -138,11 +122,11 @@ Player* StagePlayerLoader::CreatePlayerFromStageNode(
     player->Initialize();
     player->SetBaseScale(player->GetScale());
 
-    Player* playerPtr = player.get();
-    mGame->GetMeshLoadSystem()->SetActorMesh(playerPtr);
+    Player* createdPlayer = player.get();
+    mGame->GetMeshLoadSystem()->SetActorMesh(createdPlayer);
     mGame->AddActor(std::move(player));
-    mGame->AddPlayer(playerPtr);
-    return playerPtr;
+    mGame->AddPlayer(createdPlayer);
+    return createdPlayer;
 }
 
 bool StagePlayerLoader::CreatePlayerFromCurrentStage(int playerNum)
@@ -151,15 +135,13 @@ bool StagePlayerLoader::CreatePlayerFromCurrentStage(int playerNum)
         return false;
     }
 
-    const YAML::Node root =
-        YAML::LoadFile(mGame->GetCurrentStageYamlPath());
+    const YAML::Node root = YAML::LoadFile(mGame->GetCurrentStageYamlPath());
     if (!root["players"] || !root["players"].IsSequence()) {
         return false;
     }
 
     const int playerIndex = playerNum - 1;
-    if (playerIndex < 0 ||
-        playerIndex >= static_cast<int>(root["players"].size())) {
+    if (playerIndex < 0 || playerIndex >= static_cast<int>(root["players"].size())) {
         return false;
     }
 

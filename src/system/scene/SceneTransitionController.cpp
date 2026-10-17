@@ -7,7 +7,7 @@
 #include "system/AudioSystem.h"
 #include "system/sequence/SequenceSystem.h"
 
-#include <SDL2/SDL_mixer.h>
+#include <SDL_mixer.h>
 
 #include <utility>
 
@@ -37,8 +37,7 @@ void SceneTransitionController::UpdateFade(float deltaTime)
     } else if (mIsFadeOut) {
         mIsFadeOut = false;
         if (mFadeCompletionAction) {
-            std::function<void()> completionAction =
-                std::move(mFadeCompletionAction);
+            std::function<void()> completionAction = std::move(mFadeCompletionAction);
             mFadeCompletionAction = {};
             completionAction();
         }
@@ -80,8 +79,7 @@ void SceneTransitionController::StartBattleStyleSelection()
     mFadeCompletionAction = {};
     mFadeTimer = 1.0f;
     mIsFadeOut = false;
-    mGameProgressState->SetNextSceneState(
-        GameProgressState::SceneState::BattleStyleSelection);
+    mGameProgressState->SetNextSceneState(GameProgressState::SceneState::BattleStyleSelection);
 }
 
 void SceneTransitionController::CancelPendingTransition()
@@ -92,8 +90,7 @@ void SceneTransitionController::CancelPendingTransition()
     mIsFadeOut = false;
     mHasPendingStageChange = false;
     mNextStageNum = -1;
-    mGameProgressState->SetNextSceneState(
-        GameProgressState::SceneState::None);
+    mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
 }
 
 void SceneTransitionController::RequestStageChange(int stageNum)
@@ -107,9 +104,8 @@ void SceneTransitionController::RequestStageChange(int stageNum)
     mIsFadeOut = false;
 }
 
-bool SceneTransitionController::RequestFadeAction(
-    std::function<void()> midpointAction,
-    std::function<void()> completionAction)
+bool SceneTransitionController::RequestFadeAction(std::function<void()> midpointAction,
+                                                  std::function<void()> completionAction)
 {
     if (!midpointAction || mFadeTimer > -1.0f || mIsFadeOut || mHasPendingStageChange) {
         return false;
@@ -130,10 +126,8 @@ void SceneTransitionController::ApplySceneChange()
 
     switch (nextSceneState) {
     case GameProgressState::SceneState::BattleStyleSelection:
-        mGameProgressState->SetCurrentSceneState(
-            GameProgressState::SceneState::BattleStyleSelection);
-        mGameProgressState->SetNextSceneState(
-            GameProgressState::SceneState::None);
+        mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::BattleStyleSelection);
+        mGameProgressState->SetNextSceneState(GameProgressState::SceneState::None);
         break;
 
     case GameProgressState::SceneState::Opening:
@@ -161,6 +155,8 @@ void SceneTransitionController::ApplySceneChange()
 
     if (mMidpointAction) {
         std::function<void()> midpointAction = std::move(mMidpointAction);
+
+        // コールバック内で次の遷移が予約されても、その新しい処理を消さないよう先に空にする。
         mMidpointAction = {};
         midpointAction();
     }
@@ -172,13 +168,9 @@ void SceneTransitionController::ApplySceneChange()
 
         const int destinationStageNum = mNextStageNum;
         const bool shouldPlayBaseArrival = destinationStageNum == 0;
-        const bool shouldPlayStageIntro =
-            mGame->HasStageIntroCinematic(destinationStageNum);
-        const bool shouldPlayBaseIntro =
-            shouldPlayBaseArrival &&
-            !mGame->HasSeenBaseIntro();
-        const bool shouldDeferStageMusic =
-            shouldPlayStageIntro;
+        const bool shouldPlayStageIntro = mGame->HasStageIntroCinematic(destinationStageNum);
+        const bool shouldPlayBaseIntro = shouldPlayBaseArrival && !mGame->HasSeenBaseIntro();
+        const bool shouldDeferStageMusic = shouldPlayStageIntro;
 
         if (shouldDeferStageMusic) {
             mGame->GetAudioSystem()->BeginStageMusicDeferral();
@@ -191,18 +183,13 @@ void SceneTransitionController::ApplySceneChange()
         mGame->ReloadCurrentStage();
         mGame->StartPlayingScene();
 
-        // ReloadCurrentStage中は、遷移前のタイトル状態でBGM判定が
-        // 行われる。Playingへ切り替えた後にも判定し直さないと、
-        // 操作スタイル選択を省略して拠点へ入った場合にタイトルBGMが
-        // そのまま残ってしまう。
+        // 再読込時の判定は遷移前のシーンを参照するため、Playingへの切替後にBGMを再選択する。
         mGame->GetAudioSystem()->TryChangeBGM();
 
         if (shouldPlayBaseArrival && mGame->GetSequenceSystem()) {
             SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
             if (shouldPlayBaseIntro &&
-                sequenceSystem->PlayCinematicChainThenSequence(
-                    {"base_sequence"},
-                    "base_arrival_template")) {
+                sequenceSystem->PlayCinematicChainThenSequence({"base_sequence"}, "base_arrival_template")) {
                 mGame->MarkBaseIntroSeen();
                 if (Player* player = mGame->GetMainPlayer()) {
                     player->SetIsActive(false);
@@ -215,8 +202,7 @@ void SceneTransitionController::ApplySceneChange()
         }
 
         if (shouldDeferStageMusic &&
-            (!mGame->GetSequenceSystem() ||
-             !mGame->GetSequenceSystem()->IsCinematicChainPlaying())) {
+            (!mGame->GetSequenceSystem() || !mGame->GetSequenceSystem()->IsCinematicChainPlaying())) {
             mGame->GetAudioSystem()->ResumeDeferredStageMusic();
         }
     }

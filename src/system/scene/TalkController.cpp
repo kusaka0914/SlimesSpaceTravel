@@ -17,6 +17,7 @@
 #include <vector>
 
 namespace {
+
 constexpr float directionEpsilonSquared = 0.000001f;
 
 bool TryGetTangentDirection(const glm::vec3& direction, const glm::vec3& up, glm::vec3& tangentDirection)
@@ -31,21 +32,19 @@ bool TryGetTangentDirection(const glm::vec3& direction, const glm::vec3& up, glm
     return true;
 }
 
-glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, const glm::vec3& up,
-                        float smoothingSpeed, float deltaTime)
+glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, const glm::vec3& up, float smoothingSpeed,
+                        float deltaTime)
 {
     const float dotValue = glm::clamp(glm::dot(current, desired), -1.0f, 1.0f);
     const float signedAngle = std::atan2(glm::dot(glm::cross(current, desired), up), dotValue);
-    const float blend =
-        1.0f - std::exp(-std::max(0.0f, smoothingSpeed) * std::max(0.0f, deltaTime));
+    const float blend = 1.0f - std::exp(-std::max(0.0f, smoothingSpeed) * std::max(0.0f, deltaTime));
     const float angle = signedAngle * blend;
-    const glm::vec3 rotated =
-        current * std::cos(angle) + glm::cross(up, current) * std::sin(angle);
+    const glm::vec3 rotated = current * std::cos(angle) + glm::cross(up, current) * std::sin(angle);
 
     glm::vec3 tangentDirection;
     return TryGetTangentDirection(rotated, up, tangentDirection) ? tangentDirection : desired;
 }
-}
+} // namespace
 
 TalkController::TalkController(Game* game, GameProgressState* gameProgressState, UIState* uiState, NPC*& talkingNPC,
                                Player*& talkingPlayer)
@@ -64,8 +63,7 @@ void TalkController::Update(float deltaTime)
     }
 
     if (mGameProgressState->GetSceneState() != GameProgressState::SceneState::Talking ||
-        mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC ||
-        !mTalkingNPC || !mTalkingPlayer ||
+        mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC || !mTalkingNPC || !mTalkingPlayer ||
         !mTalkingNPC->GetIsActive() || !mTalkingPlayer->GetIsActive()) {
         return;
     }
@@ -103,17 +101,14 @@ void TalkController::Update(float deltaTime)
 bool TalkController::FinishTalkIfComplete()
 {
     if (!mGameProgressState || !mUIState ||
-        mGameProgressState->GetSceneState() !=
-            GameProgressState::SceneState::Talking ||
+        mGameProgressState->GetSceneState() != GameProgressState::SceneState::Talking ||
         mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC) {
         return false;
     }
 
     const int talkPageIndex = mUIState->GetTalkUIIndex();
-    const bool hasRemainingPage =
-        mTalkingNPC && talkPageIndex >= 0 &&
-        talkPageIndex <
-            static_cast<int>(mTalkingNPC->GetResolvedTalkTexts().size());
+    const bool hasRemainingPage = mTalkingNPC && talkPageIndex >= 0 &&
+                                  talkPageIndex < static_cast<int>(mTalkingNPC->GetResolvedTalkTexts().size());
     if (hasRemainingPage) {
         return false;
     }
@@ -128,8 +123,7 @@ bool TalkController::FinishTalkIfComplete()
 
 void TalkController::TryAdvanceTalkFromConfirm()
 {
-    if (GetCurrentAdvanceCondition() !=
-        TalkPageAdvanceCondition::Confirm) {
+    if (GetCurrentAdvanceCondition() != TalkPageAdvanceCondition::Confirm) {
         return;
     }
 
@@ -141,32 +135,27 @@ void TalkController::AdvanceTalkPage()
     const int talkPageIndex = mUIState->GetTalkUIIndex();
     const std::optional<std::size_t> sourceTalkPageIndex =
         mTalkingNPC && talkPageIndex >= 0
-            ? mTalkingNPC->GetResolvedTalkSourceIndex(
-                  static_cast<std::size_t>(talkPageIndex))
+            ? mTalkingNPC->GetResolvedTalkSourceIndex(static_cast<std::size_t>(talkPageIndex))
             : std::nullopt;
     const bool startsOpening =
         mTalkingNPC && talkPageIndex >= 0 &&
-        mTalkingNPC->GetResolvedTalkStartsOpeningAfterPage(
-            static_cast<std::size_t>(talkPageIndex));
+        mTalkingNPC->GetResolvedTalkStartsOpeningAfterPage(static_cast<std::size_t>(talkPageIndex));
     const bool startsEnding =
         mTalkingNPC && talkPageIndex >= 0 &&
-        mTalkingNPC->GetResolvedTalkStartsEndingAfterPage(
-            static_cast<std::size_t>(talkPageIndex));
+        mTalkingNPC->GetResolvedTalkStartsEndingAfterPage(static_cast<std::size_t>(talkPageIndex));
 
     mUIState->IncTalkUIIndex();
     CaptureCurrentPageActionBaseline();
     mGame->GetAudioSystem()->PlaySE("message_se");
 
     if (startsEnding && sourceTalkPageIndex &&
-        mGame->GetSceneSystem()->StartEndingAfterTalkPage(
-            mTalkingNPC, *sourceTalkPageIndex)) {
+        mGame->GetSceneSystem()->StartEndingAfterTalkPage(mTalkingNPC, *sourceTalkPageIndex)) {
         return;
     }
 
     if (startsOpening && sourceTalkPageIndex) {
-        mGame->GetSceneSystem()->StartOpeningAfterTalkPage(
-            mTalkingNPC, mTalkingPlayer, talkPageIndex + 1,
-            *sourceTalkPageIndex);
+        mGame->GetSceneSystem()->StartOpeningAfterTalkPage(mTalkingNPC, mTalkingPlayer, talkPageIndex + 1,
+                                                           *sourceTalkPageIndex);
     }
 }
 
@@ -187,8 +176,7 @@ void TalkController::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
     mGame->GetAudioSystem()->PlaySE("message_se");
 }
 
-void TalkController::ResumeTalkWithNPC(
-    NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex)
+void TalkController::ResumeTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex)
 {
     if (!talkingNPC || !talkingPlayer || talkPageIndex < 0) {
         return;
@@ -212,8 +200,7 @@ void TalkController::ClearActorReferencesForStageReload()
     mHasJumpStartedOnCurrentPage = false;
 }
 
-TalkPageAdvanceCondition
-TalkController::GetCurrentAdvanceCondition() const
+TalkPageAdvanceCondition TalkController::GetCurrentAdvanceCondition() const
 {
     if (!mTalkingNPC || !mUIState) {
         return TalkPageAdvanceCondition::Confirm;
@@ -224,20 +211,14 @@ TalkController::GetCurrentAdvanceCondition() const
         return TalkPageAdvanceCondition::Confirm;
     }
 
-    return mTalkingNPC->GetResolvedTalkAdvanceCondition(
-        static_cast<std::size_t>(talkPageIndex));
+    return mTalkingNPC->GetResolvedTalkAdvanceCondition(static_cast<std::size_t>(talkPageIndex));
 }
 
 void TalkController::CaptureCurrentPageActionBaseline()
 {
-    mActionPlayerAtPageStart =
-        mGame ? mGame->GetControlledPlayer() : nullptr;
-    mControlledPlayerIndexAtPageStart =
-        mGame ? mGame->GetControlledPlayerIndex() : -1;
-    mJumpSequenceAtPageStart =
-        mActionPlayerAtPageStart
-            ? mActionPlayerAtPageStart->GetJumpSequence()
-            : 0;
+    mActionPlayerAtPageStart = mGame ? mGame->GetControlledPlayer() : nullptr;
+    mControlledPlayerIndexAtPageStart = mGame ? mGame->GetControlledPlayerIndex() : -1;
+    mJumpSequenceAtPageStart = mActionPlayerAtPageStart ? mActionPlayerAtPageStart->GetJumpSequence() : 0;
     mHasJumpStartedOnCurrentPage = false;
 }
 
@@ -245,9 +226,7 @@ bool TalkController::TryAdvanceTalkFromCompletedAction()
 {
     switch (GetCurrentAdvanceCondition()) {
     case TalkPageAdvanceCondition::PlayerSwitch:
-        if (!mGame ||
-            mGame->GetControlledPlayerIndex() ==
-                mControlledPlayerIndexAtPageStart) {
+        if (!mGame || mGame->GetControlledPlayerIndex() == mControlledPlayerIndexAtPageStart) {
             return false;
         }
         mTalkingPlayer = mGame->GetControlledPlayer();
@@ -255,19 +234,15 @@ bool TalkController::TryAdvanceTalkFromCompletedAction()
         return true;
 
     case TalkPageAdvanceCondition::Jump: {
-        Player* controlledPlayer =
-            mGame ? mGame->GetControlledPlayer() : nullptr;
-        if (!controlledPlayer ||
-            controlledPlayer != mActionPlayerAtPageStart) {
+        Player* controlledPlayer = mGame ? mGame->GetControlledPlayer() : nullptr;
+        if (!controlledPlayer || controlledPlayer != mActionPlayerAtPageStart) {
             return false;
         }
 
-        if (controlledPlayer->GetJumpSequence() >
-            mJumpSequenceAtPageStart) {
+        if (controlledPlayer->GetJumpSequence() > mJumpSequenceAtPageStart) {
             mHasJumpStartedOnCurrentPage = true;
         }
-        if (!mHasJumpStartedOnCurrentPage ||
-            !controlledPlayer->GetOnGround()) {
+        if (!mHasJumpStartedOnCurrentPage || !controlledPlayer->GetOnGround()) {
             return false;
         }
 
@@ -284,28 +259,22 @@ bool TalkController::TryAdvanceTalkFromCompletedAction()
 bool TalkController::IsWaitingForPlayerAction() const
 {
     if (!mGameProgressState || !mUIState || !mTalkingNPC ||
-        mGameProgressState->GetSceneState() !=
-            GameProgressState::SceneState::Talking ||
+        mGameProgressState->GetSceneState() != GameProgressState::SceneState::Talking ||
         mUIState->GetCurrentTalkWith() != UIState::TalkWith::NPC) {
         return false;
     }
 
-    return GetCurrentAdvanceCondition() !=
-           TalkPageAdvanceCondition::Confirm;
+    return GetCurrentAdvanceCondition() != TalkPageAdvanceCondition::Confirm;
 }
 
 bool TalkController::IsWaitingForPlayerSwitch() const
 {
-    return IsWaitingForPlayerAction() &&
-           GetCurrentAdvanceCondition() ==
-               TalkPageAdvanceCondition::PlayerSwitch;
+    return IsWaitingForPlayerAction() && GetCurrentAdvanceCondition() == TalkPageAdvanceCondition::PlayerSwitch;
 }
 
 bool TalkController::IsWaitingForPlayerJump() const
 {
-    return IsWaitingForPlayerAction() &&
-           GetCurrentAdvanceCondition() ==
-               TalkPageAdvanceCondition::Jump;
+    return IsWaitingForPlayerAction() && GetCurrentAdvanceCondition() == TalkPageAdvanceCondition::Jump;
 }
 
 bool TalkController::TryStartTalkWithNPC(int playerNum)
@@ -332,27 +301,22 @@ bool TalkController::TryStartTalkWithNPC(int playerNum)
     return false;
 }
 
-bool TalkController::CanStartTalkWithNPC(
-    const Player* player) const
+bool TalkController::CanStartTalkWithNPC(const Player* player) const
 {
     if (!player) {
         return false;
     }
 
-    const CameraSystem* cameraSystem =
-        mGame ? mGame->GetCameraSystem() : nullptr;
+    const CameraSystem* cameraSystem = mGame ? mGame->GetCameraSystem() : nullptr;
     if (cameraSystem && !cameraSystem->AllowsPlayerInput()) {
         return false;
     }
 
     NPC* talkableNPC = player->GetTalkableNPC();
-    if (!talkableNPC ||
-        !talkableNPC->GetIsTalkable() ||
-        !talkableNPC->CanStartRegularTalk()) {
+    if (!talkableNPC || !talkableNPC->GetIsTalkable() || !talkableNPC->CanStartRegularTalk()) {
         return false;
     }
 
     const InputSystem* inputSystem = mGame->GetInputSystem();
-    return !inputSystem ||
-           !inputSystem->IsMovementInputPressedForPlayer(player);
+    return !inputSystem || !inputSystem->IsMovementInputPressedForPlayer(player);
 }

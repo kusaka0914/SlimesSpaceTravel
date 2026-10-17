@@ -17,19 +17,13 @@ enum class TutorialAdvanceCondition {
     PlayerMerge
 };
 
-enum class TutorialRepeatPolicy {
-    OnceEver = 0,
-    EveryRequest
-};
+enum class TutorialRepeatPolicy { OnceEver = 0, EveryRequest };
 
 struct TutorialFocusTarget {
     std::string sequenceName;
     int yamlIndex = -1;
 
-    bool IsValid() const
-    {
-        return !sequenceName.empty() && yamlIndex >= 0;
-    }
+    bool IsValid() const { return !sequenceName.empty() && yamlIndex >= 0; }
 };
 
 struct TutorialVideoSettings {
@@ -55,8 +49,7 @@ struct TutorialPage {
     std::string controllerObjectiveText;
     std::string keyboardObjectiveText;
     std::string objectivePlatformId;
-    TutorialAdvanceCondition advanceCondition =
-        TutorialAdvanceCondition::Confirm;
+    TutorialAdvanceCondition advanceCondition = TutorialAdvanceCondition::Confirm;
     TutorialFocusTarget focusTarget;
     TutorialVideoSettings video;
     std::vector<RubyTextSegment> rubySegments;
@@ -65,83 +58,67 @@ struct TutorialPage {
 
     const std::string& ResolveText(bool usesController) const;
     const std::string& ResolveObjectiveText(bool usesController) const;
-    bool HasConversationText(bool usesController) const
-    {
-        return !ResolveText(usesController).empty();
-    }
-    const std::vector<RubyTextSegment>&
-    ResolveRubySegments(bool usesController) const;
+    bool HasConversationText(bool usesController) const { return !ResolveText(usesController).empty(); }
+    const std::vector<RubyTextSegment>& ResolveRubySegments(bool usesController) const;
 };
 
 struct TutorialDefinition {
     std::string id;
     std::string displayName;
-    TutorialRepeatPolicy repeatPolicy =
-        TutorialRepeatPolicy::OnceEver;
+    TutorialRepeatPolicy repeatPolicy = TutorialRepeatPolicy::OnceEver;
     float textXRatio = 0.065f;
     float textYRatio = 0.14f;
     float textScaleRatio = 0.000333333f;
-
 
     bool usesAssistPages = false;
     std::vector<TutorialPage> pages;
     std::vector<TutorialPage> assistPages;
 
-    const std::vector<TutorialPage>& GetPagesForControlStyle(
-        bool isAssistControlStyle) const
+    const std::vector<TutorialPage>& GetPagesForControlStyle(bool isAssistControlStyle) const
     {
-        if (isAssistControlStyle && usesAssistPages &&
-            !assistPages.empty()) {
+        if (isAssistControlStyle && usesAssistPages && !assistPages.empty()) {
             return assistPages;
         }
         return pages;
     }
 };
 
+// チュートリアル定義とページを保持し、YAML入出力・編集・ルビ再生成を提供する。
 class TutorialLibrary {
 public:
-    explicit TutorialLibrary(
-        std::string path =
-            "../assets/data/tutorials/tutorials.yaml");
+    explicit TutorialLibrary(std::string path = "../assets/data/tutorials/tutorials.yaml");
 
+    // 保持定義をクリアして読み直す。失敗時はfalseとGetLastErrorで理由を返す。途中の定義が残る場合がある。
     bool Load();
     bool Save();
 
     TutorialDefinition* Find(const std::string& tutorialId);
-    const TutorialDefinition* Find(
-        const std::string& tutorialId) const;
+    const TutorialDefinition* Find(const std::string& tutorialId) const;
 
+    // IDを正規化して重複しない定義を追加する。メモリ上だけを変更し、既存定義への参照は無効になり得る。
     TutorialDefinition* Add(const std::string& requestedId);
+
+    // 指定定義を別IDで複製する。該当なしはnullptr。追加によって既存定義への参照は無効になり得る。
     TutorialDefinition* Duplicate(const std::string& tutorialId);
     bool Remove(const std::string& tutorialId);
 
+    // 共通・コントローラー・キーボード本文のルビを再生成する。生成できない区間は空になる。
     void RegeneratePageRuby(TutorialPage& page) const;
 
-    std::vector<TutorialDefinition>& GetDefinitions()
-    {
-        return mDefinitions;
-    }
-    const std::vector<TutorialDefinition>& GetDefinitions() const
-    {
-        return mDefinitions;
-    }
+    std::vector<TutorialDefinition>& GetDefinitions() { return mDefinitions; }
+    const std::vector<TutorialDefinition>& GetDefinitions() const { return mDefinitions; }
     const std::string& GetLastError() const { return mLastError; }
 
 private:
     std::string MakeUniqueId(const std::string& requestedId) const;
 
-private:
     std::string mPath;
     std::vector<TutorialDefinition> mDefinitions;
     std::string mLastError;
 };
 
-const char* GetTutorialAdvanceConditionId(
-    TutorialAdvanceCondition condition);
-TutorialAdvanceCondition ParseTutorialAdvanceConditionId(
-    const std::string& conditionId);
+const char* GetTutorialAdvanceConditionId(TutorialAdvanceCondition condition);
+TutorialAdvanceCondition ParseTutorialAdvanceConditionId(const std::string& conditionId);
 
-const char* GetTutorialRepeatPolicyId(
-    TutorialRepeatPolicy policy);
-TutorialRepeatPolicy ParseTutorialRepeatPolicyId(
-    const std::string& policyId);
+const char* GetTutorialRepeatPolicyId(TutorialRepeatPolicy policy);
+TutorialRepeatPolicy ParseTutorialRepeatPolicyId(const std::string& policyId);

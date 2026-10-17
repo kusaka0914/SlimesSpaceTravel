@@ -19,22 +19,22 @@ bool MeshCollisionDataLoader::LoadMeshPositionsAndIndices(const char* path, std:
     }
 
     unsigned int vertexOffset = 0;
-    for (unsigned int meshId = 0; meshId < scene->mNumMeshes; meshId++) {
-        const aiMesh* mesh = scene->mMeshes[meshId];
+    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++) {
+        const aiMesh* mesh = scene->mMeshes[meshIndex];
         if (!mesh) {
             return false;
         }
 
-        for (unsigned int vertexId = 0; vertexId < mesh->mNumVertices; vertexId++) {
-            outPositions.emplace_back(mesh->mVertices[vertexId].x);
-            outPositions.emplace_back(mesh->mVertices[vertexId].y);
-            outPositions.emplace_back(mesh->mVertices[vertexId].z);
+        for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++) {
+            outPositions.emplace_back(mesh->mVertices[vertexIndex].x);
+            outPositions.emplace_back(mesh->mVertices[vertexIndex].y);
+            outPositions.emplace_back(mesh->mVertices[vertexIndex].z);
         }
 
-        for (unsigned int faceId = 0; faceId < mesh->mNumFaces; faceId++) {
-            const aiFace& face = mesh->mFaces[faceId];
-            for (unsigned int indexId = 0; indexId < face.mNumIndices; indexId++) {
-                outIndices.emplace_back(vertexOffset + face.mIndices[indexId]);
+        for (unsigned int faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++) {
+            const aiFace& face = mesh->mFaces[faceIndex];
+            for (unsigned int indexIndex = 0; indexIndex < face.mNumIndices; indexIndex++) {
+                outIndices.emplace_back(vertexOffset + face.mIndices[indexIndex]);
             }
         }
 

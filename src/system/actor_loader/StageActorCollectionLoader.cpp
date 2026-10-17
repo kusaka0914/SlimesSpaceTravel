@@ -1,4 +1,4 @@
-#include "StageActorCollectionLoader.h"
+#include "system/actor_loader/StageActorCollectionLoader.h"
 
 #include "Game.h"
 #include "Stage.h"
@@ -22,26 +22,38 @@
 #include "system/actor_loader/StageActorFactory.h"
 #include "system/actor_loader/StagePlayerLoader.h"
 
-#include <string>
 #include <array>
 #include <iostream>
+#include <string>
 #include <yaml-cpp/yaml.h>
 
 namespace {
+
 bool HasValidStageCollections(const YAML::Node& stageRoot)
 {
-    if (!stageRoot || !stageRoot.IsMap() ||
-        !stageRoot["planets"] ||
-        !stageRoot["planets"].IsSequence() ||
+    if (!stageRoot || !stageRoot.IsMap() || !stageRoot["planets"] || !stageRoot["planets"].IsSequence() ||
         stageRoot["planets"].size() == 0) {
         return false;
     }
 
     constexpr std::array<const char*, 17> collectionNames = {
-        "planets", "players", "NPCs", "enemies", "boats",
-        "boatParts", "keys", "crystals", "star", "platforms",
-        "movingPlatforms", "boatArrivalPoints", "fallRespawnPoints",
-        "stageObjects", "tutorialTriggers", "jewelItems", "hazardActors",
+        "planets",
+        "players",
+        "NPCs",
+        "enemies",
+        "boats",
+        "boatParts",
+        "keys",
+        "crystals",
+        "star",
+        "platforms",
+        "movingPlatforms",
+        "boatArrivalPoints",
+        "fallRespawnPoints",
+        "stageObjects",
+        "tutorialTriggers",
+        "jewelItems",
+        "hazardActors",
     };
     for (const char* collectionName : collectionNames) {
         const YAML::Node collection = stageRoot[collectionName];
@@ -51,13 +63,11 @@ bool HasValidStageCollections(const YAML::Node& stageRoot)
     }
     return true;
 }
-}
+} // namespace
 
-StageActorCollectionLoader::StageActorCollectionLoader(
-    Game* game,
-    StageActorFactory& actorFactory,
-    StageActorCreationService& creationService,
-    StagePlayerLoader& playerLoader)
+StageActorCollectionLoader::StageActorCollectionLoader(Game* game, StageActorFactory& actorFactory,
+                                                       StageActorCreationService& creationService,
+                                                       StagePlayerLoader& playerLoader)
     : mGame(game),
       mActorFactory(actorFactory),
       mCreationService(creationService),
@@ -76,13 +86,11 @@ bool StageActorCollectionLoader::LoadAll()
     try {
         stageRoot = YAML::LoadFile(path);
     } catch (const YAML::Exception& exception) {
-        std::cerr << "Failed to load stage YAML: " << path << '\n'
-                  << exception.what() << '\n';
+        std::cerr << "Failed to load stage YAML: " << path << '\n' << exception.what() << '\n';
         return false;
     }
     if (!HasValidStageCollections(stageRoot)) {
-        std::cerr << "Stage YAML has an invalid collection structure: "
-                  << path << '\n';
+        std::cerr << "Stage YAML has an invalid collection structure: " << path << '\n';
         return false;
     }
     if (!mCreationService.ReloadActorDefaultConfigs()) {
@@ -91,6 +99,8 @@ bool StageActorCollectionLoader::LoadAll()
 
     LoadPlanets(stageRoot);
     LoadEnemies(stageRoot);
+
+    // Boat生成時に到着点を参照するため、到着点を先に登録する。
     LoadBoatArrivalPoints(stageRoot);
     LoadBoats(stageRoot);
     LoadBoatParts(stageRoot);
@@ -107,8 +117,7 @@ bool StageActorCollectionLoader::LoadAll()
     LoadFallRespawnPoints(stageRoot);
     LoadPlayers(stageRoot);
 
-    StageActorPlanetBindingService::RefreshNearestPlanetBindings(
-        mGame->GetCurrentStage());
+    StageActorPlanetBindingService::RefreshNearestPlanetBindings(mGame->GetCurrentStage());
     return true;
 }
 
@@ -127,12 +136,8 @@ void StageActorCollectionLoader::LoadNPCs(const YAML::Node& stageRoot)
 void StageActorCollectionLoader::LoadTutorialTriggers(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<TutorialTrigger>(
-        stageRoot,
-        "tutorialTriggers",
-        [](Planet* planet) { planet->RemoveAllTutorialTriggers(); },
-        [this](const YAML::Node& node, int index) {
-            return mCreationService.CreateTutorialTrigger(node, index);
-        });
+        stageRoot, "tutorialTriggers", [](Planet* planet) { planet->RemoveAllTutorialTriggers(); },
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateTutorialTrigger(node, index); });
 }
 
 void StageActorCollectionLoader::LoadEnemies(const YAML::Node& stageRoot)
@@ -204,13 +209,8 @@ void StageActorCollectionLoader::LoadPlatforms(const YAML::Node& stageRoot)
 void StageActorCollectionLoader::LoadLegacyMovingPlatforms(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<Platform>(
-        stageRoot, "movingPlatforms",
-        [](Planet* planet) {
-            planet->RemovePlatformsByStageSequence("movingPlatforms");
-        },
-        [this](const YAML::Node& node, int index) {
-            return mCreationService.CreateLegacyMovingPlatform(node, index);
-        });
+        stageRoot, "movingPlatforms", [](Planet* planet) { planet->RemovePlatformsByStageSequence("movingPlatforms"); },
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateLegacyMovingPlatform(node, index); });
 }
 
 void StageActorCollectionLoader::LoadBoatArrivalPoints(const YAML::Node& stageRoot)
@@ -223,23 +223,15 @@ void StageActorCollectionLoader::LoadBoatArrivalPoints(const YAML::Node& stageRo
 void StageActorCollectionLoader::LoadJewelItems(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<JewelItem>(
-        stageRoot,
-        "jewelItems",
-        [](Planet* planet) { planet->RemoveAllJewelItems(); },
-        [this](const YAML::Node& node, int index) {
-            return mCreationService.CreateJewelItem(node, index);
-        });
+        stageRoot, "jewelItems", [](Planet* planet) { planet->RemoveAllJewelItems(); },
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateJewelItem(node, index); });
 }
 
 void StageActorCollectionLoader::LoadHazardActors(const YAML::Node& stageRoot)
 {
     mActorFactory.LoadActorSequence<HazardActor>(
-        stageRoot,
-        "hazardActors",
-        [](Planet* planet) { planet->RemoveAllHazardActors(); },
-        [this](const YAML::Node& node, int index) {
-            return mCreationService.CreateHazardActor(node, index);
-        });
+        stageRoot, "hazardActors", [](Planet* planet) { planet->RemoveAllHazardActors(); },
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateHazardActor(node, index); });
 }
 
 void StageActorCollectionLoader::LoadFallRespawnPoints(const YAML::Node& stageRoot)

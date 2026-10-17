@@ -16,18 +16,18 @@ struct ResolvedActorModelEllipsoidShape {
     glm::vec3 scaledLocalBoundsCenter{0.0f};
 };
 
+// モデルパスとスケールをキーに、モデル境界由来の衝突楕円体を所有・再利用する。
 class ActorModelEllipsoidShapeCache {
 public:
     ActorModelEllipsoidShapeCache() = default;
     ~ActorModelEllipsoidShapeCache();
 
-    ResolvedActorModelEllipsoidShape Resolve(
-        const Actor& actor) const;
+    // キャッシュ所有の形状を返す。モデル境界がなければshapeはnullptr。この結果も同じキーでキャッシュする。
+    ResolvedActorModelEllipsoidShape Resolve(const Actor& actor) const;
 
-    static btTransform CreateWorldTransform(
-        const Actor& actor,
-        const glm::vec3& actorPosition,
-        const glm::vec3& scaledLocalBoundsCenter);
+    // Actorのモデル軸とスケール済みローカル中心から、ワールド空間の形状姿勢を求める。
+    static btTransform CreateWorldTransform(const Actor& actor, const glm::vec3& actorPosition,
+                                            const glm::vec3& scaledLocalBoundsCenter);
 
 private:
     struct ShapeKey {
@@ -51,10 +51,5 @@ private:
     static ShapeKey CreateShapeKey(const Actor& actor);
     static CachedShape CreateShape(const Actor& actor);
 
-private:
-    mutable std::unordered_map<
-        ShapeKey,
-        CachedShape,
-        ShapeKeyHash>
-        mShapes;
+    mutable std::unordered_map<ShapeKey, CachedShape, ShapeKeyHash> mShapes;
 };

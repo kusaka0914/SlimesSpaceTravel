@@ -17,6 +17,7 @@
 #include <limits>
 
 namespace {
+
 glm::vec3 NormalizeOrFallback(const glm::vec3& direction, const glm::vec3& fallback)
 {
     if (glm::dot(direction, direction) < 0.000001f) {
@@ -25,9 +26,7 @@ glm::vec3 NormalizeOrFallback(const glm::vec3& direction, const glm::vec3& fallb
     return glm::normalize(direction);
 }
 
-glm::vec3 CalculateTangentDirection(
-    const glm::vec3& direction,
-    const glm::vec3& up)
+glm::vec3 CalculateTangentDirection(const glm::vec3& direction, const glm::vec3& up)
 {
     const glm::vec3 tangent = direction - up * glm::dot(direction, up);
     if (glm::dot(tangent, tangent) >= 0.000001f) {
@@ -49,8 +48,7 @@ float CalculateFocusRadius(const Actor& actor)
 
     const LoadedModel* model = actor.GetLoadedModel();
     if (model && model->hasBounds) {
-        const glm::vec3 scaledSize =
-            glm::abs((model->boundsMaximum - model->boundsMinimum) * scale);
+        const glm::vec3 scaledSize = glm::abs((model->boundsMaximum - model->boundsMinimum) * scale);
         focusRadius = std::max(focusRadius, glm::length(scaledSize) * 0.5f);
     }
 
@@ -75,39 +73,22 @@ FocusBounds CalculateFocusBounds(const std::vector<Actor*>& focusActors)
         }
 
         const float actorRadius = CalculateFocusRadius(*actor);
-        const glm::vec3 actorUp = NormalizeOrFallback(
-            actor->GetUpVec(),
-            glm::vec3(0.0f, 1.0f, 0.0f));
-        const glm::vec3 actorCenter =
-            actor->GetPos() +
-            actorUp * glm::clamp(actorRadius * 0.15f, 0.0f, 2.5f);
+        const glm::vec3 actorUp = NormalizeOrFallback(actor->GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+        const glm::vec3 actorCenter = actor->GetPos() + actorUp * glm::clamp(actorRadius * 0.15f, 0.0f, 2.5f);
         const glm::vec3 radiusVector(actorRadius);
         minimum = glm::min(minimum, actorCenter - radiusVector);
         maximum = glm::max(maximum, actorCenter + radiusVector);
 
         const Platform* platform = dynamic_cast<const Platform*>(actor);
-        const PlatformMovementComponent* movement =
-            platform ? platform->GetMovementComponent() : nullptr;
+        const PlatformMovementComponent* movement = platform ? platform->GetMovementComponent() : nullptr;
         const Planet* planet = platform ? platform->GetCurrentPlanet() : nullptr;
         if (movement && planet) {
-            const float centerHeight =
-                glm::clamp(actorRadius * 0.15f, 0.0f, 2.5f);
-            const glm::vec3 startCenter =
-                planet->GetPos() + movement->GetBaseLocalPos() +
-                actorUp * centerHeight;
+            const float centerHeight = glm::clamp(actorRadius * 0.15f, 0.0f, 2.5f);
+            const glm::vec3 startCenter = planet->GetPos() + movement->GetBaseLocalPos() + actorUp * centerHeight;
             const glm::vec3 destinationCenter =
-                planet->GetPos() + movement->GetDestinationLocalPos() +
-                actorUp * centerHeight;
-            minimum = glm::min(
-                minimum,
-                glm::min(
-                    startCenter - radiusVector,
-                    destinationCenter - radiusVector));
-            maximum = glm::max(
-                maximum,
-                glm::max(
-                    startCenter + radiusVector,
-                    destinationCenter + radiusVector));
+                planet->GetPos() + movement->GetDestinationLocalPos() + actorUp * centerHeight;
+            minimum = glm::min(minimum, glm::min(startCenter - radiusVector, destinationCenter - radiusVector));
+            maximum = glm::max(maximum, glm::max(startCenter + radiusVector, destinationCenter + radiusVector));
         }
 
         combinedUp += actorUp;
@@ -120,57 +101,36 @@ FocusBounds CalculateFocusBounds(const std::vector<Actor*>& focusActors)
     return bounds;
 }
 
-glm::vec3 RotateAroundUp(
-    const glm::vec3& direction,
-    const glm::vec3& up,
-    float angleRadians)
+glm::vec3 RotateAroundUp(const glm::vec3& direction, const glm::vec3& up, float angleRadians)
 {
-    return glm::normalize(
-        direction * std::cos(angleRadians) +
-        glm::cross(up, direction) * std::sin(angleRadians));
+    return glm::normalize(direction * std::cos(angleRadians) + glm::cross(up, direction) * std::sin(angleRadians));
 }
 
-std::array<glm::vec3, 5> CreateVisibilitySamples(
-    const FocusBounds& focusBounds,
-    const glm::vec3& cameraBackDirection)
+std::array<glm::vec3, 5> CreateVisibilitySamples(const FocusBounds& focusBounds, const glm::vec3& cameraBackDirection)
 {
-    glm::vec3 screenRight = glm::cross(
-        focusBounds.up,
-        cameraBackDirection);
-    screenRight = NormalizeOrFallback(
-        screenRight,
-        CalculateTangentDirection(
-            glm::vec3(1.0f, 0.0f, 0.0f),
-            focusBounds.up));
+    glm::vec3 screenRight = glm::cross(focusBounds.up, cameraBackDirection);
+    screenRight =
+        NormalizeOrFallback(screenRight, CalculateTangentDirection(glm::vec3(1.0f, 0.0f, 0.0f), focusBounds.up));
 
     const float verticalOffset = focusBounds.radius * 0.45f;
     const float horizontalOffset = focusBounds.radius * 0.45f;
-    return {
-        focusBounds.center,
-        focusBounds.center + focusBounds.up * verticalOffset,
-        focusBounds.center - focusBounds.up * verticalOffset,
-        focusBounds.center + screenRight * horizontalOffset,
-        focusBounds.center - screenRight * horizontalOffset};
+    return {focusBounds.center, focusBounds.center + focusBounds.up * verticalOffset,
+            focusBounds.center - focusBounds.up * verticalOffset, focusBounds.center + screenRight * horizontalOffset,
+            focusBounds.center - screenRight * horizontalOffset};
 }
 
-float CalculateVisibleSampleRatio(
-    const CameraCollisionResolver& collisionResolver,
-    const glm::vec3& cameraPos,
-    const std::array<glm::vec3, 5>& visibilitySamples,
-    const std::vector<Actor*>& ignoredActors)
+float CalculateVisibleSampleRatio(const CameraCollisionResolver& collisionResolver, const glm::vec3& cameraPos,
+                                  const std::array<glm::vec3, 5>& visibilitySamples,
+                                  const std::vector<Actor*>& ignoredActors)
 {
     int visibleSampleCount = 0;
     for (const glm::vec3& samplePos : visibilitySamples) {
-        if (collisionResolver.HasClearLineOfSight(
-                cameraPos,
-                samplePos,
-                ignoredActors)) {
+        if (collisionResolver.HasClearLineOfSight(cameraPos, samplePos, ignoredActors)) {
             ++visibleSampleCount;
         }
     }
 
-    return static_cast<float>(visibleSampleCount) /
-        static_cast<float>(visibilitySamples.size());
+    return static_cast<float>(visibleSampleCount) / static_cast<float>(visibilitySamples.size());
 }
 
 struct FocusCameraCandidateProfile {
@@ -178,7 +138,7 @@ struct FocusCameraCandidateProfile {
     float heightMultiplier = 1.0f;
     float preferencePenalty = 0.0f;
 };
-}
+} // namespace
 
 FocusCamera::FocusCamera(Game* game, CameraCollisionResolver& collisionResolver)
     : mGame(game),
@@ -186,9 +146,7 @@ FocusCamera::FocusCamera(Game* game, CameraCollisionResolver& collisionResolver)
 {
 }
 
-glm::mat4 FocusCamera::GetFocusView(
-    const std::vector<Actor*>& focusActors,
-    const glm::vec3& preferredCameraPos)
+glm::mat4 FocusCamera::GetFocusView(const std::vector<Actor*>& focusActors, const glm::vec3& preferredCameraPos)
 {
     if (focusActors.empty() || !focusActors.front()) {
         return glm::mat4(1.0f);
@@ -200,8 +158,7 @@ glm::mat4 FocusCamera::GetFocusView(
     const glm::vec3 targetPos = focusBounds.center;
 
     glm::vec3 preferredBack = preferredCameraPos - targetPos;
-    if (glm::dot(preferredBack, preferredBack) < 0.000001f &&
-        mGame && mGame->GetMainPlayer()) {
+    if (glm::dot(preferredBack, preferredBack) < 0.000001f && mGame && mGame->GetMainPlayer()) {
         preferredBack = mGame->GetMainPlayer()->GetPos() - targetPos;
     }
     if (glm::dot(preferredBack, preferredBack) < 0.000001f) {
@@ -211,20 +168,12 @@ glm::mat4 FocusCamera::GetFocusView(
 
     const float cameraDistance = glm::clamp(6.0f + focusRadius * 2.5f, 12.0f, 60.0f);
     const float cameraHeight = glm::clamp(2.5f + focusRadius * 0.45f, 3.0f, 13.0f);
-    constexpr std::array<float, 8> candidateAnglesRadians = {
-        0.0f,
-        0.785398163f,
-        -0.785398163f,
-        1.570796327f,
-        -1.570796327f,
-        2.35619449f,
-        -2.35619449f,
-        3.141592654f};
-    constexpr std::array<FocusCameraCandidateProfile, 2>
-        candidateProfiles = {{
-            {1.0f, 1.0f, 0.0f},
-            {1.25f, 1.8f, 0.08f},
-        }};
+    constexpr std::array<float, 8> candidateAnglesRadians = {0.0f,          0.785398163f, -0.785398163f, 1.570796327f,
+                                                             -1.570796327f, 2.35619449f,  -2.35619449f,  3.141592654f};
+    constexpr std::array<FocusCameraCandidateProfile, 2> candidateProfiles = {{
+        {1.0f, 1.0f, 0.0f},
+        {1.25f, 1.8f, 0.08f},
+    }};
     constexpr float cameraClearanceRadius = 0.65f;
     const std::vector<Actor*> noIgnoredClearanceActors;
 
@@ -232,51 +181,27 @@ glm::mat4 FocusCamera::GetFocusView(
     float bestScore = -std::numeric_limits<float>::infinity();
     for (const FocusCameraCandidateProfile& profile : candidateProfiles) {
         for (const float candidateAngleRadians : candidateAnglesRadians) {
-            const glm::vec3 candidateBack = RotateAroundUp(
-                preferredBack,
-                up,
-                candidateAngleRadians);
-            const glm::vec3 desiredCameraPos =
-                targetPos +
-                candidateBack * cameraDistance * profile.distanceMultiplier +
-                up * cameraHeight * profile.heightMultiplier;
-            const glm::vec3 resolvedCameraPos = mCollisionResolver.Resolve(
-                targetPos,
-                desiredCameraPos,
-                focusActors);
-            if (!mCollisionResolver.HasCameraClearance(
-                    resolvedCameraPos,
-                    cameraClearanceRadius,
-                    noIgnoredClearanceActors)) {
+            const glm::vec3 candidateBack = RotateAroundUp(preferredBack, up, candidateAngleRadians);
+            const glm::vec3 desiredCameraPos = targetPos + candidateBack * cameraDistance * profile.distanceMultiplier +
+                                               up * cameraHeight * profile.heightMultiplier;
+            const glm::vec3 resolvedCameraPos = mCollisionResolver.Resolve(targetPos, desiredCameraPos, focusActors);
+            if (!mCollisionResolver.HasCameraClearance(resolvedCameraPos, cameraClearanceRadius,
+                                                       noIgnoredClearanceActors)) {
                 continue;
             }
 
-            const std::array<glm::vec3, 5> visibilitySamples =
-                CreateVisibilitySamples(focusBounds, candidateBack);
+            const std::array<glm::vec3, 5> visibilitySamples = CreateVisibilitySamples(focusBounds, candidateBack);
             const float visibleSampleRatio =
-                CalculateVisibleSampleRatio(
-                    mCollisionResolver,
-                    resolvedCameraPos,
-                    visibilitySamples,
-                    focusActors);
-            const float desiredDistance =
-                glm::length(desiredCameraPos - targetPos);
-            const float resolvedDistance =
-                glm::length(resolvedCameraPos - targetPos);
+                CalculateVisibleSampleRatio(mCollisionResolver, resolvedCameraPos, visibilitySamples, focusActors);
+            const float desiredDistance = glm::length(desiredCameraPos - targetPos);
+            const float resolvedDistance = glm::length(resolvedCameraPos - targetPos);
             const float resolvedDistanceRatio =
-                desiredDistance > 0.001f
-                    ? glm::clamp(
-                          resolvedDistance / desiredDistance,
-                          0.0f,
-                          1.0f)
-                    : 0.0f;
-            const float directionChangePenalty =
-                std::abs(candidateAngleRadians) * 0.04f;
+                desiredDistance > 0.001f ? glm::clamp(resolvedDistance / desiredDistance, 0.0f, 1.0f) : 0.0f;
+            const float directionChangePenalty = std::abs(candidateAngleRadians) * 0.04f;
+
+            // 可視性と距離の確保を優先し、同程度なら元の向きに近い候補を選ぶ。
             const float score =
-                visibleSampleRatio * 2.0f +
-                resolvedDistanceRatio -
-                directionChangePenalty -
-                profile.preferencePenalty;
+                visibleSampleRatio * 2.0f + resolvedDistanceRatio - directionChangePenalty - profile.preferencePenalty;
             if (score > bestScore) {
                 bestScore = score;
                 selectedCameraPos = resolvedCameraPos;
@@ -303,9 +228,8 @@ glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance
         up = glm::normalize(up);
     }
 
-    glm::vec3 back = mGame && mGame->GetMainPlayer()
-                         ? mGame->GetMainPlayer()->GetPos() - focusActor->GetPos()
-                         : glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 back = mGame && mGame->GetMainPlayer() ? mGame->GetMainPlayer()->GetPos() - focusActor->GetPos()
+                                                     : glm::vec3(0.0f, 0.0f, 1.0f);
     back -= up * glm::dot(back, up);
     if (glm::length(back) < 0.001f) {
         back = glm::cross(up, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -316,8 +240,7 @@ glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance
     back = glm::normalize(back);
 
     const glm::vec3 desiredTargetPos = focusActor->GetPos() + up * targetHeight;
-    const glm::vec3 desiredCameraPos =
-        desiredTargetPos + back * cameraDistance + up * cameraHeight;
+    const glm::vec3 desiredCameraPos = desiredTargetPos + back * cameraDistance + up * cameraHeight;
 
     constexpr float transitionBlend = 0.12f;
     mCameraPos = glm::mix(mCameraPos, desiredCameraPos, transitionBlend);
@@ -327,14 +250,11 @@ glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance
     return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
 }
 
-void FocusCamera::BeginTransition(const glm::vec3& cameraPos, const glm::vec3& targetPos,
-                                  const glm::vec3& upVec)
+void FocusCamera::BeginTransition(const glm::vec3& cameraPos, const glm::vec3& targetPos, const glm::vec3& upVec)
 {
     mCameraPos = cameraPos;
     mCameraTargetPos = targetPos;
-    mCameraUpVec = glm::length(upVec) < 0.001f
-                       ? glm::vec3(0.0f, 1.0f, 0.0f)
-                       : glm::normalize(upVec);
+    mCameraUpVec = glm::length(upVec) < 0.001f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::normalize(upVec);
 }
 
 glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor)

@@ -14,14 +14,11 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 
-Actor* StageActorLocator::FindPlacedActor(
-    const Stage& stage,
-    const std::string& sequenceName,
-    int stageYamlIndex) const
+Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string& sequenceName, int stageYamlIndex) const
 {
     if (stageYamlIndex < 0) {
         return nullptr;
@@ -42,8 +39,7 @@ Actor* StageActorLocator::FindPlacedActor(
         }
 
         for (Platform* platform : planet->GetPlatforms()) {
-            if (platform &&
-                platform->GetStageSequenceName() == sequenceName &&
+            if (platform && platform->GetStageSequenceName() == sequenceName &&
                 platform->GetStageYamlIndex() == stageYamlIndex) {
                 return platform;
             }
@@ -92,10 +88,8 @@ Actor* StageActorLocator::FindPlacedActor(
     return nullptr;
 }
 
-Platform* StageActorLocator::FindPlacedPlatform(
-    const Stage& stage,
-    const std::string& platformId,
-    int preferredStageYamlIndex) const
+Platform* StageActorLocator::FindPlacedPlatform(const Stage& stage, const std::string& platformId,
+                                                int preferredStageYamlIndex) const
 {
     if (platformId.empty()) {
         return nullptr;

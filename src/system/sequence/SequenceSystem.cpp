@@ -13,8 +13,9 @@
 #include <cmath>
 
 namespace {
-constexpr float EventStartEpsilon = 0.0001f;
-}
+
+constexpr float eventStartEpsilon = 0.0001f;
+} // namespace
 
 SequenceSystem::SequenceSystem(Game* game)
     : mGame(game),
@@ -38,12 +39,12 @@ void SequenceSystem::Update(float deltaTime)
     const float previousTime = mElapsedTime;
     mElapsedTime += std::max(0.0f, deltaTime);
 
-    if (mActiveSequence->loop && duration > EventStartEpsilon && mElapsedTime > duration) {
+    if (mActiveSequence->loop && duration > eventStartEpsilon && mElapsedTime > duration) {
         ApplyMovementClips(*mActiveSequence, duration);
         ApplyEventClips(*mActiveSequence, previousTime, duration);
 
         mElapsedTime = std::fmod(mElapsedTime, duration);
-        ApplyEventClips(*mActiveSequence, -EventStartEpsilon, mElapsedTime);
+        ApplyEventClips(*mActiveSequence, -eventStartEpsilon, mElapsedTime);
         ApplyMovementClips(*mActiveSequence, mElapsedTime);
         return;
     }
@@ -59,7 +60,7 @@ void SequenceSystem::Update(float deltaTime)
     }
 }
 
-bool SequenceSystem::Play(const std::string& sequenceId, bool preview)
+bool SequenceSystem::Play(const std::string& sequenceId, bool isPreview)
 {
     Stop(true);
 
@@ -73,42 +74,37 @@ bool SequenceSystem::Play(const std::string& sequenceId, bool preview)
     mActiveSequenceId = sequenceId;
     mElapsedTime = 0.0f;
     mIsPlaying = true;
-    mIsPreview = preview;
+    mIsPreview = isPreview;
     mLocksPlayerControl = false;
     mLastError.clear();
 
-    if (preview) {
+    if (isPreview) {
         CapturePreviewState(*sequence);
     }
 
-    ApplyEventClips(*sequence, -EventStartEpsilon, 0.0f);
+    ApplyEventClips(*sequence, -eventStartEpsilon, 0.0f);
     ApplyMovementClips(*sequence, 0.0f);
     return true;
 }
 
-bool SequenceSystem::PlayCinematicChainThenSequence(
-    const std::vector<std::string>& cinematicSequenceIds,
-    const std::string& gameplaySequenceId)
+bool SequenceSystem::PlayCinematicChainThenSequence(const std::vector<std::string>& cinematicSequenceIds,
+                                                    const std::string& gameplaySequenceId)
 {
     if (gameplaySequenceId.empty() || !mLibrary.Find(gameplaySequenceId)) {
         mLastError = "Sequence not found: " + gameplaySequenceId;
         return false;
     }
 
-    return StartCinematicChain(
-        cinematicSequenceIds,
-        gameplaySequenceId);
+    return StartCinematicChain(cinematicSequenceIds, gameplaySequenceId);
 }
 
-bool SequenceSystem::PlayCinematicChain(
-    const std::vector<std::string>& cinematicSequenceIds)
+bool SequenceSystem::PlayCinematicChain(const std::vector<std::string>& cinematicSequenceIds)
 {
     return StartCinematicChain(cinematicSequenceIds, {});
 }
 
-bool SequenceSystem::StartCinematicChain(
-    const std::vector<std::string>& cinematicSequenceIds,
-    const std::string& gameplaySequenceId)
+bool SequenceSystem::StartCinematicChain(const std::vector<std::string>& cinematicSequenceIds,
+                                         const std::string& gameplaySequenceId)
 {
     Stop(true);
 
@@ -118,8 +114,7 @@ bool SequenceSystem::StartCinematicChain(
     }
 
     for (const std::string& cinematicSequenceId : cinematicSequenceIds) {
-        if (cinematicSequenceId.empty() ||
-            !mGame->GetCameraSystem()->GetCinematicLibrary().Find(cinematicSequenceId)) {
+        if (cinematicSequenceId.empty() || !mGame->GetCameraSystem()->GetCinematicLibrary().Find(cinematicSequenceId)) {
             mLastError = "Camera sequence not found: " + cinematicSequenceId;
             return false;
         }
@@ -131,16 +126,11 @@ bool SequenceSystem::StartCinematicChain(
     mIsCinematicChainPlaying = true;
     mIsCinematicReturnFadeRequested = false;
     mLocksPlayerControl = true;
-    mActiveSequenceId = gameplaySequenceId.empty()
-                            ? cinematicSequenceIds.front()
-                            : gameplaySequenceId;
+    mActiveSequenceId = gameplaySequenceId.empty() ? cinematicSequenceIds.front() : gameplaySequenceId;
     mLastError.clear();
 
-    if (!mGame->GetCameraSystem()->PlayCinematic(
-            mCinematicSequenceChain.front(),
-            true)) {
-        mLastError = "カメラ演出を再生できませんでした: " +
-                     mCinematicSequenceChain.front();
+    if (!mGame->GetCameraSystem()->PlayCinematic(mCinematicSequenceChain.front(), true)) {
+        mLastError = "カメラ演出を再生できませんでした: " + mCinematicSequenceChain.front();
         ClearCinematicChain();
         mLocksPlayerControl = false;
         mActiveSequenceId.clear();
@@ -150,7 +140,7 @@ bool SequenceSystem::StartCinematicChain(
     return true;
 }
 
-void SequenceSystem::Stop(bool restorePreviewState)
+void SequenceSystem::Stop(bool shouldRestorePreviewState)
 {
     ++mCinematicChainGeneration;
 
@@ -158,7 +148,7 @@ void SequenceSystem::Stop(bool restorePreviewState)
         mGame->GetCameraSystem()->StopCinematic();
     }
 
-    if (restorePreviewState) {
+    if (shouldRestorePreviewState) {
         RestorePreviewState();
     } else {
         mPreviewSnapshots.clear();
@@ -214,8 +204,7 @@ void SequenceSystem::CapturePreviewState(const GameplaySequence& sequence)
     mPreviewSnapshots.clear();
 
     for (const SequenceClip& clip : sequence.clips) {
-        if (clip.type != SequenceClipType::ActorMove &&
-            clip.type != SequenceClipType::ActorVisibility) {
+        if (clip.type != SequenceClipType::ActorMove && clip.type != SequenceClipType::ActorVisibility) {
             continue;
         }
 
@@ -224,9 +213,7 @@ void SequenceSystem::CapturePreviewState(const GameplaySequence& sequence)
             continue;
         }
 
-        mPreviewSnapshots[actor] = {
-            actor->GetPos(),
-            actor->IsExplicitlyActive()};
+        mPreviewSnapshots[actor] = {actor->GetPos(), actor->IsExplicitlyActive()};
     }
 }
 
@@ -252,30 +239,26 @@ void SequenceSystem::ApplyMovementClips(const GameplaySequence& sequence, float 
         Actor* actor = ResolveActor(clip.actor);
         if (!actor) {
             if (mLastError.empty()) {
-                mLastError =
-                    "Actor not found: " + clip.actor.group + ":" + std::to_string(clip.actor.index);
+                mLastError = "Actor not found: " + clip.actor.group + ":" + std::to_string(clip.actor.index);
             }
             continue;
         }
 
         const float duration = std::max(clip.duration, 0.001f);
-        const float linearT = std::clamp((time - clip.startTime) / duration, 0.0f, 1.0f);
-        const float easedT = ApplyEasing(linearT, clip.easing);
-        actor->SetPos(glm::mix(clip.fromPosition, clip.toPosition, easedT));
+        const float linearProgress = std::clamp((time - clip.startTime) / duration, 0.0f, 1.0f);
+        const float easedProgress = ApplyEasing(linearProgress, clip.easing);
+        actor->SetPos(glm::mix(clip.fromPosition, clip.toPosition, easedProgress));
     }
 }
 
-void SequenceSystem::ApplyEventClips(
-    const GameplaySequence& sequence,
-    float previousTime,
-    float time)
+void SequenceSystem::ApplyEventClips(const GameplaySequence& sequence, float previousTime, float time)
 {
     for (const SequenceClip& clip : sequence.clips) {
         if (clip.type == SequenceClipType::ActorMove) {
             continue;
         }
 
-        if (clip.startTime > previousTime && clip.startTime <= time + EventStartEpsilon) {
+        if (clip.startTime > previousTime && clip.startTime <= time + eventStartEpsilon) {
             ApplyEventClip(clip);
         }
     }
@@ -289,8 +272,7 @@ void SequenceSystem::ApplyEventClip(const SequenceClip& clip)
         if (actor) {
             actor->SetIsActive(clip.visible);
         } else if (mLastError.empty()) {
-            mLastError =
-                "Actor not found: " + clip.actor.group + ":" + std::to_string(clip.actor.index);
+            mLastError = "Actor not found: " + clip.actor.group + ":" + std::to_string(clip.actor.index);
         }
         break;
     }
@@ -299,8 +281,7 @@ void SequenceSystem::ApplyEventClip(const SequenceClip& clip)
         break;
     case SequenceClipType::Camera:
         if (mGame && mGame->GetCameraSystem() && !clip.cameraSequenceId.empty()) {
-            if (!mGame->GetCameraSystem()->PlayCinematic(clip.cameraSequenceId) &&
-                mLastError.empty()) {
+            if (!mGame->GetCameraSystem()->PlayCinematic(clip.cameraSequenceId) && mLastError.empty()) {
                 mLastError = "Camera sequence not found: " + clip.cameraSequenceId;
             }
         }
@@ -332,8 +313,7 @@ void SequenceSystem::UpdateCinematicChain()
     if (mCinematicSequenceIndex < mCinematicSequenceChain.size()) {
         const std::string& nextCinematic = mCinematicSequenceChain[mCinematicSequenceIndex];
         if (!cameraSystem->PlayCinematic(nextCinematic, true)) {
-            mLastError = "カメラ演出を再生できませんでした: " +
-                         nextCinematic;
+            mLastError = "カメラ演出を再生できませんでした: " + nextCinematic;
             RequestCinematicReturnFade();
         }
         return;
@@ -354,13 +334,9 @@ void SequenceSystem::RequestCinematicReturnFade()
         return;
     }
 
-    const std::size_t cinematicChainGeneration =
-        mCinematicChainGeneration;
+    const std::size_t cinematicChainGeneration = mCinematicChainGeneration;
     const bool requested = sceneSystem->RequestFadeAction(
-        [this, cinematicChainGeneration]() {
-            FinishCinematicChainAtFadeMidpoint(
-                cinematicChainGeneration);
-        },
+        [this, cinematicChainGeneration]() { FinishCinematicChainAtFadeMidpoint(cinematicChainGeneration); },
         [game = mGame]() {
             if (game && game->GetAudioSystem()) {
                 game->GetAudioSystem()->ResumeDeferredStageMusic();
@@ -371,11 +347,10 @@ void SequenceSystem::RequestCinematicReturnFade()
     }
 }
 
-void SequenceSystem::FinishCinematicChainAtFadeMidpoint(
-    std::size_t cinematicChainGeneration)
+void SequenceSystem::FinishCinematicChainAtFadeMidpoint(std::size_t cinematicChainGeneration)
 {
-    if (cinematicChainGeneration != mCinematicChainGeneration ||
-        !mIsCinematicChainPlaying) {
+    // 停止や別の再生要求の後に、古いフェードのコールバックが状態を変更するのを防ぐ。
+    if (cinematicChainGeneration != mCinematicChainGeneration || !mIsCinematicChainPlaying) {
         return;
     }
 
@@ -384,8 +359,7 @@ void SequenceSystem::FinishCinematicChainAtFadeMidpoint(
         mGame->GetCameraSystem()->SnapBehindControlledPlayer();
     }
 
-    const std::string gameplaySequenceId =
-        mGameplaySequenceAfterCinematics;
+    const std::string gameplaySequenceId = mGameplaySequenceAfterCinematics;
     ClearCinematicChain();
     mLocksPlayerControl = false;
     mActiveSequenceId.clear();
@@ -404,18 +378,18 @@ void SequenceSystem::ClearCinematicChain()
     mIsCinematicReturnFadeRequested = false;
 }
 
-float SequenceSystem::ApplyEasing(float t, SequenceEasing easing)
+float SequenceSystem::ApplyEasing(float progress, SequenceEasing easing)
 {
-    t = std::clamp(t, 0.0f, 1.0f);
+    progress = std::clamp(progress, 0.0f, 1.0f);
     switch (easing) {
     case SequenceEasing::Linear:
-        return t;
+        return progress;
     case SequenceEasing::EaseIn:
-        return t * t;
+        return progress * progress;
     case SequenceEasing::EaseOut:
-        return 1.0f - (1.0f - t) * (1.0f - t);
+        return 1.0f - (1.0f - progress) * (1.0f - progress);
     case SequenceEasing::EaseInOut:
     default:
-        return t * t * (3.0f - 2.0f * t);
+        return progress * progress * (3.0f - 2.0f * progress);
     }
 }

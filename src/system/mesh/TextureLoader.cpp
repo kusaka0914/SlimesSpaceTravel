@@ -5,13 +5,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "thirdParty/stb_image.h"
 
-unsigned int TextureLoader::LoadTexture(
-    const char* path,
-    TextureColorSpace colorSpace) const
+unsigned int TextureLoader::LoadTexture(const char* path, TextureColorSpace colorSpace) const
 {
-    unsigned int texID = 0;
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
+    unsigned int textureId = 0;
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -23,9 +21,9 @@ unsigned int TextureLoader::LoadTexture(
     int channelCount = 0;
 
     stbi_set_flip_vertically_on_load(1);
-    unsigned char* data = stbi_load(path, &width, &height, &channelCount, 0);
-    if (!data) {
-        glDeleteTextures(1, &texID);
+    unsigned char* pixels = stbi_load(path, &width, &height, &channelCount, 0);
+    if (!pixels) {
+        glDeleteTextures(1, &textureId);
         return 0;
     }
 
@@ -46,21 +44,13 @@ unsigned int TextureLoader::LoadTexture(
         }
     }
 
+    // 行のバイト数が4の倍数でない画像でも、ピクセル列を正しく転送する。
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        internalFormat,
-        width,
-        height,
-        0,
-        format,
-        GL_UNSIGNED_BYTE,
-        data);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, pixels);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    stbi_image_free(data);
+    stbi_image_free(pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    return texID;
+    return textureId;
 }

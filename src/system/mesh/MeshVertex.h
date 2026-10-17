@@ -4,6 +4,7 @@
 
 #include <array>
 
+// GPUへ転送する頂点形式。骨の影響は最大4本で、未使用のboneIndicesは-1。
 struct MeshVertex {
     std::array<float, 3> position{0.0f, 0.0f, 0.0f};
     std::array<float, 3> normal{0.0f, 0.0f, 0.0f};
