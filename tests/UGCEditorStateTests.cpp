@@ -6,11 +6,6 @@
 #include "gfx/debug/ugc/UGCSelectionDragState.h"
 #include "gfx/debug/ugc/UGCSwitchConnectionState.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void EraserRestoresThePresetThatWasActiveBeforeIt()
@@ -25,9 +20,7 @@ void EraserRestoresThePresetThatWasActiveBeforeIt()
     state.LeaveEraser(true);
     ExpectFalse(state.isEraserMode, "eraser is inactive");
     ExpectTrue(state.activePresetKind.has_value(), "preset was restored");
-    ExpectTrue(
-        *state.activePresetKind == UGCPresetKind::MovingPlatform,
-        "restored preset");
+    ExpectTrue(*state.activePresetKind == UGCPresetKind::MovingPlatform, "restored preset");
 }
 
 void LoadedWorkResetsOnlyTransientToolState()
@@ -57,9 +50,7 @@ void DeactivatingEraserDoesNotRestoreThePreviousPreset()
 
     ExpectFalse(state.isEraserMode, "eraser is inactive");
     ExpectFalse(state.activePresetKind.has_value(), "preset remains inactive");
-    ExpectFalse(
-        state.presetBeforeEraser.has_value(),
-        "preset restoration request is cleared");
+    ExpectFalse(state.presetBeforeEraser.has_value(), "preset restoration request is cleared");
 }
 
 void MenuRequestsAreConsumedOnlyOnce()
@@ -70,12 +61,8 @@ void MenuRequestsAreConsumedOnlyOnce()
 
     ExpectTrue(state.ConsumeMenuOpenRequest(), "first menu request");
     ExpectFalse(state.ConsumeMenuOpenRequest(), "second menu request");
-    ExpectTrue(
-        state.ConsumeWorkManagementOpenRequest(),
-        "first work management request");
-    ExpectFalse(
-        state.ConsumeWorkManagementOpenRequest(),
-        "second work management request");
+    ExpectTrue(state.ConsumeWorkManagementOpenRequest(), "first work management request");
+    ExpectFalse(state.ConsumeWorkManagementOpenRequest(), "second work management request");
 }
 
 void DragResetClearsAllTransientMovement()
@@ -86,34 +73,26 @@ void DragResetClearsAllTransientMovement()
     state.dragStartCell = glm::ivec3(3, 0, 5);
     state.appliedHorizontalCellDelta = glm::ivec3(2, 0, 1);
     state.appliedDelta = glm::vec3(1.0f, 2.0f, 3.0f);
-    state.actorRefs.push_back(
-        StageActorRef{StageActorType::Platform, 2, "platforms", "platform"});
+    state.actorRefs.push_back(StageActorRef{StageActorType::Platform, 2, "platforms", "platform"});
 
     state.Reset();
 
     ExpectFalse(state.isDragging, "dragging reset");
     ExpectFalse(state.hasMoved, "movement reset");
     ExpectTrue(state.actorRefs.empty(), "actor references reset");
-    ExpectTrue(
-        state.dragStartCell == glm::ivec3(0),
-        "drag start cell reset");
-    ExpectTrue(
-        state.appliedHorizontalCellDelta == glm::ivec3(0),
-        "applied horizontal cell delta reset");
+    ExpectTrue(state.dragStartCell == glm::ivec3(0), "drag start cell reset");
+    ExpectTrue(state.appliedHorizontalCellDelta == glm::ivec3(0), "applied horizontal cell delta reset");
     ExpectNear(0.0f, state.appliedDelta.x, 0.0001f, "x delta reset");
 }
 
 void SwitchConnectionCancelKeepsNoPendingTarget()
 {
     UGCSwitchConnectionState state;
-    const StageActorRef switchRef{
-        StageActorType::Platform, 3, "platforms", "switch"};
+    const StageActorRef switchRef{StageActorType::Platform, 3, "platforms", "switch"};
     state.Begin(switchRef, UGCSwitchConnectionAction::Disconnect);
 
     ExpectTrue(state.HasPendingConnection(), "connection is pending");
-    ExpectTrue(
-        state.GetAction() == UGCSwitchConnectionAction::Disconnect,
-        "disconnect action");
+    ExpectTrue(state.GetAction() == UGCSwitchConnectionAction::Disconnect, "disconnect action");
 
     state.Cancel();
     ExpectFalse(state.HasPendingConnection(), "connection cancelled");
@@ -130,30 +109,21 @@ void PreviewWidthInitializationAndResizeStayWithinTheViewport()
     ExpectNear(468.0f, state.GetWidth(), 0.0001f, "viewport maximum");
 }
 
-}
+} // namespace
 
-void RegisterUGCEditorStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCEditorStateTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "UGCEditorToolState.EraserRestoresThePresetThatWasActiveBeforeIt",
-        EraserRestoresThePresetThatWasActiveBeforeIt);
-    tests.emplace_back(
-        "UGCEditorToolState.LoadedWorkResetsOnlyTransientToolState",
-        LoadedWorkResetsOnlyTransientToolState);
-    tests.emplace_back(
-        "UGCEditorToolState.DeactivatingEraserDoesNotRestoreThePreviousPreset",
-        DeactivatingEraserDoesNotRestoreThePreviousPreset);
-    tests.emplace_back(
-        "UGCEditorMenuState.MenuRequestsAreConsumedOnlyOnce",
-        MenuRequestsAreConsumedOnlyOnce);
-    tests.emplace_back(
-        "UGCSelectionDragState.DragResetClearsAllTransientMovement",
-        DragResetClearsAllTransientMovement);
-    tests.emplace_back(
-        "UGCSwitchConnectionState.SwitchConnectionCancelKeepsNoPendingTarget",
-        SwitchConnectionCancelKeepsNoPendingTarget);
-    tests.emplace_back(
-        "UGCPreviewPanelState.PreviewWidthInitializationAndResizeStayWithinTheViewport",
-        PreviewWidthInitializationAndResizeStayWithinTheViewport);
+    tests.emplace_back("UGCEditorToolState.EraserRestoresThePresetThatWasActiveBeforeIt",
+                       EraserRestoresThePresetThatWasActiveBeforeIt);
+    tests.emplace_back("UGCEditorToolState.LoadedWorkResetsOnlyTransientToolState",
+                       LoadedWorkResetsOnlyTransientToolState);
+    tests.emplace_back("UGCEditorToolState.DeactivatingEraserDoesNotRestoreThePreviousPreset",
+                       DeactivatingEraserDoesNotRestoreThePreviousPreset);
+    tests.emplace_back("UGCEditorMenuState.MenuRequestsAreConsumedOnlyOnce", MenuRequestsAreConsumedOnlyOnce);
+    tests.emplace_back("UGCSelectionDragState.DragResetClearsAllTransientMovement",
+                       DragResetClearsAllTransientMovement);
+    tests.emplace_back("UGCSwitchConnectionState.SwitchConnectionCancelKeepsNoPendingTarget",
+                       SwitchConnectionCancelKeepsNoPendingTarget);
+    tests.emplace_back("UGCPreviewPanelState.PreviewWidthInitializationAndResizeStayWithinTheViewport",
+                       PreviewWidthInitializationAndResizeStayWithinTheViewport);
 }

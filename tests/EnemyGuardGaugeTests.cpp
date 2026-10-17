@@ -2,11 +2,6 @@
 
 #include "actor/enemy/EnemyGuardGauge.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void OneSegmentUsesConfiguredGuardValue()
@@ -52,8 +47,7 @@ void GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary()
     EnemyGuardGauge guardGauge;
     guardGauge.Configure(3, 20.0f);
 
-    const EnemyGuardDamageResult damageResult =
-        guardGauge.ApplyDamageEnsuringCurrentSegmentBreak(10.0f);
+    const EnemyGuardDamageResult damageResult = guardGauge.ApplyDamageEnsuringCurrentSegmentBreak(10.0f);
 
     ExpectNear(40.0f, guardGauge.GetCurrentGuard(), 0.0001f, "full current segment is consumed");
     ExpectEqual(1, damageResult.brokenSegmentCount, "one full segment breaks");
@@ -65,8 +59,7 @@ void GuaranteedBreakKeepsMinimumDamageOverflow()
     guardGauge.Configure(3, 20.0f);
     guardGauge.ApplyDamage(15.0f);
 
-    const EnemyGuardDamageResult damageResult =
-        guardGauge.ApplyDamageEnsuringCurrentSegmentBreak(10.0f);
+    const EnemyGuardDamageResult damageResult = guardGauge.ApplyDamageEnsuringCurrentSegmentBreak(10.0f);
 
     ExpectNear(35.0f, guardGauge.GetCurrentGuard(), 0.0001f, "minimum damage carries into next segment");
     ExpectEqual(1, damageResult.brokenSegmentCount, "partially depleted segment breaks");
@@ -123,36 +116,22 @@ void ZeroSegmentsRemainSafe()
     ExpectFalse(damageResult.wasFullyBroken, "zero segment full break transition");
 }
 
-}
+} // namespace
 
-void RegisterEnemyGuardGaugeTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterEnemyGuardGaugeTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "EnemyGuardGauge.OneSegmentUsesConfiguredGuardValue",
-        OneSegmentUsesConfiguredGuardValue);
-    tests.emplace_back(
-        "EnemyGuardGauge.ThreeSegmentsAccumulateContinuousDamage",
-        ThreeSegmentsAccumulateContinuousDamage);
-    tests.emplace_back(
-        "EnemyGuardGauge.DamageCrossesSegmentBoundariesWithoutDiscardingRemainder",
-        DamageCrossesSegmentBoundariesWithoutDiscardingRemainder);
-    tests.emplace_back(
-        "EnemyGuardGauge.GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary",
-        GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary);
-    tests.emplace_back(
-        "EnemyGuardGauge.GuaranteedBreakKeepsMinimumDamageOverflow",
-        GuaranteedBreakKeepsMinimumDamageOverflow);
-    tests.emplace_back(
-        "EnemyGuardGauge.GuardClampsAtZeroAndReportsFullBreakOnlyOnce",
-        GuardClampsAtZeroAndReportsFullBreakOnlyOnce);
-    tests.emplace_back(
-        "EnemyGuardGauge.ResetRestoresMaximumGuard",
-        ResetRestoresMaximumGuard);
-    tests.emplace_back(
-        "EnemyGuardGauge.BreakAllConsumesEveryRemainingSegment",
-        BreakAllConsumesEveryRemainingSegment);
-    tests.emplace_back(
-        "EnemyGuardGauge.ZeroSegmentsRemainSafe",
-        ZeroSegmentsRemainSafe);
+    tests.emplace_back("EnemyGuardGauge.OneSegmentUsesConfiguredGuardValue", OneSegmentUsesConfiguredGuardValue);
+    tests.emplace_back("EnemyGuardGauge.ThreeSegmentsAccumulateContinuousDamage",
+                       ThreeSegmentsAccumulateContinuousDamage);
+    tests.emplace_back("EnemyGuardGauge.DamageCrossesSegmentBoundariesWithoutDiscardingRemainder",
+                       DamageCrossesSegmentBoundariesWithoutDiscardingRemainder);
+    tests.emplace_back("EnemyGuardGauge.GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary",
+                       GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary);
+    tests.emplace_back("EnemyGuardGauge.GuaranteedBreakKeepsMinimumDamageOverflow",
+                       GuaranteedBreakKeepsMinimumDamageOverflow);
+    tests.emplace_back("EnemyGuardGauge.GuardClampsAtZeroAndReportsFullBreakOnlyOnce",
+                       GuardClampsAtZeroAndReportsFullBreakOnlyOnce);
+    tests.emplace_back("EnemyGuardGauge.ResetRestoresMaximumGuard", ResetRestoresMaximumGuard);
+    tests.emplace_back("EnemyGuardGauge.BreakAllConsumesEveryRemainingSegment", BreakAllConsumesEveryRemainingSegment);
+    tests.emplace_back("EnemyGuardGauge.ZeroSegmentsRemainSafe", ZeroSegmentsRemainSafe);
 }

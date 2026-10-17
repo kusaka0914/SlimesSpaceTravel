@@ -1,80 +1,45 @@
 #include "TestSupport.h"
 
-#include <functional>
+#include <exception>
 #include <iostream>
-#include <string>
-#include <vector>
 
-void RegisterNPCTalkDataTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStageActorNodeFactoryTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStagePlatformIdentifiersTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStagePlatformConnectionsTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStageYamlRepositoryTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCWorkFileNameTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCWorkStorageTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCPlatformGridTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCPlatformDocumentTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStageEditHistoryTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCWorkMetadataTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCSessionStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCPreviewStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCEditorStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCClearTransitionStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCPresetVisualsTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCEditorTutorialTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterStageProgressSystemTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerConfigLoaderTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterEnemyConfigLoaderTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterEnemyGuardGaugeTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerControlConfigurationStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerInputDeviceRoutingTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterFramePerformanceTrackerTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterUGCModeControllerTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlatformStageConfigTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerCameraSettingsTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterCameraShakeEffectTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterTutorialObjectiveTextTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterOperationGuideVisibilityTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerJewelGaugeTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterPlayerSplitGuardStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
-void RegisterTgsExperienceControllerTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests);
+void RegisterNPCTalkDataTests(TestRegistry& tests);
+void RegisterStageActorNodeFactoryTests(TestRegistry& tests);
+void RegisterStagePlatformIdentifiersTests(TestRegistry& tests);
+void RegisterStagePlatformConnectionsTests(TestRegistry& tests);
+void RegisterStageYamlRepositoryTests(TestRegistry& tests);
+void RegisterUGCWorkFileNameTests(TestRegistry& tests);
+void RegisterUGCWorkStorageTests(TestRegistry& tests);
+void RegisterUGCPlatformGridTests(TestRegistry& tests);
+void RegisterUGCPlatformDocumentTests(TestRegistry& tests);
+void RegisterStageEditHistoryTests(TestRegistry& tests);
+void RegisterUGCWorkMetadataTests(TestRegistry& tests);
+void RegisterUGCSessionStateTests(TestRegistry& tests);
+void RegisterUGCPreviewStateTests(TestRegistry& tests);
+void RegisterUGCEditorStateTests(TestRegistry& tests);
+void RegisterUGCClearTransitionStateTests(TestRegistry& tests);
+void RegisterUGCPresetVisualsTests(TestRegistry& tests);
+void RegisterUGCEditorTutorialTests(TestRegistry& tests);
+void RegisterStageProgressSystemTests(TestRegistry& tests);
+void RegisterPlayerConfigLoaderTests(TestRegistry& tests);
+void RegisterEnemyConfigLoaderTests(TestRegistry& tests);
+void RegisterEnemyGuardGaugeTests(TestRegistry& tests);
+void RegisterPlayerControlConfigurationStateTests(TestRegistry& tests);
+void RegisterPlayerInputDeviceRoutingTests(TestRegistry& tests);
+void RegisterFramePerformanceTrackerTests(TestRegistry& tests);
+void RegisterUGCModeControllerTests(TestRegistry& tests);
+void RegisterPlatformStageConfigTests(TestRegistry& tests);
+void RegisterPlayerCameraSettingsTests(TestRegistry& tests);
+void RegisterCameraShakeEffectTests(TestRegistry& tests);
+void RegisterTutorialObjectiveTextTests(TestRegistry& tests);
+void RegisterOperationGuideVisibilityTests(TestRegistry& tests);
+void RegisterPlayerJewelGaugeTests(TestRegistry& tests);
+void RegisterPlayerSplitGuardStateTests(TestRegistry& tests);
+void RegisterTgsExperienceControllerTests(TestRegistry& tests);
 
 int main()
 {
-    std::vector<std::pair<std::string, std::function<void()>>> tests;
+    TestRegistry tests;
     RegisterNPCTalkDataTests(tests);
     RegisterStageActorNodeFactoryTests(tests);
     RegisterStagePlatformIdentifiersTests(tests);
@@ -116,12 +81,10 @@ int main()
             std::cout << "[PASS] " << testName << '\n';
         } catch (const std::exception& error) {
             ++failedTestCount;
-            std::cerr << "[FAIL] " << testName << '\n'
-                      << error.what() << '\n';
+            std::cerr << "[FAIL] " << testName << '\n' << error.what() << '\n';
         }
     }
 
-    std::cout << tests.size() - failedTestCount << "/"
-              << tests.size() << " tests passed\n";
+    std::cout << tests.size() - failedTestCount << "/" << tests.size() << " tests passed\n";
     return failedTestCount == 0 ? 0 : 1;
 }

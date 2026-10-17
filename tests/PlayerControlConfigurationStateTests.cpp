@@ -2,11 +2,6 @@
 
 #include "system/PlayerControlConfigurationState.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void SplitAndMergeTrackTheSelectedPlayer()
@@ -14,10 +9,8 @@ void SplitAndMergeTrackTheSelectedPlayer()
     PlayerControlConfigurationState state;
 
     state.BeginPlayerSplit();
-    const std::optional<ControlledPlayerChange> splitSelection =
-        state.SelectControlledPlayer(1);
-    const std::optional<ControlledPlayerChange> mergeSelection =
-        state.EndPlayerSplit();
+    const std::optional<ControlledPlayerChange> splitSelection = state.SelectControlledPlayer(1);
+    const std::optional<ControlledPlayerChange> mergeSelection = state.EndPlayerSplit();
 
     ExpectFalse(state.IsPlayerSplit(), "split state after merge");
     ExpectTrue(splitSelection.has_value(), "split selection change");
@@ -32,8 +25,7 @@ void SelectingCurrentPlayerDoesNotCreateChange()
 {
     PlayerControlConfigurationState state;
 
-    const std::optional<ControlledPlayerChange> change =
-        state.SelectControlledPlayer(0);
+    const std::optional<ControlledPlayerChange> change = state.SelectControlledPlayer(0);
 
     ExpectFalse(change.has_value(), "unchanged selection");
 }
@@ -45,12 +37,9 @@ void ScheduledSwitchWaitsForDelayAndUsesActivePlayer()
     state.SelectControlledPlayer(1);
     state.ScheduleControlSwitchAfterBoarding(0.5f);
 
-    ExpectFalse(
-        state.UpdateScheduledControlSwitch(0.25f, false, 0).has_value(),
-        "switch before delay");
+    ExpectFalse(state.UpdateScheduledControlSwitch(0.25f, false, 0).has_value(), "switch before delay");
 
-    const std::optional<ControlledPlayerChange> change =
-        state.UpdateScheduledControlSwitch(0.25f, false, 0);
+    const std::optional<ControlledPlayerChange> change = state.UpdateScheduledControlSwitch(0.25f, false, 0);
 
     ExpectTrue(change.has_value(), "switch after delay");
     ExpectEqual(0, state.GetControlledPlayerIndex(), "active player selection");
@@ -63,26 +52,19 @@ void ScheduledSwitchIsDiscardedWhenSplitEnds()
     state.ScheduleControlSwitchAfterBoarding(0.0f);
     state.EndPlayerSplit();
 
-    ExpectFalse(
-        state.UpdateScheduledControlSwitch(0.0f, false, 1).has_value(),
-        "discarded switch");
+    ExpectFalse(state.UpdateScheduledControlSwitch(0.0f, false, 1).has_value(), "discarded switch");
 }
 
-}
+} // namespace
 
-void RegisterPlayerControlConfigurationStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterPlayerControlConfigurationStateTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "PlayerControlConfigurationState.SplitAndMergeTrackTheSelectedPlayer",
-        SplitAndMergeTrackTheSelectedPlayer);
-    tests.emplace_back(
-        "PlayerControlConfigurationState.SelectingCurrentPlayerDoesNotCreateChange",
-        SelectingCurrentPlayerDoesNotCreateChange);
-    tests.emplace_back(
-        "PlayerControlConfigurationState.ScheduledSwitchWaitsForDelayAndUsesActivePlayer",
-        ScheduledSwitchWaitsForDelayAndUsesActivePlayer);
-    tests.emplace_back(
-        "PlayerControlConfigurationState.ScheduledSwitchIsDiscardedWhenSplitEnds",
-        ScheduledSwitchIsDiscardedWhenSplitEnds);
+    tests.emplace_back("PlayerControlConfigurationState.SplitAndMergeTrackTheSelectedPlayer",
+                       SplitAndMergeTrackTheSelectedPlayer);
+    tests.emplace_back("PlayerControlConfigurationState.SelectingCurrentPlayerDoesNotCreateChange",
+                       SelectingCurrentPlayerDoesNotCreateChange);
+    tests.emplace_back("PlayerControlConfigurationState.ScheduledSwitchWaitsForDelayAndUsesActivePlayer",
+                       ScheduledSwitchWaitsForDelayAndUsesActivePlayer);
+    tests.emplace_back("PlayerControlConfigurationState.ScheduledSwitchIsDiscardedWhenSplitEnds",
+                       ScheduledSwitchIsDiscardedWhenSplitEnds);
 }

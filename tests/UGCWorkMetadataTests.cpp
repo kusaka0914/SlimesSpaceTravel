@@ -2,10 +2,7 @@
 
 #include "gfx/debug/ugc/UGCWorkMetadata.h"
 
-#include <functional>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace {
 
@@ -13,22 +10,11 @@ void PrepareForSaveAddsDisplayNameAndUnverifiedDefault()
 {
     YAML::Node stageYaml;
 
-    UGCWorkMetadata::PrepareForSave(
-        stageYaml,
-        "テスト作品",
-        "テスト作品.yaml");
+    UGCWorkMetadata::PrepareForSave(stageYaml, "テスト作品", "テスト作品.yaml");
 
-    ExpectEqual(
-        std::string("テスト作品"),
-        stageYaml["ugcMetadata"]["displayName"].as<std::string>(),
-        "display name");
-    ExpectEqual(
-        std::string("テスト作品.yaml"),
-        UGCWorkMetadata::FindFileName(stageYaml).value_or(""),
-        "file name");
-    ExpectFalse(
-        UGCWorkMetadata::IsClearVerified(stageYaml),
-        "new work verification state");
+    ExpectEqual(std::string("テスト作品"), stageYaml["ugcMetadata"]["displayName"].as<std::string>(), "display name");
+    ExpectEqual(std::string("テスト作品.yaml"), UGCWorkMetadata::FindFileName(stageYaml).value_or(""), "file name");
+    ExpectFalse(UGCWorkMetadata::IsClearVerified(stageYaml), "new work verification state");
 }
 
 void PrepareForSavePreservesCompletedVerification()
@@ -36,14 +22,9 @@ void PrepareForSavePreservesCompletedVerification()
     YAML::Node stageYaml;
     UGCWorkMetadata::MarkClearVerified(stageYaml);
 
-    UGCWorkMetadata::PrepareForSave(
-        stageYaml,
-        "検証済み作品",
-        "検証済み作品.yaml");
+    UGCWorkMetadata::PrepareForSave(stageYaml, "検証済み作品", "検証済み作品.yaml");
 
-    ExpectTrue(
-        UGCWorkMetadata::IsClearVerified(stageYaml),
-        "saved verification state");
+    ExpectTrue(UGCWorkMetadata::IsClearVerified(stageYaml), "saved verification state");
 }
 
 void EditInvalidatesCompletedVerification()
@@ -53,9 +34,7 @@ void EditInvalidatesCompletedVerification()
 
     UGCWorkMetadata::InvalidateClearVerification(stageYaml);
 
-    ExpectFalse(
-        UGCWorkMetadata::IsClearVerified(stageYaml),
-        "verification state after edit");
+    ExpectFalse(UGCWorkMetadata::IsClearVerified(stageYaml), "verification state after edit");
 }
 
 void GoalDetectionRequiresNonEmptySequence()
@@ -78,40 +57,32 @@ void MalformedVerificationFlagIsTreatedAsUnverified()
     YAML::Node stageYaml;
     stageYaml["ugcMetadata"]["isClearVerified"] = "invalid";
 
-    ExpectFalse(
-        UGCWorkMetadata::IsClearVerified(stageYaml),
-        "malformed verification state");
+    ExpectFalse(UGCWorkMetadata::IsClearVerified(stageYaml), "malformed verification state");
 }
 
 void MissingOrMalformedIdentityIsIgnored()
 {
     YAML::Node stageYaml;
-    ExpectFalse(
-        UGCWorkMetadata::FindDisplayName(stageYaml).has_value(),
-        "missing display name");
-    ExpectFalse(
-        UGCWorkMetadata::FindFileName(stageYaml).has_value(),
-        "missing file name");
+    ExpectFalse(UGCWorkMetadata::FindDisplayName(stageYaml).has_value(), "missing display name");
+    ExpectFalse(UGCWorkMetadata::FindFileName(stageYaml).has_value(), "missing file name");
 
     stageYaml["ugcMetadata"]["displayName"] = YAML::Node(YAML::NodeType::Map);
     stageYaml["ugcMetadata"]["fileName"] = YAML::Node(YAML::NodeType::Sequence);
-    ExpectFalse(
-        UGCWorkMetadata::FindDisplayName(stageYaml).has_value(),
-        "malformed display name");
-    ExpectFalse(
-        UGCWorkMetadata::FindFileName(stageYaml).has_value(),
-        "malformed file name");
+    ExpectFalse(UGCWorkMetadata::FindDisplayName(stageYaml).has_value(), "malformed display name");
+    ExpectFalse(UGCWorkMetadata::FindFileName(stageYaml).has_value(), "malformed file name");
 }
 
-}
+} // namespace
 
-void RegisterUGCWorkMetadataTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCWorkMetadataTests(TestRegistry& tests)
 {
-    tests.emplace_back("UGCWorkMetadata.PrepareForSaveAddsDisplayNameAndUnverifiedDefault", PrepareForSaveAddsDisplayNameAndUnverifiedDefault);
-    tests.emplace_back("UGCWorkMetadata.PrepareForSavePreservesCompletedVerification", PrepareForSavePreservesCompletedVerification);
+    tests.emplace_back("UGCWorkMetadata.PrepareForSaveAddsDisplayNameAndUnverifiedDefault",
+                       PrepareForSaveAddsDisplayNameAndUnverifiedDefault);
+    tests.emplace_back("UGCWorkMetadata.PrepareForSavePreservesCompletedVerification",
+                       PrepareForSavePreservesCompletedVerification);
     tests.emplace_back("UGCWorkMetadata.EditInvalidatesCompletedVerification", EditInvalidatesCompletedVerification);
     tests.emplace_back("UGCWorkMetadata.GoalDetectionRequiresNonEmptySequence", GoalDetectionRequiresNonEmptySequence);
-    tests.emplace_back("UGCWorkMetadata.MalformedVerificationFlagIsTreatedAsUnverified", MalformedVerificationFlagIsTreatedAsUnverified);
+    tests.emplace_back("UGCWorkMetadata.MalformedVerificationFlagIsTreatedAsUnverified",
+                       MalformedVerificationFlagIsTreatedAsUnverified);
     tests.emplace_back("UGCWorkMetadata.MissingOrMalformedIdentityIsIgnored", MissingOrMalformedIdentityIsIgnored);
 }

@@ -2,10 +2,7 @@
 
 #include "gfx/debug/stage/StageEditHistory.h"
 
-#include <functional>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace {
 
@@ -18,10 +15,7 @@ void NewEditClearsRedoHistory()
     history.PushUndoSnapshot("before second edit");
 
     ExpectEqual(std::size_t{0}, history.GetRedoCount(), "redo count");
-    ExpectEqual(
-        std::string("before second edit"),
-        *history.FindUndoSnapshot(),
-        "latest undo snapshot");
+    ExpectEqual(std::string("before second edit"), *history.FindUndoSnapshot(), "latest undo snapshot");
 }
 
 void UndoMovesCurrentSnapshotToRedoHistory()
@@ -33,10 +27,7 @@ void UndoMovesCurrentSnapshotToRedoHistory()
 
     ExpectEqual(std::size_t{0}, history.GetUndoCount(), "undo count");
     ExpectEqual(std::size_t{1}, history.GetRedoCount(), "redo count");
-    ExpectEqual(
-        std::string("after edit"),
-        *history.FindRedoSnapshot(),
-        "redo snapshot");
+    ExpectEqual(std::string("after edit"), *history.FindRedoSnapshot(), "redo snapshot");
 }
 
 void RedoMovesCurrentSnapshotBackToUndoHistory()
@@ -49,10 +40,7 @@ void RedoMovesCurrentSnapshotBackToUndoHistory()
 
     ExpectEqual(std::size_t{1}, history.GetUndoCount(), "undo count");
     ExpectEqual(std::size_t{0}, history.GetRedoCount(), "redo count");
-    ExpectEqual(
-        std::string("before edit"),
-        *history.FindUndoSnapshot(),
-        "undo snapshot after redo");
+    ExpectEqual(std::string("before edit"), *history.FindUndoSnapshot(), "undo snapshot after redo");
 }
 
 void UndoHistoryDiscardsOldestSnapshotAtLimit()
@@ -64,10 +52,7 @@ void UndoHistoryDiscardsOldestSnapshotAtLimit()
 
     history.CommitUndo("current");
 
-    ExpectEqual(
-        std::string("second"),
-        *history.FindUndoSnapshot(),
-        "oldest retained undo snapshot");
+    ExpectEqual(std::string("second"), *history.FindUndoSnapshot(), "oldest retained undo snapshot");
 }
 
 void EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps()
@@ -94,15 +79,17 @@ void ClearRemovesUndoAndRedoSnapshots()
     ExpectEqual(std::size_t{0}, history.GetRedoCount(), "redo count");
 }
 
-}
+} // namespace
 
-void RegisterStageEditHistoryTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterStageEditHistoryTests(TestRegistry& tests)
 {
     tests.emplace_back("StageEditHistory.NewEditClearsRedoHistory", NewEditClearsRedoHistory);
     tests.emplace_back("StageEditHistory.UndoMovesCurrentSnapshotToRedoHistory", UndoMovesCurrentSnapshotToRedoHistory);
-    tests.emplace_back("StageEditHistory.RedoMovesCurrentSnapshotBackToUndoHistory", RedoMovesCurrentSnapshotBackToUndoHistory);
-    tests.emplace_back("StageEditHistory.UndoHistoryDiscardsOldestSnapshotAtLimit", UndoHistoryDiscardsOldestSnapshotAtLimit);
-    tests.emplace_back("StageEditHistory.EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps", EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps);
+    tests.emplace_back("StageEditHistory.RedoMovesCurrentSnapshotBackToUndoHistory",
+                       RedoMovesCurrentSnapshotBackToUndoHistory);
+    tests.emplace_back("StageEditHistory.UndoHistoryDiscardsOldestSnapshotAtLimit",
+                       UndoHistoryDiscardsOldestSnapshotAtLimit);
+    tests.emplace_back("StageEditHistory.EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps",
+                       EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps);
     tests.emplace_back("StageEditHistory.ClearRemovesUndoAndRedoSnapshots", ClearRemovesUndoAndRedoSnapshots);
 }

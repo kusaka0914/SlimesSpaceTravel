@@ -1,8 +1,10 @@
 #include <chrono>
+#include <cstddef>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <thread>
@@ -18,6 +20,7 @@
 #endif
 
 namespace {
+// 親ゲーム終了後のビルドと、エディター状態を復元する再起動に必要な情報。
 struct RestartArguments {
     unsigned long parentProcessId = 0;
     std::filesystem::path buildDirectory;
@@ -27,11 +30,9 @@ struct RestartArguments {
     std::filesystem::path buildLog;
 };
 
-std::optional<std::string> FindArgument(
-    const std::vector<std::string>& arguments,
-    const std::string& argumentName)
+std::optional<std::string> FindArgument(const std::vector<std::string>& arguments, const std::string& argumentName)
 {
-    for (size_t argumentIndex = 0; argumentIndex + 1 < arguments.size(); ++argumentIndex) {
+    for (std::size_t argumentIndex = 0; argumentIndex + 1 < arguments.size(); ++argumentIndex) {
         if (arguments[argumentIndex] == argumentName) {
             return arguments[argumentIndex + 1];
         }
@@ -40,33 +41,23 @@ std::optional<std::string> FindArgument(
     return std::nullopt;
 }
 
-bool ParseArguments(
-    int argumentCount,
-    char* argumentValues[],
-    RestartArguments& outArguments,
-    std::string& outErrorMessage)
+bool ParseArguments(int argumentCount, char* argumentValues[], RestartArguments& outArguments,
+                    std::string& outErrorMessage)
 {
     std::vector<std::string> arguments;
-    arguments.reserve(static_cast<size_t>(argumentCount));
+    arguments.reserve(static_cast<std::size_t>(argumentCount));
     for (int argumentIndex = 0; argumentIndex < argumentCount; ++argumentIndex) {
         arguments.emplace_back(argumentValues[argumentIndex]);
     }
 
-    const std::optional<std::string> parentProcessId =
-        FindArgument(arguments, "--parent-pid");
-    const std::optional<std::string> buildDirectory =
-        FindArgument(arguments, "--build-directory");
-    const std::optional<std::string> configuration =
-        FindArgument(arguments, "--configuration");
-    const std::optional<std::string> gameExecutable =
-        FindArgument(arguments, "--game-executable");
-    const std::optional<std::string> sessionFile =
-        FindArgument(arguments, "--session-file");
-    const std::optional<std::string> buildLog =
-        FindArgument(arguments, "--build-log");
+    const std::optional<std::string> parentProcessId = FindArgument(arguments, "--parent-pid");
+    const std::optional<std::string> buildDirectory = FindArgument(arguments, "--build-directory");
+    const std::optional<std::string> configuration = FindArgument(arguments, "--configuration");
+    const std::optional<std::string> gameExecutable = FindArgument(arguments, "--game-executable");
+    const std::optional<std::string> sessionFile = FindArgument(arguments, "--session-file");
+    const std::optional<std::string> buildLog = FindArgument(arguments, "--build-log");
 
-    if (!parentProcessId || !buildDirectory || !configuration ||
-        !gameExecutable || !sessionFile || !buildLog) {
+    if (!parentProcessId || !buildDirectory || !configuration || !gameExecutable || !sessionFile || !buildLog) {
         outErrorMessage = "ビルド再起動用プログラムに必要な引数がありません。";
         return false;
     }
@@ -89,10 +80,7 @@ bool ParseArguments(
 void WaitForParentProcess(unsigned long parentProcessId)
 {
 #ifdef _WIN32
-    HANDLE parentProcess = OpenProcess(
-        SYNCHRONIZE,
-        FALSE,
-        static_cast<DWORD>(parentProcessId));
+    HANDLE parentProcess = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(parentProcessId));
     if (!parentProcess) {
         return;
     }
@@ -114,13 +102,14 @@ std::wstring QuoteWindowsArgument(const std::wstring& argument)
     }
 
     std::wstring quotedArgument = L"\"";
-    size_t pendingBackslashCount = 0;
+    std::size_t pendingBackslashCount = 0;
     for (const wchar_t character : argument) {
         if (character == L'\\') {
             ++pendingBackslashCount;
             continue;
         }
         if (character == L'\"') {
+            // 引用符を文字として渡せるよう、その直前のバックスラッシュもエスケープする。
             quotedArgument.append(pendingBackslashCount * 2 + 1, L'\\');
             quotedArgument.push_back(L'\"');
             pendingBackslashCount = 0;
@@ -132,6 +121,7 @@ std::wstring QuoteWindowsArgument(const std::wstring& argument)
         quotedArgument.push_back(character);
     }
 
+    // 末尾のバックスラッシュが閉じ引用符をエスケープしないように二重化する。
     quotedArgument.append(pendingBackslashCount * 2, L'\\');
     quotedArgument.push_back(L'\"');
     return quotedArgument;
@@ -143,8 +133,8 @@ int RunBuild(const RestartArguments& arguments)
     buildCommand += QuoteWindowsArgument(arguments.buildDirectory.wstring());
     if (!arguments.configuration.empty()) {
         buildCommand += L" --config ";
-        buildCommand += QuoteWindowsArgument(
-            std::wstring(arguments.configuration.begin(), arguments.configuration.end()));
+        buildCommand +=
+            QuoteWindowsArgument(std::wstring(arguments.configuration.begin(), arguments.configuration.end()));
     }
     buildCommand += L" --target game --parallel > ";
     buildCommand += QuoteWindowsArgument(arguments.buildLog.wstring());
@@ -152,9 +142,7 @@ int RunBuild(const RestartArguments& arguments)
     return _wsystem(buildCommand.c_str());
 }
 
-bool LaunchGame(
-    const RestartArguments& arguments,
-    bool didBuildFail)
+bool LaunchGame(const RestartArguments& arguments, bool didBuildFail)
 {
     std::wstring commandLine = QuoteWindowsArgument(arguments.gameExecutable.wstring());
     commandLine += L" --debug --restore-editor-session ";
@@ -168,17 +156,9 @@ bool LaunchGame(
     startupInfo.cb = sizeof(startupInfo);
     PROCESS_INFORMATION processInformation{};
     std::wstring mutableCommandLine = commandLine;
-    const BOOL wasGameLaunched = CreateProcessW(
-        arguments.gameExecutable.c_str(),
-        mutableCommandLine.data(),
-        nullptr,
-        nullptr,
-        FALSE,
-        0,
-        nullptr,
-        arguments.buildDirectory.c_str(),
-        &startupInfo,
-        &processInformation);
+    const BOOL wasGameLaunched =
+        CreateProcessW(arguments.gameExecutable.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr,
+                       arguments.buildDirectory.c_str(), &startupInfo, &processInformation);
     if (!wasGameLaunched) {
         return false;
     }
@@ -193,6 +173,7 @@ std::string QuoteShellArgument(const std::string& argument)
     std::string quotedArgument = "'";
     for (const char character : argument) {
         if (character == '\'') {
+            // 単一引用符の区間を一度閉じ、引用符そのものを挟んでから再開する。
             quotedArgument += "'\\''";
         } else {
             quotedArgument.push_back(character);
@@ -204,19 +185,15 @@ std::string QuoteShellArgument(const std::string& argument)
 
 int RunBuild(const RestartArguments& arguments)
 {
-    std::string buildCommand =
-        "cmake --build " + QuoteShellArgument(arguments.buildDirectory.string());
+    std::string buildCommand = "cmake --build " + QuoteShellArgument(arguments.buildDirectory.string());
     if (!arguments.configuration.empty()) {
         buildCommand += " --config " + QuoteShellArgument(arguments.configuration);
     }
-    buildCommand += " --target game --parallel > " +
-                    QuoteShellArgument(arguments.buildLog.string()) + " 2>&1";
+    buildCommand += " --target game --parallel > " + QuoteShellArgument(arguments.buildLog.string()) + " 2>&1";
     return std::system(buildCommand.c_str());
 }
 
-bool LaunchGame(
-    const RestartArguments& arguments,
-    bool didBuildFail)
+bool LaunchGame(const RestartArguments& arguments, bool didBuildFail)
 {
     const pid_t gameProcessId = fork();
     if (gameProcessId < 0) {
@@ -226,49 +203,41 @@ bool LaunchGame(
         return true;
     }
 
+    // 再起動したゲームを親の終了後も独立して動かし、相対パスの基準をビルド先へ戻す。
     setsid();
     chdir(arguments.buildDirectory.c_str());
     if (didBuildFail) {
-        execl(
-            arguments.gameExecutable.c_str(),
-            arguments.gameExecutable.c_str(),
-            "--debug",
-            "--restore-editor-session", arguments.sessionFile.c_str(),
-            "--editor-restart-error-log", arguments.buildLog.c_str(),
-            static_cast<char*>(nullptr));
+        execl(arguments.gameExecutable.c_str(), arguments.gameExecutable.c_str(), "--debug", "--restore-editor-session",
+              arguments.sessionFile.c_str(), "--editor-restart-error-log", arguments.buildLog.c_str(),
+              static_cast<char*>(nullptr));
     } else {
-        execl(
-            arguments.gameExecutable.c_str(),
-            arguments.gameExecutable.c_str(),
-            "--debug",
-            "--restore-editor-session", arguments.sessionFile.c_str(),
-            static_cast<char*>(nullptr));
+        execl(arguments.gameExecutable.c_str(), arguments.gameExecutable.c_str(), "--debug", "--restore-editor-session",
+              arguments.sessionFile.c_str(), static_cast<char*>(nullptr));
     }
+
+    // exec失敗時は、fork元から引き継いだ終了処理や出力バッファを実行せずに終了する。
     _exit(127);
 }
 #endif
-}
+} // namespace
 
 int main(int argumentCount, char* argumentValues[])
 {
     RestartArguments arguments;
     std::string argumentErrorMessage;
-    if (!ParseArguments(
-            argumentCount,
-            argumentValues,
-            arguments,
-            argumentErrorMessage)) {
+    if (!ParseArguments(argumentCount, argumentValues, arguments, argumentErrorMessage)) {
+        std::cerr << argumentErrorMessage << '\n';
         return 2;
     }
 
+    // 実行ファイルを使用中の親ゲームが終了してから、同じ出力先をビルドする。
     WaitForParentProcess(arguments.parentProcessId);
     const int buildExitCode = RunBuild(arguments);
     const bool didBuildFail = buildExitCode != 0;
 
+    // ビルド失敗時も既存の実行ファイルを起動し、エディターへ失敗ログを渡す。
     if (!LaunchGame(arguments, didBuildFail)) {
-        std::ofstream launchErrorLog(
-            arguments.buildLog,
-            std::ios::app);
+        std::ofstream launchErrorLog(arguments.buildLog, std::ios::app);
         launchErrorLog << "\nFailed to relaunch the game after the build.\n";
         return 3;
     }

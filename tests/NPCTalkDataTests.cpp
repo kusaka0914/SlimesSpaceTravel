@@ -2,10 +2,7 @@
 
 #include "actor/NPCTalkData.h"
 
-#include <functional>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace {
 
@@ -129,7 +126,7 @@ void RubyMustMatchTheCurrentBaseText()
 
 } // namespace
 
-void RegisterNPCTalkDataTests(std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterNPCTalkDataTests(TestRegistry& tests)
 {
     tests.emplace_back("NPCTalkData.RemovingPageKeepsRemainingMetadataTogether",
                        RemovingPageKeepsRemainingMetadataTogether);

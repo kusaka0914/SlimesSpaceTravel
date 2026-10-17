@@ -2,10 +2,7 @@
 
 #include "system/actor_loader/PlatformStageConfig.h"
 
-#include <functional>
 #include <string>
-#include <utility>
-#include <vector>
 #include <yaml-cpp/yaml.h>
 
 namespace {
@@ -17,8 +14,7 @@ components:
   rotation: {}
 )");
 
-    const PlatformStageConfig config =
-        ParsePlatformStageConfig(platformNode);
+    const PlatformStageConfig config = ParsePlatformStageConfig(platformNode);
 
     ExpectFalse(config.movement.has_value(), "movement config");
     ExpectTrue(config.behavior.rotation.has_value(), "rotation config");
@@ -32,8 +28,7 @@ components:
     destinationWaitSeconds: 2.5
 )");
 
-    const PlatformStageConfig config =
-        ParsePlatformStageConfig(platformNode);
+    const PlatformStageConfig config = ParsePlatformStageConfig(platformNode);
     const PlatformMovementStageConfig& movement = *config.movement;
 
     ExpectNear(4.0f, movement.moveOffset.x, 0.0001f, "default move offset x");
@@ -54,8 +49,7 @@ returnDelay: 8.0
 endpointWaitSeconds: 9.0
 )");
 
-    const PlatformStageConfig config =
-        ParsePlatformStageConfig(platformNode, true);
+    const PlatformStageConfig config = ParsePlatformStageConfig(platformNode, true);
     const PlatformMovementStageConfig& movement = *config.movement;
 
     ExpectNear(1.0f, movement.startLocalPos->x, 0.0001f, "start x");
@@ -103,8 +97,7 @@ components:
       - { sequence: platforms, index: 4, platformId: target-id }
 )");
 
-    const PlatformBehaviorStageConfig& behavior =
-        ParsePlatformStageConfig(platformNode).behavior;
+    const PlatformBehaviorStageConfig& behavior = ParsePlatformStageConfig(platformNode).behavior;
 
     ExpectNear(1.25f, behavior.fadeOnStand->fadeOutDurationSeconds, 0.0001f, "fade duration");
     ExpectFalse(*behavior.jumpToggleInitiallyVisible, "jump initial visibility");
@@ -116,47 +109,24 @@ components:
     ExpectNear(6.0f, behavior.conveyor->speed, 0.0001f, "conveyor speed");
     ExpectTrue(behavior.hasAdhesion, "adhesion component");
     ExpectTrue(behavior.hasEnemyClearUnlock, "enemy-clear component");
-    ExpectEqual(
-        std::size_t(2),
-        behavior.pressureSwitch->targetPlatformIds.size(),
-        "platform target count");
-    ExpectEqual(
-        std::size_t(1),
-        behavior.pressureSwitch->targetEnemyRefs.size(),
-        "valid enemy target count");
-    ExpectTrue(
-        behavior.pressureSwitch->shouldRemainOnAfterPressed,
-        "latched pressure switch");
-    ExpectNear(
-        0.4f,
-        behavior.pressureSwitch->inactiveOpacity,
-        0.0001f,
-        "inactive opacity");
-    ExpectEqual(
-        std::string("group-a"),
-        behavior.latchedGroupSwitch->groupId,
-        "switch group");
-    ExpectEqual(
-        std::string("target-id"),
-        behavior.latchedGroupSwitch->revealTargets[0].platformId,
-        "reveal target id");
+    ExpectEqual(std::size_t(2), behavior.pressureSwitch->targetPlatformIds.size(), "platform target count");
+    ExpectEqual(std::size_t(1), behavior.pressureSwitch->targetEnemyRefs.size(), "valid enemy target count");
+    ExpectTrue(behavior.pressureSwitch->shouldRemainOnAfterPressed, "latched pressure switch");
+    ExpectNear(0.4f, behavior.pressureSwitch->inactiveOpacity, 0.0001f, "inactive opacity");
+    ExpectEqual(std::string("group-a"), behavior.latchedGroupSwitch->groupId, "switch group");
+    ExpectEqual(std::string("target-id"), behavior.latchedGroupSwitch->revealTargets[0].platformId, "reveal target id");
 }
 
-}
+} // namespace
 
-void RegisterPlatformStageConfigTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterPlatformStageConfigTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "PlatformStageConfig.ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig",
-        ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig);
-    tests.emplace_back(
-        "PlatformStageConfig.MovementComponentUsesDocumentedDefaultsAndLegacyWaitField",
-        MovementComponentUsesDocumentedDefaultsAndLegacyWaitField);
-    tests.emplace_back(
-        "PlatformStageConfig.LegacyMovingPlatformReadsMovementFieldsFromPlatformNode",
-        LegacyMovingPlatformReadsMovementFieldsFromPlatformNode);
-    tests.emplace_back(
-        "PlatformStageConfig.BehaviorComponentsParseValuesAndIgnoreInvalidActorTargets",
-        BehaviorComponentsParseValuesAndIgnoreInvalidActorTargets);
+    tests.emplace_back("PlatformStageConfig.ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig",
+                       ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig);
+    tests.emplace_back("PlatformStageConfig.MovementComponentUsesDocumentedDefaultsAndLegacyWaitField",
+                       MovementComponentUsesDocumentedDefaultsAndLegacyWaitField);
+    tests.emplace_back("PlatformStageConfig.LegacyMovingPlatformReadsMovementFieldsFromPlatformNode",
+                       LegacyMovingPlatformReadsMovementFieldsFromPlatformNode);
+    tests.emplace_back("PlatformStageConfig.BehaviorComponentsParseValuesAndIgnoreInvalidActorTargets",
+                       BehaviorComponentsParseValuesAndIgnoreInvalidActorTargets);
 }

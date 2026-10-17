@@ -2,11 +2,6 @@
 
 #include "actor/player/PlayerJewelGauge.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void ItemPickupDoesNotExceedSixJewels()
@@ -34,29 +29,20 @@ void ContinuousAttackRequiresAndConsumesTwoJewels()
     PlayerJewelGauge jewelGauge;
     jewelGauge.SetCount(1);
 
-    ExpectFalse(
-        jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost),
-        "one jewel cannot start continuous attack");
+    ExpectFalse(jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost),
+                "one jewel cannot start continuous attack");
 
     jewelGauge.SetCount(2);
-    ExpectTrue(
-        jewelGauge.Consume(PlayerJewelGauge::ContinuousAttackCost),
-        "two jewels can start continuous attack");
+    ExpectTrue(jewelGauge.Consume(PlayerJewelGauge::ContinuousAttackCost), "two jewels can start continuous attack");
     ExpectEqual(0, jewelGauge.GetCount(), "continuous attack consumes two jewels");
 }
 
-}
+} // namespace
 
-void RegisterPlayerJewelGaugeTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterPlayerJewelGaugeTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "PlayerJewelGauge.ItemPickupDoesNotExceedSixJewels",
-        ItemPickupDoesNotExceedSixJewels);
-    tests.emplace_back(
-        "PlayerJewelGauge.AutomaticRecoveryStopsAtTwoJewels",
-        AutomaticRecoveryStopsAtTwoJewels);
-    tests.emplace_back(
-        "PlayerJewelGauge.ContinuousAttackRequiresAndConsumesTwoJewels",
-        ContinuousAttackRequiresAndConsumesTwoJewels);
+    tests.emplace_back("PlayerJewelGauge.ItemPickupDoesNotExceedSixJewels", ItemPickupDoesNotExceedSixJewels);
+    tests.emplace_back("PlayerJewelGauge.AutomaticRecoveryStopsAtTwoJewels", AutomaticRecoveryStopsAtTwoJewels);
+    tests.emplace_back("PlayerJewelGauge.ContinuousAttackRequiresAndConsumesTwoJewels",
+                       ContinuousAttackRequiresAndConsumesTwoJewels);
 }

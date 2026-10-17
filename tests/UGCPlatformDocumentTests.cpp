@@ -2,18 +2,12 @@
 
 #include "gfx/debug/stage/UGCPlatformDocument.h"
 
-#include <functional>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace {
 
-UGCPlatformCell CreateCell(
-    int x,
-    int layer,
-    int z,
-    const std::string& behavior = "normal")
+UGCPlatformCell CreateCell(int x, int layer, int z, const std::string& behavior = "normal")
 {
     UGCPlatformCell cell;
     cell.planetIndex = 2;
@@ -28,17 +22,12 @@ void AddFootprintCreatesRequestedCellsWithoutDuplicates()
     YAML::Node stageConfig;
     const UGCPlatformCell anchorCell = CreateCell(3, 1, 4);
 
-    const int firstAddedCount =
-        UGCPlatformDocument::AddFootprint(stageConfig, anchorCell, 2);
-    const int secondAddedCount =
-        UGCPlatformDocument::AddFootprint(stageConfig, anchorCell, 2);
+    const int firstAddedCount = UGCPlatformDocument::AddFootprint(stageConfig, anchorCell, 2);
+    const int secondAddedCount = UGCPlatformDocument::AddFootprint(stageConfig, anchorCell, 2);
 
     ExpectEqual(4, firstAddedCount, "first added cell count");
     ExpectEqual(0, secondAddedCount, "duplicate added cell count");
-    ExpectEqual(
-        std::size_t{4},
-        stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
-        "stored cell count");
+    ExpectEqual(std::size_t{4}, stageConfig[UGCPlatformDocument::PlatformCellsKey].size(), "stored cell count");
 }
 
 void MovingCellRoundTripPreservesMovementDelta()
@@ -47,13 +36,10 @@ void MovingCellRoundTripPreservesMovementDelta()
     sourceCell.movementDeltaCells = glm::ivec3(4, -1, 2);
 
     UGCPlatformCell loadedCell;
-    const bool wasRead = UGCPlatformDocument::TryReadCell(
-        UGCPlatformDocument::CreateCellNode(sourceCell), loadedCell);
+    const bool wasRead = UGCPlatformDocument::TryReadCell(UGCPlatformDocument::CreateCellNode(sourceCell), loadedCell);
 
     ExpectTrue(wasRead, "moving cell was read");
-    ExpectTrue(
-        loadedCell.movementDeltaCells == sourceCell.movementDeltaCells,
-        "movement delta");
+    ExpectTrue(loadedCell.movementDeltaCells == sourceCell.movementDeltaCells, "movement delta");
 }
 
 void MalformedCellIsIgnored()
@@ -62,53 +48,37 @@ void MalformedCellIsIgnored()
     malformedCell["planetIndex"] = 1;
 
     UGCPlatformCell loadedCell;
-    ExpectFalse(
-        UGCPlatformDocument::TryReadCell(malformedCell, loadedCell),
-        "malformed cell read result");
+    ExpectFalse(UGCPlatformDocument::TryReadCell(malformedCell, loadedCell), "malformed cell read result");
 }
 
 void RemoveCellAtGridPositionRemovesOnlyExactCell()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(2, 0, 2), 2);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(2, 0, 2), 2);
 
-    const bool wasRemoved = UGCPlatformDocument::RemoveCellAtGridPosition(
-        stageConfig, 2, 2.0f, glm::ivec3(2, 0, 2));
+    const bool wasRemoved = UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(2, 0, 2));
 
     ExpectTrue(wasRemoved, "remove result");
-    ExpectEqual(
-        std::size_t{3},
-        stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
-        "remaining cell count");
-    ExpectFalse(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(2, 0, 2)),
-        "second remove result");
+    ExpectEqual(std::size_t{3}, stageConfig[UGCPlatformDocument::PlatformCellsKey].size(), "remaining cell count");
+    ExpectFalse(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(2, 0, 2)),
+                "second remove result");
 }
 
 void RemoveClosestCellUsesHorizontalDistanceWithinLayer()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(0, 0, 0), 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(3, 0, 0), 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(0, 1, 0), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(0, 0, 0), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(3, 0, 0), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(0, 1, 0), 1);
 
-    const bool wasRemoved = UGCPlatformDocument::RemoveClosestCell(
-        stageConfig, 2, 2.0f, 0, glm::vec3(6.8f, 100.0f, 1.0f));
+    const bool wasRemoved =
+        UGCPlatformDocument::RemoveClosestCell(stageConfig, 2, 2.0f, 0, glm::vec3(6.8f, 100.0f, 1.0f));
 
     ExpectTrue(wasRemoved, "remove closest result");
-    ExpectFalse(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(3, 0, 0)),
-        "closest cell already removed");
-    ExpectTrue(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(0, 1, 0)),
-        "other layer remains");
+    ExpectFalse(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(3, 0, 0)),
+                "closest cell already removed");
+    ExpectTrue(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(0, 1, 0)),
+               "other layer remains");
 }
 
 void RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell()
@@ -132,18 +102,13 @@ void RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell()
     sourceRegion.maximumZ = 3;
 
     const bool wasRemoved =
-        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
-            stageConfig, sourceRegion, glm::ivec3(6, 3, 2));
+        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(stageConfig, sourceRegion, glm::ivec3(6, 3, 2));
 
     ExpectTrue(wasRemoved, "moving destination removal result");
-    ExpectEqual(
-        std::size_t{1},
-        stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
-        "remaining moving cell count");
-    ExpectTrue(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(3, 1, 3)),
-        "other moving cell remains");
+    ExpectEqual(std::size_t{1}, stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
+                "remaining moving cell count");
+    ExpectTrue(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(3, 1, 3)),
+               "other moving cell remains");
 }
 
 void ReusingMovingSourceRegionRemovesMultipleDestinationCells()
@@ -167,30 +132,23 @@ void ReusingMovingSourceRegionRemovesMultipleDestinationCells()
     sourceRegion.maximumZ = 3;
 
     ExpectTrue(
-        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
-            stageConfig, sourceRegion, glm::ivec3(6, 3, 2)),
+        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(stageConfig, sourceRegion, glm::ivec3(6, 3, 2)),
         "first destination removed");
     ExpectTrue(
-        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(
-            stageConfig, sourceRegion, glm::ivec3(7, 3, 2)),
+        UGCPlatformDocument::RemoveMovingDestinationCellAtGridPosition(stageConfig, sourceRegion, glm::ivec3(7, 3, 2)),
         "second destination removed with original region");
-    ExpectEqual(
-        std::size_t{0},
-        stageConfig[UGCPlatformDocument::PlatformCellsKey].size(),
-        "all moving cells removed");
+    ExpectEqual(std::size_t{0}, stageConfig[UGCPlatformDocument::PlatformCellsKey].size(), "all moving cells removed");
 }
 
 void LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 2, 3), 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 5, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 2, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 5, 3), 1);
 
     int resolvedLayer = -1;
-    const bool wasResolved = UGCPlatformDocument::ResolveLayerAtGridPosition(
-        stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 5, resolvedLayer);
+    const bool wasResolved =
+        UGCPlatformDocument::ResolveLayerAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 5, resolvedLayer);
 
     ExpectTrue(wasResolved, "preferred layer resolve result");
     ExpectEqual(5, resolvedLayer, "preferred layer");
@@ -199,15 +157,12 @@ void LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells()
 void LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 2, 3), 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 5, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 2, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 5, 3), 1);
 
     int resolvedLayer = -1;
     ExpectTrue(
-        UGCPlatformDocument::ResolveLayerAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 9, resolvedLayer),
+        UGCPlatformDocument::ResolveLayerAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 9, resolvedLayer),
         "highest layer fallback resolve result");
     ExpectEqual(5, resolvedLayer, "highest layer fallback");
 }
@@ -215,28 +170,21 @@ void LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing()
 void PlacementLayerUsesLayerAboveHighestCell()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 2, 3), 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(1, 5, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 2, 3), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(1, 5, 3), 1);
 
-    ExpectEqual(
-        6,
-        UGCPlatformDocument::ResolvePlacementLayerAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 4),
-        "next placement layer");
-    ExpectEqual(
-        4,
-        UGCPlatformDocument::ResolvePlacementLayerAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(9, 0, 9), 4),
-        "empty column placement layer");
+    ExpectEqual(6,
+                UGCPlatformDocument::ResolvePlacementLayerAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(1, 0, 3), 4),
+                "next placement layer");
+    ExpectEqual(4,
+                UGCPlatformDocument::ResolvePlacementLayerAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(9, 0, 9), 4),
+                "empty column placement layer");
 }
 
 void GeneratedRegionsMergeCompleteRectangle()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(2, 1, 3), 2);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(2, 1, 3), 2);
 
     const std::vector<UGCGeneratedPlatformRegion> regions =
         UGCPlatformDocument::CalculateGeneratedPlatformRegions(stageConfig);
@@ -251,10 +199,8 @@ void GeneratedRegionsMergeCompleteRectangle()
 void TranslateCellsMovesOnlyCellsInsideSelectedRegion()
 {
     YAML::Node stageConfig;
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(2, 1, 3), 2);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(8, 1, 8), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(2, 1, 3), 2);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(8, 1, 8), 1);
 
     UGCPlatformCellTranslationRegion region;
     region.planetIndex = 2;
@@ -266,18 +212,13 @@ void TranslateCellsMovesOnlyCellsInsideSelectedRegion()
     region.maximumZ = 3;
     region.gridDelta = glm::ivec3(3, 2, -1);
 
-    const int translatedCellCount =
-        UGCPlatformDocument::TranslateCells(stageConfig, {region});
+    const int translatedCellCount = UGCPlatformDocument::TranslateCells(stageConfig, {region});
 
     ExpectEqual(4, translatedCellCount, "translated cell count");
-    ExpectTrue(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(5, 3, 2)),
-        "translated anchor cell");
-    ExpectTrue(
-        UGCPlatformDocument::RemoveCellAtGridPosition(
-            stageConfig, 2, 2.0f, glm::ivec3(8, 1, 8)),
-        "unselected cell remains");
+    ExpectTrue(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(5, 3, 2)),
+               "translated anchor cell");
+    ExpectTrue(UGCPlatformDocument::RemoveCellAtGridPosition(stageConfig, 2, 2.0f, glm::ivec3(8, 1, 8)),
+               "unselected cell remains");
 }
 
 void GeneratedRegionsSeparateBehaviorsAndMovementDeltas()
@@ -289,8 +230,7 @@ void GeneratedRegionsSeparateBehaviorsAndMovementDeltas()
     movingUp.movementDeltaCells = glm::ivec3(0, 1, 0);
     UGCPlatformDocument::AddFootprint(stageConfig, movingRight, 1);
     UGCPlatformDocument::AddFootprint(stageConfig, movingUp, 1);
-    UGCPlatformDocument::AddFootprint(
-        stageConfig, CreateCell(2, 0, 0, "fading"), 1);
+    UGCPlatformDocument::AddFootprint(stageConfig, CreateCell(2, 0, 0, "fading"), 1);
 
     const std::vector<UGCGeneratedPlatformRegion> regions =
         UGCPlatformDocument::CalculateGeneratedPlatformRegions(stageConfig);
@@ -311,10 +251,8 @@ void GeneratedPlatformRemovalPreservesAuthoredPlatforms()
     UGCPlatformDocument::RemoveGeneratedPlatforms(stageConfig);
 
     ExpectEqual(std::size_t{1}, stageConfig["platforms"].size(), "platform count");
-    ExpectEqual(
-        std::string("authored"),
-        stageConfig["platforms"][0]["name"].as<std::string>(),
-        "preserved platform name");
+    ExpectEqual(std::string("authored"), stageConfig["platforms"][0]["name"].as<std::string>(),
+                "preserved platform name");
 }
 
 void MatchingGeneratedPlatformIgnoresChangedMovementDestination()
@@ -345,17 +283,10 @@ void MatchingGeneratedPlatformIgnoresChangedMovementDestination()
     region.behavior = "moving";
     region.movementDeltaCells = glm::ivec3(8, 0, -3);
 
-    const YAML::Node matchingPlatform =
-        UGCPlatformDocument::FindMatchingGeneratedPlatformNode(
-            stageConfig, region);
+    const YAML::Node matchingPlatform = UGCPlatformDocument::FindMatchingGeneratedPlatformNode(stageConfig, region);
 
-    ExpectTrue(
-        static_cast<bool>(matchingPlatform),
-        "matching generated platform");
-    ExpectEqual(
-        std::string("platform_12"),
-        matchingPlatform["platformId"].as<std::string>(),
-        "preserved platform id");
+    ExpectTrue(static_cast<bool>(matchingPlatform), "matching generated platform");
+    ExpectEqual(std::string("platform_12"), matchingPlatform["platformId"].as<std::string>(), "preserved platform id");
 }
 
 void GeneratedPlatformWithDifferentRegionDoesNotMatch()
@@ -383,11 +314,8 @@ void GeneratedPlatformWithDifferentRegionDoesNotMatch()
     region.maximumZ = 6;
     region.behavior = "moving";
 
-    ExpectFalse(
-        static_cast<bool>(
-            UGCPlatformDocument::FindMatchingGeneratedPlatformNode(
-                stageConfig, region)),
-        "different generated region match");
+    ExpectFalse(static_cast<bool>(UGCPlatformDocument::FindMatchingGeneratedPlatformNode(stageConfig, region)),
+                "different generated region match");
 }
 
 void TranslatedGeneratedPlatformRegionPreservesIdentityMatch()
@@ -406,11 +334,8 @@ void TranslatedGeneratedPlatformRegionPreservesIdentityMatch()
     generatedPlatform["platformId"] = "platform_12";
 
     const glm::ivec3 gridDelta(2, 3, -1);
-    ExpectTrue(
-        UGCPlatformDocument::TranslateGeneratedPlatformRegionMetadata(
-            generatedPlatform,
-            gridDelta),
-        "translated generated platform metadata");
+    ExpectTrue(UGCPlatformDocument::TranslateGeneratedPlatformRegionMetadata(generatedPlatform, gridDelta),
+               "translated generated platform metadata");
     stageConfig["platforms"].push_back(generatedPlatform);
 
     UGCGeneratedPlatformRegion translatedRegion;
@@ -424,44 +349,47 @@ void TranslatedGeneratedPlatformRegionPreservesIdentityMatch()
     translatedRegion.behavior = "normal";
 
     const YAML::Node matchingPlatform =
-        UGCPlatformDocument::FindMatchingGeneratedPlatformNode(
-            stageConfig,
-            translatedRegion);
-    ExpectTrue(
-        static_cast<bool>(matchingPlatform),
-        "matching translated generated platform");
-    ExpectEqual(
-        std::string("platform_12"),
-        matchingPlatform["platformId"].as<std::string>(),
-        "preserved translated platform id");
+        UGCPlatformDocument::FindMatchingGeneratedPlatformNode(stageConfig, translatedRegion);
+    ExpectTrue(static_cast<bool>(matchingPlatform), "matching translated generated platform");
+    ExpectEqual(std::string("platform_12"), matchingPlatform["platformId"].as<std::string>(),
+                "preserved translated platform id");
 }
 
-}
+} // namespace
 
-void RegisterUGCPlatformDocumentTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCPlatformDocumentTests(TestRegistry& tests)
 {
-    tests.emplace_back("UGCPlatformDocument.AddFootprintCreatesRequestedCellsWithoutDuplicates", AddFootprintCreatesRequestedCellsWithoutDuplicates);
-    tests.emplace_back("UGCPlatformDocument.MovingCellRoundTripPreservesMovementDelta", MovingCellRoundTripPreservesMovementDelta);
+    tests.emplace_back("UGCPlatformDocument.AddFootprintCreatesRequestedCellsWithoutDuplicates",
+                       AddFootprintCreatesRequestedCellsWithoutDuplicates);
+    tests.emplace_back("UGCPlatformDocument.MovingCellRoundTripPreservesMovementDelta",
+                       MovingCellRoundTripPreservesMovementDelta);
     tests.emplace_back("UGCPlatformDocument.MalformedCellIsIgnored", MalformedCellIsIgnored);
-    tests.emplace_back("UGCPlatformDocument.RemoveCellAtGridPositionRemovesOnlyExactCell", RemoveCellAtGridPositionRemovesOnlyExactCell);
-    tests.emplace_back("UGCPlatformDocument.RemoveClosestCellUsesHorizontalDistanceWithinLayer", RemoveClosestCellUsesHorizontalDistanceWithinLayer);
-    tests.emplace_back(
-        "UGCPlatformDocument.RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell",
-        RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell);
-    tests.emplace_back(
-        "UGCPlatformDocument.ReusingMovingSourceRegionRemovesMultipleDestinationCells",
-        ReusingMovingSourceRegionRemovesMultipleDestinationCells);
-    tests.emplace_back("UGCPlatformDocument.LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells", LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells);
-    tests.emplace_back(
-        "UGCPlatformDocument.LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing",
-        LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing);
-    tests.emplace_back("UGCPlatformDocument.PlacementLayerUsesLayerAboveHighestCell", PlacementLayerUsesLayerAboveHighestCell);
-    tests.emplace_back("UGCPlatformDocument.GeneratedRegionsMergeCompleteRectangle", GeneratedRegionsMergeCompleteRectangle);
-    tests.emplace_back("UGCPlatformDocument.TranslateCellsMovesOnlyCellsInsideSelectedRegion", TranslateCellsMovesOnlyCellsInsideSelectedRegion);
-    tests.emplace_back("UGCPlatformDocument.GeneratedRegionsSeparateBehaviorsAndMovementDeltas", GeneratedRegionsSeparateBehaviorsAndMovementDeltas);
-    tests.emplace_back("UGCPlatformDocument.GeneratedPlatformRemovalPreservesAuthoredPlatforms", GeneratedPlatformRemovalPreservesAuthoredPlatforms);
-    tests.emplace_back("UGCPlatformDocument.MatchingGeneratedPlatformIgnoresChangedMovementDestination", MatchingGeneratedPlatformIgnoresChangedMovementDestination);
-    tests.emplace_back("UGCPlatformDocument.GeneratedPlatformWithDifferentRegionDoesNotMatch", GeneratedPlatformWithDifferentRegionDoesNotMatch);
-    tests.emplace_back("UGCPlatformDocument.TranslatedGeneratedPlatformRegionPreservesIdentityMatch", TranslatedGeneratedPlatformRegionPreservesIdentityMatch);
+    tests.emplace_back("UGCPlatformDocument.RemoveCellAtGridPositionRemovesOnlyExactCell",
+                       RemoveCellAtGridPositionRemovesOnlyExactCell);
+    tests.emplace_back("UGCPlatformDocument.RemoveClosestCellUsesHorizontalDistanceWithinLayer",
+                       RemoveClosestCellUsesHorizontalDistanceWithinLayer);
+    tests.emplace_back("UGCPlatformDocument.RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell",
+                       RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell);
+    tests.emplace_back("UGCPlatformDocument.ReusingMovingSourceRegionRemovesMultipleDestinationCells",
+                       ReusingMovingSourceRegionRemovesMultipleDestinationCells);
+    tests.emplace_back("UGCPlatformDocument.LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells",
+                       LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells);
+    tests.emplace_back("UGCPlatformDocument.LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing",
+                       LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing);
+    tests.emplace_back("UGCPlatformDocument.PlacementLayerUsesLayerAboveHighestCell",
+                       PlacementLayerUsesLayerAboveHighestCell);
+    tests.emplace_back("UGCPlatformDocument.GeneratedRegionsMergeCompleteRectangle",
+                       GeneratedRegionsMergeCompleteRectangle);
+    tests.emplace_back("UGCPlatformDocument.TranslateCellsMovesOnlyCellsInsideSelectedRegion",
+                       TranslateCellsMovesOnlyCellsInsideSelectedRegion);
+    tests.emplace_back("UGCPlatformDocument.GeneratedRegionsSeparateBehaviorsAndMovementDeltas",
+                       GeneratedRegionsSeparateBehaviorsAndMovementDeltas);
+    tests.emplace_back("UGCPlatformDocument.GeneratedPlatformRemovalPreservesAuthoredPlatforms",
+                       GeneratedPlatformRemovalPreservesAuthoredPlatforms);
+    tests.emplace_back("UGCPlatformDocument.MatchingGeneratedPlatformIgnoresChangedMovementDestination",
+                       MatchingGeneratedPlatformIgnoresChangedMovementDestination);
+    tests.emplace_back("UGCPlatformDocument.GeneratedPlatformWithDifferentRegionDoesNotMatch",
+                       GeneratedPlatformWithDifferentRegionDoesNotMatch);
+    tests.emplace_back("UGCPlatformDocument.TranslatedGeneratedPlatformRegionPreservesIdentityMatch",
+                       TranslatedGeneratedPlatformRegionPreservesIdentityMatch);
 }

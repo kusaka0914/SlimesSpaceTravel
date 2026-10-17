@@ -2,11 +2,6 @@
 
 #include "gfx/debug/ugc/UGCEditorTutorial.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void ProgressStartsEmptyAndAdvancesToFirstAction()
@@ -42,10 +37,8 @@ void ExpectedActionsAdvanceThroughTutorial()
     tutorial.RecordPlaytestStarted();
     tutorial.RecordReturnedFromPlaytest();
 
-    ExpectEqual(
-        static_cast<int>(UGCEditorTutorialStep::Complete),
-        static_cast<int>(tutorial.GetStep()),
-        "completed tutorial step");
+    ExpectEqual(static_cast<int>(UGCEditorTutorialStep::Complete), static_cast<int>(tutorial.GetStep()),
+                "completed tutorial step");
 }
 
 void UnrelatedPlacementDoesNotAdvancePlatformStep()
@@ -59,10 +52,8 @@ void UnrelatedPlacementDoesNotAdvancePlatformStep()
 
     tutorial.RecordPlacement(UGCPresetKind::NormalEnemy, 1);
 
-    ExpectEqual(
-        static_cast<int>(UGCEditorTutorialStep::PlacePlatform),
-        static_cast<int>(tutorial.GetStep()),
-        "platform step after enemy placement");
+    ExpectEqual(static_cast<int>(UGCEditorTutorialStep::PlacePlatform), static_cast<int>(tutorial.GetStep()),
+                "platform step after enemy placement");
 }
 
 void LargePlatformRequiresMultiCellFootprint()
@@ -77,27 +68,20 @@ void LargePlatformRequiresMultiCellFootprint()
 
     tutorial.RecordPlacement(UGCPresetKind::NormalPlatform, 1);
 
-    ExpectEqual(
-        static_cast<int>(UGCEditorTutorialStep::PlaceLargePlatform),
-        static_cast<int>(tutorial.GetStep()),
-        "large platform step after one-cell placement");
+    ExpectEqual(static_cast<int>(UGCEditorTutorialStep::PlaceLargePlatform), static_cast<int>(tutorial.GetStep()),
+                "large platform step after one-cell placement");
 }
 
-}
+} // namespace
 
-void RegisterUGCEditorTutorialTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCEditorTutorialTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "UGCEditorTutorial.ProgressStartsEmptyAndAdvancesToFirstAction",
-        ProgressStartsEmptyAndAdvancesToFirstAction);
-    tests.emplace_back(
-        "UGCEditorTutorial.ExpectedActionsAdvanceThroughTutorial",
-        ExpectedActionsAdvanceThroughTutorial);
-    tests.emplace_back(
-        "UGCEditorTutorial.UnrelatedPlacementDoesNotAdvancePlatformStep",
-        UnrelatedPlacementDoesNotAdvancePlatformStep);
-    tests.emplace_back(
-        "UGCEditorTutorial.LargePlatformRequiresMultiCellFootprint",
-        LargePlatformRequiresMultiCellFootprint);
+    tests.emplace_back("UGCEditorTutorial.ProgressStartsEmptyAndAdvancesToFirstAction",
+                       ProgressStartsEmptyAndAdvancesToFirstAction);
+    tests.emplace_back("UGCEditorTutorial.ExpectedActionsAdvanceThroughTutorial",
+                       ExpectedActionsAdvanceThroughTutorial);
+    tests.emplace_back("UGCEditorTutorial.UnrelatedPlacementDoesNotAdvancePlatformStep",
+                       UnrelatedPlacementDoesNotAdvancePlatformStep);
+    tests.emplace_back("UGCEditorTutorial.LargePlatformRequiresMultiCellFootprint",
+                       LargePlatformRequiresMultiCellFootprint);
 }

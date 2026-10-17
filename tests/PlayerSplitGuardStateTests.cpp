@@ -2,11 +2,6 @@
 
 #include "system/PlayerSplitGuardState.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void StartsFullAndBlocksThreeHits()
@@ -68,21 +63,14 @@ void DamageWhileEmptyRestartsRecoveryInterval()
     ExpectEqual(1, guardState.GetCount(), "empty guard recovers ten seconds after damage");
 }
 
-}
+} // namespace
 
-void RegisterPlayerSplitGuardStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterPlayerSplitGuardStateTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "PlayerSplitGuardState.StartsFullAndBlocksThreeHits",
-        StartsFullAndBlocksThreeHits);
-    tests.emplace_back(
-        "PlayerSplitGuardState.RecoversOneGuardEveryTenSeconds",
-        RecoversOneGuardEveryTenSeconds);
-    tests.emplace_back(
-        "PlayerSplitGuardState.AdditionalDamageRestartsRecoveryInterval",
-        AdditionalDamageRestartsRecoveryInterval);
-    tests.emplace_back(
-        "PlayerSplitGuardState.DamageWhileEmptyRestartsRecoveryInterval",
-        DamageWhileEmptyRestartsRecoveryInterval);
+    tests.emplace_back("PlayerSplitGuardState.StartsFullAndBlocksThreeHits", StartsFullAndBlocksThreeHits);
+    tests.emplace_back("PlayerSplitGuardState.RecoversOneGuardEveryTenSeconds", RecoversOneGuardEveryTenSeconds);
+    tests.emplace_back("PlayerSplitGuardState.AdditionalDamageRestartsRecoveryInterval",
+                       AdditionalDamageRestartsRecoveryInterval);
+    tests.emplace_back("PlayerSplitGuardState.DamageWhileEmptyRestartsRecoveryInterval",
+                       DamageWhileEmptyRestartsRecoveryInterval);
 }

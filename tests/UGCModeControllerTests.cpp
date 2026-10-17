@@ -5,30 +5,22 @@
 
 #include <functional>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace {
 
+// シーンや描画を起動せず、Controllerからの要求とその順序を確認するための代替Runtime。
 class FakeUGCModeRuntime : public UGCModeRuntime {
 public:
     bool IsTitleScene() const override { return isTitleScene; }
 
-    void SetDebugEditorShowing(bool isShowing) override
-    {
-        isDebugEditorShowing = isShowing;
-    }
+    void SetDebugEditorShowing(bool isShowing) override { isDebugEditorShowing = isShowing; }
 
-    void SetFreeCameraMode(bool isEnabled) override
-    {
-        isFreeCameraMode = isEnabled;
-    }
+    void SetFreeCameraMode(bool isEnabled) override { isFreeCameraMode = isEnabled; }
 
     void ReloadCurrentStage() override { ++reloadCount; }
 
-    bool LoadDebugStage(
-        int stageNumber,
-        const std::string& yamlPath) override
+    bool LoadDebugStage(int stageNumber, const std::string& yamlPath) override
     {
         loadedStageNumber = stageNumber;
         loadedStageYamlPath = yamlPath;
@@ -37,10 +29,7 @@ public:
 
     void ClosePauseMenu() override { didClosePauseMenu = true; }
 
-    void SetUGCOrthographicHalfHeight(float halfHeight) override
-    {
-        orthographicHalfHeight = halfHeight;
-    }
+    void SetUGCOrthographicHalfHeight(float halfHeight) override { orthographicHalfHeight = halfHeight; }
 
     void StartPlayingScene() override
     {
@@ -48,33 +37,19 @@ public:
         ++startPlayingSceneCount;
     }
 
-    void StartUGCStageClearPresentation() override
-    {
-        didStartUGCStageClearPresentation = true;
-    }
+    void StartUGCStageClearPresentation() override { didStartUGCStageClearPresentation = true; }
 
-    void SetDebugCameraPose(const CameraPose&) override
-    {
-        didSetDebugCameraPose = true;
-    }
+    void SetDebugCameraPose(const CameraPose&) override { didSetDebugCameraPose = true; }
 
-    bool RequestSceneFadeAction(
-        const std::function<void()>& fadeAction) override
+    bool RequestSceneFadeAction(const std::function<void()>& fadeAction) override
     {
         pendingFadeAction = fadeAction;
         return shouldAcceptFadeAction;
     }
 
-    void NotifyUGCTutorialReturnedFromPlaytest() override
-    {
-        didNotifyTutorialReturn = true;
-    }
+    void NotifyUGCTutorialReturnedFromPlaytest() override { didNotifyTutorialReturn = true; }
 
-    void CompleteUGCVerification(
-        const std::string& workFileName) override
-    {
-        completedWorkFileName = workFileName;
-    }
+    void CompleteUGCVerification(const std::string& workFileName) override { completedWorkFileName = workFileName; }
 
     bool HasProgressFlag(const std::string& progressId) const override
     {
@@ -86,10 +61,7 @@ public:
         return false;
     }
 
-    void MarkProgressFlag(const std::string& progressId) override
-    {
-        progressIds.push_back(progressId);
-    }
+    void MarkProgressFlag(const std::string& progressId) override { progressIds.push_back(progressId); }
 
     void EnterTitleAtFadeMidpoint() override
     {
@@ -99,6 +71,7 @@ public:
 
     void TryChangeBGM() override { didTryChangeBGM = true; }
 
+    // 実際のフェードと同様にコールバックを後から実行し、実行中に次の予約が入っても上書きしない。
     void CompletePendingFade()
     {
         const std::function<void()> fadeAction = pendingFadeAction;
@@ -140,19 +113,13 @@ void StartingModeConfiguresEditorRuntime()
     ExpectTrue(didStart, "mode start result");
     ExpectTrue(controller.IsModeActive(), "UGC mode active");
     ExpectEqual(0, runtime.loadedStageNumber, "UGC stage number");
-    ExpectTrue(
-        !runtime.loadedStageYamlPath.empty(),
-        "UGC working stage path");
+    ExpectFalse(runtime.loadedStageYamlPath.empty(), "UGC working stage path");
     ExpectTrue(runtime.didClosePauseMenu, "pause menu closed");
     ExpectTrue(runtime.isDebugEditorShowing, "debug editor showing");
     ExpectTrue(runtime.isFreeCameraMode, "free camera enabled");
     ExpectTrue(runtime.didStartPlayingScene, "playing scene started");
     ExpectTrue(runtime.didSetDebugCameraPose, "debug camera pose set");
-    ExpectNear(
-        20.0f,
-        runtime.orthographicHalfHeight,
-        0.0001f,
-        "orthographic half height");
+    ExpectNear(20.0f, runtime.orthographicHalfHeight, 0.0001f, "orthographic half height");
 }
 
 void ReturningFromPlaytestRestoresEditorRuntime()
@@ -171,10 +138,7 @@ void ReturningFromPlaytestRestoresEditorRuntime()
     ExpectTrue(runtime.isDebugEditorShowing, "editor restored");
     ExpectTrue(runtime.isFreeCameraMode, "free camera restored");
     ExpectEqual(2, runtime.reloadCount, "stage reload count");
-    ExpectEqual(
-        3,
-        runtime.startPlayingSceneCount,
-        "playing scene restored after editor return");
+    ExpectEqual(3, runtime.startPlayingSceneCount, "playing scene restored after editor return");
 }
 
 void VerificationCompletionWaitsForFadeAndReturnsToBrowser()
@@ -187,29 +151,18 @@ void VerificationCompletionWaitsForFadeAndReturnsToBrowser()
     ExpectTrue(controller.HandleGoalObtained(), "goal handled by UGC mode");
     controller.ProcessPendingClearCompletion();
 
-    ExpectTrue(
-        runtime.didStartUGCStageClearPresentation,
-        "stage clear presentation started");
-    ExpectFalse(
-        static_cast<bool>(runtime.pendingFadeAction),
-        "fade waits for collection animation");
+    ExpectTrue(runtime.didStartUGCStageClearPresentation, "stage clear presentation started");
+    ExpectFalse(static_cast<bool>(runtime.pendingFadeAction), "fade waits for collection animation");
 
     controller.HandleGoalCollectionFinished();
     controller.ProcessPendingClearCompletion();
 
-    ExpectTrue(
-        static_cast<bool>(runtime.pendingFadeAction),
-        "verification fade queued");
-    ExpectTrue(
-        runtime.completedWorkFileName.empty(),
-        "verification not completed before fade");
+    ExpectTrue(static_cast<bool>(runtime.pendingFadeAction), "verification fade queued");
+    ExpectTrue(runtime.completedWorkFileName.empty(), "verification not completed before fade");
 
     runtime.CompletePendingFade();
 
-    ExpectEqual(
-        std::string("verified_work.yaml"),
-        runtime.completedWorkFileName,
-        "completed work file");
+    ExpectEqual(std::string("verified_work.yaml"), runtime.completedWorkFileName, "completed work file");
     ExpectTrue(runtime.didEnterTitle, "returned to title");
     ExpectTrue(runtime.didTryChangeBGM, "title BGM requested");
     ExpectTrue(controller.IsWorkBrowserShowing(), "work browser opened");
@@ -227,17 +180,12 @@ void EditorPreviewClearReturnsToEditorAfterCollectionAndFade()
     controller.HandleGoalCollectionFinished();
     controller.ProcessPendingClearCompletion();
 
-    ExpectTrue(
-        static_cast<bool>(runtime.pendingFadeAction),
-        "editor preview fade queued");
+    ExpectTrue(static_cast<bool>(runtime.pendingFadeAction), "editor preview fade queued");
     ExpectFalse(runtime.isDebugEditorShowing, "editor hidden before fade");
     runtime.CompletePendingFade();
     ExpectTrue(runtime.isDebugEditorShowing, "editor restored after fade");
     ExpectFalse(controller.IsPlaytestActive(), "preview ended");
-    ExpectEqual(
-        3,
-        runtime.startPlayingSceneCount,
-        "stage clear state ended before editor rendering");
+    ExpectEqual(3, runtime.startPlayingSceneCount, "stage clear state ended before editor rendering");
 }
 
 void SavedWorkClearShowsResultMenuAfterCollectionAndFade()
@@ -275,10 +223,7 @@ void SavedWorkResultRetryRestartsPlaytest()
 
     ExpectFalse(controller.IsClearResultShowing(), "retry closes result");
     ExpectTrue(controller.IsPlaytestActive(), "retry starts playtest");
-    ExpectEqual(
-        reloadCountBeforeRetry + 1,
-        runtime.reloadCount,
-        "retry reloads saved stage");
+    ExpectEqual(reloadCountBeforeRetry + 1, runtime.reloadCount, "retry reloads saved stage");
 }
 
 void SavedWorkResultEditReturnsToEditor()
@@ -320,33 +265,20 @@ void SavedWorkResultTitleExitsUGCMode()
     ExpectTrue(runtime.didEnterTitle, "title scene entered");
 }
 
-}
+} // namespace
 
-void RegisterUGCModeControllerTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCModeControllerTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "UGCModeController.StartingModeConfiguresEditorRuntime",
-        StartingModeConfiguresEditorRuntime);
-    tests.emplace_back(
-        "UGCModeController.ReturningFromPlaytestRestoresEditorRuntime",
-        ReturningFromPlaytestRestoresEditorRuntime);
-    tests.emplace_back(
-        "UGCModeController.VerificationCompletionWaitsForFadeAndReturnsToBrowser",
-        VerificationCompletionWaitsForFadeAndReturnsToBrowser);
-    tests.emplace_back(
-        "UGCModeController.EditorPreviewClearReturnsToEditorAfterCollectionAndFade",
-        EditorPreviewClearReturnsToEditorAfterCollectionAndFade);
-    tests.emplace_back(
-        "UGCModeController.SavedWorkClearShowsResultMenuAfterCollectionAndFade",
-        SavedWorkClearShowsResultMenuAfterCollectionAndFade);
-    tests.emplace_back(
-        "UGCModeController.SavedWorkResultRetryRestartsPlaytest",
-        SavedWorkResultRetryRestartsPlaytest);
-    tests.emplace_back(
-        "UGCModeController.SavedWorkResultEditReturnsToEditor",
-        SavedWorkResultEditReturnsToEditor);
-    tests.emplace_back(
-        "UGCModeController.SavedWorkResultTitleExitsUGCMode",
-        SavedWorkResultTitleExitsUGCMode);
+    tests.emplace_back("UGCModeController.StartingModeConfiguresEditorRuntime", StartingModeConfiguresEditorRuntime);
+    tests.emplace_back("UGCModeController.ReturningFromPlaytestRestoresEditorRuntime",
+                       ReturningFromPlaytestRestoresEditorRuntime);
+    tests.emplace_back("UGCModeController.VerificationCompletionWaitsForFadeAndReturnsToBrowser",
+                       VerificationCompletionWaitsForFadeAndReturnsToBrowser);
+    tests.emplace_back("UGCModeController.EditorPreviewClearReturnsToEditorAfterCollectionAndFade",
+                       EditorPreviewClearReturnsToEditorAfterCollectionAndFade);
+    tests.emplace_back("UGCModeController.SavedWorkClearShowsResultMenuAfterCollectionAndFade",
+                       SavedWorkClearShowsResultMenuAfterCollectionAndFade);
+    tests.emplace_back("UGCModeController.SavedWorkResultRetryRestartsPlaytest", SavedWorkResultRetryRestartsPlaytest);
+    tests.emplace_back("UGCModeController.SavedWorkResultEditReturnsToEditor", SavedWorkResultEditReturnsToEditor);
+    tests.emplace_back("UGCModeController.SavedWorkResultTitleExitsUGCMode", SavedWorkResultTitleExitsUGCMode);
 }

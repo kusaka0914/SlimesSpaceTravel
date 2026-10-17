@@ -2,11 +2,6 @@
 
 #include "gfx/debug/ugc/UGCPreviewState.h"
 
-#include <functional>
-#include <string>
-#include <utility>
-#include <vector>
-
 namespace {
 
 void RequestedRenderSizeIsClampedToSupportedRange()
@@ -33,11 +28,7 @@ void FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt()
     UGCPreviewState preview;
     preview.SetEditLayer(2);
 
-    ExpectNear(
-        3.0f,
-        preview.UpdateFocusY(1.5f, 0.0f),
-        0.0001f,
-        "initial focus");
+    ExpectNear(3.0f, preview.UpdateFocusY(1.5f, 0.0f), 0.0001f, "initial focus");
 
     preview.SetEditLayer(4);
     const float updatedFocus = preview.UpdateFocusY(1.5f, 0.1f);
@@ -57,21 +48,14 @@ void VerticalViewToggleChangesDirection()
     ExpectFalse(preview.IsViewedFromBelow(), "view direction after second toggle");
 }
 
-}
+} // namespace
 
-void RegisterUGCPreviewStateTests(
-    std::vector<std::pair<std::string, std::function<void()>>>& tests)
+void RegisterUGCPreviewStateTests(TestRegistry& tests)
 {
-    tests.emplace_back(
-        "UGCPreviewState.RequestedRenderSizeIsClampedToSupportedRange",
-        RequestedRenderSizeIsClampedToSupportedRange);
-    tests.emplace_back(
-        "UGCPreviewState.YawIsKeptWithinOneHalfTurn",
-        YawIsKeptWithinOneHalfTurn);
-    tests.emplace_back(
-        "UGCPreviewState.FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt",
-        FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt);
-    tests.emplace_back(
-        "UGCPreviewState.VerticalViewToggleChangesDirection",
-        VerticalViewToggleChangesDirection);
+    tests.emplace_back("UGCPreviewState.RequestedRenderSizeIsClampedToSupportedRange",
+                       RequestedRenderSizeIsClampedToSupportedRange);
+    tests.emplace_back("UGCPreviewState.YawIsKeptWithinOneHalfTurn", YawIsKeptWithinOneHalfTurn);
+    tests.emplace_back("UGCPreviewState.FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt",
+                       FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt);
+    tests.emplace_back("UGCPreviewState.VerticalViewToggleChangesDirection", VerticalViewToggleChangesDirection);
 }
