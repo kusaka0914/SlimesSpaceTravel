@@ -1,11 +1,12 @@
 #include "gfx/ui/HudRenderer.h"
 
-#include "gfx/UIRenderer.h"
+// GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
+#include <GL/glew.h>
+
 #include "Game.h"
-#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
-#include "state/UIState.h"
+#include "gfx/UIRenderer.h"
 #include "system/SceneSystem.h"
 #include <string>
 #include <vector>
@@ -61,13 +62,11 @@ void HudRenderer::DrawPlayerStatusUI()
         return;
     }
 
-    const bool isTwoPlayer =
-        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
     if (!isTwoPlayer) {
         DrawPlayerStatusUIForPlayer(mainPlayer, 0.0f, 1.0f);
     } else {
-        const float halfHeight =
-            static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+        const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
         DrawPlayerStatusUIForPlayer(players[0], 0.0f, 0.5f);
         DrawPlayerStatusUIForPlayer(players[1], halfHeight, 0.5f);
     }
@@ -80,26 +79,18 @@ void HudRenderer::DrawPlayerFatiguePromptUI()
         return;
     }
 
-    const bool isTwoPlayer =
-        mGame->GetIsPlayer2Joined() && players.size() >= 2;
+    const bool isTwoPlayer = mGame->GetIsPlayer2Joined() && players.size() >= 2;
     if (!isTwoPlayer) {
-        DrawPlayerPromptUI(
-            mGame->GetMainPlayer(),
-            0.0f,
-            static_cast<float>(mRenderer->GetFbHeight()));
+        DrawPlayerPromptUI(mGame->GetMainPlayer(), 0.0f, static_cast<float>(mRenderer->GetFbHeight()));
         return;
     }
 
-    const float halfHeight =
-        static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
+    const float halfHeight = static_cast<float>(mRenderer->GetFbHeight()) * 0.5f;
     DrawPlayerPromptUI(players[0], 0.0f, halfHeight);
     DrawPlayerPromptUI(players[1], halfHeight, halfHeight);
 }
 
-void HudRenderer::DrawPlayerStatusUIForPlayer(
-    const Player* player,
-    float screenTopY,
-    float uiScale)
+void HudRenderer::DrawPlayerStatusUIForPlayer(const Player* player, float screenTopY, float uiScale)
 {
     if (!player) {
         return;
@@ -137,68 +128,35 @@ void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
     mRenderer->DrawLinedUpTexture("default", "hpTexture", "hp", hpGap, hp, screenTopY, uiScale);
 }
 
-void HudRenderer::DrawDangerBg(int hp)
-{
-    if (hp == 3) {
-        mRenderer->DrawBG(0.0f, 0.0f, mRenderer->GetFbWidth(), mRenderer->GetFbHeight(),
-                          {1.0f, 0.0f, 0.0f, 0.05f});
-    } else if (hp == 2) {
-        mRenderer->DrawBG(0.0f, 0.0f, mRenderer->GetFbWidth(), mRenderer->GetFbHeight(),
-                          {1.0f, 0.0f, 0.0f, 0.1f});
-    } else if (hp == 1) {
-        mRenderer->DrawBG(0.0f, 0.0f, mRenderer->GetFbWidth(), mRenderer->GetFbHeight(),
-                          {1.0f, 0.0f, 0.0f, 0.2f});
-    }
-}
-
 void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
 {
     const float jewelGap = mRenderer->GetFbWidth() / 20.0f;
     mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
 }
 
-void HudRenderer::DrawSplitGuardUI(
-    float screenTopY,
-    float uiScale)
+void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
 {
-    const int maximumGuardCount =
-        mGame->GetMaximumPlayerSplitGuardCount();
+    const int maximumGuardCount = mGame->GetMaximumPlayerSplitGuardCount();
     if (maximumGuardCount <= 0) {
         return;
     }
 
-    const int guardCount =
-        mGame->GetPlayerSplitGuardCount();
-    const float guardGap =
-        mRenderer->GetFbWidth() * 0.025f;
+    const int guardCount = mGame->GetPlayerSplitGuardCount();
+    const float guardGap = mRenderer->GetFbWidth() * 0.025f;
     constexpr float depletedGuardOpacity = 0.2f;
-    mRenderer->DrawLinedUpTextureSlots(
-        "default",
-        "splitGuardTexture",
-        "guard",
-        guardGap,
-        guardCount,
-        maximumGuardCount,
-        depletedGuardOpacity,
-        screenTopY,
-        uiScale);
+    mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardGap, guardCount, maximumGuardCount,
+                                       depletedGuardOpacity, screenTopY, uiScale);
 }
 
-void HudRenderer::UpdateTalkableUIVisibility(
-    const std::vector<Player*>& players,
-    bool allowsPrompt)
+void HudRenderer::UpdateTalkableUIVisibility(const std::vector<Player*>& players, bool allowsPrompt)
 {
     constexpr const char* screen = "default";
     constexpr const char* talkableTextId = "talkableText";
-    constexpr const char* controllerTextureId =
-        "talkableTextureForGameController";
-    constexpr const char* keyboardTextureId =
-        "talkableTextureForKeyboard";
+    constexpr const char* controllerTextureId = "talkableTextureForGameController";
+    constexpr const char* keyboardTextureId = "talkableTextureForKeyboard";
 
     const SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    const bool hasModalConversation =
-        sceneSystem &&
-        (sceneSystem->IsTalkWithNPC() || sceneSystem->HasActiveTutorial());
+    const bool hasModalConversation = sceneSystem && (sceneSystem->IsTalkWithNPC() || sceneSystem->HasActiveTutorial());
     const Player* promptPlayer = nullptr;
     if (allowsPrompt && !hasModalConversation) {
         for (const Player* player : players) {
@@ -210,22 +168,11 @@ void HudRenderer::UpdateTalkableUIVisibility(
     }
 
     const bool shouldShowPrompt = promptPlayer != nullptr;
-    const bool usesController =
-        shouldShowPrompt &&
-        mRenderer->UsesControllerUI(promptPlayer);
+    const bool usesController = shouldShowPrompt && mRenderer->UsesControllerUI(promptPlayer);
 
-    mRenderer->SetCustomUIElementVisible(
-        screen,
-        talkableTextId,
-        shouldShowPrompt);
-    mRenderer->SetCustomUIElementVisible(
-        screen,
-        controllerTextureId,
-        shouldShowPrompt && usesController);
-    mRenderer->SetCustomUIElementVisible(
-        screen,
-        keyboardTextureId,
-        shouldShowPrompt && !usesController);
+    mRenderer->SetCustomUIElementVisible(screen, talkableTextId, shouldShowPrompt);
+    mRenderer->SetCustomUIElementVisible(screen, controllerTextureId, shouldShowPrompt && usesController);
+    mRenderer->SetCustomUIElementVisible(screen, keyboardTextureId, shouldShowPrompt && !usesController);
 }
 
 void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
@@ -237,33 +184,18 @@ void HudRenderer::DrawRemainPartsUI(int remainBoatPartsCount)
 
     const std::string remainText = remainPartsTextInfo->texts[0] + std::to_string(remainBoatPartsCount);
     mRenderer->DrawTextForElement(
-        "default",
-        "remainPartsText",
-        mRenderer->GetFbWidth() -
-            mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
+        "default", "remainPartsText", mRenderer->GetFbWidth() - mRenderer->GetFbWidth() * remainPartsTextInfo->xRatio,
         mRenderer->GetFbWidth() * remainPartsTextInfo->yRatio,
-        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio,
-        remainText,
-        remainPartsTextInfo->centerBased,
-        {255, 255, 255, 255},
-        remainPartsTextInfo->rotationDegrees);
+        mRenderer->GetFbWidth() * remainPartsTextInfo->scaleRatio, remainText, remainPartsTextInfo->centerBased,
+        {255, 255, 255, 255}, remainPartsTextInfo->rotationDegrees);
 }
 
 void HudRenderer::DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight)
 {
-    mRenderer->DrawTextDependsOnPlayerInput(
-        player,
-        "state",
-        "recommendReduceTiredText",
-        screenTopY,
-        screenHeight);
+    mRenderer->DrawTextDependsOnPlayerInput(player, "state", "recommendReduceTiredText", screenTopY, screenHeight);
 }
 
 void HudRenderer::DrawUGCClearVerificationGuide()
 {
-    mRenderer->DrawSceneText(
-        "state",
-        "ugcClearVerificationGuideText",
-        0,
-        {255, 255, 255, 255});
+    mRenderer->DrawSceneText("state", "ugcClearVerificationGuideText", 0, {255, 255, 255, 255});
 }

@@ -1,10 +1,10 @@
 #include "gfx/Renderer.h"
 
 #include "Game.h"
+#include "gfx/TextRasterizer.h"
 #include "gfx/VertexArray.h"
 #include "thirdParty/stb_image.h"
 
-#include <algorithm>
 #include <iostream>
 
 Renderer::Renderer(Game* game)
@@ -102,69 +102,10 @@ void Renderer::RegisterTexture(const std::string& path, const std::string& name)
 GLuint Renderer::CreateTextTexture(const std::string& text, int& outWidth, int& outHeight, const SDL_Color textColor,
                                    float textScale, int outlinePixels) const
 {
-    outWidth = 0;
-    outHeight = 0;
-
-    if (!mFont) {
-        return 0;
-    }
-
-    // フォントの縁取り設定は後続の文字描画にも影響するため、一時変更を描画直後に戻す。
-    const int previousOutline = TTF_GetFontOutline(mFont);
-    const int requestedOutline = std::max(outlinePixels, 0);
-    if (previousOutline != requestedOutline) {
-        TTF_SetFontOutline(mFont, requestedOutline);
-    }
-
-    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(mFont, text.c_str(), textColor);
-    if (previousOutline != requestedOutline) {
-        TTF_SetFontOutline(mFont, previousOutline);
-    }
-
-    if (!textSurface) {
-        return 0;
-    }
-
-    SDL_Surface* rgbaSurface = SDL_ConvertSurfaceFormat(textSurface, SDL_PIXELFORMAT_RGBA32, 0);
-    SDL_FreeSurface(textSurface);
-
-    if (!rgbaSurface) {
-        return 0;
-    }
-
-    outWidth = rgbaSurface->w * textScale;
-    outHeight = rgbaSurface->h * textScale;
-
-    GLuint texture = 0;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgbaSurface->w, rgbaSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 rgbaSurface->pixels);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    SDL_FreeSurface(rgbaSurface);
-
-    return texture;
+    return TextRasterizer::CreateTexture(mFont, text, outWidth, outHeight, textColor, textScale, outlinePixels);
 }
 
 bool Renderer::MeasureText(const std::string& text, float textScale, int& outWidth, int& outHeight) const
 {
-    outWidth = 0;
-    outHeight = 0;
-    if (!mFont || text.empty()) {
-        return false;
-    }
-
-    int unscaledWidth = 0;
-    int unscaledHeight = 0;
-    if (TTF_SizeUTF8(mFont, text.c_str(), &unscaledWidth, &unscaledHeight) != 0) {
-        return false;
-    }
-
-    outWidth = static_cast<int>(unscaledWidth * textScale);
-    outHeight = static_cast<int>(unscaledHeight * textScale);
-    return outWidth > 0 && outHeight > 0;
+    return TextRasterizer::Measure(mFont, text, textScale, outWidth, outHeight);
 }

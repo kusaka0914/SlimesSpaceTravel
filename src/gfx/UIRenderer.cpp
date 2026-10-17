@@ -2,6 +2,7 @@
 
 #include "Game.h"
 #include "gfx/UIShader.h"
+#include "gfx/VertexArray.h"
 #include "gfx/ui/HudRenderer.h"
 #include "gfx/ui/PauseMenuRenderer.h"
 #include "gfx/ui/SceneUIRenderer.h"
@@ -31,7 +32,9 @@ UIRenderer::~UIRenderer()
 
 void UIRenderer::Shutdown()
 {
-    ClearTextTextureCache();
+    if (mTextRenderer) {
+        mTextRenderer->Shutdown();
+    }
 
     if (!mIsImGuiInitialized) {
         return;
@@ -57,6 +60,8 @@ void UIRenderer::Initialize()
         mIsInitialized = false;
         return;
     }
+
+    mTextRenderer = std::make_unique<UITextRenderer>(mFont, *mUIShader, *mVertexArrays.at("quad"));
 
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();

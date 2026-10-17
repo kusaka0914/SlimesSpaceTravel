@@ -1,7 +1,10 @@
 #include "gfx/ui/PauseMenuRenderer.h"
 
-#include "gfx/UIRenderer.h"
+// GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
+#include <GL/glew.h>
+
 #include "Game.h"
+#include "gfx/UIRenderer.h"
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -20,37 +23,29 @@ void PauseMenuRenderer::Draw()
     mRenderer->DrawSceneText("pauseMenu", "titleText", 0);
 
     std::vector<std::string> menuTextIds = {
-        "resumeText",
-        "controlStyleText",
-        "twoPlayerText",
-        "returnBaseText",
-        "feedbackText",
-        "quitText",
+        "resumeText", "controlStyleText", "twoPlayerText", "returnBaseText", "feedbackText", "quitText",
     };
 
     const int selectedIndex = mGame->GetPauseMenuSelectedIndex();
 
-    for (int i = 0; i < static_cast<int>(menuTextIds.size()); ++i) {
+    for (int menuIndex = 0; menuIndex < static_cast<int>(menuTextIds.size()); ++menuIndex) {
         const UILoadSystem::TextInfo* textInfo =
-            mRenderer->GetUILoadSystem()->GetTextInfo("pauseMenu", menuTextIds[i]);
+            mRenderer->GetUILoadSystem()->GetTextInfo("pauseMenu", menuTextIds[menuIndex]);
         if (!textInfo || textInfo->texts.empty()) {
             continue;
         }
 
-        const bool isTwoPlayerEntry = menuTextIds[i] == "twoPlayerText";
-        const bool isReturnBaseEntry = menuTextIds[i] == "returnBaseText";
-        const bool enabled =
-            (!isTwoPlayerEntry || mGame->CanStartTwoPlayerFromPauseMenu()) &&
-            (!isReturnBaseEntry || mGame->CanReturnToBaseFromPauseMenu());
-        const bool selected = enabled && selectedIndex == i;
+        const bool isTwoPlayerEntry = menuTextIds[menuIndex] == "twoPlayerText";
+        const bool isReturnBaseEntry = menuTextIds[menuIndex] == "returnBaseText";
+        const bool isEnabled = (!isTwoPlayerEntry || mGame->CanStartTwoPlayerFromPauseMenu()) &&
+                               (!isReturnBaseEntry || mGame->CanReturnToBaseFromPauseMenu());
+        const bool isSelected = isEnabled && selectedIndex == menuIndex;
 
         std::string label = textInfo->texts[0];
-        if (menuTextIds[i] == "feedbackText" && mGame->IsReviewBuild()) {
-            label = mGame->GetIsDebugEditorShowing()
-                ? "エディターを閉じる"
-                : "エディターを開く";
+        if (menuTextIds[menuIndex] == "feedbackText" && mGame->IsReviewBuild()) {
+            label = mGame->GetIsDebugEditorShowing() ? "エディターを閉じる" : "エディターを開く";
         }
-        if (menuTextIds[i] == "controlStyleText") {
+        if (menuTextIds[menuIndex] == "controlStyleText") {
             label += mGame->IsAssistControlStyle() ? "らくらく" : "こまかく";
         }
         if (isTwoPlayerEntry && mGame->GetIsPlayer2Joined()) {
@@ -59,25 +54,17 @@ void PauseMenuRenderer::Draw()
             label += "（コントローラーをつなぐ）";
         }
 
-        std::string text = selected ? "> " : "  ";
+        std::string text = isSelected ? "> " : "  ";
         text += label;
 
-        const glm::vec4 color = !enabled
-                                    ? glm::vec4(125, 125, 125, 255)
-                                    : selected
-                                          ? glm::vec4(255, 230, 0, 255)
-                                          : glm::vec4(255, 255, 255, 255);
+        const glm::vec4 color = !isEnabled   ? glm::vec4(125, 125, 125, 255)
+                                : isSelected ? glm::vec4(255, 230, 0, 255)
+                                             : glm::vec4(255, 255, 255, 255);
 
-        mRenderer->DrawTextForElement(
-            "pauseMenu",
-            menuTextIds[i],
-            mRenderer->GetFbWidth() * textInfo->xRatio,
-            mRenderer->GetFbHeight() * textInfo->yRatio,
-            mRenderer->GetFbWidth() * textInfo->scaleRatio,
-            text,
-            textInfo->centerBased,
-            color,
-            textInfo->rotationDegrees);
+        mRenderer->DrawTextForElement("pauseMenu", menuTextIds[menuIndex], mRenderer->GetFbWidth() * textInfo->xRatio,
+                                      mRenderer->GetFbHeight() * textInfo->yRatio,
+                                      mRenderer->GetFbWidth() * textInfo->scaleRatio, text, textInfo->centerBased,
+                                      color, textInfo->rotationDegrees);
     }
 
     mRenderer->DrawTextDependsOnGameController("pauseMenu", "operationText");

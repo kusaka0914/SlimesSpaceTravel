@@ -9,8 +9,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
@@ -69,8 +69,8 @@ void RestoreOpenGLState(const OpenGLState& state)
     }
 
     glDepthMask(state.depthWriteEnabled);
-    glBlendFuncSeparate(state.blendSourceRgb, state.blendDestinationRgb,
-                        state.blendSourceAlpha, state.blendDestinationAlpha);
+    glBlendFuncSeparate(state.blendSourceRgb, state.blendDestinationRgb, state.blendSourceAlpha,
+                        state.blendDestinationAlpha);
 
     glUseProgram(static_cast<GLuint>(state.currentProgram));
     glBindVertexArray(static_cast<GLuint>(state.currentVertexArray));
@@ -79,7 +79,7 @@ void RestoreOpenGLState(const OpenGLState& state)
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(state.boundTexture));
     glActiveTexture(state.activeTexture);
 }
-}
+} // namespace
 
 ParticleRenderer::ParticleRenderer(Game* game)
     : mGame(game),
@@ -133,7 +133,8 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) 
         RenderItem renderItem;
         renderItem.particle = &particle;
         renderItem.instance = CreateInstanceData(particle, view);
-        renderItem.cameraDistanceSquared = glm::dot(particle.position - cameraPosition, particle.position - cameraPosition);
+        renderItem.cameraDistanceSquared =
+            glm::dot(particle.position - cameraPosition, particle.position - cameraPosition);
 
         if (particle.blendMode == ParticleBlendMode::Alpha) {
             alphaItems.push_back(renderItem);
@@ -156,6 +157,7 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) 
     glDepthMask(GL_FALSE);
     glBindVertexArray(mVertexArray);
 
+    // 深度には書き込まず、不透明物による遮蔽を保ったまま粒子同士を合成する。
     DrawAdditiveParticles(additiveItems);
     DrawAlphaParticles(std::move(alphaItems));
 
@@ -171,13 +173,14 @@ std::size_t ParticleRenderer::BatchKeyHash::operator()(const BatchKey& key) cons
 
 void ParticleRenderer::InitializeBuffers()
 {
-
+    // clang-format off
     constexpr float quadVertices[] = {
         -0.5f, -0.5f, 0.0f, 0.0f,
          0.5f, -0.5f, 1.0f, 0.0f,
         -0.5f,  0.5f, 0.0f, 1.0f,
          0.5f,  0.5f, 1.0f, 1.0f,
     };
+    // clang-format on
 
     glGenVertexArrays(1, &mVertexArray);
     glGenBuffers(1, &mQuadBuffer);
@@ -274,9 +277,8 @@ GLuint ParticleRenderer::LoadTexture(const std::string& texturePath) const
 ParticleRenderer::InstanceData ParticleRenderer::CreateInstanceData(const Particle& particle,
                                                                     const glm::mat4& view) const
 {
-    const float normalizedAge = particle.lifetime > 0.0f
-                                    ? glm::clamp(particle.age / particle.lifetime, 0.0f, 1.0f)
-                                    : 1.0f;
+    const float normalizedAge =
+        particle.lifetime > 0.0f ? glm::clamp(particle.age / particle.lifetime, 0.0f, 1.0f) : 1.0f;
 
     InstanceData instance;
     instance.position = particle.position;
@@ -285,6 +287,7 @@ ParticleRenderer::InstanceData ParticleRenderer::CreateInstanceData(const Partic
     instance.rotationRadians = particle.rotationRadians;
     instance.stretch = 1.0f;
 
+    // 速度をビュー空間へ移し、カメラ平面内の向きに合わせる。奥行き方向だけの速度では回転を変えない。
     if (particle.renderMode == ParticleRenderMode::VelocityAligned &&
         glm::dot(particle.velocity, particle.velocity) > velocityEpsilonSquared) {
         const glm::vec3 viewVelocity = glm::vec3(view * glm::vec4(particle.velocity, 0.0f));
@@ -304,6 +307,7 @@ void ParticleRenderer::DrawAdditiveParticles(const std::vector<RenderItem>& item
         return;
     }
 
+    // 加算合成は順序に依存しないため、同じテクスチャの粒子をまとめて描ける。
     std::unordered_map<BatchKey, std::vector<InstanceData>, BatchKeyHash> batches;
     for (const RenderItem& item : items) {
         if (!item.particle) {
@@ -326,6 +330,7 @@ void ParticleRenderer::DrawAlphaParticles(std::vector<RenderItem> items) const
         return;
     }
 
+    // 半透明合成は奥からの順序を保つ必要があるため、同じテクスチャでも連続する粒子だけまとめる。
     std::sort(items.begin(), items.end(), [](const RenderItem& left, const RenderItem& right) {
         return left.cameraDistanceSquared > right.cameraDistanceSquared;
     });
@@ -376,9 +381,7 @@ void ParticleRenderer::DrawBatch(const BatchKey& key, const std::vector<Instance
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glBindBuffer(GL_ARRAY_BUFFER, mInstanceBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(instances.size() * sizeof(InstanceData)),
-                 instances.data(),
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(instances.size() * sizeof(InstanceData)), instances.data(),
                  GL_STREAM_DRAW);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, static_cast<GLsizei>(instances.size()));

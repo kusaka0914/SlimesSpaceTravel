@@ -1,582 +1,35 @@
-#include "gfx/UIRenderer.h"
+#include "gfx/ui/UITextRenderer.h"
 
-#include "Game.h"
-#include "actor/Player.h"
+#include "gfx/TextRasterizer.h"
 #include "gfx/UIShader.h"
 #include "gfx/VertexArray.h"
-#include "gfx/ui/HudRenderer.h"
-#include "gfx/ui/PauseMenuRenderer.h"
-#include "gfx/ui/SceneUIRenderer.h"
-#include "gfx/ui/StateUIRenderer.h"
-#include "gfx/ui/UIDebugEditorBridge.h"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "system/SceneSystem.h"
-#include "system/text/JapaneseRubyGenerator.h"
-#include "system/CameraSystem.h"
-#include "system/sequence/SequenceSystem.h"
+
 #include <algorithm>
-#include <array>
-#include <filesystem>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <limits>
+#include <utility>
 
-void UIRenderer::DrawSkyBox(int renderWidth, int renderHeight)
+UITextRenderer::UITextRenderer(TTF_Font* font, const UIShader& shader, VertexArray& quad)
+    : mFont(font),
+      mShader(shader),
+      mQuad(quad)
 {
-    if (renderWidth <= 0 || renderHeight <= 0) {
-        glfwGetFramebufferSize(
-            mGame->GetWindow(),
-            &renderWidth,
-            &renderHeight);
-    }
-
-    const int previousFramebufferWidth = mFbWidth;
-    const int previousFramebufferHeight = mFbHeight;
-    mFbWidth = renderWidth;
-    mFbHeight = renderHeight;
-    glUseProgram(mUIShader->GetShaderProgram());
-    glUniform1i(mUIShader->GetLocConvertSrgbToLinear(), 1);
-
-    DrawTexture(0.0f, 0.0f, mFbWidth, mFbHeight, "skyBox");
-    glUniform1i(mUIShader->GetLocConvertSrgbToLinear(), 0);
-
-    mFbWidth = previousFramebufferWidth;
-    mFbHeight = previousFramebufferHeight;
 }
 
-void UIRenderer::DrawSceneText(const std::string& sceneName, const std::string& UIName, int index,
-                               glm::vec4 color)
+UITextRenderer::~UITextRenderer()
 {
-    const auto textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName);
-    if (!textInfo) {
-        return;
-    }
-
-    if (index < 0 || index >= static_cast<int>(textInfo->texts.size())) {
-        return;
-    }
-
-    DrawTextForElement(
-        sceneName,
-        UIName,
-        mFbWidth * textInfo->xRatio,
-        mFbHeight * textInfo->yRatio,
-        mFbWidth * textInfo->scaleRatio,
-        textInfo->texts[index],
-        textInfo->centerBased,
-        color,
-        textInfo->rotationDegrees);
+    Shutdown();
 }
 
-void UIRenderer::DrawTalkUI(const std::vector<std::string>& texts, int index,
-                            const std::vector<RubyTextSegment>* rubySegments)
+void UITextRenderer::DrawText(glm::ivec2 framebufferSize, float x, float y, float scale, const std::string& message,
+                              bool isCenterBase, glm::vec4 color, float rotationDegrees, const TextEffect* effect)
 {
-    DrawSceneTexture("state", "talkBgTexture", "textBg");
+    glUseProgram(mShader.GetShaderProgram());
 
-    const auto talkTextInfo = mUILoadSystem->GetTextInfo("state", "talkText");
-    const auto talkBgTextureInfo =
-        mUILoadSystem->GetTextureInfo("state", "talkBgTexture");
-    if (!talkTextInfo || !talkBgTextureInfo) {
-        return;
-    }
-
-    if (index < 0 || index >= static_cast<int>(texts.size())) {
-        return;
-    }
-
-    constexpr glm::vec4 talkTextColor{35.0f, 35.0f, 42.0f, 255.0f};
-    const float x = mFbWidth * talkTextInfo->xRatio;
-    const float y = mFbHeight * talkTextInfo->yRatio;
-    const float scale = mFbWidth * talkTextInfo->scaleRatio;
-
-    if (rubySegments && !rubySegments->empty() &&
-        JoinRubyBaseText(*rubySegments) == texts[index]) {
-        DrawRubyText(
-            x,
-            y,
-            scale,
-            talkTextInfo->rubyScaleRatio,
-            talkTextInfo->rubyGapRatio,
-            *rubySegments,
-            talkTextColor,
-            talkTextInfo->centerBased,
-            talkTextInfo->rotationDegrees);
-        RecordRenderedTextElement(
-            "state",
-            "talkText",
-            x,
-            y,
-            scale,
-            texts[index],
-            talkTextInfo->centerBased,
-            talkTextInfo->rotationDegrees);
-    } else {
-        DrawTextForElement(
-            "state",
-            "talkText",
-            x,
-            y,
-            scale,
-            texts[index],
-            talkTextInfo->centerBased,
-            talkTextColor,
-            talkTextInfo->rotationDegrees);
-    }
-
-    DrawTalkAdvancePrompt();
-}
-
-void UIRenderer::DrawTalkUI(const UILoadSystem::TextInfo* textInfo)
-{
-    if (!textInfo) {
-        return;
-    }
-
-    const auto talkBgTextureInfo = mUILoadSystem->GetTextureInfo("state", "talkBgTexture");
-    if (!talkBgTextureInfo) {
-        return;
-    }
-
-    constexpr float textureMarginX = 0.0275f;
-    constexpr float textureMarginY = 0.0845f;
-    const float backgroundX =
-        mFbWidth * (textInfo->xRatio - textureMarginX);
-    const float backgroundY =
-        mFbHeight * (textInfo->yRatio - textureMarginY);
-    const float backgroundWidth =
-        mFbWidth * talkBgTextureInfo->widthRatio;
-    const float backgroundHeight =
-        mFbHeight * talkBgTextureInfo->heightRatio;
-    DrawTexture(
-        backgroundX,
-        backgroundY,
-        backgroundWidth,
-        backgroundHeight,
-        "textBg",
-        false,
-        talkBgTextureInfo->rotationDegrees);
-    RecordRenderedUIElement(
-        RenderedUIElementSource::CodeBoundTexture,
-        "state",
-        "talkBgTexture",
-        glm::vec2(
-            backgroundX + backgroundWidth * 0.5f,
-            backgroundY + backgroundHeight * 0.5f),
-        glm::vec2(backgroundWidth, backgroundHeight),
-        talkBgTextureInfo->rotationDegrees);
-
-    const glm::vec4 talkTextColor{35.0f, 35.0f, 42.0f, 255.0f};
-    const int talkUIIndex = mGame->GetSceneSystem()->GetTalkUIIndex();
-
-    if (talkUIIndex < 0 || talkUIIndex >= static_cast<int>(textInfo->texts.size())) {
-        return;
-    }
-
-    const std::string textInfoKey =
-        mUILoadSystem->FindTextInfoKey(textInfo);
-    const std::size_t keySeparator = textInfoKey.find('.');
-    const std::string screen =
-        keySeparator == std::string::npos
-            ? std::string("state")
-            : textInfoKey.substr(0, keySeparator);
-    const std::string id =
-        keySeparator == std::string::npos
-            ? std::string("talkText")
-            : textInfoKey.substr(keySeparator + 1);
-
-    if (talkUIIndex < static_cast<int>(textInfo->rubySegments.size()) &&
-        !textInfo->rubySegments[talkUIIndex].empty() &&
-        JoinRubyBaseText(textInfo->rubySegments[talkUIIndex]) ==
-            textInfo->texts[talkUIIndex]) {
-        const UILoadSystem::TextInfo* globalTalkTextInfo =
-            mUILoadSystem->GetTextInfo("state", "talkText");
-        const float rubyScaleRatio =
-            globalTalkTextInfo ? globalTalkTextInfo->rubyScaleRatio : 0.48f;
-        const float rubyGapRatio =
-            globalTalkTextInfo ? globalTalkTextInfo->rubyGapRatio : 0.0f;
-        DrawRubyText(
-            mFbWidth * textInfo->xRatio,
-            mFbHeight * textInfo->yRatio,
-            mFbWidth * textInfo->scaleRatio,
-            rubyScaleRatio,
-            rubyGapRatio,
-            textInfo->rubySegments[talkUIIndex],
-            talkTextColor,
-            textInfo->centerBased,
-            textInfo->rotationDegrees);
-        RecordRenderedTextElement(
-            screen,
-            id,
-            mFbWidth * textInfo->xRatio,
-            mFbHeight * textInfo->yRatio,
-            mFbWidth * textInfo->scaleRatio,
-            textInfo->texts[talkUIIndex],
-            textInfo->centerBased,
-            textInfo->rotationDegrees);
-    } else {
-        DrawTextForElement(
-            screen,
-            id,
-            mFbWidth * textInfo->xRatio,
-            mFbHeight * textInfo->yRatio,
-            mFbWidth * textInfo->scaleRatio,
-            textInfo->texts[talkUIIndex],
-            textInfo->centerBased,
-            talkTextColor,
-            textInfo->rotationDegrees);
-    }
-
-    DrawTalkAdvancePrompt();
-}
-
-void UIRenderer::DrawTalkAdvancePrompt()
-{
-    SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    if (!sceneSystem ||
-        sceneSystem->IsWaitingForTutorialPlayerAction()) {
-        return;
-    }
-
-    const UILoadSystem::TextureInfo* promptTextureInfo =
-        mUILoadSystem->GetTextureInfo("state", "talkAdvancePrompt");
-    if (!promptTextureInfo) {
-        return;
-    }
-
-    const bool usesController =
-        mGame->IsGameControllerConnected() &&
-        mGame->GetLastUsedInputDevice() ==
-            InputDeviceType::GameController;
-    const std::string texturePath =
-        usesController
-            ? "textures/Inputs/switch_button_a.png"
-            : "textures/Inputs/Keyboard/keyboard_space.png";
-    if (!RegisterCustomUITexture(texturePath)) {
-        return;
-    }
-
-    const GLuint textureHandle =
-        GetCustomUITextureHandle(texturePath);
-    if (textureHandle == 0) {
-        return;
-    }
-
-    const float iconX = mFbWidth * promptTextureInfo->xRatio;
-    const float iconY = mFbHeight * promptTextureInfo->yRatio;
-    const float iconWidth =
-        mFbWidth * promptTextureInfo->widthRatio;
-    const float iconHeight =
-        mFbHeight * promptTextureInfo->heightRatio;
-
-    constexpr glm::vec4 talkPromptColor{
-        35.0f / 255.0f,
-        35.0f / 255.0f,
-        42.0f / 255.0f,
-        0.9f};
-    DrawTextureHandle(
-        iconX,
-        iconY,
-        iconWidth,
-        iconHeight,
-        textureHandle,
-        false,
-        promptTextureInfo->rotationDegrees,
-        1.0f,
-        talkPromptColor);
-    RecordRenderedUIElement(
-        RenderedUIElementSource::CodeBoundTexture,
-        "state",
-        "talkAdvancePrompt",
-        glm::vec2(
-            iconX + iconWidth * 0.5f,
-            iconY + iconHeight * 0.5f),
-        glm::vec2(iconWidth, iconHeight),
-        promptTextureInfo->rotationDegrees);
-}
-
-bool UIRenderer::DrawSceneTalkUI(const std::string& sceneName, const std::string& UIName)
-{
-    const UILoadSystem::TextInfo* textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName);
-    if (!textInfo) {
-        return false;
-    }
-
-    const bool isTalking = mGame->GetSceneSystem()->GetTalkUIIndex() < static_cast<int>(textInfo->texts.size());
-    if (isTalking) {
-        DrawTalkUI(textInfo);
-        return true;
-    }
-    return false;
-}
-
-void UIRenderer::DrawTextDependsOnGameController(const std::string& sceneName, const std::string& UIName,
-                                                 float screenTopY, float uiScale)
-{
-    const UILoadSystem::TextInfo* textInfo;
-    std::string resolvedUIName;
-    if (mGame->IsGameControllerConnected()) {
-        resolvedUIName = UIName + "ForGameController";
-    } else {
-        resolvedUIName = UIName + "ForKeyBoard";
-    }
-    textInfo = mUILoadSystem->GetTextInfo(sceneName, resolvedUIName);
-
-    if (!textInfo) {
-        return;
-    }
-
-    const float screenHeight = mFbHeight * uiScale;
-
-    const float x = mFbWidth * textInfo->xRatio;
-    const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio * uiScale;
-
-    DrawTextForElement(
-        sceneName,
-        resolvedUIName,
-        x,
-        y,
-        scale,
-        textInfo->texts[0],
-        textInfo->centerBased,
-        {255, 255, 255, 255},
-        textInfo->rotationDegrees);
-}
-
-void UIRenderer::DrawTextDependsOnPlayerInput(const Player* player, const std::string& sceneName,
-                                              const std::string& UIName, float screenTopY,
-                                              float screenHeight)
-{
-    const UILoadSystem::TextInfo* textInfo = nullptr;
-    std::string resolvedUIName;
-
-    if (UsesControllerUI(player)) {
-        resolvedUIName = UIName + "ForGameController";
-    } else {
-        resolvedUIName = UIName + "ForKeyBoard";
-    }
-    textInfo = mUILoadSystem->GetTextInfo(sceneName, resolvedUIName);
-
-    if (!textInfo) {
-        return;
-    }
-
-    const float x = mFbWidth * textInfo->xRatio;
-    const float y = screenTopY + screenHeight * textInfo->yRatio;
-    const float scale = mFbWidth * textInfo->scaleRatio;
-
-    DrawTextForElement(
-        sceneName,
-        resolvedUIName,
-        x,
-        y,
-        scale,
-        textInfo->texts[0],
-        textInfo->centerBased,
-        {255, 255, 255, 255},
-        textInfo->rotationDegrees);
-}
-
-bool UIRenderer::UsesControllerUI(const Player* player) const
-{
-    if (!player) {
-        return false;
-    }
-
-    if (!mGame->IsGameControllerConnected()) {
-        return false;
-    }
-
-
-
-
-    return !mGame->GetIsPlayer2Joined() ||
-           mGame->HasGameControllerForPlayer(player->GetPlayerNum());
-}
-
-bool UIRenderer::DrawSceneTalkUIDependsOnGameController(const std::string& sceneName, const std::string& UIName)
-{
-    const UILoadSystem::TextInfo* textInfo;
-    if (mGame->IsGameControllerConnected()) {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForGameController");
-    } else {
-        textInfo = mUILoadSystem->GetTextInfo(sceneName, UIName + "ForKeyBoard");
-    }
-
-    if (!textInfo) {
-        return false;
-    }
-
-    const bool isTalking = mGame->GetSceneSystem()->GetTalkUIIndex() < static_cast<int>(textInfo->texts.size());
-    if (isTalking) {
-        DrawTalkUI(textInfo);
-        return true;
-    }
-    return false;
-}
-
-void UIRenderer::DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color)
-{
-    const UILoadSystem::TextureInfo* textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
-        return;
-    }
-
-    const float x = mFbWidth * textureInfo->xRatio;
-    const float y = mFbHeight * textureInfo->yRatio;
-    const float width = mFbWidth * textureInfo->widthRatio;
-    const float height = mFbHeight * textureInfo->heightRatio;
-    DrawBG(x, y, width, height, color, textureInfo->rotationDegrees);
-    RecordRenderedUIElement(
-        RenderedUIElementSource::CodeBoundTexture,
-        sceneName,
-        UIName,
-        glm::vec2(x + width * 0.5f, y + height * 0.5f),
-        glm::vec2(width, height),
-        textureInfo->rotationDegrees);
-}
-
-void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::string& UIName,
-                                  const std::string& textureName)
-{
-    const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo) {
-        return;
-    }
-
-    const float x = mFbWidth * textureInfo->xRatio;
-    const float y = mFbHeight * textureInfo->yRatio;
-    const float width = mFbWidth * textureInfo->widthRatio;
-    const float height = mFbHeight * textureInfo->heightRatio;
-    DrawTexture(
-        x,
-        y,
-        width,
-        height,
-        textureName,
-        false,
-        textureInfo->rotationDegrees);
-    RecordRenderedUIElement(
-        RenderedUIElementSource::CodeBoundTexture,
-        sceneName,
-        UIName,
-        glm::vec2(x + width * 0.5f, y + height * 0.5f),
-        glm::vec2(width, height),
-        textureInfo->rotationDegrees);
-}
-
-void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName,
-                                    const std::string& textureName, float gap, int count, float screenTopY,
-                                    float uiScale)
-{
-    DrawLinedUpTextureSlots(
-        sceneName,
-        UIName,
-        textureName,
-        gap,
-        count,
-        count,
-        1.0f,
-        screenTopY,
-        uiScale);
-}
-
-void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
-                                         const std::string& textureName, float gap, int activeSlotCount,
-                                         int totalSlotCount, float inactiveSlotOpacity, float screenTopY,
-                                         float uiScale)
-{
-    const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
-    if (!textureInfo || totalSlotCount <= 0) {
-        return;
-    }
-
-    const float screenHeight = mFbHeight * uiScale;
-
-    const float textureX = mFbWidth * textureInfo->xRatio;
-    const float textureY = screenTopY + screenHeight * textureInfo->yRatio;
-
-    const float textureWidth = mFbWidth * textureInfo->widthRatio * uiScale;
-    const float textureHeight = mFbWidth * textureInfo->heightRatio * uiScale;
-
-    const float textureGap = gap * uiScale;
-
-    const int visibleActiveSlotCount = std::clamp(activeSlotCount, 0, totalSlotCount);
-    const float visibleInactiveSlotOpacity = std::clamp(inactiveSlotOpacity, 0.0f, 1.0f);
-
-    for (int slotIndex = 0; slotIndex < totalSlotCount; ++slotIndex) {
-        const float currentX = textureX + textureGap * slotIndex;
-        const float opacity = slotIndex < visibleActiveSlotCount ? 1.0f : visibleInactiveSlotOpacity;
-        DrawTexture(
-            currentX,
-            textureY,
-            textureWidth,
-            textureHeight,
-            textureName,
-            false,
-            textureInfo->rotationDegrees,
-            opacity);
-        RecordRenderedUIElement(
-            RenderedUIElementSource::CodeBoundTexture,
-            sceneName,
-            UIName,
-            glm::vec2(
-                currentX + textureWidth * 0.5f,
-                textureY + textureHeight * 0.5f),
-            glm::vec2(textureWidth, textureHeight),
-            textureInfo->rotationDegrees);
-    }
-}
-
-void UIRenderer::DrawBG(
-    float x,
-    float y,
-    float width,
-    float height,
-    std::vector<GLfloat> color,
-    float rotationDegrees)
-{
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
-                      glm::rotate(
-                          glm::mat4(1.0f),
-                          glm::radians(rotationDegrees),
-                          glm::vec3(0.0f, 0.0f, 1.0f)) *
-                      glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 proj = glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
-
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocUseTexture(), 0);
-    glUniform4fv(mUIShader->GetLocObjectColor(), 1, color.data());
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    mVertexArrays.at("quad")->SetActive();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-void UIRenderer::DrawText(
-    float x,
-    float y,
-    float scale,
-    const std::string& message,
-    bool isCenterBase,
-    glm::vec4 color,
-    float rotationDegrees,
-    const TextEffect* effect)
-{
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    std::string message1 = message;
-    std::string message2;
-    const bool isNewLine = SplitText(message, message1, message2);
+    std::string firstLine = message;
+    std::string secondLine;
+    const bool hasSecondLine = SplitText(message, firstLine, secondLine);
 
     glm::vec2 rotationPivot(x, y);
     if (!isCenterBase) {
@@ -584,160 +37,113 @@ void UIRenderer::DrawText(
         int firstHeight = 0;
         int secondWidth = 0;
         int secondHeight = 0;
-        MeasureText(message1, scale, firstWidth, firstHeight);
-        if (isNewLine) {
-            MeasureText(message2, scale, secondWidth, secondHeight);
+        TextRasterizer::Measure(mFont, firstLine, scale, firstWidth, firstHeight);
+        if (hasSecondLine) {
+            TextRasterizer::Measure(mFont, secondLine, scale, secondWidth, secondHeight);
         }
 
-        const float textWidth =
-            static_cast<float>(std::max(firstWidth, secondWidth));
-        float textHeight =
-            static_cast<float>(std::max(firstHeight, secondHeight));
-        if (isNewLine) {
-            textHeight += mFbHeight * 0.0666f;
+        const float textWidth = static_cast<float>(std::max(firstWidth, secondWidth));
+        float textHeight = static_cast<float>(std::max(firstHeight, secondHeight));
+        if (hasSecondLine) {
+            textHeight += framebufferSize.y * 0.0666f;
         }
         rotationPivot += glm::vec2(textWidth, textHeight) * 0.5f;
     }
 
-    const auto drawStyledLine =
-        [&](const std::string& line, float lineOffset) {
-            if (effect && effect->shadowEnabled && effect->shadowColor.a > 0.0f) {
-                DrawTextLine(
-                    line,
-                    x + effect->shadowOffset.x,
-                    y + effect->shadowOffset.y,
-                    scale,
-                    isCenterBase,
-                    lineOffset,
-                    effect->shadowColor,
-                    rotationDegrees,
-                    rotationPivot);
-            }
+    const auto drawStyledLine = [&](const std::string& line, float lineOffset) {
+        if (effect && effect->shadowEnabled && effect->shadowColor.a > 0.0f) {
+            DrawTextLine(framebufferSize, line, x + effect->shadowOffset.x, y + effect->shadowOffset.y, scale,
+                         isCenterBase, lineOffset, effect->shadowColor, rotationDegrees, rotationPivot);
+        }
 
-            if (effect && effect->outlineEnabled &&
-                effect->outlineWidth > 0.0f && effect->outlineColor.a > 0.0f) {
-                DrawTextLine(
-                    line,
-                    x,
-                    y,
-                    scale,
-                    isCenterBase,
-                    lineOffset,
-                    effect->outlineColor,
-                    rotationDegrees,
-                    rotationPivot,
-                    effect->outlineWidth);
-            }
+        if (effect && effect->outlineEnabled && effect->outlineWidth > 0.0f && effect->outlineColor.a > 0.0f) {
+            DrawTextLine(framebufferSize, line, x, y, scale, isCenterBase, lineOffset, effect->outlineColor,
+                         rotationDegrees, rotationPivot, effect->outlineWidth);
+        }
 
-            DrawTextLine(
-                line,
-                x,
-                y,
-                scale,
-                isCenterBase,
-                lineOffset,
-                color,
-                rotationDegrees,
-                rotationPivot);
-        };
+        DrawTextLine(framebufferSize, line, x, y, scale, isCenterBase, lineOffset, color, rotationDegrees,
+                     rotationPivot);
+    };
 
-    drawStyledLine(message1, isNewLine ? -mFbHeight * 0.0222f : 0.0f);
+    drawStyledLine(firstLine, hasSecondLine ? -framebufferSize.y * 0.0222f : 0.0f);
 
-    if (!isNewLine) {
+    if (!hasSecondLine) {
         return;
     }
 
-    drawStyledLine(message2, mFbHeight * 0.0444f);
+    drawStyledLine(secondLine, framebufferSize.y * 0.0444f);
 }
 
-bool UIRenderer::SplitText(const std::string& message, std::string& message1, std::string& message2) const
+bool UITextRenderer::SplitText(const std::string& message, std::string& firstLine, std::string& secondLine)
 {
-    size_t newline = message.find('\n');
-    if (newline != std::string::npos) {
-        message1 = message.substr(0, newline);
-        message2 = message.substr(newline + 1);
+    size_t newlinePosition = message.find('\n');
+    if (newlinePosition != std::string::npos) {
+        firstLine = message.substr(0, newlinePosition);
+        secondLine = message.substr(newlinePosition + 1);
         return true;
     }
 
-    newline = message.find("\\n");
-    if (newline != std::string::npos) {
-        message1 = message.substr(0, newline);
-        message2 = message.substr(newline + 2);
+    newlinePosition = message.find("\\n");
+    if (newlinePosition != std::string::npos) {
+        firstLine = message.substr(0, newlinePosition);
+        secondLine = message.substr(newlinePosition + 2);
         return true;
     }
 
-    message1 = message;
-    message2.clear();
+    firstLine = message;
+    secondLine.clear();
     return false;
 }
 
-void UIRenderer::DrawTextLine(
-    const std::string& message,
-    float x,
-    float y,
-    float scale,
-    bool isCenterBase,
-    float yOffset,
-    glm::vec4 color,
-    float rotationDegrees,
-    glm::vec2 rotationPivot,
-    float outlineWidth)
+void UITextRenderer::DrawTextLine(glm::ivec2 framebufferSize, const std::string& message, float x, float y, float scale,
+                                  bool isCenterBase, float yOffset, glm::vec4 color, float rotationDegrees,
+                                  glm::vec2 rotationPivot, float outlineWidth)
 {
     const SDL_Color textColor{static_cast<Uint8>(color.x), static_cast<Uint8>(color.y), static_cast<Uint8>(color.z),
                               static_cast<Uint8>(color.w)};
 
+    // 縁取り幅は画面上の寸法なので、フォント生成時は拡大前のピクセル数に戻す。
     const int outlinePixels =
-        outlineWidth > 0.0f && scale > 0.0f
-            ? std::max(1, static_cast<int>(std::round(outlineWidth / scale)))
-            : 0;
+        outlineWidth > 0.0f && scale > 0.0f ? std::max(1, static_cast<int>(std::round(outlineWidth / scale))) : 0;
     const float actualOutlineWidth = static_cast<float>(outlinePixels) * scale;
-    const CachedTextTexture* cachedTexture =
-        FindOrCreateTextTexture(message, textColor, outlinePixels);
+    const CachedTextTexture* cachedTexture = FindOrCreateTextTexture(message, textColor, outlinePixels);
     if (!cachedTexture) {
         return;
     }
 
-    const int textWidth =
-        static_cast<int>(static_cast<float>(cachedTexture->unscaledWidth) * scale);
-    const int textHeight =
-        static_cast<int>(static_cast<float>(cachedTexture->unscaledHeight) * scale);
+    const int textWidth = static_cast<int>(static_cast<float>(cachedTexture->unscaledWidth) * scale);
+    const int textHeight = static_cast<int>(static_cast<float>(cachedTexture->unscaledHeight) * scale);
     if (textWidth <= 0 || textHeight <= 0) {
         return;
     }
 
-    glm::vec3 pos;
+    glm::vec3 position;
     if (isCenterBase) {
-        pos = glm::vec3(x, y + yOffset, 0.0f);
+        position = glm::vec3(x, y + yOffset, 0.0f);
     } else {
-        pos = glm::vec3(
-            x + textWidth * 0.5f - actualOutlineWidth,
-            y + textHeight * 0.5f + yOffset - actualOutlineWidth,
-            0.0f);
+        position = glm::vec3(x + textWidth * 0.5f - actualOutlineWidth,
+                             y + textHeight * 0.5f + yOffset - actualOutlineWidth, 0.0f);
     }
 
     if (rotationPivot == glm::vec2(0.0f)) {
-        rotationPivot = glm::vec2(pos.x, pos.y);
+        rotationPivot = glm::vec2(position.x, position.y);
     }
 
     const glm::vec3 pivot(rotationPivot.x, rotationPivot.y, 0.0f);
-    const glm::mat4 model =
-        glm::translate(glm::mat4(1.0f), pivot) *
-        glm::rotate(
-            glm::mat4(1.0f),
-            glm::radians(rotationDegrees),
-            glm::vec3(0.0f, 0.0f, 1.0f)) *
-        glm::translate(glm::mat4(1.0f), pos - pivot) *
-        glm::scale(glm::mat4(1.0f), glm::vec3(textWidth, textHeight, 1.0f));
+    const glm::mat4 model = glm::translate(glm::mat4(1.0f), pivot) *
+                            glm::rotate(glm::mat4(1.0f), glm::radians(rotationDegrees), glm::vec3(0.0f, 0.0f, 1.0f)) *
+                            glm::translate(glm::mat4(1.0f), position - pivot) *
+                            glm::scale(glm::mat4(1.0f), glm::vec3(textWidth, textHeight, 1.0f));
     const glm::mat4 view = glm::mat4(1.0f);
-    const glm::mat4 proj =
-        glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
+    const glm::mat4 projMat = glm::ortho(0.0f, static_cast<float>(framebufferSize.x),
+                                         static_cast<float>(framebufferSize.y), 0.0f, -1.0f, 1.0f);
 
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
-    glUniform1i(mUIShader->GetLocUseTexture(), 1);
-    glUniform4f(mUIShader->GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
+    glUniformMatrix4fv(mShader.GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(mShader.GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(mShader.GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
+    glUniform1i(mShader.GetLocDiffuseTexture(), 0);
+    glUniform1i(mShader.GetLocUseTexture(), 1);
+    glUniform4f(mShader.GetLocObjectColor(), 1.0f, 1.0f, 1.0f, 1.0f);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -745,13 +151,11 @@ void UIRenderer::DrawTextLine(
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, cachedTexture->handle);
 
-    mVertexArrays.at("quad")->SetActive();
+    mQuad.SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
 }
 
-std::size_t UIRenderer::TextTextureCacheKeyHash::operator()(
-    const TextTextureCacheKey& key) const
+std::size_t UITextRenderer::TextTextureCacheKeyHash::operator()(const TextTextureCacheKey& key) const
 {
     const std::size_t textHash = std::hash<std::string>{}(key.text);
     const std::size_t colorHash = std::hash<std::uint32_t>{}(key.rgba);
@@ -759,16 +163,13 @@ std::size_t UIRenderer::TextTextureCacheKeyHash::operator()(
     return textHash ^ (colorHash << 1) ^ (outlineHash << 2);
 }
 
-const UIRenderer::CachedTextTexture* UIRenderer::FindOrCreateTextTexture(
-    const std::string& text,
-    const SDL_Color& color,
-    int outlinePixels)
+const UITextRenderer::CachedTextTexture*
+UITextRenderer::FindOrCreateTextTexture(const std::string& text, const SDL_Color& color, int outlinePixels)
 {
-    const std::uint32_t rgba =
-        static_cast<std::uint32_t>(color.r) << 24 |
-        static_cast<std::uint32_t>(color.g) << 16 |
-        static_cast<std::uint32_t>(color.b) << 8 |
-        static_cast<std::uint32_t>(color.a);
+    const std::uint32_t rgba = static_cast<std::uint32_t>(color.r) << 24 | static_cast<std::uint32_t>(color.g) << 16 |
+                               static_cast<std::uint32_t>(color.b) << 8 | static_cast<std::uint32_t>(color.a);
+
+    // 倍率をキャッシュキーから外し、同じ文字・色・縁取りのテクスチャをサイズ違いでも再利用する。
     const TextTextureCacheKey key{text, rgba, outlinePixels};
 
     const auto existingTexture = mTextTextureCache.find(key);
@@ -785,41 +186,34 @@ const UIRenderer::CachedTextTexture* UIRenderer::FindOrCreateTextTexture(
     int unscaledWidth = 0;
     int unscaledHeight = 0;
     const GLuint textureHandle =
-        CreateTextTexture(text, unscaledWidth, unscaledHeight, color, 1.0f, outlinePixels);
+        TextRasterizer::CreateTexture(mFont, text, unscaledWidth, unscaledHeight, color, 1.0f, outlinePixels);
     if (textureHandle == 0 || unscaledWidth <= 0 || unscaledHeight <= 0) {
         return nullptr;
     }
 
     const auto [insertedTexture, wasInserted] = mTextTextureCache.emplace(
-        key,
-        CachedTextTexture{
-            textureHandle,
-            unscaledWidth,
-            unscaledHeight,
-            ++mNextTextTextureUseOrder});
+        key, CachedTextTexture{textureHandle, unscaledWidth, unscaledHeight, ++mNextTextTextureUseOrder});
     if (!wasInserted) {
         glDeleteTextures(1, &textureHandle);
     }
     return &insertedTexture->second;
 }
 
-void UIRenderer::EvictLeastRecentlyUsedTextTexture()
+void UITextRenderer::EvictLeastRecentlyUsedTextTexture()
 {
     if (mTextTextureCache.empty()) {
         return;
     }
 
-    const auto leastRecentlyUsedTexture = std::min_element(
-        mTextTextureCache.begin(),
-        mTextTextureCache.end(),
-        [](const auto& left, const auto& right) {
+    const auto leastRecentlyUsedTexture =
+        std::min_element(mTextTextureCache.begin(), mTextTextureCache.end(), [](const auto& left, const auto& right) {
             return left.second.lastUseOrder < right.second.lastUseOrder;
         });
     glDeleteTextures(1, &leastRecentlyUsedTexture->second.handle);
     mTextTextureCache.erase(leastRecentlyUsedTexture);
 }
 
-void UIRenderer::ClearTextTextureCache()
+void UITextRenderer::Shutdown()
 {
     for (const auto& cacheEntry : mTextTextureCache) {
         glDeleteTextures(1, &cacheEntry.second.handle);
@@ -827,15 +221,9 @@ void UIRenderer::ClearTextTextureCache()
     mTextTextureCache.clear();
 }
 
-void UIRenderer::DrawRubyText(float x, float y, float scale,
-                              float rubyScaleRatio,
-                              float rubyGapRatio,
-                              const std::vector<RubyTextSegment>& segments,
-                              glm::vec4 color,
-                              bool centerBased,
-                              float rotationDegrees,
-                              float outlineWidth,
-                              glm::vec4 outlineColor)
+void UITextRenderer::DrawRubyText(glm::ivec2 framebufferSize, float x, float y, float scale, float rubyScaleRatio,
+                                  float rubyGapRatio, const std::vector<RubyTextSegment>& segments, glm::vec4 color,
+                                  bool centerBased, float rotationDegrees, float outlineWidth, glm::vec4 outlineColor)
 {
     std::vector<std::vector<RubyTextSegment>> lines(1);
 
@@ -845,31 +233,30 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
             const std::size_t actualNewline = sourceSegment.text.find('\n', position);
             const std::size_t escapedNewline = sourceSegment.text.find("\\n", position);
 
-            std::size_t newline = std::string::npos;
+            std::size_t newlinePosition = std::string::npos;
             std::size_t delimiterLength = 0;
             if (actualNewline != std::string::npos &&
                 (escapedNewline == std::string::npos || actualNewline < escapedNewline)) {
-                newline = actualNewline;
+                newlinePosition = actualNewline;
                 delimiterLength = 1;
             } else if (escapedNewline != std::string::npos) {
-                newline = escapedNewline;
+                newlinePosition = escapedNewline;
                 delimiterLength = 2;
             }
 
-            const std::size_t end =
-                newline == std::string::npos ? sourceSegment.text.size() : newline;
+            const std::size_t end = newlinePosition == std::string::npos ? sourceSegment.text.size() : newlinePosition;
             if (end > position) {
                 RubyTextSegment part = sourceSegment;
                 part.text = sourceSegment.text.substr(position, end - position);
                 lines.back().emplace_back(std::move(part));
             }
 
-            if (newline == std::string::npos) {
+            if (newlinePosition == std::string::npos) {
                 break;
             }
 
             lines.emplace_back();
-            position = newline + delimiterLength;
+            position = newlinePosition + delimiterLength;
         }
     }
 
@@ -877,11 +264,10 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
         return;
     }
 
-    glUseProgram(mUIShader->GetShaderProgram());
+    glUseProgram(mShader.GetShaderProgram());
 
-    const float firstLineOffset =
-        lines.size() > 1 ? -mFbHeight * 0.0222f : 0.0f;
-    const float lineSpacing = mFbHeight * 0.0666f;
+    const float firstLineOffset = lines.size() > 1 ? -framebufferSize.y * 0.0222f : 0.0f;
+    const float lineSpacing = framebufferSize.y * 0.0666f;
 
     float maximumLineWidth = 0.0f;
     float maximumBaseHeight = 0.0f;
@@ -890,99 +276,52 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
         for (const RubyTextSegment& segment : line) {
             int baseWidth = 0;
             int baseHeight = 0;
-            if (MeasureText(segment.text, scale, baseWidth, baseHeight)) {
+            if (TextRasterizer::Measure(mFont, segment.text, scale, baseWidth, baseHeight)) {
                 lineWidth += static_cast<float>(baseWidth);
-                maximumBaseHeight =
-                    std::max(maximumBaseHeight, static_cast<float>(baseHeight));
+                maximumBaseHeight = std::max(maximumBaseHeight, static_cast<float>(baseHeight));
             }
         }
         maximumLineWidth = std::max(maximumLineWidth, lineWidth);
     }
     const float totalTextHeight =
-        maximumBaseHeight +
-        (lines.size() > 1
-             ? lineSpacing * static_cast<float>(lines.size() - 1)
-             : 0.0f);
+        maximumBaseHeight + (lines.size() > 1 ? lineSpacing * static_cast<float>(lines.size() - 1) : 0.0f);
+
+    // 本文とルビが一体で回転するよう、文字列全体で共通の回転基準を使う。
     const glm::vec2 rotationPivot =
-        centerBased
-            ? glm::vec2(x, y)
-            : glm::vec2(
-                  x + maximumLineWidth * 0.5f,
-                  y + totalTextHeight * 0.5f);
+        centerBased ? glm::vec2(x, y) : glm::vec2(x + maximumLineWidth * 0.5f, y + totalTextHeight * 0.5f);
 
-    // 本文の中央基準と左上基準で描くルビが同じ位置に揃うよう、共通の回転基準を使う。
-
-
-
-
-    const float baseStartX =
-        centerBased ? x - maximumLineWidth * 0.5f : x;
-    const float baseStartY =
-        centerBased ? y - maximumBaseHeight * 0.5f : y;
+    const float baseStartX = centerBased ? x - maximumLineWidth * 0.5f : x;
+    const float baseStartY = centerBased ? y - maximumBaseHeight * 0.5f : y;
 
     for (std::size_t lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
         float currentX = baseStartX;
-        const float lineY =
-            baseStartY + firstLineOffset +
-            lineSpacing * static_cast<float>(lineIndex);
+        const float lineY = baseStartY + firstLineOffset + lineSpacing * static_cast<float>(lineIndex);
 
         for (const RubyTextSegment& segment : lines[lineIndex]) {
             int baseWidth = 0;
             int baseHeight = 0;
-            if (!MeasureText(segment.text, scale, baseWidth, baseHeight)) {
+            if (!TextRasterizer::Measure(mFont, segment.text, scale, baseWidth, baseHeight)) {
                 continue;
             }
 
             if (outlineWidth > 0.0f && outlineColor.a > 0.0f) {
-                DrawTextLine(
-                    segment.text,
-                    currentX,
-                    lineY,
-                    scale,
-                    false,
-                    0.0f,
-                    outlineColor,
-                    rotationDegrees,
-                    rotationPivot,
-                    outlineWidth);
+                DrawTextLine(framebufferSize, segment.text, currentX, lineY, scale, false, 0.0f, outlineColor,
+                             rotationDegrees, rotationPivot, outlineWidth);
             }
-            DrawTextLine(
-                segment.text,
-                currentX,
-                lineY,
-                scale,
-                false,
-                0.0f,
-                color,
-                rotationDegrees,
-                rotationPivot);
+            DrawTextLine(framebufferSize, segment.text, currentX, lineY, scale, false, 0.0f, color, rotationDegrees,
+                         rotationPivot);
 
             if (segment.showsRuby && !segment.reading.empty()) {
                 const float rubyScale = scale * rubyScaleRatio;
                 int rubyWidth = 0;
                 int rubyHeight = 0;
-                if (MeasureText(segment.reading, rubyScale, rubyWidth, rubyHeight)) {
-                    const float rubyX =
-                        currentX + (static_cast<float>(baseWidth - rubyWidth) * 0.5f);
-                    const float rubyY =
-                        lineY -
-                        static_cast<float>(rubyHeight) *
-                            (0.9f + rubyGapRatio);
+                if (TextRasterizer::Measure(mFont, segment.reading, rubyScale, rubyWidth, rubyHeight)) {
+                    const float rubyX = currentX + (static_cast<float>(baseWidth - rubyWidth) * 0.5f);
+                    const float rubyY = lineY - static_cast<float>(rubyHeight) * (0.9f + rubyGapRatio);
 
                     // 小さいルビに縁取りを付けると文字内部が潰れて読みにくくなるため、縁取りしない。
-
-
-
-                    DrawTextLine(
-                        segment.reading,
-                        rubyX,
-                        rubyY,
-                        rubyScale,
-                        false,
-                        0.0f,
-                        color,
-                        rotationDegrees,
-                        rotationPivot);
+                    DrawTextLine(framebufferSize, segment.reading, rubyX, rubyY, rubyScale, false, 0.0f, color,
+                                 rotationDegrees, rotationPivot);
                 }
             }
 
@@ -990,78 +329,3 @@ void UIRenderer::DrawRubyText(float x, float y, float scale,
         }
     }
 }
-
-void UIRenderer::DrawTexture(
-    float x,
-    float y,
-    float width,
-    float height,
-    const std::string& textureName,
-    bool flipVertical,
-    float rotationDegrees,
-    float opacity)
-{
-    const auto textureIt = mTextures.find(textureName);
-    if (textureIt == mTextures.end()) {
-        return;
-    }
-
-    DrawTextureHandle(
-        x,
-        y,
-        width,
-        height,
-        textureIt->second,
-        flipVertical,
-        rotationDegrees,
-        opacity);
-}
-
-void UIRenderer::DrawTextureHandle(
-    float x,
-    float y,
-    float width,
-    float height,
-    GLuint textureHandle,
-    bool flipVertical,
-    float rotationDegrees,
-    float opacity,
-    glm::vec4 tint)
-{
-    if (textureHandle == 0) {
-        return;
-    }
-
-    glUseProgram(mUIShader->GetShaderProgram());
-
-    const glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(x + width * 0.5f, y + height * 0.5f, 0.0f)) *
-                            glm::rotate(
-                                glm::mat4(1.0f),
-                                glm::radians(rotationDegrees),
-                                glm::vec3(0.0f, 0.0f, 1.0f)) *
-                            glm::scale(glm::mat4(1.0f), glm::vec3(width, height, 1.0f));
-    const glm::mat4 view = glm::mat4(1.0f);
-    const glm::mat4 proj =
-        glm::ortho(0.0f, static_cast<float>(mFbWidth), static_cast<float>(mFbHeight), 0.0f, -1.0f, 1.0f);
-
-    glUniformMatrix4fv(mUIShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(proj));
-    glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
-    glUniform1i(mUIShader->GetLocUseTexture(), 1);
-    tint.a *= std::clamp(opacity, 0.0f, 1.0f);
-    glUniform4fv(
-        mUIShader->GetLocObjectColor(),
-        1,
-        glm::value_ptr(tint));
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glActiveTexture(GL_TEXTURE0);
-
-    glBindTexture(GL_TEXTURE_2D, textureHandle);
-
-    mVertexArrays.at(flipVertical ? "quadFlipVertical" : "quad")->SetActive();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-

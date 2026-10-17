@@ -2,6 +2,7 @@
 
 #include "gfx/Shader.h"
 
+// 粒子のインスタンス描画に使うGLSLプログラムとuniform位置を保持する。
 class ParticleShader : public Shader {
 public:
     ParticleShader();

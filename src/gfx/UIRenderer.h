@@ -1,13 +1,12 @@
 #pragma once
 
 #include "gfx/Renderer.h"
+#include "gfx/ui/UITextRenderer.h"
 #include "system/UILoadSystem.h"
 #include "text/RubyText.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
-#include <cstdint>
-#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
@@ -25,7 +24,7 @@ class StateUIRenderer;
 class PauseMenuRenderer;
 struct ImVec2;
 
-// ゲームUIの描画APIと文字テクスチャキャッシュを提供し、HUD・シーンUI・デバッグ編集を専用Rendererへ委譲する。
+// ゲームUIの描画窓口。文字描画・HUD・シーンUI・デバッグ編集を専用Rendererへ委譲する。
 // 描画座標は左上原点のフレームバッファ上のピクセル、回転は度。Gameは非所有参照。
 class UIRenderer : public Renderer {
 public:
@@ -49,15 +48,7 @@ public:
         float rotationDegrees = 0.0f;
     };
 
-    // 文字の影・縁取り設定。色は0〜255のRGBA。
-    struct TextEffect {
-        bool shadowEnabled = false;
-        glm::vec2 shadowOffset = glm::vec2(0.0f);
-        glm::vec4 shadowColor = glm::vec4(0.0f);
-        bool outlineEnabled = false;
-        float outlineWidth = 0.0f;
-        glm::vec4 outlineColor = glm::vec4(0.0f);
-    };
+    using TextEffect = UITextRenderer::TextEffect;
 
     UIRenderer(Game* game);
     ~UIRenderer();
@@ -201,37 +192,7 @@ private:
 
     void EndImGuiFrame();
 
-    struct TextTextureCacheKey {
-        std::string text;
-        std::uint32_t rgba = 0;
-        int outlinePixels = 0;
-
-        bool operator==(const TextTextureCacheKey& other) const
-        {
-            return text == other.text && rgba == other.rgba && outlinePixels == other.outlinePixels;
-        }
-    };
-
-    struct TextTextureCacheKeyHash {
-        std::size_t operator()(const TextTextureCacheKey& key) const;
-    };
-
-    struct CachedTextTexture {
-        GLuint handle = 0;
-        int unscaledWidth = 0;
-        int unscaledHeight = 0;
-        std::uint64_t lastUseOrder = 0;
-    };
-
-    const CachedTextTexture* FindOrCreateTextTexture(const std::string& text, const SDL_Color& color,
-                                                     int outlinePixels);
-    void EvictLeastRecentlyUsedTextTexture();
-    void ClearTextTextureCache();
-
-    bool SplitText(const std::string& message, std::string& message1, std::string& message2) const;
-    void DrawTextLine(const std::string& message, float x, float y, float scale, bool isCenterBase, float yOffset,
-                      glm::vec4 color, float rotationDegrees = 0.0f, glm::vec2 rotationPivot = glm::vec2(0.0f),
-                      float outlineWidth = 0.0f);
+    bool SplitText(const std::string& message, std::string& firstLine, std::string& secondLine) const;
     void DrawRubyText(float x, float y, float scale, float rubyScaleRatio, float rubyGapRatio,
                       const std::vector<RubyTextSegment>& segments, glm::vec4 color, bool centerBased = false,
                       float rotationDegrees = 0.0f, float outlineWidth = 0.0f,
@@ -244,6 +205,8 @@ private:
     std::unique_ptr<UILoadSystem> mUILoadSystemUnique;
     UILoadSystem* mUILoadSystem;
 
+    std::unique_ptr<UITextRenderer> mTextRenderer;
+
     std::unique_ptr<UIDebugEditorBridge> mDebugEditorBridge;
 
     std::unique_ptr<SceneUIRenderer> mSceneUIRenderer;
@@ -253,8 +216,6 @@ private:
 
     std::vector<RenderedUIElement> mRenderedUIElements;
     std::unordered_map<std::string, std::vector<RubyTextSegment>> mCustomTextRubyCache;
-    std::unordered_map<TextTextureCacheKey, CachedTextTexture, TextTextureCacheKeyHash> mTextTextureCache;
-    std::uint64_t mNextTextTextureUseOrder = 0;
 
     int mFbWidth;
     int mFbHeight;
