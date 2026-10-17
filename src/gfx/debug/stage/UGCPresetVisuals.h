@@ -23,6 +23,6 @@ struct UGCPresetVisual {
     const char* initialTextureOverridePath;
 };
 
+// プリセットの表示設定を返す。未知の種類には通常足場の設定を返す。
 const UGCPresetVisual& GetUGCPresetVisual(UGCPresetKind presetKind);
-const char* GetUGCPlatformTextureOverridePath(
-    const std::string& platformBehavior);
+const char* GetUGCPlatformTextureOverridePath(const std::string& platformBehavior);

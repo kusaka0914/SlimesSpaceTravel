@@ -26,18 +26,14 @@ bool StagePlanetYamlWriter::Save(bool shouldSaveEditorTransform) const
     }
 
     const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
-    for (std::size_t planetIndex = 0;
-         planetIndex < planets.size();
-         ++planetIndex) {
+    for (std::size_t planetIndex = 0; planetIndex < planets.size(); ++planetIndex) {
         Planet* planet = planets[planetIndex];
         if (!planet) {
             continue;
         }
 
         const EditorAuthoredTransform* editorTransform =
-            shouldSaveEditorTransform
-                ? planet->FindEditorAuthoredTransform()
-                : nullptr;
+            shouldSaveEditorTransform ? planet->FindEditorAuthoredTransform() : nullptr;
         if (editorTransform && editorTransform->hasPosition) {
             const glm::vec3& center = editorTransform->localPosition;
             config["planets"][planetIndex]["center"][0] = center.x;
@@ -59,8 +55,7 @@ bool StagePlanetYamlWriter::Save(bool shouldSaveEditorTransform) const
         planetNode.remove("shape");
         planetNode["model"] = planet->GetModelPath();
 
-        const std::string& textureOverride =
-            planet->GetTextureOverridePath();
+        const std::string& textureOverride = planet->GetTextureOverridePath();
         if (textureOverride.empty()) {
             planetNode.remove("textureOverride");
         } else {
@@ -71,21 +66,16 @@ bool StagePlanetYamlWriter::Save(bool shouldSaveEditorTransform) const
         planetNode["textureTiling"][0] = textureTiling.x;
         planetNode["textureTiling"][1] = textureTiling.y;
 
-        const std::string& backTextureOverride =
-            planet->GetBackTextureOverridePath();
+        const std::string& backTextureOverride = planet->GetBackTextureOverridePath();
         if (backTextureOverride.empty()) {
             planetNode.remove("backTextureOverride");
         } else {
             planetNode["backTextureOverride"] = backTextureOverride;
         }
-        planetNode["textureSideBlendWidth"] =
-            planet->GetTextureSideBlendWidth();
-        planetNode["canAttractNearbyPlayer"] =
-            planet->CanAttractNearbyPlayer();
-        planetNode["reactsToOverheadGravityRay"] =
-            planet->ShouldReactToOverheadGravityRay();
-        planetNode["rocketSpawnCondition"] =
-            planet->GetRocketSpawnCondition();
+        planetNode["textureSideBlendWidth"] = planet->GetTextureSideBlendWidth();
+        planetNode["canAttractNearbyPlayer"] = planet->CanAttractNearbyPlayer();
+        planetNode["reactsToOverheadGravityRay"] = planet->ShouldReactToOverheadGravityRay();
+        planetNode["rocketSpawnCondition"] = planet->GetRocketSpawnCondition();
     }
 
     return StageYamlRepository::SaveCurrentStage(mContext, config);

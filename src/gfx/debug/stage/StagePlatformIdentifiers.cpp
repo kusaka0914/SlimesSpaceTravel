@@ -18,10 +18,8 @@ std::string CreateUniqueId(const YAML::Node& stageConfig)
                     continue;
                 }
 
-                if (actorNode["platformId"] &&
-                    actorNode["platformId"].IsScalar()) {
-                    usedIds.insert(
-                        actorNode["platformId"].as<std::string>());
+                if (actorNode["platformId"] && actorNode["platformId"].IsScalar()) {
+                    usedIds.insert(actorNode["platformId"].as<std::string>());
                 }
 
                 const YAML::Node components = actorNode["components"];
@@ -29,8 +27,7 @@ std::string CreateUniqueId(const YAML::Node& stageConfig)
                     continue;
                 }
 
-                const YAML::Node pressureSwitch =
-                    components["pressureSwitch"];
+                const YAML::Node pressureSwitch = components["pressureSwitch"];
                 if (!pressureSwitch || !pressureSwitch.IsMap()) {
                     continue;
                 }
@@ -49,12 +46,11 @@ std::string CreateUniqueId(const YAML::Node& stageConfig)
     }
 
     for (int suffix = 1;; ++suffix) {
-        const std::string candidate =
-            "platform_" + std::to_string(suffix);
+        const std::string candidate = "platform_" + std::to_string(suffix);
         if (!usedIds.contains(candidate)) {
             return candidate;
         }
     }
 }
 
-}
+} // namespace StagePlatformIdentifiers

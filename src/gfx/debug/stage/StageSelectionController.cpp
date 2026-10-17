@@ -7,9 +7,9 @@
 #include "component/PlatformMovementComponent.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
-#include "system/StageActorPlanetBindingService.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/StageActorPlanetBindingService.h"
 #include "system/camera/CameraProjection.h"
 
 #include "ImGuizmo.h"
@@ -17,8 +17,8 @@
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <glm/gtc/matrix_transform.hpp>
+#include <limits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -47,20 +47,15 @@ void StageSelectionController::SetBoxSelectionEnabled(bool isEnabled)
     }
 }
 
-std::optional<StageSelectionScreenRect>
-StageSelectionController::FindActiveBoxSelectionScreenRect() const
+std::optional<StageSelectionScreenRect> StageSelectionController::FindActiveBoxSelectionScreenRect() const
 {
     if (!mIsBoxSelecting || !mBoxSelectMoved) {
         return std::nullopt;
     }
 
     return StageSelectionScreenRect{
-        .minimum = ImVec2(
-            std::min(mBoxSelectStart.x, mBoxSelectEnd.x),
-            std::min(mBoxSelectStart.y, mBoxSelectEnd.y)),
-        .maximum = ImVec2(
-            std::max(mBoxSelectStart.x, mBoxSelectEnd.x),
-            std::max(mBoxSelectStart.y, mBoxSelectEnd.y)),
+        .minimum = ImVec2(std::min(mBoxSelectStart.x, mBoxSelectEnd.x), std::min(mBoxSelectStart.y, mBoxSelectEnd.y)),
+        .maximum = ImVec2(std::max(mBoxSelectStart.x, mBoxSelectEnd.x), std::max(mBoxSelectStart.y, mBoxSelectEnd.y)),
     };
 }
 
@@ -78,8 +73,8 @@ void StageSelectionController::ApplyEditorSelectionFlags()
             continue;
         }
 
-        const bool selected = mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref));
-        instance.actor->SetIsEditorSelected(selected);
+        const bool isSelected = mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref));
+        instance.actor->SetIsEditorSelected(isSelected);
     }
 }
 
@@ -157,18 +152,12 @@ void StageSelectionController::PrepareActorForEditorSelection(Actor* actor)
         return;
     }
 
-    PlatformMovementComponent* movement =
-        platform->GetMovementComponent();
+    PlatformMovementComponent* movement = platform->GetMovementComponent();
     if (!movement) {
         return;
     }
 
-
-
-
-
-    movement->SetEditorPreviewPoint(
-        movement->GetEditorPreviewPoint());
+    movement->SetEditorPreviewPoint(movement->GetEditorPreviewPoint());
 }
 
 void StageSelectionController::ResetBoxSelectionGesture()
@@ -181,8 +170,7 @@ void StageSelectionController::ResetBoxSelectionGesture()
 
 void StageSelectionController::ResolveUGCBoxSelectionGestureAfterPick()
 {
-    if (!mIsBoxSelectMouseDown || mIsBoxSelecting ||
-        !mContext.game || !mContext.game->GetIsUGCMode()) {
+    if (!mIsBoxSelectMouseDown || mIsBoxSelecting || !mContext.game || !mContext.game->GetIsUGCMode()) {
         return;
     }
 
@@ -229,13 +217,11 @@ bool StageSelectionController::IsSelected(const StageActorRef& actorRef) const
 
 bool StageSelectionController::IsMovingPlatformDestinationSelected() const
 {
-    if (!mIsMovingPlatformDestinationSelected ||
-        mSelectedKeys.size() != 1 || !mPickedActor) {
+    if (!mIsMovingPlatformDestinationSelected || mSelectedKeys.size() != 1 || !mPickedActor) {
         return false;
     }
 
-    const Platform* selectedPlatform =
-        dynamic_cast<const Platform*>(mPickedActor);
+    const Platform* selectedPlatform = dynamic_cast<const Platform*>(mPickedActor);
     return selectedPlatform && selectedPlatform->GetMovementComponent();
 }
 
@@ -285,24 +271,19 @@ Actor* StageSelectionController::GetSingleSelectedActor() const
     return nullptr;
 }
 
-std::vector<StageActorInstance>
-StageSelectionController::CollectSelectedActorInstances() const
+std::vector<StageActorInstance> StageSelectionController::CollectSelectedActorInstances() const
 {
     std::vector<StageActorInstance> selectedInstances;
-    if (!mContext.game || !mContext.game->GetCurrentStage() ||
-        mSelectedKeys.empty()) {
+    if (!mContext.game || !mContext.game->GetCurrentStage() || mSelectedKeys.empty()) {
         return selectedInstances;
     }
 
     const std::vector<StageActorInstance> instances =
-        StageActorQuery::CollectAllActorInstances(
-            mContext.game->GetCurrentStage());
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
     selectedInstances.reserve(mSelectedKeys.size());
 
     for (const StageActorInstance& instance : instances) {
-        if (!instance.actor ||
-            !mSelectedKeys.contains(
-                StageActorQuery::MakeKey(instance.ref))) {
+        if (!instance.actor || !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
             continue;
         }
 
@@ -348,8 +329,7 @@ glm::vec3 StageSelectionController::CalculateSelectedActorsCenter() const
     return sum / static_cast<float>(count);
 }
 
-glm::vec3 StageSelectionController::
-CalculateSelectedMovingPlatformDestinationsCenter() const
+glm::vec3 StageSelectionController::CalculateSelectedMovingPlatformDestinationsCenter() const
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return glm::vec3(0.0f);
@@ -358,23 +338,19 @@ CalculateSelectedMovingPlatformDestinationsCenter() const
     glm::vec3 destinationPositionSum(0.0f);
     int destinationCount = 0;
     for (const StageActorInstance& instance :
-         StageActorQuery::CollectAllActorInstances(
-             mContext.game->GetCurrentStage())) {
-        if (!instance.actor ||
-            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+         StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage())) {
+        if (!instance.actor || !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
             continue;
         }
 
         Platform* platform = dynamic_cast<Platform*>(instance.actor);
-        PlatformMovementComponent* movement =
-            platform ? platform->GetMovementComponent() : nullptr;
+        PlatformMovementComponent* movement = platform ? platform->GetMovementComponent() : nullptr;
         Planet* planet = platform ? platform->GetCurrentPlanet() : nullptr;
         if (!movement || !planet) {
             continue;
         }
 
-        destinationPositionSum +=
-            planet->GetPos() + movement->GetDestinationLocalPos();
+        destinationPositionSum += planet->GetPos() + movement->GetDestinationLocalPos();
         ++destinationCount;
     }
 
@@ -395,8 +371,7 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
 
     std::unordered_set<Planet*> selectedPlanets;
     for (const StageActorInstance& instance : instances) {
-        if (!instance.actor ||
-            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+        if (!instance.actor || !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
             continue;
         }
 
@@ -408,17 +383,11 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
         selectedPlanets.insert(planet);
         planet->SetPos(planet->GetPos() + delta);
         const bool shouldMoveBoundActors =
-            !mContext.game->GetIsUGCMode() &&
-            mContext.planetMoveMode == PlanetMoveMode::WithBoundActors;
+            !mContext.game->GetIsUGCMode() && mContext.planetMoveMode == PlanetMoveMode::WithBoundActors;
         if (shouldMoveBoundActors) {
-            StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
-                planet,
-                delta);
+            StageActorPlanetBindingService::TranslateActorsBoundToPlanet(planet, delta);
         } else {
-            StageActorPlanetBindingService::
-                PreserveBoundActorWorldPositionsAfterPlanetMove(
-                    planet,
-                    delta);
+            StageActorPlanetBindingService::PreserveBoundActorWorldPositionsAfterPlanetMove(planet, delta);
         }
         planet->CaptureEditorAuthoredPosition();
     }
@@ -438,11 +407,9 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
 
         // 選択惑星の所属物は惑星移動で既に追従している。個別にも選択されて
         // いる場合に再度deltaを加えると二重移動になるためスキップする。
-        const bool wasMovedWithSelectedPlanet =
-            !mContext.game->GetIsUGCMode() &&
-            mContext.planetMoveMode == PlanetMoveMode::WithBoundActors &&
-            selectedPlanets.contains(
-                instance.actor->GetCurrentPlanet());
+        const bool wasMovedWithSelectedPlanet = !mContext.game->GetIsUGCMode() &&
+                                                mContext.planetMoveMode == PlanetMoveMode::WithBoundActors &&
+                                                selectedPlanets.contains(instance.actor->GetCurrentPlanet());
         if (wasMovedWithSelectedPlanet) {
             continue;
         }
@@ -453,25 +420,20 @@ void StageSelectionController::MoveSelectedActorsByDelta(const glm::vec3& delta)
         }
 
         instance.actor->SetPos(instance.actor->GetPos() + delta);
-        StageActorPlanetBindingService::RefreshNearestPlanetBinding(
-            mContext.game->GetCurrentStage(),
-            instance.actor);
+        StageActorPlanetBindingService::RefreshNearestPlanetBinding(mContext.game->GetCurrentStage(), instance.actor);
         instance.actor->CaptureEditorAuthoredPosition();
     }
 }
 
-void StageSelectionController::MoveSelectedMovingPlatformDestinationsByDelta(
-    const glm::vec3& delta)
+void StageSelectionController::MoveSelectedMovingPlatformDestinationsByDelta(const glm::vec3& delta)
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return;
     }
 
     for (const StageActorInstance& instance :
-         StageActorQuery::CollectAllActorInstances(
-             mContext.game->GetCurrentStage())) {
-        if (!instance.actor ||
-            !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
+         StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage())) {
+        if (!instance.actor || !mSelectedKeys.contains(StageActorQuery::MakeKey(instance.ref))) {
             continue;
         }
 
@@ -480,10 +442,8 @@ void StageSelectionController::MoveSelectedMovingPlatformDestinationsByDelta(
             continue;
         }
 
-        PlatformMovementComponent* movement =
-            platform->GetMovementComponent();
-        movement->SetDestinationLocalPos(
-            movement->GetDestinationLocalPos() + delta);
+        PlatformMovementComponent* movement = platform->GetMovementComponent();
+        movement->SetDestinationLocalPos(movement->GetDestinationLocalPos() + delta);
         movement->SetEditorPreviewPoint(1);
     }
 }
@@ -519,11 +479,8 @@ void StageSelectionController::UpdateBoxSelection()
 
     const DebugEditorGameViewport& gameViewport = mContext.gameViewport;
     const bool isInsideGameViewport =
-        !gameViewport.IsValid() ||
-        (mousePos.x >= gameViewport.x &&
-         mousePos.x <= gameViewport.x + gameViewport.width &&
-         mousePos.y >= gameViewport.y &&
-         mousePos.y <= gameViewport.y + gameViewport.height);
+        !gameViewport.IsValid() || (mousePos.x >= gameViewport.x && mousePos.x <= gameViewport.x + gameViewport.width &&
+                                    mousePos.y >= gameViewport.y && mousePos.y <= gameViewport.y + gameViewport.height);
 
     const bool leftPressed = glfwGetMouseButton(mContext.game->GetWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
@@ -548,8 +505,7 @@ void StageSelectionController::UpdateBoxSelection()
         const float dy = mBoxSelectEnd.y - mBoxSelectMouseDownPos.y;
         const float distance = std::sqrt(dx * dx + dy * dy);
 
-        if (distance > 5.0f &&
-            mShouldStartBoxSelectionOnDrag) {
+        if (distance > 5.0f && mShouldStartBoxSelectionOnDrag) {
             mIsBoxSelecting = true;
             mBoxSelectMoved = true;
         }
@@ -603,14 +559,11 @@ void StageSelectionController::UpdatePickedActorByMouse()
 
     std::vector<PhysicsSystem::RayHitActor> rawHits =
         mContext.game->GetPhysicsSystem()->PickActorsByRay(rayFrom, rayTo);
-    const bool hasDirectPlatformHit = std::any_of(
-        rawHits.begin(),
-        rawHits.end(),
-        [](const PhysicsSystem::RayHitActor& hit) {
+    const bool hasDirectPlatformHit =
+        std::any_of(rawHits.begin(), rawHits.end(), [](const PhysicsSystem::RayHitActor& hit) {
             return dynamic_cast<Platform*>(hit.actor) != nullptr;
         });
-    if (mContext.game->GetIsUGCMode() && !io.KeyShift &&
-        !hasDirectPlatformHit &&
+    if (mContext.game->GetIsUGCMode() && !io.KeyShift && !hasDirectPlatformHit &&
         TrySelectUGCMovingPlatformEndpoint(ImGui::GetMousePos())) {
         return;
     }
@@ -635,33 +588,29 @@ void StageSelectionController::UpdatePickedActorByMouse()
                 continue;
             }
             const std::optional<StageActorRef> hitRef =
-                StageActorQuery::FindTargetForActor(
-                    mContext.game->GetCurrentStage(), hit.actor);
+                StageActorQuery::FindTargetForActor(mContext.game->GetCurrentStage(), hit.actor);
             if (!hitRef) {
                 continue;
             }
 
-            int actorLayer = static_cast<int>(std::round(
-                hit.actor->GetPos().y / gridSize));
+            int actorLayer = static_cast<int>(std::round(hit.actor->GetPos().y / gridSize));
             const YAML::Node sequence = stageYaml[hitRef->sequenceName];
-            if (sequence && sequence.IsSequence() &&
-                hitRef->yamlIndex >= 0 &&
+            if (sequence && sequence.IsSequence() && hitRef->yamlIndex >= 0 &&
                 hitRef->yamlIndex < static_cast<int>(sequence.size())) {
                 const YAML::Node actorNode = sequence[hitRef->yamlIndex];
-                if (actorNode["ugcGeneratedPlatform"] &&
-                    actorNode["ugcGeneratedPlatform"].as<bool>(false)) {
+                if (actorNode["ugcGeneratedPlatform"] && actorNode["ugcGeneratedPlatform"].as<bool>(false)) {
                     actorLayer = actorNode["ugcGridLayer"].as<int>(actorLayer);
                 }
             }
             if (seenActors.insert(hit.actor).second) {
                 allLayerHits.push_back({hit, actorLayer});
             }
-            if (actorLayer == mUGCEditLayer &&
-                seenCurrentLayerActors.insert(hit.actor).second) {
+            if (actorLayer == mUGCEditLayer && seenCurrentLayerActors.insert(hit.actor).second) {
                 hits.push_back(hit);
             }
         }
 
+        // 通常は編集中レイヤーを優先し、該当がなければ最上段を選ぶ。Shift時だけ全レイヤーを候補にする。
         if (io.KeyShift) {
             hits.clear();
             for (const LayeredHit& layeredHit : allLayerHits) {
@@ -693,10 +642,8 @@ void StageSelectionController::UpdatePickedActorByMouse()
     size_t hitIndex = 0;
     const ImVec2 clickPos = ImGui::GetMousePos();
     const std::optional<StageActorRef> nearestHitRef =
-        StageActorQuery::FindTargetForActor(
-            mContext.game->GetCurrentStage(), hits.front().actor);
-    const bool isNearestHitSelected =
-        nearestHitRef && IsSelected(*nearestHitRef);
+        StageActorQuery::FindTargetForActor(mContext.game->GetCurrentStage(), hits.front().actor);
+    const bool isNearestHitSelected = nearestHitRef && IsSelected(*nearestHitRef);
     if (!io.KeyShift && isNearestHitSelected) {
         hitIndex = 0;
     } else if (!io.KeyShift && mHasLastPickClick) {
@@ -710,6 +657,7 @@ void StageSelectionController::UpdatePickedActorByMouse()
                              [this](const PhysicsSystem::RayHitActor& hit) { return hit.actor == mPickedActor; });
 
             if (currentHit != hits.end()) {
+                // 同じ位置への繰り返しクリックでは、重なった候補を循環して選べるようにする。
                 hitIndex = (static_cast<size_t>(std::distance(hits.begin(), currentHit)) + 1) % hits.size();
             }
         }
@@ -738,7 +686,6 @@ void StageSelectionController::UpdatePickedActorByMouse()
         ToggleSelection(hitActor, *target);
     } else if (mContext.game->GetIsUGCMode() && IsSelected(*target)) {
 
-
         PrepareActorForEditorSelection(hitActor);
         mPickedActor = hitActor;
         mPickedActorRef = *target;
@@ -748,8 +695,7 @@ void StageSelectionController::UpdatePickedActorByMouse()
     }
 }
 
-bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
-    const ImVec2& clickPosition)
+bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(const ImVec2& clickPosition)
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return false;
@@ -761,15 +707,13 @@ bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
     float closestDistanceSquared = std::numeric_limits<float>::max();
 
     for (const StageActorInstance& instance :
-         StageActorQuery::CollectAllActorInstances(
-             mContext.game->GetCurrentStage())) {
+         StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage())) {
         Platform* platform = dynamic_cast<Platform*>(instance.actor);
         if (!platform || !platform->GetIsUGCGenerated()) {
             continue;
         }
 
-        PlatformMovementComponent* movement =
-            platform->GetMovementComponent();
+        PlatformMovementComponent* movement = platform->GetMovementComponent();
         Planet* planet = platform->GetCurrentPlanet();
         if (!movement || !planet) {
             continue;
@@ -777,56 +721,36 @@ bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
 
         const glm::vec3 absoluteScale = glm::abs(platform->GetScale());
         const float worldSelectionRadius = std::max(
-            0.5f,
-            platform->GetRadius() * std::max(
-                absoluteScale.x,
-                std::max(absoluteScale.y, absoluteScale.z)));
-        constexpr glm::vec3 selectionRadiusAxes[] = {
-            glm::vec3(1.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)};
-        const glm::vec3 endpointWorldPositions[] = {
-            planet->GetPos() + movement->GetBaseLocalPos(),
-            planet->GetPos() + movement->GetDestinationLocalPos()};
+            0.5f, platform->GetRadius() * std::max(absoluteScale.x, std::max(absoluteScale.y, absoluteScale.z)));
+        constexpr glm::vec3 selectionRadiusAxes[] = {glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+                                                     glm::vec3(0.0f, 0.0f, 1.0f)};
+        const glm::vec3 endpointWorldPositions[] = {planet->GetPos() + movement->GetBaseLocalPos(),
+                                                    planet->GetPos() + movement->GetDestinationLocalPos()};
         for (int endpoint = 0; endpoint < 2; ++endpoint) {
             ImVec2 endpointScreenPosition;
-            if (!WorldToScreenPoint(
-                    endpointWorldPositions[endpoint],
-                    endpointScreenPosition)) {
+            if (!WorldToScreenPoint(endpointWorldPositions[endpoint], endpointScreenPosition)) {
                 continue;
             }
 
             float selectionRadiusPixels = 30.0f;
-            for (const glm::vec3& selectionRadiusAxis :
-                 selectionRadiusAxes) {
+            for (const glm::vec3& selectionRadiusAxis : selectionRadiusAxes) {
                 ImVec2 radiusScreenPosition;
-                if (!WorldToScreenPoint(
-                        endpointWorldPositions[endpoint] +
-                            selectionRadiusAxis * worldSelectionRadius,
-                        radiusScreenPosition)) {
+                if (!WorldToScreenPoint(endpointWorldPositions[endpoint] + selectionRadiusAxis * worldSelectionRadius,
+                                        radiusScreenPosition)) {
                     continue;
                 }
 
-                const float radiusX =
-                    radiusScreenPosition.x - endpointScreenPosition.x;
-                const float radiusY =
-                    radiusScreenPosition.y - endpointScreenPosition.y;
-                selectionRadiusPixels = std::max(
-                    selectionRadiusPixels,
-                    std::sqrt(radiusX * radiusX + radiusY * radiusY));
+                const float radiusX = radiusScreenPosition.x - endpointScreenPosition.x;
+                const float radiusY = radiusScreenPosition.y - endpointScreenPosition.y;
+                selectionRadiusPixels =
+                    std::max(selectionRadiusPixels, std::sqrt(radiusX * radiusX + radiusY * radiusY));
             }
-            selectionRadiusPixels = glm::clamp(
-                selectionRadiusPixels,
-                30.0f,
-                180.0f);
+            selectionRadiusPixels = glm::clamp(selectionRadiusPixels, 30.0f, 180.0f);
 
-            const float deltaX =
-                clickPosition.x - endpointScreenPosition.x;
-            const float deltaY =
-                clickPosition.y - endpointScreenPosition.y;
+            const float deltaX = clickPosition.x - endpointScreenPosition.x;
+            const float deltaY = clickPosition.y - endpointScreenPosition.y;
             const float distanceSquared = deltaX * deltaX + deltaY * deltaY;
-            if (distanceSquared >
-                    selectionRadiusPixels * selectionRadiusPixels ||
+            if (distanceSquared > selectionRadiusPixels * selectionRadiusPixels ||
                 distanceSquared >= closestDistanceSquared) {
                 continue;
             }
@@ -842,8 +766,7 @@ bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
         return false;
     }
 
-    closestPlatform->GetMovementComponent()->SetEditorPreviewPoint(
-        closestEndpoint);
+    closestPlatform->GetMovementComponent()->SetEditorPreviewPoint(closestEndpoint);
     mPickedActor = closestPlatform;
     mPickedActorRef = *closestPlatformRef;
     mSelectedKeys.clear();
@@ -854,8 +777,7 @@ bool StageSelectionController::TrySelectUGCMovingPlatformEndpoint(
 }
 
 std::vector<PhysicsSystem::RayHitActor>
-StageSelectionController::CollectUGCScreenPickHits(
-    const ImVec2& clickPosition) const
+StageSelectionController::CollectUGCScreenPickHits(const ImVec2& clickPosition) const
 {
     std::vector<PhysicsSystem::RayHitActor> hits;
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
@@ -863,8 +785,7 @@ StageSelectionController::CollectUGCScreenPickHits(
     }
 
     const std::vector<StageActorInstance> instances =
-        StageActorQuery::CollectAllActorInstances(
-            mContext.game->GetCurrentStage());
+        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
     for (const StageActorInstance& instance : instances) {
         Actor* actor = instance.actor;
         if (!actor || !actor->GetIsActive()) {
@@ -877,22 +798,14 @@ StageSelectionController::CollectUGCScreenPickHits(
         }
 
         const glm::vec3 absoluteScale = glm::abs(actor->GetScale());
-        const float worldRadius = std::max(
-            0.5f,
-            actor->GetRadius() * std::max(
-                absoluteScale.x,
-                std::max(absoluteScale.y, absoluteScale.z)));
+        const float worldRadius =
+            std::max(0.5f, actor->GetRadius() * std::max(absoluteScale.x, std::max(absoluteScale.y, absoluteScale.z)));
         ImVec2 radiusPoint;
         float screenRadius = 22.0f;
-        if (WorldToScreenPoint(
-                actor->GetPos() + glm::vec3(worldRadius, 0.0f, 0.0f),
-                radiusPoint)) {
+        if (WorldToScreenPoint(actor->GetPos() + glm::vec3(worldRadius, 0.0f, 0.0f), radiusPoint)) {
             const float radiusX = radiusPoint.x - screenPosition.x;
             const float radiusY = radiusPoint.y - screenPosition.y;
-            screenRadius = glm::clamp(
-                std::sqrt(radiusX * radiusX + radiusY * radiusY),
-                22.0f,
-                180.0f);
+            screenRadius = glm::clamp(std::sqrt(radiusX * radiusX + radiusY * radiusY), 22.0f, 180.0f);
         }
 
         const float deltaX = clickPosition.x - screenPosition.x;
@@ -909,12 +822,10 @@ StageSelectionController::CollectUGCScreenPickHits(
         hits.emplace_back(hit);
     }
 
-    std::sort(
-        hits.begin(), hits.end(),
-        [](const PhysicsSystem::RayHitActor& left,
-           const PhysicsSystem::RayHitActor& right) {
-            return left.distance < right.distance;
-        });
+    std::sort(hits.begin(), hits.end(),
+              [](const PhysicsSystem::RayHitActor& left, const PhysicsSystem::RayHitActor& right) {
+                  return left.distance < right.distance;
+              });
     return hits;
 }
 
@@ -935,42 +846,29 @@ bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec
     float renderMouseY = 0.0f;
 
     if (mContext.gameViewport.IsValid()) {
-        const float screenMouseX =
-            mainViewport->Pos.x + static_cast<float>(mouseX);
-        const float screenMouseY =
-            mainViewport->Pos.y + static_cast<float>(mouseY);
-        const DebugEditorGameViewport& editorViewport =
-            mContext.gameViewport;
-        if (screenMouseX < editorViewport.x ||
-            screenMouseX > editorViewport.x + editorViewport.width ||
-            screenMouseY < editorViewport.y ||
-            screenMouseY > editorViewport.y + editorViewport.height) {
+        const float screenMouseX = mainViewport->Pos.x + static_cast<float>(mouseX);
+        const float screenMouseY = mainViewport->Pos.y + static_cast<float>(mouseY);
+        const DebugEditorGameViewport& editorViewport = mContext.gameViewport;
+        if (screenMouseX < editorViewport.x || screenMouseX > editorViewport.x + editorViewport.width ||
+            screenMouseY < editorViewport.y || screenMouseY > editorViewport.y + editorViewport.height) {
             return false;
         }
 
         renderWidth = static_cast<float>(editorViewport.sourceWidth);
         renderHeight = static_cast<float>(editorViewport.sourceHeight);
-        renderMouseX =
-            (screenMouseX - editorViewport.x) /
-            editorViewport.width * renderWidth;
-        renderMouseY =
-            (screenMouseY - editorViewport.y) /
-            editorViewport.height * renderHeight;
+        renderMouseX = (screenMouseX - editorViewport.x) / editorViewport.width * renderWidth;
+        renderMouseY = (screenMouseY - editorViewport.y) / editorViewport.height * renderHeight;
     } else {
         int windowWidth = 0;
         int windowHeight = 0;
-        glfwGetWindowSize(
-            mContext.game->GetWindow(),
-            &windowWidth,
-            &windowHeight);
+        glfwGetWindowSize(mContext.game->GetWindow(), &windowWidth, &windowHeight);
         renderWidth = static_cast<float>(windowWidth);
         renderHeight = static_cast<float>(windowHeight);
         renderMouseX = static_cast<float>(mouseX);
         renderMouseY = static_cast<float>(mouseY);
     }
 
-    if (renderWidth <= 0.0f || renderHeight <= 0.0f ||
-        renderMouseX < 0.0f || renderMouseX > renderWidth ||
+    if (renderWidth <= 0.0f || renderHeight <= 0.0f || renderMouseX < 0.0f || renderMouseX > renderWidth ||
         renderMouseY < 0.0f || renderMouseY > renderHeight) {
         return false;
     }
@@ -983,8 +881,7 @@ bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec
     int viewIndex = 0;
     float viewportHeight = renderHeight;
     float localMouseY = renderMouseY;
-    float fovDeg =
-        mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
+    float fovDeg = mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
 
     if (mContext.game->GetIsPlayer2Joined() && views.size() >= 2) {
         viewportHeight = renderHeight * 0.5f;
@@ -1005,17 +902,12 @@ bool StageSelectionController::TryCreateMouseRay(glm::vec3& outRayFrom, glm::vec
     const float aspect = renderWidth / viewportHeight;
 
     const glm::mat4 view = views[viewIndex];
-    const glm::mat4 projection = CalculateCameraProjection(
-        *mContext.game, aspect, fovDeg);
-    const glm::mat4 inverseViewProjection =
-        glm::inverse(projection * view);
+    const glm::mat4 projection = CalculateCameraProjection(*mContext.game, aspect, fovDeg);
+    const glm::mat4 inverseViewProjection = glm::inverse(projection * view);
 
-    glm::vec4 nearPoint = inverseViewProjection *
-        glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
-    glm::vec4 farPoint = inverseViewProjection *
-        glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
-    if (std::abs(nearPoint.w) < 0.000001f ||
-        std::abs(farPoint.w) < 0.000001f) {
+    glm::vec4 nearPoint = inverseViewProjection * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
+    glm::vec4 farPoint = inverseViewProjection * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
+    if (std::abs(nearPoint.w) < 0.000001f || std::abs(farPoint.w) < 0.000001f) {
         return false;
     }
     nearPoint /= nearPoint.w;
@@ -1045,10 +937,7 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
     } else {
         int windowWidth = 0;
         int windowHeight = 0;
-        glfwGetWindowSize(
-            mContext.game->GetWindow(),
-            &windowWidth,
-            &windowHeight);
+        glfwGetWindowSize(mContext.game->GetWindow(), &windowWidth, &windowHeight);
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         screenWidth = static_cast<float>(windowWidth);
         screenHeight = static_cast<float>(windowHeight);
@@ -1070,10 +959,8 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const float aspect = screenWidth / screenHeight;
 
-    const float fieldOfViewDegrees =
-        mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
-    const glm::mat4 projection = CalculateCameraProjection(
-        *mContext.game, aspect, fieldOfViewDegrees);
+    const float fieldOfViewDegrees = mContext.game->GetCameraSystem()->GetFieldOfViewDegrees();
+    const glm::mat4 projection = CalculateCameraProjection(*mContext.game, aspect, fieldOfViewDegrees);
 
     const glm::vec4 clip = projection * view * glm::vec4(worldPos, 1.0f);
 
@@ -1083,12 +970,7 @@ bool StageSelectionController::WorldToScreenPoint(const glm::vec3& worldPos, ImV
 
     const glm::vec3 ndc = glm::vec3(clip) / clip.w;
 
-
-
-
-    if (!std::isfinite(ndc.x) ||
-        !std::isfinite(ndc.y) ||
-        !std::isfinite(ndc.z)) {
+    if (!std::isfinite(ndc.x) || !std::isfinite(ndc.y) || !std::isfinite(ndc.z)) {
         return false;
     }
 

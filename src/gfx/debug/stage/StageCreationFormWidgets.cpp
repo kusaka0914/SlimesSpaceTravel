@@ -2,16 +2,12 @@
 
 #include "Game.h"
 #include "Stage.h"
-#include "actor/Planet.h"
 #include "gfx/debug/DebugEditorContext.h"
 #include "imgui.h"
 
 #include <string>
 
-void StageCreationFormWidgets::DrawPlanetCombo(
-    DebugEditorContext& context,
-    const char* label,
-    int& selectedPlanetIndex)
+void StageCreationFormWidgets::DrawPlanetCombo(DebugEditorContext& context, const char* label, int& selectedPlanetIndex)
 {
     if (!context.game || !context.game->GetCurrentStage()) {
         selectedPlanetIndex = -1;
@@ -32,15 +28,12 @@ void StageCreationFormWidgets::DrawPlanetCombo(
         return;
     }
 
-    for (int planetIndex = 0;
-         planetIndex < static_cast<int>(planets.size());
-         ++planetIndex) {
+    for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
         if (!planets[planetIndex]) {
             continue;
         }
 
-        const std::string itemLabel =
-            "惑星 " + std::to_string(planetIndex);
+        const std::string itemLabel = "惑星 " + std::to_string(planetIndex);
         const bool isSelected = selectedPlanetIndex == planetIndex;
         if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
             selectedPlanetIndex = planetIndex;

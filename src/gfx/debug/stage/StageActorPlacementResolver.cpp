@@ -9,15 +9,12 @@
 #include <algorithm>
 #include <cmath>
 
-StageActorPlacementResolver::StageActorPlacementResolver(
-    DebugEditorContext& context)
+StageActorPlacementResolver::StageActorPlacementResolver(DebugEditorContext& context)
     : mContext(context)
 {
 }
 
-int StageActorPlacementResolver::ResolvePlanetIndex(
-    Actor* hitActor,
-    int fallbackPlanetIndex) const
+int StageActorPlacementResolver::ResolvePlanetIndex(Actor* hitActor, int fallbackPlanetIndex) const
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return fallbackPlanetIndex;
@@ -39,11 +36,9 @@ int StageActorPlacementResolver::ResolvePlanetIndex(
     return static_cast<int>(std::distance(planets.begin(), planetIt));
 }
 
-bool StageActorPlacementResolver::TryResolveUGCBuildPlanePlacement(
-    const glm::vec3& rayFrom,
-    const glm::vec3& rayTo,
-    int gridLayer,
-    StageActorPlacement& outPlacement) const
+bool StageActorPlacementResolver::TryResolveUGCBuildPlanePlacement(const glm::vec3& rayFrom, const glm::vec3& rayTo,
+                                                                   int gridLayer,
+                                                                   StageActorPlacement& outPlacement) const
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return false;
@@ -57,22 +52,16 @@ bool StageActorPlacementResolver::TryResolveUGCBuildPlanePlacement(
     const glm::vec3 rayDelta = rayTo - rayFrom;
     constexpr float parallelEpsilon = 0.00001f;
     float rayParameter = -1.0f;
-    const float buildPlaneY =
-        static_cast<float>(gridLayer) *
-        mContext.game->GetUGCGridSize();
+    const float buildPlaneY = static_cast<float>(gridLayer) * mContext.game->GetUGCGridSize();
 
     // UGCの組立面は、重なった足場ではなく選択中レイヤーの床に固定する。
     if (std::abs(rayDelta.y) > parallelEpsilon) {
-        rayParameter =
-            (buildPlaneY - rayFrom.y) / rayDelta.y;
+        rayParameter = (buildPlaneY - rayFrom.y) / rayDelta.y;
     }
 
     if (rayParameter < 0.0f || rayParameter > 1.0f) {
         // 横向きの視線では、同じ惑星中心を通るカメラ正面の面を代わりに使う。
-        const glm::vec3 buildPlaneCenter(
-            planets.front()->GetPos().x,
-            buildPlaneY,
-            planets.front()->GetPos().z);
+        const glm::vec3 buildPlaneCenter(planets.front()->GetPos().x, buildPlaneY, planets.front()->GetPos().z);
         glm::vec3 viewPlaneNormal = rayFrom - buildPlaneCenter;
         const float normalLength = glm::length(viewPlaneNormal);
         if (normalLength <= parallelEpsilon) {
@@ -84,9 +73,7 @@ bool StageActorPlacementResolver::TryResolveUGCBuildPlanePlacement(
         if (std::abs(denominator) <= parallelEpsilon) {
             return false;
         }
-        rayParameter = glm::dot(
-            buildPlaneCenter - rayFrom,
-            viewPlaneNormal) / denominator;
+        rayParameter = glm::dot(buildPlaneCenter - rayFrom, viewPlaneNormal) / denominator;
     }
 
     if (rayParameter < 0.0f || rayParameter > 1.0f) {

@@ -7,7 +7,7 @@
 
 namespace {
 
-constexpr std::array<const char*, 3> kDefinitionPaths = {
+constexpr std::array<const char*, 3> definitionPaths = {
     "../assets/data/debug/platform_types.yaml",
     "assets/data/debug/platform_types.yaml",
     "../../assets/data/debug/platform_types.yaml",
@@ -39,7 +39,7 @@ std::vector<PlatformTypeDefinition> CreateFallbackDefinitions()
     return definitions;
 }
 
-}
+} // namespace
 
 const std::vector<PlatformTypeDefinition>& PlatformTypeRegistry::GetDefinitions()
 {
@@ -47,8 +47,7 @@ const std::vector<PlatformTypeDefinition>& PlatformTypeRegistry::GetDefinitions(
     return definitions;
 }
 
-const PlatformTypeDefinition*
-PlatformTypeRegistry::FindBySequenceName(const std::string& sequenceName)
+const PlatformTypeDefinition* PlatformTypeRegistry::FindBySequenceName(const std::string& sequenceName)
 {
     for (const PlatformTypeDefinition& definition : GetDefinitions()) {
         if (definition.sequenceName == sequenceName) {
@@ -59,9 +58,7 @@ PlatformTypeRegistry::FindBySequenceName(const std::string& sequenceName)
     return nullptr;
 }
 
-void PlatformTypeRegistry::ApplyDefaults(
-    YAML::Node& platformNode,
-    const PlatformTypeDefinition& definition)
+void PlatformTypeRegistry::ApplyDefaults(YAML::Node& platformNode, const PlatformTypeDefinition& definition)
 {
     MergeMissingValues(platformNode, definition.defaults);
 }
@@ -69,7 +66,7 @@ void PlatformTypeRegistry::ApplyDefaults(
 std::vector<PlatformTypeDefinition> PlatformTypeRegistry::LoadDefinitions()
 {
     std::filesystem::path definitionPath;
-    for (const char* candidate : kDefinitionPaths) {
+    for (const char* candidate : definitionPaths) {
         std::error_code error;
         if (std::filesystem::exists(candidate, error) && !error) {
             definitionPath = candidate;
@@ -104,9 +101,8 @@ std::vector<PlatformTypeDefinition> PlatformTypeRegistry::LoadDefinitions()
             definition.displayName = typeNode["displayName"].as<std::string>();
             definition.sequenceName = typeNode["sequenceName"].as<std::string>();
 
-            if (definition.id.empty() || definition.displayName.empty() ||
-                definition.sequenceName.empty() || ids.contains(definition.id) ||
-                sequenceNames.contains(definition.sequenceName)) {
+            if (definition.id.empty() || definition.displayName.empty() || definition.sequenceName.empty() ||
+                ids.contains(definition.id) || sequenceNames.contains(definition.sequenceName)) {
                 continue;
             }
 

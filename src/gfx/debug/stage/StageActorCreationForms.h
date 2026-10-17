@@ -12,13 +12,14 @@ class StageActorCreateService;
 class StageActorPlacementController;
 struct DebugEditorContext;
 
+// 敵プリセットと追加先惑星を選択し、敵の追加を実行するUI状態を保持する。
 class StageEnemyCreationForm {
 public:
-    StageEnemyCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageEnemyCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                           StageActorPlacementController& placementController);
 
+    // 追加UIの準備を続けられる場合は true。開いたUIで惑星・プリセットが不足していれば false。
+    // Gameと現在のStageが有効な状態で呼ぶ。
     bool Draw();
 
 private:
@@ -33,12 +34,11 @@ private:
     std::string mEnemyPresetLoadError;
 };
 
+// NPCのモデル・名前・会話を入力し、クリック配置を開始するUI状態を保持する。
 class StageNPCCreationForm {
 public:
-    StageNPCCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageNPCCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                         StageActorPlacementController& placementController);
 
     void Draw();
 
@@ -53,15 +53,14 @@ private:
     std::vector<std::array<char, 1024>> mTalkTexts;
     float mTalkRadius = 0.75f;
     float mScale = 1.0f;
-    std::string mStatus;
+    std::string mStatusMessage;
 };
 
+// TutorialTriggerのモデル・会話を入力し、クリック配置を開始するUI状態を保持する。
 class StageTutorialTriggerCreationForm {
 public:
-    StageTutorialTriggerCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageTutorialTriggerCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                                     StageActorPlacementController& placementController);
 
     void Draw();
 
@@ -74,15 +73,14 @@ private:
     std::array<char, 128> mModelSearch = {};
     std::vector<std::array<char, 1024>> mTalkTexts;
     glm::vec3 mScale{2.0f};
-    std::string mStatus;
+    std::string mStatusMessage;
 };
 
+// JewelItemの見た目と追加先を選択し、クリック配置を開始するUI状態を保持する。
 class StageJewelItemCreationForm {
 public:
-    StageJewelItemCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageJewelItemCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                               StageActorPlacementController& placementController);
 
     void Draw();
 
@@ -96,12 +94,11 @@ private:
     glm::vec3 mScale{0.22f};
 };
 
+// HazardActorの見た目・接触ダメージを入力し、クリック配置を開始するUI状態を保持する。
 class StageHazardActorCreationForm {
 public:
-    StageHazardActorCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageHazardActorCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                                 StageActorPlacementController& placementController);
 
     void Draw();
 
@@ -118,12 +115,11 @@ private:
     float mDamageIntervalSeconds = 1.0f;
 };
 
+// BoatArrivalPointのモデルと追加先を選択し、クリック配置を開始するUI状態を保持する。
 class StageBoatArrivalPointCreationForm {
 public:
-    StageBoatArrivalPointCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageBoatArrivalPointCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                                      StageActorPlacementController& placementController);
 
     void Draw();
 

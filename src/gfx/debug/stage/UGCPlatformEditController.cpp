@@ -11,33 +11,28 @@
 #include <cmath>
 #include <utility>
 
-UGCPlatformEditController::UGCPlatformEditController(
-    DebugEditorContext& context,
-    UGCPlatformCellService& platformCellService,
-    StageActorPlacementResolver& placementResolver)
+UGCPlatformEditController::UGCPlatformEditController(DebugEditorContext& context,
+                                                     UGCPlatformCellService& platformCellService,
+                                                     StageActorPlacementResolver& placementResolver)
     : mContext(context),
       mPlatformCellService(platformCellService),
       mPlacementResolver(placementResolver)
 {
 }
 
-void UGCPlatformEditController::SetSelectionController(
-    StageSelectionController* selectionController)
+void UGCPlatformEditController::SetSelectionController(StageSelectionController* selectionController)
 {
     mSelectionController = selectionController;
 }
 
-void UGCPlatformEditController::SetPushUndoCallback(
-    std::function<void()> pushUndoCallback)
+void UGCPlatformEditController::SetPushUndoCallback(std::function<void()> pushUndoCallback)
 {
     mPushUndoCallback = std::move(pushUndoCallback);
 }
 
 bool UGCPlatformEditController::TryEraseCell()
 {
-    if (!mSelectionController ||
-        !mContext.game ||
-        !mContext.game->GetCurrentStage() ||
+    if (!mSelectionController || !mContext.game || !mContext.game->GetCurrentStage() ||
         !mContext.game->GetPhysicsSystem()) {
         return false;
     }
@@ -48,35 +43,24 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
-    const bool isSelectedMovingPlatformDestination =
-        mSelectionController->IsMovingPlatformDestinationSelected();
-    if (isSelectedMovingPlatformDestination &&
-        !mMovingDestinationEraseRegion) {
-        const std::optional<StageActorRef>& destinationRef =
-            mSelectionController->GetPickedActorRef();
+    const bool isSelectedMovingPlatformDestination = mSelectionController->IsMovingPlatformDestinationSelected();
+    if (isSelectedMovingPlatformDestination && !mMovingDestinationEraseRegion) {
+        const std::optional<StageActorRef>& destinationRef = mSelectionController->GetPickedActorRef();
         UGCGeneratedPlatformRegion sourceRegion;
-        if (!destinationRef ||
-            !mPlatformCellService.ResolveMovingPlatformRegion(
-                *destinationRef,
-                sourceRegion)) {
+        if (!destinationRef || !mPlatformCellService.ResolveMovingPlatformRegion(*destinationRef, sourceRegion)) {
             return false;
         }
         mMovingDestinationEraseRegion = sourceRegion;
 
-        const glm::vec3 destinationCenter = mSelectionController
-            ->CalculateSelectedMovingPlatformDestinationsCenter();
+        const glm::vec3 destinationCenter = mSelectionController->CalculateSelectedMovingPlatformDestinationsCenter();
         const float gridSize = sourceRegion.gridSize;
-        mMovingDestinationEraseLayer = static_cast<int>(std::round(
-            destinationCenter.y / gridSize));
+        mMovingDestinationEraseLayer = static_cast<int>(std::round(destinationCenter.y / gridSize));
     }
-    const bool isMovingPlatformDestination =
-        mMovingDestinationEraseRegion.has_value();
-    int eraseLayer = mMovingDestinationEraseLayer
-        .value_or(mGridLayer);
+    const bool isMovingPlatformDestination = mMovingDestinationEraseRegion.has_value();
+    int eraseLayer = mMovingDestinationEraseLayer.value_or(mGridLayer);
 
     StageActorPlacement placement;
-    if (!mPlacementResolver.TryResolveUGCBuildPlanePlacement(
-            rayFrom, rayTo, eraseLayer, placement)) {
+    if (!mPlacementResolver.TryResolveUGCBuildPlanePlacement(rayFrom, rayTo, eraseLayer, placement)) {
         return false;
     }
 
@@ -88,20 +72,16 @@ bool UGCPlatformEditController::TryEraseCell()
     if (isMovingPlatformDestination) {
         const float gridSize = mMovingDestinationEraseRegion->gridSize;
         const glm::ivec3 erasedDestinationCell =
-            UGCPlatformGrid::CalculateGridPosition(
-                placement.worldPosition, gridSize);
-        if (mLastErasedCell &&
-            *mLastErasedCell == erasedDestinationCell) {
+            UGCPlatformGrid::CalculateGridPosition(placement.worldPosition, gridSize);
+        if (mLastErasedCell && *mLastErasedCell == erasedDestinationCell) {
             return false;
         }
         if (!mHasPushedEraseStrokeUndo && mPushUndoCallback) {
             mPushUndoCallback();
             mHasPushedEraseStrokeUndo = true;
         }
-        const bool removed = mPlatformCellService
-            .RemoveMovingPlatformDestinationCell(
-                *mMovingDestinationEraseRegion,
-                placement.worldPosition);
+        const bool removed = mPlatformCellService.RemoveMovingPlatformDestinationCell(*mMovingDestinationEraseRegion,
+                                                                                      placement.worldPosition);
         if (removed) {
             mLastErasedCell = erasedDestinationCell;
             mSelectionController->Clear();
@@ -110,19 +90,13 @@ bool UGCPlatformEditController::TryEraseCell()
     }
 
     const float gridSize = mContext.game->GetUGCGridSize();
-    if (!mPlatformCellService.ResolveLayerAtGridPosition(
-            0,
-            placement.worldPosition,
-            gridSize,
-            mGridLayer,
-            eraseLayer)) {
+    if (!mPlatformCellService.ResolveLayerAtGridPosition(0, placement.worldPosition, gridSize, mGridLayer,
+                                                         eraseLayer)) {
         return false;
     }
 
-    const glm::ivec3 erasedCell(
-        static_cast<int>(std::floor(placement.worldPosition.x / gridSize)),
-        eraseLayer,
-        static_cast<int>(std::floor(placement.worldPosition.z / gridSize)));
+    const glm::ivec3 erasedCell(static_cast<int>(std::floor(placement.worldPosition.x / gridSize)), eraseLayer,
+                                static_cast<int>(std::floor(placement.worldPosition.z / gridSize)));
     if (mLastErasedCell && *mLastErasedCell == erasedCell) {
         return false;
     }
@@ -131,11 +105,8 @@ bool UGCPlatformEditController::TryEraseCell()
         mPushUndoCallback();
         mHasPushedEraseStrokeUndo = true;
     }
-    const bool removed = mPlatformCellService.RemoveCellAtGridPosition(
-        0,
-        placement.worldPosition,
-        gridSize,
-        eraseLayer);
+    const bool removed =
+        mPlatformCellService.RemoveCellAtGridPosition(0, placement.worldPosition, gridSize, eraseLayer);
     if (removed) {
         mLastErasedCell = erasedCell;
         mSelectionController->Clear();
@@ -151,32 +122,25 @@ void UGCPlatformEditController::EndEraseGesture()
     mMovingDestinationEraseLayer.reset();
 }
 
-bool UGCPlatformEditController::TryTranslateCells(
-    const StageActorRef& actorRef,
-    const glm::vec3& worldDelta)
+bool UGCPlatformEditController::TryTranslateCells(const StageActorRef& actorRef, const glm::vec3& worldDelta)
 {
     return mPlatformCellService.TranslateCells(actorRef, worldDelta);
 }
 
-bool UGCPlatformEditController::TryTranslateCells(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool UGCPlatformEditController::TryTranslateCells(const std::vector<StageActorRef>& actorRefs,
+                                                  const glm::vec3& worldDelta)
 {
     return mPlatformCellService.TranslateCells(actorRefs, worldDelta);
 }
 
-bool UGCPlatformEditController::TryTranslateMovingPlatformDestinations(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool UGCPlatformEditController::TryTranslateMovingPlatformDestinations(const std::vector<StageActorRef>& actorRefs,
+                                                                       const glm::vec3& worldDelta)
 {
-    return mPlatformCellService.TranslateMovingPlatformDestinations(
-        actorRefs, worldDelta);
+    return mPlatformCellService.TranslateMovingPlatformDestinations(actorRefs, worldDelta);
 }
 
-bool UGCPlatformEditController::TrySaveMovingPlatformDestinationTranslation(
-    const std::vector<StageActorRef>& actorRefs,
-    const glm::vec3& worldDelta)
+bool UGCPlatformEditController::TrySaveMovingPlatformDestinationTranslation(const std::vector<StageActorRef>& actorRefs,
+                                                                            const glm::vec3& worldDelta)
 {
-    return mPlatformCellService.SaveMovingPlatformDestinationTranslation(
-        actorRefs, worldDelta);
+    return mPlatformCellService.SaveMovingPlatformDestinationTranslation(actorRefs, worldDelta);
 }

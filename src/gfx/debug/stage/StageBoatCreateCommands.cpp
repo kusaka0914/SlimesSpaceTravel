@@ -26,10 +26,7 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
     EnsureSequence(config, "boats");
 
     const int index = static_cast<int>(config["boats"].size());
-    YAML::Node boatNode = mNodeFactory.CreateBoat(
-        startPlanetNum,
-        destPlanetNum,
-        destStage);
+    YAML::Node boatNode = mNodeFactory.CreateBoat(startPlanetNum, destPlanetNum, destStage);
     ApplyPlacementToNode(boatNode, startPlanetNum, placement);
 
     config["boats"].push_back(boatNode);
@@ -38,20 +35,15 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::Boat, boatNode, index);
+    mRuntimeCreationService.CreateActor(StageActorType::Boat, boatNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
 
-bool StageActorCreateService::AddBoatArrivalPoint(
-    int currentPlanetNum,
-    const std::string& modelPath,
-    const glm::vec3& scale,
-    const StageActorPlacement* placement)
+bool StageActorCreateService::AddBoatArrivalPoint(int currentPlanetNum, const std::string& modelPath,
+                                                  const glm::vec3& scale, const StageActorPlacement* placement)
 {
-    if (!CanCreateActor() || modelPath.empty() ||
-        !IsValidPlanetIndex(currentPlanetNum, "boat arrival point")) {
+    if (!CanCreateActor() || modelPath.empty() || !IsValidPlanetIndex(currentPlanetNum, "boat arrival point")) {
         return false;
     }
 
@@ -62,28 +54,16 @@ bool StageActorCreateService::AddBoatArrivalPoint(
 
     EnsureSequence(config, "boatArrivalPoints");
 
-    const int index =
-        static_cast<int>(config["boatArrivalPoints"].size());
-    YAML::Node arrivalPointNode =
-        mNodeFactory.CreateBoatArrivalPoint(
-            currentPlanetNum,
-            modelPath,
-            scale);
-    ApplyPlacementToNode(
-        arrivalPointNode,
-        currentPlanetNum,
-        placement);
+    const int index = static_cast<int>(config["boatArrivalPoints"].size());
+    YAML::Node arrivalPointNode = mNodeFactory.CreateBoatArrivalPoint(currentPlanetNum, modelPath, scale);
+    ApplyPlacementToNode(arrivalPointNode, currentPlanetNum, placement);
     config["boatArrivalPoints"].push_back(arrivalPointNode);
 
     if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::BoatArrivalPoint,
-        arrivalPointNode,
-        index);
+    mRuntimeCreationService.CreateActor(StageActorType::BoatArrivalPoint, arrivalPointNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
-

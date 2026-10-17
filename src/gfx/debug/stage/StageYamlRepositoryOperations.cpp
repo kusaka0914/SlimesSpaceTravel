@@ -2,44 +2,40 @@
 
 #include <fstream>
 
-bool StageYamlRepository::SaveYamlFile(
-    const std::string& filePath,
-    const YAML::Node& config)
+bool StageYamlRepository::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
     std::ofstream file(filePath);
     if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: "
-                  << filePath << std::endl;
+        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
         return false;
     }
 
     file << config;
+
+    // バッファの書き出しやファイルを閉じる際の失敗も、保存失敗として呼び出し元へ返す。
+    file.close();
+    if (!file) {
+        std::cerr << "Failed to write yaml: " << filePath << std::endl;
+        return false;
+    }
     return true;
 }
 
-bool StageYamlRepository::RemoveSequenceElement(
-    YAML::Node& config,
-    const std::string& sequenceName,
-    int index)
+bool StageYamlRepository::RemoveSequenceElement(YAML::Node& config, const std::string& sequenceName, int index)
 {
-    if (!config[sequenceName] ||
-        !config[sequenceName].IsSequence()) {
-        std::cerr << "Invalid yaml sequence: "
-                  << sequenceName << std::endl;
+    if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
+        std::cerr << "Invalid yaml sequence: " << sequenceName << std::endl;
         return false;
     }
 
     const YAML::Node oldSequence = config[sequenceName];
     if (index < 0 || index >= static_cast<int>(oldSequence.size())) {
-        std::cerr << "Delete index out of range: "
-                  << index << std::endl;
+        std::cerr << "Delete index out of range: " << index << std::endl;
         return false;
     }
 
     YAML::Node newSequence(YAML::NodeType::Sequence);
-    for (int oldIndex = 0;
-         oldIndex < static_cast<int>(oldSequence.size());
-         ++oldIndex) {
+    for (int oldIndex = 0; oldIndex < static_cast<int>(oldSequence.size()); ++oldIndex) {
         if (oldIndex != index) {
             newSequence.push_back(oldSequence[oldIndex]);
         }

@@ -28,12 +28,11 @@ bool IsPrimaryShortcutModifierPressed(GLFWwindow* window)
            glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
 #endif
 }
-}
+} // namespace
 
-StageEditShortcutHandler::StageEditShortcutHandler(
-    DebugEditorContext& context,
-    StageSelectionController& selectionController,
-    StageEditCommandController& editCommandController)
+StageEditShortcutHandler::StageEditShortcutHandler(DebugEditorContext& context,
+                                                   StageSelectionController& selectionController,
+                                                   StageEditCommandController& editCommandController)
     : mContext(context),
       mSelectionController(selectionController),
       mEditCommandController(editCommandController)
@@ -61,39 +60,29 @@ void StageEditShortcutHandler::HandleDeleteShortcut()
         return;
     }
 
-    const bool isBackspacePressed =
-        ImGui::IsKeyPressed(ImGuiKey_Backspace, false);
-    const bool isDeletePressed =
-        ImGui::IsKeyPressed(ImGuiKey_Delete, false);
+    const bool isBackspacePressed = ImGui::IsKeyPressed(ImGuiKey_Backspace, false);
+    const bool isDeletePressed = ImGui::IsKeyPressed(ImGuiKey_Delete, false);
     if (!isBackspacePressed && !isDeletePressed) {
         return;
     }
 
-    const std::unordered_set<std::string>& selectedKeys =
-        mSelectionController.GetSelectedKeys();
+    const std::unordered_set<std::string>& selectedKeys = mSelectionController.GetSelectedKeys();
     const std::vector<StageActorRef> targets =
-        StageActorQuery::CollectAllTargets(
-            mContext.game->GetCurrentStage(),
-            true);
+        StageActorQuery::CollectAllTargets(mContext.game->GetCurrentStage(), true);
     std::vector<int> selectedPlanetIndices;
     for (const StageActorRef& target : targets) {
-        if (target.type == StageActorType::Planet &&
-            selectedKeys.contains(StageActorQuery::MakeKey(target))) {
+        if (target.type == StageActorType::Planet && selectedKeys.contains(StageActorQuery::MakeKey(target))) {
             selectedPlanetIndices.push_back(target.yamlIndex);
         }
     }
 
-    if (!selectedPlanetIndices.empty() &&
-        selectedPlanetIndices.size() == selectedKeys.size()) {
-        const std::size_t planetCount =
-            mContext.game->GetCurrentStage()->GetPlanets().size();
+    if (!selectedPlanetIndices.empty() && selectedPlanetIndices.size() == selectedKeys.size()) {
+        const std::size_t planetCount = mContext.game->GetCurrentStage()->GetPlanets().size();
         if (selectedPlanetIndices.size() >= planetCount) {
             return;
         }
 
-        std::sort(
-            selectedPlanetIndices.rbegin(),
-            selectedPlanetIndices.rend());
+        std::sort(selectedPlanetIndices.rbegin(), selectedPlanetIndices.rend());
         for (int planetIndex : selectedPlanetIndices) {
             mEditCommandController.DeletePlanet(planetIndex);
         }
@@ -115,15 +104,11 @@ void StageEditShortcutHandler::HandleUndoRedoShortcut()
     }
 
     GLFWwindow* window = mContext.game->GetWindow();
-    const bool isCommandPressed =
-        IsPrimaryShortcutModifierPressed(window);
-    const bool isZPressed =
-        glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
-    const bool isYPressed =
-        glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS;
+    const bool isCommandPressed = IsPrimaryShortcutModifierPressed(window);
+    const bool isZPressed = glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS;
+    const bool isYPressed = glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS;
     const bool isShiftPressed =
-        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
 
     const bool isZTriggered = isZPressed && !mWasZPressed;
     const bool isYTriggered = isYPressed && !mWasYPressed;
@@ -134,8 +119,7 @@ void StageEditShortcutHandler::HandleUndoRedoShortcut()
         return;
     }
 
-    const bool isRedoTriggered =
-        isYTriggered || (isZTriggered && isShiftPressed);
+    const bool isRedoTriggered = isYTriggered || (isZTriggered && isShiftPressed);
     if (isRedoTriggered) {
         mEditCommandController.RestoreRedo();
         return;
@@ -160,15 +144,12 @@ void StageEditShortcutHandler::HandleDuplicateShortcut()
     }
 
     GLFWwindow* window = mContext.game->GetWindow();
-    const bool isCommandPressed =
-        IsPrimaryShortcutModifierPressed(window);
-    const bool isDPressed =
-        glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+    const bool isCommandPressed = IsPrimaryShortcutModifierPressed(window);
+    const bool isDPressed = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
     const bool isDTriggered = isDPressed && !mWasDPressed;
     mWasDPressed = isDPressed;
 
     if (isCommandPressed && isDTriggered) {
-        mEditCommandController.DuplicateSelectedKeys(
-            mSelectionController.GetSelectedKeys());
+        mEditCommandController.DuplicateSelectedKeys(mSelectionController.GetSelectedKeys());
     }
 }

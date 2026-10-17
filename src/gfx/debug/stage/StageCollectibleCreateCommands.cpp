@@ -32,8 +32,7 @@ bool StageActorCreateService::AddCrystal(const std::string& type, int currentPla
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::Crystal, crystalNode, index);
+    mRuntimeCreationService.CreateActor(StageActorType::Crystal, crystalNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
@@ -67,8 +66,7 @@ bool StageActorCreateService::AddBoatParts(const std::string& type, int currentP
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::BoatParts, partNode, index);
+    mRuntimeCreationService.CreateActor(StageActorType::BoatParts, partNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
@@ -104,21 +102,16 @@ bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlac
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::Star, starNode, index);
+    mRuntimeCreationService.CreateActor(StageActorType::Star, starNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
 
-bool StageActorCreateService::AddJewelItem(
-    int currentPlanetNum,
-    const std::string& modelPath,
-    const std::string& texturePath,
-    const glm::vec3& scale,
-    const StageActorPlacement* placement)
+bool StageActorCreateService::AddJewelItem(int currentPlanetNum, const std::string& modelPath,
+                                           const std::string& texturePath, const glm::vec3& scale,
+                                           const StageActorPlacement* placement)
 {
-    if (!CanCreateActor() || modelPath.empty() ||
-        !IsValidPlanetIndex(currentPlanetNum, "jewel item")) {
+    if (!CanCreateActor() || modelPath.empty() || !IsValidPlanetIndex(currentPlanetNum, "jewel item")) {
         return false;
     }
 
@@ -129,11 +122,7 @@ bool StageActorCreateService::AddJewelItem(
 
     EnsureSequence(config, "jewelItems");
     const int index = static_cast<int>(config["jewelItems"].size());
-    YAML::Node jewelItemNode = mNodeFactory.CreateJewelItem(
-        currentPlanetNum,
-        modelPath,
-        texturePath,
-        scale);
+    YAML::Node jewelItemNode = mNodeFactory.CreateJewelItem(currentPlanetNum, modelPath, texturePath, scale);
     ApplyPlacementToNode(jewelItemNode, currentPlanetNum, placement);
     config["jewelItems"].push_back(jewelItemNode);
 
@@ -141,9 +130,7 @@ bool StageActorCreateService::AddJewelItem(
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::JewelItem, jewelItemNode, index);
+    mRuntimeCreationService.CreateActor(StageActorType::JewelItem, jewelItemNode, index);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
-

@@ -58,6 +58,18 @@ void SaveYamlFilePreservesNestedValues()
         "saved planet index");
 }
 
+void SaveYamlFileRejectsUnwritableTarget()
+{
+    TemporaryYamlFile temporaryFile;
+    const auto invalidTarget = temporaryFile.GetPath() / "stage.yaml";
+    YAML::Node stageConfig;
+    stageConfig["star"].push_back("test");
+
+    ExpectFalse(StageYamlRepository::SaveYamlFile(invalidTarget.string(), stageConfig),
+                "save under a missing parent directory");
+    ExpectFalse(std::filesystem::exists(invalidTarget), "failed save must not create a file");
+}
+
 void RemoveSequenceElementRemovesOnlyRequestedIndex()
 {
     YAML::Node stageConfig;
@@ -146,6 +158,9 @@ void RegisterStageYamlRepositoryTests(
     tests.emplace_back(
         "StageYamlRepository.SaveYamlFilePreservesNestedValues",
         SaveYamlFilePreservesNestedValues);
+    tests.emplace_back(
+        "StageYamlRepository.SaveYamlFileRejectsUnwritableTarget",
+        SaveYamlFileRejectsUnwritableTarget);
     tests.emplace_back(
         "StageYamlRepository.RemoveSequenceElementRemovesOnlyRequestedIndex",
         RemoveSequenceElementRemovesOnlyRequestedIndex);

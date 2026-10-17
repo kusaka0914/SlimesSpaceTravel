@@ -10,30 +10,26 @@
 
 #include <string>
 
-StageCrystalCreationForm::StageCrystalCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StageCrystalCreationForm::StageCrystalCreationForm(DebugEditorContext& context,
+                                                   StageActorCreateService& actorCreateService,
+                                                   StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
 {
 }
 
-StageBoatPartsCreationForm::StageBoatPartsCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StageBoatPartsCreationForm::StageBoatPartsCreationForm(DebugEditorContext& context,
+                                                       StageActorCreateService& actorCreateService,
+                                                       StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
 {
 }
 
-StageStarCreationForm::StageStarCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StageStarCreationForm::StageStarCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                                             StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
@@ -54,8 +50,7 @@ void StageCrystalCreationForm::Draw()
             const char* crystalTypeLabels[] = {"小さいクリスタル", "大きいクリスタル"};
             const char* crystalTypes[] = {"little", "big"};
 
-            ImGui::Combo("クリスタルタイプ", &mSelectedTypeIndex, crystalTypeLabels,
-                         IM_ARRAYSIZE(crystalTypeLabels));
+            ImGui::Combo("クリスタルタイプ", &mSelectedTypeIndex, crystalTypeLabels, IM_ARRAYSIZE(crystalTypeLabels));
 
             const bool canAddCrystal = mSelectedPlanetIndex >= 0;
 
@@ -67,8 +62,7 @@ void StageCrystalCreationForm::Draw()
             if (ImGui::Button("クリスタルを追加")) {
                 const std::string crystalType = crystalTypes[mSelectedTypeIndex];
                 mPlacementController.BeginPlacement(
-                    "クリスタル",
-                    mSelectedPlanetIndex,
+                    "クリスタル", mSelectedPlanetIndex,
                     [this, crystalType](int planetIndex, const StageActorPlacement& placement) {
                         return mCreateService.AddCrystal(crystalType, planetIndex, &placement);
                     });
@@ -110,8 +104,7 @@ void StageBoatPartsCreationForm::Draw()
             if (ImGui::Button("ボートパーツを追加")) {
                 const std::string boatPartsType = boatPartsTypes[mSelectedTypeIndex];
                 mPlacementController.BeginPlacement(
-                    "ボートパーツ",
-                    mSelectedPlanetIndex,
+                    "ボートパーツ", mSelectedPlanetIndex,
                     [this, boatPartsType](int planetIndex, const StageActorPlacement& placement) {
                         return mCreateService.AddBoatParts(boatPartsType, planetIndex, &placement);
                     });
@@ -145,12 +138,10 @@ void StageStarCreationForm::Draw()
             }
 
             if (ImGui::Button("星を追加")) {
-                mPlacementController.BeginPlacement(
-                    "星",
-                    mSelectedPlanetIndex,
-                    [this](int planetIndex, const StageActorPlacement& placement) {
-                        return mCreateService.AddStar(planetIndex, &placement);
-                    });
+                mPlacementController.BeginPlacement("星", mSelectedPlanetIndex,
+                                                    [this](int planetIndex, const StageActorPlacement& placement) {
+                                                        return mCreateService.AddStar(planetIndex, &placement);
+                                                    });
             }
 
             if (!canAddStar) {

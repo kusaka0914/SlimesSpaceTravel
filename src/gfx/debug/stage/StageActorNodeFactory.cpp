@@ -3,16 +3,13 @@
 #include <algorithm>
 #include <utility>
 
-StageActorNodeFactory::StageActorNodeFactory(
-    SurfaceDistanceCalculator calculateSurfaceDistance)
+StageActorNodeFactory::StageActorNodeFactory(SurfaceDistanceCalculator calculateSurfaceDistance)
     : mCalculateSurfaceDistance(std::move(calculateSurfaceDistance))
 {
 }
 
-YAML::Node StageActorNodeFactory::CreatePlatform(
-    int planetIndex,
-    const std::string& modelPath,
-    const glm::vec3& scale) const
+YAML::Node StageActorNodeFactory::CreatePlatform(int planetIndex, const std::string& modelPath,
+                                                 const glm::vec3& scale) const
 {
     YAML::Node node;
     node["currentPlanetNum"] = planetIndex;
@@ -30,10 +27,8 @@ YAML::Node StageActorNodeFactory::CreatePlatform(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateRideMovingPlatform(
-    int planetIndex,
-    const std::string& modelPath,
-    const glm::vec3& scale) const
+YAML::Node StageActorNodeFactory::CreateRideMovingPlatform(int planetIndex, const std::string& modelPath,
+                                                           const glm::vec3& scale) const
 {
     YAML::Node node = CreatePlatform(planetIndex, modelPath, scale);
     YAML::Node movement = node["components"]["movement"];
@@ -47,9 +42,7 @@ YAML::Node StageActorNodeFactory::CreateRideMovingPlatform(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreatePlanet(
-    int planetIndex,
-    const std::string& modelPath) const
+YAML::Node StageActorNodeFactory::CreatePlanet(int planetIndex, const std::string& modelPath) const
 {
     YAML::Node node;
     node["center"][0] = static_cast<float>(planetIndex) * 32.0f;
@@ -71,9 +64,7 @@ YAML::Node StageActorNodeFactory::CreatePlanet(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateEnemy(
-    const std::string& type,
-    int planetIndex) const
+YAML::Node StageActorNodeFactory::CreateEnemy(const std::string& type, int planetIndex) const
 {
     YAML::Node node;
     node["editorName"] = type == "boss" ? "新しいボス敵" : "新しい通常敵";
@@ -88,13 +79,8 @@ YAML::Node StageActorNodeFactory::CreateEnemy(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateNPC(
-    const std::string& modelPath,
-    int planetIndex,
-    const std::string& name,
-    const std::vector<std::string>& talkTexts,
-    float radius,
-    float scale) const
+YAML::Node StageActorNodeFactory::CreateNPC(const std::string& modelPath, int planetIndex, const std::string& name,
+                                            const std::vector<std::string>& talkTexts, float radius, float scale) const
 {
     YAML::Node node;
     node["modelPath"] = modelPath;
@@ -118,11 +104,9 @@ YAML::Node StageActorNodeFactory::CreateNPC(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateTutorialTrigger(
-    int planetIndex,
-    const std::string& modelPath,
-    const std::vector<std::string>& talkTexts,
-    const glm::vec3& scale) const
+YAML::Node StageActorNodeFactory::CreateTutorialTrigger(int planetIndex, const std::string& modelPath,
+                                                        const std::vector<std::string>& talkTexts,
+                                                        const glm::vec3& scale) const
 {
     YAML::Node node;
     node["modelPath"] = modelPath;
@@ -142,9 +126,7 @@ YAML::Node StageActorNodeFactory::CreateTutorialTrigger(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateCrystal(
-    const std::string& type,
-    int planetIndex) const
+YAML::Node StageActorNodeFactory::CreateCrystal(const std::string& type, int planetIndex) const
 {
     YAML::Node node;
     node["type"] = type;
@@ -155,17 +137,13 @@ YAML::Node StageActorNodeFactory::CreateCrystal(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateBoatParts(
-    const std::string& type,
-    int planetIndex) const
+YAML::Node StageActorNodeFactory::CreateBoatParts(const std::string& type, int planetIndex) const
 {
     return CreateCrystal(type, planetIndex);
 }
 
-YAML::Node StageActorNodeFactory::CreateBoat(
-    int startPlanetIndex,
-    int destinationPlanetIndex,
-    int destinationStage) const
+YAML::Node StageActorNodeFactory::CreateBoat(int startPlanetIndex, int destinationPlanetIndex,
+                                             int destinationStage) const
 {
     YAML::Node node;
     node["startPlanet"] = startPlanetIndex;
@@ -181,10 +159,8 @@ YAML::Node StageActorNodeFactory::CreateBoat(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateBoatArrivalPoint(
-    int planetIndex,
-    const std::string& modelPath,
-    const glm::vec3& scale) const
+YAML::Node StageActorNodeFactory::CreateBoatArrivalPoint(int planetIndex, const std::string& modelPath,
+                                                         const glm::vec3& scale) const
 {
     YAML::Node node;
     node["currentPlanetNum"] = planetIndex;
@@ -213,11 +189,8 @@ YAML::Node StageActorNodeFactory::CreateStar(int planetIndex) const
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateJewelItem(
-    int planetIndex,
-    const std::string& modelPath,
-    const std::string& texturePath,
-    const glm::vec3& scale) const
+YAML::Node StageActorNodeFactory::CreateJewelItem(int planetIndex, const std::string& modelPath,
+                                                  const std::string& texturePath, const glm::vec3& scale) const
 {
     YAML::Node node;
     node["currentPlanetNum"] = planetIndex;
@@ -235,14 +208,10 @@ YAML::Node StageActorNodeFactory::CreateJewelItem(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateHazardActor(
-    int planetIndex,
-    const std::string& modelPath,
-    const std::string& texturePath,
-    const glm::vec3& scale,
-    float triggerRadius,
-    float damage,
-    float damageIntervalSeconds) const
+YAML::Node StageActorNodeFactory::CreateHazardActor(int planetIndex, const std::string& modelPath,
+                                                    const std::string& texturePath, const glm::vec3& scale,
+                                                    float triggerRadius, float damage,
+                                                    float damageIntervalSeconds) const
 {
     YAML::Node node;
     node["currentPlanetNum"] = planetIndex;
@@ -263,10 +232,8 @@ YAML::Node StageActorNodeFactory::CreateHazardActor(
     return node;
 }
 
-YAML::Node StageActorNodeFactory::CreateStageObject(
-    int planetIndex,
-    const std::string& modelPath,
-    bool isCollisionEnabled) const
+YAML::Node StageActorNodeFactory::CreateStageObject(int planetIndex, const std::string& modelPath,
+                                                    bool isCollisionEnabled) const
 {
     YAML::Node node;
     node["currentPlanetNum"] = planetIndex;
@@ -288,9 +255,7 @@ YAML::Node StageActorNodeFactory::CreateStageObject(
     return node;
 }
 
-float StageActorNodeFactory::CalculateInitialSurfaceDistance(
-    int planetIndex,
-    float height) const
+float StageActorNodeFactory::CalculateInitialSurfaceDistance(int planetIndex, float height) const
 {
     return mCalculateSurfaceDistance(planetIndex, height);
 }

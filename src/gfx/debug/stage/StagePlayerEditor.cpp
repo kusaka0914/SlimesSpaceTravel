@@ -31,20 +31,19 @@ void StagePlayerEditor::DrawDebugMover(Actor* selectedActor)
 
     ImGui::SeparatorText("デバッグ移動");
     if (ImGui::Button("操作中のプレイヤーをここへ移動")) {
-        mPlayerDebugMoveStatus =
-            MoveControlledPlayerToSelectedActor(selectedActor)
-                ? "プレイヤーを選択位置へ移動しました"
-                : "移動先を決定できませんでした";
+        mPlayerDebugMoveStatus = MoveControlledPlayerToSelectedActor(selectedActor)
+                                     ? "プレイヤーを選択位置へ移動しました"
+                                     : "移動先を決定できませんでした";
     }
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip(
-            "ステージのスポーン設定は変更しません。\n"
-            "現在のプレイ中だけ、落下時の復帰地点も選択位置へ更新します。");
+        ImGui::SetTooltip("ステージのスポーン設定は変更しません。\n"
+                          "現在のプレイ中だけ、落下時の復帰地点も選択位置へ更新します。");
     }
     if (!mPlayerDebugMoveStatus.empty()) {
         ImGui::TextDisabled("%s", mPlayerDebugMoveStatus.c_str());
     }
 }
+
 void StagePlayerEditor::DrawSpawnEditor()
 {
     ImGui::SeparatorText("プレイヤースポーン");
@@ -55,19 +54,14 @@ void StagePlayerEditor::DrawSpawnEditor()
         return;
     }
 
-    mSelectedSpawnPlayerIndex = std::clamp(
-        mSelectedSpawnPlayerIndex,
-        0,
-        static_cast<int>(players.size()) - 1);
+    mSelectedSpawnPlayerIndex = std::clamp(mSelectedSpawnPlayerIndex, 0, static_cast<int>(players.size()) - 1);
 
-    const std::string previewLabel =
-        "プレイヤー " + std::to_string(mSelectedSpawnPlayerIndex + 1);
-    if (players.size() > 1 &&
-        ImGui::BeginCombo("対象プレイヤー##spawnPlayer", previewLabel.c_str())) {
+    const std::string previewLabel = "プレイヤー " + std::to_string(mSelectedSpawnPlayerIndex + 1);
+    if (players.size() > 1 && ImGui::BeginCombo("対象プレイヤー##spawnPlayer", previewLabel.c_str())) {
         for (std::size_t i = 0; i < players.size(); ++i) {
-            const bool selected = static_cast<int>(i) == mSelectedSpawnPlayerIndex;
+            const bool isSelected = static_cast<int>(i) == mSelectedSpawnPlayerIndex;
             const std::string label = "プレイヤー " + std::to_string(i + 1);
-            if (ImGui::Selectable(label.c_str(), selected)) {
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
                 mSelectedSpawnPlayerIndex = static_cast<int>(i);
             }
         }
@@ -80,25 +74,18 @@ void StagePlayerEditor::DrawSpawnEditor()
         return;
     }
 
-    ImGui::Text(
-        "現在: 惑星 %d / 位置 (%.2f, %.2f, %.2f) / 向き %.1f°",
-        player->GetCurrentPlanetNum(),
-        player->GetPos().x,
-        player->GetPos().y,
-        player->GetPos().z,
-        glm::degrees(player->GetFacingYaw()));
+    ImGui::Text("現在: 惑星 %d / 位置 (%.2f, %.2f, %.2f) / 向き %.1f°", player->GetCurrentPlanetNum(),
+                player->GetPos().x, player->GetPos().y, player->GetPos().z, glm::degrees(player->GetFacingYaw()));
 
     if (ImGui::Button("現在の位置と向きをスポーン位置に設定")) {
-        mPlayerSpawnStatus = SaveSpawnFromCurrentTransform(player)
-            ? "現在の位置と向きをステージへ保存しました"
-            : "スポーン位置の保存に失敗しました";
+        mPlayerSpawnStatus = SaveSpawnFromCurrentTransform(player) ? "現在の位置と向きをステージへ保存しました"
+                                                                   : "スポーン位置の保存に失敗しました";
     }
 
     if (!mPlayerSpawnStatus.empty()) {
         ImGui::SameLine();
         ImGui::TextUnformatted(mPlayerSpawnStatus.c_str());
     }
-
 }
 
 bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)
@@ -108,15 +95,13 @@ bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)
     }
 
     YAML::Node config;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config) ||
-        !config["players"] ||
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config) || !config["players"] ||
         !config["players"].IsSequence()) {
         return false;
     }
 
     const int playerIndex = player->GetPlayerNum() - 1;
-    if (playerIndex < 0 ||
-        static_cast<std::size_t>(playerIndex) >= config["players"].size()) {
+    if (playerIndex < 0 || static_cast<std::size_t>(playerIndex) >= config["players"].size()) {
         return false;
     }
 
@@ -169,8 +154,7 @@ bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)
     return StageYamlRepository::SaveCurrentStage(mContext, config);
 }
 
-bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(
-    Actor* selectedActor)
+bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(Actor* selectedActor)
 {
     if (!selectedActor || !mContext.game) {
         return false;
@@ -184,26 +168,21 @@ bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(
     }
 
     Planet* destinationPlanet =
-        dynamic_cast<Planet*>(selectedActor)
-            ? static_cast<Planet*>(selectedActor)
-            : selectedActor->GetCurrentPlanet();
+        dynamic_cast<Planet*>(selectedActor) ? static_cast<Planet*>(selectedActor) : selectedActor->GetCurrentPlanet();
     if (!destinationPlanet) {
         return false;
     }
 
     const std::vector<Planet*>& planets = currentStage->GetPlanets();
-    const auto planetIt =
-        std::find(planets.begin(), planets.end(), destinationPlanet);
+    const auto planetIt = std::find(planets.begin(), planets.end(), destinationPlanet);
     if (planetIt == planets.end()) {
         return false;
     }
-    const int destinationPlanetIndex =
-        static_cast<int>(std::distance(planets.begin(), planetIt));
+    const int destinationPlanetIndex = static_cast<int>(std::distance(planets.begin(), planetIt));
 
     glm::vec3 upDirection = selectedActor->GetUpVec();
     if (Planet* selectedPlanet = dynamic_cast<Planet*>(selectedActor)) {
-        const glm::vec3 playerOffset =
-            controlledPlayer->GetPos() - selectedPlanet->GetPos();
+        const glm::vec3 playerOffset = controlledPlayer->GetPos() - selectedPlanet->GetPos();
         if (glm::length(playerOffset) > 0.000001f) {
             upDirection = glm::normalize(playerOffset);
         }
@@ -215,39 +194,29 @@ bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(
     }
 
     const float actorExtent =
-        glm::length(glm::abs(selectedActor->GetScale())) +
-        std::max(0.0f, selectedActor->GetRadius());
+        glm::length(glm::abs(selectedActor->GetScale())) + std::max(0.0f, selectedActor->GetRadius());
     const float rayDistance = std::max(5.0f, actorExtent * 2.0f);
     const glm::vec3 rayCenter = selectedActor->GetPos();
     const glm::vec3 rayFrom = rayCenter + upDirection * rayDistance;
     const glm::vec3 rayTo = rayCenter - upDirection * rayDistance;
 
     std::optional<PhysicsSystem::RayHitActor> destinationHit;
-    const bool selectedActorDefinesSurface =
-        dynamic_cast<Planet*>(selectedActor) ||
-        dynamic_cast<Platform*>(selectedActor) ||
-        dynamic_cast<StageObject*>(selectedActor);
+    const bool selectedActorDefinesSurface = dynamic_cast<Planet*>(selectedActor) ||
+                                             dynamic_cast<Platform*>(selectedActor) ||
+                                             dynamic_cast<StageObject*>(selectedActor);
     if (selectedActorDefinesSurface) {
-        const std::vector<PhysicsSystem::RayHitActor> actorHits =
-            physicsSystem->PickActorsByRay(rayFrom, rayTo);
+        const std::vector<PhysicsSystem::RayHitActor> actorHits = physicsSystem->PickActorsByRay(rayFrom, rayTo);
         const auto selectedActorHit =
-            std::find_if(
-                actorHits.begin(),
-                actorHits.end(),
-                [selectedActor](const PhysicsSystem::RayHitActor& hit) {
-                    return hit.actor == selectedActor;
-                });
+            std::find_if(actorHits.begin(), actorHits.end(),
+                         [selectedActor](const PhysicsSystem::RayHitActor& hit) { return hit.actor == selectedActor; });
         if (selectedActorHit != actorHits.end()) {
             destinationHit = *selectedActorHit;
         }
     }
 
     if (!destinationHit) {
-        const float groundSearchStartDistance =
-            std::max(1.0f, selectedActor->GetRadius() + 0.5f);
-        destinationHit = physicsSystem->RaycastStageSurface(
-            rayCenter + upDirection * groundSearchStartDistance,
-            rayTo);
+        const float groundSearchStartDistance = std::max(1.0f, selectedActor->GetRadius() + 0.5f);
+        destinationHit = physicsSystem->RaycastStageSurface(rayCenter + upDirection * groundSearchStartDistance, rayTo);
     }
 
     glm::vec3 destinationPosition = rayCenter;
@@ -261,13 +230,9 @@ bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(
     constexpr float surfaceClearance = 0.02f;
     destinationPosition += upDirection * surfaceClearance;
 
-    controlledPlayer->DebugMoveToPosition(
-        destinationPosition,
-        destinationPlanet,
-        destinationPlanetIndex);
+    controlledPlayer->DebugMoveToPosition(destinationPosition, destinationPlanet, destinationPlanetIndex);
     if (CameraSystem* cameraSystem = mContext.game->GetCameraSystem()) {
         cameraSystem->SnapBehindControlledPlayer();
     }
     return true;
 }
-

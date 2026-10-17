@@ -38,10 +38,8 @@ bool StageYamlRepository::LoadCurrentStage(DebugEditorContext& context, YAML::No
     return true;
 }
 
-bool StageYamlRepository::SaveCurrentStage(
-    DebugEditorContext& context,
-    YAML::Node config,
-    bool preserveRuntimePlanetCenters)
+bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::Node config,
+                                           bool preserveRuntimePlanetCenters)
 {
     const std::string filePath = GetCurrentStageYamlPath(context);
 
@@ -50,18 +48,15 @@ bool StageYamlRepository::SaveCurrentStage(
         return false;
     }
 
-
-
-
-
-    if (preserveRuntimePlanetCenters &&
-        context.game && context.game->GetCurrentStage() &&
-        config["planets"] && config["planets"].IsSequence()) {
+    if (preserveRuntimePlanetCenters && context.game && context.game->GetCurrentStage() && config["planets"] &&
+        config["planets"].IsSequence()) {
         const auto& planets = context.game->GetCurrentStage()->GetPlanets();
         const std::size_t count = std::min(planets.size(), config["planets"].size());
         for (std::size_t index = 0; index < count; ++index) {
             const Planet* planet = planets[index];
-            if (!planet) continue;
+            if (!planet) {
+                continue;
+            }
             const glm::vec3 center = planet->GetPos();
             config["planets"][index]["center"][0] = center.x;
             config["planets"][index]["center"][1] = center.y;

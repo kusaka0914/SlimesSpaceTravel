@@ -8,10 +8,8 @@
 #include "gfx/debug/stage/StageCreationFormWidgets.h"
 #include "imgui.h"
 
-StageBoatCreationForm::StageBoatCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StageBoatCreationForm::StageBoatCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                                             StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
@@ -42,15 +40,13 @@ void StageBoatCreationForm::Draw()
             if (ImGui::Button("ボートを追加")) {
                 const int destinationPlanetIndex = mSelectedDestinationPlanetIndex;
                 const int destinationStage = mSelectedDestinationStage;
-                mPlacementController.BeginPlacement(
-                    "ボート",
-                    mSelectedStartPlanetIndex,
-                    [this, destinationPlanetIndex, destinationStage](
-                        int startPlanetIndex,
-                        const StageActorPlacement& placement) {
-                        return mCreateService.AddBoat(
-                            startPlanetIndex, destinationPlanetIndex, destinationStage, &placement);
-                    });
+                mPlacementController.BeginPlacement("ボート", mSelectedStartPlanetIndex,
+                                                    [this, destinationPlanetIndex, destinationStage](
+                                                        int startPlanetIndex, const StageActorPlacement& placement) {
+                                                        return mCreateService.AddBoat(startPlanetIndex,
+                                                                                      destinationPlanetIndex,
+                                                                                      destinationStage, &placement);
+                                                    });
             }
 
             if (!canAddBoat) {

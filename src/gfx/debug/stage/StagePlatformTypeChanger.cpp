@@ -10,11 +10,9 @@
 
 #include <utility>
 
-StagePlatformTypeChanger::StagePlatformTypeChanger(
-    DebugEditorContext& context,
-    StageSelectionController& selectionController,
-    StageActorYamlWriter& stageActorYamlWriter,
-    Callback pushUndo)
+StagePlatformTypeChanger::StagePlatformTypeChanger(DebugEditorContext& context,
+                                                   StageSelectionController& selectionController,
+                                                   StageActorYamlWriter& stageActorYamlWriter, Callback pushUndo)
     : mContext(context),
       mSelectionController(selectionController),
       mStageActorYamlWriter(stageActorYamlWriter),
@@ -22,13 +20,10 @@ StagePlatformTypeChanger::StagePlatformTypeChanger(
 {
 }
 
-bool StagePlatformTypeChanger::ChangePlatformType(
-    const std::string& sourceSequenceName,
-    std::size_t sourceIndex,
-    const PlatformTypeDefinition& targetType)
+bool StagePlatformTypeChanger::ChangePlatformType(const std::string& sourceSequenceName, std::size_t sourceIndex,
+                                                  const PlatformTypeDefinition& targetType)
 {
-    if (!mContext.game || !mContext.game->GetCurrentStage() ||
-        targetType.sequenceName.empty() ||
+    if (!mContext.game || !mContext.game->GetCurrentStage() || targetType.sequenceName.empty() ||
         targetType.sequenceName == sourceSequenceName) {
         return false;
     }
@@ -42,27 +37,21 @@ bool StagePlatformTypeChanger::ChangePlatformType(
     mStageActorYamlWriter.WriteAllActorStates(config);
 
     YAML::Node sourceSequence = config[sourceSequenceName];
-    if (!sourceSequence || !sourceSequence.IsSequence() ||
-        sourceIndex >= sourceSequence.size()) {
+    if (!sourceSequence || !sourceSequence.IsSequence() || sourceIndex >= sourceSequence.size()) {
         return false;
     }
 
     YAML::Node convertedNode = YAML::Clone(sourceSequence[sourceIndex]);
     PlatformTypeRegistry::ApplyDefaults(convertedNode, targetType);
 
-    if (!config[targetType.sequenceName] ||
-        !config[targetType.sequenceName].IsSequence()) {
+    if (!config[targetType.sequenceName] || !config[targetType.sequenceName].IsSequence()) {
         config[targetType.sequenceName] = YAML::Node(YAML::NodeType::Sequence);
     }
 
-    const int targetIndex =
-        static_cast<int>(config[targetType.sequenceName].size());
+    const int targetIndex = static_cast<int>(config[targetType.sequenceName].size());
     config[targetType.sequenceName].push_back(convertedNode);
 
-    if (!StageYamlRepository::RemoveSequenceElement(
-            config,
-            sourceSequenceName,
-            static_cast<int>(sourceIndex))) {
+    if (!StageYamlRepository::RemoveSequenceElement(config, sourceSequenceName, static_cast<int>(sourceIndex))) {
         return false;
     }
 
@@ -74,8 +63,7 @@ bool StagePlatformTypeChanger::ChangePlatformType(
         return false;
     }
 
-    mSelectionController.SetSelectedKeys(
-        {targetType.sequenceName + ":" + std::to_string(targetIndex)});
+    mSelectionController.SetSelectedKeys({targetType.sequenceName + ":" + std::to_string(targetIndex)});
     mContext.game->ReloadCurrentStage();
     return true;
 }

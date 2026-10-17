@@ -5,12 +5,11 @@
 class StageEditCommandController;
 class StageSelectionController;
 
+// テキスト入力中の誤操作を避けながら、削除・複製・Undo/Redoのショートカットを処理する。
 class StageEditShortcutHandler {
 public:
-    StageEditShortcutHandler(
-        DebugEditorContext& context,
-        StageSelectionController& selectionController,
-        StageEditCommandController& editCommandController);
+    StageEditShortcutHandler(DebugEditorContext& context, StageSelectionController& selectionController,
+                             StageEditCommandController& editCommandController);
 
     void Update();
 

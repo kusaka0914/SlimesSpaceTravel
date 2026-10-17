@@ -4,12 +4,11 @@ class StageActorCreateService;
 class StageActorPlacementController;
 struct DebugEditorContext;
 
+// Boatの出発・到着先を選択し、クリック配置を開始するUI状態を保持する。
 class StageBoatCreationForm {
 public:
-    StageBoatCreationForm(
-        DebugEditorContext& context,
-        StageActorCreateService& actorCreateService,
-        StageActorPlacementController& placementController);
+    StageBoatCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
+                          StageActorPlacementController& placementController);
 
     void Draw();
 

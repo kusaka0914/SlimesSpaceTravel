@@ -19,38 +19,30 @@ namespace {
 
 std::string ToLower(std::string text)
 {
-    std::transform(
-        text.begin(),
-        text.end(),
-        text.begin(),
-        [](unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-        });
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return text;
 }
 
-}
+} // namespace
 
-StageObjectCreationForm::StageObjectCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StageObjectCreationForm::StageObjectCreationForm(DebugEditorContext& context,
+                                                 StageActorCreateService& actorCreateService,
+                                                 StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
 {
 }
 
-StagePlanetCreationForm::StagePlanetCreationForm(
-    StageActorCreateService& actorCreateService)
+StagePlanetCreationForm::StagePlanetCreationForm(StageActorCreateService& actorCreateService)
     : mCreateService(actorCreateService)
 {
 }
 
-StagePlatformCreationForm::StagePlatformCreationForm(
-    DebugEditorContext& context,
-    StageActorCreateService& actorCreateService,
-    StageActorPlacementController& placementController)
+StagePlatformCreationForm::StagePlatformCreationForm(DebugEditorContext& context,
+                                                     StageActorCreateService& actorCreateService,
+                                                     StageActorPlacementController& placementController)
     : mContext(context),
       mCreateService(actorCreateService),
       mPlacementController(placementController)
@@ -65,51 +57,34 @@ void StageObjectCreationForm::Draw()
             ImGui::TextUnformatted("惑星が存在しないため、モデルを追加できません");
         } else {
             StageCreationFormWidgets::DrawPlanetCombo(mContext, "追加先の惑星##stageObject", mSelectedPlanetIndex);
-            ImGui::InputTextWithHint(
-                "##stageObjectSearch",
-                "モデル名を検索",
-                mModelSearch.data(),
-                mModelSearch.size());
+            ImGui::InputTextWithHint("##stageObjectSearch", "モデル名を検索", mModelSearch.data(), mModelSearch.size());
 
-            const std::vector<std::string>& modelAssets =
-                mContext.assetCatalog->GetPaths(EditorAssetType::Model);
+            const std::vector<std::string>& modelAssets = mContext.assetCatalog->GetPaths(EditorAssetType::Model);
             const std::string searchText = ToLower(mModelSearch.data());
 
             ImGui::BeginChild("StageObjectAssetPicker", ImVec2(0.0f, 180.0f), true);
             for (const std::string& modelPath : modelAssets) {
-                if (!searchText.empty() &&
-                    ToLower(modelPath).find(searchText) == std::string::npos) {
+                if (!searchText.empty() && ToLower(modelPath).find(searchText) == std::string::npos) {
                     continue;
                 }
 
-                const bool selected = modelPath == mSelectedModel;
-                if (ImGui::Selectable(modelPath.c_str(), selected)) {
+                const bool isSelected = modelPath == mSelectedModel;
+                if (ImGui::Selectable(modelPath.c_str(), isSelected)) {
                     mSelectedModel = modelPath;
                 }
             }
             ImGui::EndChild();
 
-            ImGui::Button(
-                "モデルアセットをここへドロップ##newStageObjectModel",
-                ImVec2(-1.0f, 0.0f));
+            ImGui::Button("モデルアセットをここへドロップ##newStageObjectModel", ImVec2(-1.0f, 0.0f));
             std::string droppedStageObjectModelPath;
-            if (EditorAssetDragDrop::AcceptPath(
-                    EditorAssetType::Model,
-                    droppedStageObjectModelPath)) {
-                mSelectedModel =
-                    droppedStageObjectModelPath;
+            if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedStageObjectModelPath)) {
+                mSelectedModel = droppedStageObjectModelPath;
             }
 
-            ImGui::Text(
-                "選択中: %s",
-                mSelectedModel.empty()
-                    ? "未選択"
-                    : mSelectedModel.c_str());
+            ImGui::Text("選択中: %s", mSelectedModel.empty() ? "未選択" : mSelectedModel.c_str());
             ImGui::Checkbox("モデル形状の当たり判定を作る", &mIsCollisionEnabled);
 
-            const bool canAdd =
-                mSelectedPlanetIndex >= 0 &&
-                !mSelectedModel.empty();
+            const bool canAdd = mSelectedPlanetIndex >= 0 && !mSelectedModel.empty();
             if (!canAdd) {
                 ImGui::BeginDisabled();
             }
@@ -118,26 +93,21 @@ void StageObjectCreationForm::Draw()
                 const std::string modelPath = mSelectedModel;
                 const bool collisionEnabled = mIsCollisionEnabled;
                 mPlacementController.BeginPlacement(
-                    "ステージモデル",
-                    mSelectedPlanetIndex,
-                    [this, modelPath, collisionEnabled](
-                        int planetIndex,
-                        const StageActorPlacement& placement) {
-                        return mCreateService.AddStageObject(
-                            planetIndex, modelPath, collisionEnabled, &placement);
+                    "ステージモデル", mSelectedPlanetIndex,
+                    [this, modelPath, collisionEnabled](int planetIndex, const StageActorPlacement& placement) {
+                        return mCreateService.AddStageObject(planetIndex, modelPath, collisionEnabled, &placement);
                     });
-                mStatus = "ゲーム画面をクリックして配置してください";
+                mStatusMessage = "ゲーム画面をクリックして配置してください";
             }
 
             if (!canAdd) {
                 ImGui::EndDisabled();
             }
 
-            if (!mStatus.empty()) {
+            if (!mStatusMessage.empty()) {
                 ImGui::SameLine();
-                ImGui::TextUnformatted(mStatus.c_str());
+                ImGui::TextUnformatted(mStatusMessage.c_str());
             }
-
         }
         ImGui::TreePop();
     }
@@ -149,27 +119,16 @@ void StagePlanetCreationForm::Draw()
         const char* planetModelLabels[] = {"通常惑星", "赤い惑星", "地形付き惑星"};
         const char* planetModels[] = {"planet.obj", "planet_2.obj", "planet_3.obj"};
 
-        if (ImGui::Combo(
-                "惑星モデル",
-                &mSelectedModelIndex,
-                planetModelLabels,
-                IM_ARRAYSIZE(planetModelLabels))) {
-            mSelectedModelPath =
-                planetModels[mSelectedModelIndex];
+        if (ImGui::Combo("惑星モデル", &mSelectedModelIndex, planetModelLabels, IM_ARRAYSIZE(planetModelLabels))) {
+            mSelectedModelPath = planetModels[mSelectedModelIndex];
         }
 
-        ImGui::Button(
-            "モデルアセットをここへドロップ##newPlanetModel",
-            ImVec2(-1.0f, 0.0f));
+        ImGui::Button("モデルアセットをここへドロップ##newPlanetModel", ImVec2(-1.0f, 0.0f));
         std::string droppedPlanetModelPath;
-        if (EditorAssetDragDrop::AcceptPath(
-                EditorAssetType::Model,
-                droppedPlanetModelPath)) {
+        if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedPlanetModelPath)) {
             mSelectedModelPath = droppedPlanetModelPath;
         }
-        ImGui::TextWrapped(
-            "選択中: %s",
-            mSelectedModelPath.c_str());
+        ImGui::TextWrapped("選択中: %s", mSelectedModelPath.c_str());
 
         if (ImGui::Button("惑星を追加")) {
             mCreateService.AddPlanet(mSelectedModelPath);
@@ -193,27 +152,16 @@ void StagePlatformCreationForm::Draw()
             const char* platformModelLabels[] = {"通常足場", "カーブ足場", "細い足場"};
             const char* platformModels[] = {"platform.obj", "curvePlatform.obj", "platform_thin.obj"};
 
-            if (ImGui::Combo(
-                    "モデル##platform",
-                    &mSelectedModelIndex,
-                    platformModelLabels,
-                    IM_ARRAYSIZE(platformModelLabels))) {
-                mSelectedModelPath =
-                    platformModels[mSelectedModelIndex];
+            if (ImGui::Combo("モデル##platform", &mSelectedModelIndex, platformModelLabels,
+                             IM_ARRAYSIZE(platformModelLabels))) {
+                mSelectedModelPath = platformModels[mSelectedModelIndex];
             }
-            ImGui::Button(
-                "モデルアセットをここへドロップ##newPlatformModel",
-                ImVec2(-1.0f, 0.0f));
+            ImGui::Button("モデルアセットをここへドロップ##newPlatformModel", ImVec2(-1.0f, 0.0f));
             std::string droppedPlatformModelPath;
-            if (EditorAssetDragDrop::AcceptPath(
-                    EditorAssetType::Model,
-                    droppedPlatformModelPath)) {
-                mSelectedModelPath =
-                    droppedPlatformModelPath;
+            if (EditorAssetDragDrop::AcceptPath(EditorAssetType::Model, droppedPlatformModelPath)) {
+                mSelectedModelPath = droppedPlatformModelPath;
             }
-            ImGui::TextWrapped(
-                "選択中: %s",
-                mSelectedModelPath.c_str());
+            ImGui::TextWrapped("選択中: %s", mSelectedModelPath.c_str());
 
             ImGui::SliderFloat("スケールX##platform", &mScale.x, 0.1f, 30.0f, "%.2f");
             ImGui::SliderFloat("スケールY##platform", &mScale.y, 0.1f, 30.0f, "%.2f");
@@ -230,8 +178,7 @@ void StagePlatformCreationForm::Draw()
                 const std::string modelPath = mSelectedModelPath;
                 const glm::vec3 scale = mScale;
                 mPlacementController.BeginPlacement(
-                    "足場",
-                    mSelectedPlanetIndex,
+                    "足場", mSelectedPlanetIndex,
                     [this, modelPath, scale](int planetIndex, const StageActorPlacement& placement) {
                         return mCreateService.AddPlatform(planetIndex, modelPath, scale, &placement);
                     });
@@ -241,11 +188,9 @@ void StagePlatformCreationForm::Draw()
                 const std::string modelPath = mSelectedModelPath;
                 const glm::vec3 scale = mScale;
                 mPlacementController.BeginPlacement(
-                    "乗ると動く足場",
-                    mSelectedPlanetIndex,
+                    "乗ると動く足場", mSelectedPlanetIndex,
                     [this, modelPath, scale](int planetIndex, const StageActorPlacement& placement) {
-                        return mCreateService.AddRideMovingPlatform(
-                            planetIndex, modelPath, scale, &placement);
+                        return mCreateService.AddRideMovingPlatform(planetIndex, modelPath, scale, &placement);
                     });
                 mRideMovingPlatformStatus = "ゲーム画面をクリックして配置してください";
             }

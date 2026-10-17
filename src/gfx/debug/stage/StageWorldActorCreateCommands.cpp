@@ -22,8 +22,7 @@ bool StageActorCreateService::AddPlanet(const std::string& modelPath)
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::Planet, planetNode, planetIndex);
+    mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
@@ -41,16 +40,11 @@ bool StageActorCreateService::AddEllipsePlanet(const std::string& modelPath)
 
     EnsureSequence(config, "planets");
     const int planetIndex = static_cast<int>(config["planets"].size());
-    const glm::vec3 defaultWorldPosition(
-        static_cast<float>(planetIndex) * 32.0f,
-        0.0f,
-        0.0f);
+    const glm::vec3 defaultWorldPosition(static_cast<float>(planetIndex) * 32.0f, 0.0f, 0.0f);
     return AddEllipsePlanetAtPosition(modelPath, defaultWorldPosition);
 }
 
-bool StageActorCreateService::AddEllipsePlanetAtPosition(
-    const std::string& modelPath,
-    const glm::vec3& worldPosition)
+bool StageActorCreateService::AddEllipsePlanetAtPosition(const std::string& modelPath, const glm::vec3& worldPosition)
 {
     if (!CanCreateActor()) {
         return false;
@@ -78,8 +72,7 @@ bool StageActorCreateService::AddEllipsePlanetAtPosition(
         return false;
     }
 
-    mRuntimeCreationService.CreateActor(
-        StageActorType::Planet, planetNode, planetIndex);
+    mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex);
     mRuntimeCreationService.RefreshPhysicsWorld();
     return true;
 }
