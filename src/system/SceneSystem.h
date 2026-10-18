@@ -51,6 +51,9 @@ public:
     // Stageの再読込前に、会話・到着演出などが保持するActorへの借用参照を解除する。
     void ClearActorReferencesForStageReload();
     void StartPlayingScene();
+
+    // Playingとしてステージを読み込む。失敗時は元のシーン種別へ戻すが、解除した会話・演出は復元しない。
+    bool LoadStageIntoPlayingScene(const std::function<bool()>& loadStage);
     void FinishFocusingScene();
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
     bool StartOpeningAfterTalkPage(NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,

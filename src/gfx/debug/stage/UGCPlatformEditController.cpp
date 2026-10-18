@@ -25,9 +25,9 @@ void UGCPlatformEditController::SetSelectionController(StageSelectionController*
     mSelectionController = selectionController;
 }
 
-void UGCPlatformEditController::SetPushUndoCallback(std::function<void()> pushUndoCallback)
+void UGCPlatformEditController::SetEditExecutor(StageEditExecutor executeEdit)
 {
-    mPushUndoCallback = std::move(pushUndoCallback);
+    mExecuteEdit = std::move(executeEdit);
 }
 
 bool UGCPlatformEditController::TryEraseCell()
@@ -76,12 +76,11 @@ bool UGCPlatformEditController::TryEraseCell()
         if (mLastErasedCell && *mLastErasedCell == erasedDestinationCell) {
             return false;
         }
-        if (!mHasPushedEraseStrokeUndo && mPushUndoCallback) {
-            mPushUndoCallback();
-            mHasPushedEraseStrokeUndo = true;
-        }
-        const bool removed = mPlatformCellService.RemoveMovingPlatformDestinationCell(*mMovingDestinationEraseRegion,
-                                                                                      placement.worldPosition);
+        const auto remove = [this, &placement]() {
+            return mPlatformCellService.RemoveMovingPlatformDestinationCell(*mMovingDestinationEraseRegion,
+                                                                            placement.worldPosition);
+        };
+        const bool removed = ExecuteErase(remove);
         if (removed) {
             mLastErasedCell = erasedDestinationCell;
             mSelectionController->Clear();
@@ -101,12 +100,9 @@ bool UGCPlatformEditController::TryEraseCell()
         return false;
     }
 
-    if (!mHasPushedEraseStrokeUndo && mPushUndoCallback) {
-        mPushUndoCallback();
-        mHasPushedEraseStrokeUndo = true;
-    }
-    const bool removed =
-        mPlatformCellService.RemoveCellAtGridPosition(0, placement.worldPosition, gridSize, eraseLayer);
+    const bool removed = ExecuteErase([&]() {
+        return mPlatformCellService.RemoveCellAtGridPosition(0, placement.worldPosition, gridSize, eraseLayer);
+    });
     if (removed) {
         mLastErasedCell = erasedCell;
         mSelectionController->Clear();
@@ -114,23 +110,23 @@ bool UGCPlatformEditController::TryEraseCell()
     return removed;
 }
 
+bool UGCPlatformEditController::ExecuteErase(const StageEditOperation& remove)
+{
+    const StageEditGrouping grouping =
+        mHasSavedEraseStroke ? StageEditGrouping::ContinueOperation : StageEditGrouping::NewOperation;
+    const bool removed = mExecuteEdit ? mExecuteEdit(remove, grouping) : remove();
+    if (removed) {
+        mHasSavedEraseStroke = true;
+    }
+    return removed;
+}
+
 void UGCPlatformEditController::EndEraseGesture()
 {
-    mHasPushedEraseStrokeUndo = false;
+    mHasSavedEraseStroke = false;
     mLastErasedCell.reset();
     mMovingDestinationEraseRegion.reset();
     mMovingDestinationEraseLayer.reset();
-}
-
-bool UGCPlatformEditController::TryTranslateCells(const StageActorRef& actorRef, const glm::vec3& worldDelta)
-{
-    return mPlatformCellService.TranslateCells(actorRef, worldDelta);
-}
-
-bool UGCPlatformEditController::TryTranslateCells(const std::vector<StageActorRef>& actorRefs,
-                                                  const glm::vec3& worldDelta)
-{
-    return mPlatformCellService.TranslateCells(actorRefs, worldDelta);
 }
 
 bool UGCPlatformEditController::TryTranslateMovingPlatformDestinations(const std::vector<StageActorRef>& actorRefs,

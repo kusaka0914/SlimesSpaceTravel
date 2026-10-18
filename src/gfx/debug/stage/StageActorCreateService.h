@@ -3,6 +3,7 @@
 #include "gfx/debug/DebugEditorContext.h"
 #include "gfx/debug/stage/StageActorNodeFactory.h"
 #include "gfx/debug/stage/StageActorRuntimeCreationService.h"
+#include "gfx/debug/stage/StageEditOperation.h"
 #include "gfx/debug/stage/StageEditorTypes.h"
 
 #include <glm/glm.hpp>
@@ -15,6 +16,8 @@
 class StageActorCreateService {
 public:
     explicit StageActorCreateService(DebugEditorContext& context);
+
+    void SetEditExecutor(StageEditExecutor executeEdit);
 
     bool AddPlatform(int currentPlanetNum, const std::string& modelPath, const glm::vec3& scale,
                      const StageActorPlacement* placement = nullptr);
@@ -62,11 +65,13 @@ public:
                         const StageActorPlacement* placement = nullptr);
 
     // 複製先の配置に合わせて足場IDと移動経路も調整する。
-    // YAML保存後に実行中Actorを生成するため、生成失敗時も保存内容は残る。
+    // 保存後の生成に失敗した場合は、旧YAMLとRuntimeの復元を試みる。
     bool DuplicateActorAtPlacement(const StageActorRef& sourceRef, const YAML::Node& sourceNode, int targetPlanetIndex,
                                    const StageActorPlacement& placement);
 
 private:
+    bool CommitCreation(YAML::Node config, const StageEditOperation& createActors);
+
     bool CanCreateActor() const;
     bool IsValidPlanetIndex(int planetIndex, const char* label) const;
     void ApplyPlacementToNode(YAML::Node& node, int planetIndex, const StageActorPlacement* placement) const;
@@ -75,6 +80,7 @@ private:
     void EnsureSequence(YAML::Node& config, const std::string& sequenceName) const;
 
     DebugEditorContext& mContext;
+    StageEditExecutor mExecuteEdit;
     StageActorNodeFactory mNodeFactory;
     StageActorRuntimeCreationService mRuntimeCreationService;
 };

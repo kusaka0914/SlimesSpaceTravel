@@ -21,7 +21,7 @@ public:
     // 1始まりのPlayer番号で生成する。Stage・Planetを解決できなければnullptr。戻り値はGame所有の借用参照。
     Player* CreatePlayerFromStageNode(const YAML::Node& node, int playerNum);
 
-    // 現在のYAMLから1始まりのPlayer番号に対応する定義を生成する。trueは定義の存在を表し、生成成功は保証しない。
+    // 現在のYAMLから1始まりのPlayer番号に対応する定義を生成する。生成成功時だけtrue。YAML不正・配置先不明ならfalse。
     bool CreatePlayerFromCurrentStage(int playerNum);
 
 private:

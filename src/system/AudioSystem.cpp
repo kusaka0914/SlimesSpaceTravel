@@ -13,11 +13,20 @@ AudioSystem::AudioSystem(Game* game)
     Initialize();
 }
 
+AudioSystem::~AudioSystem()
+{
+    Shutdown();
+}
+
 void AudioSystem::Initialize()
 {
+    if (mIsAudioOpen) {
+        return;
+    }
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) != 0) {
         return;
     }
+    mIsAudioOpen = true;
 
     AdjustVolume(80, 60);
 
@@ -141,9 +150,24 @@ void AudioSystem::ResumeDeferredStageMusic()
 
 void AudioSystem::Shutdown()
 {
+    if (!mIsAudioOpen) {
+        return;
+    }
     Mix_HaltMusic();
+    Mix_HaltChannel(-1);
+    // 再生中チャンネルが音源を参照しないよう、停止後に読み込んだ資源を解放する。
+    for (const auto& [name, music] : mBGMList) {
+        Mix_FreeMusic(music);
+    }
+    for (const auto& [name, sound] : mSEList) {
+        Mix_FreeChunk(sound);
+    }
+    mBGMList.clear();
+    mSEList.clear();
     mCurrentLoopingBGMName.clear();
+    mIsStageMusicDeferred = false;
     Mix_CloseAudio();
+    mIsAudioOpen = false;
 }
 
 void AudioSystem::PlayBGM(const std::string& name)

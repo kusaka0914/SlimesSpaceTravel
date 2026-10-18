@@ -8,6 +8,7 @@
 #include "actor/Player.h"
 #include "actor/StageObject.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
@@ -16,10 +17,12 @@
 #include <cmath>
 #include <glm/glm.hpp>
 #include <optional>
+#include <utility>
 #include <vector>
 
-StagePlayerEditor::StagePlayerEditor(DebugEditorContext& context)
-    : mContext(context)
+StagePlayerEditor::StagePlayerEditor(DebugEditorContext& context, SavedEditCallback recordSavedEdit)
+    : mContext(context),
+      mRecordSavedEdit(std::move(recordSavedEdit))
 {
 }
 
@@ -94,6 +97,10 @@ bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)
         return false;
     }
 
+    std::string before;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, before)) {
+        return false;
+    }
     YAML::Node config;
     if (!StageYamlRepository::LoadCurrentStage(mContext, config) || !config["players"] ||
         !config["players"].IsSequence()) {
@@ -151,7 +158,16 @@ bool StagePlayerEditor::SaveSpawnFromCurrentTransform(Player* player)
     playerNode["rotationQuat"][2] = orientation.y;
     playerNode["rotationQuat"][3] = orientation.z;
 
-    return StageYamlRepository::SaveCurrentStage(mContext, config);
+    if (mContext.game && mContext.game->GetIsUGCMode()) {
+        UGCWorkMetadata::InvalidateClearVerification(config);
+    }
+    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+        return false;
+    }
+    if (mRecordSavedEdit) {
+        mRecordSavedEdit(before);
+    }
+    return true;
 }
 
 bool StagePlayerEditor::MoveControlledPlayerToSelectedActor(Actor* selectedActor)

@@ -28,13 +28,8 @@ bool StageActorCreateService::AddCrystal(const std::string& type, int currentPla
 
     config["crystals"].push_back(crystalNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Crystal, crystalNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Crystal, crystalNode, index); });
 }
 
 bool StageActorCreateService::AddBoatParts(const std::string& type, int currentPlanetNum,
@@ -62,13 +57,8 @@ bool StageActorCreateService::AddBoatParts(const std::string& type, int currentP
 
     config["boatParts"].push_back(partNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::BoatParts, partNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::BoatParts, partNode, index); });
 }
 
 bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlacement* placement)
@@ -98,13 +88,8 @@ bool StageActorCreateService::AddStar(int currentPlanetNum, const StageActorPlac
 
     config["star"].push_back(starNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Star, starNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Star, starNode, index); });
 }
 
 bool StageActorCreateService::AddJewelItem(int currentPlanetNum, const std::string& modelPath,
@@ -126,11 +111,6 @@ bool StageActorCreateService::AddJewelItem(int currentPlanetNum, const std::stri
     ApplyPlacementToNode(jewelItemNode, currentPlanetNum, placement);
     config["jewelItems"].push_back(jewelItemNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::JewelItem, jewelItemNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::JewelItem, jewelItemNode, index); });
 }

@@ -6,13 +6,32 @@
 
 #include "imgui.h"
 
+#include <functional>
 #include <glm/glm.hpp>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
 class Actor;
+class CameraSystem;
+class Stage;
+struct GLFWwindow;
+
+// 選択操作中だけ借用するRuntime参照。再読込後の参照を保持しないよう、操作ごとに取得する。
+struct StageSelectionScene {
+    Stage* stage = nullptr;
+    PhysicsSystem* physics = nullptr;
+    CameraSystem* camera = nullptr;
+    GLFWwindow* window = nullptr;
+    std::string_view yamlPath;
+    bool isUGC = false;
+    bool isPlayer2Joined = false;
+    bool isOrthographic = false;
+    float orthographicHalfHeight = 1.0f;
+    float gridSize = 1.0f;
+};
 
 struct StageSelectionScreenRect {
     ImVec2 minimum;
@@ -22,7 +41,9 @@ struct StageSelectionScreenRect {
 // クリック・矩形によるActor選択と複数選択の移動を管理する。Actorを所有せず、YAML参照を選択キーに使う。
 class StageSelectionController {
 public:
-    explicit StageSelectionController(DebugEditorContext& context);
+    // providerと共有画面状態の参照先は本Controllerより長く生存すること。
+    StageSelectionController(std::function<StageSelectionScene()> sceneProvider,
+                             const DebugEditorGameViewport& gameViewport, const PlanetMoveMode& planetMoveMode);
 
     // 毎フレーム入力を処理し、クリック・矩形選択を更新する。
     void Update();
@@ -85,13 +106,21 @@ private:
     bool TrySelectUGCMovingPlatformEndpoint(const ImVec2& clickPosition);
     std::vector<PhysicsSystem::RayHitActor> CollectUGCScreenPickHits(const ImVec2& clickPosition) const;
 
+    std::vector<PhysicsSystem::RayHitActor> FilterUGCPickHits(const StageSelectionScene& scene,
+                                                              const std::vector<PhysicsSystem::RayHitActor>& hits,
+                                                              bool includeAllLayers) const;
+    void ApplyPickedActor(const StageSelectionScene& scene, const std::vector<PhysicsSystem::RayHitActor>& hits,
+                          const ImVec2& clickPosition, bool isAdditive);
+
     bool WorldToScreenPoint(const glm::vec3& worldPos, ImVec2& outScreenPos) const;
     void SelectActorsInScreenRect(const ImVec2& rectMin, const ImVec2& rectMax, bool addSelection);
 
     std::string MakeKey(const StageActorRef& actorRef) const;
     std::string MakeKey(const std::string& sequenceName, int yamlIndex) const;
 
-    DebugEditorContext& mContext;
+    std::function<StageSelectionScene()> mSceneProvider;
+    const DebugEditorGameViewport& mGameViewport;
+    const PlanetMoveMode& mPlanetMoveMode;
 
     Actor* mPickedActor = nullptr;
     std::optional<StageActorRef> mPickedActorRef;

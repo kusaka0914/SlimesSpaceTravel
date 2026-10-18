@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gfx/debug/stage/StageEditOperation.h"
+
 #include "gfx/debug/DebugPanel.h"
 #include "gfx/debug/stage/StageActorCreateService.h"
 #include "gfx/debug/stage/StageActorCreationForms.h"
@@ -35,8 +37,8 @@ public:
     // 配置とUGC編集が参照する選択Controllerを共有する。所有権は移さない。
     void SetSelectionController(StageSelectionController* selectionController);
 
-    // 配置・消去・プリセット操作が編集前に呼ぶ履歴記録処理を保持する。キャプチャ先の寿命は呼び出し側で保証する。
-    void SetPushUndoCallback(std::function<void()> pushUndoCallback);
+    // 配置・消去を保存・Runtime反映・履歴確定まで実行する処理を保持する。通知先の寿命は呼出側で保証する。
+    void SetEditExecutor(StageEditExecutor executeEdit);
 
     // 配置成功時に呼ぶ処理を保持する。キャプチャ先の寿命は呼び出し側で保証する。
     void SetPlacementCompletedCallback(std::function<void()> placementCompletedCallback)
@@ -64,9 +66,9 @@ public:
     // 次の消去を別のUndoとして記録できるよう、継続中の消去状態を解除する。
     void EndUGCEraseGesture();
 
-    // worldDeltaはワールド座標の相対移動量。UGCセルの移動・保存に成功した場合はtrue。
-    bool TryTranslateUGCPlatformCells(const StageActorRef& actorRef, const glm::vec3& worldDelta);
-    bool TryTranslateUGCPlatformCells(const std::vector<StageActorRef>& actorRefs, const glm::vec3& worldDelta);
+    // 生成セルの移動をconfigへ反映する。ファイル保存・Runtime変更は行わない。
+    UGCCellEditResult WriteTranslatedUGCCells(YAML::Node& config, const std::vector<StageActorRef>& actorRefs,
+                                              const glm::vec3& worldDelta);
 
     // 移動先をworldDeltaだけ移動して保存する。ワールドの更新を伴い、選択先のActor参照が無効になる場合がある。
     bool TryTranslateUGCMovingPlatformDestinations(const std::vector<StageActorRef>& actorRefs,

@@ -29,9 +29,9 @@ std::string ToLower(std::string value)
 
 } // namespace
 
-StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context)
+StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context, std::function<bool()> saveEditorTransforms)
     : DebugPanel(context),
-      mYamlWriter(context)
+      mSaveEditorTransforms(std::move(saveEditorTransforms))
 {
 }
 
@@ -70,6 +70,12 @@ void StagePlanetPanel::Draw()
     }
 
     ImGui::TreePop();
+    if (!mTransformSaveError.empty()) {
+        ImGui::TextWrapped("%s", mTransformSaveError.c_str());
+        if (ImGui::Button("惑星配置の保存を再試行")) {
+            SaveEditorAuthoredTransforms();
+        }
+    }
 }
 
 void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
@@ -83,40 +89,14 @@ void StagePlanetPanel::DrawSelectedPlanet(Planet* selectedPlanet)
     mFocusedPlanet = nullptr;
 }
 
-void StagePlanetPanel::Save()
+bool StagePlanetPanel::SaveEditorAuthoredTransforms()
 {
-    mYamlWriter.Save(false);
-}
-
-void StagePlanetPanel::SaveEditorAuthoredTransforms()
-{
-    if (mSaveDependentActorTransformsCallback) {
-        mSaveDependentActorTransformsCallback();
+    if (!mSaveEditorTransforms || !mSaveEditorTransforms()) {
+        mTransformSaveError = "編集した配置を保存できませんでした。編集内容は画面上に残っています。";
+        return false;
     }
-
-    if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return;
-    }
-
-    std::vector<Planet*> editedPlanets;
-    for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
-        if (planet && planet->FindEditorAuthoredTransform()) {
-            editedPlanets.emplace_back(planet);
-        }
-    }
-
-    if (editedPlanets.empty() || !mYamlWriter.Save(true)) {
-        return;
-    }
-
-    for (Planet* planet : editedPlanets) {
-        planet->ClearEditorAuthoredTransform();
-    }
-}
-
-void StagePlanetPanel::SetSaveDependentActorTransformsCallback(std::function<void()> callback)
-{
-    mSaveDependentActorTransformsCallback = std::move(callback);
+    mTransformSaveError.clear();
+    return true;
 }
 
 void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex)

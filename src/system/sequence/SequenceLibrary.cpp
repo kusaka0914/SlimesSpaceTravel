@@ -1,11 +1,12 @@
 #include "system/sequence/SequenceLibrary.h"
 
+#include "utils/AtomicFile.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <utility>
 
@@ -112,13 +113,13 @@ SequenceLibrary::SequenceLibrary(std::string filePath)
 
 bool SequenceLibrary::Load()
 {
-    mSequences.clear();
+    decltype(mSequences) loadedSequences;
 
     try {
         const YAML::Node root = YAML::LoadFile(mFilePath);
         const YAML::Node sequencesNode = root["sequences"];
         if (!sequencesNode || !sequencesNode.IsMap()) {
-            return true;
+            return false;
         }
 
         for (const auto& entry : sequencesNode) {
@@ -154,15 +155,17 @@ bool SequenceLibrary::Load()
             }
 
             SortClips(sequence);
-            mSequences[sequence.id] = std::move(sequence);
+            loadedSequences[sequence.id] = std::move(sequence);
         }
-    } catch (const YAML::BadFile&) {
-        return true;
+    } catch (const YAML::BadFile& exception) {
+        std::cerr << "Failed to open sequence data: " << exception.what() << '\n';
+        return false;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to load gameplay sequences: " << exception.what() << '\n';
         return false;
     }
 
+    mSequences.swap(loadedSequences);
     return true;
 }
 
@@ -226,12 +229,15 @@ bool SequenceLibrary::Save() const
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(mFilePath);
-        if (!output) {
+        if (!emitter.good()) {
             return false;
         }
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        std::string errorMessage;
+        if (!AtomicFile::WriteText(mFilePath, std::string(emitter.c_str()) + '\n', errorMessage)) {
+            std::cerr << "Failed to save sequence data: " << errorMessage << '\n';
+            return false;
+        }
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save gameplay sequences: " << exception.what() << '\n';
         return false;

@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "actor/Platform.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
 #include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
@@ -64,9 +65,20 @@ bool UGCSwitchConnectionController::CompletePendingConnection(Actor* selectedAct
                 : StagePlatformConnections::DisconnectSwitchTarget(stageYaml, switchRef->yamlIndex, targetId,
                                                                    selectedRef->yamlIndex);
         if (wasConnectionChanged) {
-            StageYamlRepository::SaveCurrentStage(mContext, stageYaml);
-            if (mContext.game) {
-                mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
+            std::string previousYamlText;
+            if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
+                mToolState.statusMessage = "変更前のステージを読み込めませんでした";
+                return true;
+            }
+            std::string errorMessage;
+            const auto result = StageEditTransaction::Apply(
+                mContext.game->GetCurrentStageYamlPath(), previousYamlText,
+                [&]() { return StageYamlRepository::SaveCurrentStage(mContext, stageYaml); },
+                [this]() { return mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild); },
+                errorMessage);
+            if (result != StageEditApplyResult::Applied) {
+                mToolState.statusMessage = "スイッチ接続の保存・反映に失敗しました: " + errorMessage;
+                return true;
             }
             mToolState.statusMessage = mConnectionState.GetAction() == UGCSwitchConnectionAction::Connect
                                            ? "スイッチと足場をつなぎました"

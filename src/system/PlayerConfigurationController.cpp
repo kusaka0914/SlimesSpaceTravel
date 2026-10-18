@@ -120,22 +120,23 @@ PlayerConfigurationController::PlayerConfigurationController(const PlayerConfigu
 
 void PlayerConfigurationController::Reset()
 {
-    mControlState.Reset();
-    mSplitMergeTransition = {};
-    mIsSplitMergeButtonHeld = false;
-    mIsMergeGuideRequested = false;
-    mSplitGuardState.Reset();
+    mRuntimeState.mControlState.Reset();
+    mRuntimeState.mSplitMergeTransition = {};
+    mRuntimeState.mIsSplitMergeButtonHeld = false;
+    mRuntimeState.mIsMergeGuideRequested = false;
+    mRuntimeState.mSplitGuardState.Reset();
 }
 
 void PlayerConfigurationController::ConfigureAddedPlayer(Player& player)
 {
-    const bool isSoloClone = !mIsSecondPlayerJoined && !mControlState.IsPlayerSplit() && !mWorld.GetPlayers().empty();
+    const bool isSoloClone = !mRuntimeState.mIsSecondPlayerJoined && !mRuntimeState.mControlState.IsPlayerSplit() &&
+                             !mWorld.GetPlayers().empty();
     if (isSoloClone) {
         player.SetIsActive(false);
         player.SetControlLocked(true);
     }
 
-    if (mIsSecondPlayerJoined) {
+    if (mRuntimeState.mIsSecondPlayerJoined) {
         player.SetSplitForm(true);
         player.SetControlLocked(false);
         player.SetIsActive(true);
@@ -144,7 +145,7 @@ void PlayerConfigurationController::ConfigureAddedPlayer(Player& player)
 
 void PlayerConfigurationController::SynchronizeAfterStageReload()
 {
-    if (mIsSecondPlayerJoined) {
+    if (mRuntimeState.mIsSecondPlayerJoined) {
         PlayerSplitService::SynchronizeSecondPlayerAfterStageReload(mWorld.GetPlayers());
     }
 }
@@ -152,7 +153,7 @@ void PlayerConfigurationController::SynchronizeAfterStageReload()
 void PlayerConfigurationController::JoinSecondPlayer()
 {
     const bool canJoinWithoutController = mAllowsKeyboardOnlyTwoPlayer && !mGamepadService.IsConnected();
-    if (mIsSecondPlayerJoined || (!mGamepadService.IsConnected() && !canJoinWithoutController)) {
+    if (mRuntimeState.mIsSecondPlayerJoined || (!mGamepadService.IsConnected() && !canJoinWithoutController)) {
         return;
     }
 
@@ -164,23 +165,23 @@ void PlayerConfigurationController::JoinSecondPlayer()
         return;
     }
 
-    mIsSecondPlayerJoined = true;
+    mRuntimeState.mIsSecondPlayerJoined = true;
     SelectControlledPlayer(0);
 }
 
 void PlayerConfigurationController::ReturnToSinglePlayer()
 {
-    if (!mIsSecondPlayerJoined) {
+    if (!mRuntimeState.mIsSecondPlayerJoined) {
         return;
     }
 
-    mIsSecondPlayerJoined = false;
+    mRuntimeState.mIsSecondPlayerJoined = false;
     MergePlayerInto(0);
 }
 
 bool PlayerConfigurationController::CanStartTwoPlayerFromPauseMenu() const
 {
-    return mIsSecondPlayerJoined ||
+    return mRuntimeState.mIsSecondPlayerJoined ||
            (mProgressController.IsStageCleared(1) && (mGamepadService.IsConnected() || mAllowsKeyboardOnlyTwoPlayer));
 }
 
@@ -190,7 +191,7 @@ bool PlayerConfigurationController::ToggleSplit()
         return false;
     }
 
-    if (!mControlState.IsPlayerSplit()) {
+    if (!mRuntimeState.mControlState.IsPlayerSplit()) {
         return BeginSoloSplitTransition();
     }
 
@@ -198,7 +199,7 @@ bool PlayerConfigurationController::ToggleSplit()
         return BeginSoloMergeTransition();
     }
 
-    mIsMergeGuideRequested = true;
+    mRuntimeState.mIsMergeGuideRequested = true;
     return true;
 }
 
@@ -208,7 +209,7 @@ bool PlayerConfigurationController::CanToggleSplit() const
         return false;
     }
 
-    return !mControlState.IsPlayerSplit() || AreSplitPlayersCloseEnoughToMerge();
+    return !mRuntimeState.mControlState.IsPlayerSplit() || AreSplitPlayersCloseEnoughToMerge();
 }
 
 bool PlayerConfigurationController::CanStartSplitMergeInput() const
@@ -220,7 +221,7 @@ bool PlayerConfigurationController::CanStartSplitMergeInput() const
     }
 
     const std::vector<Player*>& players = mWorld.GetPlayers();
-    if (mControlState.IsPlayerSplit()) {
+    if (mRuntimeState.mControlState.IsPlayerSplit()) {
         return players.size() >= 2 && players[0] && players[0]->GetIsActive() && players[1] &&
                players[1]->GetIsActive();
     }
@@ -235,9 +236,9 @@ bool PlayerConfigurationController::CanStartSplitMergeInput() const
 
 void PlayerConfigurationController::SetSplitMergeButtonHeld(bool isHeld)
 {
-    mIsSplitMergeButtonHeld = isHeld;
+    mRuntimeState.mIsSplitMergeButtonHeld = isHeld;
     if (!isHeld) {
-        mIsMergeGuideRequested = false;
+        mRuntimeState.mIsMergeGuideRequested = false;
     }
 }
 
@@ -245,8 +246,9 @@ bool PlayerConfigurationController::TryResolveMergeGuide(const Player*& targetPl
 {
     targetPlayer = nullptr;
     radiusWorldUnits = 0.0f;
-    if (!mIsMergeGuideRequested || !mIsSplitMergeButtonHeld || !mControlState.IsPlayerSplit() ||
-        IsSplitMergeTransitionActive() || !CanChangeSoloConfiguration()) {
+    if (!mRuntimeState.mIsMergeGuideRequested || !mRuntimeState.mIsSplitMergeButtonHeld ||
+        !mRuntimeState.mControlState.IsPlayerSplit() || IsSplitMergeTransitionActive() ||
+        !CanChangeSoloConfiguration()) {
         return false;
     }
 
@@ -261,19 +263,20 @@ bool PlayerConfigurationController::TryResolveMergeGuide(const Player*& targetPl
 
 bool PlayerConfigurationController::TryConsumeSplitGuard(const Player& damagedPlayer)
 {
-    if (mIsSecondPlayerJoined || !mControlState.IsPlayerSplit() || GetControlledPlayer() == &damagedPlayer) {
+    if (mRuntimeState.mIsSecondPlayerJoined || !mRuntimeState.mControlState.IsPlayerSplit() ||
+        GetControlledPlayer() == &damagedPlayer) {
         return false;
     }
 
     const std::vector<Player*>& players = mWorld.GetPlayers();
     const bool isActiveSplitPlayer =
         std::find(players.begin(), players.end(), &damagedPlayer) != players.end() && damagedPlayer.GetIsActive();
-    return isActiveSplitPlayer && mSplitGuardState.ConsumeOne();
+    return isActiveSplitPlayer && mRuntimeState.mSplitGuardState.ConsumeOne();
 }
 
 int PlayerConfigurationController::GetSplitGuardCount() const
 {
-    return mSplitGuardState.GetCount();
+    return mRuntimeState.mSplitGuardState.GetCount();
 }
 
 int PlayerConfigurationController::GetMaximumSplitGuardCount() const
@@ -283,18 +286,18 @@ int PlayerConfigurationController::GetMaximumSplitGuardCount() const
 
 void PlayerConfigurationController::UpdateSplitMergeTransition(float deltaTime)
 {
-    mSplitGuardState.Update(deltaTime);
+    mRuntimeState.mSplitGuardState.Update(deltaTime);
     UpdatePendingSoloMergeRequest();
     UpdateMergeRecall(deltaTime);
     if (!IsSplitMergeTransitionActive()) {
         return;
     }
 
-    mSplitMergeTransition.elapsedSeconds += std::max(0.0f, deltaTime);
-    const float progress =
-        glm::clamp(mSplitMergeTransition.elapsedSeconds / splitMergeTransitionDurationSeconds, 0.0f, 1.0f);
+    mRuntimeState.mSplitMergeTransition.elapsedSeconds += std::max(0.0f, deltaTime);
+    const float progress = glm::clamp(
+        mRuntimeState.mSplitMergeTransition.elapsedSeconds / splitMergeTransitionDurationSeconds, 0.0f, 1.0f);
 
-    if (mSplitMergeTransition.kind == SplitMergeTransitionKind::Splitting) {
+    if (mRuntimeState.mSplitMergeTransition.kind == SplitMergeTransitionKind::Splitting) {
         UpdateSoloSplitTransition(progress);
         if (progress >= 1.0f) {
             CompleteSoloSplitTransition();
@@ -310,7 +313,8 @@ void PlayerConfigurationController::UpdateSplitMergeTransition(float deltaTime)
 
 void PlayerConfigurationController::UpdateMergeRecall(float deltaTime)
 {
-    if (!mIsMergeGuideRequested || !mIsSplitMergeButtonHeld || IsSplitMergeTransitionActive()) {
+    if (!mRuntimeState.mIsMergeGuideRequested || !mRuntimeState.mIsSplitMergeButtonHeld ||
+        IsSplitMergeTransitionActive()) {
         return;
     }
 
@@ -326,7 +330,7 @@ void PlayerConfigurationController::UpdateMergeRecall(float deltaTime)
 
 bool PlayerConfigurationController::IsSplitMergeTransitionActive() const
 {
-    return mSplitMergeTransition.kind != SplitMergeTransitionKind::None;
+    return mRuntimeState.mSplitMergeTransition.kind != SplitMergeTransitionKind::None;
 }
 
 bool PlayerConfigurationController::CanChangeSoloConfiguration() const
@@ -337,7 +341,7 @@ bool PlayerConfigurationController::CanChangeSoloConfiguration() const
     const bool allowsNormalPlayerInput = mCameraSystem.AllowsPlayerInput() && !mSequenceSystem.LocksPlayerControl();
     const bool allowsPlayerConfigurationInput = isWaitingForTutorialConfigurationAction || allowsNormalPlayerInput;
 
-    return !mIsSecondPlayerJoined && !IsSplitMergeTransitionActive() && mWorld.GetPlayers().size() >= 2 &&
+    return !mRuntimeState.mIsSecondPlayerJoined && !IsSplitMergeTransitionActive() && mWorld.GetPlayers().size() >= 2 &&
            allowsPlayerConfigurationScene && !mPauseMenuController.IsOpen() && allowsPlayerConfigurationInput;
 }
 
@@ -348,7 +352,7 @@ bool PlayerConfigurationController::SplitPlayer()
         return false;
     }
 
-    mControlState.BeginPlayerSplit();
+    mRuntimeState.mControlState.BeginPlayerSplit();
     SynchronizeSoloSplitResources(*players[0]);
     SelectControlledPlayer(1);
     return true;
@@ -378,9 +382,9 @@ bool PlayerConfigurationController::BeginSoloSplitTransition()
     splitPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetShouldJudgeLanding(false);
 
-    mControlState.BeginPlayerSplit();
+    mRuntimeState.mControlState.BeginPlayerSplit();
     SynchronizeSoloSplitResources(mainPlayer);
-    mSplitMergeTransition = {
+    mRuntimeState.mSplitMergeTransition = {
         .kind = SplitMergeTransitionKind::Splitting,
         .elapsedSeconds = 0.0f,
         .splitPlayerStartPosition = mainPlayer.GetPos(),
@@ -453,11 +457,11 @@ bool PlayerConfigurationController::BeginSoloMergeTransition()
 
     Player& mainPlayer = *players[0];
     Player& splitPlayer = *players[1];
-    mIsMergeGuideRequested = false;
+    mRuntimeState.mIsMergeGuideRequested = false;
     mainPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetVelocity(glm::vec3(0.0f));
     splitPlayer.SetShouldJudgeLanding(false);
-    mSplitMergeTransition = {
+    mRuntimeState.mSplitMergeTransition = {
         .kind = SplitMergeTransitionKind::Merging,
         .elapsedSeconds = 0.0f,
         .splitPlayerStartPosition = splitPlayer.GetPos(),
@@ -469,18 +473,18 @@ bool PlayerConfigurationController::BeginSoloMergeTransition()
 
 void PlayerConfigurationController::UpdatePendingSoloMergeRequest()
 {
-    if (!mIsMergeGuideRequested) {
+    if (!mRuntimeState.mIsMergeGuideRequested) {
         return;
     }
 
-    if (!mIsSplitMergeButtonHeld || !mControlState.IsPlayerSplit() || !CanChangeSoloConfiguration() ||
-        !FindMergeGuideTargetPlayer()) {
-        mIsMergeGuideRequested = false;
+    if (!mRuntimeState.mIsSplitMergeButtonHeld || !mRuntimeState.mControlState.IsPlayerSplit() ||
+        !CanChangeSoloConfiguration() || !FindMergeGuideTargetPlayer()) {
+        mRuntimeState.mIsMergeGuideRequested = false;
         return;
     }
 
     if (AreSplitPlayersCloseEnoughToMerge()) {
-        mIsMergeGuideRequested = false;
+        mRuntimeState.mIsMergeGuideRequested = false;
         BeginSoloMergeTransition();
     }
 }
@@ -492,7 +496,7 @@ Player* PlayerConfigurationController::FindMergeGuideTargetPlayer() const
         return nullptr;
     }
 
-    const int controlledPlayerIndex = mControlState.GetControlledPlayerIndex();
+    const int controlledPlayerIndex = mRuntimeState.mControlState.GetControlledPlayerIndex();
     if (controlledPlayerIndex < 0 || controlledPlayerIndex >= 2) {
         return nullptr;
     }
@@ -509,7 +513,7 @@ void PlayerConfigurationController::UpdateSoloSplitTransition(float progress)
 {
     const std::vector<Player*>& players = mWorld.GetPlayers();
     if (players.size() < 2 || !players[0] || !players[1]) {
-        mSplitMergeTransition = {};
+        mRuntimeState.mSplitMergeTransition = {};
         return;
     }
 
@@ -517,22 +521,24 @@ void PlayerConfigurationController::UpdateSoloSplitTransition(float progress)
     Player& splitPlayer = *players[1];
     const float easedProgress = CalculateSmoothstep(progress);
     const glm::vec3 upDirection = CalculateUpDirection(mainPlayer);
-    const glm::vec3 splitDirection = mSplitMergeTransition.splitDirection;
+    const glm::vec3 splitDirection = mRuntimeState.mSplitMergeTransition.splitDirection;
     const float arcHeight = std::sin(glm::pi<float>() * progress) * splitPlayerArcHeightWorldUnits;
     splitPlayer.SetPos(CalculateSplitSurfacePosition(mainPlayer, splitDirection, easedProgress) +
                        upDirection * arcHeight);
 
     const glm::vec3 finalSplitScale = splitPlayer.GetBaseScale() * Player::SplitBodyScaleMultiplier;
-    splitPlayer.SetScale(glm::mix(mSplitMergeTransition.splitPlayerStartScale, finalSplitScale, easedProgress));
+    splitPlayer.SetScale(
+        glm::mix(mRuntimeState.mSplitMergeTransition.splitPlayerStartScale, finalSplitScale, easedProgress));
     const glm::vec3 finalMainPlayerScale = mainPlayer.GetBaseScale() * Player::SplitBodyScaleMultiplier;
-    mainPlayer.SetScale(glm::mix(mSplitMergeTransition.mainPlayerStartScale, finalMainPlayerScale, easedProgress));
+    mainPlayer.SetScale(
+        glm::mix(mRuntimeState.mSplitMergeTransition.mainPlayerStartScale, finalMainPlayerScale, easedProgress));
 }
 
 void PlayerConfigurationController::UpdateSoloMergeTransition(float progress)
 {
     const std::vector<Player*>& players = mWorld.GetPlayers();
     if (players.size() < 2 || !players[0] || !players[1]) {
-        mSplitMergeTransition = {};
+        mRuntimeState.mSplitMergeTransition = {};
         return;
     }
 
@@ -541,32 +547,35 @@ void PlayerConfigurationController::UpdateSoloMergeTransition(float progress)
     const float easedProgress = CalculateSmoothstep(progress);
     const glm::vec3 upDirection = CalculateUpDirection(mainPlayer);
     const float arcHeight = std::sin(glm::pi<float>() * progress) * splitPlayerArcHeightWorldUnits * 0.5f;
-    splitPlayer.SetPos(glm::mix(mSplitMergeTransition.splitPlayerStartPosition, mainPlayer.GetPos(), easedProgress) +
-                       upDirection * arcHeight);
+    splitPlayer.SetPos(
+        glm::mix(mRuntimeState.mSplitMergeTransition.splitPlayerStartPosition, mainPlayer.GetPos(), easedProgress) +
+        upDirection * arcHeight);
 
     const glm::vec3 hiddenSplitScale =
         splitPlayer.GetBaseScale() * Player::SplitBodyScaleMultiplier * splitPlayerInitialScaleMultiplier;
-    splitPlayer.SetScale(glm::mix(mSplitMergeTransition.splitPlayerStartScale, hiddenSplitScale, easedProgress));
-    mainPlayer.SetScale(glm::mix(mSplitMergeTransition.mainPlayerStartScale, mainPlayer.GetBaseScale(), easedProgress));
+    splitPlayer.SetScale(
+        glm::mix(mRuntimeState.mSplitMergeTransition.splitPlayerStartScale, hiddenSplitScale, easedProgress));
+    mainPlayer.SetScale(
+        glm::mix(mRuntimeState.mSplitMergeTransition.mainPlayerStartScale, mainPlayer.GetBaseScale(), easedProgress));
 }
 
 void PlayerConfigurationController::CompleteSoloSplitTransition()
 {
     const std::vector<Player*>& players = mWorld.GetPlayers();
     if (players.size() < 2 || !players[0] || !players[1]) {
-        mSplitMergeTransition = {};
+        mRuntimeState.mSplitMergeTransition = {};
         return;
     }
 
     players[1]->SetShouldJudgeLanding(true);
-    mSplitMergeTransition = {};
+    mRuntimeState.mSplitMergeTransition = {};
     SelectControlledPlayer(1, ControlledPlayerCameraTransition::Smooth);
     mSceneSystem.OnPlayerSplitMergeSucceeded();
 }
 
 void PlayerConfigurationController::CompleteSoloMergeTransition()
 {
-    mSplitMergeTransition = {};
+    mRuntimeState.mSplitMergeTransition = {};
     if (MergePlayerInto(0, ControlledPlayerCameraTransition::Smooth)) {
         mSceneSystem.OnPlayerSplitMergeSucceeded();
     }
@@ -580,12 +589,12 @@ bool PlayerConfigurationController::AreSplitPlayersCloseEnoughToMerge() const
 bool PlayerConfigurationController::MergePlayerInto(int targetPlayerIndex,
                                                     ControlledPlayerCameraTransition cameraTransition)
 {
-    mIsMergeGuideRequested = false;
+    mRuntimeState.mIsMergeGuideRequested = false;
     if (!PlayerSplitService::MergeIntoMainPlayer(mWorld.GetPlayers(), targetPlayerIndex)) {
         return false;
     }
 
-    const std::optional<ControlledPlayerChange> selectionChange = mControlState.EndPlayerSplit();
+    const std::optional<ControlledPlayerChange> selectionChange = mRuntimeState.mControlState.EndPlayerSplit();
     if (selectionChange) {
         if (cameraTransition == ControlledPlayerCameraTransition::Smooth) {
             mCameraSystem.TransitionToControlledPlayer(selectionChange->previousPlayerIndex,
@@ -601,7 +610,8 @@ bool PlayerConfigurationController::MergePlayerInto(int targetPlayerIndex,
 void PlayerConfigurationController::SelectControlledPlayer(int playerIndex,
                                                            ControlledPlayerCameraTransition cameraTransition)
 {
-    const std::optional<ControlledPlayerChange> selectionChange = mControlState.SelectControlledPlayer(playerIndex);
+    const std::optional<ControlledPlayerChange> selectionChange =
+        mRuntimeState.mControlState.SelectControlledPlayer(playerIndex);
     if (selectionChange) {
         if (cameraTransition == ControlledPlayerCameraTransition::Smooth) {
             mCameraSystem.TransitionToControlledPlayer(selectionChange->previousPlayerIndex,
@@ -620,7 +630,7 @@ bool PlayerConfigurationController::SwitchControlledPlayer()
     }
 
     const std::vector<Player*>& players = mWorld.GetPlayers();
-    const int previousIndex = mControlState.GetControlledPlayerIndex();
+    const int previousIndex = mRuntimeState.mControlState.GetControlledPlayerIndex();
     int nextIndex = previousIndex;
     for (int offset = 1; offset <= static_cast<int>(players.size()); ++offset) {
         const int candidateIndex = (previousIndex + offset) % static_cast<int>(players.size());
@@ -647,7 +657,7 @@ bool PlayerConfigurationController::SwitchControlledPlayer()
             continue;
         }
 
-        mControlState.CancelScheduledControlSwitch();
+        mRuntimeState.mControlState.CancelScheduledControlSwitch();
         SelectControlledPlayer(candidateIndex);
         mSceneSystem.OnPlayerSwitchSucceeded();
         return true;
@@ -659,14 +669,15 @@ bool PlayerConfigurationController::SwitchControlledPlayer()
 bool PlayerConfigurationController::CanSwitchControlledPlayer() const
 {
     const bool allowsPlayerSwitch = mSceneSystem.IsPlaying() || mSceneSystem.IsWaitingForTutorialPlayerSwitch();
-    if (!mControlState.IsPlayerSplit() || !CanChangeSoloConfiguration() || mWorld.GetPlayers().size() < 2 ||
-        !allowsPlayerSwitch) {
+    if (!mRuntimeState.mControlState.IsPlayerSplit() || !CanChangeSoloConfiguration() ||
+        mWorld.GetPlayers().size() < 2 || !allowsPlayerSwitch) {
         return false;
     }
 
     const std::vector<Player*>& players = mWorld.GetPlayers();
     for (int index = 0; index < static_cast<int>(players.size()); ++index) {
-        if (index != mControlState.GetControlledPlayerIndex() && players[static_cast<std::size_t>(index)] &&
+        if (index != mRuntimeState.mControlState.GetControlledPlayerIndex() &&
+            players[static_cast<std::size_t>(index)] &&
             (players[static_cast<std::size_t>(index)]->GetIsActive() ||
              players[static_cast<std::size_t>(index)]->IsWaitingForBoat())) {
             return true;
@@ -677,15 +688,15 @@ bool PlayerConfigurationController::CanSwitchControlledPlayer() const
 
 void PlayerConfigurationController::RequestControlSwitchAfterBoarding()
 {
-    if (!mIsSecondPlayerJoined && mControlState.IsPlayerSplit()) {
-        mControlState.ScheduleControlSwitchAfterBoarding(boardingControlSwitchDelaySeconds);
+    if (!mRuntimeState.mIsSecondPlayerJoined && mRuntimeState.mControlState.IsPlayerSplit()) {
+        mRuntimeState.mControlState.ScheduleControlSwitchAfterBoarding(boardingControlSwitchDelaySeconds);
     }
 }
 
 void PlayerConfigurationController::UpdatePendingControlSwitch(float deltaTime)
 {
     const std::vector<Player*>& players = mWorld.GetPlayers();
-    const int controlledPlayerIndex = mControlState.GetControlledPlayerIndex();
+    const int controlledPlayerIndex = mRuntimeState.mControlState.GetControlledPlayerIndex();
     const bool isControlledPlayerActive = controlledPlayerIndex >= 0 &&
                                           controlledPlayerIndex < static_cast<int>(players.size()) &&
                                           players[static_cast<std::size_t>(controlledPlayerIndex)] &&
@@ -703,7 +714,8 @@ void PlayerConfigurationController::UpdatePendingControlSwitch(float deltaTime)
     }
 
     const std::optional<ControlledPlayerChange> selectionChange =
-        mControlState.UpdateScheduledControlSwitch(deltaTime, mIsSecondPlayerJoined, activePlayerIndex);
+        mRuntimeState.mControlState.UpdateScheduledControlSwitch(deltaTime, mRuntimeState.mIsSecondPlayerJoined,
+                                                                 activePlayerIndex);
     if (selectionChange) {
         mCameraSystem.SnapToControlledPlayer(selectionChange->previousPlayerIndex, selectionChange->currentPlayerIndex);
     }
@@ -711,21 +723,21 @@ void PlayerConfigurationController::UpdatePendingControlSwitch(float deltaTime)
 
 void PlayerConfigurationController::MergeSoloSplitAfterBoatArrival()
 {
-    if (!mIsSecondPlayerJoined && mControlState.IsPlayerSplit()) {
-        MergePlayerInto(mControlState.GetControlledPlayerIndex());
+    if (!mRuntimeState.mIsSecondPlayerJoined && mRuntimeState.mControlState.IsPlayerSplit()) {
+        MergePlayerInto(mRuntimeState.mControlState.GetControlledPlayerIndex());
     }
 }
 
 void PlayerConfigurationController::MergeSoloSplitBeforeRestart()
 {
-    if (!mIsSecondPlayerJoined && mControlState.IsPlayerSplit()) {
+    if (!mRuntimeState.mIsSecondPlayerJoined && mRuntimeState.mControlState.IsPlayerSplit()) {
         MergePlayerInto(0);
     }
 }
 
 void PlayerConfigurationController::SynchronizeSoloSplitResources(const Player& sourcePlayer)
 {
-    if (mIsSecondPlayerJoined || !mControlState.IsPlayerSplit()) {
+    if (mRuntimeState.mIsSecondPlayerJoined || !mRuntimeState.mControlState.IsPlayerSplit()) {
         return;
     }
 
@@ -734,22 +746,22 @@ void PlayerConfigurationController::SynchronizeSoloSplitResources(const Player& 
 
 bool PlayerConfigurationController::IsSecondPlayerJoined() const
 {
-    return mIsSecondPlayerJoined;
+    return mRuntimeState.mIsSecondPlayerJoined;
 }
 
 bool PlayerConfigurationController::IsPlayerSplit() const
 {
-    return mControlState.IsPlayerSplit();
+    return mRuntimeState.mControlState.IsPlayerSplit();
 }
 
 int PlayerConfigurationController::GetControlledPlayerIndex() const
 {
-    return mControlState.GetControlledPlayerIndex();
+    return mRuntimeState.mControlState.GetControlledPlayerIndex();
 }
 
 Player* PlayerConfigurationController::GetMainPlayer() const
 {
-    if (!mIsSecondPlayerJoined) {
+    if (!mRuntimeState.mIsSecondPlayerJoined) {
         if (Player* controlledPlayer = GetControlledPlayer()) {
             return controlledPlayer;
         }
@@ -761,7 +773,7 @@ Player* PlayerConfigurationController::GetMainPlayer() const
 Player* PlayerConfigurationController::GetControlledPlayer() const
 {
     const std::vector<Player*>& players = mWorld.GetPlayers();
-    const int controlledPlayerIndex = mControlState.GetControlledPlayerIndex();
+    const int controlledPlayerIndex = mRuntimeState.mControlState.GetControlledPlayerIndex();
     if (controlledPlayerIndex < 0 || controlledPlayerIndex >= static_cast<int>(players.size())) {
         return players.empty() ? nullptr : players[0];
     }

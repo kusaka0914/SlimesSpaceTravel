@@ -212,15 +212,18 @@ bool UICanvasEditorController::DeleteSelected(UILoadSystem* uiLoadSystem, std::s
 
 bool UICanvasEditorController::RestoreUndo(UILoadSystem* uiLoadSystem, std::string& statusMessage)
 {
-    if (!uiLoadSystem || !mEditHistory.RestoreLatest(*uiLoadSystem)) {
+    if (!uiLoadSystem) {
+        return false;
+    }
+    std::string error;
+    if (!mEditHistory.RestoreLatest(*uiLoadSystem, [&]() { return uiLoadSystem->SaveEditorUI(error); })) {
+        if (!error.empty()) {
+            statusMessage = "UI編集を元に戻せませんでした: " + error;
+        }
         return false;
     }
     ClearSelection();
-
-    const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
-    const bool savedExistingUI = uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
-    const bool wasSaved = savedCustomUI && savedExistingUI;
-    statusMessage = wasSaved ? "UI編集を元に戻して保存しました" : "UI編集は戻しましたが保存に失敗しました";
+    statusMessage = "UI編集を元に戻して保存しました";
     return true;
 }
 

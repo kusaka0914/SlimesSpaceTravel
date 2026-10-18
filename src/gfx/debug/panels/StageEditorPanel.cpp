@@ -12,6 +12,7 @@
 #include "gfx/debug/panels/StagePlanetPanel.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageActorYamlWriter.h"
+#include "gfx/debug/stage/StageEditCommandController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 
 #include "imgui.h"
@@ -87,8 +88,8 @@ std::vector<StageYamlOption> CollectStageYamlOptions(int currentStageNumber, int
 StageEditorPanel::StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel,
                                    StagePlanetPanel& planetPanel, StagePlacementPanel& placementPanel,
                                    StageDeleteActorPanel& deleteActorPanel, StageActorYamlWriter& stageActorYamlWriter,
-                                   StageSelectionController& selectionController, std::function<bool()> restoreUndo,
-                                   std::function<bool()> restoreRedo)
+                                   StageSelectionController& selectionController,
+                                   StageEditCommandController& editCommandController)
     : DebugPanel(context),
       mAddActorPanel(addActorPanel),
       mPlanetPanel(planetPanel),
@@ -96,8 +97,7 @@ StageEditorPanel::StageEditorPanel(DebugEditorContext& context, StageAddActorPan
       mDeleteActorPanel(deleteActorPanel),
       mStageActorYamlWriter(stageActorYamlWriter),
       mSelectionController(selectionController),
-      mRestoreUndo(std::move(restoreUndo)),
-      mRestoreRedo(std::move(restoreRedo))
+      mEditCommandController(editCommandController)
 {
 }
 
@@ -140,13 +140,15 @@ void StageEditorPanel::DrawToolbar()
 
     ImGui::SameLine();
     if (ImGui::Button("ステージを保存")) {
-        mPlanetPanel.Save();
-        mStageActorYamlWriter.SaveAllActorStates();
+        const bool saved = mStageActorYamlWriter.SaveStage(
+            [this](const std::string& before) { mEditCommandController.RecordSavedEdit(before); });
+        mSaveStatus = saved ? "ステージを保存しました" : "保存できませんでした。編集内容は画面上に残っています。";
     }
 
     ImGui::SameLine();
     if (ImGui::Button("元に戻す##stageUndo")) {
-        mEditHistoryStatus = mRestoreUndo && mRestoreUndo() ? "1つ前の状態に戻しました" : "戻せる操作がありません";
+        mEditHistoryStatus =
+            mEditCommandController.RestoreUndo() ? "1つ前の状態に戻しました" : "戻せる操作がありません";
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Ctrl+Z");
@@ -155,7 +157,7 @@ void StageEditorPanel::DrawToolbar()
     ImGui::SameLine();
     if (ImGui::Button("やり直す##stageRedo")) {
         mEditHistoryStatus =
-            mRestoreRedo && mRestoreRedo() ? "戻した操作をやり直しました" : "やり直せる操作がありません";
+            mEditCommandController.RestoreRedo() ? "戻した操作をやり直しました" : "やり直せる操作がありません";
     }
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Ctrl+Y または Ctrl+Shift+Z");
@@ -197,6 +199,20 @@ void StageEditorPanel::DrawWorkspaceWindows()
 
 void StageEditorPanel::DrawInspector()
 {
+    if (!mEditCommandController.GetLastError().empty()) {
+        ImGui::TextWrapped("%s", mEditCommandController.GetLastError().c_str());
+    }
+    if (!mStageActorYamlWriter.GetSaveError().empty()) {
+        ImGui::TextWrapped("%s", mStageActorYamlWriter.GetSaveError().c_str());
+        if (ImGui::Button("Actorの保存を再試行")) {
+            mSaveStatus = mStageActorYamlWriter.RetryFailedSaves()
+                              ? "Actorの保存を再試行しました"
+                              : "Actorを保存できませんでした。元のステージと保存先を確認してください。";
+        }
+    } else if (!mSaveStatus.empty()) {
+        ImGui::TextWrapped("%s", mSaveStatus.c_str());
+    }
+
     switch (mSelectedMenu) {
     case 0:
         DrawDebugSceneSwitcher();
@@ -252,9 +268,9 @@ void StageEditorPanel::DrawDuplicatePlacementControls()
 
         if (!selectedActorRef) {
             mDuplicatePlacementStatus = "選択中オブジェクトの保存データを取得できませんでした";
+        } else if (!mStageActorYamlWriter.SaveAllActorStates()) {
+            mDuplicatePlacementStatus = "複製元の設定を保存できませんでした";
         } else {
-
-            mStageActorYamlWriter.SaveAllActorStates();
             const bool wasStarted = mAddActorPanel.BeginDuplicatePlacement(*selectedActorRef);
             mDuplicatePlacementStatus = wasStarted ? "ゲーム画面をクリックすると同じ設定で配置できます"
                                                    : "選択中オブジェクトの複製準備に失敗しました";

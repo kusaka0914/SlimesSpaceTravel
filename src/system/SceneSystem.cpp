@@ -369,6 +369,18 @@ void SceneSystem::StartPlayingScene()
     }
 }
 
+bool SceneSystem::LoadStageIntoPlayingScene(const std::function<bool()>& loadStage)
+{
+    const auto previousScene = mGameProgressState->GetSceneState();
+    // 読込時のBGM選択をPlayingとして行うため、構築前に切り替える。
+    StartPlayingScene();
+    if (loadStage()) {
+        return true;
+    }
+    mGameProgressState->SetCurrentSceneState(previousScene);
+    return false;
+}
+
 void SceneSystem::FinishFocusingScene()
 {
     if (!mTutorialController || !mTutorialController->ResumeAfterFocus()) {

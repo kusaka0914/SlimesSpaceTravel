@@ -1,9 +1,11 @@
 #include "gfx/debug/stage/StageEditCommandController.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
 
 #include "Game.h"
 #include "Stage.h"
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StagePlatformIdentifiers.h"
+#include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "gfx/debug/ugc/UGCWorkMetadata.h"
 
@@ -476,38 +478,60 @@ bool StageEditCommandController::ConsumeRequestOpenPlacement()
     return result;
 }
 
-void StageEditCommandController::PushUndo()
+bool StageEditCommandController::ExecuteEdit(const StageEditOperation& operation, StageEditGrouping grouping,
+                                             StageEditFailureRecovery recovery)
 {
+    SynchronizeStage();
+    if (mIsExecutingEdit) {
+        return operation();
+    }
+    mLastError.clear();
     if (!mContext.game) {
-        return;
+        mLastError = "編集対象のステージがありません。";
+        return false;
     }
-
-    std::string yamlText;
-
-    if (!StageYamlRepository::ReadCurrentStageText(mContext, yamlText)) {
-        return;
+    std::string before;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, before)) {
+        mLastError = "編集前のステージを読み込めませんでした。";
+        return false;
     }
-
     try {
-        YAML::Load(yamlText);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Skip pushing invalid undo yaml: " << e.what() << std::endl;
-        return;
+        if (!YAML::Load(before).IsMap()) {
+            mLastError = "ステージYAMLのルートがMapではありません。";
+            return false;
+        }
+    } catch (const YAML::Exception& error) {
+        mLastError = error.what();
+        return false;
     }
 
-    mEditHistory.PushUndoSnapshot(yamlText);
+    std::string after;
+    mIsExecutingEdit = true;
+    const auto result = StageEditTransaction::Execute(
+        mContext.game->GetCurrentStageYamlPath(), before,
+        [&]() { return operation() && StageYamlRepository::ReadCurrentStageText(mContext, after); },
+        [this]() { return mContext.game->ReloadCurrentStage(); }, recovery, mLastError);
+    mIsExecutingEdit = false;
+    if (result != StageEditApplyResult::Applied) {
+        std::cerr << mLastError << '\n';
+        return false;
+    }
+    mEditHistory.RecordSavedChange(before, after, grouping);
+    return true;
+}
 
-    if (mContext.game->GetIsUGCMode()) {
-        YAML::Node stageYaml;
-        if (StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
-            UGCWorkMetadata::InvalidateClearVerification(stageYaml);
-            StageYamlRepository::SaveCurrentStage(mContext, stageYaml);
-        }
+void StageEditCommandController::RecordSavedEdit(const std::string& previousYamlText)
+{
+    SynchronizeStage();
+    if (!mIsExecutingEdit) {
+        mEditHistory.PushUndoSnapshot(previousYamlText);
     }
 }
 
 bool StageEditCommandController::RestoreUndo()
 {
+    SynchronizeStage();
+    mLastError.clear();
     const std::string* yamlText = mEditHistory.FindUndoSnapshot();
     if (!mContext.game || !yamlText) {
         return false;
@@ -517,16 +541,14 @@ bool StageEditCommandController::RestoreUndo()
     if (!StageYamlRepository::ReadCurrentStageText(mContext, currentYamlText)) {
         return false;
     }
-    if (!StageYamlRepository::WriteCurrentStageTextAtomically(mContext, *yamlText)) {
+    if (!ApplyStageText(*yamlText, currentYamlText)) {
         return false;
     }
 
-    // 復元に失敗したとき履歴を失わないよう、ファイルの置き換えが成功してから履歴を進める。
+    // ファイルとRuntimeの両方を復元できてから履歴を進める。
     mEditHistory.CommitUndo(currentYamlText);
 
     mSelectionController.Clear();
-
-    mContext.game->ReloadCurrentStage();
 
     return true;
 }
@@ -564,8 +586,6 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
         return false;
     }
 
-    PushUndo();
-
     for (auto& deletionEntry : deleteIndicesBySequence) {
         std::vector<int>& indices = deletionEntry.second;
         std::sort(indices.begin(), indices.end());
@@ -585,13 +605,11 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
         }
     }
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+    if (!CommitStageEdit(config)) {
         return false;
     }
 
     mSelectionController.Clear();
-
-    mContext.game->ReloadCurrentStage();
 
     return true;
 }
@@ -599,10 +617,18 @@ bool StageEditCommandController::DeleteSelectedKeys(const std::unordered_set<std
 void StageEditCommandController::ClearHistory()
 {
     mEditHistory.Clear();
+    mLastError.clear();
+}
+
+void StageEditCommandController::SynchronizeStage()
+{
+    mEditHistory.BindToStage(StageYamlRepository::GetCurrentStageYamlPath(mContext));
 }
 
 bool StageEditCommandController::RestoreRedo()
 {
+    SynchronizeStage();
+    mLastError.clear();
     const std::string* yamlText = mEditHistory.FindRedoSnapshot();
     if (!mContext.game || !yamlText) {
         return false;
@@ -612,13 +638,12 @@ bool StageEditCommandController::RestoreRedo()
     if (!StageYamlRepository::ReadCurrentStageText(mContext, currentYamlText)) {
         return false;
     }
-    if (!StageYamlRepository::WriteCurrentStageTextAtomically(mContext, *yamlText)) {
+    if (!ApplyStageText(*yamlText, currentYamlText)) {
         return false;
     }
 
     mEditHistory.CommitRedo(currentYamlText);
     mSelectionController.Clear();
-    mContext.game->ReloadCurrentStage();
     return true;
 }
 
@@ -638,8 +663,6 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
         planetIndex >= static_cast<int>(planets.size())) {
         return false;
     }
-
-    PushUndo();
 
     if (!StageYamlRepository::RemoveSequenceElement(stageYaml, "planets", planetIndex)) {
         return false;
@@ -664,12 +687,11 @@ bool StageEditCommandController::DeletePlanet(int planetIndex)
     }
     RemoveUGCPlatformCellsOnDeletedPlanet(stageYaml, planetIndex);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml, false)) {
+    if (!CommitStageEdit(stageYaml, false)) {
         return false;
     }
 
     mSelectionController.Clear();
-    mContext.game->ReloadCurrentStage();
     return true;
 }
 
@@ -698,7 +720,6 @@ bool StageEditCommandController::DeletePlanetOnly(int planetIndex)
     const float deletedPlanetRadius = ReadPlanetRadius(deletedPlanetNode);
     const float replacementPlanetRadius = ReadPlanetRadius(replacementPlanetNode);
 
-    PushUndo();
     if (!StageYamlRepository::RemoveSequenceElement(stageYaml, "planets", planetIndex)) {
         return false;
     }
@@ -725,12 +746,11 @@ bool StageEditCommandController::DeletePlanetOnly(int planetIndex)
     }
     ReassignUGCPlatformCellsFromDeletedPlanet(stageYaml, planetIndex, replacementPlanetIndex);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml, false)) {
+    if (!CommitStageEdit(stageYaml, false)) {
         return false;
     }
 
     mSelectionController.Clear();
-    mContext.game->ReloadCurrentStage();
     return true;
 }
 
@@ -856,9 +876,7 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
     RenumberPlanetNodes(stageYaml["planets"]);
 
-    PushUndo();
-
-    if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml)) {
+    if (!CommitStageEdit(stageYaml)) {
         return false;
     }
 
@@ -866,8 +884,46 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
     mRequestOpenPlacement = true;
 
-    mContext.game->ReloadCurrentStage();
+    return true;
+}
 
+bool StageEditCommandController::ApplyStageText(const std::string& yamlText, const std::string& previousYamlText)
+{
+    return ApplyStageChange(previousYamlText,
+                            [&]() { return StageYamlRepository::WriteCurrentStageTextAtomically(mContext, yamlText); });
+}
+
+bool StageEditCommandController::ApplyStageChange(const std::string& previousYamlText,
+                                                  const std::function<bool()>& saveChanges)
+{
+    std::string errorMessage;
+    const auto result = StageEditTransaction::Apply(
+        mContext.game->GetCurrentStageYamlPath(), previousYamlText, saveChanges,
+        [this]() { return mContext.game->ReloadCurrentStage(); }, errorMessage);
+    if (result != StageEditApplyResult::Applied) {
+        mLastError = errorMessage;
+        std::cerr << errorMessage << '\n';
+        return false;
+    }
+    return true;
+}
+
+bool StageEditCommandController::CommitStageEdit(YAML::Node config, bool preserveRuntimePlanetCenters)
+{
+    SynchronizeStage();
+    std::string previousYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
+        return false;
+    }
+    if (mContext.game->GetIsUGCMode()) {
+        UGCWorkMetadata::InvalidateClearVerification(config);
+    }
+    if (!ApplyStageChange(previousYamlText, [&]() {
+            return StageYamlRepository::SaveCurrentStage(mContext, config, preserveRuntimePlanetCenters);
+        })) {
+        return false;
+    }
+    mEditHistory.PushUndoSnapshot(previousYamlText);
     return true;
 }
 

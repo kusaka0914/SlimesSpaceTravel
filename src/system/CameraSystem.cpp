@@ -28,7 +28,7 @@
 CameraSystem::CameraSystem(Game* game)
     : mGame(game),
       mBossDefeatSequence(game),
-      mCollisionResolver(game),
+      mCollisionResolver([game]() { return game ? game->GetPhysicsSystem() : nullptr; }),
       mDebugCamera(game),
       mFocusCamera(game, mCollisionResolver),
       mPlayerCamera(mCollisionResolver),

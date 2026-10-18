@@ -2,7 +2,6 @@
 
 #include "gfx/debug/DebugPanel.h"
 
-#include <functional>
 #include <string>
 
 class StageAddActorPanel;
@@ -11,6 +10,7 @@ class StagePlacementPanel;
 class StageDeleteActorPanel;
 class StageActorYamlWriter;
 class StageSelectionController;
+class StageEditCommandController;
 
 // ステージ編集のメニュー・一覧・インスペクターを連携し、保存・履歴・ステージ切り替えを提供する。
 // 渡された各パネルとControllerは所有しない。
@@ -19,7 +19,7 @@ public:
     StageEditorPanel(DebugEditorContext& context, StageAddActorPanel& addActorPanel, StagePlanetPanel& planetPanel,
                      StagePlacementPanel& placementPanel, StageDeleteActorPanel& deleteActorPanel,
                      StageActorYamlWriter& stageActorYamlWriter, StageSelectionController& selectionController,
-                     std::function<bool()> restoreUndo, std::function<bool()> restoreRedo);
+                     StageEditCommandController& editCommandController);
 
     void Draw() override;
     void DrawTopBar();
@@ -50,13 +50,13 @@ private:
     StageDeleteActorPanel& mDeleteActorPanel;
     StageActorYamlWriter& mStageActorYamlWriter;
     StageSelectionController& mSelectionController;
-    std::function<bool()> mRestoreUndo;
-    std::function<bool()> mRestoreRedo;
+    StageEditCommandController& mEditCommandController;
 
     int mSelectedMenu = 3;
     bool mRequestOpenMainTab = false;
     std::string mSelectedStageYamlPath;
     std::string mStageSwitchStatus;
+    std::string mSaveStatus;
     std::string mDuplicatePlacementStatus;
     std::string mEditHistoryStatus;
 };

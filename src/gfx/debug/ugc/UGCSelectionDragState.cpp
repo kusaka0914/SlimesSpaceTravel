@@ -5,6 +5,7 @@ void UGCSelectionDragState::Reset()
     isDragging = false;
     isMovingPlatformDestination = false;
     hasMoved = false;
+    hasSavedEdit = false;
     dragStartCell = glm::ivec3(0);
     appliedHorizontalCellDelta = glm::ivec3(0);
     initialCenter = glm::vec3(0.0f);

@@ -3,8 +3,10 @@
 #include "Game.h"
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
 #include "gfx/debug/stage/StageActorYamlWriter.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -12,11 +14,12 @@
 
 StagePlatformTypeChanger::StagePlatformTypeChanger(DebugEditorContext& context,
                                                    StageSelectionController& selectionController,
-                                                   StageActorYamlWriter& stageActorYamlWriter, Callback pushUndo)
+                                                   StageActorYamlWriter& stageActorYamlWriter,
+                                                   SavedEditCallback recordSavedEdit)
     : mContext(context),
       mSelectionController(selectionController),
       mStageActorYamlWriter(stageActorYamlWriter),
-      mPushUndo(std::move(pushUndo))
+      mRecordSavedEdit(std::move(recordSavedEdit))
 {
 }
 
@@ -55,15 +58,25 @@ bool StagePlatformTypeChanger::ChangePlatformType(const std::string& sourceSeque
         return false;
     }
 
-    if (mPushUndo) {
-        mPushUndo();
-    }
-
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+    std::string previousYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
         return false;
     }
-
+    if (mContext.game->GetIsUGCMode()) {
+        UGCWorkMetadata::InvalidateClearVerification(config);
+    }
+    std::string errorMessage;
+    const auto result = StageEditTransaction::Apply(
+        mContext.game->GetCurrentStageYamlPath(), previousYamlText,
+        [&]() { return StageYamlRepository::SaveCurrentStage(mContext, config); },
+        [this]() { return mContext.game->ReloadCurrentStage(); }, errorMessage);
+    if (result != StageEditApplyResult::Applied) {
+        std::cerr << errorMessage << '\n';
+        return false;
+    }
+    if (mRecordSavedEdit) {
+        mRecordSavedEdit(previousYamlText);
+    }
     mSelectionController.SetSelectedKeys({targetType.sequenceName + ":" + std::to_string(targetIndex)});
-    mContext.game->ReloadCurrentStage();
     return true;
 }

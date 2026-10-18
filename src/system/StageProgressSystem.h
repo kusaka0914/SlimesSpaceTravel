@@ -11,7 +11,8 @@ public:
     explicit StageProgressSystem(std::filesystem::path savePath);
     StageProgressSystem(std::filesystem::path savePath, bool isPersistenceEnabled);
 
-    // メモリ上の進行を初期化して読み込む。保存無効・ファイルを開けない場合は初期状態のままtrue。
+    // 読込成功時だけ進行を置き換える。失敗時はfalseで現在の進行を維持する。
+    // 保存無効・ファイル未作成なら初期状態にしてtrue。
     bool Load();
 
     // 現在の進行を保存する。保存無効なら書き込まずにtrueを返す。

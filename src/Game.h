@@ -2,6 +2,8 @@
 
 #include "actor/player/PlayerTypes.h"
 #include "gfx/performance/FramePerformanceTracker.h"
+#include "system/GameWindow.h"
+#include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
 #include <GLFW/glfw3.h>
@@ -10,7 +12,6 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -45,16 +46,11 @@ class PlayerConfigurationController;
 class GameProgressController;
 class UGCPreviewController;
 class DebugEditorSessionController;
-class TgsExperienceController;
+class GameSessionController;
 
 enum class InputDeviceType {
     KeyboardMouse,
     GameController,
-};
-
-enum class StagePhysicsReloadMode {
-    Rebuild,
-    SkipRebuild,
 };
 
 // ゲームのライフサイクルと各System間の連携を統括する。実行中のステージと所属ActorはGameWorldが所有する。
@@ -75,15 +71,12 @@ public:
     // エディター状態を保存し、描画資源・入力デバイス・ウィンドウを解放する。デストラクタからは呼ばない。
     void Shutdown();
 
-    // 現在のYAMLからActorを読み込む。物理ワールドの再構築やBGMの更新は行わない。
-    void LoadData();
-
     // 演出と旧Actorへの参照を解除してステージを再読み込みする。返却済みのActor・Stageポインタは取得し直す。
-    // SkipRebuildでも旧物理参照は解除するが、新しい物理ワールドの構築は呼び出し元が行う。
-    void ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode);
+    // 読込失敗時はfalseで旧Actorを保持するが、演出・UI参照は解除済み。SkipRebuildの成功時は呼出元で物理を構築する。
+    bool ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode);
 
     // 物理ワールドの再構築を含めて現在のステージを再読み込みする。
-    void ReloadCurrentStage() override { ReloadCurrentStage(StagePhysicsReloadMode::Rebuild); }
+    bool ReloadCurrentStage() override { return ReloadCurrentStage(StagePhysicsReloadMode::Rebuild); }
 
     // UI定義を読み直す。UIRendererがなければ何もしない。
     void ReloadUIData();
@@ -124,7 +117,7 @@ public:
     void CloseUGCWorkBrowser();
     void MoveTitleMenuSelection(int delta);
     void ExecuteTitleMenuSelection();
-    int GetTitleMenuSelection() const { return mTitleMenuSelection; }
+    int GetTitleMenuSelection() const;
     bool GetIsUGCWorkBrowserShowing() const;
 
     // 編集中ステージを通常の試遊として開始する。クリア検証はStartUGCClearVerificationで開始する。
@@ -214,9 +207,6 @@ public:
     // 指定Actorに最も近いPlayerを所有権を移さず返す。有効な探索対象がなければ nullptr。
     Player* FindNearestPlayer(Actor* actor) const;
 
-    // 進行を保存し、実行ループへ終了を要求する。資源解放はShutdownで行う。
-    void FinishGame();
-
     // 進行を保存してタイトルへの遷移を要求する。UGCでは編集モードを終了する。
     void ReturnToTitleFromPauseMenu();
 
@@ -265,7 +255,7 @@ public:
         mOverheadGravityRayLength = rayLength > 0.01f ? rayLength : 0.01f;
     }
 
-    GLFWwindow* GetWindow() const { return mWindow; }
+    GLFWwindow* GetWindow() const { return mWindow.GetHandle(); }
     SDL_GameController* GetSdlController() const;
 
     // playerNum は1始まり。対応する接続デバイスがなければ nullptr。返却先は所有しない。
@@ -288,7 +278,7 @@ public:
 
     // 現在のステージ内を会話IDで検索する。空ID・対象なしには nullptr。返却NPCは所有しない。
     NPC* FindNPCByConversationId(const std::string& conversationId) const;
-    bool GetIsDebugEditorShowing() const { return mIsDebugEditorShowing; }
+    bool GetIsDebugEditorShowing() const override { return mIsDebugEditorShowing; }
     void SetGameUIHidden(bool isHidden) { mIsGameUIHidden = isHidden; }
     bool GetIsGameUIHidden() const { return mIsGameUIHidden; }
     bool GetIsUGCMode() const;
@@ -300,7 +290,6 @@ public:
     void SetIsUGCOrthographicView(bool isOrthographic);
     void SetUGCOrthographicHalfHeight(float halfHeight) override;
     float GetUGCOrthographicHalfHeight() const;
-    void SetUGCGridSize(float gridSize);
     float GetUGCGridSize() const;
 
     // プレビュー描画用のOpenGLテクスチャIDを返す。描画担当が未生成なら0。
@@ -352,7 +341,7 @@ public:
     void RecordViewportGpuDurationMilliseconds(int viewportIndex, float durationMilliseconds);
 
     bool IsEditorKeyboardInputCaptured() const;
-    bool GetIsFreeCameraMode() const { return mIsFreeCameraMode; }
+    bool GetIsFreeCameraMode() const override { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const;
     int GetPauseMenuSelectedIndex() const;
 
@@ -413,7 +402,6 @@ public:
     void SetInputModifierHeld(bool isHeld) { mIsInputModifierHeld = isHeld; }
 
 private:
-    bool InitializeGLFW(bool shouldUseFullscreen);
     void InitializeGameController();
     bool CreateGameSystems();
     void CreateStages(int stageCount);
@@ -422,11 +410,6 @@ private:
     void ProcessActorsInput();
     void UpdateGame();
     void UpdateActors(float deltaTime);
-    void UpdateMouseCursorVisibility();
-    void UpdateTextInputMethodAvailability();
-    void UpdateTgsExperience(float elapsedSeconds);
-    void ResetTgsExperienceAtTitle();
-    int ResolveCurrentPlanetNumberForTgsLog() const;
 
     void ProcessPendingUGCClearCompletion();
 
@@ -447,7 +430,7 @@ private:
                                             const std::string& editorRestartErrorLogPath);
     void SavePersistentDebugEditorSession();
 
-    GLFWwindow* mWindow = nullptr;
+    GameWindow mWindow;
 
     std::unique_ptr<GameWorld> mWorld;
     std::unique_ptr<PauseMenuController> mPauseMenuController;
@@ -473,8 +456,6 @@ private:
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
-    std::unique_ptr<TgsExperienceController> mTgsExperienceController;
-    bool mWasTgsReturnConfirmPressed = false;
 
     float mHitStopTimer = -1.0f;
     float mGroundNormalRayLength = 5.0f;
@@ -486,12 +467,11 @@ private:
 
     bool mIsDebugEditorShowing = false;
     bool mIsGameUIHidden = false;
-    int mTitleMenuSelection = 0;
     bool mIsFreeCameraMode = false;
     bool mIsDebugMode = false;
-    std::optional<bool> mWasTextInputMethodAllowed;
 
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
+    std::unique_ptr<GameSessionController> mSessionController;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;
     bool mIsInputModifierHeld = false;
 };

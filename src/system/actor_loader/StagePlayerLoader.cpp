@@ -8,6 +8,7 @@
 #include "system/actor_loader/ActorPlacementLoader.h"
 
 #include <glm/glm.hpp>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -135,16 +136,20 @@ bool StagePlayerLoader::CreatePlayerFromCurrentStage(int playerNum)
         return false;
     }
 
-    const YAML::Node root = YAML::LoadFile(mGame->GetCurrentStageYamlPath());
-    if (!root["players"] || !root["players"].IsSequence()) {
+    try {
+        const YAML::Node root = YAML::LoadFile(mGame->GetCurrentStageYamlPath());
+        if (!root["players"] || !root["players"].IsSequence()) {
+            return false;
+        }
+
+        const int playerIndex = playerNum - 1;
+        if (playerIndex < 0 || playerIndex >= static_cast<int>(root["players"].size())) {
+            return false;
+        }
+
+        return CreatePlayerFromStageNode(root["players"][playerIndex], playerNum) != nullptr;
+    } catch (const YAML::Exception& exception) {
+        std::cerr << "Failed to create player from stage: " << exception.what() << '\n';
         return false;
     }
-
-    const int playerIndex = playerNum - 1;
-    if (playerIndex < 0 || playerIndex >= static_cast<int>(root["players"].size())) {
-        return false;
-    }
-
-    CreatePlayerFromStageNode(root["players"][playerIndex], playerNum);
-    return true;
 }

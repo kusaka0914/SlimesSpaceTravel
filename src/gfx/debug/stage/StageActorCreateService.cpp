@@ -3,8 +3,10 @@
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Planet.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
 #include "gfx/debug/stage/StagePlatformIdentifiers.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 
 #include <algorithm>
 #include <cmath>
@@ -176,16 +178,8 @@ bool StageActorCreateService::DuplicateActorAtPlacement(const StageActorRef& sou
     const int newYamlIndex = static_cast<int>(targetSequence.size());
     targetSequence.push_back(duplicatedNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    if (!mRuntimeCreationService.CreateActor(sourceRef, duplicatedNode, newYamlIndex)) {
-        return false;
-    }
-
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(sourceRef, duplicatedNode, newYamlIndex); });
 }
 
 bool StageActorCreateService::AddStageObject(int currentPlanetNum, const std::string& modelPath, bool collisionEnabled,
@@ -211,11 +205,44 @@ bool StageActorCreateService::AddStageObject(int currentPlanetNum, const std::st
     ApplyPlacementToNode(stageObjectNode, currentPlanetNum, placement);
     config["stageObjects"].push_back(stageObjectNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
+    return CommitCreation(config, [&]() {
+        return mRuntimeCreationService.CreateActor(StageActorType::StageObject, stageObjectNode, index);
+    });
+}
+
+void StageActorCreateService::SetEditExecutor(StageEditExecutor executeEdit)
+{
+    mExecuteEdit = std::move(executeEdit);
+}
+
+bool StageActorCreateService::CommitCreation(YAML::Node config, const StageEditOperation& createActors)
+{
+    const auto commit = [&]() {
+        if (mContext.game->GetIsUGCMode()) {
+            UGCWorkMetadata::InvalidateClearVerification(config);
+        }
+        if (!StageYamlRepository::SaveCurrentStage(mContext, config) || !createActors()) {
+            return false;
+        }
+        mRuntimeCreationService.RefreshPhysicsWorld();
+        return true;
+    };
+    if (mExecuteEdit) {
+        return mExecuteEdit(commit, StageEditGrouping::NewOperation);
     }
 
-    mRuntimeCreationService.CreateActor(StageActorType::StageObject, stageObjectNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
+    // 履歴Controllerを使わない呼出元でも、生成失敗によるYAMLとRuntimeの不一致を残さない。
+    std::string before;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, before)) {
+        return false;
+    }
+    std::string error;
+    const auto result = StageEditTransaction::Execute(
+        mContext.game->GetCurrentStageYamlPath(), before, commit,
+        [this]() { return mContext.game->ReloadCurrentStage(); }, StageEditFailureRecovery::RestoreChangedFile, error);
+    if (result != StageEditApplyResult::Applied) {
+        std::cerr << error << '\n';
+        return false;
+    }
     return true;
 }

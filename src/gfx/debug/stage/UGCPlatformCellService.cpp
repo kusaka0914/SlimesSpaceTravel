@@ -4,12 +4,14 @@
 #include "Stage.h"
 #include "actor/Planet.h"
 #include "gfx/debug/DebugEditorContext.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
 #include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StagePlatformIdentifiers.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "gfx/debug/stage/UGCPlatformDocument.h"
 #include "gfx/debug/stage/UGCPlatformGrid.h"
 #include "gfx/debug/stage/UGCPresetVisuals.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 
 #include <algorithm>
 #include <cmath>
@@ -90,11 +92,7 @@ bool UGCPlatformCellService::AddCell(int planetIndex, const StageActorPlacement&
 
     UGCPlatformDocument::AddFootprint(stageConfig, newCell, footprintSideLength);
 
-    if (!RebuildGeneratedPlatforms(stageConfig) || !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return RebuildGeneratedPlatforms(stageConfig) && SaveAndApplyStage(stageConfig);
 }
 
 bool UGCPlatformCellService::AddCells(int planetIndex, const std::vector<glm::ivec3>& anchorGridPositions,
@@ -121,11 +119,7 @@ bool UGCPlatformCellService::AddCells(int planetIndex, const std::vector<glm::iv
         UGCPlatformDocument::AddFootprint(stageConfig, cell, footprintSideLength);
     }
 
-    if (!RebuildGeneratedPlatforms(stageConfig) || !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return RebuildGeneratedPlatforms(stageConfig) && SaveAndApplyStage(stageConfig);
 }
 
 bool UGCPlatformCellService::RefreshGeneratedPlatforms()
@@ -135,33 +129,17 @@ bool UGCPlatformCellService::RefreshGeneratedPlatforms()
     }
 
     YAML::Node stageConfig;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, stageConfig) || !RebuildGeneratedPlatforms(stageConfig) ||
-        !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return StageYamlRepository::LoadCurrentStage(mContext, stageConfig) && RebuildGeneratedPlatforms(stageConfig) &&
+           SaveAndApplyStage(stageConfig, RuntimeActorRefresh::ReloadActors, VerificationUpdate::Preserve);
 }
 
-bool UGCPlatformCellService::TranslateCells(const StageActorRef& generatedPlatformRef, const glm::vec3& worldDelta)
+UGCCellEditResult UGCPlatformCellService::WriteTranslatedCells(YAML::Node& stageConfig,
+                                                               const std::vector<StageActorRef>& generatedPlatformRefs,
+                                                               const glm::vec3& worldDelta)
 {
-    return TranslateCells(std::vector<StageActorRef>{generatedPlatformRef}, worldDelta);
-}
-
-bool UGCPlatformCellService::TranslateCells(const std::vector<StageActorRef>& generatedPlatformRefs,
-                                            const glm::vec3& worldDelta)
-{
-    if (!CanEditCells() || generatedPlatformRefs.empty()) {
-        return false;
-    }
-
-    YAML::Node stageConfig;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
     const YAML::Node platforms = stageConfig["platforms"];
     if (!platforms || !platforms.IsSequence()) {
-        return false;
+        return UGCCellEditResult::Unchanged;
     }
 
     std::vector<UGCPlatformCellTranslationRegion> selectedRegions;
@@ -191,31 +169,30 @@ bool UGCPlatformCellService::TranslateCells(const std::vector<StageActorRef>& ge
         region.maximumX = cellMax[0].as<int>();
         region.maximumZ = cellMax[1].as<int>();
         region.gridDelta = UGCPlatformGrid::CalculateGridDelta(worldDelta, region.gridSize);
+        if (region.gridDelta == glm::ivec3(0)) {
+            continue;
+        }
         selectedRegions.emplace_back(region);
         selectedPlatformYamlIndices.emplace_back(generatedPlatformRef.yamlIndex);
     }
 
     if (selectedRegions.empty()) {
-        return false;
+        return UGCCellEditResult::Unchanged;
     }
 
     if (UGCPlatformDocument::TranslateCells(stageConfig, selectedRegions) == 0) {
-        return false;
+        return UGCCellEditResult::Failed;
     }
 
     for (std::size_t regionIndex = 0; regionIndex < selectedRegions.size(); ++regionIndex) {
         YAML::Node platformNode = stageConfig["platforms"][selectedPlatformYamlIndices[regionIndex]];
         if (!UGCPlatformDocument::TranslateGeneratedPlatformRegionMetadata(platformNode,
                                                                            selectedRegions[regionIndex].gridDelta)) {
-            return false;
+            return UGCCellEditResult::Failed;
         }
     }
 
-    if (!RebuildGeneratedPlatforms(stageConfig) || !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return RebuildGeneratedPlatforms(stageConfig) ? UGCCellEditResult::Changed : UGCCellEditResult::Failed;
 }
 
 bool UGCPlatformCellService::TranslateMovingPlatformDestinations(
@@ -315,14 +292,8 @@ bool UGCPlatformCellService::UpdateMovingPlatformDestinations(const std::vector<
         }
     }
 
-    if (updatedCellCount == 0 || !RebuildGeneratedPlatforms(stageConfig) ||
-        !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    if (runtimeActorRefresh == RuntimeActorRefresh::ReloadActors) {
-        mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    }
-    return true;
+    return updatedCellCount > 0 && RebuildGeneratedPlatforms(stageConfig) &&
+           SaveAndApplyStage(stageConfig, runtimeActorRefresh);
 }
 
 bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(const StageActorRef& generatedPlatformRef,
@@ -393,11 +364,7 @@ bool UGCPlatformCellService::RemoveMovingPlatformDestinationCell(const UGCGenera
         return false;
     }
 
-    if (!RebuildGeneratedPlatforms(stageConfig) || !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return RebuildGeneratedPlatforms(stageConfig) && SaveAndApplyStage(stageConfig);
 }
 
 bool UGCPlatformCellService::RemoveCellAtGridPosition(int planetIndex, const glm::vec3& worldPosition, float gridSize,
@@ -419,11 +386,7 @@ bool UGCPlatformCellService::RemoveCellAtGridPosition(int planetIndex, const glm
         return false;
     }
 
-    if (!RebuildGeneratedPlatforms(stageConfig) || !StageYamlRepository::SaveCurrentStage(mContext, stageConfig)) {
-        return false;
-    }
-    mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
-    return true;
+    return RebuildGeneratedPlatforms(stageConfig) && SaveAndApplyStage(stageConfig);
 }
 
 bool UGCPlatformCellService::ResolveLayerAtGridPosition(int planetIndex, const glm::vec3& worldPosition, float gridSize,
@@ -562,5 +525,31 @@ bool UGCPlatformCellService::RebuildGeneratedPlatforms(YAML::Node& stageConfig) 
         stageConfig["platforms"].push_back(platformNode);
     }
     StagePlatformConnections::RemapLatchedGroupSwitchTargetIndices(stageConfig, previousPlatformNodes);
+    return true;
+}
+
+bool UGCPlatformCellService::SaveAndApplyStage(YAML::Node stageConfig, RuntimeActorRefresh runtimeActorRefresh,
+                                               VerificationUpdate verificationUpdate)
+{
+    std::string previousYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
+        return false;
+    }
+    if (verificationUpdate == VerificationUpdate::Invalidate && mContext.game->GetIsUGCMode()) {
+        UGCWorkMetadata::InvalidateClearVerification(stageConfig);
+    }
+    std::string errorMessage;
+    const auto result = StageEditTransaction::Apply(
+        mContext.game->GetCurrentStageYamlPath(), previousYamlText,
+        [&]() { return StageYamlRepository::SaveCurrentStage(mContext, stageConfig); },
+        [&]() {
+            return runtimeActorRefresh == RuntimeActorRefresh::KeepCurrentActors ||
+                   mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild);
+        },
+        errorMessage);
+    if (result != StageEditApplyResult::Applied) {
+        std::cerr << errorMessage << '\n';
+        return false;
+    }
     return true;
 }

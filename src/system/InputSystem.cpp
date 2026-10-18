@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
+#include <iostream>
 
 namespace {
 
@@ -674,7 +675,9 @@ void InputSystem::ProcessDebugReloadInput()
 {
     const bool reloadKeyPressed = IsKeyPressed(GLFW_KEY_F);
     if (mGame->GetIsDebugMode() && reloadKeyPressed && !mWasReloadKeyPressed) {
-        mGame->ReloadCurrentStage();
+        if (!mGame->ReloadCurrentStage()) {
+            std::cerr << "Failed to reload the current stage.\n";
+        }
     }
     mWasReloadKeyPressed = reloadKeyPressed;
 

@@ -13,6 +13,7 @@ public:
     bool isDragging = false;
     bool isMovingPlatformDestination = false;
     bool hasMoved = false;
+    bool hasSavedEdit = false;
     glm::ivec3 dragStartCell{0};
     glm::ivec3 appliedHorizontalCellDelta{0};
     glm::vec3 initialCenter{0.0f};

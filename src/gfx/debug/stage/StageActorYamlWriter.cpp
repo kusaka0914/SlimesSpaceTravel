@@ -21,8 +21,10 @@
 #include "component/PlatformPressureSwitchComponent.h"
 #include "component/PlatformVisibilityComponents.h"
 #include "gfx/debug/stage/StageActorQuery.h"
+#include "gfx/debug/stage/StagePlanetYamlWriter.h"
 #include "gfx/debug/stage/StagePlatformConnections.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 
 #include <cmath>
 #include <vector>
@@ -67,66 +69,153 @@ StageActorYamlWriter::StageActorYamlWriter(DebugEditorContext& context)
 {
 }
 
-void StageActorYamlWriter::SaveAllActorStates()
+bool StageActorYamlWriter::SaveAllActorStates(const SavedEditCallback& recordSavedEdit)
 {
-    if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return;
-    }
-
-    YAML::Node config;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
-        return;
-    }
-
-    StagePlatformConnections::AddStableIdsToLatchedGroupSwitchTargets(config);
-    WriteAllActorStates(config);
-    StageYamlRepository::SaveCurrentStage(mContext, config);
+    return SaveActorStates(SaveScope::AllActorStates, recordSavedEdit);
 }
 
-void StageActorYamlWriter::SaveEditorAuthoredTransforms()
+bool StageActorYamlWriter::SaveStage(const SavedEditCallback& recordSavedEdit)
 {
+    return SaveActorStates(SaveScope::StageSettings, recordSavedEdit);
+}
+
+bool StageActorYamlWriter::SaveEditorAuthoredTransforms(const SavedEditCallback& recordSavedEdit)
+{
+    return SaveActorStates(SaveScope::AuthoredTransforms, recordSavedEdit);
+}
+
+const std::string& StageActorYamlWriter::GetSaveError() const
+{
+    return mSaveState.GetError();
+}
+
+void StageActorYamlWriter::ClearFailedSaves()
+{
+    mSaveState.Clear();
+}
+
+bool StageActorYamlWriter::RetryFailedSaves()
+{
+    return mSaveState.Retry(
+        StageYamlRepository::GetCurrentStageYamlPath(mContext),
+        [this](SaveScope scope, const SavedEditCallback& onSaved) { return SaveActorStates(scope, onSaved); });
+}
+
+bool StageActorYamlWriter::SaveActorStates(SaveScope scope, const SavedEditCallback& recordSavedEdit)
+{
+    const std::string path = StageYamlRepository::GetCurrentStageYamlPath(mContext);
+    SavedEditCallback onSaved = mSaveState.ResolveSavedCallback(scope, path, recordSavedEdit);
+    if (!onSaved && scope == SaveScope::StageSettings) {
+        onSaved = mSaveState.ResolveSavedCallback(SaveScope::AllActorStates, path, {});
+        if (!onSaved) {
+            onSaved = mSaveState.ResolveSavedCallback(SaveScope::AuthoredTransforms, path, {});
+        }
+    }
+    const auto fail = [&](const std::string& reason) {
+        mSaveState.RecordFailure(scope, path, reason + "\n" + path, onSaved);
+        return false;
+    };
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
-        return;
+        return fail("保存対象のステージがありません。");
     }
 
-    YAML::Node config;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
-        return;
+    std::string previousYamlText;
+    if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
+        return fail("ステージを読み込めませんでした。編集内容は画面上に残っています。");
     }
-
-    StagePlatformConnections::AddStableIdsToLatchedGroupSwitchTargets(config);
 
     std::vector<Actor*> savedActors;
-    const std::vector<StageActorInstance> instances =
-        StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
+    bool hasChanges = false;
+    try {
+        YAML::Node config = YAML::Load(previousYamlText);
+        if (!config.IsMap()) {
+            return fail("ステージYAMLのルートがMapではありません。");
+        }
+        const std::string previousConfig = YAML::Dump(config);
+        StagePlatformConnections::AddStableIdsToLatchedGroupSwitchTargets(config);
+
+        if (scope != SaveScope::AuthoredTransforms) {
+            WriteAllActorStates(config);
+        }
+        if (scope != SaveScope::AllActorStates) {
+            if (!WriteEditorAuthoredTransforms(config, savedActors)) {
+                return fail("編集したActorの保存先が見つかりません。編集記録は保持しています。");
+            }
+            if (!StagePlanetYamlWriter(mContext).WriteEditorAuthoredTransforms(config)) {
+                return fail("惑星配置を保存用データへ反映できませんでした。");
+            }
+            for (Planet* planet : mContext.game->GetCurrentStage()->GetPlanets()) {
+                if (planet && planet->FindEditorAuthoredTransform()) {
+                    savedActors.emplace_back(planet);
+                }
+            }
+            if (scope == SaveScope::StageSettings && !StagePlanetYamlWriter(mContext).WriteSettings(config)) {
+                return fail("惑星設定を保存用データへ反映できませんでした。");
+            }
+            if (scope == SaveScope::AuthoredTransforms && savedActors.empty()) {
+                mSaveState.ClearFailure(scope);
+                return true;
+            }
+        }
+
+        if (mContext.game->GetIsUGCMode()) {
+            UGCWorkMetadata::InvalidateClearVerification(config);
+        }
+        hasChanges = YAML::Dump(config) != previousConfig;
+        if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+            return fail("Actorの保存に失敗しました。編集内容は画面上に残っています。");
+        }
+    } catch (const YAML::Exception& error) {
+        return fail(std::string("Actorの保存中にYAMLエラーが発生しました: ") + error.what());
+    }
+    // ファイル保存と同じ変更前データを履歴へ渡し、失敗時はRedoも編集記録も維持する。
+    if (onSaved && hasChanges) {
+        onSaved(previousYamlText);
+    }
+    for (Actor* actor : savedActors) {
+        actor->ClearEditorAuthoredTransform();
+    }
+    if (scope == SaveScope::StageSettings) {
+        mSaveState.Clear();
+    } else {
+        mSaveState.ClearFailure(scope);
+    }
+    return true;
+}
+
+bool StageActorYamlWriter::WriteEditorAuthoredTransforms(YAML::Node& config)
+{
+    std::vector<Actor*> writtenActors;
+    return WriteEditorAuthoredTransforms(config, writtenActors);
+}
+
+bool StageActorYamlWriter::WriteEditorAuthoredTransforms(YAML::Node& config, std::vector<Actor*>& writtenActors)
+{
+    if (!mContext.game || !mContext.game->GetCurrentStage()) {
+        return false;
+    }
+    const auto instances = StageActorQuery::CollectAllActorInstances(mContext.game->GetCurrentStage());
     for (const StageActorInstance& instance : instances) {
         if (!instance.actor || !instance.actor->FindEditorAuthoredTransform() ||
             instance.ref.type == StageActorType::Planet) {
             continue;
         }
-
-        WriteActorState(config, instance.ref.sequenceName, instance.actor,
-                        ActorTransformWriteMode::EditorAuthoredTransform);
-        savedActors.emplace_back(instance.actor);
+        if (!WriteActorState(config, instance.ref.sequenceName, instance.actor,
+                             ActorTransformWriteMode::EditorAuthoredTransform)) {
+            return false;
+        }
+        writtenActors.emplace_back(instance.actor);
     }
-
     for (Player* player : mContext.game->GetPlayers()) {
         if (!player || !player->FindEditorAuthoredTransform()) {
             continue;
         }
-
-        WriteActorState(config, "players", player, ActorTransformWriteMode::EditorAuthoredTransform);
-        savedActors.emplace_back(player);
+        if (!WriteActorState(config, "players", player, ActorTransformWriteMode::EditorAuthoredTransform)) {
+            return false;
+        }
+        writtenActors.emplace_back(player);
     }
-
-    if (savedActors.empty() || !StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return;
-    }
-
-    // 保存失敗時に再試行できるよう、編集記録はファイル保存に成功した後だけ消去する。
-    for (Actor* actor : savedActors) {
-        actor->ClearEditorAuthoredTransform();
-    }
+    return true;
 }
 
 void StageActorYamlWriter::WriteAllActorStates(YAML::Node& config)
@@ -153,26 +242,26 @@ void StageActorYamlWriter::WriteAllActorStates(YAML::Node& config)
     }
 }
 
-void StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string& sequenceName, Actor* actor,
+bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string& sequenceName, Actor* actor,
                                            ActorTransformWriteMode transformWriteMode)
 {
     if (!actor) {
-        return;
+        return false;
     }
 
     const int index = actor->GetStageYamlIndex();
     if (index < 0) {
-        return;
+        return false;
     }
 
     const std::size_t yamlIndex = static_cast<std::size_t>(index);
 
     if (!config[sequenceName] || !config[sequenceName].IsSequence()) {
-        return;
+        return false;
     }
 
     if (yamlIndex >= config[sequenceName].size()) {
-        return;
+        return false;
     }
 
     const EditorAuthoredTransform* editorTransform =
@@ -271,7 +360,7 @@ void StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
         if (movement && editorTransform && editorTransform->hasPosition) {
             WritePlatformMovementPath(config[sequenceName][yamlIndex], sequenceName, *movement, true);
         }
-        return;
+        return true;
     }
 
     YAML::Node actorNode = config[sequenceName][yamlIndex];
@@ -280,6 +369,7 @@ void StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
     WriteBoatState(actorNode, actor, editorTransform, authoredPlanet);
     WriteNPCState(actorNode, actor);
     WriteTextureState(actorNode, actor);
+    return true;
 }
 
 void StageActorYamlWriter::WriteModelAndHazardState(YAML::Node actorNode, Actor* actor)

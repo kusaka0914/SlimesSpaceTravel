@@ -7,14 +7,36 @@ StageEditHistory::StageEditHistory(std::size_t maximumUndoCount)
 {
 }
 
+void StageEditHistory::BindToStage(const std::string& stagePath)
+{
+    if (mStagePath != stagePath) {
+        Clear();
+        mStagePath = stagePath;
+    }
+}
+
 void StageEditHistory::PushUndoSnapshot(const std::string& yamlText)
 {
+    mLastGroupedYamlText.clear();
     mUndoSnapshots.push_back(yamlText);
     mRedoSnapshots.clear();
 
     if (mUndoSnapshots.size() > mMaximumUndoCount) {
         mUndoSnapshots.erase(mUndoSnapshots.begin());
     }
+}
+
+void StageEditHistory::RecordSavedChange(const std::string& before, const std::string& after,
+                                         StageEditGrouping grouping)
+{
+    if (before == after) {
+        return;
+    }
+    if (grouping != StageEditGrouping::ContinueOperation || mLastGroupedYamlText != before) {
+        PushUndoSnapshot(before);
+    }
+    mRedoSnapshots.clear();
+    mLastGroupedYamlText = after;
 }
 
 const std::string* StageEditHistory::FindUndoSnapshot() const
@@ -29,6 +51,7 @@ const std::string* StageEditHistory::FindRedoSnapshot() const
 
 void StageEditHistory::CommitUndo(const std::string& currentYamlText)
 {
+    mLastGroupedYamlText.clear();
     if (mUndoSnapshots.empty()) {
         return;
     }
@@ -38,6 +61,7 @@ void StageEditHistory::CommitUndo(const std::string& currentYamlText)
 
 void StageEditHistory::CommitRedo(const std::string& currentYamlText)
 {
+    mLastGroupedYamlText.clear();
     if (mRedoSnapshots.empty()) {
         return;
     }
@@ -47,6 +71,7 @@ void StageEditHistory::CommitRedo(const std::string& currentYamlText)
 
 void StageEditHistory::Clear()
 {
+    mLastGroupedYamlText.clear();
     mUndoSnapshots.clear();
     mRedoSnapshots.clear();
 }

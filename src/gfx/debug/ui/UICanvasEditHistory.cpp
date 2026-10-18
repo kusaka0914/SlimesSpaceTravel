@@ -21,17 +21,29 @@ void UICanvasEditHistory::Capture(const UILoadSystem& uiLoadSystem)
     }
 }
 
-bool UICanvasEditHistory::RestoreLatest(UILoadSystem& uiLoadSystem)
+bool UICanvasEditHistory::RestoreLatest(UILoadSystem& uiLoadSystem, const std::function<bool()>& saveChanges)
 {
     if (mUndoSnapshots.empty()) {
         return false;
     }
 
-    UICanvasEditSnapshot snapshot = std::move(mUndoSnapshots.back());
+    UICanvasEditSnapshot candidate = mUndoSnapshots.back();
+    auto swapDefinitions = [&]() {
+        candidate.customElements.swap(uiLoadSystem.GetCustomElements());
+        candidate.textureInfos.swap(uiLoadSystem.GetEditableTextureInfos());
+        candidate.textInfos.swap(uiLoadSystem.GetEditableTextInfos());
+    };
+    swapDefinitions();
+    try {
+        if (!saveChanges()) {
+            swapDefinitions();
+            return false;
+        }
+    } catch (...) {
+        swapDefinitions();
+        throw;
+    }
     mUndoSnapshots.pop_back();
-    uiLoadSystem.GetCustomElements() = std::move(snapshot.customElements);
-    uiLoadSystem.GetEditableTextureInfos() = std::move(snapshot.textureInfos);
-    uiLoadSystem.GetEditableTextInfos() = std::move(snapshot.textInfos);
     uiLoadSystem.ClearCustomVisibilityOverrides();
     return true;
 }

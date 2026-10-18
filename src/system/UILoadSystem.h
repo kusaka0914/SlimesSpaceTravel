@@ -111,7 +111,13 @@ public:
 
     // 定義を再読込する。YAML読込・変換の失敗時は以前の定義を復元してfalseを返す。
     bool ReloadUIInfo(const std::string& path = "../assets/data/ui/ui.yaml");
+    // 現在の標準UI設定を保存する。解析・書込失敗時はfalseで元ファイルを保持する。
     bool SaveUIInfo(const std::string& path);
+
+    // 標準・カスタムUIをまとめて保存する。失敗時は置換済みファイルの復旧を試み、理由をoutErrorへ返す。
+    // 復旧自体の失敗はoutErrorに復旧用コピーの場所を含めて通知する。
+    bool SaveEditorUI(std::string& outError, const std::string& uiPath = "../assets/data/ui/ui.yaml",
+                      const std::string& customPath = "../assets/data/ui/custom_ui.yaml") const;
 
     // テキストとルビを更新する。キー・インデックスが不正ならfalse。ファイルへは保存しない。
     bool UpdateTextInfoContent(const std::string& mapId, std::size_t textIndex, const std::string& text);
@@ -131,7 +137,8 @@ public:
     // 要素とその表示上書きを削除する。範囲外はfalse。後続のインデックスは前へ詰まる。
     bool RemoveCustomElement(std::size_t index);
 
-    // カスタム定義を読み込む。ファイルを開けない場合は定義・画面名を空にしてtrueを返す。
+    // 全定義を読めた場合だけ置き換え、表示上書きを解除する。失敗時はfalseで現在の定義・上書きを維持する。
+    // ファイル未作成なら空の定義としてtrueを返す。
     bool LoadCustomUI(const std::string& path = "../assets/data/ui/custom_ui.yaml");
     bool SaveCustomUI(const std::string& path = "../assets/data/ui/custom_ui.yaml") const;
 
@@ -146,6 +153,8 @@ public:
     static CustomElementType CustomElementTypeFromString(const std::string& type);
 
 private:
+    YAML::Node BuildUIInfo(const std::string& path) const;
+    YAML::Node BuildCustomUI() const;
     void LoadUIInfo(const std::string& path);
     void LoadTextureInfo(const std::string& screenName, YAML::Node& node);
     void LoadTextInfo(const std::string& screenName, YAML::Node& node);

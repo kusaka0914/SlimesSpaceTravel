@@ -12,7 +12,7 @@ class CinematicSequenceLibrary {
 public:
     explicit CinematicSequenceLibrary(std::string filePath);
 
-    // 保持定義をクリアして読み直す。失敗時はfalseを返すが、読込途中までの定義が残る場合がある。
+    // 全定義を読めた場合だけ置き換える。失敗時はfalseで現在の定義・借用参照を維持する。
     bool Load();
     bool Save() const;
 

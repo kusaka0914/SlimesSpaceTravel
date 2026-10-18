@@ -1,0 +1,431 @@
+#include "TestFileSupport.h"
+#include "TestSupport.h"
+
+#include "gfx/debug/stage/StageEditHistory.h"
+#include "gfx/debug/stage/StageEditTransaction.h"
+#include "system/StageProgressSystem.h"
+#include "system/UILoadSystem.h"
+#include "system/camera/CinematicSequenceLibrary.h"
+#include "system/sequence/SequenceLibrary.h"
+#include "system/tutorial/TutorialLibrary.h"
+#include "utils/AtomicFile.h"
+
+#include <chrono>
+#include <filesystem>
+
+#ifndef _WIN32
+#include <csignal>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
+namespace {
+
+class TemporaryDirectory {
+public:
+    TemporaryDirectory()
+    {
+        mPath = std::filesystem::temp_directory_path() /
+                ("space_persistence_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+        ExpectTrue(std::filesystem::create_directory(mPath), "create isolated test directory");
+    }
+    ~TemporaryDirectory()
+    {
+        std::error_code error;
+        std::filesystem::remove_all(mPath, error);
+    }
+    std::filesystem::path File() const { return mPath / "data.yaml"; }
+    const std::filesystem::path& Root() const { return mPath; }
+
+private:
+    std::filesystem::path mPath;
+};
+
+void AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old data");
+    std::string error;
+    ExpectTrue(AtomicFile::WriteText(fixture.File(), "new data", error), "replace old file");
+    ExpectEqual(std::string("new data"), ReadTestFile(fixture.File()), "new contents");
+    ExpectTrue(error.empty(), "no stale error on success");
+    ExpectEqual(
+        std::ptrdiff_t(1),
+        std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
+        "no temporary files remain");
+}
+
+void AtomicSaveDoesNotDeleteDestinationOnReplacementFailure()
+{
+    TemporaryDirectory fixture;
+    std::filesystem::create_directory(fixture.File());
+    std::string error;
+    ExpectFalse(AtomicFile::WriteText(fixture.File(), "replacement", error), "cannot replace directory");
+    ExpectTrue(std::filesystem::is_directory(fixture.File()), "original directory remains");
+    ExpectFalse(error.empty(), "replacement failure is explained");
+    ExpectEqual(
+        std::ptrdiff_t(1),
+        std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
+        "failed save cleans up temporary files");
+}
+
+void SequenceReloadPreservesDefinitionsOnPartialParseFailure()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "sequences: { kept: { name: original, clips: [] } }\n");
+    SequenceLibrary library(fixture.File().string());
+    ExpectTrue(library.Load(), "load valid sequences");
+    const auto* original = library.Find("kept");
+    WriteTestFile(fixture.File(), "sequences:\n  partial: { clips: [] }\n  bad: { clips: [{duration: invalid}] }\n");
+    ExpectFalse(library.Load(), "reject malformed clip");
+    ExpectTrue(library.Find("kept") == original, "original reference survives failed reload");
+    ExpectTrue(library.Find("partial") == nullptr, "partially parsed definition is not committed");
+    WriteTestFile(fixture.File(), "sequences: []\n");
+    ExpectFalse(library.Load(), "reject wrong root type");
+    ExpectTrue(library.Find("kept") == original, "wrong root keeps definitions");
+}
+
+void CinematicReloadPreservesDefinitionsOnPartialParseFailure()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "cinematics: { kept: { name: original, keyframes: [] } }\n");
+    CinematicSequenceLibrary library(fixture.File().string());
+    ExpectTrue(library.Load(), "load valid cinematics");
+    const auto* original = library.Find("kept");
+    WriteTestFile(fixture.File(),
+                  "cinematics:\n  partial: { keyframes: [] }\n  bad: { keyframes: [{time: invalid}] }\n");
+    ExpectFalse(library.Load(), "reject malformed keyframe");
+    ExpectTrue(library.Find("kept") == original, "original cinematic reference survives");
+    ExpectTrue(library.Find("partial") == nullptr, "partial cinematic is not committed");
+}
+
+void TutorialReloadPreservesDefinitionsOnPartialParseFailure()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "tutorials: [{id: kept, pages: [{id: first, text: original}]}]\n");
+    TutorialLibrary library(fixture.File().string());
+    const auto* original = library.Find("kept");
+    ExpectTrue(original != nullptr, "initial tutorial exists");
+    WriteTestFile(fixture.File(), "tutorials: [{id: partial}, {id: bad, textXRatio: invalid}]\n");
+    ExpectFalse(library.Load(), "reject malformed tutorial");
+    ExpectTrue(library.Find("kept") == original, "original tutorial reference survives");
+    ExpectTrue(library.Find("partial") == nullptr, "partial tutorial is not committed");
+    ExpectFalse(library.GetLastError().empty(), "tutorial parse failure is explained");
+}
+
+void ProgressReloadPreservesAllFieldsOnConversionFailure()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(
+        fixture.File(),
+        "clearedStages: [2]\nshownConversations: [intro]\nendingRollCompleted: true\nplayerControlStyle: assist\n");
+    StageProgressSystem progress(fixture.File());
+    ExpectTrue(progress.Load(), "initial progress load");
+    WriteTestFile(fixture.File(), "clearedStages: [1, invalid]\n");
+    ExpectFalse(progress.Load(), "invalid scalar is reported without throwing");
+    ExpectTrue(progress.IsStageCleared(2), "previous clear remains");
+    ExpectFalse(progress.IsStageCleared(1), "partial progress is not committed");
+    ExpectTrue(progress.HasShownConversation("intro"), "conversation remains");
+    ExpectTrue(progress.HasCompletedEndingRoll(), "ending remains");
+    ExpectTrue(progress.IsAssistControlStyleSelected(), "control style remains");
+}
+
+void CustomUIReloadPreservesElementsAndVisibilityOnConversionFailure()
+{
+    TemporaryDirectory fixture;
+    UILoadSystem library;
+    WriteTestFile(fixture.File(), "screens: {test: {name: Original}}\nelements: [{screen: test, id: kept, type: text, "
+                                  "visibleByDefault: true}]\n");
+    ExpectTrue(library.LoadCustomUI(fixture.File().string()), "initial custom UI load");
+    library.SetCustomElementVisible("test", "kept", false);
+    WriteTestFile(fixture.File(), "screens: {test: Changed}\nelements: [{screen: test, id: partial}, {screen: test, "
+                                  "id: bad, posRatio: [invalid, 0]}]\n");
+    ExpectFalse(library.LoadCustomUI(fixture.File().string()), "reject malformed UI element");
+    ExpectEqual(std::size_t(1), library.GetCustomElements().size(), "original element count");
+    ExpectEqual(std::string("kept"), library.GetCustomElements()[0].id, "original UI element remains");
+    ExpectEqual(std::string("Original"), library.ResolveCustomScreenDisplayName("test"), "screen name remains");
+    ExpectFalse(library.IsCustomElementVisible(library.GetCustomElements()[0]), "visibility override remains");
+}
+
+void EveryYamlSaveReportsReplacementFailure()
+{
+    TemporaryDirectory fixture;
+    std::filesystem::create_directory(fixture.File());
+    SequenceLibrary sequences(fixture.File().string());
+    ExpectTrue(sequences.Create("test"), "create sequence in memory");
+    ExpectFalse(sequences.Save(), "sequence save failure");
+    CinematicSequenceLibrary cinematics(fixture.File().string());
+    ExpectTrue(cinematics.Create("test"), "create cinematic in memory");
+    ExpectFalse(cinematics.Save(), "cinematic save failure");
+    TutorialLibrary tutorials(fixture.File().string());
+    ExpectTrue(tutorials.Add("test") != nullptr, "create tutorial in memory");
+    ExpectFalse(tutorials.Save(), "tutorial save failure");
+    ExpectFalse(tutorials.GetLastError().empty(), "tutorial save error available");
+    UILoadSystem ui;
+    ExpectFalse(ui.SaveCustomUI(fixture.File().string()), "custom UI save failure");
+    StageProgressSystem progress(fixture.File());
+    ExpectFalse(progress.Save(), "progress save failure");
+    ExpectTrue(std::filesystem::is_directory(fixture.File()), "destination is never deleted");
+}
+
+void StageEditCommitsFileAndRuntimeBeforeHistory()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    StageEditHistory history;
+    std::string runtime = "old";
+    std::string error;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", [&]() { return AtomicFile::WriteText(fixture.File(), "new", error); },
+        [&]() {
+            runtime = ReadTestFile(fixture.File());
+            return true;
+        },
+        error);
+    if (result == StageEditApplyResult::Applied) {
+        history.PushUndoSnapshot("old");
+    }
+    ExpectEqual(static_cast<int>(StageEditApplyResult::Applied), static_cast<int>(result), "edit applied");
+    ExpectEqual(std::string("new"), runtime, "runtime reflects saved definition");
+    ExpectEqual(std::string("new"), ReadTestFile(fixture.File()), "saved definition");
+    ExpectEqual(std::size_t(1), history.GetUndoCount(), "history committed after runtime");
+}
+
+void StageEditReloadFailureRestoresYamlRuntimeAndKeepsHistory()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    StageEditHistory history;
+    history.PushUndoSnapshot("earlier");
+    std::string runtime = "old";
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", [&]() { return AtomicFile::WriteText(fixture.File(), "unloadable", error); },
+        [&]() {
+            ++reloadCount;
+            const std::string definition = ReadTestFile(fixture.File());
+            if (definition == "unloadable") {
+                return false;
+            }
+            runtime = definition;
+            return true;
+        },
+        error);
+    ExpectEqual(static_cast<int>(StageEditApplyResult::ReloadFailedAndRestored), static_cast<int>(result),
+                "edit rolled back");
+    ExpectEqual(2, reloadCount, "failed edit and restoration both reloaded");
+    ExpectEqual(std::string("old"), ReadTestFile(fixture.File()), "old YAML restored");
+    ExpectEqual(std::string("old"), runtime, "old runtime restored");
+    ExpectEqual(std::size_t(1), history.GetUndoCount(), "history is unchanged");
+    ExpectEqual(std::string("earlier"), *history.FindUndoSnapshot(), "previous snapshot remains");
+    ExpectFalse(error.empty(), "failed edit is reported even after restoration");
+}
+
+void StageEditSaveFailureDoesNotReloadRuntime()
+{
+    TemporaryDirectory fixture;
+    std::filesystem::create_directory(fixture.File());
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", [&]() { return AtomicFile::WriteText(fixture.File(), "new", error); },
+        [&]() {
+            ++reloadCount;
+            return true;
+        },
+        error);
+    ExpectEqual(static_cast<int>(StageEditApplyResult::SaveFailed), static_cast<int>(result), "save failure result");
+    ExpectEqual(0, reloadCount, "runtime not reloaded after save failure");
+    ExpectTrue(std::filesystem::is_directory(fixture.File()), "destination preserved");
+}
+
+void StageEditReportsRecoveryFailureSeparately()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string error;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", [&]() { return AtomicFile::WriteText(fixture.File(), "new", error); },
+        []() { return false; }, error);
+    ExpectEqual(static_cast<int>(StageEditApplyResult::RecoveryFailed), static_cast<int>(result),
+                "recovery failure result");
+    ExpectEqual(std::string("old"), ReadTestFile(fixture.File()), "file restored even if runtime recovery fails");
+    ExpectFalse(error.empty(), "recovery failure is explained");
+}
+
+void CreationFailureRestoresFileAndPartiallyCreatedRuntime()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "original");
+    std::string runtime = "original";
+    std::string error;
+    const auto result = StageEditTransaction::Execute(
+        fixture.File(), "original",
+        [&]() {
+            ExpectTrue(AtomicFile::WriteText(fixture.File(), "two actors", error), "save pair");
+            runtime = "only first actor";
+            return false;
+        },
+        [&]() {
+            runtime = ReadTestFile(fixture.File());
+            return true;
+        },
+        StageEditFailureRecovery::RestoreChangedFile, error);
+    ExpectTrue(result == StageEditApplyResult::ReloadFailedAndRestored, "partial creation rolled back");
+    ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "file restored");
+    ExpectEqual(std::string("original"), runtime, "partial runtime removed");
+}
+
+void FailedNoOpDoesNotReloadOrWrite()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "original");
+    bool reloaded = false;
+    std::string error;
+    const auto result = StageEditTransaction::Execute(
+        fixture.File(), "original", []() { return false; },
+        [&]() {
+            reloaded = true;
+            return true;
+        },
+        StageEditFailureRecovery::RestoreChangedFile, error);
+    ExpectTrue(result == StageEditApplyResult::SaveFailed, "no-op failure");
+    ExpectFalse(reloaded, "erasing an empty cell must not rebuild stage");
+    ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "no-op keeps file");
+}
+
+void FailedPreviewRestoresRuntimeWithoutChangedFile()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "original");
+    std::string runtime = "drag preview";
+    std::string error;
+    const auto result = StageEditTransaction::Execute(
+        fixture.File(), "original", []() { return false; },
+        [&]() {
+            runtime = ReadTestFile(fixture.File());
+            return true;
+        },
+        StageEditFailureRecovery::RestoreRuntime, error);
+    ExpectTrue(result == StageEditApplyResult::ReloadFailedAndRestored, "preview restored after failed save");
+    ExpectEqual(std::string("original"), runtime, "preview does not survive failed compound move");
+}
+
+void OperationExceptionRestoresFileAndReportsRecoveryException()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "original");
+    std::string error;
+    const auto result = StageEditTransaction::Execute(
+        fixture.File(), "original",
+        [&]() -> bool {
+            ExpectTrue(AtomicFile::WriteText(fixture.File(), "partial", error), "partial save");
+            throw std::runtime_error("generation failed");
+        },
+        []() -> bool { throw std::runtime_error("recovery failed"); }, StageEditFailureRecovery::RestoreChangedFile,
+        error);
+    ExpectTrue(result == StageEditApplyResult::RecoveryFailed, "recovery exception reported separately");
+    ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "file restored even if runtime recovery throws");
+    ExpectTrue(error.find("generation failed") != std::string::npos, "original cause retained");
+    ExpectTrue(error.find("recovery failed") != std::string::npos, "recovery cause retained");
+}
+
+void SuccessfulCompoundOperationCommitsOneSnapshot()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "actors: old\ncells: old\n");
+    const std::string before = ReadTestFile(fixture.File());
+    StageEditHistory history;
+    std::string runtime = before;
+    std::string error;
+    bool restored = false;
+    const auto result = StageEditTransaction::Execute(
+        fixture.File(), before,
+        [&]() {
+            if (!AtomicFile::WriteText(fixture.File(), "actors: moved\ncells: moved\n", error)) {
+                return false;
+            }
+            runtime = ReadTestFile(fixture.File());
+            return true;
+        },
+        [&]() {
+            restored = true;
+            return true;
+        },
+        StageEditFailureRecovery::RestoreRuntime, error);
+    if (result == StageEditApplyResult::Applied) {
+        history.RecordSavedChange(before, ReadTestFile(fixture.File()), StageEditGrouping::NewOperation);
+    }
+    ExpectTrue(result == StageEditApplyResult::Applied, "compound operation applied");
+    ExpectFalse(restored, "successful runtime is retained");
+    ExpectEqual(ReadTestFile(fixture.File()), runtime, "runtime matches all file changes");
+    ExpectEqual(std::size_t(1), history.GetUndoCount(), "one history entry for actors and cells");
+    ExpectEqual(before, *history.FindUndoSnapshot(), "whole previous state available");
+}
+
+#ifndef _WIN32
+void FailedWriteDoesNotTruncateOldFile()
+{
+    TemporaryDirectory fixture;
+    const std::string original(32, 'O');
+    WriteTestFile(fixture.File(), original);
+    // 子プロセスだけに書込上限を課し、テスト実行本体の制限やシグナル設定を変えない。
+    const pid_t child = fork();
+    ExpectTrue(child >= 0, "fork write-failure test");
+    if (child == 0) {
+        std::signal(SIGXFSZ, SIG_IGN);
+        rlimit limit{8, 8};
+        if (setrlimit(RLIMIT_FSIZE, &limit) != 0) {
+            _exit(2);
+        }
+        std::string error;
+        _exit(AtomicFile::WriteText(fixture.File(), std::string(128, 'N'), error) ? 1 : 0);
+    }
+    int status = 0;
+    ExpectEqual(child, waitpid(child, &status, 0), "wait for failed writer");
+    ExpectTrue(WIFEXITED(status) && WEXITSTATUS(status) == 0, "short write returns false");
+    ExpectEqual(original, ReadTestFile(fixture.File()), "old bytes survive failed write");
+    ExpectEqual(
+        std::ptrdiff_t(1),
+        std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
+        "short write leaves no temporary files");
+}
+#endif
+
+} // namespace
+
+void RegisterPersistenceSafetyTests(TestRegistry& tests)
+{
+    tests.emplace_back("Persistence.CreationFailureRollsBackPair",
+                       CreationFailureRestoresFileAndPartiallyCreatedRuntime);
+    tests.emplace_back("Persistence.NoOpFailureDoesNotReload", FailedNoOpDoesNotReloadOrWrite);
+    tests.emplace_back("Persistence.FailedPreviewRestoresRuntime", FailedPreviewRestoresRuntimeWithoutChangedFile);
+    tests.emplace_back("Persistence.OperationAndRecoveryExceptions",
+                       OperationExceptionRestoresFileAndReportsRecoveryException);
+    tests.emplace_back("Persistence.CompoundOperationHasOneSnapshot", SuccessfulCompoundOperationCommitsOneSnapshot);
+    tests.emplace_back("Persistence.AtomicReplacementAndCleanup",
+                       AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles);
+    tests.emplace_back("Persistence.ReplacementFailureKeepsDestination",
+                       AtomicSaveDoesNotDeleteDestinationOnReplacementFailure);
+    tests.emplace_back("Persistence.SequenceReloadKeepsDefinitions",
+                       SequenceReloadPreservesDefinitionsOnPartialParseFailure);
+    tests.emplace_back("Persistence.CinematicReloadKeepsDefinitions",
+                       CinematicReloadPreservesDefinitionsOnPartialParseFailure);
+    tests.emplace_back("Persistence.TutorialReloadKeepsDefinitions",
+                       TutorialReloadPreservesDefinitionsOnPartialParseFailure);
+    tests.emplace_back("Persistence.ProgressReloadKeepsAllFields", ProgressReloadPreservesAllFieldsOnConversionFailure);
+    tests.emplace_back("Persistence.CustomUIReloadKeepsElementsAndVisibility",
+                       CustomUIReloadPreservesElementsAndVisibilityOnConversionFailure);
+    tests.emplace_back("Persistence.AllYamlSavesReportReplacementFailure", EveryYamlSaveReportsReplacementFailure);
+    tests.emplace_back("Persistence.StageEditCommitsFileRuntimeAndHistory",
+                       StageEditCommitsFileAndRuntimeBeforeHistory);
+    tests.emplace_back("Persistence.StageEditReloadFailureRestoresPreviousStage",
+                       StageEditReloadFailureRestoresYamlRuntimeAndKeepsHistory);
+    tests.emplace_back("Persistence.StageEditSaveFailureDoesNotReload", StageEditSaveFailureDoesNotReloadRuntime);
+    tests.emplace_back("Persistence.StageEditReportsRecoveryFailure", StageEditReportsRecoveryFailureSeparately);
+#ifndef _WIN32
+    tests.emplace_back("Persistence.ShortWriteKeepsOldFile", FailedWriteDoesNotTruncateOldFile);
+#endif
+}

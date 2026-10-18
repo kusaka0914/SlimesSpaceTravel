@@ -2,8 +2,6 @@
 
 #include "gfx/debug/stage/UGCPresetVisuals.h"
 
-#include <functional>
-
 class StageActorCreateService;
 class StageActorPlacementController;
 class StageSelectionController;
@@ -18,7 +16,6 @@ public:
                                  StageActorPlacementController& placementController);
 
     void SetSelectionController(StageSelectionController* selectionController);
-    void SetPushUndoCallback(std::function<void()> pushUndoCallback);
     void SetPlatformFootprintSideLength(int sideLength) { mPlatformFootprintSideLength = sideLength; }
 
     // プリセットに応じた配置操作を開始する。準備に失敗した場合や未対応の種類には false。
@@ -30,6 +27,5 @@ private:
     UGCPlatformCellService& mPlatformCellService;
     StageActorPlacementController& mPlacementController;
     StageSelectionController* mSelectionController = nullptr;
-    std::function<void()> mPushUndoCallback;
     int mPlatformFootprintSideLength = 1;
 };

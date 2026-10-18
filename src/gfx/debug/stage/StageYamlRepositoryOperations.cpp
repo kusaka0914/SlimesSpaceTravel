@@ -1,24 +1,36 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 
-#include <fstream>
+#include "utils/AtomicFile.h"
+
+bool StageYamlRepository::LoadYamlFile(const std::string& filePath, YAML::Node& outConfig)
+{
+    try {
+        YAML::Node config = YAML::LoadFile(filePath);
+        if (!config.IsMap()) {
+            std::cerr << "Invalid stage yaml root: " << filePath << '\n';
+            return false;
+        }
+        outConfig.reset(config);
+        return true;
+    } catch (const YAML::Exception& error) {
+        std::cerr << "Failed to load stage yaml: " << filePath << ": " << error.what() << '\n';
+        return false;
+    }
+}
 
 bool StageYamlRepository::SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
+    try {
+        std::string errorMessage;
+        if (!AtomicFile::WriteText(filePath, YAML::Dump(config), errorMessage)) {
+            std::cerr << "Failed to save yaml: " << filePath << ": " << errorMessage << '\n';
+            return false;
+        }
+        return true;
+    } catch (const YAML::Exception& error) {
+        std::cerr << "Failed to serialize stage yaml: " << filePath << ": " << error.what() << '\n';
         return false;
     }
-
-    file << config;
-
-    // バッファの書き出しやファイルを閉じる際の失敗も、保存失敗として呼び出し元へ返す。
-    file.close();
-    if (!file) {
-        std::cerr << "Failed to write yaml: " << filePath << std::endl;
-        return false;
-    }
-    return true;
 }
 
 bool StageYamlRepository::RemoveSequenceElement(YAML::Node& config, const std::string& sequenceName, int index)

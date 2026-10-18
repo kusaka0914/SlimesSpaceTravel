@@ -15,10 +15,10 @@ class StageActorYamlWriter;
 // 配置済みActorの一覧・選択・インスペクターを連携する。selectionControllerとYAML Writerは所有しない。
 class StagePlacementPanel : public DebugPanel {
 public:
-    using Callback = std::function<void()>;
+    using SavedEditCallback = std::function<void(const std::string&)>;
 
     StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController,
-                        StageActorYamlWriter& stageActorYamlWriter, Callback pushUndoCallback = {});
+                        StageActorYamlWriter& stageActorYamlWriter, SavedEditCallback recordSavedEdit = {});
 
     // 選択対象の設定を編集する。Game・ステージ・アセットカタログが未設定なら編集しない。
     void Draw() override;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(game)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -25,21 +25,29 @@ file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
 
 list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
 
-add_executable(game ${GAME_SOURCES})
+# エントリーポイントと保存先解決だけを差し替え、統合テストでも同じRuntimeを使う。
+list(REMOVE_ITEM GAME_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Main.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp"
+)
+add_library(game_runtime OBJECT ${GAME_SOURCES})
+add_executable(game src/Main.cpp src/system/UserDataPaths.cpp)
+target_link_libraries(game PRIVATE game_runtime)
+option(GAME_BUILD_RUNTIME_TESTS "Build integration tests requiring an OpenGL display" OFF)
 
 add_executable(editor_restart_helper
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/editor_restart_helper/Main.cpp
 )
 
 if (MSVC)
-    target_compile_options(game PRIVATE /utf-8 /MP /FS)
+    target_compile_options(game_runtime PUBLIC /utf-8 /MP /FS)
     target_compile_options(editor_restart_helper PRIVATE /utf-8)
 endif()
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)
 set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/ImGuizmo/src)
 
-target_sources(game PRIVATE
+target_sources(game_runtime PRIVATE
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
@@ -65,7 +73,11 @@ find_package(yaml-cpp REQUIRED)
 
 if (BUILD_TESTING)
     add_executable(game_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EditorReliabilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePickPolicy.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ui/UICanvasEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PersistenceSafetyTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
@@ -77,6 +89,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformGridTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformDocumentTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorSaveStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPreviewStateTests.cpp
@@ -109,6 +122,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformGrid.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformDocument.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorSaveState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewState.cpp
@@ -132,6 +146,11 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CameraShakeEffect.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/AtomicFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditTransaction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CinematicSequenceLibrary.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sequence/SequenceLibrary.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UILoadSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tutorial/TutorialLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
@@ -156,7 +175,7 @@ if (BUILD_TESTING)
     add_test(NAME game_tests COMMAND game_tests)
 endif()
 
-target_include_directories(game PRIVATE
+target_include_directories(game_runtime PUBLIC
     ${OPENGL_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS}
@@ -165,9 +184,9 @@ target_include_directories(game PRIVATE
     ${IMGUI_DIR}/backends
     ${IMGUIZMO_DIR}
 )
-target_link_directories(game PRIVATE /opt/homebrew/lib)
+target_link_directories(game_runtime PUBLIC /opt/homebrew/lib)
 
-target_link_libraries(game
+target_link_libraries(game_runtime PUBLIC
     GLEW::GLEW
     glfw
     OpenGL::GL
@@ -181,7 +200,7 @@ target_link_libraries(game
 )
 
 if (WIN32)
-    target_link_libraries(game
+    target_link_libraries(game_runtime PUBLIC
         windowsapp
         mfplat
         mfreadwrite
@@ -242,7 +261,7 @@ if (APPLE)
     set(TUTORIAL_VIDEO_MAC_SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/video/TutorialVideoPlayerMacBackend.mm
     )
-    target_sources(game PRIVATE ${TUTORIAL_VIDEO_MAC_SOURCE})
+    target_sources(game_runtime PRIVATE ${TUTORIAL_VIDEO_MAC_SOURCE})
     set_source_files_properties(
         ${TUTORIAL_VIDEO_MAC_SOURCE}
         PROPERTIES COMPILE_FLAGS "-fobjc-arc"
@@ -252,7 +271,7 @@ if (APPLE)
     find_library(COREMEDIA_FRAMEWORK CoreMedia REQUIRED)
     find_library(COREVIDEO_FRAMEWORK CoreVideo REQUIRED)
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
-    target_link_libraries(game
+    target_link_libraries(game_runtime PUBLIC
         ${AVFOUNDATION_FRAMEWORK}
         ${COREMEDIA_FRAMEWORK}
         ${COREVIDEO_FRAMEWORK}
@@ -278,10 +297,29 @@ set_target_properties(editor_restart_helper PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-target_compile_definitions(game PRIVATE SDL_MAIN_HANDLED)
+target_compile_definitions(game_runtime PUBLIC SDL_MAIN_HANDLED)
 if (GAME_REVIEW_BUILD)
-    target_compile_definitions(game PRIVATE GAME_REVIEW_BUILD=1)
+    target_compile_definitions(game_runtime PUBLIC GAME_REVIEW_BUILD=1)
 endif()
 if (GAME_TGS_BUILD)
-    target_compile_definitions(game PRIVATE GAME_TGS_BUILD=1)
+    target_compile_definitions(game_runtime PUBLIC GAME_TGS_BUILD=1)
+endif()
+
+if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
+    add_executable(game_runtime_tests
+        tests/RuntimeIntegrationTests.cpp
+        tests/IsolatedUserDataPaths.cpp
+    )
+    target_link_libraries(game_runtime_tests PRIVATE game_runtime)
+    target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
+    add_test(NAME game_runtime_tests COMMAND game_runtime_tests)
+    set_tests_properties(game_runtime_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
+        ENVIRONMENT "SDL_AUDIODRIVER=dummy"
+        LABELS "integration;display"
+        TIMEOUT 120
+        RUN_SERIAL TRUE
+    )
+    add_dependencies(game_runtime_tests game)
 endif()

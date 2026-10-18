@@ -23,10 +23,13 @@ public:
     static bool ReadCurrentStageText(DebugEditorContext& context, std::string& outYamlText);
 
     // YAMLを検証して一時ファイルへ書き出し、元ファイルと置き換える。失敗時は false。
-    // 置換失敗時は元ファイルを削除して再試行するため、常に原子的な置換になるとは限らない。
+    // 置換に失敗しても元ファイルを削除しない。
     static bool WriteCurrentStageTextAtomically(DebugEditorContext& context, const std::string& yamlText);
 
-    // ファイルを上書きする。開く処理・書き出し・クローズに失敗した場合は false。
+    // Map形式のステージYAMLを読む。読込・検証失敗時はoutConfigを変更しない。
+    static bool LoadYamlFile(const std::string& filePath, YAML::Node& outConfig);
+
+    // 旧ファイルを保持して置換する。書込み・置換失敗時はfalse。
     static bool SaveYamlFile(const std::string& filePath, const YAML::Node& config);
 
     // メモリ上の要素を削除し、後続の添字を詰める。不正なシーケンス・添字には false。

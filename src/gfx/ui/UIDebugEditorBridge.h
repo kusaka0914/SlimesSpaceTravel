@@ -37,6 +37,9 @@ public:
     // ステージ内Actorの破棄前に呼び、エディターの選択参照を解除する。
     void ClearStageSelectionForStageReload();
 
+    // 再読込成功後に、旧Runtimeに対応する保存失敗の破棄を通知する。
+    void NotifyStageReloaded();
+
     // エディターのセッションを保存／復元する。失敗時はfalseを返し、outErrorMessageに理由を設定する。
     bool SaveSession(const std::string& filePath, std::string& outErrorMessage);
     bool RestoreSession(const std::string& filePath, std::string& outErrorMessage);

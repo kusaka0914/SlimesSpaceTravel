@@ -1,15 +1,17 @@
 #pragma once
 
+#include <functional>
 #include <glm/glm.hpp>
 #include <vector>
 
-class Game;
+class PhysicsSystem;
 class Actor;
 
-// 注目点からカメラまでの遮蔽物と、カメラ周辺の空間をBulletで調べる。Gameは借用する。
+// 注目点からカメラまでの遮蔽物と、カメラ周辺の空間をBulletで調べる。物理Systemは借用する。
 class CameraCollisionResolver {
 public:
-    explicit CameraCollisionResolver(Game* game);
+    // 物理Systemの生成前にも構築できるよう、利用時にproviderで取得する。未設定・nullptrは物理なしとして扱う。
+    explicit CameraCollisionResolver(std::function<PhysicsSystem*()> physicsProvider);
 
     // 注目点から遮蔽物を調べ、指定Actorを除外してカメラ位置を手前へ補正する。座標はワールド空間。
     // 物理ワールド未構築時はdesiredCameraPosをそのまま返す。
@@ -30,5 +32,5 @@ private:
     glm::vec3 ResolveInternal(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos, const Actor* ignoredActor,
                               const std::vector<Actor*>* ignoredActors) const;
 
-    Game* mGame;
+    std::function<PhysicsSystem*()> mPhysicsProvider;
 };

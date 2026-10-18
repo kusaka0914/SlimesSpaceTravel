@@ -100,6 +100,24 @@ private:
         glm::vec3 mainPlayerStartScale{1.0f};
     };
 
+public:
+    // ステージ構築中に変更されるPlayer構成を退避する。Actorそのものや依存先は含まない。
+    class StageReloadState {
+        friend class PlayerConfigurationController;
+        bool mIsSecondPlayerJoined = false;
+        PlayerControlConfigurationState mControlState;
+        SplitMergeTransitionState mSplitMergeTransition;
+        bool mIsSplitMergeButtonHeld = false;
+        bool mIsMergeGuideRequested = false;
+        PlayerSplitGuardState mSplitGuardState;
+    };
+
+    StageReloadState CaptureStageReloadState() const { return mRuntimeState; }
+
+    // 構築失敗で旧GameWorldを戻した後に呼び、参加・操作対象・分裂遷移・ガードを復元する。
+    void RestoreStageReloadState(const StageReloadState& state) { mRuntimeState = state; }
+
+private:
     bool CanStartSplitMergeInput() const;
     bool CanChangeSoloConfiguration() const;
     bool SplitPlayer();
@@ -131,10 +149,5 @@ private:
     PauseMenuController& mPauseMenuController;
     PhysicsSystem& mPhysicsSystem;
     bool mAllowsKeyboardOnlyTwoPlayer = false;
-    bool mIsSecondPlayerJoined = false;
-    PlayerControlConfigurationState mControlState;
-    SplitMergeTransitionState mSplitMergeTransition;
-    bool mIsSplitMergeButtonHeld = false;
-    bool mIsMergeGuideRequested = false;
-    PlayerSplitGuardState mSplitGuardState;
+    StageReloadState mRuntimeState;
 };

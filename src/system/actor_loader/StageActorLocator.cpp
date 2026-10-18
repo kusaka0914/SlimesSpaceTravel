@@ -24,6 +24,11 @@ Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string&
         return nullptr;
     }
 
+    if (sequenceName == "planets") {
+        const auto& planets = stage.GetPlanets();
+        return stageYamlIndex < static_cast<int>(planets.size()) ? planets[stageYamlIndex] : nullptr;
+    }
+
     const auto findByIndex = [stageYamlIndex](const auto& actors) -> Actor* {
         for (Actor* actor : actors) {
             if (actor && actor->GetStageYamlIndex() == stageYamlIndex) {
@@ -39,8 +44,13 @@ Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string&
         }
 
         for (Platform* platform : planet->GetPlatforms()) {
-            if (platform && platform->GetStageSequenceName() == sequenceName &&
-                platform->GetStageYamlIndex() == stageYamlIndex) {
+            if (!platform || platform->GetStageYamlIndex() != stageYamlIndex) {
+                continue;
+            }
+
+            // 種別名が未設定の足場は、エディターと同じく通常のplatformsとして解決する。
+            const std::string& platformSequenceName = platform->GetStageSequenceName();
+            if (platformSequenceName == sequenceName || (platformSequenceName.empty() && sequenceName == "platforms")) {
                 return platform;
             }
         }

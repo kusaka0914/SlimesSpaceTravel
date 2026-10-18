@@ -1,11 +1,12 @@
 #include "system/camera/CinematicSequenceLibrary.h"
 
+#include "utils/AtomicFile.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <glm/common.hpp>
 #include <iostream>
 #include <utility>
@@ -109,14 +110,14 @@ CinematicSequenceLibrary::CinematicSequenceLibrary(std::string filePath)
 
 bool CinematicSequenceLibrary::Load()
 {
-    mSequences.clear();
+    decltype(mSequences) loadedSequences;
 
     try {
         const YAML::Node root = YAML::LoadFile(mFilePath);
         const YAML::Node cinematicsNode = root["cinematics"];
 
         if (!cinematicsNode || !cinematicsNode.IsMap()) {
-            return true;
+            return false;
         }
 
         for (const auto& entry : cinematicsNode) {
@@ -149,13 +150,14 @@ bool CinematicSequenceLibrary::Load()
             }
 
             SortKeyframes(sequence);
-            mSequences[sequence.id] = std::move(sequence);
+            loadedSequences[sequence.id] = std::move(sequence);
         }
     } catch (const std::exception& exception) {
         std::cerr << "Failed to load cinematic camera data: " << exception.what() << '\n';
         return false;
     }
 
+    mSequences.swap(loadedSequences);
     return true;
 }
 
@@ -209,13 +211,15 @@ bool CinematicSequenceLibrary::Save() const
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(mFilePath);
-        if (!output) {
+        if (!emitter.good()) {
             return false;
         }
-
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        std::string errorMessage;
+        if (!AtomicFile::WriteText(mFilePath, std::string(emitter.c_str()) + '\n', errorMessage)) {
+            std::cerr << "Failed to save sequence data: " << errorMessage << '\n';
+            return false;
+        }
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save cinematic camera data: " << exception.what() << '\n';
         return false;

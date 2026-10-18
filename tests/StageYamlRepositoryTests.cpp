@@ -1,3 +1,4 @@
+#include "TestFileSupport.h"
 #include "TestSupport.h"
 
 #include "gfx/debug/stage/StageYamlRepository.h"
@@ -118,10 +119,30 @@ void SetSequenceValueRejectsOutOfRangeIndexWithoutMutation()
     ExpectEqual(std::string("normal"), stageConfig["enemy"][0]["type"].as<std::string>(), "retained enemy type");
 }
 
+void InvalidStageLoadKeepsExistingDocument()
+{
+    TemporaryYamlFile file;
+    YAML::Node config = YAML::Load("kept: original");
+    YAML::Node originalReference = config;
+    for (const std::string& invalid :
+         {std::string("[]"), std::string("null"), std::string("scalar"), std::string("{broken")}) {
+        WriteTestFile(file.GetPath(), invalid);
+        ExpectFalse(StageYamlRepository::LoadYamlFile(file.GetPath().string(), config), "invalid stage rejected");
+        ExpectEqual(std::string("original"), config["kept"].as<std::string>(), "previous document retained");
+        ExpectEqual(std::string("original"), originalReference["kept"].as<std::string>(),
+                    "previous reference retained");
+    }
+    WriteTestFile(file.GetPath(), "loaded: true");
+    ExpectTrue(StageYamlRepository::LoadYamlFile(file.GetPath().string(), config), "valid stage accepted");
+    ExpectTrue(config["loaded"].as<bool>(), "successful load committed");
+    ExpectEqual(std::string("original"), originalReference["kept"].as<std::string>(), "old reference not overwritten");
+}
+
 } // namespace
 
 void RegisterStageYamlRepositoryTests(TestRegistry& tests)
 {
+    tests.emplace_back("StageYamlRepository.InvalidLoadKeepsDocument", InvalidStageLoadKeepsExistingDocument);
     tests.emplace_back("StageYamlRepository.SaveYamlFilePreservesNestedValues", SaveYamlFilePreservesNestedValues);
     tests.emplace_back("StageYamlRepository.SaveYamlFileRejectsUnwritableTarget", SaveYamlFileRejectsUnwritableTarget);
     tests.emplace_back("StageYamlRepository.RemoveSequenceElementRemovesOnlyRequestedIndex",

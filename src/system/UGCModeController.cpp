@@ -1,10 +1,8 @@
-#include <GL/glew.h>
-
 #include "system/UGCModeController.h"
 
-#include "system/CameraSystem.h"
 #include "system/UGCModeRuntime.h"
 #include "system/UserDataPaths.h"
+#include "system/camera/CinematicCameraTypes.h"
 
 #include <glm/glm.hpp>
 
@@ -53,9 +51,11 @@ bool UGCModeController::StartEditorTutorial()
 
 bool UGCModeController::FinishEditorTutorial(bool wasCompleted)
 {
+    if (!StartMode()) {
+        return false;
+    }
     mRuntime.MarkProgressFlag(wasCompleted ? completedTutorialProgressId : skippedTutorialProgressId);
-    mIsEditorTutorialActive = false;
-    return StartMode();
+    return true;
 }
 
 void UGCModeController::OpenWorkBrowser()
@@ -81,31 +81,47 @@ void UGCModeController::StartSavedWorkPlaytest()
     StartPlaytest(UGCPlaytestPurpose::SavedWork);
 }
 
-void UGCModeController::StartPlaytest(UGCPlaytestPurpose purpose)
+bool UGCModeController::StartPlaytest(UGCPlaytestPurpose purpose)
 {
+    const UGCSessionState previousState = mSessionState;
+    const bool wasDebugEditorShowing = mRuntime.GetIsDebugEditorShowing();
+    const bool wasFreeCameraEnabled = mRuntime.GetIsFreeCameraMode();
     if (!mSessionState.StartPlaytest(purpose)) {
-        return;
+        return false;
     }
     mRuntime.SetDebugEditorShowing(false);
     mRuntime.SetFreeCameraMode(false);
-    mRuntime.ReloadCurrentStage();
+    if (!mRuntime.ReloadCurrentStage()) {
+        mSessionState = previousState;
+        mRuntime.SetDebugEditorShowing(wasDebugEditorShowing);
+        mRuntime.SetFreeCameraMode(wasFreeCameraEnabled);
+        return false;
+    }
     mRuntime.StartPlayingScene();
+    return true;
 }
 
 void UGCModeController::StartClearVerification(const std::string& workFileName)
 {
+    const UGCSessionState previousState = mSessionState;
     if (!mSessionState.StartVerification(workFileName)) {
         return;
     }
-    StartPlaytest(UGCPlaytestPurpose::ClearVerification);
+    if (!StartPlaytest(UGCPlaytestPurpose::ClearVerification)) {
+        mSessionState = previousState;
+    }
 }
 
 void UGCModeController::ReturnToEditor()
 {
+    const UGCSessionState previousState = mSessionState;
     if (!mSessionState.ReturnToEditor()) {
         return;
     }
-    mRuntime.ReloadCurrentStage();
+    if (!mRuntime.ReloadCurrentStage()) {
+        mSessionState = previousState;
+        return;
+    }
     mRuntime.StartPlayingScene();
     mRuntime.SetDebugEditorShowing(true);
     mRuntime.SetFreeCameraMode(true);
@@ -295,17 +311,26 @@ bool UGCModeController::HasSeenEditorTutorial() const
 
 void UGCModeController::CompleteModeExit(bool shouldOpenWorkBrowser)
 {
+    const UGCSessionState previousState = mSessionState;
+    const bool wasEditorTutorialActive = mIsEditorTutorialActive;
+    const bool wasDebugEditorShowing = mRuntime.GetIsDebugEditorShowing();
+    const bool wasFreeCameraEnabled = mRuntime.GetIsFreeCameraMode();
     mClearTransitionState.CompleteTransition();
     mSessionState.Exit();
     mIsEditorTutorialActive = false;
     mRuntime.SetDebugEditorShowing(false);
     mRuntime.SetFreeCameraMode(false);
 
-    if (mRuntime.LoadDebugStage(initialStageNumber, initialStageYamlPath)) {
-        mRuntime.EnterTitleAtFadeMidpoint();
-        mRuntime.TryChangeBGM();
-        if (shouldOpenWorkBrowser) {
-            OpenWorkBrowser();
-        }
+    if (!mRuntime.LoadDebugStage(initialStageNumber, initialStageYamlPath)) {
+        mSessionState = previousState;
+        mIsEditorTutorialActive = wasEditorTutorialActive;
+        mRuntime.SetDebugEditorShowing(wasDebugEditorShowing);
+        mRuntime.SetFreeCameraMode(wasFreeCameraEnabled);
+        return;
+    }
+    mRuntime.EnterTitleAtFadeMidpoint();
+    mRuntime.TryChangeBGM();
+    if (shouldOpenWorkBrowser) {
+        OpenWorkBrowser();
     }
 }

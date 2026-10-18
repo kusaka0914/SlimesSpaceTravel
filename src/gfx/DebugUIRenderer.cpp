@@ -28,20 +28,36 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
       mTutorialPanel(mContext),
       mAssetBrowserPanel(mContext),
       mStageAddActorPanel(mContext),
-      mStagePlanetPanel(mContext),
+      mStagePlanetPanel(mContext,
+                        [this]() {
+                            return mStageActorYamlWriter.SaveEditorAuthoredTransforms(
+                                [this](const std::string& before) { mEditCommandController.RecordSavedEdit(before); });
+                        }),
       mStageActorYamlWriter(mContext),
-      mSelectionController(mContext),
-      mStagePlacementPanel(mContext, mSelectionController, mStageActorYamlWriter,
-                           [this]() { mEditCommandController.PushUndo(); }),
+      mSelectionController(
+          [game]() {
+              if (!game) {
+                  return StageSelectionScene{};
+              }
+              return StageSelectionScene{
+                  game->GetCurrentStage(),    game->GetPhysicsSystem(),         game->GetCameraSystem(),
+                  game->GetWindow(),          game->GetCurrentStageYamlPath(),  game->GetIsUGCMode(),
+                  game->GetIsPlayer2Joined(), game->GetIsUGCOrthographicView(), game->GetUGCOrthographicHalfHeight(),
+                  game->GetUGCGridSize()};
+          },
+          mContext.gameViewport, mContext.planetMoveMode),
+      mStagePlacementPanel(
+          mContext, mSelectionController, mStageActorYamlWriter,
+          [this](const std::string& previousYamlText) { mEditCommandController.RecordSavedEdit(previousYamlText); }),
       mEditCommandController(mContext, mSelectionController),
       mStageDeleteActorPanel(mContext, mEditCommandController),
-      mStageEditorPanel(
-          mContext, mStageAddActorPanel, mStagePlanetPanel, mStagePlacementPanel, mStageDeleteActorPanel,
-          mStageActorYamlWriter, mSelectionController, [this]() { return mEditCommandController.RestoreUndo(); },
-          [this]() { return mEditCommandController.RestoreRedo(); }),
-      mGizmoController(
-          mContext, mSelectionController, [this]() { mEditCommandController.PushUndo(); },
-          [this]() { mStagePlanetPanel.SaveEditorAuthoredTransforms(); }),
+      mStageEditorPanel(mContext, mStageAddActorPanel, mStagePlanetPanel, mStagePlacementPanel, mStageDeleteActorPanel,
+                        mStageActorYamlWriter, mSelectionController, mEditCommandController),
+      mGizmoController(mContext, mSelectionController,
+                       [this]() {
+                           return mEditCommandController.ExecuteEdit(
+                               [this]() { return mStagePlanetPanel.SaveEditorAuthoredTransforms(); });
+                       }),
       mGameViewportRenderer(mContext, mSelectionController, mGizmoController, mBuildRestartPanel),
       mWorkspaceRenderer(DebugEditorWorkspaceDependencies{
           .context = mContext,
@@ -61,10 +77,10 @@ DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
           .gizmoController = mGizmoController,
       })
 {
-    mStagePlanetPanel.SetSaveDependentActorTransformsCallback(
-        [this]() { mStageActorYamlWriter.SaveEditorAuthoredTransforms(); });
     mStageAddActorPanel.SetSelectionController(&mSelectionController);
-    mStageAddActorPanel.SetPushUndoCallback([this]() { mEditCommandController.PushUndo(); });
+    mStageAddActorPanel.SetEditExecutor([this](const StageEditOperation& operation, StageEditGrouping grouping) {
+        return mEditCommandController.ExecuteEdit(operation, grouping);
+    });
     mSessionCoordinator = std::make_unique<DebugEditorSessionCoordinator>(mContext, mStagePlanetPanel,
                                                                           mStageEditorPanel, mSelectionController);
     mUGCEditorRenderer = std::make_unique<UGCEditorRenderer>(
@@ -137,6 +153,12 @@ void DebugUIRenderer::HandleUGCEditorTutorialReturnedFromPlaytest()
 void DebugUIRenderer::ClearStageSelectionForStageReload()
 {
     mSelectionController.Clear();
+}
+
+void DebugUIRenderer::NotifyStageReloaded()
+{
+    mEditCommandController.SynchronizeStage();
+    mStageActorYamlWriter.ClearFailedSaves();
 }
 
 bool DebugUIRenderer::SaveEditorSession(const std::string& filePath, std::string& outErrorMessage)

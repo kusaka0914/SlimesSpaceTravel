@@ -10,12 +10,15 @@ class Game;
 class AudioSystem {
 public:
     AudioSystem(Game* game);
+    ~AudioSystem();
+    AudioSystem(const AudioSystem&) = delete;
+    AudioSystem& operator=(const AudioSystem&) = delete;
 
     void Initialize();
 
     void Update();
 
-    // BGM・SEの再生を停止し、ミキサーのオーディオデバイスを閉じる。
+    // BGM・SEを停止して所有する音源を解放し、デバイスを閉じる。複数回呼んでもよい。
     void Shutdown();
 
     void AdjustVolume(int volumeBGM, int volumeSE);
@@ -53,4 +56,5 @@ private:
     std::unordered_map<std::string, Mix_Chunk*> mSEList;
     std::string mCurrentLoopingBGMName;
     bool mIsStageMusicDeferred = false;
+    bool mIsAudioOpen = false;
 };

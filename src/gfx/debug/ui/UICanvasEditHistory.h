@@ -3,6 +3,7 @@
 #include "system/UILoadSystem.h"
 
 #include <cstddef>
+#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -21,8 +22,9 @@ public:
     // 編集前の状態を追加する。上限を超えた場合は最古の履歴を捨てる。
     void Capture(const UILoadSystem& uiLoadSystem);
 
-    // 最新の履歴を取り出してメモリ上のUI定義を復元し、表示上書きを解除する。履歴なしならfalse。保存は行わない。
-    bool RestoreLatest(UILoadSystem& uiLoadSystem);
+    // 候補を一時適用し、saveChanges成功時だけ履歴を消費して表示上書きを解除する。
+    // 履歴なし・保存失敗時はfalseで、メモリと履歴を維持する。saveChangesは永続化だけを行うこと。
+    bool RestoreLatest(UILoadSystem& uiLoadSystem, const std::function<bool()>& saveChanges);
 
     // 直前に記録した編集を取り消す場合などに、最新の履歴だけを捨てる。
     void DiscardLatest();

@@ -35,9 +35,9 @@ void StageActorPlacementController::SetSelectionController(StageSelectionControl
     mSelectionController = selectionController;
 }
 
-void StageActorPlacementController::SetPushUndoCallback(std::function<void()> pushUndoCallback)
+void StageActorPlacementController::SetEditExecutor(StageEditExecutor executeEdit)
 {
-    mPushUndoCallback = std::move(pushUndoCallback);
+    mExecuteEdit = std::move(executeEdit);
 }
 
 bool StageActorPlacementController::BeginDuplicatePlacement(const StageActorRef& sourceRef)
@@ -70,10 +70,6 @@ bool StageActorPlacementController::BeginDuplicatePlacement(const StageActorRef&
 
     BeginPlacement(displayName, fallbackPlanetIndex,
                    [this, sourceRef, sourceTemplate](int planetIndex, const StageActorPlacement& placement) {
-                       if (mPushUndoCallback) {
-                           mPushUndoCallback();
-                       }
-
                        return mCreateService.DuplicateActorAtPlacement(sourceRef, sourceTemplate, planetIndex,
                                                                        placement);
                    });
@@ -82,8 +78,7 @@ bool StageActorPlacementController::BeginDuplicatePlacement(const StageActorRef&
 
 void StageActorPlacementController::BeginPlacement(
     const std::string& displayName, int fallbackPlanetIndex,
-    std::function<bool(int, const StageActorPlacement&)> placementCreator, bool snapToGridIntersections,
-    bool continuousPlacement, bool autoStackUGCPlatforms, bool showUGCPlatformPreview)
+    std::function<bool(int, const StageActorPlacement&)> placementCreator, const StagePlacementOptions& options)
 {
     ClearMovingPlatformPlacementWorkflow();
     mPlacementDisplayName = displayName;
@@ -92,15 +87,14 @@ void StageActorPlacementController::BeginPlacement(
     mTargetPlatformSelector = {};
     mPlacementWithoutTargetCreator = {};
     mContinuePlacementCallback = {};
-    mSnapPlacementToGridIntersections = snapToGridIntersections;
-    mIsContinuousPlacement = continuousPlacement;
-    mAutoStackUGCPlatforms = autoStackUGCPlatforms;
-    mShowUGCPlatformPreview = showUGCPlatformPreview || (mContext.game && mContext.game->GetIsUGCMode());
+    mPlacementOptions = options;
+    mPlacementOptions.showUGCPlatformPreview |= mContext.game && mContext.game->GetIsUGCMode();
     mUGCPlacementPreviewModelPath.clear();
     mUGCPlacementPreviewModelScale = glm::vec3(1.0f);
     mIsContinuousPlacementStrokeActive = false;
+    mHasSavedPlacementStroke = false;
     mUGCContinuousPlacementLayer.reset();
-    mLastPaintedUGCCell.reset();
+    mLastPlacementAttemptCell.reset();
     mPlacementPreviewPosition.reset();
     mMovingPlatformPathStartPosition.reset();
     mTargetSelectionSourcePreviewPosition.reset();
@@ -135,8 +129,7 @@ void StageActorPlacementController::BeginMovingPlatformStrokePlacement(
     mMovingPlatformCreator = std::move(movingPlatformCreator);
     mMovingPlatformStartCells.clear();
     mWasMovingPlatformStrokeActive = false;
-    mIsMovingPlatformDestinationPlacementActive = false;
-    mShouldWaitForMovingPlatformSourceRelease = false;
+    mMovingPlatformPlacementPhase = MovingPlatformPlacementPhase::SourceStroke;
     mPlacementPreviewPosition.reset();
     mMovingPlatformPathStartPosition.reset();
     mTargetSelectionSourcePreviewPosition.reset();
@@ -154,14 +147,15 @@ void StageActorPlacementController::CancelPlacement()
     ClearMovingPlatformPlacementWorkflow();
     mPlacementDisplayName.clear();
     mPlacementFallbackPlanetIndex = -1;
-    mSnapPlacementToGridIntersections = true;
-    mIsContinuousPlacement = false;
-    mAutoStackUGCPlatforms = false;
-    mShowUGCPlatformPreview = false;
+    mPlacementOptions.snapToGridIntersections = true;
+    mPlacementOptions.continuousPlacement = false;
+    mPlacementOptions.autoStackUGCPlatforms = false;
+    mPlacementOptions.showUGCPlatformPreview = false;
     mUGCPlacementPreviewModelPath.clear();
     mIsContinuousPlacementStrokeActive = false;
+    mHasSavedPlacementStroke = false;
     mUGCContinuousPlacementLayer.reset();
-    mLastPaintedUGCCell.reset();
+    mLastPlacementAttemptCell.reset();
     mPlacementPreviewPosition.reset();
     mMovingPlatformPathStartPosition.reset();
     mTargetSelectionSourcePreviewPosition.reset();
@@ -179,8 +173,7 @@ void StageActorPlacementController::ClearMovingPlatformPlacementWorkflow()
     mMovingPlatformCreator = {};
     mMovingPlatformStartCells.clear();
     mWasMovingPlatformStrokeActive = false;
-    mIsMovingPlatformDestinationPlacementActive = false;
-    mShouldWaitForMovingPlatformSourceRelease = false;
+    mMovingPlatformPlacementPhase = MovingPlatformPlacementPhase::SourceStroke;
 }
 
 void StageActorPlacementController::UpdatePlacement()
@@ -211,8 +204,9 @@ void StageActorPlacementController::UpdatePlacement()
     const bool isMouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Left);
     if (!isMouseDown) {
         mIsContinuousPlacementStrokeActive = false;
+        mHasSavedPlacementStroke = false;
         mUGCContinuousPlacementLayer.reset();
-        mLastPaintedUGCCell.reset();
+        mLastPlacementAttemptCell.reset();
     }
 
     if (ImGui::GetIO().WantCaptureMouse) {
@@ -256,17 +250,14 @@ void StageActorPlacementController::UpdatePlacement()
         return;
     }
 
-    const bool usesPlatformFootprint = mPlacementDisplayName == "通常足場" || mPlacementDisplayName == "消える足場" ||
-                                       mPlacementDisplayName == "くっつき足場" ||
-                                       mPlacementDisplayName == "移動足場：出発点" ||
-                                       mPlacementDisplayName == "移動足場：到着点";
-    if (mContext.game->GetIsUGCMode() && mSnapPlacementToGridIntersections && !usesPlatformFootprint) {
+    const bool usesPlatformFootprint = mPlacementOptions.footprint == StagePlacementFootprint::Platform;
+    if (mContext.game->GetIsUGCMode() && mPlacementOptions.snapToGridIntersections && !usesPlatformFootprint) {
         const float gridSize = mContext.game->GetUGCGridSize();
         placement.worldPosition =
             UGCPlatformGrid::SnapToGridIntersections(placement.worldPosition, gridSize, mUGCEditLayer);
     }
 
-    if (mContext.game->GetIsUGCMode() && mAutoStackUGCPlatforms) {
+    if (mContext.game->GetIsUGCMode() && mPlacementOptions.autoStackUGCPlatforms) {
         const float gridSize = mContext.game->GetUGCGridSize();
         const int placementLayer = mUGCContinuousPlacementLayer
                                        ? *mUGCContinuousPlacementLayer
@@ -279,7 +270,7 @@ void StageActorPlacementController::UpdatePlacement()
     }
 
     glm::vec3 previewPosition = placement.worldPosition;
-    if (mContext.game->GetIsUGCMode() && mShowUGCPlatformPreview) {
+    if (mContext.game->GetIsUGCMode() && mPlacementOptions.showUGCPlatformPreview) {
         const float gridSize = mContext.game->GetUGCGridSize();
         glm::vec3 previewModelScale = mUGCPlacementPreviewModelScale;
         if (usesPlatformFootprint) {
@@ -308,27 +299,31 @@ void StageActorPlacementController::UpdatePlacement()
     }
     mPlacementPreviewPosition = previewPosition;
     const bool placementInputTriggered =
-        mIsContinuousPlacement ? isMouseDown : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+        mPlacementOptions.continuousPlacement ? isMouseDown : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
     if (!placementInputTriggered) {
         return;
     }
 
-    if (mIsContinuousPlacement) {
+    if (mPlacementOptions.continuousPlacement) {
         const float gridSize = mContext.game->GetUGCGridSize();
         const glm::ivec3 paintedCell = UGCPlatformGrid::CalculateGridPosition(placement.worldPosition, gridSize);
-        if (mLastPaintedUGCCell && *mLastPaintedUGCCell == paintedCell) {
+        if (mLastPlacementAttemptCell && *mLastPlacementAttemptCell == paintedCell) {
             return;
         }
         if (!mIsContinuousPlacementStrokeActive) {
-            if (mPushUndoCallback) {
-                mPushUndoCallback();
-            }
             mIsContinuousPlacementStrokeActive = true;
         }
-        mLastPaintedUGCCell = paintedCell;
+        mLastPlacementAttemptCell = paintedCell;
     }
 
-    const bool created = mPlacementCreator(planetIndex, placement);
+    const auto create = [this, planetIndex, &placement]() { return mPlacementCreator(planetIndex, placement); };
+    const StageEditGrouping grouping = mPlacementOptions.continuousPlacement && mHasSavedPlacementStroke
+                                           ? StageEditGrouping::ContinueOperation
+                                           : StageEditGrouping::NewOperation;
+    const bool created = mExecuteEdit ? mExecuteEdit(create, grouping) : create();
+    if (created && mPlacementOptions.continuousPlacement) {
+        mHasSavedPlacementStroke = true;
+    }
     if (created && mPlacementCompletedCallback) {
         mPlacementCompletedCallback();
     }
@@ -394,12 +389,12 @@ void StageActorPlacementController::UpdateMovingPlatformStrokePlacement()
     const glm::ivec3 hoveredCell = UGCPlatformGrid::CalculateGridPosition(placement.worldPosition, gridSize);
     const bool isMouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Left);
 
-    if (!mIsMovingPlatformDestinationPlacementActive) {
-        if (mShouldWaitForMovingPlatformSourceRelease) {
+    if (mMovingPlatformPlacementPhase != MovingPlatformPlacementPhase::Destination) {
+        if (mMovingPlatformPlacementPhase == MovingPlatformPlacementPhase::WaitForSourceRelease) {
             if (isMouseDown) {
                 return;
             }
-            mShouldWaitForMovingPlatformSourceRelease = false;
+            mMovingPlatformPlacementPhase = MovingPlatformPlacementPhase::SourceStroke;
         }
 
         if (isMouseDown && std::find(mMovingPlatformStartCells.begin(), mMovingPlatformStartCells.end(), hoveredCell) ==
@@ -424,7 +419,7 @@ void StageActorPlacementController::UpdateMovingPlatformStrokePlacement()
             glm::vec3(gridSize * 0.5f, gridSize * 0.1f, gridSize * 0.5f), mUGCPlacementPreviewTextureOverridePath);
 
         if (!isMouseDown && mWasMovingPlatformStrokeActive) {
-            mIsMovingPlatformDestinationPlacementActive = true;
+            mMovingPlatformPlacementPhase = MovingPlatformPlacementPhase::Destination;
             mPlacementDisplayName = "移動足場：移動先を配置";
             mPlacementStatus = "移動先をクリックして配置してください";
         }
@@ -447,11 +442,10 @@ void StageActorPlacementController::UpdateMovingPlatformStrokePlacement()
     if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         return;
     }
-
-    if (mPushUndoCallback) {
-        mPushUndoCallback();
-    }
-    const bool created = mMovingPlatformCreator(0, mMovingPlatformStartCells, destinationOffset);
+    const auto create = [this, &destinationOffset]() {
+        return mMovingPlatformCreator(0, mMovingPlatformStartCells, destinationOffset);
+    };
+    const bool created = mExecuteEdit ? mExecuteEdit(create, StageEditGrouping::NewOperation) : create();
     if (!created) {
         mPlacementStatus = "移動足場を配置できませんでした";
         return;
@@ -464,8 +458,7 @@ void StageActorPlacementController::PrepareNextMovingPlatformPlacement()
 {
     mMovingPlatformStartCells.clear();
     mWasMovingPlatformStrokeActive = false;
-    mIsMovingPlatformDestinationPlacementActive = false;
-    mShouldWaitForMovingPlatformSourceRelease = true;
+    mMovingPlatformPlacementPhase = MovingPlatformPlacementPhase::WaitForSourceRelease;
     mPlacementPreviewPosition.reset();
     mMovingPlatformPathStartPosition.reset();
     mFixedPlacementPreviewPositions.clear();
@@ -518,7 +511,11 @@ void StageActorPlacementController::UpdateTargetPlatformSelection()
     const bool isSwitchPlatform = targetPlatform && (targetPlatform->GetPressureSwitchComponent() ||
                                                      targetPlatform->GetLatchedGroupSwitchComponent());
     if (!targetPlatform || isSwitchPlatform) {
-        if (!mPlacementWithoutTargetCreator || !mPlacementWithoutTargetCreator()) {
+        const bool created =
+            mPlacementWithoutTargetCreator &&
+            (mExecuteEdit ? mExecuteEdit(mPlacementWithoutTargetCreator, StageEditGrouping::NewOperation)
+                          : mPlacementWithoutTargetCreator());
+        if (!created) {
             mPlacementStatus = "スイッチを配置できませんでした";
             return;
         }
@@ -532,7 +529,8 @@ void StageActorPlacementController::UpdateTargetPlatformSelection()
         return;
     }
 
-    if (!mTargetPlatformSelector(targetPlatform)) {
+    const auto create = [this, targetPlatform]() { return mTargetPlatformSelector(targetPlatform); };
+    if (!(mExecuteEdit ? mExecuteEdit(create, StageEditGrouping::NewOperation) : create())) {
         mPlacementStatus = "選んだ足場をスイッチに設定できませんでした";
         return;
     }

@@ -33,16 +33,16 @@
 
 StageActorInspector::StageActorInspector(DebugEditorContext& context, StageSelectionController& selectionController,
                                          StageActorYamlWriter& stageActorYamlWriter,
-                                         StagePlayerEditor& stagePlayerEditor, Callback pushUndo)
+                                         StagePlayerEditor& stagePlayerEditor, SavedEditCallback recordSavedEdit)
     : mContext(context),
       mSelectionController(selectionController),
       mStageActorYamlWriter(stageActorYamlWriter),
       mStagePlayerEditor(stagePlayerEditor),
       mStageActorAssetEditor(context, [this]() { RebuildPhysicsWorld(); }),
       mStageNPCInspector(context, mStageActorAssetEditor),
-      mStagePlatformEditor(context, selectionController, stageActorYamlWriter, pushUndo,
+      mStagePlatformEditor(context, selectionController, stageActorYamlWriter, recordSavedEdit,
                            [this]() { RebuildPhysicsWorld(); }),
-      mPushUndo(std::move(pushUndo))
+      mRecordSavedEdit(std::move(recordSavedEdit))
 {
 }
 
@@ -103,10 +103,6 @@ void StageActorInspector::Draw()
     }
 
     if (ImGui::Button("惑星表面に垂直")) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
-
         glm::vec3 surfaceRotation = actor->GetEditorRotation();
         surfaceRotation.x = 0.0f;
         surfaceRotation.z = 0.0f;
@@ -114,10 +110,11 @@ void StageActorInspector::Draw()
         ApplyActorEditorRotation(actor);
         actor->CaptureEditorAuthoredRotation();
 
-        mStageActorYamlWriter.SaveEditorAuthoredTransforms();
+        const bool wasSaved = mStageActorYamlWriter.SaveEditorAuthoredTransforms(mRecordSavedEdit);
         RebuildPhysicsWorld();
-        mSurfaceAlignmentStatus = isEllipsePlanet ? "Yawを保ったまま、上方向を楕円の最小スケール軸に揃えました"
-                                                  : "Yawを保ったまま、オブジェクトを惑星表面に垂直にしました";
+        mSurfaceAlignmentStatus = !wasSaved         ? "向きを変更しましたが、保存できていません"
+                                  : isEllipsePlanet ? "Yawを保ったまま、上方向を楕円の最小スケール軸に揃えました"
+                                                    : "Yawを保ったまま、オブジェクトを惑星表面に垂直にしました";
     }
 
     if (!canAlignToPlanet) {
@@ -421,7 +418,7 @@ void StageActorInspector::DrawCommonActorSettings(Actor* actor, const std::strin
     }
 
     if (placementEditFinished || physicsRebuildRequired) {
-        mStageActorYamlWriter.SaveEditorAuthoredTransforms();
+        mStageActorYamlWriter.SaveEditorAuthoredTransforms(mRecordSavedEdit);
     }
 
     if (physicsRebuildRequired) {
@@ -716,9 +713,9 @@ void StageActorInspector::DrawBoatSettings(Actor* actor, const std::string& sequ
 
     if (boatSettingsChanged) {
         if (boatStartPlanetChanged) {
-            mStageActorYamlWriter.SaveEditorAuthoredTransforms();
+            mStageActorYamlWriter.SaveEditorAuthoredTransforms(mRecordSavedEdit);
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
     }
 
     ImGui::TextDisabled("拠点では移動先ステージ、通常ステージでは移動先惑星と到着点を使用します。");

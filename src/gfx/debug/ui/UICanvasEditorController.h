@@ -56,7 +56,7 @@ public:
     bool DuplicateSelected(UILoadSystem* uiLoadSystem, std::string& statusMessage);
     bool DeleteSelected(UILoadSystem* uiLoadSystem, std::string& statusMessage);
 
-    // 履歴を復元して選択を解除し、両UI定義の保存を試みる。保存失敗でも復元できればtrue。
+    // 両UI定義の保存成功時だけ履歴を復元し、選択を解除する。保存失敗時はfalseで編集内容・履歴を維持する。
     bool RestoreUndo(UILoadSystem* uiLoadSystem, std::string& statusMessage);
 
 private:

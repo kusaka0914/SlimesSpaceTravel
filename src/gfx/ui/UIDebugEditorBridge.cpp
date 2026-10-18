@@ -78,6 +78,11 @@ void UIDebugEditorBridge::ClearStageSelectionForStageReload()
     mDebugUIRenderer->ClearStageSelectionForStageReload();
 }
 
+void UIDebugEditorBridge::NotifyStageReloaded()
+{
+    mDebugUIRenderer->NotifyStageReloaded();
+}
+
 bool UIDebugEditorBridge::SaveSession(const std::string& filePath, std::string& outErrorMessage)
 {
     return mDebugUIRenderer->SaveEditorSession(filePath, outErrorMessage);

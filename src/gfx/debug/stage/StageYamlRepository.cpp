@@ -1,5 +1,7 @@
 #include "gfx/debug/stage/StageYamlRepository.h"
 
+#include "utils/AtomicFile.h"
+
 #include "Game.h"
 #include "Stage.h"
 #include "actor/Planet.h"
@@ -8,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <utility>
 
 std::string StageYamlRepository::GetCurrentStageYamlPath(DebugEditorContext& context)
 {
@@ -27,15 +30,7 @@ bool StageYamlRepository::LoadCurrentStage(DebugEditorContext& context, YAML::No
         return false;
     }
 
-    try {
-        outConfig = YAML::LoadFile(filePath);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load stage yaml: " << filePath << std::endl;
-        std::cerr << e.what() << std::endl;
-        return false;
-    }
-
-    return true;
+    return LoadYamlFile(filePath, outConfig);
 }
 
 bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::Node config,
@@ -48,23 +43,28 @@ bool StageYamlRepository::SaveCurrentStage(DebugEditorContext& context, YAML::No
         return false;
     }
 
-    if (preserveRuntimePlanetCenters && context.game && context.game->GetCurrentStage() && config["planets"] &&
-        config["planets"].IsSequence()) {
-        const auto& planets = context.game->GetCurrentStage()->GetPlanets();
-        const std::size_t count = std::min(planets.size(), config["planets"].size());
-        for (std::size_t index = 0; index < count; ++index) {
-            const Planet* planet = planets[index];
-            if (!planet) {
-                continue;
+    try {
+        if (preserveRuntimePlanetCenters && context.game && context.game->GetCurrentStage() && config["planets"] &&
+            config["planets"].IsSequence()) {
+            const auto& planets = context.game->GetCurrentStage()->GetPlanets();
+            const std::size_t count = std::min(planets.size(), config["planets"].size());
+            for (std::size_t index = 0; index < count; ++index) {
+                const Planet* planet = planets[index];
+                if (!planet) {
+                    continue;
+                }
+                const glm::vec3 center = planet->GetPos();
+                config["planets"][index]["center"][0] = center.x;
+                config["planets"][index]["center"][1] = center.y;
+                config["planets"][index]["center"][2] = center.z;
             }
-            const glm::vec3 center = planet->GetPos();
-            config["planets"][index]["center"][0] = center.x;
-            config["planets"][index]["center"][1] = center.y;
-            config["planets"][index]["center"][2] = center.z;
         }
-    }
 
-    return SaveYamlFile(filePath, config);
+        return SaveYamlFile(filePath, config);
+    } catch (const YAML::Exception& error) {
+        std::cerr << "Failed to prepare stage yaml: " << filePath << ": " << error.what() << '\n';
+        return false;
+    }
 }
 
 bool StageYamlRepository::ReadCurrentStageText(DebugEditorContext& context, std::string& outYamlText)
@@ -83,8 +83,12 @@ bool StageYamlRepository::ReadCurrentStageText(DebugEditorContext& context, std:
         return false;
     }
 
-    outYamlText.assign(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
-
+    std::string yamlText{std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
+    if (ifs.bad()) {
+        std::cerr << "Failed to read stage yaml: " << filePath << '\n';
+        return false;
+    }
+    outYamlText = std::move(yamlText);
     return true;
 }
 
@@ -104,50 +108,10 @@ bool StageYamlRepository::WriteCurrentStageTextAtomically(DebugEditorContext& co
         return false;
     }
 
-    const std::string tempPath = filePath + ".tmp";
-
-    {
-        std::ofstream ofs(tempPath, std::ios::out | std::ios::trunc);
-
-        if (!ofs) {
-            std::cerr << "Failed to open temp yaml: " << tempPath << std::endl;
-            return false;
-        }
-
-        ofs << yamlText;
-        ofs.close();
-
-        if (!ofs) {
-            std::cerr << "Failed to write temp yaml completely: " << tempPath << std::endl;
-            return false;
-        }
+    std::string errorMessage;
+    if (!AtomicFile::WriteText(filePath, yamlText, errorMessage)) {
+        std::cerr << "Failed to save stage yaml: " << filePath << ": " << errorMessage << '\n';
+        return false;
     }
-
-    std::error_code ec;
-    std::filesystem::rename(tempPath, filePath, ec);
-
-    if (ec) {
-        std::error_code removeEc;
-
-        if (std::filesystem::exists(filePath, removeEc)) {
-            std::filesystem::remove(filePath, removeEc);
-        }
-
-        if (removeEc) {
-            std::cerr << "Failed to remove old yaml: " << filePath << std::endl;
-            std::cerr << removeEc.message() << std::endl;
-            return false;
-        }
-
-        ec.clear();
-        std::filesystem::rename(tempPath, filePath, ec);
-
-        if (ec) {
-            std::cerr << "Failed to rename temp yaml: " << tempPath << " -> " << filePath << std::endl;
-            std::cerr << ec.message() << std::endl;
-            return false;
-        }
-    }
-
     return true;
 }

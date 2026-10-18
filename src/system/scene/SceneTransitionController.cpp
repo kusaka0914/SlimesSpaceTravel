@@ -122,6 +122,7 @@ void SceneTransitionController::ApplySceneChange()
 {
     mIsFadeOut = true;
 
+    const auto previousSceneState = mGameProgressState->GetSceneState();
     const auto nextSceneState = mGameProgressState->GetNextSceneState();
 
     switch (nextSceneState) {
@@ -176,11 +177,20 @@ void SceneTransitionController::ApplySceneChange()
             mGame->GetAudioSystem()->BeginStageMusicDeferral();
         }
 
-        mGame->ChangeStage(destinationStageNum);
+        const std::string destinationYamlPath =
+            "../assets/data/stage/stage" + std::to_string(destinationStageNum) + ".yaml";
         mNextStageNum = -1;
 
         Mix_HaltMusic();
-        mGame->ReloadCurrentStage();
+        if (!mGame->LoadStageForScene(destinationStageNum, destinationYamlPath)) {
+            mGameProgressState->SetCurrentSceneState(previousSceneState);
+            if (shouldDeferStageMusic) {
+                mGame->GetAudioSystem()->ResumeDeferredStageMusic();
+            } else {
+                mGame->GetAudioSystem()->TryChangeBGM();
+            }
+            return;
+        }
         mGame->StartPlayingScene();
 
         // 再読込時の判定は遷移前のシーンを参照するため、Playingへの切替後にBGMを再選択する。

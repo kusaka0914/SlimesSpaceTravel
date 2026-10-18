@@ -31,13 +31,8 @@ bool StageActorCreateService::AddBoat(int startPlanetNum, int destPlanetNum, int
 
     config["boats"].push_back(boatNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Boat, boatNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Boat, boatNode, index); });
 }
 
 bool StageActorCreateService::AddBoatArrivalPoint(int currentPlanetNum, const std::string& modelPath,
@@ -59,11 +54,7 @@ bool StageActorCreateService::AddBoatArrivalPoint(int currentPlanetNum, const st
     ApplyPlacementToNode(arrivalPointNode, currentPlanetNum, placement);
     config["boatArrivalPoints"].push_back(arrivalPointNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::BoatArrivalPoint, arrivalPointNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config, [&]() {
+        return mRuntimeCreationService.CreateActor(StageActorType::BoatArrivalPoint, arrivalPointNode, index);
+    });
 }

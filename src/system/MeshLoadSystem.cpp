@@ -1,3 +1,5 @@
+#include <GL/glew.h>
+
 #include "system/MeshLoadSystem.h"
 
 #include "actor/Actor.h"
@@ -16,6 +18,21 @@ MeshLoadSystem::MeshLoadSystem()
 void MeshLoadSystem::Initialize()
 {
     CreateLoadedModels();
+}
+
+void MeshLoadSystem::Shutdown()
+{
+    for (auto& [path, model] : mLoadedModels) {
+        for (LoadedMesh& mesh : model.meshes) {
+            glDeleteVertexArrays(1, &mesh.VAO);
+            glDeleteBuffers(1, &mesh.VBO);
+            glDeleteBuffers(1, &mesh.EBO);
+            glDeleteTextures(1, &mesh.textureID);
+        }
+    }
+    mLoadedModels.clear();
+    mCollisionMeshGeometryByPath.clear();
+    mFailedCollisionMeshPaths.clear();
 }
 
 void MeshLoadSystem::CreateLoadedModels()

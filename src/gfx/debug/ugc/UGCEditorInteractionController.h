@@ -2,7 +2,10 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 
+#include "gfx/debug/stage/StageEditOperation.h"
+#include "gfx/debug/stage/StageEditorTypes.h"
 #include <glm/glm.hpp>
+#include <vector>
 
 class StageActorYamlWriter;
 class StageAddActorPanel;
@@ -51,6 +54,8 @@ public:
     const glm::vec3& GetViewDirection() const;
 
 private:
+    bool SaveSelectionMove(const std::vector<StageActorRef>& actorRefs, const glm::vec3& delta,
+                           StageEditGrouping grouping);
     bool TryIntersectEditLayerPlane(const glm::vec3& rayFrom, const glm::vec3& rayTo, float planeHeight,
                                     glm::vec3& outIntersection) const;
     void UpdateSelectionDrag();

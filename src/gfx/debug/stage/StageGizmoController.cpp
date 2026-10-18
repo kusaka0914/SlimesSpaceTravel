@@ -6,6 +6,7 @@
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
 #include "component/PlatformMovementComponent.h"
+#include "gfx/debug/stage/StageSelectionController.h"
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/StageActorPlanetBindingService.h"
@@ -15,13 +16,13 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/type_ptr.hpp>
+#include <utility>
 #include <vector>
 
 StageGizmoController::StageGizmoController(DebugEditorContext& context, StageSelectionController& selectionController,
-                                           Callback pushUndoCallback, Callback savePlacementCallback)
+                                           SaveCallback savePlacementCallback)
     : mContext(context),
       mSelectionController(selectionController),
-      mPushUndoCallback(std::move(pushUndoCallback)),
       mSavePlacementCallback(std::move(savePlacementCallback))
 {
 }
@@ -390,9 +391,6 @@ void StageGizmoController::DrawGizmo()
             const glm::vec3 newGizmoPos = glm::vec3(gizmoMatrix[3]);
 
             if (!mIsUsingTransformGizmo) {
-                if (mPushUndoCallback) {
-                    mPushUndoCallback();
-                }
 
                 mPreviousGizmoMatrix = glm::translate(glm::mat4(1.0f), center);
                 mIsUsingTransformGizmo = true;
@@ -448,9 +446,6 @@ void StageGizmoController::DrawGizmo()
 
     if (ImGuizmo::IsUsing()) {
         if (!mIsUsingTransformGizmo) {
-            if (mPushUndoCallback) {
-                mPushUndoCallback();
-            }
 
             mIsUsingTransformGizmo = true;
         }

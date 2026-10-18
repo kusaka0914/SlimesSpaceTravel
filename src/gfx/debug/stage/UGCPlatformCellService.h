@@ -10,6 +10,8 @@
 
 struct DebugEditorContext;
 
+enum class UGCCellEditResult { Unchanged, Changed, Failed };
+
 // UGCセルの変更から生成足場を再構築し、YAML保存とステージへの反映を行う。
 class UGCPlatformCellService {
 public:
@@ -23,9 +25,9 @@ public:
                   const glm::ivec3& movementDeltaCells = glm::ivec3(0));
     bool RefreshGeneratedPlatforms();
 
-    // 生成足場に対応するセルをworldDeltaから求めたグリッド差分だけ移動し、保存・再読み込みする。
-    bool TranslateCells(const StageActorRef& generatedPlatformRef, const glm::vec3& worldDelta);
-    bool TranslateCells(const std::vector<StageActorRef>& generatedPlatformRefs, const glm::vec3& worldDelta);
+    // config上の生成セルを移動・再生成する。該当セルがなければUnchanged。保存・再読込は行わない。
+    UGCCellEditResult WriteTranslatedCells(YAML::Node& config, const std::vector<StageActorRef>& actorRefs,
+                                           const glm::vec3& worldDelta);
 
     // 移動先だけをグリッド単位で変更し、生成足場を再構築・保存・再読み込みする。
     bool TranslateMovingPlatformDestinations(const std::vector<StageActorRef>& generatedPlatformRefs,
@@ -56,6 +58,11 @@ private:
         ReloadActors,
     };
 
+    enum class VerificationUpdate { Invalidate, Preserve };
+
+    bool SaveAndApplyStage(YAML::Node stageConfig,
+                           RuntimeActorRefresh runtimeActorRefresh = RuntimeActorRefresh::ReloadActors,
+                           VerificationUpdate verificationUpdate = VerificationUpdate::Invalidate);
     bool UpdateMovingPlatformDestinations(const std::vector<StageActorRef>& generatedPlatformRefs,
                                           const glm::vec3& worldDelta, RuntimeActorRefresh runtimeActorRefresh);
     bool CanEditCells() const;

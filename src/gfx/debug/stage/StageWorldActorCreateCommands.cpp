@@ -18,13 +18,8 @@ bool StageActorCreateService::AddPlanet(const std::string& modelPath)
     YAML::Node planetNode = mNodeFactory.CreatePlanet(planetIndex, modelPath);
     config["planets"].push_back(planetNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex); });
 }
 
 bool StageActorCreateService::AddEllipsePlanet(const std::string& modelPath)
@@ -68,11 +63,6 @@ bool StageActorCreateService::AddEllipsePlanetAtPosition(const std::string& mode
     planetNode["canAttractNearbyPlayer"] = false;
 
     config["planets"].push_back(planetNode);
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Planet, planetNode, planetIndex); });
 }

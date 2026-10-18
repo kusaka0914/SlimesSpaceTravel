@@ -2,15 +2,21 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 
-// 惑星の編集済み配置、または見た目・重力・ロケット出現条件をステージYAMLへ保存する。
+#include <yaml-cpp/yaml.h>
+
+// 惑星の配置・見た目・重力・出現条件をYAMLへ反映する。ファイル保存と編集記録の解除は担当しない。
 class StagePlanetYamlWriter {
 public:
     explicit StagePlanetYamlWriter(DebugEditorContext& context);
 
-    // true なら編集記録のある配置、false なら見た目・重力・出現条件を保存する。
-    // どちらも実行中の惑星中心を保存する。編集記録は消さず、読み書き失敗時は false。
-    bool Save(bool shouldSaveEditorTransform) const;
+    // 実行中の見た目・重力・出現条件をconfigへ反映する。
+    bool WriteSettings(YAML::Node& config) const;
+
+    // 編集記録のある惑星Transformだけをconfigへ反映する。編集記録は解除しない。
+    bool WriteEditorAuthoredTransforms(YAML::Node& config) const;
 
 private:
+    bool Write(YAML::Node& config, bool shouldSaveEditorTransform) const;
+
     DebugEditorContext& mContext;
 };

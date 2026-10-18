@@ -19,11 +19,13 @@ struct PlatformRevealTarget;
 class StagePlatformEditor {
 public:
     using Callback = std::function<void()>;
+    using SavedEditCallback = std::function<void(const std::string&)>;
 
     StagePlatformEditor(DebugEditorContext& context, StageSelectionController& selectionController,
-                        StageActorYamlWriter& stageActorYamlWriter, Callback pushUndo, Callback rebuildPhysicsWorld);
+                        StageActorYamlWriter& stageActorYamlWriter, SavedEditCallback recordSavedEdit,
+                        Callback rebuildPhysicsWorld);
 
-    // 種類変更でステージを再読み込みした場合は true。呼び出し元は元のPlatformを以後参照しない。
+    // 再読込が起こり得る種類変更を試みたらtrue。失敗時も呼び出し元は元のPlatformを以後参照しない。
     bool DrawPlatformTypeEditor(Platform* platform, const std::string& sequenceName, std::size_t listIndex);
 
     // Gameと現在のStageが有効な状態で呼ぶ。platform が nullptr なら何もしない。
@@ -48,7 +50,7 @@ private:
     DebugEditorContext& mContext;
     StageActorYamlWriter& mStageActorYamlWriter;
     StagePlatformTypeChanger mPlatformTypeChanger;
-    Callback mPushUndo;
+    SavedEditCallback mRecordSavedEdit;
     Callback mRebuildPhysicsWorld;
     std::string mPlatformTypeChangeStatus;
 };

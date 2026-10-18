@@ -1,6 +1,7 @@
 #include "system/StageProgressSystem.h"
 
 #include "system/UserDataPaths.h"
+#include "utils/AtomicFile.h"
 
 #include <filesystem>
 #include <fstream>
@@ -26,58 +27,68 @@ StageProgressSystem::StageProgressSystem(std::filesystem::path savePath, bool is
 
 bool StageProgressSystem::Load()
 {
-    Reset();
     if (!mIsPersistenceEnabled) {
+        Reset();
         return true;
     }
 
     std::ifstream input(mSavePath);
     if (!input.is_open()) {
-        return true;
+        std::error_code error;
+        if (!std::filesystem::exists(mSavePath, error) && !error) {
+            Reset();
+            return true;
+        }
+        std::cerr << "Failed to open stage progress: " << mSavePath.string() << '\n';
+        return false;
     }
 
-    YAML::Node root;
+    StageProgressSystem loaded(mSavePath, mIsPersistenceEnabled);
     try {
-        root = YAML::Load(input);
+        const YAML::Node root = YAML::Load(input);
+        if (!root.IsMap()) {
+            return false;
+        }
+
+        const YAML::Node clearedStages = root["clearedStages"];
+        if (clearedStages && clearedStages.IsSequence()) {
+            for (const YAML::Node& stageNode : clearedStages) {
+                const int stageNum = stageNode.as<int>();
+                if (stageNum >= 0) {
+                    loaded.mClearedStages.insert(stageNum);
+                }
+            }
+        }
+
+        const YAML::Node shownConversations = root["shownConversations"];
+        if (shownConversations && shownConversations.IsSequence()) {
+            for (const YAML::Node& conversationNode : shownConversations) {
+                const std::string conversationId = conversationNode.as<std::string>();
+                if (!conversationId.empty()) {
+                    loaded.mShownConversationIds.insert(conversationId);
+                }
+            }
+        }
+
+        const YAML::Node endingRollCompleted = root["endingRollCompleted"];
+        loaded.mHasCompletedEndingRoll = endingRollCompleted && endingRollCompleted.IsScalar()
+                                             ? endingRollCompleted.as<bool>()
+                                             : loaded.mShownConversationIds.contains("cinematic:ending_roll_completed");
+
+        const YAML::Node playerControlStyle = root["playerControlStyle"];
+        if (playerControlStyle && playerControlStyle.IsScalar()) {
+            const std::string style = playerControlStyle.as<std::string>();
+            if (style == "assist" || style == "standard") {
+                loaded.mHasSelectedPlayerControlStyle = true;
+                loaded.mIsAssistControlStyleSelected = style == "assist";
+            }
+        }
+
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load stage progress: " << exception.what() << '\n';
         return false;
     }
-
-    const YAML::Node clearedStages = root["clearedStages"];
-    if (clearedStages && clearedStages.IsSequence()) {
-        for (const YAML::Node& stageNode : clearedStages) {
-            const int stageNum = stageNode.as<int>();
-            if (stageNum >= 0) {
-                mClearedStages.insert(stageNum);
-            }
-        }
-    }
-
-    const YAML::Node shownConversations = root["shownConversations"];
-    if (shownConversations && shownConversations.IsSequence()) {
-        for (const YAML::Node& conversationNode : shownConversations) {
-            const std::string conversationId = conversationNode.as<std::string>();
-            if (!conversationId.empty()) {
-                mShownConversationIds.insert(conversationId);
-            }
-        }
-    }
-
-    const YAML::Node endingRollCompleted = root["endingRollCompleted"];
-    mHasCompletedEndingRoll = endingRollCompleted && endingRollCompleted.IsScalar()
-                                  ? endingRollCompleted.as<bool>()
-                                  : mShownConversationIds.contains("cinematic:ending_roll_completed");
-
-    const YAML::Node playerControlStyle = root["playerControlStyle"];
-    if (playerControlStyle && playerControlStyle.IsScalar()) {
-        const std::string style = playerControlStyle.as<std::string>();
-        if (style == "assist" || style == "standard") {
-            mHasSelectedPlayerControlStyle = true;
-            mIsAssistControlStyleSelected = style == "assist";
-        }
-    }
-
+    *this = std::move(loaded);
     return true;
 }
 
@@ -111,13 +122,11 @@ bool StageProgressSystem::Save() const
         root["playerControlStyle"] = mIsAssistControlStyleSelected ? "assist" : "standard";
     }
 
-    std::ofstream file(mSavePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to save stage progress: " << mSavePath.string() << '\n';
+    std::string errorMessage;
+    if (!AtomicFile::WriteText(mSavePath, YAML::Dump(root), errorMessage)) {
+        std::cerr << "Failed to save stage progress: " << errorMessage << '\n';
         return false;
     }
-
-    file << root;
     return true;
 }
 

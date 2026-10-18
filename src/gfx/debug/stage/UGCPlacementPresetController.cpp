@@ -11,7 +11,6 @@
 
 #include <memory>
 #include <optional>
-#include <utility>
 
 namespace {
 
@@ -40,11 +39,6 @@ void UGCPlacementPresetController::SetSelectionController(StageSelectionControll
     mSelectionController = selectionController;
 }
 
-void UGCPlacementPresetController::SetPushUndoCallback(std::function<void()> pushUndoCallback)
-{
-    mPushUndoCallback = std::move(pushUndoCallback);
-}
-
 bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
 {
     const UGCPresetVisual& presetVisual = GetUGCPresetVisual(presetKind);
@@ -69,7 +63,9 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                 }
                 return added;
             },
-            true, true, false, true);
+            StagePlacementOptions{.continuousPlacement = true,
+                                  .showUGCPlatformPreview = true,
+                                  .footprint = StagePlacementFootprint::Platform});
         mPlacementController.SetPlacementPreviewModel(
             presetVisual.modelPath,
             UGCPlatformGrid::CalculateFootprintPreviewScale(mContext.game->GetUGCGridSize(),
@@ -78,9 +74,6 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
         return true;
     case UGCPresetKind::NormalEnemy:
         mPlacementController.BeginPlacement("通常敵", 0, [this](int planetIndex, const StageActorPlacement& placement) {
-            if (mPushUndoCallback) {
-                mPushUndoCallback();
-            }
             const StageActorPlacement worldUpPlacement = CreateWorldUpPlacement(placement);
             return mCreateService.AddEnemy("normal", planetIndex, &worldUpPlacement);
         });
@@ -90,9 +83,6 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
     case UGCPresetKind::EllipsePlanet:
         mPlacementController.BeginPlacement(
             "惑星", 0, [this, modelPath = presetVisual.modelPath](int, const StageActorPlacement& placement) {
-                if (mPushUndoCallback) {
-                    mPushUndoCallback();
-                }
                 return mCreateService.AddEllipsePlanetAtPosition(modelPath, placement.worldPosition);
             });
         mPlacementController.SetPlacementPreviewModel(presetVisual.modelPath, presetVisual.thumbnailScale,
@@ -112,19 +102,12 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                         if (targetPlatformId.empty()) {
                             return false;
                         }
-
-                        if (mPushUndoCallback) {
-                            mPushUndoCallback();
-                        }
                         return mCreateService
                             .AddPressureSwitchPlatform(planetIndex, "platform.obj", switchScale, switchTexturePath,
                                                        targetPlatformId, &worldUpPlacement)
                             .has_value();
                     },
                     [this, planetIndex, worldUpPlacement, switchScale, switchTexturePath]() {
-                        if (mPushUndoCallback) {
-                            mPushUndoCallback();
-                        }
                         return mCreateService
                             .AddPressureSwitchPlatform(planetIndex, "platform.obj", switchScale, switchTexturePath, "",
                                                        &worldUpPlacement)
@@ -140,9 +123,6 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
     case UGCPresetKind::GoalStar:
         mPlacementController.BeginPlacement("ゴールの星", 0,
                                             [this](int planetIndex, const StageActorPlacement& placement) {
-                                                if (mPushUndoCallback) {
-                                                    mPushUndoCallback();
-                                                }
                                                 return mCreateService.AddStar(planetIndex, &placement);
                                             });
         mPlacementController.SetPlacementPreviewModel(presetVisual.modelPath, presetVisual.thumbnailScale,
@@ -188,7 +168,9 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                 }
                 return added;
             },
-            true, true, false, true);
+            StagePlacementOptions{.continuousPlacement = true,
+                                  .showUGCPlatformPreview = true,
+                                  .footprint = StagePlacementFootprint::Platform});
         mPlacementController.SetPlacementPreviewModel(
             presetVisual.modelPath,
             UGCPlatformGrid::CalculateFootprintPreviewScale(mContext.game->GetUGCGridSize(),
@@ -222,16 +204,10 @@ bool UGCPlacementPresetController::ActivatePreset(UGCPresetKind presetKind)
                         if (targetPlatformId.empty()) {
                             return false;
                         }
-                        if (mPushUndoCallback) {
-                            mPushUndoCallback();
-                        }
                         return mCreateService.AddTwoPlayerSwitchPair(planetIndex, **firstPlacement, secondPlacement,
                                                                      switchScale, switchTexturePath, targetPlatformId);
                     },
                     [this, planetIndex, firstPlacement, secondPlacement, switchScale, switchTexturePath]() {
-                        if (mPushUndoCallback) {
-                            mPushUndoCallback();
-                        }
                         return mCreateService.AddTwoPlayerSwitchPair(planetIndex, **firstPlacement, secondPlacement,
                                                                      switchScale, switchTexturePath, "");
                     },

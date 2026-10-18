@@ -27,13 +27,8 @@ bool StageActorCreateService::AddEnemy(const std::string& type, int currentPlane
 
     config["enemies"].push_back(enemyNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Enemy, enemyNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Enemy, enemyNode, index); });
 }
 
 bool StageActorCreateService::AddNPC(const std::string& modelPath, int currentPlanetNum, const std::string& name,
@@ -62,13 +57,8 @@ bool StageActorCreateService::AddNPC(const std::string& modelPath, int currentPl
 
     config["NPCs"].push_back(npcNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::NPC, npcNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::NPC, npcNode, index); });
 }
 
 bool StageActorCreateService::AddTutorialTrigger(int currentPlanetNum, const std::string& modelPath,
@@ -90,13 +80,9 @@ bool StageActorCreateService::AddTutorialTrigger(int currentPlanetNum, const std
     ApplyPlacementToNode(triggerNode, currentPlanetNum, placement);
     config["tutorialTriggers"].push_back(triggerNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::TutorialTrigger, triggerNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config, [&]() {
+        return mRuntimeCreationService.CreateActor(StageActorType::TutorialTrigger, triggerNode, index);
+    });
 }
 
 bool StageActorCreateService::AddHazardActor(int currentPlanetNum, const std::string& modelPath,
@@ -120,11 +106,7 @@ bool StageActorCreateService::AddHazardActor(int currentPlanetNum, const std::st
     ApplyPlacementToNode(hazardActorNode, currentPlanetNum, placement);
     config["hazardActors"].push_back(hazardActorNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::HazardActor, hazardActorNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config, [&]() {
+        return mRuntimeCreationService.CreateActor(StageActorType::HazardActor, hazardActorNode, index);
+    });
 }

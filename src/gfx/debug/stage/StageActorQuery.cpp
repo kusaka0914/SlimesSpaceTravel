@@ -18,6 +18,7 @@
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 #include "gfx/debug/stage/PlatformTypeRegistry.h"
+#include "system/actor_loader/StageActorLocator.h"
 
 #include <string>
 #include <vector>
@@ -233,19 +234,11 @@ std::optional<StageActorRef> StageActorQuery::FindTargetForActor(Stage* stage, A
 
 Actor* StageActorQuery::FindActorByRef(Stage* stage, const StageActorRef& target)
 {
-    if (!stage) {
+    if (!stage || target.sequenceName.empty()) {
         return nullptr;
     }
 
-    const std::string targetKey = MakeKey(target);
-
-    for (const StageActorInstance& instance : CollectAllActorInstances(stage)) {
-        if (MakeKey(instance.ref) == targetKey) {
-            return instance.actor;
-        }
-    }
-
-    return nullptr;
+    return StageActorLocator{}.FindPlacedActor(*stage, target.sequenceName, target.yamlIndex);
 }
 
 std::string StageActorQuery::MakeKey(const StageActorRef& target)

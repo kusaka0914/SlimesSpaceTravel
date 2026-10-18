@@ -1,12 +1,12 @@
 #include "system/camera/CameraCollisionResolver.h"
 
-#include "Game.h"
 #include "actor/Actor.h"
 #include "system/PhysicsSystem.h"
 
 #include <algorithm>
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
+#include <utility>
 
 namespace {
 
@@ -105,8 +105,8 @@ private:
 };
 } // namespace
 
-CameraCollisionResolver::CameraCollisionResolver(Game* game)
-    : mGame(game)
+CameraCollisionResolver::CameraCollisionResolver(std::function<PhysicsSystem*()> physicsProvider)
+    : mPhysicsProvider(std::move(physicsProvider))
 {
 }
 
@@ -125,11 +125,12 @@ glm::vec3 CameraCollisionResolver::Resolve(const glm::vec3& targetPos, const glm
 bool CameraCollisionResolver::HasClearLineOfSight(const glm::vec3& cameraPos, const glm::vec3& targetPos,
                                                   const std::vector<Actor*>& ignoredActors) const
 {
-    if (!mGame || !mGame->GetPhysicsSystem()) {
+    PhysicsSystem* physicsSystem = mPhysicsProvider ? mPhysicsProvider() : nullptr;
+    if (!physicsSystem) {
         return true;
     }
 
-    btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    btDiscreteDynamicsWorld* bulletWorld = physicsSystem->GetBulletWorld();
     if (!bulletWorld) {
         return true;
     }
@@ -143,11 +144,11 @@ bool CameraCollisionResolver::HasClearLineOfSight(const glm::vec3& cameraPos, co
 bool CameraCollisionResolver::HasCameraClearance(const glm::vec3& cameraPos, float clearanceRadius,
                                                  const std::vector<Actor*>& ignoredActors) const
 {
-    if (!mGame || !mGame->GetPhysicsSystem()) {
+    PhysicsSystem* physicsSystem = mPhysicsProvider ? mPhysicsProvider() : nullptr;
+    if (!physicsSystem) {
         return true;
     }
 
-    PhysicsSystem* physicsSystem = mGame->GetPhysicsSystem();
     btDiscreteDynamicsWorld* bulletWorld = physicsSystem->GetBulletWorld();
     if (!bulletWorld) {
         return true;
@@ -172,11 +173,12 @@ glm::vec3 CameraCollisionResolver::ResolveInternal(const glm::vec3& targetPos, c
                                                    const Actor* ignoredActor,
                                                    const std::vector<Actor*>* ignoredActors) const
 {
-    if (!mGame || !mGame->GetPhysicsSystem()) {
+    PhysicsSystem* physicsSystem = mPhysicsProvider ? mPhysicsProvider() : nullptr;
+    if (!physicsSystem) {
         return desiredCameraPos;
     }
 
-    btDiscreteDynamicsWorld* bulletWorld = mGame->GetPhysicsSystem()->GetBulletWorld();
+    btDiscreteDynamicsWorld* bulletWorld = physicsSystem->GetBulletWorld();
     if (!bulletWorld) {
         return desiredCameraPos;
     }

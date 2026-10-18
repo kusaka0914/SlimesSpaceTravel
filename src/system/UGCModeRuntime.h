@@ -11,9 +11,12 @@ public:
     virtual ~UGCModeRuntime() = default;
 
     virtual bool IsTitleScene() const = 0;
+    virtual bool GetIsDebugEditorShowing() const = 0;
+    virtual bool GetIsFreeCameraMode() const = 0;
     virtual void SetDebugEditorShowing(bool isShowing) = 0;
     virtual void SetFreeCameraMode(bool isEnabled) = 0;
-    virtual void ReloadCurrentStage() = 0;
+    // 失敗時はfalse。呼び出し元は後続のシーン・モード遷移を進めない。
+    virtual bool ReloadCurrentStage() = 0;
 
     // 指定Stageを読み込んで選択する。失敗時はfalseを返す。
     virtual bool LoadDebugStage(int stageNumber, const std::string& yamlPath) = 0;

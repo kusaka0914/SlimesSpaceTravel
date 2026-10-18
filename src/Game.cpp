@@ -23,6 +23,7 @@
 #include "system/DebugEditorSessionController.h"
 #include "system/EnemyJewelDropSystem.h"
 #include "system/GameProgressController.h"
+#include "system/GameSessionController.h"
 #include "system/GameWorld.h"
 #include "system/GamepadRumbleService.h"
 #include "system/InputSystem.h"
@@ -37,7 +38,6 @@
 #include "system/UILoadSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/sequence/SequenceSystem.h"
-#include "system/tgs/TgsExperienceController.h"
 
 #include "gfx/GameFrameRenderer.h"
 #include "gfx/Renderer3D.h"
@@ -46,12 +46,6 @@
 #include "imgui.h"
 
 #include "utils/MathUtils.h"
-
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#include <imm.h>
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -71,11 +65,6 @@ std::string BuildStageIntroCinematicId(int stageNum)
     return "enter_stage" + std::to_string(stageNum);
 }
 
-std::string ResolveControlStyleLogName(PlayerControlStyle controlStyle)
-{
-    return controlStyle == PlayerControlStyle::Assist ? "assist" : "standard";
-}
-
 } // namespace
 
 Game::Game() = default;
@@ -88,7 +77,7 @@ bool Game::Initialize(bool areDebugToolsEnabled, bool shouldStartInDebugStage, c
     mIsDebugMode = areDebugToolsEnabled;
 
     const bool shouldUseFullscreen = !shouldStartInDebugStage;
-    if (!InitializeGLFW(shouldUseFullscreen)) {
+    if (!mWindow.Initialize(shouldUseFullscreen)) {
         return false;
     }
 
@@ -114,49 +103,16 @@ bool Game::Initialize(bool areDebugToolsEnabled, bool shouldStartInDebugStage, c
         mSceneSystem->StartPlayingScene();
     }
 
-    ReloadCurrentStage();
+    if (!ReloadCurrentStage()) {
+        Shutdown();
+        return false;
+    }
     RestoreDebugEditorSessionAtStartup(editorSessionPath, editorRestartErrorLogPath);
 
     mLastTime = glfwGetTime();
     glEnable(GL_DEPTH_TEST);
-    UpdateMouseCursorVisibility();
-    UpdateTextInputMethodAvailability();
-
-    return true;
-}
-
-bool Game::InitializeGLFW(bool shouldUseFullscreen)
-{
-    if (!glfwInit()) {
-        return false;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* primaryVideoMode = primaryMonitor ? glfwGetVideoMode(primaryMonitor) : nullptr;
-    constexpr int debugWindowWidth = 800;
-    constexpr int debugWindowHeight = 450;
-    const int windowWidth = shouldUseFullscreen && primaryVideoMode ? primaryVideoMode->width : debugWindowWidth;
-    const int windowHeight = shouldUseFullscreen && primaryVideoMode ? primaryVideoMode->height : debugWindowHeight;
-    GLFWmonitor* windowMonitor = shouldUseFullscreen && primaryVideoMode ? primaryMonitor : nullptr;
-    mWindow = glfwCreateWindow(windowWidth, windowHeight, "Slime's Space Travel", windowMonitor, nullptr);
-    if (!mWindow) {
-        glfwTerminate();
-        return false;
-    }
-
-    glfwMakeContextCurrent(mWindow);
-    glfwSwapInterval(1);
-
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        glfwDestroyWindow(mWindow);
-        glfwTerminate();
-        return false;
-    }
+    mWindow.SetCursorVisible(mIsDebugEditorShowing);
+    mWindow.SetTextInputAllowed(IsEditorKeyboardInputCaptured());
 
     return true;
 }
@@ -168,11 +124,6 @@ void Game::InitializeGameController()
 
 bool Game::CreateGameSystems()
 {
-    if (IsTgsBuild()) {
-        mTgsExperienceController = std::make_unique<TgsExperienceController>(
-            TgsExperienceConfig{}, UserDataPaths::ResolveTgsPlayLogDirectory());
-    }
-
     mUGCModeController = std::make_unique<UGCModeController>(*this);
     mUGCPreviewController = std::make_unique<UGCPreviewController>(this);
     mWorld = std::make_unique<GameWorld>();
@@ -190,7 +141,7 @@ bool Game::CreateGameSystems()
 
     // UIRendererの初期化後に、ウィンドウとUIを借用するエディター用Controllerを生成する。
     mDebugEditorSessionController =
-        std::make_unique<DebugEditorSessionController>(mIsDebugMode, *mWindow, *mUIRenderer);
+        std::make_unique<DebugEditorSessionController>(mIsDebugMode, *GetWindow(), *mUIRenderer);
     mRenderer3D = std::make_unique<Renderer3D>(this);
     if (!mRenderer3D->IsInitialized()) {
         std::cerr << "Failed to initialize the 3D renderer.\n";
@@ -226,7 +177,22 @@ bool Game::CreateGameSystems()
         .allowsKeyboardOnlyTwoPlayer = mIsDebugMode,
     });
 
-    mFrameRenderer = std::make_unique<GameFrameRenderer>(*mWindow, *mRenderer3D, *mUIRenderer, *mCameraSystem,
+    mSessionController = std::make_unique<GameSessionController>(
+        GameSessionDependencies{
+            .world = *mWorld,
+            .sceneSystem = *mSceneSystem,
+            .sequenceSystem = *mSequenceSystem,
+            .playerConfigurationController = *mPlayerConfigurationController,
+            .progressController = *mProgressController,
+            .pauseMenuController = *mPauseMenuController,
+            .inputSystem = *mInputSystem,
+            .audioSystem = *mAudioSystem,
+            .ugcModeController = *mUGCModeController,
+            .playerControlStyle = mPlayerControlStyle,
+        },
+        IsTgsBuild());
+
+    mFrameRenderer = std::make_unique<GameFrameRenderer>(*GetWindow(), *mRenderer3D, *mUIRenderer, *mCameraSystem,
                                                          *mUGCPreviewController, mFramePerformanceTracker);
 
     mParticleSystem = std::make_unique<ParticleSystem>();
@@ -239,8 +205,9 @@ void Game::CreateStages(int stageCount)
     mWorld->CreateStages(stageCount);
 }
 
-void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
+bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
+    const auto previousPlayerConfiguration = mPlayerConfigurationController->CaptureStageReloadState();
     if (mSequenceSystem) {
         mSequenceSystem->Stop(true);
     }
@@ -266,9 +233,18 @@ void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
         mPhysicsSystem->ClearForEditorStageRebuild();
     }
 
-    const bool wasStageReloaded = mStageFlowController->ReloadCurrentStage(*this, physicsReloadMode);
+    const bool wasStageReloaded =
+        mStageFlowController->ReloadCurrentStage(*mActorLoadSystem, *mPhysicsSystem, *mAudioSystem, physicsReloadMode);
     if (!wasStageReloaded) {
-        return;
+        mPlayerConfigurationController->RestoreStageReloadState(previousPlayerConfiguration);
+        if (physicsReloadMode == StagePhysicsReloadMode::SkipRebuild && mPhysicsSystem) {
+            mPhysicsSystem->Initialize();
+        }
+        return false;
+    }
+
+    if (mUIRenderer) {
+        mUIRenderer->NotifyDebugStageReloaded();
     }
 
     if (mEnemyJewelDropSystem) {
@@ -282,6 +258,7 @@ void Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
     if (mCameraSystem) {
         mCameraSystem->SnapBehindControlledPlayer();
     }
+    return true;
 }
 
 void Game::ReloadUIData()
@@ -299,7 +276,7 @@ void Game::RunLoop()
     const auto minimumFrameDuration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
         std::chrono::duration<double>(1.0 / static_cast<double>(maximumFramesPerSecond)));
 
-    while (!glfwWindowShouldClose(mWindow)) {
+    while (!glfwWindowShouldClose(GetWindow())) {
         const auto frameStartTime = std::chrono::steady_clock::now();
         mFramePerformanceTracker.BeginFrame();
         mFrameRenderer->PollGpuPerformanceMeasurements();
@@ -311,7 +288,7 @@ void Game::RunLoop()
         const auto gameUpdateEndTime = std::chrono::steady_clock::now();
         mFramePerformanceTracker.RecordGameUpdateDuration(
             std::chrono::duration<float, std::milli>(gameUpdateEndTime - gameUpdateStartTime).count());
-        UpdateMouseCursorVisibility();
+        mWindow.SetCursorVisible(mIsDebugEditorShowing);
 
         const GameFrameRenderState renderState{
             .isDebugEditorShowing = mIsDebugEditorShowing,
@@ -321,7 +298,7 @@ void Game::RunLoop()
             .deltaTimeSeconds = mLastDeltaTime,
         };
         mFrameRenderer->Render(renderState);
-        UpdateTextInputMethodAvailability();
+        mWindow.SetTextInputAllowed(IsEditorKeyboardInputCaptured());
 
         mFramePerformanceTracker.RecordTotalDuration(
             std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - frameStartTime).count());
@@ -357,14 +334,13 @@ void Game::Shutdown()
         mUIRenderer.reset();
     }
 
-    SDL_Quit();
-
-    if (mWindow) {
-        glfwDestroyWindow(mWindow);
-        mWindow = nullptr;
+    if (mMeshLoadSystem) {
+        mMeshLoadSystem->Shutdown();
     }
 
-    glfwTerminate();
+    SDL_Quit();
+
+    mWindow.Shutdown();
 }
 
 void Game::RestoreDebugEditorSessionAtStartup(const std::string& editorSessionPath,
@@ -395,15 +371,7 @@ void Game::ProcessInput()
 
     if (mInputSystem) {
         mInputSystem->CaptureFrameInput();
-        const bool isTgsReturnConfirmPressed = mInputSystem->IsKeyPressed(GLFW_KEY_ENTER) ||
-                                               mInputSystem->IsKeyPressed(GLFW_KEY_KP_ENTER) ||
-                                               mInputSystem->IsKeyPressed(GLFW_KEY_SPACE);
-        const bool canReturnFromTgsThankYou = IsTgsThankYouScreenVisible() && mSceneSystem &&
-                                              mSceneSystem->GetFadeTimer() <= -1.0f && !mSceneSystem->IsFadingOut();
-        if (canReturnFromTgsThankYou && isTgsReturnConfirmPressed && !mWasTgsReturnConfirmPressed) {
-            mTgsExperienceController->RequestReturnToTitle();
-        }
-        mWasTgsReturnConfirmPressed = isTgsReturnConfirmPressed;
+        mSessionController->ProcessInput();
         if (ShouldBlockInputForTgsPresentation()) {
             return;
         }
@@ -449,7 +417,7 @@ void Game::ExecutePauseMenuItem()
 
 void Game::ReturnToBase()
 {
-    mStageFlowController->ReturnToBase(*this);
+    mStageFlowController->ReturnToBase(*mPauseMenuController, *mWorld, *mSceneSystem);
 }
 
 void Game::OpenFeedbackForm()
@@ -589,7 +557,7 @@ void Game::UpdateGame()
     mLastDeltaTime = deltaTime;
 
     // 体験時間には実経過時間を使い、物理・演出の更新には大きな時間差を制限したdeltaTimeを使う。
-    UpdateTgsExperience(elapsedSeconds);
+    mSessionController->Update(elapsedSeconds);
 
     ProcessPendingUGCClearCompletion();
 
@@ -652,70 +620,6 @@ void Game::UpdateGame()
     }
 }
 
-void Game::UpdateTgsExperience(float elapsedSeconds)
-{
-    if (!mTgsExperienceController || !mSceneSystem) {
-        return;
-    }
-
-    if (mTgsExperienceController->GetPhase() == TgsExperienceController::Phase::WaitingForSession &&
-        mSceneSystem->IsPlaying() && mSceneSystem->GetFadeTimer() <= -1.0f && !mSceneSystem->IsFadingOut()) {
-        mTgsExperienceController->StartSession(GetIsPlayer2Joined() ? 2 : 1,
-                                               ResolveControlStyleLogName(mPlayerControlStyle));
-    }
-
-    if (mTgsExperienceController->IsPlaying()) {
-        mTgsExperienceController->UpdateProgress(GetCurrentStageNum(), ResolveCurrentPlanetNumberForTgsLog(),
-                                                 GetIsPlayer2Joined() ? 2 : 1,
-                                                 ResolveControlStyleLogName(mPlayerControlStyle));
-    }
-    const bool isSceneTransitionActive = mSceneSystem->GetFadeTimer() > -1.0f || mSceneSystem->IsFadingOut();
-    const bool shouldPauseThankYouTimer =
-        mTgsExperienceController->IsThankYouScreenVisible() && isSceneTransitionActive;
-    if (!shouldPauseThankYouTimer) {
-        mTgsExperienceController->Update(elapsedSeconds);
-    }
-
-    if (mTgsExperienceController->IsEndingSession()) {
-        mTgsExperienceController->SaveSessionLog();
-        ClosePauseMenu();
-        mSceneSystem->RequestFadeAction([this]() { mTgsExperienceController->ShowThankYouScreen(); });
-        return;
-    }
-
-    if (mTgsExperienceController->ShouldReturnToTitle()) {
-        mSceneSystem->RequestFadeAction([this]() { ResetTgsExperienceAtTitle(); });
-    }
-}
-
-void Game::ResetTgsExperienceAtTitle()
-{
-    ClosePauseMenu();
-    if (mSequenceSystem) {
-        mSequenceSystem->Stop(true);
-    }
-    if (mPlayerConfigurationController) {
-        mPlayerConfigurationController->ReturnToSinglePlayer();
-        mPlayerConfigurationController->Reset();
-    }
-    if (mProgressController) {
-        mProgressController->ResetForNewSession();
-    }
-    mSceneSystem->ResetTutorialsForNewSession();
-
-    mPlayerControlStyle = PlayerControlStyle::Standard;
-    mTitleMenuSelection = 0;
-    mSceneSystem->EnterTitleAtFadeMidpoint();
-    mTgsExperienceController->ResetForNextSession();
-    mInputSystem->SuppressOneShotInputUntilReleased();
-}
-
-int Game::ResolveCurrentPlanetNumberForTgsLog() const
-{
-    const Player* mainPlayer = GetMainPlayer();
-    return mainPlayer ? mainPlayer->GetCurrentPlanetNum() : -1;
-}
-
 void Game::UpdateActors(float deltaTime)
 {
     // Actor更新中の生成で走査中のコンテナを変えないよう、予約したドロップは更新後に生成する。
@@ -723,51 +627,6 @@ void Game::UpdateActors(float deltaTime)
     if (mEnemyJewelDropSystem) {
         mEnemyJewelDropSystem->SpawnPendingDrops();
     }
-}
-
-void Game::UpdateMouseCursorVisibility()
-{
-    if (!mWindow) {
-        return;
-    }
-
-    const bool shouldShowMouseCursor = mIsDebugEditorShowing;
-    const int desiredCursorMode = shouldShowMouseCursor ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN;
-    if (glfwGetInputMode(mWindow, GLFW_CURSOR) != desiredCursorMode) {
-        glfwSetInputMode(mWindow, GLFW_CURSOR, desiredCursorMode);
-    }
-}
-
-void Game::UpdateTextInputMethodAvailability()
-{
-#ifdef _WIN32
-    if (!mWindow) {
-        return;
-    }
-
-    const bool shouldAllowTextInput = IsEditorKeyboardInputCaptured();
-    if (mWasTextInputMethodAllowed == shouldAllowTextInput) {
-        return;
-    }
-
-    HWND windowHandle = glfwGetWin32Window(mWindow);
-    if (!windowHandle) {
-        return;
-    }
-
-    // 通常操作中のIMEによるキー入力の干渉を避け、エディターが文字入力を受ける間だけ有効にする。
-    if (shouldAllowTextInput) {
-        ImmAssociateContextEx(windowHandle, nullptr, IACE_DEFAULT);
-    } else {
-        if (HIMC inputContext = ImmGetContext(windowHandle)) {
-            ImmSetOpenStatus(inputContext, FALSE);
-            ImmReleaseContext(windowHandle, inputContext);
-        }
-        ImmAssociateContextEx(windowHandle, nullptr, 0);
-    }
-
-    mWasTextInputMethodAllowed = shouldAllowTextInput;
-#endif
 }
 
 bool Game::IsTgsBuild() const
@@ -781,30 +640,30 @@ bool Game::IsTgsBuild() const
 
 bool Game::IsTgsThankYouScreenVisible() const
 {
-    return mTgsExperienceController && mTgsExperienceController->IsThankYouScreenVisible();
+    return mSessionController && mSessionController->IsTgsThankYouScreenVisible();
 }
 
 bool Game::IsTgsRemainingTimeNoticeVisible() const
 {
-    return mTgsExperienceController && mTgsExperienceController->IsRemainingTimeNoticeVisible();
+    return mSessionController && mSessionController->IsTgsRemainingTimeNoticeVisible();
 }
 
 bool Game::ShouldBlockInputForTgsPresentation() const
 {
-    return mTgsExperienceController && mTgsExperienceController->ShouldBlockGameInput();
+    return mSessionController && mSessionController->ShouldBlockInputForTgsPresentation();
 }
 
 void Game::SkipTgsExperienceToRemainingTimeNotice()
 {
-    if (mTgsExperienceController) {
-        mTgsExperienceController->SkipToRemainingTimeNotice();
+    if (mSessionController) {
+        mSessionController->SkipTgsExperienceToRemainingTimeNotice();
     }
 }
 
 void Game::EndTgsExperienceNow()
 {
-    if (mTgsExperienceController) {
-        mTgsExperienceController->EndSessionNow();
+    if (mSessionController) {
+        mSessionController->EndTgsExperienceNow();
     }
 }
 
@@ -882,11 +741,6 @@ void Game::SetUGCOrthographicHalfHeight(float halfHeight)
 float Game::GetUGCOrthographicHalfHeight() const
 {
     return mUGCPreviewController->GetOrthographicHalfHeight();
-}
-
-void Game::SetUGCGridSize(float gridSize)
-{
-    mUGCPreviewController->SetGridSize(gridSize);
 }
 
 float Game::GetUGCGridSize() const
@@ -1067,11 +921,6 @@ void Game::UpdatePendingSoloSplitControlSwitch(float deltaTime)
     }
 }
 
-void Game::LoadData()
-{
-    mStageFlowController->LoadData(*this);
-}
-
 void Game::ChangeStage(int stageNum)
 {
     mStageFlowController->ChangeStage(*mWorld, stageNum);
@@ -1140,7 +989,7 @@ bool Game::DebugEnterTitle()
     }
 
     mSceneSystem->DebugEnterTitle();
-    mTitleMenuSelection = 0;
+    mSessionController->ResetTitleMenuSelection();
     mAudioSystem->TryChangeBGM();
     return true;
 }
@@ -1257,33 +1106,21 @@ void Game::OpenUGCWorkBrowser()
 
 void Game::MoveTitleMenuSelection(int delta)
 {
-    if (!mSceneSystem || !mSceneSystem->IsTitle() || mSceneSystem->IsTransitionActive() || delta == 0) {
-        return;
+    if (mSessionController) {
+        mSessionController->MoveTitleMenuSelection(delta);
     }
-
-    constexpr int titleMenuItemCount = 3;
-    mTitleMenuSelection = (mTitleMenuSelection + delta + titleMenuItemCount) % titleMenuItemCount;
 }
 
 void Game::ExecuteTitleMenuSelection()
 {
-    if (!mSceneSystem || !mSceneSystem->IsTitle() || mSceneSystem->IsTransitionActive()) {
-        return;
+    if (mSessionController) {
+        mSessionController->ExecuteTitleMenuSelection();
     }
+}
 
-    switch (mTitleMenuSelection) {
-    case 0:
-        mSceneSystem->StartBattleStyleSelection();
-        break;
-    case 1:
-        mSceneSystem->RequestFadeAction([this]() { mUGCModeController->StartModeFromTitleSelection(); });
-        break;
-    case 2:
-        OpenUGCWorkBrowser();
-        break;
-    default:
-        break;
-    }
+int Game::GetTitleMenuSelection() const
+{
+    return mSessionController ? mSessionController->GetTitleMenuSelection() : 0;
 }
 
 void Game::CloseUGCWorkBrowser()
@@ -1420,14 +1257,7 @@ bool Game::LoadDebugStage(int stageNum, const std::string& yamlPath)
         return false;
     }
 
-    if (!mWorld->ChangeStage(stageNum)) {
-        return false;
-    }
-
-    mStageFlowController->SetCurrentStageYamlPath(yamlPath);
-    mSceneSystem->StartPlayingScene();
-    ReloadCurrentStage();
-    return true;
+    return mSceneSystem->LoadStageIntoPlayingScene([&]() { return LoadStageForScene(stageNum, yamlPath); });
 }
 
 void Game::CheckGameControllerConnected()
@@ -1508,8 +1338,8 @@ void Game::SetStageCleared(int stageNum, bool isCleared)
     if (mProgressController) {
         mProgressController->SetStageCleared(stageNum, isCleared);
     }
-    if (isCleared && mTgsExperienceController) {
-        mTgsExperienceController->RecordStageCleared(stageNum);
+    if (isCleared && mSessionController) {
+        mSessionController->RecordStageCleared(stageNum);
     }
 }
 
@@ -1603,8 +1433,8 @@ void Game::OnLanded()
 
 void Game::OnPlayerDied()
 {
-    if (mTgsExperienceController) {
-        mTgsExperienceController->RecordPlayerDeath();
+    if (mSessionController) {
+        mSessionController->RecordPlayerDeath();
     }
     mSceneSystem->OnPlayerDied();
 }
@@ -1626,48 +1456,9 @@ Player* Game::FindNearestPlayer(Actor* actor) const
     return mWorld->FindNearestPlayer(actor);
 }
 
-void Game::FinishGame()
-{
-    if (mProgressController) {
-        mProgressController->Save();
-    }
-    glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
-}
-
 void Game::ReturnToTitleFromPauseMenu()
 {
-    ClosePauseMenu();
-    if (mTgsExperienceController) {
-        mTgsExperienceController->SaveSessionLogBeforeTitleReturn();
-    }
-    if (mProgressController) {
-        mProgressController->Save();
-    }
-
-    if (GetIsUGCMode()) {
-        ExitUGCMode();
-        return;
-    }
-
-    mSceneSystem->RequestFadeAction([this]() {
-        if (mTgsExperienceController) {
-            ResetTgsExperienceAtTitle();
-            return;
-        }
-
-        if (mSequenceSystem) {
-            mSequenceSystem->Stop(true);
-        }
-        if (mPlayerConfigurationController) {
-            mPlayerConfigurationController->ReturnToSinglePlayer();
-            mPlayerConfigurationController->Reset();
-        }
-
-        mTitleMenuSelection = 0;
-        mSceneSystem->EnterTitleAtFadeMidpoint();
-        mAudioSystem->TryChangeBGM();
-        mInputSystem->SuppressOneShotInputUntilReleased();
-    });
+    mSessionController->ReturnToTitle();
 }
 
 void Game::RestartGame()
@@ -1834,14 +1625,21 @@ const std::string& Game::GetCurrentStageYamlPath() const
 
 bool Game::LoadStageForScene(int stageNum, const std::string& yamlPath)
 {
+    const int previousStageNum = mWorld->GetCurrentStageNum();
+    const std::string previousYamlPath = mStageFlowController->GetCurrentStageYamlPath();
     if (yamlPath.empty() || stageNum < 0 || stageNum >= static_cast<int>(GetStages().size()) ||
         !mWorld->ChangeStage(stageNum)) {
         return false;
     }
 
     mStageFlowController->SetCurrentStageYamlPath(yamlPath);
-    ReloadCurrentStage();
-    return true;
+    if (ReloadCurrentStage()) {
+        return true;
+    }
+    mWorld->ChangeStage(previousStageNum);
+    mStageFlowController->SetCurrentStageYamlPath(previousYamlPath);
+    mPhysicsSystem->Initialize();
+    return false;
 }
 
 std::string Game::GetNPCConversationId(const NPC* npc) const

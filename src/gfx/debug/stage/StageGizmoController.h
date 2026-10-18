@@ -1,10 +1,11 @@
 #pragma once
 
 #include "gfx/debug/DebugEditorContext.h"
-#include "gfx/debug/stage/StageSelectionController.h"
 
-#include "ImGuizmo.h"
 #include "imgui.h"
+
+// ImGuizmoはImGuiの型定義を前提とするため、imgui.hの後で読み込む。
+#include "ImGuizmo.h"
 
 #include <functional>
 #include <glm/glm.hpp>
@@ -12,10 +13,12 @@
 
 class Actor;
 
-// 選択Actorのギズモ操作を管理し、操作開始時のUndo記録と終了時の配置保存を通知する。
+class StageSelectionController;
+
+// 選択Actorのギズモ操作を管理し、操作終了時の配置保存を通知する。
 class StageGizmoController {
 public:
-    using Callback = std::function<void()>;
+    using SaveCallback = std::function<bool()>;
 
     enum class TranslationSpace {
         PlanetSurface,
@@ -23,7 +26,7 @@ public:
     };
 
     StageGizmoController(DebugEditorContext& context, StageSelectionController& selectionController,
-                         Callback pushUndoCallback, Callback savePlacementCallback);
+                         SaveCallback savePlacementCallback);
 
     // 毎フレーム呼ぶ。操作中は実行中Actorを変更し、操作完了時に保存コールバックを呼ぶ。
     void Update();
@@ -45,8 +48,7 @@ private:
     DebugEditorContext& mContext;
     StageSelectionController& mSelectionController;
 
-    Callback mPushUndoCallback;
-    Callback mSavePlacementCallback;
+    SaveCallback mSavePlacementCallback;
 
     ImGuizmo::OPERATION mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
     TranslationSpace mTranslationSpace = TranslationSpace::PlanetSurface;

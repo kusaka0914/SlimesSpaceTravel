@@ -13,6 +13,7 @@ void RegisterUGCWorkStorageTests(TestRegistry& tests);
 void RegisterUGCPlatformGridTests(TestRegistry& tests);
 void RegisterUGCPlatformDocumentTests(TestRegistry& tests);
 void RegisterStageEditHistoryTests(TestRegistry& tests);
+void RegisterStageActorSaveStateTests(TestRegistry& tests);
 void RegisterUGCWorkMetadataTests(TestRegistry& tests);
 void RegisterUGCSessionStateTests(TestRegistry& tests);
 void RegisterUGCPreviewStateTests(TestRegistry& tests);
@@ -37,9 +38,15 @@ void RegisterPlayerJewelGaugeTests(TestRegistry& tests);
 void RegisterPlayerSplitGuardStateTests(TestRegistry& tests);
 void RegisterTgsExperienceControllerTests(TestRegistry& tests);
 
+void RegisterEditorReliabilityTests(TestRegistry& tests);
+
+void RegisterPersistenceSafetyTests(TestRegistry& tests);
+
 int main()
 {
     TestRegistry tests;
+    RegisterPersistenceSafetyTests(tests);
+    RegisterEditorReliabilityTests(tests);
     RegisterNPCTalkDataTests(tests);
     RegisterStageActorNodeFactoryTests(tests);
     RegisterStagePlatformIdentifiersTests(tests);
@@ -50,6 +57,7 @@ int main()
     RegisterUGCPlatformGridTests(tests);
     RegisterUGCPlatformDocumentTests(tests);
     RegisterStageEditHistoryTests(tests);
+    RegisterStageActorSaveStateTests(tests);
     RegisterUGCWorkMetadataTests(tests);
     RegisterUGCSessionStateTests(tests);
     RegisterUGCPreviewStateTests(tests);

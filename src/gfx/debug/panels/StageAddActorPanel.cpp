@@ -39,11 +39,11 @@ void StageAddActorPanel::SetSelectionController(StageSelectionController* select
     mUGCPresetController.SetSelectionController(selectionController);
 }
 
-void StageAddActorPanel::SetPushUndoCallback(std::function<void()> pushUndoCallback)
+void StageAddActorPanel::SetEditExecutor(StageEditExecutor executeEdit)
 {
-    mUGCPlatformEditController.SetPushUndoCallback(pushUndoCallback);
-    mUGCPresetController.SetPushUndoCallback(pushUndoCallback);
-    mPlacementController.SetPushUndoCallback(std::move(pushUndoCallback));
+    mCreateService.SetEditExecutor(executeEdit);
+    mUGCPlatformEditController.SetEditExecutor(executeEdit);
+    mPlacementController.SetEditExecutor(std::move(executeEdit));
 }
 
 bool StageAddActorPanel::ActivateUGCPreset(UGCPresetKind presetKind)
@@ -61,15 +61,11 @@ void StageAddActorPanel::EndUGCEraseGesture()
     mUGCPlatformEditController.EndEraseGesture();
 }
 
-bool StageAddActorPanel::TryTranslateUGCPlatformCells(const StageActorRef& actorRef, const glm::vec3& worldDelta)
+UGCCellEditResult StageAddActorPanel::WriteTranslatedUGCCells(YAML::Node& config,
+                                                              const std::vector<StageActorRef>& actorRefs,
+                                                              const glm::vec3& worldDelta)
 {
-    return mUGCPlatformEditController.TryTranslateCells(actorRef, worldDelta);
-}
-
-bool StageAddActorPanel::TryTranslateUGCPlatformCells(const std::vector<StageActorRef>& actorRefs,
-                                                      const glm::vec3& worldDelta)
-{
-    return mUGCPlatformEditController.TryTranslateCells(actorRefs, worldDelta);
+    return mUGCPlatformCellService.WriteTranslatedCells(config, actorRefs, worldDelta);
 }
 
 bool StageAddActorPanel::TryTranslateUGCMovingPlatformDestinations(const std::vector<StageActorRef>& actorRefs,

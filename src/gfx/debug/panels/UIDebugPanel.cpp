@@ -583,12 +583,8 @@ void UIDebugPanel::DrawAssetPicker(std::string& texturePath, bool& flipVertical,
 
 void UIDebugPanel::SaveAllUI(UILoadSystem* uiLoadSystem)
 {
-    // 一方が失敗しても他方の保存は試す。結果の短絡評価で保存処理を省略しない。
-    const bool savedExistingUI = uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
-    const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
-
-    mStatusMessage =
-        savedExistingUI && savedCustomUI ? "すべてのUIを保存しました" : "一部またはすべてのUI保存に失敗しました";
+    std::string error;
+    mStatusMessage = uiLoadSystem->SaveEditorUI(error) ? "すべてのUIを保存しました" : "UI保存に失敗しました: " + error;
 }
 
 void UIDebugPanel::ReloadAllUI(UILoadSystem* uiLoadSystem)

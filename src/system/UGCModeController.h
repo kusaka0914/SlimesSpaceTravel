@@ -56,7 +56,7 @@ public:
     bool IsEditorTutorialActive() const;
 
 private:
-    void StartPlaytest(UGCPlaytestPurpose purpose);
+    bool StartPlaytest(UGCPlaytestPurpose purpose);
     bool StartModeWithStage(const std::string& yamlPath, bool isTutorial);
     bool HasSeenEditorTutorial() const;
     void CompleteModeExit(bool shouldOpenWorkBrowser);

@@ -152,13 +152,8 @@ bool StageActorCreateService::AddPlatform(int currentPlanetNum, const std::strin
 
     config["platforms"].push_back(platformNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index); });
 }
 
 std::optional<std::string> StageActorCreateService::AddPressureSwitchPlatform(
@@ -192,15 +187,15 @@ std::optional<std::string> StageActorCreateService::AddPressureSwitchPlatform(
         !StagePlatformConnections::AssignExclusiveSwitchTarget(config, index, targetPlatformId)) {
         return std::nullopt;
     }
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
+    if (!CommitCreation(config, [&]() {
+            if (!mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index)) {
+                return false;
+            }
+            SynchronizeRuntimeSwitchTargets(config);
+            return true;
+        })) {
         return std::nullopt;
     }
-
-    if (!mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index)) {
-        return std::nullopt;
-    }
-    SynchronizeRuntimeSwitchTargets(config);
-    mRuntimeCreationService.RefreshPhysicsWorld();
     return switchPlatformId;
 }
 
@@ -223,13 +218,8 @@ bool StageActorCreateService::AddRideMovingPlatform(int currentPlanetNum, const 
     platformNode["platformId"] = StagePlatformIdentifiers::CreateUniqueId(config);
     config["platforms"].push_back(platformNode);
 
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Platform, platformNode, index); });
 }
 
 bool StageActorCreateService::AddMovingPlatform(int currentPlanetNum, const StageActorPlacement& startPlacement,
@@ -266,12 +256,8 @@ bool StageActorCreateService::AddMovingPlatform(int currentPlanetNum, const Stag
     movement["endpointWaitSeconds"] = 0.5f;
     const int index = static_cast<int>(config["platforms"].size());
     config["platforms"].push_back(node);
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-    mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index); });
 }
 
 bool StageActorCreateService::AddFadingPlatform(int currentPlanetNum, const glm::vec3& scale,
@@ -292,12 +278,8 @@ bool StageActorCreateService::AddFadingPlatform(int currentPlanetNum, const glm:
     node["components"]["fadeOnStand"]["reappearDelay"] = 2.0f;
     const int index = static_cast<int>(config["platforms"].size());
     config["platforms"].push_back(node);
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-    mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index); });
 }
 
 bool StageActorCreateService::AddAdhesivePlatform(int currentPlanetNum, const glm::vec3& scale,
@@ -317,12 +299,8 @@ bool StageActorCreateService::AddAdhesivePlatform(int currentPlanetNum, const gl
     node["components"]["adhesion"] = YAML::Node(YAML::NodeType::Map);
     const int index = static_cast<int>(config["platforms"].size());
     config["platforms"].push_back(node);
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-    mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    return CommitCreation(config,
+                          [&]() { return mRuntimeCreationService.CreateActor(StageActorType::Platform, node, index); });
 }
 
 bool StageActorCreateService::AddTwoPlayerSwitchPair(int currentPlanetNum, const StageActorPlacement& firstPlacement,
@@ -355,18 +333,15 @@ bool StageActorCreateService::AddTwoPlayerSwitchPair(int currentPlanetNum, const
         !StagePlatformConnections::AssignExclusiveSwitchTarget(config, firstIndex, targetPlatformId)) {
         return false;
     }
-    if (!StageYamlRepository::SaveCurrentStage(mContext, config)) {
-        return false;
-    }
-
-    // 配置コールバック中の全ステージ再読込は選択・配置状態を破棄する。次の更新前に2個を生成できるため、ペアとして完全な状態で観測される。
-    const YAML::Node firstNode = config["platforms"][firstIndex];
-    const YAML::Node secondNode = config["platforms"][firstIndex + 1];
-    if (!mRuntimeCreationService.CreateActor(StageActorType::Platform, firstNode, firstIndex) ||
-        !mRuntimeCreationService.CreateActor(StageActorType::Platform, secondNode, firstIndex + 1)) {
-        return false;
-    }
-    SynchronizeRuntimeSwitchTargets(config);
-    mRuntimeCreationService.RefreshPhysicsWorld();
-    return true;
+    // 2個を次の更新前に生成し、片方でも失敗した場合はペア全体を復元する。
+    return CommitCreation(config, [&]() {
+        const YAML::Node firstNode = config["platforms"][firstIndex];
+        const YAML::Node secondNode = config["platforms"][firstIndex + 1];
+        if (!mRuntimeCreationService.CreateActor(StageActorType::Platform, firstNode, firstIndex) ||
+            !mRuntimeCreationService.CreateActor(StageActorType::Platform, secondNode, firstIndex + 1)) {
+            return false;
+        }
+        SynchronizeRuntimeSwitchTargets(config);
+        return true;
+    });
 }

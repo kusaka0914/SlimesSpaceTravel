@@ -13,6 +13,18 @@
 #include <optional>
 #include <unordered_map>
 
+namespace {
+
+bool IsBuiltInUGCEditorElement(const std::string& id)
+{
+    return id == "presetTools" || id == "selection" || id == "menu" || id == "quickTools" || id == "keyboardTools" ||
+           id == "play" || id == "preview" || id == "presetPlatform" || id == "presetEnemy" || id == "presetPlanet" ||
+           id == "presetSwitch" || id == "presetGoal" || id == "eraser" || id == "undo" || id == "redo" ||
+           id == "layerUp" || id == "layerDown" || id == "zoomIn" || id == "zoomOut";
+}
+
+} // namespace
+
 void UIRenderer::DrawCustomElement(const UILoadSystem::CustomElement& element, float viewportTopY, float viewportScale,
                                    bool centerTalkPrompt, float contentScale, const Player* inputPlayer, float opacity,
                                    const std::string* textOverride)
@@ -157,13 +169,6 @@ void UIRenderer::DrawCustomUI()
     static const std::string assistRecoverText = "体力回復";
     static const std::string assistChargingText = "溜め中";
     static const std::string assistFireChargedAttackText = "発射";
-    const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "selection" || id == "menu" || id == "quickTools" ||
-               id == "keyboardTools" || id == "play" || id == "preview" || id == "presetPlatform" ||
-               id == "presetEnemy" || id == "presetPlanet" || id == "presetSwitch" || id == "presetGoal" ||
-               id == "eraser" || id == "undo" || id == "redo" || id == "layerUp" || id == "layerDown" ||
-               id == "zoomIn" || id == "zoomOut";
-    };
 
     const auto& elements = mUILoadSystem->GetCustomElements();
     std::vector<const UILoadSystem::CustomElement*> sortedElements;
@@ -373,7 +378,7 @@ void UIRenderer::DrawCustomUI()
         }
 
         if (isUGCEditing &&
-            (element->screen != "ugc" || isBuiltInUGCEditorElement(element->id) || element->zOrder > 0)) {
+            (element->screen != "ugc" || IsBuiltInUGCEditorElement(element->id) || element->zOrder > 0)) {
             continue;
         }
         if (isUGCPlaytestActive && element->screen != "operation") {
@@ -506,18 +511,10 @@ void UIRenderer::DrawUGCForegroundCustomUI(const ImVec2& viewportMin, const ImVe
         return;
     }
 
-    const auto isBuiltInUGCEditorElement = [](const std::string& id) {
-        return id == "presetTools" || id == "selection" || id == "menu" || id == "quickTools" ||
-               id == "keyboardTools" || id == "play" || id == "preview" || id == "presetPlatform" ||
-               id == "presetEnemy" || id == "presetPlanet" || id == "presetSwitch" || id == "presetGoal" ||
-               id == "eraser" || id == "undo" || id == "redo" || id == "layerUp" || id == "layerDown" ||
-               id == "zoomIn" || id == "zoomOut" || id == "previewView";
-    };
-
     std::vector<const UILoadSystem::CustomElement*> elements;
     for (const UILoadSystem::CustomElement& element : mUILoadSystem->GetCustomElements()) {
-        if (element.screen == "ugc" && element.zOrder > 0 && !isBuiltInUGCEditorElement(element.id) &&
-            mUILoadSystem->IsCustomElementVisible(element)) {
+        if (element.screen == "ugc" && element.zOrder > 0 && !IsBuiltInUGCEditorElement(element.id) &&
+            element.id != "previewView" && mUILoadSystem->IsCustomElementVisible(element)) {
             elements.push_back(&element);
         }
     }

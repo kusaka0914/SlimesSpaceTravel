@@ -4,10 +4,10 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
-#include "gfx/debug/stage/StageActorQuery.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/SceneSystem.h"
+#include "system/actor_loader/StageActorLocator.h"
 
 #include <algorithm>
 #include <cmath>
@@ -193,10 +193,7 @@ Actor* SequenceSystem::ResolveActor(const SequenceActorRef& actorRef) const
         return nullptr;
     }
 
-    StageActorRef stageRef;
-    stageRef.sequenceName = actorRef.group;
-    stageRef.yamlIndex = actorRef.index;
-    return StageActorQuery::FindActorByRef(stage, stageRef);
+    return StageActorLocator{}.FindPlacedActor(*stage, actorRef.group, actorRef.index);
 }
 
 void SequenceSystem::CapturePreviewState(const GameplaySequence& sequence)

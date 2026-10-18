@@ -77,6 +77,9 @@ public:
     // ステージ内Actorの破棄前に呼び、編集側の選択参照を解除する。
     void ClearDebugActorReferencesForStageReload();
 
+    // 再読込成功後に呼ぶ。失敗時のRuntimeと保存失敗記録は保持する。
+    void NotifyDebugStageReloaded();
+
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
 

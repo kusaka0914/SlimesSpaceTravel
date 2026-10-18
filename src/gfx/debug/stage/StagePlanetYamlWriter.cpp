@@ -4,7 +4,6 @@
 #include "Stage.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
-#include "gfx/debug/stage/StageYamlRepository.h"
 
 #include <glm/glm.hpp>
 #include <string>
@@ -14,17 +13,21 @@ StagePlanetYamlWriter::StagePlanetYamlWriter(DebugEditorContext& context)
 {
 }
 
-bool StagePlanetYamlWriter::Save(bool shouldSaveEditorTransform) const
+bool StagePlanetYamlWriter::WriteSettings(YAML::Node& config) const
+{
+    return Write(config, false);
+}
+
+bool StagePlanetYamlWriter::WriteEditorAuthoredTransforms(YAML::Node& config) const
+{
+    return Write(config, true);
+}
+
+bool StagePlanetYamlWriter::Write(YAML::Node& config, bool shouldSaveEditorTransform) const
 {
     if (!mContext.game || !mContext.game->GetCurrentStage()) {
         return false;
     }
-
-    YAML::Node config;
-    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
-        return false;
-    }
-
     const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
     for (std::size_t planetIndex = 0; planetIndex < planets.size(); ++planetIndex) {
         Planet* planet = planets[planetIndex];
@@ -78,5 +81,5 @@ bool StagePlanetYamlWriter::Save(bool shouldSaveEditorTransform) const
         planetNode["rocketSpawnCondition"] = planet->GetRocketSpawnCondition();
     }
 
-    return StageYamlRepository::SaveCurrentStage(mContext, config);
+    return true;
 }

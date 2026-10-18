@@ -22,12 +22,12 @@
 #include <utility>
 
 StagePlatformEditor::StagePlatformEditor(DebugEditorContext& context, StageSelectionController& selectionController,
-                                         StageActorYamlWriter& stageActorYamlWriter, Callback pushUndo,
+                                         StageActorYamlWriter& stageActorYamlWriter, SavedEditCallback recordSavedEdit,
                                          Callback rebuildPhysicsWorld)
     : mContext(context),
       mStageActorYamlWriter(stageActorYamlWriter),
-      mPlatformTypeChanger(context, selectionController, stageActorYamlWriter, pushUndo),
-      mPushUndo(std::move(pushUndo)),
+      mPlatformTypeChanger(context, selectionController, stageActorYamlWriter, recordSavedEdit),
+      mRecordSavedEdit(std::move(recordSavedEdit)),
       mRebuildPhysicsWorld(std::move(rebuildPhysicsWorld))
 {
 }
@@ -52,22 +52,20 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     const bool wasMovementEnabled = movementEnabled;
     if (ImGui::Checkbox(("移動##platformMovementEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
                         &movementEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
-
         if (movementEnabled) {
             PlatformMovementComponent* movement = platform->AddMovementComponent();
             if (movement && platform->GetCurrentPlanet()) {
                 movement->SetBaseLocalPos(platform->GetPos() - platform->GetCurrentPlanet()->GetPos());
             }
             mPlatformTypeChangeStatus = "移動機能を追加しました";
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         } else if (sequenceName == "movingPlatforms") {
             const PlatformTypeDefinition* normalType = PlatformTypeRegistry::FindBySequenceName("platforms");
-            if (normalType && mPlatformTypeChanger.ChangePlatformType(sequenceName, listIndex, *normalType)) {
-                mPlatformTypeChangeStatus = "移動機能を削除しました";
+            if (normalType) {
+                const bool wasChanged = mPlatformTypeChanger.ChangePlatformType(sequenceName, listIndex, *normalType);
+                mPlatformTypeChangeStatus = wasChanged ? "移動機能を削除しました" : "移動機能を削除できませんでした";
+                // 失敗時も復旧用の再読込でPlatformが置き換わり得るため、元の参照で編集を続けない。
                 return true;
             }
             movementEnabled = wasMovementEnabled;
@@ -75,7 +73,7 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
         } else {
             platform->RemoveMovementComponent();
             mPlatformTypeChangeStatus = "移動機能を削除しました";
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         }
     }
@@ -83,15 +81,12 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     bool fadeEnabled = platform->GetFadeOnStandComponent() != nullptr;
     if (ImGui::Checkbox(("乗ると透明##platformFadeEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
                         &fadeEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (fadeEnabled) {
             platform->AddFadeOnStandComponent();
         } else {
             platform->RemoveFadeOnStandComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -99,15 +94,12 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     if (ImGui::Checkbox(
             ("ジャンプで表示切替##platformJumpToggleEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
             &jumpToggleEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (jumpToggleEnabled) {
             platform->AddJumpToggleComponent();
         } else {
             platform->RemoveJumpToggleComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -115,15 +107,12 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     if (ImGui::Checkbox(
             ("一定間隔で表示切替##platformIntervalToggleEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
             &intervalToggleEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (intervalToggleEnabled) {
             platform->AddIntervalToggleComponent();
         } else {
             platform->RemoveIntervalToggleComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -131,45 +120,36 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     if (ImGui::Checkbox(
             ("乗った方向へ移動##platformDirectionalMovementEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
             &directionalMovementEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (directionalMovementEnabled) {
             platform->AddDirectionalMovementComponent();
         } else {
             platform->RemoveDirectionalMovementComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
     bool rotationEnabled = platform->GetRotationComponent() != nullptr;
     if (ImGui::Checkbox(("回転##platformRotationEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
                         &rotationEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (rotationEnabled) {
             platform->AddRotationComponent();
         } else {
             platform->RemoveRotationComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
     bool conveyorEnabled = platform->GetConveyorComponent() != nullptr;
     if (ImGui::Checkbox(("ベルトコンベア##platformConveyorEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
                         &conveyorEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (conveyorEnabled) {
             platform->AddConveyorComponent();
         } else {
             platform->RemoveConveyorComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -177,15 +157,12 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     if (ImGui::Checkbox(
             ("触れたらくっつく##platformAdhesionEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
             &adhesionEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (adhesionEnabled) {
             platform->AddAdhesionComponent();
         } else {
             platform->RemoveAdhesionComponent();
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -193,9 +170,6 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
     if (ImGui::Checkbox(
             ("1人用スイッチ##platformPressureSwitchEnabled" + sequenceName + std::to_string(listIndex)).c_str(),
             &pressureSwitchEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (pressureSwitchEnabled) {
             platform->AddPressureSwitchComponent();
         } else {
@@ -204,7 +178,7 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
                 platform->RemoveEnemyClearUnlockComponent();
             }
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -213,9 +187,6 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
             ("2個連動・保持スイッチ##platformLatchedGroupSwitchEnabled" + sequenceName + std::to_string(listIndex))
                 .c_str(),
             &latchedGroupSwitchEnabled)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (latchedGroupSwitchEnabled) {
             platform->AddLatchedGroupSwitchComponent();
         } else {
@@ -224,7 +195,7 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
                 platform->RemoveEnemyClearUnlockComponent();
             }
         }
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -236,15 +207,12 @@ bool StagePlatformEditor::DrawPlatformTypeEditor(Platform* platform, const std::
                              std::to_string(listIndex))
                                 .c_str(),
                             &enemyClearUnlockEnabled)) {
-            if (mPushUndo) {
-                mPushUndo();
-            }
             if (enemyClearUnlockEnabled) {
                 platform->AddEnemyClearUnlockComponent();
             } else {
                 platform->RemoveEnemyClearUnlockComponent();
             }
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         }
     }
@@ -455,17 +423,13 @@ void StagePlatformEditor::DrawSwitchActorTargets(
         if (!ImGui::Checkbox(targetLabel.c_str(), &isSelected)) {
             continue;
         }
-
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (isSelected && selectedTarget == targets.end()) {
             targets.emplace_back(candidate);
         } else if (!isSelected && selectedTarget != targets.end()) {
             targets.erase(selectedTarget);
         }
         setTargets(targets);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -490,10 +454,6 @@ void StagePlatformEditor::DrawSwitchActorTargets(
         if (!ImGui::Checkbox(missingLabel.c_str(), &keepTarget) || keepTarget) {
             continue;
         }
-
-        if (mPushUndo) {
-            mPushUndo();
-        }
         targets.erase(std::remove_if(targets.begin(), targets.end(),
                                      [&missingTarget](const PlatformRevealTarget& current) {
                                          return current.sequenceName == missingTarget.sequenceName &&
@@ -501,7 +461,7 @@ void StagePlatformEditor::DrawSwitchActorTargets(
                                      }),
                       targets.end());
         setTargets(targets);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -624,11 +584,8 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
     bool shouldRemainOnAfterPressed = pressureSwitch->ShouldRemainOnAfterPressed();
     if (ImGui::Checkbox(("一度乗ったら離れてもONを保持##pressureSwitchRemainsOn" + std::to_string(yamlIndex)).c_str(),
                         &shouldRemainOnAfterPressed)) {
-        if (mPushUndo) {
-            mPushUndo();
-        }
         pressureSwitch->SetShouldRemainOnAfterPressed(shouldRemainOnAfterPressed);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
     }
 
     float inactiveOpacity = pressureSwitch->GetInactiveOpacity();
@@ -660,10 +617,6 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
             instance.ref.label + "##pressureSwitchTarget_" + platform->GetPlatformId() + "_" + targetId;
 
         if (ImGui::Checkbox(label.c_str(), &isSelected)) {
-            if (mPushUndo) {
-                mPushUndo();
-            }
-
             if (isSelected && targetIt == targetIds.end()) {
                 targetIds.emplace_back(targetId);
             } else if (!isSelected && targetIt != targetIds.end()) {
@@ -671,7 +624,7 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
             }
 
             pressureSwitch->SetTargetPlatformIds(targetIds);
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         }
     }
@@ -687,12 +640,9 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
         const std::string label = "見つからない対象: " + missingTargetId + "##missingPressureSwitchTarget_" +
                                   platform->GetPlatformId() + "_" + missingTargetId;
         if (ImGui::Checkbox(label.c_str(), &keepTarget) && !keepTarget) {
-            if (mPushUndo) {
-                mPushUndo();
-            }
             targetIds.erase(std::remove(targetIds.begin(), targetIds.end(), missingTargetId), targetIds.end());
             pressureSwitch->SetTargetPlatformIds(targetIds);
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         }
     }
@@ -719,17 +669,13 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
         if (!ImGui::Checkbox(label.c_str(), &isSelected)) {
             continue;
         }
-
-        if (mPushUndo) {
-            mPushUndo();
-        }
         if (isSelected && targetIt == targetEnemyRefs.end()) {
             targetEnemyRefs.emplace_back(candidate);
         } else if (!isSelected && targetIt != targetEnemyRefs.end()) {
             targetEnemyRefs.erase(targetIt);
         }
         pressureSwitch->SetTargetEnemyRefs(targetEnemyRefs);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -753,10 +699,6 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
         if (!ImGui::Checkbox(label.c_str(), &keepTarget) || keepTarget) {
             continue;
         }
-
-        if (mPushUndo) {
-            mPushUndo();
-        }
         targetEnemyRefs.erase(std::remove_if(targetEnemyRefs.begin(), targetEnemyRefs.end(),
                                              [&missingTarget](const PlatformRevealTarget& current) {
                                                  return current.sequenceName == missingTarget.sequenceName &&
@@ -764,7 +706,7 @@ void StagePlatformEditor::DrawPressureSwitchSettings(Platform* platform, int yam
                                              }),
                               targetEnemyRefs.end());
         pressureSwitch->SetTargetEnemyRefs(targetEnemyRefs);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -824,9 +766,6 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
         for (const std::string& groupId : existingGroupIds) {
             const bool isSelected = groupId == currentGroupId;
             if (ImGui::Selectable(groupId.c_str(), isSelected) && !isSelected) {
-                if (mPushUndo) {
-                    mPushUndo();
-                }
                 preservePreviousGroupSettings();
                 latchedSwitch->SetGroupId(groupId);
 
@@ -834,7 +773,7 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
                 latchedSwitch->SetHideTargets({});
                 bool groupWasNormalized = false;
                 NormalizeLatchedSwitchGroupConfiguration(groupId, groupWasNormalized);
-                mStageActorYamlWriter.SaveAllActorStates();
+                mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
                 RequestPhysicsWorldRebuild();
             }
             if (isSelected) {
@@ -854,7 +793,7 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
     if (ImGui::IsItemDeactivatedAfterEdit()) {
         bool groupWasNormalized = false;
         NormalizeLatchedSwitchGroupConfiguration(latchedSwitch->GetGroupId(), groupWasNormalized);
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
     ImGui::TextDisabled("対応させる2個の足場へ、同じグループIDを設定してください。");
@@ -863,7 +802,7 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
     PlatformLatchedGroupSwitchComponent* settingsOwner =
         NormalizeLatchedSwitchGroupConfiguration(latchedSwitch->GetGroupId(), groupWasNormalized);
     if (groupWasNormalized) {
-        mStageActorYamlWriter.SaveAllActorStates();
+        mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
         RequestPhysicsWorldRebuild();
     }
 
@@ -917,17 +856,13 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
             if (!ImGui::Checkbox(targetLabel.c_str(), &isSelected)) {
                 continue;
             }
-
-            if (mPushUndo) {
-                mPushUndo();
-            }
             if (isSelected && selectedTarget == revealTargets.end()) {
                 revealTargets.emplace_back(candidate);
             } else if (!isSelected && selectedTarget != revealTargets.end()) {
                 revealTargets.erase(selectedTarget);
             }
             latchedSwitch->SetRevealTargets(revealTargets);
-            mStageActorYamlWriter.SaveAllActorStates();
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
             RequestPhysicsWorldRebuild();
         }
 
@@ -951,9 +886,6 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
                                              std::to_string(yamlIndex) + "_" + missingTarget.sequenceName + "_" +
                                              std::to_string(missingTarget.yamlIndex);
             if (ImGui::Checkbox(missingLabel.c_str(), &keepTarget) && !keepTarget) {
-                if (mPushUndo) {
-                    mPushUndo();
-                }
                 revealTargets.erase(std::remove_if(revealTargets.begin(), revealTargets.end(),
                                                    [&missingTarget](const PlatformRevealTarget& current) {
                                                        return current.sequenceName == missingTarget.sequenceName &&
@@ -961,7 +893,7 @@ void StagePlatformEditor::DrawLatchedGroupSwitchSettings(Platform* platform, int
                                                    }),
                                     revealTargets.end());
                 latchedSwitch->SetRevealTargets(revealTargets);
-                mStageActorYamlWriter.SaveAllActorStates();
+                mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
                 RequestPhysicsWorldRebuild();
             }
         }

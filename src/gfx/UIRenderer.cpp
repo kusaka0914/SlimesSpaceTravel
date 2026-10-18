@@ -345,6 +345,13 @@ void UIRenderer::ClearDebugActorReferencesForStageReload()
     }
 }
 
+void UIRenderer::NotifyDebugStageReloaded()
+{
+    if (mDebugEditorBridge) {
+        mDebugEditorBridge->NotifyStageReloaded();
+    }
+}
+
 bool UIRenderer::SaveDebugEditorSession(const std::string& filePath, std::string& outErrorMessage)
 {
     if (!mDebugEditorBridge) {

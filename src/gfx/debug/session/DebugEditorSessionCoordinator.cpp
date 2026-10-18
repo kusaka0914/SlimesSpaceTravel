@@ -31,7 +31,10 @@ bool DebugEditorSessionCoordinator::Save(const std::string& filePath, const Debu
                                          std::string& outErrorMessage)
 {
     // 実行時の移動は保存せず、編集操作で変更したTransformだけを保存する。
-    mStagePlanetPanel.SaveEditorAuthoredTransforms();
+    if (!mStagePlanetPanel.SaveEditorAuthoredTransforms()) {
+        outErrorMessage = "ステージの編集内容を保存できないため、エディターのセッション保存を中止しました。";
+        return false;
+    }
 
     EditorSessionState sessionState;
     if (mContext.game) {

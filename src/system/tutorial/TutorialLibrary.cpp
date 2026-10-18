@@ -1,10 +1,11 @@
 #include "system/tutorial/TutorialLibrary.h"
 
+#include "utils/AtomicFile.h"
+
 #include "system/text/JapaneseRubyGenerator.h"
 
 #include <algorithm>
 #include <cctype>
-#include <fstream>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
@@ -107,6 +108,59 @@ YAML::Node SaveRubySegments(const std::vector<RubyTextSegment>& segments)
     }
     return node;
 }
+
+YAML::Node SavePage(const TutorialPage& page)
+{
+    YAML::Node pageNode;
+    pageNode["id"] = page.id;
+    pageNode["text"] = page.text;
+    if (!page.controllerText.empty()) {
+        pageNode["controllerText"] = page.controllerText;
+    }
+    if (!page.keyboardText.empty()) {
+        pageNode["keyboardText"] = page.keyboardText;
+    }
+    if (!page.objectiveText.empty()) {
+        pageNode["objectiveText"] = page.objectiveText;
+    }
+    if (!page.controllerObjectiveText.empty()) {
+        pageNode["controllerObjectiveText"] = page.controllerObjectiveText;
+    }
+    if (!page.keyboardObjectiveText.empty()) {
+        pageNode["keyboardObjectiveText"] = page.keyboardObjectiveText;
+    }
+    if (!page.objectivePlatformId.empty()) {
+        pageNode["objectivePlatformId"] = page.objectivePlatformId;
+    }
+    if (!page.text.empty() && JoinRubyBaseText(page.rubySegments) == page.text) {
+        pageNode["ruby"]["common"] = SaveRubySegments(page.rubySegments);
+    }
+    if (!page.controllerText.empty() && JoinRubyBaseText(page.controllerRubySegments) == page.controllerText) {
+        pageNode["ruby"]["controller"] = SaveRubySegments(page.controllerRubySegments);
+    }
+    if (!page.keyboardText.empty() && JoinRubyBaseText(page.keyboardRubySegments) == page.keyboardText) {
+        pageNode["ruby"]["keyboard"] = SaveRubySegments(page.keyboardRubySegments);
+    }
+    pageNode["advance"] = GetTutorialAdvanceConditionId(page.advanceCondition);
+
+    if (page.focusTarget.IsValid()) {
+        pageNode["focus"]["sequence"] = page.focusTarget.sequenceName;
+        pageNode["focus"]["index"] = page.focusTarget.yamlIndex;
+    }
+
+    if (page.video.IsEnabled()) {
+        pageNode["video"]["asset"] = page.video.assetPath;
+        pageNode["video"]["xRatio"] = page.video.xRatio;
+        pageNode["video"]["yRatio"] = page.video.yRatio;
+        pageNode["video"]["widthRatio"] = page.video.widthRatio;
+        pageNode["video"]["heightRatio"] = page.video.heightRatio;
+        pageNode["video"]["rotationDegrees"] = page.video.rotationDegrees;
+        pageNode["video"]["loop"] = page.video.shouldLoop;
+        pageNode["video"]["preserveAspectRatio"] = page.video.shouldPreserveAspectRatio;
+        pageNode["video"]["flipVertical"] = page.video.shouldFlipVertical;
+    }
+    return pageNode;
+}
 } // namespace
 
 const std::string& TutorialPage::ResolveText(bool usesController) const
@@ -144,7 +198,7 @@ TutorialLibrary::TutorialLibrary(std::string path)
 
 bool TutorialLibrary::Load()
 {
-    mDefinitions.clear();
+    std::vector<TutorialDefinition> loadedDefinitions;
     mLastError.clear();
 
     try {
@@ -158,7 +212,9 @@ bool TutorialLibrary::Load()
         for (const YAML::Node& tutorialNode : tutorials) {
             TutorialDefinition definition;
             definition.id = ReadString(tutorialNode, "id");
-            if (definition.id.empty() || Find(definition.id)) {
+            if (definition.id.empty() ||
+                std::any_of(loadedDefinitions.begin(), loadedDefinitions.end(),
+                            [&definition](const TutorialDefinition& loaded) { return loaded.id == definition.id; })) {
                 continue;
             }
 
@@ -232,13 +288,14 @@ bool TutorialLibrary::Load()
                 }
             }
 
-            mDefinitions.emplace_back(std::move(definition));
+            loadedDefinitions.emplace_back(std::move(definition));
         }
     } catch (const YAML::Exception& exception) {
         mLastError = exception.what();
         return false;
     }
 
+    mDefinitions.swap(loadedDefinitions);
     return true;
 }
 
@@ -261,123 +318,22 @@ bool TutorialLibrary::Save()
         tutorialNode["pages"] = YAML::Node(YAML::NodeType::Sequence);
 
         for (const TutorialPage& page : definition.pages) {
-            YAML::Node pageNode;
-            pageNode["id"] = page.id;
-            pageNode["text"] = page.text;
-            if (!page.controllerText.empty()) {
-                pageNode["controllerText"] = page.controllerText;
-            }
-            if (!page.keyboardText.empty()) {
-                pageNode["keyboardText"] = page.keyboardText;
-            }
-            if (!page.objectiveText.empty()) {
-                pageNode["objectiveText"] = page.objectiveText;
-            }
-            if (!page.controllerObjectiveText.empty()) {
-                pageNode["controllerObjectiveText"] = page.controllerObjectiveText;
-            }
-            if (!page.keyboardObjectiveText.empty()) {
-                pageNode["keyboardObjectiveText"] = page.keyboardObjectiveText;
-            }
-            if (!page.objectivePlatformId.empty()) {
-                pageNode["objectivePlatformId"] = page.objectivePlatformId;
-            }
-            if (!page.text.empty() && JoinRubyBaseText(page.rubySegments) == page.text) {
-                pageNode["ruby"]["common"] = SaveRubySegments(page.rubySegments);
-            }
-            if (!page.controllerText.empty() && JoinRubyBaseText(page.controllerRubySegments) == page.controllerText) {
-                pageNode["ruby"]["controller"] = SaveRubySegments(page.controllerRubySegments);
-            }
-            if (!page.keyboardText.empty() && JoinRubyBaseText(page.keyboardRubySegments) == page.keyboardText) {
-                pageNode["ruby"]["keyboard"] = SaveRubySegments(page.keyboardRubySegments);
-            }
-            pageNode["advance"] = GetTutorialAdvanceConditionId(page.advanceCondition);
-
-            if (page.focusTarget.IsValid()) {
-                pageNode["focus"]["sequence"] = page.focusTarget.sequenceName;
-                pageNode["focus"]["index"] = page.focusTarget.yamlIndex;
-            }
-
-            if (page.video.IsEnabled()) {
-                pageNode["video"]["asset"] = page.video.assetPath;
-                pageNode["video"]["xRatio"] = page.video.xRatio;
-                pageNode["video"]["yRatio"] = page.video.yRatio;
-                pageNode["video"]["widthRatio"] = page.video.widthRatio;
-                pageNode["video"]["heightRatio"] = page.video.heightRatio;
-                pageNode["video"]["rotationDegrees"] = page.video.rotationDegrees;
-                pageNode["video"]["loop"] = page.video.shouldLoop;
-                pageNode["video"]["preserveAspectRatio"] = page.video.shouldPreserveAspectRatio;
-                pageNode["video"]["flipVertical"] = page.video.shouldFlipVertical;
-            }
-
-            tutorialNode["pages"].push_back(pageNode);
+            tutorialNode["pages"].push_back(SavePage(page));
         }
 
         if (definition.usesAssistPages) {
             tutorialNode["assistPages"] = YAML::Node(YAML::NodeType::Sequence);
             for (const TutorialPage& page : definition.assistPages) {
-                YAML::Node pageNode;
-                pageNode["id"] = page.id;
-                pageNode["text"] = page.text;
-                if (!page.controllerText.empty()) {
-                    pageNode["controllerText"] = page.controllerText;
-                }
-                if (!page.keyboardText.empty()) {
-                    pageNode["keyboardText"] = page.keyboardText;
-                }
-                if (!page.objectiveText.empty()) {
-                    pageNode["objectiveText"] = page.objectiveText;
-                }
-                if (!page.controllerObjectiveText.empty()) {
-                    pageNode["controllerObjectiveText"] = page.controllerObjectiveText;
-                }
-                if (!page.keyboardObjectiveText.empty()) {
-                    pageNode["keyboardObjectiveText"] = page.keyboardObjectiveText;
-                }
-                if (!page.objectivePlatformId.empty()) {
-                    pageNode["objectivePlatformId"] = page.objectivePlatformId;
-                }
-                if (!page.text.empty() && JoinRubyBaseText(page.rubySegments) == page.text) {
-                    pageNode["ruby"]["common"] = SaveRubySegments(page.rubySegments);
-                }
-                if (!page.controllerText.empty() &&
-                    JoinRubyBaseText(page.controllerRubySegments) == page.controllerText) {
-                    pageNode["ruby"]["controller"] = SaveRubySegments(page.controllerRubySegments);
-                }
-                if (!page.keyboardText.empty() && JoinRubyBaseText(page.keyboardRubySegments) == page.keyboardText) {
-                    pageNode["ruby"]["keyboard"] = SaveRubySegments(page.keyboardRubySegments);
-                }
-                pageNode["advance"] = GetTutorialAdvanceConditionId(page.advanceCondition);
-                if (page.focusTarget.IsValid()) {
-                    pageNode["focus"]["sequence"] = page.focusTarget.sequenceName;
-                    pageNode["focus"]["index"] = page.focusTarget.yamlIndex;
-                }
-                if (page.video.IsEnabled()) {
-                    pageNode["video"]["asset"] = page.video.assetPath;
-                    pageNode["video"]["xRatio"] = page.video.xRatio;
-                    pageNode["video"]["yRatio"] = page.video.yRatio;
-                    pageNode["video"]["widthRatio"] = page.video.widthRatio;
-                    pageNode["video"]["heightRatio"] = page.video.heightRatio;
-                    pageNode["video"]["rotationDegrees"] = page.video.rotationDegrees;
-                    pageNode["video"]["loop"] = page.video.shouldLoop;
-                    pageNode["video"]["preserveAspectRatio"] = page.video.shouldPreserveAspectRatio;
-                    pageNode["video"]["flipVertical"] = page.video.shouldFlipVertical;
-                }
-                tutorialNode["assistPages"].push_back(pageNode);
+                tutorialNode["assistPages"].push_back(SavePage(page));
             }
         }
 
         root["tutorials"].push_back(tutorialNode);
     }
 
-    std::ofstream output(mPath);
-    if (!output.is_open()) {
-        mLastError = "failed to open tutorial yaml for writing";
+    if (!AtomicFile::WriteText(mPath, YAML::Dump(root), mLastError)) {
         return false;
     }
-
-    output << root;
-    mLastError.clear();
     return true;
 }
 

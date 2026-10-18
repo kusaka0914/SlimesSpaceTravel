@@ -11,12 +11,12 @@
 #include <utility>
 
 StagePlacementPanel::StagePlacementPanel(DebugEditorContext& context, StageSelectionController& selectionController,
-                                         StageActorYamlWriter& stageActorYamlWriter, Callback pushUndoCallback)
+                                         StageActorYamlWriter& stageActorYamlWriter, SavedEditCallback recordSavedEdit)
     : DebugPanel(context),
       mSelectionController(selectionController),
-      mStagePlayerEditor(context),
+      mStagePlayerEditor(context, recordSavedEdit),
       mStageActorInspector(context, selectionController, stageActorYamlWriter, mStagePlayerEditor,
-                           std::move(pushUndoCallback))
+                           std::move(recordSavedEdit))
 {
 }
 

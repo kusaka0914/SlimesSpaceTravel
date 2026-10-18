@@ -2,6 +2,7 @@
 
 #include "gfx/debug/DebugEditorContext.h"
 
+#include <functional>
 #include <string>
 
 class Actor;
@@ -10,7 +11,9 @@ class Player;
 // Playerの初期配置保存と、選択Actor付近へのデバッグ移動を提供する。
 class StagePlayerEditor {
 public:
-    explicit StagePlayerEditor(DebugEditorContext& context);
+    using SavedEditCallback = std::function<void(const std::string&)>;
+
+    explicit StagePlayerEditor(DebugEditorContext& context, SavedEditCallback recordSavedEdit = {});
 
     // Playerの現在の配置を初期配置として保存するUIを描画する。
     void DrawSpawnEditor();
@@ -23,6 +26,7 @@ private:
     bool MoveControlledPlayerToSelectedActor(Actor* selectedActor);
 
     DebugEditorContext& mContext;
+    SavedEditCallback mRecordSavedEdit;
     int mSelectedSpawnPlayerIndex = 0;
     std::string mPlayerSpawnStatus;
     std::string mPlayerDebugMoveStatus;

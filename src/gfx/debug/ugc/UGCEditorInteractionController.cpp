@@ -12,10 +12,12 @@
 #include "gfx/debug/stage/StageActorQuery.h"
 #include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageEditCommandController.h"
+#include "gfx/debug/stage/StagePlanetYamlWriter.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageYamlRepository.h"
 #include "gfx/debug/stage/UGCPlatformGrid.h"
 #include "gfx/debug/ugc/UGCSwitchConnectionState.h"
+#include "gfx/debug/ugc/UGCWorkMetadata.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -101,14 +103,13 @@ void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
     }
     const float gridSize = mContext.game->GetUGCGridSize();
     const glm::vec3 movement(static_cast<float>(gridX) * gridSize, 0.0f, static_cast<float>(gridZ) * gridSize);
-    mEditCommandController.PushUndo();
     std::vector<StageActorRef> selectedRefs;
     for (const StageActorInstance& selected : mSelectionController.CollectSelectedActorInstances()) {
         selectedRefs.push_back(selected.ref);
     }
     if (mSelectionController.IsMovingPlatformDestinationSelected()) {
-        const bool destinationMoved =
-            mStageAddActorPanel.TryTranslateUGCMovingPlatformDestinations(selectedRefs, movement);
+        const bool destinationMoved = mEditCommandController.ExecuteEdit(
+            [&]() { return mStageAddActorPanel.TryTranslateUGCMovingPlatformDestinations(selectedRefs, movement); });
         if (destinationMoved) {
             mSelectionController.Clear();
             mToolState.statusMessage = "移動先を1マス動かしました";
@@ -119,11 +120,37 @@ void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
     }
 
     mSelectionController.MoveSelectedActorsByDelta(movement);
-    const bool updatedUGCPlatform = mStageAddActorPanel.TryTranslateUGCPlatformCells(selectedRefs, movement);
-    if (updatedUGCPlatform) {
-        mSelectionController.Clear();
+    mToolState.statusMessage = SaveSelectionMove(selectedRefs, movement, StageEditGrouping::NewOperation)
+                                   ? "選んだものを1マス動かしました"
+                                   : "移動を保存できませんでした";
+}
+
+bool UGCEditorInteractionController::SaveSelectionMove(const std::vector<StageActorRef>& actorRefs,
+                                                       const glm::vec3& delta, StageEditGrouping grouping)
+{
+    UGCCellEditResult cellResult = UGCCellEditResult::Unchanged;
+    const bool saved = mEditCommandController.ExecuteEdit(
+        [&]() {
+            YAML::Node config;
+            if (!StageYamlRepository::LoadCurrentStage(mContext, config) ||
+                !mStageActorYamlWriter.WriteEditorAuthoredTransforms(config) ||
+                !StagePlanetYamlWriter(mContext).WriteEditorAuthoredTransforms(config)) {
+                return false;
+            }
+            cellResult = mStageAddActorPanel.WriteTranslatedUGCCells(config, actorRefs, delta);
+            UGCWorkMetadata::InvalidateClearVerification(config);
+            return cellResult != UGCCellEditResult::Failed && StageYamlRepository::SaveCurrentStage(mContext, config) &&
+                   mContext.game->ReloadCurrentStage();
+        },
+        grouping, StageEditFailureRecovery::RestoreRuntime);
+    if (saved && cellResult == UGCCellEditResult::Unchanged) {
+        std::unordered_set<std::string> keys;
+        for (const auto& actorRef : actorRefs) {
+            keys.insert(StageActorQuery::MakeKey(actorRef));
+        }
+        mSelectionController.SetSelectedKeys(keys);
     }
-    mToolState.statusMessage = "選んだものを1マス動かしました";
+    return saved;
 }
 
 bool UGCEditorInteractionController::TryIntersectEditLayerPlane(const glm::vec3& rayFrom, const glm::vec3& rayTo,
@@ -181,7 +208,6 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
 
     // クリックだけではUndoを増やさず、ドラッグ全体を1回の操作として記録する。
     if (!mDragState.hasMoved) {
-        mEditCommandController.PushUndo();
         mDragState.hasMoved = true;
     }
     if (mDragState.isMovingPlatformDestination) {
@@ -207,18 +233,22 @@ void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
     const bool isMovingPlatformDestination = isMovingSelectedActors && mDragState.isMovingPlatformDestination;
     if (isMovingSelectedActors) {
         if (!mDragState.hasMoved) {
-            mEditCommandController.PushUndo();
             mDragState.hasMoved = true;
         }
         const glm::vec3 layerMovement(
             0.0f, static_cast<float>(nextLayer - mToolState.editLayer) * mContext.game->GetUGCGridSize(), 0.0f);
         if (isMovingPlatformDestination) {
-            const bool wasSaved =
-                mStageAddActorPanel.TrySaveUGCMovingPlatformDestinationTranslation(mDragState.actorRefs, layerMovement);
+            const bool wasSaved = mEditCommandController.ExecuteEdit(
+                [&]() {
+                    return mStageAddActorPanel.TrySaveUGCMovingPlatformDestinationTranslation(mDragState.actorRefs,
+                                                                                              layerMovement);
+                },
+                mDragState.hasSavedEdit ? StageEditGrouping::ContinueOperation : StageEditGrouping::NewOperation);
             if (!wasSaved) {
                 mToolState.statusMessage = "移動先の高さを保存できませんでした";
                 return;
             }
+            mDragState.hasSavedEdit = true;
             mSelectionController.MoveSelectedMovingPlatformDestinationsByDelta(layerMovement);
             mDragState.savedDelta += layerMovement;
         } else {
@@ -436,6 +466,7 @@ void UGCEditorInteractionController::BeginSelectionDrag()
     mDragState.isDragging = true;
     mDragState.isMovingPlatformDestination = mSelectionController.IsMovingPlatformDestinationSelected();
     mDragState.hasMoved = false;
+    mDragState.hasSavedEdit = false;
     mDragState.dragStartCell = UGCPlatformGrid::CalculateGridPosition(intersection, gridSize);
     mDragState.appliedHorizontalCellDelta = glm::ivec3(0);
     mDragState.initialCenter = selectionCenter;
@@ -459,37 +490,27 @@ void UGCEditorInteractionController::FinishSelectionDrag()
             // レイヤー変更時に保存済みの差分を除き、終了時の二重適用を防ぐ。
             totalDelta = finalDestinationCenter - mDragState.initialCenter - mDragState.savedDelta;
         }
-        bool updatedUGCPlatform = false;
+        const StageEditGrouping grouping =
+            mDragState.hasSavedEdit ? StageEditGrouping::ContinueOperation : StageEditGrouping::NewOperation;
+        bool saved = false;
         if (mDragState.isMovingPlatformDestination) {
-            constexpr float minimumTranslationLength = 0.0001f;
-            updatedUGCPlatform = glm::length(totalDelta) < minimumTranslationLength;
-            if (!updatedUGCPlatform) {
-                updatedUGCPlatform =
-                    mStageAddActorPanel.TryTranslateUGCMovingPlatformDestinations(mDragState.actorRefs, totalDelta);
-            }
-            if (!updatedUGCPlatform) {
-                mSelectionController.MoveSelectedMovingPlatformDestinationsByDelta(-totalDelta);
+            saved = glm::length(totalDelta) < 0.0001f ||
+                    mEditCommandController.ExecuteEdit(
+                        [&]() {
+                            return mStageAddActorPanel.TryTranslateUGCMovingPlatformDestinations(mDragState.actorRefs,
+                                                                                                 totalDelta);
+                        },
+                        grouping, StageEditFailureRecovery::RestoreRuntime);
+            if (saved) {
+                mSelectionController.Clear();
             }
         } else {
-            mStageActorYamlWriter.SaveEditorAuthoredTransforms();
-            updatedUGCPlatform = mStageAddActorPanel.TryTranslateUGCPlatformCells(mDragState.actorRefs, totalDelta);
+            saved = SaveSelectionMove(mDragState.actorRefs, totalDelta, grouping);
         }
-        if (updatedUGCPlatform) {
-            mSelectionController.Clear();
-        }
-        mToolState.statusMessage = updatedUGCPlatform || !mDragState.isMovingPlatformDestination
-                                       ? "移動しました"
-                                       : "移動先を動かせませんでした";
-        if (updatedUGCPlatform || !mDragState.isMovingPlatformDestination) {
+        mToolState.statusMessage = saved ? "移動しました" : "移動を保存できませんでした";
+        if (saved) {
             mEditorTutorial.RecordSelectionMove();
         }
     }
-    mDragState.isDragging = false;
-    mDragState.isMovingPlatformDestination = false;
-    mDragState.hasMoved = false;
-    mDragState.dragStartCell = glm::ivec3(0);
-    mDragState.appliedHorizontalCellDelta = glm::ivec3(0);
-    mDragState.appliedDelta = glm::vec3(0.0f);
-    mDragState.savedDelta = glm::vec3(0.0f);
-    mDragState.actorRefs.clear();
+    mDragState.Reset();
 }

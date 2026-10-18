@@ -12,13 +12,19 @@ namespace {
 // シーンや描画を起動せず、Controllerからの要求とその順序を確認するための代替Runtime。
 class FakeUGCModeRuntime : public UGCModeRuntime {
 public:
+    bool GetIsDebugEditorShowing() const override { return isDebugEditorShowing; }
+    bool GetIsFreeCameraMode() const override { return isFreeCameraMode; }
     bool IsTitleScene() const override { return isTitleScene; }
 
     void SetDebugEditorShowing(bool isShowing) override { isDebugEditorShowing = isShowing; }
 
     void SetFreeCameraMode(bool isEnabled) override { isFreeCameraMode = isEnabled; }
 
-    void ReloadCurrentStage() override { ++reloadCount; }
+    bool ReloadCurrentStage() override
+    {
+        ++reloadCount;
+        return shouldReloadStage;
+    }
 
     bool LoadDebugStage(int stageNumber, const std::string& yamlPath) override
     {
@@ -81,6 +87,7 @@ public:
         }
     }
 
+    bool shouldReloadStage = true;
     bool isTitleScene = true;
     bool shouldLoadStage = true;
     bool shouldAcceptFadeAction = true;
@@ -265,6 +272,74 @@ void SavedWorkResultTitleExitsUGCMode()
     ExpectTrue(runtime.didEnterTitle, "title scene entered");
 }
 
+void FailedPlaytestReloadRestoresEditorState()
+{
+    FakeUGCModeRuntime runtime;
+    UGCModeController controller(runtime);
+    ExpectTrue(controller.StartMode(), "start editor");
+    runtime.isFreeCameraMode = false;
+    const bool wasDebugPanelShowing = controller.IsDebugPanelShowing();
+    const int previousStarts = runtime.startPlayingSceneCount;
+    runtime.shouldReloadStage = false;
+    controller.StartPlaytest();
+    ExpectFalse(controller.IsPlaytestActive(), "failed reload does not start playtest");
+    ExpectEqual(wasDebugPanelShowing, controller.IsDebugPanelShowing(), "editor panel state remains");
+    ExpectTrue(runtime.isDebugEditorShowing, "editor visibility restored");
+    ExpectFalse(runtime.isFreeCameraMode, "previous camera mode restored exactly");
+    ExpectEqual(previousStarts, runtime.startPlayingSceneCount, "scene is not advanced after failure");
+    runtime.shouldReloadStage = true;
+    controller.StartPlaytest();
+    ExpectTrue(controller.IsPlaytestActive(), "retry succeeds");
+}
+
+void FailedEditorReloadKeepsPlaytestState()
+{
+    FakeUGCModeRuntime runtime;
+    UGCModeController controller(runtime);
+    ExpectTrue(controller.StartMode(), "start editor");
+    controller.StartPlaytest();
+    const int previousStarts = runtime.startPlayingSceneCount;
+    runtime.shouldReloadStage = false;
+    controller.ReturnToEditor();
+    ExpectTrue(controller.IsPlaytestActive(), "failed return keeps playtest");
+    ExpectFalse(runtime.isDebugEditorShowing, "editor is not shown after failure");
+    ExpectEqual(previousStarts, runtime.startPlayingSceneCount, "failed return does not advance scene");
+    runtime.shouldReloadStage = true;
+    controller.ReturnToEditor();
+    ExpectFalse(controller.IsPlaytestActive(), "return can be retried");
+}
+
+void FailedVerificationReloadDoesNotLeaveVerificationActive()
+{
+    FakeUGCModeRuntime runtime;
+    UGCModeController controller(runtime);
+    ExpectTrue(controller.StartMode(), "start editor");
+    runtime.shouldReloadStage = false;
+    controller.StartClearVerification("work.yaml");
+    ExpectFalse(controller.IsVerificationActive(), "failed verification is cancelled");
+    ExpectFalse(controller.IsPlaytestActive(), "failed verification does not start playtest");
+    ExpectTrue(runtime.isDebugEditorShowing, "editor remains available");
+}
+
+void FailedModeExitRestoresModeAndRuntimeFlags()
+{
+    FakeUGCModeRuntime runtime;
+    UGCModeController controller(runtime);
+    ExpectTrue(controller.StartMode(), "start editor");
+    runtime.shouldLoadStage = false;
+    controller.ExitMode();
+    runtime.CompletePendingFade();
+    ExpectTrue(controller.IsModeActive(), "failed stage load keeps UGC mode");
+    ExpectTrue(runtime.isDebugEditorShowing, "editor remains visible");
+    ExpectTrue(runtime.isFreeCameraMode, "camera mode restored");
+    ExpectFalse(runtime.didEnterTitle, "failed exit does not enter title");
+    runtime.shouldLoadStage = true;
+    controller.ExitMode();
+    runtime.CompletePendingFade();
+    ExpectFalse(controller.IsModeActive(), "exit can be retried");
+    ExpectTrue(runtime.didEnterTitle, "retry enters title");
+}
+
 } // namespace
 
 void RegisterUGCModeControllerTests(TestRegistry& tests)
@@ -281,4 +356,9 @@ void RegisterUGCModeControllerTests(TestRegistry& tests)
     tests.emplace_back("UGCModeController.SavedWorkResultRetryRestartsPlaytest", SavedWorkResultRetryRestartsPlaytest);
     tests.emplace_back("UGCModeController.SavedWorkResultEditReturnsToEditor", SavedWorkResultEditReturnsToEditor);
     tests.emplace_back("UGCModeController.SavedWorkResultTitleExitsUGCMode", SavedWorkResultTitleExitsUGCMode);
+    tests.emplace_back("UGCModeController.FailedPlaytestReloadRestoresEditor", FailedPlaytestReloadRestoresEditorState);
+    tests.emplace_back("UGCModeController.FailedEditorReloadKeepsPlaytest", FailedEditorReloadKeepsPlaytestState);
+    tests.emplace_back("UGCModeController.FailedVerificationReloadCancelsVerification",
+                       FailedVerificationReloadDoesNotLeaveVerificationActive);
+    tests.emplace_back("UGCModeController.FailedModeExitRestoresMode", FailedModeExitRestoresModeAndRuntimeFlags);
 }

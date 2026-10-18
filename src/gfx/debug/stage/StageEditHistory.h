@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gfx/debug/stage/StageEditOperation.h"
+
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -9,8 +11,14 @@ class StageEditHistory {
 public:
     explicit StageEditHistory(std::size_t maximumUndoCount = 20);
 
+    // 同じステージの再読込では履歴を維持し、別パスへの切替時はUndo/Redoを解除する。
+    void BindToStage(const std::string& stagePath);
+
     // スナップショットを追加し、Redo履歴を破棄する。上限を超えたUndo履歴は古いものから除く。
     void PushUndoSnapshot(const std::string& yamlText);
+
+    // 保存とRuntime反映の成功後に呼ぶ。同じ操作の連続した変更だけを1履歴へまとめる。
+    void RecordSavedChange(const std::string& before, const std::string& after, StageEditGrouping grouping);
 
     // 履歴がなければ nullptr。返却ポインタは履歴の変更で無効になり得る。
     const std::string* FindUndoSnapshot() const;
@@ -32,4 +40,6 @@ private:
     std::size_t mMaximumUndoCount;
     std::vector<std::string> mUndoSnapshots;
     std::vector<std::string> mRedoSnapshots;
+    std::string mLastGroupedYamlText;
+    std::string mStagePath;
 };

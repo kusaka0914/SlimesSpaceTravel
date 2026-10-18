@@ -127,10 +127,9 @@ void UICanvasTransformController::DrawGizmo(UILoadSystem* uiLoadSystem, std::str
     if (mIsUsingGizmo) {
         mIsUsingGizmo = false;
         mTransformStartState = UICanvasEditSnapshot{};
-        const bool savedCustomUI = uiLoadSystem->SaveCustomUI();
-        const bool savedExistingUI = uiLoadSystem->SaveUIInfo("../assets/data/ui/ui.yaml");
-        const bool wasSaved = savedCustomUI && savedExistingUI;
-        statusMessage = wasSaved ? "UIギズモの変更を保存しました" : "UIギズモの変更を保存できませんでした";
+        std::string error;
+        const bool wasSaved = uiLoadSystem->SaveEditorUI(error);
+        statusMessage = wasSaved ? "UIギズモの変更を保存しました" : "UIギズモの変更を保存できませんでした: " + error;
     }
 }
 

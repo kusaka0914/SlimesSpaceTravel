@@ -88,7 +88,7 @@ class TutorialLibrary {
 public:
     explicit TutorialLibrary(std::string path = "../assets/data/tutorials/tutorials.yaml");
 
-    // 保持定義をクリアして読み直す。失敗時はfalseとGetLastErrorで理由を返す。途中の定義が残る場合がある。
+    // 全定義を読めた場合だけ置き換える。失敗時はfalseとGetLastErrorで理由を返し、現在の定義を維持する。
     bool Load();
     bool Save();
 

@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/debug/panels/StageAddActorPanel.h"
+#include "gfx/debug/stage/StageActorYamlWriter.h"
 #include "gfx/debug/stage/StageEditCommandController.h"
 #include "gfx/debug/stage/StageSelectionController.h"
 #include "gfx/debug/stage/StageSelectionOverlay.h"
@@ -139,6 +140,21 @@ void UGCEditorRenderer::Draw(unsigned int gameViewTexture, int gameViewWidth, in
         return;
     }
 
+    const std::string& saveError = mStageActorYamlWriter.GetSaveError().empty() ? mEditCommandController.GetLastError()
+                                                                                : mStageActorYamlWriter.GetSaveError();
+    if (!saveError.empty()) {
+        ImGui::SetNextWindowSize(ImVec2(440.0f, 0.0f), ImGuiCond_Always);
+        if (ImGui::Begin("保存・編集エラー", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextWrapped("%s", saveError.c_str());
+            if (!mStageActorYamlWriter.GetSaveError().empty() && ImGui::Button("保存を再試行")) {
+                mToolState.statusMessage = mStageActorYamlWriter.RetryFailedSaves()
+                                               ? "編集内容を保存しました"
+                                               : "保存できませんでした。保存先を確認してください";
+            }
+        }
+        ImGui::End();
+    }
+
     const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
     const ImVec2 gameViewportMin(mainViewport->WorkPos.x, mainViewport->WorkPos.y);
     const ImVec2 gameViewportMax(mainViewport->WorkPos.x + mainViewport->WorkSize.x,
@@ -165,6 +181,11 @@ void UGCEditorRenderer::Draw(unsigned int gameViewTexture, int gameViewWidth, in
 
 void UGCEditorRenderer::ReloadSelectedWork()
 {
+    if (mContext.game && !mContext.game->ReloadCurrentStage()) {
+        mToolState.statusMessage = "ステージの再読み込みに失敗しました";
+        return;
+    }
+
     mSelectionController.Clear();
     ActivateSelectionMode();
     mConnectionState.Cancel();
@@ -176,6 +197,5 @@ void UGCEditorRenderer::ReloadSelectedWork()
     mSelectionController.SetUGCEditLayer(mToolState.editLayer);
     if (mContext.game) {
         mContext.game->SetUGCPreviewEditLayer(mToolState.editLayer);
-        mContext.game->ReloadCurrentStage();
     }
 }
