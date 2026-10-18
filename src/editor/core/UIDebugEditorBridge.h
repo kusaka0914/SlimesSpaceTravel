@@ -9,15 +9,18 @@ class DebugUIRenderer;
 class Game;
 class UIRenderer;
 
-// UIRendererからエディターへの描画・操作要求を仲介し、DebugUIRendererを所有する。
-// 渡されたGameとUIRendererは非所有参照。生成・描画・破棄は有効なGLコンテキスト上で行う。
+// EditorのImGuiフレームと操作窓口を管理し、DebugUIRendererを所有する。Gameが生成・破棄する。
+// Game・UIRendererは非所有参照で、必ず有効な参照を渡す。生成・描画・破棄は有効なGLコンテキスト上で行う。
 class UIDebugEditorBridge {
 public:
-    UIDebugEditorBridge(Game* game, UIRenderer* uiRenderer);
+    UIDebugEditorBridge(Game& game, UIRenderer& uiRenderer);
     ~UIDebugEditorBridge();
 
+    // 両ImGuiバックエンドの初期化成功を返す。失敗したインスタンスは描画せず破棄すること。
+    bool IsInitialized() const { return mIsImGuiInitialized; }
+
     // ゲーム画面のテクスチャを借用し、通常またはUGCエディターに表示する。
-    void DrawEditor(GLuint gameViewTexture, int gameViewWidth, int gameViewHeight, bool isUGCEditor);
+    void DrawEditor(GLuint gameViewTexture, int gameViewWidth, int gameViewHeight);
     void DrawWorkBrowser();
 
     // 作品のクリア検証完了を保存し、成功時にtrueを返す。
@@ -48,5 +51,11 @@ public:
     void SetBuildRestartStatus(const std::string& message, bool isError);
 
 private:
+    bool InitImGui();
+    void EndImGuiFrame();
+
+    Game& mGame;
+    UIRenderer& mUIRenderer;
+    bool mIsImGuiInitialized = false;
     std::unique_ptr<DebugUIRenderer> mDebugUIRenderer;
 };

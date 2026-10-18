@@ -3,10 +3,11 @@
 
 #include "app/GameFrameRenderer.h"
 
+#include "editor/core/UIDebugEditorBridge.h"
+#include "gameplay/ugc/UGCPreviewController.h"
 #include "gfx/PostProcessRenderer.h"
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
-#include "gameplay/ugc/UGCPreviewController.h"
 #include "gfx/performance/FramePerformanceTracker.h"
 #include "gfx/performance/GpuDurationTimer.h"
 #include "system/CameraSystem.h"
@@ -18,11 +19,13 @@
 #include <optional>
 
 GameFrameRenderer::GameFrameRenderer(GLFWwindow& window, Renderer3D& renderer3D, UIRenderer& uiRenderer,
-                                     CameraSystem& cameraSystem, UGCPreviewController& ugcPreviewController,
+                                     UIDebugEditorBridge& editor, CameraSystem& cameraSystem,
+                                     UGCPreviewController& ugcPreviewController,
                                      FramePerformanceTracker& performanceTracker)
     : mWindow(window),
       mRenderer3D(renderer3D),
       mUIRenderer(uiRenderer),
+      mEditor(editor),
       mCameraSystem(cameraSystem),
       mUGCPreviewController(ugcPreviewController),
       mPerformanceTracker(performanceTracker),
@@ -59,7 +62,7 @@ void GameFrameRenderer::Render(const GameFrameRenderState& renderState)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const auto editorUiStartTime = std::chrono::steady_clock::now();
         mEditorUiGpuTimer->Begin();
-        mUIRenderer.DrawDebugEditor(mRenderTargets.GetEditorGameTexture(), framebufferWidth, framebufferHeight);
+        mEditor.DrawEditor(mRenderTargets.GetEditorGameTexture(), framebufferWidth, framebufferHeight);
         mEditorUiGpuTimer->End();
         mPerformanceTracker.RecordEditorUiCpuDuration(
             std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - editorUiStartTime).count());
@@ -68,12 +71,12 @@ void GameFrameRenderer::Render(const GameFrameRenderState& renderState)
         if (renderState.isDebugEditorShowing) {
             const auto editorUiStartTime = std::chrono::steady_clock::now();
             mEditorUiGpuTimer->Begin();
-            mUIRenderer.DrawDebugEditor(0, framebufferWidth, framebufferHeight);
+            mEditor.DrawEditor(0, framebufferWidth, framebufferHeight);
             mEditorUiGpuTimer->End();
             mPerformanceTracker.RecordEditorUiCpuDuration(
                 std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - editorUiStartTime).count());
         } else if (renderState.isUGCWorkBrowserShowing) {
-            mUIRenderer.DrawUGCWorkBrowser();
+            mEditor.DrawWorkBrowser();
         }
     }
 

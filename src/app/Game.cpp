@@ -16,15 +16,14 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
+#include "app/GameSessionController.h"
+#include "editor/session/DebugEditorSessionController.h"
 #include "state/GameProgressState.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
-#include "editor/session/DebugEditorSessionController.h"
 #include "system/EnemyJewelDropSystem.h"
 #include "system/GameProgressController.h"
-#include "app/GameSessionController.h"
-#include "world/GameWorld.h"
 #include "system/GamepadRumbleService.h"
 #include "system/InputSystem.h"
 #include "system/MeshLoadSystem.h"
@@ -38,11 +37,13 @@
 #include "system/UILoadSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/sequence/SequenceSystem.h"
+#include "world/GameWorld.h"
 
 #include "app/GameFrameRenderer.h"
+#include "editor/core/UIDebugEditorBridge.h"
+#include "gameplay/ugc/UGCPreviewController.h"
 #include "gfx/Renderer3D.h"
 #include "gfx/UIRenderer.h"
-#include "gameplay/ugc/UGCPreviewController.h"
 #include "imgui.h"
 
 #include "utils/MathUtils.h"
@@ -139,9 +140,14 @@ bool Game::CreateGameSystems()
         return false;
     }
 
-    // UIRendererの初期化後に、ウィンドウとUIを借用するエディター用Controllerを生成する。
+    // EditorはUIの描画機能を借用し、ImGuiの寿命と編集操作を所有する。
+    mEditor = std::make_unique<UIDebugEditorBridge>(*this, *mUIRenderer);
+    if (!mEditor->IsInitialized()) {
+        std::cerr << "Failed to initialize the editor UI.\n";
+        return false;
+    }
     mDebugEditorSessionController =
-        std::make_unique<DebugEditorSessionController>(mIsDebugMode, *GetWindow(), *mUIRenderer);
+        std::make_unique<DebugEditorSessionController>(mIsDebugMode, *GetWindow(), *mEditor);
     mRenderer3D = std::make_unique<Renderer3D>(this);
     if (!mRenderer3D->IsInitialized()) {
         std::cerr << "Failed to initialize the 3D renderer.\n";
@@ -192,8 +198,9 @@ bool Game::CreateGameSystems()
         },
         IsTgsBuild());
 
-    mFrameRenderer = std::make_unique<GameFrameRenderer>(*GetWindow(), *mRenderer3D, *mUIRenderer, *mCameraSystem,
-                                                         *mUGCPreviewController, mFramePerformanceTracker);
+    mFrameRenderer =
+        std::make_unique<GameFrameRenderer>(*GetWindow(), *mRenderer3D, *mUIRenderer, *mEditor, *mCameraSystem,
+                                            *mUGCPreviewController, mFramePerformanceTracker);
 
     mParticleSystem = std::make_unique<ParticleSystem>();
     mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
@@ -225,8 +232,8 @@ bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
         mSceneSystem->ClearActorReferencesForStageReload();
     }
 
-    if (mUIRenderer) {
-        mUIRenderer->ClearDebugActorReferencesForStageReload();
+    if (mEditor) {
+        mEditor->ClearStageSelectionForStageReload();
     }
 
     if (physicsReloadMode == StagePhysicsReloadMode::SkipRebuild && mPhysicsSystem) {
@@ -243,8 +250,8 @@ bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
         return false;
     }
 
-    if (mUIRenderer) {
-        mUIRenderer->NotifyDebugStageReloaded();
+    if (mEditor) {
+        mEditor->NotifyStageReloaded();
     }
 
     if (mEnemyJewelDropSystem) {
@@ -329,6 +336,9 @@ void Game::Shutdown()
         mRenderer3D->Shutdown();
         mRenderer3D.reset();
     }
+    mDebugEditorSessionController.reset();
+    mEditor.reset();
+
     if (mUIRenderer) {
         mUIRenderer->Shutdown();
         mUIRenderer.reset();
@@ -1046,15 +1056,15 @@ bool Game::RequestSceneFadeAction(const std::function<void()>& fadeAction)
 
 void Game::NotifyUGCTutorialReturnedFromPlaytest()
 {
-    if (mUIRenderer) {
-        mUIRenderer->NotifyUGCEditorTutorialReturnedFromPlaytest();
+    if (mEditor) {
+        mEditor->NotifyTutorialReturnedFromPlaytest();
     }
 }
 
 void Game::CompleteUGCVerification(const std::string& workFileName)
 {
-    if (mUIRenderer) {
-        mUIRenderer->CompleteUGCVerification(workFileName);
+    if (mEditor) {
+        mEditor->CompleteUGCVerification(workFileName);
     }
 }
 
@@ -1140,57 +1150,57 @@ void Game::StartUGCSavedWorkPlaytest()
 
 void Game::UndoUGCEdit()
 {
-    if (mUIRenderer) {
-        mUIRenderer->UndoUGCEdit();
+    if (mEditor) {
+        mEditor->HandleUndo();
     }
 }
 
 void Game::RedoUGCEdit()
 {
-    if (mUIRenderer) {
-        mUIRenderer->RedoUGCEdit();
+    if (mEditor) {
+        mEditor->HandleRedo();
     }
 }
 
 void Game::ToggleUGCEraser()
 {
-    if (mUIRenderer) {
-        mUIRenderer->ToggleUGCEraser();
+    if (mEditor) {
+        mEditor->ToggleEraser();
     }
 }
 
 void Game::SelectUGCEditorMode()
 {
-    if (mUIRenderer) {
-        mUIRenderer->SelectUGCEditorMode();
+    if (mEditor) {
+        mEditor->ActivateSelectionMode();
     }
 }
 
 void Game::OpenUGCEditorMenu()
 {
-    if (mUIRenderer) {
-        mUIRenderer->OpenUGCEditorMenu();
+    if (mEditor) {
+        mEditor->OpenEditorMenu();
     }
 }
 
 void Game::ZoomUGCEditor(float distanceMultiplier)
 {
-    if (mUIRenderer) {
-        mUIRenderer->ZoomUGCEditor(distanceMultiplier);
+    if (mEditor) {
+        mEditor->AdjustZoom(distanceMultiplier);
     }
 }
 
 void Game::ChangeUGCEditLayer(int layerDelta)
 {
-    if (mUIRenderer) {
-        mUIRenderer->ChangeUGCEditLayer(layerDelta);
+    if (mEditor) {
+        mEditor->ChangeLayer(layerDelta);
     }
 }
 
 void Game::MoveUGCSelectionByGrid(int gridX, int gridZ)
 {
-    if (mUIRenderer) {
-        mUIRenderer->MoveUGCSelectionByGrid(gridX, gridZ);
+    if (mEditor) {
+        mEditor->MoveSelectionOnGrid(gridX, gridZ);
     }
 }
 

@@ -17,14 +17,13 @@ class Game;
 class Player;
 class UIShader;
 class VertexArray;
-class UIDebugEditorBridge;
 class SceneUIRenderer;
 class HudRenderer;
 class StateUIRenderer;
 class PauseMenuRenderer;
 struct ImVec2;
 
-// ゲームUIの描画窓口。文字描画・HUD・シーンUI・デバッグ編集を専用Rendererへ委譲する。
+// ゲームUIの描画窓口。文字描画・HUD・シーンUIを専用Rendererへ委譲する。
 // 描画座標は左上原点のフレームバッファ上のピクセル、回転は度。Gameは非所有参照。
 class UIRenderer : public Renderer {
 public:
@@ -53,40 +52,18 @@ public:
     UIRenderer(Game* game);
     ~UIRenderer();
 
-    // OpenGLコンテキストが有効な間に、文字キャッシュとImGuiを解放する。繰り返し呼び出せる。
+    // OpenGLコンテキストが有効な間に、文字キャッシュを解放する。繰り返し呼び出せる。
     void Shutdown();
 
     // 編集用の描画要素一覧を消去し、UI非表示でなければゲームUIを描画する。
     // 描画後は深度テスト・深度書き込みを有効にする。
     void DrawGameContent();
 
-    // ImGuiフレームの開始から表示まで行う。ゲーム画面テクスチャは借用し、未編集中なら何もしない。
-    void DrawDebugEditor(GLuint gameViewTexture, int gameViewWidth, int gameViewHeight);
-    void DrawUGCWorkBrowser();
-    bool CompleteUGCVerification(const std::string& workFileName);
-    void UndoUGCEdit();
-    void RedoUGCEdit();
-    void ToggleUGCEraser();
-    void SelectUGCEditorMode();
-    void OpenUGCEditorMenu();
-    void ZoomUGCEditor(float distanceMultiplier);
-    void ChangeUGCEditLayer(int layerDelta);
-    void MoveUGCSelectionByGrid(int gridX, int gridZ);
-    void NotifyUGCEditorTutorialReturnedFromPlaytest();
-
-    // ステージ内Actorの破棄前に呼び、編集側の選択参照を解除する。
-    void ClearDebugActorReferencesForStageReload();
-
-    // 再読込成功後に呼ぶ。失敗時のRuntimeと保存失敗記録は保持する。
-    void NotifyDebugStageReloaded();
+    // Editorなど、ゲームUIの後に描かれる画面にも遷移フェードを重ねる。
+    void DrawTransitionOverlay();
 
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
-
-    // 編集セッションの保存／復元。失敗時はfalseとoutErrorMessageで理由を返す。
-    bool SaveDebugEditorSession(const std::string& filePath, std::string& outErrorMessage);
-    bool RestoreDebugEditorSession(const std::string& filePath, std::string& outErrorMessage);
-    void SetEditorRestartStatus(const std::string& message, bool isError);
 
     UILoadSystem* GetUILoadSystem() const { return mUILoadSystem; }
     int GetFbWidth() const { return mFbWidth; }
@@ -175,7 +152,6 @@ public:
 private:
     void DrawTalkAdvancePrompt();
     void Initialize();
-    void InitImGui();
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
@@ -193,8 +169,6 @@ private:
                                    const std::string& message, bool centerBased, float rotationDegrees);
     static std::string GetCustomTextureName(const std::string& assetRelativePath);
 
-    void EndImGuiFrame();
-
     bool SplitText(const std::string& message, std::string& firstLine, std::string& secondLine) const;
     void DrawRubyText(float x, float y, float scale, float rubyScaleRatio, float rubyGapRatio,
                       const std::vector<RubyTextSegment>& segments, glm::vec4 color, bool centerBased = false,
@@ -210,8 +184,6 @@ private:
 
     std::unique_ptr<UITextRenderer> mTextRenderer;
 
-    std::unique_ptr<UIDebugEditorBridge> mDebugEditorBridge;
-
     std::unique_ptr<SceneUIRenderer> mSceneUIRenderer;
     std::unique_ptr<HudRenderer> mHudRenderer;
     std::unique_ptr<StateUIRenderer> mStateUIRenderer;
@@ -223,5 +195,4 @@ private:
     int mFbWidth;
     int mFbHeight;
     bool mCustomUIPreviewEnabled = false;
-    bool mIsImGuiInitialized = false;
 };

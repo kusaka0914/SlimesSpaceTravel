@@ -33,7 +33,8 @@
       "risk": "描画窓口がUndo・編集セッション・Build&Restartを公開し、Gameも転送APIを重ねる。",
       "change": "Editorの所有・操作窓口と描画を分離し、既存Controllerへの依頼経路を限定する。",
       "tests": "保存・復元、UGC操作、再起動ヘルパーのビルドと統合テスト",
-      "status": "open"
+      "status": "editor_boundary_verified_game_api_pending",
+      "verification": "GameがEditorとImGuiを所有し、UIRendererの編集転送APIを削除。SessionはEditorへ直接依頼。gfxからeditorへのincludeはゼロ。Debugビルド・237件・Runtime4組（連続起動終了を含む）が成功。Gameの広い公開操作は次に整理する。"
     },
     {
       "id": "ARCH-04",

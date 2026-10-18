@@ -1,8 +1,8 @@
 #pragma once
 
 #include "actor/player/PlayerTypes.h"
-#include "gfx/performance/FramePerformanceTracker.h"
 #include "app/GameWindow.h"
+#include "gfx/performance/FramePerformanceTracker.h"
 #include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
@@ -46,6 +46,7 @@ class PlayerConfigurationController;
 class GameProgressController;
 class UGCPreviewController;
 class DebugEditorSessionController;
+class UIDebugEditorBridge;
 class GameSessionController;
 
 enum class InputDeviceType {
@@ -439,6 +440,7 @@ private:
 
     std::unique_ptr<AudioSystem> mAudioSystem;
     std::unique_ptr<UIRenderer> mUIRenderer;
+    std::unique_ptr<UIDebugEditorBridge> mEditor;
     std::unique_ptr<Renderer3D> mRenderer3D;
     std::unique_ptr<GameFrameRenderer> mFrameRenderer;
     std::unique_ptr<UGCModeController> mUGCModeController;

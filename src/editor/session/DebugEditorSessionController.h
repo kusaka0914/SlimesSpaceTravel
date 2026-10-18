@@ -5,16 +5,16 @@
 #include <string>
 
 struct GLFWwindow;
-class UIRenderer;
+class UIDebugEditorBridge;
 
 struct DebugEditorSessionRestoreOutcome {
     bool shouldShowEditor = false;
 };
 
-// デバッグ編集状態の保存・復元と、保存後のビルド再起動要求をまとめる。
+// デバッグ編集状態の保存・復元と、保存後のビルド再起動要求をまとめる。windowとeditorは借用し、先に破棄する。
 class DebugEditorSessionController {
 public:
-    DebugEditorSessionController(bool isDebugMode, GLFWwindow& window, UIRenderer& uiRenderer);
+    DebugEditorSessionController(bool isDebugMode, GLFWwindow& window, UIDebugEditorBridge& editor);
 
     // 指定パスが空なら常設セッションを探す。復元失敗時はエラー確認用にエディター表示を要求する。
     DebugEditorSessionRestoreOutcome RestoreAtStartup(const std::string& editorSessionPath,
@@ -30,6 +30,6 @@ public:
 private:
     bool mIsDebugMode;
     GLFWwindow& mWindow;
-    UIRenderer& mUIRenderer;
+    UIDebugEditorBridge& mEditor;
     EditorBuildRestartService mBuildRestartService;
 };

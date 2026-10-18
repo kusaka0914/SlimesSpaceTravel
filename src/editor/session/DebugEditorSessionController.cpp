@@ -2,17 +2,18 @@
 
 #include "editor/session/DebugEditorSessionController.h"
 
-#include "gfx/UIRenderer.h"
+#include "editor/core/UIDebugEditorBridge.h"
 
 #include <GLFW/glfw3.h>
 
 #include <filesystem>
 #include <iostream>
 
-DebugEditorSessionController::DebugEditorSessionController(bool isDebugMode, GLFWwindow& window, UIRenderer& uiRenderer)
+DebugEditorSessionController::DebugEditorSessionController(bool isDebugMode, GLFWwindow& window,
+                                                           UIDebugEditorBridge& editor)
     : mIsDebugMode(isDebugMode),
       mWindow(window),
-      mUIRenderer(uiRenderer)
+      mEditor(editor)
 {
 }
 
@@ -40,26 +41,26 @@ DebugEditorSessionController::RestoreAtStartup(const std::string& editorSessionP
     }
 
     std::string restoreErrorMessage;
-    if (!mUIRenderer.RestoreDebugEditorSession(sessionFilePath.string(), restoreErrorMessage)) {
+    if (!mEditor.RestoreSession(sessionFilePath.string(), restoreErrorMessage)) {
         std::cerr << restoreErrorMessage << std::endl;
-        mUIRenderer.SetEditorRestartStatus(restoreErrorMessage, true);
+        mEditor.SetBuildRestartStatus(restoreErrorMessage, true);
         return {.shouldShowEditor = true};
     }
 
     if (!editorRestartErrorLogPath.empty()) {
-        mUIRenderer.SetEditorRestartStatus("ビルドに失敗しました。ログを確認してください: " + editorRestartErrorLogPath,
-                                           true);
+        mEditor.SetBuildRestartStatus("ビルドに失敗しました。ログを確認してください: " + editorRestartErrorLogPath,
+                                      true);
         return {};
     }
 
     if (hasExplicitRestartSession) {
-        mUIRenderer.SetEditorRestartStatus("ビルドが完了し、エディターの状態を復元しました。", false);
+        mEditor.SetBuildRestartStatus("ビルドが完了し、エディターの状態を復元しました。", false);
         std::error_code removeError;
         std::filesystem::remove(sessionFilePath, removeError);
         return {};
     }
 
-    mUIRenderer.SetEditorRestartStatus("前回のデバッグエディターの状態を復元しました。", false);
+    mEditor.SetBuildRestartStatus("前回のデバッグエディターの状態を復元しました。", false);
     return {};
 }
 
@@ -72,7 +73,7 @@ void DebugEditorSessionController::SavePersistentSession()
     std::filesystem::path sessionFilePath;
     std::string saveErrorMessage;
     if (!mBuildRestartService.ResolvePersistentDebugSessionFilePath(sessionFilePath, saveErrorMessage) ||
-        !mUIRenderer.SaveDebugEditorSession(sessionFilePath.string(), saveErrorMessage)) {
+        !mEditor.SaveSession(sessionFilePath.string(), saveErrorMessage)) {
         std::cerr << saveErrorMessage << std::endl;
     }
 }
@@ -85,7 +86,7 @@ bool DebugEditorSessionController::RequestBuildAndRestart(std::string& outErrorM
         return false;
     }
 
-    if (!mUIRenderer.SaveDebugEditorSession(sessionFilePath.string(), outErrorMessage)) {
+    if (!mEditor.SaveSession(sessionFilePath.string(), outErrorMessage)) {
         return false;
     }
 

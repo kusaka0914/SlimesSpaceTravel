@@ -1,8 +1,7 @@
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/StageActorYamlWriter.h"
 #include "editor/stage/StageEditCommandController.h"
@@ -14,7 +13,9 @@
 #include "system/camera/CameraProjection.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "world/Stage.h"
 
+#include "imgui.h"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <iostream>
@@ -192,15 +193,28 @@ void CameraManualYawRemainsIndependent(Game& game)
 int main()
 {
     try {
-        Fixture fixture;
-        Game& game = fixture.game;
-        DebugEditorContext context{&game};
-        StageSelectionController selection([&]() { return SelectionScene(game); }, context.gameViewport,
-                                           context.planetMoveMode);
-        StageEditCommandController commands(context, selection);
-        EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
-        CameraManualYawRemainsIndependent(game);
-        UGCUsesTheSameTransaction(game, context, commands);
+        {
+            Fixture fixture;
+            Game& game = fixture.game;
+            DebugEditorContext context{&game};
+            StageSelectionController selection([&]() { return SelectionScene(game); }, context.gameViewport,
+                                               context.planetMoveMode);
+            StageEditCommandController commands(context, selection);
+            EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
+            CameraManualYawRemainsIndependent(game);
+            UGCUsesTheSameTransaction(game, context, commands);
+            ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
+            game.Shutdown();
+            ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Editor context released before window shutdown");
+            game.Shutdown();
+        }
+        {
+            Fixture restarted;
+            ExpectTrue(ImGui::GetCurrentContext() != nullptr, "fresh Game initializes after previous shutdown");
+            restarted.game.Shutdown();
+            ExpectTrue(ImGui::GetCurrentContext() == nullptr, "second Editor context also released");
+        }
+        std::cout << "[PASS] Runtime.EditorLifetimeAndRepeatedStartup\n";
         std::cout << "Runtime integration tests passed\n";
         return 0;
     } catch (const std::exception& error) {

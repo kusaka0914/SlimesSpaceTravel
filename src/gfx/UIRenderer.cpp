@@ -7,11 +7,6 @@
 #include "gfx/ui/PauseMenuRenderer.h"
 #include "gfx/ui/SceneUIRenderer.h"
 #include "gfx/ui/StateUIRenderer.h"
-#include "editor/core/UIDebugEditorBridge.h"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "system/InputSystem.h"
 #include "system/SceneSystem.h"
 #include "system/sequence/SequenceSystem.h"
 
@@ -35,15 +30,6 @@ void UIRenderer::Shutdown()
     if (mTextRenderer) {
         mTextRenderer->Shutdown();
     }
-
-    if (!mIsImGuiInitialized) {
-        return;
-    }
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-    mIsImGuiInitialized = false;
 }
 
 void UIRenderer::Initialize()
@@ -66,35 +52,13 @@ void UIRenderer::Initialize()
     mUILoadSystemUnique = std::make_unique<UILoadSystem>();
     mUILoadSystem = mUILoadSystemUnique.get();
 
-    mDebugEditorBridge = std::make_unique<UIDebugEditorBridge>(mGame, this);
     mSceneUIRenderer = std::make_unique<SceneUIRenderer>(mGame, this);
     mHudRenderer = std::make_unique<HudRenderer>(mGame, this);
     mStateUIRenderer = std::make_unique<StateUIRenderer>(mGame, this);
     mPauseMenuRenderer = std::make_unique<PauseMenuRenderer>(mGame, this);
 
-    InitImGui();
-
     RegisterUITextures();
     RegisterCustomUITextures();
-}
-
-void UIRenderer::InitImGui()
-{
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-    io.Fonts->AddFontFromFileTTF("../assets/fonts/NotoSansJP-Black.ttf", 18.0f, nullptr,
-                                 io.Fonts->GetGlyphRangesJapanese());
-
-    const char* glslVersion = "#version 330";
-
-    ImGui_ImplGlfw_InitForOpenGL(mGame->GetWindow(), true);
-    ImGui_ImplOpenGL3_Init(glslVersion);
-    mIsImGuiInitialized = true;
 }
 
 void UIRenderer::RegisterUITextures()
@@ -195,192 +159,7 @@ void UIRenderer::DrawGameContent()
     glDepthMask(GL_TRUE);
 }
 
-void UIRenderer::DrawDebugEditor(GLuint gameViewTexture, int gameViewWidth, int gameViewHeight)
+void UIRenderer::DrawTransitionOverlay()
 {
-    if (!mGame->GetIsDebugEditorShowing()) {
-        return;
-    }
-
-    const bool isUGCEditor = mGame->GetIsUGCMode() && !mGame->GetIsUGCDebugEditorShowing();
-    ImGuiIO& io = ImGui::GetIO();
-    const bool wasGamepadNavigationEnabled = (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0;
-    if (isUGCEditor) {
-        // Aはカーソル位置のクリックとして送信するため、
-        // 同じ入力で別のフォーカス項目を決定させない。
-        io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
-    }
-
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, mFbWidth, mFbHeight);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    if (isUGCEditor) {
-        mDebugEditorBridge->DrawEditor(gameViewTexture, gameViewWidth, gameViewHeight, true);
-    } else {
-        mDebugEditorBridge->DrawEditor(gameViewTexture, gameViewWidth, gameViewHeight, false);
-    }
-    EndImGuiFrame();
-    if (wasGamepadNavigationEnabled) {
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    }
     mStateUIRenderer->DrawTransitionUI();
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-}
-
-void UIRenderer::DrawUGCWorkBrowser()
-{
-    glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, mFbWidth, mFbHeight);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-
-    // 一覧はゲームパッドのフォーカス移動で操作できるため、
-    // ImGuiがゲーム側で隠したOSカーソルを再表示しないようにする。
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    if (const InputSystem* inputSystem = mGame->GetInputSystem()) {
-        const bool upPressed = inputSystem->IsKeyPressed(GLFW_KEY_UP) || inputSystem->IsKeyPressed(GLFW_KEY_W);
-        const bool downPressed = inputSystem->IsKeyPressed(GLFW_KEY_DOWN) || inputSystem->IsKeyPressed(GLFW_KEY_S);
-        io.AddKeyEvent(ImGuiKey_UpArrow, upPressed);
-        io.AddKeyEvent(ImGuiKey_DownArrow, downPressed);
-    }
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    mDebugEditorBridge->DrawWorkBrowser();
-    if (!mGame->GetIsUGCWorkBrowserShowing()) {
-        // W/Sで一覧を閉じた場合も、合成した方向入力を次の画面へ残さない。
-        io.AddKeyEvent(ImGuiKey_UpArrow, false);
-        io.AddKeyEvent(ImGuiKey_DownArrow, false);
-    }
-    EndImGuiFrame();
-
-    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-}
-
-bool UIRenderer::CompleteUGCVerification(const std::string& workFileName)
-{
-    return mDebugEditorBridge && mDebugEditorBridge->CompleteUGCVerification(workFileName);
-}
-
-void UIRenderer::UndoUGCEdit()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->HandleUndo();
-    }
-}
-
-void UIRenderer::RedoUGCEdit()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->HandleRedo();
-    }
-}
-
-void UIRenderer::ToggleUGCEraser()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->ToggleEraser();
-    }
-}
-
-void UIRenderer::SelectUGCEditorMode()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->ActivateSelectionMode();
-    }
-}
-
-void UIRenderer::OpenUGCEditorMenu()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->OpenEditorMenu();
-    }
-}
-
-void UIRenderer::ZoomUGCEditor(float distanceMultiplier)
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->AdjustZoom(distanceMultiplier);
-    }
-}
-
-void UIRenderer::ChangeUGCEditLayer(int layerDelta)
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->ChangeLayer(layerDelta);
-    }
-}
-
-void UIRenderer::MoveUGCSelectionByGrid(int gridX, int gridZ)
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->MoveSelectionOnGrid(gridX, gridZ);
-    }
-}
-
-void UIRenderer::NotifyUGCEditorTutorialReturnedFromPlaytest()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->NotifyTutorialReturnedFromPlaytest();
-    }
-}
-
-void UIRenderer::ClearDebugActorReferencesForStageReload()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->ClearStageSelectionForStageReload();
-    }
-}
-
-void UIRenderer::NotifyDebugStageReloaded()
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->NotifyStageReloaded();
-    }
-}
-
-bool UIRenderer::SaveDebugEditorSession(const std::string& filePath, std::string& outErrorMessage)
-{
-    if (!mDebugEditorBridge) {
-        outErrorMessage = "The debug editor is not initialized.";
-        return false;
-    }
-
-    return mDebugEditorBridge->SaveSession(filePath, outErrorMessage);
-}
-
-bool UIRenderer::RestoreDebugEditorSession(const std::string& filePath, std::string& outErrorMessage)
-{
-    if (!mDebugEditorBridge) {
-        outErrorMessage = "The debug editor is not initialized.";
-        return false;
-    }
-
-    return mDebugEditorBridge->RestoreSession(filePath, outErrorMessage);
-}
-
-void UIRenderer::SetEditorRestartStatus(const std::string& message, bool isError)
-{
-    if (mDebugEditorBridge) {
-        mDebugEditorBridge->SetBuildRestartStatus(message, isError);
-    }
-}
-
-void UIRenderer::EndImGuiFrame()
-{
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

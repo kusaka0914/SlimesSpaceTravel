@@ -1,0 +1,37 @@
+{
+  "status": "in_progress",
+  "branch": "codex/architecture-review",
+  "base_head": "272dbf3f06453b4b6ac71e13108345d9c77b47bb",
+  "commit_message": "リファクタリングをしています",
+  "completed": [
+    "全ファイル棚卸しとGame経由呼出・継承・クローン候補の静的列挙",
+    "Debug/Releaseの基準ビルド・237単体テストとRuntime3組",
+    "239ソースの機能別配置、参照更新、旧パス検索、Debug検証",
+    "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加"
+  ],
+  "next": [
+    "InputSystemのOS入力取得とアプリ操作調停を分離し、Gameの公開転送APIを減らす",
+    "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",
+    "YamlReadの契約テストを先に追加し、同一スカラー読取を共通化",
+    "残る設定保存の直接上書き、読込失敗時の部分変更、StageEditTransactionの例外復旧を修正",
+    "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
+    "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
+  ],
+  "not_verified": [
+    "Windowsビルド・実機コントローラー・全ステージ通しプレイ",
+    "性能比較（FPS/ロード）、Sanitizer",
+    "全ソースの意味・寿命監査とホットスポット全文確認は継続中"
+  ],
+  "manual_full_reads": [
+    "src/system/InputSystem.cpp",
+    "src/app/Game.cpp",
+    "src/gfx/UIRenderer.cpp",
+    "src/editor/core/UIDebugEditorBridge.cpp",
+    "src/editor/session/DebugEditorSessionController.cpp"
+  ],
+  "constraints": [
+    "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",
+    "空き容量約1GiB。既存buildを使いDebug情報は-gline-tables-only。",
+    "この作業にユーザーはサブエージェントを要求していないため使用しない。"
+  ]
+}

@@ -12,6 +12,7 @@ class PostProcessRenderer;
 class Renderer3D;
 class UGCPreviewController;
 class UIRenderer;
+class UIDebugEditorBridge;
 
 // そのフレームの表示モード。deltaTimeSecondsはUGCプレビューの注目位置補間に使う経過秒数。
 struct GameFrameRenderState {
@@ -26,8 +27,9 @@ struct GameFrameRenderState {
 // コンストラクタで受け取るウィンドウ・各描画／ゲーム機能への参照は非所有。
 class GameFrameRenderer {
 public:
-    GameFrameRenderer(GLFWwindow& window, Renderer3D& renderer3D, UIRenderer& uiRenderer, CameraSystem& cameraSystem,
-                      UGCPreviewController& ugcPreviewController, FramePerformanceTracker& performanceTracker);
+    GameFrameRenderer(GLFWwindow& window, Renderer3D& renderer3D, UIRenderer& uiRenderer, UIDebugEditorBridge& editor,
+                      CameraSystem& cameraSystem, UGCPreviewController& ugcPreviewController,
+                      FramePerformanceTracker& performanceTracker);
     ~GameFrameRenderer();
 
     // ゲーム画面と必要な編集画面を描画してバッファを交換し、CPU所要時間を記録する。
@@ -47,6 +49,7 @@ private:
     GLFWwindow& mWindow;
     Renderer3D& mRenderer3D;
     UIRenderer& mUIRenderer;
+    UIDebugEditorBridge& mEditor;
     CameraSystem& mCameraSystem;
     UGCPreviewController& mUGCPreviewController;
     FramePerformanceTracker& mPerformanceTracker;
