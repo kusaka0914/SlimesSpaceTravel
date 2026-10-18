@@ -11,3 +11,6 @@ dist-tgs-updated/
 AGENTS.md
 
 .DS_Store
+
+# clangdの生成インデックス
+.cache/

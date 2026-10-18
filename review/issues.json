@@ -1,0 +1,112 @@
+{
+  "base_head": "272dbf3f06453b4b6ac71e13108345d9c77b47bb",
+  "branch": "codex/architecture-review",
+  "status": "in_progress",
+  "issues": [
+    {
+      "id": "ARCH-01",
+      "priority": "P1",
+      "location": "src/gfx/debug/",
+      "evidence": "Stage・UI・UGC編集と資産ブラウザーが描画階層に混在し、責務から実装を探しにくい。",
+      "risk": "Stage・UI・UGC編集と資産ブラウザーが描画階層に混在し、責務から実装を探しにくい。",
+      "change": "Editor固有ソースをeditorへ分類し、全include・ビルド・資料リンクを移行する。",
+      "tests": "全構成のビルド、旧パス検索、既存テスト",
+      "status": "open"
+    },
+    {
+      "id": "ARCH-02",
+      "priority": "P1",
+      "location": "src/system/UGCModeController.h:3",
+      "evidence": "RuntimeのUGC状態がgfx/debugのUGCClearTransitionState・UGCSessionStateを取り込む。",
+      "risk": "RuntimeのUGC状態がgfx/debugのUGCClearTransitionState・UGCSessionStateを取り込む。",
+      "change": "RuntimeとEditorが共有するUGC状態・保存モデルをgameplay/ugcへ移す。",
+      "tests": "UGC状態・保存・クリア遷移テスト",
+      "status": "open"
+    },
+    {
+      "id": "ARCH-03",
+      "priority": "P1",
+      "location": "src/gfx/UIRenderer.h:66",
+      "evidence": "描画窓口がUndo・編集セッション・Build&Restartを公開し、Gameも転送APIを重ねる。",
+      "risk": "描画窓口がUndo・編集セッション・Build&Restartを公開し、Gameも転送APIを重ねる。",
+      "change": "Editorの所有・操作窓口と描画を分離し、既存Controllerへの依頼経路を限定する。",
+      "tests": "保存・復元、UGC操作、再起動ヘルパーのビルドと統合テスト",
+      "status": "open"
+    },
+    {
+      "id": "ARCH-04",
+      "priority": "P2",
+      "location": "src/system/InputSystem.cpp",
+      "evidence": "OS入力取得とシーン別コマンドの振り分けが同居する。",
+      "risk": "OS入力取得とシーン別コマンドの振り分けが同居する。",
+      "change": "呼出順・押下優先順位を調査し、取得と操作調停を分ける。",
+      "tests": "押下・継続・モード優先順位の回帰テスト",
+      "status": "open"
+    },
+    {
+      "id": "ARCH-05",
+      "priority": "P2",
+      "location": "src/system/CameraSystem.cpp",
+      "evidence": "mGame経由の状態・System取得が広く、必要な依存の範囲を追いにくい。",
+      "risk": "mGame経由の状態・System取得が広く、必要な依存の範囲を追いにくい。",
+      "change": "カメラ調停と既存Camera実装を維持し、限定情報を使う依存境界を導入する。",
+      "tests": "手動操作・補助・分割画面・UGC投影のテスト",
+      "status": "open"
+    },
+    {
+      "id": "ARCH-06",
+      "priority": "P2",
+      "location": "src/gfx/Renderer3D.cpp",
+      "evidence": "GPU描画が広いGame APIに依存しており、描画に必要な状態が不明確。",
+      "risk": "GPU描画が広いGame APIに依存しており、描画に必要な状態が不明確。",
+      "change": "取得項目と寿命を列挙し、小さな借用RenderContextで供給できる範囲を整理する。",
+      "tests": "描画順・影・プレビュー・性能の前後確認",
+      "status": "open"
+    },
+    {
+      "id": "YAML-01",
+      "priority": "P2",
+      "location": "src/system/tutorial/TutorialLibrary.cpp:14",
+      "evidence": "ReadFloat等のスカラー読取が複数ファイルに重複する。",
+      "risk": "ReadFloat等のスカラー読取が複数ファイルに重複する。",
+      "change": "欠損・null・型不正の従来動作を先にテストし、同じ契約のものだけ共通化する。",
+      "tests": "スカラー読取の境界値と既存設定テスト",
+      "status": "open"
+    },
+    {
+      "id": "SAFE-01",
+      "priority": "P1",
+      "location": "src/gfx/debug/stage/StageEditTransaction.cpp:9",
+      "evidence": "Apply経路はsave/reload callback例外を捕捉せず、Execute経路と復旧の契約が異なる。",
+      "risk": "Apply経路はsave/reload callback例外を捕捉せず、Execute経路と復旧の契約が異なる。",
+      "change": "保存・読込の例外時にも復旧を試み、復旧不能を結果で返す。",
+      "tests": "save例外・reload例外・復旧例外・元ファイル保持",
+      "status": "open"
+    },
+    {
+      "id": "TEST-01",
+      "priority": "P2",
+      "location": "tests/",
+      "evidence": "保存系は検証済みだが、楕円体幾何・衝突・操作遷移の検証に空白がある。",
+      "risk": "保存系は検証済みだが、楕円体幾何・衝突・操作遷移の検証に空白がある。",
+      "change": "副作用を増やさず、純粋な幾何とRuntime重要経路のテストを拡充する。",
+      "tests": "極端軸比・法線・高速衝突・カメラ・分裂合体",
+      "status": "open"
+    },
+    {
+      "id": "VERIFY-01",
+      "priority": "P2",
+      "location": "CMakeLists.txt",
+      "evidence": "Windows実機・全プレイ経路・代表負荷の計測結果が未確認。",
+      "risk": "Windows実機・全プレイ経路・代表負荷の計測結果が未確認。",
+      "change": "実行可能な構成を検証し、環境上実行できない確認は明示して再現手順を残す。",
+      "tests": "Debug/Release、Review/TGS、ASan/UBSan、Windows、実入力",
+      "status": "open"
+    }
+  ],
+  "notes": [
+    "静的候補116件と完全一致クローン候補22組は未分類の候補であり、そのまま不具合とは扱わない。",
+    "全662件の自作C++（src620件、tests/tools42件）を静的棚卸し済み。重要箇所の意味・寿命・挙動監査は継続中。",
+    "新規Markdown報告書は作成しない。既存README等のコードリンクは移動に合わせて更新する。"
+  ]
+}
