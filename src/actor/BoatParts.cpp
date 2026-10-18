@@ -1,6 +1,6 @@
 #include "actor/BoatParts.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "component/CollectableComponent.h"
 #include "system/AudioSystem.h"
 

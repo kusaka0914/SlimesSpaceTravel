@@ -1,6 +1,6 @@
 #include "actor/Platform.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "component/FocusComponent.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "component/PlatformEnemyClearUnlockComponent.h"

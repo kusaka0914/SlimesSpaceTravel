@@ -1,7 +1,7 @@
 #include "system/CameraSystem.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"

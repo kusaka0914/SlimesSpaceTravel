@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/UGCPlatformDocument.h"
+#include "editor/stage/UGCPlatformDocument.h"
 
 #include <string>
 #include <vector>

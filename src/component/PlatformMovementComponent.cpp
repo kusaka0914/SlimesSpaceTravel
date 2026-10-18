@@ -1,6 +1,6 @@
 #include "component/PlatformMovementComponent.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"

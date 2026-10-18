@@ -1,10 +1,10 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCEditorMenuState.h"
-#include "gfx/debug/ugc/UGCEditorToolState.h"
-#include "gfx/debug/ugc/UGCPreviewPanelState.h"
-#include "gfx/debug/ugc/UGCSelectionDragState.h"
-#include "gfx/debug/ugc/UGCSwitchConnectionState.h"
+#include "editor/ugc/UGCEditorMenuState.h"
+#include "editor/ugc/UGCEditorToolState.h"
+#include "editor/ugc/UGCPreviewPanelState.h"
+#include "editor/ugc/UGCSelectionDragState.h"
+#include "editor/ugc/UGCSwitchConnectionState.h"
 
 namespace {
 

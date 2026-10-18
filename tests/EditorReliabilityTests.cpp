@@ -1,8 +1,8 @@
 #include "TestFileSupport.h"
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StagePickPolicy.h"
-#include "gfx/debug/ui/UICanvasEditHistory.h"
+#include "editor/stage/StagePickPolicy.h"
+#include "editor/ui/UICanvasEditHistory.h"
 #include "utils/AtomicFile.h"
 
 #include <chrono>

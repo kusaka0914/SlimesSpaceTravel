@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCClearTransitionState.h"
+#include "gameplay/ugc/UGCClearTransitionState.h"
 
 namespace {
 

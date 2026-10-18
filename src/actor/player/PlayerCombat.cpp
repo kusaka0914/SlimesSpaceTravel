@@ -1,6 +1,6 @@
 #include "actor/player/PlayerCombat.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/HazardActor.h"
 #include "actor/Planet.h"

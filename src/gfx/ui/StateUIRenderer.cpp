@@ -3,7 +3,7 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/NPC.h"
 #include "gfx/UIRenderer.h"
 #include "gfx/video/TutorialVideoPlayer.h"

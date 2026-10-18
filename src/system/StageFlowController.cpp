@@ -2,7 +2,7 @@
 
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
-#include "system/GameWorld.h"
+#include "world/GameWorld.h"
 #include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"

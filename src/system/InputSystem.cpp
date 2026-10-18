@@ -1,6 +1,6 @@
 #include "system/InputSystem.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "system/CameraSystem.h"
 #include "system/PlayerInputDeviceRouting.h"

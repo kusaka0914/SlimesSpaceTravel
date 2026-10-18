@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCPreviewState.h"
+#include "gameplay/ugc/UGCPreviewState.h"
 
 namespace {
 

@@ -1,7 +1,7 @@
 #include "actor/player/PlayerRespawn.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"

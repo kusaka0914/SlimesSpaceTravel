@@ -1,6 +1,6 @@
 #include "system/scene/TalkController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/NPC.h"
 #include "actor/Player.h"
 #include "state/GameProgressState.h"

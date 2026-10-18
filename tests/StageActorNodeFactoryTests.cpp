@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StageActorNodeFactory.h"
+#include "editor/stage/StageActorNodeFactory.h"
 
 #include <string>
 

@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCEditorTutorial.h"
+#include "editor/ugc/UGCEditorTutorial.h"
 
 namespace {
 

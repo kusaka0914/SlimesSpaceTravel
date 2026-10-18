@@ -1,6 +1,6 @@
 #include "component/DestructibleComponent.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
 #include "system/AudioSystem.h"

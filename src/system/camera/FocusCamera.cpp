@@ -1,6 +1,6 @@
 #include "system/camera/FocusCamera.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"

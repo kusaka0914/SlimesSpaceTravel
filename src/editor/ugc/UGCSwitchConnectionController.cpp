@@ -1,0 +1,105 @@
+#include "editor/ugc/UGCSwitchConnectionController.h"
+
+#include "app/Game.h"
+#include "actor/Platform.h"
+#include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/stage/StageEditTransaction.h"
+#include "editor/stage/StagePlatformConnections.h"
+#include "editor/stage/StageSelectionController.h"
+#include "editor/stage/StageYamlRepository.h"
+#include "editor/ugc/UGCEditorToolState.h"
+
+#include <string>
+#include <yaml-cpp/yaml.h>
+
+UGCSwitchConnectionController::UGCSwitchConnectionController(DebugEditorContext& context,
+                                                             StageAddActorPanel& stageAddActorPanel,
+                                                             StageSelectionController& selectionController,
+                                                             UGCEditorToolState& toolState,
+                                                             UGCSwitchConnectionState& connectionState)
+    : mContext(context),
+      mStageAddActorPanel(stageAddActorPanel),
+      mSelectionController(selectionController),
+      mToolState(toolState),
+      mConnectionState(connectionState)
+{
+}
+
+bool UGCSwitchConnectionController::CompletePendingConnection(Actor* selectedActor,
+                                                              const std::optional<StageActorRef>& selectedRef)
+{
+    const std::optional<StageActorRef>& switchRef = mConnectionState.GetSwitchRef();
+    if (!switchRef || !selectedRef) {
+        return false;
+    }
+
+    Platform* targetPlatform = dynamic_cast<Platform*>(selectedActor);
+    const bool isSelectedConnectionSwitch =
+        selectedRef->sequenceName == switchRef->sequenceName && selectedRef->yamlIndex == switchRef->yamlIndex;
+    const bool isSelectedAnotherSwitch =
+        targetPlatform && (targetPlatform->GetPressureSwitchComponent() != nullptr ||
+                           targetPlatform->GetLatchedGroupSwitchComponent() != nullptr);
+    const bool canEditSelectedPlatformConnection = !isSelectedConnectionSwitch &&
+                                                   selectedRef->sequenceName == "platforms" && targetPlatform &&
+                                                   !isSelectedAnotherSwitch;
+    if (!canEditSelectedPlatformConnection) {
+        mToolState.statusMessage = "足場を選択してください（惑星やスイッチにはつなげません）";
+        mSelectionController.Clear();
+        return true;
+    }
+
+    YAML::Node stageYaml;
+    const bool wasLoaded = StageYamlRepository::LoadCurrentStage(mContext, stageYaml);
+    const YAML::Node switchNodes = wasLoaded ? stageYaml[switchRef->sequenceName] : YAML::Node();
+    const YAML::Node targetNodes = wasLoaded ? stageYaml[selectedRef->sequenceName] : YAML::Node();
+    const bool hasValidNodes = switchNodes && targetNodes && switchNodes.IsSequence() && targetNodes.IsSequence() &&
+                               switchRef->yamlIndex >= 0 && selectedRef->yamlIndex >= 0 &&
+                               switchRef->yamlIndex < static_cast<int>(switchNodes.size()) &&
+                               selectedRef->yamlIndex < static_cast<int>(targetNodes.size());
+    if (hasValidNodes) {
+        const YAML::Node targetNode = targetNodes[selectedRef->yamlIndex];
+        const std::string targetId = targetNode["platformId"] ? targetNode["platformId"].as<std::string>() : "";
+        const bool wasConnectionChanged =
+            mConnectionState.GetAction() == UGCSwitchConnectionAction::Connect
+                ? StagePlatformConnections::AssignExclusiveSwitchTarget(stageYaml, switchRef->yamlIndex, targetId)
+                : StagePlatformConnections::DisconnectSwitchTarget(stageYaml, switchRef->yamlIndex, targetId,
+                                                                   selectedRef->yamlIndex);
+        if (wasConnectionChanged) {
+            std::string previousYamlText;
+            if (!StageYamlRepository::ReadCurrentStageText(mContext, previousYamlText)) {
+                mToolState.statusMessage = "変更前のステージを読み込めませんでした";
+                return true;
+            }
+            std::string errorMessage;
+            const auto result = StageEditTransaction::Apply(
+                mContext.game->GetCurrentStageYamlPath(), previousYamlText,
+                [&]() { return StageYamlRepository::SaveCurrentStage(mContext, stageYaml); },
+                [this]() { return mContext.game->ReloadCurrentStage(StagePhysicsReloadMode::SkipRebuild); },
+                errorMessage);
+            if (result != StageEditApplyResult::Applied) {
+                mToolState.statusMessage = "スイッチ接続の保存・反映に失敗しました: " + errorMessage;
+                return true;
+            }
+            mToolState.statusMessage = mConnectionState.GetAction() == UGCSwitchConnectionAction::Connect
+                                           ? "スイッチと足場をつなぎました"
+                                           : "スイッチと足場のつながりを解除しました";
+        } else if (mConnectionState.GetAction() == UGCSwitchConnectionAction::Disconnect) {
+            mToolState.statusMessage = "この足場とはつながっていません";
+        }
+    }
+
+    mConnectionState.Cancel();
+    mSelectionController.Clear();
+    return true;
+}
+
+void UGCSwitchConnectionController::BeginConnection(const StageActorRef& switchRef, UGCSwitchConnectionAction action)
+{
+    mToolState.DeactivateEraser();
+    mStageAddActorPanel.CancelPlacement();
+    mConnectionState.Begin(switchRef, action);
+    mSelectionController.Clear();
+    mToolState.statusMessage = action == UGCSwitchConnectionAction::Connect
+                                   ? "表示したい足場を1つクリックしてください"
+                                   : "つながりを解除したい足場をクリックしてください";
+}

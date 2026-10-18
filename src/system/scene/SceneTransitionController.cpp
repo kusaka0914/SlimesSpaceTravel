@@ -1,6 +1,6 @@
 #include "system/scene/SceneTransitionController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"

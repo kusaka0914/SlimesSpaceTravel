@@ -1,7 +1,7 @@
 #include "system/GameProgressController.h"
 
 #include "actor/NPC.h"
-#include "system/GameWorld.h"
+#include "world/GameWorld.h"
 #include "system/PhysicsSystem.h"
 #include "system/UserDataPaths.h"
 

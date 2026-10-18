@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCSessionState.h"
+#include "gameplay/ugc/UGCSessionState.h"
 
 #include <string>
 

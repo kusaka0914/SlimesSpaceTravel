@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StageEditHistory.h"
+#include "editor/stage/StageEditHistory.h"
 
 #include <string>
 

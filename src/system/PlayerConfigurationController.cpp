@@ -6,7 +6,7 @@
 #include "actor/Player.h"
 #include "system/CameraSystem.h"
 #include "system/GameProgressController.h"
-#include "system/GameWorld.h"
+#include "world/GameWorld.h"
 #include "system/GamepadRumbleService.h"
 #include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"

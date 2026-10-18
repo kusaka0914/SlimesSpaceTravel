@@ -1,7 +1,7 @@
 #pragma once
 
-#include "gfx/debug/ugc/UGCClearTransitionState.h"
-#include "gfx/debug/ugc/UGCSessionState.h"
+#include "gameplay/ugc/UGCClearTransitionState.h"
+#include "gameplay/ugc/UGCSessionState.h"
 
 #include <string>
 

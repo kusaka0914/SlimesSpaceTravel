@@ -230,7 +230,6 @@
   "src/system/EditorBuildRestartService.h": "src/editor/session/EditorBuildRestartService.h",
   "src/system/EditorBuildRestartService.cpp": "src/editor/session/EditorBuildRestartService.cpp",
   "src/Stage.h": "src/world/Stage.h",
-  "src/Stage.cpp": "src/world/Stage.cpp",
   "src/system/GameWorld.h": "src/world/GameWorld.h",
   "src/gfx/DebugUIRenderer.h": "src/editor/core/DebugUIRenderer.h",
   "src/gfx/ui/UIDebugEditorBridge.h": "src/editor/core/UIDebugEditorBridge.h",

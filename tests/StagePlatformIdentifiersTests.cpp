@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StagePlatformIdentifiers.h"
+#include "editor/stage/StagePlatformIdentifiers.h"
 
 #include <string>
 

@@ -2,7 +2,7 @@
 
 #include <GL/glew.h>
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "gfx/Renderer3D.h"

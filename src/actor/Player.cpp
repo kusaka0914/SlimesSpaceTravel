@@ -1,6 +1,6 @@
 #include "actor/Player.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"

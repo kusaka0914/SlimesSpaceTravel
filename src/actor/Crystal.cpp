@@ -1,6 +1,6 @@
 #include "actor/Crystal.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "component/DestructibleComponent.h"
 #include "system/AudioSystem.h"
 

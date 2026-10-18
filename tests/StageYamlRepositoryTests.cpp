@@ -1,7 +1,7 @@
 #include "TestFileSupport.h"
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StageYamlRepository.h"
+#include "editor/stage/StageYamlRepository.h"
 
 #include <chrono>
 #include <filesystem>

@@ -1,7 +1,7 @@
 #include "TestFileSupport.h"
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCWorkStorage.h"
+#include "gameplay/ugc/UGCWorkStorage.h"
 
 #include <chrono>
 #include <filesystem>

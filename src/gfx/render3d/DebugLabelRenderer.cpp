@@ -3,8 +3,8 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatParts.h"

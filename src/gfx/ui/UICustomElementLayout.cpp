@@ -1,6 +1,6 @@
 #include "gfx/UIRenderer.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "system/text/JapaneseRubyGenerator.h"
 
 #include <algorithm>

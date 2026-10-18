@@ -1,6 +1,6 @@
 #include "system/actor_loader/StageActorLocator.h"
 
-#include "Stage.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"

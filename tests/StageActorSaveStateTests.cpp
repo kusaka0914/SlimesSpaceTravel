@@ -1,7 +1,7 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StageActorSaveState.h"
-#include "gfx/debug/stage/StageEditHistory.h"
+#include "editor/stage/StageActorSaveState.h"
+#include "editor/stage/StageEditHistory.h"
 
 #include <vector>
 

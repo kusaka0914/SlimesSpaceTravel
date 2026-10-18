@@ -27,11 +27,11 @@ list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
 
 # エントリーポイントと保存先解決だけを差し替え、統合テストでも同じRuntimeを使う。
 list(REMOVE_ITEM GAME_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Main.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/app/Main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp"
 )
 add_library(game_runtime OBJECT ${GAME_SOURCES})
-add_executable(game src/Main.cpp src/system/UserDataPaths.cpp)
+add_executable(game src/app/Main.cpp src/system/UserDataPaths.cpp)
 target_link_libraries(game PRIVATE game_runtime)
 option(GAME_BUILD_RUNTIME_TESTS "Build integration tests requiring an OpenGL display" OFF)
 
@@ -74,8 +74,8 @@ find_package(yaml-cpp REQUIRED)
 if (BUILD_TESTING)
     add_executable(game_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/EditorReliabilityTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePickPolicy.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ui/UICanvasEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePickPolicy.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PersistenceSafetyTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
@@ -113,27 +113,27 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerSplitGuardStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TgsExperienceControllerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageYamlRepositoryOperations.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkFileName.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkStorage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformGrid.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformDocument.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorSaveState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorToolState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorMenuState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewPanelState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSelectionDragState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSwitchConnectionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCClearTransitionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageActorNodeFactory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePlatformIdentifiers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePlatformConnections.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageYamlRepositoryOperations.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkFileName.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkStorage.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPlatformGrid.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPlatformDocument.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageActorSaveState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkMetadata.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCPreviewState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorToolState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorMenuState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCPreviewPanelState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSelectionDragState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSwitchConnectionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCClearTransitionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPresetVisuals.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorTutorial.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
@@ -147,7 +147,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CameraShakeEffect.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/AtomicFile.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditTransaction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageEditTransaction.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CinematicSequenceLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sequence/SequenceLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UILoadSystem.cpp

@@ -1,6 +1,6 @@
 #include "actor/CharacterActor.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Platform.h"
 #include "system/PhysicsSystem.h"
 

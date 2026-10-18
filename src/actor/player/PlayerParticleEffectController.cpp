@@ -1,6 +1,6 @@
 #include "actor/player/PlayerParticleEffectController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "effect/particle/ParticleTypes.h"
 #include "system/ParticleSystem.h"

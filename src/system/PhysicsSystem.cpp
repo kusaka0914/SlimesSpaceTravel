@@ -1,7 +1,7 @@
 #include "system/PhysicsSystem.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"

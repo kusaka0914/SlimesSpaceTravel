@@ -1,6 +1,6 @@
 #include "system/sequence/BossDefeatSequence.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Star.h"
 #include "system/AudioSystem.h"

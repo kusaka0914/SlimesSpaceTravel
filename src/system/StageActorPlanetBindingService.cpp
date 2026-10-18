@@ -1,7 +1,7 @@
 #include "system/StageActorPlanetBindingService.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"

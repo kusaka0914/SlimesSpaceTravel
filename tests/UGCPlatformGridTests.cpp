@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/UGCPlatformGrid.h"
+#include "editor/stage/UGCPlatformGrid.h"
 
 #include <vector>
 

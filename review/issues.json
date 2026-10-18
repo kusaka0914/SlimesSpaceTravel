@@ -11,7 +11,8 @@
       "risk": "Stage・UI・UGC編集と資産ブラウザーが描画階層に混在し、責務から実装を探しにくい。",
       "change": "Editor固有ソースをeditorへ分類し、全include・ビルド・資料リンクを移行する。",
       "tests": "全構成のビルド、旧パス検索、既存テスト",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "239移動ソースの変更がパス置換のみであることを全件照合。Debugビルド・237テスト・Runtime3組が成功。旧パス参照はsrc/tests/tools/scripts/shaders/CMake/README/mdでゼロ。Release等の最終確認は未実施。"
     },
     {
       "id": "ARCH-02",
@@ -21,7 +22,8 @@
       "risk": "RuntimeのUGC状態がgfx/debugのUGCClearTransitionState・UGCSessionStateを取り込む。",
       "change": "RuntimeとEditorが共有するUGC状態・保存モデルをgameplay/ugcへ移す。",
       "tests": "UGC状態・保存・クリア遷移テスト",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "UGCの共有状態・保存モデル・プレビュー状態をgameplay/ugcへ移し、RuntimeからEditorへのincludeを解消。"
     },
     {
       "id": "ARCH-03",

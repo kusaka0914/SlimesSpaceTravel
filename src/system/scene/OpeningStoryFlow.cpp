@@ -1,6 +1,6 @@
 #include "system/scene/OpeningStoryFlow.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/NPC.h"
 #include "actor/Player.h"
 #include "state/UIState.h"

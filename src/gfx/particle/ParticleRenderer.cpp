@@ -1,6 +1,6 @@
 #include "gfx/particle/ParticleRenderer.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "gfx/particle/ParticleShader.h"
 #include "system/ParticleSystem.h"
 #include "thirdParty/stb_image.h"

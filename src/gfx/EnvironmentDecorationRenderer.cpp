@@ -1,9 +1,9 @@
-// Game.h経由のGLFWより先にGLEWを読み込み、OpenGLヘッダーの競合を避ける。
+// app/Game.h経由のGLFWより先にGLEWを読み込み、OpenGLヘッダーの競合を避ける。
 #include <GL/glew.h>
 
 #include "gfx/EnvironmentDecorationRenderer.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/Crystal.h"

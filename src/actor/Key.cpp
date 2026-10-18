@@ -1,6 +1,6 @@
 #include "actor/Key.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "component/CollectableComponent.h"

@@ -1,8 +1,8 @@
 #include "TestFileSupport.h"
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/StageEditHistory.h"
-#include "gfx/debug/stage/StageEditTransaction.h"
+#include "editor/stage/StageEditHistory.h"
+#include "editor/stage/StageEditTransaction.h"
 #include "system/StageProgressSystem.h"
 #include "system/UILoadSystem.h"
 #include "system/camera/CinematicSequenceLibrary.h"

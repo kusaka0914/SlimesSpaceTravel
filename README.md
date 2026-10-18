@@ -102,7 +102,7 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 #### まず見るコード
 
-[UGCEditorInteractionController.cpp](src/gfx/debug/ugc/UGCEditorInteractionController.cpp)
+[UGCEditorInteractionController.cpp](src/editor/ugc/UGCEditorInteractionController.cpp)
 
 `UGCEditorInteractionController::UpdateSelectionDrag`
 
@@ -127,8 +127,8 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 #### 関連コード
 
-- [UGCPreviewController.cpp](src/gfx/debug/ugc/UGCPreviewController.cpp)
-- [GameFrameRenderer.cpp](src/gfx/GameFrameRenderer.cpp)
+- [UGCPreviewController.cpp](src/gameplay/ugc/UGCPreviewController.cpp)
+- [GameFrameRenderer.cpp](src/app/GameFrameRenderer.cpp)
   - `DrawUGCPreviewFrame`
 
 編集内容はゲーム本体とは別のFramebufferへ描画し、2D編集画面と3Dプレビューを切り替えながら確認できます。
@@ -137,7 +137,7 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 #### まず見るコード
 
-[EditorBuildRestartService.cpp](src/system/EditorBuildRestartService.cpp)
+[EditorBuildRestartService.cpp](src/editor/session/EditorBuildRestartService.cpp)
 
 #### 課題
 
@@ -168,7 +168,7 @@ Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execl` を利用し
 
 #### 関連コード
 
-- [DebugEditorSessionController.cpp](src/system/DebugEditorSessionController.cpp)
+- [DebugEditorSessionController.cpp](src/editor/session/DebugEditorSessionController.cpp)
 - `tools/editor_restart_helper/`
 
 ---
@@ -259,7 +259,7 @@ Enemyの種類ごとに大きな条件分岐を書くのではなく、「待機
 ### 主なコード
 
 - [GpuDurationTimer.cpp](src/gfx/performance/GpuDurationTimer.cpp)
-- [GameFrameRenderer.cpp](src/gfx/GameFrameRenderer.cpp)
+- [GameFrameRenderer.cpp](src/app/GameFrameRenderer.cpp)
 
 `GL_TIME_ELAPSED` を利用してGPU実行時間を測定しています。
 
@@ -272,7 +272,7 @@ Enemyの種類ごとに大きな条件分岐を書くのではなく、「待機
 
 ### 主なコード
 
-- [UICanvasEditorController.cpp](src/gfx/debug/ui/UICanvasEditorController.cpp)
+- [UICanvasEditorController.cpp](src/editor/ui/UICanvasEditorController.cpp)
 - [UILoadSystem.cpp](src/system/UILoadSystem.cpp)
 
 実際のゲーム画面上でUIを選択し、
@@ -432,7 +432,7 @@ src/
 │  └─ scene/          Scene・会話・Tutorial
 │
 ├─ text/              日本語・Ruby表示用データ
-└─ Game.cpp           各System / Controllerを保持する全体の調停役
+└─ app/Game.cpp           各System / Controllerを保持する全体の調停役
 ```
 
 ---

@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/stage/UGCPresetVisuals.h"
+#include "editor/stage/UGCPresetVisuals.h"
 
 #include <string>
 

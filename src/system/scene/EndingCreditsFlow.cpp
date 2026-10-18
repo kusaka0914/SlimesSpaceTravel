@@ -1,6 +1,6 @@
 #include "system/scene/EndingCreditsFlow.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/NPC.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"

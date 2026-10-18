@@ -1,4 +1,4 @@
-#include "gfx/debug/stage/StagePlatformConnections.h"
+#include "editor/stage/StagePlatformConnections.h"
 
 #include "TestSupport.h"
 

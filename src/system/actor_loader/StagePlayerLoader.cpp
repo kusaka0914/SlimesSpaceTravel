@@ -1,7 +1,7 @@
 #include "system/actor_loader/StagePlayerLoader.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "system/MeshLoadSystem.h"

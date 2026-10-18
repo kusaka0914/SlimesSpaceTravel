@@ -1,6 +1,6 @@
 #include "gfx/Renderer.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "gfx/TextRasterizer.h"
 #include "gfx/VertexArray.h"
 #include "thirdParty/stb_image.h"

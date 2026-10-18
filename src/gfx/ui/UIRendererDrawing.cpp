@@ -1,6 +1,6 @@
 #include "gfx/UIRenderer.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "gfx/UIShader.h"
 #include "gfx/VertexArray.h"

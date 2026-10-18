@@ -1,6 +1,6 @@
 #include "system/ActorLoadSystem.h"
 
-#include "system/GameWorld.h"
+#include "world/GameWorld.h"
 
 #include <exception>
 #include <iostream>

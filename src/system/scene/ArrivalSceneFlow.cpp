@@ -1,7 +1,7 @@
 #include "system/scene/ArrivalSceneFlow.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"

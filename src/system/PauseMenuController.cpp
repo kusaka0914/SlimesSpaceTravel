@@ -1,6 +1,6 @@
 #include "system/PauseMenuController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 
 void PauseMenuController::Toggle()
 {

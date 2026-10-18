@@ -1,6 +1,6 @@
 #include "TestSupport.h"
 
-#include "gfx/debug/ugc/UGCWorkFileName.h"
+#include "gameplay/ugc/UGCWorkFileName.h"
 
 #include <string>
 

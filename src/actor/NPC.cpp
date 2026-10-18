@@ -1,6 +1,6 @@
 #include "actor/NPC.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "system/SceneSystem.h"
 #include "utils/MathUtils.h"

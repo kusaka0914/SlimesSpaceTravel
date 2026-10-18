@@ -1,6 +1,6 @@
 #include "gfx/render3d/RenderViewportController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "gfx/Renderer3D.h"
 #include "system/CameraSystem.h"
 #include "system/camera/CameraProjection.h"

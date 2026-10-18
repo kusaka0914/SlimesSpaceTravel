@@ -1,6 +1,6 @@
 #include "system/camera/DebugCamera.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "system/InputSystem.h"
 
 #include <GLFW/glfw3.h>
