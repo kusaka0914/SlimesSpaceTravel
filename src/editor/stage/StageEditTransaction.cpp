@@ -6,30 +6,74 @@
 #include <fstream>
 #include <iterator>
 
+namespace {
+
+bool HasFileChanged(const std::filesystem::path& path, const std::string& previousYamlText)
+{
+    try {
+        std::ifstream currentFile(path, std::ios::binary);
+        const std::string currentText{std::istreambuf_iterator<char>(currentFile), std::istreambuf_iterator<char>()};
+        // ハンドルはこのスコープで閉じ、Windowsの復元時にも置換を妨げない。
+        return !currentFile || currentText != previousYamlText;
+    } catch (const std::ios_base::failure&) {
+        return true;
+    }
+}
+
+StageEditApplyResult RestorePreviousStage(const std::filesystem::path& path, const std::string& previousYamlText,
+                                          bool restoreFile, const std::function<bool()>& restoreRuntime,
+                                          std::string& outError)
+{
+    if (restoreFile) {
+        std::string restoreError;
+        if (!AtomicFile::WriteText(path, previousYamlText, restoreError)) {
+            outError += " Restoring the previous file also failed: " + restoreError;
+            return StageEditApplyResult::RecoveryFailed;
+        }
+    }
+    try {
+        if (!restoreRuntime()) {
+            outError += " Restoring the previous runtime also failed.";
+            return StageEditApplyResult::RecoveryFailed;
+        }
+    } catch (const std::exception& error) {
+        outError += std::string(" Restoring the previous runtime raised an error: ") + error.what();
+        return StageEditApplyResult::RecoveryFailed;
+    }
+    outError += " The previous stage was restored.";
+    return StageEditApplyResult::ReloadFailedAndRestored;
+}
+
+} // namespace
+
 StageEditApplyResult StageEditTransaction::Apply(const std::filesystem::path& path, const std::string& previousYamlText,
                                                  const std::function<bool()>& saveChanges,
                                                  const std::function<bool()>& reloadRuntime, std::string& outError)
 {
     outError.clear();
-    if (!saveChanges()) {
-        outError = "Failed to save the stage edit.";
-        return StageEditApplyResult::SaveFailed;
-    }
-    if (reloadRuntime()) {
-        return StageEditApplyResult::Applied;
+    try {
+        if (!saveChanges()) {
+            outError = "Failed to save the stage edit.";
+            return StageEditApplyResult::SaveFailed;
+        }
+    } catch (const std::exception& error) {
+        outError = std::string("Stage save failed: ") + error.what();
+        if (!HasFileChanged(path, previousYamlText)) {
+            return StageEditApplyResult::SaveFailed;
+        }
+        return RestorePreviousStage(path, previousYamlText, true, reloadRuntime, outError);
     }
 
-    std::string restoreError;
-    if (!AtomicFile::WriteText(path, previousYamlText, restoreError)) {
-        outError = "Stage reload failed; restoring the previous file also failed: " + restoreError;
-        return StageEditApplyResult::RecoveryFailed;
+    try {
+        if (reloadRuntime()) {
+            return StageEditApplyResult::Applied;
+        }
+        outError = "Stage reload failed.";
+    } catch (const std::exception& error) {
+        outError = std::string("Stage reload failed: ") + error.what();
     }
-    if (!reloadRuntime()) {
-        outError = "The previous stage file was restored, but its runtime reload failed.";
-        return StageEditApplyResult::RecoveryFailed;
-    }
-    outError = "Stage reload failed; the previous stage was restored.";
-    return StageEditApplyResult::ReloadFailedAndRestored;
+    // 同じYAMLでも、失敗した読込がRuntimeを途中まで変更している可能性がある。
+    return RestorePreviousStage(path, previousYamlText, true, reloadRuntime, outError);
 }
 
 StageEditApplyResult StageEditTransaction::Execute(const std::filesystem::path& path,
@@ -48,30 +92,9 @@ StageEditApplyResult StageEditTransaction::Execute(const std::filesystem::path& 
         outError = std::string("Stage edit failed: ") + error.what();
     }
 
-    std::ifstream currentFile(path, std::ios::binary);
-    const std::string currentText{std::istreambuf_iterator<char>(currentFile), std::istreambuf_iterator<char>()};
-    const bool fileChanged = !currentFile || currentText != previousYamlText;
-    // Windowsでも復元時のファイル置換を妨げないよう、読込ハンドルを先に閉じる。
-    currentFile.close();
+    const bool fileChanged = HasFileChanged(path, previousYamlText);
     if (!fileChanged && recovery == StageEditFailureRecovery::RestoreChangedFile) {
         return StageEditApplyResult::SaveFailed;
     }
-    if (fileChanged) {
-        std::string restoreError;
-        if (!AtomicFile::WriteText(path, previousYamlText, restoreError)) {
-            outError += " Restoring the previous file also failed: " + restoreError;
-            return StageEditApplyResult::RecoveryFailed;
-        }
-    }
-    try {
-        if (!restoreRuntime()) {
-            outError += " Restoring the previous runtime also failed.";
-            return StageEditApplyResult::RecoveryFailed;
-        }
-    } catch (const std::exception& error) {
-        outError += std::string(" Restoring the previous runtime raised an error: ") + error.what();
-        return StageEditApplyResult::RecoveryFailed;
-    }
-    outError += " The previous stage was restored.";
-    return StageEditApplyResult::ReloadFailedAndRestored;
+    return RestorePreviousStage(path, previousYamlText, fileChanged, restoreRuntime, outError);
 }

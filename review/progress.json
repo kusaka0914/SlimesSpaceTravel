@@ -8,7 +8,8 @@
     "Debug/Releaseの基準ビルド・237単体テストとRuntime3組",
     "239ソースの機能別配置、参照更新、旧パス検索、Debug検証",
     "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加",
-    "InputSystemからGame/Editor依存を除去し、GameInputControllerへアプリ操作を分離。Gameの転送API13件を削除。SDL仮想機器で入力保持・切断・無効番号を検証。"
+    "InputSystemからGame/Editor依存を除去し、GameInputControllerへアプリ操作を分離。Gameの転送API13件を削除。SDL仮想機器で入力保持・切断・無効番号を検証。",
+    "StageEditTransactionの保存・再読込・復旧例外を処理し、失敗後復旧の回帰テスト5件を追加。Debug・242単体・Runtime5組成功。"
   ],
   "next": [
     "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",

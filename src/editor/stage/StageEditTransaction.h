@@ -22,7 +22,8 @@ StageEditApplyResult Execute(const std::filesystem::path& path, const std::strin
                              StageEditFailureRecovery recovery, std::string& outError);
 
 // 保存後にRuntimeへ反映する。反映失敗時は変更前のYAMLを戻してRuntimeの復元を試みる。
-// 履歴・選択の確定はAppliedの場合だけ呼び出し元で行う。コールバックは同期実行する。
+// コールバックは同期実行し、std::exception時も復旧を試みる。履歴・選択の確定はAppliedの場合だけ行う。
+// saveChangesはfalse時にファイルを変更しないこと。保存中の例外で変更が残った場合は復旧対象とする。
 StageEditApplyResult Apply(const std::filesystem::path& path, const std::string& previousYamlText,
                            const std::function<bool()>& saveChanges, const std::function<bool()>& reloadRuntime,
                            std::string& outError);

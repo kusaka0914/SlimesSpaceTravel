@@ -255,6 +255,121 @@ void StageEditReportsRecoveryFailureSeparately()
     ExpectFalse(error.empty(), "recovery failure is explained");
 }
 
+void StageEditSaveExceptionRestoresChangedFile()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old",
+        [&]() -> bool {
+            WriteTestFile(fixture.File(), "partial");
+            throw std::runtime_error("save interrupted");
+        },
+        [&]() {
+            ++reloadCount;
+            return ReadTestFile(fixture.File()) == "old";
+        },
+        error);
+    ExpectTrue(result == StageEditApplyResult::ReloadFailedAndRestored, "save exception rolls back partial write");
+    ExpectEqual(std::string("old"), ReadTestFile(fixture.File()), "file restored after save exception");
+    ExpectEqual(1, reloadCount, "runtime rebuilt from restored file");
+    ExpectTrue(error.find("save interrupted") != std::string::npos, "save exception retained");
+}
+
+void StageEditSaveExceptionWithoutChangesDoesNotReload()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string error;
+    bool reloaded = false;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", []() -> bool { throw std::runtime_error("save rejected"); },
+        [&]() {
+            reloaded = true;
+            return true;
+        },
+        error);
+    ExpectTrue(result == StageEditApplyResult::SaveFailed, "unchanged save exception is a save failure");
+    ExpectFalse(reloaded, "unchanged save failure keeps runtime references alive");
+    ExpectEqual(std::string("old"), ReadTestFile(fixture.File()), "old file retained");
+}
+
+void StageEditReloadExceptionRestoresRuntimeEvenIfFileIsUnchanged()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string runtime = "old";
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old", []() { return true; },
+        [&]() {
+            if (++reloadCount == 1) {
+                runtime = "partial runtime";
+                throw std::runtime_error("reload interrupted");
+            }
+            runtime = ReadTestFile(fixture.File());
+            return true;
+        },
+        error);
+    ExpectTrue(result == StageEditApplyResult::ReloadFailedAndRestored, "reload exception recovered");
+    ExpectEqual(std::string("old"), runtime, "partially rebuilt runtime discarded");
+    ExpectEqual(2, reloadCount, "reload attempted again for recovery");
+    ExpectTrue(error.find("reload interrupted") != std::string::npos, "reload exception retained");
+}
+
+void StageEditRecoveryExceptionIsReported()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old",
+        [&]() {
+            WriteTestFile(fixture.File(), "new");
+            return true;
+        },
+        [&]() -> bool {
+            if (++reloadCount == 1) {
+                throw std::runtime_error("initial reload failed");
+            }
+            throw std::runtime_error("recovery reload failed");
+        },
+        error);
+    ExpectTrue(result == StageEditApplyResult::RecoveryFailed, "recovery exception reported separately");
+    ExpectEqual(std::string("old"), ReadTestFile(fixture.File()), "file restored before runtime recovery");
+    ExpectTrue(error.find("initial reload failed") != std::string::npos, "initial exception retained");
+    ExpectTrue(error.find("recovery reload failed") != std::string::npos, "recovery exception retained");
+}
+
+void StageEditFileRecoveryFailureDoesNotReloadWrongDefinition()
+{
+    TemporaryDirectory fixture;
+    WriteTestFile(fixture.File(), "old");
+    std::string error;
+    int reloadCount = 0;
+    const auto result = StageEditTransaction::Apply(
+        fixture.File(), "old",
+        [&]() {
+            WriteTestFile(fixture.File(), "new");
+            return true;
+        },
+        [&]() {
+            ++reloadCount;
+            std::filesystem::remove(fixture.File());
+            std::filesystem::create_directory(fixture.File());
+            return false;
+        },
+        error);
+    ExpectTrue(result == StageEditApplyResult::RecoveryFailed, "file recovery failure reported");
+    ExpectEqual(1, reloadCount, "runtime recovery skipped when previous file cannot be restored");
+    ExpectTrue(std::filesystem::is_directory(fixture.File()), "unexpected destination preserved");
+    ExpectFalse(error.empty(), "file recovery failure explained");
+}
+
 void CreationFailureRestoresFileAndPartiallyCreatedRuntime()
 {
     TemporaryDirectory fixture;
@@ -398,6 +513,14 @@ void FailedWriteDoesNotTruncateOldFile()
 
 void RegisterPersistenceSafetyTests(TestRegistry& tests)
 {
+    tests.emplace_back("Persistence.SaveExceptionRestoresChangedFile", StageEditSaveExceptionRestoresChangedFile);
+    tests.emplace_back("Persistence.UnchangedSaveExceptionKeepsRuntime",
+                       StageEditSaveExceptionWithoutChangesDoesNotReload);
+    tests.emplace_back("Persistence.ReloadExceptionRestoresUnchangedFile",
+                       StageEditReloadExceptionRestoresRuntimeEvenIfFileIsUnchanged);
+    tests.emplace_back("Persistence.RecoveryExceptionIsReported", StageEditRecoveryExceptionIsReported);
+    tests.emplace_back("Persistence.FileRecoveryFailureSkipsReload",
+                       StageEditFileRecoveryFailureDoesNotReloadWrongDefinition);
     tests.emplace_back("Persistence.CreationFailureRollsBackPair",
                        CreationFailureRestoresFileAndPartiallyCreatedRuntime);
     tests.emplace_back("Persistence.NoOpFailureDoesNotReload", FailedNoOpDoesNotReloadOrWrite);

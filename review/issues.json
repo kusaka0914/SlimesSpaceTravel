@@ -80,12 +80,13 @@
     {
       "id": "SAFE-01",
       "priority": "P1",
-      "location": "src/gfx/debug/stage/StageEditTransaction.cpp:9",
+      "location": "src/editor/stage/StageEditTransaction.cpp",
       "evidence": "Apply経路はsave/reload callback例外を捕捉せず、Execute経路と復旧の契約が異なる。",
       "risk": "Apply経路はsave/reload callback例外を捕捉せず、Execute経路と復旧の契約が異なる。",
       "change": "保存・読込の例外時にも復旧を試み、復旧不能を結果で返す。",
       "tests": "save例外・reload例外・復旧例外・元ファイル保持",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "回帰テストを先に実行し4件の未捕捉例外を再現。保存例外・読込例外・復旧例外・ファイル復旧不能・変更前の保存例外を追加。242単体テストとRuntime5組、Debug全ビルド成功。通常のfalse保存失敗は再読込しない契約を維持。"
     },
     {
       "id": "TEST-01",
