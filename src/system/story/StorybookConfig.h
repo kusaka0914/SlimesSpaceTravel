@@ -13,8 +13,10 @@ class StorybookConfig {
 public:
     static constexpr const char* DefaultPath = "../assets/data/sequences/storybook.yaml";
 
-    // 保持トラックをクリアして読む。ファイルを開けなければtrue、その他の例外はfalse。途中の定義が残る場合がある。
+    // 成功時にトラックを置き換える。ファイルを開けなければ空にしてtrue、解析失敗時は元の定義を維持してfalse。
     bool Load(const std::string& path = DefaultPath);
+
+    // 親ディレクトリを作成して保存する。書込・置換に失敗した場合は既存ファイルを保ってfalse。
     bool Save(const std::string& path = DefaultPath) const;
 
     // 0始まりのページを取得する。末尾超過は最終画像、トラックなし・負の番号・画像なしは空文字列。

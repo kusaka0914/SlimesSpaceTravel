@@ -36,8 +36,10 @@ class EndingRollConfigIO {
 public:
     static constexpr const char* DefaultPath = "../assets/data/sequences/ending_roll.yaml";
 
-    // 出力を既定値へ戻して読み込む。ファイルを開けなければtrue、その他の例外はfalse。途中の値が残る場合がある。
+    // 成功時だけ出力を置き換える。ファイルを開けなければ既定値でtrue、解析失敗時は出力を維持してfalse。
     static bool Load(EndingRollConfig& outConfig, const std::string& path = DefaultPath);
+
+    // 親ディレクトリを作成して保存する。書込・置換に失敗した場合は既存ファイルを保ってfalse。
     static bool Save(const EndingRollConfig& config, const std::string& path = DefaultPath);
 };
 

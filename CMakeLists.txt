@@ -78,6 +78,12 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/YamlReadTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ConfigurationPersistenceTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/session/EditorSessionRepository.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyPresetRepository.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/effect/particle/ParticleConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/story/StorybookConfig.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/ending/EndingRollConfig.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PersistenceSafetyTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp

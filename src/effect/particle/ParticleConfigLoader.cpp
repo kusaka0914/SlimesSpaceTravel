@@ -1,11 +1,11 @@
 #include "effect/particle/ParticleConfigLoader.h"
 
+#include "utils/AtomicFile.h"
 #include "utils/YamlRead.h"
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -329,14 +329,12 @@ bool ParticleConfigLoader::Save(const std::string& filePath,
             return false;
         }
 
-        std::ofstream output(filePath);
-        if (!output) {
-            std::cerr << "Failed to open particle config for writing: " << filePath << '\n';
+        std::string error;
+        if (!AtomicFile::WriteText(outputPath, std::string(emitter.c_str()) + '\n', error)) {
+            std::cerr << "Failed to save particle config '" << filePath << "': " << error << '\n';
             return false;
         }
-
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save particle config '" << filePath << "': " << exception.what() << '\n';
         return false;

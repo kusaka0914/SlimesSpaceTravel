@@ -59,7 +59,7 @@ public:
                      std::string& outErrorMessage);
 
     // 既存YAMLへ保存する。originalPresetIdが空なら追加、指定時はそのIDを置換し、攻撃確率も正規化する。
-    // 成功時はtrueで更新番号を進める。falseを返す場合はoutErrorMessageへ理由を設定する。
+    // 成功時だけファイルを置き換えて更新番号を進める。失敗時は既存ファイルを保ち、falseと理由を返す。
     static bool Save(const std::string& filePath, const std::string& originalPresetId,
                      const EnemyPresetDefinition& preset, std::string& outErrorMessage);
 

@@ -65,6 +65,8 @@ public:
 
     // 設定を読み込みNormalizeする。ファイルがなければ既定値でtrue。読込・変換失敗時は出力を維持してfalse。
     bool Load(PlayerCameraSettings& settings) const;
+
+    // 正規化した値を保存する。書き終えてから置き換え、失敗時は既存ファイルを保ってfalse。
     bool Save(const PlayerCameraSettings& settings) const;
 
 private:

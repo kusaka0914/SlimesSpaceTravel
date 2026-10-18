@@ -10,7 +10,6 @@
 #include "system/tutorial/TutorialLibrary.h"
 #include "utils/AtomicFile.h"
 
-#include <chrono>
 #include <filesystem>
 
 #ifndef _WIN32
@@ -22,29 +21,9 @@
 
 namespace {
 
-class TemporaryDirectory {
-public:
-    TemporaryDirectory()
-    {
-        mPath = std::filesystem::temp_directory_path() /
-                ("space_persistence_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-        ExpectTrue(std::filesystem::create_directory(mPath), "create isolated test directory");
-    }
-    ~TemporaryDirectory()
-    {
-        std::error_code error;
-        std::filesystem::remove_all(mPath, error);
-    }
-    std::filesystem::path File() const { return mPath / "data.yaml"; }
-    const std::filesystem::path& Root() const { return mPath; }
-
-private:
-    std::filesystem::path mPath;
-};
-
 void AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old data");
     std::string error;
     ExpectTrue(AtomicFile::WriteText(fixture.File(), "new data", error), "replace old file");
@@ -58,7 +37,7 @@ void AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles()
 
 void AtomicSaveDoesNotDeleteDestinationOnReplacementFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     std::filesystem::create_directory(fixture.File());
     std::string error;
     ExpectFalse(AtomicFile::WriteText(fixture.File(), "replacement", error), "cannot replace directory");
@@ -72,7 +51,7 @@ void AtomicSaveDoesNotDeleteDestinationOnReplacementFailure()
 
 void SequenceReloadPreservesDefinitionsOnPartialParseFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "sequences: { kept: { name: original, clips: [] } }\n");
     SequenceLibrary library(fixture.File().string());
     ExpectTrue(library.Load(), "load valid sequences");
@@ -88,7 +67,7 @@ void SequenceReloadPreservesDefinitionsOnPartialParseFailure()
 
 void CinematicReloadPreservesDefinitionsOnPartialParseFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "cinematics: { kept: { name: original, keyframes: [] } }\n");
     CinematicSequenceLibrary library(fixture.File().string());
     ExpectTrue(library.Load(), "load valid cinematics");
@@ -102,7 +81,7 @@ void CinematicReloadPreservesDefinitionsOnPartialParseFailure()
 
 void TutorialReloadPreservesDefinitionsOnPartialParseFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "tutorials: [{id: kept, pages: [{id: first, text: original}]}]\n");
     TutorialLibrary library(fixture.File().string());
     const auto* original = library.Find("kept");
@@ -116,7 +95,7 @@ void TutorialReloadPreservesDefinitionsOnPartialParseFailure()
 
 void ProgressReloadPreservesAllFieldsOnConversionFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(
         fixture.File(),
         "clearedStages: [2]\nshownConversations: [intro]\nendingRollCompleted: true\nplayerControlStyle: assist\n");
@@ -133,7 +112,7 @@ void ProgressReloadPreservesAllFieldsOnConversionFailure()
 
 void CustomUIReloadPreservesElementsAndVisibilityOnConversionFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     UILoadSystem library;
     WriteTestFile(fixture.File(), "screens: {test: {name: Original}}\nelements: [{screen: test, id: kept, type: text, "
                                   "visibleByDefault: true}]\n");
@@ -150,7 +129,7 @@ void CustomUIReloadPreservesElementsAndVisibilityOnConversionFailure()
 
 void EveryYamlSaveReportsReplacementFailure()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     std::filesystem::create_directory(fixture.File());
     SequenceLibrary sequences(fixture.File().string());
     ExpectTrue(sequences.Create("test"), "create sequence in memory");
@@ -171,7 +150,7 @@ void EveryYamlSaveReportsReplacementFailure()
 
 void StageEditCommitsFileAndRuntimeBeforeHistory()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     StageEditHistory history;
     std::string runtime = "old";
@@ -194,7 +173,7 @@ void StageEditCommitsFileAndRuntimeBeforeHistory()
 
 void StageEditReloadFailureRestoresYamlRuntimeAndKeepsHistory()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     StageEditHistory history;
     history.PushUndoSnapshot("earlier");
@@ -225,7 +204,7 @@ void StageEditReloadFailureRestoresYamlRuntimeAndKeepsHistory()
 
 void StageEditSaveFailureDoesNotReloadRuntime()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     std::filesystem::create_directory(fixture.File());
     std::string error;
     int reloadCount = 0;
@@ -243,7 +222,7 @@ void StageEditSaveFailureDoesNotReloadRuntime()
 
 void StageEditReportsRecoveryFailureSeparately()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string error;
     const auto result = StageEditTransaction::Apply(
@@ -257,7 +236,7 @@ void StageEditReportsRecoveryFailureSeparately()
 
 void StageEditSaveExceptionRestoresChangedFile()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string error;
     int reloadCount = 0;
@@ -280,7 +259,7 @@ void StageEditSaveExceptionRestoresChangedFile()
 
 void StageEditSaveExceptionWithoutChangesDoesNotReload()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string error;
     bool reloaded = false;
@@ -298,7 +277,7 @@ void StageEditSaveExceptionWithoutChangesDoesNotReload()
 
 void StageEditReloadExceptionRestoresRuntimeEvenIfFileIsUnchanged()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string runtime = "old";
     std::string error;
@@ -322,7 +301,7 @@ void StageEditReloadExceptionRestoresRuntimeEvenIfFileIsUnchanged()
 
 void StageEditRecoveryExceptionIsReported()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string error;
     int reloadCount = 0;
@@ -347,7 +326,7 @@ void StageEditRecoveryExceptionIsReported()
 
 void StageEditFileRecoveryFailureDoesNotReloadWrongDefinition()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "old");
     std::string error;
     int reloadCount = 0;
@@ -372,7 +351,7 @@ void StageEditFileRecoveryFailureDoesNotReloadWrongDefinition()
 
 void CreationFailureRestoresFileAndPartiallyCreatedRuntime()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "original");
     std::string runtime = "original";
     std::string error;
@@ -395,7 +374,7 @@ void CreationFailureRestoresFileAndPartiallyCreatedRuntime()
 
 void FailedNoOpDoesNotReloadOrWrite()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "original");
     bool reloaded = false;
     std::string error;
@@ -413,7 +392,7 @@ void FailedNoOpDoesNotReloadOrWrite()
 
 void FailedPreviewRestoresRuntimeWithoutChangedFile()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "original");
     std::string runtime = "drag preview";
     std::string error;
@@ -430,7 +409,7 @@ void FailedPreviewRestoresRuntimeWithoutChangedFile()
 
 void OperationExceptionRestoresFileAndReportsRecoveryException()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "original");
     std::string error;
     const auto result = StageEditTransaction::Execute(
@@ -449,7 +428,7 @@ void OperationExceptionRestoresFileAndReportsRecoveryException()
 
 void SuccessfulCompoundOperationCommitsOneSnapshot()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     WriteTestFile(fixture.File(), "actors: old\ncells: old\n");
     const std::string before = ReadTestFile(fixture.File());
     StageEditHistory history;
@@ -483,7 +462,7 @@ void SuccessfulCompoundOperationCommitsOneSnapshot()
 #ifndef _WIN32
 void FailedWriteDoesNotTruncateOldFile()
 {
-    TemporaryDirectory fixture;
+    TemporaryTestDirectory fixture;
     const std::string original(32, 'O');
     WriteTestFile(fixture.File(), original);
     // 子プロセスだけに書込上限を課し、テスト実行本体の制限やシグナル設定を変えない。

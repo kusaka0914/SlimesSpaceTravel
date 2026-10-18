@@ -10,7 +10,8 @@
     "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加",
     "InputSystemからGame/Editor依存を除去し、GameInputControllerへアプリ操作を分離。Gameの転送API13件を削除。SDL仮想機器で入力保持・切断・無効番号を検証。",
     "StageEditTransactionの保存・再読込・復旧例外を処理し、失敗後復旧の回帰テスト5件を追加。Debug・242単体・Runtime5組成功。",
-    "YAMLスカラー読取7ファイル17関数を共通化。先行契約テストと共通helperの直接テストを追加し、247単体・Runtime5組・Debug成功。"
+    "YAMLスカラー読取7ファイル17関数を共通化。先行契約テストと共通helperの直接テストを追加し、247単体・Runtime5組・Debug成功。",
+    "設定保存7経路をAtomicFileへ統一し、Storybook/Endingの部分読込を防止。回帰テストで改修前8件失敗を再現後、266単体・Runtime5組成功。"
   ],
   "next": [
     "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",
@@ -31,7 +32,15 @@
     "src/editor/session/DebugEditorSessionController.cpp",
     "src/app/GameInputController.cpp",
     "src/system/InputSystem.h",
-    "src/app/GameInputController.h"
+    "src/app/GameInputController.h",
+    "src/gfx/Renderer.h",
+    "src/gfx/Renderer.cpp",
+    "src/gfx/Renderer3D.h",
+    "src/gfx/Renderer3D.cpp",
+    "src/gfx/render3d/SceneObjectRenderer.cpp",
+    "src/system/story/StorybookConfig.cpp",
+    "src/system/ending/EndingRollConfig.cpp",
+    "src/actor/enemy/EnemyPresetRepository.cpp"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

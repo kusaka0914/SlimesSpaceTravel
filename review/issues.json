@@ -108,6 +108,17 @@
       "change": "実行可能な構成を検証し、環境上実行できない確認は明示して再現手順を残す。",
       "tests": "Debug/Release、Review/TGS、ASan/UBSan、Windows、実入力",
       "status": "open"
+    },
+    {
+      "id": "SAFE-02",
+      "priority": "P1",
+      "location": "StorybookConfig::Load / EndingRollConfigIO::Load / 7設定保存実装",
+      "evidence": "旧Storybook/Endingは先に出力をclearして順次解析。EditorSession/Camera/Particle/EnemyPreset/Storybook/Ending/ActorParameterの7保存経路はofstreamで直接上書き。",
+      "risk": "不正定義の再読込で有効な状態を失い、短い書き込み・クローズ失敗で旧設定を破壊する。",
+      "change": "読込結果を一時状態で解析して成功時だけ確定。保存は既存AtomicFileへ統一。成功する欠損ファイル読込の既定値リセットは維持。",
+      "tests": "6公開保存APIの書込上限テスト・旧バイト保持・一時ファイル掃除、部分読込失敗、欠損ファイル、往復変換。ActorParameter保存は実資産へ書き込まずビルドと共通AtomicFileテストで確認。",
+      "status": "implemented_and_debug_verified",
+      "verification": "改修前は追加15テストのうち8件失敗。改修後262単体+Runtime5組成功。往復変換テスト4件を追加後266/266成功。Debug全ビルド成功。TGSログは既に一時ファイル方式なので別監査対象。"
     }
   ],
   "notes": [

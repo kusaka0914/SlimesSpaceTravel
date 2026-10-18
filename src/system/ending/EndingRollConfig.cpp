@@ -1,28 +1,29 @@
 #include "system/ending/EndingRollConfig.h"
 
+#include "utils/AtomicFile.h"
 #include "utils/YamlRead.h"
 
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
+#include <utility>
 #include <yaml-cpp/yaml.h>
 
 bool EndingRollConfigIO::Load(EndingRollConfig& outConfig, const std::string& path)
 {
-    outConfig = {};
+    EndingRollConfig loadedConfig;
     try {
         const YAML::Node root = YAML::LoadFile(path);
         const YAML::Node credits = root["credits"];
         if (credits) {
-            outConfig.creditsText = credits["text"] ? credits["text"].as<std::string>() : "";
-            outConfig.creditsStartTime = std::max(0.0f, YamlRead::ReadOr<float>(credits, "start", 0.0f));
-            outConfig.creditsStartYRatio = YamlRead::ReadOr<float>(credits, "startY", 1.1f);
-            outConfig.creditsScrollSpeedRatio =
+            loadedConfig.creditsText = credits["text"] ? credits["text"].as<std::string>() : "";
+            loadedConfig.creditsStartTime = std::max(0.0f, YamlRead::ReadOr<float>(credits, "start", 0.0f));
+            loadedConfig.creditsStartYRatio = YamlRead::ReadOr<float>(credits, "startY", 1.1f);
+            loadedConfig.creditsScrollSpeedRatio =
                 std::max(0.001f, YamlRead::ReadOr<float>(credits, "scrollSpeed", 0.055f));
-            outConfig.creditsTextScaleRatio =
+            loadedConfig.creditsTextScaleRatio =
                 std::max(0.00002f, YamlRead::ReadOr<float>(credits, "textScale", 0.00055f));
         }
-        outConfig.totalDuration = std::max(1.0f, YamlRead::ReadOr<float>(root, "duration", 30.0f));
+        loadedConfig.totalDuration = std::max(1.0f, YamlRead::ReadOr<float>(root, "duration", 30.0f));
 
         const YAML::Node events = root["imageEvents"];
         if (events && events.IsSequence()) {
@@ -39,22 +40,24 @@ bool EndingRollConfigIO::Load(EndingRollConfig& outConfig, const std::string& pa
                 event.yRatio = YamlRead::ReadOr<float>(node, "y", 0.5f);
                 event.widthRatio = std::max(0.01f, YamlRead::ReadOr<float>(node, "width", 0.2f));
                 event.heightRatio = std::max(0.01f, YamlRead::ReadOr<float>(node, "height", 0.2f));
-                outConfig.imageEvents.push_back(std::move(event));
+                loadedConfig.imageEvents.push_back(std::move(event));
             }
         }
 
         const YAML::Node endImage = root["endImage"];
         if (endImage) {
-            outConfig.endImagePath = endImage["image"] ? endImage["image"].as<std::string>() : "";
-            outConfig.endImageStartTime = std::max(0.0f, YamlRead::ReadOr<float>(endImage, "start", 24.0f));
-            outConfig.endImageFadeInDuration = std::max(0.0f, YamlRead::ReadOr<float>(endImage, "fadeIn", 0.6f));
-            outConfig.endImageHoldDuration = std::max(0.5f, YamlRead::ReadOr<float>(endImage, "holdDuration", 5.0f));
+            loadedConfig.endImagePath = endImage["image"] ? endImage["image"].as<std::string>() : "";
+            loadedConfig.endImageStartTime = std::max(0.0f, YamlRead::ReadOr<float>(endImage, "start", 24.0f));
+            loadedConfig.endImageFadeInDuration = std::max(0.0f, YamlRead::ReadOr<float>(endImage, "fadeIn", 0.6f));
+            loadedConfig.endImageHoldDuration = std::max(0.5f, YamlRead::ReadOr<float>(endImage, "holdDuration", 5.0f));
         }
     } catch (const YAML::BadFile&) {
+        outConfig = {};
         return true;
     } catch (const std::exception&) {
         return false;
     }
+    outConfig = std::move(loadedConfig);
     return true;
 }
 
@@ -100,9 +103,8 @@ bool EndingRollConfigIO::Save(const EndingRollConfig& config, const std::string&
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(path);
-        output << emitter.c_str();
-        return output.good();
+        std::string error;
+        return emitter.good() && AtomicFile::WriteText(outputPath, emitter.c_str(), error);
     } catch (const std::exception&) {
         return false;
     }

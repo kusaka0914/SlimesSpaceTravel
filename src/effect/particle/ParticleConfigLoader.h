@@ -13,8 +13,7 @@ public:
     static bool Load(const std::string& filePath,
                      std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions);
 
-    // 親ディレクトリを作成し、ID順にYAMLを上書き保存する。失敗時はfalseを返す。
-    // 書き込み途中の失敗では、既存ファイルの内容は復元しない。
+    // 親ディレクトリを作成し、ID順にYAMLを保存する。書き終えてから置き換え、失敗時は既存ファイルを保ってfalse。
     static bool Save(const std::string& filePath,
                      const std::unordered_map<std::string, ParticleEffectDefinition>& definitions);
 };

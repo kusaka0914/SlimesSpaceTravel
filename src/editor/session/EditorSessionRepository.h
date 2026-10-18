@@ -8,7 +8,7 @@
 // EditorSessionStateのYAML入出力を担当し、ゲームや編集画面には適用しない。
 class EditorSessionRepository {
 public:
-    // 親フォルダーを作成し、既存ファイルを上書きする。失敗時はfalseとoutErrorMessageを返す。
+    // 親フォルダーを作成し、書き終えたファイルへ置き換える。失敗時は既存ファイルを保ち、falseと理由を返す。
     static bool Save(const std::filesystem::path& filePath, const EditorSessionState& sessionState,
                      std::string& outErrorMessage);
 

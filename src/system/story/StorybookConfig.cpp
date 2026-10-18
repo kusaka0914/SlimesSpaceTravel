@@ -1,17 +1,20 @@
 #include "system/story/StorybookConfig.h"
 
+#include "utils/AtomicFile.h"
+
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
+#include <utility>
 #include <yaml-cpp/yaml.h>
 
 bool StorybookConfig::Load(const std::string& path)
 {
-    mTracks.clear();
+    std::unordered_map<std::string, StorybookTrack> loadedTracks;
     try {
         const YAML::Node root = YAML::LoadFile(path);
         const YAML::Node tracks = root["tracks"];
         if (!tracks || !tracks.IsMap()) {
+            mTracks.clear();
             return true;
         }
         for (const auto& entry : tracks) {
@@ -22,13 +25,15 @@ bool StorybookConfig::Load(const std::string& path)
                     track.pageImages.push_back(page ? page.as<std::string>() : "");
                 }
             }
-            mTracks[entry.first.as<std::string>()] = std::move(track);
+            loadedTracks[entry.first.as<std::string>()] = std::move(track);
         }
     } catch (const YAML::BadFile&) {
+        mTracks.clear();
         return true;
     } catch (const std::exception&) {
         return false;
     }
+    mTracks = std::move(loadedTracks);
     return true;
 }
 
@@ -50,9 +55,8 @@ bool StorybookConfig::Save(const std::string& path) const
             emitter << YAML::EndSeq << YAML::EndMap;
         }
         emitter << YAML::EndMap << YAML::EndMap;
-        std::ofstream output(path);
-        output << emitter.c_str();
-        return output.good();
+        std::string error;
+        return emitter.good() && AtomicFile::WriteText(outputPath, emitter.c_str(), error);
     } catch (const std::exception&) {
         return false;
     }

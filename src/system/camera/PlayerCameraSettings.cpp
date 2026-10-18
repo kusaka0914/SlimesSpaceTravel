@@ -1,11 +1,11 @@
 #include "system/camera/PlayerCameraSettings.h"
 
+#include "utils/AtomicFile.h"
 #include "utils/YamlRead.h"
 
 #include <yaml-cpp/yaml.h>
 
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <utility>
 
@@ -299,13 +299,12 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(mFilePath);
-        if (!output) {
+        std::string error;
+        if (!emitter.good() || !AtomicFile::WriteText(mFilePath, std::string(emitter.c_str()) + '\n', error)) {
+            std::cerr << "Failed to save player camera settings: " << error << '\n';
             return false;
         }
-
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save player camera settings: " << exception.what() << '\n';
         return false;

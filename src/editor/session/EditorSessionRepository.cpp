@@ -1,8 +1,9 @@
 #include "editor/session/EditorSessionRepository.h"
 
+#include "utils/AtomicFile.h"
+
 #include <algorithm>
 #include <exception>
-#include <fstream>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
@@ -92,15 +93,13 @@ bool EditorSessionRepository::Save(const std::filesystem::path& filePath, const 
         emitter << YAML::EndSeq;
         emitter << YAML::EndMap;
 
-        std::ofstream output(filePath, std::ios::binary | std::ios::trunc);
-        if (!output) {
-            outErrorMessage = "エディター状態の保存ファイルを開けませんでした: " + filePath.string();
+        if (!emitter.good()) {
+            outErrorMessage = "エディター状態の変換に失敗しました: " + emitter.GetLastError();
             return false;
         }
-
-        output << emitter.c_str();
-        if (!output.good()) {
-            outErrorMessage = "エディター状態の保存中に書き込みが失敗しました: " + filePath.string();
+        std::string writeError;
+        if (!AtomicFile::WriteText(filePath, emitter.c_str(), writeError)) {
+            outErrorMessage = "エディター状態の保存に失敗しました: " + writeError;
             return false;
         }
     } catch (const std::exception& exception) {

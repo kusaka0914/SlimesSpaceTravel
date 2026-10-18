@@ -1,12 +1,13 @@
 #include "editor/tools/parameters/ActorParameterYamlWriter.h"
 
-#include "app/Game.h"
+#include "utils/AtomicFile.h"
+
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "app/Game.h"
 #include "system/PhysicsSystem.h"
 
-#include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -15,17 +16,15 @@
 namespace {
 bool SaveYamlFile(const std::string& filePath, const YAML::Node& config)
 {
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open yaml for writing: " << filePath << std::endl;
+    YAML::Emitter emitter;
+    emitter << config;
+    if (!emitter.good()) {
+        std::cerr << "Failed to serialize yaml: " << emitter.GetLastError() << '\n';
         return false;
     }
-    file << config;
-
-    // バッファの書き出しやファイルを閉じる際の失敗も、保存失敗として呼び出し元へ返す。
-    file.close();
-    if (!file) {
-        std::cerr << "Failed to write yaml: " << filePath << std::endl;
+    std::string error;
+    if (!AtomicFile::WriteText(filePath, emitter.c_str(), error)) {
+        std::cerr << "Failed to write yaml '" << filePath << "': " << error << '\n';
         return false;
     }
     return true;

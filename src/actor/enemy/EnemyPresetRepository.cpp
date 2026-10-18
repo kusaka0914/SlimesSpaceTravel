@@ -1,9 +1,10 @@
 #include "actor/enemy/EnemyPresetRepository.h"
 
+#include "utils/AtomicFile.h"
+
 #include <algorithm>
 #include <cctype>
 #include <exception>
-#include <fstream>
 #include <optional>
 #include <unordered_set>
 #include <yaml-cpp/yaml.h>
@@ -207,15 +208,15 @@ void WritePreset(YAML::Node& node, const EnemyPresetDefinition& preset)
 
 bool SaveYaml(const std::string& filePath, const YAML::Node& root, std::string& outErrorMessage)
 {
-    std::ofstream output(filePath);
-    if (!output.is_open()) {
-        outErrorMessage = "敵プリセットファイルを開けませんでした。";
+    YAML::Emitter emitter;
+    emitter << root;
+    if (!emitter.good()) {
+        outErrorMessage = "敵プリセットの変換に失敗しました: " + emitter.GetLastError();
         return false;
     }
-
-    output << root;
-    if (!output.good()) {
-        outErrorMessage = "敵プリセットファイルの書き込みに失敗しました。";
+    std::string writeError;
+    if (!AtomicFile::WriteText(filePath, emitter.c_str(), writeError)) {
+        outErrorMessage = "敵プリセットファイルの保存に失敗しました: " + writeError;
         return false;
     }
     return true;

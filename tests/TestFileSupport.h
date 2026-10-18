@@ -3,6 +3,8 @@
 #include "TestSupport.h"
 
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -51,3 +53,29 @@ inline std::string ReadTestFile(const std::filesystem::path& filePath)
     }
     return text;
 }
+
+// 保存先を一時ディレクトリへ隔離し、終了時に生成ファイルをまとめて削除する。
+class TemporaryTestDirectory {
+public:
+    TemporaryTestDirectory()
+    {
+        static std::atomic<unsigned long long> nextId{0};
+        mPath = std::filesystem::temp_directory_path() /
+                ("space_test_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "_" +
+                 std::to_string(nextId.fetch_add(1)));
+        ExpectTrue(std::filesystem::create_directory(mPath), "create isolated test directory");
+    }
+    ~TemporaryTestDirectory()
+    {
+        std::error_code error;
+        std::filesystem::remove_all(mPath, error);
+    }
+    TemporaryTestDirectory(const TemporaryTestDirectory&) = delete;
+    TemporaryTestDirectory& operator=(const TemporaryTestDirectory&) = delete;
+
+    std::filesystem::path File() const { return mPath / "data.yaml"; }
+    const std::filesystem::path& Root() const { return mPath; }
+
+private:
+    std::filesystem::path mPath;
+};
