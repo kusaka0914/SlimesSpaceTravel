@@ -6,22 +6,22 @@
 #include <glm/glm.hpp>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-class Game;
 class ParticleShader;
 
 // ParticleSystemの粒子をビルボードで描画し、シェーダー・バッファ・テクスチャを所有する。
-// Gameは非所有参照。生成・描画・破棄は有効なGLコンテキスト上で行う。
+// 生成・描画・破棄は有効なGLコンテキスト上で行う。入力の粒子は描画中だけ借用する。
 class ParticleRenderer {
 public:
-    explicit ParticleRenderer(Game* game);
+    ParticleRenderer();
     ~ParticleRenderer();
 
     // 加算粒子をバッチ描画し、半透明粒子を奥から描く。使用した主要なGL描画状態は復元する。
-    void Draw(const glm::mat4& view, const glm::mat4& projection) const;
+    void Draw(const glm::mat4& view, const glm::mat4& projection, std::span<const Particle> particles) const;
 
 private:
     struct InstanceData {
@@ -64,7 +64,6 @@ private:
     static std::string ResolveTexturePath(const std::string& texturePath);
 
 private:
-    Game* mGame = nullptr;
     std::unique_ptr<ParticleShader> mShader;
 
     GLuint mVertexArray = 0;

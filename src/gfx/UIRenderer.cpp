@@ -12,7 +12,7 @@
 #include <GLFW/glfw3.h>
 
 UIRenderer::UIRenderer(Game* game)
-    : Renderer(game),
+    : mGame(game),
       mUIShader(nullptr),
       mUILoadSystem(nullptr),
       mFbWidth(0),

@@ -1,9 +1,7 @@
-// app/Game.h経由のGLFWより先にGLEWを読み込み、OpenGLヘッダーの競合を避ける。
 #include <GL/glew.h>
 
 #include "gfx/EnvironmentDecorationRenderer.h"
 
-#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/Crystal.h"
@@ -178,17 +176,12 @@ bool IsBatchNearPosition(const auto& batch, const glm::vec3& position, float add
 }
 } // namespace
 
-EnvironmentDecorationRenderer::EnvironmentDecorationRenderer(Game* game)
-    : mGame(game)
-{
-}
-
 EnvironmentDecorationRenderer::~EnvironmentDecorationRenderer() = default;
 
-void EnvironmentDecorationRenderer::Prepare(const std::vector<Planet*>& planets)
+void EnvironmentDecorationRenderer::Prepare(const std::vector<Planet*>& planets, MeshLoadSystem* modelLoader)
 {
     if (HavePlanetsChanged(planets)) {
-        RebuildForPlanets(planets);
+        RebuildForPlanets(planets, modelLoader);
     }
 }
 
@@ -292,11 +285,11 @@ bool EnvironmentDecorationRenderer::HavePlanetsChanged(const std::vector<Planet*
     return false;
 }
 
-void EnvironmentDecorationRenderer::RebuildForPlanets(const std::vector<Planet*>& planets)
+void EnvironmentDecorationRenderer::RebuildForPlanets(const std::vector<Planet*>& planets, MeshLoadSystem* modelLoader)
 {
     ReleaseInstanceBuffers();
     mDecoratedPlanets.clear();
-    if (!mGame || !mGame->GetMeshLoadSystem()) {
+    if (!modelLoader) {
         return;
     }
 
@@ -308,7 +301,7 @@ void EnvironmentDecorationRenderer::RebuildForPlanets(const std::vector<Planet*>
         if (settings.biome == Planet::Biome::None || settings.decorationDensity <= 0.0f) {
             continue;
         }
-        AppendPlanetBatches(*planet);
+        AppendPlanetBatches(*planet, *modelLoader);
         mDecoratedPlanets.push_back({
             planet,
             planet->GetRenderPosition(),
@@ -321,7 +314,7 @@ void EnvironmentDecorationRenderer::RebuildForPlanets(const std::vector<Planet*>
     }
 }
 
-void EnvironmentDecorationRenderer::AppendPlanetBatches(Planet& planet)
+void EnvironmentDecorationRenderer::AppendPlanetBatches(Planet& planet, MeshLoadSystem& modelLoader)
 {
     const Planet::VisualSettings& visualSettings = planet.GetVisualSettings();
     const std::vector<glm::vec3> occupiedPositions = CollectOccupiedPositions(planet);
@@ -338,7 +331,7 @@ void EnvironmentDecorationRenderer::AppendPlanetBatches(Planet& planet)
     const auto appendDefinitions = [&](const auto& definitions) {
         for (const DecorationDefinition& definition : definitions) {
             DecorationBatch batch;
-            batch.model = mGame->GetMeshLoadSystem()->ResolveLoadedModel(definition.modelPath);
+            batch.model = modelLoader.ResolveLoadedModel(definition.modelPath);
             if (!batch.model || !batch.model->IsLoaded()) {
                 continue;
             }

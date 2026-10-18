@@ -50,7 +50,7 @@ public:
     using TextEffect = UITextRenderer::TextEffect;
 
     UIRenderer(Game* game);
-    ~UIRenderer();
+    ~UIRenderer() override;
 
     // OpenGLコンテキストが有効な間に、文字キャッシュを解放する。繰り返し呼び出せる。
     void Shutdown();
@@ -176,6 +176,8 @@ private:
                       glm::vec4 outlineColor = glm::vec4(0.0f));
 
 private:
+    // Gameが所有し、描画資源の解放が終わるまで有効な借用先。
+    Game* mGame;
     std::unique_ptr<UIShader> mUIShaderUnique;
     UIShader* mUIShader;
 

@@ -65,7 +65,8 @@
       "risk": "GPU描画が広いGame APIに依存しており、描画に必要な状態が不明確。",
       "change": "取得項目と寿命を列挙し、小さな借用RenderContextで供給できる範囲を整理する。",
       "tests": "描画順・影・プレビュー・性能の前後確認",
-      "status": "open"
+      "status": "render_modules_narrowed_scene_context_pending",
+      "verification": "Renderer基底の未使用Game参照を削除。ParticleRendererはspan<const Particle>、EnvironmentDecorationRendererは呼出中のみ借用するMeshLoadSystemへ変更しGameから独立。Gameの未使用TGS転送API2件も削除。Debug全ビルド・266単体・Runtime6組成功。Runtimeで実ステージと影、加算/半透明粒子の描画とGL状態復元・解放も検証。Renderer3D/SceneObject/Viewportの広いGame依存は継続整理。"
     },
     {
       "id": "YAML-01",

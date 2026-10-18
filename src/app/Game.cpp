@@ -676,20 +676,6 @@ bool Game::ShouldBlockInputForTgsPresentation() const
     return mSessionController && mSessionController->ShouldBlockInputForTgsPresentation();
 }
 
-void Game::SkipTgsExperienceToRemainingTimeNotice()
-{
-    if (mSessionController) {
-        mSessionController->SkipTgsExperienceToRemainingTimeNotice();
-    }
-}
-
-void Game::EndTgsExperienceNow()
-{
-    if (mSessionController) {
-        mSessionController->EndTgsExperienceNow();
-    }
-}
-
 void Game::SetUGCPreviewRenderSize(int width, int height)
 {
     mUGCPreviewController->SetRenderSize(width, height);

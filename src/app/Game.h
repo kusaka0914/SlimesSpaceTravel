@@ -357,8 +357,6 @@ public:
     bool IsTgsThankYouScreenVisible() const;
     bool IsTgsRemainingTimeNoticeVisible() const;
     bool ShouldBlockInputForTgsPresentation() const;
-    void EndTgsExperienceNow();
-    void SkipTgsExperienceToRemainingTimeNotice();
     PlayerControlStyle GetPlayerControlStyle() const { return mPlayerControlStyle; }
     bool IsAssistControlStyle() const { return mPlayerControlStyle == PlayerControlStyle::Assist; }
     bool HasSelectedPlayerControlStyle() const;

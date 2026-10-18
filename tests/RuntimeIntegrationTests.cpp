@@ -8,6 +8,9 @@
 #include "editor/stage/StageSelectionController.h"
 #include "editor/stage/StageYamlRepository.h"
 #include "editor/stage/UGCPlatformCellService.h"
+#include "gfx/Renderer3D.h"
+#include "gfx/particle/ParticleRenderer.h"
+#include "system/CameraSystem.h"
 #include "system/InputSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/camera/CameraCollisionResolver.h"
@@ -189,6 +192,44 @@ void CameraManualYawRemainsIndependent(Game& game)
     std::cout << "[PASS] Runtime.ManualCameraAndProjection\n";
 }
 
+void RendererDrawsStageAndBorrowedParticles(Game& game)
+{
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "initialization leaves no GL error");
+    game.GetCameraSystem()->Update(1.0f / 60.0f);
+    ExpectFalse(game.GetCameraSystem()->GetViews().empty(), "stage camera is drawable");
+    game.GetRenderer3D()->RenderGameplayShadowMap();
+    game.GetRenderer3D()->Draw();
+    glFinish();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "stage and shadow drawing succeed");
+
+    Particle particle;
+    particle.texturePath = "spark_dot.png";
+    particle.lifetime = 1.0f;
+    particle.startSize = 0.25f;
+    std::array<Particle, 2> particles{particle, particle};
+    particles[1].blendMode = ParticleBlendMode::Alpha;
+    const auto view = glm::lookAt(glm::vec3(0, 0, 5), glm::vec3(0), glm::vec3(0, 1, 0));
+    const auto projection = CalculateCameraProjection(CameraProjectionSettings{}, 1.0f, 60.0f);
+    glUseProgram(0);
+    glBindVertexArray(0);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    {
+        ParticleRenderer renderer;
+        renderer.Draw(view, projection, particles);
+        GLint program = -1;
+        GLboolean depthWrite = GL_FALSE;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthWrite);
+        ExpectEqual(0, program, "particle drawing restores program");
+        ExpectFalse(glIsEnabled(GL_BLEND) == GL_TRUE, "particle drawing restores blend state");
+        ExpectTrue(depthWrite == GL_TRUE, "particle drawing restores depth write");
+    }
+    glFinish();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "particle drawing and release succeed");
+    std::cout << "[PASS] Runtime.StageShadowAndBorrowedParticleRendering\n";
+}
+
 class VirtualController {
 public:
     VirtualController()
@@ -268,6 +309,7 @@ int main()
             StageEditCommandController commands(context, selection);
             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
             CameraManualYawRemainsIndependent(game);
+            RendererDrawsStageAndBorrowedParticles(game);
             UGCUsesTheSameTransaction(game, context, commands);
             InputSnapshotUsesOnlyProvidedDevices(game);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");

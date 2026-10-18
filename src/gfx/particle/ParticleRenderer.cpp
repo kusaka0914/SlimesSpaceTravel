@@ -1,8 +1,6 @@
 #include "gfx/particle/ParticleRenderer.h"
 
-#include "app/Game.h"
 #include "gfx/particle/ParticleShader.h"
-#include "system/ParticleSystem.h"
 #include "thirdParty/stb_image.h"
 
 #include <glm/common.hpp>
@@ -81,9 +79,8 @@ void RestoreOpenGLState(const OpenGLState& state)
 }
 } // namespace
 
-ParticleRenderer::ParticleRenderer(Game* game)
-    : mGame(game),
-      mShader(std::make_unique<ParticleShader>())
+ParticleRenderer::ParticleRenderer()
+    : mShader(std::make_unique<ParticleShader>())
 {
     InitializeBuffers();
 }
@@ -108,14 +105,14 @@ ParticleRenderer::~ParticleRenderer()
     }
 }
 
-void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) const
+void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection,
+                            std::span<const Particle> particles) const
 {
-    if (!mGame || !mShader || !mShader->GetShaderProgram() || mVertexArray == 0) {
+    if (!mShader || !mShader->GetShaderProgram() || mVertexArray == 0) {
         return;
     }
 
-    const ParticleSystem* particleSystem = mGame->GetParticleSystem();
-    if (!particleSystem || particleSystem->GetParticles().empty()) {
+    if (particles.empty()) {
         return;
     }
 
@@ -126,10 +123,10 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) 
 
     std::vector<RenderItem> additiveItems;
     std::vector<RenderItem> alphaItems;
-    additiveItems.reserve(particleSystem->GetParticleCount());
-    alphaItems.reserve(particleSystem->GetParticleCount());
+    additiveItems.reserve(particles.size());
+    alphaItems.reserve(particles.size());
 
-    for (const Particle& particle : particleSystem->GetParticles()) {
+    for (const Particle& particle : particles) {
         RenderItem renderItem;
         renderItem.particle = &particle;
         renderItem.instance = CreateInstanceData(particle, view);

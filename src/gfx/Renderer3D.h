@@ -44,7 +44,7 @@ enum class UGCSceneLayerRenderMode {
 class Renderer3D : public Renderer {
 public:
     explicit Renderer3D(Game* game);
-    ~Renderer3D();
+    ~Renderer3D() override;
 
     // シェーダー・基本テクスチャ・描画モジュールを生成する。コンストラクタから呼ばれる初期化処理。
     void Initialize();
@@ -160,6 +160,8 @@ private:
     void DrawActorToShadowMap(Actor* actor, bool useOrient, const glm::vec3& focusPosition) const;
 
 private:
+    // Gameが所有し、描画資源の解放が終わるまで有効な借用先。
+    Game* mGame;
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;
 

@@ -7,14 +7,13 @@
 #include <unordered_map>
 #include <vector>
 
-class Game;
 class VertexArray;
 
-// UI・3D描画で使うフォント、基本形状、テクスチャ生成処理の共通基盤。Gameは非所有参照。
-// 生成時にSDL_ttfとGLリソースを初期化し、破棄時に解放する。GameとGLコンテキストはRendererより長く有効に保つ。
+// UI・3D描画で使うフォント、基本形状、テクスチャ生成処理の共通基盤。
+// 生成時にSDL_ttfとGLリソースを初期化し、破棄時に解放する。GLコンテキストはRendererより長く有効に保つ。
 class Renderer {
 public:
-    Renderer(Game* game);
+    Renderer();
     virtual ~Renderer();
 
     // フォントと派生Rendererのシェーダーが初期化できた場合にtrue。失敗時の終了処理はGame側が担当する。
@@ -37,7 +36,6 @@ private:
     void InitializeVertexArrays();
 
 protected:
-    Game* mGame;
     TTF_Font* mFont;
     bool mDidInitializeTtf = false;
     bool mIsInitialized = false;

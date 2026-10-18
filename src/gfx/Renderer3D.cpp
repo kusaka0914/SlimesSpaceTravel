@@ -1,7 +1,5 @@
 #include "gfx/Renderer3D.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatParts.h"
@@ -18,6 +16,7 @@
 #include "actor/StageObject.h"
 #include "actor/Star.h"
 #include "animation/SkeletalAnimationConstants.h"
+#include "app/Game.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/DirectionalShadowMap.h"
 #include "gfx/DirectionalShadowShader.h"
@@ -31,6 +30,7 @@
 #include "gfx/render3d/PlayerEffectRenderer.h"
 #include "gfx/render3d/RenderViewportController.h"
 #include "gfx/render3d/SceneObjectRenderer.h"
+#include "system/ParticleSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 #include "system/mesh/LoadedMesh.h"
@@ -38,6 +38,7 @@
 #include "system/mesh/TextureLoader.h"
 #include "system/sequence/SequenceSystem.h"
 #include "utils/MathUtils.h"
+#include "world/Stage.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -206,7 +207,7 @@ std::vector<glm::vec3> CreateUGCPlacementGhostEdges(const glm::vec3& center, flo
 } // namespace
 
 Renderer3D::Renderer3D(Game* game)
-    : Renderer(game),
+    : mGame(game),
       mShader3D(nullptr),
       mAttackRangeVAO(0),
       mAttackRangeVBO(0)
@@ -367,7 +368,7 @@ void Renderer3D::Initialize()
     InitializeRenderModules();
     mDirectionalShadowMap = std::make_unique<DirectionalShadowMap>();
     mPlanetAtmosphereRenderer = std::make_unique<PlanetAtmosphereRenderer>();
-    mEnvironmentDecorationRenderer = std::make_unique<EnvironmentDecorationRenderer>(mGame);
+    mEnvironmentDecorationRenderer = std::make_unique<EnvironmentDecorationRenderer>();
 }
 
 void Renderer3D::Draw() const
@@ -416,7 +417,7 @@ void Renderer3D::RenderShadowMap(const glm::vec3& focusPosition) const
     const std::vector<Planet*>& planets = mGame->GetCurrentStage()->GetPlanets();
     const bool shouldDrawEnvironment = !mGame->GetIsUGCMode() && mEnvironmentDecorationRenderer;
     if (shouldDrawEnvironment) {
-        mEnvironmentDecorationRenderer->Prepare(planets);
+        mEnvironmentDecorationRenderer->Prepare(planets, mGame->GetMeshLoadSystem());
     }
 
     if (!mDirectionalShadowMap || !mDirectionalShadowMap->Begin(focusPosition, ResolveSunDirectionForCurrentStage())) {
@@ -474,7 +475,7 @@ void Renderer3D::DrawEnvironmentDecorations() const
     if (!mGame || mGame->GetIsUGCMode() || !mGame->GetCurrentStage() || !mEnvironmentDecorationRenderer || !mShader3D) {
         return;
     }
-    mEnvironmentDecorationRenderer->Prepare(mGame->GetCurrentStage()->GetPlanets());
+    mEnvironmentDecorationRenderer->Prepare(mGame->GetCurrentStage()->GetPlanets(), mGame->GetMeshLoadSystem());
     mEnvironmentDecorationRenderer->Draw(*mShader3D, mCurrentCameraPosition);
 }
 
@@ -540,8 +541,10 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
         }
     }
 
-    if (mParticleRenderer) {
-        mParticleRenderer->Draw(viewMat, projMat);
+    if (mParticleRenderer && mGame) {
+        if (const ParticleSystem* particles = mGame->GetParticleSystem()) {
+            mParticleRenderer->Draw(viewMat, projMat, particles->GetParticles());
+        }
     }
     mEmphasizeUGCLayers = false;
     mDimNonEditingUGCLayers = false;
@@ -683,7 +686,7 @@ void Renderer3D::InitializeRenderModules()
     mPlayerEffectRenderer = std::make_unique<PlayerEffectRenderer>(this);
     mDebugLabelRenderer = std::make_unique<DebugLabelRenderer>(this);
     mNPCProximityMessageRenderer = std::make_unique<NPCProximityMessageRenderer>(this);
-    mParticleRenderer = std::make_unique<ParticleRenderer>(mGame);
+    mParticleRenderer = std::make_unique<ParticleRenderer>();
     mSceneObjectRenderer = std::make_unique<SceneObjectRenderer>(
         this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get(), mNPCProximityMessageRenderer.get());
     mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);

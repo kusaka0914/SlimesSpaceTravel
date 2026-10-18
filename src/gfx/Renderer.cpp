@@ -1,15 +1,13 @@
 #include "gfx/Renderer.h"
 
-#include "app/Game.h"
 #include "gfx/TextRasterizer.h"
 #include "gfx/VertexArray.h"
 #include "thirdParty/stb_image.h"
 
 #include <iostream>
 
-Renderer::Renderer(Game* game)
-    : mGame(game),
-      mFont(nullptr)
+Renderer::Renderer()
+    : mFont(nullptr)
 {
     Initialize();
 }
