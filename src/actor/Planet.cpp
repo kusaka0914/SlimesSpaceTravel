@@ -1,5 +1,7 @@
 #include "actor/Planet.h"
 
+#include "utils/YamlRead.h"
+
 #include "actor/Boat.h"
 
 #include <algorithm>
@@ -47,21 +49,6 @@ glm::vec4 ReadVec4(const YAML::Node& node, const char* key, const glm::vec4& def
                      node[key][1] ? node[key][1].as<float>() : defaultValue.y,
                      node[key][2] ? node[key][2].as<float>() : defaultValue.z,
                      node[key][3] ? node[key][3].as<float>() : defaultValue.w);
-}
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
-}
-
-int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
-{
-    return node[key] ? node[key].as<int>() : defaultValue;
-}
-
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
 }
 
 std::string ToLower(std::string text)
@@ -150,22 +137,22 @@ void Planet::ApplyConfig(const YAML::Node& node)
     const glm::vec4 color = ReadVec4(node, "color", glm::vec4(1.0f));
     SetColor(color);
 
-    const std::string modelPath = ReadString(node, "model", "planet.obj");
+    const std::string modelPath = YamlRead::ReadOr<std::string>(node, "model", "planet.obj");
     SetModelPath(modelPath);
 
-    const std::string textureOverride = ReadString(node, "textureOverride", "");
+    const std::string textureOverride = YamlRead::ReadOr<std::string>(node, "textureOverride", "");
     SetTextureOverridePath(textureOverride);
     mVisualSettings = ResolveDefaultVisualSettings(modelPath, textureOverride);
     const YAML::Node visualNode = node["visual"];
     if (visualNode && visualNode.IsMap()) {
         mVisualSettings.biome = ParseBiome(visualNode, mVisualSettings.biome);
         mVisualSettings.atmosphereColor = ReadVec3(visualNode, "atmosphereColor", mVisualSettings.atmosphereColor);
-        mVisualSettings.atmosphereStrength =
-            glm::clamp(ReadFloat(visualNode, "atmosphereStrength", mVisualSettings.atmosphereStrength), 0.0f, 1.0f);
-        mVisualSettings.decorationDensity =
-            glm::clamp(ReadFloat(visualNode, "decorationDensity", mVisualSettings.decorationDensity), 0.0f, 2.0f);
+        mVisualSettings.atmosphereStrength = glm::clamp(
+            YamlRead::ReadOr<float>(visualNode, "atmosphereStrength", mVisualSettings.atmosphereStrength), 0.0f, 1.0f);
+        mVisualSettings.decorationDensity = glm::clamp(
+            YamlRead::ReadOr<float>(visualNode, "decorationDensity", mVisualSettings.decorationDensity), 0.0f, 2.0f);
     }
-    SetBackTextureOverridePath(ReadString(node, "backTextureOverride", ""));
+    SetBackTextureOverridePath(YamlRead::ReadOr<std::string>(node, "backTextureOverride", ""));
     SetTextureSideBlendWidth(node["textureSideBlendWidth"] ? node["textureSideBlendWidth"].as<float>() : 0.05f);
     SetCanAttractNearbyPlayer(node["canAttractNearbyPlayer"] ? node["canAttractNearbyPlayer"].as<bool>() : true);
     SetShouldReactToOverheadGravityRay(
@@ -176,10 +163,10 @@ void Planet::ApplyConfig(const YAML::Node& node)
     const glm::vec2 textureTiling = ReadVec2(node, "textureTiling", automaticTextureTiling);
     SetTextureTiling(glm::max(textureTiling, glm::vec2(0.01f)));
 
-    const int stageNum = ReadInt(node, "stageNum", 0);
+    const int stageNum = YamlRead::ReadOr<int>(node, "stageNum", 0);
     SetStageNum(stageNum);
 
-    const std::string rocketSpawnCondition = ReadString(node, "rocketSpawnCondition", "");
+    const std::string rocketSpawnCondition = YamlRead::ReadOr<std::string>(node, "rocketSpawnCondition", "");
     SetRocketSpawnCondition(rocketSpawnCondition);
 }
 

@@ -77,6 +77,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePickPolicy.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/YamlReadTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/PersistenceSafetyTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp

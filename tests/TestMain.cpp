@@ -3,6 +3,8 @@
 #include <exception>
 #include <iostream>
 
+void RegisterYamlReadTests(TestRegistry& tests);
+
 void RegisterNPCTalkDataTests(TestRegistry& tests);
 void RegisterStageActorNodeFactoryTests(TestRegistry& tests);
 void RegisterStagePlatformIdentifiersTests(TestRegistry& tests);
@@ -45,6 +47,7 @@ void RegisterPersistenceSafetyTests(TestRegistry& tests);
 int main()
 {
     TestRegistry tests;
+    RegisterYamlReadTests(tests);
     RegisterPersistenceSafetyTests(tests);
     RegisterEditorReliabilityTests(tests);
     RegisterNPCTalkDataTests(tests);

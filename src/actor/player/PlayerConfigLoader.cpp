@@ -1,21 +1,13 @@
 #include "actor/player/PlayerConfigLoader.h"
 
+#include "utils/YamlRead.h"
+
 #include <cctype>
 #include <string>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
 namespace {
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
-}
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
-}
-
 std::string NormalizeAnimationId(const std::string& animationId)
 {
     std::string normalizedId;
@@ -79,7 +71,7 @@ void ReadAnimationDefinitions(const YAML::Node& playerNode, PlayerAnimationDefin
         if (animationNode.IsScalar()) {
             definition.clipName = animationNode.as<std::string>();
         } else if (animationNode.IsMap()) {
-            definition.clipName = ReadString(animationNode, "clip", definition.clipName);
+            definition.clipName = YamlRead::ReadOr<std::string>(animationNode, "clip", definition.clipName);
             definition.playbackMode = ParsePlaybackMode(animationNode, definition.playbackMode);
         }
 
@@ -127,114 +119,135 @@ PlayerConfig PlayerConfigLoader::Parse(const YAML::Node& playerRoot)
     }
 
     for (const YAML::Node& playerNode : playerRoot["players"]) {
-        config.hp = ReadFloat(playerNode, "hp", config.hp);
-        config.scale = ReadFloat(playerNode, "scale", config.scale);
+        config.hp = YamlRead::ReadOr<float>(playerNode, "hp", config.hp);
+        config.scale = YamlRead::ReadOr<float>(playerNode, "scale", config.scale);
 
-        config.attackSpeed = ReadFloat(playerNode, "attackSpeed", config.attackSpeed);
-        config.attack = ReadFloat(playerNode, "attack", config.attack);
-        config.moveSpeed = ReadFloat(playerNode, "moveSpeed", config.moveSpeed);
-        config.maximumStepHeight = ReadFloat(playerNode, "maximumStepHeight", config.maximumStepHeight);
-        config.jumpHeight = ReadFloat(playerNode, "jumpHeight", config.jumpHeight);
-        config.jumpAscentDuration = ReadFloat(playerNode, "jumpAscentDuration", config.jumpAscentDuration);
-        config.jumpFallDuration = ReadFloat(playerNode, "jumpFallDuration", config.jumpFallDuration);
+        config.attackSpeed = YamlRead::ReadOr<float>(playerNode, "attackSpeed", config.attackSpeed);
+        config.attack = YamlRead::ReadOr<float>(playerNode, "attack", config.attack);
+        config.moveSpeed = YamlRead::ReadOr<float>(playerNode, "moveSpeed", config.moveSpeed);
+        config.maximumStepHeight = YamlRead::ReadOr<float>(playerNode, "maximumStepHeight", config.maximumStepHeight);
+        config.jumpHeight = YamlRead::ReadOr<float>(playerNode, "jumpHeight", config.jumpHeight);
+        config.jumpAscentDuration =
+            YamlRead::ReadOr<float>(playerNode, "jumpAscentDuration", config.jumpAscentDuration);
+        config.jumpFallDuration = YamlRead::ReadOr<float>(playerNode, "jumpFallDuration", config.jumpFallDuration);
         config.jumpApexHoverDurationSeconds =
-            ReadFloat(playerNode, "jumpApexHoverDurationSeconds", config.jumpApexHoverDurationSeconds);
-        config.airWeakAttackPostHoverDurationSeconds = ReadFloat(playerNode, "airWeakAttackPostHoverDurationSeconds",
-                                                                 config.airWeakAttackPostHoverDurationSeconds);
-        config.airDodgePostHoverDurationSeconds =
-            ReadFloat(playerNode, "airDodgePostHoverDurationSeconds", config.airDodgePostHoverDurationSeconds);
-        config.groundNormalRayLength = ReadFloat(playerNode, "groundNormalRayLength", config.groundNormalRayLength);
+            YamlRead::ReadOr<float>(playerNode, "jumpApexHoverDurationSeconds", config.jumpApexHoverDurationSeconds);
+        config.airWeakAttackPostHoverDurationSeconds = YamlRead::ReadOr<float>(
+            playerNode, "airWeakAttackPostHoverDurationSeconds", config.airWeakAttackPostHoverDurationSeconds);
+        config.airDodgePostHoverDurationSeconds = YamlRead::ReadOr<float>(
+            playerNode, "airDodgePostHoverDurationSeconds", config.airDodgePostHoverDurationSeconds);
+        config.groundNormalRayLength =
+            YamlRead::ReadOr<float>(playerNode, "groundNormalRayLength", config.groundNormalRayLength);
         config.overheadGravityRayLength =
-            ReadFloat(playerNode, "overheadGravityRayLength", config.overheadGravityRayLength);
-        const float legacyCollisionRadius = ReadFloat(playerNode, "collisionRadius", config.collisionHeight * 0.5f);
+            YamlRead::ReadOr<float>(playerNode, "overheadGravityRayLength", config.overheadGravityRayLength);
+        const float legacyCollisionRadius =
+            YamlRead::ReadOr<float>(playerNode, "collisionRadius", config.collisionHeight * 0.5f);
         const float legacyCollisionDiameter = 2.0f * legacyCollisionRadius;
-        config.collisionWidth = ReadFloat(playerNode, "collisionWidth", config.collisionWidth);
-        config.collisionHeight = ReadFloat(playerNode, "collisionHeight", legacyCollisionDiameter);
-        config.collisionDepth = ReadFloat(playerNode, "collisionDepth", legacyCollisionDiameter);
-        config.collisionCenterHeight = ReadFloat(playerNode, "collisionCenterHeight", config.collisionCenterHeight);
+        config.collisionWidth = YamlRead::ReadOr<float>(playerNode, "collisionWidth", config.collisionWidth);
+        config.collisionHeight = YamlRead::ReadOr<float>(playerNode, "collisionHeight", legacyCollisionDiameter);
+        config.collisionDepth = YamlRead::ReadOr<float>(playerNode, "collisionDepth", legacyCollisionDiameter);
+        config.collisionCenterHeight =
+            YamlRead::ReadOr<float>(playerNode, "collisionCenterHeight", config.collisionCenterHeight);
 
-        config.dodgeDuration = ReadFloat(playerNode, "dodgeDuration", config.dodgeDuration);
-        config.dodgeCooldownTime = ReadFloat(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);
-        config.dodgeDistance = ReadFloat(playerNode, "dodgeDistance", config.dodgeDistance);
-        config.airDodgeAttackDamage = ReadFloat(playerNode, "airDodgeAttackDamage", config.airDodgeAttackDamage);
-        config.airDodgeGuardDamage = ReadFloat(playerNode, "airDodgeGuardDamage", config.airDodgeGuardDamage);
+        config.dodgeDuration = YamlRead::ReadOr<float>(playerNode, "dodgeDuration", config.dodgeDuration);
+        config.dodgeCooldownTime = YamlRead::ReadOr<float>(playerNode, "dodgeCooldownTime", config.dodgeCooldownTime);
+        config.dodgeDistance = YamlRead::ReadOr<float>(playerNode, "dodgeDistance", config.dodgeDistance);
+        config.airDodgeAttackDamage =
+            YamlRead::ReadOr<float>(playerNode, "airDodgeAttackDamage", config.airDodgeAttackDamage);
+        config.airDodgeGuardDamage =
+            YamlRead::ReadOr<float>(playerNode, "airDodgeGuardDamage", config.airDodgeGuardDamage);
         config.airDodgeHorizontalHitboxScale =
-            ReadFloat(playerNode, "airDodgeHorizontalHitboxScale", config.airDodgeHorizontalHitboxScale);
+            YamlRead::ReadOr<float>(playerNode, "airDodgeHorizontalHitboxScale", config.airDodgeHorizontalHitboxScale);
         config.airDodgeVerticalHitboxScale =
-            ReadFloat(playerNode, "airDodgeVerticalHitboxScale", config.airDodgeVerticalHitboxScale);
-        config.airDodgeEnemyPushSpeed = ReadFloat(playerNode, "airDodgeEnemyPushSpeed", config.airDodgeEnemyPushSpeed);
-        config.airDodgeEnemyPushDampingPerSecond =
-            ReadFloat(playerNode, "airDodgeEnemyPushDampingPerSecond", config.airDodgeEnemyPushDampingPerSecond);
-        config.airWeakEnemyLiftHeight = ReadFloat(playerNode, "airWeakEnemyLiftHeight", config.airWeakEnemyLiftHeight);
+            YamlRead::ReadOr<float>(playerNode, "airDodgeVerticalHitboxScale", config.airDodgeVerticalHitboxScale);
+        config.airDodgeEnemyPushSpeed =
+            YamlRead::ReadOr<float>(playerNode, "airDodgeEnemyPushSpeed", config.airDodgeEnemyPushSpeed);
+        config.airDodgeEnemyPushDampingPerSecond = YamlRead::ReadOr<float>(
+            playerNode, "airDodgeEnemyPushDampingPerSecond", config.airDodgeEnemyPushDampingPerSecond);
+        config.airWeakEnemyLiftHeight =
+            YamlRead::ReadOr<float>(playerNode, "airWeakEnemyLiftHeight", config.airWeakEnemyLiftHeight);
         config.airComboDodgePlayerLiftHeight =
-            ReadFloat(playerNode, "airComboDodgePlayerLiftHeight", config.airComboDodgePlayerLiftHeight);
+            YamlRead::ReadOr<float>(playerNode, "airComboDodgePlayerLiftHeight", config.airComboDodgePlayerLiftHeight);
         config.airComboDodgeEnemyLiftHeight =
-            ReadFloat(playerNode, "airComboDodgeEnemyLiftHeight", config.airComboDodgeEnemyLiftHeight);
+            YamlRead::ReadOr<float>(playerNode, "airComboDodgeEnemyLiftHeight", config.airComboDodgeEnemyLiftHeight);
 
-        config.normalAttackRange = ReadFloat(playerNode, "normalAttackRange", config.normalAttackRange);
-        config.normalAttackAngle = ReadFloat(playerNode, "normalAttackAngle", config.normalAttackAngle);
-        config.normalAttack = ReadFloat(playerNode, "normalAttack", config.normalAttack);
+        config.normalAttackRange = YamlRead::ReadOr<float>(playerNode, "normalAttackRange", config.normalAttackRange);
+        config.normalAttackAngle = YamlRead::ReadOr<float>(playerNode, "normalAttackAngle", config.normalAttackAngle);
+        config.normalAttack = YamlRead::ReadOr<float>(playerNode, "normalAttack", config.normalAttack);
         config.groundCombo1GuardDamage =
-            ReadFloat(playerNode, "groundCombo1GuardDamage", config.groundCombo1GuardDamage);
+            YamlRead::ReadOr<float>(playerNode, "groundCombo1GuardDamage", config.groundCombo1GuardDamage);
         config.groundCombo2GuardDamage =
-            ReadFloat(playerNode, "groundCombo2GuardDamage", config.groundCombo2GuardDamage);
+            YamlRead::ReadOr<float>(playerNode, "groundCombo2GuardDamage", config.groundCombo2GuardDamage);
         config.groundCombo3GuardDamage =
-            ReadFloat(playerNode, "groundCombo3GuardDamage", config.groundCombo3GuardDamage);
+            YamlRead::ReadOr<float>(playerNode, "groundCombo3GuardDamage", config.groundCombo3GuardDamage);
 
-        config.wideAttackRange = ReadFloat(playerNode, "wideAttackRange", config.wideAttackRange);
-        config.wideAttackAngle = ReadFloat(playerNode, "wideAttackAngle", config.wideAttackAngle);
-        config.wideAttack = ReadFloat(playerNode, "wideAttack", config.wideAttack);
-        config.groundWideGuardDamage = ReadFloat(playerNode, "groundWideGuardDamage", config.groundWideGuardDamage);
-        config.airWeakGuardDamage = ReadFloat(playerNode, "airWeakGuardDamage", config.airWeakGuardDamage);
+        config.wideAttackRange = YamlRead::ReadOr<float>(playerNode, "wideAttackRange", config.wideAttackRange);
+        config.wideAttackAngle = YamlRead::ReadOr<float>(playerNode, "wideAttackAngle", config.wideAttackAngle);
+        config.wideAttack = YamlRead::ReadOr<float>(playerNode, "wideAttack", config.wideAttack);
+        config.groundWideGuardDamage =
+            YamlRead::ReadOr<float>(playerNode, "groundWideGuardDamage", config.groundWideGuardDamage);
+        config.airWeakGuardDamage =
+            YamlRead::ReadOr<float>(playerNode, "airWeakGuardDamage", config.airWeakGuardDamage);
 
-        config.strongAttackRange = ReadFloat(playerNode, "strongAttackRange", config.strongAttackRange);
-        config.strongAttack = ReadFloat(playerNode, "strongAttack", config.strongAttack);
+        config.strongAttackRange = YamlRead::ReadOr<float>(playerNode, "strongAttackRange", config.strongAttackRange);
+        config.strongAttack = YamlRead::ReadOr<float>(playerNode, "strongAttack", config.strongAttack);
         config.strongAttackGuardDamage =
-            ReadFloat(playerNode, "strongAttackGuardDamage", config.strongAttackGuardDamage);
-        config.strongAttackSpeed = ReadFloat(playerNode, "strongAttackSpeed", config.strongAttackSpeed);
-        config.chargedAttackRange = ReadFloat(playerNode, "chargedAttackRange", config.chargedAttackRange);
-        config.chargedAttackAngle = ReadFloat(playerNode, "chargedAttackAngle", config.chargedAttackAngle);
-        config.chargedAttackDamage = ReadFloat(playerNode, "chargedAttackDamage", config.chargedAttackDamage);
-        config.chargedAttackChargeDurationSeconds =
-            ReadFloat(playerNode, "chargedAttackChargeDurationSeconds", config.chargedAttackChargeDurationSeconds);
-        config.continuousAttackRange = ReadFloat(playerNode, "continuousAttackRange", config.continuousAttackRange);
-        config.continuousAttackAngle = ReadFloat(playerNode, "continuousAttackAngle", config.continuousAttackAngle);
-        config.continuousAttackDamage = ReadFloat(playerNode, "continuousAttackDamage", config.continuousAttackDamage);
+            YamlRead::ReadOr<float>(playerNode, "strongAttackGuardDamage", config.strongAttackGuardDamage);
+        config.strongAttackSpeed = YamlRead::ReadOr<float>(playerNode, "strongAttackSpeed", config.strongAttackSpeed);
+        config.chargedAttackRange =
+            YamlRead::ReadOr<float>(playerNode, "chargedAttackRange", config.chargedAttackRange);
+        config.chargedAttackAngle =
+            YamlRead::ReadOr<float>(playerNode, "chargedAttackAngle", config.chargedAttackAngle);
+        config.chargedAttackDamage =
+            YamlRead::ReadOr<float>(playerNode, "chargedAttackDamage", config.chargedAttackDamage);
+        config.chargedAttackChargeDurationSeconds = YamlRead::ReadOr<float>(
+            playerNode, "chargedAttackChargeDurationSeconds", config.chargedAttackChargeDurationSeconds);
+        config.continuousAttackRange =
+            YamlRead::ReadOr<float>(playerNode, "continuousAttackRange", config.continuousAttackRange);
+        config.continuousAttackAngle =
+            YamlRead::ReadOr<float>(playerNode, "continuousAttackAngle", config.continuousAttackAngle);
+        config.continuousAttackDamage =
+            YamlRead::ReadOr<float>(playerNode, "continuousAttackDamage", config.continuousAttackDamage);
         config.continuousAttackGuardDamage =
-            ReadFloat(playerNode, "continuousAttackGuardDamage", config.continuousAttackGuardDamage);
-        config.continuousAttackIntervalSeconds =
-            ReadFloat(playerNode, "continuousAttackIntervalSeconds", config.continuousAttackIntervalSeconds);
-        config.continuousAttackDurationSeconds =
-            ReadFloat(playerNode, "continuousAttackDurationSeconds", config.continuousAttackDurationSeconds);
-        config.airSlamRiseHeight = ReadFloat(playerNode, "airSlamRiseHeight", config.airSlamRiseHeight);
+            YamlRead::ReadOr<float>(playerNode, "continuousAttackGuardDamage", config.continuousAttackGuardDamage);
+        config.continuousAttackIntervalSeconds = YamlRead::ReadOr<float>(playerNode, "continuousAttackIntervalSeconds",
+                                                                         config.continuousAttackIntervalSeconds);
+        config.continuousAttackDurationSeconds = YamlRead::ReadOr<float>(playerNode, "continuousAttackDurationSeconds",
+                                                                         config.continuousAttackDurationSeconds);
+        config.airSlamRiseHeight = YamlRead::ReadOr<float>(playerNode, "airSlamRiseHeight", config.airSlamRiseHeight);
         config.airSlamRiseDurationSeconds =
-            ReadFloat(playerNode, "airSlamRiseDurationSeconds", config.airSlamRiseDurationSeconds);
+            YamlRead::ReadOr<float>(playerNode, "airSlamRiseDurationSeconds", config.airSlamRiseDurationSeconds);
         config.airSlamHoverDurationSeconds =
-            ReadFloat(playerNode, "airSlamHoverDurationSeconds", config.airSlamHoverDurationSeconds);
+            YamlRead::ReadOr<float>(playerNode, "airSlamHoverDurationSeconds", config.airSlamHoverDurationSeconds);
         config.airSlamEnemyDownwardSpeed =
-            ReadFloat(playerNode, "airSlamEnemyDownwardSpeed", config.airSlamEnemyDownwardSpeed);
+            YamlRead::ReadOr<float>(playerNode, "airSlamEnemyDownwardSpeed", config.airSlamEnemyDownwardSpeed);
         config.airSlamFullDamageHeight =
-            ReadFloat(playerNode, "airSlamFullDamageHeight", config.airSlamFullDamageHeight);
+            YamlRead::ReadOr<float>(playerNode, "airSlamFullDamageHeight", config.airSlamFullDamageHeight);
         config.airSlamMinimumDamageRatio =
-            ReadFloat(playerNode, "airSlamMinimumDamageRatio", config.airSlamMinimumDamageRatio);
-        config.airSlamGuardDamage = ReadFloat(playerNode, "airSlamGuardDamage", config.airSlamGuardDamage);
+            YamlRead::ReadOr<float>(playerNode, "airSlamMinimumDamageRatio", config.airSlamMinimumDamageRatio);
+        config.airSlamGuardDamage =
+            YamlRead::ReadOr<float>(playerNode, "airSlamGuardDamage", config.airSlamGuardDamage);
 
-        config.specialAttackCooldown = ReadFloat(playerNode, "specialAttackCooldown", config.specialAttackCooldown);
-        config.defaultInvincibleTimer = ReadFloat(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);
-        config.defaultDamageTimer = ReadFloat(playerNode, "defaultDamageTimer", config.defaultDamageTimer);
+        config.specialAttackCooldown =
+            YamlRead::ReadOr<float>(playerNode, "specialAttackCooldown", config.specialAttackCooldown);
+        config.defaultInvincibleTimer =
+            YamlRead::ReadOr<float>(playerNode, "defaultInvincibleTimer", config.defaultInvincibleTimer);
+        config.defaultDamageTimer =
+            YamlRead::ReadOr<float>(playerNode, "defaultDamageTimer", config.defaultDamageTimer);
         config.defaultAttackMotionTimer =
-            ReadFloat(playerNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
-        config.attackHitDelay = ReadFloat(playerNode, "attackHitDelay", config.attackHitDelay);
-        config.groundWeakAttackCooldownSeconds =
-            ReadFloat(playerNode, "groundWeakAttackCooldownSeconds", config.groundWeakAttackCooldownSeconds);
+            YamlRead::ReadOr<float>(playerNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
+        config.attackHitDelay = YamlRead::ReadOr<float>(playerNode, "attackHitDelay", config.attackHitDelay);
+        config.groundWeakAttackCooldownSeconds = YamlRead::ReadOr<float>(playerNode, "groundWeakAttackCooldownSeconds",
+                                                                         config.groundWeakAttackCooldownSeconds);
         config.airWeakAttackCooldownSeconds =
-            ReadFloat(playerNode, "airWeakAttackCooldownSeconds", config.airWeakAttackCooldownSeconds);
-        config.lastAttackCooldown = ReadFloat(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
+            YamlRead::ReadOr<float>(playerNode, "airWeakAttackCooldownSeconds", config.airWeakAttackCooldownSeconds);
+        config.lastAttackCooldown =
+            YamlRead::ReadOr<float>(playerNode, "lastAttackCooldown", config.lastAttackCooldown);
         config.defaultStrongAttackTimer =
-            ReadFloat(playerNode, "defaultStrongAttackTimer", config.defaultStrongAttackTimer);
-        config.knockBackSpeed = ReadFloat(playerNode, "knockBackSpeed", config.knockBackSpeed);
+            YamlRead::ReadOr<float>(playerNode, "defaultStrongAttackTimer", config.defaultStrongAttackTimer);
+        config.knockBackSpeed = YamlRead::ReadOr<float>(playerNode, "knockBackSpeed", config.knockBackSpeed);
 
-        config.modelPath = ReadString(playerNode, "modelPath", config.modelPath);
+        config.modelPath = YamlRead::ReadOr<std::string>(playerNode, "modelPath", config.modelPath);
 
         ReadLegacyAnimationNames(playerNode, config.animations);
         ReadAnimationDefinitions(playerNode, config.animations);

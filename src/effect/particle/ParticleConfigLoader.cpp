@@ -1,5 +1,7 @@
 #include "effect/particle/ParticleConfigLoader.h"
 
+#include "utils/YamlRead.h"
+
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -16,21 +18,6 @@ std::string ToLower(std::string value)
     std::transform(value.begin(), value.end(), value.begin(),
                    [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return value;
-}
-
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
-}
-
-int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
-{
-    return node[key] ? node[key].as<int>() : defaultValue;
-}
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
 }
 
 ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& defaultValue)
@@ -145,12 +132,13 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
 {
     ParticleEmitterDefinition definition;
 
-    definition.texturePath = ReadString(emitterNode, "texture", definition.texturePath);
-    definition.blendMode = ParseBlendMode(ReadString(emitterNode, "blendMode", "additive"));
-    definition.renderMode = ParseRenderMode(ReadString(emitterNode, "renderMode", "billboard"));
-    definition.directionMode = ParseDirectionMode(ReadString(emitterNode, "directionMode", "sphere"));
+    definition.texturePath = YamlRead::ReadOr<std::string>(emitterNode, "texture", definition.texturePath);
+    definition.blendMode = ParseBlendMode(YamlRead::ReadOr<std::string>(emitterNode, "blendMode", "additive"));
+    definition.renderMode = ParseRenderMode(YamlRead::ReadOr<std::string>(emitterNode, "renderMode", "billboard"));
+    definition.directionMode =
+        ParseDirectionMode(YamlRead::ReadOr<std::string>(emitterNode, "directionMode", "sphere"));
 
-    definition.count = std::max(0, ReadInt(emitterNode, "count", definition.count));
+    definition.count = std::max(0, YamlRead::ReadOr<int>(emitterNode, "count", definition.count));
     definition.lifetime = ReadRange(emitterNode["lifetime"], definition.lifetime);
     definition.speed = ReadRange(emitterNode["speed"], definition.speed);
     definition.rotationDegrees = ReadRange(emitterNode["rotationDegrees"], definition.rotationDegrees);
@@ -160,13 +148,15 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
     const YAML::Node sizeNode = emitterNode["size"];
     if (sizeNode) {
         definition.startSize = ReadRange(sizeNode["start"], definition.startSize);
-        definition.endSizeMultiplier = ReadFloat(sizeNode, "endMultiplier", definition.endSizeMultiplier);
+        definition.endSizeMultiplier = YamlRead::ReadOr<float>(sizeNode, "endMultiplier", definition.endSizeMultiplier);
     }
 
-    definition.spreadAngleDegrees = ReadFloat(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
-    definition.gravity = ReadFloat(emitterNode, "gravity", definition.gravity);
-    definition.drag = std::max(0.0f, ReadFloat(emitterNode, "drag", definition.drag));
-    definition.velocityStretch = std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
+    definition.spreadAngleDegrees =
+        YamlRead::ReadOr<float>(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
+    definition.gravity = YamlRead::ReadOr<float>(emitterNode, "gravity", definition.gravity);
+    definition.drag = std::max(0.0f, YamlRead::ReadOr<float>(emitterNode, "drag", definition.drag));
+    definition.velocityStretch =
+        std::max(0.0f, YamlRead::ReadOr<float>(emitterNode, "velocityStretch", definition.velocityStretch));
 
     definition.positionOffset = ReadVec3(emitterNode["positionOffset"], definition.positionOffset);
     definition.startColor = ReadVec4(emitterNode["colorStart"], definition.startColor);
@@ -265,7 +255,7 @@ bool ParticleConfigLoader::Load(const std::string& filePath,
             }
 
             ParticleEffectDefinition effectDefinition;
-            effectDefinition.displayName = ReadString(effectNode, "name", effectId);
+            effectDefinition.displayName = YamlRead::ReadOr<std::string>(effectNode, "name", effectId);
 
             for (const YAML::Node& emitterNode : emittersNode) {
                 ParticleEmitterDefinition emitterDefinition = ReadEmitterDefinition(emitterNode);

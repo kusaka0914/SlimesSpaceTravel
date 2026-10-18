@@ -9,11 +9,11 @@
     "239ソースの機能別配置、参照更新、旧パス検索、Debug検証",
     "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加",
     "InputSystemからGame/Editor依存を除去し、GameInputControllerへアプリ操作を分離。Gameの転送API13件を削除。SDL仮想機器で入力保持・切断・無効番号を検証。",
-    "StageEditTransactionの保存・再読込・復旧例外を処理し、失敗後復旧の回帰テスト5件を追加。Debug・242単体・Runtime5組成功。"
+    "StageEditTransactionの保存・再読込・復旧例外を処理し、失敗後復旧の回帰テスト5件を追加。Debug・242単体・Runtime5組成功。",
+    "YAMLスカラー読取7ファイル17関数を共通化。先行契約テストと共通helperの直接テストを追加し、247単体・Runtime5組・Debug成功。"
   ],
   "next": [
     "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",
-    "YamlReadの契約テストを先に追加し、同一スカラー読取を共通化",
     "残る設定保存の直接上書き、読込失敗時の部分変更、StageEditTransactionの例外復旧を修正",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"

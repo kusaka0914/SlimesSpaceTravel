@@ -1,5 +1,7 @@
 #include "system/tutorial/TutorialLibrary.h"
 
+#include "utils/YamlRead.h"
+
 #include "utils/AtomicFile.h"
 
 #include "system/text/JapaneseRubyGenerator.h"
@@ -10,21 +12,6 @@
 #include <yaml-cpp/yaml.h>
 
 namespace {
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& fallback = {})
-{
-    return node[key] ? node[key].as<std::string>() : fallback;
-}
-
-float ReadFloat(const YAML::Node& node, const char* key, float fallback)
-{
-    return node[key] ? node[key].as<float>() : fallback;
-}
-
-bool ReadBool(const YAML::Node& node, const char* key, bool fallback)
-{
-    return node[key] ? node[key].as<bool>() : fallback;
-}
 
 std::string NormalizeRequestedId(std::string requestedId)
 {
@@ -211,56 +198,62 @@ bool TutorialLibrary::Load()
 
         for (const YAML::Node& tutorialNode : tutorials) {
             TutorialDefinition definition;
-            definition.id = ReadString(tutorialNode, "id");
+            definition.id = YamlRead::ReadOr<std::string>(tutorialNode, "id");
             if (definition.id.empty() ||
                 std::any_of(loadedDefinitions.begin(), loadedDefinitions.end(),
                             [&definition](const TutorialDefinition& loaded) { return loaded.id == definition.id; })) {
                 continue;
             }
 
-            definition.displayName = ReadString(tutorialNode, "name", definition.id);
-            definition.repeatPolicy = ParseTutorialRepeatPolicyId(ReadString(tutorialNode, "repeat", "onceEver"));
-            definition.textXRatio = ReadFloat(tutorialNode, "textXRatio", definition.textXRatio);
-            definition.textYRatio = ReadFloat(tutorialNode, "textYRatio", definition.textYRatio);
-            definition.textScaleRatio = ReadFloat(tutorialNode, "textScaleRatio", definition.textScaleRatio);
-            definition.usesAssistPages = ReadBool(tutorialNode, "usesAssistPages", false);
+            definition.displayName = YamlRead::ReadOr<std::string>(tutorialNode, "name", definition.id);
+            definition.repeatPolicy =
+                ParseTutorialRepeatPolicyId(YamlRead::ReadOr<std::string>(tutorialNode, "repeat", "onceEver"));
+            definition.textXRatio = YamlRead::ReadOr<float>(tutorialNode, "textXRatio", definition.textXRatio);
+            definition.textYRatio = YamlRead::ReadOr<float>(tutorialNode, "textYRatio", definition.textYRatio);
+            definition.textScaleRatio =
+                YamlRead::ReadOr<float>(tutorialNode, "textScaleRatio", definition.textScaleRatio);
+            definition.usesAssistPages = YamlRead::ReadOr<bool>(tutorialNode, "usesAssistPages", false);
 
             const auto loadPages = [this](const YAML::Node& pages, std::vector<TutorialPage>& target) {
                 if (pages && pages.IsSequence()) {
                     for (std::size_t pageIndex = 0; pageIndex < pages.size(); ++pageIndex) {
                         const YAML::Node pageNode = pages[pageIndex];
                         TutorialPage page;
-                        page.id = ReadString(pageNode, "id", "page_" + std::to_string(pageIndex + 1));
-                        page.text = ReadString(pageNode, "text");
-                        page.controllerText = ReadString(pageNode, "controllerText");
-                        page.keyboardText = ReadString(pageNode, "keyboardText");
-                        page.objectiveText = ReadString(pageNode, "objectiveText");
-                        page.controllerObjectiveText = ReadString(pageNode, "controllerObjectiveText");
-                        page.keyboardObjectiveText = ReadString(pageNode, "keyboardObjectiveText");
-                        page.objectivePlatformId = ReadString(pageNode, "objectivePlatformId");
-                        page.advanceCondition =
-                            ParseTutorialAdvanceConditionId(ReadString(pageNode, "advance", "confirm"));
+                        page.id =
+                            YamlRead::ReadOr<std::string>(pageNode, "id", "page_" + std::to_string(pageIndex + 1));
+                        page.text = YamlRead::ReadOr<std::string>(pageNode, "text");
+                        page.controllerText = YamlRead::ReadOr<std::string>(pageNode, "controllerText");
+                        page.keyboardText = YamlRead::ReadOr<std::string>(pageNode, "keyboardText");
+                        page.objectiveText = YamlRead::ReadOr<std::string>(pageNode, "objectiveText");
+                        page.controllerObjectiveText =
+                            YamlRead::ReadOr<std::string>(pageNode, "controllerObjectiveText");
+                        page.keyboardObjectiveText = YamlRead::ReadOr<std::string>(pageNode, "keyboardObjectiveText");
+                        page.objectivePlatformId = YamlRead::ReadOr<std::string>(pageNode, "objectivePlatformId");
+                        page.advanceCondition = ParseTutorialAdvanceConditionId(
+                            YamlRead::ReadOr<std::string>(pageNode, "advance", "confirm"));
 
                         const YAML::Node focusNode = pageNode["focus"];
                         if (focusNode && focusNode.IsMap()) {
-                            page.focusTarget.sequenceName = ReadString(focusNode, "sequence");
+                            page.focusTarget.sequenceName = YamlRead::ReadOr<std::string>(focusNode, "sequence");
                             page.focusTarget.yamlIndex = focusNode["index"] ? focusNode["index"].as<int>() : -1;
                         }
 
                         const YAML::Node videoNode = pageNode["video"];
                         if (videoNode && videoNode.IsMap()) {
-                            page.video.assetPath = ReadString(videoNode, "asset");
-                            page.video.xRatio = ReadFloat(videoNode, "xRatio", page.video.xRatio);
-                            page.video.yRatio = ReadFloat(videoNode, "yRatio", page.video.yRatio);
-                            page.video.widthRatio = ReadFloat(videoNode, "widthRatio", page.video.widthRatio);
-                            page.video.heightRatio = ReadFloat(videoNode, "heightRatio", page.video.heightRatio);
+                            page.video.assetPath = YamlRead::ReadOr<std::string>(videoNode, "asset");
+                            page.video.xRatio = YamlRead::ReadOr<float>(videoNode, "xRatio", page.video.xRatio);
+                            page.video.yRatio = YamlRead::ReadOr<float>(videoNode, "yRatio", page.video.yRatio);
+                            page.video.widthRatio =
+                                YamlRead::ReadOr<float>(videoNode, "widthRatio", page.video.widthRatio);
+                            page.video.heightRatio =
+                                YamlRead::ReadOr<float>(videoNode, "heightRatio", page.video.heightRatio);
                             page.video.rotationDegrees =
-                                ReadFloat(videoNode, "rotationDegrees", page.video.rotationDegrees);
-                            page.video.shouldLoop = ReadBool(videoNode, "loop", page.video.shouldLoop);
-                            page.video.shouldPreserveAspectRatio =
-                                ReadBool(videoNode, "preserveAspectRatio", page.video.shouldPreserveAspectRatio);
+                                YamlRead::ReadOr<float>(videoNode, "rotationDegrees", page.video.rotationDegrees);
+                            page.video.shouldLoop = YamlRead::ReadOr<bool>(videoNode, "loop", page.video.shouldLoop);
+                            page.video.shouldPreserveAspectRatio = YamlRead::ReadOr<bool>(
+                                videoNode, "preserveAspectRatio", page.video.shouldPreserveAspectRatio);
                             page.video.shouldFlipVertical =
-                                ReadBool(videoNode, "flipVertical", page.video.shouldFlipVertical);
+                                YamlRead::ReadOr<bool>(videoNode, "flipVertical", page.video.shouldFlipVertical);
                         }
 
                         RegeneratePageRuby(page);

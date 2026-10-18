@@ -75,7 +75,8 @@
       "risk": "ReadFloat等のスカラー読取が複数ファイルに重複する。",
       "change": "欠損・null・型不正の従来動作を先にテストし、同じ契約のものだけ共通化する。",
       "tests": "スカラー読取の境界値と既存設定テスト",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "共通化前にPlayer/Enemyの欠損・null・型不正・整数範囲・文字列変換の契約テスト3件を実行。7ファイルの同一スカラー読取17関数をYamlRead::ReadOrへ統合。ベクトル・範囲補正・変換失敗をfallbackにする別仕様のEnemyPreset ReadValueは維持。247単体テストとRuntime5組、Debug全ビルド成功。"
     },
     {
       "id": "SAFE-01",

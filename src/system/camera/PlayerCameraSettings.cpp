@@ -1,5 +1,7 @@
 #include "system/camera/PlayerCameraSettings.h"
 
+#include "utils/YamlRead.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <filesystem>
@@ -8,15 +10,6 @@
 #include <utility>
 
 #include <glm/common.hpp>
-
-namespace {
-
-float ReadFloat(const YAML::Node& node, const char* key, float fallback)
-{
-    const YAML::Node value = node[key];
-    return value ? value.as<float>() : fallback;
-}
-} // namespace
 
 void PlayerCameraSettings::Normalize()
 {
@@ -98,104 +91,112 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             return false;
         }
 
-        loadedSettings.distance = ReadFloat(cameraNode, "distance", loadedSettings.distance);
-        loadedSettings.pitchDegrees = ReadFloat(cameraNode, "pitchDegrees", loadedSettings.pitchDegrees);
-        loadedSettings.targetHeight = ReadFloat(cameraNode, "targetHeight", loadedSettings.targetHeight);
+        loadedSettings.distance = YamlRead::ReadOr<float>(cameraNode, "distance", loadedSettings.distance);
+        loadedSettings.pitchDegrees = YamlRead::ReadOr<float>(cameraNode, "pitchDegrees", loadedSettings.pitchDegrees);
+        loadedSettings.targetHeight = YamlRead::ReadOr<float>(cameraNode, "targetHeight", loadedSettings.targetHeight);
         loadedSettings.splitScreenTargetHeight =
-            ReadFloat(cameraNode, "splitScreenTargetHeight", loadedSettings.splitScreenTargetHeight);
-        loadedSettings.fieldOfViewDegrees = ReadFloat(cameraNode, "fieldOfView", loadedSettings.fieldOfViewDegrees);
+            YamlRead::ReadOr<float>(cameraNode, "splitScreenTargetHeight", loadedSettings.splitScreenTargetHeight);
+        loadedSettings.fieldOfViewDegrees =
+            YamlRead::ReadOr<float>(cameraNode, "fieldOfView", loadedSettings.fieldOfViewDegrees);
         loadedSettings.splitScreenFieldOfViewDegrees =
-            ReadFloat(cameraNode, "splitScreenFieldOfView", loadedSettings.splitScreenFieldOfViewDegrees);
-        loadedSettings.yawSensitivity = ReadFloat(cameraNode, "yawSensitivity", loadedSettings.yawSensitivity);
+            YamlRead::ReadOr<float>(cameraNode, "splitScreenFieldOfView", loadedSettings.splitScreenFieldOfViewDegrees);
+        loadedSettings.yawSensitivity =
+            YamlRead::ReadOr<float>(cameraNode, "yawSensitivity", loadedSettings.yawSensitivity);
         loadedSettings.pitchSensitivityDegrees =
-            ReadFloat(cameraNode, "pitchSensitivityDegrees", loadedSettings.pitchSensitivityDegrees);
-        loadedSettings.minPitchDegrees = ReadFloat(cameraNode, "minPitchDegrees", loadedSettings.minPitchDegrees);
-        loadedSettings.maxPitchDegrees = ReadFloat(cameraNode, "maxPitchDegrees", loadedSettings.maxPitchDegrees);
-        loadedSettings.upSmoothingSpeed = ReadFloat(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
+            YamlRead::ReadOr<float>(cameraNode, "pitchSensitivityDegrees", loadedSettings.pitchSensitivityDegrees);
+        loadedSettings.minPitchDegrees =
+            YamlRead::ReadOr<float>(cameraNode, "minPitchDegrees", loadedSettings.minPitchDegrees);
+        loadedSettings.maxPitchDegrees =
+            YamlRead::ReadOr<float>(cameraNode, "maxPitchDegrees", loadedSettings.maxPitchDegrees);
+        loadedSettings.upSmoothingSpeed =
+            YamlRead::ReadOr<float>(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
         loadedSettings.targetSmoothingSpeed =
-            ReadFloat(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
-        loadedSettings.attackTargetSmoothingSpeed =
-            ReadFloat(cameraNode, "attackTargetSmoothingSpeed", loadedSettings.attackTargetSmoothingSpeed);
+            YamlRead::ReadOr<float>(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
+        loadedSettings.attackTargetSmoothingSpeed = YamlRead::ReadOr<float>(cameraNode, "attackTargetSmoothingSpeed",
+                                                                            loadedSettings.attackTargetSmoothingSpeed);
         loadedSettings.airSlamDistanceMultiplier =
-            ReadFloat(cameraNode, "airSlamDistanceMultiplier", loadedSettings.airSlamDistanceMultiplier);
+            YamlRead::ReadOr<float>(cameraNode, "airSlamDistanceMultiplier", loadedSettings.airSlamDistanceMultiplier);
         loadedSettings.airSlamPitchDegrees =
-            ReadFloat(cameraNode, "airSlamPitchDegrees", loadedSettings.airSlamPitchDegrees);
-        loadedSettings.airSlamDistanceSmoothingSpeed =
-            ReadFloat(cameraNode, "airSlamDistanceSmoothingSpeed", loadedSettings.airSlamDistanceSmoothingSpeed);
+            YamlRead::ReadOr<float>(cameraNode, "airSlamPitchDegrees", loadedSettings.airSlamPitchDegrees);
+        loadedSettings.airSlamDistanceSmoothingSpeed = YamlRead::ReadOr<float>(
+            cameraNode, "airSlamDistanceSmoothingSpeed", loadedSettings.airSlamDistanceSmoothingSpeed);
         loadedSettings.airSlamReturnDelaySeconds =
-            ReadFloat(cameraNode, "airSlamReturnDelaySeconds", loadedSettings.airSlamReturnDelaySeconds);
+            YamlRead::ReadOr<float>(cameraNode, "airSlamReturnDelaySeconds", loadedSettings.airSlamReturnDelaySeconds);
         loadedSettings.autoFollowDelaySeconds =
-            ReadFloat(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
-        loadedSettings.autoFollowRotationDurationSeconds = ReadFloat(cameraNode, "autoFollowRotationDurationSeconds",
-                                                                     loadedSettings.autoFollowRotationDurationSeconds);
-        loadedSettings.autoFollowMinimumLateralInput =
-            ReadFloat(cameraNode, "autoFollowMinimumLateralInput", loadedSettings.autoFollowMinimumLateralInput);
-        loadedSettings.autoFollowMaximumBackwardInput =
-            ReadFloat(cameraNode, "autoFollowMaximumBackwardInput", loadedSettings.autoFollowMaximumBackwardInput);
+            YamlRead::ReadOr<float>(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
+        loadedSettings.autoFollowRotationDurationSeconds = YamlRead::ReadOr<float>(
+            cameraNode, "autoFollowRotationDurationSeconds", loadedSettings.autoFollowRotationDurationSeconds);
+        loadedSettings.autoFollowMinimumLateralInput = YamlRead::ReadOr<float>(
+            cameraNode, "autoFollowMinimumLateralInput", loadedSettings.autoFollowMinimumLateralInput);
+        loadedSettings.autoFollowMaximumBackwardInput = YamlRead::ReadOr<float>(
+            cameraNode, "autoFollowMaximumBackwardInput", loadedSettings.autoFollowMaximumBackwardInput);
         loadedSettings.autoFollowDelayAfterManualInputSeconds =
-            ReadFloat(cameraNode, "autoFollowDelayAfterManualInputSeconds",
-                      loadedSettings.autoFollowDelayAfterManualInputSeconds);
-        loadedSettings.backwardFacingLookAheadDistance =
-            ReadFloat(cameraNode, "backwardFacingLookAheadDistance", loadedSettings.backwardFacingLookAheadDistance);
+            YamlRead::ReadOr<float>(cameraNode, "autoFollowDelayAfterManualInputSeconds",
+                                    loadedSettings.autoFollowDelayAfterManualInputSeconds);
+        loadedSettings.backwardFacingLookAheadDistance = YamlRead::ReadOr<float>(
+            cameraNode, "backwardFacingLookAheadDistance", loadedSettings.backwardFacingLookAheadDistance);
         loadedSettings.backwardFacingFramingActivationDelaySeconds =
-            ReadFloat(cameraNode, "backwardFacingFramingActivationDelaySeconds",
-                      loadedSettings.backwardFacingFramingActivationDelaySeconds);
+            YamlRead::ReadOr<float>(cameraNode, "backwardFacingFramingActivationDelaySeconds",
+                                    loadedSettings.backwardFacingFramingActivationDelaySeconds);
         loadedSettings.backwardFacingFramingMinimumBackwardInput =
-            ReadFloat(cameraNode, "backwardFacingFramingMinimumBackwardInput",
-                      loadedSettings.backwardFacingFramingMinimumBackwardInput);
-        loadedSettings.surfaceTraversalAutoAlignAngleDegrees = ReadFloat(
+            YamlRead::ReadOr<float>(cameraNode, "backwardFacingFramingMinimumBackwardInput",
+                                    loadedSettings.backwardFacingFramingMinimumBackwardInput);
+        loadedSettings.surfaceTraversalAutoAlignAngleDegrees = YamlRead::ReadOr<float>(
             cameraNode, "surfaceTraversalAutoAlignAngleDegrees", loadedSettings.surfaceTraversalAutoAlignAngleDegrees);
         loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput =
-            ReadFloat(cameraNode, "surfaceTraversalAutoAlignMinimumMovementInput",
-                      loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput);
+            YamlRead::ReadOr<float>(cameraNode, "surfaceTraversalAutoAlignMinimumMovementInput",
+                                    loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput);
         loadedSettings.backwardFacingFramingStartAngleDegrees =
-            ReadFloat(cameraNode, "backwardFacingFramingStartAngleDegrees",
-                      loadedSettings.backwardFacingFramingStartAngleDegrees);
-        loadedSettings.backwardFacingFramingEndAngleDegrees = ReadFloat(
+            YamlRead::ReadOr<float>(cameraNode, "backwardFacingFramingStartAngleDegrees",
+                                    loadedSettings.backwardFacingFramingStartAngleDegrees);
+        loadedSettings.backwardFacingFramingEndAngleDegrees = YamlRead::ReadOr<float>(
             cameraNode, "backwardFacingFramingEndAngleDegrees", loadedSettings.backwardFacingFramingEndAngleDegrees);
-        loadedSettings.backwardFacingFramingSmoothingSpeed = ReadFloat(
+        loadedSettings.backwardFacingFramingSmoothingSpeed = YamlRead::ReadOr<float>(
             cameraNode, "backwardFacingFramingSmoothingSpeed", loadedSettings.backwardFacingFramingSmoothingSpeed);
 
         const YAML::Node talkNode = cameraNode["talk"];
         if (talkNode && talkNode.IsMap()) {
-            loadedSettings.talkDistance = ReadFloat(talkNode, "distance", loadedSettings.talkDistance);
-            loadedSettings.talkPitchDegrees = ReadFloat(talkNode, "pitchDegrees", loadedSettings.talkPitchDegrees);
-            loadedSettings.talkTargetHeight = ReadFloat(talkNode, "targetHeight", loadedSettings.talkTargetHeight);
+            loadedSettings.talkDistance = YamlRead::ReadOr<float>(talkNode, "distance", loadedSettings.talkDistance);
+            loadedSettings.talkPitchDegrees =
+                YamlRead::ReadOr<float>(talkNode, "pitchDegrees", loadedSettings.talkPitchDegrees);
+            loadedSettings.talkTargetHeight =
+                YamlRead::ReadOr<float>(talkNode, "targetHeight", loadedSettings.talkTargetHeight);
             loadedSettings.talkFieldOfViewDegrees =
-                ReadFloat(talkNode, "fieldOfView", loadedSettings.talkFieldOfViewDegrees);
+                YamlRead::ReadOr<float>(talkNode, "fieldOfView", loadedSettings.talkFieldOfViewDegrees);
             loadedSettings.talkTransitionInDuration =
-                ReadFloat(talkNode, "transitionInDuration", loadedSettings.talkTransitionInDuration);
+                YamlRead::ReadOr<float>(talkNode, "transitionInDuration", loadedSettings.talkTransitionInDuration);
             loadedSettings.talkTransitionOutDuration =
-                ReadFloat(talkNode, "transitionOutDuration", loadedSettings.talkTransitionOutDuration);
+                YamlRead::ReadOr<float>(talkNode, "transitionOutDuration", loadedSettings.talkTransitionOutDuration);
         }
 
         const YAML::Node bossDefeatNode = cameraNode["bossDefeat"];
         if (bossDefeatNode && bossDefeatNode.IsMap()) {
             loadedSettings.bossDefeatDistance =
-                ReadFloat(bossDefeatNode, "distance", loadedSettings.bossDefeatDistance);
+                YamlRead::ReadOr<float>(bossDefeatNode, "distance", loadedSettings.bossDefeatDistance);
             loadedSettings.bossDefeatCameraHeight =
-                ReadFloat(bossDefeatNode, "cameraHeight", loadedSettings.bossDefeatCameraHeight);
+                YamlRead::ReadOr<float>(bossDefeatNode, "cameraHeight", loadedSettings.bossDefeatCameraHeight);
             loadedSettings.bossDefeatTargetHeight =
-                ReadFloat(bossDefeatNode, "targetHeight", loadedSettings.bossDefeatTargetHeight);
+                YamlRead::ReadOr<float>(bossDefeatNode, "targetHeight", loadedSettings.bossDefeatTargetHeight);
             loadedSettings.bossDefeatFieldOfViewDegrees =
-                ReadFloat(bossDefeatNode, "fieldOfView", loadedSettings.bossDefeatFieldOfViewDegrees);
+                YamlRead::ReadOr<float>(bossDefeatNode, "fieldOfView", loadedSettings.bossDefeatFieldOfViewDegrees);
             loadedSettings.bossDefeatStarDistance =
-                ReadFloat(bossDefeatNode, "starDistance", loadedSettings.bossDefeatStarDistance);
+                YamlRead::ReadOr<float>(bossDefeatNode, "starDistance", loadedSettings.bossDefeatStarDistance);
             loadedSettings.bossDefeatStarCameraHeight =
-                ReadFloat(bossDefeatNode, "starCameraHeight", loadedSettings.bossDefeatStarCameraHeight);
+                YamlRead::ReadOr<float>(bossDefeatNode, "starCameraHeight", loadedSettings.bossDefeatStarCameraHeight);
             loadedSettings.bossDefeatStarTargetHeight =
-                ReadFloat(bossDefeatNode, "starTargetHeight", loadedSettings.bossDefeatStarTargetHeight);
+                YamlRead::ReadOr<float>(bossDefeatNode, "starTargetHeight", loadedSettings.bossDefeatStarTargetHeight);
         }
 
         const YAML::Node boatRideNode = cameraNode["boatRide"];
         if (boatRideNode && boatRideNode.IsMap()) {
-            loadedSettings.boatRideDistance = ReadFloat(boatRideNode, "distance", loadedSettings.boatRideDistance);
+            loadedSettings.boatRideDistance =
+                YamlRead::ReadOr<float>(boatRideNode, "distance", loadedSettings.boatRideDistance);
             loadedSettings.boatRideCameraHeight =
-                ReadFloat(boatRideNode, "cameraHeight", loadedSettings.boatRideCameraHeight);
+                YamlRead::ReadOr<float>(boatRideNode, "cameraHeight", loadedSettings.boatRideCameraHeight);
             loadedSettings.boatRideTargetHeight =
-                ReadFloat(boatRideNode, "targetHeight", loadedSettings.boatRideTargetHeight);
+                YamlRead::ReadOr<float>(boatRideNode, "targetHeight", loadedSettings.boatRideTargetHeight);
             loadedSettings.boatRideFieldOfViewDegrees =
-                ReadFloat(boatRideNode, "fieldOfView", loadedSettings.boatRideFieldOfViewDegrees);
+                YamlRead::ReadOr<float>(boatRideNode, "fieldOfView", loadedSettings.boatRideFieldOfViewDegrees);
         }
 
         loadedSettings.Normalize();

@@ -1,0 +1,271 @@
+[PASS] YamlRead.LoaderMissingScalarsKeepDefaults
+[PASS] YamlRead.LoaderInvalidScalarsRemainErrors
+[PASS] YamlRead.LoaderStringConversionSemantics
+[PASS] Persistence.SaveExceptionRestoresChangedFile
+[PASS] Persistence.UnchangedSaveExceptionKeepsRuntime
+[PASS] Persistence.ReloadExceptionRestoresUnchangedFile
+[PASS] Persistence.RecoveryExceptionIsReported
+[PASS] Persistence.FileRecoveryFailureSkipsReload
+[PASS] Persistence.CreationFailureRollsBackPair
+[PASS] Persistence.NoOpFailureDoesNotReload
+[PASS] Persistence.FailedPreviewRestoresRuntime
+[PASS] Persistence.OperationAndRecoveryExceptions
+[PASS] Persistence.CompoundOperationHasOneSnapshot
+[PASS] Persistence.AtomicReplacementAndCleanup
+[PASS] Persistence.ReplacementFailureKeepsDestination
+Failed to load gameplay sequences: yaml-cpp: error at line 3, column 29: bad conversion
+[PASS] Persistence.SequenceReloadKeepsDefinitions
+Failed to load cinematic camera data: yaml-cpp: error at line 3, column 29: bad conversion
+[PASS] Persistence.CinematicReloadKeepsDefinitions
+[PASS] Persistence.TutorialReloadKeepsDefinitions
+Failed to load stage progress: yaml-cpp: error at line 1, column 20: bad conversion
+[PASS] Persistence.ProgressReloadKeepsAllFields
+Failed to load UI yaml: ../assets/data/ui/ui.yaml
+bad file: ../assets/data/ui/ui.yaml
+Failed to load custom UI yaml: yaml-cpp: error at line 2, column 76: bad conversion
+[PASS] Persistence.CustomUIReloadKeepsElementsAndVisibility
+Failed to save sequence data: Failed to replace the destination: Is a directory
+Failed to save sequence data: Failed to replace the destination: Is a directory
+Failed to load UI yaml: ../assets/data/ui/ui.yaml
+bad file: ../assets/data/ui/ui.yaml
+Failed to save custom UI yaml: Failed to replace the destination: Is a directory
+Failed to save stage progress: Failed to replace the destination: Is a directory
+[PASS] Persistence.AllYamlSavesReportReplacementFailure
+[PASS] Persistence.StageEditCommitsFileRuntimeAndHistory
+[PASS] Persistence.StageEditReloadFailureRestoresPreviousStage
+[PASS] Persistence.StageEditSaveFailureDoesNotReload
+[PASS] Persistence.StageEditReportsRecoveryFailure
+[PASS] Persistence.ShortWriteKeepsOldFile
+[PASS] StagePickPolicy.LayerOrderAndDuplicates
+[PASS] StagePickPolicy.MetadataFallback
+[PASS] AtomicFile.CompoundPreparation
+[PASS] AtomicFile.CompoundReplacementRollback
+[PASS] AtomicFile.DuplicateDestinations
+Failed to load UI yaml: ../assets/data/ui/ui.yaml
+bad file: ../assets/data/ui/ui.yaml
+[PASS] UICanvasUndo.FailureAndRetry
+Failed to load UI yaml: ../assets/data/ui/ui.yaml
+bad file: ../assets/data/ui/ui.yaml
+[PASS] UICanvasUndo.CompoundPersistence
+[PASS] NPCTalkData.RemovingPageKeepsRemainingMetadataTogether
+[PASS] NPCTalkData.TextChangesInvalidateOnlyTheirOwnRuby
+[PASS] NPCTalkData.ProximityMessagesNormalizeNewlinesBeforeComparingRuby
+[PASS] NPCTalkData.OutOfRangeEditsDoNotCreatePagesOrChangeExistingPages
+[PASS] NPCTalkData.RubyMustMatchTheCurrentBaseText
+[PASS] StageActorNodeFactory.CreatePlatformStoresPlacementDefaultsAndVisualSettings
+[PASS] StageActorNodeFactory.CreateRideMovingPlatformAddsMovementComponentDefaults
+[PASS] StageActorNodeFactory.CreatePlanetUsesIndexForInitialCenterAndStageNumber
+[PASS] StageActorNodeFactory.CreateEnemyUsesTypeAndCalculatedSurfaceDistance
+[PASS] StageActorNodeFactory.CreateNPCClampsRadiusAndScaleAndProvidesEmptyDialogue
+[PASS] StageActorNodeFactory.CreateNPCPreservesDialogueOrder
+[PASS] StageActorNodeFactory.CreateTutorialTriggerClampsEachScaleAxis
+[PASS] StageActorNodeFactory.CreateCollectiblesStoreTypePlanetAndActivationDefaults
+[PASS] StageActorNodeFactory.CreateBoatStoresRouteAndCalculatedSurfaceDistance
+[PASS] StageActorNodeFactory.CreateBoatArrivalPointClampsScale
+[PASS] StageActorNodeFactory.CreateJewelItemOmitsEmptyTextureAndClampsScale
+[PASS] StageActorNodeFactory.CreateHazardActorClampsUnsafeParameters
+[PASS] StageActorNodeFactory.CreateStageObjectStoresCollisionAndCalculatedSurfaceDistance
+[PASS] StagePlatformIdentifiers.EmptyStageUsesFirstPlatformIdentifier
+[PASS] StagePlatformIdentifiers.ExistingPlatformIdentifiersAdvanceSuffix
+[PASS] StagePlatformIdentifiers.IdentifierSelectionUsesFirstAvailableGap
+[PASS] StagePlatformIdentifiers.PressureSwitchTargetsReserveReferencedIdentifiers
+[PASS] StagePlatformIdentifiers.NonSequenceStageEntriesDoNotReserveIdentifiers
+[PASS] StagePlatformConnections.AssigningTargetToSecondSwitchRemovesItFromFirstSwitch
+[PASS] StagePlatformConnections.SwitchPlatformCannotBeAssignedAsTarget
+[PASS] StagePlatformConnections.AssigningTargetToTwoPlayerSwitchRemovesItFromPressureSwitch
+[PASS] StagePlatformConnections.AssigningTargetToPressureSwitchRemovesItFromTwoPlayerSwitch
+[PASS] StagePlatformConnections.ReorderedPlatformsPreserveTwoPlayerSwitchTarget
+[PASS] StagePlatformConnections.ExistingTwoPlayerSwitchTargetReceivesStablePlatformId
+[PASS] StagePlatformConnections.DisconnectingPressureSwitchTargetPreservesOtherTargets
+[PASS] StagePlatformConnections.DisconnectingTwoPlayerSwitchTargetPreservesOtherGroupTargets
+Invalid stage yaml root: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/space_stage_yaml_test_302806324762083.yaml
+Invalid stage yaml root: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/space_stage_yaml_test_302806324762083.yaml
+Invalid stage yaml root: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/space_stage_yaml_test_302806324762083.yaml
+Failed to load stage yaml: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/space_stage_yaml_test_302806324762083.yaml: yaml-cpp: error at line 1, column 1: end of map flow not found
+[PASS] StageYamlRepository.InvalidLoadKeepsDocument
+[PASS] StageYamlRepository.SaveYamlFilePreservesNestedValues
+Failed to save yaml: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/space_stage_yaml_test_302806325970666.yaml/stage.yaml: Failed to create a temporary file directory: No such file or directory
+[PASS] StageYamlRepository.SaveYamlFileRejectsUnwritableTarget
+[PASS] StageYamlRepository.RemoveSequenceElementRemovesOnlyRequestedIndex
+Delete index out of range: -1
+[PASS] StageYamlRepository.RemoveSequenceElementRejectsInvalidIndexWithoutMutation
+Invalid yaml sequence: missing
+[PASS] StageYamlRepository.RemoveSequenceElementRejectsMissingSequence
+[PASS] StageYamlRepository.SetSequenceValueUpdatesRequestedElementOnly
+Index out of range: 2
+[PASS] StageYamlRepository.SetSequenceValueRejectsOutOfRangeIndexWithoutMutation
+[PASS] UGCWorkFileName.PlainDisplayNameCreatesYamlFileName
+[PASS] UGCWorkFileName.WindowsReservedCharactersAreReplaced
+[PASS] UGCWorkFileName.ControlCharactersAreReplaced
+[PASS] UGCWorkFileName.TrailingSpacesAndPeriodsAreRemoved
+[PASS] UGCWorkFileName.EmptyOrRemovedDisplayNameUsesUntitled
+[PASS] UGCWorkFileName.FileNameResolvesDisplayNameWithoutFinalExtension
+[PASS] UGCWorkStorage.FindSavedFileNamesCreatesMissingDirectory
+[PASS] UGCWorkStorage.FindSavedFileNamesFiltersAndSortsYamlFiles
+[PASS] UGCWorkStorage.CopyWorkingFileToSavedCreatesExactCopy
+[PASS] UGCWorkStorage.CopyWorkingFileToSavedHonorsOverwriteChoice
+[PASS] UGCWorkStorage.CopySavedFileToWorkingReplacesWorkingFile
+[PASS] UGCWorkStorage.DuplicateSavedFileUsesIncrementingJapaneseSuffix
+[PASS] UGCWorkStorage.DeleteSavedFileReportsExistingAndMissingFiles
+[PASS] UGCWorkStorage.IsClearVerifiedHandlesVerifiedUnverifiedAndInvalidFiles
+[PASS] UGCPlatformGrid.InvalidGridSizeUsesMinimumPositiveSize
+[PASS] UGCPlatformGrid.WorldPositionConvertsToGridUsingFloorForHorizontalAxes
+[PASS] UGCPlatformGrid.NegativeWorldPositionUsesLowerGridCell
+[PASS] UGCPlatformGrid.GridPositionConvertsToCellCenter
+[PASS] UGCPlatformGrid.WorldDeltaRoundsToNearestGridDelta
+[PASS] UGCPlatformGrid.FootprintCellsExpandFromAnchorTowardNegativeAxes
+[PASS] UGCPlatformGrid.FootprintSideLengthIsClampedToSupportedRange
+[PASS] UGCPlatformGrid.PlacementSnapsToIntersectionsAndSelectedLayer
+[PASS] UGCPlatformGrid.CellPreviewUsesCellCenterAndPreservesHeight
+[PASS] UGCPlatformGrid.FootprintPreviewMatchesGeneratedArea
+[PASS] UGCPlatformDocument.AddFootprintCreatesRequestedCellsWithoutDuplicates
+[PASS] UGCPlatformDocument.MovingCellRoundTripPreservesMovementDelta
+[PASS] UGCPlatformDocument.MalformedCellIsIgnored
+[PASS] UGCPlatformDocument.RemoveCellAtGridPositionRemovesOnlyExactCell
+[PASS] UGCPlatformDocument.RemoveClosestCellUsesHorizontalDistanceWithinLayer
+[PASS] UGCPlatformDocument.RemovingMovingDestinationCellRemovesOnlyCorrespondingSourceCell
+[PASS] UGCPlatformDocument.ReusingMovingSourceRegionRemovesMultipleDestinationCells
+[PASS] UGCPlatformDocument.LayerResolutionUsesPreferredLayerWhenColumnHasMultipleCells
+[PASS] UGCPlatformDocument.LayerResolutionUsesHighestLayerWhenPreferredLayerIsMissing
+[PASS] UGCPlatformDocument.PlacementLayerUsesLayerAboveHighestCell
+[PASS] UGCPlatformDocument.GeneratedRegionsMergeCompleteRectangle
+[PASS] UGCPlatformDocument.TranslateCellsMovesOnlyCellsInsideSelectedRegion
+[PASS] UGCPlatformDocument.GeneratedRegionsSeparateBehaviorsAndMovementDeltas
+[PASS] UGCPlatformDocument.GeneratedPlatformRemovalPreservesAuthoredPlatforms
+[PASS] UGCPlatformDocument.MatchingGeneratedPlatformIgnoresChangedMovementDestination
+[PASS] UGCPlatformDocument.GeneratedPlatformWithDifferentRegionDoesNotMatch
+[PASS] UGCPlatformDocument.TranslatedGeneratedPlatformRegionPreservesIdentityMatch
+[PASS] StageEditHistory.StageBinding
+[PASS] StageEditHistory.SuccessfulStrokeAndRedo
+[PASS] StageEditHistory.ContinuationAfterFailedStart
+[PASS] StageEditHistory.InterveningEditBreaksGrouping
+[PASS] StageEditHistory.NoOpPreservesRedo
+[PASS] StageEditHistory.NewEditClearsRedoHistory
+[PASS] StageEditHistory.UndoMovesCurrentSnapshotToRedoHistory
+[PASS] StageEditHistory.RedoMovesCurrentSnapshotBackToUndoHistory
+[PASS] StageEditHistory.UndoHistoryDiscardsOldestSnapshotAtLimit
+[PASS] StageEditHistory.EmptyHistoryHasNoSnapshotsAndCommitsAreNoOps
+[PASS] StageEditHistory.ClearRemovesUndoAndRedoSnapshots
+[PASS] StageActorSave.WholeStageSupersedesPartialSaves
+[PASS] StageActorSave.EmptyRetry
+[PASS] StageActorSave.HistorySurvivesFailedRetry
+[PASS] StageActorSave.IndependentScopesAndRetryOrder
+[PASS] StageActorSave.NoCrossStageRetry
+[PASS] StageActorSave.NormalRetryReusesNotification
+[PASS] UGCWorkMetadata.PrepareForSaveAddsDisplayNameAndUnverifiedDefault
+[PASS] UGCWorkMetadata.PrepareForSavePreservesCompletedVerification
+[PASS] UGCWorkMetadata.EditInvalidatesCompletedVerification
+[PASS] UGCWorkMetadata.GoalDetectionRequiresNonEmptySequence
+[PASS] UGCWorkMetadata.MalformedVerificationFlagIsTreatedAsUnverified
+[PASS] UGCWorkMetadata.MissingOrMalformedIdentityIsIgnored
+[PASS] UGCSessionState.EnterEditorActivatesEditingViewAndClosesBrowser
+[PASS] UGCSessionState.PlaytestIsRejectedOutsideUGCMode
+[PASS] UGCSessionState.PlaytestHidesEditingViews
+[PASS] UGCSessionState.VerificationRequiresActiveModeAndFileName
+[PASS] UGCSessionState.ClearCompletionReturnsVerificationFileOnce
+[PASS] UGCSessionState.NormalPlaytestClearCompletionHasEmptyVerificationFile
+[PASS] UGCSessionState.SavedWorkClearResultTracksSelection
+[PASS] UGCSessionState.ReturnToEditorCancelsPendingVerification
+[PASS] UGCSessionState.ExitClearsAllVisibleUGCState
+[PASS] UGCPreviewState.RequestedRenderSizeIsClampedToSupportedRange
+[PASS] UGCPreviewState.YawIsKeptWithinOneHalfTurn
+[PASS] UGCPreviewState.FocusStartsAtCurrentLayerAndThenSmoothlyFollowsIt
+[PASS] UGCPreviewState.VerticalViewToggleChangesDirection
+[PASS] UGCEditorToolState.EraserRestoresThePresetThatWasActiveBeforeIt
+[PASS] UGCEditorToolState.LoadedWorkResetsOnlyTransientToolState
+[PASS] UGCEditorToolState.DeactivatingEraserDoesNotRestoreThePreviousPreset
+[PASS] UGCEditorMenuState.MenuRequestsAreConsumedOnlyOnce
+[PASS] UGCSelectionDragState.DragResetClearsAllTransientMovement
+[PASS] UGCSwitchConnectionState.SwitchConnectionCancelKeepsNoPendingTarget
+[PASS] UGCPreviewPanelState.PreviewWidthInitializationAndResizeStayWithinTheViewport
+[PASS] UGCClearTransitionState.NormalPlaytestQueuesAnEmptyWorkFileName
+[PASS] UGCClearTransitionState.VerificationCompletionPreservesWorkFileName
+[PASS] UGCClearTransitionState.BeginningTransitionConsumesOnlyTheQueuedCompletion
+[PASS] UGCClearTransitionState.CompletingTransitionAllowsNextCompletion
+[PASS] Platform preset visuals use their assigned textures
+[PASS] Planet and switch preset visuals use placement scales
+[PASS] UGCEditorTutorial.ProgressStartsEmptyAndAdvancesToFirstAction
+[PASS] UGCEditorTutorial.ExpectedActionsAdvanceThroughTutorial
+[PASS] UGCEditorTutorial.UnrelatedPlacementDoesNotAdvancePlatformStep
+[PASS] UGCEditorTutorial.LargePlatformRequiresMultiCellFootprint
+[PASS] StageProgressSystem.MissingFileLoadsAsNewProgress
+[PASS] StageProgressSystem.ChangesCreateDirectoryAndPersist
+Failed to load stage progress: yaml-cpp: error at line 2, column 1: end of sequence flow not found
+[PASS] StageProgressSystem.InvalidFileReturnsFailureWithoutPartialState
+[PASS] StageProgressSystem.TransientProgressDoesNotTouchPersistentFile
+[PASS] PlayerConfigLoader.AirDodgeAttackParametersLoadIndependentlyFromWeakAttack
+[PASS] PlayerConfigLoader.ParsedPlayerYamlProducesConfigWithoutFileAccess
+[PASS] PlayerConfigLoader.GuardDamageParametersLoadFromPlayerConfig
+[PASS] EnemyConfigLoader.ParsedEnemyYamlCombinesCommonAndSelectedTypeConfig
+[PASS] EnemyConfigLoader.LegacyBreakCountMaxConfiguresGuardSegments
+[PASS] EnemyConfigLoader.WeakBossCombatConfigDoesNotStartBossEncounterPresentation
+[PASS] EnemyConfigLoader.BossConfigStartsBossEncounterPresentationByDefault
+[PASS] EnemyGuardGauge.OneSegmentUsesConfiguredGuardValue
+[PASS] EnemyGuardGauge.ThreeSegmentsAccumulateContinuousDamage
+[PASS] EnemyGuardGauge.DamageCrossesSegmentBoundariesWithoutDiscardingRemainder
+[PASS] EnemyGuardGauge.GuaranteedBreakConsumesFullCurrentSegmentWhenNecessary
+[PASS] EnemyGuardGauge.GuaranteedBreakKeepsMinimumDamageOverflow
+[PASS] EnemyGuardGauge.GuardClampsAtZeroAndReportsFullBreakOnlyOnce
+[PASS] EnemyGuardGauge.ResetRestoresMaximumGuard
+[PASS] EnemyGuardGauge.BreakAllConsumesEveryRemainingSegment
+[PASS] EnemyGuardGauge.ZeroSegmentsRemainSafe
+[PASS] PlayerControlConfigurationState.SplitAndMergeTrackTheSelectedPlayer
+[PASS] PlayerControlConfigurationState.SelectingCurrentPlayerDoesNotCreateChange
+[PASS] PlayerControlConfigurationState.ScheduledSwitchWaitsForDelayAndUsesActivePlayer
+[PASS] PlayerControlConfigurationState.ScheduledSwitchIsDiscardedWhenSplitEnds
+[PASS] PlayerInputDeviceRouting.TwoControllersAreAssignedToDifferentPlayers
+[PASS] PlayerInputDeviceRouting.OneControllerAndKeyboardAreAssignedToDifferentPlayers
+[PASS] PlayerInputDeviceRouting.DebugKeyboardOnlyModeUsesSeparateKeySets
+[PASS] PlayerInputDeviceRouting.ControllerDisconnectDoesNotShareKeyboardBetweenPlayers
+[PASS] PlayerInputDeviceRouting.SinglePlayerControllerFollowsControlledSplitPlayer
+[PASS] FramePerformanceTracker.ViewportDurationsTrackBothRenderedViewports
+[PASS] FramePerformanceTracker.BeginFrameClearsPerFrameCpuValuesAndPreservesLatestGpuValues
+[PASS] UGCModeController.StartingModeConfiguresEditorRuntime
+[PASS] UGCModeController.ReturningFromPlaytestRestoresEditorRuntime
+[PASS] UGCModeController.VerificationCompletionWaitsForFadeAndReturnsToBrowser
+[PASS] UGCModeController.EditorPreviewClearReturnsToEditorAfterCollectionAndFade
+[PASS] UGCModeController.SavedWorkClearShowsResultMenuAfterCollectionAndFade
+[PASS] UGCModeController.SavedWorkResultRetryRestartsPlaytest
+[PASS] UGCModeController.SavedWorkResultEditReturnsToEditor
+[PASS] UGCModeController.SavedWorkResultTitleExitsUGCMode
+[PASS] UGCModeController.FailedPlaytestReloadRestoresEditor
+[PASS] UGCModeController.FailedEditorReloadKeepsPlaytest
+[PASS] UGCModeController.FailedVerificationReloadCancelsVerification
+[PASS] UGCModeController.FailedModeExitRestoresMode
+[PASS] PlatformStageConfig.ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig
+[PASS] PlatformStageConfig.MovementComponentUsesDocumentedDefaultsAndLegacyWaitField
+[PASS] PlatformStageConfig.LegacyMovingPlatformReadsMovementFieldsFromPlatformNode
+[PASS] PlatformStageConfig.BehaviorComponentsParseValuesAndIgnoreInvalidActorTargets
+[PASS] PlayerCameraSettings.AutoFollowSettingsLoadFromYaml
+[PASS] PlayerCameraSettings.AutoFollowSettingsNormalizeToSupportedRanges
+[PASS] PlayerCameraSettings.AutoFollowSettingsSurviveSaveAndReload
+[PASS] CameraShakeEffect.AirStrongAttackStartsWithVerticalImpactAndReturnsToZero
+[PASS] CameraShakeEffect.WeakerDamageShakeDoesNotReplaceActiveAirStrongAttackShake
+[PASS] CameraShakeEffect.RepeatedDamageShakeRestartsWithoutAddingOffsets
+[PASS] TutorialObjectiveText.DeviceSpecificTextTakesPriority
+[PASS] TutorialObjectiveText.CommonTextIsUsedWithoutDeviceVariant
+[PASS] TutorialObjectiveText.ConversationTextIsFallback
+[PASS] TutorialObjectiveText.ActionOnlyPageHasNoConversation
+[PASS] TutorialObjectiveText.LibraryLoadsObjectiveAndConditions
+[PASS] TutorialObjectiveText.StandardAndAssistPagesPreserveAllSettingsWhenSaved
+[PASS] TutorialObjectiveText.SaveOmitsUnusedPageSettingsAndDisabledAssistPages
+[PASS] OperationGuideVisibility.StageOnePlanetZeroShowsBasicGuides
+[PASS] OperationGuideVisibility.StageOnePlanetThreeAddsDodge
+[PASS] OperationGuideVisibility.StageOnePlanetOneAddsCombat
+[PASS] OperationGuideVisibility.OtherLocationsShowAll
+[PASS] OperationGuideVisibility.UGCShowsAll
+[PASS] OperationGuideVisibility.TwoPlayerModeHidesSoloConfigurationGuides
+[PASS] PlayerJewelGauge.ItemPickupDoesNotExceedSixJewels
+[PASS] PlayerJewelGauge.AutomaticRecoveryStopsAtTwoJewels
+[PASS] PlayerJewelGauge.ContinuousAttackRequiresAndConsumesTwoJewels
+[PASS] PlayerSplitGuardState.StartsFullAndBlocksThreeHits
+[PASS] PlayerSplitGuardState.RecoversOneGuardEveryTenSeconds
+[PASS] PlayerSplitGuardState.AdditionalDamageRestartsRecoveryInterval
+[PASS] PlayerSplitGuardState.DamageWhileEmptyRestartsRecoveryInterval
+[PASS] TgsExperienceController.NoticeTimeoutAndAutomaticReturn
+[PASS] TgsExperienceController.SessionLogStoresReachedProgress
+[PASS] TgsExperienceController.TitleReturnSavesPartialSessionAndContinuesNumbering
+[PASS] TgsExperienceController.EndSessionNowSkipsToTimeLimit
+[PASS] TgsExperienceController.NoticeShortcutShowsNoticeAndEndsAfterRemainingTime
+[PASS] TgsExperienceController.ReturnRequestOnlyWorksOnThankYouScreen
+245/245 tests passed
