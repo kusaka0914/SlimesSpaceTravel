@@ -1,8 +1,8 @@
 #include "system/scene/TalkController.h"
 
-#include "app/Game.h"
 #include "actor/NPC.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
 #include "system/AudioSystem.h"
@@ -318,5 +318,17 @@ bool TalkController::CanStartTalkWithNPC(const Player* player) const
     }
 
     const InputSystem* inputSystem = mGame->GetInputSystem();
-    return !inputSystem || !inputSystem->IsMovementInputPressedForPlayer(player);
+    if (!inputSystem) {
+        return true;
+    }
+    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    const auto device = ResolvePlayerInputDevice(
+        player->GetPlayerNum(), {
+                                    .isTwoPlayerMode = mGame->GetIsPlayer2Joined(),
+                                    .isDebugMode = mGame->GetIsDebugMode(),
+                                    .hasControllerOne = inputSystem->HasControllerInput(1),
+                                    .hasControllerTwo = inputSystem->HasControllerInput(2),
+                                    .controlledPlayerNum = controlledPlayer ? controlledPlayer->GetPlayerNum() : 1,
+                                });
+    return !inputSystem->IsMovementInputPressed(device);
 }

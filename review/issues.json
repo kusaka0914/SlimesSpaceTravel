@@ -44,7 +44,8 @@
       "risk": "OS入力取得とシーン別コマンドの振り分けが同居する。",
       "change": "呼出順・押下優先順位を調査し、取得と操作調停を分ける。",
       "tests": "押下・継続・モード優先順位の回帰テスト",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "OS入力取得は機器ハンドルを呼出中のみ借用する。モード別操作と押下履歴はapp/GameInputControllerへ移動。旧22関数を比較し19件は依頼経路を除き同一、3件の差分は必須参照化とゼロ画面寸法の安全対策。Debugビルド・237件・Runtime5組成功。実機の全操作は未検証。"
     },
     {
       "id": "ARCH-05",

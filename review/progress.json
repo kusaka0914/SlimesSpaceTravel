@@ -7,10 +7,10 @@
     "全ファイル棚卸しとGame経由呼出・継承・クローン候補の静的列挙",
     "Debug/Releaseの基準ビルド・237単体テストとRuntime3組",
     "239ソースの機能別配置、参照更新、旧パス検索、Debug検証",
-    "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加"
+    "GameによるEditor/ImGui所有、UIRendererの編集操作転送を削除、Runtime連続起動終了を追加",
+    "InputSystemからGame/Editor依存を除去し、GameInputControllerへアプリ操作を分離。Gameの転送API13件を削除。SDL仮想機器で入力保持・切断・無効番号を検証。"
   ],
   "next": [
-    "InputSystemのOS入力取得とアプリ操作調停を分離し、Gameの公開転送APIを減らす",
     "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",
     "YamlReadの契約テストを先に追加し、同一スカラー読取を共通化",
     "残る設定保存の直接上書き、読込失敗時の部分変更、StageEditTransactionの例外復旧を修正",
@@ -27,7 +27,10 @@
     "src/app/Game.cpp",
     "src/gfx/UIRenderer.cpp",
     "src/editor/core/UIDebugEditorBridge.cpp",
-    "src/editor/session/DebugEditorSessionController.cpp"
+    "src/editor/session/DebugEditorSessionController.cpp",
+    "src/app/GameInputController.cpp",
+    "src/system/InputSystem.h",
+    "src/app/GameInputController.h"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

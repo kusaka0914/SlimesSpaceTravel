@@ -9,6 +9,7 @@
 
 #include "app/Game.h"
 #include "world/Stage.h"
+#include <GLFW/glfw3.h>
 
 #include "actor/Actor.h"
 #include "actor/Enemy.h"
@@ -16,6 +17,7 @@
 #include "actor/Planet.h"
 #include "actor/Player.h"
 
+#include "app/GameInputController.h"
 #include "app/GameSessionController.h"
 #include "editor/session/DebugEditorSessionController.h"
 #include "state/GameProgressState.h"
@@ -166,7 +168,7 @@ bool Game::CreateGameSystems()
     if (mProgressController->HasSelectedPlayerControlStyle()) {
         mPlayerControlStyle = mProgressController->GetSelectedPlayerControlStyle();
     }
-    mInputSystem = std::make_unique<InputSystem>(this);
+    mInputSystem = std::make_unique<InputSystem>();
     mSequenceSystem = std::make_unique<SequenceSystem>(this);
 
     // 参照する各Systemを生成してから、Player構成を管理するControllerへ依存先を渡す。
@@ -192,11 +194,20 @@ bool Game::CreateGameSystems()
             .progressController = *mProgressController,
             .pauseMenuController = *mPauseMenuController,
             .inputSystem = *mInputSystem,
+            .suppressOneShotInput =
+                [this]() {
+                    if (mGameInputController) {
+                        mGameInputController->SuppressOneShotInputUntilReleased();
+                    }
+                },
             .audioSystem = *mAudioSystem,
             .ugcModeController = *mUGCModeController,
             .playerControlStyle = mPlayerControlStyle,
         },
         IsTgsBuild());
+
+    mGameInputController =
+        std::make_unique<GameInputController>(*this, *mInputSystem, *mEditor, *mSessionController, *mUGCModeController);
 
     mFrameRenderer =
         std::make_unique<GameFrameRenderer>(*GetWindow(), *mRenderer3D, *mUIRenderer, *mEditor, *mCameraSystem,
@@ -336,6 +347,7 @@ void Game::Shutdown()
         mRenderer3D->Shutdown();
         mRenderer3D.reset();
     }
+    mGameInputController.reset();
     mDebugEditorSessionController.reset();
     mEditor.reset();
 
@@ -380,12 +392,13 @@ void Game::ProcessInput()
     SDL_GameControllerUpdate();
 
     if (mInputSystem) {
-        mInputSystem->CaptureFrameInput();
+        mInputSystem->CaptureFrameInput(*GetWindow(), {mGamepadRumbleService->GetControllerForPlayer(1),
+                                                       mGamepadRumbleService->GetControllerForPlayer(2)});
         mSessionController->ProcessInput();
         if (ShouldBlockInputForTgsPresentation()) {
             return;
         }
-        mInputSystem->ProcessGameInput();
+        mGameInputController->ProcessGameInput();
     }
 
     if (mPauseMenuController->IsOpen()) {
@@ -1109,25 +1122,6 @@ bool Game::FinishUGCEditorTutorial(bool wasCompleted)
     return mUGCModeController->FinishEditorTutorial(wasCompleted);
 }
 
-void Game::OpenUGCWorkBrowser()
-{
-    mUGCModeController->OpenWorkBrowser();
-}
-
-void Game::MoveTitleMenuSelection(int delta)
-{
-    if (mSessionController) {
-        mSessionController->MoveTitleMenuSelection(delta);
-    }
-}
-
-void Game::ExecuteTitleMenuSelection()
-{
-    if (mSessionController) {
-        mSessionController->ExecuteTitleMenuSelection();
-    }
-}
-
 int Game::GetTitleMenuSelection() const
 {
     return mSessionController ? mSessionController->GetTitleMenuSelection() : 0;
@@ -1148,62 +1142,6 @@ void Game::StartUGCSavedWorkPlaytest()
     mUGCModeController->StartSavedWorkPlaytest();
 }
 
-void Game::UndoUGCEdit()
-{
-    if (mEditor) {
-        mEditor->HandleUndo();
-    }
-}
-
-void Game::RedoUGCEdit()
-{
-    if (mEditor) {
-        mEditor->HandleRedo();
-    }
-}
-
-void Game::ToggleUGCEraser()
-{
-    if (mEditor) {
-        mEditor->ToggleEraser();
-    }
-}
-
-void Game::SelectUGCEditorMode()
-{
-    if (mEditor) {
-        mEditor->ActivateSelectionMode();
-    }
-}
-
-void Game::OpenUGCEditorMenu()
-{
-    if (mEditor) {
-        mEditor->OpenEditorMenu();
-    }
-}
-
-void Game::ZoomUGCEditor(float distanceMultiplier)
-{
-    if (mEditor) {
-        mEditor->AdjustZoom(distanceMultiplier);
-    }
-}
-
-void Game::ChangeUGCEditLayer(int layerDelta)
-{
-    if (mEditor) {
-        mEditor->ChangeLayer(layerDelta);
-    }
-}
-
-void Game::MoveUGCSelectionByGrid(int gridX, int gridZ)
-{
-    if (mEditor) {
-        mEditor->MoveSelectionOnGrid(gridX, gridZ);
-    }
-}
-
 void Game::StartUGCClearVerification(const std::string& workFileName)
 {
     mUGCModeController->StartClearVerification(workFileName);
@@ -1217,16 +1155,6 @@ void Game::ReturnToUGCEditor()
 void Game::ExitUGCMode()
 {
     mUGCModeController->ExitMode();
-}
-
-void Game::MoveUGCClearResultSelection(int delta)
-{
-    mUGCModeController->MoveClearResultSelection(delta);
-}
-
-void Game::ExecuteUGCClearResultSelection()
-{
-    mUGCModeController->ExecuteClearResultSelection();
 }
 
 bool Game::GetIsUGCClearResultShowing() const

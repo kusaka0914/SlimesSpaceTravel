@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 
 class AudioSystem;
@@ -22,6 +23,8 @@ struct GameSessionDependencies {
     GameProgressController& progressController;
     PauseMenuController& pauseMenuController;
     InputSystem& inputSystem;
+    // タイトル復帰時に同期して呼ぶ。通知先はセッションの寿命中、有効であること。
+    std::function<void()> suppressOneShotInput;
     AudioSystem& audioSystem;
     UGCModeController& ugcModeController;
     PlayerControlStyle& playerControlStyle;
@@ -67,6 +70,7 @@ private:
     GameProgressController& mProgressController;
     PauseMenuController& mPauseMenuController;
     InputSystem& mInputSystem;
+    std::function<void()> mSuppressOneShotInput;
     AudioSystem& mAudioSystem;
     UGCModeController& mUGCModeController;
     PlayerControlStyle& mPlayerControlStyle;

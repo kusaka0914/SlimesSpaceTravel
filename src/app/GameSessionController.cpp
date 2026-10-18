@@ -3,7 +3,6 @@
 #include "actor/Player.h"
 #include "system/AudioSystem.h"
 #include "system/GameProgressController.h"
-#include "world/GameWorld.h"
 #include "system/InputSystem.h"
 #include "system/PauseMenuController.h"
 #include "system/PlayerConfigurationController.h"
@@ -12,6 +11,7 @@
 #include "system/UserDataPaths.h"
 #include "system/sequence/SequenceSystem.h"
 #include "system/tgs/TgsExperienceController.h"
+#include "world/GameWorld.h"
 
 #include <GLFW/glfw3.h>
 
@@ -32,6 +32,7 @@ GameSessionController::GameSessionController(const GameSessionDependencies& depe
       mProgressController(dependencies.progressController),
       mPauseMenuController(dependencies.pauseMenuController),
       mInputSystem(dependencies.inputSystem),
+      mSuppressOneShotInput(dependencies.suppressOneShotInput),
       mAudioSystem(dependencies.audioSystem),
       mUGCModeController(dependencies.ugcModeController),
       mPlayerControlStyle(dependencies.playerControlStyle)
@@ -168,7 +169,7 @@ void GameSessionController::EnterTitleAtFadeMidpoint()
     } else {
         mAudioSystem.TryChangeBGM();
     }
-    mInputSystem.SuppressOneShotInputUntilReleased();
+    mSuppressOneShotInput();
 }
 
 void GameSessionController::RecordPlayerDeath()

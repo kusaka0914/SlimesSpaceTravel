@@ -1,0 +1,19 @@
+[  0%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/player/PlayerInput.cpp.o
+[  0%] Building CXX object CMakeFiles/game_runtime.dir/src/app/Game.cpp.o
+[  0%] Building CXX object CMakeFiles/game_runtime.dir/src/app/GameSessionController.cpp.o
+[  0%] Building CXX object CMakeFiles/game_runtime.dir/src/app/GameInputController.cpp.o
+[  1%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/core/UIDebugEditorBridge.cpp.o
+[  2%] Building CXX object CMakeFiles/game_runtime.dir/src/system/CameraSystem.cpp.o
+[  3%] Building CXX object CMakeFiles/game_runtime.dir/src/system/InputSystem.cpp.o
+[  3%] Building CXX object CMakeFiles/game_runtime.dir/src/system/camera/DebugCamera.cpp.o
+[  5%] Building CXX object CMakeFiles/game_runtime.dir/src/system/scene/TalkController.cpp.o
+[ 98%] Built target game_runtime
+[100%] Linking CXX executable game
+Copying runtime assets and shaders...
+[100%] Built target game
+[100%] Built target game_tests
+[ 98%] Built target game_runtime
+[100%] Built target game
+[100%] Building CXX object CMakeFiles/game_runtime_tests.dir/tests/RuntimeIntegrationTests.cpp.o
+[100%] Linking CXX executable game_runtime_tests
+[100%] Built target game_runtime_tests

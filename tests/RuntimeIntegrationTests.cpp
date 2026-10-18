@@ -8,6 +8,7 @@
 #include "editor/stage/StageSelectionController.h"
 #include "editor/stage/StageYamlRepository.h"
 #include "editor/stage/UGCPlatformCellService.h"
+#include "system/InputSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/camera/CameraProjection.h"
@@ -188,6 +189,71 @@ void CameraManualYawRemainsIndependent(Game& game)
     std::cout << "[PASS] Runtime.ManualCameraAndProjection\n";
 }
 
+class VirtualController {
+public:
+    VirtualController()
+    {
+        const int index = SDL_JoystickAttachVirtual(SDL_JOYSTICK_TYPE_GAMECONTROLLER, SDL_CONTROLLER_AXIS_MAX,
+                                                    SDL_CONTROLLER_BUTTON_MAX, 0);
+        ExpectTrue(index >= 0, "attach isolated virtual controller");
+        mInstanceId = SDL_JoystickGetDeviceInstanceID(index);
+        mController = SDL_GameControllerOpen(index);
+        if (!mController) {
+            SDL_JoystickDetachVirtual(index);
+            throw TestFailure("Failed to open virtual controller");
+        }
+    }
+    ~VirtualController()
+    {
+        SDL_GameControllerClose(mController);
+        // 実機の接続変更でSDLの添字が変わっても、自分が追加した機器だけを取り外す。
+        for (int index = 0; index < SDL_NumJoysticks(); ++index) {
+            if (SDL_JoystickGetDeviceInstanceID(index) == mInstanceId) {
+                SDL_JoystickDetachVirtual(index);
+                break;
+            }
+        }
+    }
+    SDL_GameController* Get() const { return mController; }
+    void SetInput(Sint16 horizontal, Uint8 confirm)
+    {
+        SDL_Joystick* joystick = SDL_GameControllerGetJoystick(mController);
+        ExpectEqual(0, SDL_JoystickSetVirtualAxis(joystick, SDL_CONTROLLER_AXIS_LEFTX, horizontal), "set virtual axis");
+        ExpectEqual(0, SDL_JoystickSetVirtualButton(joystick, SDL_CONTROLLER_BUTTON_A, confirm), "set virtual button");
+        SDL_JoystickUpdate();
+        SDL_GameControllerUpdate();
+    }
+
+private:
+    SDL_JoystickID mInstanceId = -1;
+    SDL_GameController* mController = nullptr;
+};
+
+void InputSnapshotUsesOnlyProvidedDevices(Game& game)
+{
+    VirtualController controller;
+    InputSystem input;
+    controller.SetInput(20000, 1);
+    input.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+    ExpectTrue(input.HasControllerInput(1), "provided controller connected");
+    ExpectFalse(input.HasControllerInput(2), "unprovided controller absent regardless of real devices");
+    ExpectEqual(20000, input.GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX), "axis captured");
+    ExpectTrue(input.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A), "confirm captured");
+    ExpectTrue(input.IsMovementInputPressed(PlayerInputDevice::ControllerOne), "movement routed to captured device");
+    ExpectFalse(input.IsMovementInputPressed(PlayerInputDevice::None), "unassigned input does not move");
+    controller.SetInput(0, 0);
+    ExpectEqual(20000, input.GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX), "same-frame query preserves snapshot");
+    input.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+    ExpectEqual(0, input.GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX), "next frame observes release");
+    ExpectFalse(input.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A), "next frame button released");
+    input.CaptureFrameInput(*game.GetWindow(), {nullptr, nullptr});
+    ExpectFalse(input.HasControllerInput(1), "disconnect clears connected flag");
+    ExpectFalse(input.IsMovementInputPressed(PlayerInputDevice::ControllerOne), "disconnect clears movement");
+    ExpectEqual(0, input.GetControllerAxis(0, SDL_CONTROLLER_AXIS_LEFTX), "invalid player number ignored");
+    ExpectEqual(0, input.GetControllerAxis(1, -1), "invalid axis ignored");
+    std::cout << "[PASS] Runtime.InputSnapshotAndVirtualController\n";
+}
+
 } // namespace
 
 int main()
@@ -203,6 +269,7 @@ int main()
             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
             CameraManualYawRemainsIndependent(game);
             UGCUsesTheSameTransaction(game, context, commands);
+            InputSnapshotUsesOnlyProvidedDevices(game);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
             game.Shutdown();
             ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Editor context released before window shutdown");

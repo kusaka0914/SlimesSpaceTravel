@@ -9,6 +9,7 @@
 #include "gfx/ui/StateUIRenderer.h"
 #include "system/SceneSystem.h"
 #include "system/sequence/SequenceSystem.h"
+#include <GLFW/glfw3.h>
 
 UIRenderer::UIRenderer(Game* game)
     : Renderer(game),

@@ -6,7 +6,6 @@
 #include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
-#include <GLFW/glfw3.h>
 #include <SDL.h>
 #include <cstddef>
 #include <functional>
@@ -48,6 +47,7 @@ class UGCPreviewController;
 class DebugEditorSessionController;
 class UIDebugEditorBridge;
 class GameSessionController;
+class GameInputController;
 
 enum class InputDeviceType {
     KeyboardMouse,
@@ -114,31 +114,18 @@ public:
     // 完了・スキップの進行フラグを記録し、通常のUGC編集へ移る。通常編集を開始できなければ false。
     bool FinishUGCEditorTutorial(bool wasCompleted);
     bool GetIsUGCEditorTutorialActive() const;
-    void OpenUGCWorkBrowser();
     void CloseUGCWorkBrowser();
-    void MoveTitleMenuSelection(int delta);
-    void ExecuteTitleMenuSelection();
     int GetTitleMenuSelection() const;
     bool GetIsUGCWorkBrowserShowing() const;
 
     // 編集中ステージを通常の試遊として開始する。クリア検証はStartUGCClearVerificationで開始する。
     void StartUGCPlaytest();
     void StartUGCSavedWorkPlaytest();
-    void UndoUGCEdit();
-    void RedoUGCEdit();
-    void ToggleUGCEraser();
-    void SelectUGCEditorMode();
-    void OpenUGCEditorMenu();
-    void ZoomUGCEditor(float distanceMultiplier);
-    void ChangeUGCEditLayer(int layerDelta);
-    void MoveUGCSelectionByGrid(int gridX, int gridZ);
 
     // 指定した保存作品のクリア検証を開始する。作品名はUGC作品管理で使うファイル名を渡す。
     void StartUGCClearVerification(const std::string& workFileName);
     void ReturnToUGCEditor();
     void ExitUGCMode();
-    void MoveUGCClearResultSelection(int delta);
-    void ExecuteUGCClearResultSelection();
     bool GetIsUGCClearResultShowing() const;
     int GetUGCClearResultSelection() const;
 
@@ -455,6 +442,7 @@ private:
     std::unique_ptr<MathUtils> mMathUtils;
     std::unique_ptr<SceneSystem> mSceneSystem;
     std::unique_ptr<InputSystem> mInputSystem;
+    std::unique_ptr<GameInputController> mGameInputController;
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
     std::unique_ptr<EnemyJewelDropSystem> mEnemyJewelDropSystem;
