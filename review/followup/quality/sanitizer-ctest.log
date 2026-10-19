@@ -1,0 +1,23 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/7 Test #1: game_tests .......................   Passed    4.08 sec
+    Start 2: asset_schema_tests
+2/7 Test #2: asset_schema_tests ...............   Passed    4.71 sec
+    Start 3: asset_validation_tests
+3/7 Test #3: asset_validation_tests ...........   Passed    1.19 sec
+    Start 4: restart_helper_tests
+4/7 Test #4: restart_helper_tests .............   Passed    1.49 sec
+    Start 5: architecture_audit_tests
+5/7 Test #5: architecture_audit_tests .........   Passed    0.11 sec
+    Start 6: game_runtime_tests
+6/7 Test #6: game_runtime_tests ...............   Passed  116.17 sec
+    Start 7: startup_exit_tests
+7/7 Test #7: startup_exit_tests ...............   Passed    1.33 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Label Time Summary:
+display        = 117.50 sec*proc (2 tests)
+integration    = 117.50 sec*proc (2 tests)
+
+Total Test time (real) = 129.08 sec

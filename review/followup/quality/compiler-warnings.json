@@ -1,0 +1,12 @@
+{
+  "flags": [
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wno-unused-parameter"
+  ],
+  "scope": "First-party production/test/quality-tool sources. Third-party implementation files excluded; Bullet headers treated as system headers. This does not enable every possible compiler warning.",
+  "configuration": "Release, no sanitizer, no coverage",
+  "warnings": 0,
+  "errors": 0
+}

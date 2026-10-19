@@ -6,7 +6,7 @@
     "警告/静的解析/CI/カバレッジ/固定条件ベンチマーク",
     "最終監査と既存READMEからの検証案内"
   ],
-  "status": "seven_priority_fixes_verified_debug",
+  "status": "implementation_and_local_verification_complete_with_explicit_limits",
   "constraints": [
     "既存ゲーム仕様・データ形式を維持",
     "新しいMarkdown報告書を作らない",
@@ -16,11 +16,13 @@
   ],
   "completed": [
     "ビルボード/SDL機器交換/Texture GL/STB/Editorフォームの先行5失敗と修正後Runtime28組成功",
-    "再起動の厳密なPID/exec通知、保存結果型、Main終了コードを実装。全275単体・helper6・監査4・Runtime28組・起動失敗1成功。"
+    "再起動の厳密なPID/exec通知、保存結果型、Main終了コードを実装。全275単体・helper6・監査4・Runtime28組・起動失敗1成功。",
+    "必要な依存縮小、入力履歴、安定IDの設定・保存を修正。ASan/UBSanとReleaseで全276単体・Runtime30組を含む7CTest群が成功。",
+    "警告0件、静的解析22ファイル、依存・整形検査、CI設定、参考カバレッジ、Releaseベンチマーク、YAML検査を整備。"
   ],
   "next": [
-    "設計境界監査と必要な修正",
-    "警告/静的解析/CI/カバレッジ/固定条件ベンチマーク",
-    "最終構成検証と既存READMEの案内整理"
-  ]
+    "意図が不明なUGC作業データ2件は保持。接続先の方針が決まった後にデータ修復を判断する。",
+    "ホスト環境のLinux/Windows CIと実機・FPS・LSanは未確認。実行していない結果は成功扱いしない。"
+  ],
+  "summary": "review/followup/summary.json"
 }

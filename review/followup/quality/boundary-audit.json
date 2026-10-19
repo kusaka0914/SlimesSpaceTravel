@@ -1,0 +1,92 @@
+{
+  "base": "4bdf8d5de6e12845a4c7a1634a4a453761dc0fd7",
+  "boundaries": [
+    {
+      "area": "Player particle presentation",
+      "decision": "changed",
+      "evidence": [
+        "src/actor/player/PlayerParticleEffectController.cpp",
+        "src/actor/Player.cpp",
+        "tests/RuntimeReliabilityTests.cpp"
+      ],
+      "result": "ParticleSystem is borrowed per call; no cached service survives Game/World destruction order."
+    },
+    {
+      "area": "Camera projection",
+      "decision": "removed unused API",
+      "evidence": [
+        "src/system/camera/CameraProjection.cpp",
+        "src/system/camera/CameraProjection.h"
+      ],
+      "result": "All callers already pass CameraProjectionSettings. The unused Game overload was the remaining direct Game header dependency in the camera directory."
+    },
+    {
+      "area": "Stage Editor persistence",
+      "decision": "retain existing transaction/state boundaries",
+      "evidence": [
+        "src/editor/stage/StageEditTransaction.cpp",
+        "src/editor/stage/StageActorYamlWriter.cpp",
+        "src/editor/stage/StageActorSaveState.cpp",
+        "src/editor/stage/panels/StageEditorPanel.cpp",
+        "tests/RuntimeEditorPersistenceTests.cpp"
+      ],
+      "result": "Structural edits recover file/runtime through transactions. Immediate inspector values remain visible on failure, failed saves keep callbacks, and history is appended only after persistence succeeds. No second transaction framework added."
+    },
+    {
+      "area": "Stage reload and render borrowing",
+      "decision": "retain and verify",
+      "evidence": [
+        "src/app/Game.cpp",
+        "src/system/ActorLoadSystem.cpp",
+        "src/world/GameWorld.cpp",
+        "src/gfx/render3d/SceneRenderState.h"
+      ],
+      "result": "Sequence/camera/scene/editor references are cleared before replacement; failed load restores old World ownership. Scene spans are synchronous and must not be cached across updates."
+    },
+    {
+      "area": "Player/Enemy lifecycle",
+      "decision": "retain update order",
+      "evidence": [
+        "src/actor/Player.cpp",
+        "src/actor/Enemy.cpp",
+        "tests/RuntimeGameplayTests.cpp"
+      ],
+      "result": "Player respawn clears buffered attack, hover, facing target, grounding/gravity and particle history. Enemy resolves pursuit each update and branches on life state. Existing native death/combat/reload regressions retained; this is not proof of every AI path."
+    },
+    {
+      "area": "Input suppression",
+      "decision": "fix four omitted histories",
+      "evidence": [
+        "src/app/GameInputController.cpp"
+      ],
+      "result": "UGC grid direction buttons now join other one-shot histories during capture suppression. Static call-site review; no new end-to-end D-pad capture regression is claimed."
+    },
+    {
+      "area": "Texture writer contract",
+      "decision": "clarify private nonnull contract",
+      "evidence": [
+        "src/editor/stage/StageActorYamlWriter.cpp"
+      ],
+      "result": "WriteActorState already rejects null. WriteTextureState now takes const Actor& instead of a nullable pointer; analyzer warning resolved without suppressing the checker."
+    },
+    {
+      "area": "Stable switch target identity and persistence",
+      "decision": "fixed with failing runtime reproduction",
+      "evidence": [
+        "src/component/PlatformRevealTarget.h",
+        "src/system/actor_loader/PlatformStageConfig.cpp",
+        "src/component/PlatformPressureSwitchComponent.cpp",
+        "src/component/PlatformLatchedGroupSwitchComponent.cpp",
+        "src/editor/stage/StageActorYamlWriter.cpp",
+        "src/editor/stage/StagePlatformCreateCommands.cpp",
+        "tests/RuntimeReliabilityTests.cpp"
+      ],
+      "result": "ID-only targets are parsed, compared by stable identity, resolved and preserved when saving. Different IDs do not collide on an absent legacy index; owner and duplicate references are filtered. Legacy sequence/index references remain supported."
+    }
+  ],
+  "not_changed": [
+    "Game composition remains responsible for assembling services. Actors that orchestrate multiple systems keep Game rather than introducing broad provider interfaces.",
+    "Mode-specific input histories remain independent booleans; no evidence justified a larger state-machine rewrite.",
+    "UGC sample data with unknown intended switch connections remains unchanged and explicitly baselined by content hash."
+  ]
+}

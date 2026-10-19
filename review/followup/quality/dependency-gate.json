@@ -1,0 +1,14 @@
+{
+  "head": "d80c0d78d7748816be67b89a4bb4df9cc4d6484d",
+  "first_party_cpp_files": 690,
+  "header_include_cycles": [],
+  "dependency_violations": [],
+  "limitations": [
+    "Static candidates require semantic review; no defect is inferred from size alone.",
+    "Game accesses use named/typed receivers and GetGame accessors; inferred aliases, templates and callbacks are not resolved.",
+    "Pointer lifetime and behavioral equivalence require call-site review and runtime tests.",
+    "File inventory includes assets; static scan status does not mean manual review of every line."
+  ],
+  "include_edges_checked": 2346,
+  "passed": true
+}

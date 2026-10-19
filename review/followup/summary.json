@@ -1,0 +1,143 @@
+{
+  "base": "4bdf8d5de6e12845a4c7a1634a4a453761dc0fd7",
+  "implementation_commits": [
+    "126ca86",
+    "ab627f7",
+    "d80c0d7"
+  ],
+  "status": "requested priority fixes and selected design boundaries implemented; local verification passed with explicit remaining limits",
+  "priority_fixes": [
+    "MathUtils billboard axes validate before normalization and retain normal-case pose.",
+    "GamepadRumbleService detects same-count device replacement using SDL identity/attachment.",
+    "Restart helper validates full PID/range and acknowledges POSIX chdir/exec errors.",
+    "ProgressUpdateResult separates state change from persistence status without rolling back memory on save failure.",
+    "Production Main returns nonzero on initialization failure.",
+    "Enemy creation form errors no longer suppress unrelated forms.",
+    "Image row order and texture upload state are isolated across model/UI/particle loaders."
+  ],
+  "additional_design_changes": [
+    "Player particle presentation borrows ParticleSystem per call instead of obtaining Game.",
+    "Unused Game-based projection API removed; all callers use explicit settings.",
+    "Missing UGC D-pad suppression histories added; static call-site verification only.",
+    "Stable switch IDs survive parsing, duplicate/self filtering, runtime lookup and serialization; failing native regression reproduced before repair.",
+    "Unused fields/constants and compiler warnings clarified; Bullet forward declarations match the external definitions."
+  ],
+  "verification": {
+    "final_sanitizer": {
+      "configuration": "Debug + full ASan/UBSan, including production CLI and instrumented yaml-cpp",
+      "ctest_groups": 7,
+      "unit_cases": 276,
+      "runtime_groups": 30,
+      "passed": true,
+      "record": "quality/sanitizer.json"
+    },
+    "final_release": {
+      "configuration": "Release, sanitizer OFF, coverage OFF, warnings ON",
+      "ctest_groups": 7,
+      "unit_cases": 276,
+      "runtime_groups": 30,
+      "asset_validator_cases": 8,
+      "restart_helper_cases": 6,
+      "architecture_scanner_cases": 7,
+      "startup_exit_cases": 1,
+      "passed": true,
+      "record": "quality/release-ctest.log"
+    },
+    "static_analysis": {
+      "engine": "Clang Static Analyzer",
+      "selected_translation_units": 22,
+      "passed": true,
+      "record": "quality/static-analysis.json"
+    },
+    "compiler_warnings": {
+      "warnings": 0,
+      "errors": 0,
+      "record": "quality/compiler-warnings.json"
+    },
+    "dependency_and_format": {
+      "header_cycles": 0,
+      "forbidden_include_edges": 0,
+      "changed_cpp_files_checked_with_clang_format_18": 61,
+      "passed": true,
+      "record": "quality/dependency-gate.json"
+    },
+    "coverage": {
+      "snapshot": "earlier Debug snapshot before the later stable-ID roundtrip patch; 29 runtime groups",
+      "function_percent": 46.406406406406404,
+      "line_percent": 31.855387575092106,
+      "branch_percent": 21.77760375880971,
+      "limits": "LLVM reported 20 mismatched function records. These percentages are reference measurements, not a final-tree correctness gate.",
+      "record": "quality/coverage.json"
+    },
+    "benchmarks": {
+      "configuration": "Release fixed input, 200 iterations (fast operations x1000), 11 samples",
+      "results": [
+        {
+          "name": "stage_yaml_parse",
+          "iterations": 200,
+          "samples": 11,
+          "median_us": 6037.630625,
+          "p95_us": 6242.70479,
+          "checksum": 30842
+        },
+        {
+          "name": "stage_yaml_clone",
+          "iterations": 200,
+          "samples": 11,
+          "median_us": 2578.428335,
+          "p95_us": 2606.46542,
+          "checksum": 30842
+        },
+        {
+          "name": "stage_yaml_serialize",
+          "iterations": 200,
+          "samples": 11,
+          "median_us": 5130.501875,
+          "p95_us": 5210.686455,
+          "checksum": 123991449
+        },
+        {
+          "name": "actor_construct_destroy",
+          "iterations": 200000,
+          "samples": 11,
+          "median_us": 0.094874165,
+          "p95_us": 0.096301875,
+          "checksum": 2200003
+        },
+        {
+          "name": "billboard_regular",
+          "iterations": 200000,
+          "samples": 11,
+          "median_us": 0.029034375,
+          "p95_us": 0.029581665,
+          "checksum": 408529557085
+        }
+      ],
+      "comparison": "new baseline only; no speedup claim. A deliberately mismatched comparison was rejected.",
+      "record": "quality/benchmark.json"
+    },
+    "assets": {
+      "files": 37,
+      "valid": 35,
+      "known_invalid_unchanged": 2,
+      "new_failures": 0,
+      "record": "quality/assets.json"
+    },
+    "ci": {
+      "workflow": ".github/workflows/quality.yml",
+      "yaml_syntax_checked": true,
+      "github_execution": "not run",
+      "windows_execution": "not run"
+    }
+  },
+  "remaining_limits": [
+    "UGC working examples ugc_stage.yaml and ugc_saves/僕のステージ.yaml retain duplicate platform IDs and a missing platform_8 switch target. Original data is unchanged because the intended connection is unknown; LF-normalized hashes and diagnostics are explicitly baselined.",
+    "Physical gameplay, real-controller hotplug, FPS/GPU performance and LSan are not verified by this work.",
+    "Linux/Windows CI is configured, but no push or hosted run was performed.",
+    "Review/TGS configurations were not rerun in this follow-up; previous results apply only to their recorded older snapshots.",
+    "Static analysis covers selected files; coverage and runtime regressions do not prove every execution path."
+  ],
+  "source_snapshot": "quality/source-snapshot.csv",
+  "reproduction_entry": "README.md / 品質検証の入口",
+  "new_markdown_reports": false
+}

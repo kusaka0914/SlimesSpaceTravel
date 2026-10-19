@@ -1,0 +1,15 @@
+{
+  "policy": "Known invalid UGC working examples are retained to avoid guessing gameplay connections. A changed LF-normalized content hash, changed diagnostic or removed file fails this baseline and requires review. This is not a claim that these assets are valid.",
+  "known_invalid": {
+    "assets/data/stage/ugc_stage.yaml": {
+      "sha256": "c3dbd93b97efd1c3121624f7377b1a112d35e573427d778c4edacc06cb7ee841",
+      "diagnostic": "duplicate/empty platform ID: platform_3",
+      "unresolved": "Repeated generated platform IDs; pressureSwitch references missing platform_8. Intended target is unknown."
+    },
+    "assets/data/stage/ugc_saves/僕のステージ.yaml": {
+      "sha256": "c3dbd93b97efd1c3121624f7377b1a112d35e573427d778c4edacc06cb7ee841",
+      "diagnostic": "duplicate/empty platform ID: platform_3",
+      "unresolved": "Repeated generated platform IDs; pressureSwitch references missing platform_8. Intended target is unknown."
+    }
+  }
+}

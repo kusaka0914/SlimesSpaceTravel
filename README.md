@@ -164,7 +164,7 @@ Editor上でBuild & Restartを実行すると、
 
 Buildをゲーム本体とは別Processへ任せることで、自身の実行ファイルを終了した後でもBuildと再起動を継続できる構成にしています。
 
-Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execl` を利用しています。
+Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execv` を利用しています。POSIXでは起動結果をパイプで親へ通知し、作業ディレクトリ変更や実行ファイルの起動に失敗した場合もエラーを表示します。
 
 #### 関連コード
 
@@ -464,6 +464,50 @@ src/
 ```
 
 `app`がSystemとEditorを組み立て、EditorはRuntimeのAPIを利用します。`gfx`とUGCのRuntimeはEditor内部へ依存しません。Actor専用の姿勢計算は`actor/MathUtils`に置き、`utils`はゲーム固有型へ依存させていません。
+
+### 所有権と変更の境界
+
+- `Game`はSystemとEditorを組み立て、`GameWorld`がActorとStageを所有します。StageやPlanetのActor一覧は借用参照です。
+- Stage再読込の前にSequence・Camera・Scene・Editorの旧Actor参照を解除します。読込失敗時は以前のWorldを保持します。描画用の`SceneRenderState`は呼出中だけ有効な一覧を借用し、次の更新や再読込へ持ち越しません。
+- Editorの作成・削除・Undo / Redoは`StageEditTransaction`で保存とRuntime再構築を調停します。Inspectorの即時編集は画面に残し、保存失敗の理由と再試行を`StageActorSaveState`で管理します。履歴への追加は保存成功後です。
+- `StageProgressSystem`の更新は`ProgressUpdateResult`を返し、メモリ上の変更と保存の成否を区別します。保存に失敗しても現在のゲーム進行を巻き戻しません。
+- MeshのGPUリソースはMesh管理側、UIテクスチャはRenderer、Particle用テクスチャはParticleRendererが解放します。アップロード処理は`TextureUploadState`で呼出前のGL状態へ戻します。生成・使用・解放には有効なGLコンテキストが必要です。
+
+### 品質検証の入口
+
+今回の修正・検証の要約は[review/followup/summary.json](review/followup/summary.json)にまとめています。`review/`内の以前のログはその時点の履歴で、最新状態の成功を示すものではありません。
+
+代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
+
+```sh
+# Debug・警告・表示環境を使う統合テスト
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGAME_ENABLE_WARNINGS=ON -DGAME_BUILD_RUNTIME_TESTS=ON
+cmake --build build --parallel 2
+ctest --test-dir build --output-on-failure
+
+# 重要な実装22ファイルの解析と、既存の依存境界の検査
+python3 -B tools/run_static_analysis.py --build build
+python3 -B tools/architecture_audit.py --check --output build/audit
+python3 -B tools/check_format.py --base <比較元コミット> --clang-format <clang-format-18>
+
+# Clangでの関数・行・分岐カバレッジ
+cmake -S . -B build -DGAME_ENABLE_COVERAGE=ON
+cmake --build build --parallel 2
+python3 -B tools/collect_coverage.py --build build --run-tests
+
+# 計装を外したReleaseで固定入力のCPU計測
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGAME_ENABLE_COVERAGE=OFF -DGAME_BUILD_BENCHMARKS=ON
+cmake --build build --parallel 2
+python3 -B tools/run_benchmarks.py --build build
+```
+
+解析はclang-tidyを優先し、未導入のClang環境ではClang Static Analyzerを使います。どちらも選択した翻訳単位が対象で、全経路の安全性を証明しません。依存検査もローカルの引用形式includeに対する検査です。
+
+カバレッジは未実行の実装も分母に含めます。ローカルのLLVM集約では一部関数のプロファイル不一致警告が出るため、割合は参考値として診断も記録しています。ベンチマークは固定Stageのメモリ内YAML処理・Actor生成破棄・姿勢計算を測り、FPS・GPU負荷・実際のステージ全体のロード時間は測りません。条件が異なる結果の自動比較は拒否します。
+
+同梱YAMLは未知フィールドを許容しつつ、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続を検査します。既存のUGC作業データ2件には重複IDと参照切れがあり、接続先の意図を推測して修正していません。[既知の不整合](review/asset-baseline.json)はファイルのハッシュと診断を固定し、内容が変わった場合や新しい不整合は失敗にします。これは全アセットが正常という意味ではありません。厳密な検査は`build/game_asset_check assets/data`で実行できます。
+
+[CI設定](.github/workflows/quality.yml)はLinuxのDebug / Release・統合テスト・解析・計測と、WindowsのReleaseビルド・画面不要のテストを実行します。GitHub上の実行結果はActionsから確認してください。ローカル検証だけではWindowsやCIの成功とは扱いません。
 
 ---
 

@@ -1,0 +1,106 @@
+name: Code quality
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CC: clang-18
+      CXX: clang++-18
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install build and analysis dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang-18 clang-tidy-18 clang-format-18 llvm-18 libglfw3-dev libglew-dev libglm-dev libassimp-dev libbullet-dev libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev libyaml-cpp-dev xvfb xauth libgl1-mesa-dev
+      - name: Check dependency boundaries and changed-line formatting
+        env:
+          BASE_REVISION: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_REVISION" ] || [ "$BASE_REVISION" = 0000000000000000000000000000000000000000 ]; then
+            BASE_REVISION=$(git rev-parse HEAD^)
+          fi
+          python3 -B tools/check_format.py --base "$BASE_REVISION" --clang-format clang-format-18
+          python3 -B tools/architecture_audit.py --check --output build/audit
+      - name: Configure Debug coverage
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGAME_BUILD_RUNTIME_TESTS=ON -DGAME_ENABLE_WARNINGS=ON -DGAME_ENABLE_COVERAGE=ON
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Run regressions and collect coverage
+        run: xvfb-run -a python3 -B tools/collect_coverage.py --build build --run-tests --llvm-cov llvm-cov-18 --llvm-profdata llvm-profdata-18
+      - name: Analyze production boundaries
+        run: python3 -B tools/run_static_analysis.py --build build --clang-tidy clang-tidy-18 --jobs 2
+      - name: Configure and build Release benchmark
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGAME_ENABLE_COVERAGE=OFF -DGAME_BUILD_BENCHMARKS=ON
+          cmake --build build --parallel 2
+      - name: Test Release and record CPU baseline
+        run: |
+          xvfb-run -a ctest --test-dir build --output-on-failure
+          python3 -B tools/run_benchmarks.py --build build
+      - name: Save quality results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-quality
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/coverage/report.json
+            build/analysis/
+            build/audit/structure.json
+            build/benchmarks/current.json
+            build/assets/report.json
+
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Pin vcpkg tool and port definitions
+        shell: pwsh
+        run: |
+          git -C "$env:VCPKG_INSTALLATION_ROOT" fetch origin 664933b8d385dfc01f4e0cdff4c7c74e71f6a740 --depth=1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C "$env:VCPKG_INSTALLATION_ROOT" checkout --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:VCPKG_INSTALLATION_ROOT/bootstrap-vcpkg.bat" -disableMetrics
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Configure
+        shell: pwsh
+        run: cmake -S . -B build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DGAME_ENABLE_WARNINGS=ON -DBUILD_TESTING=ON
+      - name: Build production and headless tests
+        run: cmake --build build --config Release --parallel 2
+      - name: Run headless regressions and asset validation
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Check dependency boundaries
+        run: python -B tools/architecture_audit.py --check --output build/audit
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-quality
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/audit/structure.json
+            build/assets/report.json

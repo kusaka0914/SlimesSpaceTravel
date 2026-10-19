@@ -14,3 +14,7 @@ AGENTS.md
 
 # clangdの生成インデックス
 .cache/
+
+# LLVMカバレッジの実行生成物
+*.profraw
+*.profdata

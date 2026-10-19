@@ -1,0 +1,41 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/7 Test #1: game_tests .......................   Passed    0.59 sec
+    Start 2: asset_schema_tests
+2/7 Test #2: asset_schema_tests ...............   Passed    0.32 sec
+    Start 3: asset_validation_tests
+3/7 Test #3: asset_validation_tests ...........   Passed    0.17 sec
+    Start 4: restart_helper_tests
+4/7 Test #4: restart_helper_tests .............   Passed    0.69 sec
+    Start 5: architecture_audit_tests
+5/7 Test #5: architecture_audit_tests .........   Passed    0.10 sec
+    Start 6: game_runtime_tests
+6/7 Test #6: game_runtime_tests ...............   Passed   38.40 sec
+    Start 7: startup_exit_tests
+7/7 Test #7: startup_exit_tests ...............   Passed    0.84 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Label Time Summary:
+display        =  39.24 sec*proc (2 tests)
+integration    =  39.24 sec*proc (2 tests)
+
+Total Test time (real) =  41.11 sec
+warning: 20 functions have mismatched data
+{
+  "functions": {
+    "count": 4995,
+    "covered": 2318,
+    "percent": 46.406406406406404
+  },
+  "lines": {
+    "count": 55099,
+    "covered": 17552,
+    "percent": 31.855387575092106
+  },
+  "branches": {
+    "count": 25540,
+    "covered": 5562,
+    "percent": 21.77760375880971
+  }
+}

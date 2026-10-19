@@ -96,9 +96,29 @@ def header_cycles(edges):
     return sorted(cycles)
 
 
+def dependency_violations(edges):
+    """Gate only established boundaries; orchestration and legacy Actor dependencies remain allowed."""
+    violations = []
+    for edge in edges:
+        source, target = edge["from"], edge["to"]
+        reason = None
+        if source.startswith(("src/gfx/", "src/system/", "src/gameplay/")) and target.startswith("src/editor/"):
+            reason = "runtime must not include editor implementation"
+        elif source.startswith("src/utils/") and target.startswith(("src/actor/", "src/app/", "src/editor/", "src/world/")):
+            reason = "general utilities must not depend on game owners"
+        elif (source.startswith("src/system/camera/") or source in {
+                "src/system/InputSystem.cpp", "src/system/InputSystem.h", "src/system/CameraSystem.cpp",
+                "src/system/CameraSystem.h", "src/gfx/Renderer3D.cpp", "src/gfx/Renderer3D.h"
+        }) and target == "src/app/Game.h":
+            reason = "input/camera/renderer consume their explicit dependencies"
+        if reason:
+            violations.append({**edge, "reason": reason})
+    return violations
+
+
 def write_csv(path, rows, columns):
     with path.open("w", encoding="utf-8", newline="") as output:
-        writer = csv.DictWriter(output, fieldnames=columns)
+        writer = csv.DictWriter(output, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -125,10 +145,16 @@ def audit(root, output):
         code = mask_literals(source)
         calls.extend({"path": name, **call} for call in game_accesses(source))
         inheritance.extend({"path": name, **declaration} for declaration in inheritance_declarations(source))
-        for include in INCLUDE.findall(source):
-            target = root / "src" / include
-            if target.is_file():
-                edges.append({"from": name, "to": target.relative_to(root).as_posix()})
+        # Mask comments without masking the include's quoted path.
+        for match in INCLUDE.finditer(source):
+            if not code[match.start():match.start() + match.group().index("#") + 1].strip():
+                continue
+            include = match.group(1)
+            for candidate in (path.parent / include, root / "src" / include):
+                target = candidate.resolve()
+                if target.is_file() and target.is_relative_to(root):
+                    edges.append({"from": name, "to": target.relative_to(root).as_posix()})
+                    break
         for function in functions(source):
             location = {"path": name, **{key: function[key] for key in ("name", "line", "lines", "brace_depth")}}
             if function["lines"] >= 80 or function["brace_depth"] >= 6:
@@ -144,6 +170,7 @@ def audit(root, output):
               "exact_body_clone_candidates": [group for group in clones.values() if len(group) > 1],
               "include_edges": edges,
               "header_include_cycles": header_cycles(edges),
+              "dependency_violations": dependency_violations(edges),
               "limitations": ["Static candidates require semantic review; no defect is inferred from size alone.",
                                "Game accesses use named/typed receivers and GetGame accessors; inferred aliases, templates and callbacks are not resolved.",
                                "Pointer lifetime and behavioral equivalence require call-site review and runtime tests.",
@@ -151,10 +178,15 @@ def audit(root, output):
     (output / "structure.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"files": len(inventory), "cpp_files": report["first_party_cpp_files"], "game_calls": len(calls),
                       "hotspots": len(hotspots), "clone_candidates": len(report["exact_body_clone_candidates"])}))
+    return report
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("review/current"))
+    parser.add_argument("--check", action="store_true", help="fail on header cycles or forbidden dependency directions")
     arguments = parser.parse_args()
-    audit(Path(__file__).resolve().parents[1], arguments.output)
+    report = audit(Path(__file__).resolve().parents[1], arguments.output)
+    if arguments.check and (report["header_include_cycles"] or report["dependency_violations"]):
+        print(json.dumps({key: report[key] for key in ("header_include_cycles", "dependency_violations")}, indent=2))
+        raise SystemExit(1)
