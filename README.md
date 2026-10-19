@@ -422,6 +422,8 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用していま�
 
 ```text
 src/
+├─ app/               Game・Window・入力/Sessionの調停とSystemの組み立て
+├─ world/             Stage・Actorの所有と寿命管理
 ├─ actor/
 │  ├─ player/         Playerの入力・移動・重力・戦闘・状態
 │  ├─ enemy/          Enemyの移動・戦闘・状態・AI
@@ -430,13 +432,24 @@ src/
 ├─ animation/         Skeletal Animation
 ├─ component/         Actor間で再利用する機能
 ├─ effect/            Particleなどの演出
+├─ gameplay/ugc/      UGCの実行状態・作品保存・プレビュー状態
+│
+├─ editor/
+│  ├─ core/           Editor全体の調停・Context・Viewport
+│  ├─ stage/          Stageの配置・Inspector・Undo / Redo・YAML保存
+│  ├─ ugc/            UGC編集の入力・表示・操作
+│  ├─ ui/             UI Canvasの編集・選択・履歴
+│  ├─ panels/         基本情報・性能表示
+│  ├─ tools/          Camera・Particle・Sequenceなどの編集
+│  ├─ session/        編集状態の保存・復元・Build & Restart
+│  └─ assets/         Editor用Asset Browser・サムネイル
 │
 ├─ gfx/
-│  ├─ debug/
-│  │  ├─ stage/       開発用3D Stage Editor
-│  │  └─ ugc/         プレイヤー向けStage Editor
 │  ├─ render3d/       3D描画
-│  └─ ui/             HUD・Menu・Tutorial
+│  ├─ ui/             HUD・Menu・Tutorial
+│  ├─ particle/       Particle描画
+│  ├─ performance/    GPU計測
+│  └─ video/          動画表示
 │
 ├─ system/
 │  ├─ actor_loader/   YAMLからのStage構築
@@ -445,9 +458,12 @@ src/
 │  ├─ physics/        Bullet Physics・移動衝突判定
 │  └─ scene/          Scene・会話・Tutorial
 │
+├─ state/             ゲーム進行・UI状態
 ├─ text/              日本語・Ruby表示用データ
-└─ app/Game.cpp           各System / Controllerを保持する全体の調停役
+└─ utils/             AtomicFile・YAML読み取り・文字列処理
 ```
+
+`app`がSystemとEditorを組み立て、EditorはRuntimeのAPIを利用します。`gfx`とUGCのRuntimeはEditor内部へ依存しません。Actor専用の姿勢計算は`actor/MathUtils`に置き、`utils`はゲーム固有型へ依存させていません。
 
 ---
 
