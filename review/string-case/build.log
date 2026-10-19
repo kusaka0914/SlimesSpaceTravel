@@ -1,0 +1,21 @@
+[  0%] Built target editor_restart_helper
+[  0%] Building CXX object CMakeFiles/game_tests.dir/src/effect/particle/ParticleConfigLoader.cpp.o
+[  1%] Linking CXX executable game_tests
+[ 23%] Built target game_tests
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/Planet.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/assets/AssetBrowserPanel.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/assets/EditorAssetCatalog.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageActorAssetEditor.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageActorCreationForms.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageWorldCreationForms.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/panels/StagePlanetPanel.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/tools/particle/ParticleEffectDebugPanel.cpp.o
+[ 25%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/tools/tutorial/TutorialDebugPanel.cpp.o
+[ 26%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/ui/UIDebugPanel.cpp.o
+[ 26%] Building CXX object CMakeFiles/game_runtime.dir/src/effect/particle/ParticleConfigLoader.cpp.o
+[ 98%] Built target game_runtime
+[ 99%] Linking CXX executable game
+Copying runtime assets and shaders...
+[ 99%] Built target game
+[ 99%] Linking CXX executable game_runtime_tests
+[100%] Built target game_runtime_tests

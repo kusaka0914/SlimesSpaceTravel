@@ -1,16 +1,17 @@
 #include "editor/ui/UIDebugPanel.h"
 
+#include "utils/StringUtils.h"
+
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
 #include "app/Game.h"
-#include "gfx/UIRenderer.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdio>
 #include <map>
 #include <string>
@@ -27,13 +28,6 @@ template <std::size_t Size> bool EditString(const char* label, std::string& valu
 
     value = buffer.data();
     return true;
-}
-
-std::string ToLower(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return value;
 }
 
 std::string ExtractScreenId(const std::string& elementKey)
@@ -551,10 +545,10 @@ void UIDebugPanel::DrawAssetPicker(std::string& texturePath, bool& flipVertical,
     }
 
     ImGui::BeginChild("TextureAssetPicker", ImVec2(0.0f, 180.0f), true);
-    const std::string filter = ToLower(mAssetFilter.data());
+    const std::string filter = StringUtils::ToLower(mAssetFilter.data());
 
     for (const std::string& asset : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
-        if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+        if (!filter.empty() && StringUtils::ToLower(asset).find(filter) == std::string::npos) {
             continue;
         }
 

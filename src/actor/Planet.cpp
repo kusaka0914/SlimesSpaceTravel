@@ -1,11 +1,12 @@
 #include "actor/Planet.h"
 
+#include "utils/StringUtils.h"
+
 #include "utils/YamlRead.h"
 
 #include "actor/Boat.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <filesystem>
 
@@ -51,19 +52,12 @@ glm::vec4 ReadVec4(const YAML::Node& node, const char* key, const glm::vec4& def
                      node[key][3] ? node[key][3].as<float>() : defaultValue.w);
 }
 
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
-
 Planet::VisualSettings ResolveDefaultVisualSettings(const std::string& modelPath, const std::string& texturePath)
 {
     Planet::VisualSettings settings;
 
     // 明示設定がない場合は、既存アセット名から見た目の既定値を選ぶ。
-    const std::string visualIdentity = ToLower(modelPath + "|" + texturePath);
+    const std::string visualIdentity = StringUtils::ToLower(modelPath + "|" + texturePath);
 
     const bool isDecorationFreeTheme = visualIdentity.find("blackplatform") != std::string::npos ||
                                        visualIdentity.find("slimeplatform") != std::string::npos;
@@ -99,7 +93,7 @@ Planet::Biome ParseBiome(const YAML::Node& visualNode, Planet::Biome defaultBiom
         return defaultBiome;
     }
 
-    const std::string biomeName = ToLower(visualNode["biome"].as<std::string>());
+    const std::string biomeName = StringUtils::ToLower(visualNode["biome"].as<std::string>());
     if (biomeName == "grass" || biomeName == "grassland") {
         return Planet::Biome::Grassland;
     }

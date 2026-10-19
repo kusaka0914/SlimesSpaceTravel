@@ -1,30 +1,20 @@
 #include "editor/stage/StageWorldCreationForms.h"
 
+#include "utils/StringUtils.h"
+
 #include "app/Game.h"
-#include "world/Stage.h"
-#include "editor/core/DebugEditorContext.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
+#include "editor/core/DebugEditorContext.h"
 #include "editor/stage/StageActorCreateService.h"
 #include "editor/stage/StageActorPlacementController.h"
 #include "editor/stage/StageCreationFormWidgets.h"
 #include "imgui.h"
+#include "world/Stage.h"
 
 #include <algorithm>
-#include <cctype>
 #include <string>
 #include <vector>
-
-namespace {
-
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
-
-} // namespace
 
 StageObjectCreationForm::StageObjectCreationForm(DebugEditorContext& context,
                                                  StageActorCreateService& actorCreateService,
@@ -60,11 +50,11 @@ void StageObjectCreationForm::Draw()
             ImGui::InputTextWithHint("##stageObjectSearch", "モデル名を検索", mModelSearch.data(), mModelSearch.size());
 
             const std::vector<std::string>& modelAssets = mContext.assetCatalog->GetPaths(EditorAssetType::Model);
-            const std::string searchText = ToLower(mModelSearch.data());
+            const std::string searchText = StringUtils::ToLower(mModelSearch.data());
 
             ImGui::BeginChild("StageObjectAssetPicker", ImVec2(0.0f, 180.0f), true);
             for (const std::string& modelPath : modelAssets) {
-                if (!searchText.empty() && ToLower(modelPath).find(searchText) == std::string::npos) {
+                if (!searchText.empty() && StringUtils::ToLower(modelPath).find(searchText) == std::string::npos) {
                     continue;
                 }
 

@@ -1,33 +1,24 @@
 #include "editor/stage/panels/StagePlanetPanel.h"
 
+#include "utils/StringUtils.h"
+
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Planet.h"
-#include "gfx/Renderer3D.h"
+#include "app/Game.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
+#include "gfx/Renderer3D.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
 #include "system/StageActorPlanetBindingService.h"
+#include "world/Stage.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <string>
 #include <utility>
-
-namespace {
-std::string ToLower(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return value;
-}
-
-} // namespace
 
 StagePlanetPanel::StagePlanetPanel(DebugEditorContext& context, std::function<bool()> saveEditorTransforms)
     : DebugPanel(context),
@@ -144,9 +135,9 @@ void StagePlanetPanel::DrawTexturePicker(Planet* planet, std::size_t planetIndex
 
         const std::string assetListId = "PlanetTextureAssetPicker##" + std::to_string(planetIndex);
         ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
-        const std::string filter = ToLower(mTextureAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mTextureAssetFilter.data());
         for (const std::string& asset : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
-            if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+            if (!filter.empty() && StringUtils::ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
 
@@ -228,9 +219,9 @@ void StagePlanetPanel::DrawBackTexturePicker(Planet* planet, std::size_t planetI
 
         const std::string assetListId = "PlanetBackTextureAssetPicker##" + std::to_string(planetIndex);
         ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
-        const std::string filter = ToLower(mTextureAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mTextureAssetFilter.data());
         for (const std::string& asset : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
-            if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+            if (!filter.empty() && StringUtils::ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
 

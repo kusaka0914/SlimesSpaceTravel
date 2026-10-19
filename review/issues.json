@@ -243,6 +243,17 @@
       "tests": "全利用先検索、全Editorの構築・繰り返し起動終了、既存全Runtimeと単体。",
       "status": "implemented_and_debug_verified",
       "verification": "271単体・監査4件・Runtime20組・Debug全ビルド成功。Draw本体は未変更。"
+    },
+    {
+      "id": "MAINT-04",
+      "priority": "P3",
+      "location": "src/utils/StringUtils.h; Planet/Editor/Particleの11実装",
+      "evidence": "11ファイルに引数名以外が同一のToLowerが存在し、36箇所で使用。",
+      "risk": "大小文字の扱いを変える際に更新漏れが起こり、バイト単位の変換である契約も重複する。",
+      "change": "unsigned char経由のstd::tolowerとコピー返却を維持した小さなnamespace関数へ統一。",
+      "tests": "全11関数の処理列照合、Debug全ビルド、既存全テスト。",
+      "status": "implemented_and_debug_verified",
+      "verification": "271単体・監査4件・Runtime20組成功。Unicode変換へは変更していない。"
     }
   ],
   "notes": [

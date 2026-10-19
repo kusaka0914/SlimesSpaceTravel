@@ -1,27 +1,21 @@
 #include "editor/assets/AssetBrowserPanel.h"
 
-#include "gfx/UIRenderer.h"
+#include "utils/StringUtils.h"
+
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
 #include "editor/assets/EditorModelThumbnailRenderer.h"
+#include "gfx/UIRenderer.h"
 #include "gfx/video/TutorialVideoPlayer.h"
 #include "imgui.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <vector>
 
 namespace {
 constexpr int videoThumbnailMaximumWidth = 160;
 constexpr int videoThumbnailMaximumHeight = 90;
-
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
 
 ImVec2 CalculateAspectFitSize(int sourceWidth, int sourceHeight, float maximumWidth, float maximumHeight)
 {
@@ -320,8 +314,8 @@ bool AssetBrowserPanel::ShouldShow(const EditorAssetInfo& asset) const
         return false;
     }
 
-    const std::string search = ToLower(mSearchText.data());
-    return search.empty() || ToLower(asset.relativePath).find(search) != std::string::npos;
+    const std::string search = StringUtils::ToLower(mSearchText.data());
+    return search.empty() || StringUtils::ToLower(asset.relativePath).find(search) != std::string::npos;
 }
 
 const char* AssetBrowserPanel::ResolveTypeLabel(EditorAssetType type) const

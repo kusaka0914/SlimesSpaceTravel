@@ -1,5 +1,7 @@
 #include "editor/tools/tutorial/TutorialDebugPanel.h"
 
+#include "utils/StringUtils.h"
+
 #include "app/Game.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
@@ -12,7 +14,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cctype>
 #include <cstdio>
 #include <string>
 #include <utility>
@@ -49,12 +50,6 @@ bool MatchesFocusTarget(const TutorialFocusTarget& focusTarget, const StageActor
     return focusTarget.sequenceName == actorRef.sequenceName && focusTarget.yamlIndex == actorRef.yamlIndex;
 }
 
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
 } // namespace
 
 TutorialDebugPanel::TutorialDebugPanel(DebugEditorContext& context)
@@ -366,9 +361,9 @@ void TutorialDebugPanel::DrawVideoEditor(TutorialController* controller, Tutoria
             page.video.assetPath.clear();
         }
 
-        const std::string filter = ToLower(mVideoAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mVideoAssetFilter.data());
         for (const std::string& asset : mContext.assetCatalog->GetPaths(EditorAssetType::Video)) {
-            if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+            if (!filter.empty() && StringUtils::ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
             if (ImGui::Selectable(asset.c_str(), page.video.assetPath == asset)) {

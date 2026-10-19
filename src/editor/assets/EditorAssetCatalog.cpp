@@ -1,20 +1,15 @@
 #include "editor/assets/EditorAssetCatalog.h"
 
+#include "utils/StringUtils.h"
+
 #include <algorithm>
-#include <cctype>
 #include <filesystem>
 
 namespace {
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
 
 bool IsSupportedAssetExtension(EditorAssetType type, const std::filesystem::path& path)
 {
-    const std::string extension = ToLower(path.extension().string());
+    const std::string extension = StringUtils::ToLower(path.extension().string());
 
     switch (type) {
     case EditorAssetType::Model:

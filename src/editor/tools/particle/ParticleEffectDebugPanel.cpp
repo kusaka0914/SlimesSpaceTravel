@@ -1,19 +1,20 @@
 #include "editor/tools/particle/ParticleEffectDebugPanel.h"
 
+#include "utils/StringUtils.h"
+
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Player.h"
-#include "gfx/UIRenderer.h"
+#include "app/Game.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
 #include "editor/core/DebugPanelTextInput.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 #include "system/ParticleSystem.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -45,13 +46,6 @@ constexpr const char* previewPositionLabels[] = {
 };
 
 constexpr std::string_view particleTextureAssetPrefix = "textures/particles/";
-
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
 
 bool TryResolveParticleTexturePath(std::string_view assetPath, std::string& outParticleTexturePath)
 {
@@ -549,14 +543,14 @@ bool ParticleEffectDebugPanel::DrawTexturePicker(ParticleEmitterDefinition& emit
         ImGui::InputTextWithHint("##ParticleTextureFilter", "パーティクル画像を検索", mTextureAssetFilter.data(),
                                  mTextureAssetFilter.size());
 
-        const std::string filter = ToLower(mTextureAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mTextureAssetFilter.data());
         if (ImGui::BeginCombo("画像アセット", emitter.texturePath.c_str())) {
             for (const std::string& assetPath : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
                 std::string particleTexturePath;
                 if (!TryResolveParticleTexturePath(assetPath, particleTexturePath)) {
                     continue;
                 }
-                if (!filter.empty() && ToLower(particleTexturePath).find(filter) == std::string::npos) {
+                if (!filter.empty() && StringUtils::ToLower(particleTexturePath).find(filter) == std::string::npos) {
                     continue;
                 }
 

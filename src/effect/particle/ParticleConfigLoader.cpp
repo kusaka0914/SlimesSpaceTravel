@@ -1,10 +1,11 @@
 #include "effect/particle/ParticleConfigLoader.h"
 
+#include "utils/StringUtils.h"
+
 #include "utils/AtomicFile.h"
 #include "utils/YamlRead.h"
 
 #include <algorithm>
-#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -13,12 +14,6 @@
 #include <yaml-cpp/yaml.h>
 
 namespace {
-std::string ToLower(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return value;
-}
 
 ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& defaultValue)
 {
@@ -78,19 +73,19 @@ glm::vec4 ReadVec4(const YAML::Node& node, const glm::vec4& defaultValue)
 // 列挙値の表記は大文字・小文字を区別せず、未知の値には各モードの既定値を使う。
 ParticleBlendMode ParseBlendMode(const std::string& value)
 {
-    return ToLower(value) == "alpha" ? ParticleBlendMode::Alpha : ParticleBlendMode::Additive;
+    return StringUtils::ToLower(value) == "alpha" ? ParticleBlendMode::Alpha : ParticleBlendMode::Additive;
 }
 
 ParticleRenderMode ParseRenderMode(const std::string& value)
 {
-    const std::string lowerValue = ToLower(value);
+    const std::string lowerValue = StringUtils::ToLower(value);
     return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned" ? ParticleRenderMode::VelocityAligned
                                                                                : ParticleRenderMode::Billboard;
 }
 
 ParticleDirectionMode ParseDirectionMode(const std::string& value)
 {
-    const std::string lowerValue = ToLower(value);
+    const std::string lowerValue = StringUtils::ToLower(value);
     if (lowerValue == "fixed") {
         return ParticleDirectionMode::Fixed;
     }

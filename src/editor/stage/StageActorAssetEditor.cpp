@@ -1,30 +1,22 @@
 #include "editor/stage/StageActorAssetEditor.h"
 
+#include "utils/StringUtils.h"
+
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/NPC.h"
-#include "gfx/Renderer3D.h"
+#include "app/Game.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/assets/EditorAssetDragDrop.h"
+#include "gfx/Renderer3D.h"
 #include "imgui.h"
 #include "system/MeshLoadSystem.h"
 
 #include <algorithm>
-#include <cctype>
 #include <utility>
-
-namespace {
-std::string ToLower(std::string text)
-{
-    std::transform(text.begin(), text.end(), text.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return text;
-}
-} // namespace
 
 StageActorAssetEditor::StageActorAssetEditor(DebugEditorContext& context, Callback rebuildPhysicsWorld)
     : mContext(context),
@@ -66,12 +58,12 @@ void StageActorAssetEditor::DrawActorModelPicker(Actor* actor, const std::string
                              mActorModelAssetFilter.size());
 
     const std::vector<std::string>& modelAssets = mContext.assetCatalog->GetPaths(EditorAssetType::Model);
-    const std::string filter = ToLower(mActorModelAssetFilter.data());
+    const std::string filter = StringUtils::ToLower(mActorModelAssetFilter.data());
     const std::string listId = "PlacedActorModelAssetPicker##" + sequenceName + std::to_string(listIndex);
 
     ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
     for (const std::string& modelPath : modelAssets) {
-        if (!filter.empty() && ToLower(modelPath).find(filter) == std::string::npos) {
+        if (!filter.empty() && StringUtils::ToLower(modelPath).find(filter) == std::string::npos) {
             continue;
         }
 
@@ -112,12 +104,12 @@ void StageActorAssetEditor::DrawNPCModelPicker(NPC* npc, const std::string& sequ
                              mNPCModelAssetFilter.size());
 
     const std::vector<std::string>& modelAssets = mContext.assetCatalog->GetPaths(EditorAssetType::Model);
-    const std::string filter = ToLower(mNPCModelAssetFilter.data());
+    const std::string filter = StringUtils::ToLower(mNPCModelAssetFilter.data());
     const std::string listId = "PlacedNPCModelAssetPicker##" + sequenceName + std::to_string(listIndex);
 
     ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
     for (const std::string& modelPath : modelAssets) {
-        if (!filter.empty() && ToLower(modelPath).find(filter) == std::string::npos) {
+        if (!filter.empty() && StringUtils::ToLower(modelPath).find(filter) == std::string::npos) {
             continue;
         }
 
@@ -157,12 +149,12 @@ void StageActorAssetEditor::DrawBoatModelPicker(Boat* boat, const std::string& s
                              mBoatModelAssetFilter.size());
 
     const std::vector<std::string>& modelAssets = mContext.assetCatalog->GetPaths(EditorAssetType::Model);
-    const std::string filter = ToLower(mBoatModelAssetFilter.data());
+    const std::string filter = StringUtils::ToLower(mBoatModelAssetFilter.data());
     const std::string listId = "PlacedBoatModelAssetPicker##" + sequenceName + std::to_string(listIndex);
 
     ImGui::BeginChild(listId.c_str(), ImVec2(0.0f, 180.0f), true);
     for (const std::string& modelPath : modelAssets) {
-        if (!filter.empty() && ToLower(modelPath).find(filter) == std::string::npos) {
+        if (!filter.empty() && StringUtils::ToLower(modelPath).find(filter) == std::string::npos) {
             continue;
         }
 
@@ -223,9 +215,9 @@ void StageActorAssetEditor::DrawTextureOverrideEditor(Actor* actor, const std::s
 
         const std::string assetListId = "ActorTextureAssetPicker##" + sequenceName + std::to_string(listIndex);
         ImGui::BeginChild(assetListId.c_str(), ImVec2(0.0f, 180.0f), true);
-        const std::string filter = ToLower(mTextureAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mTextureAssetFilter.data());
         for (const std::string& asset : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
-            if (!filter.empty() && ToLower(asset).find(filter) == std::string::npos) {
+            if (!filter.empty() && StringUtils::ToLower(asset).find(filter) == std::string::npos) {
                 continue;
             }
 
@@ -329,9 +321,9 @@ void StageActorAssetEditor::DrawBulkTextureOverrideEditor(const std::vector<Stag
         }
 
         ImGui::BeginChild("BulkActorTextureAssetPicker", ImVec2(0.0f, 180.0f), true);
-        const std::string filter = ToLower(mTextureAssetFilter.data());
+        const std::string filter = StringUtils::ToLower(mTextureAssetFilter.data());
         for (const std::string& texturePath : mContext.assetCatalog->GetPaths(EditorAssetType::Texture)) {
-            if (!filter.empty() && ToLower(texturePath).find(filter) == std::string::npos) {
+            if (!filter.empty() && StringUtils::ToLower(texturePath).find(filter) == std::string::npos) {
                 continue;
             }
 
