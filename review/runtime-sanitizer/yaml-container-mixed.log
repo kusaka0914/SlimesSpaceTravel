@@ -1,0 +1,69 @@
+=================================================================
+==57121==ERROR: AddressSanitizer: container-overflow on address 0x000105701880 at pc 0x000103460d7c bp 0x00016d385d50 sp 0x00016d385500
+READ of size 16 at 0x000105701880 thread T0
+==57121==WARNING: external symbolizer didn't start up correctly!
+==57121==WARNING: Can't write to symbolizer at fd 4
+==57121==WARNING: external symbolizer didn't start up correctly!
+==57121==WARNING: Can't write to symbolizer at fd 5
+==57121==WARNING: external symbolizer didn't start up correctly!
+==57121==WARNING: Can't write to symbolizer at fd 6
+==57121==WARNING: external symbolizer didn't start up correctly!
+==57121==WARNING: Can't write to symbolizer at fd 7
+==57121==WARNING: external symbolizer didn't start up correctly!
+==57121==WARNING: Failed to use and restart external symbolizer!
+    #0 0x103460d78 in __asan_memcpy+0x394 (/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/15.0.0/lib/darwin/libclang_rt.asan_osx_dynamic.dylib:arm64e+0x50d78)
+    #1 0x102abc6a0 in charstd::__1::find_if[abi:ue170006]<std::__1::__wrap_iter<std::__1::pair<YAML::detail::node*, YAML::detail::node*>*>, bool YAML::detail::node_data::remove<char [8]>(char const (&) [8], std::__1::shared_ptr<YAML::detail::memory_holder>)::'lambda'(std::__1::pair<YAML::detail::node*, YAML::detail::node*>)>(char [8], char [8], bool YAML::detail::node_data::remove<char [8]>(char const (&) [8], std::__1::shared_ptr<YAML::detail::memory_holder>)::'lambda'(std::__1::pair<YAML::detail::node*, YAML::detail::node*>)) [8]+0x26c (/private/tmp/slimes_yaml_container_repro:arm64+0x1000446a0)
+    #2 0x102abc044 in bool YAML::detail::node_data::remove<char [8]>(char const (&) [8], std::__1::shared_ptr<YAML::detail::memory_holder>)+0xc40 (/private/tmp/slimes_yaml_container_repro:arm64+0x100044044)
+    #3 0x102abb2d8 in bool YAML::detail::node_ref::remove<char [8]>(char const (&) [8], std::__1::shared_ptr<YAML::detail::memory_holder>)+0x298 (/private/tmp/slimes_yaml_container_repro:arm64+0x1000432d8)
+    #4 0x102abaf14 in bool YAML::detail::node::remove<char [8]>(char const (&) [8], std::__1::shared_ptr<YAML::detail::memory_holder>)+0x298 (/private/tmp/slimes_yaml_container_repro:arm64+0x100042f14)
+    #5 0x102a7be7c in bool YAML::Node::remove<char [8]>(char const (&) [8])+0x290 (/private/tmp/slimes_yaml_container_repro:arm64+0x100003e7c)
+    #6 0x102a7a0c8 in main+0x490 (/private/tmp/slimes_yaml_container_repro:arm64+0x1000020c8)
+    #7 0x18d81e0dc  (<unknown module>)
+
+0x000105701880 is located 16 bytes inside of 32-byte region [0x000105701870,0x000105701890)
+allocated by thread T0 here:
+    #0 0x10347174c in wrap__Znwm+0x74 (/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/15.0.0/lib/darwin/libclang_rt.asan_osx_dynamic.dylib:arm64e+0x6174c)
+    #1 0x102fcd03c in std::__1::__allocation_result<std::__1::allocator_traits<std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>>::pointer> std::__1::__allocate_at_least[abi:ue170006]<std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>>(std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>&, unsigned long)+0x1c (/opt/homebrew/Cellar/yaml-cpp/0.9.0/lib/libyaml-cpp.0.9.0.dylib:arm64+0x1103c)
+    #2 0x102fcc8ac in YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)+0x7c (/opt/homebrew/Cellar/yaml-cpp/0.9.0/lib/libyaml-cpp.0.9.0.dylib:arm64+0x108ac)
+    #3 0x102aada10 in YAML::detail::node& YAML::detail::node_data::get<char [7]>(char const (&) [7], std::__1::shared_ptr<YAML::detail::memory_holder>)+0xda0 (/private/tmp/slimes_yaml_container_repro:arm64+0x100035a10)
+    #4 0x102aacb04 in YAML::detail::node& YAML::detail::node_ref::get<char [7]>(char const (&) [7], std::__1::shared_ptr<YAML::detail::memory_holder>)+0x298 (/private/tmp/slimes_yaml_container_repro:arm64+0x100034b04)
+    #5 0x102aac634 in YAML::detail::node& YAML::detail::node::get<char [7]>(char const (&) [7], std::__1::shared_ptr<YAML::detail::memory_holder>)+0x298 (/private/tmp/slimes_yaml_container_repro:arm64+0x100034634)
+    #6 0x102a7b024 in YAML::Node YAML::Node::operator[]<char [7]>(char const (&) [7])+0x2ac (/private/tmp/slimes_yaml_container_repro:arm64+0x100003024)
+    #7 0x102a79fec in main+0x3b4 (/private/tmp/slimes_yaml_container_repro:arm64+0x100001fec)
+    #8 0x18d81e0dc  (<unknown module>)
+
+HINT: if you don't care about these errors you may set ASAN_OPTIONS=detect_container_overflow=0.
+If you suspect a false positive see also: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow.
+SUMMARY: AddressSanitizer: container-overflow (/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/15.0.0/lib/darwin/libclang_rt.asan_osx_dynamic.dylib:arm64e+0x50d78) in __asan_memcpy+0x394
+Shadow bytes around the buggy address:
+  0x000105701600: 00 00 00 00 fa fa 00 00 00 00 fa fa 00 00 00 00
+  0x000105701680: fa fa 00 00 00 00 fa fa 00 00 00 00 fa fa 00 00
+  0x000105701700: 00 00 fa fa 00 00 00 00 fa fa 00 00 00 00 fa fa
+  0x000105701780: 00 00 00 00 fa fa fd fd fd fd fa fa fd fd fd fd
+  0x000105701800: fa fa fd fd fd fa fa fa fd fd fd fd fa fa 00 00
+=>0x000105701880:[fc]fc fa fa 00 00 00 00 fa fa 00 00 00 00 fa fa
+  0x000105701900: fd fd fd fd fa fa 00 00 00 00 fa fa 00 00 00 00
+  0x000105701980: fa fa 00 00 00 00 fa fa fd fd fd fd fa fa fd fd
+  0x000105701a00: fd fd fa fa fd fd fd fa fa fa 00 00 00 00 fa fa
+  0x000105701a80: 00 00 00 00 fa fa 00 00 00 00 fa fa fd fd fd fd
+  0x000105701b00: fa fa fd fd fd fd fa fa fd fd fd fa fa fa 00 00
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==57121==ABORTING

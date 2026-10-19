@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 include(CTest)
 
 option(GAME_ENABLE_TEST_SANITIZERS "Enable AddressSanitizer and UBSan for headless unit tests only" OFF)
+option(GAME_ENABLE_RUNTIME_SANITIZERS "Enable AddressSanitizer and UBSan for the game and runtime integration tests" OFF)
 
 option(
     GAME_REVIEW_BUILD
@@ -35,6 +36,18 @@ list(REMOVE_ITEM GAME_SOURCES
 add_library(game_runtime OBJECT ${GAME_SOURCES})
 add_executable(game src/app/Main.cpp src/system/UserDataPaths.cpp)
 target_link_libraries(game PRIVATE game_runtime)
+if (GAME_ENABLE_RUNTIME_SANITIZERS)
+    if (MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        message(FATAL_ERROR "GAME_ENABLE_RUNTIME_SANITIZERS requires GCC or Clang with a GNU-style command line")
+    endif()
+    # Runtime本体と利用側の両方を計装し、テストのラッパーだけに適用される状態を避ける。
+    target_compile_options(game_runtime PUBLIC
+        -fsanitize=address,undefined
+        -fno-omit-frame-pointer
+        -fno-sanitize-recover=undefined
+    )
+    target_link_options(game_runtime INTERFACE -fsanitize=address,undefined)
+endif()
 option(GAME_BUILD_RUNTIME_TESTS "Build integration tests requiring an OpenGL display" OFF)
 
 add_executable(editor_restart_helper
@@ -345,11 +358,16 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
     add_test(NAME game_runtime_tests COMMAND game_runtime_tests)
+    set(GAME_RUNTIME_TEST_TIMEOUT 120)
+    if (GAME_ENABLE_RUNTIME_SANITIZERS)
+        # 全体計装ではYAML再構築を含む実行時間が伸びるため、通常構成とは制限を分ける。
+        set(GAME_RUNTIME_TEST_TIMEOUT 300)
+    endif()
     set_tests_properties(game_runtime_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
         ENVIRONMENT "SDL_AUDIODRIVER=dummy"
         LABELS "integration;display"
-        TIMEOUT 120
+        TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
         RUN_SERIAL TRUE
     )
     add_dependencies(game_runtime_tests game)

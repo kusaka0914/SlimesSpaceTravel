@@ -1,0 +1,1634 @@
+{
+  "compiled_entries": 407,
+  "all_instrumented": true,
+  "entries": [
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Actor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/ActorGroundResolver.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Boat.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/BoatArrivalPoint.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/BoatParts.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/CharacterActor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Crystal.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Enemy.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/FallRespawnPoint.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/HazardActor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/JewelItem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Key.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/NPC.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/NPCTalkData.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Planet.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Platform.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Player.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/StageObject.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/Star.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/TutorialTrigger.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyAttackGeometry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyCollisionGeometry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyCombat.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyDamageHandler.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyGrounding.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyGuardGauge.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyMovement.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyPresetRepository.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyStateMachine.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyStatus.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/EnemyBehaviorActionFactory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/EnemyBehaviorController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyChaseAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyFanAttackAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyIdleAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyMeleeAttackAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyRadialAttackAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/behavior/actions/EnemyTripleChargeAttackAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/planet/PlanetActorRegistry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/planet/PlanetProgressController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlanetGravityCandidateSelector.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerAnimationController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerAttackHitDetector.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerAttackResolver.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerBoatRide.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerCombat.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerDamageHandler.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerGrounding.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerInput.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerJewelGauge.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerMovement.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerParticleEffectController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerPlanetGravityController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerRespawn.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerStateMachine.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerStateMachineAction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerStateMachineIdle.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerStatus.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerTargetingAssist.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/animation/AnimationPlayer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/Game.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/GameControlStyle.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/GameFrameRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/GameInputController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/GameSessionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/GameWindow.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/CollectableComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/Component.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/DestructibleComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/FocusComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformAdhesionComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformEnemyClearUnlockComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformLatchedGroupSwitchComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformMotionBehaviorComponents.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformMovementComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformPressDetection.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformPressureSwitchComponent.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/component/PlatformVisibilityComponents.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/assets/AssetBrowserPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/assets/EditorAssetCatalog.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/assets/EditorModelThumbnailRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/core/DebugEditorLayoutController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/core/DebugEditorWorkspaceRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/core/DebugGameViewportRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/core/DebugUIRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/core/UIDebugEditorBridge.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/panels/BasicInfoDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/panels/PerformanceDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/DebugBuildRestartPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/DebugEditorSessionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/DebugEditorSessionCoordinator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/EditorBuildRestartService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/EditorSessionRepository.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/PlatformTypeRegistry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorAssetEditor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorCreateService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorCreationForms.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorInspector.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorNodeFactory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorNodeFactoryContext.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorPlacementController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorPlacementResolver.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorQuery.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorRuntimeCreationService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorSaveState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorYamlWriter.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageBoatCreateCommands.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageBoatCreationForm.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageCharacterCreateCommands.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageCollectibleCreateCommands.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageCollectibleCreationForms.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageCreationFormWidgets.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditCommandController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditHistory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditShortcutHandler.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditTransaction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageGizmoController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageNPCInspector.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePickPolicy.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlanetYamlWriter.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformConnections.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformCreateCommands.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformEditor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformIdentifiers.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformTypeChanger.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlayerEditor.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageSelectionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageSelectionOverlay.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageWorldActorCreateCommands.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageWorldCreationForms.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageYamlRepository.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageYamlRepositoryOperations.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlacementPresetController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformCellService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformDocument.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformEditController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformGrid.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPresetVisuals.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/panels/StageAddActorPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/panels/StageDeleteActorPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/panels/StageEditorPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/panels/StagePlacementPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/panels/StagePlanetPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/camera/CameraDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/camera/CinematicSequenceDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/parameters/ActorParameterYamlWriter.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/parameters/EnemyParameterDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/parameters/EnemyPresetDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/parameters/ParameterDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/parameters/PlayerParameterDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/particle/ParticleEffectDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/progress/StarCollectionDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/EndingRollDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/SequenceDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/SequenceEditorWorkspacePanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/StorybookDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/StorybookEditorPersistence.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/tutorial/TutorialDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCDebugOverlayRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorChromeRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorElementRegistrar.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorInteractionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorMenuState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorToolState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorTutorial.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorViewController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCPreviewPanelState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCPreviewRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSceneOverlayRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSelectionDragState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSwitchConnectionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSwitchConnectionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCTutorialOverlayRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCWorkController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCWorkFileService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCWorkPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasEditHistory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasEditorController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasElementGeometry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasSelectionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasTransformController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UIDebugPanel.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/effect/particle/ParticleConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCClearTransitionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCPreviewController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCPreviewState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCSessionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkFileName.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkMetadata.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkStorage.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/DirectionalShadowMap.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/DirectionalShadowShader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/EnvironmentDecorationRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/GameRenderTargets.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/PlanetAtmosphereRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/PlanetAtmosphereShader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/PostProcessRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/PostProcessShader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/Renderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/Renderer3D.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/Shader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/Shader3D.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/TextRasterizer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/UIRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/UIShader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/VertexArray.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/particle/ParticleRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/particle/ParticleShader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/performance/FramePerformanceTracker.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/performance/GpuDurationTimer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/render3d/DebugLabelRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/render3d/NPCProximityMessageRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/render3d/PlayerEffectRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/render3d/RenderViewportController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/render3d/SceneObjectRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/HudRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/OperationGuideVisibility.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/PauseMenuRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/SceneUIRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/StateUIRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/UICustomElementLayout.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/UICustomElementRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/UIRendererDrawing.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/UITextRenderer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/video/TutorialVideoPlayer.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/state/GameProgressState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/state/UIState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/ActorLoadSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/AudioSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/CameraSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/EnemyJewelDropSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/GameProgressController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/GamepadRumbleService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/InputSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/MeshLoadSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/ParticleSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PauseMenuController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PhysicsSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerConfigurationController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerControlConfigurationState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerInputDeviceRouting.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerSplitGuardState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerSplitService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/SceneSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/StageActorPlanetBindingService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/StageFlowController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/StageProgressSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UGCModeController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UILoadSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/ActorPlacementLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/NpcStageConfigApplicator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/NpcTalkStageConfigApplicator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/PlatformStageConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/PlatformStageConfigApplicator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StageActorCollectionLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StageActorCreationService.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StageActorLocator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StageBoatCreator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StagePlanetCreator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/StagePlayerLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/TutorialTriggerStageConfigApplicator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CameraCollisionResolver.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CameraProjection.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CameraShakeEffect.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CinematicCamera.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CinematicSequenceLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/DebugCamera.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/FocusCamera.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/PlayerCamera.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/PlayerCameraSettings.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/ending/EndingRollConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/mesh/AssimpMeshLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/mesh/MeshCollisionDataLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/mesh/TextureLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/ActorCollisionResolver.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/ActorModelEllipsoidShapeCache.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/EditorPickSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/EllipsoidCollisionShapeGeometry.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/FallRespawnTriggerSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/PhysicsWorldBuilder.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/physics/StageCollisionBuilder.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/ArrivalSceneFlow.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/EndingCreditsFlow.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/OpeningStoryFlow.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/SceneTransitionController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/TalkController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/scene/TutorialController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/sequence/BossDefeatSequence.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/sequence/SequenceLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/sequence/SequenceSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/story/StorybookConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/text/JapaneseRubyGenerator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/tgs/TgsExperienceController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/tutorial/TutorialLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/utils/AtomicFile.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/utils/MathUtils.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/world/GameWorld.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/imgui.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/imgui_draw.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/imgui_tables.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/imgui_widgets.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/imgui_demo.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/backends/imgui_impl_glfw.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/imgui/backends/imgui_impl_opengl3.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/thirdParty/ImGuizmo/src/ImGuizmo.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/video/TutorialVideoPlayerMacBackend.mm",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/app/Main.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UserDataPaths.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/EditorReliabilityTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePickPolicy.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ui/UICanvasEditHistory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/TestMain.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/YamlReadTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/ConfigurationPersistenceTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/tools/sequence/StorybookEditorPersistence.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/session/EditorSessionRepository.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyPresetRepository.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/effect/particle/ParticleConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/story/StorybookConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/ending/EndingRollConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PersistenceSafetyTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/NPCTalkDataTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/NPCTalkData.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StageActorNodeFactoryTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StagePlatformIdentifiersTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StagePlatformConnectionsTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StageYamlRepositoryTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCWorkFileNameTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCWorkStorageTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCPlatformGridTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCPlatformDocumentTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StageEditHistoryTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StageActorSaveStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCWorkMetadataTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCSessionStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCPreviewStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCEditorStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCClearTransitionStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCPresetVisualsTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCEditorTutorialTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/StageProgressSystemTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerConfigLoaderTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/EnemyConfigLoaderTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/EnemyGuardGaugeTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerControlConfigurationStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerInputDeviceRoutingTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/FramePerformanceTrackerTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/UGCModeControllerTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlatformStageConfigTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerCameraSettingsTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/CameraShakeEffectTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/TutorialObjectiveTextTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/OperationGuideVisibilityTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerJewelGaugeTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/PlayerSplitGuardStateTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/TgsExperienceControllerTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorNodeFactory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformIdentifiers.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StagePlatformConnections.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageYamlRepositoryOperations.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkFileName.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkStorage.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformGrid.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPlatformDocument.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditHistory.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorSaveState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCWorkMetadata.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCSessionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCPreviewState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorToolState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorMenuState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCPreviewPanelState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSelectionDragState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCSwitchConnectionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gameplay/ugc/UGCClearTransitionState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/UGCPresetVisuals.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/ugc/UGCEditorTutorial.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/StageProgressSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UserDataPaths.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyConfigLoader.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/enemy/EnemyGuardGauge.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerControlConfigurationState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerInputDeviceRouting.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/performance/FramePerformanceTracker.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UGCModeController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/actor_loader/PlatformStageConfig.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/PlayerCameraSettings.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CameraShakeEffect.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/utils/AtomicFile.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageEditTransaction.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/camera/CinematicSequenceLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/sequence/SequenceLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/UILoadSystem.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/tutorial/TutorialLibrary.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/text/JapaneseRubyGenerator.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/gfx/ui/OperationGuideVisibility.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/actor/player/PlayerJewelGauge.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/PlayerSplitGuardState.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/system/tgs/TgsExperienceController.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RuntimeIntegrationTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RuntimeGameplayTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RuntimeEditorPersistenceTests.cpp",
+      "instrumented": true
+    },
+    {
+      "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/IsolatedUserDataPaths.cpp",
+      "instrumented": true
+    }
+  ]
+}

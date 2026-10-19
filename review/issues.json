@@ -287,6 +287,17 @@
       "tests": "通常/らくらく3段、遅延/一回解決、2Playerの予約独立、空中制限/回避キャンセル/強化消費、着地/アシスト準備。",
       "status": "implemented_and_release_verified",
       "verification": "271単体・監査4件・Runtime23組・通常Release全ビルド成功。入力から命中ダメージまでの全戦闘や実機の操作感を検証したものではない。"
+    },
+    {
+      "id": "VERIFY-02",
+      "priority": "P2",
+      "location": "CMakeLists.txt; macOS libc++ / yaml-cpp 0.9.0",
+      "evidence": "Runtime全体計装でYAML::Node::removeがcontainer-overflowを報告。ゲームなし最小ケースでもHomebrew版と同一ソースの未計装版で再現し、同条件で計装した版では成功。",
+      "risk": "混在したvectorの注釈により、ゲーム本体のSanitizer検査が途中で止まる。",
+      "change": "ゲーム/Runtime用の明示オプションを追加し、依存yaml-cppも計装して標準のyaml-cpp_DIRで選択する手順を既存READMEへ記載。通常時120秒/全体計装時300秒のRuntimeタイムアウト。",
+      "tests": "ヘッダー一致、同一タグ/同一コンパイラーでの未計装/計装対照、全コンパイルエントリーのフラグ、全CTest。",
+      "status": "implemented_and_sanitizer_verified",
+      "verification": "container検査を無効化せず271単体・監査4件・Runtime23組成功。リーク検査は無効、外部の共有ライブラリ内部まで全面計装した主張はしない。"
     }
   ],
   "notes": [

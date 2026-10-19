@@ -239,6 +239,10 @@ ctest --test-dir build -R '^game_tests$' --output-on-failure
 
 GCC / Clangでは、構成時に`-DGAME_ENABLE_TEST_SANITIZERS=ON`を追加すると、画面を必要としない単体テストへAddressSanitizer / UBSanを適用できます。通常構成へ戻す場合は`OFF`にして再ビルドしてください。ゲーム本体とRuntime統合テストには、このオプションでは適用しません。
 
+`-DGAME_ENABLE_RUNTIME_SANITIZERS=ON`ではゲーム本体とRuntime統合テストを計装します。両方のオプションを有効にすると単体テストも含めて検証できます。共有ライブラリ内部の計装や、利用環境で非対応のリーク検査は保証しません。
+
+macOSのlibc++では、計装済みコードと未計装ライブラリの混在でコンテナ検査が誤報することがあります（[Clangの制約](https://clang.llvm.org/docs/AddressSanitizer.html#container-overflow-detection)）。yaml-cpp 0.9.0でこの条件を再現したため、Runtimeの検証では同じコンパイラーとSanitizerでyaml-cppもビルドし、`-Dyaml-cpp_DIR=<そのインストール先>/lib/cmake/yaml-cpp`を指定してください。コンテナ検査を無効にする必要はありません。通常構成へ戻す際は、この指定も元の依存ライブラリの場所へ戻してください。
+
 `-DGAME_BUILD_RUNTIME_TESTS=ON`では、OpenGL環境を必要とするRuntime統合テストも追加します。専用の一時保存先と非表示ウィンドウで、保存・Undo / Redo・再読込、入力、カメラ、描画、連続起動終了を検証します。
 
 ---

@@ -1,0 +1,98 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/3 Test #1: game_tests .......................   Passed    1.67 sec
+    Start 2: architecture_audit_tests
+2/3 Test #2: architecture_audit_tests .........   Passed    0.11 sec
+    Start 3: game_runtime_tests
+3/3 Test #3: game_runtime_tests ...............Subprocess aborted***Exception:  51.31 sec
+=================================================================
+==56908==ERROR: AddressSanitizer: container-overflow on address 0x00010d157ef0 at pc 0x00010a81cd7c bp 0x00016ce926f0 sp 0x00016ce91ea0
+READ of size 16 at 0x00010d157ef0 thread T0
+    #0 0x10a81cd78 in __asan_memcpy+0x394 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x50d78)
+    #1 0x103ae63ec in charstd::__1::find_if[abi:ue170006]<std::__1::__wrap_iter<std::__1::pair<YAML::detail::node*, YAML::detail::node*>*>, bool YAML::detail::node_data::remove<char [23]>(char const (&) [23], std::__1::shared_ptr<YAML::detail::memory_holder>)::'lambda'(std::__1::pair<YAML::detail::node*, YAML::detail::node*>)>(char [23], char [23], bool YAML::detail::node_data::remove<char [23]>(char const (&) [23], std::__1::shared_ptr<YAML::detail::memory_holder>)::'lambda'(std::__1::pair<YAML::detail::node*, YAML::detail::node*>)) [23] find_if.h:25
+    #2 0x103ae5d98 in bool YAML::detail::node_data::remove<char [23]>(char const (&) [23], std::__1::shared_ptr<YAML::detail::memory_holder>) impl.h:190
+    #3 0x103ae5070 in bool YAML::detail::node_ref::remove<char [23]>(char const (&) [23], std::__1::shared_ptr<YAML::detail::memory_holder>) node_ref.h:72
+    #4 0x103ae4cc0 in bool YAML::detail::node::remove<char [23]>(char const (&) [23], std::__1::shared_ptr<YAML::detail::memory_holder>) node.h:141
+    #5 0x103ae4910 in bool YAML::Node::remove<char [23]>(char const (&) [23]) impl.h:347
+    #6 0x103ac6410 in (anonymous namespace)::WritePlatformMovementPath(YAML::Node, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, PlatformMovementComponent const&, bool) StageActorYamlWriter.cpp:54
+    #7 0x103aca354 in StageActorYamlWriter::WritePlatformState(YAML::Node, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, Actor*) StageActorYamlWriter.cpp:594
+    #8 0x103ac03c4 in StageActorYamlWriter::WriteActorState(YAML::Node&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, Actor*, StageActorYamlWriter::ActorTransformWriteMode) StageActorYamlWriter.cpp:552
+    #9 0x103ab492c in StageActorYamlWriter::WriteAllActorStates(YAML::Node&) StageActorYamlWriter.cpp:424
+    #10 0x1030c0408 in (anonymous namespace)::MovingPlatformSavePreservesAuthoredStartAndSchema(Game&) RuntimeEditorPersistenceTests.cpp:65
+    #11 0x1030bda84 in RunRuntimeEditorPersistenceTests(Game&) RuntimeEditorPersistenceTests.cpp:219
+    #12 0x102f6735c in main RuntimeIntegrationTests.cpp:533
+    #13 0x18d81e0dc  (<unknown module>)
+
+0x00010d157ef0 is located 112 bytes inside of 128-byte region [0x00010d157e80,0x00010d157f00)
+allocated by thread T0 here:
+    #0 0x10a82d74c in wrap__Znwm+0x74 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x6174c)
+    #1 0x10933503c in std::__1::__allocation_result<std::__1::allocator_traits<std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>>::pointer> std::__1::__allocate_at_least[abi:ue170006]<std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>>(std::__1::allocator<std::__1::pair<YAML::detail::node*, bool>>&, unsigned long)+0x1c (libyaml-cpp.0.9.0.dylib:arm64+0x1103c)
+    #2 0x1093348ac in YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)+0x7c (libyaml-cpp.0.9.0.dylib:arm64+0x108ac)
+    #3 0x10310aa30 in YAML::detail::node& YAML::detail::node_data::get<char [11]>(char const (&) [11], std::__1::shared_ptr<YAML::detail::memory_holder>) impl.h:170
+    #4 0x103109b90 in YAML::detail::node& YAML::detail::node_ref::get<char [11]>(char const (&) [11], std::__1::shared_ptr<YAML::detail::memory_holder>) node_ref.h:68
+    #5 0x1031096e4 in YAML::detail::node& YAML::detail::node::get<char [11]>(char const (&) [11], std::__1::shared_ptr<YAML::detail::memory_holder>) node.h:135
+    #6 0x1030d2f24 in YAML::Node YAML::Node::operator[]<char [11]>(char const (&) [11]) impl.h:340
+    #7 0x103ac5af0 in (anonymous namespace)::WritePlatformMovementPath(YAML::Node, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, PlatformMovementComponent const&, bool) StageActorYamlWriter.cpp:48
+    #8 0x103aca354 in StageActorYamlWriter::WritePlatformState(YAML::Node, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, Actor*) StageActorYamlWriter.cpp:594
+    #9 0x103ac03c4 in StageActorYamlWriter::WriteActorState(YAML::Node&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, Actor*, StageActorYamlWriter::ActorTransformWriteMode) StageActorYamlWriter.cpp:552
+    #10 0x103ab492c in StageActorYamlWriter::WriteAllActorStates(YAML::Node&) StageActorYamlWriter.cpp:424
+    #11 0x1030bfca4 in (anonymous namespace)::MovingPlatformSavePreservesAuthoredStartAndSchema(Game&) RuntimeEditorPersistenceTests.cpp:58
+    #12 0x1030bda84 in RunRuntimeEditorPersistenceTests(Game&) RuntimeEditorPersistenceTests.cpp:219
+    #13 0x102f6735c in main RuntimeIntegrationTests.cpp:533
+    #14 0x18d81e0dc  (<unknown module>)
+
+HINT: if you don't care about these errors you may set ASAN_OPTIONS=detect_container_overflow=0.
+If you suspect a false positive see also: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow.
+SUMMARY: AddressSanitizer: container-overflow (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x50d78) in __asan_memcpy+0x394
+Shadow bytes around the buggy address:
+  0x00010d157c00: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x00010d157c80: 00 00 00 00 00 00 07 fa fa fa fa fa fa fa fa fa
+  0x00010d157d00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x00010d157d80: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x00010d157e00: 00 00 00 00 00 00 07 fa fa fa fa fa fa fa fa fa
+=>0x00010d157e80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00[fc]fc
+  0x00010d157f00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x00010d157f80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x00010d158000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x00010d158080: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x00010d158100: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==56908==ABORTING
+[PASS] Runtime.EllipsoidProjectionAndHemisphere
+[PASS] Runtime.ThinWallSweepAndOverlap
+[PASS] Runtime.MovementActionLifecycle
+[PASS] Runtime.GravitySwitchHysteresisAndLifecycle
+[PASS] Runtime.NearCenterInternalProjection
+[PASS] Runtime.WorldInvalidatesRegistriesBeforeActorDestruction
+[PASS] Runtime.CollisionFiltersSkipEmptyRegistryEntries
+
+
+67% tests passed, 1 tests failed out of 3
+
+Label Time Summary:
+display        =  51.31 sec*proc (1 test)
+integration    =  51.31 sec*proc (1 test)
+
+Total Test time (real) =  53.09 sec
+
+The following tests FAILED:
+	  3 - game_runtime_tests (Subprocess aborted)           display integration
+Errors while running CTest
