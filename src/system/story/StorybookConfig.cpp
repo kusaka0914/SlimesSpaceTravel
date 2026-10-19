@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <stdexcept>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
@@ -44,22 +45,30 @@ bool StorybookConfig::Save(const std::string& path) const
         if (outputPath.has_parent_path()) {
             std::filesystem::create_directories(outputPath.parent_path());
         }
-        YAML::Emitter emitter;
-        emitter << YAML::BeginMap << YAML::Key << "tracks" << YAML::Value << YAML::BeginMap;
-        for (const auto& [id, track] : mTracks) {
-            emitter << YAML::Key << id << YAML::Value << YAML::BeginMap;
-            emitter << YAML::Key << "pages" << YAML::Value << YAML::BeginSeq;
-            for (const std::string& image : track.pageImages) {
-                emitter << image;
-            }
-            emitter << YAML::EndSeq << YAML::EndMap;
-        }
-        emitter << YAML::EndMap << YAML::EndMap;
         std::string error;
-        return emitter.good() && AtomicFile::WriteText(outputPath, emitter.c_str(), error);
+        return AtomicFile::WriteText(outputPath, Serialize(), error);
     } catch (const std::exception&) {
         return false;
     }
+}
+
+std::string StorybookConfig::Serialize() const
+{
+    YAML::Emitter emitter;
+    emitter << YAML::BeginMap << YAML::Key << "tracks" << YAML::Value << YAML::BeginMap;
+    for (const auto& [id, track] : mTracks) {
+        emitter << YAML::Key << id << YAML::Value << YAML::BeginMap;
+        emitter << YAML::Key << "pages" << YAML::Value << YAML::BeginSeq;
+        for (const std::string& image : track.pageImages) {
+            emitter << image;
+        }
+        emitter << YAML::EndSeq << YAML::EndMap;
+    }
+    emitter << YAML::EndMap << YAML::EndMap;
+    if (!emitter.good()) {
+        throw std::runtime_error(emitter.GetLastError());
+    }
+    return emitter.c_str();
 }
 
 std::string StorybookConfig::GetPageImage(const std::string& trackId, int pageIndex) const

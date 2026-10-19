@@ -81,6 +81,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/YamlReadTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/ConfigurationPersistenceTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/tools/sequence/StorybookEditorPersistence.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/session/EditorSessionRepository.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyPresetRepository.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/effect/particle/ParticleConfigLoader.cpp

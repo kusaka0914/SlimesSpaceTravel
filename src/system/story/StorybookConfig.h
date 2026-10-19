@@ -19,6 +19,9 @@ public:
     // 親ディレクトリを作成して保存する。書込・置換に失敗した場合は既存ファイルを保ってfalse。
     bool Save(const std::string& path = DefaultPath) const;
 
+    // 現在の画像定義をYAMLへ変換する。ファイルは変更せず、変換失敗時はstd::runtime_errorを送出する。
+    std::string Serialize() const;
+
     // 0始まりのページを取得する。末尾超過は最終画像、トラックなし・負の番号・画像なしは空文字列。
     std::string GetPageImage(const std::string& trackId, int pageIndex) const;
 

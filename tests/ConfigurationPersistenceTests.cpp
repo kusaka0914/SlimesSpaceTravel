@@ -4,7 +4,9 @@
 
 #include "actor/enemy/EnemyPresetRepository.h"
 #include "editor/session/EditorSessionRepository.h"
+#include "editor/tools/sequence/StorybookEditorPersistence.h"
 #include "effect/particle/ParticleConfigLoader.h"
+#include "system/UILoadSystem.h"
 #include "system/camera/PlayerCameraSettings.h"
 #include "system/ending/EndingRollConfig.h"
 #include "system/story/StorybookConfig.h"
@@ -12,6 +14,103 @@
 #include <yaml-cpp/yaml.h>
 
 namespace {
+
+constexpr const char* storybookDialogueYaml =
+    "opening: [{id: openingText, type: text, text: [original], futureField: retain}]\n";
+
+void StorybookImageSaveFailureKeepsDialogue()
+{
+    TemporaryTestDirectory fixture;
+    const auto uiPath = fixture.Root() / "ui.yaml";
+    const auto imagePath = fixture.Root() / "blocked";
+    WriteTestFile(uiPath, storybookDialogueYaml);
+    std::filesystem::create_directory(imagePath);
+    UILoadSystem ui;
+    ui.GetEditableTextInfos()["opening.openingText"].texts = {"変更後の会話"};
+    StorybookConfig story;
+    story.GetEditablePageImages("opening") = {"変更後.png"};
+    std::string error;
+    ExpectFalse(StorybookEditorPersistence::Save(ui, story, error, uiPath.string(), imagePath.string()),
+                "image destination rejects compound save");
+    ExpectTrue(!error.empty(), "compound save reports failure");
+    ExpectEqual(std::string(storybookDialogueYaml), ReadTestFile(uiPath), "image failure preserves original dialogue");
+    ExpectTrue(std::filesystem::is_directory(imagePath), "invalid image destination remains a directory");
+}
+
+void StorybookDialogueFailureKeepsImages()
+{
+    TemporaryTestDirectory fixture;
+    const auto uiPath = fixture.Root() / "ui.yaml";
+    const auto imagePath = fixture.Root() / "storybook.yaml";
+    const std::string originalImages = "tracks: {opening: {pages: [original.png]}}\n";
+    WriteTestFile(uiPath, "opening: [");
+    WriteTestFile(imagePath, originalImages);
+    UILoadSystem ui;
+    StorybookConfig story;
+    story.GetEditablePageImages("opening") = {"変更後.png"};
+    std::string error;
+    ExpectFalse(StorybookEditorPersistence::Save(ui, story, error, uiPath.string(), imagePath.string()),
+                "invalid dialogue rejects compound save");
+    ExpectTrue(!error.empty(), "dialogue failure is reported");
+    ExpectEqual(originalImages, ReadTestFile(imagePath), "dialogue failure preserves original images");
+    ExpectEqual(std::string("opening: ["), ReadTestFile(uiPath), "invalid source dialogue is not replaced");
+}
+
+void StorybookCompoundSavePreservesPairedContentAndUnknownFields()
+{
+    TemporaryTestDirectory fixture;
+    const auto uiPath = fixture.Root() / "ui.yaml";
+    const auto imagePath = fixture.Root() / "story" / "storybook.yaml";
+    WriteTestFile(uiPath, storybookDialogueYaml);
+    UILoadSystem ui;
+    ui.GetEditableTextInfos()["opening.openingText"].texts = {"旅立ち", "帰還"};
+    StorybookConfig story;
+    story.GetEditablePageImages("opening") = {"旅立ち.png", "帰還.png"};
+    std::string error = "old error";
+    ExpectTrue(StorybookEditorPersistence::Save(ui, story, error, uiPath.string(), imagePath.string()),
+               "save paired storybook content");
+    ExpectTrue(error.empty(), "success clears previous error");
+    const YAML::Node savedUI = YAML::LoadFile(uiPath.string());
+    ExpectEqual(std::string("旅立ち"), savedUI["opening"][0]["text"][0].as<std::string>(), "first page dialogue");
+    ExpectEqual(std::string("帰還"), savedUI["opening"][0]["text"][1].as<std::string>(), "second page dialogue");
+    ExpectEqual(std::string("retain"), savedUI["opening"][0]["futureField"].as<std::string>(), "unknown UI field");
+    StorybookConfig loaded;
+    ExpectTrue(loaded.Load(imagePath.string()), "reload saved image mapping");
+    ExpectEqual(std::string("旅立ち.png"), loaded.GetPageImage("opening", 0), "first page image");
+    ExpectEqual(std::string("帰還.png"), loaded.GetPageImage("opening", 1), "second page image");
+    ExpectEqual(std::ptrdiff_t(3),
+                std::distance(std::filesystem::recursive_directory_iterator(fixture.Root()),
+                              std::filesystem::recursive_directory_iterator()),
+                "compound save leaves only two files and their parent directory");
+}
+
+#ifndef _WIN32
+void StorybookCompoundShortWriteKeepsBothFiles()
+{
+    TemporaryTestDirectory fixture;
+    const auto uiPath = fixture.Root() / "ui.yaml";
+    const auto imagePath = fixture.Root() / "storybook.yaml";
+    const std::string originalImages = "tracks: {opening: {pages: [original.png]}}\n";
+    WriteTestFile(uiPath, storybookDialogueYaml);
+    WriteTestFile(imagePath, originalImages);
+    UILoadSystem ui;
+    ui.GetEditableTextInfos()["opening.openingText"].texts = {"変更後の会話"};
+    StorybookConfig story;
+    story.GetEditablePageImages("opening") = {"変更後.png"};
+    ExpectWriteFailureWithByteLimit(
+        [&]() {
+            std::string error;
+            return StorybookEditorPersistence::Save(ui, story, error, uiPath.string(), imagePath.string());
+        },
+        8);
+    ExpectEqual(std::string(storybookDialogueYaml), ReadTestFile(uiPath), "short write preserves dialogue");
+    ExpectEqual(originalImages, ReadTestFile(imagePath), "short write preserves image mapping");
+    ExpectEqual(
+        std::ptrdiff_t(2),
+        std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
+        "short write leaves no temporary or backup files");
+}
+#endif
 
 void StorybookFailedReloadKeepsTracksAndReferences()
 {
@@ -237,6 +336,13 @@ void ConfigurationShortWriteKeepsPreviousBytes(const SaveConfiguration& save)
 
 void RegisterConfigurationPersistenceTests(TestRegistry& tests)
 {
+    tests.emplace_back("Configuration.StorybookImageFailureKeepsDialogue", StorybookImageSaveFailureKeepsDialogue);
+    tests.emplace_back("Configuration.StorybookDialogueFailureKeepsImages", StorybookDialogueFailureKeepsImages);
+    tests.emplace_back("Configuration.StorybookCompoundRoundTrip",
+                       StorybookCompoundSavePreservesPairedContentAndUnknownFields);
+#ifndef _WIN32
+    tests.emplace_back("Configuration.StorybookCompoundShortWrite", StorybookCompoundShortWriteKeepsBothFiles);
+#endif
     tests.emplace_back("Configuration.StorybookAndEndingRoundTrip",
                        StorybookAndEndingRoundTripPreservesAuthoredContent);
     tests.emplace_back("Configuration.EditorSessionRoundTrip", EditorSessionRoundTripPreservesPoseAndSelection);

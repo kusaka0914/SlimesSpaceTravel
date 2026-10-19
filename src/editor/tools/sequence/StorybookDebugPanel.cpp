@@ -1,11 +1,12 @@
 #include "editor/tools/sequence/StorybookDebugPanel.h"
+#include "editor/tools/sequence/StorybookEditorPersistence.h"
 
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
 #include "app/Game.h"
-#include "gfx/UIRenderer.h"
 #include "editor/assets/EditorAssetDragDrop.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 #include "system/SceneSystem.h"
 #include "system/UILoadSystem.h"
@@ -76,10 +77,10 @@ void StorybookDebugPanel::Draw()
     if (ImGui::Button("保存")) {
         NormalizeTrackImageCount("opening", true);
         NormalizeTrackImageCount("ending", false);
-        const bool savedText = mContext.uiRenderer->GetUILoadSystem()->SaveUIInfo("../assets/data/ui/ui.yaml");
-        const bool savedImages = mConfig.Save();
-        mStatusMessage = savedText && savedImages ? "会話文と画像設定を保存しました" : "保存に失敗しました";
-        if (savedImages && mContext.game && mContext.game->GetSceneSystem()) {
+        std::string error;
+        const bool wasSaved = StorybookEditorPersistence::Save(*mContext.uiRenderer->GetUILoadSystem(), mConfig, error);
+        mStatusMessage = wasSaved ? "会話文と画像設定を保存しました" : "保存に失敗しました: " + error;
+        if (wasSaved && mContext.game && mContext.game->GetSceneSystem()) {
             mContext.game->GetSceneSystem()->ReloadStorybookConfig();
         }
     }

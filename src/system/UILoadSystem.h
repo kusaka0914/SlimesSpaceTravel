@@ -114,6 +114,10 @@ public:
     // 現在の標準UI設定を保存する。解析・書込失敗時はfalseで元ファイルを保持する。
     bool SaveUIInfo(const std::string& path);
 
+    // 既存ファイルの未編集項目を保って、現在の標準UI設定をYAML文字列へ変換する。書込は行わない。
+    // 既存定義の読込・解析に失敗した場合はYAML::Exceptionを送出する。
+    std::string SerializeUIInfo(const std::string& path) const;
+
     // 標準・カスタムUIをまとめて保存する。失敗時は置換済みファイルの復旧を試み、理由をoutErrorへ返す。
     // 復旧自体の失敗はoutErrorに復旧用コピーの場所を含めて通知する。
     bool SaveEditorUI(std::string& outError, const std::string& uiPath = "../assets/data/ui/ui.yaml",

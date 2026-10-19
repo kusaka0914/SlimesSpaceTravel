@@ -174,11 +174,16 @@ YAML::Node UILoadSystem::BuildUIInfo(const std::string& path) const
     return root;
 }
 
+std::string UILoadSystem::SerializeUIInfo(const std::string& path) const
+{
+    return YAML::Dump(BuildUIInfo(path));
+}
+
 bool UILoadSystem::SaveUIInfo(const std::string& path)
 {
     try {
         std::string error;
-        if (AtomicFile::WriteText(path, YAML::Dump(BuildUIInfo(path)), error)) {
+        if (AtomicFile::WriteText(path, SerializeUIInfo(path), error)) {
             return true;
         }
         std::cerr << "Failed to save UI yaml: " << error << '\n';
@@ -497,7 +502,7 @@ bool UILoadSystem::SaveEditorUI(std::string& outError, const std::string& uiPath
     outError.clear();
     try {
         // 両方のシリアライズを先に完了し、片方の定義不正で保存が部分的に進むのを防ぐ。
-        const std::string uiText = YAML::Dump(BuildUIInfo(uiPath));
+        const std::string uiText = SerializeUIInfo(uiPath);
         const std::string customText = YAML::Dump(BuildCustomUI());
         const std::array files = {AtomicFile::TextWrite{uiPath, uiText}, AtomicFile::TextWrite{customPath, customText}};
         return AtomicFile::WriteTextFiles(files, outError) == AtomicFile::WriteResult::Written;

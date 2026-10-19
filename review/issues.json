@@ -230,7 +230,8 @@
       "risk": "片側だけ成功すると、会話ページと画像一覧が異なる編集時点になる。",
       "change": "シリアライズ後に既存AtomicFile::WriteTextFilesで一括保存し、片側失敗時は両方を維持/復旧する。",
       "tests": "片側の保存先不正/定義不正、短い書込、両方成功と往復UTF-8/未知項目保持。",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "旧保存ボタンと同じ2つの独立保存を小さなhelperへ抽出した先行テストで2失敗（269/271）を再現。変換とI/Oを分離して両方を事前変換、一括保存へ変更し、271単体・監査4件・Runtime20組・Debug全ビルド成功。親ディレクトリ作成・未知項目・既存のYAML出力形式も維持。中断をまたぐ一括原子性は既存AtomicFileの契約どおり保証しない。"
     }
   ],
   "notes": [
