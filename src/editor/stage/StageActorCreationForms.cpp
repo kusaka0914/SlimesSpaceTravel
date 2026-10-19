@@ -48,7 +48,7 @@ StageTutorialTriggerCreationForm::StageTutorialTriggerCreationForm(DebugEditorCo
     std::snprintf(mTalkTexts.front().data(), mTalkTexts.front().size(), "%s", "ここにチュートリアルの内容を入力");
 }
 
-bool StageEnemyCreationForm::Draw()
+void StageEnemyCreationForm::Draw()
 {
     if (ImGui::TreeNode("敵追加")) {
         const auto& planets = mContext.game->GetCurrentStage()->GetPlanets();
@@ -56,7 +56,7 @@ bool StageEnemyCreationForm::Draw()
         if (planets.empty()) {
             ImGui::Text("惑星が存在しないため、敵を追加できません");
             ImGui::TreePop();
-            return false;
+            return;
         }
 
         StageCreationFormWidgets::DrawPlanetCombo(mContext, "敵の追加先惑星", mSelectedPlanetIndex);
@@ -70,7 +70,7 @@ bool StageEnemyCreationForm::Draw()
         if (mEnemyPresets.empty()) {
             ImGui::TextWrapped("敵プリセットを読み込めません: %s", mEnemyPresetLoadError.c_str());
             ImGui::TreePop();
-            return false;
+            return;
         }
 
         mSelectedEnemyTypeIndex = std::clamp(mSelectedEnemyTypeIndex, 0, static_cast<int>(mEnemyPresets.size()) - 1);
@@ -111,7 +111,6 @@ bool StageEnemyCreationForm::Draw()
 
         ImGui::TreePop();
     }
-    return true;
 }
 
 void StageNPCCreationForm::Draw()

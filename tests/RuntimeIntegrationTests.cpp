@@ -1,5 +1,6 @@
 #include "RuntimeEditorPersistenceTests.h"
 #include "RuntimeGameplayTests.h"
+#include "RuntimeReliabilityTests.h"
 #include "RuntimeStageSupport.h"
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
@@ -529,6 +530,7 @@ int main()
         {
             Fixture fixture;
             Game& game = fixture.game;
+            RunRuntimeReliabilityTests(game);
             RunRuntimeGameplayTests(game);
             RunRuntimeEditorPersistenceTests(game);
             DebugEditorContext context{&game};

@@ -29,12 +29,12 @@ public:
     void ApplyActorEditorRotation(Actor* actor) const;
 
     // Actorの位置から上・右方向へ移動した描画位置に、カメラを向く行列を作る。距離・大きさはワールド単位。
-    // actor は非null、viewMatrix は可逆とし、Actorの上方向と視線が平行でない配置で使う。
+    // actorは非null、位置・寸法・余白は有限値。視線の退化時はカメラの軸、無効な上方向はワールドY軸で補う。
     glm::mat4 CreateBillBoard(const glm::mat4& viewMatrix, const Actor* actor, float upMargin, float rightMargin,
                               float width, float height) const;
 
-    // 指定したワールド座標を描画中心とする。ほぼ0のupDirectionにはワールドY軸を使う。
-    // viewMatrix は可逆、視線は補正後の上方向と非平行で、カメラ位置は描画中心と異なること。
+    // 有限の座標・寸法を指定する。ほぼ0または非有限のupDirectionにはワールドY軸を使う。
+    // 中心とカメラが一致する場合はカメラのZ軸、無効なviewMatrixにはワールドZ軸を視線の代わりに使う。
     glm::mat4 CreateBillBoard(const glm::mat4& viewMatrix, const glm::vec3& centerPosition,
                               const glm::vec3& upDirection, float width, float height) const;
 };

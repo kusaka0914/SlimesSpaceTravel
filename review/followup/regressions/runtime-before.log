@@ -1,0 +1,34 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 3: game_runtime_tests
+1/1 Test #3: game_runtime_tests ...............***Failed   13.12 sec
+[FAIL] Runtime.BillboardDegeneracyAndNormalPose: billboard contains only finite values
+  expected: 1
+  actual:   0
+[FAIL] Runtime.ControllerReplacementKeepsCurrentDeviceOrder: Player has an attached controller
+  expected: 1
+  actual:   0
+[FAIL] Runtime.TextureLoadingPreservesCallerState: restore unpack alignment
+  expected: 8
+  actual:   1
+[FAIL] Runtime.TextureOrientationDoesNotLeakIntoUI: UI texture keeps startup top-to-bottom orientation
+  expected: 255
+  actual:   0
+[FAIL] Runtime.EnemyFormFailureDoesNotHideOtherForms: forms after failed enemy form are still submitted
+  expected: 295907042
+  actual:   0
+[FAIL] Runtime integration: runtime reliability regressions
+  expected: 0
+  actual:   5
+
+
+0% tests passed, 1 tests failed out of 1
+
+Label Time Summary:
+display        =  13.12 sec*proc (1 test)
+integration    =  13.12 sec*proc (1 test)
+
+Total Test time (real) =  13.12 sec
+
+The following tests FAILED:
+	  3 - game_runtime_tests (Failed)                       display integration
+Errors while running CTest

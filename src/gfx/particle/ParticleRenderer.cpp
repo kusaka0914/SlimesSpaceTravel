@@ -1,7 +1,8 @@
 #include "gfx/particle/ParticleRenderer.h"
 
+#include "gfx/TextureUploadState.h"
 #include "gfx/particle/ParticleShader.h"
-#include "thirdParty/stb_image.h"
+#include "system/mesh/ImageLoader.h"
 
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -241,24 +242,19 @@ GLuint ParticleRenderer::LoadTexture(const std::string& texturePath) const
 {
     const std::string resolvedPath = ResolveTexturePath(texturePath);
 
-    int width = 0;
-    int height = 0;
-    int channelCount = 0;
-
-    stbi_set_flip_vertically_on_load(1);
-    unsigned char* imageData = stbi_load(resolvedPath.c_str(), &width, &height, &channelCount, STBI_rgb_alpha);
-    if (!imageData || width <= 0 || height <= 0) {
+    const auto image = ImageLoader::Load(resolvedPath.c_str(), ImageLoader::RowOrder::BottomToTop, 4);
+    if (!image.pixels) {
         std::cerr << "Failed to load particle texture: " << resolvedPath << '\n';
-        stbi_image_free(imageData);
         return 0;
     }
 
+    const TextureUploadState state;
     GLuint texture = 0;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 image.pixels.get());
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -266,8 +262,6 @@ GLuint ParticleRenderer::LoadTexture(const std::string& texturePath) const
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    stbi_image_free(imageData);
-    glBindTexture(GL_TEXTURE_2D, 0);
     return texture;
 }
 

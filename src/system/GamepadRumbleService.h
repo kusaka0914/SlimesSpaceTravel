@@ -15,7 +15,7 @@ public:
     void Initialize();
     void Shutdown();
 
-    // 接続台数が変わった場合は、保持中のコントローラーハンドルを開き直す。
+    // 接続状態・Instance ID・機器順が変わったらハンドルを開き直し、SDLの列挙順にPlayer番号を割り当てる。
     void UpdateConnection();
 
     // 1始まりのPlayer番号へ振動を送る。未接続なら何もしない。強度には0〜65535を指定する。

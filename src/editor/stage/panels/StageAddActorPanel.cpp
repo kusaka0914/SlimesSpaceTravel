@@ -1,9 +1,9 @@
 #include "editor/stage/panels/StageAddActorPanel.h"
 
 #include "app/Game.h"
-#include "world/Stage.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "imgui.h"
+#include "world/Stage.h"
 
 #include <utility>
 #include <vector>
@@ -129,9 +129,7 @@ void StageAddActorPanel::Draw()
 
     mPlanetCreationForm.Draw();
 
-    if (!mEnemyCreationForm.Draw()) {
-        return;
-    }
+    mEnemyCreationForm.Draw();
 
     mPlatformCreationForm.Draw();
 

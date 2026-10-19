@@ -27,14 +27,23 @@ void GamepadRumbleService::Shutdown()
 
 void GamepadRumbleService::UpdateConnection()
 {
-    int connectedControllerCount = 0;
+    std::size_t connectedControllerCount = 0;
+    bool hasDeviceChanged = false;
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) {
+            if (connectedControllerCount >= mControllers.size()) {
+                hasDeviceChanged = true;
+            } else {
+                SDL_GameController* controller = mControllers[connectedControllerCount];
+                hasDeviceChanged = hasDeviceChanged || !SDL_GameControllerGetAttached(controller) ||
+                                   SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller)) !=
+                                       SDL_JoystickGetDeviceInstanceID(i);
+            }
             ++connectedControllerCount;
         }
     }
 
-    if (connectedControllerCount == static_cast<int>(mControllers.size())) {
+    if (!hasDeviceChanged && connectedControllerCount == mControllers.size()) {
         return;
     }
 

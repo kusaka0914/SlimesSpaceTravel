@@ -1,8 +1,9 @@
 #include "gfx/Renderer.h"
 
 #include "gfx/TextRasterizer.h"
+#include "gfx/TextureUploadState.h"
 #include "gfx/VertexArray.h"
-#include "thirdParty/stb_image.h"
+#include "system/mesh/ImageLoader.h"
 
 #include <iostream>
 
@@ -71,20 +72,18 @@ void Renderer::InitializeVertexArrays()
 
 void Renderer::RegisterTexture(const std::string& path, const std::string& name)
 {
-    int imageWidth, imageHeight, channelCount;
-    unsigned char* imageData = stbi_load(path.c_str(), &imageWidth, &imageHeight, &channelCount, STBI_rgb_alpha);
-    if (!imageData || imageWidth <= 0 || imageHeight <= 0) {
+    const auto image = ImageLoader::Load(path.c_str(), ImageLoader::RowOrder::TopToBottom, 4);
+    if (!image.pixels) {
         std::cerr << "Failed to load texture: " << path << std::endl;
-        stbi_image_free(imageData);
         return;
     }
 
+    const TextureUploadState state;
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-    stbi_image_free(imageData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 image.pixels.get());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

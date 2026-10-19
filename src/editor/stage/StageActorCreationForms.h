@@ -18,9 +18,8 @@ public:
     StageEnemyCreationForm(DebugEditorContext& context, StageActorCreateService& actorCreateService,
                            StageActorPlacementController& placementController);
 
-    // 追加UIの準備を続けられる場合は true。開いたUIで惑星・プリセットが不足していれば false。
-    // Gameと現在のStageが有効な状態で呼ぶ。
-    bool Draw();
+    // Gameと現在のStageが有効な状態で呼ぶ。惑星・プリセット不足のエラーはこのフォーム内に表示する。
+    void Draw();
 
 private:
     DebugEditorContext& mContext;
