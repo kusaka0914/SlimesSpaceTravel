@@ -110,3 +110,23 @@ struct Particle {
     float drag = 0.0f;
     float velocityStretch = 0.0f;
 };
+
+// 新規エフェクトとエディターのエミッター追加で共通の初期設定を返す。
+inline ParticleEmitterDefinition CreateDefaultParticleEmitter()
+{
+    ParticleEmitterDefinition emitter;
+    emitter.texturePath = "spark_dot.png";
+    emitter.blendMode = ParticleBlendMode::Additive;
+    emitter.renderMode = ParticleRenderMode::Billboard;
+    emitter.directionMode = ParticleDirectionMode::Sphere;
+    emitter.count = 8;
+    emitter.lifetime = {0.25f, 0.50f};
+    emitter.speed = {0.5f, 2.0f};
+    emitter.startSize = {0.15f, 0.30f};
+    emitter.endSizeMultiplier = 0.1f;
+    emitter.rotationDegrees = {0.0f, 360.0f};
+    emitter.angularVelocityDegrees = {-90.0f, 90.0f};
+    emitter.startColor = glm::vec4(1.0f);
+    emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
+    return emitter;
+}

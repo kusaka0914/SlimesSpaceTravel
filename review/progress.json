@@ -26,10 +26,11 @@
     "GameWorldの破棄で借用一覧を先に解除し、ActorをStageより先に破棄する順序を明示。観測用Componentで、旧実装のActor破棄中にPlayer一覧が残ることを再現後、267単体・監査4件・Runtime20組・Debug全ビルド成功。",
     "Storybook Editorの会話/画像の2ファイル保存をAtomicFile::WriteTextFilesへ統合。従来の2保存を抽出した先行テストで片側だけ更新される2失敗を再現し、修正後271単体・監査4件・Runtime20組・Debug全ビルド成功。UTF-8の対応・未知項目・書込中断・一時ファイル掃除も確認。",
     "共有Contextを使用しないEnemyPresetDebugPanel/ParameterDebugPanelの継承を解除。敵プリセットはGame/EditorContextを受け取らず、編集データだけで構築。利用先全検索と271単体・監査4件・Runtime20組・Debug全ビルド成功。",
-    "11ファイル36呼出の同一ToLowerをStringUtilsへ共通化。全処理列の同一性を確認し、271単体・監査4件・Runtime20組・Debug全ビルド成功。"
+    "11ファイル36呼出の同一ToLowerをStringUtilsへ共通化。全処理列の同一性を確認し、271単体・監査4件・Runtime20組・Debug全ビルド成功。",
+    "粒子初期設定・カメラキー安定整列・Playerアニメーション照合の同一処理を型の隣へ集約。Sequence Panelの未使用契約も整理。全7関数の処理列照合と271単体・監査4件・Runtime20組・Debug全ビルド成功。"
   ],
   "next": [
-    "実際に使っていないPanel共通基盤依存の解除、残るEditor Panel全文・継承・クローン候補の意味分類を継続",
+    "残るクローン候補の意味分類、継承・借用参照の監査と最終構成検証を継続",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
   ],
@@ -119,7 +120,32 @@
     "src/editor/tools/camera/CinematicSequenceDebugPanel.cpp",
     "src/editor/tools/camera/CinematicSequenceDebugPanel.h",
     "src/editor/tools/sequence/SequenceDebugPanel.cpp",
-    "src/editor/tools/sequence/SequenceDebugPanel.h"
+    "src/editor/tools/sequence/SequenceDebugPanel.h",
+    "src/editor/tools/particle/ParticleEffectDebugPanel.cpp",
+    "src/editor/tools/particle/ParticleEffectDebugPanel.h",
+    "src/editor/tools/tutorial/TutorialDebugPanel.cpp",
+    "src/editor/tools/tutorial/TutorialDebugPanel.h",
+    "src/editor/ui/UIDebugPanel.cpp",
+    "src/editor/ui/UIDebugPanel.h",
+    "src/editor/assets/AssetBrowserPanel.cpp",
+    "src/editor/assets/AssetBrowserPanel.h",
+    "src/editor/session/DebugBuildRestartPanel.cpp",
+    "src/editor/session/DebugBuildRestartPanel.h",
+    "src/editor/ugc/UGCWorkPanel.cpp",
+    "src/editor/ugc/UGCWorkPanel.h",
+    "src/actor/player/PlayerAnimationController.cpp",
+    "src/actor/player/PlayerAnimationController.h",
+    "src/actor/player/PlayerAnimationDefinition.h",
+    "src/editor/panels/BasicInfoDebugPanel.h",
+    "src/editor/panels/PerformanceDebugPanel.h",
+    "src/editor/stage/panels/StageEditorPanel.h",
+    "src/editor/tools/camera/CameraDebugPanel.h",
+    "src/editor/tools/parameters/EnemyParameterDebugPanel.h",
+    "src/editor/tools/parameters/PlayerParameterDebugPanel.h",
+    "src/editor/tools/sequence/StorybookDebugPanel.h",
+    "src/editor/tools/sequence/EndingRollDebugPanel.h",
+    "src/editor/tools/sequence/SequenceEditorWorkspacePanel.h",
+    "src/editor/tools/progress/StarCollectionDebugPanel.h"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

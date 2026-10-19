@@ -1,9 +1,8 @@
 #include "editor/tools/sequence/SequenceDebugPanel.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "editor/core/DebugPanelTextInput.h"
 #include "editor/stage/StageActorQuery.h"
 #include "imgui.h"
@@ -11,6 +10,7 @@
 #include "system/camera/CinematicSequenceLibrary.h"
 #include "system/sequence/SequenceLibrary.h"
 #include "system/sequence/SequenceSystem.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <array>
@@ -257,7 +257,7 @@ void SequenceDebugPanel::DrawClipInspector(SequenceSystem* system, GameplaySeque
     ImGui::DragFloat("開始時刻", &clip.startTime, 0.05f, 0.0f, 999.0f, "%.2f 秒");
 
     if (clip.type == SequenceClipType::ActorMove || clip.type == SequenceClipType::ActorVisibility) {
-        DrawActorTargetPicker(system, clip);
+        DrawActorTargetPicker(clip);
     }
 
     if (clip.type == SequenceClipType::ActorMove) {
@@ -314,9 +314,8 @@ void SequenceDebugPanel::DrawClipInspector(SequenceSystem* system, GameplaySeque
     }
 }
 
-bool SequenceDebugPanel::DrawActorTargetPicker(SequenceSystem* system, SequenceClip& clip)
+void SequenceDebugPanel::DrawActorTargetPicker(SequenceClip& clip)
 {
-    (void)system;
     const std::vector<ActorTargetOption> targets = CollectActorTargets(mContext.game);
 
     std::string currentLabel = "未設定";
@@ -327,7 +326,6 @@ bool SequenceDebugPanel::DrawActorTargetPicker(SequenceSystem* system, SequenceC
         }
     }
 
-    bool wasChanged = false;
     if (ImGui::BeginCombo("対象アクター", currentLabel.c_str())) {
         for (const ActorTargetOption& target : targets) {
             const bool isSelected = Matches(target.ref, clip.actor);
@@ -339,7 +337,6 @@ bool SequenceDebugPanel::DrawActorTargetPicker(SequenceSystem* system, SequenceC
                     clip.fromPosition = target.actor->GetPos();
                     clip.toPosition = target.actor->GetPos();
                 }
-                wasChanged = true;
             }
         }
         ImGui::EndCombo();
@@ -347,7 +344,6 @@ bool SequenceDebugPanel::DrawActorTargetPicker(SequenceSystem* system, SequenceC
 
     ImGui::TextDisabled("参照: %s:%d", clip.actor.group.empty() ? "未設定" : clip.actor.group.c_str(),
                         clip.actor.index);
-    return wasChanged;
 }
 
 void SequenceDebugPanel::DrawCameraSequencePicker(SequenceClip& clip)

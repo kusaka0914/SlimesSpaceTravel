@@ -19,13 +19,6 @@ glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
     return glm::normalize(value);
 }
 
-void SortKeyframes(CinematicSequence& sequence)
-{
-    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
-                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
-                         return left.time < right.time;
-                     });
-}
 } // namespace
 
 bool CinematicCamera::Play(const CinematicSequence& sequence, bool shouldHoldFinalPose)
@@ -35,7 +28,7 @@ bool CinematicCamera::Play(const CinematicSequence& sequence, bool shouldHoldFin
     }
 
     mSequence = sequence;
-    SortKeyframes(mSequence);
+    SortCinematicKeyframes(mSequence);
     for (CinematicCameraKeyframe& keyframe : mSequence.keyframes) {
         keyframe.holdDurationSeconds = std::max(0.0f, keyframe.holdDurationSeconds);
     }

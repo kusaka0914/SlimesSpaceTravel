@@ -62,13 +62,6 @@ int ToTransitionModeIndex(CameraTransitionMode transitionMode)
     return transitionMode == CameraTransitionMode::Cut ? 1 : 0;
 }
 
-void SortKeyframes(CinematicSequence& sequence)
-{
-    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
-                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
-                         return left.time < right.time;
-                     });
-}
 } // namespace
 
 CinematicSequenceDebugPanel::CinematicSequenceDebugPanel(DebugEditorContext& context)
@@ -270,7 +263,7 @@ void CinematicSequenceDebugPanel::DrawSequenceEditor(CameraSystem* cameraSystem,
             keyframe.transitionMode = ToTransitionMode(mTransitionModeIndex);
 
             sequence->keyframes.push_back(keyframe);
-            SortKeyframes(*sequence);
+            SortCinematicKeyframes(*sequence);
             mSelectedKeyframeIndex = -1;
             mStatusMessage = "現在のカメラをキーフレームとして追加しました";
         }
@@ -291,7 +284,7 @@ void CinematicSequenceDebugPanel::DrawSequenceEditor(CameraSystem* cameraSystem,
             keyframe.easing = ToEasing(mEasingIndex);
             keyframe.transitionMode = ToTransitionMode(mTransitionModeIndex);
 
-            SortKeyframes(*sequence);
+            SortCinematicKeyframes(*sequence);
             mSelectedKeyframeIndex = -1;
             mStatusMessage = "キーフレームを上書きしました";
         }

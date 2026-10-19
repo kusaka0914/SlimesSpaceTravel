@@ -94,13 +94,6 @@ const char* ToString(CameraTransitionMode transitionMode)
     return transitionMode == CameraTransitionMode::Cut ? "cut" : "smooth";
 }
 
-void SortKeyframes(CinematicSequence& sequence)
-{
-    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
-                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
-                         return left.time < right.time;
-                     });
-}
 } // namespace
 
 CinematicSequenceLibrary::CinematicSequenceLibrary(std::string filePath)
@@ -149,7 +142,7 @@ bool CinematicSequenceLibrary::Load()
                 }
             }
 
-            SortKeyframes(sequence);
+            SortCinematicKeyframes(sequence);
             loadedSequences[sequence.id] = std::move(sequence);
         }
     } catch (const std::exception& exception) {

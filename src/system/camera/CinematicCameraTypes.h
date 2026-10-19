@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <glm/glm.hpp>
 
 #include <string>
@@ -41,3 +43,12 @@ struct CinematicSequence {
     float endHoldDuration = 0.5f;
     std::vector<CinematicCameraKeyframe> keyframes;
 };
+
+// 時刻順に並べる。同時刻のキーは定義順を維持する。
+inline void SortCinematicKeyframes(CinematicSequence& sequence)
+{
+    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
+                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
+                         return left.time < right.time;
+                     });
+}

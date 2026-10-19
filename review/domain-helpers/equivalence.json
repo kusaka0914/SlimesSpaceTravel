@@ -1,0 +1,30 @@
+[
+  {
+    "original_helpers": [
+      "src/system/ParticleSystem.cpp",
+      "src/editor/tools/particle/ParticleEffectDebugPanel.cpp"
+    ],
+    "shared_header": "src/effect/particle/ParticleTypes.h",
+    "helper": "CreateDefaultParticleEmitter",
+    "bodies_equal": true
+  },
+  {
+    "original_helpers": [
+      "src/system/camera/CinematicCamera.cpp",
+      "src/system/camera/CinematicSequenceLibrary.cpp",
+      "src/editor/tools/camera/CinematicSequenceDebugPanel.cpp"
+    ],
+    "shared_header": "src/system/camera/CinematicCameraTypes.h",
+    "helper": "SortCinematicKeyframes",
+    "bodies_equal": true
+  },
+  {
+    "original_helpers": [
+      "src/actor/player/PlayerAnimationController.cpp",
+      "src/actor/player/PlayerConfigLoader.cpp"
+    ],
+    "shared_header": "src/actor/player/PlayerAnimationDefinition.h",
+    "helper": "NormalizePlayerAnimationId",
+    "bodies_equal": true
+  }
+]

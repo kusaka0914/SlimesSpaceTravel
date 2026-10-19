@@ -2,31 +2,16 @@
 
 #include "utils/YamlRead.h"
 
-#include <cctype>
 #include <string>
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
 namespace {
-std::string NormalizeAnimationId(const std::string& animationId)
-{
-    std::string normalizedId;
-    normalizedId.reserve(animationId.size());
-
-    for (const unsigned char character : animationId) {
-        if (std::isspace(character) || character == '-' || character == '_') {
-            continue;
-        }
-        normalizedId.push_back(static_cast<char>(std::tolower(character)));
-    }
-
-    return normalizedId;
-}
 
 PlayerAnimationPlaybackMode ParsePlaybackMode(const YAML::Node& animationNode, PlayerAnimationPlaybackMode defaultMode)
 {
     if (animationNode["mode"]) {
-        const std::string normalizedMode = NormalizeAnimationId(animationNode["mode"].as<std::string>());
+        const std::string normalizedMode = NormalizePlayerAnimationId(animationNode["mode"].as<std::string>());
 
         if (normalizedMode == "base" || normalizedMode == "baseloop" || normalizedMode == "loop") {
             return PlayerAnimationPlaybackMode::BaseLoop;
@@ -53,7 +38,7 @@ void ReadAnimationDefinitions(const YAML::Node& playerNode, PlayerAnimationDefin
     }
 
     for (const auto& animationEntry : animationsNode) {
-        const std::string animationId = NormalizeAnimationId(animationEntry.first.as<std::string>());
+        const std::string animationId = NormalizePlayerAnimationId(animationEntry.first.as<std::string>());
         if (animationId.empty()) {
             continue;
         }

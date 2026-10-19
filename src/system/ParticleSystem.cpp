@@ -33,24 +33,6 @@ glm::vec3 CreatePerpendicular(const glm::vec3& axis)
     return SafeNormalize(glm::cross(axis, reference), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
-ParticleEmitterDefinition CreateDefaultEmitter()
-{
-    ParticleEmitterDefinition emitter;
-    emitter.texturePath = "spark_dot.png";
-    emitter.blendMode = ParticleBlendMode::Additive;
-    emitter.renderMode = ParticleRenderMode::Billboard;
-    emitter.directionMode = ParticleDirectionMode::Sphere;
-    emitter.count = 8;
-    emitter.lifetime = {0.25f, 0.50f};
-    emitter.speed = {0.5f, 2.0f};
-    emitter.startSize = {0.15f, 0.30f};
-    emitter.endSizeMultiplier = 0.1f;
-    emitter.rotationDegrees = {0.0f, 360.0f};
-    emitter.angularVelocityDegrees = {-90.0f, 90.0f};
-    emitter.startColor = glm::vec4(1.0f);
-    emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
-    return emitter;
-}
 } // namespace
 
 ParticleSystem::ParticleSystem(std::size_t maxParticleCount)
@@ -114,7 +96,7 @@ bool ParticleSystem::CreateEffect(const std::string& effectId)
 {
     ParticleEffectDefinition definition;
     definition.displayName = effectId;
-    definition.emitters.push_back(CreateDefaultEmitter());
+    definition.emitters.push_back(CreateDefaultParticleEmitter());
     return CreateEffect(effectId, definition);
 }
 

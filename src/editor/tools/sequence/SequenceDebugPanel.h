@@ -22,7 +22,7 @@ private:
     void DrawClipList(GameplaySequence& sequence);
     void DrawClipInspector(SequenceSystem* system, GameplaySequence& sequence);
 
-    bool DrawActorTargetPicker(SequenceSystem* system, SequenceClip& clip);
+    void DrawActorTargetPicker(SequenceClip& clip);
     void DrawCameraSequencePicker(SequenceClip& clip);
     void AddArrivalTemplate(GameplaySequence& sequence);
 

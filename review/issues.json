@@ -254,6 +254,17 @@
       "tests": "全11関数の処理列照合、Debug全ビルド、既存全テスト。",
       "status": "implemented_and_debug_verified",
       "verification": "271単体・監査4件・Runtime20組成功。Unicode変換へは変更していない。"
+    },
+    {
+      "id": "MAINT-05",
+      "priority": "P3",
+      "location": "ParticleTypes.h / CinematicCameraTypes.h / PlayerAnimationDefinition.h / SequenceDebugPanel.*",
+      "evidence": "粒子初期値2箇所、時刻安定ソート3箇所、Player論理ID正規化2箇所で同一処理を保持。対象選択のsystem引数とbool戻り値は未使用。",
+      "risk": "EditorとRuntimeで同じデータの初期化・照合規則が離れて更新される。",
+      "change": "各ドメイン型の隣に小さなinline関数を集約し、未使用のprivate契約を削除。",
+      "tests": "全重複関数の処理列一致、Debug全ビルドと全テスト。",
+      "status": "implemented_and_debug_verified",
+      "verification": "271単体・監査4件・Runtime20組成功。型の既定値、同時刻キーの定義順、Cロケールによる照合規則を維持。"
     }
   ],
   "notes": [
