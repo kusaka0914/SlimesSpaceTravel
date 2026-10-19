@@ -193,6 +193,14 @@ if (BUILD_TESTING)
         target_link_options(game_tests PRIVATE -fsanitize=address,undefined)
     endif()
     add_test(NAME game_tests COMMAND game_tests)
+
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if (Python3_Interpreter_FOUND)
+        add_test(NAME architecture_audit_tests
+            COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests -p ArchitectureAuditTests.py
+        )
+        set_tests_properties(architecture_audit_tests PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
 endif()
 
 target_include_directories(game_runtime PUBLIC

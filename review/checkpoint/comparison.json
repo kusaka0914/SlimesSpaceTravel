@@ -1,0 +1,12 @@
+{
+  "baseline_ref": "272dbf3f06453b4b6ac71e13108345d9c77b47bb",
+  "current_head": "8bc07db3533ac43ac034a522203c45bef7c7121c",
+  "scanner": "tools/architecture_audit.py:game_accesses; named/typed pointer/reference receivers and GetGame() accessors",
+  "baseline_all_detected": 1241,
+  "current_all_detected": 1088,
+  "baseline_src_detected": 1219,
+  "current_src_detected": 1025,
+  "limitations": "同じ改善済み検出式を変更前後へ使用。型推論・alias解決・間接callbackは行わないため、Game呼出全件や依存削減率の厳密な証明ではない。",
+  "header_cycles_detected": 0,
+  "inheritance_declarations_detected": 73
+}

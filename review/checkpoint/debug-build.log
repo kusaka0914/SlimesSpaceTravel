@@ -1,0 +1,8 @@
+-- Configuring done (0.9s)
+-- Generating done (0.2s)
+-- Build files have been written to: /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+[  0%] Built target editor_restart_helper
+[ 23%] Built target game_tests
+[ 98%] Built target game_runtime
+[ 99%] Built target game
+[100%] Built target game_runtime_tests
