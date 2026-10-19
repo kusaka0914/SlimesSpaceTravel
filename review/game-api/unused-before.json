@@ -1,0 +1,110 @@
+[
+  {
+    "api": "GetHitStopTimer",
+    "occurrences": [
+      {
+        "path": "src/app/Game.h",
+        "line": 344
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetSdlControllerForPlayer",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 1557
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 251
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetUGCMovingPlatformPathDestinationPosition",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 804
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 307
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetUGCMovingPlatformPathStartPosition",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 799
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 306
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetUGCPlacementModelPreview",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 888
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 319
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetUGCPlacementModelPreviewPositions",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 893
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 320
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "GetUGCPlatformPlacementPreview",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 788
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 301
+      }
+    ],
+    "outside_Game": 0
+  },
+  {
+    "api": "ReturnToUGCEditor",
+    "occurrences": [
+      {
+        "path": "src/app/Game.cpp",
+        "line": 1200
+      },
+      {
+        "path": "src/app/Game.h",
+        "line": 128
+      }
+    ],
+    "outside_Game": 0
+  }
+]

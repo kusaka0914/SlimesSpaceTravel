@@ -785,25 +785,10 @@ void Game::SetUGCPlatformPlacementPreview(const std::optional<glm::vec3>& positi
     mUGCPreviewController->SetPlatformPlacementPosition(position);
 }
 
-const std::optional<glm::vec3>& Game::GetUGCPlatformPlacementPreview() const
-{
-    return mUGCPreviewController->GetPlatformPlacementPosition();
-}
-
 void Game::SetUGCMovingPlatformPathPreview(const std::optional<glm::vec3>& startPosition,
                                            const std::optional<glm::vec3>& destinationPosition)
 {
     mUGCPreviewController->SetMovingPlatformPath(startPosition, destinationPosition);
-}
-
-const std::optional<glm::vec3>& Game::GetUGCMovingPlatformPathStartPosition() const
-{
-    return mUGCPreviewController->GetMovingPlatformPathStart();
-}
-
-const std::optional<glm::vec3>& Game::GetUGCMovingPlatformPathDestinationPosition() const
-{
-    return mUGCPreviewController->GetMovingPlatformPathDestination();
 }
 
 void Game::SetUGCOrthographicHalfHeight(float halfHeight)
@@ -883,16 +868,6 @@ void Game::SetUGCPlacementModelPreviewPositions(const std::vector<glm::vec3>& po
                                                 const glm::vec3& scale, const std::string& textureOverridePath)
 {
     mUGCPreviewController->SetPlacementModelPositions(positions, modelPath, scale, textureOverridePath);
-}
-
-Actor* Game::GetUGCPlacementModelPreview() const
-{
-    return mUGCPreviewController->GetPlacementModel();
-}
-
-const std::vector<glm::vec3>& Game::GetUGCPlacementModelPreviewPositions() const
-{
-    return mUGCPreviewController->GetPlacementModelPositions();
 }
 
 void Game::RequestEnemyJewelDrop(const Enemy& defeatedEnemy)
@@ -1195,11 +1170,6 @@ void Game::StartUGCSavedWorkPlaytest()
 void Game::StartUGCClearVerification(const std::string& workFileName)
 {
     mUGCModeController->StartClearVerification(workFileName);
-}
-
-void Game::ReturnToUGCEditor()
-{
-    mUGCModeController->ReturnToEditor();
 }
 
 void Game::ExitUGCMode()
@@ -1552,11 +1522,6 @@ void Game::VibrateControllerForPlayer(int playerNum, int lowFrequency, int highF
 SDL_GameController* Game::GetSdlController() const
 {
     return mGamepadRumbleService->GetController();
-}
-
-SDL_GameController* Game::GetSdlControllerForPlayer(int playerNum) const
-{
-    return mGamepadRumbleService->GetControllerForPlayer(playerNum);
 }
 
 const std::vector<Player*>& Game::GetPlayers() const

@@ -125,7 +125,6 @@ public:
 
     // 指定した保存作品のクリア検証を開始する。作品名はUGC作品管理で使うファイル名を渡す。
     void StartUGCClearVerification(const std::string& workFileName);
-    void ReturnToUGCEditor();
     void ExitUGCMode();
     bool GetIsUGCClearResultShowing() const;
     int GetUGCClearResultSelection() const;
@@ -247,9 +246,6 @@ public:
     GLFWwindow* GetWindow() const { return mWindow.GetHandle(); }
     SDL_GameController* GetSdlController() const;
 
-    // playerNum は1始まり。対応する接続デバイスがなければ nullptr。返却先は所有しない。
-    SDL_GameController* GetSdlControllerForPlayer(int playerNum) const;
-
     const std::vector<Player*>& GetPlayers() const;
     const std::vector<JewelItem*>& GetRuntimeJewelItems() const;
     Player* GetMainPlayer() const;
@@ -298,13 +294,10 @@ public:
 
     // ワールド座標で足場の配置候補を設定する。std::nullopt なら表示を解除する。
     void SetUGCPlatformPlacementPreview(const std::optional<glm::vec3>& position);
-    const std::optional<glm::vec3>& GetUGCPlatformPlacementPreview() const;
 
     // 移動足場の両端をワールド座標で指定する。未指定の端点はプレビューから除く。
     void SetUGCMovingPlatformPathPreview(const std::optional<glm::vec3>& startPosition,
                                          const std::optional<glm::vec3>& destinationPosition);
-    const std::optional<glm::vec3>& GetUGCMovingPlatformPathStartPosition() const;
-    const std::optional<glm::vec3>& GetUGCMovingPlatformPathDestinationPosition() const;
 
     // ワールド座標で配置用モデルを設定する。位置未指定・空モデル名なら破棄し、モデル変更時は作り直す。
     void SetUGCPlacementModelPreview(const std::optional<glm::vec3>& position, const std::string& modelPath = "",
@@ -314,10 +307,6 @@ public:
     // 1つの配置用モデルを複数のワールド位置へ表示する。位置一覧が空ならモデルを破棄する。
     void SetUGCPlacementModelPreviewPositions(const std::vector<glm::vec3>& positions, const std::string& modelPath,
                                               const glm::vec3& scale, const std::string& textureOverridePath = "");
-
-    // 配置用Actorを所有権を移さず返す。未設定時は nullptr、モデル変更・解除でポインタは無効になる。
-    Actor* GetUGCPlacementModelPreview() const;
-    const std::vector<glm::vec3>& GetUGCPlacementModelPreviewPositions() const;
 
     // 直近のゲーム更新に使った秒数。長い停止後も最大0.04秒に制限する。
     float GetLastDeltaTime() const { return mLastDeltaTime; }
@@ -341,7 +330,6 @@ public:
     Renderer3D* GetRenderer3D() const { return mRenderer3D.get(); }
     SequenceSystem* GetSequenceSystem() const { return mSequenceSystem.get(); }
 
-    float GetHitStopTimer() const { return mHitStopTimer; }
     float GetGroundNormalRayLength() const { return mGroundNormalRayLength; }
     float GetOverheadGravityRayLength() const { return mOverheadGravityRayLength; }
     bool GetIsPlayer2Joined() const;

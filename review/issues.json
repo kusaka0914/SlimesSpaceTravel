@@ -298,6 +298,17 @@
       "tests": "ヘッダー一致、同一タグ/同一コンパイラーでの未計装/計装対照、全コンパイルエントリーのフラグ、全CTest。",
       "status": "implemented_and_sanitizer_verified",
       "verification": "container検査を無効化せず271単体・監査4件・Runtime23組成功。リーク検査は無効、外部の共有ライブラリ内部まで全面計装した主張はしない。"
+    },
+    {
+      "id": "ARCH-08",
+      "priority": "P3",
+      "location": "src/app/Game.h / Game.cpp",
+      "evidence": "プレビュー取得5件、Player別SDL取得、UGC編集復帰、HitStop取得は宣言/定義以外の識別子出現がゼロ。",
+      "risk": "担当Controllerや描画snapshotへ移行後も未使用の公開窓口が残り、Gameの契約が広く見える。",
+      "change": "全8件の宣言/定義と専用コメントを削除。既に利用側で使っている担当のAPIは維持。",
+      "tests": "全自作C++の識別子検索、Debug ASan全ビルド、271単体と監査4件。",
+      "status": "implemented_and_build_verified",
+      "verification": "既存の実行呼出はゼロで挙動変更なし。Runtime全体は直前の計装ビルドで23組成功しており、最終構成で再確認する。"
     }
   ],
   "notes": [
