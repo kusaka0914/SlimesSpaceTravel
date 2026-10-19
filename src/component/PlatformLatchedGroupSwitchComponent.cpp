@@ -90,12 +90,13 @@ void PlatformLatchedGroupSwitchComponent::SetRevealTargets(const std::vector<Pla
             continue;
         }
 
-        const bool isOwnerTarget = mPlatform && target.sequenceName == mPlatform->GetStageSequenceName() &&
-                                   target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.RefersToSameActor(PlatformRevealTarget{mPlatform->GetStageSequenceName(),
+                                                          mPlatform->GetStageYamlIndex(), mPlatform->GetPlatformId()});
         const auto duplicateTarget =
-            std::find_if(mRevealTargets.begin(), mRevealTargets.end(), [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
-            });
+            std::find_if(mRevealTargets.begin(), mRevealTargets.end(),
+                         [&target](const PlatformRevealTarget& current) { return current.RefersToSameActor(target); });
         if (!isOwnerTarget && duplicateTarget == mRevealTargets.end()) {
             mRevealTargets.emplace_back(target);
         }
@@ -115,12 +116,13 @@ void PlatformLatchedGroupSwitchComponent::SetHideTargets(const std::vector<Platf
             continue;
         }
 
-        const bool isOwnerTarget = mPlatform && target.sequenceName == mPlatform->GetStageSequenceName() &&
-                                   target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.RefersToSameActor(PlatformRevealTarget{mPlatform->GetStageSequenceName(),
+                                                          mPlatform->GetStageYamlIndex(), mPlatform->GetPlatformId()});
         const bool isDuplicate =
-            std::any_of(mHideTargets.begin(), mHideTargets.end(), [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
-            });
+            std::any_of(mHideTargets.begin(), mHideTargets.end(),
+                        [&target](const PlatformRevealTarget& current) { return current.RefersToSameActor(target); });
         if (!isOwnerTarget && !isDuplicate) {
             mHideTargets.emplace_back(target);
         }
@@ -192,7 +194,7 @@ std::vector<PlatformRevealTarget> PlatformLatchedGroupSwitchComponent::CollectGr
         for (const PlatformRevealTarget& target : component->GetRevealTargets()) {
             const auto duplicateTarget =
                 std::find_if(groupTargets.begin(), groupTargets.end(), [&target](const PlatformRevealTarget& current) {
-                    return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
+                    return current.RefersToSameActor(target);
                 });
             if (duplicateTarget == groupTargets.end()) {
                 groupTargets.emplace_back(target);
@@ -214,7 +216,7 @@ std::vector<PlatformRevealTarget> PlatformLatchedGroupSwitchComponent::CollectGr
         for (const PlatformRevealTarget& target : component->GetHideTargets()) {
             const bool isDuplicate =
                 std::any_of(groupTargets.begin(), groupTargets.end(), [&target](const PlatformRevealTarget& current) {
-                    return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
+                    return current.RefersToSameActor(target);
                 });
             if (!isDuplicate) {
                 groupTargets.emplace_back(target);

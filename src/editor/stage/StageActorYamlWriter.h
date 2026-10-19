@@ -59,7 +59,7 @@ private:
     void WritePlatformState(YAML::Node actorNode, const std::string& sequenceName, Actor* actor);
     void WriteBoatState(YAML::Node actorNode, Actor* actor);
     void WriteNPCState(YAML::Node actorNode, Actor* actor);
-    void WriteTextureState(YAML::Node actorNode, Actor* actor);
+    void WriteTextureState(YAML::Node actorNode, const Actor& actor);
     int FindPlanetIndex(const Planet* targetPlanet) const;
 
     DebugEditorContext& mContext;

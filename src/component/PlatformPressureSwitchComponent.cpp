@@ -104,10 +104,9 @@ void PlatformPressureSwitchComponent::SetTargetEnemyRefs(const std::vector<Platf
             continue;
         }
 
-        const bool isDuplicate = std::any_of(
-            mTargetEnemyRefs.begin(), mTargetEnemyRefs.end(), [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
-            });
+        const bool isDuplicate =
+            std::any_of(mTargetEnemyRefs.begin(), mTargetEnemyRefs.end(),
+                        [&target](const PlatformRevealTarget& current) { return current.RefersToSameActor(target); });
         if (!isDuplicate) {
             mTargetEnemyRefs.emplace_back(target);
         }
@@ -126,12 +125,13 @@ void PlatformPressureSwitchComponent::SetHideTargets(const std::vector<PlatformR
             continue;
         }
 
-        const bool isOwnerTarget = mPlatform && target.sequenceName == mPlatform->GetStageSequenceName() &&
-                                   target.yamlIndex == mPlatform->GetStageYamlIndex();
+        const bool isOwnerTarget =
+            mPlatform &&
+            target.RefersToSameActor(PlatformRevealTarget{mPlatform->GetStageSequenceName(),
+                                                          mPlatform->GetStageYamlIndex(), mPlatform->GetPlatformId()});
         const bool isDuplicate =
-            std::any_of(mHideTargets.begin(), mHideTargets.end(), [&target](const PlatformRevealTarget& current) {
-                return current.sequenceName == target.sequenceName && current.yamlIndex == target.yamlIndex;
-            });
+            std::any_of(mHideTargets.begin(), mHideTargets.end(),
+                        [&target](const PlatformRevealTarget& current) { return current.RefersToSameActor(target); });
         if (!isOwnerTarget && !isDuplicate) {
             mHideTargets.emplace_back(target);
         }
@@ -197,6 +197,10 @@ Actor* PlatformPressureSwitchComponent::FindTargetActor(const PlatformRevealTarg
     Stage* stage = game->GetCurrentStage();
     if (!stage) {
         return nullptr;
+    }
+    if (!target.platformId.empty()) {
+        return game->GetActorLoadSystem()->GetActorLocator().FindPlacedPlatform(*stage, target.platformId,
+                                                                                target.yamlIndex);
     }
     return game->GetActorLoadSystem()->GetActorLocator().FindPlacedActor(*stage, target.sequenceName, target.yamlIndex);
 }

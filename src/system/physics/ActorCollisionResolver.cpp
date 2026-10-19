@@ -126,7 +126,7 @@ float CalculateExpandedBoundsClearance(const EnemyCollisionGeometry::ModelBounds
 {
     const glm::vec3 offset = position - bounds.center;
     float clearance = -std::numeric_limits<float>::max();
-    for (glm::length_t axisIndex = 0; axisIndex < bounds.axes.size(); ++axisIndex) {
+    for (glm::length_t axisIndex = 0; axisIndex < bounds.halfExtents.length(); ++axisIndex) {
         const float expandedExtent = bounds.halfExtents[axisIndex] + expansion[axisIndex];
         clearance = std::max(clearance, std::abs(glm::dot(offset, bounds.axes[axisIndex])) - expandedExtent);
     }
@@ -538,7 +538,7 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActor(btDiscreteDy
             const glm::vec3 expandedHalfExtents = enemyBounds.halfExtents + glm::vec3(movingActorCollisionRadius);
             const glm::vec3 localOffset = desiredPos - enemyBounds.center;
             glm::vec3 localPosition(0.0f);
-            for (glm::length_t axisIndex = 0; axisIndex < enemyBounds.axes.size(); ++axisIndex) {
+            for (glm::length_t axisIndex = 0; axisIndex < enemyBounds.halfExtents.length(); ++axisIndex) {
                 localPosition[axisIndex] = glm::dot(localOffset, enemyBounds.axes[axisIndex]);
                 if (std::abs(localPosition[axisIndex]) > expandedHalfExtents[axisIndex]) {
                     return std::nullopt;
@@ -547,7 +547,7 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActor(btDiscreteDy
 
             glm::length_t nearestFaceAxis = 0;
             float nearestFacePenetration = expandedHalfExtents.x - std::abs(localPosition.x);
-            for (glm::length_t axisIndex = 1; axisIndex < enemyBounds.axes.size(); ++axisIndex) {
+            for (glm::length_t axisIndex = 1; axisIndex < enemyBounds.halfExtents.length(); ++axisIndex) {
                 const float facePenetration = expandedHalfExtents[axisIndex] - std::abs(localPosition[axisIndex]);
                 if (facePenetration < nearestFacePenetration) {
                     nearestFaceAxis = axisIndex;

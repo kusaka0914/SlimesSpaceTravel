@@ -19,7 +19,6 @@
 
 namespace {
 
-constexpr const char* platformCellsKey = UGCPlatformDocument::PlatformCellsKey;
 constexpr const char* generatedPlatformKey = UGCPlatformDocument::GeneratedPlatformKey;
 using PlatformCell = UGCPlatformCell;
 

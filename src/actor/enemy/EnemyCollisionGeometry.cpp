@@ -45,7 +45,7 @@ glm::vec3 CalculateClosestPoint(const ModelBounds& bounds, const glm::vec3& poin
 {
     glm::vec3 closestPoint = bounds.center;
     const glm::vec3 offset = point - bounds.center;
-    for (glm::length_t axisIndex = 0; axisIndex < bounds.axes.size(); ++axisIndex) {
+    for (glm::length_t axisIndex = 0; axisIndex < bounds.halfExtents.length(); ++axisIndex) {
         const float coordinate = glm::dot(offset, bounds.axes[axisIndex]);
         const float clampedCoordinate =
             glm::clamp(coordinate, -bounds.halfExtents[axisIndex], bounds.halfExtents[axisIndex]);
@@ -78,7 +78,7 @@ std::array<glm::vec3, 9> CreateCandidatePoints(const ModelBounds& bounds, const 
 float CalculateSupportDistance(const ModelBounds& bounds, const glm::vec3& direction)
 {
     float supportDistance = 0.0f;
-    for (glm::length_t axisIndex = 0; axisIndex < bounds.axes.size(); ++axisIndex) {
+    for (glm::length_t axisIndex = 0; axisIndex < bounds.halfExtents.length(); ++axisIndex) {
         supportDistance += std::abs(glm::dot(direction, bounds.axes[axisIndex])) * bounds.halfExtents[axisIndex];
     }
     return supportDistance;
@@ -93,7 +93,7 @@ bool DoesSegmentIntersectExpandedBounds(const ModelBounds& bounds, const glm::ve
     const glm::vec3 localStartOffset = segmentStart - bounds.center;
     const glm::vec3 localEndOffset = segmentEnd - bounds.center;
 
-    for (glm::length_t axisIndex = 0; axisIndex < bounds.axes.size(); ++axisIndex) {
+    for (glm::length_t axisIndex = 0; axisIndex < bounds.halfExtents.length(); ++axisIndex) {
         const float localStart = glm::dot(localStartOffset, bounds.axes[axisIndex]);
         const float localDelta = glm::dot(localEndOffset - localStartOffset, bounds.axes[axisIndex]);
         const float expandedExtent = bounds.halfExtents[axisIndex] + expansion[axisIndex];

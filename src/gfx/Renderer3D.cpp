@@ -851,7 +851,6 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
         radiusY = glm::clamp(modelSize.z * 0.31f, 0.17f, 2.5f);
     }
 
-    constexpr float maximumShadowDistance = 12.0f;
     constexpr float distanceFade = 1.0f;
     shadowCenter += surfaceNormal * 0.012f;
     const float distanceScale = 1.0f + glm::clamp(surfaceDistance * 0.025f, 0.0f, 0.22f);

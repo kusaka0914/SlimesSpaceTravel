@@ -7,6 +7,35 @@
 
 namespace {
 
+void ActorTargetsAcceptStableIdsWithoutLegacyIndices()
+{
+    const PlatformRevealTarget first{"platforms", 1, "first"};
+    ExpectTrue(first.RefersToSameActor({"platforms", 9, "first"}), "stable ID survives index changes");
+    ExpectFalse(first.RefersToSameActor({"platforms", 1, "different"}), "IDs take precedence over stale indices");
+    ExpectTrue(first.RefersToSameActor({"platforms", 1, ""}), "legacy reference retains index matching");
+    ExpectFalse(PlatformRevealTarget{}.RefersToSameActor({}), "invalid empty targets do not match");
+    const auto config = ParsePlatformStageConfig(YAML::Load(R"(
+components:
+  pressureSwitch:
+    hideTargets:
+      - {platformId: hidden-floor}
+      - {sequence: enemies}
+      - {platformId: ''}
+  latchedGroupSwitch:
+    targets:
+      - {platformId: revealed-floor}
+      - {sequence: enemies, index: 2}
+)"));
+    const auto& hidden = config.behavior.pressureSwitch->hideTargets;
+    const auto& revealed = config.behavior.latchedGroupSwitch->revealTargets;
+    ExpectEqual(std::size_t(1), hidden.size(), "ID-only hide target survives parsing");
+    ExpectEqual(std::string("hidden-floor"), hidden[0].platformId, "stable hide ID");
+    ExpectEqual(-1, hidden[0].yamlIndex, "ID-only target needs no legacy index");
+    ExpectEqual(std::size_t(2), revealed.size(), "stable and legacy targets coexist");
+    ExpectEqual(std::string("revealed-floor"), revealed[0].platformId, "stable reveal ID");
+    ExpectEqual(2, revealed[1].yamlIndex, "legacy index remains supported");
+}
+
 void ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig()
 {
     const YAML::Node platformNode = YAML::Load(R"(
@@ -121,6 +150,8 @@ components:
 
 void RegisterPlatformStageConfigTests(TestRegistry& tests)
 {
+    tests.emplace_back("PlatformStageConfig.ActorTargetsAcceptStableIdsWithoutLegacyIndices",
+                       ActorTargetsAcceptStableIdsWithoutLegacyIndices);
     tests.emplace_back("PlatformStageConfig.ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig",
                        ModernPlatformWithoutMovementComponentDoesNotCreateMovementConfig);
     tests.emplace_back("PlatformStageConfig.MovementComponentUsesDocumentedDefaultsAndLegacyWaitField",

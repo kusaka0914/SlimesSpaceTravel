@@ -5,7 +5,7 @@
 
 class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
-class btDbvtBroadphase;
+struct btDbvtBroadphase;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
 class btCollisionObject;

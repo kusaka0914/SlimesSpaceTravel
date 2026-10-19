@@ -533,7 +533,7 @@ int main()
             RunRuntimeReliabilityTests(game);
             RunRuntimeGameplayTests(game);
             RunRuntimeEditorPersistenceTests(game);
-            DebugEditorContext context{&game};
+            DebugEditorContext context{.game = &game};
             StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); },
                                                context.gameViewport, context.planetMoveMode);
             StageEditCommandController commands(context, selection);

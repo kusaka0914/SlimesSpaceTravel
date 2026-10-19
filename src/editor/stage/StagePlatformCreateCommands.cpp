@@ -39,13 +39,13 @@ std::vector<PlatformRevealTarget> ReadLatchedSwitchTargets(const YAML::Node& tar
     }
 
     for (const YAML::Node& targetNode : targetsNode) {
-        if (!targetNode || !targetNode.IsMap() || !targetNode["sequence"] || !targetNode["index"]) {
+        if (!targetNode || !targetNode.IsMap()) {
             continue;
         }
 
         PlatformRevealTarget target;
-        target.sequenceName = targetNode["sequence"].as<std::string>();
-        target.yamlIndex = targetNode["index"].as<int>();
+        target.sequenceName = targetNode["sequence"].as<std::string>("");
+        target.yamlIndex = targetNode["index"].as<int>(-1);
         target.platformId = targetNode["platformId"].as<std::string>("");
         if (target.IsValid()) {
             targets.push_back(std::move(target));

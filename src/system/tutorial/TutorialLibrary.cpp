@@ -351,7 +351,7 @@ TutorialDefinition* TutorialLibrary::Add(const std::string& requestedId)
     TutorialDefinition definition;
     definition.id = MakeUniqueId(requestedId);
     definition.displayName = definition.id;
-    definition.pages.emplace_back(TutorialPage{"page_1", "新しいチュートリアル"});
+    definition.pages.emplace_back(TutorialPage{.id = "page_1", .text = "新しいチュートリアル"});
     RegeneratePageRuby(definition.pages.front());
     mDefinitions.emplace_back(std::move(definition));
     return &mDefinitions.back();

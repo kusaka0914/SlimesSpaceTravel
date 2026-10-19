@@ -1,16 +1,7 @@
 #include "system/camera/CameraProjection.h"
 
-#include "app/Game.h"
-
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-
-glm::mat4 CalculateCameraProjection(const Game& game, float aspectRatio, float fieldOfViewDegrees)
-{
-    return CalculateCameraProjection(CameraProjectionSettings{game.GetIsUGCMode() && game.GetIsUGCOrthographicView(),
-                                                              game.GetUGCOrthographicHalfHeight()},
-                                     aspectRatio, fieldOfViewDegrees);
-}
 
 glm::mat4 CalculateCameraProjection(const CameraProjectionSettings& settings, float aspectRatio,
                                     float fieldOfViewDegrees)

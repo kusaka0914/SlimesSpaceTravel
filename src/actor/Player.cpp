@@ -1,12 +1,12 @@
 #include "actor/Player.h"
 
-#include "app/Game.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/player/PlayerConfig.h"
 #include "actor/player/PlayerDamageHandler.h"
+#include "app/Game.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
 
@@ -406,8 +406,9 @@ void Player::ResolvePreUpdateCollisions()
 void Player::UpdateWhileControlLocked(float deltaTime)
 {
     mVelocity = glm::vec3(0.0f);
-    mParticleEffectController.UpdateSpecialCharging(*this, false, deltaTime);
-    mParticleEffectController.UpdateWalking(*this, false);
+    ParticleSystem& particles = *mGame->GetParticleSystem();
+    mParticleEffectController.UpdateSpecialCharging(*this, particles, false, deltaTime);
+    mParticleEffectController.UpdateWalking(*this, particles, false);
     mAnimationController.RequestAnimation(idleAnimationId, false);
     mAnimationController.Update(deltaTime);
 }
@@ -473,12 +474,13 @@ void Player::UpdatePresentation(PlayerActionState previousActionState, const Lan
     const bool shouldWalk = currentActionState == PlayerActionState::Idle && GetIsActive() && GetOnGround() &&
                             !IsAttachedToPlatform() && (hasMovementInput || mWasMergeRecallWalking);
 
+    ParticleSystem& particles = *mGame->GetParticleSystem();
     if (landing.didLand) {
-        mParticleEffectController.EmitLanding(*this, landing.landingSpeed);
+        mParticleEffectController.EmitLanding(*this, particles, landing.landingSpeed);
     }
     const bool isSpecialChargeActive = mCombat.IsSpecialCharging() || mCombat.GetCanSpecialAttack();
-    mParticleEffectController.UpdateSpecialCharging(*this, isSpecialChargeActive, deltaTime);
-    mParticleEffectController.UpdateWalking(*this, shouldWalk);
+    mParticleEffectController.UpdateSpecialCharging(*this, particles, isSpecialChargeActive, deltaTime);
+    mParticleEffectController.UpdateWalking(*this, particles, shouldWalk);
 
     mAnimationController.RequestAnimation(shouldWalk ? walkAnimationId : idleAnimationId, false);
     RequestEnteredActionAnimation(previousActionState, currentActionState);

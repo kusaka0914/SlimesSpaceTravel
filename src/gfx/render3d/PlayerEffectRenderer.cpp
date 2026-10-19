@@ -240,7 +240,7 @@ void PlayerEffectRenderer::DrawPlayerMergeGuide(const Player* targetPlayer, floa
         playerSurfaceOffset = glm::dot(center - centerProjection.position, centerProjection.outwardNormal);
     }
 
-    const auto resolveSurfacePoint = [planet, shouldFollowPlanetSurface, playerSurfaceOffset, surfaceOffsetWorldUnits,
+    const auto resolveSurfacePoint = [planet, shouldFollowPlanetSurface, playerSurfaceOffset,
                                       up](const glm::vec3& point) {
         if (!shouldFollowPlanetSurface) {
             return point + up * surfaceOffsetWorldUnits;

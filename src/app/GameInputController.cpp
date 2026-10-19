@@ -184,6 +184,10 @@ void GameInputController::SuppressOneShotInputUntilReleased()
     mWasUGCEditorLayerUpPressed = true;
     mWasUGCEditorPlayPressed = true;
     mWasUGCEditorSelectionPressed = true;
+    mWasUGCEditorDpadLeftPressed = true;
+    mWasUGCEditorDpadRightPressed = true;
+    mWasUGCEditorDpadUpPressed = true;
+    mWasUGCEditorDpadDownPressed = true;
     mWasKeyboardConfirmPressed = true;
 }
 

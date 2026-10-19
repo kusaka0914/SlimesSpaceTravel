@@ -64,6 +64,17 @@ void WritePlatformMovementPath(YAML::Node platformNode, const std::string& seque
     platformNode["pos"][2] = startLocalPos.z;
 }
 
+YAML::Node SerializeActorTarget(const PlatformRevealTarget& target)
+{
+    YAML::Node node;
+    node["sequence"] = target.sequenceName;
+    node["index"] = target.yamlIndex;
+    if (!target.platformId.empty()) {
+        node["platformId"] = target.platformId;
+    }
+    return node;
+}
+
 YAML::Node SerializeRubyTextSegments(const std::vector<RubyTextSegment>& segments)
 {
     YAML::Node nodes(YAML::NodeType::Sequence);
@@ -552,7 +563,7 @@ bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
     WritePlatformState(actorNode, sequenceName, actor);
     WriteBoatState(actorNode, actor);
     WriteNPCState(actorNode, actor);
-    WriteTextureState(actorNode, actor);
+    WriteTextureState(actorNode, *actor);
     return true;
 }
 
@@ -671,16 +682,12 @@ void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::s
             }
             node["enemyTargets"] = YAML::Node(YAML::NodeType::Sequence);
             for (const PlatformRevealTarget& target : component->GetTargetEnemyRefs()) {
-                YAML::Node targetNode;
-                targetNode["sequence"] = target.sequenceName;
-                targetNode["index"] = target.yamlIndex;
+                YAML::Node targetNode = SerializeActorTarget(target);
                 node["enemyTargets"].push_back(targetNode);
             }
             node["hideTargets"] = YAML::Node(YAML::NodeType::Sequence);
             for (const PlatformRevealTarget& target : component->GetHideTargets()) {
-                YAML::Node targetNode;
-                targetNode["sequence"] = target.sequenceName;
-                targetNode["index"] = target.yamlIndex;
+                YAML::Node targetNode = SerializeActorTarget(target);
                 node["hideTargets"].push_back(targetNode);
             }
         } else {
@@ -698,9 +705,7 @@ void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::s
             node["groupId"] = component->GetGroupId();
             node["targets"] = YAML::Node(YAML::NodeType::Sequence);
             for (const PlatformRevealTarget& target : component->GetRevealTargets()) {
-                YAML::Node targetNode;
-                targetNode["sequence"] = target.sequenceName;
-                targetNode["index"] = target.yamlIndex;
+                YAML::Node targetNode = SerializeActorTarget(target);
                 std::string targetPlatformId = target.platformId;
                 if (targetPlatformId.empty() && target.sequenceName == "platforms" && mContext.game &&
                     mContext.game->GetCurrentStage()) {
@@ -718,9 +723,7 @@ void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::s
             }
             node["hideTargets"] = YAML::Node(YAML::NodeType::Sequence);
             for (const PlatformRevealTarget& target : component->GetHideTargets()) {
-                YAML::Node targetNode;
-                targetNode["sequence"] = target.sequenceName;
-                targetNode["index"] = target.yamlIndex;
+                YAML::Node targetNode = SerializeActorTarget(target);
                 node["hideTargets"].push_back(targetNode);
             }
         } else {
@@ -794,19 +797,19 @@ void StageActorYamlWriter::WriteNPCState(YAML::Node actorNode, Actor* actor)
     WriteNPCTalkRuby(actorNode, *npc);
 }
 
-void StageActorYamlWriter::WriteTextureState(YAML::Node actorNode, Actor* actor)
+void StageActorYamlWriter::WriteTextureState(YAML::Node actorNode, const Actor& actor)
 {
-    const bool supportsTextureTiling = dynamic_cast<const Platform*>(actor) ||
-                                       dynamic_cast<const StageObject*>(actor) || dynamic_cast<const Boat*>(actor) ||
-                                       dynamic_cast<const BoatArrivalPoint*>(actor) ||
-                                       dynamic_cast<const JewelItem*>(actor) || dynamic_cast<const HazardActor*>(actor);
+    const bool supportsTextureTiling =
+        dynamic_cast<const Platform*>(&actor) || dynamic_cast<const StageObject*>(&actor) ||
+        dynamic_cast<const Boat*>(&actor) || dynamic_cast<const BoatArrivalPoint*>(&actor) ||
+        dynamic_cast<const JewelItem*>(&actor) || dynamic_cast<const HazardActor*>(&actor);
     if (supportsTextureTiling) {
-        const glm::vec2 textureTiling = actor->GetTextureTiling();
+        const glm::vec2 textureTiling = actor.GetTextureTiling();
         actorNode["textureTiling"][0] = textureTiling.x;
         actorNode["textureTiling"][1] = textureTiling.y;
     }
 
-    const std::string& textureOverride = actor->GetTextureOverridePath();
+    const std::string& textureOverride = actor.GetTextureOverridePath();
     if (textureOverride.empty()) {
         actorNode.remove("textureOverride");
     } else {

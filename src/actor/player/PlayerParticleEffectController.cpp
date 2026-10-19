@@ -1,6 +1,5 @@
 #include "actor/player/PlayerParticleEffectController.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
 #include "effect/particle/ParticleTypes.h"
 #include "system/ParticleSystem.h"
@@ -26,25 +25,21 @@ glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
     return glm::normalize(value);
 }
 
-ParticleSystem* GetParticleSystem(Player& player)
-{
-    Game* game = player.GetGame();
-    return game ? game->GetParticleSystem() : nullptr;
-}
 } // namespace
 
-void PlayerParticleEffectController::UpdateWalking(Player& player, bool isWalking)
+void PlayerParticleEffectController::UpdateWalking(Player& player, ParticleSystem& particles, bool isWalking)
 {
     const bool didStartWalking = isWalking && !mWasWalking;
 
     if (didStartWalking) {
-        EmitWalkStart(player);
+        EmitWalkStart(player, particles);
     }
 
     mWasWalking = isWalking;
 }
 
-void PlayerParticleEffectController::UpdateSpecialCharging(Player& player, bool isCharging, float deltaTime)
+void PlayerParticleEffectController::UpdateSpecialCharging(Player& player, ParticleSystem& particles, bool isCharging,
+                                                           float deltaTime)
 {
     if (!isCharging) {
         mWasSpecialCharging = false;
@@ -63,18 +58,13 @@ void PlayerParticleEffectController::UpdateSpecialCharging(Player& player, bool 
         return;
     }
 
-    EmitSpecialCharge(player);
+    EmitSpecialCharge(player, particles);
     mSpecialChargeEmissionTimerSeconds = specialChargeEmissionIntervalSeconds;
 }
 
-void PlayerParticleEffectController::EmitLanding(Player& player, float landingSpeed)
+void PlayerParticleEffectController::EmitLanding(Player& player, ParticleSystem& particles, float landingSpeed)
 {
     if (landingSpeed < minimumLandingEffectSpeed) {
-        return;
-    }
-
-    ParticleSystem* particleSystem = GetParticleSystem(player);
-    if (!particleSystem) {
         return;
     }
 
@@ -86,7 +76,7 @@ void PlayerParticleEffectController::EmitLanding(Player& player, float landingSp
     context.direction = upDirection;
     context.scale = glm::clamp(landingSpeed / 5.5f, 0.75f, 1.65f);
 
-    particleSystem->Emit(landingEffectId, context);
+    particles.Emit(landingEffectId, context);
 }
 
 void PlayerParticleEffectController::Reset()
@@ -96,13 +86,8 @@ void PlayerParticleEffectController::Reset()
     mSpecialChargeEmissionTimerSeconds = 0.0f;
 }
 
-void PlayerParticleEffectController::EmitSpecialCharge(Player& player)
+void PlayerParticleEffectController::EmitSpecialCharge(Player& player, ParticleSystem& particles)
 {
-    ParticleSystem* particleSystem = GetParticleSystem(player);
-    if (!particleSystem) {
-        return;
-    }
-
     const glm::vec3 upDirection = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
 
     ParticleSpawnContext context;
@@ -110,16 +95,11 @@ void PlayerParticleEffectController::EmitSpecialCharge(Player& player)
     context.normal = upDirection;
     context.direction = upDirection;
     context.scale = 1.0f;
-    particleSystem->Emit(specialChargeEffectId, context);
+    particles.Emit(specialChargeEffectId, context);
 }
 
-void PlayerParticleEffectController::EmitWalkStart(Player& player)
+void PlayerParticleEffectController::EmitWalkStart(Player& player, ParticleSystem& particles)
 {
-    ParticleSystem* particleSystem = GetParticleSystem(player);
-    if (!particleSystem) {
-        return;
-    }
-
     const glm::vec3 upDirection = SafeNormalize(player.GetUpVec(), glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 forwardDirection = SafeNormalize(player.GetFacingForwardVec(), glm::vec3(0.0f, 0.0f, 1.0f));
     const glm::vec3 emissionDirection = SafeNormalize(-forwardDirection + upDirection * 0.25f, upDirection);
@@ -132,5 +112,5 @@ void PlayerParticleEffectController::EmitWalkStart(Player& player)
     context.direction = emissionDirection;
     context.scale = 1.0f;
 
-    particleSystem->Emit(walkStartEffectId, context);
+    particles.Emit(walkStartEffectId, context);
 }

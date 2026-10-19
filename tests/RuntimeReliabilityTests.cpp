@@ -1,14 +1,24 @@
 #include "RuntimeReliabilityTests.h"
+#include "RuntimeStageSupport.h"
 
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
 #include "actor/MathUtils.h"
+#include "actor/Planet.h"
+#include "actor/Platform.h"
+#include "actor/Player.h"
+#include "actor/player/PlayerParticleEffectController.h"
 #include "app/Game.h"
+#include "component/PlatformLatchedGroupSwitchComponent.h"
+#include "component/PlatformPressureSwitchComponent.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/core/DebugEditorContext.h"
+#include "editor/stage/StageActorYamlWriter.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
 #include "gfx/Renderer.h"
 #include "system/GamepadRumbleService.h"
+#include "system/ParticleSystem.h"
+#include "system/actor_loader/PlatformStageConfig.h"
 #include "system/mesh/TextureLoader.h"
 #include "world/Stage.h"
 
@@ -19,8 +29,74 @@
 #include <array>
 #include <iostream>
 #include <limits>
+#include <utility>
 
 namespace {
+
+void SwitchStableTargetsSurviveConfigurationAndSave(Game& game)
+{
+    Planet planet(nullptr);
+    Platform owner(&game);
+    owner.SetCurrentPlanet(&planet);
+    owner.SetStageSequenceName("platforms");
+    owner.SetStageYamlIndex(0);
+    owner.SetPlatformId("owner");
+    planet.AddPlatform(&owner);
+    ScopedTestStagePlanets planets(*game.GetCurrentStage(), {&planet});
+    const std::vector<PlatformRevealTarget> targets{
+        {"", -1, "first"}, {"", -1, "second"}, {"platforms", 0, "owner"}, {"", -1, "first"}};
+    auto* pressure = owner.AddPressureSwitchComponent();
+    auto* latched = owner.AddLatchedGroupSwitchComponent();
+    pressure->SetHideTargets(targets);
+    latched->SetRevealTargets(targets);
+    latched->SetHideTargets(targets);
+    ExpectEqual(std::size_t(2), pressure->GetHideTargets().size(), "distinct stable IDs are not duplicates");
+    ExpectEqual(std::size_t(2), latched->GetRevealTargets().size(), "latched stable IDs exclude self and duplicates");
+    ExpectEqual(std::size_t(2), latched->GetHideTargets().size(), "latched hide targets retain distinct IDs");
+    DebugEditorContext context{.game = &game};
+    StageActorYamlWriter writer(context);
+    auto config = YAML::Load("planets: [{}]\nplatforms: [{}]\n");
+    writer.WriteAllActorStates(config);
+    const auto saved = ParsePlatformStageConfig(config["platforms"][0]);
+    ExpectEqual(std::size_t(2), saved.behavior.pressureSwitch->hideTargets.size(), "pressure IDs survive save/reparse");
+    ExpectEqual(std::string("second"), saved.behavior.pressureSwitch->hideTargets[1].platformId, "pressure stable ID");
+    ExpectEqual(std::size_t(2), saved.behavior.latchedGroupSwitch->hideTargets.size(), "latched hide IDs survive save");
+    ExpectEqual(std::string("second"), saved.behavior.latchedGroupSwitch->hideTargets[1].platformId, "latched hide ID");
+}
+
+void ParticlePresentationUsesOnlyProvidedSystem(Game& game)
+{
+    Player player(&game);
+    player.SetPos({2, 3, 4});
+    ParticleSystem particles(64);
+    ParticleEffectDefinition effect;
+    auto emitter = CreateDefaultParticleEmitter();
+    emitter.count = 1;
+    effect.emitters.push_back(emitter);
+    for (const auto* id : {"walk_start_dust", "landing_dust", "player_special_charge"}) {
+        ExpectTrue(particles.CreateEffect(id, effect), "create deterministic particle effect");
+    }
+    PlayerParticleEffectController presentation;
+    presentation.UpdateWalking(player, particles, true);
+    presentation.UpdateWalking(player, particles, true);
+    ExpectEqual(1U, particles.GetParticles().size(), "one emission at walk start");
+    presentation.UpdateWalking(player, particles, false);
+    presentation.UpdateWalking(player, particles, true);
+    ExpectEqual(2U, particles.GetParticles().size(), "new walking transition emits again");
+    presentation.EmitLanding(player, particles, 0.5f);
+    ExpectEqual(2U, particles.GetParticles().size(), "slow landing does not emit");
+    presentation.EmitLanding(player, particles, 2);
+    ExpectEqual(3U, particles.GetParticles().size(), "landing emits into provided system");
+    presentation.UpdateSpecialCharging(player, particles, true, 0);
+    presentation.UpdateSpecialCharging(player, particles, true, 0.05f);
+    ExpectEqual(4U, particles.GetParticles().size(), "charge emission is throttled");
+    presentation.UpdateSpecialCharging(player, particles, true, 0.08f);
+    ExpectEqual(5U, particles.GetParticles().size(), "charge interval emits again");
+    presentation.Reset();
+    presentation.UpdateWalking(player, particles, true);
+    presentation.UpdateSpecialCharging(player, particles, true, 0);
+    ExpectEqual(7U, particles.GetParticles().size(), "reset clears both histories");
+}
 
 void ExpectBillboardBasis(const glm::mat4& matrix)
 {
@@ -156,17 +232,29 @@ struct RestorePixelState {
     GLint binding = 0;
     GLint unpack = 0;
     GLint pack = 0;
+    GLint buffer = 0;
+    GLint rowLength = 0;
+    GLint skipRows = 0;
+    GLint skipPixels = 0;
     RestorePixelState()
     {
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &binding);
         glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpack);
         glGetIntegerv(GL_PACK_ALIGNMENT, &pack);
+        glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &buffer);
+        glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+        glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
+        glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
     }
     ~RestorePixelState()
     {
         glBindTexture(GL_TEXTURE_2D, binding);
         glPixelStorei(GL_UNPACK_ALIGNMENT, unpack);
         glPixelStorei(GL_PACK_ALIGNMENT, pack);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
     }
 };
 
@@ -191,6 +279,16 @@ void TextureLoadingPreservesCallerState(Game&)
     glGenTextures(1, &sentinel.id);
     glBindTexture(GL_TEXTURE_2D, sentinel.id);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+    struct UnpackBuffer {
+        GLuint id = 0;
+        ~UnpackBuffer() { glDeleteBuffers(1, &id); }
+    } buffer;
+    glGenBuffers(1, &buffer.id);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer.id);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, 1024, nullptr, GL_STATIC_DRAW);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 9);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 2);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 1);
     TextureLoader loader;
     Texture image{loader.LoadTexture(path.string().c_str(), TextureColorSpace::Linear)};
     ExpectTrue(image.id != 0, "load test image");
@@ -200,6 +298,16 @@ void TextureLoadingPreservesCallerState(Game&)
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &binding);
     ExpectEqual(8, alignment, "restore unpack alignment");
     ExpectEqual(sentinel.id, static_cast<GLuint>(binding), "restore texture binding");
+    for (const auto& [state, expected] :
+         std::array<std::pair<GLenum, GLint>, 4>{{{GL_PIXEL_UNPACK_BUFFER_BINDING, static_cast<GLint>(buffer.id)},
+                                                  {GL_UNPACK_ROW_LENGTH, 9},
+                                                  {GL_UNPACK_SKIP_ROWS, 2},
+                                                  {GL_UNPACK_SKIP_PIXELS, 1}}}) {
+        GLint actual = 0;
+        glGetIntegerv(state, &actual);
+        ExpectEqual(expected, actual, "restore PBO and row layout");
+    }
+    ExpectEqual(static_cast<GLenum>(GL_NO_ERROR), glGetError(), "CPU upload ignores caller PBO and row layout");
     ExpectEqual(0U, loader.LoadTexture("missing-test-image.png", TextureColorSpace::Linear), "missing image fails");
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &binding);
     ExpectEqual(sentinel.id, static_cast<GLuint>(binding), "failed load also preserves binding");
@@ -248,7 +356,7 @@ void EnemyFormFailureDoesNotHideOtherForms(Game& game)
     } restore{stage, stage.GetPlanets()};
     stage.RemoveAllPlanet();
     EditorAssetCatalog assets;
-    DebugEditorContext context{&game};
+    DebugEditorContext context{.game = &game};
     context.assetCatalog = &assets;
     StageAddActorPanel panel(context);
     ImGui_ImplOpenGL3_NewFrame();
@@ -272,6 +380,8 @@ void RunRuntimeReliabilityTests(Game& game)
 {
     int failures = 0;
     const std::pair<const char*, void (*)(Game&)> cases[]{
+        {"SwitchStableTargetsSurviveConfigurationAndSave", SwitchStableTargetsSurviveConfigurationAndSave},
+        {"ParticlePresentationUsesOnlyProvidedSystem", ParticlePresentationUsesOnlyProvidedSystem},
         {"BillboardDegeneracyAndNormalPose", BillboardDegeneracyAndNormalPose},
         {"ControllerReplacementKeepsCurrentDeviceOrder", ControllerReplacementKeepsCurrentDeviceOrder},
         {"TextureLoadingPreservesCallerState", TextureLoadingPreservesCallerState},

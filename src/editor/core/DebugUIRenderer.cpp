@@ -9,7 +9,7 @@
 #include <string>
 
 DebugUIRenderer::DebugUIRenderer(Game* game, UIRenderer* uiRenderer)
-    : mContext{game, uiRenderer, &mAssetCatalog},
+    : mContext{.game = game, .uiRenderer = uiRenderer, .assetCatalog = &mAssetCatalog},
       mLayoutController(mContext),
       mBuildRestartPanel(mContext),
       mPerformancePanel(mContext),

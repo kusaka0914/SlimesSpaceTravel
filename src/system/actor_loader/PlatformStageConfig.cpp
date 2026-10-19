@@ -28,7 +28,7 @@ std::vector<PlatformRevealTarget> ParseActorTargets(const YAML::Node& targetsNod
 
     targets.reserve(targetsNode.size());
     for (const YAML::Node& targetNode : targetsNode) {
-        if (!targetNode || !targetNode.IsMap() || !targetNode["sequence"] || !targetNode["index"]) {
+        if (!targetNode || !targetNode.IsMap()) {
             continue;
         }
 

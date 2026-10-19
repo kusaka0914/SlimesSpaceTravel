@@ -10,4 +10,14 @@ struct PlatformRevealTarget {
     std::string platformId;
 
     bool IsValid() const { return !platformId.empty() || (!sequenceName.empty() && yamlIndex >= 0); }
+
+    // 両方にIDがあればIDを優先し、それ以外は有効なシーケンス名と添字で照合する。
+    bool RefersToSameActor(const PlatformRevealTarget& other) const
+    {
+        if (!platformId.empty() && !other.platformId.empty()) {
+            return platformId == other.platformId;
+        }
+        return !sequenceName.empty() && yamlIndex >= 0 && sequenceName == other.sequenceName &&
+               yamlIndex == other.yamlIndex;
+    }
 };

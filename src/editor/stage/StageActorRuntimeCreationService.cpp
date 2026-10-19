@@ -15,7 +15,7 @@ StageActorRuntimeCreationService::StageActorRuntimeCreationService(DebugEditorCo
 bool StageActorRuntimeCreationService::CreateActor(StageActorType actorType, const YAML::Node& actorNode,
                                                    int stageYamlIndex) const
 {
-    return CreateActor(StageActorRef{actorType, stageYamlIndex}, actorNode, stageYamlIndex);
+    return CreateActor(StageActorRef{.type = actorType, .yamlIndex = stageYamlIndex}, actorNode, stageYamlIndex);
 }
 
 bool StageActorRuntimeCreationService::CreateActor(const StageActorRef& actorRef, const YAML::Node& actorNode,

@@ -250,7 +250,7 @@ bool PlayerAttackHitDetector::DoesAirDodgePathTouchEnemyModel(const Player& play
 
     // Playerの判定幅を敵の各ローカル軸へ投影し、移動線分と拡張境界の交差として調べる。
     glm::vec3 expansion(0.0f);
-    for (glm::length_t axisIndex = 0; axisIndex < enemyBounds.axes.size(); ++axisIndex) {
+    for (glm::length_t axisIndex = 0; axisIndex < enemyBounds.halfExtents.length(); ++axisIndex) {
         const glm::vec3 targetAxis = enemyBounds.axes[axisIndex];
         const float verticalAxisAlignment = glm::clamp(std::abs(glm::dot(targetAxis, playerUpDirection)), 0.0f, 1.0f);
         const float horizontalAxisAlignment =

@@ -34,7 +34,7 @@ void MovingPlatformSavePreservesAuthoredStartAndSchema(Game& game)
     platform.SetStageYamlIndex(0);
     planet.AddPlatform(&platform);
     ScopedTestStagePlanets planets(*game.GetCurrentStage(), {&planet});
-    DebugEditorContext context{&game};
+    DebugEditorContext context{.game = &game};
     StageActorYamlWriter writer(context);
     auto* movement = platform.AddMovementComponent();
     movement->SetBaseLocalPos({1, 2, 3});
@@ -113,7 +113,7 @@ void NPCTalkSerializationKeepsMetadataAndRemovesStaleKeys(Game& game)
     npc.SetTalkProximityMessageRubySegments(1, {{"お", "", false}, {"帰り", "かえり", true}});
     planet.AddNPC(&npc);
     ScopedTestStagePlanets planets(*game.GetCurrentStage(), {&planet});
-    DebugEditorContext context{&game};
+    DebugEditorContext context{.game = &game};
     StageActorYamlWriter writer(context);
     YAML::Node config = YAML::Load("NPCs: [{futureField: retain}]");
     writer.WriteAllActorStates(config);
@@ -172,7 +172,7 @@ void MovingPlatformDuplicationTranslatesPathAndSupportsHistory(Game& game)
         WriteTestFile(path, YAML::Dump(stage));
         ExpectTrue(game.LoadStageForScene(1, path.string()), "load isolated stage for path duplication");
         const std::string original = ReadTestFile(path);
-        DebugEditorContext context{&game};
+        DebugEditorContext context{.game = &game};
         StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); }, context.gameViewport,
                                            context.planetMoveMode);
         StageEditCommandController commands(context, selection);

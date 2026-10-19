@@ -278,7 +278,6 @@ private:
     int mAttackComboIndex = 0;
     int mAirAttackCount = 0;
 
-    float mAttackStartHeight = 0.0f;
     float mAttack = 10.0f;
     float mAttackSpeed = 5.0f;
     float mAttackCooldownRemaining = 0.0f;

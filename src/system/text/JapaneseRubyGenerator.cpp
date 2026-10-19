@@ -14,6 +14,8 @@
 
 namespace {
 
+#ifdef _WIN32
+
 void AppendSegment(std::vector<RubyTextSegment>& segments, RubyTextSegment segment)
 {
     if (!segment.showsRuby && !segments.empty() && !segments.back().showsRuby) {
@@ -22,8 +24,6 @@ void AppendSegment(std::vector<RubyTextSegment>& segments, RubyTextSegment segme
     }
     segments.emplace_back(std::move(segment));
 }
-
-#ifdef _WIN32
 
 bool IsKanji(wchar_t character)
 {
