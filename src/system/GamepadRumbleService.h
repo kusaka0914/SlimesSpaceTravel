@@ -7,7 +7,10 @@
 // 接続中のSDLコントローラーを保持し、Player番号に応じた振動を送る。
 class GamepadRumbleService {
 public:
+    GamepadRumbleService() = default;
     ~GamepadRumbleService();
+    GamepadRumbleService(const GamepadRumbleService&) = delete;
+    GamepadRumbleService& operator=(const GamepadRumbleService&) = delete;
 
     void Initialize();
     void Shutdown();

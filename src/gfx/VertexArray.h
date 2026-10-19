@@ -6,6 +6,8 @@ class VertexArray {
 public:
     VertexArray(const float* vertices, unsigned int vertexCount, const unsigned int* indices, unsigned int indexCount);
     ~VertexArray();
+    VertexArray(const VertexArray&) = delete;
+    VertexArray& operator=(const VertexArray&) = delete;
 
     // このVAOを現在の描画用にバインドする。描画命令自体は呼び出し側で発行する。
     void SetActive();

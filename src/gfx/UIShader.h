@@ -8,10 +8,10 @@ public:
     UIShader();
     ~UIShader();
 
-    // プログラムとuniform位置を設定する。コンストラクタから呼ばれる初期化処理。
-    void Initialize();
     int GetLocConvertSrgbToLinear() const { return mLocConvertSrgbToLinear; }
 
 private:
+    void Initialize();
+
     int mLocConvertSrgbToLinear = -1;
 };

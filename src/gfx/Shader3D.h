@@ -8,9 +8,6 @@ public:
     Shader3D();
     ~Shader3D();
 
-    // プログラムとuniform位置を設定する。コンストラクタから呼ばれる初期化処理。
-    void Initialize();
-
     int GetLocSunDirection() const { return mLocSunDirection; }
     int GetLocSunColor() const { return mLocSunColor; }
     int GetLocSunIntensity() const { return mLocSunIntensity; }
@@ -47,6 +44,8 @@ public:
     int GetLocShadowMaximumBias() const { return mLocShadowMaximumBias; }
 
 private:
+    void Initialize();
+
     int mLocSunDirection;
     int mLocSunColor;
     int mLocSunIntensity;

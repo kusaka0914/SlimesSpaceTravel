@@ -9,7 +9,10 @@
 // GLクエリの解放には有効なGLコンテキストが必要。コンテキスト破棄前にShutdownを呼ぶ。
 class GpuDurationTimer {
 public:
+    GpuDurationTimer() = default;
     ~GpuDurationTimer();
+    GpuDurationTimer(const GpuDurationTimer&) = delete;
+    GpuDurationTimer& operator=(const GpuDurationTimer&) = delete;
 
     // GL_TIME_ELAPSEDの他の計測と重ねず、Begin/Endで描画処理を囲む。
     // 非対応環境・計測中・空きスロットなしの場合は計測を開始しない。
