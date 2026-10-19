@@ -9,6 +9,7 @@
 #include <SDL_ttf.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -150,11 +151,22 @@ public:
                            glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f});
 
 private:
+    struct CustomScreenLayout {
+        float scale = 1.0f;
+        float verticalOffset = 0.0f;
+    };
+
     void DrawTalkAdvancePrompt();
     void Initialize();
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
+    float CalculateOperationGuideOpacity(const UILoadSystem::CustomElement& element, const Player* player,
+                                         std::optional<bool>& canTogglePlayerSplit) const;
+    CustomScreenLayout
+    CalculateCustomScreenLayout(const std::vector<const UILoadSystem::CustomElement*>& sortedElements,
+                                const std::string& screen, float viewportHeight, bool alwaysAnchorToBottom,
+                                float preferredVerticalOffset) const;
     void DrawCustomElement(const UILoadSystem::CustomElement& element, float viewportTopY = 0.0f,
                            float viewportScale = 1.0f, bool centerTalkPrompt = false, float contentScale = -1.0f,
                            const Player* inputPlayer = nullptr, float opacity = 1.0f,

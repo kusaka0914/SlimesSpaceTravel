@@ -1,7 +1,7 @@
 #include "gfx/UIRenderer.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "gfx/ui/OperationGuideVisibility.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
@@ -155,6 +155,150 @@ void UIRenderer::DrawCustomElement(const UILoadSystem::CustomElement& element, f
     }
 }
 
+float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomElement& element, const Player* player,
+                                                 std::optional<bool>& canTogglePlayerSplit) const
+{
+    constexpr float disabledOpacity = 0.38f;
+    if (element.screen != "operation") {
+        return 1.0f;
+    }
+
+    const bool isBoatDisembarkGuide =
+        player && player->IsWaitingForBoat() && (element.id == "buttonB" || element.id == "buttonTextB");
+    if (isBoatDisembarkGuide) {
+        return 1.0f;
+    }
+
+    const bool playerCanAct = player && player->GetIsActive() && player->IsAlive();
+    if (!playerCanAct) {
+        return disabledOpacity;
+    }
+
+    const bool isSpecialCharging = player->IsSpecialCharging() || player->GetCanSpecialAttack();
+    const bool isContinuousAttack = player->IsContinuousAttacking();
+    // 連続攻撃は地上にいる間だけ操作を占有する。空中では残り時間が
+    // 減るだけで、弱攻撃・回避・強攻撃を通常どおり受け付ける。
+    const bool isGroundContinuousAttack = isContinuousAttack && player->GetOnGround();
+    const bool isModifierHeld = mGame->IsInputModifierHeld();
+    const bool isIdle = player->GetActionState() == Player::ActionState::Idle;
+    const bool isWeakAttacking = player->GetActionState() == Player::ActionState::Attacking;
+    const bool canStartNormalAction = isIdle && !isSpecialCharging && !isGroundContinuousAttack;
+    const bool canRecover = isIdle && !isSpecialCharging && !player->GetCanSpecialAttack() &&
+                            player->GetJewelCount() >= 1 && player->GetHp() < player->GetMaxHp();
+    const bool canStartChargeAttack = isIdle && !isGroundContinuousAttack && player->GetJewelCount() >= 2;
+    const bool canStartContinuousAttack = canStartNormalAction && player->GetOnGround() &&
+                                          player->GetJewelCount() >= PlayerJewelGauge::ContinuousAttackCost;
+    bool isEnabled = true;
+
+    if (element.id == "buttonA" || element.id == "buttonTextA") {
+        if (isModifierHeld) {
+            // 特殊入力中は「体力回復」。ジュエルを1個消費する。
+            isEnabled = canRecover;
+            return isEnabled ? 1.0f : disabledOpacity;
+        }
+
+        isEnabled = isIdle && !isSpecialCharging && player->GetOnGround();
+    } else if (element.id == "buttonB" || element.id == "buttonTextB") {
+        // 回避の短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
+        // 溜め中の回避は受け付けるため、通常表示を保つ。
+        isEnabled = !isGroundContinuousAttack && (isIdle || isWeakAttacking);
+    } else if (element.id == "buttonA_copy" || element.id == "buttonTextB_copy") {
+        isEnabled = mGame->CanOpenPauseMenu();
+    } else if (element.id == "buttonX" || element.id == "buttonTextX") {
+        if (isModifierHeld) {
+            // 特殊入力中は「溜め攻撃」。開始には2個必要で、溜め中は
+            // 同じ入力で発射／終了する。
+            isEnabled = isSpecialCharging || canStartChargeAttack;
+            return isEnabled ? 1.0f : disabledOpacity;
+        }
+        if (mGame->IsAssistControlStyle()) {
+            isEnabled = isSpecialCharging || player->GetCanSpecialAttack() || canRecover;
+            return isEnabled ? 1.0f : disabledOpacity;
+        }
+        // 溜め攻撃は同じ強攻撃入力で発射／終了するので、その間も
+        // 強攻撃だけは有効として表示する。
+        isEnabled = canStartNormalAction || isSpecialCharging;
+    } else if (element.id == "buttonY" || element.id == "buttonTextY") {
+        // 特殊入力中は「連続攻撃」で、ジュエルを2個消費する。
+        isEnabled = isModifierHeld ? canStartContinuousAttack : canStartNormalAction;
+    } else if (element.id == "buttonB_copy" || element.id == "buttonTextB_copy2") {
+        // 溜め中は移動入力を受け付けない。一方、連続攻撃中は
+        // 移動できるため通常表示を保つ。
+        isEnabled = !isSpecialCharging && isIdle;
+    } else if (element.id == "buttonB_copy_copy" || element.id == "buttonTextB_copy2_copy" ||
+               element.id == "buttonB_copy_copy_copy" || element.id == "buttonTextB_copy2_copy_copy") {
+        const CameraSystem* cameraSystem = mGame->GetCameraSystem();
+        isEnabled = cameraSystem && cameraSystem->AllowsPlayerInput();
+    } else if (element.id == "buttonB_copy_copy2" || element.id == "buttonTextB_copy2_copy2") {
+        isEnabled = mGame->CanSwitchControlledPlayer();
+    } else if (element.id == "buttonB_copy_copy2_copy" || element.id == "buttonTextB_copy2_copy2_copy") {
+        if (!canTogglePlayerSplit) {
+            canTogglePlayerSplit = mGame->CanTogglePlayerSplit();
+        }
+        isEnabled = *canTogglePlayerSplit;
+    }
+
+    return isEnabled ? 1.0f : disabledOpacity;
+}
+
+// 画面ごとの配置を保ちながら、高さが足りない場合だけ縮小して枠内に収める。
+UIRenderer::CustomScreenLayout
+UIRenderer::CalculateCustomScreenLayout(const std::vector<const UILoadSystem::CustomElement*>& sortedElements,
+                                        const std::string& screen, float viewportHeight, bool alwaysAnchorToBottom,
+                                        float preferredVerticalOffset) const
+{
+    constexpr float viewportPadding = 12.0f;
+    float minimumY = std::numeric_limits<float>::max();
+    float maximumY = std::numeric_limits<float>::lowest();
+    for (const UILoadSystem::CustomElement* candidate : sortedElements) {
+        if (!candidate || candidate->screen != screen) {
+            continue;
+        }
+
+        float height = mFbWidth * candidate->heightRatio;
+        if (candidate->type == UILoadSystem::CustomElementType::Text) {
+            const std::string resolvedText = ResolveCustomElementText(*candidate);
+            std::string firstLine;
+            std::string secondLine;
+            const bool hasSecondLine = SplitText(resolvedText, firstLine, secondLine);
+            int firstWidth = 0;
+            int firstHeight = 0;
+            MeasureText(firstLine, mFbWidth * candidate->textScaleRatio, firstWidth, firstHeight);
+            height = static_cast<float>(firstHeight);
+            if (hasSecondLine) {
+                int secondWidth = 0;
+                int secondHeight = 0;
+                MeasureText(secondLine, mFbWidth * candidate->textScaleRatio, secondWidth, secondHeight);
+                height += static_cast<float>(secondHeight) + mFbHeight * 0.0666f;
+            }
+        }
+
+        const float y = mFbWidth * candidate->yRatio;
+        const float top = candidate->centerBased ? y - height * 0.5f : y;
+        minimumY = std::min(minimumY, top);
+        maximumY = std::max(maximumY, top + height);
+    }
+
+    if (minimumY > maximumY) {
+        return CustomScreenLayout{};
+    }
+
+    const float availableHeight = std::max(1.0f, viewportHeight - viewportPadding * 2.0f);
+    const float contentHeight = std::max(1.0f, maximumY - minimumY);
+    const float scale = std::min(1.0f, availableHeight / contentHeight);
+    const float scaledMinY = minimumY * scale;
+    const float scaledMaxY = maximumY * scale;
+    float verticalOffset =
+        alwaysAnchorToBottom ? viewportHeight - viewportPadding - scaledMaxY : preferredVerticalOffset;
+    if (scaledMaxY + verticalOffset > viewportHeight - viewportPadding) {
+        verticalOffset = viewportHeight - viewportPadding - scaledMaxY;
+    }
+    if (scaledMinY + verticalOffset < viewportPadding) {
+        verticalOffset += viewportPadding - (scaledMinY + verticalOffset);
+    }
+    return CustomScreenLayout{scale, verticalOffset};
+}
+
 void UIRenderer::DrawCustomUI()
 {
     if (!mUILoadSystem) {
@@ -207,156 +351,15 @@ void UIRenderer::DrawCustomUI()
         isTwoPlayer};
 
     std::optional<bool> canTogglePlayerSplit;
-    const auto getOperationGuideOpacity = [&](const UILoadSystem::CustomElement& element, const Player* player) {
-        constexpr float disabledOpacity = 0.38f;
-        if (element.screen != "operation") {
-            return 1.0f;
-        }
-
-        const bool isBoatDisembarkGuide =
-            player && player->IsWaitingForBoat() && (element.id == "buttonB" || element.id == "buttonTextB");
-        if (isBoatDisembarkGuide) {
-            return 1.0f;
-        }
-
-        const bool playerCanAct = player && player->GetIsActive() && player->IsAlive();
-        if (!playerCanAct) {
-            return disabledOpacity;
-        }
-
-        const bool isSpecialCharging = player->IsSpecialCharging() || player->GetCanSpecialAttack();
-        const bool isContinuousAttack = player->IsContinuousAttacking();
-        // 連続攻撃は地上にいる間だけ操作を占有する。空中では残り時間が
-        // 減るだけで、弱攻撃・回避・強攻撃を通常どおり受け付ける。
-        const bool isGroundContinuousAttack = isContinuousAttack && player->GetOnGround();
-        const bool isModifierHeld = mGame->IsInputModifierHeld();
-        const bool isIdle = player->GetActionState() == Player::ActionState::Idle;
-        const bool isWeakAttacking = player->GetActionState() == Player::ActionState::Attacking;
-        const bool canStartNormalAction = isIdle && !isSpecialCharging && !isGroundContinuousAttack;
-        const bool canRecover = isIdle && !isSpecialCharging && !player->GetCanSpecialAttack() &&
-                                player->GetJewelCount() >= 1 && player->GetHp() < player->GetMaxHp();
-        const bool canStartChargeAttack = isIdle && !isGroundContinuousAttack && player->GetJewelCount() >= 2;
-        const bool canStartContinuousAttack = canStartNormalAction && player->GetOnGround() &&
-                                              player->GetJewelCount() >= PlayerJewelGauge::ContinuousAttackCost;
-        bool isEnabled = true;
-
-        if (element.id == "buttonA" || element.id == "buttonTextA") {
-            if (isModifierHeld) {
-                // 特殊入力中は「体力回復」。ジュエルを1個消費する。
-                isEnabled = canRecover;
-                return isEnabled ? 1.0f : disabledOpacity;
-            }
-
-            isEnabled = isIdle && !isSpecialCharging && player->GetOnGround();
-        } else if (element.id == "buttonB" || element.id == "buttonTextB") {
-            // 回避の短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
-            // 溜め中の回避は受け付けるため、通常表示を保つ。
-            isEnabled = !isGroundContinuousAttack && (isIdle || isWeakAttacking);
-        } else if (element.id == "buttonA_copy" || element.id == "buttonTextB_copy") {
-            isEnabled = mGame->CanOpenPauseMenu();
-        } else if (element.id == "buttonX" || element.id == "buttonTextX") {
-            if (isModifierHeld) {
-                // 特殊入力中は「溜め攻撃」。開始には2個必要で、溜め中は
-                // 同じ入力で発射／終了する。
-                isEnabled = isSpecialCharging || canStartChargeAttack;
-                return isEnabled ? 1.0f : disabledOpacity;
-            }
-            if (mGame->IsAssistControlStyle()) {
-                isEnabled = isSpecialCharging || player->GetCanSpecialAttack() || canRecover;
-                return isEnabled ? 1.0f : disabledOpacity;
-            }
-            // 溜め攻撃は同じ強攻撃入力で発射／終了するので、その間も
-            // 強攻撃だけは有効として表示する。
-            isEnabled = canStartNormalAction || isSpecialCharging;
-        } else if (element.id == "buttonY" || element.id == "buttonTextY") {
-            // 特殊入力中は「連続攻撃」で、ジュエルを2個消費する。
-            isEnabled = isModifierHeld ? canStartContinuousAttack : canStartNormalAction;
-        } else if (element.id == "buttonB_copy" || element.id == "buttonTextB_copy2") {
-            // 溜め中は移動入力を受け付けない。一方、連続攻撃中は
-            // 移動できるため通常表示を保つ。
-            isEnabled = !isSpecialCharging && isIdle;
-        } else if (element.id == "buttonB_copy_copy" || element.id == "buttonTextB_copy2_copy" ||
-                   element.id == "buttonB_copy_copy_copy" || element.id == "buttonTextB_copy2_copy_copy") {
-            const CameraSystem* cameraSystem = mGame->GetCameraSystem();
-            isEnabled = cameraSystem && cameraSystem->AllowsPlayerInput();
-        } else if (element.id == "buttonB_copy_copy2" || element.id == "buttonTextB_copy2_copy2") {
-            isEnabled = mGame->CanSwitchControlledPlayer();
-        } else if (element.id == "buttonB_copy_copy2_copy" || element.id == "buttonTextB_copy2_copy2_copy") {
-            if (!canTogglePlayerSplit) {
-                canTogglePlayerSplit = mGame->CanTogglePlayerSplit();
-            }
-            isEnabled = *canTogglePlayerSplit;
-        }
-
-        return isEnabled ? 1.0f : disabledOpacity;
-    };
 
     const auto isTalkPromptElement = [](const std::string& id) {
         return id == "talkableText" || id == "talkableTextureForGameController" || id == "talkableTextureForKeyboard";
     };
 
-    struct CustomScreenLayout {
-        float scale = 1.0f;
-        float verticalOffset = 0.0f;
-    };
-    // 画面ごとの配置を保ちながら、分割画面など高さが足りない場合だけ縮小して枠内に収める。
-    const auto calculateCustomScreenLayout = [&](const std::string& screen, float viewportHeight,
-                                                 bool alwaysAnchorToBottom, float preferredVerticalOffset) {
-        constexpr float viewportPadding = 12.0f;
-        float minimumY = std::numeric_limits<float>::max();
-        float maximumY = std::numeric_limits<float>::lowest();
-        for (const UILoadSystem::CustomElement* candidate : sortedElements) {
-            if (!candidate || candidate->screen != screen) {
-                continue;
-            }
-
-            float height = mFbWidth * candidate->heightRatio;
-            if (candidate->type == UILoadSystem::CustomElementType::Text) {
-                const std::string resolvedText = ResolveCustomElementText(*candidate);
-                std::string firstLine;
-                std::string secondLine;
-                const bool hasSecondLine = SplitText(resolvedText, firstLine, secondLine);
-                int firstWidth = 0;
-                int firstHeight = 0;
-                MeasureText(firstLine, mFbWidth * candidate->textScaleRatio, firstWidth, firstHeight);
-                height = static_cast<float>(firstHeight);
-                if (hasSecondLine) {
-                    int secondWidth = 0;
-                    int secondHeight = 0;
-                    MeasureText(secondLine, mFbWidth * candidate->textScaleRatio, secondWidth, secondHeight);
-                    height += static_cast<float>(secondHeight) + mFbHeight * 0.0666f;
-                }
-            }
-
-            const float y = mFbWidth * candidate->yRatio;
-            const float top = candidate->centerBased ? y - height * 0.5f : y;
-            minimumY = std::min(minimumY, top);
-            maximumY = std::max(maximumY, top + height);
-        }
-
-        if (minimumY > maximumY) {
-            return CustomScreenLayout{};
-        }
-
-        const float availableHeight = std::max(1.0f, viewportHeight - viewportPadding * 2.0f);
-        const float contentHeight = std::max(1.0f, maximumY - minimumY);
-        const float scale = std::min(1.0f, availableHeight / contentHeight);
-        const float scaledMinY = minimumY * scale;
-        const float scaledMaxY = maximumY * scale;
-        float verticalOffset =
-            alwaysAnchorToBottom ? viewportHeight - viewportPadding - scaledMaxY : preferredVerticalOffset;
-        if (scaledMaxY + verticalOffset > viewportHeight - viewportPadding) {
-            verticalOffset = viewportHeight - viewportPadding - scaledMaxY;
-        }
-        if (scaledMinY + verticalOffset < viewportPadding) {
-            verticalOffset += viewportPadding - (scaledMinY + verticalOffset);
-        }
-        return CustomScreenLayout{scale, verticalOffset};
-    };
     const float operationGuideViewportHeight =
         isTwoPlayer ? static_cast<float>(mFbHeight) * 0.5f : static_cast<float>(mFbHeight);
     const CustomScreenLayout operationGuideLayout =
-        calculateCustomScreenLayout("operation", operationGuideViewportHeight, true, 0.0f);
+        CalculateCustomScreenLayout(sortedElements, "operation", operationGuideViewportHeight, true, 0.0f);
     constexpr float authoredAspectRatio = 16.0f / 9.0f;
     const float authoredViewportHeight = static_cast<float>(mFbWidth) / authoredAspectRatio;
     const float centeredAuthoredViewportTop =
@@ -367,9 +370,10 @@ void UIRenderer::DrawCustomUI()
             screenLayouts.contains(element->screen)) {
             continue;
         }
-        screenLayouts.emplace(element->screen, calculateCustomScreenLayout(
-                                                   element->screen, static_cast<float>(mFbHeight), false,
-                                                   element->screen == "title" ? centeredAuthoredViewportTop : 0.0f));
+        screenLayouts.emplace(
+            element->screen,
+            CalculateCustomScreenLayout(sortedElements, element->screen, static_cast<float>(mFbHeight), false,
+                                        element->screen == "title" ? centeredAuthoredViewportTop : 0.0f));
     }
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
@@ -472,12 +476,14 @@ void UIRenderer::DrawCustomUI()
         if (isTwoPlayer && element->screen == "operation") {
             const std::string* player1TextOverride = resolvePlayerTextOverride(players[0]);
             DrawCustomElement(*element, operationGuideLayout.verticalOffset, operationGuideLayout.scale, false,
-                              operationGuideLayout.scale, players[0], getOperationGuideOpacity(*element, players[0]),
+                              operationGuideLayout.scale, players[0],
+                              CalculateOperationGuideOpacity(*element, players[0], canTogglePlayerSplit),
                               player1TextOverride);
             const std::string* player2TextOverride = resolvePlayerTextOverride(players[1]);
             DrawCustomElement(*element, static_cast<float>(mFbHeight) * 0.5f + operationGuideLayout.verticalOffset,
                               operationGuideLayout.scale, false, operationGuideLayout.scale, players[1],
-                              getOperationGuideOpacity(*element, players[1]), player2TextOverride);
+                              CalculateOperationGuideOpacity(*element, players[1], canTogglePlayerSplit),
+                              player2TextOverride);
             continue;
         }
         const std::string* operationTextOverride = resolvePlayerTextOverride(operationPlayer);
@@ -488,7 +494,8 @@ void UIRenderer::DrawCustomUI()
                                : (screenLayout != screenLayouts.end() ? screenLayout->second : CustomScreenLayout{});
         DrawCustomElement(*element, elementLayout.verticalOffset, elementLayout.scale, false, elementLayout.scale,
                           isOperationElement ? operationPlayer : nullptr,
-                          getOperationGuideOpacity(*element, operationPlayer), operationTextOverride);
+                          CalculateOperationGuideOpacity(*element, operationPlayer, canTogglePlayerSplit),
+                          operationTextOverride);
         CustomElementScreenTransform screenTransform;
         if (CalculateCustomElementScreenTransform(*element, screenTransform)) {
             if (elementLayout.scale != 1.0f || elementLayout.verticalOffset != 0.0f) {

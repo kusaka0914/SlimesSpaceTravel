@@ -12,6 +12,7 @@
 #include "editor/stage/StageYamlRepository.h"
 #include "editor/stage/UGCPlatformCellService.h"
 #include "gfx/Renderer3D.h"
+#include "gfx/UIRenderer.h"
 #include "gfx/particle/ParticleRenderer.h"
 #include "gfx/performance/FramePerformanceTracker.h"
 #include "gfx/render3d/RenderViewportController.h"
@@ -29,6 +30,7 @@
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <iostream>
+#include <utility>
 
 namespace {
 
@@ -360,6 +362,69 @@ void UGCSceneUsesCurrentBorrowedPreviewState(Game& game)
     std::cout << "[PASS] Runtime.UGCSceneAndPlacementPreview\n";
 }
 
+void CustomUIKeepsOrderAndFitsViewport(Game& game)
+{
+    UIRenderer& renderer = *game.GetUIRenderer();
+    auto& elements = renderer.GetUILoadSystem()->GetCustomElements();
+    struct RestoreElements {
+        std::vector<UILoadSystem::CustomElement>& elements;
+        std::vector<UILoadSystem::CustomElement> original;
+        ~RestoreElements() { elements = std::move(original); }
+    } restore{elements, std::move(elements)};
+
+    UILoadSystem::CustomElement first;
+    first.screen = "test_layout";
+    first.id = "first";
+    first.type = UILoadSystem::CustomElementType::Panel;
+    first.visibleByDefault = true;
+    first.xRatio = 0.1f;
+    first.yRatio = 2.0f;
+    first.widthRatio = 0.2f;
+    first.heightRatio = 0.1f;
+    first.zOrder = 1;
+    auto second = first;
+    second.id = "second";
+    second.yRatio = 2.4f;
+    auto behind = first;
+    behind.id = "behind";
+    behind.type = UILoadSystem::CustomElementType::Text;
+    behind.text = "First line\nSecond line";
+    behind.yRatio = 2.8f;
+    behind.zOrder = 0;
+    auto hidden = first;
+    hidden.id = "hidden";
+    hidden.visibleByDefault = false;
+    elements = {first, second, behind, hidden};
+
+    ExpectEqual(static_cast<GLenum>(GL_NO_ERROR), glGetError(), "previous rendering leaves clean GL state");
+    renderer.DrawGameContent();
+    ExpectEqual(static_cast<GLenum>(GL_NO_ERROR), glGetError(), "custom UI draws without GL errors");
+    ExpectTrue(glIsEnabled(GL_DEPTH_TEST) == GL_TRUE, "UI restores depth test");
+    GLboolean writesDepth = GL_FALSE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &writesDepth);
+    ExpectTrue(writesDepth == GL_TRUE, "UI restores depth writes");
+
+    std::vector<std::string> order;
+    for (const auto& rendered : renderer.GetRenderedUIElements()) {
+        if (rendered.source != UIRenderer::RenderedUIElementSource::Custom || rendered.screen != first.screen) {
+            continue;
+        }
+        order.push_back(rendered.id);
+        const auto& transform = rendered.transform;
+        const float top = transform.center.y - transform.size.y * 0.5f;
+        const float bottom = transform.center.y + transform.size.y * 0.5f;
+        ExpectTrue(top >= 11.0f && bottom <= renderer.GetFbHeight() - 11.0f,
+                   "oversized authored content fits inside viewport padding");
+        ExpectTrue(std::isfinite(transform.center.x) && transform.size.x > 0 && transform.size.y > 0,
+                   "finite nonempty UI bounds");
+    }
+    ExpectEqual(std::size_t(3), order.size(), "only visible synthetic UI elements are recorded");
+    ExpectEqual(std::string("behind"), order[0], "lower zOrder first");
+    ExpectEqual(std::string("first"), order[1], "equal zOrder retains authored first element");
+    ExpectEqual(std::string("second"), order[2], "equal zOrder retains authored second element");
+    std::cout << "[PASS] Runtime.CustomUILayoutOrderAndViewportBounds\n";
+}
+
 void CamerasUseExplicitContextWithoutGame()
 {
     DebugCamera debug;
@@ -473,6 +538,7 @@ int main()
             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
             CameraManualYawRemainsIndependent(game);
             RendererDrawsStageAndBorrowedParticles(game);
+            CustomUIKeepsOrderAndFitsViewport(game);
             CamerasUseExplicitContextWithoutGame();
             CameraControlsAreIndependentAndStopDuringEditorCapture(game);
             UGCUsesTheSameTransaction(game, context, commands);

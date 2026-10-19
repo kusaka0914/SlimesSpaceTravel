@@ -199,6 +199,17 @@
       "tests": "新旧YAMLの複製経路、変位保持、ユニークID、未知項目、実Runtime再読込と選択、Undo/Redoの完全なバイト復元、惑星と同時複製の二重変位防止。",
       "status": "implemented_and_debug_verified",
       "verification": "修正前に経路始点の不一致を再現。修正後267単体・監査4件・Runtime18組・Debug全ビルド成功。"
+    },
+    {
+      "id": "MAINT-03",
+      "priority": "P2",
+      "location": "src/gfx/ui/UICustomElementRenderer.cpp:DrawCustomUI",
+      "evidence": "フレームの描画順/表示条件と、操作可否89行・スクリーン配置計算のlambdaが1関数に集中。",
+      "risk": "表示条件を直す際に配置計算や操作状態を同時に追う必要があり、変更範囲が見えにくい。",
+      "change": "既存UIRendererのprivate helperへ操作案内の不透明度計算と画面配置計算を分離。同期状態取得・lazyな分身可否キャッシュ・描画順は維持。",
+      "tests": "先行Runtime UIテストで同一zOrderの定義順・非表示・2行文字とPanelの縮小配置・GL状態復元を確認。抽出処理列を旧lambdaと照合。",
+      "status": "implemented_and_debug_verified",
+      "verification": "267単体・監査4件・Runtime19組・Debug全ビルド成功。UIの全スタイル/全操作の視覚比較は未実施。"
     }
   ],
   "notes": [

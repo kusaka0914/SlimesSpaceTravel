@@ -1,0 +1,13 @@
+{
+  "checks": [
+    {
+      "helper": "CalculateOperationGuideOpacity",
+      "statement_equivalence": true
+    },
+    {
+      "helper": "CalculateCustomScreenLayout",
+      "statement_equivalence": true
+    }
+  ],
+  "scope": "lambda captures become explicit arguments or existing UIRenderer members; draw calls, cached split availability and calculations unchanged"
+}
