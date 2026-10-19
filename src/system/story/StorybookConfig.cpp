@@ -1,6 +1,7 @@
 #include "system/story/StorybookConfig.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -12,7 +13,7 @@ bool StorybookConfig::Load(const std::string& path)
 {
     std::unordered_map<std::string, StorybookTrack> loadedTracks;
     try {
-        const YAML::Node root = YAML::LoadFile(path);
+        const YAML::Node root = YamlFile::Load(path);
         const YAML::Node tracks = root["tracks"];
         if (!tracks || !tracks.IsMap()) {
             mTracks.clear();

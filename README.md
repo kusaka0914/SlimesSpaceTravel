@@ -475,7 +475,7 @@ src/
 
 ### 品質検証の入口
 
-今回の修正・検証の要約は[review/followup/summary.json](review/followup/summary.json)にまとめています。`review/`内の以前のログはその時点の履歴で、最新状態の成功を示すものではありません。
+最新の入出力・UGC修正と検証の要約は[review/submission/summary.json](review/submission/summary.json)にまとめています。[以前の検証](review/followup/summary.json)を含め、`review/`内のログは記録された時点の履歴で、最新状態の成功を示すものではありません。
 
 代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
 
@@ -485,7 +485,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
 cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
 
-# 重要な実装22ファイルの解析と、既存の依存境界の検査
+# 入出力・UGCを含む重要な実装30ファイルの解析と、既存の依存境界の検査
 python3 -B tools/run_static_analysis.py --build build
 python3 -B tools/architecture_audit.py --check --output build/audit
 python3 -B tools/check_format.py --base <比較元コミット> --clang-format <clang-format-18>
@@ -505,7 +505,7 @@ python3 -B tools/run_benchmarks.py --build build
 
 カバレッジは未実行の実装も分母に含めます。ローカルのLLVM集約では一部関数のプロファイル不一致警告が出るため、割合は参考値として診断も記録しています。ベンチマークは固定Stageのメモリ内YAML処理・Actor生成破棄・姿勢計算を測り、FPS・GPU負荷・実際のステージ全体のロード時間は測りません。条件が異なる結果の自動比較は拒否します。
 
-同梱YAMLは未知フィールドを許容しつつ、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続を検査します。既存のUGC作業データ2件には重複IDと参照切れがあり、接続先の意図を推測して修正していません。[既知の不整合](review/asset-baseline.json)はファイルのハッシュと診断を固定し、内容が変わった場合や新しい不整合は失敗にします。これは全アセットが正常という意味ではありません。厳密な検査は`build/game_asset_check assets/data`で実行できます。
+同梱YAML全37件に、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続の検査を適用します。不正データの例外許可はありません。UGC作業データ2件は、参照されていない重複IDだけを採番し直し、存在しない`platform_8`への参照だけを除きました。配置・セル情報・有効な接続は保持しています。`build/game_asset_check assets/data`でも同じ検査を実行できます。
 
 [CI設定](.github/workflows/quality.yml)はLinuxのDebug / Release・統合テスト・解析・計測と、WindowsのReleaseビルド・画面不要のテストを実行します。GitHub上の実行結果はActionsから確認してください。ローカル検証だけではWindowsやCIの成功とは扱いません。
 

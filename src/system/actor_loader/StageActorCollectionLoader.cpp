@@ -1,7 +1,5 @@
 #include "system/actor_loader/StageActorCollectionLoader.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
@@ -17,10 +15,13 @@
 #include "actor/StageObject.h"
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
+#include "app/Game.h"
 #include "system/StageActorPlanetBindingService.h"
 #include "system/actor_loader/StageActorCreationService.h"
 #include "system/actor_loader/StageActorFactory.h"
 #include "system/actor_loader/StagePlayerLoader.h"
+#include "utils/YamlFile.h"
+#include "world/Stage.h"
 
 #include <array>
 #include <iostream>
@@ -84,7 +85,7 @@ bool StageActorCollectionLoader::LoadAll()
     const std::string& path = mGame->GetCurrentStageYamlPath();
     YAML::Node stageRoot;
     try {
-        stageRoot = YAML::LoadFile(path);
+        stageRoot = YamlFile::Load(path);
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load stage YAML: " << path << '\n' << exception.what() << '\n';
         return false;

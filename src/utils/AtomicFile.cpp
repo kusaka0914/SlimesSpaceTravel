@@ -41,8 +41,9 @@ struct TemporaryFile {
 bool PrepareText(const std::filesystem::path& path, std::string_view text, TemporaryFile& temporary,
                  std::string& outError)
 {
-    if (path.filename().empty()) {
-        outError = "The destination filename is empty.";
+    if (path.filename().empty() ||
+        path.native().find(std::filesystem::path::value_type{}) != std::filesystem::path::string_type::npos) {
+        outError = "The destination filename is empty or contains an embedded null.";
         return false;
     }
 

@@ -180,6 +180,8 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CameraShakeEffect.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/AtomicFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/TextFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/YamlFile.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageEditTransaction.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CinematicSequenceLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sequence/SequenceLibrary.cpp
@@ -223,7 +225,6 @@ if (BUILD_TESTING)
         add_test(NAME asset_schema_tests
             COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/validate_assets.py
                 --validator $<TARGET_FILE:game_asset_check>
-                --baseline ${CMAKE_CURRENT_SOURCE_DIR}/review/asset-baseline.json
         )
         add_test(NAME asset_validation_tests
             COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/AssetValidationTests.py

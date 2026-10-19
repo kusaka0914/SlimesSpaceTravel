@@ -5,13 +5,12 @@
 #include "gameplay/ugc/UGCWorkFileName.h"
 #include "gameplay/ugc/UGCWorkMetadata.h"
 #include "system/UserDataPaths.h"
+#include "utils/TextFile.h"
+#include "utils/YamlFile.h"
 
-#include <algorithm>
 #include <exception>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <iterator>
 #include <yaml-cpp/yaml.h>
 
 namespace {
@@ -98,7 +97,7 @@ bool UGCWorkFileService::ResetWorkingStage(std::string& outErrorMessage) const
 bool UGCWorkFileService::HasUnsavedChanges() const
 {
     try {
-        const YAML::Node workingStage = YAML::LoadFile(UserDataPaths::ResolveUGCWorkingStageFile().string());
+        const YAML::Node workingStage = YamlFile::Load(UserDataPaths::ResolveUGCWorkingStageFile().string());
         const std::optional<std::string> fileName = UGCWorkMetadata::FindFileName(workingStage);
         if (!fileName) {
             return true;
@@ -116,13 +115,12 @@ bool UGCWorkFileService::HasUnsavedChanges() const
             return true;
         }
 
-        std::ifstream workingFile(UserDataPaths::ResolveUGCWorkingStageFile(), std::ios::binary);
-        std::ifstream savedFile(savedStagePath, std::ios::binary);
-        if (!workingFile || !savedFile) {
-            return true;
-        }
-        return !std::equal(std::istreambuf_iterator<char>(workingFile), std::istreambuf_iterator<char>(),
-                           std::istreambuf_iterator<char>(savedFile));
+        std::string workingText;
+        std::string savedText;
+        std::string readError;
+        // サイズ確認後にファイルが変わっても、短い入力の終端を越えて比較しない。
+        return !TextFile::Read(UserDataPaths::ResolveUGCWorkingStageFile(), workingText, readError) ||
+               !TextFile::Read(savedStagePath, savedText, readError) || workingText != savedText;
     } catch (const YAML::Exception&) {
         return true;
     }
@@ -155,7 +153,7 @@ bool UGCWorkFileService::CopyToWorkingFile(const std::string& fileName) const
 
     try {
         const std::filesystem::path workingStagePath = UserDataPaths::ResolveUGCWorkingStageFile();
-        YAML::Node stageYaml = YAML::LoadFile(workingStagePath.string());
+        YAML::Node stageYaml = YamlFile::Load(workingStagePath.string());
         UGCWorkMetadata::PrepareForSave(stageYaml, ResolveDisplayName(fileName), fileName);
         if (!StageYamlRepository::SaveYamlFile(workingStagePath.string(), stageYaml)) {
             return false;

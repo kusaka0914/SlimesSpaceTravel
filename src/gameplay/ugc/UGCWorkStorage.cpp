@@ -1,6 +1,7 @@
 #include "gameplay/ugc/UGCWorkStorage.h"
 
 #include "gameplay/ugc/UGCWorkMetadata.h"
+#include "utils/YamlFile.h"
 
 #include <algorithm>
 #include <utility>
@@ -106,7 +107,7 @@ bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const
 bool UGCWorkStorage::IsClearVerified(const std::string& fileName) const
 {
     try {
-        const YAML::Node stageYaml = YAML::LoadFile(ResolveSavedFilePath(fileName).string());
+        const YAML::Node stageYaml = YamlFile::Load(ResolveSavedFilePath(fileName).string());
         return UGCWorkMetadata::IsClearVerified(stageYaml);
     } catch (const YAML::Exception&) {
         return false;

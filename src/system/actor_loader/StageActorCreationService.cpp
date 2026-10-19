@@ -25,6 +25,7 @@
 #include "system/actor_loader/StagePlanetCreator.h"
 #include "system/actor_loader/StagePlayerLoader.h"
 #include "system/actor_loader/TutorialTriggerStageConfigApplicator.h"
+#include "utils/YamlFile.h"
 
 #include <glm/glm.hpp>
 #include <iostream>
@@ -43,14 +44,14 @@ StageActorCreationService::StageActorCreationService(StageActorFactory& actorFac
 bool StageActorCreationService::ReloadActorDefaultConfigs()
 {
     try {
-        YAML::Node boatArrivalPointConfig = YAML::LoadFile("../assets/data/actor/boatarrivalpoints.yaml");
-        YAML::Node boatPartsConfig = YAML::LoadFile("../assets/data/actor/boatparts.yaml");
-        YAML::Node crystalConfig = YAML::LoadFile("../assets/data/actor/crystals.yaml");
-        YAML::Node enemyConfig = YAML::LoadFile("../assets/data/actor/enemies.yaml");
-        YAML::Node fallRespawnPointConfig = YAML::LoadFile("../assets/data/actor/fallrespawnpoints.yaml");
-        YAML::Node keyConfig = YAML::LoadFile("../assets/data/actor/keys.yaml");
-        YAML::Node npcConfig = YAML::LoadFile("../assets/data/actor/npcs.yaml");
-        YAML::Node starConfig = YAML::LoadFile("../assets/data/actor/stars.yaml");
+        YAML::Node boatArrivalPointConfig = YamlFile::Load("../assets/data/actor/boatarrivalpoints.yaml");
+        YAML::Node boatPartsConfig = YamlFile::Load("../assets/data/actor/boatparts.yaml");
+        YAML::Node crystalConfig = YamlFile::Load("../assets/data/actor/crystals.yaml");
+        YAML::Node enemyConfig = YamlFile::Load("../assets/data/actor/enemies.yaml");
+        YAML::Node fallRespawnPointConfig = YamlFile::Load("../assets/data/actor/fallrespawnpoints.yaml");
+        YAML::Node keyConfig = YamlFile::Load("../assets/data/actor/keys.yaml");
+        YAML::Node npcConfig = YamlFile::Load("../assets/data/actor/npcs.yaml");
+        YAML::Node starConfig = YamlFile::Load("../assets/data/actor/stars.yaml");
         PlayerConfig playerConfig = PlayerConfigLoader::Load("../assets/data/actor/players.yaml");
 
         mBoatArrivalPointConfig = std::move(boatArrivalPointConfig);

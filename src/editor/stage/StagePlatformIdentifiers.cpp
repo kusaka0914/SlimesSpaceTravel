@@ -4,9 +4,9 @@
 
 namespace StagePlatformIdentifiers {
 
-std::string CreateUniqueId(const YAML::Node& stageConfig)
+std::string CreateUniqueId(const YAML::Node& stageConfig, const std::vector<std::string>& reservedIds)
 {
-    std::unordered_set<std::string> usedIds;
+    std::unordered_set<std::string> usedIds(reservedIds.begin(), reservedIds.end());
     if (stageConfig && stageConfig.IsMap()) {
         for (const auto& entry : stageConfig) {
             const YAML::Node sequence = entry.second;

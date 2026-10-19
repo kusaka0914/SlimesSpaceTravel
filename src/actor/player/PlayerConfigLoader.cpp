@@ -1,5 +1,6 @@
 #include "actor/player/PlayerConfigLoader.h"
 
+#include "utils/YamlFile.h"
 #include "utils/YamlRead.h"
 
 #include <string>
@@ -91,7 +92,7 @@ void ReadLegacyAnimationNames(const YAML::Node& playerNode, PlayerAnimationDefin
 
 PlayerConfig PlayerConfigLoader::Load(const std::string& filePath)
 {
-    const YAML::Node playerRoot = YAML::LoadFile(filePath);
+    const YAML::Node playerRoot = YamlFile::Load(filePath);
     return Parse(playerRoot);
 }
 

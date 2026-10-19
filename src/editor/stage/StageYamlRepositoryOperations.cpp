@@ -1,11 +1,12 @@
 #include "editor/stage/StageYamlRepository.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 
 bool StageYamlRepository::LoadYamlFile(const std::string& filePath, YAML::Node& outConfig)
 {
     try {
-        YAML::Node config = YAML::LoadFile(filePath);
+        YAML::Node config = YamlFile::Load(filePath);
         if (!config.IsMap()) {
             std::cerr << "Invalid stage yaml root: " << filePath << '\n';
             return false;

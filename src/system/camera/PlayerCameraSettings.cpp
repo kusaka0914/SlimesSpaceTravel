@@ -1,6 +1,7 @@
 #include "system/camera/PlayerCameraSettings.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 #include "utils/YamlRead.h"
 
 #include <yaml-cpp/yaml.h>
@@ -83,7 +84,7 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             return true;
         }
 
-        const YAML::Node root = YAML::LoadFile(mFilePath);
+        const YAML::Node root = YamlFile::Load(mFilePath);
         const YAML::Node cameraNode = root["playerCamera"];
 
         if (!cameraNode || !cameraNode.IsMap()) {

@@ -1,0 +1,29 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 6: game_runtime_tests
+1/1 Test #6: game_runtime_tests ...............***Failed    6.81 sec
+[FAIL] Runtime.GeneratedPlatformsReserveIdsDuringRebuild: new regions must not reuse an existing region's ID
+  expected: 1
+  actual:   0
+[PASS] Runtime.SwitchStableTargetsSurviveConfigurationAndSave
+[PASS] Runtime.ParticlePresentationUsesOnlyProvidedSystem
+[PASS] Runtime.BillboardDegeneracyAndNormalPose
+[PASS] Runtime.ControllerReplacementKeepsCurrentDeviceOrder
+[PASS] Runtime.TextureLoadingPreservesCallerState
+[PASS] Runtime.TextureOrientationDoesNotLeakIntoUI
+[PASS] Runtime.EnemyFormFailureDoesNotHideOtherForms
+[FAIL] Runtime integration: runtime reliability regressions
+  expected: 0
+  actual:   1
+
+
+0% tests passed, 1 tests failed out of 1
+
+Label Time Summary:
+display        =   6.81 sec*proc (1 test)
+integration    =   6.81 sec*proc (1 test)
+
+Total Test time (real) =   6.81 sec
+
+The following tests FAILED:
+	  6 - game_runtime_tests (Failed)                       display integration
+Errors while running CTest

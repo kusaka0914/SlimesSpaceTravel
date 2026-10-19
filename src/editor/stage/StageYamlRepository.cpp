@@ -1,6 +1,7 @@
 #include "editor/stage/StageYamlRepository.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/TextFile.h"
 
 #include "app/Game.h"
 #include "world/Stage.h"
@@ -8,8 +9,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <utility>
 
 std::string StageYamlRepository::GetCurrentStageYamlPath(DebugEditorContext& context)
@@ -76,19 +75,11 @@ bool StageYamlRepository::ReadCurrentStageText(DebugEditorContext& context, std:
         return false;
     }
 
-    std::ifstream ifs(filePath);
-
-    if (!ifs) {
-        std::cerr << "Failed to open stage yaml: " << filePath << std::endl;
+    std::string error;
+    if (!TextFile::Read(filePath, outYamlText, error)) {
+        std::cerr << "Failed to read stage yaml: " << filePath << ": " << error << '\n';
         return false;
     }
-
-    std::string yamlText{std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
-    if (ifs.bad()) {
-        std::cerr << "Failed to read stage yaml: " << filePath << '\n';
-        return false;
-    }
-    outYamlText = std::move(yamlText);
     return true;
 }
 

@@ -1,11 +1,12 @@
 #include "system/actor_loader/StagePlayerLoader.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "system/MeshLoadSystem.h"
 #include "system/actor_loader/ActorPlacementLoader.h"
+#include "utils/YamlFile.h"
+#include "world/Stage.h"
 
 #include <glm/glm.hpp>
 #include <iostream>
@@ -137,7 +138,7 @@ bool StagePlayerLoader::CreatePlayerFromCurrentStage(int playerNum)
     }
 
     try {
-        const YAML::Node root = YAML::LoadFile(mGame->GetCurrentStageYamlPath());
+        const YAML::Node root = YamlFile::Load(mGame->GetCurrentStageYamlPath());
         if (!root["players"] || !root["players"].IsSequence()) {
             return false;
         }

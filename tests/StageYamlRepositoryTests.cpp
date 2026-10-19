@@ -10,6 +10,23 @@
 
 namespace {
 
+void InvalidFilePathsKeepExistingDocument()
+{
+    TemporaryTestDirectory fixture;
+    WriteTestFile(fixture.File(), "loaded: true\n");
+    std::string nulPath = fixture.File().string();
+    nulPath.push_back('\0');
+    nulPath += "suffix";
+    for (const auto& path :
+         {std::string(), fixture.Root().string(), (fixture.Root() / "missing.yaml").string(), nulPath}) {
+        YAML::Node document = YAML::Load("kept: original");
+        const YAML::Node original = document;
+        ExpectFalse(StageYamlRepository::LoadYamlFile(path, document), "non-file path rejected without throwing");
+        ExpectEqual(std::string("original"), document["kept"].as<std::string>(), "document retained");
+        ExpectEqual(std::string("original"), original["kept"].as<std::string>(), "borrowed document retained");
+    }
+}
+
 class TemporaryYamlFile {
 public:
     TemporaryYamlFile()
@@ -142,6 +159,7 @@ void InvalidStageLoadKeepsExistingDocument()
 
 void RegisterStageYamlRepositoryTests(TestRegistry& tests)
 {
+    tests.emplace_back("StageYamlRepository.InvalidFilePathsKeepDocument", InvalidFilePathsKeepExistingDocument);
     tests.emplace_back("StageYamlRepository.InvalidLoadKeepsDocument", InvalidStageLoadKeepsExistingDocument);
     tests.emplace_back("StageYamlRepository.SaveYamlFilePreservesNestedValues", SaveYamlFilePreservesNestedValues);
     tests.emplace_back("StageYamlRepository.SaveYamlFileRejectsUnwritableTarget", SaveYamlFileRejectsUnwritableTarget);

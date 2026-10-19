@@ -10,10 +10,84 @@
 #include "system/sequence/SequenceLibrary.h"
 #include "system/tutorial/TutorialLibrary.h"
 #include "utils/AtomicFile.h"
+#include "utils/TextFile.h"
+#include "utils/YamlFile.h"
 
 #include <filesystem>
 
 namespace {
+
+void TextReadsPreserveBytesAndKeepOutputOnFailure()
+{
+    TemporaryTestDirectory fixture;
+    const auto path = fixture.Root() / std::filesystem::path(u8"日本語 data.yaml");
+    std::string content(10000, 'x');
+    content += "\r\n";
+    content.push_back('\0');
+    std::string error;
+    ExpectTrue(AtomicFile::WriteText(path, content, error), "write binary-safe fixture");
+    std::string actual = "previous";
+    ExpectTrue(TextFile::Read(path, actual, error), "read Unicode path across multiple buffers");
+    ExpectEqual(content, actual, "CRLF and embedded content bytes remain unchanged");
+    for (const auto& invalid : {fixture.Root(), fixture.Root() / "missing.yaml", std::filesystem::path()}) {
+        ExpectFalse(TextFile::Read(invalid, actual, error), "non-file read rejected");
+        ExpectEqual(content, actual, "failed read does not publish partial contents");
+        ExpectFalse(error.empty(), "read failure includes reason");
+    }
+    ExpectTrue(AtomicFile::WriteText(path, "", error), "write empty file");
+    ExpectTrue(TextFile::Read(path, actual, error), "empty file is a successful read");
+    ExpectTrue(actual.empty() && error.empty(), "success clears contents and old error");
+}
+
+void YamlFileDistinguishesReadFailureAndSyntaxFailure()
+{
+    TemporaryTestDirectory fixture;
+    WriteTestFile(fixture.File(), "{broken");
+    bool syntaxFailure = false;
+    try {
+        YamlFile::Load(fixture.File());
+    } catch (const YAML::BadFile&) {
+        throw TestFailure("readable malformed YAML must retain its parse error category");
+    } catch (const YAML::Exception&) {
+        syntaxFailure = true;
+    }
+    ExpectTrue(syntaxFailure, "malformed YAML reports a syntax error");
+    bool readFailure = false;
+    try {
+        YamlFile::Load(fixture.Root());
+    } catch (const YAML::BadFile&) {
+        readFailure = true;
+    }
+    ExpectTrue(readFailure, "directory read uses the existing BadFile contract");
+}
+
+void TutorialDirectoryReadKeepsDefinitions()
+{
+    TemporaryTestDirectory fixture;
+    WriteTestFile(fixture.File(), "tutorials: [{id: kept, pages: [{text: original}]}]\n");
+    TutorialLibrary tutorials(fixture.File().string());
+    const auto* original = tutorials.Find("kept");
+    ExpectTrue(original != nullptr, "initial tutorial loaded");
+    std::filesystem::remove(fixture.File());
+    std::filesystem::create_directory(fixture.File());
+    ExpectFalse(tutorials.Load(), "directory read fails without escaping an I/O exception");
+    ExpectTrue(tutorials.Find("kept") == original, "existing tutorial reference survives failed reload");
+    ExpectFalse(tutorials.GetLastError().empty(), "read failure is explained");
+}
+
+void AtomicSaveRejectsEmbeddedNullWithoutOverwritingFile()
+{
+    TemporaryTestDirectory fixture;
+    WriteTestFile(fixture.File(), "original");
+    std::string invalid = fixture.File().string();
+    invalid.push_back('\0');
+    invalid += "suffix";
+    std::string error;
+    ExpectFalse(AtomicFile::WriteText(std::filesystem::path(invalid), "replacement", error),
+                "embedded null must not be truncated to a different destination");
+    ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "original bytes retained");
+    ExpectFalse(error.empty(), "invalid path is explained");
+}
 
 void AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles()
 {
@@ -477,6 +551,11 @@ void FailedWriteDoesNotTruncateOldFile()
 
 void RegisterPersistenceSafetyTests(TestRegistry& tests)
 {
+    tests.emplace_back("Persistence.TextReadBytesAndFailureState", TextReadsPreserveBytesAndKeepOutputOnFailure);
+    tests.emplace_back("Persistence.YamlReadErrorCategories", YamlFileDistinguishesReadFailureAndSyntaxFailure);
+    tests.emplace_back("Persistence.TutorialDirectoryReadKeepsDefinitions", TutorialDirectoryReadKeepsDefinitions);
+    tests.emplace_back("Persistence.AtomicSaveRejectsEmbeddedNull",
+                       AtomicSaveRejectsEmbeddedNullWithoutOverwritingFile);
     tests.emplace_back("Persistence.SaveExceptionRestoresChangedFile", StageEditSaveExceptionRestoresChangedFile);
     tests.emplace_back("Persistence.UnchangedSaveExceptionKeepsRuntime",
                        StageEditSaveExceptionWithoutChangesDoesNotReload);

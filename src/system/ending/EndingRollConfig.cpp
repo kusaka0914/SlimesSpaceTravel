@@ -1,6 +1,7 @@
 #include "system/ending/EndingRollConfig.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 #include "utils/YamlRead.h"
 
 #include <algorithm>
@@ -12,7 +13,7 @@ bool EndingRollConfigIO::Load(EndingRollConfig& outConfig, const std::string& pa
 {
     EndingRollConfig loadedConfig;
     try {
-        const YAML::Node root = YAML::LoadFile(path);
+        const YAML::Node root = YamlFile::Load(path);
         const YAML::Node credits = root["credits"];
         if (credits) {
             loadedConfig.creditsText = credits["text"] ? credits["text"].as<std::string>() : "";

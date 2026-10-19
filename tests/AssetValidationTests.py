@@ -51,31 +51,30 @@ class AssetValidationTests(unittest.TestCase):
     def test_cyclic_alias_does_not_recurse_indefinitely(self):
         self.validate("node: &cycle {child: *cycle}\n", 1, "cyclic YAML alias")
 
-    def test_known_invalid_baseline_requires_identical_content_and_diagnostic(self):
-        with tempfile.TemporaryDirectory(prefix="slimes asset baseline ") as directory:
+    def test_line_endings_share_a_hash_but_invalid_content_is_always_rejected(self):
+        with tempfile.TemporaryDirectory(prefix="slimes asset line endings ") as directory:
             root = Path(directory)
             path = root / "stage.yaml"
-            path.write_text("key: 1\nkey: 2\n", encoding="utf-8")
-            baseline = {"stage.yaml": {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                                       "diagnostic": "duplicate mapping key: key"}}
-            known = validate(Path(VALIDATOR), root, baseline, root)
-            self.assertTrue(known["passed"])
-            self.assertEqual("known_invalid_unchanged", known["files"][0]["status"])
-            path.write_bytes(b"key: 1\r\nkey: 2\r\n")
-            self.assertTrue(validate(Path(VALIDATOR), root, baseline, root)["passed"])
-            baseline["stage.yaml"]["diagnostic"] = "different error"
-            self.assertFalse(validate(Path(VALIDATOR), root, baseline, root)["passed"])
-            path.write_text("key: 1\nkey: 3\n", encoding="utf-8")
-            self.assertFalse(validate(Path(VALIDATOR), root, baseline, root)["passed"])
+            for newline in ["\r\n", "\n"]:
+                with self.subTest(newline=repr(newline)):
+                    path.write_text("key: 1\nkey: 2\n", encoding="utf-8", newline=newline)
+                    report = validate(Path(VALIDATOR), root, root)
+                    self.assertFalse(report["passed"])
+                    self.assertEqual("failed", report["files"][0]["status"])
+                    self.assertEqual(hashlib.sha256(b"key: 1\nkey: 2\n").hexdigest(),
+                                     report["files"][0]["sha256"])
+                    self.assertIn("duplicate mapping key: key", report["files"][0]["diagnostic"])
 
-    def test_baseline_does_not_accept_new_invalid_files_or_stale_exceptions(self):
-        with tempfile.TemporaryDirectory(prefix="slimes asset baseline ") as directory:
+    def test_batch_reports_every_invalid_file(self):
+        with tempfile.TemporaryDirectory(prefix="slimes asset batch ") as directory:
             root = Path(directory)
             (root / "valid.yaml").write_text("key: value\n", encoding="utf-8")
-            self.assertTrue(validate(Path(VALIDATOR), root, {}, root)["passed"])
-            self.assertFalse(validate(Path(VALIDATOR), root, {"missing.yaml": {}}, root)["passed"])
+            self.assertTrue(validate(Path(VALIDATOR), root, root)["passed"])
             (root / "invalid.yaml").write_text("key: 1\nkey: 2\n", encoding="utf-8")
-            self.assertFalse(validate(Path(VALIDATOR), root, {}, root)["passed"])
+            (root / "invalid_syntax.yml").write_text("key: [", encoding="utf-8")
+            report = validate(Path(VALIDATOR), root, root)
+            self.assertFalse(report["passed"])
+            self.assertEqual(["failed", "failed", "valid"], [row["status"] for row in report["files"]])
 
 
 if __name__ == "__main__":

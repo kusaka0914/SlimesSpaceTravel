@@ -1,5 +1,7 @@
 #include "editor/stage/PlatformTypeRegistry.h"
 
+#include "utils/YamlFile.h"
+
 #include <array>
 #include <filesystem>
 #include <iostream>
@@ -80,7 +82,7 @@ std::vector<PlatformTypeDefinition> PlatformTypeRegistry::LoadDefinitions()
     }
 
     try {
-        const YAML::Node root = YAML::LoadFile(definitionPath.string());
+        const YAML::Node root = YamlFile::Load(definitionPath.string());
         const YAML::Node typeNodes = root["platformTypes"];
         if (!typeNodes || !typeNodes.IsSequence()) {
             std::cerr << "platformTypes must be a sequence: " << definitionPath << std::endl;

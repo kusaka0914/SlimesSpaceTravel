@@ -54,6 +54,16 @@ void NonSequenceStageEntriesDoNotReserveIdentifiers()
                 "identifier when unrelated entries contain matching text");
 }
 
+void RemovedPlatformsKeepReservedIdentifiers()
+{
+    YAML::Node stageConfig;
+    stageConfig["platforms"][0]["platformId"] = "platform_2";
+    ExpectEqual(std::string("platform_4"),
+                StagePlatformIdentifiers::CreateUniqueId(stageConfig, {"platform_1", "platform_3"}),
+                "temporarily removed platforms remain reserved alongside current platforms");
+    ExpectEqual(std::size_t(1), stageConfig["platforms"].size(), "identifier selection leaves document unchanged");
+}
+
 } // namespace
 
 void RegisterStagePlatformIdentifiersTests(TestRegistry& tests)
@@ -68,4 +78,6 @@ void RegisterStagePlatformIdentifiersTests(TestRegistry& tests)
                        PressureSwitchTargetsReserveReferencedIdentifiers);
     tests.emplace_back("StagePlatformIdentifiers.NonSequenceStageEntriesDoNotReserveIdentifiers",
                        NonSequenceStageEntriesDoNotReserveIdentifiers);
+    tests.emplace_back("StagePlatformIdentifiers.RemovedPlatformsKeepReservedIdentifiers",
+                       RemovedPlatformsKeepReservedIdentifiers);
 }

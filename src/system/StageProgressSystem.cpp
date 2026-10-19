@@ -2,9 +2,9 @@
 
 #include "system/UserDataPaths.h"
 #include "utils/AtomicFile.h"
+#include "utils/TextFile.h"
 
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <utility>
 #include <yaml-cpp/yaml.h>
@@ -32,20 +32,21 @@ bool StageProgressSystem::Load()
         return true;
     }
 
-    std::ifstream input(mSavePath);
-    if (!input.is_open()) {
+    std::string text;
+    std::string readError;
+    if (!TextFile::Read(mSavePath, text, readError)) {
         std::error_code error;
         if (!std::filesystem::exists(mSavePath, error) && !error) {
             Reset();
             return true;
         }
-        std::cerr << "Failed to open stage progress: " << mSavePath.string() << '\n';
+        std::cerr << "Failed to read stage progress: " << readError << '\n';
         return false;
     }
 
     StageProgressSystem loaded(mSavePath, mIsPersistenceEnabled);
     try {
-        const YAML::Node root = YAML::Load(input);
+        const YAML::Node root = YAML::Load(text);
         if (!root.IsMap()) {
             return false;
         }

@@ -24,6 +24,10 @@ SOURCES = (
     "src/actor/enemy/EnemyMovement.cpp", "src/editor/stage/StageActorYamlWriter.cpp",
     "src/system/actor_loader/PlatformStageConfig.cpp", "src/component/PlatformPressureSwitchComponent.cpp",
     "src/component/PlatformLatchedGroupSwitchComponent.cpp", "src/editor/stage/StagePlatformCreateCommands.cpp",
+    "src/utils/TextFile.cpp", "src/utils/YamlFile.cpp", "src/utils/AtomicFile.cpp",
+    "src/editor/stage/StagePlatformIdentifiers.cpp", "src/editor/stage/UGCPlatformCellService.cpp",
+    "src/editor/stage/StageYamlRepository.cpp", "src/system/tutorial/TutorialLibrary.cpp",
+    "src/editor/ugc/UGCWorkFileService.cpp",
 )
 
 

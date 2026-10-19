@@ -455,6 +455,14 @@ void UGCPlatformCellService::ApplyPlacement(YAML::Node& actorNode, int planetInd
 bool UGCPlatformCellService::RebuildGeneratedPlatforms(YAML::Node& stageConfig) const
 {
     const YAML::Node previousPlatformNodes = YAML::Clone(stageConfig["platforms"]);
+    std::vector<std::string> reservedPlatformIds;
+    if (previousPlatformNodes && previousPlatformNodes.IsSequence()) {
+        for (const YAML::Node& platform : previousPlatformNodes) {
+            if (platform["platformId"] && platform["platformId"].IsScalar()) {
+                reservedPlatformIds.push_back(platform["platformId"].as<std::string>());
+            }
+        }
+    }
     const std::vector<UGCGeneratedPlatformRegion> generatedRegions =
         UGCPlatformDocument::CalculateGeneratedPlatformRegions(stageConfig);
 
@@ -488,7 +496,8 @@ bool UGCPlatformCellService::RebuildGeneratedPlatforms(YAML::Node& stageConfig) 
         ApplyPlacement(platformNode, region.planetIndex, placement);
         PreserveGeneratedPlatformIdentityAndRotation(previousGeneratedPlatforms[regionIndex], platformNode);
         if (!platformNode["platformId"] || platformNode["platformId"].as<std::string>("").empty()) {
-            platformNode["platformId"] = StagePlatformIdentifiers::CreateUniqueId(stageConfig);
+            // 後から復元する足場のIDを、新規領域へ先に割り当てない。
+            platformNode["platformId"] = StagePlatformIdentifiers::CreateUniqueId(stageConfig, reservedPlatformIds);
         }
         platformNode[generatedPlatformKey] = true;
         platformNode["ugcGridSize"] = region.gridSize;

@@ -7,6 +7,7 @@
 #include "actor/Star.h"
 #include "app/Game.h"
 #include "system/PhysicsSystem.h"
+#include "utils/YamlFile.h"
 
 #include <iostream>
 #include <optional>
@@ -61,7 +62,7 @@ std::optional<std::size_t> FindEntryIndex(const YAML::Node& config, const std::s
 bool LoadYaml(const std::string& filePath, YAML::Node& outConfig)
 {
     try {
-        outConfig = YAML::LoadFile(filePath);
+        outConfig = YamlFile::Load(filePath);
         return true;
     } catch (const YAML::Exception& exception) {
         std::cerr << "Failed to load yaml: " << filePath << std::endl;

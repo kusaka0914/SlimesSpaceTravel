@@ -1,23 +1,17 @@
 #include "editor/stage/StageEditTransaction.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/TextFile.h"
 
 #include <exception>
-#include <fstream>
-#include <iterator>
 
 namespace {
 
 bool HasFileChanged(const std::filesystem::path& path, const std::string& previousYamlText)
 {
-    try {
-        std::ifstream currentFile(path, std::ios::binary);
-        const std::string currentText{std::istreambuf_iterator<char>(currentFile), std::istreambuf_iterator<char>()};
-        // ハンドルはこのスコープで閉じ、Windowsの復元時にも置換を妨げない。
-        return !currentFile || currentText != previousYamlText;
-    } catch (const std::ios_base::failure&) {
-        return true;
-    }
+    std::string currentText;
+    std::string error;
+    return !TextFile::Read(path, currentText, error) || currentText != previousYamlText;
 }
 
 StageEditApplyResult RestorePreviousStage(const std::filesystem::path& path, const std::string& previousYamlText,

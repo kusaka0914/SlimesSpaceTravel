@@ -1,6 +1,7 @@
 #include "editor/session/EditorSessionRepository.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 
 #include <algorithm>
 #include <exception>
@@ -116,7 +117,7 @@ bool EditorSessionRepository::Load(const std::filesystem::path& filePath, Editor
     outErrorMessage.clear();
 
     try {
-        const YAML::Node root = YAML::LoadFile(filePath.string());
+        const YAML::Node root = YamlFile::Load(filePath.string());
         const int formatVersion = root["formatVersion"].as<int>(0);
         if (formatVersion != EditorSessionState::CurrentFormatVersion) {
             outErrorMessage = "未対応のエディター状態ファイルです。形式バージョン: " + std::to_string(formatVersion);

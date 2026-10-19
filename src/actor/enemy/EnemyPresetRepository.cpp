@@ -1,6 +1,7 @@
 #include "actor/enemy/EnemyPresetRepository.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 
 #include <algorithm>
 #include <cctype>
@@ -229,7 +230,7 @@ bool EnemyPresetRepository::Load(const std::string& filePath, std::vector<EnemyP
     outErrorMessage.clear();
 
     try {
-        const YAML::Node root = YAML::LoadFile(filePath);
+        const YAML::Node root = YamlFile::Load(filePath);
         const YAML::Node enemies = root["enemies"];
         if (!enemies || !enemies.IsSequence()) {
             outErrorMessage = "enemies.yaml に enemies 一覧がありません。";
@@ -279,7 +280,7 @@ bool EnemyPresetRepository::Save(const std::string& filePath, const std::string&
 
     YAML::Node root;
     try {
-        root = YAML::LoadFile(filePath);
+        root = YamlFile::Load(filePath);
     } catch (const YAML::Exception& exception) {
         outErrorMessage = exception.what();
         return false;

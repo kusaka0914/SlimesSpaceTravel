@@ -1,0 +1,14 @@
+.....F..
+======================================================================
+FAIL: test_known_invalid_baseline_requires_identical_content_and_diagnostic (__main__.AssetValidationTests.test_known_invalid_baseline_requires_identical_content_and_diagnostic)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/AssetValidationTests.py", line 62, in test_known_invalid_baseline_requires_identical_content_and_diagnostic
+    self.assertTrue(known["passed"])
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.057s
+
+FAILED (failures=1)

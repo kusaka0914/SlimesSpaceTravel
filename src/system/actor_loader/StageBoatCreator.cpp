@@ -1,12 +1,13 @@
 #include "system/actor_loader/StageBoatCreator.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
+#include "app/Game.h"
 #include "system/MeshLoadSystem.h"
 #include "system/actor_loader/ActorPlacementLoader.h"
+#include "utils/YamlFile.h"
+#include "world/Stage.h"
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -83,7 +84,7 @@ Boat* StageBoatCreator::CreateFromStageNode(const YAML::Node& node, int stageYam
     mPlacementLoader.ApplyPlacementFromStageNode(boat.get(), node, currentPlanet, stageYamlIndex, 1.0f);
     mPlacementLoader.ApplyRotationFromStageNode(boat.get(), node);
 
-    YAML::Node boatRoot = YAML::LoadFile("../assets/data/actor/boats.yaml");
+    YAML::Node boatRoot = YamlFile::Load("../assets/data/actor/boats.yaml");
     for (const YAML::Node& boatNode : boatRoot["boats"]) {
         const std::string modelPath = boatNode["modelPath"] ? boatNode["modelPath"].as<std::string>() : "";
         boat->SetModelPath(modelPath);

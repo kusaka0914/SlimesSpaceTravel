@@ -14,6 +14,7 @@
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/core/DebugEditorContext.h"
 #include "editor/stage/StageActorYamlWriter.h"
+#include "editor/stage/UGCPlatformCellService.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
 #include "gfx/Renderer.h"
 #include "system/GamepadRumbleService.h"
@@ -29,9 +30,43 @@
 #include <array>
 #include <iostream>
 #include <limits>
+#include <set>
 #include <utility>
 
 namespace {
+
+void GeneratedPlatformsReserveIdsDuringRebuild(Game& game)
+{
+    YAML::Node config = YAML::Load(R"(
+platforms:
+  - {currentPlanetNum: 0, platformId: platform_2, ugcGeneratedPlatform: true, ugcGridSize: 1,
+     ugcGridLayer: 0, ugcCellMin: [0, 0], ugcCellMax: [0, 0], ugcPlatformBehavior: normal}
+  - {currentPlanetNum: 0, platformId: platform_1, ugcGeneratedPlatform: true, ugcGridSize: 1,
+     ugcGridLayer: 0, ugcCellMin: [10, 0], ugcCellMax: [10, 0], ugcPlatformBehavior: normal}
+)");
+    for (const glm::ivec3 position : {glm::ivec3(-10, 0, 0), glm::ivec3(0), glm::ivec3(10, 0, 0)}) {
+        UGCPlatformCell cell;
+        cell.gridPosition = position;
+        config[UGCPlatformDocument::PlatformCellsKey].push_back(UGCPlatformDocument::CreateCellNode(cell));
+    }
+    DebugEditorContext context{.game = &game};
+    UGCPlatformCellService cells(context);
+    ExpectTrue(cells.WriteTranslatedCells(config, {{StageActorType::Platform, 0, "platforms", ""}}, {0, 0, 1}) ==
+                   UGCCellEditResult::Changed,
+               "rebuild changed cells without saving or reloading the stage");
+    std::set<std::string> identities;
+    for (const auto& platform : config["platforms"]) {
+        const auto identity = platform["platformId"].as<std::string>();
+        ExpectTrue(identities.insert(identity).second, "new regions must not reuse an existing region's ID");
+        const int x = platform["ugcCellMin"][0].as<int>();
+        if (x == 10) {
+            ExpectEqual(std::string("platform_1"), identity, "unchanged region keeps its referenced identity");
+        } else if (x == 0) {
+            ExpectEqual(std::string("platform_2"), identity, "translated region keeps its identity");
+        }
+    }
+    ExpectEqual(std::size_t(3), identities.size(), "all generated regions have unique identities");
+}
 
 void SwitchStableTargetsSurviveConfigurationAndSave(Game& game)
 {
@@ -380,6 +415,7 @@ void RunRuntimeReliabilityTests(Game& game)
 {
     int failures = 0;
     const std::pair<const char*, void (*)(Game&)> cases[]{
+        {"GeneratedPlatformsReserveIdsDuringRebuild", GeneratedPlatformsReserveIdsDuringRebuild},
         {"SwitchStableTargetsSurviveConfigurationAndSave", SwitchStableTargetsSurviveConfigurationAndSave},
         {"ParticlePresentationUsesOnlyProvidedSystem", ParticlePresentationUsesOnlyProvidedSystem},
         {"BillboardDegeneracyAndNormalPose", BillboardDegeneracyAndNormalPose},

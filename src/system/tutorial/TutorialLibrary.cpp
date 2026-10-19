@@ -1,5 +1,6 @@
 #include "system/tutorial/TutorialLibrary.h"
 
+#include "utils/YamlFile.h"
 #include "utils/YamlRead.h"
 
 #include "utils/AtomicFile.h"
@@ -189,7 +190,7 @@ bool TutorialLibrary::Load()
     mLastError.clear();
 
     try {
-        const YAML::Node root = YAML::LoadFile(mPath);
+        const YAML::Node root = YamlFile::Load(mPath);
         const YAML::Node tutorials = root["tutorials"];
         if (!tutorials || !tutorials.IsSequence()) {
             mLastError = "tutorials sequence was not found";

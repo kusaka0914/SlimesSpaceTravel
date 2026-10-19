@@ -1,6 +1,7 @@
 #include "system/sequence/SequenceLibrary.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -116,7 +117,7 @@ bool SequenceLibrary::Load()
     decltype(mSequences) loadedSequences;
 
     try {
-        const YAML::Node root = YAML::LoadFile(mFilePath);
+        const YAML::Node root = YamlFile::Load(mFilePath);
         const YAML::Node sequencesNode = root["sequences"];
         if (!sequencesNode || !sequencesNode.IsMap()) {
             return false;

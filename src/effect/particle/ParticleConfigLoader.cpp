@@ -3,6 +3,7 @@
 #include "utils/StringUtils.h"
 
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 #include "utils/YamlRead.h"
 
 #include <algorithm>
@@ -228,7 +229,7 @@ bool ParticleConfigLoader::Load(const std::string& filePath,
                                 std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions)
 {
     try {
-        const YAML::Node root = YAML::LoadFile(filePath);
+        const YAML::Node root = YamlFile::Load(filePath);
         const YAML::Node effectsNode = root["particleEffects"];
 
         if (!effectsNode || !effectsNode.IsMap()) {

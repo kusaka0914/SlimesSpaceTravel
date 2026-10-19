@@ -1,10 +1,11 @@
 #include "system/UILoadSystem.h"
+
 #include "system/text/JapaneseRubyGenerator.h"
 #include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <set>
 
@@ -42,7 +43,7 @@ bool UILoadSystem::ReloadUIInfo(const std::string& path)
 
 void UILoadSystem::LoadUIInfo(const std::string& path)
 {
-    const YAML::Node root = YAML::LoadFile(path);
+    const YAML::Node root = YamlFile::Load(path);
 
     for (auto screen : root) {
         const std::string screenName = screen.first.as<std::string>();
@@ -107,7 +108,7 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
 
 YAML::Node UILoadSystem::BuildUIInfo(const std::string& path) const
 {
-    YAML::Node root = YAML::LoadFile(path);
+    YAML::Node root = YamlFile::Load(path);
     if (!root.IsMap()) {
         throw YAML::RepresentationException(root.Mark(), "UI definition must be a map");
     }
@@ -287,7 +288,7 @@ bool UILoadSystem::LoadCustomUI(const std::string& path)
         return true;
     };
     try {
-        const YAML::Node root = YAML::LoadFile(path);
+        const YAML::Node root = YamlFile::Load(path);
         if (!root.IsMap()) {
             return false;
         }

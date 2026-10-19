@@ -1,0 +1,78 @@
+[
+  {
+    "file": "assets/data/stage/ugc_stage.yaml",
+    "renamed_duplicates": [
+      {
+        "platform_index": 6,
+        "old": "platform_3",
+        "new": "platform_17"
+      },
+      {
+        "platform_index": 8,
+        "old": "platform_3",
+        "new": "platform_18"
+      },
+      {
+        "platform_index": 9,
+        "old": "platform_4",
+        "new": "platform_19"
+      },
+      {
+        "platform_index": 10,
+        "old": "platform_3",
+        "new": "platform_20"
+      },
+      {
+        "platform_index": 11,
+        "old": "platform_3",
+        "new": "platform_21"
+      },
+      {
+        "platform_index": 12,
+        "old": "platform_3",
+        "new": "platform_22"
+      }
+    ],
+    "removed_unresolved_target": "platform_8",
+    "preserved_valid_target_index": 18,
+    "other_yaml_values_unchanged": true
+  },
+  {
+    "file": "assets/data/stage/ugc_saves/僕のステージ.yaml",
+    "renamed_duplicates": [
+      {
+        "platform_index": 6,
+        "old": "platform_3",
+        "new": "platform_17"
+      },
+      {
+        "platform_index": 8,
+        "old": "platform_3",
+        "new": "platform_18"
+      },
+      {
+        "platform_index": 9,
+        "old": "platform_4",
+        "new": "platform_19"
+      },
+      {
+        "platform_index": 10,
+        "old": "platform_3",
+        "new": "platform_20"
+      },
+      {
+        "platform_index": 11,
+        "old": "platform_3",
+        "new": "platform_21"
+      },
+      {
+        "platform_index": 12,
+        "old": "platform_3",
+        "new": "platform_22"
+      }
+    ],
+    "removed_unresolved_target": "platform_8",
+    "preserved_valid_target_index": 18,
+    "other_yaml_values_unchanged": true
+  }
+]
