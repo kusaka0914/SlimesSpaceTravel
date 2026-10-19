@@ -210,6 +210,27 @@
       "tests": "先行Runtime UIテストで同一zOrderの定義順・非表示・2行文字とPanelの縮小配置・GL状態復元を確認。抽出処理列を旧lambdaと照合。",
       "status": "implemented_and_debug_verified",
       "verification": "267単体・監査4件・Runtime19組・Debug全ビルド成功。UIの全スタイル/全操作の視覚比較は未実施。"
+    },
+    {
+      "id": "SAFE-08",
+      "priority": "P2",
+      "location": "src/world/GameWorld.h / GameWorld::~GameWorld; PlatformAdhesionComponent::ReleaseAttachedPlayers",
+      "evidence": "Worldの暗黙破棄ではmActorsの破棄中にmPlayersが残る。接着Componentは破棄時にGameのPlayer一覧に含まれる参照を有効候補として扱う。観測Componentで空でない一覧が残ることを確認。",
+      "risk": "Actorの破棄順に依存して、終了処理が破棄途中のPlayerを有効な候補として取得する。実際のUAFクラッシュはこの検証では再現していない。",
+      "change": "WorldデストラクタでPlayer/Stage借用一覧と現在Stageを解除してからActorを破棄。所有Stageはその後に自動破棄する。",
+      "tests": "独立したWorldの観測Componentと、実Gameの繰り返し終了/再起動・全Runtime。",
+      "status": "implemented_and_debug_verified",
+      "verification": "回帰テストは修正前に非空一覧で失敗、修正後267単体・監査4件・Runtime20組・Debug全ビルド成功。"
+    },
+    {
+      "id": "SAFE-09",
+      "priority": "P1",
+      "location": "src/editor/tools/sequence/StorybookDebugPanel.cpp:Draw 保存ボタン",
+      "evidence": "UI会話のSaveUIInfoと画像のStorybookConfig::Saveを個別に実行し、片方の成否に関係なくもう片方を保存する。",
+      "risk": "片側だけ成功すると、会話ページと画像一覧が異なる編集時点になる。",
+      "change": "シリアライズ後に既存AtomicFile::WriteTextFilesで一括保存し、片側失敗時は両方を維持/復旧する。",
+      "tests": "片側の保存先不正/定義不正、短い書込、両方成功と往復UTF-8/未知項目保持。",
+      "status": "open"
     }
   ],
   "notes": [

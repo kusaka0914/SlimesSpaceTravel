@@ -1,9 +1,9 @@
 #include "world/GameWorld.h"
 
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <glm/glm.hpp>
@@ -20,6 +20,15 @@ struct EnemyDistance {
     float nearestPlayerDistanceSquared = 0.0f;
 };
 } // namespace
+
+GameWorld::~GameWorld()
+{
+    // Componentの終了処理が、破棄途中のPlayerを有効な候補として取得しないようにする。
+    mPlayers.clear();
+    mStages.clear();
+    mCurrentStage = nullptr;
+    mActors.clear();
+}
 
 void GameWorld::CreateStages(int stageCount)
 {

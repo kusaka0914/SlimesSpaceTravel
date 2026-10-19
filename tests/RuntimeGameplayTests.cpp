@@ -11,8 +11,10 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerPlanetGravityController.h"
 #include "app/Game.h"
+#include "component/Component.h"
 #include "system/PhysicsSystem.h"
 #include "system/physics/ActorCollisionResolver.h"
+#include "world/GameWorld.h"
 #include "world/Stage.h"
 
 #include <btBulletDynamicsCommon.h>
@@ -253,6 +255,45 @@ void NearCenterInternalPointStillProjectsOntoSurface()
     std::cout << "[PASS] Runtime.NearCenterInternalProjection\n";
 }
 
+void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
+{
+    bool didDestroyComponent = false;
+    bool wereRegistriesInvalidated = false;
+    class RegistryObserver final : public Component {
+    public:
+        RegistryObserver(Actor* owner, const GameWorld& world, bool& destroyed, bool& invalidated)
+            : Component(owner),
+              mWorld(world),
+              mDestroyed(destroyed),
+              mInvalidated(invalidated)
+        {
+        }
+        ~RegistryObserver() override
+        {
+            mDestroyed = true;
+            mInvalidated = mWorld.GetPlayers().empty();
+        }
+
+    private:
+        const GameWorld& mWorld;
+        bool& mDestroyed;
+        bool& mInvalidated;
+    };
+
+    {
+        GameWorld world;
+        world.CreateStages(1);
+        auto player = std::make_unique<Player>(&game);
+        player->AddComponent(
+            std::make_unique<RegistryObserver>(player.get(), world, didDestroyComponent, wereRegistriesInvalidated));
+        world.AddPlayer(player.get());
+        world.AddActor(std::move(player));
+    }
+    ExpectTrue(didDestroyComponent, "World owns and destroys Actor components");
+    ExpectTrue(wereRegistriesInvalidated, "borrowed Player registry is cleared before Actor destruction callbacks");
+    std::cout << "[PASS] Runtime.WorldInvalidatesRegistriesBeforeActorDestruction\n";
+}
+
 } // namespace
 
 void RunRuntimeGameplayTests(Game& game)
@@ -262,4 +303,5 @@ void RunRuntimeGameplayTests(Game& game)
     MovementActionsResetOnlyTheirOwnState(game);
     GravitySwitchHasHysteresisAndClearsOnLanding(game);
     NearCenterInternalPointStillProjectsOntoSurface();
+    WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(game);
 }

@@ -10,6 +10,9 @@ class Stage;
 // ActorとStageを所有し、現在のステージとPlayerへの参照、入力・更新の実行を管理する。
 class GameWorld {
 public:
+    // 借用一覧と現在Stageを先に解除し、ActorをStageより先に破棄する。
+    ~GameWorld();
+
     // Stageを作り直して先頭を選択する。既存のActorとPlayer参照はクリアしない。
     void CreateStages(int stageCount);
 
