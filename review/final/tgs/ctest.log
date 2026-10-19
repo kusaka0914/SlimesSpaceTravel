@@ -1,0 +1,9 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/2 Test #1: game_tests .......................   Passed    0.17 sec
+    Start 2: architecture_audit_tests
+2/2 Test #2: architecture_audit_tests .........   Passed    0.10 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.27 sec

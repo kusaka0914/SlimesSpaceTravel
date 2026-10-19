@@ -1,0 +1,6 @@
+{
+  "command": "clang-format --dry-run --Werror src/gfx/Shader.h src/gfx/Shader3D.h src/gfx/UIShader.h src/gfx/VertexArray.h src/gfx/performance/GpuDurationTimer.h src/system/GamepadRumbleService.h src/system/camera/DebugCamera.h src/system/camera/DebugCamera.cpp",
+  "result": "passed",
+  "diagnostics": "",
+  "scope": "最後の安全性/入力修正8ファイル。全既存ファイルを再整形したものではない。"
+}

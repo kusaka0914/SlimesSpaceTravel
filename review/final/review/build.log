@@ -1,0 +1,18 @@
+[  0%] Built target editor_restart_helper
+[ 23%] Built target game_tests
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/MathUtils.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/NPC.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/enemy/EnemyMovement.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/enemy/EnemyStateMachine.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/actor/player/PlayerMovement.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/app/Game.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageActorInspector.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageGizmoController.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/gfx/Renderer3D.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/system/physics/StageCollisionBuilder.cpp.o
+[ 98%] Built target game_runtime
+[ 99%] Linking CXX executable game
+Copying runtime assets and shaders...
+[ 99%] Built target game
+[ 99%] Linking CXX executable game_runtime_tests
+[100%] Built target game_runtime_tests

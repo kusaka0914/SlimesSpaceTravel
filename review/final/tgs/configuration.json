@@ -1,0 +1,9 @@
+{
+  "source_head": "27416e5d8597a39a0d78d84cdf98e7df05cadd58",
+  "CMAKE_BUILD_TYPE": "Release",
+  "GAME_REVIEW_BUILD": false,
+  "GAME_TGS_BUILD": true,
+  "sanitizers": false,
+  "runtime_registered": false,
+  "scope": "本体ビルドとheadless2エントリー。TGS実通し操作は未検証。"
+}

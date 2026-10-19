@@ -1,0 +1,7 @@
+{
+  "snapshot_head": "c4552f1236dfe2234575c7fe7dc9c9da6a8431cc",
+  "local_header_cycles": [],
+  "editor_include_violations": [],
+  "utils_game_type_includes": [],
+  "scope": "quoted local include graph。第三者ライブラリの内部、推論されるalias/callback依存までは解決しない。"
+}

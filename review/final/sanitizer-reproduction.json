@@ -1,0 +1,28 @@
+{
+  "compiler": "/usr/bin/clang++",
+  "yaml_source": "https://github.com/jbeder/yaml-cpp",
+  "yaml_tag": "yaml-cpp-0.9.0",
+  "yaml_head": "56e3bb550c91fd7005566f19c079cb7a503223cf",
+  "yaml_configure": [
+    "-DYAML_BUILD_SHARED_LIBS=OFF",
+    "-DYAML_CPP_BUILD_TESTS=OFF",
+    "-DYAML_CPP_BUILD_TOOLS=OFF",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined",
+    "-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -gline-tables-only"
+  ],
+  "game_configure": [
+    "-DGAME_ENABLE_TEST_SANITIZERS=ON",
+    "-DGAME_ENABLE_RUNTIME_SANITIZERS=ON",
+    "-DGAME_BUILD_RUNTIME_TESTS=ON",
+    "-Dyaml-cpp_DIR=<一時インストール先>/lib/cmake/yaml-cpp"
+  ],
+  "test_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+  },
+  "container_overflow": "default enabled; no suppression",
+  "leaks": "unsupported by this installed sanitizer runtime; not verified",
+  "library_scope": "yaml-cppとゲーム/テストを計装。その他の外部共有ライブラリー内部をすべて計装したものではない。",
+  "yaml_cached_compiler": "/usr/bin/c++ (AppleClang)"
+}

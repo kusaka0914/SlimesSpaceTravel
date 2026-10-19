@@ -1,0 +1,35 @@
+{
+  "scope": "全C++を列挙・静的検索し、所有元/再読込/解放の重要経路と必須ホットスポット/Panelを目視。全行の意味と全ポインタの全実行経路を手作業で証明したものではない。",
+  "findings": [
+    {
+      "area": "World/Actor/Stage",
+      "decision": "GameWorldがActorとStageを所有。借用Player/Stage一覧をActor破棄前に解除し、ActorはStageより先に破棄。既存終了経路/観測Component/ASanで確認。"
+    },
+    {
+      "area": "Stage reload",
+      "decision": "GameがSequence/Camera/Particle/Talk/Tutorial/Editor選択を解除してからActorLoadSystemのWorld交換を実行。失敗時は旧Worldへ復帰。Player設定の持越しは値/番号で保存。"
+    },
+    {
+      "area": "Renderer/Camera/Input",
+      "decision": "Gameが組み立てる必須借用参照と同期callback/snapshot。SceneRenderStateのspanは同期Draw中のみ利用し、保存しない。カメラはGameを借用しない。"
+    },
+    {
+      "area": "Editor/ImGui/GL",
+      "decision": "GameがEditor/ImGuiを終了し、描画資源をGLコンテキストより先に破棄。Shader/VAO/query/SDLハンドルの暗黙コピーを禁止。明示Shutdownの連続呼出とデストラクタ任せの終了をRuntime検証。"
+    },
+    {
+      "area": "Actor components",
+      "decision": "ActorがComponentをunique_ptr所有。owner/Game/Planet等は借用。PlatformAdhesion等の解除はWorldの借用一覧が先に空になる終了順を考慮。"
+    },
+    {
+      "area": "TutorialVideoPlayerMacBackend",
+      "decision": "AVAssetReaderの同期フレーム読込。Stopでreaderのcancel/強参照解除/GL texture破棄後にbackendを解放。非同期callbackによるGame借用はない。実動画全素材は未検証。"
+    }
+  ],
+  "unverified": [
+    "Windowsの実資源終了",
+    "全ステージ/全動画/全入力の実プレイ",
+    "リーク検査",
+    "借用ポインタの経路を網羅する形式的な証明"
+  ]
+}

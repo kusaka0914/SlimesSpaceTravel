@@ -1,0 +1,121 @@
+{
+  "checked": [
+    {
+      "document": "README.md",
+      "target": "summary.pdf"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/Planet.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/ActorGroundResolver.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/player/PlayerPlanetGravityController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/camera/PlayerCamera.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/camera/CameraCollisionResolver.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/editor/ugc/UGCEditorInteractionController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/gameplay/ugc/UGCPreviewController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/app/GameFrameRenderer.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/editor/session/EditorBuildRestartService.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/editor/session/DebugEditorSessionController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/enemy/behavior/EnemyBehaviorController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/enemy/behavior/EnemyBehaviorAction.h"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/enemy/behavior/EnemyBehaviorActionFactory.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/actor/enemy/EnemyConfigLoader.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/gfx/performance/GpuDurationTimer.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/app/GameFrameRenderer.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/editor/ui/UICanvasEditorController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/UILoadSystem.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/physics/ActorCollisionResolver.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/PlayerConfigurationController.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/sequence/SequenceSystem.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/sequence/SequenceTypes.h"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/sequence/SequenceLibrary.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/system/text/JapaneseRubyGenerator.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/text/RubyText.h"
+    },
+    {
+      "document": "README.md",
+      "target": "src/gfx/ui/UICustomElementRenderer.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "src/animation/AnimationPlayer.cpp"
+    },
+    {
+      "document": "README.md",
+      "target": "summary.pdf"
+    }
+  ],
+  "missing": []
+}

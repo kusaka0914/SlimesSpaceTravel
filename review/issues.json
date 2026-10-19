@@ -1,7 +1,7 @@
 {
   "base_head": "272dbf3f06453b4b6ac71e13108345d9c77b47bb",
   "branch": "codex/architecture-review",
-  "status": "in_progress",
+  "status": "implemented_and_locally_verified_external_acceptance_pending",
   "issues": [
     {
       "id": "ARCH-01",
@@ -11,8 +11,9 @@
       "risk": "Stage・UI・UGC編集と資産ブラウザーが描画階層に混在し、責務から実装を探しにくい。",
       "change": "Editor固有ソースをeditorへ分類し、全include・ビルド・資料リンクを移行する。",
       "tests": "全構成のビルド、旧パス検索、既存テスト",
-      "status": "implemented_and_debug_verified",
-      "verification": "239移動ソースの変更がパス置換のみであることを全件照合。Debugビルド・237テスト・Runtime3組が成功。旧パス参照はsrc/tests/tools/scripts/shaders/CMake/README/mdでゼロ。Release等の最終確認は未実施。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "Editor/Runtime/app/worldの239移動とMathUtils2移動、累計241件。移動対応表・旧パスゼロ・リンク29件正常・最終構成を確認。初回239件のパスだけの置換照合はmigrationの記録を参照。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-02",
@@ -22,8 +23,9 @@
       "risk": "RuntimeのUGC状態がgfx/debugのUGCClearTransitionState・UGCSessionStateを取り込む。",
       "change": "RuntimeとEditorが共有するUGC状態・保存モデルをgameplay/ugcへ移す。",
       "tests": "UGC状態・保存・クリア遷移テスト",
-      "status": "implemented_and_debug_verified",
-      "verification": "UGCの共有状態・保存モデル・プレビュー状態をgameplay/ugcへ移し、RuntimeからEditorへのincludeを解消。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "UGCの共有状態・保存モデル・プレビュー状態をgameplay/ugcへ移し、RuntimeからEditorへのincludeを解消。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-03",
@@ -33,8 +35,9 @@
       "risk": "描画窓口がUndo・編集セッション・Build&Restartを公開し、Gameも転送APIを重ねる。",
       "change": "Editorの所有・操作窓口と描画を分離し、既存Controllerへの依頼経路を限定する。",
       "tests": "保存・復元、UGC操作、再起動ヘルパーのビルドと統合テスト",
-      "status": "editor_boundary_verified_game_api_pending",
-      "verification": "GameがEditorとImGuiを所有し、UIRendererの編集転送APIを削除。SessionはEditorへ直接依頼。gfxからeditorへのincludeはゼロ。Debugビルド・237件・Runtime4組（連続起動終了を含む）が成功。Gameの広い公開操作は次に整理する。 Input13件・TGS2件・描画性能記録2件、累計17件のGame転送APIを利用先へ移行して削除。残るAPIは利用先と合わせて監査継続。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "GameがEditor/ImGuiを所有し、UIRendererの編集セッション転送を削除。gfx→editor includeゼロ。Input/Camera/Renderer3DからGame依存を除き、利用先確認後にGame API累計25件を削除。残るActor/Component/EditorのGame参照は残存候補として別途明記。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-04",
@@ -44,8 +47,9 @@
       "risk": "OS入力取得とシーン別コマンドの振り分けが同居する。",
       "change": "呼出順・押下優先順位を調査し、取得と操作調停を分ける。",
       "tests": "押下・継続・モード優先順位の回帰テスト",
-      "status": "implemented_and_debug_verified",
-      "verification": "OS入力取得は機器ハンドルを呼出中のみ借用する。モード別操作と押下履歴はapp/GameInputControllerへ移動。旧22関数を比較し19件は依頼経路を除き同一、3件の差分は必須参照化とゼロ画面寸法の安全対策。Debugビルド・237件・Runtime5組成功。実機の全操作は未検証。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "OS入力取得は機器ハンドルを呼出中のみ借用する。モード別操作と押下履歴はapp/GameInputControllerへ移動。旧22関数を比較し19件は依頼経路を除き同一、3件の差分は必須参照化とゼロ画面寸法の安全対策。Debugビルド・237件・Runtime5組成功。実機の全操作は未検証。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-05",
@@ -55,8 +59,9 @@
       "risk": "mGame経由の状態・System取得が広く、必要な依存の範囲を追いにくい。",
       "change": "カメラ調停と既存Camera実装を維持し、限定情報を使う依存境界を導入する。",
       "tests": "手動操作・補助・分割画面・UGC投影のテスト",
-      "status": "implemented_and_debug_verified",
-      "verification": "CameraSystem/DebugCamera/FocusCamera/BossDefeatSequenceからGame参照を削除。World/Input/Sceneを明示借用し、操作状態は割当済みPlayerを含む小さな値、配置Actor/物理は同期callbackで現在値を取得。Focus/Debugは呼出引数、Boss演出はAudioのみ借用。参照先の生成・メンバ破棄順も整合。Debug全ビルド・266単体・Runtime8組成功。カメラ数式・補間係数は維持、実機操作感・性能比較は未検証。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "CameraSystem/DebugCamera/FocusCamera/BossDefeatSequenceからGame参照を削除。World/Input/Sceneを明示借用し、操作状態は割当済みPlayerを含む小さな値、配置Actor/物理は同期callbackで現在値を取得。Focus/Debugは呼出引数、Boss演出はAudioのみ借用。参照先の生成・メンバ破棄順も整合。Debug全ビルド・266単体・Runtime8組成功。カメラ数式・補間係数は維持、実機操作感・性能比較は未検証。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-06",
@@ -66,8 +71,9 @@
       "risk": "GPU描画が広いGame APIに依存しており、描画に必要な状態が不明確。",
       "change": "取得項目と寿命を列挙し、小さな借用RenderContextで供給できる範囲を整理する。",
       "tests": "描画順・影・プレビュー・性能の前後確認",
-      "status": "implemented_and_debug_verified",
-      "verification": "Renderer3D/SceneObject/Viewport/PlayerEffect/DebugLabel/NPCMessageからGameを除去。必須サービスは借用参照、現在の描画状態は同期callbackとspanで取得し一覧を複製しない。既存描画順・投影距離・光源・各数式を維持。Game破棄時もGL資源をWindowより先に解放。267単体・Runtime10組・Debug全ビルド成功。性能の前後計測と視覚的ゴールデン比較は未検証。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "Renderer3D/SceneObject/Viewport/PlayerEffect/DebugLabel/NPCMessageからGameを除去。必須サービスは借用参照、現在の描画状態は同期callbackとspanで取得し一覧を複製しない。既存描画順・投影距離・光源・各数式を維持。Game破棄時もGL資源をWindowより先に解放。267単体・Runtime10組・Debug全ビルド成功。性能の前後計測と視覚的ゴールデン比較は未検証。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "YAML-01",
@@ -77,8 +83,9 @@
       "risk": "ReadFloat等のスカラー読取が複数ファイルに重複する。",
       "change": "欠損・null・型不正の従来動作を先にテストし、同じ契約のものだけ共通化する。",
       "tests": "スカラー読取の境界値と既存設定テスト",
-      "status": "implemented_and_debug_verified",
-      "verification": "共通化前にPlayer/Enemyの欠損・null・型不正・整数範囲・文字列変換の契約テスト3件を実行。7ファイルの同一スカラー読取17関数をYamlRead::ReadOrへ統合。ベクトル・範囲補正・変換失敗をfallbackにする別仕様のEnemyPreset ReadValueは維持。247単体テストとRuntime5組、Debug全ビルド成功。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "共通化前にPlayer/Enemyの欠損・null・型不正・整数範囲・文字列変換の契約テスト3件を実行。7ファイルの同一スカラー読取17関数をYamlRead::ReadOrへ統合。ベクトル・範囲補正・変換失敗をfallbackにする別仕様のEnemyPreset ReadValueは維持。247単体テストとRuntime5組、Debug全ビルド成功。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-01",
@@ -88,8 +95,9 @@
       "risk": "Apply経路はsave/reload callback例外を捕捉せず、Execute経路と復旧の契約が異なる。",
       "change": "保存・読込の例外時にも復旧を試み、復旧不能を結果で返す。",
       "tests": "save例外・reload例外・復旧例外・元ファイル保持",
-      "status": "implemented_and_debug_verified",
-      "verification": "回帰テストを先に実行し4件の未捕捉例外を再現。保存例外・読込例外・復旧例外・ファイル復旧不能・変更前の保存例外を追加。242単体テストとRuntime5組、Debug全ビルド成功。通常のfalse保存失敗は再読込しない契約を維持。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "回帰テストを先に実行し4件の未捕捉例外を再現。保存例外・読込例外・復旧例外・ファイル復旧不能・変更前の保存例外を追加。242単体テストとRuntime5組、Debug全ビルド成功。通常のfalse保存失敗は再読込しない契約を維持。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "TEST-01",
@@ -99,8 +107,8 @@
       "risk": "保存系は検証済みだが、楕円体幾何・衝突・操作遷移の検証に空白がある。",
       "change": "副作用を増やさず、純粋な幾何とRuntime重要経路のテストを拡充する。",
       "tests": "極端軸比・法線・高速衝突・カメラ・分裂合体",
-      "status": "open",
-      "verification": "267単体・Runtime15組。幾何/薄壁掃引/重なり解決/移動状態/惑星切替ヒステリシスを追加。戦闘コンボ/アシスト/全入力・全プレイ経路の検証は継続中。"
+      "status": "automated_contracts_verified_manual_acceptance_pending",
+      "verification": "271単体・監査4件・Runtime23組。幾何/CCD/移動/惑星/カメラ/描画/戦闘/入力/保存復旧/終了を通常Debug・Release・Review・全体ASan/UBSanで確認。TGSは271単体・監査4件。全実入力/全ステージ通し操作は未実施。"
     },
     {
       "id": "VERIFY-01",
@@ -110,7 +118,8 @@
       "risk": "Windows実機・全プレイ経路・代表負荷の計測結果が未確認。",
       "change": "実行可能な構成を検証し、環境上実行できない確認は明示して再現手順を残す。",
       "tests": "Debug/Release、Review/TGS、ASan/UBSan、Windows、実入力",
-      "status": "open"
+      "status": "local_matrix_verified_external_acceptance_pending",
+      "verification": "review/final/matrix.jsonの全構成成功。Windows・全実機入力・性能比較・リークは未実施。再現手順はreview/final/remaining-checks.json。"
     },
     {
       "id": "SAFE-02",
@@ -120,8 +129,9 @@
       "risk": "不正定義の再読込で有効な状態を失い、短い書き込み・クローズ失敗で旧設定を破壊する。",
       "change": "読込結果を一時状態で解析して成功時だけ確定。保存は既存AtomicFileへ統一。成功する欠損ファイル読込の既定値リセットは維持。",
       "tests": "6公開保存APIの書込上限テスト・旧バイト保持・一時ファイル掃除、部分読込失敗、欠損ファイル、往復変換。ActorParameter保存は実資産へ書き込まずビルドと共通AtomicFileテストで確認。",
-      "status": "implemented_and_debug_verified",
-      "verification": "改修前は追加15テストのうち8件失敗。改修後262単体+Runtime5組成功。往復変換テスト4件を追加後266/266成功。Debug全ビルド成功。TGSログは既に一時ファイル方式なので別監査対象。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "改修前は追加15テストのうち8件失敗。改修後262単体+Runtime5組成功。往復変換テスト4件を追加後266/266成功。Debug全ビルド成功。TGSログは既に一時ファイル方式なので別監査対象。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-03",
@@ -131,8 +141,9 @@
       "risk": "文字入力中やステージ切替直後に2Pカメラが継続移動する。",
       "change": "両方の軸と整列ボタン履歴を対称に停止・初期化する。",
       "tests": "仮想コントローラー2台と実Player2体を用いて、1P/2Pの独立、文字入力中の停止、解除後の停止、ステージ切替の履歴初期化を検証。",
-      "status": "implemented_and_debug_verified",
-      "verification": "初期カメラ姿勢を確定した回帰テストで文字入力中の2P継続移動を再現。修正後はRuntime8組・266単体が成功。実機コントローラーは未検証。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "初期カメラ姿勢を確定した回帰テストで文字入力中の2P継続移動を再現。修正後はRuntime8組・266単体が成功。実機コントローラーは未検証。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-04",
@@ -142,8 +153,9 @@
       "risk": "未完成ログが残り、クローズ失敗時に不完全なログを確定する可能性がある。",
       "change": "一意ログの一時ファイル→rename方式を維持し、close確認と失敗時の一時ファイル削除を追加。短い書込の子プロセステストも共通化。",
       "tests": "TGSログに8バイト上限を課し、false・既存ログ保持・一時ファイルなしを確認。通常ログ・連番・1回だけ試行の既存テスト。",
-      "status": "implemented_and_debug_verified",
-      "verification": "追加テストは改修前266/267で失敗、改修後267/267とRuntime8組成功。Debug全ビルド成功。Windowsの強制書込失敗テストはPOSIX依存のため未実行。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "追加テストは改修前266/267で失敗、改修後267/267とRuntime8組成功。Debug全ビルド成功。Windowsの強制書込失敗テストはPOSIX依存のため未実行。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-05",
@@ -153,8 +165,9 @@
       "risk": "UGC経路・衝突形状の描画でGLエラーが残り、その後の検証を妨げる。",
       "change": "明示された線幅だけを対応範囲へ補正し、描画後に以前の幅へ戻す。",
       "tests": "UGC編集・影・本描画のGLエラーなしと幅の復元。1P/2P・繰り返し起動終了。",
-      "status": "implemented_and_debug_verified",
-      "verification": "追加UGCテストで再現後、267単体・Runtime10組成功。2px対応環境では要求値を維持。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "追加UGCテストで再現後、267単体・Runtime10組成功。2px対応環境では要求値を維持。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-06",
@@ -164,8 +177,9 @@
       "risk": "中心付近の表面距離・法線を使う重力/接地/敵移動が、楕円体の表面と一致しない。",
       "change": "中心付近を扱う既存分岐は維持し、それ以外の内部点は正のscaledDistanceSquaredから放射投影倍率を求める。",
       "tests": "先行テストで制約式0.16を再現。中心、内外、法線、負/ゼロスケール、極端軸比、軸置換、中央帯の表裏も検証。",
-      "status": "implemented_and_debug_verified",
-      "verification": "267単体・Runtime15組・Debug全ビルド成功。有限な通常座標/スケールが対象でNaN/無限大の入力保証は追加していない。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "267単体・Runtime15組・Debug全ビルド成功。有限な通常座標/スケールが対象でNaN/無限大の入力保証は追加していない。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "MAINT-01",
@@ -175,8 +189,9 @@
       "risk": "不要な戦闘依存の印象と、使われない公開操作が残り、リセット追加時の片側漏れが起こりやすい。",
       "change": "全利用先検索後に不要な宣言/実装/引数/メンバを削除。空中状態のみResetAirborneStateへまとめ、最終接地惑星は呼出側で従来どおり扱う。",
       "tests": "変更前から回避/ジャンプ/滞空、惑星切替ヒステリシス、着地/再出現の公開契約をRuntimeで確認。",
-      "status": "implemented_and_debug_verified",
-      "verification": "Debug全ビルド・267単体・Runtime15組成功。回避判定の戦闘条件は既存StateMachine側に維持。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "Debug全ビルド・267単体・Runtime15組成功。回避判定の戦闘条件は既存StateMachine側に維持。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "MAINT-02",
@@ -186,8 +201,9 @@
       "risk": "スキーマ更新時に片側の修正が漏れやすく、保存順序と編集Transformの扱いを読み取りにくい。",
       "change": "既存経路保存を再利用し、NPC保存を内容別の非所有・副作用限定helperへ分割。ルビの同一シリアライズを共通化し、到達しない引数/分岐を除去。",
       "tests": "新旧2種類の床スキーマ、終点プレビューと配置始点、未知項目保持、無効添字時の編集記録保持、NPC条件/カメラ/演出/ルビと解除後の古いキー削除を変更前後で確認。",
-      "status": "implemented_and_debug_verified",
-      "verification": "267単体・Runtime17組・Debug全ビルド成功。抽出4関数はpointer→reference以外の処理列が旧実装と一致。実UIの全操作は未検証。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "267単体・Runtime17組・Debug全ビルド成功。抽出4関数はpointer→reference以外の処理列が旧実装と一致。実UIの全操作は未検証。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-07",
@@ -197,8 +213,9 @@
       "risk": "移動床の複製が元の経路を使い、配置後やプレビュー時に元の場所へ戻る。",
       "change": "旧形式とcomponents.movementの経路平行移動を共通化し、単独複製では配置と同じ変位を加える。惑星との同時複製では元のローカル経路を維持。",
       "tests": "新旧YAMLの複製経路、変位保持、ユニークID、未知項目、実Runtime再読込と選択、Undo/Redoの完全なバイト復元、惑星と同時複製の二重変位防止。",
-      "status": "implemented_and_debug_verified",
-      "verification": "修正前に経路始点の不一致を再現。修正後267単体・監査4件・Runtime18組・Debug全ビルド成功。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "修正前に経路始点の不一致を再現。修正後267単体・監査4件・Runtime18組・Debug全ビルド成功。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "MAINT-03",
@@ -208,8 +225,9 @@
       "risk": "表示条件を直す際に配置計算や操作状態を同時に追う必要があり、変更範囲が見えにくい。",
       "change": "既存UIRendererのprivate helperへ操作案内の不透明度計算と画面配置計算を分離。同期状態取得・lazyな分身可否キャッシュ・描画順は維持。",
       "tests": "先行Runtime UIテストで同一zOrderの定義順・非表示・2行文字とPanelの縮小配置・GL状態復元を確認。抽出処理列を旧lambdaと照合。",
-      "status": "implemented_and_debug_verified",
-      "verification": "267単体・監査4件・Runtime19組・Debug全ビルド成功。UIの全スタイル/全操作の視覚比較は未実施。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "267単体・監査4件・Runtime19組・Debug全ビルド成功。UIの全スタイル/全操作の視覚比較は未実施。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-08",
@@ -219,8 +237,9 @@
       "risk": "Actorの破棄順に依存して、終了処理が破棄途中のPlayerを有効な候補として取得する。実際のUAFクラッシュはこの検証では再現していない。",
       "change": "WorldデストラクタでPlayer/Stage借用一覧と現在Stageを解除してからActorを破棄。所有Stageはその後に自動破棄する。",
       "tests": "独立したWorldの観測Componentと、実Gameの繰り返し終了/再起動・全Runtime。",
-      "status": "implemented_and_debug_verified",
-      "verification": "回帰テストは修正前に非空一覧で失敗、修正後267単体・監査4件・Runtime20組・Debug全ビルド成功。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "回帰テストは修正前に非空一覧で失敗、修正後267単体・監査4件・Runtime20組・Debug全ビルド成功。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-09",
@@ -230,8 +249,9 @@
       "risk": "片側だけ成功すると、会話ページと画像一覧が異なる編集時点になる。",
       "change": "シリアライズ後に既存AtomicFile::WriteTextFilesで一括保存し、片側失敗時は両方を維持/復旧する。",
       "tests": "片側の保存先不正/定義不正、短い書込、両方成功と往復UTF-8/未知項目保持。",
-      "status": "implemented_and_debug_verified",
-      "verification": "旧保存ボタンと同じ2つの独立保存を小さなhelperへ抽出した先行テストで2失敗（269/271）を再現。変換とI/Oを分離して両方を事前変換、一括保存へ変更し、271単体・監査4件・Runtime20組・Debug全ビルド成功。親ディレクトリ作成・未知項目・既存のYAML出力形式も維持。中断をまたぐ一括原子性は既存AtomicFileの契約どおり保証しない。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "旧保存ボタンと同じ2つの独立保存を小さなhelperへ抽出した先行テストで2失敗（269/271）を再現。変換とI/Oを分離して両方を事前変換、一括保存へ変更し、271単体・監査4件・Runtime20組・Debug全ビルド成功。親ディレクトリ作成・未知項目・既存のYAML出力形式も維持。中断をまたぐ一括原子性は既存AtomicFileの契約どおり保証しない。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-07",
@@ -241,8 +261,9 @@
       "risk": "データ編集だけの敵プリセットをGame全体の共有Contextへ結びつけ、必要な依存を分かりにくくしていた。",
       "change": "両クラスを独立させ、EnemyPresetの共有Context引数を削除。Parameterのcontext引数は所有する子パネルへの組み立てにだけ利用。",
       "tests": "全利用先検索、全Editorの構築・繰り返し起動終了、既存全Runtimeと単体。",
-      "status": "implemented_and_debug_verified",
-      "verification": "271単体・監査4件・Runtime20組・Debug全ビルド成功。Draw本体は未変更。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "271単体・監査4件・Runtime20組・Debug全ビルド成功。Draw本体は未変更。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "MAINT-04",
@@ -252,8 +273,9 @@
       "risk": "大小文字の扱いを変える際に更新漏れが起こり、バイト単位の変換である契約も重複する。",
       "change": "unsigned char経由のstd::tolowerとコピー返却を維持した小さなnamespace関数へ統一。",
       "tests": "全11関数の処理列照合、Debug全ビルド、既存全テスト。",
-      "status": "implemented_and_debug_verified",
-      "verification": "271単体・監査4件・Runtime20組成功。Unicode変換へは変更していない。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "271単体・監査4件・Runtime20組成功。Unicode変換へは変更していない。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "MAINT-05",
@@ -263,8 +285,9 @@
       "risk": "EditorとRuntimeで同じデータの初期化・照合規則が離れて更新される。",
       "change": "各ドメイン型の隣に小さなinline関数を集約し、未使用のprivate契約を削除。",
       "tests": "全重複関数の処理列一致、Debug全ビルドと全テスト。",
-      "status": "implemented_and_debug_verified",
-      "verification": "271単体・監査4件・Runtime20組成功。型の既定値、同時刻キーの定義順、Cロケールによる照合規則を維持。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "271単体・監査4件・Runtime20組成功。型の既定値、同時刻キーの定義順、Cロケールによる照合規則を維持。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-10",
@@ -274,8 +297,9 @@
       "risk": "空の登録が含まれると敵移動の衝突フィルターでクラッシュする。",
       "change": "接地/モデル参照より前にnullptrを除外する。",
       "tests": "nullのEnemy/Crystal/NPC、4フィルター、有効な敵がnullの後にも判定されること、空中/接地/無効敵。",
-      "status": "implemented_and_debug_verified",
-      "verification": "旧実装のSegFaultを再現後、271単体・監査4件・Runtime21組・Debug全ビルド成功。有効な敵の衝突応答は変更なし。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "旧実装のSegFaultを再現後、271単体・監査4件・Runtime21組・Debug全ビルド成功。有効な敵の衝突応答は変更なし。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "TEST-02",
@@ -285,8 +309,9 @@
       "risk": "依存/所有変更後に攻撃予約や空中制限の退行を自動で検知できない。",
       "change": "実PlayerCombatとPlayer/Movementを用い、対象敵なしの予約解決と状態契約の統合テストを追加。",
       "tests": "通常/らくらく3段、遅延/一回解決、2Playerの予約独立、空中制限/回避キャンセル/強化消費、着地/アシスト準備。",
-      "status": "implemented_and_release_verified",
-      "verification": "271単体・監査4件・Runtime23組・通常Release全ビルド成功。入力から命中ダメージまでの全戦闘や実機の操作感を検証したものではない。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "271単体・監査4件・Runtime23組・通常Release全ビルド成功。入力から命中ダメージまでの全戦闘や実機の操作感を検証したものではない。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "VERIFY-02",
@@ -296,8 +321,9 @@
       "risk": "混在したvectorの注釈により、ゲーム本体のSanitizer検査が途中で止まる。",
       "change": "ゲーム/Runtime用の明示オプションを追加し、依存yaml-cppも計装して標準のyaml-cpp_DIRで選択する手順を既存READMEへ記載。通常時120秒/全体計装時300秒のRuntimeタイムアウト。",
       "tests": "ヘッダー一致、同一タグ/同一コンパイラーでの未計装/計装対照、全コンパイルエントリーのフラグ、全CTest。",
-      "status": "implemented_and_sanitizer_verified",
-      "verification": "container検査を無効化せず271単体・監査4件・Runtime23組成功。リーク検査は無効、外部の共有ライブラリ内部まで全面計装した主張はしない。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "container検査を無効化せず271単体・監査4件・Runtime23組成功。リーク検査は無効、外部の共有ライブラリ内部まで全面計装した主張はしない。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "ARCH-08",
@@ -307,8 +333,9 @@
       "risk": "担当Controllerや描画snapshotへ移行後も未使用の公開窓口が残り、Gameの契約が広く見える。",
       "change": "全8件の宣言/定義と専用コメントを削除。既に利用側で使っている担当のAPIは維持。",
       "tests": "全自作C++の識別子検索、Debug ASan全ビルド、271単体と監査4件。",
-      "status": "implemented_and_build_verified",
-      "verification": "既存の実行呼出はゼロで挙動変更なし。Runtime全体は直前の計装ビルドで23組成功しており、最終構成で再確認する。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "既存の実行呼出はゼロで挙動変更なし。Runtime全体は直前の計装ビルドで23組成功しており、最終構成で再確認する。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
     },
     {
       "id": "SAFE-11",
@@ -318,13 +345,71 @@
       "risk": "非表示/無効化した敵が、モデルの有無によって他の敵の移動を妨げる。",
       "change": "敵の接地/モデル判定前に有効状態を確認し、通常のActor衝突と同じ条件へそろえる。",
       "tests": "モデルありの有効敵は停止、無効敵は通過。既存の球状応答、空中/接地フィルターとnull登録も維持。",
-      "status": "implemented_and_sanitizer_verified",
-      "verification": "修正前に移動位置の不一致を再現し、修正後271単体・監査4件・Runtime23組・Debug全体ASan/UBSan成功。"
+      "status": "implemented_and_final_matrix_verified",
+      "verification": "修正前に移動位置の不一致を再現し、修正後271単体・監査4件・Runtime23組・Debug全体ASan/UBSan成功。",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
+    },
+    {
+      "id": "SAFE-12",
+      "priority": "P3",
+      "location": "src/gfx/Shader.h; Shader3D.h; UIShader.h; VertexArray.h; performance/GpuDurationTimer.h; src/system/GamepadRumbleService.h",
+      "evidence": "GL/SDLハンドル所有クラスに暗黙コピーが残り、Shaderは非virtual公開デストラクタと再初期化APIも公開していた。既存のコピー利用は全検索で見つからない。",
+      "risk": "将来のコピーで二重解放、基底ポインタからの破棄、再初期化時のハンドル上書きを許すAPI。現在の実ゲームで二重解放を再現した主張ではない。",
+      "change": "コピーを禁止。Shaderの構築/破棄をprotected、派生の内部初期化をprivateに限定。既存の単独所有を型の契約へ反映。",
+      "tests": "全利用先検索、実際の全ビルド、GL生成/終了を含む既存Runtime検証。",
+      "status": "implemented_and_final_matrix_verified",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
+    },
+    {
+      "id": "SAFE-13",
+      "priority": "P2",
+      "location": "src/system/camera/DebugCamera.cpp:ProcessInput",
+      "evidence": "UGC入力分岐がEditor文字入力のcapture判定より先にreturnし、CameraSystemが渡したcaptureフラグを無視してWASD移動を蓄える。",
+      "risk": "UGCのテキスト入力中に自由カメラが移動し得る。",
+      "change": "移動量をリセットした直後にcaptureを判定し、UGCを含む自由カメラ操作を抑止。非capture時の入力順は維持。",
+      "tests": "呼出元・全分岐と実ビルド/既存Runtime。実OSのWASDを注入した当該ケースの自動再現は未実施。",
+      "status": "implemented_and_final_matrix_verified",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。",
+      "verification": "呼出元とcapture→UGC/通常入力の順序をソースで確認。全構成ビルド/既存Runtime成功。実OSのWASD注入による当該分岐の自動テストは未実施。"
+    },
+    {
+      "id": "ARCH-09",
+      "priority": "P3",
+      "location": "src/utils/MathUtils.h/.cpp → src/actor/MathUtils.h/.cpp",
+      "evidence": "MathUtilsはActor/Planetを直接利用する専用計算で、汎用utilsの一方向依存条件に反していた。",
+      "risk": "汎用機能の階層からゲーム固有クラスを取り込み、責務から置き場を予測しにくい。",
+      "change": "既存型/API/計算式を保ったままactorへgit mv。全includeと移動対応表を更新。",
+      "tests": "ヘッダーのバイト一致とcppのinclude置換だけの同一性、旧パス検索、全構成ビルド。",
+      "status": "implemented_and_final_matrix_verified",
+      "final_verification": "review/final/matrix.json（同一src/tests/tools/CMakeの最終構成）。個々の先行再現/変更前後比較は既存verificationと各ログを参照。"
+    },
+    {
+      "id": "ARCH-10",
+      "priority": "P3",
+      "location": "src/app/Game.h; src/actor/; src/component/; src/editor/",
+      "evidence": "同一式の静的集計でsrcのGame呼出は1219→1025。Editor450、Actor181、Component43等の呼出が残る。",
+      "risk": "Gameを介した取得とイベント調停の結合が残り、依存設計の独自評価は89点。",
+      "change": "今後の機能変更時に利用サービスを限定する。今回は全Actor/Editorへのport追加や万能Contextへの置換は行わない。",
+      "tests": "変更時は該当操作/保存/再読込/終了のRuntimeを維持。",
+      "status": "deferred_with_rationale",
+      "verification": "review/final/architecture-comparison.json / review-scores.json"
+    },
+    {
+      "id": "MAINT-06",
+      "priority": "P3",
+      "location": "src/editor/ugc/UGCEditorChromeRenderer.cpp; UGCDebugOverlayRenderer.cpp等",
+      "evidence": "最長の連続UI表示関数は271行。13〜14行の接地照合/消しゴム装飾が2か所ずつ残る。",
+      "risk": "表示項目が増えたとき変更箇所が広がる。現時点の実証不具合ではない。",
+      "change": "表示順と局所状態が読める利点を保ち、機能追加時に同じ変更理由の単位で分割/共通化する。行数目的の抽出や中間基底は作らない。",
+      "tests": "将来変更時にUI描画/接地/履歴の該当Runtimeを実行。",
+      "status": "deferred_with_rationale",
+      "verification": "review/final/clone-decisions.json; current/structure.json"
     }
   ],
   "notes": [
     "静的候補116件と完全一致クローン候補22組は未分類の候補であり、そのまま不具合とは扱わない。",
     "全662件の自作C++（src620件、tests/tools42件）を静的棚卸し済み。重要箇所の意味・寿命・挙動監査は継続中。",
     "新規Markdown報告書は作成しない。既存README等のコードリンクは移動に合わせて更新する。"
-  ]
+  ],
+  "unresolved_p0_p1": []
 }
