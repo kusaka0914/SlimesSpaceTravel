@@ -10,7 +10,7 @@ class StorybookDebugPanel : public DebugPanel {
 public:
     explicit StorybookDebugPanel(DebugEditorContext& context);
 
-    // 会話文とページ画像を編集する。保存時は両方のファイルへ書き込み、画像設定の保存成功時に実行用設定を再読み込みする。
+    // 会話文とページ画像を編集する。保存は2ファイルを一括で更新し、両方の保存成功時だけ実行用設定を再読み込みする。
     void Draw() override;
 
 private:

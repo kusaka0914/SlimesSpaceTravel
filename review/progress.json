@@ -27,7 +27,8 @@
     "Storybook Editorの会話/画像の2ファイル保存をAtomicFile::WriteTextFilesへ統合。従来の2保存を抽出した先行テストで片側だけ更新される2失敗を再現し、修正後271単体・監査4件・Runtime20組・Debug全ビルド成功。UTF-8の対応・未知項目・書込中断・一時ファイル掃除も確認。",
     "共有Contextを使用しないEnemyPresetDebugPanel/ParameterDebugPanelの継承を解除。敵プリセットはGame/EditorContextを受け取らず、編集データだけで構築。利用先全検索と271単体・監査4件・Runtime20組・Debug全ビルド成功。",
     "11ファイル36呼出の同一ToLowerをStringUtilsへ共通化。全処理列の同一性を確認し、271単体・監査4件・Runtime20組・Debug全ビルド成功。",
-    "粒子初期設定・カメラキー安定整列・Playerアニメーション照合の同一処理を型の隣へ集約。Sequence Panelの未使用契約も整理。全7関数の処理列照合と271単体・監査4件・Runtime20組・Debug全ビルド成功。"
+    "粒子初期設定・カメラキー安定整列・Playerアニメーション照合の同一処理を型の隣へ集約。Sequence Panelの未使用契約も整理。全7関数の処理列照合と271単体・監査4件・Runtime20組・Debug全ビルド成功。",
+    "PlanetActorRegistryのnull登録で一部衝突フィルターがクラッシュすることを先行テストで再現し修正。4フィルターと有効敵/接地/空中/無効の契約も検証。271単体・監査4件・Runtime21組・Debug全ビルド成功。Storybookの一括保存契約コメントも実装へ同期。"
   ],
   "next": [
     "残るクローン候補の意味分類、継承・借用参照の監査と最終構成検証を継続",

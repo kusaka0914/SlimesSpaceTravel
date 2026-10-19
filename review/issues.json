@@ -265,6 +265,17 @@
       "tests": "全重複関数の処理列一致、Debug全ビルドと全テスト。",
       "status": "implemented_and_debug_verified",
       "verification": "271単体・監査4件・Runtime20組成功。型の既定値、同時刻キーの定義順、Cロケールによる照合規則を維持。"
+    },
+    {
+      "id": "SAFE-10",
+      "priority": "P2",
+      "location": "src/system/physics/ActorCollisionResolver.cpp:CheckConflictActors",
+      "evidence": "PlanetActorRegistryはnullptr登録を許すが、IgnoreAirborneEnemiesはenemy->IsOnGround、StopAtEnemiesは*enemyを未検査で参照。先行Runtime回帰テストがSegFaultで失敗。",
+      "risk": "空の登録が含まれると敵移動の衝突フィルターでクラッシュする。",
+      "change": "接地/モデル参照より前にnullptrを除外する。",
+      "tests": "nullのEnemy/Crystal/NPC、4フィルター、有効な敵がnullの後にも判定されること、空中/接地/無効敵。",
+      "status": "implemented_and_debug_verified",
+      "verification": "旧実装のSegFaultを再現後、271単体・監査4件・Runtime21組・Debug全ビルド成功。有効な敵の衝突応答は変更なし。"
     }
   ],
   "notes": [

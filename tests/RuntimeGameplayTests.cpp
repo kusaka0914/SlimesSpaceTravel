@@ -3,6 +3,7 @@
 #include "RuntimeStageSupport.h"
 #include "TestSupport.h"
 #include "actor/Actor.h"
+#include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlanetGravityCandidateSelector.h"
@@ -150,6 +151,54 @@ void SweepsStopAtThinWallsAndResolveOverlap()
         resolver.CheckCollision(nullptr, nullptr, &actor, {20, 0, 0}, {10, 0, 0}, 0, ActorCollisionFilter::AllActors);
     ExpectVectorNear({10, 0, 0}, unavailable.resolvedPosition, 0, "missing world preserves desired position");
     std::cout << "[PASS] Runtime.ThinWallSweepAndOverlap\n";
+}
+
+void CollisionFiltersSkipEmptyRegistryEntries(Game& game)
+{
+    Planet planet(nullptr);
+    Actor actor(nullptr);
+    actor.SetCurrentPlanet(&planet);
+    actor.SetPos({1, 2, 3});
+    // PlanetActorRegistryはnullptrの登録を許す。フィルター適用前にも実体があるとは限らない。
+    planet.AddEnemy(nullptr);
+    planet.AddCrystal(nullptr);
+    planet.AddNPC(nullptr);
+    const ActorCollisionResolver resolver;
+    const glm::vec3 desiredPosition(4, 5, 6);
+    for (const ActorCollisionFilter filter :
+         {ActorCollisionFilter::AllActors, ActorCollisionFilter::IgnoreEnemies,
+          ActorCollisionFilter::IgnoreAirborneEnemies, ActorCollisionFilter::StopAtEnemies}) {
+        const auto result = resolver.CheckCollision(nullptr, nullptr, &actor, desiredPosition - actor.GetPos(),
+                                                    desiredPosition, 0.0f, filter);
+        ExpectVectorNear(desiredPosition, result.resolvedPosition, 0.0f,
+                         "empty registry entry does not block movement");
+        ExpectFalse(result.didHitStage, "missing Bullet world omits stage collision");
+    }
+    Enemy enemy(&game);
+    enemy.SetCurrentPlanet(&planet);
+    enemy.SetPos(desiredPosition - glm::vec3(0.25f, 0, 0));
+    enemy.SetRadius(1.0f);
+    planet.AddEnemy(&enemy);
+    const auto resolve = [&](ActorCollisionFilter filter) {
+        return resolver
+            .CheckCollision(nullptr, nullptr, &actor, desiredPosition - actor.GetPos(), desiredPosition, 0.0f, filter)
+            .resolvedPosition;
+    };
+    ExpectVectorNear(desiredPosition, resolve(ActorCollisionFilter::IgnoreEnemies), 0.0f,
+                     "ignore-enemies filter preserves movement");
+    ExpectVectorNear(desiredPosition, resolve(ActorCollisionFilter::IgnoreAirborneEnemies), 0.0f,
+                     "airborne enemy is ignored after null entry");
+    ExpectTrue(glm::length(resolve(ActorCollisionFilter::AllActors) - desiredPosition) > 0.1f,
+               "valid enemy after null entry still separates actors");
+    ExpectVectorNear(actor.GetPos(), resolve(ActorCollisionFilter::StopAtEnemies), 0.0f,
+                     "stop-at-enemies filter retains current position");
+    enemy.Land(enemy.GetPos());
+    ExpectTrue(glm::length(resolve(ActorCollisionFilter::IgnoreAirborneEnemies) - desiredPosition) > 0.1f,
+               "grounded enemy still blocks airborne-only filter");
+    enemy.SetIsActive(false);
+    ExpectVectorNear(desiredPosition, resolve(ActorCollisionFilter::AllActors), 0.0f, "inactive enemy is ignored");
+    planet.RemoveEnemy(&enemy);
+    std::cout << "[PASS] Runtime.CollisionFiltersSkipEmptyRegistryEntries\n";
 }
 
 void MovementActionsResetOnlyTheirOwnState(Game& game)
@@ -304,4 +353,5 @@ void RunRuntimeGameplayTests(Game& game)
     GravitySwitchHasHysteresisAndClearsOnLanding(game);
     NearCenterInternalPointStillProjectsOntoSurface();
     WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(game);
+    CollisionFiltersSkipEmptyRegistryEntries(game);
 }
