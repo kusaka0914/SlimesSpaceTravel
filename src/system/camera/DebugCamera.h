@@ -10,7 +10,7 @@ class InputSystem;
 // 自由移動・マウス回転とUGC編集用のカメラ姿勢を管理する。入力やモードの所有権は持たない。
 class DebugCamera {
 public:
-    // InputSystemの取得済み入力から移動・回転量を蓄える。移動への反映はUpdateで行う。
+    // 取得済み入力から移動・回転量を蓄え、Updateで反映する。Editorの文字入力中はUGCでも操作を受け付けない。
     void ProcessInput(const InputSystem& inputSystem, bool isUGCMode, bool isEditorKeyboardInputCaptured);
     void Update(float deltaTime, bool isUGCMode);
 

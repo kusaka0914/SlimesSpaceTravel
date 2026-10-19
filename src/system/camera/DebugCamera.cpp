@@ -48,6 +48,12 @@ void DebugCamera::ProcessInput(const InputSystem& inputSystem, bool isUGCMode, b
     mMousePitchDelta = 0.0f;
     mIsFastMove = false;
 
+    // 文字入力に使うWASDをUGCの上下左右移動へ流さない。
+    if (isEditorKeyboardInputCaptured) {
+        mWasRotatingWithMouse = false;
+        return;
+    }
+
     if (isUGCMode) {
         if (inputSystem.IsKeyPressed(GLFW_KEY_A)) {
             mMoveRight -= 1.0f;
@@ -62,11 +68,6 @@ void DebugCamera::ProcessInput(const InputSystem& inputSystem, bool isUGCMode, b
             mMoveUp -= 1.0f;
         }
 
-        mWasRotatingWithMouse = false;
-        return;
-    }
-
-    if (isEditorKeyboardInputCaptured) {
         mWasRotatingWithMouse = false;
         return;
     }
