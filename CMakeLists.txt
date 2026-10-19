@@ -328,6 +328,7 @@ endif()
 if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     add_executable(game_runtime_tests
         tests/RuntimeIntegrationTests.cpp
+        tests/RuntimeGameplayTests.cpp
         tests/IsolatedUserDataPaths.cpp
     )
     target_link_libraries(game_runtime_tests PRIVATE game_runtime)

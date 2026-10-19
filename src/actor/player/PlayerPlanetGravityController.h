@@ -37,6 +37,7 @@ public:
     bool ShouldPreservePlatformTakeoffDirection() const { return mShouldPreservePlatformTakeoffDirection; }
 
 private:
+    void ResetAirborneState();
     void SwitchToPlanet(Player& player, PlayerMovement& movement, Planet* nextPlanet);
 
     void ApplyCurrentPlanet(Player& player, PlayerMovement& movement, Planet* planet) const;

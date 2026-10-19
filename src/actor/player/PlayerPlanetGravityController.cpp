@@ -1,14 +1,14 @@
 #include "actor/player/PlayerPlanetGravityController.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/ActorGroundResolver.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/player/PlanetGravityCandidateSelector.h"
 #include "actor/player/PlayerMovement.h"
+#include "app/Game.h"
 #include "system/PhysicsSystem.h"
+#include "world/Stage.h"
 
 #include <cmath>
 #include <glm/glm.hpp>
@@ -273,20 +273,7 @@ void PlayerPlanetGravityController::OnGroundRayCastSucceeded()
 
 void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& movement)
 {
-    mIsJumpSwitchingActive = false;
-    mIsOverheadGravityRayActive = false;
-    mGroundRayHitThisFrame = false;
-    mFallbackAppliedThisJump = false;
-    mFallbackGravityActive = false;
-    mNoGroundRayDuration = 0.0f;
-    mEllipseJumpStartSurfaceDistance = 0.0f;
-    mUseEllipseSurfaceGravity = false;
-    mIsNearbySurfaceAttractionActive = false;
-    mIsNearbySurfaceAttractionPullActive = false;
-    mShouldPreservePlatformTakeoffDirection = false;
-    mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
-    mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
-    mSmoothedUpInitialized = false;
+    ResetAirborneState();
 
     Planet* landedPlanet = dynamic_cast<Planet*>(player.GetGroundActor());
     if (!landedPlanet) {
@@ -299,6 +286,12 @@ void PlayerPlanetGravityController::OnLanded(Player& player, PlayerMovement& mov
 
 void PlayerPlanetGravityController::OnRespawned()
 {
+    ResetAirborneState();
+    mLastLandedPlanet = nullptr;
+}
+
+void PlayerPlanetGravityController::ResetAirborneState()
+{
     mIsJumpSwitchingActive = false;
     mIsOverheadGravityRayActive = false;
     mGroundRayHitThisFrame = false;
@@ -310,7 +303,6 @@ void PlayerPlanetGravityController::OnRespawned()
     mIsNearbySurfaceAttractionActive = false;
     mIsNearbySurfaceAttractionPullActive = false;
     mShouldPreservePlatformTakeoffDirection = false;
-    mLastLandedPlanet = nullptr;
     mOverheadGravityUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mPlatformTakeoffUpDirection = glm::vec3(0.0f, 1.0f, 0.0f);
     mSmoothedUpInitialized = false;

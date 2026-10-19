@@ -75,11 +75,6 @@ float CalculateDodgeMovementDuration(bool isOnGround, float baseDodgeDuration)
     return baseDodgeDuration * airborneDurationMultiplier;
 }
 
-glm::vec3 GetAirbornePhysicsUpDirection(const Player& player)
-{
-    return player.CalculateAirbornePhysicsUpDirection();
-}
-
 float CalculateEllipseAirControlMultiplier(const glm::vec3& visualUpDirection, const glm::vec3& physicsUpDirection)
 {
     const float normalAlignment = glm::clamp(glm::dot(visualUpDirection, physicsUpDirection), 0.0f, 1.0f);
@@ -93,11 +88,6 @@ struct AppliedPlayerMovement {
     bool didHitStage = false;
 };
 
-void TryAttachToAdhesionPlatformAlongMovement(Player& player, const glm::vec3& movementStart)
-{
-    PlatformAdhesionComponent::TryAttachPlayerToAnyPlatformAlongMovement(player, movementStart);
-}
-
 AppliedPlayerMovement MoveWithCollision(PhysicsSystem& physicsSystem, Player& player, const glm::vec3& movementDelta,
                                         ActorCollisionFilter actorCollisionFilter = ActorCollisionFilter::AllActors)
 {
@@ -110,7 +100,7 @@ AppliedPlayerMovement MoveWithCollision(PhysicsSystem& physicsSystem, Player& pl
     const glm::vec3 resolvedPosition =
         collisionResult.hasUnresolvedStageOverlap ? positionBeforeMovement : collisionResult.resolvedPosition;
     player.SetPos(resolvedPosition);
-    TryAttachToAdhesionPlatformAlongMovement(player, positionBeforeMovement);
+    PlatformAdhesionComponent::TryAttachPlayerToAnyPlatformAlongMovement(player, positionBeforeMovement);
 
     const glm::vec3 finalPosition = player.GetPos();
     return {finalPosition - positionBeforeMovement, collisionResult.blockingNormal, collisionResult.didHitStage};
@@ -347,7 +337,7 @@ PlayerMovement::PlayerMovement(PhysicsSystem& physicsSystem, MathUtils& mathUtil
 {
 }
 
-bool PlayerMovement::CanDodge(const PlayerCombat& combat) const
+bool PlayerMovement::CanDodge() const
 {
     const bool isCooldownFinished = mDodgeCooldownRemaining <= 0.0f;
     const bool hasDodgeAvailable = !mHasUsedDodge;
@@ -611,7 +601,7 @@ void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& comb
         }
     }
     if (!player.GetOnGround() && combat.IsEnhancedAirDodgeAttackActive()) {
-        const glm::vec3 upDirection = GetAirbornePhysicsUpDirection(player);
+        const glm::vec3 upDirection = player.CalculateAirbornePhysicsUpDirection();
         const float liftSpeed = combat.GetAirComboDodgePlayerLiftHeight() / dodgeMovementDuration;
         movementDelta += upDirection * liftSpeed * deltaTime;
     }
@@ -802,7 +792,7 @@ void PlayerMovement::StopAirborneVerticalMovement(Player& player) const
         return;
     }
 
-    const glm::vec3 physicsUpDirection = GetAirbornePhysicsUpDirection(player);
+    const glm::vec3 physicsUpDirection = player.CalculateAirbornePhysicsUpDirection();
     const glm::vec3 velocity = player.GetVelocity();
     const float verticalSpeed = glm::dot(velocity, physicsUpDirection);
     player.SetVelocity(velocity - physicsUpDirection * verticalSpeed);
@@ -826,7 +816,7 @@ void PlayerMovement::ApplyJumpGravityMovement(Player& player, const glm::vec3& i
     }
 
     const glm::vec3 visualUpDirection = GetNormalizedUpDirection(player);
-    const glm::vec3 physicsUpDirection = GetAirbornePhysicsUpDirection(player);
+    const glm::vec3 physicsUpDirection = player.CalculateAirbornePhysicsUpDirection();
     Planet* currentPlanet = player.GetCurrentPlanet();
     const bool usesEllipseGravity = player.ShouldUseEllipseSurfaceGravity();
 
@@ -977,13 +967,6 @@ glm::vec3 PlayerMovement::ClampEllipseAirborneMovementToSurfaceTravelLimit(const
     return normalMovement + tangentialMovement * allowedTangentialMultiplier;
 }
 
-float PlayerMovement::CalculateAirborneGravityAcceleration(const Player& player) const
-{
-    const glm::vec3 upDirection = GetNormalizedUpDirection(player);
-    const float verticalSpeed = glm::dot(player.GetVelocity(), upDirection);
-    return CalculateAirborneGravityAcceleration(verticalSpeed);
-}
-
 float PlayerMovement::CalculateAirborneGravityAcceleration(float verticalSpeed) const
 {
     // 高さhを時間tで落ちる等加速度運動h = a*t*t/2から求め、上昇・下降で時間を使い分ける。
@@ -1092,11 +1075,6 @@ void PlayerMovement::UpdateStrongAttackDirectionTowards(Player& player, const gl
 
     mStrongAttackDirectionOverride = attackDirection;
     mHasStrongAttackDirectionOverride = true;
-}
-
-void PlayerMovement::StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition)
-{
-    StartStrongAttackMovementTowards(player, targetPosition);
 }
 
 void PlayerMovement::ClearStrongAttackDirectionOverride()

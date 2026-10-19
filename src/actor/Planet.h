@@ -75,6 +75,7 @@ public:
     glm::vec3 CalculateEllipseVerticalDirection(const glm::vec3& worldPosition) const;
 
     // 楕円体の外部点は最近傍の表面へ、内部点は中心からの放射方向へ投影する。
+    // 中心付近で方向が定まらない場合は、最短半径軸の正方向を選ぶ。
     EllipseSurfaceProjection CalculateEllipseSurfaceProjection(const glm::vec3& worldPosition) const;
 
     // 最短スケール軸を上下軸とし、中央の帯をSideとして表裏を判定する。

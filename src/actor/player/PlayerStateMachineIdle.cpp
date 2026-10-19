@@ -1,6 +1,5 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
@@ -10,6 +9,7 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
 #include "actor/player/PlayerTargetingAssist.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
 
 #include <algorithm>
@@ -381,8 +381,8 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
 bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status)
 {
-    const bool canStartDodging = movement.CanDodge(combat) && combat.CanDodgeDuringAttack() &&
-                                 input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    const bool canStartDodging =
+        movement.CanDodge() && combat.CanDodgeDuringAttack() && input.GetDodgePressed() && !input.GetDodgePressedPrev();
 
     if (!canStartDodging) {
         return false;
@@ -411,7 +411,7 @@ bool PlayerStateMachine::TryStartAssistAirDodgeAttack(Player& player, PlayerInpu
     const bool hasWideAttackRequest = input.GetBufferedAttackInput() == PlayerAttackInputKind::Wide;
     const bool canStartAutoDodge =
         player.GetGame()->IsAssistControlStyle() && !player.GetOnGround() && hasWideAttackRequest &&
-        !combat.CanStartAirAttack() && combat.GetAttackCooldownRemaining() <= 0.0f && movement.CanDodge(combat) &&
+        !combat.CanStartAirAttack() && combat.GetAttackCooldownRemaining() <= 0.0f && movement.CanDodge() &&
         combat.CanDodgeDuringAttack() && !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack();
     if (!canStartAutoDodge) {
         return false;

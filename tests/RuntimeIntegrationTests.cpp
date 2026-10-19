@@ -1,3 +1,4 @@
+#include "RuntimeGameplayTests.h"
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
@@ -469,6 +470,7 @@ int main()
         {
             Fixture fixture;
             Game& game = fixture.game;
+            RunRuntimeGameplayTests(game);
             DebugEditorContext context{&game};
             StageSelectionController selection([&]() { return SelectionScene(game); }, context.gameViewport,
                                                context.planetMoveMode);

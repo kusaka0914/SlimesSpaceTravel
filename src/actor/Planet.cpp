@@ -280,7 +280,7 @@ Planet::EllipseSurfaceProjection Planet::CalculateEllipseSurfaceProjection(const
         surfaceLocalPosition[shortestAxisIndex] = radii[shortestAxisIndex];
     } else if (!isOutside) {
         // 内部点は放射方向へ投影する。外部点の最近傍計算とは分けて扱う。
-        const float radialScale = 1.0f / std::sqrt(std::max(scaledDistanceSquared, positionEpsilon));
+        const float radialScale = 1.0f / std::sqrt(scaledDistanceSquared);
         surfaceLocalPosition = localPosition * radialScale;
     } else {
         // 外部点は楕円体の制約式が1になる係数を二分探索し、最近傍の表面位置を求める。

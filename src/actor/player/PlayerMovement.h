@@ -16,7 +16,7 @@ class PlayerMovement {
 public:
     PlayerMovement(PhysicsSystem& physicsSystem, MathUtils& mathUtils);
 
-    bool CanDodge(const PlayerCombat& combat) const;
+    bool CanDodge() const;
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
@@ -70,7 +70,6 @@ public:
     // ワールド位置への突進方向を設定し、速度を0にして接地と通常の着地判定を解除する。
     void StartStrongAttackMovementTowards(Player& player, const glm::vec3& targetPosition);
     void UpdateStrongAttackDirectionTowards(Player& player, const glm::vec3& targetPosition);
-    void StartAssistStrongAttackMovement(Player& player, const glm::vec3& targetPosition);
     void ClearStrongAttackDirectionOverride();
 
     void StartKnockBack(Player& player, const glm::vec3& damageSourcePosition);
@@ -158,7 +157,6 @@ private:
     void StartDodgeMovementInDirection(Player& player, const glm::vec3& dodgeDirection, DodgeTrajectory trajectory);
     glm::vec3 CalculateEllipseDodgeMovementDelta(Player& player, const Planet& planet, float dodgeSpeed,
                                                  float deltaTime);
-    float CalculateAirborneGravityAcceleration(const Player& player) const;
     float CalculateAirborneGravityAcceleration(float verticalSpeed) const;
     glm::vec3 CalculateInputMovementDelta(const Player& player, const PlayerInput& input, float deltaTime) const;
     bool ApplyWalkingMovement(Player& player, const glm::vec3& movementDelta);
@@ -184,7 +182,6 @@ private:
     float mDodgeCooldownRemaining = 0.0f;
     float mDodgeCooldownDuration = 0.3f;
     float mDodgeDistance = 3.0f;
-    float mDodgeStartHeight = 0.0f;
     float mAirSlamRiseHeight = 1.0f;
     float mAirSlamRiseDurationSeconds = 0.5f;
     float mAirSlamHoverDurationSeconds = 0.3f;

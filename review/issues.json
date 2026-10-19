@@ -99,7 +99,8 @@
       "risk": "保存系は検証済みだが、楕円体幾何・衝突・操作遷移の検証に空白がある。",
       "change": "副作用を増やさず、純粋な幾何とRuntime重要経路のテストを拡充する。",
       "tests": "極端軸比・法線・高速衝突・カメラ・分裂合体",
-      "status": "open"
+      "status": "open",
+      "verification": "267単体・Runtime15組。幾何/薄壁掃引/重なり解決/移動状態/惑星切替ヒステリシスを追加。戦闘コンボ/アシスト/全入力・全プレイ経路の検証は継続中。"
     },
     {
       "id": "VERIFY-01",
@@ -154,6 +155,28 @@
       "tests": "UGC編集・影・本描画のGLエラーなしと幅の復元。1P/2P・繰り返し起動終了。",
       "status": "implemented_and_debug_verified",
       "verification": "追加UGCテストで再現後、267単体・Runtime10組成功。2px対応環境では要求値を維持。"
+    },
+    {
+      "id": "SAFE-06",
+      "priority": "P2",
+      "location": "src/actor/Planet.cpp:CalculateEllipseSurfaceProjection",
+      "evidence": "半径(5,2,3)、内部位置(0.002,0,0)で表面制約式が1ではなく0.16。放射投影の分母に位置用epsilonを使うため、表面より内側で止まる。",
+      "risk": "中心付近の表面距離・法線を使う重力/接地/敵移動が、楕円体の表面と一致しない。",
+      "change": "中心付近を扱う既存分岐は維持し、それ以外の内部点は正のscaledDistanceSquaredから放射投影倍率を求める。",
+      "tests": "先行テストで制約式0.16を再現。中心、内外、法線、負/ゼロスケール、極端軸比、軸置換、中央帯の表裏も検証。",
+      "status": "implemented_and_debug_verified",
+      "verification": "267単体・Runtime15組・Debug全ビルド成功。有限な通常座標/スケールが対象でNaN/無限大の入力保証は追加していない。"
+    },
+    {
+      "id": "MAINT-01",
+      "priority": "P3",
+      "location": "src/actor/player/PlayerMovement.*; PlayerPlanetGravityController.*",
+      "evidence": "CanDodgeのcombat引数は未使用。StartAssistStrongAttackMovementとPlayer引数の重力計算overload、mDodgeStartHeightは利用ゼロ。着地/再出現で14項目の同一リセットが重複。",
+      "risk": "不要な戦闘依存の印象と、使われない公開操作が残り、リセット追加時の片側漏れが起こりやすい。",
+      "change": "全利用先検索後に不要な宣言/実装/引数/メンバを削除。空中状態のみResetAirborneStateへまとめ、最終接地惑星は呼出側で従来どおり扱う。",
+      "tests": "変更前から回避/ジャンプ/滞空、惑星切替ヒステリシス、着地/再出現の公開契約をRuntimeで確認。",
+      "status": "implemented_and_debug_verified",
+      "verification": "Debug全ビルド・267単体・Runtime15組成功。回避判定の戦闘条件は既存StateMachine側に維持。"
     }
   ],
   "notes": [
