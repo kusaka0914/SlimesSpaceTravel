@@ -4,10 +4,8 @@
 #include "imgui.h"
 
 ParameterDebugPanel::ParameterDebugPanel(DebugEditorContext& context, CameraDebugPanel& cameraPanel)
-    : DebugPanel(context),
-      mCameraPanel(cameraPanel),
+    : mCameraPanel(cameraPanel),
       mPlayerPanel(context),
-      mEnemyPresetPanel(context),
       mEnemyPanel(context, mEnemyPresetPanel)
 {
 }

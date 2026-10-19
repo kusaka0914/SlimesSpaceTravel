@@ -24,7 +24,8 @@
     "StageEditCommandControllerで移動床単独複製時の経路ずれを先行Runtimeテストで再現。既存の経路平行移動を共通化し、新旧YAML双方の始点/終点と配置を同期。惑星との同時複製で二重変位しないこと、実再読込/選択/Undo/Redoも確認。267単体・監査4件・Runtime18組成功。",
     "UICustomElementRendererのDrawCustomUIから操作案内の状態判定と画面内配置計算を分離。両helperの処理列が元lambdaと一致することと、文字/パネルの実描画で安定zOrder・非表示・縮小配置・GL状態復元を変更前後で確認。267単体・監査4件・Runtime19組・Debug全ビルド成功。",
     "GameWorldの破棄で借用一覧を先に解除し、ActorをStageより先に破棄する順序を明示。観測用Componentで、旧実装のActor破棄中にPlayer一覧が残ることを再現後、267単体・監査4件・Runtime20組・Debug全ビルド成功。",
-    "Storybook Editorの会話/画像の2ファイル保存をAtomicFile::WriteTextFilesへ統合。従来の2保存を抽出した先行テストで片側だけ更新される2失敗を再現し、修正後271単体・監査4件・Runtime20組・Debug全ビルド成功。UTF-8の対応・未知項目・書込中断・一時ファイル掃除も確認。"
+    "Storybook Editorの会話/画像の2ファイル保存をAtomicFile::WriteTextFilesへ統合。従来の2保存を抽出した先行テストで片側だけ更新される2失敗を再現し、修正後271単体・監査4件・Runtime20組・Debug全ビルド成功。UTF-8の対応・未知項目・書込中断・一時ファイル掃除も確認。",
+    "共有Contextを使用しないEnemyPresetDebugPanel/ParameterDebugPanelの継承を解除。敵プリセットはGame/EditorContextを受け取らず、編集データだけで構築。利用先全検索と271単体・監査4件・Runtime20組・Debug全ビルド成功。"
   ],
   "next": [
     "実際に使っていないPanel共通基盤依存の解除、残るEditor Panel全文・継承・クローン候補の意味分類を継続",
@@ -112,7 +113,8 @@
     "src/editor/tools/parameters/EnemyPresetDebugPanel.h",
     "src/editor/tools/parameters/ParameterDebugPanel.h",
     "src/editor/tools/sequence/StorybookEditorPersistence.cpp",
-    "src/editor/tools/sequence/StorybookEditorPersistence.h"
+    "src/editor/tools/sequence/StorybookEditorPersistence.h",
+    "src/editor/tools/parameters/PlayerParameterDebugPanel.cpp"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

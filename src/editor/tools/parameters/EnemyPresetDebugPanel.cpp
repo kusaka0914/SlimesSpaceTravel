@@ -34,11 +34,6 @@ const char* FindEnemyAttackDisplayName(const std::string& attackType)
 
 } // namespace
 
-EnemyPresetDebugPanel::EnemyPresetDebugPanel(DebugEditorContext& context)
-    : DebugPanel(context)
-{
-}
-
 void EnemyPresetDebugPanel::Draw()
 {
     if (!mHasLoadedPresets) {

@@ -232,6 +232,17 @@
       "tests": "片側の保存先不正/定義不正、短い書込、両方成功と往復UTF-8/未知項目保持。",
       "status": "implemented_and_debug_verified",
       "verification": "旧保存ボタンと同じ2つの独立保存を小さなhelperへ抽出した先行テストで2失敗（269/271）を再現。変換とI/Oを分離して両方を事前変換、一括保存へ変更し、271単体・監査4件・Runtime20組・Debug全ビルド成功。親ディレクトリ作成・未知項目・既存のYAML出力形式も維持。中断をまたぐ一括原子性は既存AtomicFileの契約どおり保証しない。"
+    },
+    {
+      "id": "ARCH-07",
+      "priority": "P3",
+      "location": "src/editor/tools/parameters/EnemyPresetDebugPanel.*; ParameterDebugPanel.*",
+      "evidence": "両クラスは基底DebugPanelのmContextを一度も使わず、DebugPanel型の参照/ポインタによる利用も全検索でゼロ。EnemyPresetのcontext引数は基底初期化だけに使用。",
+      "risk": "データ編集だけの敵プリセットをGame全体の共有Contextへ結びつけ、必要な依存を分かりにくくしていた。",
+      "change": "両クラスを独立させ、EnemyPresetの共有Context引数を削除。Parameterのcontext引数は所有する子パネルへの組み立てにだけ利用。",
+      "tests": "全利用先検索、全Editorの構築・繰り返し起動終了、既存全Runtimeと単体。",
+      "status": "implemented_and_debug_verified",
+      "verification": "271単体・監査4件・Runtime20組・Debug全ビルド成功。Draw本体は未変更。"
     }
   ],
   "notes": [

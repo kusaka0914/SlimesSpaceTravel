@@ -1,7 +1,6 @@
 #pragma once
 
 #include "actor/enemy/EnemyPresetRepository.h"
-#include "editor/core/DebugPanel.h"
 
 #include <array>
 #include <cstddef>
@@ -9,12 +8,10 @@
 #include <vector>
 
 // 敵プリセットの編集用コピーを保持し、攻撃構成・選択確率の調整とYAMLへの保存を行う。
-class EnemyPresetDebugPanel : public DebugPanel {
+class EnemyPresetDebugPanel {
 public:
-    explicit EnemyPresetDebugPanel(DebugEditorContext& context);
-
     // 初回にプリセットを読み込む。入力は編集用コピーへ反映し、保存操作でファイルへ書き戻す。
-    void Draw() override;
+    void Draw();
 
 private:
     void DrawAttackEditor();
