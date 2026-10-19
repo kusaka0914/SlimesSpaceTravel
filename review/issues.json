@@ -55,7 +55,8 @@
       "risk": "mGame経由の状態・System取得が広く、必要な依存の範囲を追いにくい。",
       "change": "カメラ調停と既存Camera実装を維持し、限定情報を使う依存境界を導入する。",
       "tests": "手動操作・補助・分割画面・UGC投影のテスト",
-      "status": "open"
+      "status": "implemented_and_debug_verified",
+      "verification": "CameraSystem/DebugCamera/FocusCamera/BossDefeatSequenceからGame参照を削除。World/Input/Sceneを明示借用し、操作状態は割当済みPlayerを含む小さな値、配置Actor/物理は同期callbackで現在値を取得。Focus/Debugは呼出引数、Boss演出はAudioのみ借用。参照先の生成・メンバ破棄順も整合。Debug全ビルド・266単体・Runtime8組成功。カメラ数式・補間係数は維持、実機操作感・性能比較は未検証。"
     },
     {
       "id": "ARCH-06",
@@ -120,6 +121,17 @@
       "tests": "6公開保存APIの書込上限テスト・旧バイト保持・一時ファイル掃除、部分読込失敗、欠損ファイル、往復変換。ActorParameter保存は実資産へ書き込まずビルドと共通AtomicFileテストで確認。",
       "status": "implemented_and_debug_verified",
       "verification": "改修前は追加15テストのうち8件失敗。改修後262単体+Runtime5組成功。往復変換テスト4件を追加後266/266成功。Debug全ビルド成功。TGSログは既に一時ファイル方式なので別監査対象。"
+    },
+    {
+      "id": "SAFE-03",
+      "priority": "P2",
+      "location": "src/system/CameraSystem.cpp:ProcessInput / ResetForStageChange",
+      "evidence": "Editor文字入力で1Pのスティックだけ0にし、2Pは直前の軸値を保持していた。ステージ切替でも2Pの軸・整列ボタン履歴を初期化していなかった。",
+      "risk": "文字入力中やステージ切替直後に2Pカメラが継続移動する。",
+      "change": "両方の軸と整列ボタン履歴を対称に停止・初期化する。",
+      "tests": "仮想コントローラー2台と実Player2体を用いて、1P/2Pの独立、文字入力中の停止、解除後の停止、ステージ切替の履歴初期化を検証。",
+      "status": "implemented_and_debug_verified",
+      "verification": "初期カメラ姿勢を確定した回帰テストで文字入力中の2P継続移動を再現。修正後はRuntime8組・266単体が成功。実機コントローラーは未検証。"
     }
   ],
   "notes": [

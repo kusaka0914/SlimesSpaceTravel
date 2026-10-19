@@ -157,7 +157,35 @@ bool Game::CreateGameSystems()
     }
     mSceneSystem = std::make_unique<SceneSystem>(this, *mUIRenderer->GetUILoadSystem());
     mMathUtils = std::make_unique<MathUtils>();
-    mCameraSystem = std::make_unique<CameraSystem>(this);
+    mInputSystem = std::make_unique<InputSystem>();
+    mCameraSystem = std::make_unique<CameraSystem>(CameraSystemDependencies{
+        .world = *mWorld,
+        .input = *mInputSystem,
+        .scene = *mSceneSystem,
+        .audio = mAudioSystem.get(),
+        .physicsProvider = [this]() { return mPhysicsSystem.get(); },
+        .readControlState =
+            [this]() {
+                return CameraControlState{
+                    .mainPlayer = GetMainPlayer(),
+                    .controlledPlayer = GetControlledPlayer(),
+                    .controlledPlayerIndex = GetControlledPlayerIndex(),
+                    .isPlayer2Joined = GetIsPlayer2Joined(),
+                    .isFreeCameraMode = GetIsFreeCameraMode(),
+                    .isUGCMode = GetIsUGCMode(),
+                    .isDebugEditorShowing = GetIsDebugEditorShowing(),
+                    .isEditorKeyboardInputCaptured = IsEditorKeyboardInputCaptured(),
+                    .hasPrimaryController = IsGameControllerConnected(),
+                    .hasSecondController = HasGameControllerForPlayer(2),
+                };
+            },
+        .findPlacedActor = [this](const std::string& sequenceName, int yamlIndex) -> Actor* {
+            Stage* stage = mWorld->GetCurrentStage();
+            return mActorLoadSystem && stage
+                       ? mActorLoadSystem->GetActorLocator().FindPlacedActor(*stage, sequenceName, yamlIndex)
+                       : nullptr;
+        },
+    });
     mMeshLoadSystem = std::make_unique<MeshLoadSystem>();
     mUGCPreviewController->SetMeshLoadSystem(*mMeshLoadSystem);
     mActorLoadSystem = std::make_unique<ActorLoadSystem>(this, *mWorld);
@@ -168,7 +196,6 @@ bool Game::CreateGameSystems()
     if (mProgressController->HasSelectedPlayerControlStyle()) {
         mPlayerControlStyle = mProgressController->GetSelectedPlayerControlStyle();
     }
-    mInputSystem = std::make_unique<InputSystem>();
     mSequenceSystem = std::make_unique<SequenceSystem>(this);
 
     // 参照する各Systemを生成してから、Player構成を管理するControllerへ依存先を渡す。

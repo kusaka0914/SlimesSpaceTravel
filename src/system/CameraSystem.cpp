@@ -1,7 +1,5 @@
 #include "system/CameraSystem.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
 #include "actor/Key.h"
@@ -11,12 +9,12 @@
 #include "actor/Player.h"
 #include "actor/Star.h"
 #include "component/FocusComponent.h"
-#include "system/ActorLoadSystem.h"
-#include "system/AudioSystem.h"
 #include "system/InputSystem.h"
 #include "system/SceneSystem.h"
 #include "system/scene/TutorialController.h"
 #include "system/tutorial/TutorialLibrary.h"
+#include "world/GameWorld.h"
+#include "world/Stage.h"
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
@@ -24,13 +22,17 @@
 #include <cmath>
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <utility>
 
-CameraSystem::CameraSystem(Game* game)
-    : mGame(game),
-      mBossDefeatSequence(game),
-      mCollisionResolver([game]() { return game ? game->GetPhysicsSystem() : nullptr; }),
-      mDebugCamera(game),
-      mFocusCamera(game, mCollisionResolver),
+CameraSystem::CameraSystem(CameraSystemDependencies dependencies)
+    : mWorld(dependencies.world),
+      mInput(dependencies.input),
+      mScene(dependencies.scene),
+      mReadControlState(std::move(dependencies.readControlState)),
+      mFindPlacedActor(std::move(dependencies.findPlacedActor)),
+      mBossDefeatSequence(dependencies.audio),
+      mCollisionResolver(std::move(dependencies.physicsProvider)),
+      mFocusCamera(mCollisionResolver),
       mPlayerCamera(mCollisionResolver),
       mPlayerCameraSettingsRepository("../assets/data/camera/player.yaml"),
       mCinematicLibrary("../assets/data/camera/cinematics.yaml")
@@ -41,40 +43,41 @@ CameraSystem::CameraSystem(Game* game)
 
 void CameraSystem::ProcessInput()
 {
-    if (!mGame || mCinematicCamera.IsActive()) {
+    const CameraControlState controls = mReadControlState();
+    if (mCinematicCamera.IsActive()) {
         return;
     }
 
-    if (mGame->IsEditorKeyboardInputCaptured()) {
+    if (controls.isEditorKeyboardInputCaptured) {
         mCameraStickX = 0.0f;
         mCameraStickY = 0.0f;
+        mSecondControllerStickX = 0.0f;
+        mSecondControllerStickY = 0.0f;
         mKeyboardYawInput = 0.0f;
         mKeyboardPitchInput = 0.0f;
         mWasAlignCameraPressed = true;
-        if (mGame->GetIsFreeCameraMode()) {
-            mDebugCamera.ProcessInput();
+        mWasSecondControllerAlignCameraPressed = true;
+        if (controls.isFreeCameraMode) {
+            mDebugCamera.ProcessInput(mInput, controls.isUGCMode, controls.isEditorKeyboardInputCaptured);
         }
         return;
     }
 
-    if (mGame->GetIsFreeCameraMode()) {
-        mDebugCamera.ProcessInput();
+    if (controls.isFreeCameraMode) {
+        mDebugCamera.ProcessInput(mInput, controls.isUGCMode, controls.isEditorKeyboardInputCaptured);
         return;
     }
 
-    SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    InputSystem* inputSystem = mGame->GetInputSystem();
-    if (!inputSystem) {
-        return;
-    }
-    const bool hasPrimaryController = inputSystem->HasControllerInput(1);
-    const bool hasSecondController = inputSystem->HasControllerInput(2);
+    SceneSystem& sceneSystem = mScene;
+    const InputSystem& inputSystem = mInput;
+    const bool hasPrimaryController = inputSystem.HasControllerInput(1);
+    const bool hasSecondController = inputSystem.HasControllerInput(2);
 
     constexpr float deadZone = 0.25f;
     constexpr float scale = 1.0f / 32767.0f;
 
-    mCameraStickX = hasPrimaryController ? inputSystem->GetControllerAxis(1, SDL_CONTROLLER_AXIS_RIGHTX) * scale : 0.0f;
-    mCameraStickY = hasPrimaryController ? inputSystem->GetControllerAxis(1, SDL_CONTROLLER_AXIS_RIGHTY) * scale : 0.0f;
+    mCameraStickX = hasPrimaryController ? inputSystem.GetControllerAxis(1, SDL_CONTROLLER_AXIS_RIGHTX) * scale : 0.0f;
+    mCameraStickY = hasPrimaryController ? inputSystem.GetControllerAxis(1, SDL_CONTROLLER_AXIS_RIGHTY) * scale : 0.0f;
 
     if (std::abs(mCameraStickX) < deadZone) {
         mCameraStickX = 0.0f;
@@ -83,9 +86,9 @@ void CameraSystem::ProcessInput()
         mCameraStickY = 0.0f;
     }
     mSecondControllerStickX =
-        hasSecondController ? inputSystem->GetControllerAxis(2, SDL_CONTROLLER_AXIS_RIGHTX) * scale : 0.0f;
+        hasSecondController ? inputSystem.GetControllerAxis(2, SDL_CONTROLLER_AXIS_RIGHTX) * scale : 0.0f;
     mSecondControllerStickY =
-        hasSecondController ? inputSystem->GetControllerAxis(2, SDL_CONTROLLER_AXIS_RIGHTY) * scale : 0.0f;
+        hasSecondController ? inputSystem.GetControllerAxis(2, SDL_CONTROLLER_AXIS_RIGHTY) * scale : 0.0f;
     if (std::abs(mSecondControllerStickX) < deadZone) {
         mSecondControllerStickX = 0.0f;
     }
@@ -95,35 +98,34 @@ void CameraSystem::ProcessInput()
 
     mKeyboardYawInput = 0.0f;
     mKeyboardPitchInput = 0.0f;
-    const bool acceptsKeyboardInput = !mGame->IsEditorKeyboardInputCaptured();
-    if (acceptsKeyboardInput && inputSystem->IsKeyPressed(GLFW_KEY_RIGHT)) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_RIGHT)) {
         mKeyboardYawInput += 1.0f;
     }
-    if (acceptsKeyboardInput && inputSystem->IsKeyPressed(GLFW_KEY_LEFT)) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_LEFT)) {
         mKeyboardYawInput -= 1.0f;
     }
-    if (acceptsKeyboardInput && inputSystem->IsKeyPressed(GLFW_KEY_UP)) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_UP)) {
         mKeyboardPitchInput += 1.0f;
     }
-    if (acceptsKeyboardInput && inputSystem->IsKeyPressed(GLFW_KEY_DOWN)) {
+    if (inputSystem.IsKeyPressed(GLFW_KEY_DOWN)) {
         mKeyboardPitchInput -= 1.0f;
     }
 
-    const bool keyboardAlignCameraPressed = acceptsKeyboardInput && inputSystem->IsKeyPressed(GLFW_KEY_M);
+    const bool keyboardAlignCameraPressed = inputSystem.IsKeyPressed(GLFW_KEY_M);
     const bool controllerAlignCameraPressed =
-        inputSystem->IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+        inputSystem.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
     const bool secondControllerAlignCameraPressed =
-        inputSystem->IsControllerButtonPressed(2, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    const bool playerTwoUsesController = mGame->GetIsPlayer2Joined() && mGame->HasGameControllerForPlayer(2);
+        inputSystem.IsControllerButtonPressed(2, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    const bool playerTwoUsesController = controls.isPlayer2Joined && controls.hasSecondController;
     const bool alignCameraPressed =
         controllerAlignCameraPressed || (keyboardAlignCameraPressed && !playerTwoUsesController);
 
-    if (sceneSystem && sceneSystem->IsPlaying() && alignCameraPressed && !mWasAlignCameraPressed) {
+    if (sceneSystem.IsPlaying() && alignCameraPressed && !mWasAlignCameraPressed) {
         int playerIndex = GetPrimaryPlayerIndex();
-        if (mGame->GetIsPlayer2Joined()) {
+        if (controls.isPlayer2Joined) {
             playerIndex = (keyboardAlignCameraPressed && !playerTwoUsesController) ? 1 : 0;
         }
-        const std::vector<Player*>& players = mGame->GetPlayers();
+        const std::vector<Player*>& players = mWorld.GetPlayers();
         if (playerIndex >= 0 && playerIndex < static_cast<int>(players.size()) &&
             players[static_cast<std::size_t>(playerIndex)]) {
             mPlayerCamera.AlignBehindPlayer(players[static_cast<std::size_t>(playerIndex)], playerIndex);
@@ -131,9 +133,9 @@ void CameraSystem::ProcessInput()
     }
 
     mWasAlignCameraPressed = alignCameraPressed;
-    if (sceneSystem && sceneSystem->IsPlaying() && secondControllerAlignCameraPressed &&
-        !mWasSecondControllerAlignCameraPressed && playerTwoUsesController) {
-        const std::vector<Player*>& players = mGame->GetPlayers();
+    if (sceneSystem.IsPlaying() && secondControllerAlignCameraPressed && !mWasSecondControllerAlignCameraPressed &&
+        playerTwoUsesController) {
+        const std::vector<Player*>& players = mWorld.GetPlayers();
         if (players.size() >= 2 && players[1]) {
             mPlayerCamera.AlignBehindPlayer(players[1], 1);
         }
@@ -231,8 +233,11 @@ void CameraSystem::ResetForStageChange()
     mRevealFocusActors.clear();
     mRevealFocusView = glm::mat4(1.0f);
     mWasAlignCameraPressed = false;
+    mWasSecondControllerAlignCameraPressed = false;
     mCameraStickX = 0.0f;
     mCameraStickY = 0.0f;
+    mSecondControllerStickX = 0.0f;
+    mSecondControllerStickY = 0.0f;
     mKeyboardYawInput = 0.0f;
     mKeyboardPitchInput = 0.0f;
     mPlayerPitchOffsetsDegrees.clear();
@@ -255,11 +260,8 @@ void CameraSystem::ResetForStageChange()
 
 void CameraSystem::SnapBehindControlledPlayer()
 {
-    if (!mGame) {
-        return;
-    }
-
-    Player* controlledPlayer = mGame->GetControlledPlayer();
+    const CameraControlState controls = mReadControlState();
+    Player* controlledPlayer = controls.controlledPlayer;
     if (!controlledPlayer) {
         return;
     }
@@ -269,11 +271,12 @@ void CameraSystem::SnapBehindControlledPlayer()
 
 float CameraSystem::GetFieldOfViewDegrees() const
 {
+    const CameraControlState controls = mReadControlState();
     if (mCinematicCamera.IsActive()) {
         return glm::clamp(mCinematicCamera.GetPose().fieldOfViewDegrees, 10.0f, 120.0f);
     }
 
-    if (mGame && mGame->GetIsFreeCameraMode()) {
+    if (controls.isFreeCameraMode) {
         return mDebugCamera.GetFieldOfViewDegrees();
     }
 
@@ -285,19 +288,15 @@ float CameraSystem::GetFieldOfViewDegrees() const
         return mPlayerCameraSettings.boatRideFieldOfViewDegrees;
     }
 
-    const float normalFieldOfView = mGame && mGame->GetIsPlayer2Joined()
-                                        ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
-                                        : mPlayerCameraSettings.fieldOfViewDegrees;
+    const float normalFieldOfView = controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
+                                                             : mPlayerCameraSettings.fieldOfViewDegrees;
 
     return glm::mix(normalFieldOfView, mPlayerCameraSettings.talkFieldOfViewDegrees, GetEasedTalkCameraBlend());
 }
 
 void CameraSystem::UpdateCamera(float deltaTime)
 {
-    if (!mGame) {
-        return;
-    }
-
+    const CameraControlState controls = mReadControlState();
     UpdateTalkCameraTransition(deltaTime);
     mBossDefeatSequence.Update(deltaTime);
     UpdateAirSlamCameraStates(deltaTime);
@@ -307,14 +306,14 @@ void CameraSystem::UpdateCamera(float deltaTime)
         return;
     }
 
-    if (mGame->GetIsFreeCameraMode()) {
-        mDebugCamera.Update(deltaTime);
+    if (controls.isFreeCameraMode) {
+        mDebugCamera.Update(deltaTime, controls.isUGCMode);
         return;
     }
 
     UpdatePlayerPitchOffsets(deltaTime);
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     std::vector<float> yawDeltas(players.size(), 0.0f);
     const int primaryPlayerIndex = GetPrimaryPlayerIndex();
     const bool allowsManualYaw = mTalkCameraBlend <= 0.0f;
@@ -322,16 +321,16 @@ void CameraSystem::UpdateCamera(float deltaTime)
         const float yawSpeedRadiansPerSecond = mPlayerCameraSettings.yawSensitivity;
         const float safeDeltaTime = std::max(0.0f, deltaTime);
 
-        if (mGame->GetIsPlayer2Joined()) {
-            if (!players.empty() && players[0] && mGame->IsGameControllerConnected()) {
+        if (controls.isPlayer2Joined) {
+            if (!players.empty() && players[0] && controls.hasPrimaryController) {
                 yawDeltas[0] = mCameraStickX * yawSpeedRadiansPerSecond * safeDeltaTime;
             }
 
-            if (mGame->HasGameControllerForPlayer(2)) {
+            if (controls.hasSecondController) {
                 if (yawDeltas.size() >= 2 && players[1]) {
                     yawDeltas[1] = mSecondControllerStickX * yawSpeedRadiansPerSecond * safeDeltaTime;
                 }
-            } else if (mGame->IsGameControllerConnected()) {
+            } else if (controls.hasPrimaryController) {
                 if (yawDeltas.size() >= 2 && players[1]) {
                     yawDeltas[1] = mKeyboardYawInput * yawSpeedRadiansPerSecond * safeDeltaTime;
                 }
@@ -339,15 +338,15 @@ void CameraSystem::UpdateCamera(float deltaTime)
                 yawDeltas[0] = mKeyboardYawInput * yawSpeedRadiansPerSecond * safeDeltaTime;
             }
         } else if (primaryPlayerIndex >= 0 && primaryPlayerIndex < static_cast<int>(yawDeltas.size())) {
-            const float yawInput = mGame->IsGameControllerConnected() ? mCameraStickX : mKeyboardYawInput;
+            const float yawInput = controls.hasPrimaryController ? mCameraStickX : mKeyboardYawInput;
             yawDeltas[static_cast<std::size_t>(primaryPlayerIndex)] =
                 yawInput * yawSpeedRadiansPerSecond * safeDeltaTime;
         }
     }
 
-    SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    const bool allowsMovementCameraAssist = sceneSystem && sceneSystem->IsPlaying() && mTalkCameraBlend <= 0.0f &&
-                                            !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
+    SceneSystem& sceneSystem = mScene;
+    const bool allowsMovementCameraAssist =
+        sceneSystem.IsPlaying() && mTalkCameraBlend <= 0.0f && !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
     mPlayerCamera.Update(players, yawDeltas, mPlayerCameraSettings, deltaTime, allowsMovementCameraAssist);
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
@@ -355,7 +354,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
 
 void CameraSystem::UpdateAirSlamCameraStates(float deltaTime)
 {
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     mAirSlamCameraStates.resize(players.size());
 
     const float safeDeltaTime = std::max(0.0f, deltaTime);
@@ -396,11 +395,8 @@ void CameraSystem::UpdateAirSlamCameraStates(float deltaTime)
 
 void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
 {
-    if (!mGame) {
-        return;
-    }
-
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const CameraControlState controls = mReadControlState();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     if (mPlayerPitchOffsetsDegrees.size() < players.size()) {
         mPlayerPitchOffsetsDegrees.resize(players.size(), 0.0f);
     }
@@ -410,17 +406,17 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
     if (allowsManualPitch) {
         const float pitchSpeed = mPlayerCameraSettings.pitchSensitivityDegrees * std::max(0.0f, deltaTime);
 
-        if (mGame->GetIsPlayer2Joined()) {
-            if (!players.empty() && players[0] && mGame->IsGameControllerConnected()) {
+        if (controls.isPlayer2Joined) {
+            if (!players.empty() && players[0] && controls.hasPrimaryController) {
                 mPlayerPitchOffsetsDegrees[0] += -mCameraStickY * pitchSpeed;
             }
 
             int keyboardPlayerIndex = -1;
-            if (mGame->HasGameControllerForPlayer(2)) {
+            if (controls.hasSecondController) {
                 if (players.size() >= 2 && players[1]) {
                     mPlayerPitchOffsetsDegrees[1] += -mSecondControllerStickY * pitchSpeed;
                 }
-            } else if (mGame->IsGameControllerConnected()) {
+            } else if (controls.hasPrimaryController) {
                 if (players.size() >= 2 && players[1]) {
                     keyboardPlayerIndex = 1;
                 }
@@ -436,7 +432,7 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
             const int controlledIndex = GetPrimaryPlayerIndex();
             if (controlledIndex >= 0 && controlledIndex < static_cast<int>(players.size()) &&
                 players[static_cast<std::size_t>(controlledIndex)]) {
-                if (mGame->IsGameControllerConnected()) {
+                if (controls.hasPrimaryController) {
                     mPlayerPitchOffsetsDegrees[static_cast<std::size_t>(controlledIndex)] +=
                         -mCameraStickY * pitchSpeed;
                 } else {
@@ -456,8 +452,9 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
 
 bool CameraSystem::AllowsPlayerInput() const
 {
-    return !mBossDefeatSequence.IsActive() && !mCinematicCamera.IsActive() &&
-           !(mGame && mGame->GetIsFreeCameraMode()) && !mIsTargetFocus && !FindMovingBoat();
+    const CameraControlState controls = mReadControlState();
+    return !mBossDefeatSequence.IsActive() && !mCinematicCamera.IsActive() && !controls.isFreeCameraMode &&
+           !mIsTargetFocus && !FindMovingBoat();
 }
 
 void CameraSystem::StartBossDefeatSequence(Enemy* boss, Star* star)
@@ -467,6 +464,7 @@ void CameraSystem::StartBossDefeatSequence(Enemy* boss, Star* star)
 
 void CameraSystem::BeginBossDefeatSequence(Enemy* boss, Star* star, bool isPreview)
 {
+    const CameraControlState controls = mReadControlState();
     if (!boss) {
         return;
     }
@@ -474,7 +472,7 @@ void CameraSystem::BeginBossDefeatSequence(Enemy* boss, Star* star, bool isPrevi
     mBossDefeatSequence.Start(boss, star, isPreview);
     mCameraStickX = 0.0f;
 
-    Player* player = mGame ? mGame->GetMainPlayer() : nullptr;
+    Player* player = controls.mainPlayer;
     const glm::vec3 targetPos = player ? player->GetPos() : boss->GetPos();
     const glm::vec3 up = player ? player->GetUpVec() : boss->GetUpVec();
     mFocusCamera.BeginTransition(mPlayerCamera.GetCameraPos(GetPrimaryPlayerIndex()), targetPos, up);
@@ -482,7 +480,8 @@ void CameraSystem::BeginBossDefeatSequence(Enemy* boss, Star* star, bool isPrevi
 
 bool CameraSystem::PreviewBossDefeatSequence()
 {
-    Player* player = mGame ? mGame->GetMainPlayer() : nullptr;
+    const CameraControlState controls = mReadControlState();
+    Player* player = controls.mainPlayer;
     Planet* planet = player ? player->GetCurrentPlanet() : nullptr;
     Enemy* boss = FindBossEnemy(planet);
     if (!boss) {
@@ -500,16 +499,17 @@ void CameraSystem::StopBossDefeatSequence()
 
 void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
 {
-    SceneSystem* sceneSystem = mGame ? mGame->GetSceneSystem() : nullptr;
+    const CameraControlState controls = mReadControlState();
+    SceneSystem& sceneSystem = mScene;
 
     Player* targetPlayer = nullptr;
     NPC* targetNPC = nullptr;
-    if (sceneSystem && sceneSystem->IsTalkWithNPC() && sceneSystem->GetTalkingPlayer() &&
-        sceneSystem->GetTalkingNPC() && sceneSystem->GetTalkingNPC()->ShouldUseTalkCamera()) {
-        targetPlayer = sceneSystem->GetTalkingPlayer();
-        targetNPC = sceneSystem->GetTalkingNPC();
-    } else if (mIsTalkCameraPreviewEnabled && mGame) {
-        targetPlayer = mGame->GetMainPlayer();
+    if (sceneSystem.IsTalkWithNPC() && sceneSystem.GetTalkingPlayer() && sceneSystem.GetTalkingNPC() &&
+        sceneSystem.GetTalkingNPC()->ShouldUseTalkCamera()) {
+        targetPlayer = sceneSystem.GetTalkingPlayer();
+        targetNPC = sceneSystem.GetTalkingNPC();
+    } else if (mIsTalkCameraPreviewEnabled) {
+        targetPlayer = controls.mainPlayer;
     }
 
     if (targetPlayer) {
@@ -541,11 +541,11 @@ void CameraSystem::UpdateTalkCameraTransition(float deltaTime)
 
 void CameraSystem::UpdateTalkCameraAim()
 {
-    if (!mGame || !mTalkCameraPlayer || !mHasTalkCameraTarget || mTalkCameraBlend <= 0.0f) {
+    if (!mTalkCameraPlayer || !mHasTalkCameraTarget || mTalkCameraBlend <= 0.0f) {
         return;
     }
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     for (int playerIndex = 0; playerIndex < static_cast<int>(players.size()); ++playerIndex) {
         if (players[playerIndex] != mTalkCameraPlayer) {
             continue;
@@ -559,11 +559,11 @@ void CameraSystem::UpdateTalkCameraAim()
 
 void CameraSystem::SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex)
 {
-    if (!mGame || toPlayerIndex < 0) {
+    if (toPlayerIndex < 0) {
         return;
     }
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     if (toPlayerIndex >= static_cast<int>(players.size()) || !players[static_cast<std::size_t>(toPlayerIndex)]) {
         return;
     }
@@ -575,11 +575,11 @@ void CameraSystem::SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex
 
 void CameraSystem::TransitionToControlledPlayer(int fromPlayerIndex, int toPlayerIndex)
 {
-    if (!mGame || toPlayerIndex < 0) {
+    if (toPlayerIndex < 0) {
         return;
     }
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     if (toPlayerIndex >= static_cast<int>(players.size()) || !players[static_cast<std::size_t>(toPlayerIndex)]) {
         return;
     }
@@ -617,8 +617,8 @@ void CameraSystem::UpdateTalkPageFocus(float deltaTime)
         desiredFocusActor = nullptr;
     }
 
-    SceneSystem* sceneSystem = mGame ? mGame->GetSceneSystem() : nullptr;
-    Player* talkingPlayer = sceneSystem ? sceneSystem->GetTalkingPlayer() : nullptr;
+    SceneSystem& sceneSystem = mScene;
+    Player* talkingPlayer = sceneSystem.GetTalkingPlayer();
 
     const float safeDeltaTime = std::max(0.0f, deltaTime);
     if (desiredFocusActor) {
@@ -631,7 +631,7 @@ void CameraSystem::UpdateTalkPageFocus(float deltaTime)
             }
 
             int talkPlayerIndex = GetPrimaryPlayerIndex();
-            const std::vector<Player*>& players = mGame->GetPlayers();
+            const std::vector<Player*>& players = mWorld.GetPlayers();
             for (int playerIndex = 0; playerIndex < static_cast<int>(players.size()); ++playerIndex) {
                 if (players[static_cast<std::size_t>(playerIndex)] == talkingPlayer) {
                     talkPlayerIndex = playerIndex;
@@ -712,6 +712,7 @@ float CameraSystem::GetEasedTalkPageFocusBlend() const
 
 glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
 {
+    const CameraControlState controls = mReadControlState();
     const float talkBlend = player && player == mTalkCameraPlayer ? GetEasedTalkCameraBlend() : 0.0f;
     const float airSlamDistanceBlend =
         playerIndex >= 0 && static_cast<std::size_t>(playerIndex) < mAirSlamCameraStates.size()
@@ -735,9 +736,8 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
     const float actionPitchDegrees =
         glm::mix(normalPitchDegrees, mPlayerCameraSettings.airSlamPitchDegrees, airSlamPitchBlend);
     const float pitchDegrees = glm::mix(actionPitchDegrees, mPlayerCameraSettings.talkPitchDegrees, talkBlend);
-    const float normalTargetHeight = mGame && mGame->GetIsPlayer2Joined()
-                                         ? mPlayerCameraSettings.splitScreenTargetHeight
-                                         : mPlayerCameraSettings.targetHeight;
+    const float normalTargetHeight =
+        controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenTargetHeight : mPlayerCameraSettings.targetHeight;
     const float targetHeight = glm::mix(normalTargetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
 
     const glm::mat4 view =
@@ -758,6 +758,7 @@ glm::mat4 CameraSystem::ApplyPlayerShake(const glm::mat4& view, int playerIndex)
 
 glm::mat4 CameraSystem::GetTalkPageFocusView(Player* player, int playerIndex)
 {
+    const CameraControlState controls = mReadControlState();
     const glm::mat4 normalView = GetPlayerCameraView(player, playerIndex);
     if (!player || !mHasTalkPageFocusPose || mTalkPageFocusBlend <= 0.0f) {
         return normalView;
@@ -772,9 +773,8 @@ glm::mat4 CameraSystem::GetTalkPageFocusView(Player* player, int playerIndex)
 
     const glm::vec3 normalCameraPos = mPlayerCamera.GetCameraPos(playerIndex);
     const float talkCameraBlend = player == mTalkCameraPlayer ? GetEasedTalkCameraBlend() : 0.0f;
-    const float normalTargetHeight = mGame && mGame->GetIsPlayer2Joined()
-                                         ? mPlayerCameraSettings.splitScreenTargetHeight
-                                         : mPlayerCameraSettings.targetHeight;
+    const float normalTargetHeight =
+        controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenTargetHeight : mPlayerCameraSettings.targetHeight;
     const float currentCameraTargetHeight =
         glm::mix(normalTargetHeight, mPlayerCameraSettings.talkTargetHeight, talkCameraBlend);
     const glm::vec3 normalTargetPos = player->GetPos() + normalUp * currentCameraTargetHeight;
@@ -795,34 +795,25 @@ glm::mat4 CameraSystem::GetTalkPageFocusView(Player* player, int playerIndex)
 
 Actor* CameraSystem::ResolveTalkPageFocusActor() const
 {
-    if (!mGame) {
-        return nullptr;
-    }
-
-    SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    if (sceneSystem && sceneSystem->HasActiveTutorial()) {
-        TutorialController* tutorialController = sceneSystem->GetTutorialController();
+    SceneSystem& sceneSystem = mScene;
+    if (sceneSystem.HasActiveTutorial()) {
+        TutorialController* tutorialController = sceneSystem.GetTutorialController();
         const TutorialPage* page = tutorialController ? tutorialController->GetCurrentPage() : nullptr;
         if (!page || !page->focusTarget.IsValid()) {
             return nullptr;
         }
 
-        ActorLoadSystem* actorLoadSystem = mGame->GetActorLoadSystem();
-        Stage* stage = mGame->GetCurrentStage();
-        if (!actorLoadSystem || !stage) {
-            return nullptr;
-        }
-        return actorLoadSystem->GetActorLocator().FindPlacedActor(*stage, page->focusTarget.sequenceName,
-                                                                  page->focusTarget.yamlIndex);
+        return mFindPlacedActor ? mFindPlacedActor(page->focusTarget.sequenceName, page->focusTarget.yamlIndex)
+                                : nullptr;
     }
 
-    NPC* talkingNPC = sceneSystem ? sceneSystem->GetTalkingNPC() : nullptr;
-    Player* talkingPlayer = sceneSystem ? sceneSystem->GetTalkingPlayer() : nullptr;
-    if (!sceneSystem || !sceneSystem->IsTalkWithNPC() || !talkingNPC || !talkingPlayer) {
+    NPC* talkingNPC = sceneSystem.GetTalkingNPC();
+    Player* talkingPlayer = sceneSystem.GetTalkingPlayer();
+    if (!sceneSystem.IsTalkWithNPC() || !talkingNPC || !talkingPlayer) {
         return nullptr;
     }
 
-    const int talkIndex = sceneSystem->GetTalkUIIndex();
+    const int talkIndex = sceneSystem.GetTalkUIIndex();
     if (talkIndex < 0) {
         return nullptr;
     }
@@ -833,29 +824,21 @@ Actor* CameraSystem::ResolveTalkPageFocusActor() const
         return nullptr;
     }
 
-    ActorLoadSystem* actorLoadSystem = mGame->GetActorLoadSystem();
-    Stage* stage = mGame->GetCurrentStage();
-    if (!actorLoadSystem || !stage) {
-        return nullptr;
-    }
-    return actorLoadSystem->GetActorLocator().FindPlacedActor(*stage, target->sequenceName, target->yamlIndex);
+    return mFindPlacedActor ? mFindPlacedActor(target->sequenceName, target->yamlIndex) : nullptr;
 }
 
 std::vector<glm::mat4> CameraSystem::GetViews()
 {
+    const CameraControlState controls = mReadControlState();
     std::vector<glm::mat4> views;
     mIsShowingRevealFocus = false;
-
-    if (!mGame) {
-        return views;
-    }
 
     if (mCinematicCamera.IsActive()) {
         views.emplace_back(mCinematicCamera.GetView());
         return views;
     }
 
-    if (mGame->GetIsFreeCameraMode()) {
+    if (controls.isFreeCameraMode) {
         views.emplace_back(mDebugCamera.GetView());
         return views;
     }
@@ -871,7 +854,8 @@ std::vector<glm::mat4> CameraSystem::GetViews()
                                                isFocusingStar ? mPlayerCameraSettings.bossDefeatStarCameraHeight
                                                               : mPlayerCameraSettings.bossDefeatCameraHeight,
                                                isFocusingStar ? mPlayerCameraSettings.bossDefeatStarTargetHeight
-                                                              : mPlayerCameraSettings.bossDefeatTargetHeight));
+                                                              : mPlayerCameraSettings.bossDefeatTargetHeight,
+                                               controls.mainPlayer));
         }
 
         if (!views.empty()) {
@@ -898,14 +882,14 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         }
 
         mBoatRideCameraTarget = boatRideCameraTarget;
-        views.emplace_back(mFocusCamera.GetCloseFocusView(boatRideCameraTarget, mPlayerCameraSettings.boatRideDistance,
-                                                          mPlayerCameraSettings.boatRideCameraHeight,
-                                                          mPlayerCameraSettings.boatRideTargetHeight));
+        views.emplace_back(mFocusCamera.GetCloseFocusView(
+            boatRideCameraTarget, mPlayerCameraSettings.boatRideDistance, mPlayerCameraSettings.boatRideCameraHeight,
+            mPlayerCameraSettings.boatRideTargetHeight, controls.mainPlayer));
         return views;
     }
     mBoatRideCameraTarget = nullptr;
 
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     const int primaryPlayerIndex = GetPrimaryPlayerIndex();
     if (primaryPlayerIndex < 0 || primaryPlayerIndex >= static_cast<int>(players.size())) {
         return views;
@@ -915,9 +899,15 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    SceneSystem* sceneSystem = mGame->GetSceneSystem();
-    if (sceneSystem && sceneSystem->IsOpening()) {
-        views = mFocusCamera.GetOpeningViews();
+    SceneSystem& sceneSystem = mScene;
+    if (sceneSystem.IsOpening()) {
+        OpeningCameraShot shot = OpeningCameraShot::None;
+        if (sceneSystem.IsTalkWithMother()) {
+            shot = OpeningCameraShot::Mother;
+        } else if (sceneSystem.IsTalkWithDoctor()) {
+            shot = OpeningCameraShot::Doctor;
+        }
+        views = mFocusCamera.GetOpeningViews(shot);
         if (!views.empty()) {
             return views;
         }
@@ -928,7 +918,7 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         return views;
     }
 
-    const bool isPlayer2Joined = mGame->GetIsPlayer2Joined() && players.size() >= 2 && players[1];
+    const bool isPlayer2Joined = controls.isPlayer2Joined && players.size() >= 2 && players[1];
     if ((mTalkCameraPlayer && mTalkCameraBlend > 0.0f) || (mHasTalkPageFocusPose && mTalkPageFocusBlend > 0.0f)) {
         views.emplace_back(GetTalkPageFocusView(isPlayer2Joined ? players[0] : primaryPlayer,
                                                 isPlayer2Joined ? 0 : primaryPlayerIndex));
@@ -943,15 +933,15 @@ std::vector<glm::mat4> CameraSystem::GetViews()
         mIsShowingRevealFocus = true;
         if (focusingActors != mRevealFocusActors) {
             mRevealFocusActors = focusingActors;
-            mRevealFocusView =
-                mFocusCamera.GetFocusView(focusingActors, mPlayerCamera.GetCameraPos(primaryPlayerIndex));
+            mRevealFocusView = mFocusCamera.GetFocusView(focusingActors, mPlayerCamera.GetCameraPos(primaryPlayerIndex),
+                                                         controls.mainPlayer);
         }
         views.emplace_back(mRevealFocusView);
         return views;
     }
     mRevealFocusActors.clear();
 
-    if (sceneSystem && sceneSystem->IsStageClear()) {
+    if (sceneSystem.IsStageClear()) {
         views.emplace_back(mPlayerCamera.GetView(primaryPlayer, primaryPlayerIndex, 6.0f, -1.0f, 1.0f, true));
         return views;
     }
@@ -959,7 +949,8 @@ std::vector<glm::mat4> CameraSystem::GetViews()
     if (mIsTargetFocus) {
         Enemy* targetEnemy = FindBossEnemy(currentPlanet);
         if (targetEnemy) {
-            views.emplace_back(ApplyPlayerShake(mFocusCamera.GetTargetCameraView(targetEnemy), primaryPlayerIndex));
+            views.emplace_back(ApplyPlayerShake(mFocusCamera.GetTargetCameraView(targetEnemy, controls.mainPlayer),
+                                                primaryPlayerIndex));
             return views;
         }
     }
@@ -975,15 +966,12 @@ std::vector<glm::mat4> CameraSystem::GetViews()
 
 glm::vec3 CameraSystem::GetCameraPos() const
 {
-    if (!mGame) {
-        return glm::vec3(0.0f);
-    }
-
+    const CameraControlState controls = mReadControlState();
     if (mCinematicCamera.IsActive()) {
         return mCinematicCamera.GetPose().position;
     }
 
-    if (mGame->GetIsFreeCameraMode()) {
+    if (controls.isFreeCameraMode) {
         return mDebugCamera.GetCameraPos();
     }
 
@@ -1017,12 +1005,13 @@ glm::vec3 CameraSystem::GetPlayerCameraPos(int playerIndex) const
 
 int CameraSystem::GetPrimaryPlayerIndex() const
 {
-    if (!mGame || mGame->GetIsPlayer2Joined()) {
+    const CameraControlState controls = mReadControlState();
+    if (controls.isPlayer2Joined) {
         return 0;
     }
 
-    const int controlledIndex = mGame->GetControlledPlayerIndex();
-    const std::vector<Player*>& players = mGame->GetPlayers();
+    const int controlledIndex = controls.controlledPlayerIndex;
+    const std::vector<Player*>& players = mWorld.GetPlayers();
     if (controlledIndex < 0 || controlledIndex >= static_cast<int>(players.size())) {
         return 0;
     }
@@ -1033,7 +1022,7 @@ int CameraSystem::GetPrimaryPlayerIndex() const
 std::vector<Actor*> CameraSystem::FindFocusingActors() const
 {
     std::vector<Actor*> focusingActors;
-    Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
+    Stage* stage = mWorld.GetCurrentStage();
     if (!stage) {
         return focusingActors;
     }
@@ -1081,7 +1070,7 @@ bool CameraSystem::HasActiveRevealFocus() const
 
 Boat* CameraSystem::FindMovingBoat() const
 {
-    Stage* stage = mGame ? mGame->GetCurrentStage() : nullptr;
+    Stage* stage = mWorld.GetCurrentStage();
     if (!stage) {
         return nullptr;
     }
@@ -1102,16 +1091,17 @@ Boat* CameraSystem::FindMovingBoat() const
 
 Boat* CameraSystem::ResolveBoatRideCameraTarget() const
 {
+    const CameraControlState controls = mReadControlState();
     if (Boat* movingBoat = FindMovingBoat()) {
         return movingBoat;
     }
 
-    const bool allowsEditorPreview = mGame && mGame->GetIsDebugEditorShowing() && mIsBoatRideCameraPreviewEnabled;
-    if (!allowsEditorPreview || !mGame->GetCurrentStage()) {
+    const bool allowsEditorPreview = controls.isDebugEditorShowing && mIsBoatRideCameraPreviewEnabled;
+    if (!allowsEditorPreview || !mWorld.GetCurrentStage()) {
         return nullptr;
     }
 
-    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+    for (Planet* planet : mWorld.GetCurrentStage()->GetPlanets()) {
         if (!planet) {
             continue;
         }

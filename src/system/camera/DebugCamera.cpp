@@ -1,6 +1,5 @@
 #include "system/camera/DebugCamera.h"
 
-#include "app/Game.h"
 #include "system/InputSystem.h"
 
 #include <GLFW/glfw3.h>
@@ -38,12 +37,7 @@ glm::vec3 CalculateRightDirection(const glm::vec3& forward, const glm::vec3& up)
 }
 } // namespace
 
-DebugCamera::DebugCamera(Game* game)
-    : mGame(game)
-{
-}
-
-void DebugCamera::ProcessInput()
+void DebugCamera::ProcessInput(const InputSystem& inputSystem, bool isUGCMode, bool isEditorKeyboardInputCaptured)
 {
     mMoveForward = 0.0f;
     mMoveRight = 0.0f;
@@ -54,12 +48,7 @@ void DebugCamera::ProcessInput()
     mMousePitchDelta = 0.0f;
     mIsFastMove = false;
 
-    if (!mGame || !mGame->GetInputSystem()) {
-        return;
-    }
-    const InputSystem& inputSystem = *mGame->GetInputSystem();
-
-    if (mGame->GetIsUGCMode()) {
+    if (isUGCMode) {
         if (inputSystem.IsKeyPressed(GLFW_KEY_A)) {
             mMoveRight -= 1.0f;
         }
@@ -77,7 +66,7 @@ void DebugCamera::ProcessInput()
         return;
     }
 
-    if (mGame->IsEditorKeyboardInputCaptured()) {
+    if (isEditorKeyboardInputCaptured) {
         mWasRotatingWithMouse = false;
         return;
     }
@@ -131,7 +120,7 @@ void DebugCamera::ProcessInput()
     mWasRotatingWithMouse = isRotatingWithMouse;
 }
 
-void DebugCamera::Update(float deltaTime)
+void DebugCamera::Update(float deltaTime, bool isUGCMode)
 {
     constexpr float keyboardRotateSpeed = 2.0f;
 
@@ -162,7 +151,7 @@ void DebugCamera::Update(float deltaTime)
     const glm::vec3 movementDelta =
         (mForwardVec * mMoveForward + right * mMoveRight + mUpVec * mMoveUp) * moveSpeed * deltaTime;
     mCameraPos += movementDelta;
-    if (mGame && mGame->GetIsUGCMode()) {
+    if (isUGCMode) {
         mUGCTarget += movementDelta;
     }
 }
@@ -172,17 +161,17 @@ glm::mat4 DebugCamera::GetView() const
     return glm::lookAt(mCameraPos, mCameraPos + mForwardVec, mUpVec);
 }
 
-CameraPose DebugCamera::GetPose() const
+CameraPose DebugCamera::GetPose(bool isUGCMode) const
 {
     CameraPose pose;
     pose.position = mCameraPos;
-    pose.target = mGame && mGame->GetIsUGCMode() ? mUGCTarget : mCameraPos + mForwardVec;
+    pose.target = isUGCMode ? mUGCTarget : mCameraPos + mForwardVec;
     pose.up = mUpVec;
     pose.fieldOfViewDegrees = mFieldOfViewDegrees;
     return pose;
 }
 
-void DebugCamera::SetPose(const CameraPose& pose)
+void DebugCamera::SetPose(const CameraPose& pose, bool isUGCMode)
 {
     const glm::vec3 forward = SafeNormalize(pose.target - pose.position, mForwardVec);
     const glm::vec3 requestedUp = SafeNormalize(pose.up, mUpVec);
@@ -191,7 +180,7 @@ void DebugCamera::SetPose(const CameraPose& pose)
     mCameraPos = pose.position;
     mForwardVec = forward;
     mUpVec = SafeNormalize(glm::cross(right, forward), requestedUp);
-    if (mGame && mGame->GetIsUGCMode()) {
+    if (isUGCMode) {
         mUGCTarget = pose.target;
     }
     SetFieldOfViewDegrees(pose.fieldOfViewDegrees);

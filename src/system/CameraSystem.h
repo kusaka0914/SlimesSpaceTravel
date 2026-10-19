@@ -12,10 +12,15 @@
 
 #include <glm/glm.hpp>
 
+#include <functional>
+#include <string>
 #include <string_view>
 #include <vector>
 
-class Game;
+class GameWorld;
+class InputSystem;
+class SceneSystem;
+class AudioSystem;
 class Actor;
 class Player;
 class Boat;
@@ -23,12 +28,38 @@ class Planet;
 class Enemy;
 class Star;
 
+// 操作権・表示モードの現在値。Playerはその呼出時点の借用先で、ステージをまたいで保持しない。
+struct CameraControlState {
+    Player* mainPlayer = nullptr;
+    Player* controlledPlayer = nullptr;
+    int controlledPlayerIndex = 0;
+    bool isPlayer2Joined = false;
+    bool isFreeCameraMode = false;
+    bool isUGCMode = false;
+    bool isDebugEditorShowing = false;
+    bool isEditorKeyboardInputCaptured = false;
+    bool hasPrimaryController = false;
+    bool hasSecondController = false;
+};
+
+// 必須参照はCameraSystemより長く有効に保つ。コールバックは同期実行し、再読込後の対象を利用時に取得する。
+// readControlStateは必須。physicsProvider・findPlacedActorが未設定なら、物理補正・配置Actorへの注目を省略する。
+struct CameraSystemDependencies {
+    const GameWorld& world;
+    const InputSystem& input;
+    SceneSystem& scene;
+    AudioSystem* audio = nullptr;
+    std::function<PhysicsSystem*()> physicsProvider;
+    std::function<CameraControlState()> readControlState;
+    std::function<Actor*(const std::string&, int)> findPlacedActor;
+};
+
 // プレイヤー追従・会話・演出のカメラを調停し、描画用のビューを生成する。
 class CameraSystem {
 public:
     using PlayerCameraState = ::PlayerCameraState;
 
-    explicit CameraSystem(Game* game);
+    explicit CameraSystem(CameraSystemDependencies dependencies);
 
     void ProcessInput();
 
@@ -74,8 +105,8 @@ public:
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
-    CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(); }
-    void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose); }
+    CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(mReadControlState().isUGCMode); }
+    void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose, mReadControlState().isUGCMode); }
 
     float GetFieldOfViewDegrees() const;
 
@@ -130,7 +161,11 @@ private:
     Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;
 
-    Game* mGame;
+    const GameWorld& mWorld;
+    const InputSystem& mInput;
+    SceneSystem& mScene;
+    std::function<CameraControlState()> mReadControlState;
+    std::function<Actor*(const std::string&, int)> mFindPlacedActor;
     BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;

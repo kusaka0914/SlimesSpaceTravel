@@ -1,6 +1,5 @@
 #include "system/sequence/BossDefeatSequence.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Star.h"
 #include "system/AudioSystem.h"
@@ -14,8 +13,8 @@ constexpr float starRevealTimeSeconds = 4.0f;
 constexpr float sequenceDurationSeconds = 7.0f;
 } // namespace
 
-BossDefeatSequence::BossDefeatSequence(Game* game)
-    : mGame(game)
+BossDefeatSequence::BossDefeatSequence(AudioSystem* audio)
+    : mAudio(audio)
 {
 }
 
@@ -40,7 +39,7 @@ void BossDefeatSequence::Update(float deltaTime)
 
     mElapsedSeconds += std::max(0.0f, deltaTime);
 
-    AudioSystem* audioSystem = mGame ? mGame->GetAudioSystem() : nullptr;
+    AudioSystem* audioSystem = mAudio;
     if (!mIsPreview && !mHasPlayedDefeatSound && mElapsedSeconds >= defeatSoundDelaySeconds) {
         if (audioSystem) {
             audioSystem->PlaySE("boss_defeated_se");

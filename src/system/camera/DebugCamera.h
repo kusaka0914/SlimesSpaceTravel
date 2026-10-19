@@ -5,31 +5,27 @@
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 
-class Game;
+class InputSystem;
 
-// 自由移動・マウス回転とUGC編集用のカメラ姿勢を管理する。Gameは借用する。
+// 自由移動・マウス回転とUGC編集用のカメラ姿勢を管理する。入力やモードの所有権は持たない。
 class DebugCamera {
 public:
-    explicit DebugCamera(Game* game);
-
     // InputSystemの取得済み入力から移動・回転量を蓄える。移動への反映はUpdateで行う。
-    void ProcessInput();
-    void Update(float deltaTime);
+    void ProcessInput(const InputSystem& inputSystem, bool isUGCMode, bool isEditorKeyboardInputCaptured);
+    void Update(float deltaTime, bool isUGCMode);
 
     glm::mat4 GetView() const;
 
-    CameraPose GetPose() const;
+    CameraPose GetPose(bool isUGCMode) const;
 
     // 位置・注目方向・上方向・画角を反映する。UGCモードでは注目点も保持する。
-    void SetPose(const CameraPose& pose);
+    void SetPose(const CameraPose& pose, bool isUGCMode);
 
     const glm::vec3& GetCameraPos() const { return mCameraPos; }
     float GetFieldOfViewDegrees() const { return mFieldOfViewDegrees; }
     void SetFieldOfViewDegrees(float fieldOfViewDegrees);
 
 private:
-    Game* mGame;
-
     float mMoveForward = 0.0f;
     float mMoveRight = 0.0f;
     float mMoveUp = 0.0f;

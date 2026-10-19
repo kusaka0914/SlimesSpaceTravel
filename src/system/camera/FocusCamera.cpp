@@ -1,12 +1,10 @@
 #include "system/camera/FocusCamera.h"
 
-#include "app/Game.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
 #include "component/PlatformMovementComponent.h"
-#include "system/SceneSystem.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/mesh/LoadedModel.h"
 
@@ -140,13 +138,13 @@ struct FocusCameraCandidateProfile {
 };
 } // namespace
 
-FocusCamera::FocusCamera(Game* game, CameraCollisionResolver& collisionResolver)
-    : mGame(game),
-      mCollisionResolver(collisionResolver)
+FocusCamera::FocusCamera(CameraCollisionResolver& collisionResolver)
+    : mCollisionResolver(collisionResolver)
 {
 }
 
-glm::mat4 FocusCamera::GetFocusView(const std::vector<Actor*>& focusActors, const glm::vec3& preferredCameraPos)
+glm::mat4 FocusCamera::GetFocusView(const std::vector<Actor*>& focusActors, const glm::vec3& preferredCameraPos,
+                                    const Player* referencePlayer)
 {
     if (focusActors.empty() || !focusActors.front()) {
         return glm::mat4(1.0f);
@@ -158,8 +156,8 @@ glm::mat4 FocusCamera::GetFocusView(const std::vector<Actor*>& focusActors, cons
     const glm::vec3 targetPos = focusBounds.center;
 
     glm::vec3 preferredBack = preferredCameraPos - targetPos;
-    if (glm::dot(preferredBack, preferredBack) < 0.000001f && mGame && mGame->GetMainPlayer()) {
-        preferredBack = mGame->GetMainPlayer()->GetPos() - targetPos;
+    if (glm::dot(preferredBack, preferredBack) < 0.000001f && referencePlayer) {
+        preferredBack = referencePlayer->GetPos() - targetPos;
     }
     if (glm::dot(preferredBack, preferredBack) < 0.000001f) {
         preferredBack = -focusActors.front()->GetForwardVec();
@@ -215,7 +213,7 @@ glm::mat4 FocusCamera::GetFocusView(const std::vector<Actor*>& focusActors, cons
     return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
 }
 glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance, float cameraHeight,
-                                         float targetHeight)
+                                         float targetHeight, const Player* referencePlayer)
 {
     if (!focusActor) {
         return glm::mat4(1.0f);
@@ -228,8 +226,7 @@ glm::mat4 FocusCamera::GetCloseFocusView(Actor* focusActor, float cameraDistance
         up = glm::normalize(up);
     }
 
-    glm::vec3 back = mGame && mGame->GetMainPlayer() ? mGame->GetMainPlayer()->GetPos() - focusActor->GetPos()
-                                                     : glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 back = referencePlayer ? referencePlayer->GetPos() - focusActor->GetPos() : glm::vec3(0.0f, 0.0f, 1.0f);
     back -= up * glm::dot(back, up);
     if (glm::length(back) < 0.001f) {
         back = glm::cross(up, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -257,14 +254,9 @@ void FocusCamera::BeginTransition(const glm::vec3& cameraPos, const glm::vec3& t
     mCameraUpVec = glm::length(upVec) < 0.001f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::normalize(upVec);
 }
 
-glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor)
+glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor, const Player* player)
 {
-    if (!mGame || !targetActor) {
-        return glm::mat4(1.0f);
-    }
-
-    Player* player = mGame->GetMainPlayer();
-    if (!player) {
+    if (!targetActor || !player) {
         return glm::mat4(1.0f);
     }
 
@@ -311,15 +303,11 @@ glm::mat4 FocusCamera::GetTargetCameraView(Actor* targetActor)
     return glm::lookAt(mCameraPos, mCameraTargetPos, mCameraUpVec);
 }
 
-std::vector<glm::mat4> FocusCamera::GetOpeningViews() const
+std::vector<glm::mat4> FocusCamera::GetOpeningViews(OpeningCameraShot shot) const
 {
     std::vector<glm::mat4> views;
 
-    if (!mGame || !mGame->GetSceneSystem()) {
-        return views;
-    }
-
-    if (mGame->GetSceneSystem()->IsTalkWithMother()) {
+    if (shot == OpeningCameraShot::Mother) {
         const glm::mat4 talkWithMotherView =
             glm::lookAt(glm::vec3(-2.0f, 4.0f, -2.0f), glm::vec3(4.0f, 2.0f, 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -327,7 +315,7 @@ std::vector<glm::mat4> FocusCamera::GetOpeningViews() const
         return views;
     }
 
-    if (mGame->GetSceneSystem()->IsTalkWithDoctor()) {
+    if (shot == OpeningCameraShot::Doctor) {
         const glm::mat4 talkWithDoctorView =
             glm::lookAt(glm::vec3(3.0f, 4.0f, 1.0f), glm::vec3(-4.0f, 2.0f, -4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 

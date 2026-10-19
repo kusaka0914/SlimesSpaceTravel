@@ -12,10 +12,11 @@
     "StageEditTransactionの保存・再読込・復旧例外を処理し、失敗後復旧の回帰テスト5件を追加。Debug・242単体・Runtime5組成功。",
     "YAMLスカラー読取7ファイル17関数を共通化。先行契約テストと共通helperの直接テストを追加し、247単体・Runtime5組・Debug成功。",
     "設定保存7経路をAtomicFileへ統一し、Storybook/Endingの部分読込を防止。回帰テストで改修前8件失敗を再現後、266単体・Runtime5組成功。",
-    "Renderer基盤・粒子・惑星装飾のGame依存を削除。Gameの未使用TGS転送2件を削除。266単体・実描画を含むRuntime6組成功。"
+    "Renderer基盤・粒子・惑星装飾のGame依存を削除。Gameの未使用TGS転送2件を削除。266単体・実描画を含むRuntime6組成功。",
+    "CameraSystemと各Camera/Boss演出からGameを除去。明示した参照と同期callbackへ限定し、2Pの文字入力中・ステージ切替直後の継続入力も修正。266単体・Runtime8組成功。"
   ],
   "next": [
-    "Renderer基盤の未使用Game依存を削除し、Renderer3D/CameraSystemの依存範囲を監査",
+    "Renderer3D/SceneObject/ViewportのGame依存を描画状態と明示した参照へ限定する",
     "残る設定保存の直接上書き、読込失敗時の部分変更、StageEditTransactionの例外復旧を修正",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
@@ -49,11 +50,13 @@
     "src/system/sequence/BossDefeatSequence.cpp",
     "src/gfx/particle/ParticleRenderer.cpp",
     "src/gfx/EnvironmentDecorationRenderer.cpp",
-    "src/gfx/render3d/RenderViewportController.cpp"
+    "src/gfx/render3d/RenderViewportController.cpp",
+    "src/actor/Player.h",
+    "src/actor/Player.cpp"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",
-    "空き容量約1GiB。既存buildを使いDebug情報は-gline-tables-only。",
+    "空き容量約250MiB。既存buildを使いDebug情報は-gline-tables-only。",
     "この作業にユーザーはサブエージェントを要求していないため使用しない。"
   ]
 }

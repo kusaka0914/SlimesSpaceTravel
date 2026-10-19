@@ -17,6 +17,7 @@
 #include "system/camera/CameraProjection.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "world/GameWorld.h"
 #include "world/Stage.h"
 
 #include "imgui.h"
@@ -265,6 +266,15 @@ public:
         SDL_GameControllerUpdate();
     }
 
+    void SetCameraInput(Sint16 yaw, Sint16 pitch)
+    {
+        SDL_Joystick* joystick = SDL_GameControllerGetJoystick(mController);
+        ExpectEqual(0, SDL_JoystickSetVirtualAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTX, yaw), "set camera yaw");
+        ExpectEqual(0, SDL_JoystickSetVirtualAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTY, pitch), "set camera pitch");
+        SDL_JoystickUpdate();
+        SDL_GameControllerUpdate();
+    }
+
 private:
     SDL_JoystickID mInstanceId = -1;
     SDL_GameController* mController = nullptr;
@@ -295,6 +305,102 @@ void InputSnapshotUsesOnlyProvidedDevices(Game& game)
     std::cout << "[PASS] Runtime.InputSnapshotAndVirtualController\n";
 }
 
+void CamerasUseExplicitContextWithoutGame()
+{
+    DebugCamera debug;
+    CameraPose authored;
+    authored.position = {1, 2, 3};
+    authored.target = {1, 2, 13};
+    authored.fieldOfViewDegrees = 200.0f;
+    debug.SetPose(authored, true);
+    ExpectTrue(debug.GetPose(true).target == authored.target, "UGC preserves authored target distance");
+    ExpectNear(1.0f, glm::length(debug.GetPose(false).target - authored.position), 0.0001f,
+               "free camera returns unit look direction");
+    ExpectNear(120.0f, debug.GetFieldOfViewDegrees(), 0.0f, "field of view remains clamped");
+    authored.target = authored.position;
+    authored.up = {0, 0, 0};
+    debug.SetPose(authored, false);
+    const auto view = debug.GetView();
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) {
+            ExpectTrue(std::isfinite(view[column][row]), "degenerate pose keeps a finite camera basis");
+        }
+    }
+    CameraCollisionResolver collision(nullptr);
+    FocusCamera focus(collision);
+    ExpectTrue(focus.GetOpeningViews(OpeningCameraShot::None).empty(), "no opening shot selected");
+    ExpectEqual(std::size_t(1), focus.GetOpeningViews(OpeningCameraShot::Mother).size(), "mother shot");
+    ExpectEqual(std::size_t(1), focus.GetOpeningViews(OpeningCameraShot::Doctor).size(), "doctor shot");
+    std::cout << "[PASS] Runtime.CameraExplicitContextAndDegeneratePose\n";
+}
+
+void CameraControlsAreIndependentAndStopDuringEditorCapture(Game& game)
+{
+    Player* first = game.GetMainPlayer();
+    ExpectTrue(first != nullptr, "camera test has a primary player");
+    Player second(&game);
+    second.SetPos(first->GetPos());
+    second.SetUpVec(first->GetUpVec());
+    second.Actor::SetCurrentPlanet(first->GetCurrentPlanet());
+    GameWorld world;
+    world.AddPlayer(first);
+    world.AddPlayer(&second);
+    InputSystem input;
+    CameraControlState controls{
+        .mainPlayer = first,
+        .controlledPlayer = first,
+        .isPlayer2Joined = true,
+        .hasPrimaryController = true,
+        .hasSecondController = true,
+    };
+    CameraSystem camera(CameraSystemDependencies{
+        .world = world,
+        .input = input,
+        .scene = *game.GetSceneSystem(),
+        .readControlState = [&]() { return controls; },
+    });
+    VirtualController primary;
+    VirtualController secondary;
+    const auto capture = [&]() {
+        input.CaptureFrameInput(*game.GetWindow(), {primary.Get(), secondary.Get()});
+        camera.ProcessInput();
+        camera.Update(0.1f);
+        ExpectEqual(std::size_t(2), camera.GetViews().size(), "independent camera views");
+    };
+    // 初期追従の補間を入力による変化と混同しないよう、両方の姿勢を先に確定する。
+    camera.SnapToControlledPlayer(0, 0);
+    camera.SnapToControlledPlayer(0, 1);
+    capture();
+    const auto initialFirst = camera.GetPlayerCameraPos(0);
+    const auto initialSecond = camera.GetPlayerCameraPos(1);
+    secondary.SetCameraInput(0, 12000);
+    capture();
+    const auto movedSecond = camera.GetPlayerCameraPos(1);
+    ExpectTrue(glm::length(movedSecond - initialSecond) > 0.01f, "second controller moves second camera");
+    ExpectTrue(glm::length(camera.GetPlayerCameraPos(0) - initialFirst) < 0.001f,
+               "second input leaves first camera alone");
+    controls.isEditorKeyboardInputCaptured = true;
+    capture();
+    ExpectTrue(glm::length(camera.GetPlayerCameraPos(1) - movedSecond) < 0.001f,
+               "editor capture stops held second stick");
+    controls.isEditorKeyboardInputCaptured = false;
+    secondary.SetCameraInput(0, 0);
+    capture();
+    ExpectTrue(glm::length(camera.GetPlayerCameraPos(1) - movedSecond) < 0.001f, "released stick stays stopped");
+    secondary.SetCameraInput(0, 12000);
+    capture();
+    camera.ResetForStageChange();
+    camera.SnapToControlledPlayer(0, 0);
+    camera.SnapToControlledPlayer(0, 1);
+    camera.GetViews();
+    const auto resetSecond = camera.GetPlayerCameraPos(1);
+    camera.Update(0.1f);
+    camera.GetViews();
+    ExpectTrue(glm::length(camera.GetPlayerCameraPos(1) - resetSecond) < 0.001f,
+               "stage reset clears second stick history");
+    std::cout << "[PASS] Runtime.CameraControlIsolationAndEditorCapture\n";
+}
+
 } // namespace
 
 int main()
@@ -310,6 +416,8 @@ int main()
             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
             CameraManualYawRemainsIndependent(game);
             RendererDrawsStageAndBorrowedParticles(game);
+            CamerasUseExplicitContextWithoutGame();
+            CameraControlsAreIndependentAndStopDuringEditorCapture(game);
             UGCUsesTheSameTransaction(game, context, commands);
             InputSnapshotUsesOnlyProvidedDevices(game);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");

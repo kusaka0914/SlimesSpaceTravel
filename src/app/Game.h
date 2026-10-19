@@ -434,12 +434,12 @@ private:
     std::unique_ptr<UGCPreviewController> mUGCPreviewController;
     std::unique_ptr<DebugEditorSessionController> mDebugEditorSessionController;
     std::unique_ptr<PhysicsSystem> mPhysicsSystem;
+    std::unique_ptr<SceneSystem> mSceneSystem;
+    std::unique_ptr<InputSystem> mInputSystem;
     std::unique_ptr<CameraSystem> mCameraSystem;
     std::unique_ptr<ActorLoadSystem> mActorLoadSystem;
     std::unique_ptr<MeshLoadSystem> mMeshLoadSystem;
     std::unique_ptr<MathUtils> mMathUtils;
-    std::unique_ptr<SceneSystem> mSceneSystem;
-    std::unique_ptr<InputSystem> mInputSystem;
     std::unique_ptr<GameInputController> mGameInputController;
     std::unique_ptr<ParticleSystem> mParticleSystem;
     std::unique_ptr<SequenceSystem> mSequenceSystem;
