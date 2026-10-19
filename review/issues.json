@@ -188,6 +188,17 @@
       "tests": "新旧2種類の床スキーマ、終点プレビューと配置始点、未知項目保持、無効添字時の編集記録保持、NPC条件/カメラ/演出/ルビと解除後の古いキー削除を変更前後で確認。",
       "status": "implemented_and_debug_verified",
       "verification": "267単体・Runtime17組・Debug全ビルド成功。抽出4関数はpointer→reference以外の処理列が旧実装と一致。実UIの全操作は未検証。"
+    },
+    {
+      "id": "SAFE-07",
+      "priority": "P2",
+      "location": "src/editor/stage/StageEditCommandController.cpp:DuplicateSelectedKeys",
+      "evidence": "複製はposを(+1,0,0)ずらすがstartLocalPos/endLocalPosは元のまま。読み込み側ApplyMovementConfigはposよりstartLocalPosを優先する。回帰テストで期待始点X=2に対し実値1を再現。",
+      "risk": "移動床の複製が元の経路を使い、配置後やプレビュー時に元の場所へ戻る。",
+      "change": "旧形式とcomponents.movementの経路平行移動を共通化し、単独複製では配置と同じ変位を加える。惑星との同時複製では元のローカル経路を維持。",
+      "tests": "新旧YAMLの複製経路、変位保持、ユニークID、未知項目、実Runtime再読込と選択、Undo/Redoの完全なバイト復元、惑星と同時複製の二重変位防止。",
+      "status": "implemented_and_debug_verified",
+      "verification": "修正前に経路始点の不一致を再現。修正後267単体・監査4件・Runtime18組・Debug全ビルド成功。"
     }
   ],
   "notes": [

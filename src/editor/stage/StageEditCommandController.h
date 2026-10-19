@@ -47,6 +47,7 @@ public:
     bool DeletePlanetOnly(int planetIndex);
 
     // 選択Actorを複製し、選択した惑星同士の参照先も複製先へ付け替える。成功時は複製先を選択する。
+    // 移動床の経路も配置と同じだけずらす。惑星と一緒に複製する所属物には変位を重ねない。
     bool DuplicateSelectedKeys(const std::unordered_set<std::string>& selectedKeys);
 
     // 配置UIを開く要求を返し、記録した要求を消費する。

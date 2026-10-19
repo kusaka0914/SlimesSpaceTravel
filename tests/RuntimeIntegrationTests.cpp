@@ -1,5 +1,6 @@
 #include "RuntimeEditorPersistenceTests.h"
 #include "RuntimeGameplayTests.h"
+#include "RuntimeStageSupport.h"
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
@@ -59,14 +60,6 @@ struct Fixture {
     }
     ~Fixture() = default;
 };
-
-StageSelectionScene SelectionScene(Game& game)
-{
-    return {game.GetCurrentStage(),    game.GetPhysicsSystem(),         game.GetCameraSystem(),
-            game.GetWindow(),          game.GetCurrentStageYamlPath(),  game.GetIsUGCMode(),
-            game.GetIsPlayer2Joined(), game.GetIsUGCOrthographicView(), game.GetUGCOrthographicHalfHeight(),
-            game.GetUGCGridSize()};
-}
 
 StageActorInstance FindPlatform(Game& game)
 {
@@ -474,8 +467,8 @@ int main()
             RunRuntimeGameplayTests(game);
             RunRuntimeEditorPersistenceTests(game);
             DebugEditorContext context{&game};
-            StageSelectionController selection([&]() { return SelectionScene(game); }, context.gameViewport,
-                                               context.planetMoveMode);
+            StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); },
+                                               context.gameViewport, context.planetMoveMode);
             StageEditCommandController commands(context, selection);
             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
             CameraManualYawRemainsIndependent(game);

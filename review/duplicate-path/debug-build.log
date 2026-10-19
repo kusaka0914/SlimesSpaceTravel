@@ -1,0 +1,19 @@
+[  0%] Built target editor_restart_helper
+[ 23%] Built target game_tests
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/core/DebugEditorWorkspaceRenderer.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/core/DebugUIRenderer.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/core/UIDebugEditorBridge.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageEditCommandController.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/StageEditShortcutHandler.cpp.o
+[ 23%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/panels/StageDeleteActorPanel.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/stage/panels/StageEditorPanel.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/ugc/UGCEditorInteractionController.cpp.o
+[ 24%] Building CXX object CMakeFiles/game_runtime.dir/src/editor/ugc/UGCEditorRenderer.cpp.o
+[ 98%] Built target game_runtime
+[ 99%] Linking CXX executable game
+Copying runtime assets and shaders...
+[ 99%] Built target game
+[ 99%] Building CXX object CMakeFiles/game_runtime_tests.dir/tests/RuntimeIntegrationTests.cpp.o
+[100%] Building CXX object CMakeFiles/game_runtime_tests.dir/tests/RuntimeEditorPersistenceTests.cpp.o
+[100%] Linking CXX executable game_runtime_tests
+[100%] Built target game_runtime_tests

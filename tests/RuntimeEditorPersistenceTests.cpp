@@ -1,6 +1,7 @@
 #include "RuntimeEditorPersistenceTests.h"
 
 #include "RuntimeStageSupport.h"
+#include "TestFileSupport.h"
 #include "TestSupport.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
@@ -8,6 +9,8 @@
 #include "app/Game.h"
 #include "component/PlatformMovementComponent.h"
 #include "editor/stage/StageActorYamlWriter.h"
+#include "editor/stage/StageEditCommandController.h"
+#include "system/UserDataPaths.h"
 
 #include <iostream>
 #include <yaml-cpp/yaml.h>
@@ -151,10 +154,69 @@ void NPCTalkSerializationKeepsMetadataAndRemovesStaleKeys(Game& game)
     std::cout << "[PASS] Runtime.NPCTalkSaveSchemaAndStaleMetadata\n";
 }
 
+void MovingPlatformDuplicationTranslatesPathAndSupportsHistory(Game& game)
+{
+    for (const std::string sequence : {"platforms", "movingPlatforms"}) {
+        YAML::Node stage = YAML::Load(ReadTestFile("../assets/data/stage/test.yaml"));
+        YAML::Node platform =
+            YAML::Load("{currentPlanetNum: 0, platformId: duplication_source, modelPath: platform.obj, pos: [1, 2, 3], "
+                       "scale: [3, 0.5, 3], futureField: retain}");
+        YAML::Node movement = sequence == "movingPlatforms" ? platform : platform["components"]["movement"];
+        movement["startLocalPos"] = YAML::Load("[1, 2, 3]");
+        movement["endLocalPos"] = YAML::Load("[4, 6, 8]");
+        movement["moveOffset"] = YAML::Load("[3, 4, 5]");
+        movement["moveOnPlayer"] = true;
+        const int sourceIndex = static_cast<int>(stage[sequence].size());
+        stage[sequence].push_back(platform);
+        const auto path = UserDataPaths::FindRootDirectory() / (sequence + "_duplication.yaml");
+        WriteTestFile(path, YAML::Dump(stage));
+        ExpectTrue(game.LoadStageForScene(1, path.string()), "load isolated stage for path duplication");
+        const std::string original = ReadTestFile(path);
+        DebugEditorContext context{&game};
+        StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); }, context.gameViewport,
+                                           context.planetMoveMode);
+        StageEditCommandController commands(context, selection);
+        const std::string key = sequence + ":" + std::to_string(sourceIndex);
+        ExpectTrue(commands.DuplicateSelectedKeys({key}), "duplicate moving platform");
+        const std::string duplicated = ReadTestFile(path);
+        const YAML::Node saved = YAML::Load(duplicated);
+        const YAML::Node copy = saved[sequence][sourceIndex + 1];
+        const YAML::Node copiedPath = sequence == "movingPlatforms" ? copy : copy["components"]["movement"];
+        ExpectYamlVector({2, 2, 3}, copy["pos"], "duplicate placement offset");
+        ExpectYamlVector({2, 2, 3}, copiedPath["startLocalPos"], "duplicate path start offset");
+        ExpectYamlVector({5, 6, 8}, copiedPath["endLocalPos"], "duplicate path destination offset");
+        ExpectYamlVector({3, 4, 5}, copiedPath["moveOffset"], "duplicate path displacement unchanged");
+        ExpectTrue(copy["platformId"].as<std::string>() != "duplication_source", "duplicate receives a unique ID");
+        ExpectEqual(std::string("retain"), copy["futureField"].as<std::string>(), "duplicate retains unknown fields");
+        auto* runtimeCopy = dynamic_cast<Platform*>(selection.GetSingleSelectedActor());
+        ExpectTrue(runtimeCopy && runtimeCopy->GetMovementComponent(), "duplicate selected after runtime reload");
+        ExpectTrue(glm::length(runtimeCopy->GetMovementComponent()->GetBaseLocalPos() - glm::vec3(2, 2, 3)) < 0.0001f,
+                   "runtime reads translated path start");
+        ExpectTrue(commands.ConsumeRequestOpenPlacement(), "duplication opens placement UI");
+        ExpectTrue(commands.RestoreUndo(), "Undo path duplication");
+        ExpectEqual(original, ReadTestFile(path), "Undo restores original stage bytes");
+        ExpectTrue(commands.RestoreRedo(), "Redo path duplication");
+        ExpectEqual(duplicated, ReadTestFile(path), "Redo restores duplicated stage bytes");
+
+        ExpectTrue(commands.RestoreUndo(), "restore source before duplicating planet and child");
+        ExpectTrue(commands.DuplicateSelectedKeys({"planets:0", key}), "duplicate planet with moving platform");
+        const YAML::Node withPlanet = YAML::Load(ReadTestFile(path));
+        const YAML::Node child = withPlanet[sequence][sourceIndex + 1];
+        const YAML::Node childPath = sequence == "movingPlatforms" ? child : child["components"]["movement"];
+        ExpectYamlVector({1, 2, 3}, child["pos"], "duplicated parent supplies world offset");
+        ExpectYamlVector({1, 2, 3}, childPath["startLocalPos"], "child local path does not receive a second offset");
+        ExpectYamlVector({4, 6, 8}, childPath["endLocalPos"], "child local destination remains unchanged");
+        ExpectEqual(static_cast<int>(withPlanet["planets"].size()) - 1, child["currentPlanetNum"].as<int>(),
+                    "child belongs to duplicated planet");
+    }
+    std::cout << "[PASS] Runtime.MovingPlatformDuplicationAndHistory\n";
+}
+
 } // namespace
 
 void RunRuntimeEditorPersistenceTests(Game& game)
 {
     MovingPlatformSavePreservesAuthoredStartAndSchema(game);
     NPCTalkSerializationKeepsMetadataAndRemovesStaleKeys(game);
+    MovingPlatformDuplicationTranslatesPathAndSupportsHistory(game);
 }

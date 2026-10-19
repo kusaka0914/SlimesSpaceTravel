@@ -20,10 +20,11 @@
     "UGC実描画でMacの線幅2設定によるGL_INVALID_VALUEを再現。線幅を対応範囲へ補正して元へ復元。対応環境の2px指定と描画順・数式は維持。",
     "PlayerMovementの未使用API/引数/メンバと薄いローカル転送を削除し、着地・再出現の同一重力リセットを共通化。先行Runtimeテストで幾何・薄壁CCD/重なり・回避/ジャンプ・惑星切替ヒステリシスを確認。中心付近の内部投影不具合も再現して修正し、267単体・Runtime15組・Debug全ビルド成功。",
     "StageActorYamlWriterのNPC保存を責務別の小関数へ分割し、本文/頭上表示のルビ形式と移動床経路保存を共通化。到達しないTransform引数と分岐を削除。先行スキーマテストと抽出4関数の処理順照合後、267単体・Runtime17組・Debug全ビルド成功。",
-    "構造監査のGame参照型呼出とfinal/struct継承の数え落とし・修飾Implementation名の誤検出を修正。検出式の回帰4テストをCTestへ条件付き登録。同じ検出式で基準SHAと現状を再集計し、ヒューリスティックの限界も記録。267単体と監査4テスト成功。"
+    "構造監査のGame参照型呼出とfinal/struct継承の数え落とし・修飾Implementation名の誤検出を修正。検出式の回帰4テストをCTestへ条件付き登録。同じ検出式で基準SHAと現状を再集計し、ヒューリスティックの限界も記録。267単体と監査4テスト成功。",
+    "StageEditCommandControllerで移動床単独複製時の経路ずれを先行Runtimeテストで再現。既存の経路平行移動を共通化し、新旧YAML双方の始点/終点と配置を同期。惑星との同時複製で二重変位しないこと、実再読込/選択/Undo/Redoも確認。267単体・監査4件・Runtime18組成功。"
   ],
   "next": [
-    "StageEditCommandController/StageSelectionController/UICustomElementRenderer/Editor Panelの全文監査と利用先・借用寿命確認を継続",
+    "UICustomElementRendererの長い処理の整理、Editor Panelの全文監査、継承とクローン候補の意味分類を継続",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
   ],
@@ -76,7 +77,11 @@
     "src/editor/stage/StageActorInspector.cpp",
     "src/editor/stage/StageEditCommandController.cpp",
     "src/editor/stage/StageEditCommandController.h",
-    "src/gfx/ui/UICustomElementRenderer.cpp"
+    "src/gfx/ui/UICustomElementRenderer.cpp",
+    "src/editor/stage/StageSelectionController.cpp",
+    "src/editor/stage/StageSelectionController.h",
+    "src/system/actor_loader/PlatformStageConfig.cpp",
+    "src/system/actor_loader/PlatformStageConfigApplicator.cpp"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

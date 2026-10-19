@@ -2,12 +2,12 @@
 #include "editor/stage/StageEditTransaction.h"
 
 #include "app/Game.h"
-#include "world/Stage.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/StagePlatformIdentifiers.h"
 #include "editor/stage/StageSelectionController.h"
 #include "editor/stage/StageYamlRepository.h"
 #include "gameplay/ugc/UGCWorkMetadata.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -94,6 +94,16 @@ void TranslateMovementPath(YAML::Node movementNode, const glm::vec3& localPositi
     }
 }
 
+void TranslateActorMovementPaths(YAML::Node actorNode, const glm::vec3& localPositionOffset)
+{
+    TranslateMovementPath(actorNode, localPositionOffset);
+    const YAML::Node readOnlyActorNode = actorNode;
+    const YAML::Node components = readOnlyActorNode["components"];
+    if (components && components.IsMap() && components["movement"]) {
+        TranslateMovementPath(actorNode["components"]["movement"], localPositionOffset);
+    }
+}
+
 void PreserveActorWorldPositionAfterPlanetReassignment(YAML::Node actorNode, float previousPlanetRadius,
                                                        float replacementPlanetRadius,
                                                        const glm::vec3& localPositionOffset)
@@ -119,12 +129,7 @@ void PreserveActorWorldPositionAfterPlanetReassignment(YAML::Node actorNode, flo
         actorNode["height"] = distanceFromReplacementCenter - replacementPlanetRadius;
     }
 
-    TranslateMovementPath(actorNode, localPositionOffset);
-    const YAML::Node readOnlyActorNode = actorNode;
-    const YAML::Node components = readOnlyActorNode["components"];
-    if (components && components.IsMap() && components["movement"]) {
-        TranslateMovementPath(actorNode["components"]["movement"], localPositionOffset);
-    }
+    TranslateActorMovementPaths(actorNode, localPositionOffset);
 }
 
 void ReassignPlayersFromDeletedPlanet(YAML::Node& stageYaml, int deletedPlanetIndex, int replacementPlanetIndex)
@@ -856,6 +861,8 @@ bool StageEditCommandController::DuplicateSelectedKeys(const std::unordered_set<
 
         if (shouldOffsetActorPosition) {
             OffsetDuplicatedActorNode(duplicatedNode, duplicateOffset);
+            // 読込時は経路の始点がposより優先されるため、配置と経路へ同じ変位を加える。
+            TranslateActorMovementPaths(duplicatedNode, duplicateOffset);
         }
         if (target.type == StageActorType::Platform) {
             duplicatedNode["platformId"] = StagePlatformIdentifiers::CreateUniqueId(stageYaml);

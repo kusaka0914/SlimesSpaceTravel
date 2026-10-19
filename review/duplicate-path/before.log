@@ -1,0 +1,30 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/3 Test #1: game_tests .......................   Passed    0.17 sec
+    Start 2: architecture_audit_tests
+2/3 Test #2: architecture_audit_tests .........   Passed    0.09 sec
+    Start 3: game_runtime_tests
+3/3 Test #3: game_runtime_tests ...............***Failed   13.06 sec
+[PASS] Runtime.EllipsoidProjectionAndHemisphere
+[PASS] Runtime.ThinWallSweepAndOverlap
+[PASS] Runtime.MovementActionLifecycle
+[PASS] Runtime.GravitySwitchHysteresisAndLifecycle
+[PASS] Runtime.NearCenterInternalProjection
+[PASS] Runtime.MovingPlatformSaveSchemaAndAuthoredStart
+[PASS] Runtime.NPCTalkSaveSchemaAndStaleMetadata
+[FAIL] Runtime integration: duplicate path start offset
+  expected: 2 +/- 0.0001
+  actual:   1
+
+
+67% tests passed, 1 tests failed out of 3
+
+Label Time Summary:
+display        =  13.06 sec*proc (1 test)
+integration    =  13.06 sec*proc (1 test)
+
+Total Test time (real) =  13.32 sec
+
+The following tests FAILED:
+	  3 - game_runtime_tests (Failed)                       display integration
+Errors while running CTest
