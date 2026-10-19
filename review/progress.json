@@ -14,7 +14,8 @@
     "設定保存7経路をAtomicFileへ統一し、Storybook/Endingの部分読込を防止。回帰テストで改修前8件失敗を再現後、266単体・Runtime5組成功。",
     "Renderer基盤・粒子・惑星装飾のGame依存を削除。Gameの未使用TGS転送2件を削除。266単体・実描画を含むRuntime6組成功。",
     "CameraSystemと各Camera/Boss演出からGameを除去。明示した参照と同期callbackへ限定し、2Pの文字入力中・ステージ切替直後の継続入力も修正。266単体・Runtime8組成功。",
-    "TGSログのclose検証と失敗時.tmp削除を追加。書込上限の子プロセス検証を3テスト間で共通化。267単体・Runtime8組成功。"
+    "TGSログのclose検証と失敗時.tmp削除を追加。書込上限の子プロセス検証を3テスト間で共通化。267単体・Runtime8組成功。",
+    "CMakeのGAME_ENABLE_TEST_SANITIZERSを追加し、267単体をASan/UBSanで検証。通常構成へ戻して267単体も再確認。README既存テスト節へ実行方法を追記。"
   ],
   "next": [
     "Renderer3D/SceneObject/ViewportのGame依存を描画状態と明示した参照へ限定する",
@@ -24,7 +25,7 @@
   ],
   "not_verified": [
     "Windowsビルド・実機コントローラー・全ステージ通しプレイ",
-    "性能比較（FPS/ロード）、Sanitizer",
+    "性能比較（FPS/ロード）、Runtime全体のSanitizer、リーク検査（現環境はdetect_leaks非対応）",
     "全ソースの意味・寿命監査とホットスポット全文確認は継続中"
   ],
   "manual_full_reads": [
@@ -57,7 +58,7 @@
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",
-    "空き容量約250MiB。既存buildを使いDebug情報は-gline-tables-only。",
+    "直近の空き容量約5GiB。既存buildを使いDebug情報は-gline-tables-only。",
     "この作業にユーザーはサブエージェントを要求していないため使用しない。"
   ]
 }

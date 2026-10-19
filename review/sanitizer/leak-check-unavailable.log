@@ -1,0 +1,13 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 1: game_tests
+1/1 Test #1: game_tests .......................Subprocess aborted***Exception:   0.03 sec
+==36429==AddressSanitizer: detect_leaks is not supported on this platform.
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.04 sec
+
+The following tests FAILED:
+	  1 - game_tests (Subprocess aborted)
+Errors while running CTest

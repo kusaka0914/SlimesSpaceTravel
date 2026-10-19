@@ -229,7 +229,17 @@ Enemyについても、移動・戦闘・ダメージ処理・状態・行動AI�
 
 などです。
 
-テストはCMake / CTestから実行できる構成にしています。
+テストはCMake / CTestから実行できます。
+
+```sh
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --target game_tests
+ctest --test-dir build -R '^game_tests$' --output-on-failure
+```
+
+GCC / Clangでは、構成時に`-DGAME_ENABLE_TEST_SANITIZERS=ON`を追加すると、画面を必要としない単体テストへAddressSanitizer / UBSanを適用できます。通常構成へ戻す場合は`OFF`にして再ビルドしてください。ゲーム本体とRuntime統合テストには、このオプションでは適用しません。
+
+`-DGAME_BUILD_RUNTIME_TESTS=ON`では、OpenGL環境を必要とするRuntime統合テストも追加します。専用の一時保存先と非表示ウィンドウで、保存・Undo / Redo・再読込、入力、カメラ、描画、連続起動終了を検証します。
 
 ---
 

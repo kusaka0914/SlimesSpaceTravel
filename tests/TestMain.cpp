@@ -4,9 +4,7 @@
 #include <iostream>
 
 void RegisterConfigurationPersistenceTests(TestRegistry& tests);
-
 void RegisterYamlReadTests(TestRegistry& tests);
-
 void RegisterNPCTalkDataTests(TestRegistry& tests);
 void RegisterStageActorNodeFactoryTests(TestRegistry& tests);
 void RegisterStagePlatformIdentifiersTests(TestRegistry& tests);
@@ -41,9 +39,7 @@ void RegisterOperationGuideVisibilityTests(TestRegistry& tests);
 void RegisterPlayerJewelGaugeTests(TestRegistry& tests);
 void RegisterPlayerSplitGuardStateTests(TestRegistry& tests);
 void RegisterTgsExperienceControllerTests(TestRegistry& tests);
-
 void RegisterEditorReliabilityTests(TestRegistry& tests);
-
 void RegisterPersistenceSafetyTests(TestRegistry& tests);
 
 int main()

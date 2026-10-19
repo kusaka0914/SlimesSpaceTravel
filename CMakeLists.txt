@@ -4,6 +4,8 @@ project(game)
 set(CMAKE_CXX_STANDARD 20)
 include(CTest)
 
+option(GAME_ENABLE_TEST_SANITIZERS "Enable AddressSanitizer and UBSan for headless unit tests only" OFF)
+
 option(
     GAME_REVIEW_BUILD
     "Enable debug tools while preserving the normal title-screen startup"
@@ -178,6 +180,17 @@ if (BUILD_TESTING)
     endif()
     if (WIN32)
         target_link_libraries(game_tests PRIVATE windowsapp)
+    endif()
+    if (GAME_ENABLE_TEST_SANITIZERS)
+        if (MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+            message(FATAL_ERROR "GAME_ENABLE_TEST_SANITIZERS requires GCC or Clang with a GNU-style command line")
+        endif()
+        target_compile_options(game_tests PRIVATE
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+            -fno-sanitize-recover=undefined
+        )
+        target_link_options(game_tests PRIVATE -fsanitize=address,undefined)
     endif()
     add_test(NAME game_tests COMMAND game_tests)
 endif()
