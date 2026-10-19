@@ -18,10 +18,11 @@
     "CMakeのGAME_ENABLE_TEST_SANITIZERSを追加し、267単体をASan/UBSanで検証。通常構成へ戻して267単体も再確認。README既存テスト節へ実行方法を追記。",
     "Renderer3Dとrender3dのGame依存を除去。借用サービスとspan中心のSceneRenderStateへ限定し、Gameの転送API累計17件を削除。終了呼出忘れもGame破棄時に処理。267単体・Runtime10組・Debug全ビルド成功。",
     "UGC実描画でMacの線幅2設定によるGL_INVALID_VALUEを再現。線幅を対応範囲へ補正して元へ復元。対応環境の2px指定と描画順・数式は維持。",
-    "PlayerMovementの未使用API/引数/メンバと薄いローカル転送を削除し、着地・再出現の同一重力リセットを共通化。先行Runtimeテストで幾何・薄壁CCD/重なり・回避/ジャンプ・惑星切替ヒステリシスを確認。中心付近の内部投影不具合も再現して修正し、267単体・Runtime15組・Debug全ビルド成功。"
+    "PlayerMovementの未使用API/引数/メンバと薄いローカル転送を削除し、着地・再出現の同一重力リセットを共通化。先行Runtimeテストで幾何・薄壁CCD/重なり・回避/ジャンプ・惑星切替ヒステリシスを確認。中心付近の内部投影不具合も再現して修正し、267単体・Runtime15組・Debug全ビルド成功。",
+    "StageActorYamlWriterのNPC保存を責務別の小関数へ分割し、本文/頭上表示のルビ形式と移動床経路保存を共通化。到達しないTransform引数と分岐を削除。先行スキーマテストと抽出4関数の処理順照合後、267単体・Runtime17組・Debug全ビルド成功。"
   ],
   "next": [
-    "PlayerMovement/衝突/惑星重力/Editor各重要ソースと利用箇所の監査、幾何・操作・衝突のRuntime検証を拡充",
+    "StageEditCommandController/StageSelectionController/UICustomElementRenderer/Editor Panelの全文監査と利用先・借用寿命確認を継続",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
   ],
@@ -69,7 +70,9 @@
     "src/actor/enemy/EnemyMovement.cpp",
     "src/actor/enemy/EnemyMovement.h",
     "src/editor/stage/StageActorYamlWriter.cpp",
-    "src/editor/stage/StageActorYamlWriter.h"
+    "src/editor/stage/StageActorYamlWriter.h",
+    "src/editor/stage/StagePlatformEditor.cpp",
+    "src/editor/stage/StageActorInspector.cpp"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

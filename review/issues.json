@@ -177,6 +177,17 @@
       "tests": "変更前から回避/ジャンプ/滞空、惑星切替ヒステリシス、着地/再出現の公開契約をRuntimeで確認。",
       "status": "implemented_and_debug_verified",
       "verification": "Debug全ビルド・267単体・Runtime15組成功。回避判定の戦闘条件は既存StateMachine側に維持。"
+    },
+    {
+      "id": "MAINT-02",
+      "priority": "P2",
+      "location": "src/editor/stage/StageActorYamlWriter.cpp:WritePlatformState / WriteNPCState",
+      "evidence": "既存WritePlatformMovementPathと同じ経路フィールド群がRuntime側にコピー。NPCの頭上メッセージ/ページ条件/カメラ/演出/ルビが1関数へ集中。Runtime専用の床/Boat保存に渡すTransform引数は常にnullptr。",
+      "risk": "スキーマ更新時に片側の修正が漏れやすく、保存順序と編集Transformの扱いを読み取りにくい。",
+      "change": "既存経路保存を再利用し、NPC保存を内容別の非所有・副作用限定helperへ分割。ルビの同一シリアライズを共通化し、到達しない引数/分岐を除去。",
+      "tests": "新旧2種類の床スキーマ、終点プレビューと配置始点、未知項目保持、無効添字時の編集記録保持、NPC条件/カメラ/演出/ルビと解除後の古いキー削除を変更前後で確認。",
+      "status": "implemented_and_debug_verified",
+      "verification": "267単体・Runtime17組・Debug全ビルド成功。抽出4関数はpointer→reference以外の処理列が旧実装と一致。実UIの全操作は未検証。"
     }
   ],
   "notes": [

@@ -1,5 +1,6 @@
 #include "RuntimeGameplayTests.h"
 
+#include "RuntimeStageSupport.h"
 #include "TestSupport.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
@@ -186,31 +187,6 @@ void MovementActionsResetOnlyTheirOwnState(Game& game)
     std::cout << "[PASS] Runtime.MovementActionLifecycle\n";
 }
 
-// 合成した惑星だけで距離境界を検証する。例外時にも実ステージの借用一覧を元へ戻す。
-class ScopedStagePlanets {
-public:
-    ScopedStagePlanets(Stage& stage, std::initializer_list<Planet*> planets)
-        : mStage(stage),
-          mOriginal(stage.GetPlanets())
-    {
-        mStage.RemoveAllPlanet();
-        for (Planet* planet : planets) {
-            mStage.AddPlanet(planet);
-        }
-    }
-    ~ScopedStagePlanets()
-    {
-        mStage.RemoveAllPlanet();
-        for (Planet* planet : mOriginal) {
-            mStage.AddPlanet(planet);
-        }
-    }
-
-private:
-    Stage& mStage;
-    std::vector<Planet*> mOriginal;
-};
-
 void GravitySwitchHasHysteresisAndClearsOnLanding(Game& game)
 {
     Planet first(nullptr);
@@ -233,7 +209,7 @@ void GravitySwitchHasHysteresisAndClearsOnLanding(Game& game)
     Player player(&game);
     PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
     PlayerPlanetGravityController gravity;
-    ScopedStagePlanets planets(*game.GetCurrentStage(), {&first, &second});
+    ScopedTestStagePlanets planets(*game.GetCurrentStage(), {&first, &second});
     player.Actor::SetCurrentPlanet(&first);
     player.SetPos(origin + glm::vec3(2.05f, 0, 0));
     gravity.OnJumpStarted(player, movement, false);

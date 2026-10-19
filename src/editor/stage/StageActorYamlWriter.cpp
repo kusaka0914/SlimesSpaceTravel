@@ -1,7 +1,5 @@
 #include "editor/stage/StageActorYamlWriter.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
@@ -15,6 +13,7 @@
 #include "actor/StageObject.h"
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
+#include "app/Game.h"
 #include "component/PlatformLatchedGroupSwitchComponent.h"
 #include "component/PlatformMotionBehaviorComponents.h"
 #include "component/PlatformMovementComponent.h"
@@ -25,6 +24,7 @@
 #include "editor/stage/StagePlatformConnections.h"
 #include "editor/stage/StageYamlRepository.h"
 #include "gameplay/ugc/UGCWorkMetadata.h"
+#include "world/Stage.h"
 
 #include <cmath>
 #include <vector>
@@ -58,10 +58,194 @@ void WritePlatformMovementPath(YAML::Node platformNode, const std::string& seque
         return;
     }
 
+    // 終点プレビュー中も、配置位置は経路の始点として保存する。
     platformNode["pos"][0] = startLocalPos.x;
     platformNode["pos"][1] = startLocalPos.y;
     platformNode["pos"][2] = startLocalPos.z;
 }
+
+YAML::Node SerializeRubyTextSegments(const std::vector<RubyTextSegment>& segments)
+{
+    YAML::Node nodes(YAML::NodeType::Sequence);
+    for (const RubyTextSegment& segment : segments) {
+        YAML::Node node(YAML::NodeType::Map);
+        node["text"] = segment.text;
+        node["ruby"] = segment.showsRuby;
+        if (segment.showsRuby) {
+            node["reading"] = segment.reading;
+        }
+        nodes.push_back(node);
+    }
+    return nodes;
+}
+
+void WriteNPCProximityMessage(YAML::Node actorNode, const NPC& npc, bool isTutorialTrigger)
+{
+    if (isTutorialTrigger || npc.GetProximityMessageMode() == NPCProximityMessageMode::Disabled) {
+        actorNode.remove("proximityMessage");
+    } else {
+        YAML::Node proximityMessage(YAML::NodeType::Map);
+        proximityMessage["mode"] =
+            npc.GetProximityMessageMode() == NPCProximityMessageMode::AfterTalk ? "afterTalk" : "always";
+        proximityMessage["variants"] = YAML::Node(YAML::NodeType::Sequence);
+        proximityMessage["rubies"] = YAML::Node(YAML::NodeType::Sequence);
+        for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+            const std::string& messageText = npc.GetTalkProximityMessageText(talkIndex);
+            if (messageText.empty()) {
+                continue;
+            }
+
+            YAML::Node variantNode(YAML::NodeType::Map);
+            variantNode["talkIndex"] = static_cast<int>(talkIndex);
+            variantNode["text"] = messageText;
+            proximityMessage["variants"].push_back(variantNode);
+
+            if (!npc.HasValidTalkProximityMessageRuby(talkIndex)) {
+                continue;
+            }
+
+            YAML::Node rubyNode(YAML::NodeType::Map);
+            rubyNode["talkIndex"] = static_cast<int>(talkIndex);
+            rubyNode["segments"] = SerializeRubyTextSegments(npc.GetTalkProximityMessageRubySegments(talkIndex));
+            proximityMessage["rubies"].push_back(rubyNode);
+        }
+        if (proximityMessage["rubies"].size() == 0) {
+            proximityMessage.remove("rubies");
+        }
+        proximityMessage["range"] = npc.GetProximityMessageRange();
+        proximityMessage["height"] = npc.GetProximityMessageHeight();
+        proximityMessage["scale"] = npc.GetProximityMessageScale();
+        actorNode["proximityMessage"] = proximityMessage;
+    }
+}
+
+void WriteNPCTalkTextsAndStageConditions(YAML::Node actorNode, const NPC& npc)
+{
+    actorNode["talkTexts"] = YAML::Node(YAML::NodeType::Sequence);
+    for (const std::string& talkText : npc.GetTalkTexts()) {
+        actorNode["talkTexts"].push_back(talkText);
+    }
+
+    YAML::Node talkStageClearConditions(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        const int stageCondition = npc.GetTalkStageClearCondition(talkIndex);
+        if (stageCondition < 0) {
+            continue;
+        }
+
+        YAML::Node conditionNode(YAML::NodeType::Map);
+        conditionNode["talkIndex"] = static_cast<int>(talkIndex);
+        conditionNode["stage"] = stageCondition;
+        talkStageClearConditions.push_back(conditionNode);
+    }
+    if (talkStageClearConditions.size() > 0) {
+        actorNode["talkStageClearConditions"] = talkStageClearConditions;
+    } else {
+        actorNode.remove("talkStageClearConditions");
+    }
+}
+
+void WriteNPCTalkCameraFocus(YAML::Node actorNode, const NPC& npc)
+{
+    YAML::Node talkCameraFocus(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        const NPCTalkCameraFocusTarget* focusTarget = npc.GetTalkCameraFocusTarget(talkIndex);
+        if (!focusTarget || !focusTarget->IsValid()) {
+            continue;
+        }
+
+        YAML::Node focusNode(YAML::NodeType::Map);
+        focusNode["talkIndex"] = static_cast<int>(talkIndex);
+        focusNode["sequence"] = focusTarget->sequenceName;
+        focusNode["index"] = focusTarget->yamlIndex;
+        talkCameraFocus.push_back(focusNode);
+    }
+
+    if (talkCameraFocus.size() > 0) {
+        actorNode["talkCameraFocus"] = talkCameraFocus;
+    } else {
+        actorNode.remove("talkCameraFocus");
+    }
+}
+
+void WriteNPCTalkAdvanceConditions(YAML::Node actorNode, const NPC& npc)
+{
+    YAML::Node talkAdvanceConditions(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        const TalkPageAdvanceCondition condition = npc.GetTalkAdvanceCondition(talkIndex);
+        if (condition == TalkPageAdvanceCondition::Confirm) {
+            continue;
+        }
+
+        YAML::Node conditionNode(YAML::NodeType::Map);
+        conditionNode["talkIndex"] = static_cast<int>(talkIndex);
+        conditionNode["condition"] = GetTalkPageAdvanceConditionId(condition);
+        talkAdvanceConditions.push_back(conditionNode);
+    }
+
+    if (talkAdvanceConditions.size() > 0) {
+        actorNode["talkAdvanceConditions"] = talkAdvanceConditions;
+    } else {
+        actorNode.remove("talkAdvanceConditions");
+    }
+}
+
+void WriteNPCTalkSequenceTriggers(YAML::Node actorNode, const NPC& npc)
+{
+    YAML::Node talkOpeningAfterPages(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        if (!npc.GetTalkStartsOpeningAfterPage(talkIndex)) {
+            continue;
+        }
+
+        YAML::Node pageNode(YAML::NodeType::Map);
+        pageNode["talkIndex"] = static_cast<int>(talkIndex);
+        talkOpeningAfterPages.push_back(pageNode);
+    }
+    if (talkOpeningAfterPages.size() > 0) {
+        actorNode["talkOpeningAfterPages"] = talkOpeningAfterPages;
+    } else {
+        actorNode.remove("talkOpeningAfterPages");
+    }
+
+    YAML::Node talkEndingAfterPages(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        if (!npc.GetTalkStartsEndingAfterPage(talkIndex)) {
+            continue;
+        }
+        YAML::Node pageNode(YAML::NodeType::Map);
+        pageNode["talkIndex"] = static_cast<int>(talkIndex);
+        talkEndingAfterPages.push_back(pageNode);
+    }
+    if (talkEndingAfterPages.size() > 0) {
+        actorNode["talkEndingAfterPages"] = talkEndingAfterPages;
+    } else {
+        actorNode.remove("talkEndingAfterPages");
+    }
+}
+
+void WriteNPCTalkRuby(YAML::Node actorNode, const NPC& npc)
+{
+    YAML::Node talkRubies(YAML::NodeType::Sequence);
+    for (std::size_t talkIndex = 0; talkIndex < npc.GetTalkTexts().size(); ++talkIndex) {
+        if (!npc.HasValidTalkRuby(talkIndex)) {
+            continue;
+        }
+
+        YAML::Node rubyNode(YAML::NodeType::Map);
+        rubyNode["talkIndex"] = static_cast<int>(talkIndex);
+        rubyNode["segments"] = SerializeRubyTextSegments(npc.GetTalkRubySegments(talkIndex));
+
+        talkRubies.push_back(rubyNode);
+    }
+
+    if (talkRubies.size() > 0) {
+        actorNode["talkRubies"] = talkRubies;
+    } else {
+        actorNode.remove("talkRubies");
+    }
+}
+
 } // namespace
 
 StageActorYamlWriter::StageActorYamlWriter(DebugEditorContext& context)
@@ -365,8 +549,8 @@ bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
 
     YAML::Node actorNode = config[sequenceName][yamlIndex];
     WriteModelAndHazardState(actorNode, actor);
-    WritePlatformState(actorNode, sequenceName, actor, editorTransform);
-    WriteBoatState(actorNode, actor, editorTransform, authoredPlanet);
+    WritePlatformState(actorNode, sequenceName, actor);
+    WriteBoatState(actorNode, actor);
     WriteNPCState(actorNode, actor);
     WriteTextureState(actorNode, actor);
     return true;
@@ -392,8 +576,7 @@ void StageActorYamlWriter::WriteModelAndHazardState(YAML::Node actorNode, Actor*
     }
 }
 
-void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::string& sequenceName, Actor* actor,
-                                              const EditorAuthoredTransform* editorTransform)
+void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::string& sequenceName, Actor* actor)
 {
     if (const Platform* platform = dynamic_cast<const Platform*>(actor)) {
         actorNode["platformId"] = platform->GetPlatformId();
@@ -408,37 +591,7 @@ void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::s
                 }
             }
         } else {
-            YAML::Node movementNode =
-                sequenceName == "movingPlatforms" ? actorNode : actorNode["components"]["movement"];
-
-            const glm::vec3 startLocalPos = movement->GetBaseLocalPos();
-            const glm::vec3 endLocalPos = movement->GetDestinationLocalPos();
-            const glm::vec3 moveOffset = movement->GetMoveOffset();
-
-            movementNode["startLocalPos"][0] = startLocalPos.x;
-            movementNode["startLocalPos"][1] = startLocalPos.y;
-            movementNode["startLocalPos"][2] = startLocalPos.z;
-            movementNode["endLocalPos"][0] = endLocalPos.x;
-            movementNode["endLocalPos"][1] = endLocalPos.y;
-            movementNode["endLocalPos"][2] = endLocalPos.z;
-            movementNode["moveOffset"][0] = moveOffset.x;
-            movementNode["moveOffset"][1] = moveOffset.y;
-            movementNode["moveOffset"][2] = moveOffset.z;
-            movementNode["moveDuration"] = movement->GetMoveDuration();
-            movementNode["moveOnPlayer"] = movement->GetMoveOnPlayer();
-            movementNode["returnDelay"] = movement->GetReturnDelay();
-            movementNode.remove("destinationWaitSeconds");
-            movementNode["endpointWaitSeconds"] = movement->GetEndpointWaitDurationSeconds();
-
-            if (editorTransform && editorTransform->hasPosition) {
-                actorNode["pos"][0] = startLocalPos.x;
-
-                // プレビュー中に到着地点へ表示していても、通常の配置位置は
-                // 必ず出発地点として保存する。
-                actorNode["pos"][0] = startLocalPos.x;
-                actorNode["pos"][1] = startLocalPos.y;
-                actorNode["pos"][2] = startLocalPos.z;
-            }
+            WritePlatformMovementPath(actorNode, sequenceName, *movement, false);
         }
 
         YAML::Node platformNode = actorNode;
@@ -580,14 +733,11 @@ void StageActorYamlWriter::WritePlatformState(YAML::Node actorNode, const std::s
     }
 }
 
-void StageActorYamlWriter::WriteBoatState(YAML::Node actorNode, Actor* actor,
-                                          const EditorAuthoredTransform* editorTransform, Planet* authoredPlanet)
+void StageActorYamlWriter::WriteBoatState(YAML::Node actorNode, Actor* actor)
 {
     if (const Boat* boat = dynamic_cast<const Boat*>(actor)) {
 
-        const Planet* startPlanet =
-            editorTransform && editorTransform->hasPosition ? authoredPlanet : boat->GetCurrentPlanet();
-        actorNode["startPlanet"] = FindPlanetIndex(startPlanet);
+        actorNode["startPlanet"] = FindPlanetIndex(boat->GetCurrentPlanet());
         actorNode["destPlanet"] = FindPlanetIndex(boat->GetDestPlanet());
         actorNode["destStage"] = boat->GetDestStage();
         actorNode["travelSpeed"] = boat->GetTravelSpeed();
@@ -608,198 +758,40 @@ void StageActorYamlWriter::WriteBoatState(YAML::Node actorNode, Actor* actor,
 
 void StageActorYamlWriter::WriteNPCState(YAML::Node actorNode, Actor* actor)
 {
-    if (const NPC* npc = dynamic_cast<const NPC*>(actor)) {
-        actorNode["modelPath"] = npc->GetModelPath();
-        const bool isTutorialTrigger = dynamic_cast<const TutorialTrigger*>(npc) != nullptr;
-        if (isTutorialTrigger) {
-            const TutorialTrigger* tutorialTrigger = static_cast<const TutorialTrigger*>(npc);
-            if (tutorialTrigger->GetTutorialId().empty()) {
-                actorNode.remove("tutorialId");
-            } else {
-                actorNode["tutorialId"] = tutorialTrigger->GetTutorialId();
-            }
-            if (tutorialTrigger->GetRequiredCompletedTutorialId().empty()) {
-                actorNode.remove("requiredCompletedTutorialId");
-            } else {
-                actorNode["requiredCompletedTutorialId"] = tutorialTrigger->GetRequiredCompletedTutorialId();
-            }
-            actorNode.remove("name");
-            actorNode.remove("radius");
-            actorNode.remove("proximityMessage");
-        } else {
-            actorNode["name"] = npc->GetName();
-            actorNode["radius"] = npc->GetRadius();
-            actorNode["forceTalkOnArrival"] = npc->GetForcesTalkOnArrival();
-        }
-
-        if (isTutorialTrigger || npc->GetProximityMessageMode() == NPCProximityMessageMode::Disabled) {
-            actorNode.remove("proximityMessage");
-        } else {
-            YAML::Node proximityMessage(YAML::NodeType::Map);
-            proximityMessage["mode"] =
-                npc->GetProximityMessageMode() == NPCProximityMessageMode::AfterTalk ? "afterTalk" : "always";
-            proximityMessage["variants"] = YAML::Node(YAML::NodeType::Sequence);
-            proximityMessage["rubies"] = YAML::Node(YAML::NodeType::Sequence);
-            for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-                const std::string& messageText = npc->GetTalkProximityMessageText(talkIndex);
-                if (messageText.empty()) {
-                    continue;
-                }
-
-                YAML::Node variantNode(YAML::NodeType::Map);
-                variantNode["talkIndex"] = static_cast<int>(talkIndex);
-                variantNode["text"] = messageText;
-                proximityMessage["variants"].push_back(variantNode);
-
-                if (!npc->HasValidTalkProximityMessageRuby(talkIndex)) {
-                    continue;
-                }
-
-                YAML::Node rubyNode(YAML::NodeType::Map);
-                rubyNode["talkIndex"] = static_cast<int>(talkIndex);
-                rubyNode["segments"] = YAML::Node(YAML::NodeType::Sequence);
-                for (const RubyTextSegment& segment : npc->GetTalkProximityMessageRubySegments(talkIndex)) {
-                    YAML::Node segmentNode(YAML::NodeType::Map);
-                    segmentNode["text"] = segment.text;
-                    segmentNode["ruby"] = segment.showsRuby;
-                    if (segment.showsRuby) {
-                        segmentNode["reading"] = segment.reading;
-                    }
-                    rubyNode["segments"].push_back(segmentNode);
-                }
-                proximityMessage["rubies"].push_back(rubyNode);
-            }
-            if (proximityMessage["rubies"].size() == 0) {
-                proximityMessage.remove("rubies");
-            }
-            proximityMessage["range"] = npc->GetProximityMessageRange();
-            proximityMessage["height"] = npc->GetProximityMessageHeight();
-            proximityMessage["scale"] = npc->GetProximityMessageScale();
-            actorNode["proximityMessage"] = proximityMessage;
-        }
-
-        actorNode["talkTexts"] = YAML::Node(YAML::NodeType::Sequence);
-        for (const std::string& talkText : npc->GetTalkTexts()) {
-            actorNode["talkTexts"].push_back(talkText);
-        }
-
-        YAML::Node talkStageClearConditions(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            const int stageCondition = npc->GetTalkStageClearCondition(talkIndex);
-            if (stageCondition < 0) {
-                continue;
-            }
-
-            YAML::Node conditionNode(YAML::NodeType::Map);
-            conditionNode["talkIndex"] = static_cast<int>(talkIndex);
-            conditionNode["stage"] = stageCondition;
-            talkStageClearConditions.push_back(conditionNode);
-        }
-        if (talkStageClearConditions.size() > 0) {
-            actorNode["talkStageClearConditions"] = talkStageClearConditions;
-        } else {
-            actorNode.remove("talkStageClearConditions");
-        }
-
-        YAML::Node talkCameraFocus(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            const NPCTalkCameraFocusTarget* focusTarget = npc->GetTalkCameraFocusTarget(talkIndex);
-            if (!focusTarget || !focusTarget->IsValid()) {
-                continue;
-            }
-
-            YAML::Node focusNode(YAML::NodeType::Map);
-            focusNode["talkIndex"] = static_cast<int>(talkIndex);
-            focusNode["sequence"] = focusTarget->sequenceName;
-            focusNode["index"] = focusTarget->yamlIndex;
-            talkCameraFocus.push_back(focusNode);
-        }
-
-        if (talkCameraFocus.size() > 0) {
-            actorNode["talkCameraFocus"] = talkCameraFocus;
-        } else {
-            actorNode.remove("talkCameraFocus");
-        }
-
-        YAML::Node talkAdvanceConditions(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            const TalkPageAdvanceCondition condition = npc->GetTalkAdvanceCondition(talkIndex);
-            if (condition == TalkPageAdvanceCondition::Confirm) {
-                continue;
-            }
-
-            YAML::Node conditionNode(YAML::NodeType::Map);
-            conditionNode["talkIndex"] = static_cast<int>(talkIndex);
-            conditionNode["condition"] = GetTalkPageAdvanceConditionId(condition);
-            talkAdvanceConditions.push_back(conditionNode);
-        }
-
-        if (talkAdvanceConditions.size() > 0) {
-            actorNode["talkAdvanceConditions"] = talkAdvanceConditions;
-        } else {
-            actorNode.remove("talkAdvanceConditions");
-        }
-
-        YAML::Node talkOpeningAfterPages(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            if (!npc->GetTalkStartsOpeningAfterPage(talkIndex)) {
-                continue;
-            }
-
-            YAML::Node pageNode(YAML::NodeType::Map);
-            pageNode["talkIndex"] = static_cast<int>(talkIndex);
-            talkOpeningAfterPages.push_back(pageNode);
-        }
-        if (talkOpeningAfterPages.size() > 0) {
-            actorNode["talkOpeningAfterPages"] = talkOpeningAfterPages;
-        } else {
-            actorNode.remove("talkOpeningAfterPages");
-        }
-
-        YAML::Node talkEndingAfterPages(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            if (!npc->GetTalkStartsEndingAfterPage(talkIndex)) {
-                continue;
-            }
-            YAML::Node pageNode(YAML::NodeType::Map);
-            pageNode["talkIndex"] = static_cast<int>(talkIndex);
-            talkEndingAfterPages.push_back(pageNode);
-        }
-        if (talkEndingAfterPages.size() > 0) {
-            actorNode["talkEndingAfterPages"] = talkEndingAfterPages;
-        } else {
-            actorNode.remove("talkEndingAfterPages");
-        }
-
-        YAML::Node talkRubies(YAML::NodeType::Sequence);
-        for (std::size_t talkIndex = 0; talkIndex < npc->GetTalkTexts().size(); ++talkIndex) {
-            if (!npc->HasValidTalkRuby(talkIndex)) {
-                continue;
-            }
-
-            YAML::Node rubyNode(YAML::NodeType::Map);
-            rubyNode["talkIndex"] = static_cast<int>(talkIndex);
-            rubyNode["segments"] = YAML::Node(YAML::NodeType::Sequence);
-
-            for (const RubyTextSegment& segment : npc->GetTalkRubySegments(talkIndex)) {
-                YAML::Node segmentNode(YAML::NodeType::Map);
-                segmentNode["text"] = segment.text;
-                segmentNode["ruby"] = segment.showsRuby;
-                if (segment.showsRuby) {
-                    segmentNode["reading"] = segment.reading;
-                }
-                rubyNode["segments"].push_back(segmentNode);
-            }
-
-            talkRubies.push_back(rubyNode);
-        }
-
-        if (talkRubies.size() > 0) {
-            actorNode["talkRubies"] = talkRubies;
-        } else {
-            actorNode.remove("talkRubies");
-        }
+    const NPC* npc = dynamic_cast<const NPC*>(actor);
+    if (!npc) {
+        return;
     }
+
+    actorNode["modelPath"] = npc->GetModelPath();
+    const bool isTutorialTrigger = dynamic_cast<const TutorialTrigger*>(npc) != nullptr;
+    if (isTutorialTrigger) {
+        const TutorialTrigger* tutorialTrigger = static_cast<const TutorialTrigger*>(npc);
+        if (tutorialTrigger->GetTutorialId().empty()) {
+            actorNode.remove("tutorialId");
+        } else {
+            actorNode["tutorialId"] = tutorialTrigger->GetTutorialId();
+        }
+        if (tutorialTrigger->GetRequiredCompletedTutorialId().empty()) {
+            actorNode.remove("requiredCompletedTutorialId");
+        } else {
+            actorNode["requiredCompletedTutorialId"] = tutorialTrigger->GetRequiredCompletedTutorialId();
+        }
+        actorNode.remove("name");
+        actorNode.remove("radius");
+        actorNode.remove("proximityMessage");
+    } else {
+        actorNode["name"] = npc->GetName();
+        actorNode["radius"] = npc->GetRadius();
+        actorNode["forceTalkOnArrival"] = npc->GetForcesTalkOnArrival();
+    }
+
+    WriteNPCProximityMessage(actorNode, *npc, isTutorialTrigger);
+    WriteNPCTalkTextsAndStageConditions(actorNode, *npc);
+    WriteNPCTalkCameraFocus(actorNode, *npc);
+    WriteNPCTalkAdvanceConditions(actorNode, *npc);
+    WriteNPCTalkSequenceTriggers(actorNode, *npc);
+    WriteNPCTalkRuby(actorNode, *npc);
 }
 
 void StageActorYamlWriter::WriteTextureState(YAML::Node actorNode, Actor* actor)

@@ -10,7 +10,6 @@
 
 class Actor;
 class Planet;
-struct EditorAuthoredTransform;
 
 // Actor設定と編集済み配置をステージYAMLへ反映する。惑星のシリアライズは専用Writerへ委譲する。
 class StageActorYamlWriter {
@@ -20,6 +19,7 @@ public:
     explicit StageActorYamlWriter(DebugEditorContext& context);
 
     // 惑星以外の実行中Actorを保存する。成功後だけ変更前YAMLを通知する。失敗時はfalseで、Runtimeは維持する。
+    // 編集TransformはSaveEditorAuthoredTransformsで別途反映する。
     bool SaveAllActorStates(const SavedEditCallback& recordSavedEdit = {});
 
     // Actor・惑星設定と未保存Transformを1回のファイル置換で保存する。失敗時は全編集記録を保持する。
@@ -56,10 +56,8 @@ private:
     bool WriteActorState(YAML::Node& config, const std::string& sequenceName, Actor* actor,
                          ActorTransformWriteMode transformWriteMode);
     void WriteModelAndHazardState(YAML::Node actorNode, Actor* actor);
-    void WritePlatformState(YAML::Node actorNode, const std::string& sequenceName, Actor* actor,
-                            const EditorAuthoredTransform* editorTransform);
-    void WriteBoatState(YAML::Node actorNode, Actor* actor, const EditorAuthoredTransform* editorTransform,
-                        Planet* authoredPlanet);
+    void WritePlatformState(YAML::Node actorNode, const std::string& sequenceName, Actor* actor);
+    void WriteBoatState(YAML::Node actorNode, Actor* actor);
     void WriteNPCState(YAML::Node actorNode, Actor* actor);
     void WriteTextureState(YAML::Node actorNode, Actor* actor);
     int FindPlanetIndex(const Planet* targetPlanet) const;
