@@ -8,7 +8,7 @@
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/gtc/matrix_transform.hpp>

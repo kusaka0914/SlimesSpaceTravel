@@ -237,5 +237,7 @@
   "src/system/GameWorld.cpp": "src/world/GameWorld.cpp",
   "src/gfx/DebugUIRenderer.cpp": "src/editor/core/DebugUIRenderer.cpp",
   "src/gfx/ui/UIDebugEditorBridge.cpp": "src/editor/core/UIDebugEditorBridge.cpp",
-  "src/gfx/GameFrameRenderer.cpp": "src/app/GameFrameRenderer.cpp"
+  "src/gfx/GameFrameRenderer.cpp": "src/app/GameFrameRenderer.cpp",
+  "src/utils/MathUtils.h": "src/actor/MathUtils.h",
+  "src/utils/MathUtils.cpp": "src/actor/MathUtils.cpp"
 }

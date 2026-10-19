@@ -48,7 +48,7 @@
 #include "gfx/UIRenderer.h"
 #include "imgui.h"
 
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <chrono>

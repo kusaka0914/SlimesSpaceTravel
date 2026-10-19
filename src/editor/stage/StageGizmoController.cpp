@@ -10,7 +10,7 @@
 #include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/StageActorPlanetBindingService.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <GLFW/glfw3.h>
 #include <algorithm>

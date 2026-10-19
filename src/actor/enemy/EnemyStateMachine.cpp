@@ -15,7 +15,7 @@
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/ParticleSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>

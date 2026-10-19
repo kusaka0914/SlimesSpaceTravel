@@ -3,7 +3,7 @@
 #include "app/Game.h"
 #include "actor/Player.h"
 #include "system/SceneSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>

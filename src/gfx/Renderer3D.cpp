@@ -33,7 +33,7 @@
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/mesh/TextureLoader.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 #include "world/Stage.h"
 
 #include <GL/glew.h>

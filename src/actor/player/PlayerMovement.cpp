@@ -8,7 +8,7 @@
 #include "actor/player/PlayerInput.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>

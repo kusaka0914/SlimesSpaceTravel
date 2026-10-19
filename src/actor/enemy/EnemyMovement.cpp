@@ -9,7 +9,7 @@
 #include "system/AudioSystem.h"
 #include "system/ParticleSystem.h"
 #include "system/PhysicsSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>
