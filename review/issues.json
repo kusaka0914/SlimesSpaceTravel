@@ -132,6 +132,17 @@
       "tests": "仮想コントローラー2台と実Player2体を用いて、1P/2Pの独立、文字入力中の停止、解除後の停止、ステージ切替の履歴初期化を検証。",
       "status": "implemented_and_debug_verified",
       "verification": "初期カメラ姿勢を確定した回帰テストで文字入力中の2P継続移動を再現。修正後はRuntime8組・266単体が成功。実機コントローラーは未検証。"
+    },
+    {
+      "id": "SAFE-04",
+      "priority": "P2",
+      "location": "src/system/tgs/TgsExperienceController.cpp:WriteSessionLog",
+      "evidence": "flushだけを検証してclose結果を確認せず、短い書き込みの失敗分岐でも.tmpを削除していなかった。",
+      "risk": "未完成ログが残り、クローズ失敗時に不完全なログを確定する可能性がある。",
+      "change": "一意ログの一時ファイル→rename方式を維持し、close確認と失敗時の一時ファイル削除を追加。短い書込の子プロセステストも共通化。",
+      "tests": "TGSログに8バイト上限を課し、false・既存ログ保持・一時ファイルなしを確認。通常ログ・連番・1回だけ試行の既存テスト。",
+      "status": "implemented_and_debug_verified",
+      "verification": "追加テストは改修前266/267で失敗、改修後267/267とRuntime8組成功。Debug全ビルド成功。Windowsの強制書込失敗テストはPOSIX依存のため未実行。"
     }
   ],
   "notes": [

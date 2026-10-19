@@ -1,4 +1,5 @@
 #include "TestFileSupport.h"
+#include "TestProcessSupport.h"
 #include "TestSupport.h"
 
 #include "actor/enemy/EnemyPresetRepository.h"
@@ -9,13 +10,6 @@
 #include "system/story/StorybookConfig.h"
 
 #include <yaml-cpp/yaml.h>
-
-#ifndef _WIN32
-#include <csignal>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 
 namespace {
 
@@ -230,23 +224,7 @@ void ConfigurationShortWriteKeepsPreviousBytes(const SaveConfiguration& save)
     TemporaryTestDirectory fixture;
     const std::string original = "enemies: [{type: test}]\n";
     WriteTestFile(fixture.File(), original);
-    const auto child = fork();
-    ExpectTrue(child >= 0, "fork configuration writer");
-    if (child == 0) {
-        std::signal(SIGXFSZ, SIG_IGN);
-        const rlimit limit{8, 8};
-        if (setrlimit(RLIMIT_FSIZE, &limit) != 0) {
-            _exit(2);
-        }
-        try {
-            _exit(save(fixture.File()) ? 1 : 0);
-        } catch (...) {
-            _exit(3);
-        }
-    }
-    int status = 0;
-    ExpectEqual(child, waitpid(child, &status, 0), "wait for writer");
-    ExpectTrue(WIFEXITED(status) && WEXITSTATUS(status) == 0, "short write reports failure");
+    ExpectWriteFailureWithByteLimit([&]() { return save(fixture.File()); }, 8);
     ExpectEqual(original, ReadTestFile(fixture.File()), "old configuration survives failed write");
     ExpectEqual(
         std::ptrdiff_t(1),

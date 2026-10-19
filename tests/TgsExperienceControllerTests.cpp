@@ -1,4 +1,5 @@
 #include "TestFileSupport.h"
+#include "TestProcessSupport.h"
 #include "TestSupport.h"
 
 #include "system/tgs/TgsExperienceController.h"
@@ -190,10 +191,37 @@ void EndSessionNowSkipsToTimeLimit()
     ExpectFalse(controller.IsRemainingTimeNoticeVisible(), "shortcut hides remaining-time notice");
 }
 
+#ifndef _WIN32
+void FailedSessionLogRemovesTemporaryFileAndKeepsExistingLogs()
+{
+    const TemporaryTestDirectory directory;
+    const auto previous = directory.Root() / "previous.yaml";
+    const std::string original = "session: original\n";
+    WriteTestFile(previous, original);
+    ExpectWriteFailureWithByteLimit(
+        [&]() {
+            TgsExperienceController controller(CreateShortExperienceConfig(), directory.Root());
+            controller.StartSession(1, "assist");
+            controller.EndSessionNow();
+            return controller.SaveSessionLog();
+        },
+        8);
+    ExpectEqual(original, ReadTestFile(previous), "existing log is unchanged");
+    ExpectEqual(
+        std::ptrdiff_t(1),
+        std::distance(std::filesystem::directory_iterator(directory.Root()), std::filesystem::directory_iterator()),
+        "failed log leaves no temporary file");
+}
+#endif
+
 } // namespace
 
 void RegisterTgsExperienceControllerTests(TestRegistry& tests)
 {
+#ifndef _WIN32
+    tests.emplace_back("TgsExperienceController.FailedWriteCleansTemporaryLog",
+                       FailedSessionLogRemovesTemporaryFileAndKeepsExistingLogs);
+#endif
     tests.emplace_back("TgsExperienceController.NoticeTimeoutAndAutomaticReturn",
                        ExperienceShowsNoticeEndsAndReturnsToTitle);
     tests.emplace_back("TgsExperienceController.SessionLogStoresReachedProgress",

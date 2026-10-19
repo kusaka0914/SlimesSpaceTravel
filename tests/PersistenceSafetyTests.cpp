@@ -1,4 +1,5 @@
 #include "TestFileSupport.h"
+#include "TestProcessSupport.h"
 #include "TestSupport.h"
 
 #include "editor/stage/StageEditHistory.h"
@@ -11,13 +12,6 @@
 #include "utils/AtomicFile.h"
 
 #include <filesystem>
-
-#ifndef _WIN32
-#include <csignal>
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 
 namespace {
 
@@ -465,21 +459,12 @@ void FailedWriteDoesNotTruncateOldFile()
     TemporaryTestDirectory fixture;
     const std::string original(32, 'O');
     WriteTestFile(fixture.File(), original);
-    // 子プロセスだけに書込上限を課し、テスト実行本体の制限やシグナル設定を変えない。
-    const pid_t child = fork();
-    ExpectTrue(child >= 0, "fork write-failure test");
-    if (child == 0) {
-        std::signal(SIGXFSZ, SIG_IGN);
-        rlimit limit{8, 8};
-        if (setrlimit(RLIMIT_FSIZE, &limit) != 0) {
-            _exit(2);
-        }
-        std::string error;
-        _exit(AtomicFile::WriteText(fixture.File(), std::string(128, 'N'), error) ? 1 : 0);
-    }
-    int status = 0;
-    ExpectEqual(child, waitpid(child, &status, 0), "wait for failed writer");
-    ExpectTrue(WIFEXITED(status) && WEXITSTATUS(status) == 0, "short write returns false");
+    ExpectWriteFailureWithByteLimit(
+        [&]() {
+            std::string error;
+            return AtomicFile::WriteText(fixture.File(), std::string(128, 'N'), error);
+        },
+        8);
     ExpectEqual(original, ReadTestFile(fixture.File()), "old bytes survive failed write");
     ExpectEqual(
         std::ptrdiff_t(1),

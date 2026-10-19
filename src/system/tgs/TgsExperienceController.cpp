@@ -204,9 +204,14 @@ bool TgsExperienceController::WriteSessionLog(const std::string& endReason)
             return false;
         }
         output << root;
-        output.flush();
+        // クローズ時の書込失敗も確定前に検知し、未完成ログを残さない。
+        output.close();
         if (!output.good()) {
             std::cerr << "Failed to write TGS play log: " << temporaryPath.string() << '\n';
+            std::filesystem::remove(temporaryPath, fileSystemError);
+            if (fileSystemError) {
+                std::cerr << "Failed to remove incomplete TGS play log: " << fileSystemError.message() << '\n';
+            }
             return false;
         }
     }
