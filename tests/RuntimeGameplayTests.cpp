@@ -15,6 +15,7 @@
 #include "app/Game.h"
 #include "component/Component.h"
 #include "system/PhysicsSystem.h"
+#include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
@@ -175,6 +176,7 @@ void CollisionFiltersSkipEmptyRegistryEntries(Game& game)
                          "empty registry entry does not block movement");
         ExpectFalse(result.didHitStage, "missing Bullet world omits stage collision");
     }
+    LoadedModel model;
     Enemy enemy(&game);
     enemy.SetCurrentPlanet(&planet);
     enemy.SetPos(desiredPosition - glm::vec3(0.25f, 0, 0));
@@ -198,6 +200,18 @@ void CollisionFiltersSkipEmptyRegistryEntries(Game& game)
                "grounded enemy still blocks airborne-only filter");
     enemy.SetIsActive(false);
     ExpectVectorNear(desiredPosition, resolve(ActorCollisionFilter::AllActors), 0.0f, "inactive enemy is ignored");
+    model.hasBounds = true;
+    model.boundsMinimum = glm::vec3(-0.5f);
+    model.boundsMaximum = glm::vec3(0.5f);
+    enemy.SetScale(glm::vec3(1.0f));
+    enemy.SetLoadedModel(&model);
+    enemy.SetIsActive(true);
+    ExpectVectorNear(actor.GetPos(), resolve(ActorCollisionFilter::StopAtEnemies), 0.0f,
+                     "active enemy model still blocks movement");
+    enemy.SetIsActive(false);
+    ExpectVectorNear(desiredPosition, resolve(ActorCollisionFilter::StopAtEnemies), 0.0f,
+                     "inactive enemy model does not block stop-at-enemies movement");
+    enemy.SetLoadedModel(nullptr);
     planet.RemoveEnemy(&enemy);
     std::cout << "[PASS] Runtime.CollisionFiltersSkipEmptyRegistryEntries\n";
 }

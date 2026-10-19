@@ -309,6 +309,17 @@
       "tests": "全自作C++の識別子検索、Debug ASan全ビルド、271単体と監査4件。",
       "status": "implemented_and_build_verified",
       "verification": "既存の実行呼出はゼロで挙動変更なし。Runtime全体は直前の計装ビルドで23組成功しており、最終構成で再確認する。"
+    },
+    {
+      "id": "SAFE-11",
+      "priority": "P2",
+      "location": "src/system/physics/ActorCollisionResolver.cpp:StopAtEnemies",
+      "evidence": "モデル境界を使う早期停止はCheckConflictActorより前に返り、非アクティブ判定を通らない。先行テストで希望X=4に対して開始X=1のまま停止することを再現。",
+      "risk": "非表示/無効化した敵が、モデルの有無によって他の敵の移動を妨げる。",
+      "change": "敵の接地/モデル判定前に有効状態を確認し、通常のActor衝突と同じ条件へそろえる。",
+      "tests": "モデルありの有効敵は停止、無効敵は通過。既存の球状応答、空中/接地フィルターとnull登録も維持。",
+      "status": "implemented_and_sanitizer_verified",
+      "verification": "修正前に移動位置の不一致を再現し、修正後271単体・監査4件・Runtime23組・Debug全体ASan/UBSan成功。"
     }
   ],
   "notes": [

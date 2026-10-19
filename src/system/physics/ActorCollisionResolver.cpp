@@ -444,7 +444,7 @@ std::optional<glm::vec3> ActorCollisionResolver::CheckConflictActors(btDiscreteD
         }
 
         // 登録一覧はnullptrを許すため、接地やモデル情報を参照する前に除外する。
-        if (!enemy || enemy == actor) {
+        if (!enemy || enemy == actor || !enemy->GetIsActive()) {
             continue;
         }
 

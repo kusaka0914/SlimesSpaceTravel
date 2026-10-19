@@ -1,0 +1,25 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 3: game_runtime_tests
+1/1 Test #3: game_runtime_tests ...............***Failed   45.04 sec
+[PASS] Runtime.EllipsoidProjectionAndHemisphere
+[PASS] Runtime.ThinWallSweepAndOverlap
+[PASS] Runtime.MovementActionLifecycle
+[PASS] Runtime.GravitySwitchHysteresisAndLifecycle
+[PASS] Runtime.NearCenterInternalProjection
+[PASS] Runtime.WorldInvalidatesRegistriesBeforeActorDestruction
+[FAIL] Runtime integration: inactive enemy model does not block stop-at-enemies movement x
+  expected: 4 +/- 0
+  actual:   1
+
+
+0% tests passed, 1 tests failed out of 1
+
+Label Time Summary:
+display        =  45.04 sec*proc (1 test)
+integration    =  45.04 sec*proc (1 test)
+
+Total Test time (real) =  45.04 sec
+
+The following tests FAILED:
+	  3 - game_runtime_tests (Failed)                       display integration
+Errors while running CTest

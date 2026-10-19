@@ -13,7 +13,7 @@ struct ActorMovementCollisionResult;
 // Actorの移動経路と終点の重なりを調べ、ステージや他Actorとの衝突を解決する。
 class ActorCollisionResolver {
 public:
-    // ワールド座標の要求移動を、他Actorとの衝突、ステージとの衝突の順に解決する。
+    // ワールド座標の要求移動を、有効な他Actorとの衝突、ステージとの衝突の順に解決する。
     // world・playerShapeがnullptrでも他Actorとの補正は行い、ステージとの判定だけを省略する。
     ActorMovementCollisionResult CheckCollision(btDiscreteDynamicsWorld* world, btConvexShape* playerShape,
                                                 Actor* actor, const glm::vec3& moveDelta, const glm::vec3& desiredPos,
