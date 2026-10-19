@@ -2,12 +2,10 @@
 
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "gfx/Renderer3D.h"
 #include "gfx/Shader3D.h"
-#include "gfx/UIRenderer.h"
 #include "gfx/VertexArray.h"
 #include "system/UILoadSystem.h"
 
@@ -15,14 +13,15 @@
 
 #include <algorithm>
 
-NPCProximityMessageRenderer::NPCProximityMessageRenderer(const Renderer3D* renderer)
-    : mRenderer(renderer)
+NPCProximityMessageRenderer::NPCProximityMessageRenderer(const Renderer3D* renderer, const UILoadSystem& uiDefinitions)
+    : mRenderer(renderer),
+      mUIDefinitions(uiDefinitions)
 {
 }
 
 void NPCProximityMessageRenderer::Draw(const glm::mat4& viewMat, const std::vector<Planet*>& planets) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D()) {
+    if (!mRenderer || !mRenderer->GetShader3D()) {
         return;
     }
 
@@ -57,13 +56,9 @@ void NPCProximityMessageRenderer::DrawMessage(const glm::mat4& viewMat, const NP
     const SDL_Color textColor{6, 6, 7, 255};
     float rubyScaleRatio = 0.36f;
     float rubyGapRatio = -0.46f;
-    if (UIRenderer* uiRenderer = renderer.GetGame()->GetUIRenderer()) {
-        if (UILoadSystem* uiLoadSystem = uiRenderer->GetUILoadSystem()) {
-            if (const UILoadSystem::TextInfo* talkTextInfo = uiLoadSystem->GetTextInfo("state", "talkText")) {
-                rubyScaleRatio = talkTextInfo->rubyScaleRatio;
-                rubyGapRatio = talkTextInfo->rubyGapRatio;
-            }
-        }
+    if (const UILoadSystem::TextInfo* talkTextInfo = mUIDefinitions.GetTextInfo("state", "talkText")) {
+        rubyScaleRatio = talkTextInfo->rubyScaleRatio;
+        rubyGapRatio = talkTextInfo->rubyGapRatio;
     }
 
     GLuint textTexture = 0;

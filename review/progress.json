@@ -15,11 +15,12 @@
     "Renderer基盤・粒子・惑星装飾のGame依存を削除。Gameの未使用TGS転送2件を削除。266単体・実描画を含むRuntime6組成功。",
     "CameraSystemと各Camera/Boss演出からGameを除去。明示した参照と同期callbackへ限定し、2Pの文字入力中・ステージ切替直後の継続入力も修正。266単体・Runtime8組成功。",
     "TGSログのclose検証と失敗時.tmp削除を追加。書込上限の子プロセス検証を3テスト間で共通化。267単体・Runtime8組成功。",
-    "CMakeのGAME_ENABLE_TEST_SANITIZERSを追加し、267単体をASan/UBSanで検証。通常構成へ戻して267単体も再確認。README既存テスト節へ実行方法を追記。"
+    "CMakeのGAME_ENABLE_TEST_SANITIZERSを追加し、267単体をASan/UBSanで検証。通常構成へ戻して267単体も再確認。README既存テスト節へ実行方法を追記。",
+    "Renderer3Dとrender3dのGame依存を除去。借用サービスとspan中心のSceneRenderStateへ限定し、Gameの転送API累計17件を削除。終了呼出忘れもGame破棄時に処理。267単体・Runtime10組・Debug全ビルド成功。",
+    "UGC実描画でMacの線幅2設定によるGL_INVALID_VALUEを再現。線幅を対応範囲へ補正して元へ復元。対応環境の2px指定と描画順・数式は維持。"
   ],
   "next": [
-    "Renderer3D/SceneObject/ViewportのGame依存を描画状態と明示した参照へ限定する",
-    "残る設定保存の直接上書き、読込失敗時の部分変更、StageEditTransactionの例外復旧を修正",
+    "PlayerMovement/衝突/惑星重力/Editor各重要ソースと利用箇所の監査、幾何・操作・衝突のRuntime検証を拡充",
     "重要ソース全文と呼出元・所有権・継承・重複を監査し台帳更新",
     "Debug/Release・Review/TGS・sanitizer・可能なCI・Runtime・移動参照を最終確認"
   ],
@@ -54,7 +55,12 @@
     "src/gfx/EnvironmentDecorationRenderer.cpp",
     "src/gfx/render3d/RenderViewportController.cpp",
     "src/actor/Player.h",
-    "src/actor/Player.cpp"
+    "src/actor/Player.cpp",
+    "src/app/Game.h",
+    "src/system/camera/PlayerCamera.cpp",
+    "src/actor/player/PlayerMovement.cpp",
+    "src/actor/player/PlayerMovement.h",
+    "src/gfx/render3d/SceneRenderState.h"
   ],
   "constraints": [
     "新しいMarkdown報告書を作らない。既存READMEのパスは更新済み。",

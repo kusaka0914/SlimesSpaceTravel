@@ -1,0 +1,29 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 2: game_runtime_tests
+1/1 Test #2: game_runtime_tests ...............***Failed   15.30 sec
+Failed to load stage YAML: /var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes_runtime_362781138687291/other.yaml
+yaml-cpp: error at line 1, column 1: end of sequence flow not found
+UNSUPPORTED (log once): POSSIBLE ISSUE: unit 1 GLD_TEXTURE_INDEX_2D is unloadable and bound to sampler type (Float) - using zero texture because texture unloadable
+[PASS] Runtime.StageSaveFailureRetryUndoRedoAndStageBoundary
+[PASS] Runtime.ManualCameraAndProjection
+[PASS] Runtime.StageShadowAndBorrowedParticleRendering
+[PASS] Runtime.CameraExplicitContextAndDegeneratePose
+[PASS] Runtime.CameraControlIsolationAndEditorCapture
+[PASS] Runtime.UGCCreateMoveUndo
+[diagnostic] line width range: 1, 1; setting 2 gives error 1281
+[FAIL] Runtime integration: UGC layer, ghost and moving path render
+  expected: 0
+  actual:   1281
+
+
+0% tests passed, 1 tests failed out of 1
+
+Label Time Summary:
+display        =  15.30 sec*proc (1 test)
+integration    =  15.30 sec*proc (1 test)
+
+Total Test time (real) =  15.31 sec
+
+The following tests FAILED:
+	  2 - game_runtime_tests (Failed)                       display integration
+Errors while running CTest

@@ -1,10 +1,7 @@
 #include "gfx/render3d/DebugLabelRenderer.h"
 
-// GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatParts.h"
@@ -19,6 +16,7 @@
 #include "gfx/Renderer3D.h"
 #include "gfx/Shader3D.h"
 #include "gfx/VertexArray.h"
+#include "world/Stage.h"
 
 #include <SDL_ttf.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -30,17 +28,17 @@ DebugLabelRenderer::DebugLabelRenderer(const Renderer3D* renderer)
 {
 }
 
-void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
+void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat, const Stage* stage, bool isUGCMode) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetGame()->GetCurrentStage()) {
+    if (!mRenderer || !stage) {
         return;
     }
 
-    if (mRenderer->GetGame()->GetIsUGCMode()) {
+    if (isUGCMode) {
         return;
     }
 
-    const std::vector<Planet*>& planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
+    const std::vector<Planet*>& planets = stage->GetPlanets();
 
     for (Planet* planet : planets) {
         if (!planet) {
@@ -89,7 +87,7 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
 
 void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !actor || !actor->GetIsActive()) {
+    if (!mRenderer || !mRenderer->GetShader3D() || !actor || !actor->GetIsActive()) {
         return;
     }
 

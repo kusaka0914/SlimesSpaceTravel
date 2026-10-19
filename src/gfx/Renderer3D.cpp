@@ -16,7 +16,6 @@
 #include "actor/StageObject.h"
 #include "actor/Star.h"
 #include "animation/SkeletalAnimationConstants.h"
-#include "app/Game.h"
 #include "component/PlatformMovementComponent.h"
 #include "gfx/DirectionalShadowMap.h"
 #include "gfx/DirectionalShadowShader.h"
@@ -30,13 +29,10 @@
 #include "gfx/render3d/PlayerEffectRenderer.h"
 #include "gfx/render3d/RenderViewportController.h"
 #include "gfx/render3d/SceneObjectRenderer.h"
-#include "system/ParticleSystem.h"
 #include "system/PhysicsSystem.h"
-#include "system/SceneSystem.h"
 #include "system/mesh/LoadedMesh.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/mesh/TextureLoader.h"
-#include "system/sequence/SequenceSystem.h"
 #include "utils/MathUtils.h"
 #include "world/Stage.h"
 
@@ -52,6 +48,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace {
 constexpr float editorSelectionRed = 1.0f;
@@ -206,8 +203,15 @@ std::vector<glm::vec3> CreateUGCPlacementGhostEdges(const glm::vec3& center, flo
 }
 } // namespace
 
-Renderer3D::Renderer3D(Game* game)
-    : mGame(game),
+Renderer3D::Renderer3D(Renderer3DDependencies dependencies)
+    : mWindow(dependencies.window),
+      mMath(dependencies.math),
+      mModelLoader(dependencies.models),
+      mPhysics(dependencies.physics),
+      mUIDefinitions(dependencies.uiDefinitions),
+      mCameras(dependencies.cameras),
+      mPerformance(dependencies.performance),
+      mReadScene(std::move(dependencies.readScene)),
       mShader3D(nullptr),
       mAttackRangeVAO(0),
       mAttackRangeVBO(0)
@@ -373,37 +377,38 @@ void Renderer3D::Initialize()
 
 void Renderer3D::Draw() const
 {
-    if (!mGame || !mShader3D || !mRenderViewportController) {
+    const SceneRenderState scene = mReadScene();
+    if (!mShader3D || !mRenderViewportController) {
         return;
     }
 
-    if (mGame->GetSceneSystem()->IsTitle() || mGame->GetSceneSystem()->IsBattleStyleSelection()) {
+    if (scene.isTitle || scene.isBattleStyleSelection) {
         return;
     }
 
     int framebufferWidth = 0;
     int framebufferHeight = 0;
-    glfwGetFramebufferSize(mGame->GetWindow(), &framebufferWidth, &framebufferHeight);
+    glfwGetFramebufferSize(&mWindow, &framebufferWidth, &framebufferHeight);
 
     glUseProgram(mShader3D->GetShaderProgram());
     mRenderViewportController->DrawGameScreen(static_cast<float>(framebufferWidth),
-                                              static_cast<float>(framebufferHeight));
+                                              static_cast<float>(framebufferHeight), scene);
 }
 
 void Renderer3D::RenderGameplayShadowMap() const
 {
-    if (!mGame || !mGame->GetCurrentStage() || mGame->GetSceneSystem()->IsTitle() ||
-        mGame->GetSceneSystem()->IsBattleStyleSelection()) {
+    const SceneRenderState scene = mReadScene();
+    if (!scene.stage || scene.isTitle || scene.isBattleStyleSelection) {
         return;
     }
 
-    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    const Player* controlledPlayer = scene.controlledPlayer;
     if (controlledPlayer) {
         RenderShadowMap(controlledPlayer->GetRenderPosition());
         return;
     }
 
-    const std::vector<Planet*>& planets = mGame->GetCurrentStage()->GetPlanets();
+    const std::vector<Planet*>& planets = scene.stage->GetPlanets();
     if (!planets.empty() && planets.front()) {
         RenderShadowMap(planets.front()->GetPos());
     }
@@ -411,16 +416,18 @@ void Renderer3D::RenderGameplayShadowMap() const
 
 void Renderer3D::RenderShadowMap(const glm::vec3& focusPosition) const
 {
-    if (!mGame || !mGame->GetCurrentStage()) {
+    const SceneRenderState scene = mReadScene();
+    if (!scene.stage) {
         return;
     }
-    const std::vector<Planet*>& planets = mGame->GetCurrentStage()->GetPlanets();
-    const bool shouldDrawEnvironment = !mGame->GetIsUGCMode() && mEnvironmentDecorationRenderer;
+    const std::vector<Planet*>& planets = scene.stage->GetPlanets();
+    const bool shouldDrawEnvironment = !scene.isUGCMode && mEnvironmentDecorationRenderer;
     if (shouldDrawEnvironment) {
-        mEnvironmentDecorationRenderer->Prepare(planets, mGame->GetMeshLoadSystem());
+        mEnvironmentDecorationRenderer->Prepare(planets, &mModelLoader);
     }
 
-    if (!mDirectionalShadowMap || !mDirectionalShadowMap->Begin(focusPosition, ResolveSunDirectionForCurrentStage())) {
+    if (!mDirectionalShadowMap ||
+        !mDirectionalShadowMap->Begin(focusPosition, ResolveSunDirection(scene.stageNumber))) {
         return;
     }
 
@@ -452,12 +459,11 @@ void Renderer3D::RenderShadowMap(const glm::vec3& focusPosition) const
         DrawActorToShadowMap(planet->GetKey(), true, focusPosition);
         DrawActorToShadowMap(planet->GetStar(), true, focusPosition);
     }
-    drawActors(mGame->GetRuntimeJewelItems(), true);
+    drawActors(scene.runtimeJewels, true);
 
-    const SequenceSystem* sequenceSystem = mGame->GetSequenceSystem();
-    const bool shouldDrawPlayers = !sequenceSystem || !sequenceSystem->IsCinematicChainPlaying();
+    const bool shouldDrawPlayers = !scene.hidesPlayersForCinematic;
     if (shouldDrawPlayers) {
-        drawActors(mGame->GetPlayers(), true);
+        drawActors(scene.players, true);
     }
 
     if (shouldDrawEnvironment) {
@@ -470,12 +476,12 @@ void Renderer3D::RenderShadowMap(const glm::vec3& focusPosition) const
     mDirectionalShadowMap->End();
 }
 
-void Renderer3D::DrawEnvironmentDecorations() const
+void Renderer3D::DrawEnvironmentDecorations(const SceneRenderState& scene) const
 {
-    if (!mGame || mGame->GetIsUGCMode() || !mGame->GetCurrentStage() || !mEnvironmentDecorationRenderer || !mShader3D) {
+    if (scene.isUGCMode || !scene.stage || !mEnvironmentDecorationRenderer || !mShader3D) {
         return;
     }
-    mEnvironmentDecorationRenderer->Prepare(mGame->GetCurrentStage()->GetPlanets(), mGame->GetMeshLoadSystem());
+    mEnvironmentDecorationRenderer->Prepare(scene.stage->GetPlanets(), &mModelLoader);
     mEnvironmentDecorationRenderer->Draw(*mShader3D, mCurrentCameraPosition);
 }
 
@@ -483,6 +489,7 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
                            UGCSceneLayerRenderMode ugcLayerRenderMode, int ugcEditLayer,
                            const Player* viewportPlayer) const
 {
+    const SceneRenderState scene = mReadScene();
     if (!mSceneObjectRenderer || !mShader3D) {
         return;
     }
@@ -490,12 +497,12 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
                                ugcLayerRenderMode == UGCSceneLayerRenderMode::HighlightEditingLayerWithoutDimming;
     bool dimsNonEditingUGCLayers = ugcLayerRenderMode == UGCSceneLayerRenderMode::HighlightEditingLayer;
     const bool shouldAutomaticallyHighlightEditingLayer =
-        ugcLayerRenderMode == UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer && mGame &&
-        mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
+        ugcLayerRenderMode == UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer && scene.isUGCMode &&
+        scene.isDebugEditorShowing;
     if (shouldAutomaticallyHighlightEditingLayer) {
         emphasizesUGCLayers = true;
         dimsNonEditingUGCLayers = true;
-        ugcEditLayer = mGame->GetUGCPreviewEditLayer();
+        ugcEditLayer = scene.ugcEditLayer;
     }
 
     glUseProgram(mShader3D->GetShaderProgram());
@@ -504,23 +511,23 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
     mDimNonEditingUGCLayers = dimsNonEditingUGCLayers;
     mUGCEditLayer = ugcEditLayer;
     UpdateViewFrustum(projMat * viewMat);
-    SetUniforms(viewMat, projMat, cameraPos);
-    mSceneObjectRenderer->DrawSceneObjects(viewMat, viewportPlayer);
+    SetUniforms(viewMat, projMat, cameraPos, scene.stageNumber);
+    mSceneObjectRenderer->DrawSceneObjects(viewMat, viewportPlayer, scene);
 
-    if (mPlanetAtmosphereRenderer && mGame && mGame->GetCurrentStage()) {
-        mPlanetAtmosphereRenderer->Draw(mGame->GetCurrentStage()->GetPlanets(), viewMat, projMat, cameraPos,
-                                        ResolveSunDirectionForCurrentStage());
+    if (mPlanetAtmosphereRenderer && scene.stage) {
+        mPlanetAtmosphereRenderer->Draw(scene.stage->GetPlanets(), viewMat, projMat, cameraPos,
+                                        ResolveSunDirection(scene.stageNumber));
         glUseProgram(mShader3D->GetShaderProgram());
-        SetUniforms(viewMat, projMat, cameraPos);
+        SetUniforms(viewMat, projMat, cameraPos, scene.stageNumber);
     }
 
-    if (mGame && mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing()) {
-        DrawUGCMovingPlatformPaths();
-        const std::optional<glm::vec3>& placementPreview = mGame->GetUGCPlatformPlacementPreview();
+    if (scene.isUGCMode && scene.isDebugEditorShowing) {
+        DrawUGCMovingPlatformPaths(scene);
+        const std::optional<glm::vec3>& placementPreview = scene.placementPosition;
         if (placementPreview) {
-            Actor* placementPreviewActor = mGame->GetUGCPlacementModelPreview();
+            Actor* placementPreviewActor = scene.placementModel;
             if (placementPreviewActor) {
-                const std::vector<glm::vec3>& previewPositions = mGame->GetUGCPlacementModelPreviewPositions();
+                const auto& previewPositions = scene.placementModelPositions;
                 if (previewPositions.empty()) {
                     DrawUGCPlacementPreviewActor(placementPreviewActor);
                 } else {
@@ -530,36 +537,34 @@ void Renderer3D::DrawScene(const glm::mat4& viewMat, const glm::mat4& projMat, c
                     }
                 }
             } else {
-                const float gridSize = mGame->GetUGCGridSize();
+                const float gridSize = scene.ugcGridSize;
                 DrawAttackRangeVertices(CreateUGCPlacementGhostFaces(*placementPreview, gridSize), GL_TRIANGLES,
                                         glm::vec4(0.25f, 0.95f, 0.68f, 0.32f));
                 DrawAttackRangeVertices(CreateUGCPlacementGhostEdges(*placementPreview, gridSize), GL_LINES,
                                         glm::vec4(0.62f, 1.0f, 0.82f, 0.95f));
             }
 
-            SetUniforms(viewMat, projMat, cameraPos);
+            SetUniforms(viewMat, projMat, cameraPos, scene.stageNumber);
         }
     }
 
-    if (mParticleRenderer && mGame) {
-        if (const ParticleSystem* particles = mGame->GetParticleSystem()) {
-            mParticleRenderer->Draw(viewMat, projMat, particles->GetParticles());
-        }
+    if (mParticleRenderer) {
+        mParticleRenderer->Draw(viewMat, projMat, scene.particles);
     }
     mEmphasizeUGCLayers = false;
     mDimNonEditingUGCLayers = false;
 }
 
-void Renderer3D::DrawUGCMovingPlatformPaths() const
+void Renderer3D::DrawUGCMovingPlatformPaths(const SceneRenderState& scene) const
 {
-    if (!mGame || !mGame->GetCurrentStage()) {
+    if (!scene.stage) {
         return;
     }
 
     std::vector<glm::vec3> pathVertices;
     std::vector<std::pair<Platform*, glm::vec3>> endpointPreviews;
-    const float pathHeightOffset = mGame->GetUGCGridSize() * 0.18f;
-    for (Planet* planet : mGame->GetCurrentStage()->GetPlanets()) {
+    const float pathHeightOffset = scene.ugcGridSize * 0.18f;
+    for (Planet* planet : scene.stage->GetPlanets()) {
         if (!planet) {
             continue;
         }
@@ -588,8 +593,8 @@ void Renderer3D::DrawUGCMovingPlatformPaths() const
         }
     }
 
-    const std::optional<glm::vec3>& previewPathStart = mGame->GetUGCMovingPlatformPathStartPosition();
-    const std::optional<glm::vec3>& previewPathDestination = mGame->GetUGCMovingPlatformPathDestinationPosition();
+    const std::optional<glm::vec3>& previewPathStart = scene.movingPathStart;
+    const std::optional<glm::vec3>& previewPathDestination = scene.movingPathDestination;
     if (previewPathStart && previewPathDestination) {
         pathVertices.push_back(*previewPathStart + glm::vec3(0.0f, pathHeightOffset, 0.0f));
         pathVertices.push_back(*previewPathDestination + glm::vec3(0.0f, pathHeightOffset, 0.0f));
@@ -600,12 +605,8 @@ void Renderer3D::DrawUGCMovingPlatformPaths() const
     }
 
     GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    GLfloat previousLineWidth = 1.0f;
-    glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
     glDisable(GL_DEPTH_TEST);
-    glLineWidth(2.0f);
-    DrawAttackRangeVertices(pathVertices, GL_LINES, glm::vec4(0.2f, 0.9f, 1.0f, 0.9f));
-    glLineWidth(previousLineWidth);
+    DrawAttackRangeVertices(pathVertices, GL_LINES, glm::vec4(0.2f, 0.9f, 1.0f, 0.9f), 2.0f);
     if (wasDepthTestEnabled == GL_TRUE) {
         glEnable(GL_DEPTH_TEST);
     }
@@ -685,29 +686,30 @@ void Renderer3D::InitializeRenderModules()
 {
     mPlayerEffectRenderer = std::make_unique<PlayerEffectRenderer>(this);
     mDebugLabelRenderer = std::make_unique<DebugLabelRenderer>(this);
-    mNPCProximityMessageRenderer = std::make_unique<NPCProximityMessageRenderer>(this);
+    mNPCProximityMessageRenderer = std::make_unique<NPCProximityMessageRenderer>(this, mUIDefinitions);
     mParticleRenderer = std::make_unique<ParticleRenderer>();
     mSceneObjectRenderer = std::make_unique<SceneObjectRenderer>(
-        this, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get(), mNPCProximityMessageRenderer.get());
-    mRenderViewportController = std::make_unique<RenderViewportController>(mGame, this);
+        this, mPhysics, mPlayerEffectRenderer.get(), mDebugLabelRenderer.get(), mNPCProximityMessageRenderer.get());
+    mRenderViewportController = std::make_unique<RenderViewportController>(mCameras, mPerformance, this);
 }
 
-glm::vec3 Renderer3D::ResolveSunDirectionForCurrentStage() const
+glm::vec3 Renderer3D::ResolveSunDirection(int stageNumber) const
 {
     glm::vec3 sunDirection = mLightingSettings.sunDirection;
-    if (mGame && mGame->GetCurrentStageNum() == verticallyInvertedSunStageNumber) {
+    if (stageNumber == verticallyInvertedSunStageNumber) {
         sunDirection.y = -sunDirection.y;
     }
     return sunDirection;
 }
 
-void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const
+void Renderer3D::SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos,
+                             int stageNumber) const
 {
     glUniformMatrix4fv(mShader3D->GetLocView(), 1, GL_FALSE, glm::value_ptr(viewMat));
     glUniformMatrix4fv(mShader3D->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
 
     glUniform3f(mShader3D->GetLocCameraWorldPosition(), cameraPos.x, cameraPos.y, cameraPos.z);
-    glUniform3fv(mShader3D->GetLocSunDirection(), 1, glm::value_ptr(ResolveSunDirectionForCurrentStage()));
+    glUniform3fv(mShader3D->GetLocSunDirection(), 1, glm::value_ptr(ResolveSunDirection(stageNumber)));
     glUniform3fv(mShader3D->GetLocSunColor(), 1, glm::value_ptr(mLightingSettings.sunColor));
     glUniform1f(mShader3D->GetLocSunIntensity(), mLightingSettings.sunIntensity);
     glUniform3fv(mShader3D->GetLocEnvironmentColor(), 1, glm::value_ptr(mLightingSettings.environmentColor));
@@ -786,7 +788,7 @@ void Renderer3D::DrawInactiveActorPreview(Actor* actor, float opacity) const
 
 void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
 {
-    if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f || !mGame) {
+    if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f) {
         return;
     }
 
@@ -800,11 +802,7 @@ void Renderer3D::DrawBlobShadow(const CharacterActor* actor) const
     glm::vec3 surfaceNormal = up;
     float surfaceDistance = 0.0f;
     if (!actor->GetOnGround()) {
-        PhysicsSystem* physics = mGame->GetPhysicsSystem();
-        if (!physics) {
-            return;
-        }
-
+        const PhysicsSystem* physics = &mPhysics;
         constexpr float rayStartOffset = 0.15f;
         constexpr float maximumShadowDistance = 12.0f;
         const glm::vec3 rayFrom = actor->GetPos() + up * rayStartOffset;
@@ -1063,7 +1061,7 @@ GLuint Renderer3D::GetOrLoadTextureOverride(const std::string& assetRelativePath
 }
 
 void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode,
-                                         const glm::vec4& color) const
+                                         const glm::vec4& color, std::optional<float> lineWidth) const
 {
     if (!mShader3D || vertices.empty()) {
         return;
@@ -1074,6 +1072,16 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glUniform1i(mShader3D->GetLocUseTexture(), 0);
     glUniform4f(mShader3D->GetLocObjectColor(), color.r, color.g, color.b, color.a);
 
+    const bool overridesLineWidth =
+        lineWidth && (drawMode == GL_LINES || drawMode == GL_LINE_STRIP || drawMode == GL_LINE_LOOP);
+    GLfloat previousLineWidth = 1.0f;
+    if (overridesLineWidth) {
+        GLfloat widthRange[2]{};
+        glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
+        glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, widthRange);
+        // 幅の広い線を受け付けない実装でも、GLエラーを起こさず同じプリミティブを描く。
+        glLineWidth(std::clamp(*lineWidth, widthRange[0], widthRange[1]));
+    }
     StartTransparentDraw();
 
     glBindVertexArray(mAttackRangeVAO);
@@ -1087,24 +1095,21 @@ void Renderer3D::DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices,
     glBindVertexArray(0);
 
     EndTransparentDraw();
+    if (overridesLineWidth) {
+        glLineWidth(previousLineWidth);
+    }
 }
 
 glm::mat4 Renderer3D::CreateBillboard(const glm::mat4& viewMat, const Actor* actor, float upMargin, float rightMargin,
                                       float width, float height) const
 {
-    if (!mGame || !mGame->GetMathUtils()) {
-        return glm::mat4(1.0f);
-    }
-    return mGame->GetMathUtils()->CreateBillBoard(viewMat, actor, upMargin, rightMargin, width, height);
+    return mMath.CreateBillBoard(viewMat, actor, upMargin, rightMargin, width, height);
 }
 
 glm::mat4 Renderer3D::CreateBillboard(const glm::mat4& viewMat, const glm::vec3& centerPosition,
                                       const glm::vec3& upDirection, float width, float height) const
 {
-    if (!mGame || !mGame->GetMathUtils()) {
-        return glm::mat4(1.0f);
-    }
-    return mGame->GetMathUtils()->CreateBillBoard(viewMat, centerPosition, upDirection, width, height);
+    return mMath.CreateBillBoard(viewMat, centerPosition, upDirection, width, height);
 }
 
 glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier) const
@@ -1113,7 +1118,7 @@ glm::mat4 Renderer3D::CreateActorModelMatrix(Actor* actor, bool useOrient, float
     const glm::vec3 scale = actor->GetRenderScale() * scaleMultiplier;
 
     if (useOrient) {
-        return glm::translate(glm::mat4(1.0f), position) * mGame->GetMathUtils()->CreateOrient(actor) *
+        return glm::translate(glm::mat4(1.0f), position) * mMath.CreateOrient(actor) *
                glm::scale(glm::mat4(1.0f), scale);
     }
 

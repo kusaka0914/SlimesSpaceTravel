@@ -34,7 +34,7 @@
       "change": "Editorの所有・操作窓口と描画を分離し、既存Controllerへの依頼経路を限定する。",
       "tests": "保存・復元、UGC操作、再起動ヘルパーのビルドと統合テスト",
       "status": "editor_boundary_verified_game_api_pending",
-      "verification": "GameがEditorとImGuiを所有し、UIRendererの編集転送APIを削除。SessionはEditorへ直接依頼。gfxからeditorへのincludeはゼロ。Debugビルド・237件・Runtime4組（連続起動終了を含む）が成功。Gameの広い公開操作は次に整理する。"
+      "verification": "GameがEditorとImGuiを所有し、UIRendererの編集転送APIを削除。SessionはEditorへ直接依頼。gfxからeditorへのincludeはゼロ。Debugビルド・237件・Runtime4組（連続起動終了を含む）が成功。Gameの広い公開操作は次に整理する。 Input13件・TGS2件・描画性能記録2件、累計17件のGame転送APIを利用先へ移行して削除。残るAPIは利用先と合わせて監査継続。"
     },
     {
       "id": "ARCH-04",
@@ -66,8 +66,8 @@
       "risk": "GPU描画が広いGame APIに依存しており、描画に必要な状態が不明確。",
       "change": "取得項目と寿命を列挙し、小さな借用RenderContextで供給できる範囲を整理する。",
       "tests": "描画順・影・プレビュー・性能の前後確認",
-      "status": "render_modules_narrowed_scene_context_pending",
-      "verification": "Renderer基底の未使用Game参照を削除。ParticleRendererはspan<const Particle>、EnvironmentDecorationRendererは呼出中のみ借用するMeshLoadSystemへ変更しGameから独立。Gameの未使用TGS転送API2件も削除。Debug全ビルド・266単体・Runtime6組成功。Runtimeで実ステージと影、加算/半透明粒子の描画とGL状態復元・解放も検証。Renderer3D/SceneObject/Viewportの広いGame依存は継続整理。"
+      "status": "implemented_and_debug_verified",
+      "verification": "Renderer3D/SceneObject/Viewport/PlayerEffect/DebugLabel/NPCMessageからGameを除去。必須サービスは借用参照、現在の描画状態は同期callbackとspanで取得し一覧を複製しない。既存描画順・投影距離・光源・各数式を維持。Game破棄時もGL資源をWindowより先に解放。267単体・Runtime10組・Debug全ビルド成功。性能の前後計測と視覚的ゴールデン比較は未検証。"
     },
     {
       "id": "YAML-01",
@@ -143,6 +143,17 @@
       "tests": "TGSログに8バイト上限を課し、false・既存ログ保持・一時ファイルなしを確認。通常ログ・連番・1回だけ試行の既存テスト。",
       "status": "implemented_and_debug_verified",
       "verification": "追加テストは改修前266/267で失敗、改修後267/267とRuntime8組成功。Debug全ビルド成功。Windowsの強制書込失敗テストはPOSIX依存のため未実行。"
+    },
+    {
+      "id": "SAFE-05",
+      "priority": "P2",
+      "location": "src/gfx/Renderer3D.cpp:DrawAttackRangeVertices / DrawUGCMovingPlatformPaths; src/gfx/render3d/PlayerEffectRenderer.cpp:DrawPlayerCollisionShape",
+      "evidence": "MacのGL_ALIASED_LINE_WIDTH_RANGEは[1,1]。従来のglLineWidth(2)がGL_INVALID_VALUE(1281)となりUGC実描画の追加テストが失敗。",
+      "risk": "UGC経路・衝突形状の描画でGLエラーが残り、その後の検証を妨げる。",
+      "change": "明示された線幅だけを対応範囲へ補正し、描画後に以前の幅へ戻す。",
+      "tests": "UGC編集・影・本描画のGLエラーなしと幅の復元。1P/2P・繰り返し起動終了。",
+      "status": "implemented_and_debug_verified",
+      "verification": "追加UGCテストで再現後、267単体・Runtime10組成功。2px対応環境では要求値を維持。"
     }
   ],
   "notes": [

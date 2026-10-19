@@ -2,13 +2,16 @@
 
 #include "gfx/LightingSettings.h"
 #include "gfx/Renderer.h"
+#include "gfx/render3d/SceneRenderState.h"
 #include "text/RubyText.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
 #include <array>
+#include <functional>
 #include <glm/glm.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,7 +23,13 @@ class DebugLabelRenderer;
 class DirectionalShadowMap;
 class EnvironmentDecorationRenderer;
 class Enemy;
-class Game;
+class CameraSystem;
+class FramePerformanceTracker;
+class MathUtils;
+class MeshLoadSystem;
+class PhysicsSystem;
+class UILoadSystem;
+struct GLFWwindow;
 class NPCProximityMessageRenderer;
 class Player;
 class PlayerEffectRenderer;
@@ -40,10 +49,22 @@ enum class UGCSceneLayerRenderMode {
     ShowAllLayers,
 };
 
+// 参照先はRenderer3Dより長く有効に保つ。readSceneは必須で、描画中に有効な現在のシーンを同期取得する。
+struct Renderer3DDependencies {
+    GLFWwindow& window;
+    const MathUtils& math;
+    MeshLoadSystem& models;
+    const PhysicsSystem& physics;
+    const UILoadSystem& uiDefinitions;
+    CameraSystem& cameras;
+    FramePerformanceTracker& performance;
+    std::function<SceneRenderState()> readScene;
+};
+
 // 3D描画の窓口。Actor描画と材質設定を担い、視点分割・場面構成・各種演出を専用Rendererへ委譲する。
 class Renderer3D : public Renderer {
 public:
-    explicit Renderer3D(Game* game);
+    explicit Renderer3D(Renderer3DDependencies dependencies);
     ~Renderer3D() override;
 
     // シェーダー・基本テクスチャ・描画モジュールを生成する。コンストラクタから呼ばれる初期化処理。
@@ -63,7 +84,7 @@ public:
     void RenderShadowMap(const glm::vec3& focusPosition) const;
 
     // 現在ステージの装飾を準備して描画する。UGCモードでは描画しない。
-    void DrawEnvironmentDecorations() const;
+    void DrawEnvironmentDecorations(const SceneRenderState& scene) const;
 
     // 指定した視点でシーン・大気・パーティクルを描画する。描画先とviewportは呼び出し側で設定する。
     // viewportPlayerは視点固有の表示に使い、省略時は特定Playerへ限定しない。
@@ -72,7 +93,6 @@ public:
               UGCSceneLayerRenderMode ugcLayerRenderMode = UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer,
               int ugcEditLayer = 0, const Player* viewportPlayer = nullptr) const;
 
-    Game* GetGame() const { return mGame; }
     Shader3D* GetShader3D() const { return mShader3D; }
 
     // 未登録ならnullptr／0。取得した基本形状・テクスチャはRenderer側の管理対象。
@@ -118,13 +138,13 @@ public:
     // 直近のDrawSceneの視錐台に外接球が入るかを返す。視錐台未設定・nullptrの場合は除外せずtrue。
     bool IsActorInsideView(const Actor* actor) const;
 
-    template <class ActorType> void TryDrawActors(const std::vector<ActorType*>& actors, bool useOrient = true) const
+    template <class ActorRange> void TryDrawActors(const ActorRange& actors, bool useOrient = true) const
     {
         if (actors.empty()) {
             return;
         }
 
-        for (ActorType* actor : actors) {
+        for (auto* actor : actors) {
             if (!actor || !actor->GetIsActive() || actor->GetRenderOpacity() <= 0.001f) {
                 continue;
             }
@@ -134,9 +154,11 @@ public:
     }
 
     // ワールド座標の頂点列を指定プリミティブで半透明描画する。現在の3Dシェーダーと視点設定を使う。
-    void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color) const;
+    // 線描画時にlineWidthを指定すると対応範囲へ補正し、描画後に元の線幅へ戻す。単位はピクセル。
+    void DrawAttackRangeVertices(const std::vector<glm::vec3>& vertices, GLenum drawMode, const glm::vec4& color,
+                                 std::optional<float> lineWidth = std::nullopt) const;
 
-    // カメラへ向くモデル行列を返す。位置と寸法はワールド単位。Game・MathUtils未設定なら単位行列。
+    // カメラへ向くモデル行列を返す。位置と寸法はワールド単位。姿勢計算には借用中のMathUtilsを使う。
     glm::mat4 CreateBillboard(const glm::mat4& viewMat, const Actor* actor, float upMargin, float rightMargin,
                               float width, float height) const;
     glm::mat4 CreateBillboard(const glm::mat4& viewMat, const glm::vec3& centerPosition, const glm::vec3& upDirection,
@@ -146,22 +168,29 @@ private:
     void InitializeAttackRangeBuffer();
     void InitializeRenderModules();
     void UpdateViewFrustum(const glm::mat4& viewProjectionMatrix) const;
-    glm::vec3 ResolveSunDirectionForCurrentStage() const;
+    glm::vec3 ResolveSunDirection(int stageNumber) const;
 
-    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos) const;
+    void SetUniforms(const glm::mat4& viewMat, const glm::mat4& projMat, const glm::vec3& cameraPos,
+                     int stageNumber) const;
     glm::mat4 CreateActorModelMatrix(Actor* actor, bool useOrient, float scaleMultiplier = 1.0f) const;
     void DrawActorSelectionUnderlay(Actor* actor, bool useOrient) const;
     void DrawActorOutlineUnderlay(Actor* actor, bool useOrient, const glm::vec4& color, float scaleMultiplier) const;
     void DrawActorSelectionOverlay(Actor* actor, bool useOrient) const;
-    void DrawUGCMovingPlatformPaths() const;
+    void DrawUGCMovingPlatformPaths(const SceneRenderState& scene) const;
 
     bool UploadActorSkinningMatrices(const Actor* actor) const;
     void SetSkinningEnabled(bool isEnabled) const;
     void DrawActorToShadowMap(Actor* actor, bool useOrient, const glm::vec3& focusPosition) const;
 
 private:
-    // Gameが所有し、描画資源の解放が終わるまで有効な借用先。
-    Game* mGame;
+    GLFWwindow& mWindow;
+    const MathUtils& mMath;
+    MeshLoadSystem& mModelLoader;
+    const PhysicsSystem& mPhysics;
+    const UILoadSystem& mUIDefinitions;
+    CameraSystem& mCameras;
+    FramePerformanceTracker& mPerformance;
+    std::function<SceneRenderState()> mReadScene;
     std::unique_ptr<Shader3D> mShader3DUnique;
     Shader3D* mShader3D;
 

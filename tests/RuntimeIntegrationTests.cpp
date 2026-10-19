@@ -10,6 +10,8 @@
 #include "editor/stage/UGCPlatformCellService.h"
 #include "gfx/Renderer3D.h"
 #include "gfx/particle/ParticleRenderer.h"
+#include "gfx/performance/FramePerformanceTracker.h"
+#include "gfx/render3d/RenderViewportController.h"
 #include "system/CameraSystem.h"
 #include "system/InputSystem.h"
 #include "system/UserDataPaths.h"
@@ -43,17 +45,17 @@ struct IsolatedDirectory {
 struct Fixture {
     IsolatedDirectory directory;
     Game game;
-    Fixture()
+    explicit Fixture(bool areDebugToolsEnabled = false)
     {
         // GameWindowは可視性のヒントを上書きしない。通常起動の設定は変えずテストだけ非表示にする。
         ExpectTrue(glfwInit() == GLFW_TRUE, "GLFW display available");
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        if (!game.Initialize(false, true)) {
+        if (!game.Initialize(areDebugToolsEnabled, true)) {
             game.Shutdown();
             throw TestFailure("Game initialization failed");
         }
     }
-    ~Fixture() { game.Shutdown(); }
+    ~Fixture() = default;
 };
 
 StageSelectionScene SelectionScene(Game& game)
@@ -305,6 +307,64 @@ void InputSnapshotUsesOnlyProvidedDevices(Game& game)
     std::cout << "[PASS] Runtime.InputSnapshotAndVirtualController\n";
 }
 
+void TwoPlayerViewportAndEmptyTargetsRemainSafe(Game& game)
+{
+    game.TryCreatePlayer2();
+    ExpectTrue(game.GetIsPlayer2Joined(), "debug runtime joins second player");
+    ExpectTrue(game.GetPlayers().size() >= 2 && game.GetPlayers()[1]->GetIsActive(), "second player is active");
+    game.GetCameraSystem()->Update(1.0f / 60.0f);
+    game.GetRenderer3D()->Draw();
+    glFinish();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "two viewports render without GL errors");
+    ExpectEqual(2, game.GetFramePerformanceMetrics().renderedViewportCount, "both viewport times reach the tracker");
+    game.ReturnToSinglePlayer();
+    ExpectFalse(game.GetIsPlayer2Joined(), "return to single player");
+    game.GetRenderer3D()->Draw();
+    glFinish();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "single viewport works after two-player return");
+
+    FramePerformanceTracker performance;
+    RenderViewportController viewports(*game.GetCameraSystem(), performance, game.GetRenderer3D());
+    SceneRenderState scene;
+    scene.isPlayer2Joined = true;
+    viewports.DrawGameScreen(640, 0, scene);
+    viewports.DrawGameScreen(0, 480, scene);
+    ExpectEqual(0, performance.GetMetrics().renderedViewportCount,
+                "empty targets do not render or record invalid projections");
+    viewports.Shutdown();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "empty viewport targets leave no GL error");
+    std::cout << "[PASS] Runtime.TwoPlayerViewportAndEmptyTargets\n";
+}
+
+void UGCSceneUsesCurrentBorrowedPreviewState(Game& game)
+{
+    ExpectTrue(game.GetIsUGCMode(), "UGC editor is active");
+    game.SetUGCPlatformPlacementPreview(glm::vec3(8, 0, 0));
+    game.SetUGCMovingPlatformPathPreview(glm::vec3(0, 0, 0), glm::vec3(3, 0, 0));
+    const glm::vec3 cameraPosition(12, 20, 20);
+    const auto view = glm::lookAt(cameraPosition, glm::vec3(0), glm::vec3(0, 1, 0));
+    const auto projection = CalculateCameraProjection(CameraProjectionSettings{true, 20}, 4.0f / 3.0f, 60.0f);
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(),
+                "UGC editing leaves no GL error before rendering");
+    glViewport(0, 0, 640, 480);
+    game.GetRenderer3D()->RenderShadowMap(glm::vec3(0));
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "UGC shadow pass");
+    game.GetRenderer3D()->DrawScene(view, projection, cameraPosition, UGCSceneLayerRenderMode::HighlightEditingLayer,
+                                    game.GetUGCPreviewEditLayer());
+    glFinish();
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "UGC layer, ghost and moving path render");
+    GLfloat originalWidth = 0.0f;
+    glGetFloatv(GL_LINE_WIDTH, &originalWidth);
+    game.GetRenderer3D()->DrawAttackRangeVertices({glm::vec3(0), glm::vec3(1, 0, 0)}, GL_LINES, glm::vec4(1), 2.0f);
+    GLfloat restoredWidth = 0.0f;
+    glGetFloatv(GL_LINE_WIDTH, &restoredWidth);
+    ExpectNear(originalWidth, restoredWidth, 0.0f, "explicit line width is restored after drawing");
+    ExpectEqual(static_cast<unsigned int>(GL_NO_ERROR), glGetError(), "line width respects renderer capabilities");
+    game.SetUGCPlatformPlacementPreview(std::nullopt);
+    game.SetUGCMovingPlatformPathPreview(std::nullopt, std::nullopt);
+    std::cout << "[PASS] Runtime.UGCSceneAndPlacementPreview\n";
+}
+
 void CamerasUseExplicitContextWithoutGame()
 {
     DebugCamera debug;
@@ -419,6 +479,7 @@ int main()
             CamerasUseExplicitContextWithoutGame();
             CameraControlsAreIndependentAndStopDuringEditorCapture(game);
             UGCUsesTheSameTransaction(game, context, commands);
+            UGCSceneUsesCurrentBorrowedPreviewState(game);
             InputSnapshotUsesOnlyProvidedDevices(game);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
             game.Shutdown();
@@ -426,11 +487,11 @@ int main()
             game.Shutdown();
         }
         {
-            Fixture restarted;
+            Fixture restarted(true);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "fresh Game initializes after previous shutdown");
-            restarted.game.Shutdown();
-            ExpectTrue(ImGui::GetCurrentContext() == nullptr, "second Editor context also released");
+            TwoPlayerViewportAndEmptyTargetsRemainSafe(restarted.game);
         }
+        ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Game destruction releases the second Editor context");
         std::cout << "[PASS] Runtime.EditorLifetimeAndRepeatedStartup\n";
         std::cout << "Runtime integration tests passed\n";
         return 0;

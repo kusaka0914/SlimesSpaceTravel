@@ -28,6 +28,7 @@ class ActorLoadSystem;
 class CameraSystem;
 class MathUtils;
 class Renderer3D;
+struct SceneRenderState;
 class UIRenderer;
 class AudioSystem;
 class SceneSystem;
@@ -322,12 +323,6 @@ public:
     float GetLastDeltaTime() const { return mLastDeltaTime; }
     const FramePerformanceMetrics& GetFramePerformanceMetrics() const;
 
-    // 指定ビューポートのCPU描画時間をミリ秒単位で計測情報へ記録する。
-    void RecordViewportRenderDurationMilliseconds(int viewportIndex, float durationMilliseconds);
-
-    // 指定ビューポートのGPU描画時間をミリ秒単位で計測情報へ記録する。
-    void RecordViewportGpuDurationMilliseconds(int viewportIndex, float durationMilliseconds);
-
     bool IsEditorKeyboardInputCaptured() const;
     bool GetIsFreeCameraMode() const override { return mIsFreeCameraMode; }
     bool GetIsPauseMenuOpen() const;
@@ -395,6 +390,7 @@ private:
     void ProcessInput();
     void ProcessActorsInput();
     void UpdateGame();
+    SceneRenderState CreateSceneRenderState() const;
     void UpdateActors(float deltaTime);
 
     void ProcessPendingUGCClearCompletion();

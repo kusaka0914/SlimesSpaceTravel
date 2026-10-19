@@ -3,7 +3,6 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -109,8 +108,9 @@ PlayerEffectRenderer::PlayerEffectRenderer(const Renderer3D* renderer)
 {
 }
 
-void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, const std::vector<Player*>& players,
-                                       bool isDebugEditorShowing, const PhysicsSystem* physicsSystem) const
+void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, std::span<Player* const> players,
+                                       bool isDebugEditorShowing, const PhysicsSystem* physicsSystem,
+                                       const SplitGuardRenderState& splitGuard) const
 {
     if (!mRenderer) {
         return;
@@ -124,12 +124,9 @@ void PlayerEffectRenderer::DrawPlayers(const glm::mat4& viewMat, const std::vect
     DrawPlayerCollisionShape(players[0], isDebugEditorShowing, physicsSystem);
     DrawTiredEffect(viewMat, players[0]);
 
-    const Game* game = mRenderer->GetGame();
-    const bool shouldDrawSplitGuard =
-        game && !game->GetIsGameUIHidden() && game->GetIsPlayerSplit() && !game->GetIsPlayer2Joined();
-    const int splitGuardCount = shouldDrawSplitGuard ? game->GetPlayerSplitGuardCount() : 0;
-    const int maximumSplitGuardCount = shouldDrawSplitGuard ? game->GetMaximumPlayerSplitGuardCount() : 0;
-    const Player* controlledPlayer = shouldDrawSplitGuard ? game->GetControlledPlayer() : nullptr;
+    const int splitGuardCount = splitGuard.count;
+    const int maximumSplitGuardCount = splitGuard.maximumCount;
+    const Player* controlledPlayer = splitGuard.controlledPlayer;
     if (players[0] != controlledPlayer) {
         DrawPlayerSplitGuard(viewMat, players[0], splitGuardCount, maximumSplitGuardCount, physicsSystem);
     }
@@ -332,21 +329,15 @@ void PlayerEffectRenderer::DrawPlayerCollisionShape(const Player* player, bool i
     }
 
     const GLboolean wasDepthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
-    GLfloat previousLineWidth = 1.0f;
-    glGetFloatv(GL_LINE_WIDTH, &previousLineWidth);
-
     glDisable(GL_DEPTH_TEST);
-    glLineWidth(2.0f);
-
-    mRenderer->DrawAttackRangeVertices(wireframeVertices, GL_LINES, collisionColor);
-
-    glLineWidth(previousLineWidth);
+    mRenderer->DrawAttackRangeVertices(wireframeVertices, GL_LINES, collisionColor, 2.0f);
     if (wasDepthTestEnabled == GL_TRUE) {
         glEnable(GL_DEPTH_TEST);
     }
 }
 
-void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat, const Player* viewportPlayer) const
+void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewMat, const Player* viewportPlayer,
+                                            bool showsStatusUI) const
 {
     if (!mRenderer || !enemy || !enemy->GetIsActive() || !mRenderer->IsActorInsideView(enemy)) {
         return;
@@ -355,8 +346,7 @@ void PlayerEffectRenderer::DrawEnemyEffects(Enemy* enemy, const glm::mat4& viewM
     const Player* controlledPlayer = viewportPlayer;
     const Planet* playerPlanet = controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
     const bool isEnemyOnPlayerPlanet = playerPlanet && enemy->GetCurrentPlanet() == playerPlanet;
-    const bool shouldDrawEnemyStatusUI = !mRenderer->GetGame()->GetIsGameUIHidden();
-    if (isEnemyOnPlayerPlanet && shouldDrawEnemyStatusUI) {
+    if (isEnemyOnPlayerPlanet && showsStatusUI) {
         DrawEnemyGuard(viewMat, enemy);
         DrawEnemyHp(viewMat, enemy);
     }

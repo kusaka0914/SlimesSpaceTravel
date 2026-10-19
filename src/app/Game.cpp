@@ -72,7 +72,10 @@ std::string BuildStageIntroCinematicId(int stageNum)
 
 Game::Game() = default;
 
-Game::~Game() = default;
+Game::~Game()
+{
+    Shutdown();
+}
 
 bool Game::Initialize(bool areDebugToolsEnabled, bool shouldStartInDebugStage, const std::string& editorSessionPath,
                       const std::string& editorRestartErrorLogPath)
@@ -150,11 +153,6 @@ bool Game::CreateGameSystems()
     }
     mDebugEditorSessionController =
         std::make_unique<DebugEditorSessionController>(mIsDebugMode, *GetWindow(), *mEditor);
-    mRenderer3D = std::make_unique<Renderer3D>(this);
-    if (!mRenderer3D->IsInitialized()) {
-        std::cerr << "Failed to initialize the 3D renderer.\n";
-        return false;
-    }
     mSceneSystem = std::make_unique<SceneSystem>(this, *mUIRenderer->GetUILoadSystem());
     mMathUtils = std::make_unique<MathUtils>();
     mInputSystem = std::make_unique<InputSystem>();
@@ -236,12 +234,25 @@ bool Game::CreateGameSystems()
     mGameInputController =
         std::make_unique<GameInputController>(*this, *mInputSystem, *mEditor, *mSessionController, *mUGCModeController);
 
+    mParticleSystem = std::make_unique<ParticleSystem>();
+    mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
+    mRenderer3D = std::make_unique<Renderer3D>(Renderer3DDependencies{
+        .window = *GetWindow(),
+        .math = *mMathUtils,
+        .models = *mMeshLoadSystem,
+        .physics = *mPhysicsSystem,
+        .uiDefinitions = *mUIRenderer->GetUILoadSystem(),
+        .cameras = *mCameraSystem,
+        .performance = mFramePerformanceTracker,
+        .readScene = [this]() { return CreateSceneRenderState(); },
+    });
+    if (!mRenderer3D->IsInitialized()) {
+        std::cerr << "Failed to initialize the 3D renderer.\n";
+        return false;
+    }
     mFrameRenderer =
         std::make_unique<GameFrameRenderer>(*GetWindow(), *mRenderer3D, *mUIRenderer, *mEditor, *mCameraSystem,
                                             *mUGCPreviewController, mFramePerformanceTracker);
-
-    mParticleSystem = std::make_unique<ParticleSystem>();
-    mParticleSystem->LoadDefinitions("../assets/data/effects/particles.yaml");
     return true;
 }
 
@@ -313,6 +324,42 @@ void Game::ReloadUIData()
     }
 
     mUIRenderer->GetUILoadSystem()->Initialize();
+}
+
+SceneRenderState Game::CreateSceneRenderState() const
+{
+    SceneRenderState scene{
+        .stage = mWorld->GetCurrentStage(),
+        .stageNumber = mWorld->GetCurrentStageNum(),
+        .players = mWorld->GetPlayers(),
+        .runtimeJewels = GetRuntimeJewelItems(),
+        .particles = mParticleSystem->GetParticles(),
+        .controlledPlayer = GetControlledPlayer(),
+        .isTitle = mSceneSystem->IsTitle(),
+        .isBattleStyleSelection = mSceneSystem->IsBattleStyleSelection(),
+        .hidesPlayersForCinematic = mSequenceSystem->IsCinematicChainPlaying(),
+        .isUGCMode = GetIsUGCMode(),
+        .isDebugEditorShowing = mIsDebugEditorShowing,
+        .isDebugMode = mIsDebugMode,
+        .isGameUIHidden = mIsGameUIHidden,
+        .isPlayer2Joined = GetIsPlayer2Joined(),
+        .projection = {GetIsUGCMode() && GetIsUGCOrthographicView(), GetUGCOrthographicHalfHeight()},
+    };
+    if (!scene.isGameUIHidden && GetIsPlayerSplit() && !scene.isPlayer2Joined) {
+        scene.splitGuard = {scene.controlledPlayer, GetPlayerSplitGuardCount(), GetMaximumPlayerSplitGuardCount()};
+    }
+    if (!TryResolvePlayerMergeGuide(scene.mergeGuideTarget, scene.mergeGuideRadiusWorldUnits)) {
+        scene.mergeGuideTarget = nullptr;
+        scene.mergeGuideRadiusWorldUnits = 0.0f;
+    }
+    scene.ugcEditLayer = mUGCPreviewController->GetEditLayer();
+    scene.ugcGridSize = mUGCPreviewController->GetGridSize();
+    scene.placementPosition = mUGCPreviewController->GetPlatformPlacementPosition();
+    scene.placementModel = mUGCPreviewController->GetPlacementModel();
+    scene.placementModelPositions = mUGCPreviewController->GetPlacementModelPositions();
+    scene.movingPathStart = mUGCPreviewController->GetMovingPlatformPathStart();
+    scene.movingPathDestination = mUGCPreviewController->GetMovingPlatformPathDestination();
+    return scene;
 }
 
 void Game::RunLoop()
@@ -579,16 +626,6 @@ void Game::ProcessActorsInput()
     }
 
     mWorld->ProcessActorsInput();
-}
-
-void Game::RecordViewportRenderDurationMilliseconds(int viewportIndex, float durationMilliseconds)
-{
-    mFramePerformanceTracker.RecordViewportCpuDuration(viewportIndex, durationMilliseconds);
-}
-
-void Game::RecordViewportGpuDurationMilliseconds(int viewportIndex, float durationMilliseconds)
-{
-    mFramePerformanceTracker.RecordViewportGpuDuration(viewportIndex, durationMilliseconds);
 }
 
 const FramePerformanceMetrics& Game::GetFramePerformanceMetrics() const
