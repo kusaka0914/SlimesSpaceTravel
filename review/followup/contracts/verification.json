@@ -1,0 +1,13 @@
+{
+  "restart": "6 CLI tests. Before: 11 subcase failures; after: all pass. PID range/full consumption/duplicates, missing executable/cwd, valid args and fallback restart.",
+  "startup": "Actual production Main linked with isolated save paths and hidden-window wrapper. Before: failure exits 0; after: exits 1.",
+  "progress": "Old state-change behavior is verified before changing API. New result separates changed from save status; tests cover success/failure/no-op/disabled/manual retry. This is an API-result improvement, not a prior failing assertion against the documented old bool contract.",
+  "test_counts": {
+    "unit": 275,
+    "restart": 6,
+    "scanner": 4,
+    "runtime_groups": 28,
+    "startup": 1
+  },
+  "platform": "macOS; Windows helper path has not been executed locally"
+}

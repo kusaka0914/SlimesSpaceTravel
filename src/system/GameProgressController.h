@@ -25,35 +25,35 @@ public:
 
     bool HasSelectedPlayerControlStyle() const;
     PlayerControlStyle GetSelectedPlayerControlStyle() const;
-    void SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle);
+    ProgressUpdateResult SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle);
 
     bool IsStageCleared(int stageNumber) const;
 
     // 進行を更新して保存を試みる。状態が変わった場合はActorの表示と物理ワールドも再構築する。
-    void SetStageCleared(int stageNumber, bool isCleared);
+    ProgressUpdateResult SetStageCleared(int stageNumber, bool isCleared);
     bool AreAllMainStagesCleared() const;
 
     bool HasCompletedTutorial(const std::string& tutorialId) const;
-    void MarkTutorialCompleted(const std::string& tutorialId);
+    ProgressUpdateResult MarkTutorialCompleted(const std::string& tutorialId);
     bool HasSeenBaseIntro() const;
-    void MarkBaseIntroSeen();
+    ProgressUpdateResult MarkBaseIntroSeen();
     bool HasCompletedEndingRoll() const;
-    void MarkEndingRollCompleted();
+    ProgressUpdateResult MarkEndingRollCompleted();
 
     bool HasShownNPCConversation(const NPC* npc) const;
-    void MarkNPCConversationShown(const NPC* npc);
+    ProgressUpdateResult MarkNPCConversationShown(const NPC* npc);
     bool HasCompletedNPCOpeningTrigger(const NPC* npc, std::size_t talkPageIndex) const;
-    void MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
+    ProgressUpdateResult MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
     bool HasCompletedNPCEndingTrigger(const NPC* npc, std::size_t talkPageIndex) const;
-    void MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
+    ProgressUpdateResult MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
 
     // ステージYAMLとNPCの配置情報から進行IDを生成する。NPCが未配置・nullptrなら空文字列を返す。
     std::string BuildNPCConversationId(const NPC* npc) const;
 
     bool HasProgressFlag(const std::string& progressId) const;
 
-    // 空でない進行IDを既読にして保存を試みる。保存失敗は呼び出し側へ通知しない。
-    void MarkProgressFlag(const std::string& progressId);
+    // 空でない進行IDを既読にし、変更と保存の結果を返す。失敗時もメモリ上の進行は維持する。
+    ProgressUpdateResult MarkProgressFlag(const std::string& progressId);
 
 private:
     std::string BuildNPCOpeningTriggerId(const NPC* npc, std::size_t talkPageIndex) const;

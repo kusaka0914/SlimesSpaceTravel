@@ -52,7 +52,9 @@ option(GAME_BUILD_RUNTIME_TESTS "Build integration tests requiring an OpenGL dis
 
 add_executable(editor_restart_helper
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/editor_restart_helper/Main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ProcessLaunch.cpp
 )
+target_include_directories(editor_restart_helper PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (MSVC)
     target_compile_options(game_runtime PUBLIC /utf-8 /MP /FS)
@@ -210,6 +212,14 @@ if (BUILD_TESTING)
 
     find_package(Python3 QUIET COMPONENTS Interpreter)
     if (Python3_Interpreter_FOUND)
+        add_executable(restart_launch_probe tests/RestartLaunchProbe.cpp)
+        add_test(NAME restart_helper_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/RestartHelperTests.py
+                --helper $<TARGET_FILE:editor_restart_helper>
+                --probe $<TARGET_FILE:restart_launch_probe>
+                --cmake ${CMAKE_COMMAND}
+        )
+        set_tests_properties(restart_helper_tests PROPERTIES TIMEOUT 60)
         add_test(NAME architecture_audit_tests
             COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests -p ArchitectureAuditTests.py
         )
@@ -372,4 +382,18 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
         RUN_SERIAL TRUE
     )
     add_dependencies(game_runtime_tests game)
+    if (Python3_Interpreter_FOUND)
+        add_executable(game_startup_probe
+            src/app/Main.cpp
+            tests/StartupEntryProbe.cpp
+            tests/IsolatedUserDataPaths.cpp
+        )
+        target_link_libraries(game_startup_probe PRIVATE game_runtime)
+        target_compile_definitions(game_startup_probe PRIVATE main=RunProductionMain)
+        add_test(NAME startup_exit_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/StartupExitTests.py
+                --probe $<TARGET_FILE:game_startup_probe>
+        )
+        set_tests_properties(startup_exit_tests PROPERTIES TIMEOUT 30 LABELS "integration;display" RUN_SERIAL TRUE)
+    endif()
 endif()

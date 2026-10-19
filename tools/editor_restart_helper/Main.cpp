@@ -1,13 +1,20 @@
+#include "utils/ProcessLaunch.h"
+
+#include <algorithm>
+#include <array>
+#include <charconv>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
-#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <optional>
+#include <limits>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -30,50 +37,51 @@ struct RestartArguments {
     std::filesystem::path buildLog;
 };
 
-std::optional<std::string> FindArgument(const std::vector<std::string>& arguments, const std::string& argumentName)
-{
-    for (std::size_t argumentIndex = 0; argumentIndex + 1 < arguments.size(); ++argumentIndex) {
-        if (arguments[argumentIndex] == argumentName) {
-            return arguments[argumentIndex + 1];
-        }
-    }
-
-    return std::nullopt;
-}
-
 bool ParseArguments(int argumentCount, char* argumentValues[], RestartArguments& outArguments,
                     std::string& outErrorMessage)
 {
-    std::vector<std::string> arguments;
-    arguments.reserve(static_cast<std::size_t>(argumentCount));
-    for (int argumentIndex = 0; argumentIndex < argumentCount; ++argumentIndex) {
-        arguments.emplace_back(argumentValues[argumentIndex]);
+    const std::array<std::string_view, 6> names{"--parent-pid",      "--build-directory", "--configuration",
+                                                "--game-executable", "--session-file",    "--build-log"};
+    std::array<std::string_view, 6> values{};
+    std::array<bool, 6> found{};
+    for (int index = 1; index < argumentCount; index += 2) {
+        const auto name = std::find(names.begin(), names.end(), argumentValues[index]);
+        if (index + 1 >= argumentCount || name == names.end()) {
+            outErrorMessage = "ビルド再起動用プログラムの引数が不正です。";
+            return false;
+        }
+        const auto slot = static_cast<std::size_t>(name - names.begin());
+        if (found[slot]) {
+            outErrorMessage = "ビルド再起動用プログラムの引数が重複しています。";
+            return false;
+        }
+        found[slot] = true;
+        values[slot] = argumentValues[index + 1];
     }
-
-    const std::optional<std::string> parentProcessId = FindArgument(arguments, "--parent-pid");
-    const std::optional<std::string> buildDirectory = FindArgument(arguments, "--build-directory");
-    const std::optional<std::string> configuration = FindArgument(arguments, "--configuration");
-    const std::optional<std::string> gameExecutable = FindArgument(arguments, "--game-executable");
-    const std::optional<std::string> sessionFile = FindArgument(arguments, "--session-file");
-    const std::optional<std::string> buildLog = FindArgument(arguments, "--build-log");
-
-    if (!parentProcessId || !buildDirectory || !configuration || !gameExecutable || !sessionFile || !buildLog) {
+    if (std::find(found.begin(), found.end(), false) != found.end() || values[1].empty() || values[3].empty() ||
+        values[4].empty() || values[5].empty()) {
         outErrorMessage = "ビルド再起動用プログラムに必要な引数がありません。";
         return false;
     }
 
-    try {
-        outArguments.parentProcessId = std::stoul(*parentProcessId);
-    } catch (const std::exception&) {
+    unsigned long processId = 0;
+    const auto result = std::from_chars(values[0].data(), values[0].data() + values[0].size(), processId);
+#ifdef _WIN32
+    constexpr auto maximumProcessId = (std::numeric_limits<DWORD>::max)();
+#else
+    constexpr auto maximumProcessId = (std::numeric_limits<pid_t>::max)();
+#endif
+    if (result.ec != std::errc{} || result.ptr != values[0].data() + values[0].size() || processId == 0 ||
+        processId > static_cast<unsigned long>(maximumProcessId)) {
         outErrorMessage = "呼び出し元のプロセスIDが不正です。";
         return false;
     }
-
-    outArguments.buildDirectory = *buildDirectory;
-    outArguments.configuration = *configuration;
-    outArguments.gameExecutable = *gameExecutable;
-    outArguments.sessionFile = *sessionFile;
-    outArguments.buildLog = *buildLog;
+    outArguments.parentProcessId = processId;
+    outArguments.buildDirectory = values[1];
+    outArguments.configuration = values[2];
+    outArguments.gameExecutable = values[3];
+    outArguments.sessionFile = values[4];
+    outArguments.buildLog = values[5];
     return true;
 }
 
@@ -142,7 +150,7 @@ int RunBuild(const RestartArguments& arguments)
     return _wsystem(buildCommand.c_str());
 }
 
-bool LaunchGame(const RestartArguments& arguments, bool didBuildFail)
+bool LaunchGame(const RestartArguments& arguments, bool didBuildFail, std::string& outError)
 {
     std::wstring commandLine = QuoteWindowsArgument(arguments.gameExecutable.wstring());
     commandLine += L" --debug --restore-editor-session ";
@@ -160,6 +168,7 @@ bool LaunchGame(const RestartArguments& arguments, bool didBuildFail)
         CreateProcessW(arguments.gameExecutable.c_str(), mutableCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr,
                        arguments.buildDirectory.c_str(), &startupInfo, &processInformation);
     if (!wasGameLaunched) {
+        outError = std::error_code(static_cast<int>(GetLastError()), std::system_category()).message();
         return false;
     }
 
@@ -193,30 +202,15 @@ int RunBuild(const RestartArguments& arguments)
     return std::system(buildCommand.c_str());
 }
 
-bool LaunchGame(const RestartArguments& arguments, bool didBuildFail)
+bool LaunchGame(const RestartArguments& arguments, bool didBuildFail, std::string& outError)
 {
-    const pid_t gameProcessId = fork();
-    if (gameProcessId < 0) {
-        return false;
-    }
-    if (gameProcessId != 0) {
-        return true;
-    }
-
-    // 再起動したゲームを親の終了後も独立して動かし、相対パスの基準をビルド先へ戻す。
-    setsid();
-    chdir(arguments.buildDirectory.c_str());
+    std::vector<std::string> gameArguments{"--debug", "--restore-editor-session", arguments.sessionFile.string()};
     if (didBuildFail) {
-        execl(arguments.gameExecutable.c_str(), arguments.gameExecutable.c_str(), "--debug", "--restore-editor-session",
-              arguments.sessionFile.c_str(), "--editor-restart-error-log", arguments.buildLog.c_str(),
-              static_cast<char*>(nullptr));
-    } else {
-        execl(arguments.gameExecutable.c_str(), arguments.gameExecutable.c_str(), "--debug", "--restore-editor-session",
-              arguments.sessionFile.c_str(), static_cast<char*>(nullptr));
+        gameArguments.emplace_back("--editor-restart-error-log");
+        gameArguments.push_back(arguments.buildLog.string());
     }
-
-    // exec失敗時は、fork元から引き継いだ終了処理や出力バッファを実行せずに終了する。
-    _exit(127);
+    return ProcessLaunch::StartDetached(arguments.gameExecutable, arguments.buildDirectory, std::move(gameArguments),
+                                        outError);
 }
 #endif
 } // namespace
@@ -236,9 +230,10 @@ int main(int argumentCount, char* argumentValues[])
     const bool didBuildFail = buildExitCode != 0;
 
     // ビルド失敗時も既存の実行ファイルを起動し、エディターへ失敗ログを渡す。
-    if (!LaunchGame(arguments, didBuildFail)) {
+    std::string launchError;
+    if (!LaunchGame(arguments, didBuildFail, launchError)) {
         std::ofstream launchErrorLog(arguments.buildLog, std::ios::app);
-        launchErrorLog << "\nFailed to relaunch the game after the build.\n";
+        launchErrorLog << "\nFailed to relaunch the game after the build: " << launchError << '\n';
         return 3;
     }
 

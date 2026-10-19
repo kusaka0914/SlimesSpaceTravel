@@ -1,4 +1,5 @@
 #include "editor/session/EditorBuildRestartService.h"
+#include "utils/ProcessLaunch.h"
 
 #include <array>
 #include <system_error>
@@ -162,21 +163,12 @@ bool EditorBuildRestartService::LaunchBuildAndRestartHelper(const std::filesyste
     CloseHandle(processInformation.hThread);
     CloseHandle(processInformation.hProcess);
 #else
-    const pid_t helperProcessId = fork();
-    if (helperProcessId < 0) {
-        outErrorMessage = "ビルド再起動用プロセスを開始できませんでした。";
-        return false;
-    }
-
-    if (helperProcessId == 0) {
-        const std::string parentProcessId = std::to_string(getppid());
-        execl(runtimePaths.helperExecutable.c_str(), runtimePaths.helperExecutable.c_str(), "--parent-pid",
-              parentProcessId.c_str(), "--build-directory", runtimePaths.buildDirectory.c_str(), "--configuration",
-              runtimePaths.configuration.c_str(), "--game-executable", runtimePaths.gameExecutable.c_str(),
-              "--session-file", sessionFilePath.c_str(), "--build-log", runtimePaths.buildLog.c_str(),
-              static_cast<char*>(nullptr));
-        _exit(127);
-    }
+    return ProcessLaunch::StartDetached(
+        runtimePaths.helperExecutable, runtimePaths.buildDirectory,
+        {"--parent-pid", std::to_string(getpid()), "--build-directory", runtimePaths.buildDirectory.string(),
+         "--configuration", runtimePaths.configuration, "--game-executable", runtimePaths.gameExecutable.string(),
+         "--session-file", sessionFilePath.string(), "--build-log", runtimePaths.buildLog.string()},
+        outErrorMessage);
 #endif
 
     return true;

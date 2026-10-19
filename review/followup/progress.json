@@ -6,7 +6,7 @@
     "警告/静的解析/CI/カバレッジ/固定条件ベンチマーク",
     "最終監査と既存READMEからの検証案内"
   ],
-  "status": "runtime_boundary_fixes_verified",
+  "status": "seven_priority_fixes_verified_debug",
   "constraints": [
     "既存ゲーム仕様・データ形式を維持",
     "新しいMarkdown報告書を作らない",
@@ -15,11 +15,12 @@
     "未実行のCI/実機/性能を成功扱いしない"
   ],
   "completed": [
-    "ビルボード/SDL機器交換/Texture GL/STB/Editorフォームの先行5失敗と修正後Runtime28組成功"
+    "ビルボード/SDL機器交換/Texture GL/STB/Editorフォームの先行5失敗と修正後Runtime28組成功",
+    "再起動の厳密なPID/exec通知、保存結果型、Main終了コードを実装。全275単体・helper6・監査4・Runtime28組・起動失敗1成功。"
   ],
   "next": [
-    "Restart helperの厳密な引数/exec通知",
-    "進行保存結果/起動終了コード",
-    "設計境界と自動品質検証"
+    "設計境界監査と必要な修正",
+    "警告/静的解析/CI/カバレッジ/固定条件ベンチマーク",
+    "最終構成検証と既存READMEの案内整理"
   ]
 }

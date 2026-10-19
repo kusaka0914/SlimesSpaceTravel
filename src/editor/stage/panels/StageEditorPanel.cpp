@@ -1,19 +1,19 @@
 #include "editor/stage/panels/StageEditorPanel.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "editor/core/DebugEditorLayout.h"
-#include "editor/stage/panels/StageAddActorPanel.h"
-#include "editor/stage/panels/StageDeleteActorPanel.h"
-#include "editor/stage/panels/StagePlacementPanel.h"
-#include "editor/stage/panels/StagePlanetPanel.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/StageActorYamlWriter.h"
 #include "editor/stage/StageEditCommandController.h"
 #include "editor/stage/StageSelectionController.h"
+#include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/stage/panels/StageDeleteActorPanel.h"
+#include "editor/stage/panels/StagePlacementPanel.h"
+#include "editor/stage/panels/StagePlanetPanel.h"
+#include "world/Stage.h"
 
 #include "imgui.h"
 
@@ -400,13 +400,21 @@ void StageEditorPanel::DrawStageClearProgressEditor()
         const std::string checkboxLabel = "ステージ " + std::to_string(stageNum) +
                                           " をクリア済みにする##stageClearProgress" + std::to_string(stageNum);
         if (ImGui::Checkbox(checkboxLabel.c_str(), &isCleared)) {
-            mContext.game->SetStageCleared(stageNum, isCleared);
+            const auto result = mContext.game->SetStageCleared(stageNum, isCleared);
+            if (result.saveStatus == ProgressSaveStatus::Failed) {
+                mProgressSaveError = "進行は画面へ反映しましたが、保存できませんでした。";
+            } else if (result.saveStatus != ProgressSaveStatus::NotAttempted) {
+                mProgressSaveError.clear();
+            }
         }
 
         if (stageNum == currentStageNum) {
             ImGui::SameLine();
             ImGui::TextDisabled("（現在編集中）");
         }
+    }
+    if (!mProgressSaveError.empty()) {
+        ImGui::TextWrapped("%s", mProgressSaveError.c_str());
     }
 }
 

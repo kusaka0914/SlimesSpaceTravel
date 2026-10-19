@@ -1,0 +1,162 @@
+Test project /Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build
+    Start 2: restart_helper_tests
+1/1 Test #2: restart_helper_tests .............***Failed    5.47 sec
+.FFFFFFFFFFF.
+======================================================================
+FAIL: test_missing_executable_is_reported_by_parent (__main__.RestartHelperTests.test_missing_executable_is_reported_by_parent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 81, in test_missing_executable_is_reported_by_parent
+    self.assertEqual(3, result.returncode)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 3 != 0
+
+======================================================================
+FAIL: test_missing_working_directory_is_reported_by_parent (__main__.RestartHelperTests.test_missing_working_directory_is_reported_by_parent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 86, in test_missing_working_directory_is_reported_by_parent
+    self.assertEqual(3, result.returncode)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 3 != 1
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='0')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 68, in test_rejects_invalid_pid_without_waiting_or_launching
+    result = self.run_helper(self.arguments(pid=pid), timeout=2)
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 51, in run_helper
+    return subprocess.run([HELPER, *arguments], cwd=self.root, capture_output=True, timeout=timeout)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2154, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1268, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/editor_restart_helper', '--parent-pid', '0', '--build-directory', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build with 'quotes'", '--configuration', 'Debug', '--game-executable', '/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/restart_launch_probe', '--session-file', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/session 'quoted'.yaml", '--build-log', '/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build log.txt']' timed out after 2 seconds
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 70, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.fail(f"invalid PID {pid!r} reached the parent-wait loop")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: invalid PID '0' reached the parent-wait loop
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='-1')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 68, in test_rejects_invalid_pid_without_waiting_or_launching
+    result = self.run_helper(self.arguments(pid=pid), timeout=2)
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 51, in run_helper
+    return subprocess.run([HELPER, *arguments], cwd=self.root, capture_output=True, timeout=timeout)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 557, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1221, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 2154, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1268, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/editor_restart_helper', '--parent-pid', '-1', '--build-directory', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build with 'quotes'", '--configuration', 'Debug', '--game-executable', '/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/restart_launch_probe', '--session-file', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/session 'quoted'.yaml", '--build-log', '/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build log.txt']' timed out after 2 seconds
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 70, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.fail(f"invalid PID {pid!r} reached the parent-wait loop")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: invalid PID '-1' reached the parent-wait loop
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='+12')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 71, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.assertEqual(2, result.returncode, result.stderr.decode(errors="replace"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : 
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='12tail')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 71, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.assertEqual(2, result.returncode, result.stderr.decode(errors="replace"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : 
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid=' 12')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 71, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.assertEqual(2, result.returncode, result.stderr.decode(errors="replace"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : 
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='12 ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 71, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.assertEqual(2, result.returncode, result.stderr.decode(errors="replace"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : 
+
+======================================================================
+FAIL: test_rejects_invalid_pid_without_waiting_or_launching (__main__.RestartHelperTests.test_rejects_invalid_pid_without_waiting_or_launching) (pid='2147483648')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 71, in test_rejects_invalid_pid_without_waiting_or_launching
+    self.assertEqual(2, result.returncode, result.stderr.decode(errors="replace"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : 
+
+======================================================================
+FAIL: test_rejects_missing_unknown_and_duplicate_options (__main__.RestartHelperTests.test_rejects_missing_unknown_and_duplicate_options) (arguments=['--parent-pid', '73217', '--build-directory', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build with 'quotes'", '--configuration', 'Debug', '--game-executable', '/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/restart_launch_probe', '--session-file', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/session 'quoted'.yaml", '--build-log', '/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build log.txt', '--unknown', 'value'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 77, in test_rejects_missing_unknown_and_duplicate_options
+    self.assertEqual(2, self.run_helper(arguments).returncode)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_rejects_missing_unknown_and_duplicate_options (__main__.RestartHelperTests.test_rejects_missing_unknown_and_duplicate_options) (arguments=['--parent-pid', '73217', '--build-directory', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build with 'quotes'", '--configuration', 'Debug', '--game-executable', '/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/build/restart_launch_probe', '--session-file', "/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/session 'quoted'.yaml", '--build-log', '/var/folders/j3/638kkbjn1mvcqwrx81njb0pm0000gn/T/slimes restart 8tfgpykd/build log.txt', '--parent-pid', '73217'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/tests/RestartHelperTests.py", line 77, in test_rejects_missing_unknown_and_duplicate_options
+    self.assertEqual(2, self.run_helper(arguments).returncode)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+----------------------------------------------------------------------
+Ran 6 tests in 5.347s
+
+FAILED (failures=11)
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   5.47 sec
+
+The following tests FAILED:
+	  2 - restart_helper_tests (Failed)
+Errors while running CTest

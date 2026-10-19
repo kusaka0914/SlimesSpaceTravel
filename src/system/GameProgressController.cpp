@@ -1,9 +1,9 @@
 #include "system/GameProgressController.h"
 
 #include "actor/NPC.h"
-#include "world/GameWorld.h"
 #include "system/PhysicsSystem.h"
 #include "system/UserDataPaths.h"
+#include "world/GameWorld.h"
 
 namespace {
 
@@ -51,9 +51,9 @@ PlayerControlStyle GameProgressController::GetSelectedPlayerControlStyle() const
     return mProgress.IsAssistControlStyleSelected() ? PlayerControlStyle::Assist : PlayerControlStyle::Standard;
 }
 
-void GameProgressController::SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle)
+ProgressUpdateResult GameProgressController::SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle)
 {
-    mProgress.SetSelectedPlayerControlStyle(controlStyle == PlayerControlStyle::Assist);
+    return mProgress.SetSelectedPlayerControlStyle(controlStyle == PlayerControlStyle::Assist);
 }
 
 bool GameProgressController::IsStageCleared(int stageNumber) const
@@ -61,13 +61,14 @@ bool GameProgressController::IsStageCleared(int stageNumber) const
     return mProgress.IsStageCleared(stageNumber);
 }
 
-void GameProgressController::SetStageCleared(int stageNumber, bool isCleared)
+ProgressUpdateResult GameProgressController::SetStageCleared(int stageNumber, bool isCleared)
 {
-    const bool didProgressChange = mProgress.SetStageCleared(stageNumber, isCleared);
-    if (didProgressChange) {
+    const auto result = mProgress.SetStageCleared(stageNumber, isCleared);
+    if (result.changed) {
         mWorld.RefreshActorProgressVisibility();
         mPhysicsSystem.Initialize();
     }
+    return result;
 }
 
 bool GameProgressController::AreAllMainStagesCleared() const
@@ -86,9 +87,9 @@ bool GameProgressController::HasCompletedTutorial(const std::string& tutorialId)
     return !completedTutorialId.empty() && HasProgressFlag(completedTutorialId);
 }
 
-void GameProgressController::MarkTutorialCompleted(const std::string& tutorialId)
+ProgressUpdateResult GameProgressController::MarkTutorialCompleted(const std::string& tutorialId)
 {
-    MarkProgressFlag(BuildCompletedTutorialId(tutorialId));
+    return MarkProgressFlag(BuildCompletedTutorialId(tutorialId));
 }
 
 bool GameProgressController::HasSeenBaseIntro() const
@@ -96,9 +97,9 @@ bool GameProgressController::HasSeenBaseIntro() const
     return HasProgressFlag(baseIntroProgressId);
 }
 
-void GameProgressController::MarkBaseIntroSeen()
+ProgressUpdateResult GameProgressController::MarkBaseIntroSeen()
 {
-    MarkProgressFlag(baseIntroProgressId);
+    return MarkProgressFlag(baseIntroProgressId);
 }
 
 bool GameProgressController::HasCompletedEndingRoll() const
@@ -106,9 +107,9 @@ bool GameProgressController::HasCompletedEndingRoll() const
     return mProgress.HasCompletedEndingRoll();
 }
 
-void GameProgressController::MarkEndingRollCompleted()
+ProgressUpdateResult GameProgressController::MarkEndingRollCompleted()
 {
-    mProgress.SetEndingRollCompleted();
+    return mProgress.SetEndingRollCompleted();
 }
 
 bool GameProgressController::HasShownNPCConversation(const NPC* npc) const
@@ -116,9 +117,9 @@ bool GameProgressController::HasShownNPCConversation(const NPC* npc) const
     return HasProgressFlag(BuildNPCConversationId(npc));
 }
 
-void GameProgressController::MarkNPCConversationShown(const NPC* npc)
+ProgressUpdateResult GameProgressController::MarkNPCConversationShown(const NPC* npc)
 {
-    MarkProgressFlag(BuildNPCConversationId(npc));
+    return MarkProgressFlag(BuildNPCConversationId(npc));
 }
 
 bool GameProgressController::HasCompletedNPCOpeningTrigger(const NPC* npc, std::size_t talkPageIndex) const
@@ -126,9 +127,9 @@ bool GameProgressController::HasCompletedNPCOpeningTrigger(const NPC* npc, std::
     return HasProgressFlag(BuildNPCOpeningTriggerId(npc, talkPageIndex));
 }
 
-void GameProgressController::MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex)
+ProgressUpdateResult GameProgressController::MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex)
 {
-    MarkProgressFlag(BuildNPCOpeningTriggerId(npc, talkPageIndex));
+    return MarkProgressFlag(BuildNPCOpeningTriggerId(npc, talkPageIndex));
 }
 
 bool GameProgressController::HasCompletedNPCEndingTrigger(const NPC* npc, std::size_t talkPageIndex) const
@@ -136,9 +137,9 @@ bool GameProgressController::HasCompletedNPCEndingTrigger(const NPC* npc, std::s
     return HasProgressFlag(BuildNPCEndingTriggerId(npc, talkPageIndex));
 }
 
-void GameProgressController::MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex)
+ProgressUpdateResult GameProgressController::MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex)
 {
-    MarkProgressFlag(BuildNPCEndingTriggerId(npc, talkPageIndex));
+    return MarkProgressFlag(BuildNPCEndingTriggerId(npc, talkPageIndex));
 }
 
 std::string GameProgressController::BuildNPCConversationId(const NPC* npc) const
@@ -156,11 +157,9 @@ bool GameProgressController::HasProgressFlag(const std::string& progressId) cons
     return !progressId.empty() && mProgress.HasShownConversation(progressId);
 }
 
-void GameProgressController::MarkProgressFlag(const std::string& progressId)
+ProgressUpdateResult GameProgressController::MarkProgressFlag(const std::string& progressId)
 {
-    if (!progressId.empty()) {
-        mProgress.MarkConversationShown(progressId);
-    }
+    return mProgress.MarkConversationShown(progressId);
 }
 
 std::string GameProgressController::BuildNPCOpeningTriggerId(const NPC* npc, std::size_t talkPageIndex) const

@@ -1286,19 +1286,21 @@ bool Game::IsStageCleared(int stageNum) const
     return mProgressController && mProgressController->IsStageCleared(stageNum);
 }
 
-void Game::MarkStageCleared(int stageNum)
+ProgressUpdateResult Game::MarkStageCleared(int stageNum)
 {
-    SetStageCleared(stageNum, true);
+    return SetStageCleared(stageNum, true);
 }
 
-void Game::SetStageCleared(int stageNum, bool isCleared)
+ProgressUpdateResult Game::SetStageCleared(int stageNum, bool isCleared)
 {
+    ProgressUpdateResult result;
     if (mProgressController) {
-        mProgressController->SetStageCleared(stageNum, isCleared);
+        result = mProgressController->SetStageCleared(stageNum, isCleared);
     }
     if (isCleared && mSessionController) {
         mSessionController->RecordStageCleared(stageNum);
     }
+    return result;
 }
 
 bool Game::HasCompletedTutorial(const std::string& tutorialId) const

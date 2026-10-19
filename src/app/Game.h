@@ -3,6 +3,7 @@
 #include "actor/player/PlayerTypes.h"
 #include "app/GameWindow.h"
 #include "gfx/performance/FramePerformanceTracker.h"
+#include "state/ProgressUpdateResult.h"
 #include "system/StageFlowController.h"
 #include "system/UGCModeRuntime.h"
 
@@ -346,10 +347,10 @@ public:
 
     bool IsInBase() const;
     bool IsStageCleared(int stageNum) const;
-    void MarkStageCleared(int stageNum);
+    ProgressUpdateResult MarkStageCleared(int stageNum);
 
-    // 進行状態が変わった場合はActorの表示条件と物理を更新する。クリア時は体験版ログにも記録する。
-    void SetStageCleared(int stageNum, bool isCleared);
+    // 変更時はActor表示と物理を更新し、クリア時は体験版ログへ記録する。進行の変更と保存の結果を返す。
+    ProgressUpdateResult SetStageCleared(int stageNum, bool isCleared);
     bool HasCompletedTutorial(const std::string& tutorialId) const;
     void MarkTutorialCompleted(const std::string& tutorialId);
     bool HasShownNPCConversation(const NPC* npc) const;

@@ -144,15 +144,15 @@ bool StageProgressSystem::IsStageCleared(int stageNum) const
     return stageNum >= 0 && mClearedStages.contains(stageNum);
 }
 
-bool StageProgressSystem::MarkStageCleared(int stageNum)
+ProgressUpdateResult StageProgressSystem::MarkStageCleared(int stageNum)
 {
     return SetStageCleared(stageNum, true);
 }
 
-bool StageProgressSystem::SetStageCleared(int stageNum, bool isCleared)
+ProgressUpdateResult StageProgressSystem::SetStageCleared(int stageNum, bool isCleared)
 {
     if (stageNum < 0) {
-        return false;
+        return {};
     }
 
     bool changed = false;
@@ -162,10 +162,7 @@ bool StageProgressSystem::SetStageCleared(int stageNum, bool isCleared)
         changed = mClearedStages.erase(stageNum) > 0;
     }
 
-    if (changed) {
-        Save();
-    }
-    return changed;
+    return SaveChange(changed);
 }
 
 bool StageProgressSystem::HasShownConversation(const std::string& conversationId) const
@@ -173,37 +170,41 @@ bool StageProgressSystem::HasShownConversation(const std::string& conversationId
     return !conversationId.empty() && mShownConversationIds.contains(conversationId);
 }
 
-bool StageProgressSystem::MarkConversationShown(const std::string& conversationId)
+ProgressUpdateResult StageProgressSystem::MarkConversationShown(const std::string& conversationId)
 {
     if (conversationId.empty()) {
-        return false;
+        return {};
     }
 
     const bool changed = mShownConversationIds.insert(conversationId).second;
-    if (changed) {
-        Save();
-    }
-    return changed;
+    return SaveChange(changed);
 }
 
-bool StageProgressSystem::SetEndingRollCompleted(bool completed)
+ProgressUpdateResult StageProgressSystem::SetEndingRollCompleted(bool completed)
 {
     if (mHasCompletedEndingRoll == completed) {
-        return false;
+        return {};
     }
 
     mHasCompletedEndingRoll = completed;
-    Save();
-    return true;
+    return SaveChange(true);
 }
 
-bool StageProgressSystem::SetSelectedPlayerControlStyle(bool isAssistControlStyle)
+ProgressUpdateResult StageProgressSystem::SetSelectedPlayerControlStyle(bool isAssistControlStyle)
 {
     const bool changed = !mHasSelectedPlayerControlStyle || mIsAssistControlStyleSelected != isAssistControlStyle;
     mHasSelectedPlayerControlStyle = true;
     mIsAssistControlStyleSelected = isAssistControlStyle;
-    if (changed) {
-        Save();
+    return SaveChange(changed);
+}
+
+ProgressUpdateResult StageProgressSystem::SaveChange(bool changed) const
+{
+    if (!changed) {
+        return {};
     }
-    return changed;
+    if (!mIsPersistenceEnabled) {
+        return {true, ProgressSaveStatus::Disabled};
+    }
+    return {true, Save() ? ProgressSaveStatus::Succeeded : ProgressSaveStatus::Failed};
 }

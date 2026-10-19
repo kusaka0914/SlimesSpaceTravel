@@ -80,11 +80,11 @@ int main(int argc, const char* argv[])
 
     Game game;
 
-    if (game.Initialize(launchOptions.areDebugToolsEnabled, launchOptions.shouldStartInDebugStage,
-                        launchOptions.editorSessionPath, launchOptions.editorRestartErrorLogPath)) {
-        game.RunLoop();
-        game.Shutdown();
+    if (!game.Initialize(launchOptions.areDebugToolsEnabled, launchOptions.shouldStartInDebugStage,
+                         launchOptions.editorSessionPath, launchOptions.editorRestartErrorLogPath)) {
+        return 1;
     }
-
+    game.RunLoop();
+    game.Shutdown();
     return 0;
 }

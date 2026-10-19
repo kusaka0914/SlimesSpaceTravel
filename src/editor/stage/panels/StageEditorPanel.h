@@ -56,6 +56,7 @@ private:
     bool mRequestOpenMainTab = false;
     std::string mSelectedStageYamlPath;
     std::string mStageSwitchStatus;
+    std::string mProgressSaveError;
     std::string mSaveStatus;
     std::string mDuplicatePlacementStatus;
     std::string mEditHistoryStatus;

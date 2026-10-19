@@ -1,5 +1,7 @@
 #pragma once
 
+#include "state/ProgressUpdateResult.h"
+
 #include <filesystem>
 #include <set>
 #include <string>
@@ -23,28 +25,30 @@ public:
 
     bool IsStageCleared(int stageNum) const;
 
-    // クリアを記録して保存を試みる。戻り値は状態変更の有無を表し、保存成功の有無ではない。
-    bool MarkStageCleared(int stageNum);
+    // クリアを記録し、変更の有無と保存結果を返す。保存失敗でもメモリ上の進行は維持する。
+    ProgressUpdateResult MarkStageCleared(int stageNum);
 
-    // クリア状態を変更して保存を試みる。負の番号・変更なしはfalse。保存結果は戻り値に含めない。
-    bool SetStageCleared(int stageNum, bool isCleared);
+    // クリア状態を変更して保存を試みる。負の番号・変更なしはchanged=falseで保存しない。
+    ProgressUpdateResult SetStageCleared(int stageNum, bool isCleared);
     bool HasShownConversation(const std::string& conversationId) const;
 
-    // 空でないIDを既読にして保存を試みる。新規登録ならtrue。保存結果は戻り値に含めない。
-    bool MarkConversationShown(const std::string& conversationId);
+    // 空でないIDを既読にして保存を試みる。空ID・登録済みなら変更も保存もしない。
+    ProgressUpdateResult MarkConversationShown(const std::string& conversationId);
 
     bool HasCompletedEndingRoll() const { return mHasCompletedEndingRoll; }
 
-    // 完走状態を更新して保存を試みる。状態が変わればtrue。保存結果は戻り値に含めない。
-    bool SetEndingRollCompleted(bool completed = true);
+    // 完走状態を更新し、変更の有無と保存結果を返す。
+    ProgressUpdateResult SetEndingRollCompleted(bool completed = true);
 
     bool HasSelectedPlayerControlStyle() const { return mHasSelectedPlayerControlStyle; }
     bool IsAssistControlStyleSelected() const { return mIsAssistControlStyleSelected; }
 
-    // 操作方式を選択済みとして保存を試みる。状態が変わればtrue。保存結果は戻り値に含めない。
-    bool SetSelectedPlayerControlStyle(bool isAssistControlStyle);
+    // 操作方式を選択済みとして保存し、変更の有無と保存結果を返す。
+    ProgressUpdateResult SetSelectedPlayerControlStyle(bool isAssistControlStyle);
 
 private:
+    ProgressUpdateResult SaveChange(bool changed) const;
+
     std::filesystem::path mSavePath;
     std::set<int> mClearedStages;
     std::set<std::string> mShownConversationIds;
