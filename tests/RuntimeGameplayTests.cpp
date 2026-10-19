@@ -11,6 +11,7 @@
 #include "actor/player/PlayerInput.h"
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerPlanetGravityController.h"
+#include "actor/player/PlayerStatus.h"
 #include "app/Game.h"
 #include "component/Component.h"
 #include "system/PhysicsSystem.h"
@@ -354,4 +355,93 @@ void RunRuntimeGameplayTests(Game& game)
     NearCenterInternalPointStillProjectsOntoSurface();
     WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(game);
     CollisionFiltersSkipEmptyRegistryEntries(game);
+}
+
+void RunRuntimeCombatTests(Game& game)
+{
+    struct RestoreControlStyle {
+        Game& game;
+        PlayerControlStyle style;
+        ~RestoreControlStyle() { game.SetPlayerControlStyle(style); }
+    } restore{game, game.GetPlayerControlStyle()};
+
+    Player firstPlayer(&game);
+    Player secondPlayer(&game);
+    firstPlayer.Land({0, 0, 0});
+    secondPlayer.Land({0, 0, 0});
+    PlayerMovement firstMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    PlayerMovement secondMovement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    firstMovement.SetPlayerNum(1);
+    secondMovement.SetPlayerNum(2);
+    PlayerStatus firstStatus;
+    PlayerStatus secondStatus;
+    PlayerCombat secondCombat(*game.GetPhysicsSystem());
+    secondCombat.SetAttackHitDelay(0.2f);
+
+    for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
+        game.SetPlayerControlStyle(style);
+        PlayerCombat combat(*game.GetPhysicsSystem());
+        combat.SetAttackHitDelay(0.2f);
+        for (int step = 1; step <= 3; ++step) {
+            combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+            const PlayerAttackKind expected =
+                style == PlayerControlStyle::Assist && step == 3 ? PlayerAttackKind::Normal : PlayerAttackKind::Wide;
+            ExpectTrue(combat.GetAttackKind() == expected, "third assist weak input becomes the normal finisher");
+            ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.1f),
+                        "attack cannot resolve before its delay");
+            const auto before = combat.GetResolvedAttackSequence();
+            ExpectTrue(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 0.11f),
+                       "delayed attack resolves once even without a target");
+            ExpectEqual(before + 1, combat.GetResolvedAttackSequence(), "one sequence per resolved attack");
+            ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
+                        "resolved attack does not repeat");
+            ExpectEqual(step == 3 ? 0 : step, combat.GetAttackComboIndex(), "ground combo advances and then resets");
+        }
+
+        combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        secondCombat.StartAttacking(secondPlayer, PlayerAttackInputKind::Wide, secondMovement, secondStatus, 0.0f);
+        combat.CancelCurrentAttack();
+        const auto canceledSequence = combat.GetResolvedAttackSequence();
+        ExpectFalse(combat.UpdatePendingAttackHit(firstPlayer, firstMovement, firstStatus, 1.0f),
+                    "cancellation removes delayed hit");
+        ExpectEqual(canceledSequence, combat.GetResolvedAttackSequence(), "canceled attack has no resolved sequence");
+        ExpectTrue(combat.CanMoveDuringAttack() && combat.CanDodgeDuringAttack(), "cancel releases movement locks");
+        const auto secondBefore = secondCombat.GetResolvedAttackSequence();
+        ExpectTrue(secondCombat.UpdatePendingAttackHit(secondPlayer, secondMovement, secondStatus, 0.21f),
+                   "first player's cancel leaves second player's pending attack intact");
+        ExpectEqual(secondBefore + 1, secondCombat.GetResolvedAttackSequence(),
+                    "second player's sequence is independent");
+    }
+    std::cout << "[PASS] Runtime.CombatComboDelayStyleAndPlayerIsolation\n";
+
+    firstPlayer.NotLand();
+    PlayerCombat airCombat(*game.GetPhysicsSystem());
+    for (int index = 0; index < 3; ++index) {
+        ExpectTrue(airCombat.CanStartAirAttack(), "three airborne weak attacks available");
+        airCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
+        ExpectTrue(airCombat.IsAirAttacking(), "air weak attack locks airborne movement");
+        ExpectFalse(airCombat.CanDodgeDuringAttack(), "air weak attack initially prevents dodge");
+        airCombat.UpdateAttackDodgeLock(0.51f);
+        ExpectTrue(airCombat.CanDodgeDuringAttack(), "dodge cancel opens after delay");
+        airCombat.CancelAirAttackForDodge();
+        ExpectFalse(airCombat.HasPendingAttackHit(), "dodge cancel clears pending air hit");
+        ExpectTrue(airCombat.CanMoveDuringAttack(), "dodge cancel permits air movement");
+    }
+    ExpectFalse(airCombat.CanStartAirAttack(), "cancel does not bypass airborne attack limit");
+    airCombat.PrepareAssistAirCombo();
+    ExpectTrue(airCombat.CanStartAirAttack(), "assist combo prepares a fresh airborne attack allowance");
+    airCombat.RecordAirWeakAttackHit();
+    airCombat.StartAirDodgeAttack();
+    ExpectTrue(airCombat.IsEnhancedAirDodgeAttackActive(), "preceding air weak hit enhances the next dodge");
+    airCombat.EndAirDodgeAttack();
+    airCombat.StartAirDodgeAttack();
+    ExpectFalse(airCombat.IsEnhancedAirDodgeAttackActive(), "enhancement is consumed by one dodge");
+    airCombat.OnLanded();
+    ExpectFalse(airCombat.IsAirDodgeAttackActive() || airCombat.IsAirAttacking(), "landing resets air combat state");
+    airCombat.StartAssistStrongAttacking(firstPlayer, 0.0f);
+    ExpectTrue(airCombat.GetIsAssistStrongAttack() && airCombat.HasPendingAttackHit(),
+               "assist strong attack queues hit");
+    airCombat.CancelCurrentAttack();
+    ExpectFalse(airCombat.HasPendingAttackHit(), "assist strong hit also cancels");
+    std::cout << "[PASS] Runtime.AirCombatDodgeCancelLimitAndAssistPreparation\n";
 }

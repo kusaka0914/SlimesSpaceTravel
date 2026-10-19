@@ -276,6 +276,17 @@
       "tests": "nullのEnemy/Crystal/NPC、4フィルター、有効な敵がnullの後にも判定されること、空中/接地/無効敵。",
       "status": "implemented_and_debug_verified",
       "verification": "旧実装のSegFaultを再現後、271単体・監査4件・Runtime21組・Debug全ビルド成功。有効な敵の衝突応答は変更なし。"
+    },
+    {
+      "id": "TEST-02",
+      "priority": "P2",
+      "location": "tests/RuntimeGameplayTests.cpp:RunRuntimeCombatTests",
+      "evidence": "既存RuntimeではCombatのコンボ・キャンセル・操作スタイル別の進行を直接検証していなかった。",
+      "risk": "依存/所有変更後に攻撃予約や空中制限の退行を自動で検知できない。",
+      "change": "実PlayerCombatとPlayer/Movementを用い、対象敵なしの予約解決と状態契約の統合テストを追加。",
+      "tests": "通常/らくらく3段、遅延/一回解決、2Playerの予約独立、空中制限/回避キャンセル/強化消費、着地/アシスト準備。",
+      "status": "implemented_and_release_verified",
+      "verification": "271単体・監査4件・Runtime23組・通常Release全ビルド成功。入力から命中ダメージまでの全戦闘や実機の操作感を検証したものではない。"
     }
   ],
   "notes": [

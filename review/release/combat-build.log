@@ -1,0 +1,6 @@
+[ 97%] Built target game_runtime
+[ 98%] Built target game
+[ 98%] Building CXX object CMakeFiles/game_runtime_tests.dir/tests/RuntimeIntegrationTests.cpp.o
+[ 98%] Building CXX object CMakeFiles/game_runtime_tests.dir/tests/RuntimeGameplayTests.cpp.o
+[ 98%] Linking CXX executable game_runtime_tests
+[100%] Built target game_runtime_tests

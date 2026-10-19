@@ -544,6 +544,7 @@ int main()
             UGCUsesTheSameTransaction(game, context, commands);
             UGCSceneUsesCurrentBorrowedPreviewState(game);
             InputSnapshotUsesOnlyProvidedDevices(game);
+            RunRuntimeCombatTests(game);
             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
             game.Shutdown();
             ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Editor context released before window shutdown");
