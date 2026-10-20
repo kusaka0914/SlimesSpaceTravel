@@ -40,7 +40,7 @@ bool UGCModeController::StartEditorTutorial()
     const std::filesystem::path tutorialTemplatePath = "../assets/data/stage/ugc_tutorial_template.yaml";
     const std::filesystem::path tutorialStagePath = UserDataPaths::ResolveUGCTutorialStageFile();
     std::string copyError;
-    if (!AtomicFile::CopyFile(tutorialTemplatePath, tutorialStagePath, true, copyError)) {
+    if (!AtomicFile::CopyRegularFile(tutorialTemplatePath, tutorialStagePath, true, copyError)) {
         std::cerr << "Failed to reset UGC editor tutorial: " << copyError << '\n';
         return false;
     }

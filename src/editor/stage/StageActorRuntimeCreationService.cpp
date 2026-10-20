@@ -1,7 +1,7 @@
 #include "editor/stage/StageActorRuntimeCreationService.h"
 
-#include "app/Game.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
 #include "editor/core/DebugEditorContext.h"
 #include "system/ActorLoadSystem.h"
 #include "system/PhysicsSystem.h"
@@ -15,7 +15,8 @@ StageActorRuntimeCreationService::StageActorRuntimeCreationService(DebugEditorCo
 bool StageActorRuntimeCreationService::CreateActor(StageActorType actorType, const YAML::Node& actorNode,
                                                    int stageYamlIndex) const
 {
-    return CreateActor(StageActorRef{.type = actorType, .yamlIndex = stageYamlIndex}, actorNode, stageYamlIndex);
+    return CreateActor(StageActorRef{.type = actorType, .yamlIndex = stageYamlIndex, .sequenceName = {}, .label = {}},
+                       actorNode, stageYamlIndex);
 }
 
 bool StageActorRuntimeCreationService::CreateActor(const StageActorRef& actorRef, const YAML::Node& actorNode,

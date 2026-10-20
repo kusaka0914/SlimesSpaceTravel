@@ -23,9 +23,9 @@ struct SplitGuardRenderState {
 struct SceneRenderState {
     const Stage* stage = nullptr;
     int stageNumber = 0;
-    std::span<Player* const> players;
-    std::span<JewelItem* const> runtimeJewels;
-    std::span<const Particle> particles;
+    std::span<Player* const> players{};
+    std::span<JewelItem* const> runtimeJewels{};
+    std::span<const Particle> particles{};
     Player* controlledPlayer = nullptr;
 
     bool isTitle = false;
@@ -36,16 +36,16 @@ struct SceneRenderState {
     bool isDebugMode = false;
     bool isGameUIHidden = false;
     bool isPlayer2Joined = false;
-    CameraProjectionSettings projection;
-    SplitGuardRenderState splitGuard;
+    CameraProjectionSettings projection{};
+    SplitGuardRenderState splitGuard{};
     const Player* mergeGuideTarget = nullptr;
     float mergeGuideRadiusWorldUnits = 0.0f;
 
     int ugcEditLayer = 0;
     float ugcGridSize = 1.0f;
-    std::optional<glm::vec3> placementPosition;
+    std::optional<glm::vec3> placementPosition{};
     Actor* placementModel = nullptr;
-    std::span<const glm::vec3> placementModelPositions;
-    std::optional<glm::vec3> movingPathStart;
-    std::optional<glm::vec3> movingPathDestination;
+    std::span<const glm::vec3> placementModelPositions{};
+    std::optional<glm::vec3> movingPathStart{};
+    std::optional<glm::vec3> movingPathDestination{};
 };

@@ -124,8 +124,8 @@ bool AtomicFile::WriteText(const std::filesystem::path& path, std::string_view t
     return true;
 }
 
-bool AtomicFile::CopyFile(const std::filesystem::path& source, const std::filesystem::path& destination,
-                          bool shouldOverwrite, std::string& outError)
+bool AtomicFile::CopyRegularFile(const std::filesystem::path& source, const std::filesystem::path& destination,
+                                 bool shouldOverwrite, std::string& outError)
 {
     outError.clear();
     std::error_code error;

@@ -70,7 +70,7 @@ bool UGCWorkFileService::ResetWorkingStage(std::string& outErrorMessage) const
         outErrorMessage = "作業フォルダを作れませんでした: " + fileSystemError.message();
         return false;
     }
-    return AtomicFile::CopyFile(newWorkTemplatePath, workingStagePath, true, outErrorMessage);
+    return AtomicFile::CopyRegularFile(newWorkTemplatePath, workingStagePath, true, outErrorMessage);
 }
 
 bool UGCWorkFileService::HasUnsavedChanges() const

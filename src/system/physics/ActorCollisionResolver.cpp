@@ -174,8 +174,12 @@ public:
 
     btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace) override
     {
+        // Bulletの基底callbackは衝突Objectを参照するため、不完全な結果は渡さない。
+        if (!convexResult.m_hitCollisionObject) {
+            return 1.0f;
+        }
         btVector3 hitNormal = convexResult.m_hitNormalLocal;
-        if (!normalInWorldSpace && convexResult.m_hitCollisionObject) {
+        if (!normalInWorldSpace) {
             hitNormal = convexResult.m_hitCollisionObject->getWorldTransform().getBasis() * hitNormal;
         }
 

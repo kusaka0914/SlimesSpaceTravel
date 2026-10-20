@@ -362,7 +362,7 @@ SceneRenderState Game::CreateSceneRenderState() const
     return scene;
 }
 
-void Game::RunLoop()
+void Game::RunLoop(const std::function<void(const FramePerformanceMetrics&)>& onFrameCompleted)
 {
     constexpr int maximumFramesPerSecond = 60;
     const auto minimumFrameDuration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
@@ -394,6 +394,9 @@ void Game::RunLoop()
 
         mFramePerformanceTracker.RecordTotalDuration(
             std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - frameStartTime).count());
+        if (onFrameCompleted) {
+            onFrameCompleted(mFramePerformanceTracker.GetMetrics());
+        }
 
         // ドライバー側でVSyncが無効化されても過剰に描画し続けないよう、ソフトウェア側でも60FPSに制限する。
         std::this_thread::sleep_until(frameStartTime + minimumFrameDuration);

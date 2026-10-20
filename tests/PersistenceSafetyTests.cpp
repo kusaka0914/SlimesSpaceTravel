@@ -96,17 +96,17 @@ void AtomicCopyPreservesExistingDestinationsAndPublishesCompleteBytes()
     WriteTestFile(source, "new bytes");
     WriteTestFile(fixture.File(), "old bytes");
     std::string error;
-    ExpectFalse(AtomicFile::CopyFile(source, fixture.File(), false, error),
+    ExpectFalse(AtomicFile::CopyRegularFile(source, fixture.File(), false, error),
                 "non-overwriting copy rejects existing file");
     ExpectEqual(std::string("old bytes"), ReadTestFile(fixture.File()), "rejected copy preserves destination");
-    ExpectTrue(AtomicFile::CopyFile(source, fixture.File(), true, error), "complete replacement");
+    ExpectTrue(AtomicFile::CopyRegularFile(source, fixture.File(), true, error), "complete replacement");
     ExpectEqual(std::string("new bytes"), ReadTestFile(fixture.File()), "replacement contents");
     for (const auto& invalid : {fixture.Root(), fixture.Root() / "missing.yaml"}) {
-        ExpectFalse(AtomicFile::CopyFile(invalid, fixture.File(), true, error), "invalid source rejected");
+        ExpectFalse(AtomicFile::CopyRegularFile(invalid, fixture.File(), true, error), "invalid source rejected");
         ExpectEqual(std::string("new bytes"), ReadTestFile(fixture.File()), "read failure keeps destination");
     }
     const auto created = fixture.Root() / "new.yaml";
-    ExpectTrue(AtomicFile::CopyFile(source, created, false, error), "publish new file without overwrite");
+    ExpectTrue(AtomicFile::CopyRegularFile(source, created, false, error), "publish new file without overwrite");
     ExpectEqual(std::string("new bytes"), ReadTestFile(created), "new file contents");
     ExpectEqual(
         std::ptrdiff_t(3),
@@ -580,7 +580,7 @@ void FailedCopyDoesNotTruncateOldFile()
     ExpectWriteFailureWithByteLimit(
         [&]() {
             std::string error;
-            return AtomicFile::CopyFile(source, fixture.File(), true, error);
+            return AtomicFile::CopyRegularFile(source, fixture.File(), true, error);
         },
         8);
     ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "old file survives a partial copy");

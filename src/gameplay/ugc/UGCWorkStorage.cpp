@@ -76,7 +76,7 @@ UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(const std::string& file
     }
 
     std::string error;
-    if (!AtomicFile::CopyFile(mPaths.workingStageFile, ResolveSavedFilePath(fileName), shouldOverwrite, error)) {
+    if (!AtomicFile::CopyRegularFile(mPaths.workingStageFile, ResolveSavedFilePath(fileName), shouldOverwrite, error)) {
         return {UGCWorkCopyFailure::FileCopy, error};
     }
     return {};
@@ -85,7 +85,7 @@ UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(const std::string& file
 bool UGCWorkStorage::CopySavedFileToWorking(const std::string& fileName) const
 {
     std::string error;
-    return AtomicFile::CopyFile(ResolveSavedFilePath(fileName), mPaths.workingStageFile, true, error);
+    return AtomicFile::CopyRegularFile(ResolveSavedFilePath(fileName), mPaths.workingStageFile, true, error);
 }
 
 bool UGCWorkStorage::WriteWorkingAndSavedFile(const std::string& fileName, std::string_view text,
@@ -118,7 +118,7 @@ bool UGCWorkStorage::DuplicateSavedFile(const std::string& fileName) const
     }
     std::string error;
     return !statusError &&
-           AtomicFile::CopyFile(sourceFilePath, ResolveSavedFilePath(destinationFileName), false, error);
+           AtomicFile::CopyRegularFile(sourceFilePath, ResolveSavedFilePath(destinationFileName), false, error);
 }
 
 bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const

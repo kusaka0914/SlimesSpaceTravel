@@ -377,6 +377,7 @@ endif()
 if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     add_executable(game_runtime_tests
         tests/RuntimeIntegrationTests.cpp
+        tests/RuntimeFrameLoopTests.cpp
         tests/RuntimeGameplayTests.cpp
         tests/RuntimeReliabilityTests.cpp
         tests/RuntimeEditorPersistenceTests.cpp
@@ -401,6 +402,14 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
             RUN_SERIAL TRUE
         )
     endforeach()
+    add_test(NAME game_runtime_frame_loop_tests COMMAND game_runtime_tests --frame-loop 240 cycle)
+    set_tests_properties(game_runtime_frame_loop_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
+        ENVIRONMENT "SDL_AUDIODRIVER=dummy"
+        LABELS "integration;display"
+        TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
+        RUN_SERIAL TRUE
+    )
     add_dependencies(game_runtime_tests game)
     if (Python3_Interpreter_FOUND)
         add_executable(game_startup_probe

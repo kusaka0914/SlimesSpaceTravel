@@ -1,4 +1,5 @@
 #include "RuntimeEditorPersistenceTests.h"
+#include "RuntimeFrameLoopTests.h"
 #include "RuntimeGameplayTests.h"
 #include "RuntimeReliabilityTests.h"
 #include "RuntimeStageSupport.h"
@@ -29,6 +30,7 @@
 
 #include "imgui.h"
 #include <GLFW/glfw3.h>
+#include <charconv>
 #include <cmath>
 #include <iostream>
 #include <utility>
@@ -526,6 +528,25 @@ void CameraControlsAreIndependentAndStopDuringEditorCapture(Game& game)
 
 int main(int argc, char** argv)
 {
+    if (argc == 4 && std::string(argv[1]) == "--frame-loop") {
+        int frames = 0;
+        const std::string count = argv[2];
+        const auto parsed = std::from_chars(count.data(), count.data() + count.size(), frames);
+        const std::string scenario = argv[3];
+        if (parsed.ec != std::errc{} || parsed.ptr != count.data() + count.size() || frames < 4 || frames > 216000 ||
+            (scenario != "one-player" && scenario != "two-player" && scenario != "ugc" && scenario != "cycle")) {
+            std::cerr << "Expected 4..216000 frames and one-player, two-player, ugc or cycle\n";
+            return 2;
+        }
+        try {
+            Fixture fixture(true, true);
+            MeasureRuntimeFrameLoop(fixture.game, frames, scenario);
+            return 0;
+        } catch (const std::exception& error) {
+            std::cerr << "[FAIL] Frame loop: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc == 2 && std::string(argv[1]) == "--interactive") {
         try {
             // 実際のRunLoopを操作しつつ、既存セーブとEditor設定はテスト用保存先へ隔離する。
@@ -590,7 +611,7 @@ int main(int argc, char** argv)
     };
     const std::string selected = argc == 3 && std::string(argv[1]) == "--suite" ? argv[2] : "";
     if (argc != 1 && selected.empty()) {
-        std::cerr << "Usage: game_runtime_tests [--suite NAME | --interactive]\n";
+        std::cerr << "Usage: game_runtime_tests [--suite NAME | --interactive | --frame-loop FRAMES SCENARIO]\n";
         return 2;
     }
     int failures = 0;

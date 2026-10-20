@@ -1,0 +1,32 @@
+{
+  "head": "b2b2f243e047b151bcf9e9c1ba43b3ca5f7f641d",
+  "run_id": 39364693933,
+  "windows": {
+    "failure": "AtomicFile::CopyFile was expanded to CopyFileA by windows.h",
+    "fix": "rename to CopyRegularFile without undefining Windows macros"
+  },
+  "linux": {
+    "failure": "ClosestBlockingStageSweepCallback allowed a null collision object into the Bullet base callback",
+    "fix": "reject incomplete results before the base callback",
+    "classification": "defensive enforcement of the Bullet callback precondition; no gameplay crash reproduced"
+  },
+  "coverage_before_frame_loop": {
+    "functions": {
+      "count": 4989,
+      "covered": 2348,
+      "percent": 47.06353978753257
+    },
+    "lines": {
+      "count": 55679,
+      "covered": 18516,
+      "percent": 33.25490759532319
+    },
+    "branches": {
+      "count": 25522,
+      "covered": 5700,
+      "percent": 22.33367290964658
+    }
+  },
+  "coverage_diagnostic": "23 functions have mismatched data; counts are not an exact cross-binary coverage guarantee",
+  "compiler_warnings": "Explicit defaults/value construction replace omitted aggregate members reported by Clang 18."
+}

@@ -49,9 +49,9 @@ struct CameraSystemDependencies {
     const InputSystem& input;
     SceneSystem& scene;
     AudioSystem* audio = nullptr;
-    std::function<PhysicsSystem*()> physicsProvider;
-    std::function<CameraControlState()> readControlState;
-    std::function<Actor*(const std::string&, int)> findPlacedActor;
+    std::function<PhysicsSystem*()> physicsProvider{};
+    std::function<CameraControlState()> readControlState{};
+    std::function<Actor*(const std::string&, int)> findPlacedActor{};
 };
 
 // プレイヤー追従・会話・演出のカメラを調停し、描画用のビューを生成する。

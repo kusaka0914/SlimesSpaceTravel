@@ -13,8 +13,8 @@ bool WriteText(const std::filesystem::path& path, std::string_view text, std::st
 
 // 通常ファイルを一時ファイルへコピーしてから公開する。失敗時は既存の保存先を変更しない。
 // shouldOverwrite=falseなら既存ファイルを上書きしない。親ディレクトリは呼出元で用意する。
-bool CopyFile(const std::filesystem::path& source, const std::filesystem::path& destination, bool shouldOverwrite,
-              std::string& outError);
+bool CopyRegularFile(const std::filesystem::path& source, const std::filesystem::path& destination,
+                     bool shouldOverwrite, std::string& outError);
 
 struct TextWrite {
     std::filesystem::path path;

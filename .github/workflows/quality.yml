@@ -88,11 +88,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Configure
         shell: pwsh
-        run: cmake -S . -B build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DGAME_ENABLE_WARNINGS=ON -DBUILD_TESTING=ON
+        run: cmake -S . -B build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DGAME_ENABLE_WARNINGS=ON -DBUILD_TESTING=ON -DGAME_BUILD_RUNTIME_TESTS=ON
       - name: Build production and headless tests
         run: cmake --build build --config Release --parallel 2
       - name: Run headless regressions and asset validation
-        run: ctest --test-dir build -C Release --output-on-failure
+        # Hosted Windowsでは表示環境を仮定せず、実機用の統合テストもコンパイルまで確認する。
+        run: ctest --test-dir build -C Release -LE display --output-on-failure
       - name: Check dependency boundaries
         run: python -B tools/architecture_audit.py --check --output build/audit
       - name: Save test results

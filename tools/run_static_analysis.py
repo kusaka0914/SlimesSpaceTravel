@@ -117,6 +117,8 @@ def main():
     (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     for result in results:
         print(f"{'PASS' if result['passed'] else 'FAIL'} {result['path']}")
+        if not result["passed"]:
+            print(Path(result["log"]).read_text(encoding="utf-8"))
     return 0 if report["passed"] else 1
 
 

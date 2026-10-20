@@ -32,6 +32,8 @@ public:
 
     // Stageを再読込して編集へ戻る。状態上戻れない場合は何もしない。
     void ReturnToEditor();
+
+    // フェードの切替時点でのモード解除を予約する。フェード中やStage切替待ちなら受け付けない。
     void ExitMode();
     bool HandleGoalObtained();
 

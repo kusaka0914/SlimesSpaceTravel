@@ -32,7 +32,7 @@ struct DebugEditorContext {
     Game* game = nullptr;
     UIRenderer* uiRenderer = nullptr;
     EditorAssetCatalog* assetCatalog = nullptr;
-    DebugEditorGameViewport gameViewport;
-    DebugEditorLayoutState layout;
+    DebugEditorGameViewport gameViewport{};
+    DebugEditorLayoutState layout{};
     PlanetMoveMode planetMoveMode = PlanetMoveMode::WithBoundActors;
 };

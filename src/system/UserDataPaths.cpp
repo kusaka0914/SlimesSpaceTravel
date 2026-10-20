@@ -54,7 +54,7 @@ bool CopyFileIfMissing(const std::filesystem::path& sourceFile, const std::files
     }
 
     std::string copyError;
-    if (!AtomicFile::CopyFile(sourceFile, destinationFile, false, copyError)) {
+    if (!AtomicFile::CopyRegularFile(sourceFile, destinationFile, false, copyError)) {
         fileSystemError = std::make_error_code(std::errc::io_error);
         return false;
     }

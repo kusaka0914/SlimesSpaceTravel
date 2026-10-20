@@ -69,7 +69,8 @@ public:
                     const std::string& editorRestartErrorLogPath = {});
 
     // Initialize成功後に呼び、終了要求まで入力・更新・描画を繰り返す。終了後はShutdownを呼ぶ。
-    void RunLoop();
+    // onFrameCompletedは更新・描画後、FPS制限の待機前に同期呼出する。計測値の参照は呼出中だけ有効。
+    void RunLoop(const std::function<void(const FramePerformanceMetrics&)>& onFrameCompleted = {});
 
     // エディター状態を保存し、描画資源・入力デバイス・ウィンドウを解放する。デストラクタからも呼ぶ。
     // 初期化途中や解放済みの状態でも呼び出せる。
@@ -127,6 +128,8 @@ public:
 
     // 指定した保存作品のクリア検証を開始する。作品名はUGC作品管理で使うファイル名を渡す。
     void StartUGCClearVerification(const std::string& workFileName);
+
+    // フェード経由のUGC終了を要求する。終了するまで通常の更新を続ける必要がある。
     void ExitUGCMode();
     bool GetIsUGCClearResultShowing() const;
     int GetUGCClearResultSelection() const;
