@@ -14,7 +14,7 @@ class StageNPCInspector {
 public:
     StageNPCInspector(DebugEditorContext& context, StageActorAssetEditor& assetEditor);
 
-    // Gameと現在のStageが有効な状態で呼ぶ。npc が nullptr なら何もしない。
+    // Game・現在のStage・npcのいずれかが未設定なら何もしない。
     // 会話の変更は実行中NPCへ反映し、YAMLへの保存は呼び出し元が行う。
     void Draw(NPC* npc, const std::string& sequenceName, std::size_t listIndex, int yamlIndex);
 

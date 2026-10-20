@@ -27,7 +27,7 @@ StageNPCInspector::StageNPCInspector(DebugEditorContext& context, StageActorAsse
 
 void StageNPCInspector::Draw(NPC* npc, const std::string& sequenceName, std::size_t listIndex, int yamlIndex)
 {
-    if (!npc) {
+    if (!npc || !mContext.game || !mContext.game->GetCurrentStage()) {
         return;
     }
 

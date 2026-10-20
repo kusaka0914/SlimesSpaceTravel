@@ -2,7 +2,7 @@ name: Code quality
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, 'codex/submission-quality']
   pull_request:
   workflow_dispatch:
 

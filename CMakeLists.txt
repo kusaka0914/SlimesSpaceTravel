@@ -385,19 +385,22 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     target_link_libraries(game_runtime_tests PRIVATE game_runtime)
     target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
-    add_test(NAME game_runtime_tests COMMAND game_runtime_tests)
     set(GAME_RUNTIME_TEST_TIMEOUT 120)
     if (GAME_ENABLE_RUNTIME_SANITIZERS)
         # 全体計装ではYAML再構築を含む実行時間が伸びるため、通常構成とは制限を分ける。
         set(GAME_RUNTIME_TEST_TIMEOUT 300)
     endif()
-    set_tests_properties(game_runtime_tests PROPERTIES
-        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
-        ENVIRONMENT "SDL_AUDIODRIVER=dummy"
-        LABELS "integration;display"
-        TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
-        RUN_SERIAL TRUE
-    )
+    # CTestは失敗したsuiteの後も別プロセスのsuiteを実行し、Gameと保存先を共有しない。
+    foreach(suite reliability gameplay persistence editor render ugc input combat lifetime)
+        add_test(NAME game_runtime_${suite}_tests COMMAND game_runtime_tests --suite ${suite})
+        set_tests_properties(game_runtime_${suite}_tests PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
+            ENVIRONMENT "SDL_AUDIODRIVER=dummy"
+            LABELS "integration;display"
+            TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
+            RUN_SERIAL TRUE
+        )
+    endforeach()
     add_dependencies(game_runtime_tests game)
     if (Python3_Interpreter_FOUND)
         add_executable(game_startup_probe

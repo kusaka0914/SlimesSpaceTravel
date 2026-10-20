@@ -1,5 +1,7 @@
 #include "system/UserDataPaths.h"
 
+#include "utils/AtomicFile.h"
+
 #include <cstdlib>
 #include <memory>
 #include <system_error>
@@ -51,8 +53,12 @@ bool CopyFileIfMissing(const std::filesystem::path& sourceFile, const std::files
         return false;
     }
 
-    std::filesystem::copy_file(sourceFile, destinationFile, std::filesystem::copy_options::none, fileSystemError);
-    return !fileSystemError;
+    std::string copyError;
+    if (!AtomicFile::CopyFile(sourceFile, destinationFile, false, copyError)) {
+        fileSystemError = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    return true;
 }
 
 bool CopyYamlFilesIfMissing(const std::filesystem::path& sourceDirectory,
@@ -65,21 +71,21 @@ bool CopyYamlFilesIfMissing(const std::filesystem::path& sourceDirectory,
         return false;
     }
 
-    for (const std::filesystem::directory_entry& sourceEntry :
-         std::filesystem::directory_iterator(sourceDirectory, fileSystemError)) {
-        if (fileSystemError) {
-            return false;
+    std::filesystem::directory_iterator entries(sourceDirectory, fileSystemError);
+    const std::filesystem::directory_iterator end;
+    while (!fileSystemError && entries != end) {
+        const auto& sourceEntry = *entries;
+        if (sourceEntry.is_regular_file(fileSystemError) && sourceEntry.path().extension() == ".yaml") {
+            const auto destinationFile = destinationDirectory / sourceEntry.path().filename();
+            if (!CopyFileIfMissing(sourceEntry.path(), destinationFile, fileSystemError)) {
+                return false;
+            }
         }
-        if (!sourceEntry.is_regular_file() || sourceEntry.path().extension() != ".yaml") {
-            continue;
-        }
-
-        const std::filesystem::path destinationFile = destinationDirectory / sourceEntry.path().filename();
-        if (!CopyFileIfMissing(sourceEntry.path(), destinationFile, fileSystemError)) {
-            return false;
+        if (!fileSystemError) {
+            entries.increment(fileSystemError);
         }
     }
-    return true;
+    return !fileSystemError;
 }
 
 } // namespace

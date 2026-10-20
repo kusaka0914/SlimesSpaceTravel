@@ -83,7 +83,11 @@ void UGCWorkPanel::StartVerification()
 
 bool UGCWorkPanel::CompleteVerification(const std::string& workFileName)
 {
-    return mController.CompleteVerification(workFileName);
+    const bool completed = mController.CompleteVerification(workFileName);
+    if (!completed) {
+        mState.saveErrorMessage = "完成チェックの結果を保存できませんでした: " + mState.saveErrorMessage;
+    }
+    return completed;
 }
 
 bool UGCWorkPanel::HasUnsavedChanges() const
@@ -141,7 +145,7 @@ void UGCWorkPanel::DrawManagement()
     ImGui::BeginDisabled(!hasSelectedWork);
     if (ImGui::Button("選んだ作品を開く", ImVec2(188.0f, 46.0f))) {
         const bool wasLoaded = mController.LoadSelectedWork();
-        outStatusMessage = wasLoaded ? "作品を開きました" : "作品を開けませんでした";
+        outStatusMessage = wasLoaded ? "作品を開きました" : "作品を開けませんでした: " + mState.saveErrorMessage;
         if (wasLoaded) {
             ImGui::CloseCurrentPopup();
         }
@@ -348,6 +352,10 @@ void UGCWorkPanel::DrawBrowser()
     ImGui::TextUnformatted("つくったステージであそぶ");
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Separator();
+
+    if (!mState.saveErrorMessage.empty()) {
+        ImGui::TextWrapped("%s", mState.saveErrorMessage.c_str());
+    }
 
     if (!mController.IsSelectedWorkVerified()) {
         mState.selectedWorkIndex = -1;

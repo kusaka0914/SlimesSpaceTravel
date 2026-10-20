@@ -11,6 +11,11 @@ namespace AtomicFile {
 // 親ディレクトリは呼び出し元で用意する。false時はoutErrorに理由を返す。電源断時の永続性は保証しない。
 bool WriteText(const std::filesystem::path& path, std::string_view text, std::string& outError);
 
+// 通常ファイルを一時ファイルへコピーしてから公開する。失敗時は既存の保存先を変更しない。
+// shouldOverwrite=falseなら既存ファイルを上書きしない。親ディレクトリは呼出元で用意する。
+bool CopyFile(const std::filesystem::path& source, const std::filesystem::path& destination, bool shouldOverwrite,
+              std::string& outError);
+
 struct TextWrite {
     std::filesystem::path path;
     std::string_view text;

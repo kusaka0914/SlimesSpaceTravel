@@ -1,6 +1,7 @@
 #include "gameplay/ugc/UGCWorkStorage.h"
 
 #include "gameplay/ugc/UGCWorkMetadata.h"
+#include "utils/AtomicFile.h"
 #include "utils/YamlFile.h"
 
 #include <algorithm>
@@ -31,7 +32,12 @@ UGCWorkStorage::UGCWorkStorage(UGCWorkStoragePaths paths)
 
 std::filesystem::path UGCWorkStorage::ResolveSavedFilePath(const std::string& fileName) const
 {
-    return mPaths.savedWorkDirectory / CreateUtf8Path(fileName);
+    const std::filesystem::path name = CreateUtf8Path(fileName);
+    if (name.empty() || name.has_parent_path() || name.has_root_path() || name == "." || name == ".." ||
+        fileName.find('\0') != std::string::npos) {
+        return {};
+    }
+    return mPaths.savedWorkDirectory / name;
 }
 
 std::optional<std::vector<std::string>> UGCWorkStorage::FindSavedFileNames() const
@@ -43,14 +49,19 @@ std::optional<std::vector<std::string>> UGCWorkStorage::FindSavedFileNames() con
     }
 
     std::vector<std::string> fileNames;
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(mPaths.savedWorkDirectory, fileSystemError)) {
-        if (fileSystemError) {
-            break;
-        }
-        if (entry.is_regular_file() && entry.path().extension() == ".yaml") {
+    std::filesystem::directory_iterator entries(mPaths.savedWorkDirectory, fileSystemError);
+    const std::filesystem::directory_iterator end;
+    while (!fileSystemError && entries != end) {
+        const auto& entry = *entries;
+        if (entry.is_regular_file(fileSystemError) && entry.path().extension() == ".yaml") {
             fileNames.emplace_back(ToUtf8FileName(entry.path()));
         }
+        if (!fileSystemError) {
+            entries.increment(fileSystemError);
+        }
+    }
+    if (fileSystemError) {
+        return std::nullopt;
     }
     std::sort(fileNames.begin(), fileNames.end());
     return fileNames;
@@ -61,24 +72,38 @@ UGCWorkCopyResult UGCWorkStorage::CopyWorkingFileToSaved(const std::string& file
     std::error_code fileSystemError;
     std::filesystem::create_directories(mPaths.savedWorkDirectory, fileSystemError);
     if (fileSystemError) {
-        return {UGCWorkCopyFailure::SavedDirectoryCreation, fileSystemError};
+        return {UGCWorkCopyFailure::SavedDirectoryCreation, fileSystemError.message()};
     }
 
-    const std::filesystem::copy_options copyOptions =
-        shouldOverwrite ? std::filesystem::copy_options::overwrite_existing : std::filesystem::copy_options::none;
-    std::filesystem::copy_file(mPaths.workingStageFile, ResolveSavedFilePath(fileName), copyOptions, fileSystemError);
-    if (fileSystemError) {
-        return {UGCWorkCopyFailure::FileCopy, fileSystemError};
+    std::string error;
+    if (!AtomicFile::CopyFile(mPaths.workingStageFile, ResolveSavedFilePath(fileName), shouldOverwrite, error)) {
+        return {UGCWorkCopyFailure::FileCopy, error};
     }
     return {};
 }
 
 bool UGCWorkStorage::CopySavedFileToWorking(const std::string& fileName) const
 {
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(ResolveSavedFilePath(fileName), mPaths.workingStageFile,
-                               std::filesystem::copy_options::overwrite_existing, fileSystemError);
-    return !fileSystemError;
+    std::string error;
+    return AtomicFile::CopyFile(ResolveSavedFilePath(fileName), mPaths.workingStageFile, true, error);
+}
+
+bool UGCWorkStorage::WriteWorkingAndSavedFile(const std::string& fileName, std::string_view text,
+                                              std::string& outError) const
+{
+    const auto savedPath = ResolveSavedFilePath(fileName);
+    if (savedPath.empty()) {
+        outError = "Expected a saved work filename without a directory.";
+        return false;
+    }
+    std::error_code error;
+    std::filesystem::create_directories(mPaths.savedWorkDirectory, error);
+    if (error) {
+        outError = "Failed to create the saved work directory: " + error.message();
+        return false;
+    }
+    const AtomicFile::TextWrite files[]{{mPaths.workingStageFile, text}, {savedPath, text}};
+    return AtomicFile::WriteTextFiles(files, outError) == AtomicFile::WriteResult::Written;
 }
 
 bool UGCWorkStorage::DuplicateSavedFile(const std::string& fileName) const
@@ -87,14 +112,13 @@ bool UGCWorkStorage::DuplicateSavedFile(const std::string& fileName) const
     const std::string sourceStem = ToUtf8FileName(sourceFilePath.stem());
     std::string destinationFileName = sourceStem + "_コピー.yaml";
     int suffix = 2;
-    while (std::filesystem::exists(ResolveSavedFilePath(destinationFileName))) {
+    std::error_code statusError;
+    while (std::filesystem::exists(ResolveSavedFilePath(destinationFileName), statusError)) {
         destinationFileName = sourceStem + "_コピー" + std::to_string(suffix++) + ".yaml";
     }
-
-    std::error_code fileSystemError;
-    std::filesystem::copy_file(sourceFilePath, ResolveSavedFilePath(destinationFileName),
-                               std::filesystem::copy_options::none, fileSystemError);
-    return !fileSystemError;
+    std::string error;
+    return !statusError &&
+           AtomicFile::CopyFile(sourceFilePath, ResolveSavedFilePath(destinationFileName), false, error);
 }
 
 bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const
@@ -107,7 +131,7 @@ bool UGCWorkStorage::DeleteSavedFile(const std::string& fileName) const
 bool UGCWorkStorage::IsClearVerified(const std::string& fileName) const
 {
     try {
-        const YAML::Node stageYaml = YamlFile::Load(ResolveSavedFilePath(fileName).string());
+        const YAML::Node stageYaml = YamlFile::Load(ResolveSavedFilePath(fileName));
         return UGCWorkMetadata::IsClearVerified(stageYaml);
     } catch (const YAML::Exception&) {
         return false;

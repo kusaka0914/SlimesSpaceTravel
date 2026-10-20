@@ -1,4 +1,4 @@
 Checks: '-*,clang-analyzer-core.*,clang-analyzer-cplusplus.*,clang-analyzer-deadcode.*,clang-analyzer-unix.*,bugprone-use-after-move,bugprone-infinite-loop,bugprone-suspicious-semicolon,performance-unnecessary-copy-initialization'
 WarningsAsErrors: 'clang-analyzer-*,bugprone-*'
-HeaderFilterRegex: 'src/(actor|app|component|editor|gfx|state|system|utils)/'
+HeaderFilterRegex: 'src/(actor|animation|app|component|editor|effect|gameplay|gfx|state|system|text|utils|world)/'
 FormatStyle: file

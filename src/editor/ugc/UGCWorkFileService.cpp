@@ -5,6 +5,7 @@
 #include "gameplay/ugc/UGCWorkFileName.h"
 #include "gameplay/ugc/UGCWorkMetadata.h"
 #include "system/UserDataPaths.h"
+#include "utils/AtomicFile.h"
 #include "utils/TextFile.h"
 #include "utils/YamlFile.h"
 
@@ -51,22 +52,7 @@ bool UGCWorkFileService::SaveCurrentWork(const std::string& displayName, const s
             return false;
         }
         UGCWorkMetadata::PrepareForSave(stageYaml, displayName, fileName);
-        if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml)) {
-            outErrorMessage = "作業中のステージを書き込めませんでした";
-            return false;
-        }
-
-        const UGCWorkCopyResult copyResult = mStorage.CopyWorkingFileToSaved(fileName, true);
-        if (copyResult.failure == UGCWorkCopyFailure::SavedDirectoryCreation) {
-            outErrorMessage = "保存フォルダを作れませんでした: " + copyResult.fileSystemError.message();
-            return false;
-        }
-        if (!copyResult.Succeeded()) {
-            outErrorMessage = "作品ファイルをコピーできませんでした: " + copyResult.fileSystemError.message();
-            return false;
-        }
-
-        return true;
+        return SaveStageCopies(stageYaml, fileName, outErrorMessage);
     } catch (const std::exception& error) {
         std::cerr << "Failed to save UGC work: " << error.what() << std::endl;
         outErrorMessage = error.what();
@@ -84,20 +70,13 @@ bool UGCWorkFileService::ResetWorkingStage(std::string& outErrorMessage) const
         outErrorMessage = "作業フォルダを作れませんでした: " + fileSystemError.message();
         return false;
     }
-    std::filesystem::copy_file(newWorkTemplatePath, workingStagePath, std::filesystem::copy_options::overwrite_existing,
-                               fileSystemError);
-    if (!fileSystemError) {
-        return true;
-    }
-
-    outErrorMessage = "初期ステージを読み込めませんでした: " + fileSystemError.message();
-    return false;
+    return AtomicFile::CopyFile(newWorkTemplatePath, workingStagePath, true, outErrorMessage);
 }
 
 bool UGCWorkFileService::HasUnsavedChanges() const
 {
     try {
-        const YAML::Node workingStage = YamlFile::Load(UserDataPaths::ResolveUGCWorkingStageFile().string());
+        const YAML::Node workingStage = YamlFile::Load(UserDataPaths::ResolveUGCWorkingStageFile());
         const std::optional<std::string> fileName = UGCWorkMetadata::FindFileName(workingStage);
         if (!fileName) {
             return true;
@@ -131,35 +110,27 @@ bool UGCWorkFileService::IsClearVerified(const std::string& fileName) const
     return mStorage.IsClearVerified(fileName);
 }
 
-bool UGCWorkFileService::CompleteVerification(const std::string& fileName) const
+bool UGCWorkFileService::CompleteVerification(const std::string& fileName, std::string& outError) const
 {
+    outError.clear();
     YAML::Node stageYaml;
     if (!StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
+        outError = "作業中のステージを読み込めませんでした";
         return false;
     }
     UGCWorkMetadata::MarkClearVerified(stageYaml);
-    if (!StageYamlRepository::SaveCurrentStage(mContext, stageYaml)) {
-        return false;
-    }
-
-    return mStorage.CopyWorkingFileToSaved(fileName, true).Succeeded();
+    return SaveStageCopies(stageYaml, fileName, outError);
 }
 
-bool UGCWorkFileService::CopyToWorkingFile(const std::string& fileName) const
+bool UGCWorkFileService::CopyToWorkingFile(const std::string& fileName, std::string& outError) const
 {
-    if (!mStorage.CopySavedFileToWorking(fileName)) {
-        return false;
-    }
-
+    outError.clear();
     try {
-        const std::filesystem::path workingStagePath = UserDataPaths::ResolveUGCWorkingStageFile();
-        YAML::Node stageYaml = YamlFile::Load(workingStagePath.string());
+        YAML::Node stageYaml = YamlFile::Load(mStorage.ResolveSavedFilePath(fileName));
         UGCWorkMetadata::PrepareForSave(stageYaml, ResolveDisplayName(fileName), fileName);
-        if (!StageYamlRepository::SaveYamlFile(workingStagePath.string(), stageYaml)) {
-            return false;
-        }
-        return mStorage.CopyWorkingFileToSaved(fileName, true).Succeeded();
-    } catch (const YAML::Exception&) {
+        return SaveStageCopies(stageYaml, fileName, outError);
+    } catch (const YAML::Exception& error) {
+        outError = error.what();
         return false;
     }
 }
@@ -172,4 +143,16 @@ bool UGCWorkFileService::DuplicateWork(const std::string& fileName) const
 bool UGCWorkFileService::DeleteWork(const std::string& fileName) const
 {
     return mStorage.DeleteSavedFile(fileName);
+}
+
+bool UGCWorkFileService::SaveStageCopies(const YAML::Node& stageYaml, const std::string& fileName,
+                                         std::string& outError) const
+{
+    YAML::Emitter emitter;
+    emitter << stageYaml;
+    if (!emitter.good()) {
+        outError = emitter.GetLastError();
+        return false;
+    }
+    return mStorage.WriteWorkingAndSavedFile(fileName, emitter.c_str(), outError);
 }

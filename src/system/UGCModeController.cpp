@@ -3,6 +3,7 @@
 #include "system/UGCModeRuntime.h"
 #include "system/UserDataPaths.h"
 #include "system/camera/CinematicCameraTypes.h"
+#include "utils/AtomicFile.h"
 
 #include <glm/glm.hpp>
 
@@ -38,11 +39,9 @@ bool UGCModeController::StartEditorTutorial()
 {
     const std::filesystem::path tutorialTemplatePath = "../assets/data/stage/ugc_tutorial_template.yaml";
     const std::filesystem::path tutorialStagePath = UserDataPaths::ResolveUGCTutorialStageFile();
-    std::error_code copyError;
-    std::filesystem::copy_file(tutorialTemplatePath, tutorialStagePath,
-                               std::filesystem::copy_options::overwrite_existing, copyError);
-    if (copyError) {
-        std::cerr << "Failed to reset UGC editor tutorial: " << copyError.message() << '\n';
+    std::string copyError;
+    if (!AtomicFile::CopyFile(tutorialTemplatePath, tutorialStagePath, true, copyError)) {
+        std::cerr << "Failed to reset UGC editor tutorial: " << copyError << '\n';
         return false;
     }
 

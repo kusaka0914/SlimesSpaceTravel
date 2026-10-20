@@ -178,6 +178,10 @@ void StageActorPlacementController::ClearMovingPlatformPlacementWorkflow()
 
 void StageActorPlacementController::UpdatePlacement()
 {
+    if (!mContext.game) {
+        mPlacementStatus = "配置に必要なシステムを利用できません";
+        return;
+    }
     if (mMovingPlatformCreator) {
         UpdateMovingPlatformStrokePlacement();
         return;
@@ -226,9 +230,8 @@ void StageActorPlacementController::UpdatePlacement()
     }
 
     StageActorPlacement placement;
-    int planetIndex = mPlacementFallbackPlanetIndex;
+    int planetIndex = 0;
     if (mContext.game->GetIsUGCMode()) {
-        planetIndex = 0;
         if (!mPlacementResolver.TryResolveUGCBuildPlanePlacement(rayFrom, rayTo, mUGCEditLayer, placement)) {
             mPlacementStatus = "クリック位置に配置点を作れませんでした";
             return;

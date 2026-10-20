@@ -51,11 +51,11 @@ struct IsolatedDirectory {
 struct Fixture {
     IsolatedDirectory directory;
     Game game;
-    explicit Fixture(bool areDebugToolsEnabled = false)
+    explicit Fixture(bool areDebugToolsEnabled = false, bool isVisible = false)
     {
         // GameWindowは可視性のヒントを上書きしない。通常起動の設定は変えずテストだけ非表示にする。
         ExpectTrue(glfwInit() == GLFW_TRUE, "GLFW display available");
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_VISIBLE, isVisible ? GLFW_TRUE : GLFW_FALSE);
         if (!game.Initialize(areDebugToolsEnabled, true)) {
             game.Shutdown();
             throw TestFailure("Game initialization failed");
@@ -524,45 +524,104 @@ void CameraControlsAreIndependentAndStopDuringEditorCapture(Game& game)
 
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
-    try {
-        {
-            Fixture fixture;
-            Game& game = fixture.game;
-            RunRuntimeReliabilityTests(game);
-            RunRuntimeGameplayTests(game);
-            RunRuntimeEditorPersistenceTests(game);
-            DebugEditorContext context{.game = &game};
-            StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); },
-                                               context.gameViewport, context.planetMoveMode);
-            StageEditCommandController commands(context, selection);
-            EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
-            CameraManualYawRemainsIndependent(game);
-            RendererDrawsStageAndBorrowedParticles(game);
-            CustomUIKeepsOrderAndFitsViewport(game);
-            CamerasUseExplicitContextWithoutGame();
-            CameraControlsAreIndependentAndStopDuringEditorCapture(game);
-            UGCUsesTheSameTransaction(game, context, commands);
-            UGCSceneUsesCurrentBorrowedPreviewState(game);
-            InputSnapshotUsesOnlyProvidedDevices(game);
-            RunRuntimeCombatTests(game);
-            ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
-            game.Shutdown();
-            ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Editor context released before window shutdown");
-            game.Shutdown();
+    if (argc == 2 && std::string(argv[1]) == "--interactive") {
+        try {
+            // 実際のRunLoopを操作しつつ、既存セーブとEditor設定はテスト用保存先へ隔離する。
+            Fixture fixture(true, true);
+            std::cout << "Interactive validation GPU: " << glGetString(GL_RENDERER) << std::endl;
+            fixture.game.RunLoop();
+            const auto& metrics = fixture.game.GetFramePerformanceMetrics();
+            std::cout << "Last frame snapshot (ms): total=" << metrics.totalMilliseconds
+                      << " update=" << metrics.gameUpdateMilliseconds
+                      << " firstViewportGPU=" << metrics.firstViewportGpuMilliseconds
+                      << " hasGPU=" << metrics.hasFirstViewportGpuMeasurement << '\n';
+            ExpectEqual(static_cast<GLuint>(GL_NO_ERROR), glGetError(), "interactive loop leaves no GL error");
+            return 0;
+        } catch (const std::exception& error) {
+            std::cerr << "[FAIL] Interactive validation: " << error.what() << '\n';
+            return 1;
         }
-        {
-            Fixture restarted(true);
-            ExpectTrue(ImGui::GetCurrentContext() != nullptr, "fresh Game initializes after previous shutdown");
-            TwoPlayerViewportAndEmptyTargetsRemainSafe(restarted.game);
-        }
-        ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Game destruction releases the second Editor context");
-        std::cout << "[PASS] Runtime.EditorLifetimeAndRepeatedStartup\n";
-        std::cout << "Runtime integration tests passed\n";
-        return 0;
-    } catch (const std::exception& error) {
-        std::cerr << "[FAIL] Runtime integration: " << error.what() << '\n';
-        return 1;
     }
+
+    struct Suite {
+        const char* name;
+        void (*run)(Game&);
+    };
+    const Suite suites[]{
+        {"reliability", RunRuntimeReliabilityTests},
+        {"gameplay", RunRuntimeGameplayTests},
+        {"persistence", RunRuntimeEditorPersistenceTests},
+        {"editor",
+         [](Game& game) {
+             DebugEditorContext context{.game = &game};
+             StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); },
+                                                context.gameViewport, context.planetMoveMode);
+             StageEditCommandController commands(context, selection);
+             EditingPersistsRuntimeUndoAndRedo(game, context, selection, commands);
+         }},
+        {"render",
+         [](Game& game) {
+             CameraManualYawRemainsIndependent(game);
+             RendererDrawsStageAndBorrowedParticles(game);
+             CustomUIKeepsOrderAndFitsViewport(game);
+             CamerasUseExplicitContextWithoutGame();
+             CameraControlsAreIndependentAndStopDuringEditorCapture(game);
+         }},
+        {"ugc",
+         [](Game& game) {
+             DebugEditorContext context{.game = &game};
+             StageSelectionController selection([&]() { return MakeTestStageSelectionScene(game); },
+                                                context.gameViewport, context.planetMoveMode);
+             StageEditCommandController commands(context, selection);
+             UGCUsesTheSameTransaction(game, context, commands);
+             UGCSceneUsesCurrentBorrowedPreviewState(game);
+         }},
+        {"input", InputSnapshotUsesOnlyProvidedDevices},
+        {"combat", RunRuntimeCombatTests},
+        {"lifetime",
+         [](Game& game) {
+             ExpectTrue(ImGui::GetCurrentContext() != nullptr, "Editor owns initialized ImGui");
+             game.Shutdown();
+             ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Editor released before window shutdown");
+             game.Shutdown();
+         }},
+    };
+    const std::string selected = argc == 3 && std::string(argv[1]) == "--suite" ? argv[2] : "";
+    if (argc != 1 && selected.empty()) {
+        std::cerr << "Usage: game_runtime_tests [--suite NAME | --interactive]\n";
+        return 2;
+    }
+    int failures = 0;
+    int executed = 0;
+    for (const auto& suite : suites) {
+        if (!selected.empty() && selected != suite.name) {
+            continue;
+        }
+        ++executed;
+        try {
+            {
+                Fixture fixture;
+                suite.run(fixture.game);
+            }
+            ExpectTrue(ImGui::GetCurrentContext() == nullptr, "Game destruction releases Editor context");
+            if (std::string(suite.name) == "lifetime") {
+                Fixture restarted(true);
+                ExpectTrue(ImGui::GetCurrentContext() != nullptr, "fresh Game initializes after previous shutdown");
+                TwoPlayerViewportAndEmptyTargetsRemainSafe(restarted.game);
+                std::cout << "[PASS] Runtime.EditorLifetimeAndRepeatedStartup\n";
+            }
+            std::cout << "[PASS] Runtime suite: " << suite.name << '\n';
+        } catch (const std::exception& error) {
+            ++failures;
+            std::cerr << "[FAIL] Runtime suite: " << suite.name << ": " << error.what() << '\n';
+        }
+    }
+    if (executed == 0) {
+        std::cerr << "Unknown Runtime test suite: " << selected << '\n';
+        return 2;
+    }
+    std::cout << executed - failures << "/" << executed << " Runtime suites passed\n";
+    return failures == 0 ? 0 : 1;
 }

@@ -38,8 +38,7 @@ struct TemporaryFile {
     }
 };
 
-bool PrepareText(const std::filesystem::path& path, std::string_view text, TemporaryFile& temporary,
-                 std::string& outError)
+bool ReserveTemporaryFile(const std::filesystem::path& path, TemporaryFile& temporary, std::string& outError)
 {
     if (path.filename().empty() ||
         path.native().find(std::filesystem::path::value_type{}) != std::filesystem::path::string_type::npos) {
@@ -66,6 +65,16 @@ bool PrepareText(const std::filesystem::path& path, std::string_view text, Tempo
     }
     if (temporary.path.empty()) {
         outError = "Failed to reserve a temporary file directory.";
+        return false;
+    }
+
+    return true;
+}
+
+bool PrepareText(const std::filesystem::path& path, std::string_view text, TemporaryFile& temporary,
+                 std::string& outError)
+{
+    if (!ReserveTemporaryFile(path, temporary, outError)) {
         return false;
     }
 
@@ -110,6 +119,44 @@ bool AtomicFile::WriteText(const std::filesystem::path& path, std::string_view t
     std::error_code error;
     if (!ReplaceFile(temporary.path, path, error)) {
         outError = "Failed to replace the destination: " + error.message();
+        return false;
+    }
+    return true;
+}
+
+bool AtomicFile::CopyFile(const std::filesystem::path& source, const std::filesystem::path& destination,
+                          bool shouldOverwrite, std::string& outError)
+{
+    outError.clear();
+    std::error_code error;
+    if (source.empty() ||
+        source.native().find(std::filesystem::path::value_type{}) != std::filesystem::path::string_type::npos ||
+        !std::filesystem::is_regular_file(source, error)) {
+        outError = error ? error.message() : "Expected a regular source file.";
+        return false;
+    }
+    TemporaryFile temporary;
+    if (!ReserveTemporaryFile(destination, temporary, outError)) {
+        return false;
+    }
+    if (!std::filesystem::copy_file(source, temporary.path, error)) {
+        outError = "Failed to copy the complete file: " + error.message();
+        return false;
+    }
+    if (shouldOverwrite) {
+        ReplaceFile(temporary.path, destination, error);
+    } else {
+        // exists()との二段階判定では、確認後に作られた別の作品を上書きする可能性がある。
+#ifdef _WIN32
+        if (!MoveFileExW(temporary.path.c_str(), destination.c_str(), MOVEFILE_WRITE_THROUGH)) {
+            error = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+        }
+#else
+        std::filesystem::create_hard_link(temporary.path, destination, error);
+#endif
+    }
+    if (error) {
+        outError = "Failed to publish the copied file: " + error.message();
         return false;
     }
     return true;

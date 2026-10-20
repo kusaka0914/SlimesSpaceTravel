@@ -475,7 +475,7 @@ src/
 
 ### 品質検証の入口
 
-最新の入出力・UGC修正と検証の要約は[review/submission/summary.json](review/submission/summary.json)にまとめています。[以前の検証](review/followup/summary.json)を含め、`review/`内のログは記録された時点の履歴で、最新状態の成功を示すものではありません。
+保存・描画・検証分離の要約は[review/submission/hardening.json](review/submission/hardening.json)、先行する入出力・UGC修正は[summary.json](review/submission/summary.json)にまとめています。[以前の検証](review/followup/summary.json)を含め、`review/`内のログは記録された時点の履歴で、最新状態の成功を示すものではありません。
 
 代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
 
@@ -485,10 +485,16 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
 cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
 
-# 入出力・UGCを含む重要な実装30ファイルの解析と、既存の依存境界の検査
+# 入出力・UGCを含む重要な実装41ファイルの解析と、既存の依存境界の検査
 python3 -B tools/run_static_analysis.py --build build
+# 全自作実装を調べる場合は --all-production を付ける。
 python3 -B tools/architecture_audit.py --check --output build/audit
 python3 -B tools/check_format.py --base <比較元コミット> --clang-format <clang-format-18>
+
+# 既存セーブを使わず、表示したウィンドウで本体のRunLoopを操作する（統合テスト有効時）。
+cd build/runtime-tests
+../game_runtime_tests --interactive
+cd ../..
 
 # Clangでの関数・行・分岐カバレッジ
 cmake -S . -B build -DGAME_ENABLE_COVERAGE=ON

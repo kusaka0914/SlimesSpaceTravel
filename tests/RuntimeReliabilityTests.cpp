@@ -4,6 +4,7 @@
 #include "TestFileSupport.h"
 #include "actor/Actor.h"
 #include "actor/MathUtils.h"
+#include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
@@ -13,14 +14,22 @@
 #include "component/PlatformPressureSwitchComponent.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/core/DebugEditorContext.h"
+#include "editor/stage/StageActorAssetEditor.h"
 #include "editor/stage/StageActorYamlWriter.h"
+#include "editor/stage/StageNPCInspector.h"
 #include "editor/stage/UGCPlatformCellService.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/ugc/UGCWorkController.h"
+#include "editor/ugc/UGCWorkFileService.h"
+#include "editor/ugc/UGCWorkState.h"
+#include "gfx/GameRenderTargets.h"
 #include "gfx/Renderer.h"
 #include "system/GamepadRumbleService.h"
 #include "system/ParticleSystem.h"
+#include "system/UserDataPaths.h"
 #include "system/actor_loader/PlatformStageConfig.h"
 #include "system/mesh/TextureLoader.h"
+#include "utils/YamlFile.h"
 #include "world/Stage.h"
 
 #include "imgui.h"
@@ -34,6 +43,125 @@
 #include <utility>
 
 namespace {
+
+void NPCInspectorAcceptsMissingContextWithoutStartingUI(Game&)
+{
+    DebugEditorContext context;
+    StageActorAssetEditor assets(context, []() {});
+    StageNPCInspector inspector(context, assets);
+    NPC npc(nullptr);
+    inspector.Draw(&npc, "NPCs", 0, 0);
+    inspector.Draw(nullptr, "NPCs", 0, 0);
+}
+
+void RenderTargetsRestoreBindingsAndReleaseResources(Game&)
+{
+    struct Bindings {
+        GLuint texture = 0, unpack = 0, read = 0, draw = 0, depth = 0;
+        Bindings()
+        {
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glGenBuffers(1, &unpack);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, unpack);
+            glBufferData(GL_PIXEL_UNPACK_BUFFER, 4, nullptr, GL_STATIC_DRAW);
+            glGenFramebuffers(1, &read);
+            glGenFramebuffers(1, &draw);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, read);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw);
+            glGenRenderbuffers(1, &depth);
+            glBindRenderbuffer(GL_RENDERBUFFER, depth);
+        }
+        ~Bindings()
+        {
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glDeleteTextures(1, &texture);
+            glDeleteBuffers(1, &unpack);
+            glDeleteFramebuffers(1, &read);
+            glDeleteFramebuffers(1, &draw);
+            glDeleteRenderbuffers(1, &depth);
+        }
+    } bindings;
+    const auto expectBindings = [&]() {
+        for (const auto& [query, expected] :
+             std::array<std::pair<GLenum, GLuint>, 5>{{{GL_TEXTURE_BINDING_2D, bindings.texture},
+                                                       {GL_PIXEL_UNPACK_BUFFER_BINDING, bindings.unpack},
+                                                       {GL_READ_FRAMEBUFFER_BINDING, bindings.read},
+                                                       {GL_DRAW_FRAMEBUFFER_BINDING, bindings.draw},
+                                                       {GL_RENDERBUFFER_BINDING, bindings.depth}}}) {
+            GLint actual = 0;
+            glGetIntegerv(query, &actual);
+            ExpectEqual(expected, static_cast<GLuint>(actual), "render target creation restores caller binding");
+        }
+        ExpectEqual(static_cast<GLuint>(GL_NO_ERROR), glGetError(), "no GL error with a bound small unpack buffer");
+    };
+    GameRenderTargets targets;
+    ExpectTrue(targets.EnsureUGCPreviewTarget(32, 24), "preview allocated");
+    expectBindings();
+    const GLuint preview = targets.GetUGCPreviewFramebuffer();
+    const GLuint texture = targets.GetUGCPreviewTexture();
+    ExpectTrue(targets.EnsureEditorGameTarget(16, 16), "editor allocated independently");
+    ExpectTrue(targets.GetEditorGameFramebuffer() != preview, "targets own distinct resources");
+    expectBindings();
+    ExpectTrue(targets.EnsureUGCPreviewTarget(48, 36), "preview resized");
+    ExpectEqual(preview, targets.GetUGCPreviewFramebuffer(), "resize reuses framebuffer");
+    ExpectEqual(48, targets.GetUGCPreviewWidth(), "new width published");
+    ExpectEqual(36, targets.GetUGCPreviewHeight(), "new height published");
+    ExpectFalse(targets.EnsureUGCPreviewTarget(std::numeric_limits<int>::max(), 1), "driver limit checked");
+    ExpectFalse(targets.EnsureUGCPreviewTarget(0, 1), "zero size rejected");
+    ExpectEqual(preview, targets.GetUGCPreviewFramebuffer(), "invalid size preserves valid target");
+    expectBindings();
+    targets.Shutdown();
+    targets.Shutdown();
+    ExpectFalse(glIsFramebuffer(preview) == GL_TRUE || glIsTexture(texture) == GL_TRUE, "GPU resources released");
+    ExpectEqual(0, targets.GetUGCPreviewWidth(), "released dimensions cleared");
+}
+
+void UGCWorkTransactionsRetainFilesOnFailure(Game& game)
+{
+    ExpectTrue(game.StartUGCMode(), "open isolated working stage");
+    DebugEditorContext context{.game = &game};
+    UGCWorkFileService service(context);
+    const auto working = UserDataPaths::ResolveUGCWorkingStageFile();
+    const auto saved = UserDataPaths::ResolveUGCSavedWorkDirectory() / "work.yaml";
+    std::string error;
+    ExpectTrue(service.SaveCurrentWork("work", "work.yaml", error), "save both copies");
+    ExpectFalse(service.HasUnsavedChanges(), "matching committed copies");
+    const std::string original = ReadTestFile(working);
+    WriteTestFile(saved, "planets: [");
+    ExpectFalse(service.CopyToWorkingFile("work.yaml", error),
+                "malformed saved work rejected before replacing working data");
+    ExpectEqual(original, ReadTestFile(working), "failed parse keeps working stage");
+    WriteTestFile(saved, original);
+    std::filesystem::create_directory(saved.parent_path() / "blocked.yaml");
+    ExpectFalse(service.SaveCurrentWork("changed", "blocked.yaml", error), "paired save rejects invalid destination");
+    ExpectEqual(original, ReadTestFile(working), "failed save keeps metadata and working contents");
+    UGCWorkState workState;
+    UGCWorkController controller(context, workState, []() {});
+    ExpectFalse(controller.CompleteVerification("blocked.yaml"), "failed verification save reported");
+    ExpectFalse(workState.saveErrorMessage.empty(), "verification failure is available to the work browser");
+    ExpectEqual(original, ReadTestFile(working), "failed verification keeps old flag");
+    ExpectEqual(original, ReadTestFile(saved), "other saved work unchanged");
+    ExpectTrue(service.CompleteVerification("work.yaml", error), "verification committed to both copies");
+    ExpectTrue(service.IsClearVerified("work.yaml"), "saved verification flag");
+    ExpectFalse(service.HasUnsavedChanges(), "verified copies are identical");
+    ExpectTrue(service.CopyToWorkingFile("work.yaml", error), "valid saved work opens");
+    ExpectFalse(service.HasUnsavedChanges(), "opening normalizes both copies together");
+    ExpectTrue(service.ResetWorkingStage(error), "reset uses packaged template");
+    ExpectTrue(service.HasUnsavedChanges(), "reset has no saved identity");
+    const auto retained = working.parent_path() / "retained.yaml";
+    std::filesystem::rename(working, retained);
+    std::filesystem::create_directory(working);
+    const bool reset = service.ResetWorkingStage(error);
+    const bool keptDirectory = std::filesystem::is_directory(working);
+    std::filesystem::remove(working);
+    std::filesystem::rename(retained, working);
+    ExpectFalse(reset, "invalid reset destination rejected");
+    ExpectTrue(keptDirectory, "reset did not delete destination directory");
+}
 
 void GeneratedPlatformsReserveIdsDuringRebuild(Game& game)
 {
@@ -415,6 +543,9 @@ void RunRuntimeReliabilityTests(Game& game)
 {
     int failures = 0;
     const std::pair<const char*, void (*)(Game&)> cases[]{
+        {"NPCInspectorAcceptsMissingContextWithoutStartingUI", NPCInspectorAcceptsMissingContextWithoutStartingUI},
+        {"RenderTargetsRestoreBindingsAndReleaseResources", RenderTargetsRestoreBindingsAndReleaseResources},
+        {"UGCWorkTransactionsRetainFilesOnFailure", UGCWorkTransactionsRetainFilesOnFailure},
         {"GeneratedPlatformsReserveIdsDuringRebuild", GeneratedPlatformsReserveIdsDuringRebuild},
         {"SwitchStableTargetsSurviveConfigurationAndSave", SwitchStableTargetsSurviveConfigurationAndSave},
         {"ParticlePresentationUsesOnlyProvidedSystem", ParticlePresentationUsesOnlyProvidedSystem},

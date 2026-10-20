@@ -169,6 +169,37 @@ void IsClearVerifiedHandlesVerifiedUnverifiedAndInvalidFiles()
     ExpectFalse(storage.IsClearVerified("missing.yaml"), "missing work");
 }
 
+void PairedSaveKeepsBothFilesOnPreparationFailure()
+{
+    TemporaryWorkStorage fixture;
+    fixture.WriteWorkingFile("old working");
+    fixture.WriteSavedFile("work.yaml", "old saved");
+    const auto storage = fixture.CreateStorage();
+    std::string error;
+    ExpectTrue(storage.WriteWorkingAndSavedFile("work.yaml", "new bytes", error), "paired save succeeds");
+    ExpectEqual(std::string("new bytes"), fixture.ReadFile(fixture.GetWorkingFilePath()), "working copy committed");
+    ExpectEqual(std::string("new bytes"), fixture.ReadFile(fixture.GetSavedDirectoryPath() / "work.yaml"),
+                "saved copy committed");
+    std::filesystem::create_directory(fixture.GetSavedDirectoryPath() / "blocked.yaml");
+    ExpectFalse(storage.WriteWorkingAndSavedFile("blocked.yaml", "replacement", error), "invalid saved destination");
+    ExpectEqual(std::string("new bytes"), fixture.ReadFile(fixture.GetWorkingFilePath()), "working copy retained");
+    ExpectFalse(error.empty(), "paired save failure explained");
+}
+
+void SavedWorkNamesCannotEscapeTheDirectory()
+{
+    TemporaryWorkStorage fixture;
+    fixture.WriteWorkingFile("original");
+    const auto storage = fixture.CreateStorage();
+    std::string error;
+    for (const auto& name : {std::string("../outside.yaml"), std::string("/outside.yaml"), std::string(".."),
+                             std::string(""), std::string("work\0suffix", 11)}) {
+        ExpectTrue(storage.ResolveSavedFilePath(name).empty(), "invalid name has no destination");
+        ExpectFalse(storage.WriteWorkingAndSavedFile(name, "replacement", error), "invalid paired save rejected");
+        ExpectEqual(std::string("original"), fixture.ReadFile(fixture.GetWorkingFilePath()), "working bytes retained");
+    }
+}
+
 } // namespace
 
 void RegisterUGCWorkStorageTests(TestRegistry& tests)
@@ -188,4 +219,7 @@ void RegisterUGCWorkStorageTests(TestRegistry& tests)
                        DeleteSavedFileReportsExistingAndMissingFiles);
     tests.emplace_back("UGCWorkStorage.IsClearVerifiedHandlesVerifiedUnverifiedAndInvalidFiles",
                        IsClearVerifiedHandlesVerifiedUnverifiedAndInvalidFiles);
+    tests.emplace_back("UGCWorkStorage.PairedSaveKeepsBothFilesOnFailure",
+                       PairedSaveKeepsBothFilesOnPreparationFailure);
+    tests.emplace_back("UGCWorkStorage.SavedWorkNamesStayInDirectory", SavedWorkNamesCannotEscapeTheDirectory);
 }

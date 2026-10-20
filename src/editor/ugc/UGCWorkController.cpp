@@ -147,7 +147,7 @@ void UGCWorkController::StartVerification(std::string& outStatusMessage)
 
 bool UGCWorkController::CompleteVerification(const std::string& workFileName)
 {
-    const bool wasCompleted = mFileService.CompleteVerification(workFileName);
+    const bool wasCompleted = mFileService.CompleteVerification(workFileName, mState.saveErrorMessage);
     RefreshWorkList();
     return wasCompleted;
 }
@@ -172,7 +172,7 @@ bool UGCWorkController::CopySelectedWorkToWorkingFile()
         return false;
     }
     const std::string copiedFileName = *selectedFileName;
-    if (!mFileService.CopyToWorkingFile(copiedFileName)) {
+    if (!mFileService.CopyToWorkingFile(copiedFileName, mState.saveErrorMessage)) {
         return false;
     }
 

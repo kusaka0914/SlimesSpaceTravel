@@ -1,0 +1,28 @@
+[
+  {
+    "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageNPCInspector.cpp",
+    "line": 181,
+    "message": "Called C++ object pointer is null",
+    "events": [
+      "Assuming 'npc' is non-null",
+      "Assuming field 'game' is null",
+      "Assuming the condition is true",
+      "Assuming the condition is false",
+      "Assuming the condition is false",
+      "Assuming the condition is true",
+      "Assuming the condition is false",
+      "Assuming 'shouldDrawInlineConversationEditor' is true",
+      "Calling 'StageNPCInspector::DrawInlineConversationEditor'",
+      "Entered call from 'StageNPCInspector::Draw'",
+      "Called C++ object pointer is null"
+    ]
+  },
+  {
+    "file": "/Users/kusakatakumi/SlimesSpaceTravel/SlimesSpaceTravel/src/editor/stage/StageActorPlacementController.cpp",
+    "line": 229,
+    "message": "Value stored to 'planetIndex' during its initialization is never read",
+    "events": [
+      "Value stored to 'planetIndex' during its initialization is never read"
+    ]
+  }
+]

@@ -28,6 +28,10 @@ SOURCES = (
     "src/editor/stage/StagePlatformIdentifiers.cpp", "src/editor/stage/UGCPlatformCellService.cpp",
     "src/editor/stage/StageYamlRepository.cpp", "src/system/tutorial/TutorialLibrary.cpp",
     "src/editor/ugc/UGCWorkFileService.cpp",
+    "src/gfx/GameRenderTargets.cpp", "src/gameplay/ugc/UGCWorkStorage.cpp", "src/system/UGCModeController.cpp",
+    "src/editor/stage/StageActorInspector.cpp", "src/system/ActorLoadSystem.cpp", "src/world/GameWorld.cpp",
+    "src/editor/stage/StageNPCInspector.cpp", "src/editor/stage/StageActorPlacementController.cpp",
+    "src/editor/ugc/UGCWorkController.cpp", "src/editor/ugc/UGCWorkPanel.cpp", "src/system/UserDataPaths.cpp",
 )
 
 
@@ -81,11 +85,22 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--clang-tidy", default=shutil.which("clang-tidy"))
     parser.add_argument("--jobs", type=int, default=2)
+    parser.add_argument("--all-production", action="store_true",
+                        help="analyze every first-party production translation unit in the compilation database")
     options = parser.parse_args()
     build = options.build.resolve()
     output = (options.output or build / "analysis").resolve()
     output.mkdir(parents=True, exist_ok=True)
     entries = json.loads((build / "compile_commands.json").read_text(encoding="utf-8"))
+    sources = SOURCES
+    if options.all_production:
+        sources = set()
+        for entry in entries:
+            path = (Path(entry["directory"]) / entry["file"]).resolve()
+            if path.is_relative_to(ROOT / "src") and "thirdParty" not in path.parts:
+                sources.add(path.relative_to(ROOT).as_posix())
+        sources.add("tools/editor_restart_helper/Main.cpp")
+        sources = sorted(sources)
     if options.jobs < 1:
         parser.error("--jobs must be positive")
     if not options.clang_tidy:
@@ -94,9 +109,10 @@ def main():
         if os.name == "nt" or "clang" not in version.lower():
             parser.error("install clang-tidy or use a Clang compilation database")
     with ThreadPoolExecutor(max_workers=options.jobs) as executor:
-        results = list(executor.map(lambda source: analyze(source, entries, options.clang_tidy, build, output), SOURCES))
+        results = list(executor.map(lambda source: analyze(source, entries, options.clang_tidy, build, output), sources))
     report = {"engine": "clang-tidy" if options.clang_tidy else "Clang static analyzer",
-              "scope": "selected production files; external-header diagnostics are excluded from the plist gate",
+              "scope": ("all first-party production translation units" if options.all_production else
+                        "selected production boundaries") + "; external-header diagnostics are excluded from the plist gate",
               "results": results, "passed": all(result["passed"] for result in results)}
     (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     for result in results:

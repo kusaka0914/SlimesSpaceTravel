@@ -1,0 +1,52 @@
+{
+  "base_commit": "07d8fbcc1eb6cba14e695fe376738b049c2c0e1d",
+  "status": "code hardening and Release checks complete; hosted CI, sanitizer and final operating checks pending",
+  "fixes": [
+    "UGC copy/reset/migration prepare a full temporary file before publishing; no-overwrite copies publish without a check-then-overwrite race.",
+    "UGC save/open/verification writes working and saved copies through the existing rollback-capable compound writer. Malformed work is parsed before replacing working data.",
+    "Invalid saved-work paths are rejected. Directory iteration returns a failure instead of throwing or accepting an incomplete list.",
+    "Work browser displays verification/open errors; recovery backup paths remain available in the error information.",
+    "GameRenderTargets shares allocation/deallocation, cannot be copied, releases owned resources, checks dimensions and restores GL bindings/unpack state.",
+    "NPC Inspector rejects missing Game/Stage; placement checks Game before use and removes a dead initialization.",
+    "Game::Shutdown documentation now agrees with its destructor call.",
+    "CTest launches nine independent runtime suites; a failed suite does not stop unrelated suites. An isolated interactive entry runs the actual Game::RunLoop without user saves."
+  ],
+  "local_release": {
+    "ctest_groups": 15,
+    "unit_cases": 286,
+    "all_passed": true,
+    "asset_files": 37,
+    "static_production_translation_units": 309,
+    "static_diagnostics": 0,
+    "clang_format": "18.1.8",
+    "changed_cpp_files_since_dev": 50,
+    "warnings": 0
+  },
+  "design_audit": {
+    "method": "all-source structural scan and compiler analysis, plus focused manual tracing of orchestration, save/undo/reload, ownership and render-resource boundaries; not a claim of line-by-line manual reading of every file",
+    "source_files_in_manifest": 638,
+    "focused_boundaries": [
+      "Game and GameWorld/ActorLoadSystem stage replacement",
+      "StageActorInspector and StageActorYamlWriter save/retry/history boundary",
+      "PhysicsWorldBuilder and PhysicsSystem Bullet removal/destruction order",
+      "PlatformAdhesionComponent teardown and cleared Player registries",
+      "MeshLoadSystem, GameFrameRenderer and GPU shutdown before GameWindow",
+      "PlayerMovement/EnemyMovement/ActorCollisionResolver movement and sweep boundaries",
+      "TextFile/YamlFile/AtomicFile/UGCWorkStorage persistence"
+    ],
+    "retained_choices": [
+      "Game remains the composition/orchestration facade; replacing every shared service access with callbacks would add unrelated complexity.",
+      "Straight UI control sequences and schema field mappings remain in order; size alone does not justify splitting them.",
+      "Small local normalization/interpolation helpers and mutable/const lookup pairs remain local; no generic base class is introduced to eliminate a few repeated lines.",
+      "Platform switch state/visual logic remains in its component; only actual common contact detection is shared."
+    ]
+  },
+  "remaining": [
+    "Linux/Windows hosted CI on the published final commit",
+    "ASan/UBSan rerun for this source tree and available leak checks",
+    "Actual RunLoop interaction, repeated stages and performance on a specified submission machine",
+    "Independent human review; automated analysis and this focused manual audit do not replace it"
+  ],
+  "source_snapshot": "hardening-source-snapshot.csv",
+  "new_markdown_reports": false
+}

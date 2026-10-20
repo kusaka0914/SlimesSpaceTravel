@@ -89,6 +89,31 @@ void AtomicSaveRejectsEmbeddedNullWithoutOverwritingFile()
     ExpectFalse(error.empty(), "invalid path is explained");
 }
 
+void AtomicCopyPreservesExistingDestinationsAndPublishesCompleteBytes()
+{
+    TemporaryTestDirectory fixture;
+    const auto source = fixture.Root() / "source.yaml";
+    WriteTestFile(source, "new bytes");
+    WriteTestFile(fixture.File(), "old bytes");
+    std::string error;
+    ExpectFalse(AtomicFile::CopyFile(source, fixture.File(), false, error),
+                "non-overwriting copy rejects existing file");
+    ExpectEqual(std::string("old bytes"), ReadTestFile(fixture.File()), "rejected copy preserves destination");
+    ExpectTrue(AtomicFile::CopyFile(source, fixture.File(), true, error), "complete replacement");
+    ExpectEqual(std::string("new bytes"), ReadTestFile(fixture.File()), "replacement contents");
+    for (const auto& invalid : {fixture.Root(), fixture.Root() / "missing.yaml"}) {
+        ExpectFalse(AtomicFile::CopyFile(invalid, fixture.File(), true, error), "invalid source rejected");
+        ExpectEqual(std::string("new bytes"), ReadTestFile(fixture.File()), "read failure keeps destination");
+    }
+    const auto created = fixture.Root() / "new.yaml";
+    ExpectTrue(AtomicFile::CopyFile(source, created, false, error), "publish new file without overwrite");
+    ExpectEqual(std::string("new bytes"), ReadTestFile(created), "new file contents");
+    ExpectEqual(
+        std::ptrdiff_t(3),
+        std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
+        "copy leaves no temporary files");
+}
+
 void AtomicSaveReplacesCompleteFileAndRemovesTemporaryFiles()
 {
     TemporaryTestDirectory fixture;
@@ -545,12 +570,30 @@ void FailedWriteDoesNotTruncateOldFile()
         std::distance(std::filesystem::directory_iterator(fixture.Root()), std::filesystem::directory_iterator()),
         "short write leaves no temporary files");
 }
+
+void FailedCopyDoesNotTruncateOldFile()
+{
+    TemporaryTestDirectory fixture;
+    const auto source = fixture.Root() / "source.yaml";
+    WriteTestFile(source, std::string(128, 'N'));
+    WriteTestFile(fixture.File(), "original");
+    ExpectWriteFailureWithByteLimit(
+        [&]() {
+            std::string error;
+            return AtomicFile::CopyFile(source, fixture.File(), true, error);
+        },
+        8);
+    ExpectEqual(std::string("original"), ReadTestFile(fixture.File()), "old file survives a partial copy");
+}
+
 #endif
 
 } // namespace
 
 void RegisterPersistenceSafetyTests(TestRegistry& tests)
 {
+    tests.emplace_back("Persistence.AtomicCopyPreservesDestinations",
+                       AtomicCopyPreservesExistingDestinationsAndPublishesCompleteBytes);
     tests.emplace_back("Persistence.TextReadBytesAndFailureState", TextReadsPreserveBytesAndKeepOutputOnFailure);
     tests.emplace_back("Persistence.YamlReadErrorCategories", YamlFileDistinguishesReadFailureAndSyntaxFailure);
     tests.emplace_back("Persistence.TutorialDirectoryReadKeepsDefinitions", TutorialDirectoryReadKeepsDefinitions);
@@ -592,6 +635,7 @@ void RegisterPersistenceSafetyTests(TestRegistry& tests)
     tests.emplace_back("Persistence.StageEditSaveFailureDoesNotReload", StageEditSaveFailureDoesNotReloadRuntime);
     tests.emplace_back("Persistence.StageEditReportsRecoveryFailure", StageEditReportsRecoveryFailureSeparately);
 #ifndef _WIN32
+    tests.emplace_back("Persistence.PartialCopyPreservesOldFile", FailedCopyDoesNotTruncateOldFile);
     tests.emplace_back("Persistence.ShortWriteKeepsOldFile", FailedWriteDoesNotTruncateOldFile);
 #endif
 }
