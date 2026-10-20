@@ -3,7 +3,7 @@
 #include "editor/core/DebugEditorContext.h"
 #include "editor/core/DebugEditorSection.h"
 #include "editor/session/DebugEditorSessionCoordinator.h"
-#include "editor/stage/StageEditShortcutHandler.h"
+#include "editor/stage/history/StageEditShortcutHandler.h"
 
 class AssetBrowserPanel;
 class BasicInfoDebugPanel;

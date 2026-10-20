@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor/stage/UGCPresetVisuals.h"
+#include "editor/stage/ugc/UGCPresetVisuals.h"
 
 #include <optional>
 #include <string>

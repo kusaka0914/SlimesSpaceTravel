@@ -1,9 +1,9 @@
 #pragma once
 
 #include "editor/core/DebugPanel.h"
-#include "editor/stage/StageActorInspector.h"
-#include "editor/stage/StagePlayerEditor.h"
-#include "editor/stage/StageSelectionController.h"
+#include "editor/stage/inspectors/StageActorInspector.h"
+#include "editor/stage/inspectors/StagePlayerEditor.h"
+#include "editor/stage/selection/StageSelectionController.h"
 
 #include <functional>
 #include <string>

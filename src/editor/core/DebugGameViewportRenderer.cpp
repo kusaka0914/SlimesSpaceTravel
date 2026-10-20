@@ -3,12 +3,12 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Actor.h"
-#include "editor/session/DebugBuildRestartPanel.h"
+#include "app/Game.h"
 #include "editor/core/DebugEditorLayout.h"
-#include "editor/stage/StageGizmoController.h"
-#include "editor/stage/StageSelectionController.h"
+#include "editor/session/DebugBuildRestartPanel.h"
+#include "editor/stage/selection/StageGizmoController.h"
+#include "editor/stage/selection/StageSelectionController.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
 

@@ -4,16 +4,16 @@
 #include <GL/glew.h>
 
 #include "app/Game.h"
-#include "gfx/UIRenderer.h"
 #include "editor/assets/EditorModelThumbnailRenderer.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
-#include "editor/stage/UGCPresetVisuals.h"
+#include "editor/stage/ugc/UGCPresetVisuals.h"
 #include "editor/ugc/UGCEditorInteractionController.h"
 #include "editor/ugc/UGCEditorMenuState.h"
 #include "editor/ugc/UGCEditorToolState.h"
 #include "editor/ugc/UGCEditorTutorial.h"
 #include "editor/ugc/UGCTutorialOverlayRenderer.h"
 #include "editor/ugc/UGCWorkPanel.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 
 #include <algorithm>

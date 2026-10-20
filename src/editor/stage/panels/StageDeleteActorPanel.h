@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor/core/DebugPanel.h"
-#include "editor/stage/StageEditCommandController.h"
+#include "editor/stage/history/StageEditCommandController.h"
 
 #include <string>
 #include <unordered_set>

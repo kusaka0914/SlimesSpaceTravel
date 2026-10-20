@@ -1,12 +1,12 @@
 #include "editor/ugc/UGCEditorRenderer.h"
 
 #include "app/Game.h"
-#include "gfx/UIRenderer.h"
+#include "editor/stage/history/StageEditCommandController.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
-#include "editor/stage/StageActorYamlWriter.h"
-#include "editor/stage/StageEditCommandController.h"
-#include "editor/stage/StageSelectionController.h"
-#include "editor/stage/StageSelectionOverlay.h"
+#include "editor/stage/persistence/StageActorYamlWriter.h"
+#include "editor/stage/selection/StageSelectionController.h"
+#include "editor/stage/selection/StageSelectionOverlay.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 
 #include <utility>

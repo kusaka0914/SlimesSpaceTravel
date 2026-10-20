@@ -1,7 +1,7 @@
 #include "editor/ugc/UGCWorkFileService.h"
 
 #include "editor/core/DebugEditorContext.h"
-#include "editor/stage/StageYamlRepository.h"
+#include "editor/stage/persistence/StageYamlRepository.h"
 #include "gameplay/ugc/UGCWorkFileName.h"
 #include "gameplay/ugc/UGCWorkMetadata.h"
 #include "system/UserDataPaths.h"

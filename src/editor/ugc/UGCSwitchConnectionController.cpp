@@ -1,12 +1,12 @@
 #include "editor/ugc/UGCSwitchConnectionController.h"
 
-#include "app/Game.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
+#include "editor/stage/history/StageEditTransaction.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
-#include "editor/stage/StageEditTransaction.h"
-#include "editor/stage/StagePlatformConnections.h"
-#include "editor/stage/StageSelectionController.h"
-#include "editor/stage/StageYamlRepository.h"
+#include "editor/stage/persistence/StagePlatformConnections.h"
+#include "editor/stage/persistence/StageYamlRepository.h"
+#include "editor/stage/selection/StageSelectionController.h"
 #include "editor/ugc/UGCEditorToolState.h"
 
 #include <string>

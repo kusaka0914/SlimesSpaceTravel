@@ -73,7 +73,7 @@ def main():
         "tracked_changes": subprocess.run(["git", "diff", "--quiet", "HEAD", "--"], cwd=ROOT).returncode != 0,
         "system": platform.platform(), "cpu": cpu_description(), "configuration": configuration,
         "executable_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
-        "method_sha256": hashlib.sha256((ROOT / "tests/RuntimeFrameLoopTests.cpp").read_bytes()).hexdigest(),
+        "method_sha256": hashlib.sha256((ROOT / "tests/integration/RuntimeFrameLoopTests.cpp").read_bytes()).hexdigest(),
         "isolation_runner_sha256": hashlib.sha256((ROOT / "tools/run_runtime_checks.py").read_bytes()).hexdigest(),
         "scenarios": scenarios,
         "limitations": [

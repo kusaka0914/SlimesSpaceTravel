@@ -1,16 +1,16 @@
 #include "editor/session/DebugEditorSessionCoordinator.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "editor/core/DebugEditorContext.h"
-#include "editor/stage/panels/StageEditorPanel.h"
-#include "editor/stage/panels/StagePlanetPanel.h"
 #include "editor/session/EditorSessionRepository.h"
 #include "editor/stage/StageActorQuery.h"
-#include "editor/stage/StageSelectionController.h"
+#include "editor/stage/panels/StageEditorPanel.h"
+#include "editor/stage/panels/StagePlanetPanel.h"
+#include "editor/stage/selection/StageSelectionController.h"
 #include "system/CameraSystem.h"
+#include "world/Stage.h"
 
 #include <glm/glm.hpp>
 #include <unordered_set>

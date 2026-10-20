@@ -1,12 +1,12 @@
 #include "editor/stage/panels/StagePlacementPanel.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
+#include "app/Game.h"
 #include "editor/assets/EditorAssetCatalog.h"
 #include "editor/stage/StageActorQuery.h"
-#include "editor/stage/StageActorYamlWriter.h"
+#include "editor/stage/persistence/StageActorYamlWriter.h"
 #include "imgui.h"
+#include "world/Stage.h"
 
 #include <utility>
 

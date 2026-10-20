@@ -2,8 +2,8 @@
 
 #include "editor/core/DebugEditorContext.h"
 
-#include "editor/stage/StageEditOperation.h"
 #include "editor/stage/StageEditorTypes.h"
+#include "editor/stage/history/StageEditOperation.h"
 #include <glm/glm.hpp>
 #include <vector>
 

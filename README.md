@@ -437,6 +437,13 @@ src/
 ├─ editor/
 │  ├─ core/           Editor全体の調停・Context・Viewport
 │  ├─ stage/          Stageの配置・Inspector・Undo / Redo・YAML保存
+│  │  ├─ creation/       Actorの作成・配置
+│  │  ├─ selection/      選択・Pick・Gizmo
+│  │  ├─ inspectors/     Actorの設定編集UI
+│  │  ├─ persistence/    YAML読込・保存・足場参照
+│  │  ├─ history/        編集操作・Undo / Redo・Transaction
+│  │  ├─ ugc/            UGCのセル・グリッド編集
+│  │  └─ panels/         Stage Editorのパネル
 │  ├─ ugc/            UGC編集の入力・表示・操作
 │  ├─ ui/             UI Canvasの編集・選択・履歴
 │  ├─ panels/         基本情報・性能表示
@@ -475,7 +482,7 @@ src/
 
 ### 品質検証の入口
 
-回帰テストは[tests/](tests/)、静的解析・依存境界・アセット検証の実行スクリプトは[tools/](tools/)にあります。以下の手順で検証できます。
+回帰テストは[tests/](tests/)にあり、[unit/](tests/unit/)は個別機能、[integration/](tests/integration/)はゲーム本体や外部プロセスとの連携、[support/](tests/support/)は共通の検証関数と補助プログラムです。静的解析・依存境界・アセット検証の実行スクリプトは[tools/](tools/)にあります。以下の手順で検証できます。
 
 代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
 

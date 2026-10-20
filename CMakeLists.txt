@@ -98,64 +98,64 @@ if (BUILD_TESTING)
         target_compile_options(game_asset_check PRIVATE /utf-8)
     endif()
     add_executable(game_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EditorReliabilityTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePickPolicy.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EditorReliabilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/selection/StagePickPolicy.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/YamlReadTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/ConfigurationPersistenceTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/YamlReadTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/ConfigurationPersistenceTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/tools/sequence/StorybookEditorPersistence.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/session/EditorSessionRepository.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyPresetRepository.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/effect/particle/ParticleConfigLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/story/StorybookConfig.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/ending/EndingRollConfig.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PersistenceSafetyTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/NPCTalkDataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PersistenceSafetyTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/NPCTalkDataTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformIdentifiersTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformConnectionsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageYamlRepositoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkFileNameTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkStorageTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformGridTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformDocumentTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorSaveStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPreviewStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCClearTransitionStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyConfigLoaderTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyGuardGaugeTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerInputDeviceRoutingTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerCameraSettingsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/CameraShakeEffectTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TutorialObjectiveTextTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/OperationGuideVisibilityTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerSplitGuardStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TgsExperienceControllerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageActorNodeFactory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePlatformIdentifiers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StagePlatformConnections.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageYamlRepositoryOperations.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageActorNodeFactoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StagePlatformIdentifiersTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StagePlatformConnectionsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageYamlRepositoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkFileNameTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkStorageTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPlatformGridTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPlatformDocumentTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageEditHistoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageActorSaveStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkMetadataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPreviewStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCEditorStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCClearTransitionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPresetVisualsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCEditorTutorialTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageProgressSystemTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EnemyConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EnemyGuardGaugeTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerInputDeviceRoutingTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/FramePerformanceTrackerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCModeControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlatformStageConfigTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerCameraSettingsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/CameraShakeEffectTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TutorialObjectiveTextTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/OperationGuideVisibilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerJewelGaugeTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerSplitGuardStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TgsExperienceControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/creation/StageActorNodeFactory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StagePlatformIdentifiers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StagePlatformConnections.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StageYamlRepositoryOperations.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkFileName.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkStorage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPlatformGrid.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPlatformDocument.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageEditHistory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageActorSaveState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPlatformGrid.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPlatformDocument.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/history/StageEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StageActorSaveState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkMetadata.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCSessionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCPreviewState.cpp
@@ -165,7 +165,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSelectionDragState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSwitchConnectionState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCClearTransitionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/UGCPresetVisuals.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPresetVisuals.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorTutorial.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
@@ -182,7 +182,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/AtomicFile.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/TextFile.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/YamlFile.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/StageEditTransaction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/history/StageEditTransaction.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CinematicSequenceLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sequence/SequenceLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UILoadSystem.cpp
@@ -227,19 +227,19 @@ if (BUILD_TESTING)
                 --validator $<TARGET_FILE:game_asset_check>
         )
         add_test(NAME asset_validation_tests
-            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/AssetValidationTests.py
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/AssetValidationTests.py
                 --validator $<TARGET_FILE:game_asset_check>
         )
-        add_executable(restart_launch_probe tests/RestartLaunchProbe.cpp)
+        add_executable(restart_launch_probe tests/support/RestartLaunchProbe.cpp)
         add_test(NAME restart_helper_tests
-            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/RestartHelperTests.py
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/RestartHelperTests.py
                 --helper $<TARGET_FILE:editor_restart_helper>
                 --probe $<TARGET_FILE:restart_launch_probe>
                 --cmake ${CMAKE_COMMAND}
         )
         set_tests_properties(restart_helper_tests PROPERTIES TIMEOUT 60)
         add_test(NAME architecture_audit_tests
-            COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests -p ArchitectureAuditTests.py
+            COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests/unit -p ArchitectureAuditTests.py
         )
         set_tests_properties(architecture_audit_tests PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     endif()
@@ -379,18 +379,18 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
         message(FATAL_ERROR "Runtime checks require Python3 to isolate Editor sessions")
     endif()
     add_executable(game_runtime_tests
-        tests/RuntimeIntegrationTests.cpp
-        tests/RuntimeFrameLoopTests.cpp
-        tests/RuntimeGameplayTests.cpp
-        tests/RuntimeReliabilityTests.cpp
-        tests/RuntimeEditorPersistenceTests.cpp
-        tests/IsolatedUserDataPaths.cpp
+        tests/integration/RuntimeIntegrationTests.cpp
+        tests/integration/RuntimeFrameLoopTests.cpp
+        tests/integration/RuntimeGameplayTests.cpp
+        tests/integration/RuntimeReliabilityTests.cpp
+        tests/integration/RuntimeEditorPersistenceTests.cpp
+        tests/support/IsolatedUserDataPaths.cpp
     )
     target_link_libraries(game_runtime_tests PRIVATE game_runtime)
     target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
     add_test(NAME game_runtime_launch_tests
-        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/RuntimeLaunchTests.py
+        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/RuntimeLaunchTests.py
             --executable $<TARGET_FILE:game_runtime_tests>
             --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests)
     set_tests_properties(game_runtime_launch_tests PROPERTIES TIMEOUT 60 LABELS "integration" RUN_SERIAL TRUE)
@@ -429,13 +429,13 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     if (Python3_Interpreter_FOUND)
         add_executable(game_startup_probe
             src/app/Main.cpp
-            tests/StartupEntryProbe.cpp
-            tests/IsolatedUserDataPaths.cpp
+            tests/support/StartupEntryProbe.cpp
+            tests/support/IsolatedUserDataPaths.cpp
         )
         target_link_libraries(game_startup_probe PRIVATE game_runtime)
         target_compile_definitions(game_startup_probe PRIVATE main=RunProductionMain)
         add_test(NAME startup_exit_tests
-            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/StartupExitTests.py
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/StartupExitTests.py
                 --probe $<TARGET_FILE:game_startup_probe>
         )
         set_tests_properties(startup_exit_tests PROPERTIES TIMEOUT 30 LABELS "integration;display" RUN_SERIAL TRUE)
@@ -448,7 +448,7 @@ if (GAME_BUILD_BENCHMARKS)
 endif()
 
 if (GAME_ENABLE_WARNINGS)
-    file(GLOB GAME_TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
+    file(GLOB_RECURSE GAME_TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
     set(GAME_WARNING_SOURCES ${GAME_SOURCES} ${GAME_TEST_SOURCES} ${TUTORIAL_VIDEO_MAC_SOURCE}
         "${CMAKE_CURRENT_SOURCE_DIR}/src/app/Main.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp"

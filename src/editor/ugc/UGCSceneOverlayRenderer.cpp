@@ -3,21 +3,21 @@
 // GLEWはGLFWなどが取り込むOpenGLヘッダより先に読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
 #include "component/PlatformLatchedGroupSwitchComponent.h"
 #include "component/PlatformPressureSwitchComponent.h"
-#include "editor/stage/panels/StageAddActorPanel.h"
 #include "editor/stage/StageActorQuery.h"
-#include "editor/stage/StageSelectionController.h"
-#include "editor/stage/StageYamlRepository.h"
+#include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/stage/persistence/StageYamlRepository.h"
+#include "editor/stage/selection/StageSelectionController.h"
 #include "editor/ugc/UGCEditorInteractionController.h"
 #include "editor/ugc/UGCSwitchConnectionController.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <cmath>

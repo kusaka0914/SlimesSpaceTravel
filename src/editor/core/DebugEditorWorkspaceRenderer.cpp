@@ -3,22 +3,22 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
+#include "editor/assets/AssetBrowserPanel.h"
 #include "editor/core/DebugEditorLayout.h"
 #include "editor/core/DebugEditorLayoutController.h"
 #include "editor/core/DebugGameViewportRenderer.h"
-#include "editor/assets/AssetBrowserPanel.h"
 #include "editor/panels/BasicInfoDebugPanel.h"
+#include "editor/stage/history/StageEditCommandController.h"
+#include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/stage/panels/StageEditorPanel.h"
+#include "editor/stage/selection/StageGizmoController.h"
+#include "editor/stage/selection/StageSelectionController.h"
+#include "editor/stage/selection/StageSelectionOverlay.h"
 #include "editor/tools/parameters/ParameterDebugPanel.h"
 #include "editor/tools/particle/ParticleEffectDebugPanel.h"
 #include "editor/tools/sequence/SequenceEditorWorkspacePanel.h"
-#include "editor/stage/panels/StageAddActorPanel.h"
-#include "editor/stage/panels/StageEditorPanel.h"
 #include "editor/tools/tutorial/TutorialDebugPanel.h"
 #include "editor/ui/UIDebugPanel.h"
-#include "editor/stage/StageEditCommandController.h"
-#include "editor/stage/StageGizmoController.h"
-#include "editor/stage/StageSelectionController.h"
-#include "editor/stage/StageSelectionOverlay.h"
 #include "imgui.h"
 
 #include <algorithm>

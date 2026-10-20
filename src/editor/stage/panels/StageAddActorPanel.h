@@ -1,19 +1,19 @@
 #pragma once
 
-#include "editor/stage/StageEditOperation.h"
+#include "editor/stage/history/StageEditOperation.h"
 
 #include "editor/core/DebugPanel.h"
-#include "editor/stage/StageActorCreateService.h"
-#include "editor/stage/StageActorCreationForms.h"
-#include "editor/stage/StageActorPlacementController.h"
-#include "editor/stage/StageActorPlacementResolver.h"
-#include "editor/stage/StageBoatCreationForm.h"
-#include "editor/stage/StageCollectibleCreationForms.h"
 #include "editor/stage/StageEditorTypes.h"
-#include "editor/stage/StageWorldCreationForms.h"
-#include "editor/stage/UGCPlacementPresetController.h"
-#include "editor/stage/UGCPlatformCellService.h"
-#include "editor/stage/UGCPlatformEditController.h"
+#include "editor/stage/creation/StageActorCreateService.h"
+#include "editor/stage/creation/StageActorCreationForms.h"
+#include "editor/stage/creation/StageActorPlacementController.h"
+#include "editor/stage/creation/StageActorPlacementResolver.h"
+#include "editor/stage/creation/StageBoatCreationForm.h"
+#include "editor/stage/creation/StageCollectibleCreationForms.h"
+#include "editor/stage/creation/StageWorldCreationForms.h"
+#include "editor/stage/ugc/UGCPlacementPresetController.h"
+#include "editor/stage/ugc/UGCPlatformCellService.h"
+#include "editor/stage/ugc/UGCPlatformEditController.h"
 
 #include <functional>
 #include <glm/glm.hpp>
