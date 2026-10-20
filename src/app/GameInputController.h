@@ -21,6 +21,7 @@ public:
     void SuppressOneShotInputUntilReleased();
 
 private:
+    void ProcessPlayAndMenuInput();
     void SuppressUGCPlayShortcutUntilReleased();
     void UpdateLastUsedInputDevice();
     bool ProcessTgsEndShortcutInput();

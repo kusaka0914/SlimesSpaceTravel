@@ -3,17 +3,15 @@
 #include "editor/ugc/UGCEditorTutorial.h"
 #include "editor/ugc/UGCEditorViewController.h"
 #include "editor/ugc/UGCSelectionDragState.h"
+#include "editor/ugc/UGCStageEditSession.h"
 
 #include "actor/Actor.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "app/Game.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/history/StageEditCommandController.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
 #include "editor/stage/persistence/StageActorYamlWriter.h"
-#include "editor/stage/persistence/StagePlanetYamlWriter.h"
-#include "editor/stage/persistence/StageYamlRepository.h"
 #include "editor/stage/selection/StageSelectionController.h"
 #include "editor/stage/ugc/UGCPlatformGrid.h"
 #include "editor/ugc/UGCSwitchConnectionState.h"
@@ -27,11 +25,12 @@
 #include <vector>
 
 UGCEditorInteractionController::UGCEditorInteractionController(
-    DebugEditorContext& context, StageAddActorPanel& stageAddActorPanel, StageActorYamlWriter& stageActorYamlWriter,
-    StageSelectionController& selectionController, StageEditCommandController& editCommandController,
-    UGCEditorTutorial& editorTutorial, UGCEditorToolState& toolState, UGCSelectionDragState& dragState,
-    UGCSwitchConnectionState& connectionState, UGCEditorViewController& viewController)
-    : mContext(context),
+    UGCStageEditSession& stageSession, StageAddActorPanel& stageAddActorPanel,
+    StageActorYamlWriter& stageActorYamlWriter, StageSelectionController& selectionController,
+    StageEditCommandController& editCommandController, UGCEditorTutorial& editorTutorial, UGCEditorToolState& toolState,
+    UGCSelectionDragState& dragState, UGCSwitchConnectionState& connectionState,
+    UGCEditorViewController& viewController)
+    : mStageSession(stageSession),
       mStageAddActorPanel(stageAddActorPanel),
       mStageActorYamlWriter(stageActorYamlWriter),
       mSelectionController(selectionController),
@@ -48,13 +47,19 @@ void UGCEditorInteractionController::HandleUndo()
 {
     const bool wasRestored = mEditCommandController.RestoreUndo();
     mEditorTutorial.RecordUndo(wasRestored);
-    mToolState.statusMessage = wasRestored ? "1つ前の状態に戻しました" : "戻せる操作がありません";
+    mToolState.statusMessage = wasRestored ? "1つ前の状態に戻しました"
+                               : !mEditCommandController.GetLastError().empty()
+                                   ? "元に戻せませんでした。編集エラーを確認してください"
+                                   : "戻せる操作がありません";
 }
 
 void UGCEditorInteractionController::HandleRedo()
 {
-    mToolState.statusMessage =
-        mEditCommandController.RestoreRedo() ? "戻した操作をやり直しました" : "やり直せる操作がありません";
+    const bool wasRestored = mEditCommandController.RestoreRedo();
+    mToolState.statusMessage = wasRestored ? "戻した操作をやり直しました"
+                               : !mEditCommandController.GetLastError().empty()
+                                   ? "やり直せませんでした。編集エラーを確認してください"
+                                   : "やり直せる操作がありません";
 }
 
 void UGCEditorInteractionController::ToggleEraser()
@@ -97,11 +102,11 @@ void UGCEditorInteractionController::ChangeLayer(int layerDelta)
 
 void UGCEditorInteractionController::MoveSelectionOnGrid(int gridX, int gridZ)
 {
-    if (mToolState.isEraserMode || mStageAddActorPanel.IsPlacementActive() ||
+    if (!mStageSession.IsAvailable() || mToolState.isEraserMode || mStageAddActorPanel.IsPlacementActive() ||
         mSelectionController.GetSelectedActorCount() == 0) {
         return;
     }
-    const float gridSize = mContext.game->GetUGCGridSize();
+    const float gridSize = mStageSession.GetGridSize();
     const glm::vec3 movement(static_cast<float>(gridX) * gridSize, 0.0f, static_cast<float>(gridZ) * gridSize);
     std::vector<StageActorRef> selectedRefs;
     for (const StageActorInstance& selected : mSelectionController.CollectSelectedActorInstances()) {
@@ -132,15 +137,14 @@ bool UGCEditorInteractionController::SaveSelectionMove(const std::vector<StageAc
     const bool saved = mEditCommandController.ExecuteEdit(
         [&]() {
             YAML::Node config;
-            if (!StageYamlRepository::LoadCurrentStage(mContext, config) ||
-                !mStageActorYamlWriter.WriteEditorAuthoredTransforms(config) ||
-                !StagePlanetYamlWriter(mContext).WriteEditorAuthoredTransforms(config)) {
+            if (!mStageSession.LoadDocument(config) || !mStageActorYamlWriter.WriteEditorAuthoredTransforms(config) ||
+                !mStageSession.WritePlanetTransforms(config)) {
                 return false;
             }
             cellResult = mStageAddActorPanel.WriteTranslatedUGCCells(config, actorRefs, delta);
             UGCWorkMetadata::InvalidateClearVerification(config);
-            return cellResult != UGCCellEditResult::Failed && StageYamlRepository::SaveCurrentStage(mContext, config) &&
-                   mContext.game->ReloadCurrentStage();
+            return cellResult != UGCCellEditResult::Failed && mStageSession.SaveDocument(config) &&
+                   mStageSession.ReloadStage();
         },
         grouping, StageEditFailureRecovery::RestoreRuntime);
     if (saved && cellResult == UGCCellEditResult::Unchanged) {
@@ -171,7 +175,7 @@ bool UGCEditorInteractionController::TryIntersectEditLayerPlane(const glm::vec3&
 
 void UGCEditorInteractionController::UpdateSelectionDrag()
 {
-    if (!mContext.game || !mContext.game->GetCameraSystem()) {
+    if (!mStageSession.HasCamera()) {
         return;
     }
 
@@ -189,7 +193,7 @@ void UGCEditorInteractionController::UpdateSelectionDrag()
     glm::vec3 rayFrom;
     glm::vec3 rayTo;
     glm::vec3 intersection;
-    const float gridSize = mContext.game->GetUGCGridSize();
+    const float gridSize = mStageSession.GetGridSize();
     const float planeHeight = static_cast<float>(mToolState.editLayer) * gridSize;
     if (!mSelectionController.TryCreateMouseRay(rayFrom, rayTo) ||
         !TryIntersectEditLayerPlane(rayFrom, rayTo, planeHeight, intersection)) {
@@ -236,7 +240,7 @@ void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
             mDragState.hasMoved = true;
         }
         const glm::vec3 layerMovement(
-            0.0f, static_cast<float>(nextLayer - mToolState.editLayer) * mContext.game->GetUGCGridSize(), 0.0f);
+            0.0f, static_cast<float>(nextLayer - mToolState.editLayer) * mStageSession.GetGridSize(), 0.0f);
         if (isMovingPlatformDestination) {
             const bool wasSaved = mEditCommandController.ExecuteEdit(
                 [&]() {
@@ -260,7 +264,7 @@ void UGCEditorInteractionController::ChangeEditLayer(int layerDelta)
     mToolState.editLayer = nextLayer;
     mStageAddActorPanel.SetUGCEditLayer(mToolState.editLayer);
     mSelectionController.SetUGCEditLayer(mToolState.editLayer);
-    mContext.game->SetUGCPreviewEditLayer(mToolState.editLayer);
+    mStageSession.SetPreviewEditLayer(mToolState.editLayer);
     if (!isMovingSelectedActors) {
         mSelectionController.Clear();
     }
@@ -277,17 +281,17 @@ void UGCEditorInteractionController::SyncEditLayerToPickedActor()
 {
     Actor* pickedActor = mSelectionController.GetPickedActor();
     const std::optional<StageActorRef>& pickedRef = mSelectionController.GetPickedActorRef();
-    if (!pickedActor || !pickedRef || !mContext.game) {
+    if (!pickedActor || !pickedRef || !mStageSession.IsAvailable()) {
         return;
     }
 
-    const float gridSize = mContext.game->GetUGCGridSize();
+    const float gridSize = mStageSession.GetGridSize();
     const bool isMovingPlatformDestination = mSelectionController.IsMovingPlatformDestinationSelected();
     const glm::vec3 pickedPosition =
         isMovingPlatformDestination ? mSelectionController.CalculateSelectedActorsCenter() : pickedActor->GetPos();
     int pickedLayer = static_cast<int>(std::round(pickedPosition.y / gridSize));
     YAML::Node stageYaml;
-    if (!isMovingPlatformDestination && StageYamlRepository::LoadCurrentStage(mContext, stageYaml)) {
+    if (!isMovingPlatformDestination && mStageSession.LoadDocument(stageYaml)) {
         const YAML::Node sequence = stageYaml[pickedRef->sequenceName];
         if (sequence && sequence.IsSequence() && pickedRef->yamlIndex >= 0 &&
             pickedRef->yamlIndex < static_cast<int>(sequence.size())) {
@@ -308,7 +312,7 @@ void UGCEditorInteractionController::SyncEditLayerToPickedActor()
     mToolState.editLayer = pickedLayer;
     mStageAddActorPanel.SetUGCEditLayer(mToolState.editLayer);
     mSelectionController.SetUGCEditLayer(mToolState.editLayer);
-    mContext.game->SetUGCPreviewEditLayer(mToolState.editLayer);
+    mStageSession.SetPreviewEditLayer(mToolState.editLayer);
     mToolState.statusMessage = std::to_string(mToolState.editLayer + 1) + "だん目のものを選びました";
 }
 
@@ -375,7 +379,7 @@ void UGCEditorInteractionController::HandleEraserInteraction()
         return mEditCommandController.DeletePlanetOnly(pickedRef->yamlIndex);
     };
     const auto tryDeletePickedActorOnCurrentLayer = [&]() {
-        if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || !mContext.game) {
+        if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || !mStageSession.IsAvailable()) {
             return false;
         }
 
@@ -389,7 +393,7 @@ void UGCEditorInteractionController::HandleEraserInteraction()
         if (pickedPlatform && pickedPlatform->GetIsUGCGenerated()) {
             return false;
         }
-        const float gridSize = mContext.game->GetUGCGridSize();
+        const float gridSize = mStageSession.GetGridSize();
         const int actorLayer = static_cast<int>(std::round(pickedActor->GetPos().y / gridSize));
         if (actorLayer != mToolState.editLayer) {
             return false;
@@ -454,7 +458,7 @@ void UGCEditorInteractionController::BeginSelectionDrag()
         return;
     }
 
-    const float gridSize = mContext.game->GetUGCGridSize();
+    const float gridSize = mStageSession.GetGridSize();
     const float planeHeight = static_cast<float>(mToolState.editLayer) * gridSize;
     const glm::vec3 selectionCenter = mSelectionController.CalculateSelectedActorsCenter();
 

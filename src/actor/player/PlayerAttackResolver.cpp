@@ -1,6 +1,5 @@
 #include "actor/player/PlayerAttackResolver.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/enemy/EnemyCollisionGeometry.h"
@@ -12,6 +11,7 @@
 #include "system/ParticleSystem.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace {
 constexpr float directionEpsilonSquared = 0.000001f;
@@ -25,9 +25,8 @@ glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
     return glm::normalize(value);
 }
 
-void EmitAttackHitEffect(Player& player, const Enemy& enemy, float effectScale)
+void EmitAttackHitEffect(ParticleSystem* particleSystem, Player& player, const Enemy& enemy, float effectScale)
 {
-    ParticleSystem* particleSystem = player.GetGame()->GetParticleSystem();
     if (!particleSystem) {
         return;
     }
@@ -56,10 +55,10 @@ void EmitAttackHitEffect(Player& player, const Enemy& enemy, float effectScale)
     particleSystem->Emit("attack_hit", context);
 }
 
-void ApplyDamageWithHitEffect(Enemy& enemy, float damage, Player& player, float effectScale)
+void ApplyDamageWithHitEffect(ParticleSystem* particles, Enemy& enemy, float damage, Player& player, float effectScale)
 {
     enemy.ApplyDamage(player.CalculateOutgoingAttackDamage(damage), &player);
-    EmitAttackHitEffect(player, enemy, effectScale);
+    EmitAttackHitEffect(particles, player, enemy, effectScale);
 }
 
 bool CanReceiveGroundGuardDamage(const Enemy& enemy)
@@ -68,13 +67,21 @@ bool CanReceiveGroundGuardDamage(const Enemy& enemy)
 }
 } // namespace
 
+PlayerAttackResolver::PlayerAttackResolver(AudioSystem& audio, ParticleSystem* particles,
+                                           std::function<void(int)> onAttackHit)
+    : mAudio(audio),
+      mParticles(particles),
+      mOnAttackHit(std::move(onAttackHit))
+{
+}
+
 void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status,
                                          PlayerCombat& combat, const std::vector<Enemy*>& hitEnemies,
                                          bool didHitHazardActor, float deltaTime) const
 {
     if (hitEnemies.empty() && !didHitHazardActor) {
         combat.StartAfterAttackReaction(player, movement, status);
-        player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
+        mAudio.PlaySE("attack_miss_se");
 
         if (combat.GetAttackComboIndex() != 3) {
             return;
@@ -85,9 +92,9 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
     }
 
     if (hitEnemies.empty()) {
-        player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
+        mOnAttackHit(movement.GetPlayerNum());
         combat.StartAfterAttackReaction(player, movement, status);
-        player.GetGame()->GetAudioSystem()->PlaySE("attack_se");
+        mAudio.PlaySE("attack_se");
         if (combat.GetAttackComboIndex() == 3) {
             combat.ResetGroundAttackCombo();
         }
@@ -95,7 +102,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
     }
 
     if (combat.GetAttackKind() != PlayerAttackKind::Strong) {
-        player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
+        mOnAttackHit(movement.GetPlayerNum());
         combat.StartAfterAttackReaction(player, movement, status);
         const bool isPlayerGrounded = player.GetOnGround();
         const float guardDamage = combat.CalculateCurrentGuardDamage(isPlayerGrounded);
@@ -114,7 +121,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
                         : enemy->ApplyGuardDamage(guardDamage, deltaTime);
                 didBreakGuardSegment |= guardDamageResult.DidBreakSegment();
             }
-            ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.0f);
+            ApplyDamageWithHitEffect(mParticles, *enemy, combat.GetAttack(), player, 1.0f);
             if (!isPlayerGrounded) {
                 enemy->ApplyAirComboLift(combat.GetAirWeakEnemyLiftHeight());
             }
@@ -122,7 +129,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         }
 
         if (!didHitEnemy) {
-            player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
+            mAudio.PlaySE("attack_miss_se");
             return;
         }
 
@@ -131,7 +138,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
             movement.RestoreAirDodge();
         }
 
-        player.GetGame()->GetAudioSystem()->PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_se");
+        mAudio.PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_se");
         if (combat.GetAttackComboIndex() == 3) {
             combat.ResetGroundAttackCombo();
         }
@@ -150,7 +157,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
         }
 
         enemy->SetIsStrongAttacked(true);
-        ApplyDamageWithHitEffect(*enemy, combat.GetAttack(), player, 1.45f);
+        ApplyDamageWithHitEffect(mParticles, *enemy, combat.GetAttack(), player, 1.45f);
         combat.SetStrongAttackHit(true);
         hitAirborneEnemy = true;
     }
@@ -159,7 +166,7 @@ void PlayerAttackResolver::ResolveAttack(Player& player, PlayerMovement& movemen
     if (hitAirborneEnemy) {
         strongAttackSound = "attack_air_se";
     }
-    player.GetGame()->GetAudioSystem()->PlaySE(strongAttackSound);
+    mAudio.PlaySE(strongAttackSound);
 }
 
 bool PlayerAttackResolver::ResolveAirSlamAttack(Player& player, const PlayerMovement& movement, PlayerCombat& combat,
@@ -181,7 +188,7 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(Player& player, const PlayerMove
         const EnemyGuardDamageResult guardDamageResult =
             enemy->ApplyGuardDamage(combat.GetAirSlamGuardDamage(), deltaTime);
         didBreakGuardSegment |= guardDamageResult.DidBreakSegment();
-        ApplyDamageWithHitEffect(*enemy, groundedEnemyDamage, player, 1.45f);
+        ApplyDamageWithHitEffect(mParticles, *enemy, groundedEnemyDamage, player, 1.45f);
         combat.SetStrongAttackHit(true);
         didHitEnemy = true;
     }
@@ -190,8 +197,8 @@ bool PlayerAttackResolver::ResolveAirSlamAttack(Player& player, const PlayerMove
         return false;
     }
 
-    player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
-    player.GetGame()->GetAudioSystem()->PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_air_se");
+    mOnAttackHit(movement.GetPlayerNum());
+    mAudio.PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_air_se");
     return true;
 }
 
@@ -215,7 +222,7 @@ bool PlayerAttackResolver::ResolveAirSlamContact(Player& player, const PlayerMov
         }
 
         canAssignImpactFeedback = false;
-        EmitAttackHitEffect(player, *enemy, 1.45f);
+        EmitAttackHitEffect(mParticles, player, *enemy, 1.45f);
         didHitEnemy = true;
     }
 
@@ -223,8 +230,8 @@ bool PlayerAttackResolver::ResolveAirSlamContact(Player& player, const PlayerMov
         return false;
     }
 
-    player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
-    player.GetGame()->GetAudioSystem()->PlaySE("attack_air_se");
+    mOnAttackHit(movement.GetPlayerNum());
+    mAudio.PlaySE("attack_air_se");
     return true;
 }
 
@@ -244,7 +251,7 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(Player& player, const PlayerMov
             const EnemyGuardDamageResult guardDamageResult = enemy->ApplyGuardDamage(guardDamage, deltaTime);
             didBreakGuardSegment |= guardDamageResult.DidBreakSegment();
         }
-        ApplyDamageWithHitEffect(*enemy, damage, player, 1.25f);
+        ApplyDamageWithHitEffect(mParticles, *enemy, damage, player, 1.25f);
         enemy->ApplyAirDodgePush(movement.GetDodgeDirection(), enemyPushSpeed, enemyPushDampingPerSecond);
         if (enemyLiftHeight > 0.0f) {
             enemy->ApplyAirComboLift(enemyLiftHeight);
@@ -256,8 +263,8 @@ bool PlayerAttackResolver::ResolveAirDodgeAttack(Player& player, const PlayerMov
         return false;
     }
 
-    player.GetGame()->OnPlayerAttackHit(movement.GetPlayerNum());
-    player.GetGame()->GetAudioSystem()->PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_se");
+    mOnAttackHit(movement.GetPlayerNum());
+    mAudio.PlaySE(didBreakGuardSegment ? "destroy_se" : "attack_se");
     return true;
 }
 
@@ -275,17 +282,17 @@ void PlayerAttackResolver::ResolveSpecialAttack(Player& player, PlayerJewelGauge
         if (enemy->GetOnGround()) {
             const EnemyGuardDamageResult guardDamageResult = enemy->BreakGuard(deltaTime);
             if (guardDamageResult.DidBreakSegment()) {
-                player.GetGame()->GetAudioSystem()->PlaySE("destroy_se");
+                mAudio.PlaySE("destroy_se");
             }
         }
 
         if (enemy->GetCanCountered()) {
-            ApplyDamageWithHitEffect(*enemy, chargedAttackDamage * counterDamageMultiplier, player, 1.7f);
+            ApplyDamageWithHitEffect(mParticles, *enemy, chargedAttackDamage * counterDamageMultiplier, player, 1.7f);
             enemy->FlipCanCountered();
             jewelGauge.RestoreFull();
-            player.GetGame()->GetAudioSystem()->PlaySE("just_attack_se");
+            mAudio.PlaySE("just_attack_se");
         } else {
-            ApplyDamageWithHitEffect(*enemy, chargedAttackDamage, player, 1.45f);
+            ApplyDamageWithHitEffect(mParticles, *enemy, chargedAttackDamage, player, 1.45f);
         }
     }
 }

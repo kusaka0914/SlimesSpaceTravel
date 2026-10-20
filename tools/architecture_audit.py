@@ -111,6 +111,11 @@ def dependency_violations(edges):
                 "src/system/CameraSystem.h", "src/gfx/Renderer3D.cpp", "src/gfx/Renderer3D.h"
         }) and target == "src/app/Game.h":
             reason = "input/camera/renderer consume their explicit dependencies"
+        elif source in {
+            "src/actor/player/PlayerInput.cpp", "src/actor/player/PlayerCombat.cpp",
+            "src/actor/player/PlayerAttackResolver.cpp", "src/editor/ugc/UGCEditorInteractionController.cpp"
+        } and target == "src/app/Game.h":
+            reason = "input/combat/UGC interaction consume scoped state and services"
         if reason:
             violations.append({**edge, "reason": reason})
     return violations

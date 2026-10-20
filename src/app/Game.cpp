@@ -665,6 +665,11 @@ void Game::UpdateGame()
         return;
     }
 
+    UpdateWorldAndCamera(deltaTime);
+}
+
+void Game::UpdateWorldAndCamera(float deltaTime)
+{
     mSceneSystem->Update(deltaTime);
     UpdatePendingSoloSplitControlSwitch(deltaTime);
 

@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.18)
 project(game)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CTest)
 
 option(GAME_ENABLE_TEST_SANITIZERS "Enable AddressSanitizer and UBSan for headless unit tests only" OFF)
@@ -58,6 +59,8 @@ add_executable(editor_restart_helper
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ProcessLaunch.cpp
 )
 target_include_directories(editor_restart_helper PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# 単体のgameビルドでも、Editorの再起動操作に必要なHelperを揃える。
+add_dependencies(game editor_restart_helper)
 
 if (MSVC)
     target_compile_options(game_runtime PUBLIC /utf-8 /MP /FS)
@@ -238,6 +241,13 @@ if (BUILD_TESTING)
                 --cmake ${CMAKE_COMMAND}
         )
         set_tests_properties(restart_helper_tests PROPERTIES TIMEOUT 60)
+        if (WIN32)
+            add_executable(build_tool_probe tests/support/BuildToolProbe.cpp)
+            add_test(NAME windows_build_tools_tests
+                COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/WindowsBuildTests.py
+                    --probe $<TARGET_FILE:build_tool_probe>)
+            set_tests_properties(windows_build_tools_tests PROPERTIES TIMEOUT 60 LABELS "integration")
+        endif()
         add_test(NAME architecture_audit_tests
             COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests/unit -p ArchitectureAuditTests.py
         )

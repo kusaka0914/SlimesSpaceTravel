@@ -8,7 +8,9 @@
 #include "actor/player/PlayerDamageHandler.h"
 #include "app/Game.h"
 #include "component/PlatformAdhesionComponent.h"
+#include "system/InputSystem.h"
 #include "system/PhysicsSystem.h"
+#include "system/SceneSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -61,6 +63,18 @@ StarCollectionCelebrationTransform CalculateStarCollectionCelebrationTransform(f
     transform.scaleMultiplier = glm::vec3(1.0f - stretch * 0.45f, 1.0f + stretch, 1.0f - stretch * 0.45f);
     return transform;
 }
+PlayerCombatDependencies CreateCombatDependencies(Game& game)
+{
+    return {
+        .physics = *game.GetPhysicsSystem(),
+        .audio = *game.GetAudioSystem(),
+        .particles = game.GetParticleSystem(),
+        .readControlStyle = [&game]() { return game.GetPlayerControlStyle(); },
+        .onAttackHit = [&game](int playerNum) { game.OnPlayerAttackHit(playerNum); },
+        .vibrate = [&game](int playerNum, int low, int high,
+                           int duration) { game.VibrateControllerForPlayer(playerNum, low, high, duration); },
+    };
+}
 } // namespace
 
 Player::Player(Game* game)
@@ -68,7 +82,7 @@ Player::Player(Game* game)
       mInput(*game->GetInputSystem()),
       mMovement(*game->GetPhysicsSystem(), *game->GetMathUtils()),
       mGrounding(*game->GetPhysicsSystem()),
-      mCombat(*game->GetPhysicsSystem())
+      mCombat(CreateCombatDependencies(*game))
 {
 }
 
@@ -366,7 +380,19 @@ void Player::DebugMoveToPosition(const glm::vec3& worldPosition, Planet* planet,
 
 void Player::ProcessActor()
 {
-    mInput.ProcessActor(*this, mMovement);
+    const Player* controlledPlayer = mGame->GetControlledPlayer();
+    const InputSystem& input = *mGame->GetInputSystem();
+    const SceneSystem* scene = mGame->GetSceneSystem();
+    const PlayerInputContext context{
+        .devices = {mGame->GetIsPlayer2Joined(), mGame->GetIsDebugMode(), input.HasControllerInput(1),
+                    input.HasControllerInput(2), controlledPlayer ? controlledPlayer->GetPlayerNum() : 1},
+        .isNonControlledSoloPlayer =
+            !mGame->GetIsPlayer2Joined() && mGame->GetPlayers().size() >= 2 && controlledPlayer != this,
+        .isEditorKeyboardCaptured = mGame->IsEditorKeyboardInputCaptured(),
+        .isWaitingForTutorialJump = scene && scene->IsWaitingForTutorialPlayerJump(),
+        .isAssistControlStyle = mGame->IsAssistControlStyle(),
+    };
+    mInput.ProcessActor(mMovement, context);
 }
 
 void Player::UpdateActor(float deltaTime)

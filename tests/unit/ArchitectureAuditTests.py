@@ -13,6 +13,12 @@ class ArchitectureAuditTests(unittest.TestCase):
         ]
         self.assertEqual(len(dependency_violations(edges)), 4)
 
+    def test_player_and_ugc_interaction_cannot_regain_game_dependency(self):
+        sources = ["src/actor/player/PlayerInput.cpp", "src/actor/player/PlayerCombat.cpp",
+                   "src/actor/player/PlayerAttackResolver.cpp", "src/editor/ugc/UGCEditorInteractionController.cpp"]
+        edges = [{"from": source, "to": "src/app/Game.h"} for source in sources]
+        self.assertEqual(len(dependency_violations(edges)), len(sources))
+
     def test_dependency_gate_allows_composition_and_domain_dependencies(self):
         edges = [
             {"from": "src/app/Game.cpp", "to": "src/editor/Editor.h"},

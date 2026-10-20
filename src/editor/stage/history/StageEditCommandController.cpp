@@ -544,6 +544,7 @@ bool StageEditCommandController::RestoreUndo()
 
     std::string currentYamlText;
     if (!StageYamlRepository::ReadCurrentStageText(mContext, currentYamlText)) {
+        mLastError = "現在のステージを読み込めませんでした。履歴は保持しています。";
         return false;
     }
     if (!ApplyStageText(*yamlText, currentYamlText)) {
@@ -641,6 +642,7 @@ bool StageEditCommandController::RestoreRedo()
 
     std::string currentYamlText;
     if (!StageYamlRepository::ReadCurrentStageText(mContext, currentYamlText)) {
+        mLastError = "現在のステージを読み込めませんでした。履歴は保持しています。";
         return false;
     }
     if (!ApplyStageText(*yamlText, currentYamlText)) {

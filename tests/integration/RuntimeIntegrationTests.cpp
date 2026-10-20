@@ -308,6 +308,27 @@ void InputSnapshotUsesOnlyProvidedDevices(Game& game)
     ExpectTrue(input.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_A), "confirm captured");
     ExpectTrue(input.IsMovementInputPressed(PlayerInputDevice::ControllerOne), "movement routed to captured device");
     ExpectFalse(input.IsMovementInputPressed(PlayerInputDevice::None), "unassigned input does not move");
+    PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    movement.SetPlayerNum(1);
+    PlayerInput playerInput(input);
+    PlayerInputContext context{.devices = {.hasControllerOne = true}};
+    playerInput.ProcessActor(movement, context);
+    ExpectTrue(playerInput.GetJumpPressed(), "injected device context reads controller jump");
+    ExpectTrue(playerInput.GetMoveLeft() > 0.5f, "injected device context reads movement");
+    context.isWaitingForTutorialJump = true;
+    playerInput.ProcessActor(movement, context);
+    ExpectNear(0.0f, playerInput.GetMoveLeft(), 0.0f, "tutorial restriction blocks movement");
+    ExpectTrue(playerInput.GetJumpPressed(), "tutorial restriction retains requested jump");
+    context.isNonControlledSoloPlayer = true;
+    playerInput.ProcessActor(movement, context);
+    ExpectFalse(playerInput.GetJumpPressed(), "noncontrolled snapshot clears held jump");
+    context.isNonControlledSoloPlayer = false;
+    context.isWaitingForTutorialJump = false;
+    playerInput.SetInputAvailableTimer(1.0f);
+    context.isWaitingForTutorialJump = true;
+    playerInput.ProcessActor(movement, context);
+    ExpectFalse(playerInput.GetJumpPressed(), "input lock prevents tutorial jump until available");
+
     controller.SetInput(0, 0);
     ExpectEqual(20000, input.GetControllerAxis(1, SDL_CONTROLLER_AXIS_LEFTX), "same-frame query preserves snapshot");
     input.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});

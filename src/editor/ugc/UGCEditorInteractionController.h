@@ -1,12 +1,12 @@
 #pragma once
 
-#include "editor/core/DebugEditorContext.h"
 
 #include "editor/stage/StageEditorTypes.h"
 #include "editor/stage/history/StageEditOperation.h"
 #include <glm/glm.hpp>
 #include <vector>
 
+class UGCStageEditSession;
 class StageActorYamlWriter;
 class StageAddActorPanel;
 class StageEditCommandController;
@@ -21,7 +21,7 @@ class UGCSwitchConnectionState;
 // 参照で受け取る各モジュールは所有しない。
 class UGCEditorInteractionController {
 public:
-    UGCEditorInteractionController(DebugEditorContext& context, StageAddActorPanel& stageAddActorPanel,
+    UGCEditorInteractionController(UGCStageEditSession& stageSession, StageAddActorPanel& stageAddActorPanel,
                                    StageActorYamlWriter& stageActorYamlWriter,
                                    StageSelectionController& selectionController,
                                    StageEditCommandController& editCommandController, UGCEditorTutorial& editorTutorial,
@@ -64,7 +64,7 @@ private:
     void SyncEditLayerToPickedActor();
     void HandleEraserInteraction();
 
-    DebugEditorContext& mContext;
+    UGCStageEditSession& mStageSession;
     StageAddActorPanel& mStageAddActorPanel;
     StageActorYamlWriter& mStageActorYamlWriter;
     StageSelectionController& mSelectionController;

@@ -32,6 +32,9 @@ SOURCES = (
     "src/editor/stage/inspectors/StageActorInspector.cpp", "src/system/ActorLoadSystem.cpp", "src/world/GameWorld.cpp",
     "src/editor/stage/inspectors/StageNPCInspector.cpp", "src/editor/stage/creation/StageActorPlacementController.cpp",
     "src/editor/ugc/UGCWorkController.cpp", "src/editor/ugc/UGCWorkPanel.cpp", "src/system/UserDataPaths.cpp",
+    "src/actor/player/PlayerInput.cpp", "src/actor/player/PlayerCombat.cpp",
+    "src/actor/player/PlayerAttackResolver.cpp", "src/editor/ugc/UGCStageEditSession.cpp",
+    "src/editor/ugc/UGCEditorInteractionController.cpp",
 )
 
 

@@ -22,6 +22,7 @@
 
 #include <btBulletDynamicsCommon.h>
 #include <iostream>
+#include <stdexcept>
 
 namespace {
 
@@ -223,7 +224,7 @@ void MovementActionsResetOnlyTheirOwnState(Game& game)
     player.SetFacingForwardVec({0, 0, 1});
     player.SetOnGround(true);
     PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
-    PlayerCombat combat(*game.GetPhysicsSystem());
+    PlayerCombat combat(MakeTestCombatDependencies(game));
     PlayerInput input(*game.GetInputSystem());
     ExpectTrue(movement.CanDodge(), "dodge initially available");
     movement.StartDodgeMovement(player, input);
@@ -379,6 +380,16 @@ void RunRuntimeCombatTests(Game& game)
         ~RestoreControlStyle() { game.SetPlayerControlStyle(style); }
     } restore{game, game.GetPlayerControlStyle()};
 
+    auto invalidDependencies = MakeTestCombatDependencies(game);
+    invalidDependencies.readControlStyle = {};
+    bool rejected = false;
+    try {
+        PlayerCombat invalid(invalidDependencies);
+    } catch (const std::invalid_argument&) {
+        rejected = true;
+    }
+    ExpectTrue(rejected, "missing combat dependency rejected at construction");
+
     Player firstPlayer(&game);
     Player secondPlayer(&game);
     firstPlayer.Land({0, 0, 0});
@@ -389,12 +400,12 @@ void RunRuntimeCombatTests(Game& game)
     secondMovement.SetPlayerNum(2);
     PlayerStatus firstStatus;
     PlayerStatus secondStatus;
-    PlayerCombat secondCombat(*game.GetPhysicsSystem());
+    PlayerCombat secondCombat(MakeTestCombatDependencies(game));
     secondCombat.SetAttackHitDelay(0.2f);
 
     for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
         game.SetPlayerControlStyle(style);
-        PlayerCombat combat(*game.GetPhysicsSystem());
+        PlayerCombat combat(MakeTestCombatDependencies(game));
         combat.SetAttackHitDelay(0.2f);
         for (int step = 1; step <= 3; ++step) {
             combat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
@@ -429,7 +440,7 @@ void RunRuntimeCombatTests(Game& game)
     std::cout << "[PASS] Runtime.CombatComboDelayStyleAndPlayerIsolation\n";
 
     firstPlayer.NotLand();
-    PlayerCombat airCombat(*game.GetPhysicsSystem());
+    PlayerCombat airCombat(MakeTestCombatDependencies(game));
     for (int index = 0; index < 3; ++index) {
         ExpectTrue(airCombat.CanStartAirAttack(), "three airborne weak attacks available");
         airCombat.StartAttacking(firstPlayer, PlayerAttackInputKind::Wide, firstMovement, firstStatus, 0.0f);
@@ -457,5 +468,11 @@ void RunRuntimeCombatTests(Game& game)
                "assist strong attack queues hit");
     airCombat.CancelCurrentAttack();
     ExpectFalse(airCombat.HasPendingAttackHit(), "assist strong hit also cancels");
+    int notifiedPlayer = 0;
+    PlayerAttackResolver resolver(*game.GetAudioSystem(), nullptr, [&](int number) { notifiedPlayer = number; });
+    PlayerCombat feedbackCombat(MakeTestCombatDependencies(game));
+    resolver.ResolveAttack(firstPlayer, firstMovement, firstStatus, feedbackCombat, {}, true, 0.0f);
+    ExpectEqual(firstMovement.GetPlayerNum(), notifiedPlayer, "hazard hit reaches injected notification");
+    std::cout << "[PASS] Runtime.CombatFeedbackUsesProvidedNotification\n";
     std::cout << "[PASS] Runtime.AirCombatDodgeCancelLimitAndAssistPreparation\n";
 }

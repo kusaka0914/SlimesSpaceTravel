@@ -1,7 +1,7 @@
 #pragma once
 
-#include "editor/core/DebugEditorContext.h"
 #include "editor/assets/EditorModelThumbnailRenderer.h"
+#include "editor/core/DebugEditorContext.h"
 #include "editor/ugc/UGCDebugOverlayRenderer.h"
 #include "editor/ugc/UGCEditorChromeRenderer.h"
 #include "editor/ugc/UGCEditorElementRegistrar.h"
@@ -13,6 +13,7 @@
 #include "editor/ugc/UGCPreviewRenderer.h"
 #include "editor/ugc/UGCSceneOverlayRenderer.h"
 #include "editor/ugc/UGCSelectionDragState.h"
+#include "editor/ugc/UGCStageEditSession.h"
 #include "editor/ugc/UGCSwitchConnectionController.h"
 #include "editor/ugc/UGCSwitchConnectionState.h"
 #include "editor/ugc/UGCTutorialOverlayRenderer.h"
@@ -74,6 +75,7 @@ private:
     UGCSwitchConnectionState mConnectionState;
     UGCSwitchConnectionController mSwitchConnectionController;
     UGCEditorViewController mViewController;
+    UGCStageEditSession mStageSession;
     UGCEditorInteractionController mInteractionController;
     UGCPreviewRenderer mPreviewRenderer;
     UGCTutorialOverlayRenderer mTutorialOverlayRenderer;

@@ -1,10 +1,19 @@
 #pragma once
 
 #include "actor/player/PlayerTypes.h"
+#include "system/PlayerInputDeviceRouting.h"
 
-class Player;
 class PlayerMovement;
 class InputSystem;
+
+// 入力取得時点のゲーム状態。ActorやGameへの参照を保持しない。
+struct PlayerInputContext {
+    PlayerInputDeviceContext devices{};
+    bool isNonControlledSoloPlayer = false;
+    bool isEditorKeyboardCaptured = false;
+    bool isWaitingForTutorialJump = false;
+    bool isAssistControlStyle = false;
+};
 
 // 操作デバイスの入力を集約し、押下履歴・攻撃の先行入力・チュートリアル中の入力制限を管理する。
 class PlayerInput {
@@ -12,9 +21,9 @@ public:
     explicit PlayerInput(InputSystem& inputSystem);
 
     // デバイス入力・操作対象・チュートリアル制限を反映し、攻撃の押下開始を先行入力へ保存する。
-    void ProcessActor(Player& player, const PlayerMovement& movement);
-    void ProcessGameController(Player& player, const PlayerMovement& movement);
-    void ProcessKeyboard(Player& player, const PlayerMovement& movement);
+    void ProcessActor(const PlayerMovement& movement, const PlayerInputContext& context);
+    void ProcessGameController(const PlayerMovement& movement, const PlayerInputDeviceContext& devices);
+    void ProcessKeyboard(const PlayerMovement& movement, const PlayerInputContext& context);
 
     // 状態更新で押下開始を判定した後に呼び、現在のボタン状態を前フレーム値へ保存する。
     void EndFrame();
@@ -57,8 +66,8 @@ public:
     void SyncAttackButtonPrev();
 
 private:
-    void ApplyTutorialInputRestriction(Player& player);
-    void UpdateRecoverInput(const Player& player);
+    void ApplyTutorialInputRestriction(bool isWaitingForTutorialJump);
+    void UpdateRecoverInput(bool isAssistControlStyle);
     void CaptureAttackInput();
     void ClearNonControlledPlayerInput();
 

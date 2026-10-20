@@ -91,6 +91,15 @@ jobs:
         run: cmake -S . -B build -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DGAME_ENABLE_WARNINGS=ON -DBUILD_TESTING=ON -DGAME_BUILD_RUNTIME_TESTS=ON
       - name: Build production and headless tests
         run: cmake --build build --config Release --parallel 2
+      - name: Verify standalone game target includes restart helper
+        shell: pwsh
+        run: |
+          Remove-Item build/Release/editor_restart_helper.exe
+          cmake --build build --config Release --target game --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path build/Release/editor_restart_helper.exe)) {
+            throw "Building game did not produce editor_restart_helper.exe"
+          }
       - name: Run headless regressions and asset validation
         # Hosted Windowsでは表示環境を仮定せず、実機用の統合テストもコンパイルまで確認する。
         run: ctest --test-dir build -C Release -LE display --output-on-failure

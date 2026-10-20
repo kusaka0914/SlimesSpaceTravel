@@ -81,6 +81,10 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 算出した表面位置・法線・表面までの距離は、PlayerやEnemyの姿勢、重力方向、惑星との距離判定などから共通利用しています。
 
+**計算上の制約：** 対象はワールド軸に沿う楕円体です。外部点は最近傍、内部点は中心からの放射方向へ投影します。外部点の二分探索は48回で打ち切ります。内部点でも最近点を求める方式とは結果が異なるため、両者を契約として分けています。
+
+テストでは、楕円体の表面方程式、法線の向き、中心点・内部点・外部点、軸の入替、細長い楕円体を確認します。反復回数と精度の関係は、すべての浮動小数点入力に対する誤差保証ではありません。
+
 #### 関連コード
 
 - [ActorGroundResolver.cpp](src/actor/ActorGroundResolver.cpp)
@@ -125,6 +129,8 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 ドラッグ開始時の位置や適用済みの移動量を保持し、Undo / RedoやYAML上の保存データとの整合性も管理しています。
 
+**保存と履歴：** ドラッグ中はRuntime上でプレビューし、確定時に保存します。履歴はYAML全体のスナップショットなので、編集差分ごとの復元処理を持たずに戻せる一方、大きなステージでは履歴のメモリ量と再読込コストが増えます。保存・再読込が失敗した場合は以前の状態への復旧を試み、成功してから履歴を進めます。
+
 #### 関連コード
 
 - [UGCPreviewController.cpp](src/gameplay/ugc/UGCPreviewController.cpp)
@@ -163,6 +169,8 @@ Editor上でBuild & Restartを実行すると、
 という流れで処理します。
 
 Buildをゲーム本体とは別Processへ任せることで、自身の実行ファイルを終了した後でもBuildと再起動を継続できる構成にしています。
+
+**方式の制約：** 実行中コードの差し替えではなく、プロセスを再起動します。復元するのは保存したEditor状態であり、実行中のすべてのオブジェクトのメモリ状態ではありません。Helperの引数検査と、起動失敗・ビルド失敗の経路もテスト対象です。
 
 Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execv` を利用しています。POSIXでは起動結果をパイプで親へ通知し、作業ディレクトリ変更や実行ファイルの起動に失敗した場合もエラーを表示します。
 
@@ -213,37 +221,7 @@ Enemyについても、移動・戦闘・ダメージ処理・状態・行動AI�
 
 ### 自動テスト
 
-画面操作を必要とせず検証できるデータ処理・状態管理については、自動テストを用意しています。
-
-主な対象は、
-
-- Stage YAMLの読み書き
-- UGC Stageデータ
-- Undo / Redo履歴
-- Enemy / Player設定読み込み
-- Player入力デバイス割り当て
-- Camera設定
-- Stage進行
-- UI / Tutorial関連状態
-- Performance計測用ロジック
-
-などです。
-
-テストはCMake / CTestから実行できます。
-
-```sh
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build --target game_tests
-ctest --test-dir build -R '^game_tests$' --output-on-failure
-```
-
-GCC / Clangでは、構成時に`-DGAME_ENABLE_TEST_SANITIZERS=ON`を追加すると、画面を必要としない単体テストへAddressSanitizer / UBSanを適用できます。通常構成へ戻す場合は`OFF`にして再ビルドしてください。ゲーム本体とRuntime統合テストには、このオプションでは適用しません。
-
-`-DGAME_ENABLE_RUNTIME_SANITIZERS=ON`ではゲーム本体とRuntime統合テストを計装します。両方のオプションを有効にすると単体テストも含めて検証できます。共有ライブラリ内部の計装や、利用環境で非対応のリーク検査は保証しません。
-
-macOSのlibc++では、計装済みコードと未計装ライブラリの混在でコンテナ検査が誤報することがあります（[Clangの制約](https://clang.llvm.org/docs/AddressSanitizer.html#container-overflow-detection)）。yaml-cpp 0.9.0でこの条件を再現したため、Runtimeの検証では同じコンパイラーとSanitizerでyaml-cppもビルドし、`-Dyaml-cpp_DIR=<そのインストール先>/lib/cmake/yaml-cpp`を指定してください。コンテナ検査を無効にする必要はありません。通常構成へ戻す際は、この指定も元の依存ライブラリの場所へ戻してください。
-
-`-DGAME_BUILD_RUNTIME_TESTS=ON`では、OpenGL環境を必要とするRuntime統合テストも追加します。専用の一時保存先と非表示ウィンドウで、保存・Undo / Redo・再読込、入力、カメラ、描画、連続起動終了を検証します。
+画面を必要としないデータ処理・状態管理と、OpenGLを使うRuntime統合テストを分けています。保存失敗時の復旧、Undo / Redo、入力機器の割当、戦闘状態、惑星の幾何条件などを検証します。[実行手順](#品質検証の入口)を参照してください。
 
 ---
 
@@ -492,7 +470,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 
 cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
 
-# 入出力・UGCを含む重要な実装41ファイルの解析と、既存の依存境界の検査
+# 入出力・UGCを含む重要な実装の解析と、既存の依存境界の検査
 python3 -B tools/run_static_analysis.py --build build
 # 全自作実装を調べる場合は --all-production を付ける。
 python3 -B tools/architecture_audit.py --check --output build/audit
@@ -518,13 +496,23 @@ python3 -B tools/measure_frame_loop.py --build build
 python3 -B tools/measure_frame_loop.py --build build --frames 36000 --scenario cycle --output build/benchmarks/soak.json
 ```
 
-解析はclang-tidyを優先し、未導入のClang環境ではClang Static Analyzerを使います。どちらも選択した翻訳単位が対象で、全経路の安全性を証明しません。依存検査もローカルの引用形式includeに対する検査です。
+検証の適用範囲は次のとおりです。
 
-カバレッジは未実行の実装も分母に含めます。ローカルのLLVM集約では一部関数のプロファイル不一致警告が出るため、割合は参考値として診断も記録しています。ベンチマークは固定Stageのメモリ内YAML処理・Actor生成破棄・姿勢計算を測り、FPS・GPU負荷・実際のステージ全体のロード時間は測りません。条件が異なる結果の自動比較は拒否します。
+- 静的解析は選択した翻訳単位、依存検査は引用形式includeを対象とし、全経路の安全性は証明しません。
+- カバレッジには未実行の自作実装も含めます。プロファイル不一致の診断がある場合、割合だけで評価しません。
+- CPUベンチマークはメモリ内のYAML処理・Actor生成破棄・姿勢計算を対象とします。実描画のフレーム時間は`measure_frame_loop.py`で別に記録します。異なる測定条件の自動比較は拒否します。
+- 同梱YAMLを検査し、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続の不整合を検出します。
+- [CI](.github/workflows/quality.yml)はLinuxのDebug / Release・統合テスト・解析と、WindowsのReleaseビルド・画面不要のテストを対象とします。結果はActionsで確認してください。
+- Windows実機の操作・表示・音声・性能は、CIの成功とは別に確認が必要です。測定結果は記録された機器・構成にだけ適用されます。
 
-同梱YAML全37件に、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続の検査を適用します。不正データの例外許可はありません。UGC作業データ2件は、参照されていない重複IDだけを採番し直し、存在しない`platform_8`への参照だけを除きました。配置・セル情報・有効な接続は保持しています。`build/game_asset_check assets/data`でも同じ検査を実行できます。
+<details>
+<summary>macOSでRuntimeへSanitizerを適用する場合</summary>
 
-[CI設定](.github/workflows/quality.yml)はLinuxのDebug / Release・統合テスト・解析・計測と、WindowsのReleaseビルド・画面不要のテストを実行します。GitHub上の実行結果はActionsから確認してください。ローカル検証だけではWindowsやCIの成功とは扱いません。
+`GAME_ENABLE_TEST_SANITIZERS=ON`は画面不要の単体テスト、`GAME_ENABLE_RUNTIME_SANITIZERS=ON`はゲーム本体とRuntime統合テストへAddressSanitizer / UBSanを適用します。両方を有効にすると双方を検証できます。
+
+macOSのlibc++では、計装済みコードと未計装ライブラリの混在でコンテナ検査が誤報することがあります（[Clangの制約](https://clang.llvm.org/docs/AddressSanitizer.html#container-overflow-detection)）。同じコンパイラーとSanitizerでyaml-cppもビルドし、`-Dyaml-cpp_DIR=<インストール先>/lib/cmake/yaml-cpp`を指定してください。通常構成へ戻す際はこの指定も戻します。共有ライブラリ内部の計装や、利用環境で非対応のリーク検査は保証しません。
+
+</details>
 
 ---
 
@@ -545,6 +533,7 @@ zipを展開し、実行ファイルを起動してください。
 - Windows 10 / 11 64bit
 - Visual Studio 2022
   - 「C++によるデスクトップ開発」
+  - 「Windows用C++ CMakeツール」（CMake 3.18以降）
 - Git
 - インターネット接続（初回ビルド時）
 
@@ -552,7 +541,11 @@ zipを展開し、実行ファイルを起動してください。
 
 `build_windows.bat` を実行してください。
 
-初回実行時は必要に応じてvcpkgを自動取得し、`vcpkg.json` に記載された依存ライブラリを取得したうえでWindows x64 Release版をビルドします。
+初回実行時は必要に応じてvcpkgを自動取得し、`vcpkg.json`に記載された依存ライブラリを取得してWindows x64 Release版をビルドします。新規取得するvcpkg本体と、manifestの`builtin-baseline`はCIと同じコミットを使用します。`VCPKG_ROOT`を指定した場合は既存のvcpkg本体を利用します。
+
+CMakeはPATH、次にVisual Studio同梱版から探します。`build_windows.bat --check-cmake`で、依存ライブラリを取得せず探索だけを確認できます。
+
+`game`をビルドすると`editor_restart_helper`も生成され、`--debug`で起動したEditorからBuild & Restartを利用できます。
 
 ビルド後は以下を実行できます。
 
@@ -601,17 +594,9 @@ Debug Modeでは、
 
 ### プログラム開発
 
-プログラムの設計・実装の主体は自身とし、主に以下の用途で利用しています。
+設計案の検討、問題の調査、コードレビューに加え、コード案の作成、実装・リファクタリング、テスト作成の補助にも生成AIを利用しています。
 
-- 自身で設計・実装したコードについて、責務分割・依存関係・可読性の観点からレビューを受ける
-- 自身で考えた設計案・実装方針について妥当性や別案を確認する
-- リファレンス等を調査しても方針を決めきれなかった問題について、解決方法の候補を検討する
-
-プレイヤー向けステージ作成機能などでは、2D操作と3D空間の対応を含む実装方針の検討にも利用しています。
-
-生成AIから提示されたコードをそのまま使用するのではなく、各処理が必要な理由を確認し、必要に応じて公式リファレンス等で仕様を調査したうえで、自身の設計へ採用するかを判断しています。
-
-採用した内容についても自身で実装し、最終的な動作確認を行っています。
+生成AIによる提案にも誤りがあるため、採用したコードは実装の確認とテストの対象としています。AI利用を含む担当範囲の説明と、提出するコードの最終責任は制作者が持ちます。自動検証の範囲と、実機確認が必要な範囲は[品質検証の入口](#品質検証の入口)に記載しています。
 
 </details>
 

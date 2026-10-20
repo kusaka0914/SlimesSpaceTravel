@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 class Enemy;
@@ -8,10 +9,16 @@ class PlayerCombat;
 class PlayerJewelGauge;
 class PlayerMovement;
 class PlayerStatus;
+class AudioSystem;
+class ParticleSystem;
 
 // 探索済みの敵へダメージ・ガード破壊・外力を適用し、命中演出と攻撃後の状態を更新する。
 class PlayerAttackResolver {
 public:
+    // サービスを借用し、命中通知の関数を保持する。通知先は必須で、サービスは本オブジェクトより長く存続させる。
+    // ParticleSystem未設定時は命中エフェクトだけを省略する。
+    PlayerAttackResolver(AudioSystem& audio, ParticleSystem* particles, std::function<void(int)> onAttackHit);
+
     // 命中一覧と障害物への反応から結果を適用する。空振りでも攻撃後の硬直・コンボを更新する。
     void ResolveAttack(Player& player, PlayerMovement& movement, PlayerStatus& status, PlayerCombat& combat,
                        const std::vector<Enemy*>& hitEnemies, bool didHitHazardActor, float deltaTime) const;
@@ -34,4 +41,9 @@ public:
     bool ResolveAirDodgeAttack(Player& player, const PlayerMovement& movement, const std::vector<Enemy*>& hitEnemies,
                                float damage, float guardDamage, float enemyPushSpeed, float enemyPushDampingPerSecond,
                                float enemyLiftHeight, float deltaTime) const;
+
+private:
+    AudioSystem& mAudio;
+    ParticleSystem* mParticles;
+    std::function<void(int)> mOnAttackHit;
 };

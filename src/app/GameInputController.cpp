@@ -124,6 +124,11 @@ void GameInputController::ProcessGameInput()
         ProcessUGCEditorCommandInput();
         return;
     }
+    ProcessPlayAndMenuInput();
+}
+
+void GameInputController::ProcessPlayAndMenuInput()
+{
     ProcessPauseToggleInput();
 
     const bool wasPauseMenuOpen = mGame.GetIsPauseMenuOpen();
@@ -142,8 +147,7 @@ void GameInputController::ProcessGameInput()
     ProcessBattleStyleSelectionInput();
 
     // ポーズ決定もAを使うため、そのフレームの入力を会話開始へ流さない。
-    const bool didExecuteSceneConfirm =
-        ProcessSceneConfirmInput(!wasPauseMenuOpen && !isUGCEditorActive && !wasTitleMenuActive);
+    const bool didExecuteSceneConfirm = ProcessSceneConfirmInput(!wasPauseMenuOpen && !wasTitleMenuActive);
     ProcessFreeCameraToggleInput();
     const bool allowsStartAction =
         !wasPauseMenuOpen && !wasTitleMenuActive && !mUGC.IsWorkBrowserShowing() && !didExecuteSceneConfirm;

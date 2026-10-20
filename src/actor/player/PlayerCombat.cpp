@@ -1,6 +1,5 @@
 #include "actor/player/PlayerCombat.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/HazardActor.h"
 #include "actor/Planet.h"
@@ -14,14 +13,20 @@
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
+#include <stdexcept>
 
 namespace {
 constexpr float attackDodgeCancelDelaySeconds = 0.5f;
 }
 
-PlayerCombat::PlayerCombat(PhysicsSystem& physicsSystem)
-    : mHitDetector(physicsSystem)
+PlayerCombat::PlayerCombat(const PlayerCombatDependencies& dependencies)
+    : mDependencies(dependencies),
+      mHitDetector(dependencies.physics),
+      mAttackResolver(dependencies.audio, dependencies.particles, dependencies.onAttackHit)
 {
+    if (!mDependencies.readControlStyle || !mDependencies.onAttackHit || !mDependencies.vibrate) {
+        throw std::invalid_argument("PlayerCombat requires control state and feedback callbacks");
+    }
 }
 
 bool PlayerCombat::IsAttacking() const
@@ -70,7 +75,7 @@ void PlayerCombat::StartAttacking(Player& player, PlayerAttackInputKind attackIn
         return;
     }
 
-    const bool shouldFinishAssistCombo = player.GetGame()->IsAssistControlStyle() &&
+    const bool shouldFinishAssistCombo = (mDependencies.readControlStyle() == PlayerControlStyle::Assist) &&
                                          attackInput == PlayerAttackInputKind::Wide && mAttackComboIndex == 2;
 
     if (attackInput == PlayerAttackInputKind::Normal || shouldFinishAssistCombo) {
@@ -149,7 +154,7 @@ bool PlayerCombat::ResolveAirSlamImpact(Player& player, PlayerMovement& movement
 
     const bool didHitEnemy = mDidAirSlamContactEnemy || didHitGroundedEnemy;
     if (!didHitEnemy) {
-        player.GetGame()->GetAudioSystem()->PlaySE("attack_miss_se");
+        mDependencies.audio.PlaySE("attack_miss_se");
     }
 
     mIsStrongAttackHit = didHitEnemy;
@@ -171,7 +176,7 @@ void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
     mIsCharged = true;
 
     StartAttackHitDelay();
-    player.GetGame()->GetAudioSystem()->PlaySE("air_charged_se");
+    mDependencies.audio.PlaySE("air_charged_se");
 }
 
 void PlayerCombat::FinishSpecialAttackCharging()
@@ -258,7 +263,7 @@ void PlayerCombat::SpecialAttack(Player& player, const PlayerMovement& movement,
     const std::vector<Enemy*> enemies = mHitDetector.FindHitEnemies(player, *this);
     mAttackResolver.ResolveSpecialAttack(player, jewelGauge, enemies, mChargedAttackDamage, deltaTime);
 
-    player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 0, 40000, 1000);
+    mDependencies.vibrate(movement.GetPlayerNum(), 0, 40000, 1000);
 
     mCanSpecialAttack = false;
     mAttackCooldownRemaining = 1.0f;

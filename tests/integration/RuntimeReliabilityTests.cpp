@@ -20,6 +20,7 @@
 #include "editor/stage/ugc/UGCPlatformCellService.h"
 #include "editor/ugc/UGCEditorMenuState.h"
 #include "editor/ugc/UGCEditorToolState.h"
+#include "editor/ugc/UGCStageEditSession.h"
 #include "editor/ugc/UGCWorkController.h"
 #include "editor/ugc/UGCWorkFileService.h"
 #include "editor/ugc/UGCWorkPanel.h"
@@ -55,6 +56,62 @@ void NPCInspectorAcceptsMissingContextWithoutStartingUI(Game&)
     NPC npc(nullptr);
     inspector.Draw(&npc, "NPCs", 0, 0);
     inspector.Draw(nullptr, "NPCs", 0, 0);
+}
+
+void StageRebuildFailureKeepsPreviousWorldAndPlayerConfiguration(Game& game)
+{
+    TemporaryTestDirectory directory;
+    const std::string originalPath = game.GetCurrentStageYamlPath();
+    const int originalStageNumber = game.GetCurrentStageNum();
+    Stage* originalStage = game.GetCurrentStage();
+    Player* originalMain = game.GetMainPlayer();
+    Player* originalControlled = game.GetControlledPlayer();
+    const auto originalPlayers = game.GetPlayers();
+    const bool originalJoined = game.GetIsPlayer2Joined();
+    const bool originalSplit = game.GetIsPlayerSplit();
+    const int originalGuard = game.GetPlayerSplitGuardCount();
+
+    YAML::Node document = YamlFile::Load(originalPath);
+    YAML::Node players(YAML::NodeType::Sequence);
+    YAML::Node firstPlayer;
+    firstPlayer["currentPlanetNum"] = 0;
+    players.push_back(firstPlayer);
+    YAML::Node secondPlayer = YAML::Clone(firstPlayer);
+    // 1体目を登録した後、2体目の設定変換で失敗させる。
+    secondPlayer["modelPath"]["invalid"] = true;
+    players.push_back(secondPlayer);
+    document["players"] = players;
+    WriteTestFile(directory.File(), YAML::Dump(document));
+
+    ExpectFalse(game.LoadStageForScene(originalStageNumber, directory.File().string()), "partial rebuild fails");
+    ExpectTrue(game.GetCurrentStage() == originalStage, "previous Stage remains alive");
+    ExpectTrue(game.GetPlayers() == originalPlayers, "previous Player registry restored");
+    ExpectTrue(game.GetMainPlayer() == originalMain && game.GetControlledPlayer() == originalControlled,
+               "configuration does not retain partially created Player");
+    ExpectEqual(originalPath, game.GetCurrentStageYamlPath(), "failed target path is restored");
+    ExpectEqual(originalJoined, game.GetIsPlayer2Joined(), "joined mode restored");
+    ExpectEqual(originalSplit, game.GetIsPlayerSplit(), "split mode restored");
+    ExpectEqual(originalGuard, game.GetPlayerSplitGuardCount(), "shared guard restored");
+    ExpectTrue(game.GetPhysicsSystem()->GetBulletWorld() != nullptr, "previous world has rebuilt physics");
+}
+
+void UGCStageSessionReadsCurrentTargetAndRejectsMissingContext(Game& game)
+{
+    DebugEditorContext context;
+    UGCStageEditSession session(context);
+    YAML::Node document;
+    document["retain"] = 7;
+    ExpectFalse(session.IsAvailable() || session.HasCamera(), "missing context unavailable");
+    ExpectFalse(session.LoadDocument(document), "missing context cannot read document");
+    ExpectEqual(7, document["retain"].as<int>(), "failed read preserves caller output");
+    ExpectFalse(session.ReloadStage(), "missing context cannot rebuild");
+    session.SetPreviewEditLayer(2);
+
+    context.game = &game;
+    ExpectTrue(session.IsAvailable() && session.HasCamera(), "session reads current context");
+    ExpectTrue(session.LoadDocument(document), "current Stage document loaded");
+    ExpectTrue(document["planets"].IsSequence(), "current document has planets");
+    ExpectNear(game.GetUGCGridSize(), session.GetGridSize(), 0.0f, "grid state acquired at call time");
 }
 
 void RenderTargetsRestoreBindingsAndReleaseResources(Game&)
@@ -602,6 +659,10 @@ void RunRuntimeReliabilityTests(Game& game)
     int failures = 0;
     const std::pair<const char*, void (*)(Game&)> cases[]{
         {"NPCInspectorAcceptsMissingContextWithoutStartingUI", NPCInspectorAcceptsMissingContextWithoutStartingUI},
+        {"StageRebuildFailureKeepsPreviousWorldAndPlayerConfiguration",
+         StageRebuildFailureKeepsPreviousWorldAndPlayerConfiguration},
+        {"UGCStageSessionReadsCurrentTargetAndRejectsMissingContext",
+         UGCStageSessionReadsCurrentTargetAndRejectsMissingContext},
         {"RenderTargetsRestoreBindingsAndReleaseResources", RenderTargetsRestoreBindingsAndReleaseResources},
         {"UGCWorkTransactionsRetainFilesOnFailure", UGCWorkTransactionsRetainFilesOnFailure},
         {"GeneratedPlatformsReserveIdsDuringRebuild", GeneratedPlatformsReserveIdsDuringRebuild},

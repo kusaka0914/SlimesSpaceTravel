@@ -383,6 +383,7 @@ private:
     void ProcessInput();
     void ProcessActorsInput();
     void UpdateGame();
+    void UpdateWorldAndCamera(float deltaTime);
     SceneRenderState CreateSceneRenderState() const;
     void UpdateActors(float deltaTime);
 

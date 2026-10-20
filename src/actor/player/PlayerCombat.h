@@ -2,6 +2,7 @@
 
 #include "actor/player/PlayerAttackHitDetector.h"
 #include "actor/player/PlayerAttackResolver.h"
+#include "actor/player/PlayerCombatDependencies.h"
 #include "actor/player/PlayerTypes.h"
 
 #include <cstdint>
@@ -18,7 +19,8 @@ class PhysicsSystem;
 // 時間は秒、攻撃範囲はワールド距離、角度はラジアン。
 class PlayerCombat {
 public:
-    explicit PlayerCombat(PhysicsSystem& physicsSystem);
+    // 通知・状態取得コールバックが空ならstd::invalid_argument。借用サービスは戦闘処理より長く保持する。
+    explicit PlayerCombat(const PlayerCombatDependencies& dependencies);
 
     bool IsAttacking() const;
 
@@ -344,6 +346,7 @@ private:
 
     std::uint64_t mResolvedAttackSequence = 0;
 
+    PlayerCombatDependencies mDependencies;
     PlayerAttackHitDetector mHitDetector;
     PlayerAttackResolver mAttackResolver;
 };

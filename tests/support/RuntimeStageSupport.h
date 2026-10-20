@@ -1,5 +1,6 @@
 #pragma once
 
+#include "actor/player/PlayerCombatDependencies.h"
 #include "app/Game.h"
 #include "editor/stage/selection/StageSelectionController.h"
 #include "world/Stage.h"
@@ -41,3 +42,15 @@ private:
     Stage& mStage;
     std::vector<Planet*> mOriginal;
 };
+
+inline PlayerCombatDependencies MakeTestCombatDependencies(Game& game)
+{
+    return {*game.GetPhysicsSystem(),
+            *game.GetAudioSystem(),
+            game.GetParticleSystem(),
+            [&game]() { return game.GetPlayerControlStyle(); },
+            [&game](int number) { game.OnPlayerAttackHit(number); },
+            [&game](int number, int low, int high, int duration) {
+                game.VibrateControllerForPlayer(number, low, high, duration);
+            }};
+}
