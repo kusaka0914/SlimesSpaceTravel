@@ -496,12 +496,6 @@ cd build/runtime-tests
 ../game_runtime_tests --interactive
 cd ../..
 
-# Releaseの実描画ループを1人・2人・UGCで各600フレーム計測する。
-# Windowsではpython、複数構成ジェネレーターでは --configuration Release を使う。
-python3 -B tools/measure_frame_loop.py --build build
-# 繰り返し遷移の長時間確認（60FPSなら約10分）。既存セーブは使用しない。
-python3 -B tools/measure_frame_loop.py --build build --frames 36000 --scenario cycle --output build/benchmarks/soak.json
-
 # Clangでの関数・行・分岐カバレッジ
 cmake -S . -B build -DGAME_ENABLE_COVERAGE=ON
 cmake --build build --parallel 2
@@ -511,6 +505,12 @@ python3 -B tools/collect_coverage.py --build build --run-tests
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGAME_ENABLE_COVERAGE=OFF -DGAME_BUILD_BENCHMARKS=ON
 cmake --build build --parallel 2
 python3 -B tools/run_benchmarks.py --build build
+
+# Releaseの実描画ループを1人・2人・UGCで各600フレーム計測する。
+# Windowsではpython、複数構成ジェネレーターでは --configuration Release を使う。
+python3 -B tools/measure_frame_loop.py --build build
+# 繰り返し遷移の長時間確認（60FPSなら約10分）。既存セーブは使用しない。
+python3 -B tools/measure_frame_loop.py --build build --frames 36000 --scenario cycle --output build/benchmarks/soak.json
 ```
 
 解析はclang-tidyを優先し、未導入のClang環境ではClang Static Analyzerを使います。どちらも選択した翻訳単位が対象で、全経路の安全性を証明しません。依存検査もローカルの引用形式includeに対する検査です。
