@@ -18,7 +18,7 @@ public:
 
     void RequestManagementOpen();
 
-    // 表示要求の保留中もtrueを返す。
+    // ImGuiフレーム内でDrawManagementと同じID階層から呼ぶ。表示要求の保留中もtrueを返す。
     bool IsManagementOpen() const;
     void DrawManagement();
     void DrawBrowser();

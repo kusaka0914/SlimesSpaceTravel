@@ -19,8 +19,11 @@
 #include "editor/stage/StageNPCInspector.h"
 #include "editor/stage/UGCPlatformCellService.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
+#include "editor/ugc/UGCEditorMenuState.h"
+#include "editor/ugc/UGCEditorToolState.h"
 #include "editor/ugc/UGCWorkController.h"
 #include "editor/ugc/UGCWorkFileService.h"
+#include "editor/ugc/UGCWorkPanel.h"
 #include "editor/ugc/UGCWorkState.h"
 #include "gfx/GameRenderTargets.h"
 #include "gfx/Renderer.h"
@@ -537,6 +540,61 @@ void EnemyFormFailureDoesNotHideOtherForms(Game& game)
     ExpectEqual(finalForm, lastItem, "forms after failed enemy form are still submitted");
 }
 
+void WorkManagementPopupSupportsNestedConfirmation(Game& game)
+{
+    DebugEditorContext context{.game = &game};
+    UGCEditorMenuState menu;
+    UGCEditorToolState tools;
+    UGCWorkPanel panel(context, menu, tools, []() {});
+    bool wasInitiallyClosed = false;
+    bool hadPendingRequest = false;
+    bool wasOpen = false;
+    bool wasOpenWithChild = false;
+    bool wasClosed = false;
+    for (int phase = 0; phase < 3; ++phase) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::GetIO().DisplaySize = ImVec2(1280, 720);
+        ImGui::NewFrame();
+        ImGui::Begin("Work management popup contract");
+        if (phase == 0) {
+            wasInitiallyClosed = !panel.IsManagementOpen();
+            panel.RequestManagementOpen();
+            hadPendingRequest = panel.IsManagementOpen();
+            panel.DrawManagement();
+            wasOpen = panel.IsManagementOpen();
+        } else {
+            if (ImGui::BeginPopupModal("作品管理###UGCWorkManagement")) {
+                if (phase == 1) {
+                    ImGui::OpenPopup("Nested confirmation");
+                }
+                if (ImGui::BeginPopup("Nested confirmation")) {
+                    if (phase == 2) {
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+                if (phase == 2) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            if (phase == 1) {
+                wasOpenWithChild = panel.IsManagementOpen();
+            } else {
+                wasClosed = !panel.IsManagementOpen();
+            }
+        }
+        ImGui::End();
+        ImGui::EndFrame();
+    }
+    ExpectTrue(wasInitiallyClosed, "closed management popup can be queried without an ImGui assertion");
+    ExpectTrue(hadPendingRequest, "pending management request counts as open");
+    ExpectTrue(wasOpen, "opened management popup is visible from its parent ID scope");
+    ExpectTrue(wasOpenWithChild, "nested confirmation does not hide its management parent");
+    ExpectTrue(wasClosed, "closing management clears its open state");
+}
+
 } // namespace
 
 void RunRuntimeReliabilityTests(Game& game)
@@ -554,6 +612,7 @@ void RunRuntimeReliabilityTests(Game& game)
         {"TextureLoadingPreservesCallerState", TextureLoadingPreservesCallerState},
         {"TextureOrientationDoesNotLeakIntoUI", TextureOrientationDoesNotLeakIntoUI},
         {"EnemyFormFailureDoesNotHideOtherForms", EnemyFormFailureDoesNotHideOtherForms},
+        {"WorkManagementPopupSupportsNestedConfirmation", WorkManagementPopupSupportsNestedConfirmation},
     };
     for (const auto& [name, run] : cases) {
         try {

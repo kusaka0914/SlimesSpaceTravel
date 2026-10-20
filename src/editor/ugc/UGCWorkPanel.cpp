@@ -58,8 +58,8 @@ void UGCWorkPanel::RequestManagementOpen()
 
 bool UGCWorkPanel::IsManagementOpen() const
 {
-    return mMenuState.HasWorkManagementOpenRequest() ||
-           ImGui::IsPopupOpen("作品管理###UGCWorkManagement", ImGuiPopupFlags_AnyPopupLevel);
+    // 作品管理はルートで開く。文字列IDとAnyPopupLevelの併用はImGuiの契約外。
+    return mMenuState.HasWorkManagementOpenRequest() || ImGui::IsPopupOpen("作品管理###UGCWorkManagement");
 }
 
 bool UGCWorkPanel::SaveCurrentWork()
