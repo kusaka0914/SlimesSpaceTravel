@@ -402,7 +402,8 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
             RUN_SERIAL TRUE
         )
     endforeach()
-    add_test(NAME game_runtime_frame_loop_tests COMMAND game_runtime_tests --frame-loop 240 cycle)
+    # CPU描画のCIでは実描画を短く検査し、連続遷移は--frame-loopのcycleで別途計測する。
+    add_test(NAME game_runtime_frame_loop_tests COMMAND game_runtime_tests --frame-loop 12 ugc)
     set_tests_properties(game_runtime_frame_loop_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
         ENVIRONMENT "SDL_AUDIODRIVER=dummy"
