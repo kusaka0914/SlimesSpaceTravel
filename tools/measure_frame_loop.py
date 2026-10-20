@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import platform
 import subprocess
+import sys
 
 from run_benchmarks import cpu_description
 
@@ -48,7 +49,9 @@ def main():
     scenarios = []
     environment = dict(os.environ, SDL_AUDIODRIVER="dummy")
     for scenario in options.scenario or ["one-player", "two-player", "ugc"]:
-        result = subprocess.run([str(executable), "--frame-loop", str(options.frames), scenario],
+        result = subprocess.run([sys.executable, "-B", str(ROOT / "tools/run_runtime_checks.py"),
+                                 "--executable", str(executable), "--working-directory", str(build / "runtime-tests"),
+                                 "--", "--frame-loop", str(options.frames), scenario],
                                 cwd=build / "runtime-tests", env=environment, text=True, encoding="utf-8",
                                 errors="replace", capture_output=True, timeout=options.frames / 20 + 180)
         log = output.parent / f"{output.stem}-{scenario}.log"
@@ -71,6 +74,7 @@ def main():
         "system": platform.platform(), "cpu": cpu_description(), "configuration": configuration,
         "executable_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
         "method_sha256": hashlib.sha256((ROOT / "tests/RuntimeFrameLoopTests.cpp").read_bytes()).hexdigest(),
+        "isolation_runner_sha256": hashlib.sha256((ROOT / "tools/run_runtime_checks.py").read_bytes()).hexdigest(),
         "scenarios": scenarios,
         "limitations": [
             "Visible debug-stage window with isolated saves and dummy audio; stationary players, no physical input.",

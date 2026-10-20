@@ -375,6 +375,9 @@ if (GAME_TGS_BUILD)
 endif()
 
 if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
+    if (NOT Python3_Interpreter_FOUND)
+        message(FATAL_ERROR "Runtime checks require Python3 to isolate Editor sessions")
+    endif()
     add_executable(game_runtime_tests
         tests/RuntimeIntegrationTests.cpp
         tests/RuntimeFrameLoopTests.cpp
@@ -386,6 +389,11 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     target_link_libraries(game_runtime_tests PRIVATE game_runtime)
     target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
+    add_test(NAME game_runtime_launch_tests
+        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/RuntimeLaunchTests.py
+            --executable $<TARGET_FILE:game_runtime_tests>
+            --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests)
+    set_tests_properties(game_runtime_launch_tests PROPERTIES TIMEOUT 60 LABELS "integration" RUN_SERIAL TRUE)
     set(GAME_RUNTIME_TEST_TIMEOUT 120)
     if (GAME_ENABLE_RUNTIME_SANITIZERS)
         # 全体計装ではYAML再構築を含む実行時間が伸びるため、通常構成とは制限を分ける。
@@ -393,7 +401,10 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
     endif()
     # CTestは失敗したsuiteの後も別プロセスのsuiteを実行し、Gameと保存先を共有しない。
     foreach(suite reliability gameplay persistence editor render ugc input combat lifetime)
-        add_test(NAME game_runtime_${suite}_tests COMMAND game_runtime_tests --suite ${suite})
+        add_test(NAME game_runtime_${suite}_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_runtime_checks.py
+                --executable $<TARGET_FILE:game_runtime_tests>
+                --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests -- --suite ${suite})
         set_tests_properties(game_runtime_${suite}_tests PROPERTIES
             WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
             ENVIRONMENT "SDL_AUDIODRIVER=dummy"
@@ -403,7 +414,10 @@ if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
         )
     endforeach()
     # CPU描画のCIでは実描画を短く検査し、連続遷移は--frame-loopのcycleで別途計測する。
-    add_test(NAME game_runtime_frame_loop_tests COMMAND game_runtime_tests --frame-loop 12 ugc)
+    add_test(NAME game_runtime_frame_loop_tests
+        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_runtime_checks.py
+            --executable $<TARGET_FILE:game_runtime_tests>
+            --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests -- --frame-loop 12 ugc)
     set_tests_properties(game_runtime_frame_loop_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
         ENVIRONMENT "SDL_AUDIODRIVER=dummy"

@@ -492,9 +492,7 @@ python3 -B tools/architecture_audit.py --check --output build/audit
 python3 -B tools/check_format.py --base <比較元コミット> --clang-format <clang-format-18>
 
 # 既存セーブを使わず、表示したウィンドウで本体のRunLoopを操作する（統合テスト有効時）。
-cd build/runtime-tests
-../game_runtime_tests --interactive
-cd ../..
+python3 -B tools/run_runtime_checks.py --build build -- --interactive
 
 # Clangでの関数・行・分岐カバレッジ
 cmake -S . -B build -DGAME_ENABLE_COVERAGE=ON

@@ -7,6 +7,7 @@
 #include "actor/Actor.h"
 #include "actor/Player.h"
 #include "app/Game.h"
+#include "editor/session/EditorBuildRestartService.h"
 #include "editor/stage/StageActorQuery.h"
 #include "editor/stage/StageActorYamlWriter.h"
 #include "editor/stage/StageEditCommandController.h"
@@ -32,6 +33,7 @@
 #include <GLFW/glfw3.h>
 #include <charconv>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <utility>
 
@@ -55,6 +57,17 @@ struct Fixture {
     Game game;
     explicit Fixture(bool areDebugToolsEnabled = false, bool isVisible = false)
     {
+        // Editorの保存先は実行ファイル基準なので、通常ビルドの設定と共有していないことを確認する。
+        if (areDebugToolsEnabled) {
+            const char* token = std::getenv("SLIMES_RUNTIME_TEST_TOKEN");
+            ExpectTrue(token != nullptr, "launch debug Runtime checks through tools/run_runtime_checks.py");
+            std::filesystem::path session;
+            std::string error;
+            ExpectTrue(EditorBuildRestartService{}.ResolvePersistentDebugSessionFilePath(session, error),
+                       "resolve isolated Editor session");
+            ExpectEqual(std::string(token), ReadTestFile(session.parent_path() / ".runtime-test-token"),
+                        "Editor sessions stay beside the private test executable");
+        }
         // GameWindowは可視性のヒントを上書きしない。通常起動の設定は変えずテストだけ非表示にする。
         ExpectTrue(glfwInit() == GLFW_TRUE, "GLFW display available");
         glfwWindowHint(GLFW_VISIBLE, isVisible ? GLFW_TRUE : GLFW_FALSE);
@@ -62,6 +75,7 @@ struct Fixture {
             game.Shutdown();
             throw TestFailure("Game initialization failed");
         }
+        ImGui::GetIO().IniFilename = nullptr;
     }
     ~Fixture() = default;
 };
