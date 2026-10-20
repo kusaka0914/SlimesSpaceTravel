@@ -1,8 +1,0 @@
-{
-  "source_head": "27416e5d8597a39a0d78d84cdf98e7df05cadd58",
-  "CMAKE_BUILD_TYPE": "Release",
-  "GAME_REVIEW_BUILD": true,
-  "GAME_TGS_BUILD": false,
-  "sanitizers": false,
-  "runtime_groups": 23
-}

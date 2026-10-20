@@ -5,6 +5,10 @@ dist-review/
 build-tgs/
 dist-tgs/
 dist-tgs-updated/
+
+# 可読性レビュー・検証の作業記録
+/review/
+
 .cursor/
 .vscode/
 .vs/

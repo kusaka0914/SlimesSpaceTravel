@@ -1,6 +1,0 @@
-{
-  "exit_code": 2,
-  "different_conditions_rejected": true,
-  "output_not_written": true,
-  "diagnostic": "usage: run_benchmarks.py [-h] [--build BUILD] [--executable EXECUTABLE]\n                         [--stage STAGE] [--iterations ITERATIONS]\n                         [--samples SAMPLES] [--baseline BASELINE]\n                         [--machine-label MACHINE_LABEL] [--output OUTPUT]\nrun_benchmarks.py: error: baseline conditions differ; refusing a misleading performance comparison"
-}

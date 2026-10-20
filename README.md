@@ -475,7 +475,7 @@ src/
 
 ### 品質検証の入口
 
-保存・描画・検証分離の要約は[review/submission/hardening.json](review/submission/hardening.json)、先行する入出力・UGC修正は[summary.json](review/submission/summary.json)にまとめています。[以前の検証](review/followup/summary.json)を含め、`review/`内のログは記録された時点の履歴で、最新状態の成功を示すものではありません。
+回帰テストは[tests/](tests/)、静的解析・依存境界・アセット検証の実行スクリプトは[tools/](tools/)にあります。以下の手順で検証できます。
 
 代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
 

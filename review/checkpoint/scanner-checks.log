@@ -1,2 +1,0 @@
-Game accesses: pointer/reference, explicitly typed alias, accessor chain, comments and strings PASS
-Inheritance: class/struct/final, nested qualified implementation and comments PASS
