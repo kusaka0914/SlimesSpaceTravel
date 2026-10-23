@@ -219,10 +219,6 @@ Enemyについても、移動・戦闘・ダメージ処理・状態・行動AI�
 
 することを意識しています。
 
-### 自動テスト
-
-画面を必要としないデータ処理・状態管理と、OpenGLを使うRuntime統合テストを分けています。保存失敗時の復旧、Undo / Redo、入力機器の割当、戦闘状態、惑星の幾何条件などを検証します。[実行手順](#品質検証の入口)を参照してください。
-
 ---
 
 ## その他の実装
@@ -447,72 +443,6 @@ src/
 ├─ text/              日本語・Ruby表示用データ
 └─ utils/             AtomicFile・YAML読み取り・文字列処理
 ```
-
-`app`がSystemとEditorを組み立て、EditorはRuntimeのAPIを利用します。`gfx`とUGCのRuntimeはEditor内部へ依存しません。Actor専用の姿勢計算は`actor/MathUtils`に置き、`utils`はゲーム固有型へ依存させていません。
-
-### 所有権と変更の境界
-
-- `Game`はSystemとEditorを組み立て、`GameWorld`がActorとStageを所有します。StageやPlanetのActor一覧は借用参照です。
-- Stage再読込の前にSequence・Camera・Scene・Editorの旧Actor参照を解除します。読込失敗時は以前のWorldを保持します。描画用の`SceneRenderState`は呼出中だけ有効な一覧を借用し、次の更新や再読込へ持ち越しません。
-- Editorの作成・削除・Undo / Redoは`StageEditTransaction`で保存とRuntime再構築を調停します。Inspectorの即時編集は画面に残し、保存失敗の理由と再試行を`StageActorSaveState`で管理します。履歴への追加は保存成功後です。
-- `StageProgressSystem`の更新は`ProgressUpdateResult`を返し、メモリ上の変更と保存の成否を区別します。保存に失敗しても現在のゲーム進行を巻き戻しません。
-- MeshのGPUリソースはMesh管理側、UIテクスチャはRenderer、Particle用テクスチャはParticleRendererが解放します。アップロード処理は`TextureUploadState`で呼出前のGL状態へ戻します。生成・使用・解放には有効なGLコンテキストが必要です。
-
-### 品質検証の入口
-
-回帰テストは[tests/](tests/)にあり、[unit/](tests/unit/)は個別機能、[integration/](tests/integration/)はゲーム本体や外部プロセスとの連携、[support/](tests/support/)は共通の検証関数と補助プログラムです。静的解析・依存境界・アセット検証の実行スクリプトは[tools/](tools/)にあります。以下の手順で検証できます。
-
-代表的な回帰テストは、ビルボードの退化軸、SDL仮想機器の同数交換、画像読込順とGL状態、再起動のPIDとexec失敗、進行保存の失敗通知、初期化失敗の終了コードです。Player演出へ渡したParticleSystemだけが更新されることと、足場の安定IDだけによる参照も確認します。
-
-```sh
-# Debug・警告・表示環境を使う統合テスト
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGAME_ENABLE_WARNINGS=ON -DGAME_BUILD_RUNTIME_TESTS=ON
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
-
-# 入出力・UGCを含む重要な実装の解析と、既存の依存境界の検査
-python3 -B tools/run_static_analysis.py --build build
-# 全自作実装を調べる場合は --all-production を付ける。
-python3 -B tools/architecture_audit.py --check --output build/audit
-python3 -B tools/check_format.py --base <比較元コミット> --clang-format <clang-format-18>
-
-# 既存セーブを使わず、表示したウィンドウで本体のRunLoopを操作する（統合テスト有効時）。
-python3 -B tools/run_runtime_checks.py --build build -- --interactive
-
-# Clangでの関数・行・分岐カバレッジ
-cmake -S . -B build -DGAME_ENABLE_COVERAGE=ON
-cmake --build build --parallel 2
-python3 -B tools/collect_coverage.py --build build --run-tests
-
-# 計装を外したReleaseで固定入力のCPU計測
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGAME_ENABLE_COVERAGE=OFF -DGAME_BUILD_BENCHMARKS=ON
-cmake --build build --parallel 2
-python3 -B tools/run_benchmarks.py --build build
-
-# Releaseの実描画ループを1人・2人・UGCで各600フレーム計測する。
-# Windowsではpython、複数構成ジェネレーターでは --configuration Release を使う。
-python3 -B tools/measure_frame_loop.py --build build
-# 繰り返し遷移の長時間確認（60FPSなら約10分）。既存セーブは使用しない。
-python3 -B tools/measure_frame_loop.py --build build --frames 36000 --scenario cycle --output build/benchmarks/soak.json
-```
-
-検証の適用範囲は次のとおりです。
-
-- 静的解析は選択した翻訳単位、依存検査は引用形式includeを対象とし、全経路の安全性は証明しません。
-- カバレッジには未実行の自作実装も含めます。プロファイル不一致の診断がある場合、割合だけで評価しません。
-- CPUベンチマークはメモリ内のYAML処理・Actor生成破棄・姿勢計算を対象とします。実描画のフレーム時間は`measure_frame_loop.py`で別に記録します。異なる測定条件の自動比較は拒否します。
-- 同梱YAMLを検査し、重複キー・非有限ベクトル・惑星参照・足場ID・Pressure Switch接続の不整合を検出します。
-- [CI](.github/workflows/quality.yml)はLinuxのDebug / Release・統合テスト・解析と、WindowsのReleaseビルド・画面不要のテストを対象とします。結果はActionsで確認してください。
-- Windows実機の操作・表示・音声・性能は、CIの成功とは別に確認が必要です。測定結果は記録された機器・構成にだけ適用されます。
-
-<details>
-<summary>macOSでRuntimeへSanitizerを適用する場合</summary>
-
-`GAME_ENABLE_TEST_SANITIZERS=ON`は画面不要の単体テスト、`GAME_ENABLE_RUNTIME_SANITIZERS=ON`はゲーム本体とRuntime統合テストへAddressSanitizer / UBSanを適用します。両方を有効にすると双方を検証できます。
-
-macOSのlibc++では、計装済みコードと未計装ライブラリの混在でコンテナ検査が誤報することがあります（[Clangの制約](https://clang.llvm.org/docs/AddressSanitizer.html#container-overflow-detection)）。同じコンパイラーとSanitizerでyaml-cppもビルドし、`-Dyaml-cpp_DIR=<インストール先>/lib/cmake/yaml-cpp`を指定してください。通常構成へ戻す際はこの指定も戻します。共有ライブラリ内部の計装や、利用環境で非対応のリーク検査は保証しません。
-
-</details>
 
 ---
 
