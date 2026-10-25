@@ -2,9 +2,9 @@
 
 C++ / OpenGLで制作した、個人制作のステージクリア型3Dアクションゲームです。
 
-球体・楕円体の惑星を360°移動し、惑星の表・側面・裏側を探索しながら、敵との戦闘や2体のスライムを使ったギミックを攻略します。
+子どもやゲームに慣れていない人でも迷わず楽しめることを目指し、球体・楕円体の惑星を360°探索するゲームを制作しました。1ボタンでコンボや空中攻撃を楽しめる「らくらくスタイル」、漢字への自動ルビ表示、積み木感覚のステージ作成機能など、操作や理解の負担を減らす工夫を取り入れています。
 
-Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描画、物理連携、キャラクター制御、カメラ、アニメーション、敵AI、ステージ管理、開発用エディタなど、ゲームを構成する主要システムをC++で実装しています。
+また、こうした遊びやすさを繰り返し改善できるよう、チュートリアル・UI・3Dステージを編集するための開発ツールも自作しました。Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描画、キャラクター制御、カメラ、敵AI、ステージ管理などの主要システムをC++で実装しています。
 
 ### 制作情報
 
@@ -42,63 +42,113 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 - 球体・楕円体の表・側面・裏側を移動できる360°ステージ
 - 1体のスライムから2体へ分身して攻略するギミック
-- コンボ、ガード破壊、打ち上げ、空中攻撃、ため攻撃を組み合わせる戦闘
+- コンボ、ガード破壊、打ち上げ、空中攻撃、惑星への叩きつけを組み合わせる戦闘
 - 1人プレイ / 2人プレイ対応
-- アクションが苦手な人でも遊びやすい「らくらくスタイル」
-- 2Dグリッドと3Dプレビューを組み合わせたプレイヤー向けステージ作成機能
+- 1ボタン連打でコンボや空中追撃ができる、アクションが苦手な人向けの「らくらくスタイル」
+- 2Dグリッドと3Dプレビューを組み合わせ、積み木感覚で3Dステージを作れるプレイヤー向けステージ作成機能
 
 <img width="1275" alt="Slime's Space Travel gameplay" src="https://github.com/user-attachments/assets/df8a8d36-4e73-4384-b31f-5915db8f8ca3" />
 
 ---
 
+## 目次
+
+- [起動・操作方法](#起動操作方法)
+- [コードを見る方へ ― まずこの3箇所](#コードを見る方へ--まずこの3箇所)
+- [その他の実装](#その他の実装)
+- [設計について・自動テスト](#設計について)
+- [使用技術・技術選定理由](#使用技術)
+- [Windowsでのビルド](#windowsでのビルド)
+
+---
+
+## 起動・操作方法
+
+### 起動方法
+
+実行ファイル一式はitch.ioからダウンロードできます。
+
+https://kusaka0914.itch.io/slimesspacetravel
+
+ZIPファイルを展開し、`game.exe`を起動してください。
+
+### 基本操作
+
+キーボードまたはゲームコントローラーで操作できます。
+
+| 操作 | キーボード | コントローラー |
+| --- | --- | --- |
+| 移動 | W / A / S / D | 左スティック |
+| カメラ操作 | 矢印キー | 右スティック |
+| カメラを正面に合わせる | M | R |
+| ジャンプ | Space | A |
+| 弱攻撃 | J | Y |
+| 強攻撃 | K | X |
+| 回避 | U | B |
+| 特殊攻撃 | N | L |
+| スライムの分裂・合体 | I | ZR |
+| 操作するスライムの切り替え | Y | ZL |
+| ポーズメニュー | Esc | -（マイナス） |
+
+※ コントローラーのボタン表記はNintendo Switch Proコントローラー方式です。
+※ ステージ1クリア後、ゲームコントローラーを接続した上で、ポーズメニューから2人プレイを開始できます
+
+---
+
 ## コードを見る方へ ― まずこの3箇所
 
-短時間で確認いただく場合は、以下の3つをご覧ください。
+本作では、ゲームに慣れていない人でも遊びやすい仕組みと、それを繰り返し改善できる開発環境に力を入れました。
 
-1. **360°移動** — 3D数学・物理・キャラクター制御
-2. **プレイヤー向けStage Editor** — 2D入力と3D空間の対応・編集システム
-3. **Build & Restart** — C++開発の確認サイクルを短縮する開発ツール
+その中でも、技術的に工夫した以下の3つの実装をご覧ください。
 
-### 1. 球体・楕円体上の360°移動
+1. **360°移動** — 惑星のどこでも自然に操作できる移動・姿勢・カメラ制御
+2. **プレイヤー向けStage Editor** — 直感的な2D操作で3Dステージを作れる編集システム
+3. **Build & Restart** — 遊びやすさを繰り返し調整するための開発支援ツール
+
+### 1. 球体・楕円体上でも自然に操作できる360°移動
 
 #### まず見るコード
 
-[Planet.cpp](src/actor/Planet.cpp)
-
-`Planet::CalculateEllipseSurfaceProjection`
+- [ActorGroundResolver.cpp](src/actor/ActorGroundResolver.cpp)
+  - `CalculateAverageNormal`
+- [Actor.cpp](src/actor/Actor.cpp)
+  - `UpdateUpVec`
+  - `UpdateDirectionVectors`
+- [PlayerMovement.cpp](src/actor/player/PlayerMovement.cpp)
+  - `UpdateCameraRelativeMovementDirections`
 
 #### 課題
 
-本作では、ワールド座標のY軸を常に上方向として扱わず、Actorごとに変化する `upVec` を基準に接地・姿勢・移動・重力・カメラを制御しています。
+本作では、惑星の表・側面・裏側を探索するため、移動する場所によって地面の向きが変化します。
 
-球体では「惑星中心からActorへの方向」を表面法線として利用できますが、楕円体では中心方向と実際の表面法線が一致しません。
+一般的なワールド座標のY軸を上方向とする処理では、惑星の側面や裏側でキャラクターの姿勢や移動方向、カメラの向きが不自然になります。
+
+そのため、地面の向きが変わっても、プレイヤーが操作方向に迷わず、自然に探索できる仕組みが必要でした。
 
 #### 実装
 
-`CalculateEllipseSurfaceProjection` では、ワールド座標上の点に対して楕円体表面上の対応位置を求め、そこから外向き法線を計算しています。
+Bullet PhysicsのRay Testを利用し、キャラクターの中央・前後左右から地面を検出します。
 
-楕円体外部の点については、制約式を満たすパラメータを二分探索で求め、表面上の最近点を算出します。
+取得した地面法線を平均してキャラクターの上方向 `upVec` を更新し、外積を利用して地面に沿った前後・左右方向を計算します。
 
-算出した表面位置・法線・表面までの距離は、PlayerやEnemyの姿勢、重力方向、惑星との距離判定などから共通利用しています。
+プレイヤーの移動では、カメラの向きを考慮して移動方向を求め、入力に応じて移動させています。
+
+これにより、惑星の表から側面、裏側へ移動しても、その場所の地面に合わせてキャラクターの姿勢と操作方向を変えられるようにしました。
 
 #### 関連コード
 
-- [ActorGroundResolver.cpp](src/actor/ActorGroundResolver.cpp)
-  - `CalculateAverageNormal`
-  - `CalculateFallbackUpVec`
 - [PlayerPlanetGravityController.cpp](src/actor/player/PlayerPlanetGravityController.cpp)
-  - `CalculateAirbornePhysicsUpDirection`
-  - `Update`
+  - 空中での重力方向の制御
 - [PlayerCamera.cpp](src/system/camera/PlayerCamera.cpp)
+  - 地面の向きに応じたカメラ制御
 - [CameraCollisionResolver.cpp](src/system/camera/CameraCollisionResolver.cpp)
+  - カメラと地形の衝突回避
 
-接地中はActorの中央・前後左右からRay Testを行い、複数の地面法線から安定した上方向を求めます。
+空中では地面を検出できない場合もあるため、惑星の形状や位置関係に応じて重力方向を求め、姿勢が急激に変化しないよう補間しています。
 
-空中では周囲の惑星との位置関係から重力対象を切り替え、姿勢が急激に変化しないよう `upVec` を補間します。
+また、カメラもプレイヤーの `upVec` を基準に向きを調整し、惑星の裏側でも探索しやすい視点を維持できるよう工夫しています。
 
-カメラもPlayerの `upVec` を基準に姿勢を構築し、惑星の裏側へ移動しても操作方向を維持できるようにしています。
-
-### 2. 2D操作で3Dステージを作るStage Editor
+### 2. 積み木感覚で3Dステージを作れるStage Editor
 
 #### まず見るコード
 
@@ -108,22 +158,26 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 #### 課題
 
-一般的な3DエディタのようにX・Y・Z軸を直接操作する方式では、ゲームを遊ぶプレイヤーがステージを作成するには操作が複雑になります。
+本作では、ゲームを遊ぶだけでなく、プレイヤー自身がステージを作る楽しさも提供したいと考えました。
 
-そこで、
+しかし、一般的な3DエディターのようにX・Y・Z軸を直接操作する方式では、3D操作に慣れていない人にとって難しく、気軽にステージを作れません。
+
+そのため、複雑な3D操作を覚えなくても、直感的に足場や敵を配置できる仕組みが必要でした。
+
+#### 実装
+
+3D空間の操作を、
 
 - 水平方向：2Dグリッド
 - 高さ方向：「だん」
 
-として分離し、「1マス動かす」「1だん上げる」といった操作で3Dステージを作れる方式にしました。
+に分け、「1マス動かす」「1だん上げる」といった積み木に近い感覚で編集できるようにしました。
 
-#### 実装
+内部では、マウス位置から3D空間へRayを生成し、編集用Planeとの交点を求めています。
 
-マウス位置から3D空間へRayを生成し、編集用Planeとの交点を求めます。
+その交点から移動量を計算し、グリッドにスナップすることで、2D画面上の操作を3D空間のオブジェクト移動へ変換しています。
 
-交点から移動量を計算し、グリッドサイズへスナップしてActorを移動します。
-
-ドラッグ開始時の位置や適用済みの移動量を保持し、Undo / RedoやYAML上の保存データとの整合性も管理しています。
+また、操作を間違えてもやり直せるよう、Undo / Redoを実装し、編集内容とYAML上の保存データの整合性も管理しています。
 
 #### 関連コード
 
@@ -131,9 +185,11 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 - [GameFrameRenderer.cpp](src/gfx/GameFrameRenderer.cpp)
   - `DrawUGCPreviewFrame`
 
-編集内容はゲーム本体とは別のFramebufferへ描画し、2D編集画面と3Dプレビューを切り替えながら確認できます。
+編集内容は別のFramebufferへ描画し、2D編集画面と3Dプレビューを切り替えながら確認できるようにしました。
 
-### 3. 編集状態を保持したBuild & Restart
+これにより、3D操作の難しさを減らしながら、プレイヤーが自分の思い描いたステージを作りやすくしています。
+
+### 3. 遊びやすさの改善を支えるBuild & Restart
 
 #### まず見るコード
 
@@ -141,17 +197,19 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用せず、描�
 
 #### 課題
 
-本作ではC++コードを変更して動作確認するたびに、
+本作では、操作性やUI、チュートリアルなどを繰り返し調整し、実際に動かして確認することを重視しています。
+
+しかし、C++コードの変更後に動作確認するには、
 
 `Build → ゲーム起動 → Editorを開く → 編集中の場所まで戻る`
 
 という操作が必要でした。
 
-機能が増えるにつれて確認までの操作が増えたため、この反復を短縮する仕組みを実装しました。
+特に、ゲームを終了すると編集していたステージやカメラ位置などの作業状態が失われるため、改善と確認を繰り返す際の負担になっていました。
 
 #### 実装
 
-Editor上でBuild & Restartを実行すると、
+Editor上からBuild & Restartを実行すると、
 
 1. 現在のEditor状態を保存
 2. Helper Processを起動
@@ -160,16 +218,164 @@ Editor上でBuild & Restartを実行すると、
 5. Build成功後にゲームを再起動
 6. 保存していたEditor状態を復元
 
-という流れで処理します。
+という処理を自動で行います。
 
-Buildをゲーム本体とは別Processへ任せることで、自身の実行ファイルを終了した後でもBuildと再起動を継続できる構成にしています。
+Buildをゲーム本体とは別Processへ任せることで、実行中のゲームを終了した後でもBuildと再起動を継続できる構成にしました。
 
 Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execl` を利用しています。
+
+これにより、コードの変更後も元の編集状態から作業を再開でき、操作性や演出などを繰り返し改善しやすい開発環境を整えました。
 
 #### 関連コード
 
 - [DebugEditorSessionController.cpp](src/system/DebugEditorSessionController.cpp)
 - `tools/editor_restart_helper/`
+
+---
+
+## その他の実装
+
+遊びやすさの向上に関わる機能や、それらを繰り返し改善するための開発ツールに加え、ゲームを支える技術的な実装を紹介します。
+
+### 遊びやすさを実現する機能
+
+<details>
+<summary><strong>1ボタンで戦闘を楽しめる「らくらくスタイル」</strong></summary>
+
+#### 主なコード
+
+- [PlayerStateMachineIdle.cpp](src/actor/player/PlayerStateMachineIdle.cpp)
+  - `TryStartAssistStrongAttack`
+  - `TryStartAssistBrokenEnemyAirCombo`
+- [PlayerTargetingAssist.cpp](src/actor/player/PlayerTargetingAssist.cpp)
+  - `FindAttackTarget`
+  - `FaceTarget`
+
+アクションが苦手な人でも戦闘を楽しめるよう、1ボタンの連打でコンボや打ち上げ後の空中追撃を行える「らくらくスタイル」を実装しました。
+
+内部では、周囲の敵から攻撃対象を選択し、プレイヤーを自動で敵の方向へ向けます。また、敵の状態に応じて攻撃や追撃を補助することで、複雑な操作をしなくても多彩なアクションを楽しめるようにしています。
+
+</details>
+
+
+<details>
+<summary><strong>家族や友人と一緒に楽しめるローカル2人プレイ</strong></summary>
+
+#### 主なコード
+
+- [PlayerInputDeviceRouting.cpp](src/system/PlayerInputDeviceRouting.cpp)
+- [RenderViewportController.cpp](src/gfx/render3d/RenderViewportController.cpp)
+- [CameraSystem.cpp](src/system/CameraSystem.cpp)
+- [PlayerConfigurationController.cpp](src/system/PlayerConfigurationController.cpp)
+
+家族や友人と一緒にゲームを楽しめるよう、画面分割によるローカル2人プレイを実装しました。
+
+プレイヤーごとに入力デバイスとカメラを管理し、`glViewport` で画面を上下に分割して、それぞれの視点からステージを描画しています。
+
+また、各プレイヤーのHPなどのUIも画面ごとに表示し、2人がそれぞれ操作できる構成にしています。
+
+</details>
+
+
+<details>
+<summary><strong>漢字が読めない人にも配慮した自動ルビ表示</strong></summary>
+
+#### 主なコード
+
+- [JapaneseRubyGenerator.cpp](src/system/text/JapaneseRubyGenerator.cpp)
+- [RubyText.h](src/text/RubyText.h)
+- [UICustomElementRenderer.cpp](src/gfx/ui/UICustomElementRenderer.cpp)
+
+漢字を読むのが難しい子どもでも、UIや会話文を理解しやすいよう、日本語文章から自動でルビを生成する仕組みを実装しました。
+
+Windows版では `Windows::Globalization::JapanesePhoneticAnalyzer` を利用して読みを取得しています。
+
+解析結果から本文を再構築し、元の文章と一致することを確認した場合のみ採用することで、文章が不正に変化することを防いでいます。
+
+</details>
+
+### 遊びやすさの改善を支える開発ツール
+
+<details>
+<summary><strong>チュートリアルを編集・プレビューできるTutorial Editor</strong></summary>
+
+#### 主なコード
+
+- [TutorialDebugPanel.cpp](src/gfx/debug/panels/TutorialDebugPanel.cpp)
+- [TutorialLibrary.cpp](src/system/tutorial/TutorialLibrary.cpp)
+
+ゲームに慣れていない人へ操作方法を分かりやすく伝えるため、チュートリアルの内容や表示方法を繰り返し調整できるエディターを実装しました。
+
+文章や動画などの表示内容・配置を編集でき、指定したページからプレビューして実際の見え方を確認できます。
+
+これにより、説明の分かりやすさを確認しながら、チュートリアルを調整できるようにしました。
+
+</details>
+
+<details>
+<summary><strong>ゲーム画面上で直接編集できるUI Editor</strong></summary>
+
+#### 主なコード
+
+- [UICanvasEditorController.cpp](src/gfx/debug/ui/UICanvasEditorController.cpp)
+- [UILoadSystem.cpp](src/system/UILoadSystem.cpp)
+
+プレイヤーに必要な情報を分かりやすく伝えるため、ゲーム画面上でUIの配置や大きさを直接調整できるエディターを実装しました。
+
+UIを選択して移動・回転・拡大縮小できるほか、複製・削除・Undo・YAML保存にも対応しています。
+
+複数選択や範囲選択、重なったUIの選択切り替えも実装し、画面上で見え方を確認しながらUIを調整できるようにしました。
+
+</details>
+
+<details>
+<summary><strong>3D空間でステージを直接編集できる開発用Stage Editor</strong></summary>
+
+#### 主なコード
+
+- [StageGizmoController.cpp](src/gfx/debug/stage/StageGizmoController.cpp)
+- [StageActorYamlWriter.cpp](src/gfx/debug/stage/StageActorYamlWriter.cpp)
+
+ステージの導線や敵・足場の配置を繰り返し調整できるよう、ゲーム内の3D空間でオブジェクトを直接編集する開発用エディターを実装しました。
+
+Actorを選択し、ImGuizmoによる移動・回転・拡大縮小を行えます。また、編集内容はYAMLに保存でき、コードを変更せずにステージを調整できます。
+
+※ プレイヤー向けの積み木型Stage Editorとは別の、開発者向け機能です。
+
+</details>
+
+### ゲームを支える技術的な実装
+
+<details>
+<summary><strong>Sweep判定による壁衝突・スライド移動</strong></summary>
+
+#### 主なコード
+
+- [ActorCollisionResolver.cpp](src/system/physics/ActorCollisionResolver.cpp)
+
+移動中のすり抜けを防ぎ、壁に接触しても自然に移動できるよう、Bullet PhysicsのSweep判定を利用した衝突処理を実装しました。
+
+衝突時には、残りの移動量から壁の法線方向へ入り込む成分を除去し、壁面に沿って移動させます。
+
+</details>
+
+<details>
+<summary><strong>YAMLで行動を組み替えられるAction型Enemy AI</strong></summary>
+
+#### 主なコード
+
+- [EnemyBehaviorController.cpp](src/actor/enemy/behavior/EnemyBehaviorController.cpp)
+- [EnemyBehaviorAction.h](src/actor/enemy/behavior/EnemyBehaviorAction.h)
+- [EnemyBehaviorActionFactory.cpp](src/actor/enemy/behavior/EnemyBehaviorActionFactory.cpp)
+- [EnemyConfigLoader.cpp](src/actor/enemy/EnemyConfigLoader.cpp)
+
+敵の行動を追加・調整しやすくするため、「待機」「追跡」「近接攻撃」「扇形攻撃」「突進」などを独立したActionとして実装しました。
+
+各Actionは `CanStart` / `CanContinue` / `Evaluate` を持ち、実行可能なActionの評価値を利用して次の行動を選択します。
+
+使用するActionとパラメータはYAMLから変更でき、敵の行動パターンをコードの変更なしで調整できる構成にしています。
+
+</details>
 
 ---
 
@@ -213,157 +419,11 @@ Enemyについても、移動・戦闘・ダメージ処理・状態・行動AI�
 
 ### 自動テスト
 
-画面操作を必要とせず検証できるデータ処理・状態管理については、自動テストを用意しています。
+機能追加や改善を繰り返す中で、既存の動作に不具合が生じないよう、データ処理や状態管理に自動テストを導入しました。
 
-主な対象は、
+主に、ステージデータの読み書き、UGCの編集・Undo / Redo、入力デバイスの割り当て、チュートリアルの進行、操作ガイドの表示条件などを検証しています。
 
-- Stage YAMLの読み書き
-- UGC Stageデータ
-- Undo / Redo履歴
-- Enemy / Player設定読み込み
-- Player入力デバイス割り当て
-- Camera設定
-- Stage進行
-- UI / Tutorial関連状態
-- Performance計測用ロジック
-
-などです。
-
-テストはCMake / CTestから実行できる構成にしています。
-
----
-
-## その他の実装
-
-<details>
-<summary><strong>YAMLで行動を組み替えられるAction型Enemy AI</strong></summary>
-
-### 主なコード
-
-- [EnemyBehaviorController.cpp](src/actor/enemy/behavior/EnemyBehaviorController.cpp)
-- [EnemyBehaviorAction.h](src/actor/enemy/behavior/EnemyBehaviorAction.h)
-- [EnemyBehaviorActionFactory.cpp](src/actor/enemy/behavior/EnemyBehaviorActionFactory.cpp)
-- [EnemyConfigLoader.cpp](src/actor/enemy/EnemyConfigLoader.cpp)
-
-Enemyの種類ごとに大きな条件分岐を書くのではなく、「待機」「追跡」「近接攻撃」「扇形攻撃」「突進」などを独立したActionとして実装しています。
-
-各Actionは `CanStart` / `CanContinue` / `Evaluate` を持ち、実行可能なActionから評価値を利用して次の行動を選択します。
-
-使用するActionとパラメータはYAMLから変更できます。
-
-</details>
-
-<details>
-<summary><strong>OpenGL Timer QueryによるGPU処理時間計測</strong></summary>
-
-### 主なコード
-
-- [GpuDurationTimer.cpp](src/gfx/performance/GpuDurationTimer.cpp)
-- [GameFrameRenderer.cpp](src/gfx/GameFrameRenderer.cpp)
-
-`GL_TIME_ELAPSED` を利用してGPU実行時間を測定しています。
-
-結果取得時にCPUを待たせないよう複数のQuery Slotを循環利用し、`GL_QUERY_RESULT_AVAILABLE` で完了したQueryのみ後から取得します。
-
-</details>
-
-<details>
-<summary><strong>ゲーム画面上で直接編集できるUI Editor</strong></summary>
-
-### 主なコード
-
-- [UICanvasEditorController.cpp](src/gfx/debug/ui/UICanvasEditorController.cpp)
-- [UILoadSystem.cpp](src/system/UILoadSystem.cpp)
-
-実際のゲーム画面上でUIを選択し、
-
-- 移動
-- 回転
-- 拡大縮小
-- 複製
-- 削除
-- Undo
-- YAML保存
-
-まで行えます。
-
-複数選択、範囲選択、重なったUIの選択切り替えにも対応しています。
-
-</details>
-
-<details>
-<summary><strong>Sweep判定による壁衝突・スライド移動</strong></summary>
-
-### 主なコード
-
-- [ActorCollisionResolver.cpp](src/system/physics/ActorCollisionResolver.cpp)
-
-移動開始位置から終了位置までSweep判定を行い、高速移動時のすり抜けを抑えています。
-
-壁へ衝突した場合は、残りの移動量から衝突法線方向へ入り込む成分を除き、壁面に沿って移動させます。
-
-</details>
-
-<details>
-<summary><strong>分身・1人 / 2人プレイを共通化したPlayer管理</strong></summary>
-
-### 主なコード
-
-- [PlayerConfigurationController.cpp](src/system/PlayerConfigurationController.cpp)
-
-1人プレイ時の分身と2人プレイ時のPlayer参加を共通のPlayer構造で管理しています。
-
-分身位置も固定ワールド座標ではなく、現在の `upVec` を利用して惑星表面に沿うよう計算しています。
-
-</details>
-
-<details>
-<summary><strong>YAMLベースのSequence System</strong></summary>
-
-### 主なコード
-
-- [SequenceSystem.cpp](src/system/sequence/SequenceSystem.cpp)
-- [SequenceTypes.h](src/system/sequence/SequenceTypes.h)
-- [SequenceLibrary.cpp](src/system/sequence/SequenceLibrary.cpp)
-
-Actor移動、表示切り替え、Player操作、Camera演出などを時間軸上のClipとして扱います。
-
-SequenceをYAMLから読み書きすることで、ゲームロジックへ個別の演出処理を書き込まずに構成できます。
-
-</details>
-
-<details>
-<summary><strong>日本語文章から自動生成するルビ表示</strong></summary>
-
-### 主なコード
-
-- [JapaneseRubyGenerator.cpp](src/system/text/JapaneseRubyGenerator.cpp)
-- [RubyText.h](src/text/RubyText.h)
-- [UICustomElementRenderer.cpp](src/gfx/ui/UICustomElementRenderer.cpp)
-
-Windows版では `Windows::Globalization::JapanesePhoneticAnalyzer` を利用して日本語文章から読みを取得し、漢字を含む部分へ自動でルビを表示します。
-
-解析結果から本文を再構築し、元の文章と一致することを確認した場合のみ利用しています。
-
-</details>
-
-<details>
-<summary><strong>ボーンアニメーションの再生・補間</strong></summary>
-
-### 主なコード
-
-- [AnimationPlayer.cpp](src/animation/AnimationPlayer.cpp)
-
-Assimpから読み込んだKeyframeを利用し、
-
-- Position / Scale：線形補間
-- Rotation：Quaternion SLERP
-
-で補間します。
-
-Skeleton階層を再帰的に辿り、最終的なBone Transformを計算しています。
-
-</details>
+テストはCMake / CTestから実行できる構成にしています。操作感や遊びやすさなど、自動テストだけでは判断できない部分については、実際のプレイテストで確認・改善しています。
 
 ---
 
@@ -434,38 +494,6 @@ src/
 ├─ text/              日本語・Ruby表示用データ
 └─ Game.cpp           各System / Controllerを保持する全体の調停役
 ```
-
----
-
-## 起動・操作方法
-
-### 起動方法
-
-実行ファイル一式はitch.ioからダウンロードできます。
-
-https://kusaka0914.itch.io/slimesspacetravel
-
-ZIPファイルを展開し、`game.exe`を起動してください。
-
-### 基本操作
-
-キーボードまたはゲームコントローラーで操作できます。
-
-| 操作 | キーボード | コントローラー |
-| --- | --- | --- |
-| 移動 | W / A / S / D | 左スティック |
-| カメラ操作 | 矢印キー | 右スティック |
-| カメラを正面に合わせる | M | R |
-| ジャンプ | Space | A |
-| 弱攻撃 | J | Y |
-| 強攻撃 | K | X |
-| 回避 | U | B |
-| 特殊攻撃 | N | L |
-| スライムの分裂・合体 | I | ZR |
-| 操作するスライムの切り替え | Y | ZL |
-| ポーズメニュー | Esc | -（マイナス） |
-
-※ コントローラーのボタン表記はNintendo Switch Proコントローラー方式です。
 
 ---
 
