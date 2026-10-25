@@ -19,7 +19,7 @@ C++ / OpenGLで制作した、個人制作のステージクリア型3Dアクシ
 
 - **プレイ映像:** https://youtu.be/fcE3nDOE_2A
 - **実行ファイル:** https://kusaka0914.itch.io/slimesspacetravel
-- **開発要点書:** [summary.pdf](summary.pdf)
+- **開発要点書（READMEのみでも作品の概要・主な実装を確認できます。さらに詳しく知りたい方向けの補足資料）:** [summary.pdf](summary.pdf)
 - **ポートフォリオサイト（他の制作物も紹介しています）:** https://kusaka0914.github.io
 
 <img width="1280" alt="Slime's Space Travel" src="https://github.com/user-attachments/assets/28071dbf-166d-465a-a26b-8b4e9404c04b" />
@@ -578,6 +578,8 @@ Debug Modeでは、
 
 ## 詳細資料
 
-制作背景・コンセプト、開発期間、制作人数、担当範囲、ゲームデザイン、技術選定理由、開発用Editor、システム設計、技術的に工夫した点などは、以下にまとめています。
+本READMEでは、作品の概要や主な実装、設計上の工夫を紹介しています。
+
+より詳しい制作背景や技術的な問題解決、開発用エディターの画面などを確認したい方向けに、補足資料を用意しています。
 
 [開発要点書（summary.pdf）](summary.pdf)
