@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Planet.h"
 #include "system/MeshLoadSystem.h"
 #include "system/actor_loader/ActorPlacementLoader.h"
@@ -15,6 +15,7 @@
 
 class Actor;
 
+// 配置・設定・初期化・Gameへの所有権移譲をまとめる、Actor生成の共通手順。
 class StageActorFactory {
 public:
     StageActorFactory(Game* game, const ActorPlacementLoader& placementLoader)
@@ -23,6 +24,8 @@ public:
     {
     }
 
+    // Gameへ所有権を移し、借用ポインターを返す。Stage・所属Planetを解決できなければnullptr。
+    // 既定設定、ステージ上書き、上書き後処理、Initializeの順に適用する。
     template <class TActor>
     TActor*
     CreatePlacedActorFromStageNode(const YAML::Node& node, int stageYamlIndex, float defaultHeight,
@@ -31,6 +34,7 @@ public:
                                    const std::function<void(TActor*, const YAML::Node&)>& applyConfig = {},
                                    const std::function<void(TActor*, const YAML::Node&)>& applyAfterStageOverride = {});
 
+    // 指定配列がある場合だけPlanetの参照一覧をクリアして生成する。既存Actorの所有権は変更しない。
     template <class TActor>
     void LoadActorSequence(const YAML::Node& stageRoot, const std::string& sequenceName,
                            const std::function<void(Planet*)>& clearFromPlanet,
@@ -76,6 +80,7 @@ TActor* StageActorFactory::CreatePlacedActorFromStageNode(
     actor->SetScale(defaultScale);
     actor->SetModelPath(defaultModelPath);
 
+    // 既定設定を先に適用し、ステージで指定されたモデル・スケールを優先する。
     if (applyConfig) {
         applyConfig(actor.get(), node);
     }
@@ -92,16 +97,16 @@ TActor* StageActorFactory::CreatePlacedActorFromStageNode(
 
     actor->Initialize();
 
-    TActor* actorPtr = actor.get();
+    TActor* createdActor = actor.get();
 
-    mGame->GetMeshLoadSystem()->SetActorMesh(actorPtr);
+    mGame->GetMeshLoadSystem()->SetActorMesh(createdActor);
     mGame->AddActor(std::move(actor));
 
     if (registerToPlanet) {
-        registerToPlanet(currentPlanet, actorPtr);
+        registerToPlanet(currentPlanet, createdActor);
     }
 
-    return actorPtr;
+    return createdActor;
 }
 
 template <class TActor>

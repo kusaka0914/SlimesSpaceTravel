@@ -1,21 +1,26 @@
 #pragma once
 
 #include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/CameraShakeEffect.h"
 #include "system/camera/CinematicCamera.h"
 #include "system/camera/CinematicSequenceLibrary.h"
 #include "system/camera/DebugCamera.h"
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
-#include "system/camera/CameraShakeEffect.h"
 #include "system/camera/PlayerCameraSettings.h"
 #include "system/sequence/BossDefeatSequence.h"
 
 #include <glm/glm.hpp>
 
+#include <functional>
+#include <string>
 #include <string_view>
 #include <vector>
 
-class Game;
+class GameWorld;
+class InputSystem;
+class SceneSystem;
+class AudioSystem;
 class Actor;
 class Player;
 class Boat;
@@ -23,21 +28,53 @@ class Planet;
 class Enemy;
 class Star;
 
+// 操作権・表示モードの現在値。Playerはその呼出時点の借用先で、ステージをまたいで保持しない。
+struct CameraControlState {
+    Player* mainPlayer = nullptr;
+    Player* controlledPlayer = nullptr;
+    int controlledPlayerIndex = 0;
+    bool isPlayer2Joined = false;
+    bool isFreeCameraMode = false;
+    bool isUGCMode = false;
+    bool isDebugEditorShowing = false;
+    bool isEditorKeyboardInputCaptured = false;
+    bool hasPrimaryController = false;
+    bool hasSecondController = false;
+};
+
+// 必須参照はCameraSystemより長く有効に保つ。コールバックは同期実行し、再読込後の対象を利用時に取得する。
+// readControlStateは必須。physicsProvider・findPlacedActorが未設定なら、物理補正・配置Actorへの注目を省略する。
+struct CameraSystemDependencies {
+    const GameWorld& world;
+    const InputSystem& input;
+    SceneSystem& scene;
+    AudioSystem* audio = nullptr;
+    std::function<PhysicsSystem*()> physicsProvider{};
+    std::function<CameraControlState()> readControlState{};
+    std::function<Actor*(const std::string&, int)> findPlacedActor{};
+};
+
+// プレイヤー追従・会話・演出のカメラを調停し、描画用のビューを生成する。
 class CameraSystem {
 public:
     using PlayerCameraState = ::PlayerCameraState;
 
-    explicit CameraSystem(Game* game);
+    explicit CameraSystem(CameraSystemDependencies dependencies);
 
     void ProcessInput();
+
+    // カメラ振動を含む各カメラの状態を、秒単位のdeltaTimeで更新する。
     void Update(float deltaTime);
     void UpdateShakeEffects(float deltaTime);
+
+    // 1始まりのPlayer番号に対して着地攻撃の命中振動を開始する。
     void StartAirStrongAttackHitShake(int playerNum);
+
+    // 1始まりのPlayer番号に対して被ダメージ振動を開始する。
     void StartPlayerDamagedShake(int playerNum);
 
-    bool PlayCinematic(
-        std::string_view sequenceId,
-        bool shouldHoldFinalPose = false);
+    // 指定シーケンスを再生する。未登録・再生不可ならfalse。shouldHoldFinalPoseで終了姿勢を保持する。
+    bool PlayCinematic(std::string_view sequenceId, bool shouldHoldFinalPose = false);
     void StopCinematic();
 
     bool IsCinematicPlaying() const { return mCinematicCamera.IsActive(); }
@@ -47,31 +84,29 @@ public:
     float GetCinematicDuration() const { return mCinematicCamera.GetDuration(); }
 
     bool SaveCinematicSequences() const { return mCinematicLibrary.Save(); }
+
+    // 再生中の演出を停止して定義を再読込する。読込結果を返す。
     bool ReloadCinematicSequences();
 
     const PlayerCameraSettings& GetPlayerCameraSettings() const { return mPlayerCameraSettings; }
     void SetPlayerCameraSettings(PlayerCameraSettings settings);
     bool SavePlayerCameraSettings() const;
     bool ReloadPlayerCameraSettings();
+
+    // ステージ切替前に演出・追従状態と借用中のActor参照をクリアする。
     void ResetForStageChange();
     void SnapBehindControlledPlayer();
 
-    bool GetTalkCameraPreviewEnabled() const { return mTalkCameraPreviewEnabled; }
-    void SetTalkCameraPreviewEnabled(bool enabled) { mTalkCameraPreviewEnabled = enabled; }
-    bool GetBoatRideCameraPreviewEnabled() const
-    {
-        return mBoatRideCameraPreviewEnabled;
-    }
-    void SetBoatRideCameraPreviewEnabled(bool enabled)
-    {
-        mBoatRideCameraPreviewEnabled = enabled;
-    }
+    bool GetTalkCameraPreviewEnabled() const { return mIsTalkCameraPreviewEnabled; }
+    void SetTalkCameraPreviewEnabled(bool enabled) { mIsTalkCameraPreviewEnabled = enabled; }
+    bool GetBoatRideCameraPreviewEnabled() const { return mIsBoatRideCameraPreviewEnabled; }
+    void SetBoatRideCameraPreviewEnabled(bool enabled) { mIsBoatRideCameraPreviewEnabled = enabled; }
 
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
-    CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(); }
-    void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose); }
+    CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(mReadControlState().isUGCMode); }
+    void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose, mReadControlState().isUGCMode); }
 
     float GetFieldOfViewDegrees() const;
 
@@ -80,17 +115,23 @@ public:
     bool GetIsTargetFocus() const { return mIsTargetFocus; }
     bool HasActiveRevealFocus() const;
     bool AllowsPlayerInput() const;
+
+    // 0始まりの操作対象切替に合わせてカメラを即座に合わせる。
     void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
-    void TransitionToControlledPlayer(
-        int fromPlayerIndex,
-        int toPlayerIndex);
+
+    // 0始まりの操作対象切替に合わせてカメラを滑らかに遷移させる。
+    void TransitionToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
     void StartBossDefeatSequence(Enemy* boss, Star* star);
     bool PreviewBossDefeatSequence();
     void StopBossDefeatSequence();
     bool IsBossDefeatSequencePlaying() const { return mBossDefeatSequence.IsActive(); }
+
+    // 演出を優先して描画ビューを生成し、追従・注目状態も更新する。通常の2人プレイではPlayer順に返す。
     std::vector<glm::mat4> GetViews();
     glm::vec3 GetCameraPos() const;
-    glm::vec3 GetPlayerCameraPos(int playerNum) const;
+
+    // 0始まりのPlayerインデックスに対応する追従カメラ位置を返す。
+    glm::vec3 GetPlayerCameraPos(int playerIndex) const;
 
 private:
     struct AirSlamCameraState {
@@ -101,10 +142,7 @@ private:
     };
 
     void UpdateCamera(float deltaTime);
-    void BeginBossDefeatSequence(
-        Enemy* boss,
-        Star* star,
-        bool isPreview);
+    void BeginBossDefeatSequence(Enemy* boss, Star* star, bool isPreview);
     void UpdateTalkCameraTransition(float deltaTime);
     void UpdateTalkCameraAim();
     void UpdateTalkPageFocus(float deltaTime);
@@ -115,9 +153,7 @@ private:
     float GetEasedTalkPageFocusBlend() const;
     void CopyPlayerPitchOffset(int fromPlayerIndex, int toPlayerIndex);
     glm::mat4 GetPlayerCameraView(Player* player, int playerIndex);
-    glm::mat4 ApplyPlayerShake(
-        const glm::mat4& view,
-        int playerIndex) const;
+    glm::mat4 ApplyPlayerShake(const glm::mat4& view, int playerIndex) const;
     glm::mat4 GetTalkPageFocusView(Player* player, int playerIndex);
     Actor* ResolveTalkPageFocusActor() const;
     std::vector<Actor*> FindFocusingActors() const;
@@ -125,18 +161,21 @@ private:
     Boat* ResolveBoatRideCameraTarget() const;
     Enemy* FindBossEnemy(Planet* planet) const;
 
-private:
-    Game* mGame;
+    const GameWorld& mWorld;
+    const InputSystem& mInput;
+    SceneSystem& mScene;
+    std::function<CameraControlState()> mReadControlState;
+    std::function<Actor*(const std::string&, int)> mFindPlacedActor;
     BossDefeatSequence mBossDefeatSequence;
 
     bool mIsTargetFocus = false;
     bool mIsShowingRevealFocus = false;
     std::vector<Actor*> mRevealFocusActors;
     glm::mat4 mRevealFocusView{1.0f};
-    bool mTalkCameraPreviewEnabled = false;
-    bool mBoatRideCameraPreviewEnabled = false;
-    bool mAlignCameraPressedPrev = false;
-    bool mSecondControllerAlignCameraPressedPrev = false;
+    bool mIsTalkCameraPreviewEnabled = false;
+    bool mIsBoatRideCameraPreviewEnabled = false;
+    bool mWasAlignCameraPressed = false;
+    bool mWasSecondControllerAlignCameraPressed = false;
     float mCameraStickX = 0.0f;
     float mCameraStickY = 0.0f;
     float mSecondControllerStickX = 0.0f;

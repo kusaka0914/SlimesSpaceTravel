@@ -16,8 +16,8 @@ struct PlayerInputDeviceContext {
     int controlledPlayerNum = 1;
 };
 
-PlayerInputDevice ResolvePlayerInputDevice(
-    int playerNum,
-    const PlayerInputDeviceContext& context);
+// 1始まりのPlayer番号を、参加状態と接続状況に応じた入力機器へ割り当てる。対象外はNone。
+PlayerInputDevice ResolvePlayerInputDevice(int playerNum, const PlayerInputDeviceContext& context);
 
+// コントローラーの1始まりの番号を返す。キーボード・Noneでは0を返す。
 int ResolveControllerPlayerNum(PlayerInputDevice inputDevice);

@@ -1,40 +1,34 @@
 #include "actor/TutorialTrigger.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "system/MeshLoadSystem.h"
 #include "system/SceneSystem.h"
 #include "system/scene/TutorialController.h"
 #include "system/tutorial/TutorialLibrary.h"
 
+#include <algorithm>
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-
-#include <algorithm>
-#include <filesystem>
 #include <limits>
 #include <vector>
 
 namespace {
-glm::mat4 CreateModelOrientation(
-    const TutorialTrigger& trigger)
+glm::mat4 CreateModelOrientation(const TutorialTrigger& trigger)
 {
-    const glm::mat4 semanticOrientation =
-        glm::mat4_cast(trigger.GetOrientation());
+    const glm::mat4 semanticOrientation = glm::mat4_cast(trigger.GetOrientation());
 
     glm::mat4 modelAxisCorrection(1.0f);
-    modelAxisCorrection[0] =
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-    modelAxisCorrection[1] =
-        glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-    modelAxisCorrection[2] =
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+    modelAxisCorrection[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+    modelAxisCorrection[1] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+    modelAxisCorrection[2] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
 
     return semanticOrientation * modelAxisCorrection;
 }
-}
+} // namespace
 
 TutorialTrigger::TutorialTrigger(Game* game)
     : NPC(game)
@@ -57,45 +51,32 @@ void TutorialTrigger::OnLoadedModelChanged()
     mLocalBoundsMin = glm::vec3(-0.5f);
     mLocalBoundsMax = glm::vec3(0.5f);
 
-    if (!mGame || !mGame->GetMeshLoadSystem() ||
-        GetModelPath().empty()) {
+    if (!mGame || !mGame->GetMeshLoadSystem() || GetModelPath().empty()) {
         return;
     }
 
     std::filesystem::path modelPath(GetModelPath());
     if (!modelPath.is_absolute()) {
-        modelPath =
-            std::filesystem::path("../assets/models") /
-            modelPath;
+        modelPath = std::filesystem::path("../assets/models") / modelPath;
     }
 
     const CollisionMeshGeometry* collisionGeometry =
-        mGame->GetMeshLoadSystem()
-            ->ResolveCollisionMeshGeometry(
-                modelPath.lexically_normal().string());
-    if (!collisionGeometry ||
-        collisionGeometry->positions.size() < 3) {
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(modelPath.lexically_normal().string());
+    if (!collisionGeometry || collisionGeometry->positions.size() < 3) {
         return;
     }
 
-    glm::vec3 boundsMin(
-        std::numeric_limits<float>::max());
-    glm::vec3 boundsMax(
-        std::numeric_limits<float>::lowest());
-    for (std::size_t index = 0;
-         index + 2 < collisionGeometry->positions.size();
-         index += 3) {
-        const glm::vec3 position(
-            collisionGeometry->positions[index],
-            collisionGeometry->positions[index + 1],
-            collisionGeometry->positions[index + 2]);
+    glm::vec3 boundsMin(std::numeric_limits<float>::max());
+    glm::vec3 boundsMax(std::numeric_limits<float>::lowest());
+    for (std::size_t index = 0; index + 2 < collisionGeometry->positions.size(); index += 3) {
+        const glm::vec3 position(collisionGeometry->positions[index], collisionGeometry->positions[index + 1],
+                                 collisionGeometry->positions[index + 2]);
         boundsMin = glm::min(boundsMin, position);
         boundsMax = glm::max(boundsMax, position);
     }
 
     constexpr float minimumBoundsSize = 0.0001f;
-    if (glm::length(boundsMax - boundsMin) <=
-        minimumBoundsSize) {
+    if (glm::length(boundsMax - boundsMin) <= minimumBoundsSize) {
         return;
     }
 
@@ -103,72 +84,45 @@ void TutorialTrigger::OnLoadedModelChanged()
     mLocalBoundsMax = boundsMax;
 }
 
-bool TutorialTrigger::IsInsideModelBounds(
-    const glm::vec3& worldPosition) const
+bool TutorialTrigger::IsInsideModelBounds(const glm::vec3& worldPosition) const
 {
     glm::vec3 safeScale = glm::abs(GetScale());
     safeScale.x = std::max(0.0001f, safeScale.x);
     safeScale.y = std::max(0.0001f, safeScale.y);
     safeScale.z = std::max(0.0001f, safeScale.z);
 
-    const glm::mat4 modelMatrix =
-        glm::translate(glm::mat4(1.0f), GetPos()) *
-        CreateModelOrientation(*this) *
-        glm::scale(glm::mat4(1.0f), safeScale);
-    const glm::vec3 localPosition =
-        glm::vec3(
-            glm::inverse(modelMatrix) *
-            glm::vec4(worldPosition, 1.0f));
+    // モデル軸の補正を含む逆変換で、ワールド位置を境界判定用のローカル空間へ戻す。
+    const glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), GetPos()) * CreateModelOrientation(*this) *
+                                  glm::scale(glm::mat4(1.0f), safeScale);
+    const glm::vec3 localPosition = glm::vec3(glm::inverse(modelMatrix) * glm::vec4(worldPosition, 1.0f));
 
     constexpr float boundsEpsilon = 0.0001f;
-    return localPosition.x >=
-               mLocalBoundsMin.x - boundsEpsilon &&
-           localPosition.x <=
-               mLocalBoundsMax.x + boundsEpsilon &&
-           localPosition.y >=
-               mLocalBoundsMin.y - boundsEpsilon &&
-           localPosition.y <=
-               mLocalBoundsMax.y + boundsEpsilon &&
-           localPosition.z >=
-               mLocalBoundsMin.z - boundsEpsilon &&
-           localPosition.z <=
-               mLocalBoundsMax.z + boundsEpsilon;
+    return localPosition.x >= mLocalBoundsMin.x - boundsEpsilon &&
+           localPosition.x <= mLocalBoundsMax.x + boundsEpsilon &&
+           localPosition.y >= mLocalBoundsMin.y - boundsEpsilon &&
+           localPosition.y <= mLocalBoundsMax.y + boundsEpsilon &&
+           localPosition.z >= mLocalBoundsMin.z - boundsEpsilon && localPosition.z <= mLocalBoundsMax.z + boundsEpsilon;
 }
 
 bool TutorialTrigger::RequiresSplitPlayerToStart() const
 {
     if (!mTutorialId.empty()) {
-        SceneSystem* sceneSystem =
-            mGame ? mGame->GetSceneSystem() : nullptr;
-        TutorialController* tutorialController =
-            sceneSystem
-                ? sceneSystem->GetTutorialController()
-                : nullptr;
+        SceneSystem* sceneSystem = mGame ? mGame->GetSceneSystem() : nullptr;
+        TutorialController* tutorialController = sceneSystem ? sceneSystem->GetTutorialController() : nullptr;
         const TutorialDefinition* definition =
-            tutorialController
-                ? tutorialController->GetLibrary().Find(
-                      mTutorialId)
-                : nullptr;
+            tutorialController ? tutorialController->GetLibrary().Find(mTutorialId) : nullptr;
         if (!definition) {
             return false;
         }
 
-        return std::any_of(
-            definition->pages.begin(),
-            definition->pages.end(),
-            [](const TutorialPage& page) {
-                return page.advanceCondition ==
-                       TutorialAdvanceCondition::PlayerSwitch;
-            });
+        return std::any_of(definition->pages.begin(), definition->pages.end(), [](const TutorialPage& page) {
+            return page.advanceCondition == TutorialAdvanceCondition::PlayerSwitch;
+        });
     }
 
-    const std::vector<std::string> resolvedTalkTexts =
-        GetResolvedTalkTexts();
-    for (std::size_t pageIndex = 0;
-         pageIndex < resolvedTalkTexts.size();
-         ++pageIndex) {
-        if (GetResolvedTalkAdvanceCondition(pageIndex) ==
-            TalkPageAdvanceCondition::PlayerSwitch) {
+    const std::vector<std::string> resolvedTalkTexts = GetResolvedTalkTexts();
+    for (std::size_t pageIndex = 0; pageIndex < resolvedTalkTexts.size(); ++pageIndex) {
+        if (GetResolvedTalkAdvanceCondition(pageIndex) == TalkPageAdvanceCondition::PlayerSwitch) {
             return true;
         }
     }
@@ -177,8 +131,7 @@ bool TutorialTrigger::RequiresSplitPlayerToStart() const
 
 void TutorialTrigger::UpdateActor(float)
 {
-    if (mHasTriggeredThisVisit || !mGame ||
-        mGame->GetIsDebugEditorShowing()) {
+    if (mHasTriggeredThisVisit || !mGame || mGame->GetIsDebugEditorShowing()) {
         return;
     }
 
@@ -190,8 +143,7 @@ void TutorialTrigger::UpdateActor(float)
     bool hasPlayerInsideTrigger = false;
     for (Player* player : mGame->GetPlayers()) {
         if (player && player->GetIsActive() && player->GetOnGround() &&
-            player->GetCurrentPlanet() == GetCurrentPlanet() &&
-            IsInsideModelBounds(player->GetPos())) {
+            player->GetCurrentPlanet() == GetCurrentPlanet() && IsInsideModelBounds(player->GetPos())) {
             hasPlayerInsideTrigger = true;
             break;
         }
@@ -199,11 +151,8 @@ void TutorialTrigger::UpdateActor(float)
 
     const bool requiresSplitPlayer = RequiresSplitPlayerToStart();
     const bool isPlayerSplit = mGame->GetIsPlayerSplit();
-    if (mHasObservedPlayerSplitState && !mWasPlayerSplit &&
-        isPlayerSplit && requiresSplitPlayer && hasPlayerInsideTrigger) {
-
-
-
+    if (mHasObservedPlayerSplitState && !mWasPlayerSplit && isPlayerSplit && requiresSplitPlayer &&
+        hasPlayerInsideTrigger) {
         mRequiresExitAfterSplittingInside = true;
     }
     mHasObservedPlayerSplitState = true;
@@ -217,8 +166,7 @@ void TutorialTrigger::UpdateActor(float)
     }
 
     for (Player* player : mGame->GetPlayers()) {
-        if (!player || !player->GetIsActive() ||
-            !player->GetOnGround() ||
+        if (!player || !player->GetIsActive() || !player->GetOnGround() ||
             player->GetCurrentPlanet() != GetCurrentPlanet()) {
             continue;
         }
@@ -228,11 +176,8 @@ void TutorialTrigger::UpdateActor(float)
         }
 
         if (!mRequiredCompletedTutorialId.empty()) {
-            TutorialController* tutorialController =
-                sceneSystem->GetTutorialController();
-            if (!tutorialController ||
-                !tutorialController->HasCompletedTutorial(
-                    mRequiredCompletedTutorialId)) {
+            TutorialController* tutorialController = sceneSystem->GetTutorialController();
+            if (!tutorialController || !tutorialController->HasCompletedTutorial(mRequiredCompletedTutorialId)) {
                 continue;
             }
         }
@@ -242,10 +187,7 @@ void TutorialTrigger::UpdateActor(float)
         }
 
         if (!mTutorialId.empty()) {
-            mHasTriggeredThisVisit =
-                sceneSystem->TryStartTutorial(
-                    mTutorialId,
-                    player);
+            mHasTriggeredThisVisit = sceneSystem->TryStartTutorial(mTutorialId, player);
         } else {
             mHasTriggeredThisVisit = true;
             sceneSystem->StartTalkWithNPC(this, player);

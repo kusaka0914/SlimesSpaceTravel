@@ -1,7 +1,7 @@
 #include "system/scene/ArrivalSceneFlow.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
@@ -11,11 +11,8 @@
 #include "system/scene/TutorialController.h"
 #include "system/sequence/SequenceSystem.h"
 
-ArrivalSceneFlow::ArrivalSceneFlow(
-    Game& game,
-    SceneSystem& sceneSystem,
-    TalkController& talkController,
-    TutorialController& tutorialController)
+ArrivalSceneFlow::ArrivalSceneFlow(Game& game, SceneSystem& sceneSystem, TalkController& talkController,
+                                   TutorialController& tutorialController)
     : mGame(game),
       mSceneSystem(sceneSystem),
       mTalkController(talkController),
@@ -68,9 +65,7 @@ void ArrivalSceneFlow::OnBoatArrived(Boat* boat)
             continue;
         }
         const bool isInactiveSoloClone =
-            !mGame.GetIsPlayer2Joined() &&
-            !mGame.GetIsPlayerSplit() &&
-            player != mainPlayer;
+            !mGame.GetIsPlayer2Joined() && !mGame.GetIsPlayerSplit() && player != mainPlayer;
         if (!isInactiveSoloClone) {
             player->OnBoatArrived(boat);
         }
@@ -87,8 +82,7 @@ void ArrivalSceneFlow::UpdateTutorials()
         return;
     }
     Player* controlledPlayer = mGame.GetControlledPlayer();
-    if (!controlledPlayer || !controlledPlayer->GetIsActive() ||
-        !controlledPlayer->GetOnGround()) {
+    if (!controlledPlayer || !controlledPlayer->GetIsActive() || !controlledPlayer->GetOnGround()) {
         return;
     }
 
@@ -99,8 +93,7 @@ void ArrivalSceneFlow::UpdateTutorials()
 
 void ArrivalSceneFlow::UpdateForcedTalk()
 {
-    if (!mHasPendingForcedTalk || !mSceneSystem.IsPlaying() ||
-        mSceneSystem.GetFadeTimer() >= 0.0f ||
+    if (!mHasPendingForcedTalk || !mSceneSystem.IsPlaying() || mSceneSystem.GetFadeTimer() >= 0.0f ||
         mSceneSystem.IsFadingOut()) {
         return;
     }
@@ -110,8 +103,7 @@ void ArrivalSceneFlow::UpdateForcedTalk()
     }
 
     Player* talkingPlayer = mGame.GetControlledPlayer();
-    if (!talkingPlayer || !talkingPlayer->GetIsActive() ||
-        (mHasReachedDestination && !talkingPlayer->GetOnGround())) {
+    if (!talkingPlayer || !talkingPlayer->GetIsActive() || (mHasReachedDestination && !talkingPlayer->GetOnGround())) {
         return;
     }
 
@@ -125,16 +117,13 @@ void ArrivalSceneFlow::UpdateForcedTalk()
 NPC* ArrivalSceneFlow::FindForcedTalkNPC() const
 {
     Player* controlledPlayer = mGame.GetControlledPlayer();
-    Planet* arrivalPlanet =
-        controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
+    Planet* arrivalPlanet = controlledPlayer ? controlledPlayer->GetCurrentPlanet() : nullptr;
     const auto findInPlanet = [this](Planet* planet) -> NPC* {
         if (!planet) {
             return nullptr;
         }
         for (NPC* npc : planet->GetNPCs()) {
-            if (npc && npc->GetIsActive() &&
-                npc->GetForcesTalkOnArrival() &&
-                !npc->GetResolvedTalkTexts().empty() &&
+            if (npc && npc->GetIsActive() && npc->GetForcesTalkOnArrival() && !npc->GetResolvedTalkTexts().empty() &&
                 !mGame.HasShownNPCConversation(npc)) {
                 return npc;
             }

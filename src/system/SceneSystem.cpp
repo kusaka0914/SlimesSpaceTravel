@@ -1,7 +1,7 @@
 #include "system/SceneSystem.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 
 #include "actor/Boat.h"
 #include "actor/NPC.h"
@@ -9,6 +9,8 @@
 #include "actor/Player.h"
 
 #include "system/AudioSystem.h"
+#include "system/UILoadSystem.h"
+#include "system/ending/EndingRollConfig.h"
 #include "system/scene/ArrivalSceneFlow.h"
 #include "system/scene/EndingCreditsFlow.h"
 #include "system/scene/OpeningStoryFlow.h"
@@ -16,9 +18,7 @@
 #include "system/scene/TalkController.h"
 #include "system/scene/TutorialController.h"
 #include "system/sequence/SequenceSystem.h"
-#include "system/ending/EndingRollConfig.h"
 #include "system/story/StorybookConfig.h"
-#include "system/UILoadSystem.h"
 
 #include <SDL2/SDL_mixer.h>
 #include <glm/glm.hpp>
@@ -51,22 +51,10 @@ void SceneSystem::CreateControllers()
     mTalkController =
         std::make_unique<TalkController>(mGame, mGameProgressState.get(), mUIState.get(), mTalkingNPC, mTalkingPlayer);
     mTutorialController = std::make_unique<TutorialController>(mGame, mGameProgressState.get(), mUIState.get());
-    mArrivalSceneFlow = std::make_unique<ArrivalSceneFlow>(
-        *mGame,
-        *this,
-        *mTalkController,
-        *mTutorialController);
-    mOpeningStoryFlow = std::make_unique<OpeningStoryFlow>(
-        *mGame,
-        *this,
-        *mUIState,
-        *mTalkController,
-        [this]() { mArrivalSceneFlow->SuppressForcedTalkOnce(); });
-    mEndingCreditsFlow = std::make_unique<EndingCreditsFlow>(
-        *mGame,
-        *this,
-        *mGameProgressState,
-        *mUIState);
+    mArrivalSceneFlow = std::make_unique<ArrivalSceneFlow>(*mGame, *this, *mTalkController, *mTutorialController);
+    mOpeningStoryFlow = std::make_unique<OpeningStoryFlow>(*mGame, *this, *mUIState, *mTalkController,
+                                                           [this]() { mArrivalSceneFlow->SuppressForcedTalkOnce(); });
+    mEndingCreditsFlow = std::make_unique<EndingCreditsFlow>(*mGame, *this, *mGameProgressState, *mUIState);
 }
 
 void SceneSystem::Update(float deltaTime)
@@ -75,8 +63,6 @@ void SceneSystem::Update(float deltaTime)
     if (IsGameOver() && mFadeTimer < 0.0f && mGameOverTimer >= 0.0f) {
         mGameOverTimer -= std::max(0.0f, deltaTime);
         if (mGameOverTimer < 0.0f) {
-
-
             mGameOverTimer = -1.0f;
             RestartGame();
         }
@@ -117,12 +103,9 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
 
     case GameProgressState::SceneState::Credits:
 
-
-
         return true;
 
-    case GameProgressState::SceneState::Talking:
-    {
+    case GameProgressState::SceneState::Talking: {
         if (mTutorialController->HasActiveTutorial()) {
             mTutorialController->TryAdvanceFromConfirm();
             return true;
@@ -157,38 +140,30 @@ bool SceneSystem::OnConfirmPressed(int playerNum)
 
 bool SceneSystem::IsWaitingForTutorialPlayerAction() const
 {
-    return (mTutorialController &&
-            mTutorialController->IsWaitingForPlayerAction()) ||
-           (mTalkController &&
-            mTalkController->IsWaitingForPlayerAction());
+    return (mTutorialController && mTutorialController->IsWaitingForPlayerAction()) ||
+           (mTalkController && mTalkController->IsWaitingForPlayerAction());
 }
 
 bool SceneSystem::CanStartTalkWithNPC(const Player* player) const
 {
-    return mTalkController &&
-           mTalkController->CanStartTalkWithNPC(player);
+    return mTalkController && mTalkController->CanStartTalkWithNPC(player);
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerSwitch() const
 {
-    return (mTutorialController &&
-            mTutorialController->IsWaitingForPlayerSwitch()) ||
-           (mTalkController &&
-            mTalkController->IsWaitingForPlayerSwitch());
+    return (mTutorialController && mTutorialController->IsWaitingForPlayerSwitch()) ||
+           (mTalkController && mTalkController->IsWaitingForPlayerSwitch());
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerJump() const
 {
-    return (mTutorialController &&
-            mTutorialController->IsWaitingForPlayerJump()) ||
-           (mTalkController &&
-            mTalkController->IsWaitingForPlayerJump());
+    return (mTutorialController && mTutorialController->IsWaitingForPlayerJump()) ||
+           (mTalkController && mTalkController->IsWaitingForPlayerJump());
 }
 
 bool SceneSystem::IsWaitingForTutorialPlayerSplitMerge() const
 {
-    return mTutorialController &&
-           mTutorialController->IsWaitingForPlayerSplitMerge();
+    return mTutorialController && mTutorialController->IsWaitingForPlayerSplitMerge();
 }
 
 void SceneSystem::OnPlayerSwitchSucceeded()
@@ -207,24 +182,17 @@ void SceneSystem::OnPlayerSplitMergeSucceeded()
 
 bool SceneSystem::HasActiveTutorial() const
 {
-    return mTutorialController &&
-           mTutorialController->HasActiveTutorial();
+    return mTutorialController && mTutorialController->HasActiveTutorial();
 }
 
-bool SceneSystem::IsTutorialActive(
-    const std::string& tutorialId) const
+bool SceneSystem::IsTutorialActive(const std::string& tutorialId) const
 {
-    return mTutorialController &&
-           mTutorialController->GetActiveTutorialId() ==
-               tutorialId;
+    return mTutorialController && mTutorialController->GetActiveTutorialId() == tutorialId;
 }
 
 void SceneSystem::OnStartPressed()
 {
     if (mGameProgressState->GetSceneState() == GameProgressState::SceneState::Opening && mFadeTimer <= -1.0f) {
-
-
-
         if (mOpeningStoryFlow->HasResume()) {
             FinishOpeningStory();
         } else {
@@ -249,14 +217,12 @@ void SceneSystem::StartOpening()
 
 bool SceneSystem::IsShowingTutorialConversation() const
 {
-    return mTutorialController &&
-           mTutorialController->IsShowingConversation();
+    return mTutorialController && mTutorialController->IsShowingConversation();
 }
 
 bool SceneSystem::IsShowingTutorialObjective() const
 {
-    return mTutorialController &&
-           mTutorialController->IsShowingActionObjective();
+    return mTutorialController && mTutorialController->IsShowingActionObjective();
 }
 
 void SceneSystem::StartEnding()
@@ -273,7 +239,6 @@ void SceneSystem::StartBattleStyleSelection()
     }
 
     if (mGame->HasSelectedPlayerControlStyle()) {
-
         RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
         return;
     }
@@ -289,9 +254,7 @@ void SceneSystem::MoveBattleStyleSelection(int direction)
     }
 
     mSelectedBattleStyle =
-        mSelectedBattleStyle == PlayerControlStyle::Assist
-            ? PlayerControlStyle::Standard
-            : PlayerControlStyle::Assist;
+        mSelectedBattleStyle == PlayerControlStyle::Assist ? PlayerControlStyle::Standard : PlayerControlStyle::Assist;
 }
 
 void SceneSystem::ConfirmBattleStyleSelection()
@@ -301,7 +264,6 @@ void SceneSystem::ConfirmBattleStyleSelection()
     }
 
     mGame->SetPlayerControlStyle(mSelectedBattleStyle);
-
 
     RequestStageChange(mGame->IsStageCleared(1) ? 0 : 1);
 }
@@ -353,15 +315,13 @@ void SceneSystem::ClearActorReferencesForStageReload()
     }
 }
 
-void SceneSystem::ResetForDebugScene(
-    GameProgressState::SceneState destinationScene)
+void SceneSystem::ResetForDebugScene(GameProgressState::SceneState destinationScene)
 {
     mTransitionController->CancelPendingTransition();
     ApplyDebugSceneState(destinationScene);
 }
 
-void SceneSystem::ApplyDebugSceneState(
-    GameProgressState::SceneState destinationScene)
+void SceneSystem::ApplyDebugSceneState(GameProgressState::SceneState destinationScene)
 {
     if (mTutorialController) {
         mTutorialController->Stop(false);
@@ -409,10 +369,21 @@ void SceneSystem::StartPlayingScene()
     }
 }
 
+bool SceneSystem::LoadStageIntoPlayingScene(const std::function<bool()>& loadStage)
+{
+    const auto previousScene = mGameProgressState->GetSceneState();
+    // 読込時のBGM選択をPlayingとして行うため、構築前に切り替える。
+    StartPlayingScene();
+    if (loadStage()) {
+        return true;
+    }
+    mGameProgressState->SetCurrentSceneState(previousScene);
+    return false;
+}
+
 void SceneSystem::FinishFocusingScene()
 {
-    if (!mTutorialController ||
-        !mTutorialController->ResumeAfterFocus()) {
+    if (!mTutorialController || !mTutorialController->ResumeAfterFocus()) {
         StartPlayingScene();
         return;
     }
@@ -438,15 +409,10 @@ void SceneSystem::StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer)
     mTalkController->StartTalkWithNPC(talkingNPC, talkingPlayer);
 }
 
-bool SceneSystem::StartOpeningAfterTalkPage(
-    NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
-    std::size_t sourceTalkPageIndex)
+bool SceneSystem::StartOpeningAfterTalkPage(NPC* talkingNPC, Player* talkingPlayer, int resumeTalkPageIndex,
+                                            std::size_t sourceTalkPageIndex)
 {
-    return mOpeningStoryFlow->StartAfterTalkPage(
-        talkingNPC,
-        talkingPlayer,
-        resumeTalkPageIndex,
-        sourceTalkPageIndex);
+    return mOpeningStoryFlow->StartAfterTalkPage(talkingNPC, talkingPlayer, resumeTalkPageIndex, sourceTalkPageIndex);
 }
 
 void SceneSystem::FinishOpeningStory()
@@ -454,12 +420,9 @@ void SceneSystem::FinishOpeningStory()
     mOpeningStoryFlow->Finish();
 }
 
-bool SceneSystem::StartEndingAfterTalkPage(
-    NPC* talkingNPC, std::size_t sourceTalkPageIndex)
+bool SceneSystem::StartEndingAfterTalkPage(NPC* talkingNPC, std::size_t sourceTalkPageIndex)
 {
-    return mEndingCreditsFlow->StartEndingAfterTalkPage(
-        talkingNPC,
-        sourceTalkPageIndex);
+    return mEndingCreditsFlow->StartEndingAfterTalkPage(talkingNPC, sourceTalkPageIndex);
 }
 
 void SceneSystem::FinishEndingStory()
@@ -490,13 +453,9 @@ void SceneSystem::ReloadEndingRollConfig()
     mEndingCreditsFlow->ReloadConfig();
 }
 
-std::string SceneSystem::FindStorybookPageImage(
-    const std::string& trackId,
-    int pageIndex) const
+std::string SceneSystem::FindStorybookPageImage(const std::string& trackId, int pageIndex) const
 {
-    return mStorybookConfig
-        ? mStorybookConfig->GetPageImage(trackId, pageIndex)
-        : std::string{};
+    return mStorybookConfig ? mStorybookConfig->GetPageImage(trackId, pageIndex) : std::string{};
 }
 
 const EndingRollConfig& SceneSystem::GetEndingRollConfig() const
@@ -504,27 +463,19 @@ const EndingRollConfig& SceneSystem::GetEndingRollConfig() const
     return mEndingCreditsFlow->GetConfig();
 }
 
-bool SceneSystem::TryStartTutorial(
-    const std::string& tutorialId,
-    Player* tutorialPlayer)
+bool SceneSystem::TryStartTutorial(const std::string& tutorialId, Player* tutorialPlayer)
 {
-    return mTutorialController &&
-           mTutorialController->TryStart(
-               tutorialId,
-               tutorialPlayer);
+    return mTutorialController && mTutorialController->TryStart(tutorialId, tutorialPlayer);
 }
 
-bool SceneSystem::PreviewTutorial(
-    const std::string& tutorialId)
+bool SceneSystem::PreviewTutorial(const std::string& tutorialId)
 {
-    return mTutorialController &&
-           mTutorialController->Preview(tutorialId);
+    return mTutorialController && mTutorialController->Preview(tutorialId);
 }
 
 Player* SceneSystem::GetTalkingPlayer() const
 {
-    if (mTutorialController &&
-        mTutorialController->HasActiveTutorial()) {
+    if (mTutorialController && mTutorialController->HasActiveTutorial()) {
         return mTutorialController->GetTutorialPlayer();
     }
     return mTalkingPlayer;
@@ -566,13 +517,9 @@ bool SceneSystem::RequestPlayerRespawn(Player* player)
     return true;
 }
 
-bool SceneSystem::RequestFadeAction(
-    std::function<void()> midpointAction,
-    std::function<void()> completionAction)
+bool SceneSystem::RequestFadeAction(std::function<void()> midpointAction, std::function<void()> completionAction)
 {
-    return mTransitionController->RequestFadeAction(
-        std::move(midpointAction),
-        std::move(completionAction));
+    return mTransitionController->RequestFadeAction(std::move(midpointAction), std::move(completionAction));
 }
 
 void SceneSystem::RequestStageChange(int stageNum)
@@ -606,8 +553,7 @@ void SceneSystem::AdvanceOpeningStoryIfComplete()
         return;
     }
 
-    if (mUIState->GetTalkUIIndex() <
-        GetSceneTalkPageCount("opening", textId)) {
+    if (mUIState->GetTalkUIIndex() < GetSceneTalkPageCount("opening", textId)) {
         return;
     }
 
@@ -628,35 +574,26 @@ void SceneSystem::AdvanceOpeningStoryIfComplete()
 
 void SceneSystem::FinishEndingStoryIfComplete()
 {
-    if (!IsEnding() || mFadeTimer >= 0.0f ||
-        mUIState->GetCurrentTalkWith() != UIState::TalkWith::Ending) {
+    if (!IsEnding() || mFadeTimer >= 0.0f || mUIState->GetCurrentTalkWith() != UIState::TalkWith::Ending) {
         return;
     }
 
-    if (mUIState->GetTalkUIIndex() <
-        GetSceneTalkPageCount("ending", "endingText")) {
+    if (mUIState->GetTalkUIIndex() < GetSceneTalkPageCount("ending", "endingText")) {
         return;
     }
 
     FinishEndingStory();
 }
 
-int SceneSystem::GetSceneTalkPageCount(
-    const char* sceneName,
-    const char* textId) const
+int SceneSystem::GetSceneTalkPageCount(const char* sceneName, const char* textId) const
 {
-    const UILoadSystem::TextInfo* textInfo =
-        mUILoadSystem.GetTextInfo(sceneName, textId);
-    return textInfo
-        ? static_cast<int>(textInfo->texts.size())
-        : 0;
+    const UILoadSystem::TextInfo* textInfo = mUILoadSystem.GetTextInfo(sceneName, textId);
+    return textInfo ? static_cast<int>(textInfo->texts.size()) : 0;
 }
 
 float SceneSystem::GetCreditsElapsed() const
 {
-    return mEndingCreditsFlow
-        ? mEndingCreditsFlow->GetCreditsElapsed()
-        : 0.0f;
+    return mEndingCreditsFlow ? mEndingCreditsFlow->GetCreditsElapsed() : 0.0f;
 }
 
 void SceneSystem::OnBoatArrived(Boat* boat)
@@ -671,8 +608,7 @@ void SceneSystem::OnStageClear()
     Mix_HaltMusic();
 
     if (mGame->GetAudioSystem()) {
-        mClearAudioChannel =
-            mGame->GetAudioSystem()->PlaySE("clear_se");
+        mClearAudioChannel = mGame->GetAudioSystem()->PlaySE("clear_se");
     } else {
         mClearAudioChannel = -1;
     }
@@ -683,8 +619,7 @@ void SceneSystem::OnStageClear()
 
 void SceneSystem::OnUGCStageClear()
 {
-    mGameProgressState->SetCurrentSceneState(
-        GameProgressState::SceneState::StageClear);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::StageClear);
     Mix_HaltMusic();
     if (mGame->GetAudioSystem()) {
         mGame->GetAudioSystem()->PlaySE("clear_se");
@@ -728,8 +663,7 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     }
 
     AudioSystem* audioSystem = mGame->GetAudioSystem();
-    if (mClearAudioChannel >= 0 && audioSystem &&
-        audioSystem->IsSEPlaying(mClearAudioChannel)) {
+    if (mClearAudioChannel >= 0 && audioSystem && audioSystem->IsSEPlaying(mClearAudioChannel)) {
         return;
     }
 
@@ -743,11 +677,10 @@ void SceneSystem::UpdateClearTimer(float deltaTime)
     // 遷移要求を毎フレーム繰り返さないよう、先に再生状態をリセットする。
     mClearTimer = -1.0f;
     mClearAudioChannel = -1;
-    // 初回はエンディングからスタッフロールを再生する。完走した事実は
-    // ステージ進行とは別の専用保存値に記録され、以後の再クリアでは
-    // 拠点へ戻る。
-    if (mGame->GetCurrentStageNum() == 5 &&
-        !mGame->HasCompletedEndingRoll()) {
+
+    // スタッフロールの完走はステージ進行と別に保存し、
+    // 完走済みの再クリアでは拠点へ戻す。
+    if (mGame->GetCurrentStageNum() == 5 && !mGame->HasCompletedEndingRoll()) {
         StartEnding();
         return;
     }

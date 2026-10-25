@@ -1,8 +1,15 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 project(game)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CTest)
+
+option(GAME_ENABLE_TEST_SANITIZERS "Enable AddressSanitizer and UBSan for headless unit tests only" OFF)
+option(GAME_ENABLE_RUNTIME_SANITIZERS "Enable AddressSanitizer and UBSan for the game and runtime integration tests" OFF)
+option(GAME_ENABLE_WARNINGS "Enable additional compiler warnings in first-party sources" OFF)
+option(GAME_ENABLE_COVERAGE "Instrument the game and tests for LLVM source coverage" OFF)
+option(GAME_BUILD_BENCHMARKS "Build fixed-input CPU benchmarks that do not open a window" OFF)
 
 option(
     GAME_REVIEW_BUILD
@@ -25,21 +32,45 @@ file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
 
 list(FILTER GAME_SOURCES EXCLUDE REGEX ".*/src/thirdParty/.*")
 
-add_executable(game ${GAME_SOURCES})
+# エントリーポイントと保存先解決だけを差し替え、統合テストでも同じRuntimeを使う。
+list(REMOVE_ITEM GAME_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/app/Main.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp"
+)
+add_library(game_runtime OBJECT ${GAME_SOURCES})
+add_executable(game src/app/Main.cpp src/system/UserDataPaths.cpp)
+target_link_libraries(game PRIVATE game_runtime)
+if (GAME_ENABLE_RUNTIME_SANITIZERS)
+    if (MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        message(FATAL_ERROR "GAME_ENABLE_RUNTIME_SANITIZERS requires GCC or Clang with a GNU-style command line")
+    endif()
+    # Runtime本体と利用側の両方を計装し、テストのラッパーだけに適用される状態を避ける。
+    target_compile_options(game_runtime PUBLIC
+        -fsanitize=address,undefined
+        -fno-omit-frame-pointer
+        -fno-sanitize-recover=undefined
+    )
+    target_link_options(game_runtime INTERFACE -fsanitize=address,undefined)
+endif()
+option(GAME_BUILD_RUNTIME_TESTS "Build integration tests requiring an OpenGL display" OFF)
 
 add_executable(editor_restart_helper
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/editor_restart_helper/Main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ProcessLaunch.cpp
 )
+target_include_directories(editor_restart_helper PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# 単体のgameビルドでも、Editorの再起動操作に必要なHelperを揃える。
+add_dependencies(game editor_restart_helper)
 
 if (MSVC)
-    target_compile_options(game PRIVATE /utf-8 /MP /FS)
+    target_compile_options(game_runtime PUBLIC /utf-8 /MP /FS)
     target_compile_options(editor_restart_helper PRIVATE /utf-8)
 endif()
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/imgui)
 set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdParty/ImGuizmo/src)
 
-target_sources(game PRIVATE
+target_sources(game_runtime PRIVATE
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
@@ -64,60 +95,81 @@ find_package(SDL2_ttf REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 if (BUILD_TESTING)
+    add_executable(game_asset_check tools/asset_check/Main.cpp)
+    target_link_libraries(game_asset_check PRIVATE yaml-cpp::yaml-cpp)
+    if (MSVC)
+        target_compile_options(game_asset_check PRIVATE /utf-8)
+    endif()
     add_executable(game_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestMain.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageActorNodeFactoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformIdentifiersTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StagePlatformConnectionsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageYamlRepositoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkFileNameTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkStorageTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformGridTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPlatformDocumentTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageEditHistoryTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCWorkMetadataTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCSessionStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPreviewStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCClearTransitionStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCPresetVisualsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCEditorTutorialTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/StageProgressSystemTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerConfigLoaderTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyConfigLoaderTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/EnemyGuardGaugeTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerControlConfigurationStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerInputDeviceRoutingTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/FramePerformanceTrackerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/UGCModeControllerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlatformStageConfigTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerCameraSettingsTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/CameraShakeEffectTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TutorialObjectiveTextTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/OperationGuideVisibilityTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerJewelGaugeTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/PlayerSplitGuardStateTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/TgsExperienceControllerTests.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageActorNodeFactory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformIdentifiers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StagePlatformConnections.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageYamlRepositoryOperations.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkFileName.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkStorage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformGrid.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPlatformDocument.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/StageEditHistory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCWorkMetadata.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSessionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorToolState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorMenuState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCPreviewPanelState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSelectionDragState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCSwitchConnectionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCClearTransitionState.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/stage/UGCPresetVisuals.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/debug/ugc/UGCEditorTutorial.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EditorReliabilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/selection/StagePickPolicy.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TestMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/YamlReadTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/ConfigurationPersistenceTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/tools/sequence/StorybookEditorPersistence.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/session/EditorSessionRepository.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/enemy/EnemyPresetRepository.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/effect/particle/ParticleConfigLoader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/story/StorybookConfig.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/ending/EndingRollConfig.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PersistenceSafetyTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/NPCTalkDataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/NPCTalkData.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageActorNodeFactoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StagePlatformIdentifiersTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StagePlatformConnectionsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageYamlRepositoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkFileNameTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkStorageTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPlatformGridTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPlatformDocumentTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageEditHistoryTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageActorSaveStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCWorkMetadataTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCSessionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPreviewStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCEditorStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCClearTransitionStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCPresetVisualsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCEditorTutorialTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/StageProgressSystemTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EnemyConfigLoaderTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EnemyGuardGaugeTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerControlConfigurationStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerInputDeviceRoutingTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/FramePerformanceTrackerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/UGCModeControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlatformStageConfigTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerCameraSettingsTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/CameraShakeEffectTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TutorialObjectiveTextTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/OperationGuideVisibilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerJewelGaugeTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerSplitGuardStateTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TgsExperienceControllerTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/creation/StageActorNodeFactory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StagePlatformIdentifiers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StagePlatformConnections.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StageYamlRepositoryOperations.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkFileName.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkStorage.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPlatformGrid.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPlatformDocument.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/history/StageEditHistory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/persistence/StageActorSaveState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCWorkMetadata.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCSessionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCPreviewState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorToolState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorMenuState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCPreviewPanelState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSelectionDragState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCSwitchConnectionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gameplay/ugc/UGCClearTransitionState.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/ugc/UGCPresetVisuals.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ugc/UGCEditorTutorial.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/StageProgressSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerConfigLoader.cpp
@@ -130,6 +182,13 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/actor_loader/PlatformStageConfig.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/PlayerCameraSettings.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CameraShakeEffect.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/AtomicFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/TextFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/YamlFile.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/history/StageEditTransaction.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/camera/CinematicSequenceLibrary.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sequence/SequenceLibrary.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/system/UILoadSystem.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tutorial/TutorialLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
@@ -151,21 +210,62 @@ if (BUILD_TESTING)
     if (WIN32)
         target_link_libraries(game_tests PRIVATE windowsapp)
     endif()
+    if (GAME_ENABLE_TEST_SANITIZERS)
+        if (MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+            message(FATAL_ERROR "GAME_ENABLE_TEST_SANITIZERS requires GCC or Clang with a GNU-style command line")
+        endif()
+        target_compile_options(game_tests PRIVATE
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+            -fno-sanitize-recover=undefined
+        )
+        target_link_options(game_tests PRIVATE -fsanitize=address,undefined)
+    endif()
     add_test(NAME game_tests COMMAND game_tests)
+
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if (Python3_Interpreter_FOUND)
+        add_test(NAME asset_schema_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/validate_assets.py
+                --validator $<TARGET_FILE:game_asset_check>
+        )
+        add_test(NAME asset_validation_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/AssetValidationTests.py
+                --validator $<TARGET_FILE:game_asset_check>
+        )
+        add_executable(restart_launch_probe tests/support/RestartLaunchProbe.cpp)
+        add_test(NAME restart_helper_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/RestartHelperTests.py
+                --helper $<TARGET_FILE:editor_restart_helper>
+                --probe $<TARGET_FILE:restart_launch_probe>
+                --cmake ${CMAKE_COMMAND}
+        )
+        set_tests_properties(restart_helper_tests PROPERTIES TIMEOUT 60)
+        if (WIN32)
+            add_executable(build_tool_probe tests/support/BuildToolProbe.cpp)
+            add_test(NAME windows_build_tools_tests
+                COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/WindowsBuildTests.py
+                    --probe $<TARGET_FILE:build_tool_probe>)
+            set_tests_properties(windows_build_tools_tests PROPERTIES TIMEOUT 60 LABELS "integration")
+        endif()
+        add_test(NAME architecture_audit_tests
+            COMMAND ${Python3_EXECUTABLE} -B -m unittest discover -s tests/unit -p ArchitectureAuditTests.py
+        )
+        set_tests_properties(architecture_audit_tests PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
 endif()
 
-target_include_directories(game PRIVATE
+target_include_directories(game_runtime PUBLIC
     ${OPENGL_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIRS}
-    ${BULLET_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${IMGUIZMO_DIR}
 )
-target_link_directories(game PRIVATE /opt/homebrew/lib)
+target_include_directories(game_runtime SYSTEM PUBLIC ${BULLET_INCLUDE_DIRS})
 
-target_link_libraries(game
+target_link_libraries(game_runtime PUBLIC
     GLEW::GLEW
     glfw
     OpenGL::GL
@@ -179,7 +279,7 @@ target_link_libraries(game
 )
 
 if (WIN32)
-    target_link_libraries(game
+    target_link_libraries(game_runtime PUBLIC
         windowsapp
         mfplat
         mfreadwrite
@@ -240,7 +340,7 @@ if (APPLE)
     set(TUTORIAL_VIDEO_MAC_SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/video/TutorialVideoPlayerMacBackend.mm
     )
-    target_sources(game PRIVATE ${TUTORIAL_VIDEO_MAC_SOURCE})
+    target_sources(game_runtime PRIVATE ${TUTORIAL_VIDEO_MAC_SOURCE})
     set_source_files_properties(
         ${TUTORIAL_VIDEO_MAC_SOURCE}
         PROPERTIES COMPILE_FLAGS "-fobjc-arc"
@@ -250,7 +350,7 @@ if (APPLE)
     find_library(COREMEDIA_FRAMEWORK CoreMedia REQUIRED)
     find_library(COREVIDEO_FRAMEWORK CoreVideo REQUIRED)
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
-    target_link_libraries(game
+    target_link_libraries(game_runtime PUBLIC
         ${AVFOUNDATION_FRAMEWORK}
         ${COREMEDIA_FRAMEWORK}
         ${COREVIDEO_FRAMEWORK}
@@ -276,10 +376,144 @@ set_target_properties(editor_restart_helper PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-target_compile_definitions(game PRIVATE SDL_MAIN_HANDLED)
+target_compile_definitions(game_runtime PUBLIC SDL_MAIN_HANDLED)
 if (GAME_REVIEW_BUILD)
-    target_compile_definitions(game PRIVATE GAME_REVIEW_BUILD=1)
+    target_compile_definitions(game_runtime PUBLIC GAME_REVIEW_BUILD=1)
 endif()
 if (GAME_TGS_BUILD)
-    target_compile_definitions(game PRIVATE GAME_TGS_BUILD=1)
+    target_compile_definitions(game_runtime PUBLIC GAME_TGS_BUILD=1)
+endif()
+
+if (BUILD_TESTING AND GAME_BUILD_RUNTIME_TESTS AND NOT GAME_TGS_BUILD)
+    if (NOT Python3_Interpreter_FOUND)
+        message(FATAL_ERROR "Runtime checks require Python3 to isolate Editor sessions")
+    endif()
+    add_executable(game_runtime_tests
+        tests/integration/RuntimeIntegrationTests.cpp
+        tests/integration/RuntimeFrameLoopTests.cpp
+        tests/integration/RuntimeGameplayTests.cpp
+        tests/integration/RuntimeReliabilityTests.cpp
+        tests/integration/RuntimeEditorPersistenceTests.cpp
+        tests/support/IsolatedUserDataPaths.cpp
+    )
+    target_link_libraries(game_runtime_tests PRIVATE game_runtime)
+    target_include_directories(game_runtime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests")
+    add_test(NAME game_runtime_launch_tests
+        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/RuntimeLaunchTests.py
+            --executable $<TARGET_FILE:game_runtime_tests>
+            --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests)
+    set_tests_properties(game_runtime_launch_tests PROPERTIES TIMEOUT 60 LABELS "integration" RUN_SERIAL TRUE)
+    set(GAME_RUNTIME_TEST_TIMEOUT 120)
+    if (GAME_ENABLE_RUNTIME_SANITIZERS)
+        # 全体計装ではYAML再構築を含む実行時間が伸びるため、通常構成とは制限を分ける。
+        set(GAME_RUNTIME_TEST_TIMEOUT 300)
+    endif()
+    # CTestは失敗したsuiteの後も別プロセスのsuiteを実行し、Gameと保存先を共有しない。
+    foreach(suite reliability gameplay persistence editor render ugc input combat lifetime)
+        add_test(NAME game_runtime_${suite}_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_runtime_checks.py
+                --executable $<TARGET_FILE:game_runtime_tests>
+                --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests -- --suite ${suite})
+        set_tests_properties(game_runtime_${suite}_tests PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
+            ENVIRONMENT "SDL_AUDIODRIVER=dummy"
+            LABELS "integration;display"
+            TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
+            RUN_SERIAL TRUE
+        )
+    endforeach()
+    # CPU描画のCIでは実描画を短く検査し、連続遷移は--frame-loopのcycleで別途計測する。
+    add_test(NAME game_runtime_frame_loop_tests
+        COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tools/run_runtime_checks.py
+            --executable $<TARGET_FILE:game_runtime_tests>
+            --working-directory ${CMAKE_CURRENT_BINARY_DIR}/runtime-tests -- --frame-loop 12 ugc)
+    set_tests_properties(game_runtime_frame_loop_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime-tests"
+        ENVIRONMENT "SDL_AUDIODRIVER=dummy"
+        LABELS "integration;display"
+        TIMEOUT ${GAME_RUNTIME_TEST_TIMEOUT}
+        RUN_SERIAL TRUE
+    )
+    add_dependencies(game_runtime_tests game)
+    if (Python3_Interpreter_FOUND)
+        add_executable(game_startup_probe
+            src/app/Main.cpp
+            tests/support/StartupEntryProbe.cpp
+            tests/support/IsolatedUserDataPaths.cpp
+        )
+        target_link_libraries(game_startup_probe PRIVATE game_runtime)
+        target_compile_definitions(game_startup_probe PRIVATE main=RunProductionMain)
+        add_test(NAME startup_exit_tests
+            COMMAND ${Python3_EXECUTABLE} -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/StartupExitTests.py
+                --probe $<TARGET_FILE:game_startup_probe>
+        )
+        set_tests_properties(startup_exit_tests PROPERTIES TIMEOUT 30 LABELS "integration;display" RUN_SERIAL TRUE)
+    endif()
+endif()
+
+if (GAME_BUILD_BENCHMARKS)
+    add_executable(game_benchmarks tools/benchmarks/Main.cpp src/system/UserDataPaths.cpp)
+    target_link_libraries(game_benchmarks PRIVATE game_runtime)
+endif()
+
+if (GAME_ENABLE_WARNINGS)
+    file(GLOB_RECURSE GAME_TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
+    set(GAME_WARNING_SOURCES ${GAME_SOURCES} ${GAME_TEST_SOURCES} ${TUTORIAL_VIDEO_MAC_SOURCE}
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/app/Main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/system/UserDataPaths.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/editor_restart_helper/Main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/benchmarks/Main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_check/Main.cpp"
+    )
+    list(REMOVE_DUPLICATES GAME_WARNING_SOURCES)
+    foreach(source IN LISTS GAME_WARNING_SOURCES)
+        # 公開フックの引数名を残し、第三者ライブラリの実装には警告設定を追加しない。
+        if (MSVC)
+            set_property(SOURCE ${source} APPEND PROPERTY COMPILE_OPTIONS /W4 /wd4100)
+        else()
+            set_property(SOURCE ${source} APPEND PROPERTY COMPILE_OPTIONS
+                -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+        endif()
+    endforeach()
+endif()
+
+if (GAME_ENABLE_COVERAGE)
+    if (MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "GAME_ENABLE_COVERAGE requires Clang with a GNU-style command line")
+    endif()
+    target_compile_options(game_runtime PUBLIC -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(game_runtime INTERFACE -fprofile-instr-generate)
+    set(GAME_COVERAGE_OBJECTS "$<TARGET_FILE:game>\n")
+    foreach(target game_tests editor_restart_helper restart_launch_probe game_asset_check)
+        if (TARGET ${target})
+            target_compile_options(${target} PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+            target_link_options(${target} PRIVATE -fprofile-instr-generate)
+            string(APPEND GAME_COVERAGE_OBJECTS "$<TARGET_FILE:${target}>\n")
+        endif()
+    endforeach()
+    foreach(target game_runtime_tests game_startup_probe)
+        if (TARGET ${target})
+            string(APPEND GAME_COVERAGE_OBJECTS "$<TARGET_FILE:${target}>\n")
+        endif()
+    endforeach()
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/coverage")
+    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/coverage/objects-$<CONFIG>.txt"
+        CONTENT "${GAME_COVERAGE_OBJECTS}")
+    get_property(GAME_REGISTERED_TESTS DIRECTORY PROPERTY TESTS)
+    foreach(test IN LISTS GAME_REGISTERED_TESTS)
+        set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT
+            "LLVM_PROFILE_FILE=${CMAKE_CURRENT_BINARY_DIR}/coverage/%p-%m.profraw")
+    endforeach()
+endif()
+
+if (GAME_ENABLE_RUNTIME_SANITIZERS)
+    # RuntimeにリンクしないCLIも、同じ依存ライブラリとエラー経路を計装する。
+    foreach(target editor_restart_helper restart_launch_probe game_asset_check)
+        if (TARGET ${target})
+            target_compile_options(${target} PRIVATE -fsanitize=address,undefined
+                -fno-omit-frame-pointer -fno-sanitize-recover=undefined)
+            target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+        endif()
+    endforeach()
 endif()

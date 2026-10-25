@@ -1,4 +1,4 @@
-#include "FallRespawnPoint.h"
+#include "actor/FallRespawnPoint.h"
 
 #include <yaml-cpp/yaml.h>
 

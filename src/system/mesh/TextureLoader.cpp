@@ -1,40 +1,32 @@
 #include "system/mesh/TextureLoader.h"
 
+#include "gfx/TextureUploadState.h"
+#include "system/mesh/ImageLoader.h"
+
 #include <GL/glew.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "thirdParty/stb_image.h"
-
-unsigned int TextureLoader::LoadTexture(
-    const char* path,
-    TextureColorSpace colorSpace) const
+unsigned int TextureLoader::LoadTexture(const char* path, TextureColorSpace colorSpace) const
 {
-    unsigned int texID = 0;
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
+    const auto image = ImageLoader::Load(path, ImageLoader::RowOrder::BottomToTop);
+    if (!image.pixels) {
+        return 0;
+    }
+    const TextureUploadState state;
+    unsigned int textureId = 0;
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    int width = 0;
-    int height = 0;
-    int channelCount = 0;
-
-    stbi_set_flip_vertically_on_load(1);
-    unsigned char* data = stbi_load(path, &width, &height, &channelCount, 0);
-    if (!data) {
-        glDeleteTextures(1, &texID);
-        return 0;
-    }
-
     GLenum format = GL_RGBA;
-    if (channelCount == 1) {
+    if (image.channels == 1) {
         format = GL_RED;
-    } else if (channelCount == 2) {
+    } else if (image.channels == 2) {
         format = GL_RG;
-    } else if (channelCount == 3) {
+    } else if (image.channels == 3) {
         format = GL_RGB;
     }
     GLenum internalFormat = format;
@@ -46,21 +38,9 @@ unsigned int TextureLoader::LoadTexture(
         }
     }
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        internalFormat,
-        width,
-        height,
-        0,
-        format,
-        GL_UNSIGNED_BYTE,
-        data);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image.width, image.height, 0, format, GL_UNSIGNED_BYTE,
+                 image.pixels.get());
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    stbi_image_free(data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return texID;
+    return textureId;
 }

@@ -10,59 +10,54 @@ class GameWorld;
 class NPC;
 class PhysicsSystem;
 
+// 保存進行をゲーム内の識別子へ対応付け、ステージの表示・衝突判定へ反映する。
 class GameProgressController {
 public:
-    GameProgressController(
-        GameWorld& world,
-        PhysicsSystem& physicsSystem,
-        const std::string& currentStageYamlPath,
-        bool isPersistenceEnabled = true);
+    // world・physicsSystem・currentStageYamlPathは借用し、このオブジェクトより長く生存すること。
+    GameProgressController(GameWorld& world, PhysicsSystem& physicsSystem, const std::string& currentStageYamlPath,
+                           bool isPersistenceEnabled = true);
 
     bool Load();
     bool Save() const;
+
+    // メモリ上の進行だけを初期化する。保存ファイルへは書き込まない。
     void ResetForNewSession();
 
     bool HasSelectedPlayerControlStyle() const;
     PlayerControlStyle GetSelectedPlayerControlStyle() const;
-    void SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle);
+    ProgressUpdateResult SetSelectedPlayerControlStyle(PlayerControlStyle controlStyle);
 
     bool IsStageCleared(int stageNumber) const;
-    void SetStageCleared(int stageNumber, bool isCleared);
+
+    // 進行を更新して保存を試みる。状態が変わった場合はActorの表示と物理ワールドも再構築する。
+    ProgressUpdateResult SetStageCleared(int stageNumber, bool isCleared);
     bool AreAllMainStagesCleared() const;
 
     bool HasCompletedTutorial(const std::string& tutorialId) const;
-    void MarkTutorialCompleted(const std::string& tutorialId);
+    ProgressUpdateResult MarkTutorialCompleted(const std::string& tutorialId);
     bool HasSeenBaseIntro() const;
-    void MarkBaseIntroSeen();
+    ProgressUpdateResult MarkBaseIntroSeen();
     bool HasCompletedEndingRoll() const;
-    void MarkEndingRollCompleted();
+    ProgressUpdateResult MarkEndingRollCompleted();
 
     bool HasShownNPCConversation(const NPC* npc) const;
-    void MarkNPCConversationShown(const NPC* npc);
-    bool HasCompletedNPCOpeningTrigger(
-        const NPC* npc,
-        std::size_t talkPageIndex) const;
-    void MarkNPCOpeningTriggerCompleted(
-        const NPC* npc,
-        std::size_t talkPageIndex);
-    bool HasCompletedNPCEndingTrigger(
-        const NPC* npc,
-        std::size_t talkPageIndex) const;
-    void MarkNPCEndingTriggerCompleted(
-        const NPC* npc,
-        std::size_t talkPageIndex);
+    ProgressUpdateResult MarkNPCConversationShown(const NPC* npc);
+    bool HasCompletedNPCOpeningTrigger(const NPC* npc, std::size_t talkPageIndex) const;
+    ProgressUpdateResult MarkNPCOpeningTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
+    bool HasCompletedNPCEndingTrigger(const NPC* npc, std::size_t talkPageIndex) const;
+    ProgressUpdateResult MarkNPCEndingTriggerCompleted(const NPC* npc, std::size_t talkPageIndex);
+
+    // ステージYAMLとNPCの配置情報から進行IDを生成する。NPCが未配置・nullptrなら空文字列を返す。
     std::string BuildNPCConversationId(const NPC* npc) const;
 
     bool HasProgressFlag(const std::string& progressId) const;
-    void MarkProgressFlag(const std::string& progressId);
+
+    // 空でない進行IDを既読にし、変更と保存の結果を返す。失敗時もメモリ上の進行は維持する。
+    ProgressUpdateResult MarkProgressFlag(const std::string& progressId);
 
 private:
-    std::string BuildNPCOpeningTriggerId(
-        const NPC* npc,
-        std::size_t talkPageIndex) const;
-    std::string BuildNPCEndingTriggerId(
-        const NPC* npc,
-        std::size_t talkPageIndex) const;
+    std::string BuildNPCOpeningTriggerId(const NPC* npc, std::size_t talkPageIndex) const;
+    std::string BuildNPCEndingTriggerId(const NPC* npc, std::size_t talkPageIndex) const;
 
     GameWorld& mWorld;
     PhysicsSystem& mPhysicsSystem;

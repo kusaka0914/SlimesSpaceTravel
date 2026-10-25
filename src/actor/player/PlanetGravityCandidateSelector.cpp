@@ -41,17 +41,11 @@ PlanetDistanceCandidate PlanetGravityCandidateSelector::FindNearestPlanet(const 
 float PlanetGravityCandidateSelector::CalculateSurfaceDistance(const glm::vec3& playerPos, const Planet& planet) const
 {
     if (planet.GetPlanetShape() == Planet::PlanetShape::Ellipse) {
-        return planet
-            .CalculateEllipseSurfaceProjection(playerPos)
-            .distance;
+        return planet.CalculateEllipseSurfaceProjection(playerPos).distance;
     }
 
     const float surfaceRadius = CalculateApproximateSurfaceRadius(playerPos, planet);
     const float centerDistance = glm::length(playerPos - planet.GetPos());
-
-
-
-
 
     return std::abs(centerDistance - surfaceRadius);
 }

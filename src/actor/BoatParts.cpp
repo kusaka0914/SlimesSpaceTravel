@@ -1,5 +1,6 @@
-#include "BoatParts.h"
-#include "Game.h"
+#include "actor/BoatParts.h"
+
+#include "app/Game.h"
 #include "component/CollectableComponent.h"
 #include "system/AudioSystem.h"
 
@@ -11,9 +12,7 @@ BoatParts::BoatParts(Game* game)
     AddCollectableComponent();
 }
 
-void BoatParts::ApplyConfig(
-    const YAML::Node& boatPartsRoot,
-    const std::string& type)
+void BoatParts::ApplyConfig(const YAML::Node& boatPartsRoot, const std::string& type)
 {
     if (!boatPartsRoot["boatParts"] || !boatPartsRoot["boatParts"].IsSequence()) {
         return;

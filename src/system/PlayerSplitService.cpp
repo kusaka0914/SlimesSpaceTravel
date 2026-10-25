@@ -4,8 +4,7 @@
 
 #include <glm/glm.hpp>
 
-bool PlayerSplitService::ActivateSplit(
-    const std::vector<Player*>& players)
+bool PlayerSplitService::ActivateSplit(const std::vector<Player*>& players)
 {
     if (players.size() < 2 || !players[0] || !players[1]) {
         return false;
@@ -22,15 +21,9 @@ bool PlayerSplitService::ActivateSplit(
     return true;
 }
 
-bool PlayerSplitService::MergeIntoMainPlayer(
-    const std::vector<Player*>& players,
-    int sourcePlayerIndex)
+bool PlayerSplitService::MergeIntoMainPlayer(const std::vector<Player*>& players, int sourcePlayerIndex)
 {
-    if (players.size() < 2 ||
-        sourcePlayerIndex < 0 ||
-        sourcePlayerIndex >= 2 ||
-        !players[0] ||
-        !players[1]) {
+    if (players.size() < 2 || sourcePlayerIndex < 0 || sourcePlayerIndex >= 2 || !players[0] || !players[1]) {
         return false;
     }
 
@@ -49,22 +42,17 @@ bool PlayerSplitService::MergeIntoMainPlayer(
     return true;
 }
 
-bool PlayerSplitService::ArePlayersCloseEnoughToMerge(
-    const std::vector<Player*>& players,
-    float maximumDistance)
+bool PlayerSplitService::ArePlayersCloseEnoughToMerge(const std::vector<Player*>& players, float maximumDistance)
 {
-    if (players.size() < 2 || !players[0] || !players[1] ||
-        !players[0]->GetIsActive() || !players[1]->GetIsActive()) {
+    if (players.size() < 2 || !players[0] || !players[1] || !players[0]->GetIsActive() || !players[1]->GetIsActive()) {
         return false;
     }
 
-    const float playerDistance =
-        glm::length(players[0]->GetPos() - players[1]->GetPos());
+    const float playerDistance = glm::length(players[0]->GetPos() - players[1]->GetPos());
     return playerDistance <= maximumDistance;
 }
 
-void PlayerSplitService::SynchronizeSecondPlayerAfterStageReload(
-    const std::vector<Player*>& players)
+void PlayerSplitService::SynchronizeSecondPlayerAfterStageReload(const std::vector<Player*>& players)
 {
     if (players.size() < 2 || !players[0] || !players[1]) {
         return;
@@ -75,12 +63,9 @@ void PlayerSplitService::SynchronizeSecondPlayerAfterStageReload(
     players[1]->SetShouldJudgeLanding(!players[0]->GetOnGround());
 }
 
-void PlayerSplitService::SynchronizeSharedResources(
-    const std::vector<Player*>& players,
-    const Player& sourcePlayer)
+void PlayerSplitService::SynchronizeSharedResources(const std::vector<Player*>& players, const Player& sourcePlayer)
 {
-    if (players.size() < 2 ||
-        (players[0] != &sourcePlayer && players[1] != &sourcePlayer)) {
+    if (players.size() < 2 || (players[0] != &sourcePlayer && players[1] != &sourcePlayer)) {
         return;
     }
 
@@ -101,22 +86,15 @@ void PlayerSplitService::SynchronizeSharedResources(
     }
 }
 
-void PlayerSplitService::CopyPlacementAndMovement(
-    const Player& sourcePlayer,
-    Player& destinationPlayer,
-    bool shouldCopyVelocity)
+void PlayerSplitService::CopyPlacementAndMovement(const Player& sourcePlayer, Player& destinationPlayer,
+                                                  bool shouldCopyVelocity)
 {
     destinationPlayer.SetCurrentPlanet(sourcePlayer.GetCurrentPlanet());
     destinationPlayer.SetCurrentPlanetNum(sourcePlayer.GetCurrentPlanetNum());
-    destinationPlayer.SetSphericalPlacement(
-        sourcePlayer.GetTheta(),
-        sourcePlayer.GetPhi(),
-        sourcePlayer.GetHeight());
+    destinationPlayer.SetSphericalPlacement(sourcePlayer.GetTheta(), sourcePlayer.GetPhi(), sourcePlayer.GetHeight());
     destinationPlayer.SetOrientation(sourcePlayer.GetOrientation());
     destinationPlayer.SetFacingForwardVec(sourcePlayer.GetFacingForwardVec());
-    destinationPlayer.SetCameraForwardDirection(
-        -sourcePlayer.GetFacingForwardVec(),
-        sourcePlayer.GetUpVec());
+    destinationPlayer.SetCameraForwardDirection(-sourcePlayer.GetFacingForwardVec(), sourcePlayer.GetUpVec());
     destinationPlayer.SetCameraYaw(sourcePlayer.GetCameraYaw());
     destinationPlayer.SetPos(sourcePlayer.GetPos());
     if (shouldCopyVelocity) {

@@ -51,6 +51,7 @@ void PhysicsWorldBuilder::ResetBulletWorld(std::unique_ptr<btDefaultCollisionCon
                                            std::unique_ptr<btSequentialImpulseConstraintSolver>& solver,
                                            std::unique_ptr<btDiscreteDynamicsWorld>& world) const
 {
+    // ワールドがソルバー・衝突設定などを参照するため、参照元から先に破棄する。
     world.reset();
     solver.reset();
     broadphase.reset();

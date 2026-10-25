@@ -24,19 +24,15 @@ std::tm ToLocalTime(std::time_t timestamp)
     return localTime;
 }
 
-}
+} // namespace
 
-TgsExperienceController::TgsExperienceController(
-    TgsExperienceConfig config,
-    std::filesystem::path playLogDirectory)
+TgsExperienceController::TgsExperienceController(TgsExperienceConfig config, std::filesystem::path playLogDirectory)
     : mConfig(config),
       mPlayLogDirectory(std::move(playLogDirectory))
 {
 }
 
-void TgsExperienceController::StartSession(
-    int playerCount,
-    const std::string& controlStyle)
+void TgsExperienceController::StartSession(int playerCount, const std::string& controlStyle)
 {
     if (mPhase != Phase::WaitingForSession) {
         return;
@@ -63,25 +59,16 @@ void TgsExperienceController::Update(float elapsedSeconds)
 {
     const float safeElapsedSeconds = std::max(0.0f, elapsedSeconds);
     if (mPhase == Phase::Playing) {
-        const float previousRemainingSeconds =
-            mConfig.playDurationSeconds - mElapsedPlaySeconds;
-        mElapsedPlaySeconds = std::min(
-            mConfig.playDurationSeconds,
-            mElapsedPlaySeconds + safeElapsedSeconds);
-        const float remainingSeconds =
-            mConfig.playDurationSeconds - mElapsedPlaySeconds;
+        const float previousRemainingSeconds = mConfig.playDurationSeconds - mElapsedPlaySeconds;
+        mElapsedPlaySeconds = std::min(mConfig.playDurationSeconds, mElapsedPlaySeconds + safeElapsedSeconds);
+        const float remainingSeconds = mConfig.playDurationSeconds - mElapsedPlaySeconds;
 
-        const bool crossedNoticeTime =
-            previousRemainingSeconds >
-                mConfig.remainingTimeNoticeSeconds &&
-            remainingSeconds <= mConfig.remainingTimeNoticeSeconds;
+        const bool crossedNoticeTime = previousRemainingSeconds > mConfig.remainingTimeNoticeSeconds &&
+                                       remainingSeconds <= mConfig.remainingTimeNoticeSeconds;
         if (crossedNoticeTime) {
-            mNoticeRemainingSeconds =
-                mConfig.noticeDisplayDurationSeconds;
+            mNoticeRemainingSeconds = mConfig.noticeDisplayDurationSeconds;
         } else if (mNoticeRemainingSeconds > 0.0f) {
-            mNoticeRemainingSeconds = std::max(
-                0.0f,
-                mNoticeRemainingSeconds - safeElapsedSeconds);
+            mNoticeRemainingSeconds = std::max(0.0f, mNoticeRemainingSeconds - safeElapsedSeconds);
         }
 
         if (mElapsedPlaySeconds >= mConfig.playDurationSeconds) {
@@ -96,8 +83,7 @@ void TgsExperienceController::Update(float elapsedSeconds)
     }
 
     mThankYouElapsedSeconds += safeElapsedSeconds;
-    if (mThankYouElapsedSeconds >=
-        mConfig.thankYouDisplayDurationSeconds) {
+    if (mThankYouElapsedSeconds >= mConfig.thankYouDisplayDurationSeconds) {
         mPhase = Phase::ReturningToTitle;
     }
 }
@@ -108,9 +94,8 @@ void TgsExperienceController::SkipToRemainingTimeNotice()
         return;
     }
 
-    mElapsedPlaySeconds = std::max(
-        mElapsedPlaySeconds,
-        mConfig.playDurationSeconds - mConfig.remainingTimeNoticeSeconds);
+    mElapsedPlaySeconds =
+        std::max(mElapsedPlaySeconds, mConfig.playDurationSeconds - mConfig.remainingTimeNoticeSeconds);
     mNoticeRemainingSeconds = mConfig.noticeDisplayDurationSeconds;
 }
 
@@ -125,11 +110,8 @@ void TgsExperienceController::EndSessionNow()
     mPhase = Phase::EndingSession;
 }
 
-void TgsExperienceController::UpdateProgress(
-    int stageNumber,
-    int planetNumber,
-    int playerCount,
-    const std::string& controlStyle)
+void TgsExperienceController::UpdateProgress(int stageNumber, int planetNumber, int playerCount,
+                                             const std::string& controlStyle)
 {
     if (mPhase != Phase::Playing) {
         return;
@@ -137,17 +119,13 @@ void TgsExperienceController::UpdateProgress(
 
     mFinalStageNumber = stageNumber;
     mFinalPlanetNumber = planetNumber;
-    mMaximumPlayerCount = std::max(
-        mMaximumPlayerCount,
-        std::max(1, playerCount));
+    mMaximumPlayerCount = std::max(mMaximumPlayerCount, std::max(1, playerCount));
     if (!controlStyle.empty()) {
         mControlStyle = controlStyle;
     }
     if (stageNumber >= 0) {
         mVisitedStageNumbers.insert(stageNumber);
-        mFurthestStageNumber = std::max(
-            mFurthestStageNumber,
-            stageNumber);
+        mFurthestStageNumber = std::max(mFurthestStageNumber, stageNumber);
     }
 }
 
@@ -167,8 +145,7 @@ void TgsExperienceController::RecordStageCleared(int stageNumber)
 
 bool TgsExperienceController::SaveSessionLog()
 {
-    if (mPhase != Phase::EndingSession ||
-        mWasSessionLogSaveAttempted) {
+    if (mPhase != Phase::EndingSession || mWasSessionLogSaveAttempted) {
         return false;
     }
 
@@ -177,26 +154,21 @@ bool TgsExperienceController::SaveSessionLog()
 
 bool TgsExperienceController::SaveSessionLogBeforeTitleReturn()
 {
-    if (mPhase != Phase::Playing ||
-        mWasSessionLogSaveAttempted) {
+    if (mPhase != Phase::Playing || mWasSessionLogSaveAttempted) {
         return false;
     }
 
     return WriteSessionLog("returned_to_title");
 }
 
-bool TgsExperienceController::WriteSessionLog(
-    const std::string& endReason)
+bool TgsExperienceController::WriteSessionLog(const std::string& endReason)
 {
     mWasSessionLogSaveAttempted = true;
 
     std::error_code fileSystemError;
-    std::filesystem::create_directories(
-        mPlayLogDirectory,
-        fileSystemError);
+    std::filesystem::create_directories(mPlayLogDirectory, fileSystemError);
     if (fileSystemError) {
-        std::cerr << "Failed to create TGS play log directory: "
-                  << fileSystemError.message() << '\n';
+        std::cerr << "Failed to create TGS play log directory: " << fileSystemError.message() << '\n';
         return false;
     }
 
@@ -228,26 +200,25 @@ bool TgsExperienceController::WriteSessionLog(
     {
         std::ofstream output(temporaryPath);
         if (!output.is_open()) {
-            std::cerr << "Failed to open TGS play log: "
-                      << temporaryPath.string() << '\n';
+            std::cerr << "Failed to open TGS play log: " << temporaryPath.string() << '\n';
             return false;
         }
         output << root;
-        output.flush();
+        // クローズ時の書込失敗も確定前に検知し、未完成ログを残さない。
+        output.close();
         if (!output.good()) {
-            std::cerr << "Failed to write TGS play log: "
-                      << temporaryPath.string() << '\n';
+            std::cerr << "Failed to write TGS play log: " << temporaryPath.string() << '\n';
+            std::filesystem::remove(temporaryPath, fileSystemError);
+            if (fileSystemError) {
+                std::cerr << "Failed to remove incomplete TGS play log: " << fileSystemError.message() << '\n';
+            }
             return false;
         }
     }
 
-    std::filesystem::rename(
-        temporaryPath,
-        finalPath,
-        fileSystemError);
+    std::filesystem::rename(temporaryPath, finalPath, fileSystemError);
     if (fileSystemError) {
-        std::cerr << "Failed to finalize TGS play log: "
-                  << fileSystemError.message() << '\n';
+        std::cerr << "Failed to finalize TGS play log: " << fileSystemError.message() << '\n';
         std::filesystem::remove(temporaryPath, fileSystemError);
         return false;
     }
@@ -282,49 +253,35 @@ void TgsExperienceController::ResetForNextSession()
     mClearedStageNumbers.clear();
 }
 
-std::string TgsExperienceController::CreateSessionId(
-    std::chrono::system_clock::time_point timestamp) const
+std::string TgsExperienceController::CreateSessionId(std::chrono::system_clock::time_point timestamp) const
 {
-    const std::time_t timestampSeconds =
-        std::chrono::system_clock::to_time_t(timestamp);
+    const std::time_t timestampSeconds = std::chrono::system_clock::to_time_t(timestamp);
     const std::tm localTime = ToLocalTime(timestampSeconds);
     const auto milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            timestamp.time_since_epoch()) %
-        1000;
+        std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()) % 1000;
 
     std::ostringstream sessionId;
-    sessionId << std::put_time(&localTime, "%Y%m%d_%H%M%S")
-              << '_' << std::setw(3) << std::setfill('0')
+    sessionId << std::put_time(&localTime, "%Y%m%d_%H%M%S") << '_' << std::setw(3) << std::setfill('0')
               << milliseconds.count();
     return sessionId.str();
 }
 
-std::string TgsExperienceController::FormatTimestamp(
-    std::chrono::system_clock::time_point timestamp) const
+std::string TgsExperienceController::FormatTimestamp(std::chrono::system_clock::time_point timestamp) const
 {
-    const std::time_t timestampSeconds =
-        std::chrono::system_clock::to_time_t(timestamp);
+    const std::time_t timestampSeconds = std::chrono::system_clock::to_time_t(timestamp);
     const std::tm localTime = ToLocalTime(timestampSeconds);
     std::ostringstream formattedTimestamp;
-    formattedTimestamp << std::put_time(
-        &localTime,
-        "%Y-%m-%dT%H:%M:%S");
+    formattedTimestamp << std::put_time(&localTime, "%Y-%m-%dT%H:%M:%S");
     return formattedTimestamp.str();
 }
 
-std::filesystem::path
-TgsExperienceController::ResolveUniqueLogPath() const
+std::filesystem::path TgsExperienceController::ResolveUniqueLogPath() const
 {
     int largestNumberedSession = 0;
     int legacyLogCount = 0;
     std::error_code directoryError;
-    for (std::filesystem::directory_iterator entryIterator(
-             mPlayLogDirectory,
-             directoryError),
-         endIterator;
-         !directoryError && entryIterator != endIterator;
-         entryIterator.increment(directoryError)) {
+    for (std::filesystem::directory_iterator entryIterator(mPlayLogDirectory, directoryError), endIterator;
+         !directoryError && entryIterator != endIterator; entryIterator.increment(directoryError)) {
         const std::filesystem::path& entryPath = entryIterator->path();
         if (entryPath.extension() != ".yaml") {
             continue;
@@ -332,10 +289,7 @@ TgsExperienceController::ResolveUniqueLogPath() const
 
         const std::string fileStem = entryPath.stem().string();
         const std::size_t numberEnd = fileStem.find('_');
-        const bool hasNumberedPrefix =
-            fileStem.starts_with("No") &&
-            numberEnd != std::string::npos &&
-            numberEnd > 2;
+        const bool hasNumberedPrefix = fileStem.starts_with("No") && numberEnd != std::string::npos && numberEnd > 2;
         if (!hasNumberedPrefix) {
             ++legacyLogCount;
             continue;
@@ -344,38 +298,25 @@ TgsExperienceController::ResolveUniqueLogPath() const
         int sessionNumber = 0;
         const char* numberBegin = fileStem.data() + 2;
         const char* numberEndPointer = fileStem.data() + numberEnd;
-        const auto parseResult = std::from_chars(
-            numberBegin,
-            numberEndPointer,
-            sessionNumber);
-        if (parseResult.ec != std::errc{} ||
-            parseResult.ptr != numberEndPointer ||
-            sessionNumber <= 0) {
+        const auto parseResult = std::from_chars(numberBegin, numberEndPointer, sessionNumber);
+        if (parseResult.ec != std::errc{} || parseResult.ptr != numberEndPointer || sessionNumber <= 0) {
             ++legacyLogCount;
             continue;
         }
-        largestNumberedSession = std::max(
-            largestNumberedSession,
-            sessionNumber);
+        largestNumberedSession = std::max(largestNumberedSession, sessionNumber);
     }
 
-    int nextSessionNumber = largestNumberedSession > 0
-        ? largestNumberedSession + 1
-        : legacyLogCount + 1;
+    int nextSessionNumber = largestNumberedSession > 0 ? largestNumberedSession + 1 : legacyLogCount + 1;
 
-    const std::time_t startedAtSeconds =
-        std::chrono::system_clock::to_time_t(mSessionStartedAt);
+    const std::time_t startedAtSeconds = std::chrono::system_clock::to_time_t(mSessionStartedAt);
     const std::tm localStartTime = ToLocalTime(startedAtSeconds);
     std::ostringstream dateText;
     dateText << std::put_time(&localStartTime, "%Y%m%d");
 
     while (true) {
         std::ostringstream fileName;
-        fileName << "No" << std::setw(3) << std::setfill('0')
-                 << nextSessionNumber << '_' << dateText.str()
-                 << ".yaml";
-        const std::filesystem::path candidate =
-            mPlayLogDirectory / fileName.str();
+        fileName << "No" << std::setw(3) << std::setfill('0') << nextSessionNumber << '_' << dateText.str() << ".yaml";
+        const std::filesystem::path candidate = mPlayLogDirectory / fileName.str();
         if (!std::filesystem::exists(candidate)) {
             return candidate;
         }

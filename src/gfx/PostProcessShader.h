@@ -2,6 +2,7 @@
 
 #include "gfx/Shader.h"
 
+// 輝度抽出・ぼかし・合成を切り替えるGLSLプログラムと、そのuniform位置を保持する。
 class PostProcessShader : public Shader {
 public:
     PostProcessShader();

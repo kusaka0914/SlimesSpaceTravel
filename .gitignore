@@ -1,13 +1,25 @@
 build/
+out/
 dist/
 build-review/
 dist-review/
 build-tgs/
 dist-tgs/
 dist-tgs-updated/
+
+# 可読性レビュー・検証の作業記録
+/review/
+
 .cursor/
 .vscode/
 .vs/
 AGENTS.md
 
 .DS_Store
+
+# clangdの生成インデックス
+.cache/
+
+# LLVMカバレッジの実行生成物
+*.profraw
+*.profdata

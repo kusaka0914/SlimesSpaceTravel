@@ -1,5 +1,6 @@
 #pragma once
 
+// 各時間の単位はミリ秒。GPU時間は対応するhasフラグがtrueの場合に有効。
 struct FramePerformanceMetrics {
     float totalMilliseconds = 0.0f;
     float gameUpdateMilliseconds = 0.0f;
@@ -19,15 +20,16 @@ struct FramePerformanceMetrics {
     bool hasEditorUiGpuMeasurement = false;
 };
 
+// フレーム内のCPU時間と、遅れて取得されるGPU時間の最新値を保持する。
 class FramePerformanceTracker {
 public:
+    // フレーム内で集計するCPU時間と描画数をリセットする。totalとGPU計測値は次の記録まで保持する。
     void BeginFrame();
-    void RecordViewportCpuDuration(
-        int viewportIndex,
-        float durationMilliseconds);
-    void RecordViewportGpuDuration(
-        int viewportIndex,
-        float durationMilliseconds);
+
+    // viewportIndexは0または1。それ以外は無視する。CPU時間の記録で描画数も更新する。
+    void RecordViewportCpuDuration(int viewportIndex, float durationMilliseconds);
+    void RecordViewportGpuDuration(int viewportIndex, float durationMilliseconds);
+
     void RecordTotalDuration(float durationMilliseconds);
     void RecordGameUpdateDuration(float durationMilliseconds);
     void RecordGameUiCpuDuration(float durationMilliseconds);

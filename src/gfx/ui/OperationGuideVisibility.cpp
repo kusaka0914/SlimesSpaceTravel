@@ -13,42 +13,28 @@ bool IsStrongAttackGuide(std::string_view elementId)
 
 bool IsSoloPlayerConfigurationGuide(std::string_view elementId)
 {
-    return elementId == "buttonB_copy_copy2" ||
-           elementId == "buttonTextB_copy2_copy2" ||
-           elementId == "buttonB_copy_copy2_copy" ||
-           elementId == "buttonTextB_copy2_copy2_copy";
+    return elementId == "buttonB_copy_copy2" || elementId == "buttonTextB_copy2_copy2" ||
+           elementId == "buttonB_copy_copy2_copy" || elementId == "buttonTextB_copy2_copy2_copy";
 }
 
 bool IsCombatGuide(std::string_view elementId)
 {
-    return IsStrongAttackGuide(elementId) ||
-           elementId == "buttonY" || elementId == "buttonTextY" ||
-           elementId == "buttonB_copy_copy2_copy2" ||
-           elementId == "buttonTextB_copy2_copy2_copy2";
+    return IsStrongAttackGuide(elementId) || elementId == "buttonY" || elementId == "buttonTextY" ||
+           elementId == "buttonB_copy_copy2_copy2" || elementId == "buttonTextB_copy2_copy2_copy2";
 }
-}
+} // namespace
 
-bool ShouldShowOperationGuideElement(
-    std::string_view elementId,
-    const OperationGuideDisplayState& displayState)
+bool ShouldShowOperationGuideElement(std::string_view elementId, const OperationGuideDisplayState& displayState)
 {
-    if (displayState.isTwoPlayerMode &&
-        IsSoloPlayerConfigurationGuide(elementId)) {
+    if (displayState.isTwoPlayerMode && IsSoloPlayerConfigurationGuide(elementId)) {
         return false;
     }
 
-    const bool usesPhasedTutorialGuide =
-        !displayState.isUGCPlaytestActive &&
-        displayState.currentStageNumber == 1;
-    const bool showsBasicGuidesOnly =
-        usesPhasedTutorialGuide &&
-        displayState.currentPlanetNumber == 0;
-    const bool showsDodgeGuideOnly =
-        usesPhasedTutorialGuide &&
-        displayState.currentPlanetNumber == 3;
+    const bool usesPhasedTutorialGuide = !displayState.isUGCPlaytestActive && displayState.currentStageNumber == 1;
+    const bool showsBasicGuidesOnly = usesPhasedTutorialGuide && displayState.currentPlanetNumber == 0;
+    const bool showsDodgeGuideOnly = usesPhasedTutorialGuide && displayState.currentPlanetNumber == 3;
     const bool hasUnlockedDodge = !showsBasicGuidesOnly;
-    const bool hasUnlockedCombat =
-        !showsBasicGuidesOnly && !showsDodgeGuideOnly;
+    const bool hasUnlockedCombat = !showsBasicGuidesOnly && !showsDodgeGuideOnly;
 
     if (IsDodgeGuide(elementId)) {
         return hasUnlockedDodge;

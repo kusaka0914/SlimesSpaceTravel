@@ -15,12 +15,9 @@ PlanetAtmosphereRenderer::PlanetAtmosphereRenderer()
 
 PlanetAtmosphereRenderer::~PlanetAtmosphereRenderer() = default;
 
-void PlanetAtmosphereRenderer::Draw(
-    const std::vector<Planet*>& planets,
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::vec3& cameraPosition,
-    const glm::vec3& sunDirection) const
+void PlanetAtmosphereRenderer::Draw(const std::vector<Planet*>& planets, const glm::mat4& view,
+                                    const glm::mat4& projection, const glm::vec3& cameraPosition,
+                                    const glm::vec3& sunDirection) const
 {
     if (!mShader || mShader->GetShaderProgram() == 0 || planets.empty()) {
         return;
@@ -45,37 +42,18 @@ void PlanetAtmosphereRenderer::Draw(
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glUseProgram(mShader->GetShaderProgram());
-    glUniformMatrix4fv(
-        mShader->GetLocView(),
-        1,
-        GL_FALSE,
-        glm::value_ptr(view));
-    glUniformMatrix4fv(
-        mShader->GetLocProj(),
-        1,
-        GL_FALSE,
-        glm::value_ptr(projection));
-    glUniform3fv(
-        mShader->GetLocViewPosition(),
-        1,
-        glm::value_ptr(cameraPosition));
-    glUniform1f(
-        mShader->GetLocAtmospherePower(),
-        mSettings.fresnelPower);
-    glUniform3fv(
-        mShader->GetLocSunDirection(),
-        1,
-        glm::value_ptr(sunDirection));
+    glUniformMatrix4fv(mShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(mShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3fv(mShader->GetLocCameraWorldPosition(), 1, glm::value_ptr(cameraPosition));
+    glUniform1f(mShader->GetLocAtmospherePower(), mSettings.fresnelPower);
+    glUniform3fv(mShader->GetLocSunDirection(), 1, glm::value_ptr(sunDirection));
 
     for (Planet* planet : planets) {
         if (!planet || !planet->GetIsActive()) {
             continue;
         }
-        const glm::vec3 absoluteScale =
-            glm::abs(planet->GetRenderScale());
-        if (absoluteScale.x <= 0.001f ||
-            absoluteScale.y <= 0.001f ||
-            absoluteScale.z <= 0.001f) {
+        const glm::vec3 absoluteScale = glm::abs(planet->GetRenderScale());
+        if (absoluteScale.x <= 0.001f || absoluteScale.y <= 0.001f || absoluteScale.z <= 0.001f) {
             continue;
         }
         const std::vector<LoadedMesh>* meshes = planet->GetMeshes();
@@ -83,33 +61,16 @@ void PlanetAtmosphereRenderer::Draw(
             continue;
         }
 
-        const Planet::VisualSettings& visualSettings =
-            planet->GetVisualSettings();
-        glUniform3fv(
-            mShader->GetLocAtmosphereColor(),
-            1,
-            glm::value_ptr(visualSettings.atmosphereColor));
-        glUniform1f(
-            mShader->GetLocAtmosphereStrength(),
-            visualSettings.atmosphereStrength);
+        const Planet::VisualSettings& visualSettings = planet->GetVisualSettings();
+        glUniform3fv(mShader->GetLocAtmosphereColor(), 1, glm::value_ptr(visualSettings.atmosphereColor));
+        glUniform1f(mShader->GetLocAtmosphereStrength(), visualSettings.atmosphereStrength);
 
-        const glm::mat4 model =
-            glm::translate(glm::mat4(1.0f), planet->GetRenderPosition()) *
-            glm::scale(
-                glm::mat4(1.0f),
-                planet->GetRenderScale() * mSettings.shellScale);
-        glUniformMatrix4fv(
-            mShader->GetLocModel(),
-            1,
-            GL_FALSE,
-            glm::value_ptr(model));
+        const glm::mat4 model = glm::translate(glm::mat4(1.0f), planet->GetRenderPosition()) *
+                                glm::scale(glm::mat4(1.0f), planet->GetRenderScale() * mSettings.shellScale);
+        glUniformMatrix4fv(mShader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(model));
         for (const LoadedMesh& mesh : *meshes) {
             glBindVertexArray(mesh.VAO);
-            glDrawElements(
-                GL_TRIANGLES,
-                mesh.indexCount,
-                GL_UNSIGNED_INT,
-                nullptr);
+            glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
         }
     }
 

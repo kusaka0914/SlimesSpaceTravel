@@ -1,7 +1,7 @@
 #include "system/physics/EditorPickSystem.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
@@ -9,14 +9,14 @@
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
-#include "actor/Key.h"
-#include "actor/JewelItem.h"
 #include "actor/HazardActor.h"
+#include "actor/JewelItem.h"
+#include "actor/Key.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 #include "system/MeshLoadSystem.h"
 #include "system/physics/StageCollisionBuilder.h"
@@ -47,12 +47,7 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
             continue;
         }
 
-        CreatePickBody(
-            world,
-            planet,
-            pickObjects,
-            pickShapes,
-            pickTriangleMeshes);
+        CreatePickBody(world, planet, pickObjects, pickShapes, pickTriangleMeshes);
 
         for (Enemy* enemy : planet->GetEnemies()) {
             CreatePickBody(world, enemy, pickObjects, pickShapes, pickTriangleMeshes);
@@ -82,32 +77,16 @@ void EditorPickSystem::CreatePickBodies(btDiscreteDynamicsWorld* world,
             CreatePickBody(world, npc, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
-        for (TutorialTrigger* trigger :
-             planet->GetTutorialTriggers()) {
-            CreatePickBody(
-                world,
-                trigger,
-                pickObjects,
-                pickShapes,
-                pickTriangleMeshes);
+        for (TutorialTrigger* trigger : planet->GetTutorialTriggers()) {
+            CreatePickBody(world, trigger, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
         for (JewelItem* jewelItem : planet->GetJewelItems()) {
-            CreatePickBody(
-                world,
-                jewelItem,
-                pickObjects,
-                pickShapes,
-                pickTriangleMeshes);
+            CreatePickBody(world, jewelItem, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
         for (HazardActor* hazardActor : planet->GetHazardActors()) {
-            CreatePickBody(
-                world,
-                hazardActor,
-                pickObjects,
-                pickShapes,
-                pickTriangleMeshes);
+            CreatePickBody(world, hazardActor, pickObjects, pickShapes, pickTriangleMeshes);
         }
 
         if (Star* star = planet->GetStar()) {
@@ -137,11 +116,8 @@ void EditorPickSystem::CreatePickBody(btDiscreteDynamicsWorld* world, Actor* act
         return;
     }
 
-    const bool useMesh =
-        dynamic_cast<Planet*>(actor) ||
-        dynamic_cast<Platform*>(actor) ||
-        dynamic_cast<StageObject*>(actor) ||
-        dynamic_cast<TutorialTrigger*>(actor);
+    const bool useMesh = dynamic_cast<Planet*>(actor) || dynamic_cast<Platform*>(actor) ||
+                         dynamic_cast<StageObject*>(actor) || dynamic_cast<TutorialTrigger*>(actor);
 
     if (useMesh && CreateMeshPickBody(world, actor, pickObjects, pickShapes, pickTriangleMeshes)) {
         return;
@@ -157,15 +133,9 @@ void EditorPickSystem::CreateSpherePickBody(btDiscreteDynamicsWorld* world, Acto
     const glm::vec3 scale = actor->GetScale();
     const float maxScale = std::max(scale.x, std::max(scale.y, scale.z));
     float radius = std::max({actor->GetRadius(), maxScale * 0.5f, 0.5f});
-    if (const HazardActor* hazardActor =
-            dynamic_cast<const HazardActor*>(actor)) {
-        const glm::vec3 triggerHalfExtents =
-            hazardActor->CalculateScaledTriggerHalfExtents();
-        radius = std::max({
-            triggerHalfExtents.x,
-            triggerHalfExtents.y,
-            triggerHalfExtents.z,
-            0.5f});
+    if (const HazardActor* hazardActor = dynamic_cast<const HazardActor*>(actor)) {
+        const glm::vec3 triggerHalfExtents = hazardActor->CalculateScaledTriggerHalfExtents();
+        radius = std::max({triggerHalfExtents.x, triggerHalfExtents.y, triggerHalfExtents.z, 0.5f});
     }
 
     auto shape = std::make_unique<btSphereShape>(radius);
@@ -194,17 +164,12 @@ bool EditorPickSystem::CreateMeshPickBody(btDiscreteDynamicsWorld* world, Actor*
 
     const std::string modelPath = "../assets/models/" + actor->GetModelPath();
     const CollisionMeshGeometry* collisionGeometry =
-        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
-            modelPath);
-    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
-        collisionGeometry->indices.size() < 3) {
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(modelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 || collisionGeometry->indices.size() < 3) {
         return false;
     }
 
-    auto triangleMesh = CreateTriangleMesh(
-        actor->GetScale(),
-        collisionGeometry->positions,
-        collisionGeometry->indices);
+    auto triangleMesh = CreateTriangleMesh(actor->GetScale(), collisionGeometry->positions, collisionGeometry->indices);
     if (!triangleMesh) {
         return false;
     }
@@ -226,9 +191,9 @@ bool EditorPickSystem::CreateMeshPickBody(btDiscreteDynamicsWorld* world, Actor*
     return true;
 }
 
-std::unique_ptr<btTriangleMesh>
-EditorPickSystem::CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& positions,
-                                     const std::vector<unsigned int>& indices) const
+std::unique_ptr<btTriangleMesh> EditorPickSystem::CreateTriangleMesh(const glm::vec3& actorScale,
+                                                                     const std::vector<float>& positions,
+                                                                     const std::vector<unsigned int>& indices) const
 {
     auto triangleMesh = std::make_unique<btTriangleMesh>();
 
@@ -290,8 +255,7 @@ EditorPickSystem::PickActorByRay(btDiscreteDynamicsWorld* world, const glm::vec3
 }
 
 std::vector<PhysicsSystem::RayHitActor>
-EditorPickSystem::PickActorsByRay(btDiscreteDynamicsWorld* world, const glm::vec3& rayFrom,
-                                  const glm::vec3& rayTo,
+EditorPickSystem::PickActorsByRay(btDiscreteDynamicsWorld* world, const glm::vec3& rayFrom, const glm::vec3& rayTo,
                                   const std::vector<std::unique_ptr<btCollisionObject>>& pickObjects) const
 {
     std::vector<PhysicsSystem::RayHitActor> hits;

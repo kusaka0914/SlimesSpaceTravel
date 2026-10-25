@@ -1,15 +1,18 @@
 #include "system/sequence/SequenceLibrary.h"
 
+#include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <utility>
 
 namespace {
+
 glm::vec3 ReadVec3(const YAML::Node& node, const glm::vec3& fallback)
 {
     if (!node || !node.IsSequence() || node.size() != 3) {
@@ -99,13 +102,10 @@ const char* EasingToString(SequenceEasing easing)
 void SortClips(GameplaySequence& sequence)
 {
     std::stable_sort(
-        sequence.clips.begin(),
-        sequence.clips.end(),
-        [](const SequenceClip& left, const SequenceClip& right) {
-            return left.startTime < right.startTime;
-        });
+        sequence.clips.begin(), sequence.clips.end(),
+        [](const SequenceClip& left, const SequenceClip& right) { return left.startTime < right.startTime; });
 }
-}
+} // namespace
 
 SequenceLibrary::SequenceLibrary(std::string filePath)
     : mFilePath(std::move(filePath))
@@ -114,22 +114,20 @@ SequenceLibrary::SequenceLibrary(std::string filePath)
 
 bool SequenceLibrary::Load()
 {
-    mSequences.clear();
+    decltype(mSequences) loadedSequences;
 
     try {
-        const YAML::Node root = YAML::LoadFile(mFilePath);
+        const YAML::Node root = YamlFile::Load(mFilePath);
         const YAML::Node sequencesNode = root["sequences"];
         if (!sequencesNode || !sequencesNode.IsMap()) {
-            return true;
+            return false;
         }
 
         for (const auto& entry : sequencesNode) {
             GameplaySequence sequence;
             sequence.id = entry.first.as<std::string>();
             const YAML::Node sequenceNode = entry.second;
-            sequence.displayName = sequenceNode["name"]
-                                       ? sequenceNode["name"].as<std::string>()
-                                       : sequence.id;
+            sequence.displayName = sequenceNode["name"] ? sequenceNode["name"].as<std::string>() : sequence.id;
             sequence.loop = sequenceNode["loop"] ? sequenceNode["loop"].as<bool>() : false;
 
             const YAML::Node clipsNode = sequenceNode["clips"];
@@ -137,42 +135,38 @@ bool SequenceLibrary::Load()
                 for (const YAML::Node& clipNode : clipsNode) {
                     SequenceClip clip;
                     clip.type = ParseClipType(clipNode["type"] ? clipNode["type"].as<std::string>() : "actorMove");
-                    clip.startTime =
-                        clipNode["start"] ? std::max(0.0f, clipNode["start"].as<float>()) : 0.0f;
-                    clip.duration =
-                        clipNode["duration"] ? std::max(0.001f, clipNode["duration"].as<float>()) : 1.0f;
+                    clip.startTime = clipNode["start"] ? std::max(0.0f, clipNode["start"].as<float>()) : 0.0f;
+                    clip.duration = clipNode["duration"] ? std::max(0.001f, clipNode["duration"].as<float>()) : 1.0f;
 
                     const YAML::Node targetNode = clipNode["target"];
                     if (targetNode) {
-                        clip.actor.group =
-                            targetNode["group"] ? targetNode["group"].as<std::string>() : "";
+                        clip.actor.group = targetNode["group"] ? targetNode["group"].as<std::string>() : "";
                         clip.actor.index = targetNode["index"] ? targetNode["index"].as<int>() : -1;
                     }
 
                     clip.fromPosition = ReadVec3(clipNode["from"], clip.fromPosition);
                     clip.toPosition = ReadVec3(clipNode["to"], clip.toPosition);
-                    clip.easing =
-                        ParseEasing(clipNode["easing"] ? clipNode["easing"].as<std::string>() : "easeInOut");
+                    clip.easing = ParseEasing(clipNode["easing"] ? clipNode["easing"].as<std::string>() : "easeInOut");
                     clip.visible = clipNode["visible"] ? clipNode["visible"].as<bool>() : true;
-                    clip.playerControlEnabled =
-                        clipNode["enabled"] ? clipNode["enabled"].as<bool>() : true;
-                    clip.cameraSequenceId =
-                        clipNode["sequence"] ? clipNode["sequence"].as<std::string>() : "";
+                    clip.playerControlEnabled = clipNode["enabled"] ? clipNode["enabled"].as<bool>() : true;
+                    clip.cameraSequenceId = clipNode["sequence"] ? clipNode["sequence"].as<std::string>() : "";
 
                     sequence.clips.emplace_back(std::move(clip));
                 }
             }
 
             SortClips(sequence);
-            mSequences[sequence.id] = std::move(sequence);
+            loadedSequences[sequence.id] = std::move(sequence);
         }
-    } catch (const YAML::BadFile&) {
-        return true;
+    } catch (const YAML::BadFile& exception) {
+        std::cerr << "Failed to open sequence data: " << exception.what() << '\n';
+        return false;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to load gameplay sequences: " << exception.what() << '\n';
         return false;
     }
 
+    mSequences.swap(loadedSequences);
     return true;
 }
 
@@ -205,8 +199,7 @@ bool SequenceLibrary::Save() const
                     emitter << YAML::Key << "duration" << YAML::Value << clip.duration;
                 }
 
-                if (clip.type == SequenceClipType::ActorMove ||
-                    clip.type == SequenceClipType::ActorVisibility) {
+                if (clip.type == SequenceClipType::ActorMove || clip.type == SequenceClipType::ActorVisibility) {
                     emitter << YAML::Key << "target" << YAML::Value << YAML::BeginMap;
                     emitter << YAML::Key << "group" << YAML::Value << clip.actor.group;
                     emitter << YAML::Key << "index" << YAML::Value << clip.actor.index;
@@ -237,12 +230,15 @@ bool SequenceLibrary::Save() const
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(mFilePath);
-        if (!output) {
+        if (!emitter.good()) {
             return false;
         }
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        std::string errorMessage;
+        if (!AtomicFile::WriteText(mFilePath, std::string(emitter.c_str()) + '\n', errorMessage)) {
+            std::cerr << "Failed to save sequence data: " << errorMessage << '\n';
+            return false;
+        }
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save gameplay sequences: " << exception.what() << '\n';
         return false;
@@ -290,13 +286,10 @@ GameplaySequence* SequenceLibrary::Duplicate(std::string_view id)
 
     GameplaySequence duplicated = *source;
     duplicated.id = duplicatedId;
-    duplicated.displayName =
-        (source->displayName.empty() ? source->id : source->displayName) +
-        " コピー";
+    duplicated.displayName = (source->displayName.empty() ? source->id : source->displayName) + " コピー";
 
-    const auto [sequenceIt, wasInserted] =
-        mSequences.emplace(duplicatedId, std::move(duplicated));
-    return wasInserted ? &sequenceIt->second : nullptr;
+    const auto [sequenceIterator, wasInserted] = mSequences.emplace(duplicatedId, std::move(duplicated));
+    return wasInserted ? &sequenceIterator->second : nullptr;
 }
 
 bool SequenceLibrary::Rename(std::string_view currentId, std::string newId)

@@ -1,114 +1,64 @@
 #include "actor/enemy/EnemyConfigLoader.h"
 
-#include <yaml-cpp/yaml.h>
+#include "utils/YamlRead.h"
 
 #include <utility>
+#include <yaml-cpp/yaml.h>
 
 namespace {
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
-}
-
-int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
-{
-    return node[key] ? node[key].as<int>() : defaultValue;
-}
-
-bool ReadBool(const YAML::Node& node, const char* key, bool defaultValue)
-{
-    return node[key] ? node[key].as<bool>() : defaultValue;
-}
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
-}
-
 void ApplyCommonConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
-    config.guardValuePerSegment = ReadFloat(
-        enemyNode,
-        "guardValuePerSegment",
-        config.guardValuePerSegment);
-    config.knockBackSpeed = ReadFloat(enemyNode, "knockBackSpeed", config.knockBackSpeed);
-    config.defaultLaunchedTimer = ReadFloat(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
-    config.launchHeight = ReadFloat(enemyNode, "launchHeight", config.launchHeight);
-    config.detectionRange = ReadFloat(enemyNode, "detectionRange", config.detectionRange);
+    config.guardValuePerSegment =
+        YamlRead::ReadOr<float>(enemyNode, "guardValuePerSegment", config.guardValuePerSegment);
+    config.knockBackSpeed = YamlRead::ReadOr<float>(enemyNode, "knockBackSpeed", config.knockBackSpeed);
+    config.defaultLaunchedTimer =
+        YamlRead::ReadOr<float>(enemyNode, "defaultLaunchedTimer", config.defaultLaunchedTimer);
+    config.launchHeight = YamlRead::ReadOr<float>(enemyNode, "launchHeight", config.launchHeight);
+    config.detectionRange = YamlRead::ReadOr<float>(enemyNode, "detectionRange", config.detectionRange);
 }
 
 void ApplyTypeConfig(EnemyConfig& config, const YAML::Node& enemyNode)
 {
-    config.isBoss = ReadBool(enemyNode, "isBoss", config.isBoss);
-    config.isBossEncounter = ReadBool(
-        enemyNode,
-        "isBossEncounter",
-        config.isBoss);
-    config.isNormalHitKnockBackEnabled = ReadBool(
-        enemyNode,
-        "normalHitKnockBackEnabled",
-        config.isNormalHitKnockBackEnabled);
-    config.hp = ReadFloat(enemyNode, "hp", config.hp);
-    config.scale = ReadFloat(enemyNode, "scale", config.scale);
-    config.moveSpeed = ReadFloat(enemyNode, "speed", config.moveSpeed);
-    config.attack = ReadFloat(enemyNode, "attack", config.attack);
-    config.radius = ReadFloat(enemyNode, "radius", config.radius);
+    config.isBoss = YamlRead::ReadOr<bool>(enemyNode, "isBoss", config.isBoss);
+    config.isBossEncounter = YamlRead::ReadOr<bool>(enemyNode, "isBossEncounter", config.isBoss);
+    config.isNormalHitKnockBackEnabled =
+        YamlRead::ReadOr<bool>(enemyNode, "normalHitKnockBackEnabled", config.isNormalHitKnockBackEnabled);
+    config.hp = YamlRead::ReadOr<float>(enemyNode, "hp", config.hp);
+    config.scale = YamlRead::ReadOr<float>(enemyNode, "scale", config.scale);
+    config.moveSpeed = YamlRead::ReadOr<float>(enemyNode, "speed", config.moveSpeed);
+    config.attack = YamlRead::ReadOr<float>(enemyNode, "attack", config.attack);
+    config.radius = YamlRead::ReadOr<float>(enemyNode, "radius", config.radius);
 
-    config.guardSegmentCount = ReadInt(
-        enemyNode,
-        "breakCountMax",
-        config.guardSegmentCount);
-    config.modelPath = ReadString(enemyNode, "modelPath", config.modelPath);
+    config.guardSegmentCount = YamlRead::ReadOr<int>(enemyNode, "breakCountMax", config.guardSegmentCount);
+    config.modelPath = YamlRead::ReadOr<std::string>(enemyNode, "modelPath", config.modelPath);
 
     config.defaultStandByAttackTimer =
-        ReadFloat(enemyNode, "defaultStandByAttackTimer", config.defaultStandByAttackTimer);
+        YamlRead::ReadOr<float>(enemyNode, "defaultStandByAttackTimer", config.defaultStandByAttackTimer);
     config.defaultAttackMotionTimer =
-        ReadFloat(enemyNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
-    config.attackSpeed = ReadFloat(enemyNode, "attackSpeed", config.attackSpeed);
-    config.attackPreparationRange = ReadFloat(
-        enemyNode,
-        "attackPreparationRange",
-        config.radius + 1.5f);
-    config.bossManeuver.preAttackApproachProbabilityPercent = ReadFloat(
-        enemyNode,
-        "preAttackApproachProbabilityPercent",
-        config.bossManeuver.preAttackApproachProbabilityPercent);
-    config.bossManeuver.preAttackApproachSpeed = ReadFloat(
-        enemyNode,
-        "preAttackApproachSpeed",
-        config.bossManeuver.preAttackApproachSpeed);
-    config.bossManeuver.preAttackApproachStopDistance = ReadFloat(
-        enemyNode,
-        "preAttackApproachStopDistance",
-        config.bossManeuver.preAttackApproachStopDistance);
-    config.bossManeuver.postAttackRetreatProbabilityPercent = ReadFloat(
-        enemyNode,
-        "postAttackRetreatProbabilityPercent",
-        config.bossManeuver.postAttackRetreatProbabilityPercent);
-    config.bossManeuver.postAttackRetreatDelaySeconds = ReadFloat(
-        enemyNode,
-        "postAttackRetreatDelaySeconds",
-        config.bossManeuver.postAttackRetreatDelaySeconds);
-    config.bossManeuver.postAttackRetreatSpeed = ReadFloat(
-        enemyNode,
-        "postAttackRetreatSpeed",
-        config.bossManeuver.postAttackRetreatSpeed);
-    config.bossManeuver.postAttackRetreatDistance = ReadFloat(
-        enemyNode,
-        "postAttackRetreatDistance",
-        config.bossManeuver.postAttackRetreatDistance);
-    config.bossManeuver.postRetreatRecoverySeconds = ReadFloat(
-        enemyNode,
-        "postRetreatRecoverySeconds",
-        config.bossManeuver.postRetreatRecoverySeconds);
+        YamlRead::ReadOr<float>(enemyNode, "defaultAttackMotionTimer", config.defaultAttackMotionTimer);
+    config.attackSpeed = YamlRead::ReadOr<float>(enemyNode, "attackSpeed", config.attackSpeed);
+    config.attackPreparationRange = YamlRead::ReadOr<float>(enemyNode, "attackPreparationRange", config.radius + 1.5f);
+    config.bossManeuver.preAttackApproachProbabilityPercent = YamlRead::ReadOr<float>(
+        enemyNode, "preAttackApproachProbabilityPercent", config.bossManeuver.preAttackApproachProbabilityPercent);
+    config.bossManeuver.preAttackApproachSpeed =
+        YamlRead::ReadOr<float>(enemyNode, "preAttackApproachSpeed", config.bossManeuver.preAttackApproachSpeed);
+    config.bossManeuver.preAttackApproachStopDistance = YamlRead::ReadOr<float>(
+        enemyNode, "preAttackApproachStopDistance", config.bossManeuver.preAttackApproachStopDistance);
+    config.bossManeuver.postAttackRetreatProbabilityPercent = YamlRead::ReadOr<float>(
+        enemyNode, "postAttackRetreatProbabilityPercent", config.bossManeuver.postAttackRetreatProbabilityPercent);
+    config.bossManeuver.postAttackRetreatDelaySeconds = YamlRead::ReadOr<float>(
+        enemyNode, "postAttackRetreatDelaySeconds", config.bossManeuver.postAttackRetreatDelaySeconds);
+    config.bossManeuver.postAttackRetreatSpeed =
+        YamlRead::ReadOr<float>(enemyNode, "postAttackRetreatSpeed", config.bossManeuver.postAttackRetreatSpeed);
+    config.bossManeuver.postAttackRetreatDistance =
+        YamlRead::ReadOr<float>(enemyNode, "postAttackRetreatDistance", config.bossManeuver.postAttackRetreatDistance);
+    config.bossManeuver.postRetreatRecoverySeconds = YamlRead::ReadOr<float>(
+        enemyNode, "postRetreatRecoverySeconds", config.bossManeuver.postRetreatRecoverySeconds);
     config.bossManeuver.postRetreatFollowupApproachProbabilityPercent =
-        ReadFloat(
-            enemyNode,
-            "postRetreatFollowupApproachProbabilityPercent",
-            config.bossManeuver
-                .postRetreatFollowupApproachProbabilityPercent);
+        YamlRead::ReadOr<float>(enemyNode, "postRetreatFollowupApproachProbabilityPercent",
+                                config.bossManeuver.postRetreatFollowupApproachProbabilityPercent);
     config.behavior.profileName =
-        ReadString(enemyNode, "behaviorProfile", config.behavior.profileName);
+        YamlRead::ReadOr<std::string>(enemyNode, "behaviorProfile", config.behavior.profileName);
 }
 
 EnemyBehaviorConfig CreateLegacyMeleeBehavior()
@@ -123,9 +73,7 @@ EnemyBehaviorConfig CreateLegacyMeleeBehavior()
     return behavior;
 }
 
-void AppendBehaviorActions(
-    EnemyBehaviorConfig& behavior,
-    const YAML::Node& actionsNode)
+void AppendBehaviorActions(EnemyBehaviorConfig& behavior, const YAML::Node& actionsNode)
 {
     for (const YAML::Node& actionNode : actionsNode) {
         if (!actionNode.IsMap()) {
@@ -133,8 +81,8 @@ void AppendBehaviorActions(
         }
 
         EnemyBehaviorActionConfig action;
-        action.type = ReadString(actionNode, "type", "");
-        action.weight = ReadFloat(actionNode, "weight", action.weight);
+        action.type = YamlRead::ReadOr<std::string>(actionNode, "type", "");
+        action.weight = YamlRead::ReadOr<float>(actionNode, "weight", action.weight);
 
         if (action.type.empty()) {
             continue;
@@ -149,7 +97,6 @@ void AppendBehaviorActions(
             try {
                 action.parameters[key] = entry.second.as<float>();
             } catch (const YAML::BadConversion&) {
-
             }
         }
 
@@ -160,11 +107,9 @@ void AppendBehaviorActions(
 void ApplyBehaviorProfile(EnemyConfig& config, const YAML::Node& root)
 {
     const YAML::Node profiles = root["behaviorProfiles"];
-    const YAML::Node profileNode =
-        profiles && profiles.IsMap() ? profiles[config.behavior.profileName] : YAML::Node();
+    const YAML::Node profileNode = profiles && profiles.IsMap() ? profiles[config.behavior.profileName] : YAML::Node();
 
-    if (!profileNode || !profileNode.IsMap() ||
-        !profileNode["actions"] || !profileNode["actions"].IsSequence()) {
+    if (!profileNode || !profileNode.IsMap() || !profileNode["actions"] || !profileNode["actions"].IsSequence()) {
         config.behavior = CreateLegacyMeleeBehavior();
         return;
     }
@@ -176,10 +121,7 @@ void ApplyBehaviorProfile(EnemyConfig& config, const YAML::Node& root)
     config.behavior = behavior.actions.empty() ? CreateLegacyMeleeBehavior() : std::move(behavior);
 }
 
-bool ApplyPresetAttacks(
-    EnemyConfig& config,
-    const YAML::Node& enemyNode,
-    const std::string& enemyType)
+bool ApplyPresetAttacks(EnemyConfig& config, const YAML::Node& enemyNode, const std::string& enemyType)
 {
     const YAML::Node attacksNode = enemyNode["attacks"];
     if (!attacksNode || !attacksNode.IsSequence()) {
@@ -195,18 +137,15 @@ bool ApplyPresetAttacks(
     AppendBehaviorActions(behavior, attacksNode);
 
     if (behavior.actions.size() == 2) {
-        behavior.actions.push_back(
-            EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
+        behavior.actions.push_back(EnemyBehaviorActionConfig{"meleeAttack", 1.0f, {}});
     }
 
     config.behavior = std::move(behavior);
     return true;
 }
-}
+} // namespace
 
-EnemyConfig EnemyConfigLoader::Parse(
-    const YAML::Node& enemyRoot,
-    const std::string& type)
+EnemyConfig EnemyConfigLoader::Parse(const YAML::Node& enemyRoot, const std::string& type)
 {
     EnemyConfig config;
     config.isBoss = type == "boss";
@@ -218,7 +157,7 @@ EnemyConfig EnemyConfigLoader::Parse(
 
     YAML::Node selectedEnemyNode;
     for (const YAML::Node& enemyNode : enemyRoot["enemies"]) {
-        const std::string enemyType = ReadString(enemyNode, "type", "");
+        const std::string enemyType = YamlRead::ReadOr<std::string>(enemyNode, "type", "");
 
         if (enemyType == "common") {
             ApplyCommonConfig(config, enemyNode);
@@ -231,8 +170,7 @@ EnemyConfig EnemyConfigLoader::Parse(
         }
     }
 
-    if (!selectedEnemyNode ||
-        !ApplyPresetAttacks(config, selectedEnemyNode, type)) {
+    if (!selectedEnemyNode || !ApplyPresetAttacks(config, selectedEnemyNode, type)) {
         ApplyBehaviorProfile(config, enemyRoot);
     }
     return config;

@@ -1,7 +1,7 @@
 #include "system/StageActorPlanetBindingService.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
@@ -9,15 +9,15 @@
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
-#include "actor/Key.h"
-#include "actor/JewelItem.h"
 #include "actor/HazardActor.h"
+#include "actor/JewelItem.h"
+#include "actor/Key.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
-#include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 #include "component/PlatformMovementComponent.h"
 
@@ -36,36 +36,30 @@ struct RegisteredActorInfo {
     bool isRegisteredToMultiplePlanets = false;
 };
 
-void RecordActor(
-    std::unordered_map<Actor*, RegisteredActorInfo>& registeredActors,
-    Actor* actor,
-    Planet* registeredPlanet)
+void RecordActor(std::unordered_map<Actor*, RegisteredActorInfo>& registeredActors, Actor* actor,
+                 Planet* registeredPlanet)
 {
     if (!actor || !registeredPlanet) {
         return;
     }
 
-    const auto [iterator, wasInserted] = registeredActors.emplace(
-        actor,
-        RegisteredActorInfo{actor, registeredPlanet, false});
+    const auto [iterator, wasInserted] =
+        registeredActors.emplace(actor, RegisteredActorInfo{actor, registeredPlanet, false});
     if (!wasInserted && iterator->second.registeredPlanet != registeredPlanet) {
         iterator->second.isRegisteredToMultiplePlanets = true;
     }
 }
 
 template <class TActor>
-void RecordActors(
-    std::unordered_map<Actor*, RegisteredActorInfo>& registeredActors,
-    const std::vector<TActor*>& actors,
-    Planet* registeredPlanet)
+void RecordActors(std::unordered_map<Actor*, RegisteredActorInfo>& registeredActors, const std::vector<TActor*>& actors,
+                  Planet* registeredPlanet)
 {
     for (TActor* actor : actors) {
         RecordActor(registeredActors, actor, registeredPlanet);
     }
 }
 
-std::unordered_map<Actor*, RegisteredActorInfo> CollectRegisteredActors(
-    const std::vector<Planet*>& planets)
+std::unordered_map<Actor*, RegisteredActorInfo> CollectRegisteredActors(const std::vector<Planet*>& planets)
 {
     std::unordered_map<Actor*, RegisteredActorInfo> registeredActors;
 
@@ -93,27 +87,20 @@ std::unordered_map<Actor*, RegisteredActorInfo> CollectRegisteredActors(
     return registeredActors;
 }
 
-float CalculateDistanceToPlanetSurface(
-    const Planet& planet,
-    const glm::vec3& worldPosition)
+float CalculateDistanceToPlanetSurface(const Planet& planet, const glm::vec3& worldPosition)
 {
     switch (planet.GetPlanetShape()) {
     case Planet::PlanetShape::Ellipse:
         return planet.CalculateEllipseSurfaceProjection(worldPosition).distance;
     case Planet::PlanetShape::Sphere:
-        return std::abs(
-            glm::length(worldPosition - planet.GetPos()) -
-            std::abs(planet.GetRadius()));
+        return std::abs(glm::length(worldPosition - planet.GetPos()) - std::abs(planet.GetRadius()));
     case Planet::PlanetShape::Normal:
     default:
         return glm::length(worldPosition - planet.GetPos());
     }
 }
 
-Planet* FindNearestPlanet(
-    const std::vector<Planet*>& planets,
-    const glm::vec3& worldPosition,
-    Planet* currentPlanet)
+Planet* FindNearestPlanet(const std::vector<Planet*>& planets, const glm::vec3& worldPosition, Planet* currentPlanet)
 {
     constexpr float distanceComparisonEpsilon = 0.001f;
 
@@ -125,14 +112,10 @@ Planet* FindNearestPlanet(
             continue;
         }
 
-        const float distance =
-            CalculateDistanceToPlanetSurface(*planet, worldPosition);
-        const bool isMeaningfullyCloser =
-            distance + distanceComparisonEpsilon < nearestDistance;
+        const float distance = CalculateDistanceToPlanetSurface(*planet, worldPosition);
+        const bool isMeaningfullyCloser = distance + distanceComparisonEpsilon < nearestDistance;
         const bool isEquivalentCurrentPlanet =
-            currentPlanet == planet &&
-            std::abs(distance - nearestDistance) <=
-                distanceComparisonEpsilon;
+            currentPlanet == planet && std::abs(distance - nearestDistance) <= distanceComparisonEpsilon;
 
         if (isMeaningfullyCloser || isEquivalentCurrentPlanet) {
             nearestPlanet = planet;
@@ -163,14 +146,11 @@ void RemoveActorFromPlanet(Planet& planet, Actor* actor)
         planet.RemoveNPC(npc);
     } else if (Platform* platform = dynamic_cast<Platform*>(actor)) {
         planet.RemovePlatform(platform);
-    } else if (BoatArrivalPoint* point =
-                   dynamic_cast<BoatArrivalPoint*>(actor)) {
+    } else if (BoatArrivalPoint* point = dynamic_cast<BoatArrivalPoint*>(actor)) {
         planet.RemoveBoatArrivalPoint(point);
-    } else if (FallRespawnPoint* point =
-                   dynamic_cast<FallRespawnPoint*>(actor)) {
+    } else if (FallRespawnPoint* point = dynamic_cast<FallRespawnPoint*>(actor)) {
         planet.RemoveFallRespawnPoint(point);
-    } else if (StageObject* stageObject =
-                   dynamic_cast<StageObject*>(actor)) {
+    } else if (StageObject* stageObject = dynamic_cast<StageObject*>(actor)) {
         planet.RemoveStageObject(stageObject);
     } else if (Key* key = dynamic_cast<Key*>(actor)) {
         if (planet.GetKey() == key) {
@@ -203,14 +183,11 @@ void AddActorToPlanet(Planet& planet, Actor* actor)
         planet.AddNPC(npc);
     } else if (Platform* platform = dynamic_cast<Platform*>(actor)) {
         planet.AddPlatform(platform);
-    } else if (BoatArrivalPoint* point =
-                   dynamic_cast<BoatArrivalPoint*>(actor)) {
+    } else if (BoatArrivalPoint* point = dynamic_cast<BoatArrivalPoint*>(actor)) {
         planet.AddBoatArrivalPoint(point);
-    } else if (FallRespawnPoint* point =
-                   dynamic_cast<FallRespawnPoint*>(actor)) {
+    } else if (FallRespawnPoint* point = dynamic_cast<FallRespawnPoint*>(actor)) {
         planet.AddFallRespawnPoint(point);
-    } else if (StageObject* stageObject =
-                   dynamic_cast<StageObject*>(actor)) {
+    } else if (StageObject* stageObject = dynamic_cast<StageObject*>(actor)) {
         planet.AddStageObject(stageObject);
     } else if (Key* key = dynamic_cast<Key*>(actor)) {
         planet.SetKey(key);
@@ -230,39 +207,30 @@ void UpdateSphericalPlacement(Actor& actor, const Planet& planet)
     }
 
     const glm::vec3 radialDirection = planetOffset / centerDistance;
-    const float theta =
-        std::atan2(radialDirection.z, radialDirection.x);
-    const float phi =
-        std::asin(glm::clamp(radialDirection.y, -1.0f, 1.0f));
+    const float theta = std::atan2(radialDirection.z, radialDirection.x);
+    const float phi = std::asin(glm::clamp(radialDirection.y, -1.0f, 1.0f));
 
     float height = centerDistance - std::abs(planet.GetRadius());
     if (planet.GetPlanetShape() == Planet::PlanetShape::Ellipse) {
-        const Planet::EllipseSurfaceProjection projection =
-            planet.CalculateEllipseSurfaceProjection(actor.GetPos());
-        height = projection.isOutside
-            ? projection.distance
-            : -projection.distance;
+        const Planet::EllipseSurfaceProjection projection = planet.CalculateEllipseSurfaceProjection(actor.GetPos());
+        height = projection.isOutside ? projection.distance : -projection.distance;
     }
 
     actor.SetSphericalPlacement(theta, phi, height);
 }
 
-void PreserveMovingPlatformWorldPath(
-    Actor& actor,
-    const Planet* previousPlanet,
-    const Planet& nextPlanet)
+void PreserveMovingPlatformWorldPath(Actor& actor, const Planet* previousPlanet, const Planet& nextPlanet)
 {
     Platform* platform = dynamic_cast<Platform*>(&actor);
     if (!platform || !platform->GetMovementComponent()) {
         return;
     }
 
-    PlatformMovementComponent* movement =
-        platform->GetMovementComponent();
-    const glm::vec3 previousPlanetCenter =
-        previousPlanet ? previousPlanet->GetPos() : glm::vec3(0.0f);
-    const glm::vec3 worldPathStart =
-        previousPlanetCenter + movement->GetBaseLocalPos();
+    PlatformMovementComponent* movement = platform->GetMovementComponent();
+    const glm::vec3 previousPlanetCenter = previousPlanet ? previousPlanet->GetPos() : glm::vec3(0.0f);
+
+    // 所属Planetを変えても、可動床の経路始点のワールド位置は維持する。
+    const glm::vec3 worldPathStart = previousPlanetCenter + movement->GetBaseLocalPos();
     movement->SetBaseLocalPos(worldPathStart - nextPlanet.GetPos());
 }
 
@@ -280,7 +248,7 @@ void RefreshBoatDestinations(const std::vector<Planet*>& planets)
     }
 }
 
-std::vector<Actor*> CollectActorsOwnedByPlanet(Planet& planet)
+std::vector<Actor*> CollectActorsRegisteredToPlanet(Planet& planet)
 {
     std::unordered_set<Actor*> uniqueActors;
 
@@ -314,37 +282,28 @@ std::vector<Actor*> CollectActorsOwnedByPlanet(Planet& planet)
     return std::vector<Actor*>(uniqueActors.begin(), uniqueActors.end());
 }
 
-bool RefreshActorBinding(
-    const std::vector<Planet*>& planets,
-    const RegisteredActorInfo& registration,
-    std::unordered_set<Planet*>& affectedPlanets)
+bool RefreshActorBinding(const std::vector<Planet*>& planets, const RegisteredActorInfo& registration,
+                         std::unordered_set<Planet*>& affectedPlanets)
 {
     Actor* actor = registration.actor;
     if (!actor) {
         return false;
     }
 
-    Planet* nearestPlanet = FindNearestPlanet(
-        planets,
-        actor->GetPos(),
-        actor->GetCurrentPlanet());
+    Planet* nearestPlanet = FindNearestPlanet(planets, actor->GetPos(), actor->GetCurrentPlanet());
     if (!nearestPlanet) {
         return false;
     }
 
-    const bool isAlreadyConsistent =
-        actor->GetCurrentPlanet() == nearestPlanet &&
-        registration.registeredPlanet == nearestPlanet &&
-        !registration.isRegisteredToMultiplePlanets;
+    const bool isAlreadyConsistent = actor->GetCurrentPlanet() == nearestPlanet &&
+                                     registration.registeredPlanet == nearestPlanet &&
+                                     !registration.isRegisteredToMultiplePlanets;
     if (isAlreadyConsistent) {
         return false;
     }
 
     Planet* previousPlanet = actor->GetCurrentPlanet();
-    PreserveMovingPlatformWorldPath(
-        *actor,
-        previousPlanet,
-        *nearestPlanet);
+    PreserveMovingPlatformWorldPath(*actor, previousPlanet, *nearestPlanet);
 
     for (Planet* planet : planets) {
         if (planet) {
@@ -364,9 +323,7 @@ bool RefreshActorBinding(
     return true;
 }
 
-void FinalizeBindingChanges(
-    const std::vector<Planet*>& planets,
-    const std::unordered_set<Planet*>& affectedPlanets)
+void FinalizeBindingChanges(const std::vector<Planet*>& planets, const std::unordered_set<Planet*>& affectedPlanets)
 {
     for (Planet* planet : affectedPlanets) {
         planet->Initialize();
@@ -374,10 +331,9 @@ void FinalizeBindingChanges(
     RefreshBoatDestinations(planets);
 }
 
-}
+} // namespace
 
-bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
-    Stage* stage)
+bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(Stage* stage)
 {
     if (!stage) {
         return false;
@@ -394,9 +350,6 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
     for (const auto& [actorPointer, registration] : registeredActors) {
         (void)actorPointer;
 
-
-
-
         if (dynamic_cast<Boat*>(registration.actor)) {
             continue;
         }
@@ -412,9 +365,7 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBindings(
     return true;
 }
 
-bool StageActorPlanetBindingService::RefreshNearestPlanetBinding(
-    Stage* stage,
-    Actor* actor)
+bool StageActorPlanetBindingService::RefreshNearestPlanetBinding(Stage* stage, Actor* actor)
 {
     if (!stage || !actor) {
         return false;
@@ -428,10 +379,7 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBinding(
     }
 
     std::unordered_set<Planet*> affectedPlanets;
-    if (!RefreshActorBinding(
-            planets,
-            registration->second,
-            affectedPlanets)) {
+    if (!RefreshActorBinding(planets, registration->second, affectedPlanets)) {
         return false;
     }
 
@@ -439,15 +387,13 @@ bool StageActorPlanetBindingService::RefreshNearestPlanetBinding(
     return true;
 }
 
-void StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
-    Planet* planet,
-    const glm::vec3& translation)
+void StageActorPlanetBindingService::TranslateActorsBoundToPlanet(Planet* planet, const glm::vec3& translation)
 {
     if (!planet || glm::length(translation) <= 0.000001f) {
         return;
     }
 
-    for (Actor* actor : CollectActorsOwnedByPlanet(*planet)) {
+    for (Actor* actor : CollectActorsRegisteredToPlanet(*planet)) {
         actor->SetPos(actor->GetPos() + translation);
     }
 
@@ -466,17 +412,14 @@ void StageActorPlanetBindingService::TranslateActorsBoundToPlanet(
     }
 }
 
-void StageActorPlanetBindingService::
-PreserveBoundActorWorldPositionsAfterPlanetMove(
-    Planet* planet,
-    const glm::vec3& planetTranslation)
+void StageActorPlanetBindingService::PreserveBoundActorWorldPositionsAfterPlanetMove(Planet* planet,
+                                                                                     const glm::vec3& planetTranslation)
 {
-    if (!planet ||
-        glm::length(planetTranslation) <= 0.000001f) {
+    if (!planet || glm::length(planetTranslation) <= 0.000001f) {
         return;
     }
 
-    for (Actor* actor : CollectActorsOwnedByPlanet(*planet)) {
+    for (Actor* actor : CollectActorsRegisteredToPlanet(*planet)) {
         if (!actor) {
             continue;
         }
@@ -484,11 +427,8 @@ PreserveBoundActorWorldPositionsAfterPlanetMove(
         UpdateSphericalPlacement(*actor, *planet);
 
         if (Platform* platform = dynamic_cast<Platform*>(actor)) {
-            PlatformMovementComponent* movement =
-                platform->GetMovementComponent();
+            PlatformMovementComponent* movement = platform->GetMovementComponent();
             if (movement) {
-
-
                 movement->TranslatePath(-planetTranslation);
             }
         }
@@ -499,8 +439,7 @@ PreserveBoundActorWorldPositionsAfterPlanetMove(
     Game* game = planet->GetGame();
     if (game) {
         for (Player* player : game->GetPlayers()) {
-            if (!player ||
-                player->GetCurrentPlanet() != planet) {
+            if (!player || player->GetCurrentPlanet() != planet) {
                 continue;
             }
 
@@ -515,8 +454,7 @@ PreserveBoundActorWorldPositionsAfterPlanetMove(
     }
 }
 
-void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(
-    Planet* planet)
+void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(Planet* planet)
 {
     if (!planet) {
         return;
@@ -527,11 +465,7 @@ void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(
             return;
         }
 
-        actor->SetPos(
-            planet->CalculateSurfacePos(
-                actor->GetTheta(),
-                actor->GetPhi(),
-                actor->GetHeight()));
+        actor->SetPos(planet->CalculateSurfacePos(actor->GetTheta(), actor->GetPhi(), actor->GetHeight()));
         actor->CaptureEditorAuthoredPosition();
     };
 
@@ -566,11 +500,7 @@ void StageActorPlanetBindingService::ReprojectSurfaceActorsAfterPlanetScale(
     if (game) {
         for (Player* player : game->GetPlayers()) {
             if (player && player->GetCurrentPlanet() == planet) {
-                player->SetPos(
-                    planet->CalculateSurfacePos(
-                        player->GetTheta(),
-                        player->GetPhi(),
-                        player->GetHeight()));
+                player->SetPos(planet->CalculateSurfacePos(player->GetTheta(), player->GetPhi(), player->GetHeight()));
             }
         }
     }

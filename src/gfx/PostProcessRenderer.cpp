@@ -1,47 +1,32 @@
-#include <GL/glew.h>
-
 #include "gfx/PostProcessRenderer.h"
 
 #include "gfx/PostProcessShader.h"
 
+#include <GL/glew.h>
 #include <algorithm>
 
 namespace {
-constexpr int BrightExtractionPass = 0;
-constexpr int BlurPass = 1;
-constexpr int CompositePass = 2;
-}
+constexpr int brightExtractionPass = 0;
+constexpr int blurPass = 1;
+constexpr int compositePass = 2;
+} // namespace
 
 PostProcessRenderer::PostProcessRenderer()
     : mShader(std::make_unique<PostProcessShader>())
 {
     constexpr float fullscreenVertices[] = {
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f,  1.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
     };
 
     glGenVertexArrays(1, &mFullscreenVertexArray);
     glGenBuffers(1, &mFullscreenVertexBuffer);
     glBindVertexArray(mFullscreenVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, mFullscreenVertexBuffer);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        sizeof(fullscreenVertices),
-        fullscreenVertices,
-        GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fullscreenVertices), fullscreenVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(
-        1,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        4 * sizeof(float),
-        reinterpret_cast<void*>(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
     glBindVertexArray(0);
 }
 
@@ -59,13 +44,9 @@ bool PostProcessRenderer::BeginScene(int width, int height)
     return true;
 }
 
-void PostProcessRenderer::CompositeTo(
-    unsigned int destinationFramebuffer,
-    int width,
-    int height)
+void PostProcessRenderer::CompositeTo(unsigned int destinationFramebuffer, int width, int height)
 {
-    if (!mIsSceneActive || !mShader ||
-        mShader->GetShaderProgram() == 0) {
+    if (!mIsSceneActive || !mShader || mShader->GetShaderProgram() == 0) {
         glBindFramebuffer(GL_FRAMEBUFFER, destinationFramebuffer);
         return;
     }
@@ -89,44 +70,34 @@ void PostProcessRenderer::CompositeTo(
 
     glBindFramebuffer(GL_FRAMEBUFFER, mBloomFramebuffers[0]);
     glViewport(0, 0, mBloomWidth, mBloomHeight);
-    glUniform1i(mShader->GetLocPass(), BrightExtractionPass);
+    glUniform1i(mShader->GetLocPass(), brightExtractionPass);
     glUniform1f(mShader->GetLocBloomThreshold(), mSettings.bloomThreshold);
     glUniform1f(mShader->GetLocBloomSoftKnee(), mSettings.bloomSoftKnee);
     glBindTexture(GL_TEXTURE_2D, mSceneTexture);
     DrawFullscreenQuad();
 
+    // 同じテクスチャを読み書きしないよう、2つの描画先を交互に使って水平・垂直のぼかしを重ねる。
     const int blurIterationCount = std::max(0, mSettings.blurIterationCount);
     int sourceBloomTextureIndex = 0;
-    for (int blurIteration = 0;
-         blurIteration < blurIterationCount * 2;
-         ++blurIteration) {
-        const int destinationBloomTextureIndex =
-            1 - sourceBloomTextureIndex;
-        glBindFramebuffer(
-            GL_FRAMEBUFFER,
-            mBloomFramebuffers[destinationBloomTextureIndex]);
-        glUniform1i(mShader->GetLocPass(), BlurPass);
-        glUniform1i(
-            mShader->GetLocHorizontalBlur(),
-            blurIteration % 2 == 0 ? 1 : 0);
-        glBindTexture(
-            GL_TEXTURE_2D,
-            mBloomTextures[sourceBloomTextureIndex]);
+    for (int blurIteration = 0; blurIteration < blurIterationCount * 2; ++blurIteration) {
+        const int destinationBloomTextureIndex = 1 - sourceBloomTextureIndex;
+        glBindFramebuffer(GL_FRAMEBUFFER, mBloomFramebuffers[destinationBloomTextureIndex]);
+        glUniform1i(mShader->GetLocPass(), blurPass);
+        glUniform1i(mShader->GetLocHorizontalBlur(), blurIteration % 2 == 0 ? 1 : 0);
+        glBindTexture(GL_TEXTURE_2D, mBloomTextures[sourceBloomTextureIndex]);
         DrawFullscreenQuad();
         sourceBloomTextureIndex = destinationBloomTextureIndex;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, destinationFramebuffer);
     glViewport(0, 0, width, height);
-    glUniform1i(mShader->GetLocPass(), CompositePass);
+    glUniform1i(mShader->GetLocPass(), compositePass);
     glUniform1f(mShader->GetLocBloomStrength(), mSettings.bloomStrength);
     glUniform1f(mShader->GetLocExposure(), mSettings.exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mSceneTexture);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(
-        GL_TEXTURE_2D,
-        mBloomTextures[sourceBloomTextureIndex]);
+    glBindTexture(GL_TEXTURE_2D, mBloomTextures[sourceBloomTextureIndex]);
     glUniform1i(mShader->GetLocBloomTexture(), 1);
     DrawFullscreenQuad();
 
@@ -172,12 +143,10 @@ void PostProcessRenderer::Shutdown()
 
 bool PostProcessRenderer::EnsureRenderTargets(int width, int height)
 {
-    if (width <= 0 || height <= 0 || !mShader ||
-        mShader->GetShaderProgram() == 0) {
+    if (width <= 0 || height <= 0 || !mShader || mShader->GetShaderProgram() == 0) {
         return false;
     }
-    if (width == mWidth && height == mHeight &&
-        mSceneFramebuffer != 0 && mBloomFramebuffers[0] != 0) {
+    if (width == mWidth && height == mHeight && mSceneFramebuffer != 0 && mBloomFramebuffers[0] != 0) {
         return true;
     }
 
@@ -206,41 +175,18 @@ bool PostProcessRenderer::CreateSceneTarget(int width, int height)
 
     glGenTextures(1, &mSceneTexture);
     glBindTexture(GL_TEXTURE_2D, mSceneTexture);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA16F,
-        width,
-        height,
-        0,
-        GL_RGBA,
-        GL_FLOAT,
-        nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER,
-        GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D,
-        mSceneTexture,
-        0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mSceneTexture, 0);
 
     glGenRenderbuffers(1, &mSceneDepthBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, mSceneDepthBuffer);
-    glRenderbufferStorage(
-        GL_RENDERBUFFER,
-        GL_DEPTH24_STENCIL8,
-        width,
-        height);
-    glFramebufferRenderbuffer(
-        GL_FRAMEBUFFER,
-        GL_DEPTH_STENCIL_ATTACHMENT,
-        GL_RENDERBUFFER,
-        mSceneDepthBuffer);
-    return glCheckFramebufferStatus(GL_FRAMEBUFFER) ==
-           GL_FRAMEBUFFER_COMPLETE;
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mSceneDepthBuffer);
+    return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
 
 bool PostProcessRenderer::CreateBloomTargets(int width, int height)
@@ -250,28 +196,13 @@ bool PostProcessRenderer::CreateBloomTargets(int width, int height)
     for (int targetIndex = 0; targetIndex < 2; ++targetIndex) {
         glBindFramebuffer(GL_FRAMEBUFFER, mBloomFramebuffers[targetIndex]);
         glBindTexture(GL_TEXTURE_2D, mBloomTextures[targetIndex]);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA16F,
-            width,
-            height,
-            0,
-            GL_RGBA,
-            GL_FLOAT,
-            nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            mBloomTextures[targetIndex],
-            0);
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-            GL_FRAMEBUFFER_COMPLETE) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mBloomTextures[targetIndex], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             return false;
         }
     }

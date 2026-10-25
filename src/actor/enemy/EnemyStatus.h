@@ -8,40 +8,28 @@
 
 class Player;
 
+// HP・ガード・攻撃設定・行動タイマー・命中履歴を保持する。行動遷移はEnemyStateMachineが担当する。
 class EnemyStatus {
 public:
     EnemyStatus();
 
     void SetIsBoss(bool isBoss) { mIsBoss = isBoss; }
-    void SetIsNormalHitKnockBackEnabled(bool isEnabled)
-    {
-        mIsNormalHitKnockBackEnabled = isEnabled;
-    }
+    void SetIsNormalHitKnockBackEnabled(bool isEnabled) { mIsNormalHitKnockBackEnabled = isEnabled; }
     void SetIsStrongAttacked(bool isStrongAttacked) { mIsStrongAttacked = isStrongAttacked; }
     void ClearStrongAttacked() { mIsStrongAttacked = false; }
 
+    // 区画構成を設定し、現在ガードを最大値へ戻す。打ち上げや行動遷移は行わない。
     void ConfigureGuard(int segmentCount, float guardValuePerSegment)
     {
         mGuardGauge.Configure(segmentCount, guardValuePerSegment);
     }
-    void SetGuardSegmentCount(int segmentCount)
+    void SetGuardSegmentCount(int segmentCount) { mGuardGauge.SetSegmentCount(segmentCount); }
+    EnemyGuardDamageResult ApplyGuardDamage(float guardDamage) { return mGuardGauge.ApplyDamage(guardDamage); }
+    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(float minimumGuardDamage)
     {
-        mGuardGauge.SetSegmentCount(segmentCount);
+        return mGuardGauge.ApplyDamageEnsuringCurrentSegmentBreak(minimumGuardDamage);
     }
-    EnemyGuardDamageResult ApplyGuardDamage(float guardDamage)
-    {
-        return mGuardGauge.ApplyDamage(guardDamage);
-    }
-    EnemyGuardDamageResult ApplyGuardDamageEnsuringCurrentSegmentBreak(
-        float minimumGuardDamage)
-    {
-        return mGuardGauge.ApplyDamageEnsuringCurrentSegmentBreak(
-            minimumGuardDamage);
-    }
-    EnemyGuardDamageResult BreakGuard()
-    {
-        return mGuardGauge.BreakAll();
-    }
+    EnemyGuardDamageResult BreakGuard() { return mGuardGauge.BreakAll(); }
     void ResetGuard() { mGuardGauge.Reset(); }
 
     void SetHp(float hp) { mHealth.SetHp(hp); }
@@ -53,16 +41,16 @@ public:
     void SetLaunchHeight(float launchHeight) { mLaunchHeight = launchHeight; }
     void SetMoveSpeed(float moveSpeed) { mMoveSpeed = moveSpeed; }
     void SetAttack(float attack) { mAttack = attack; }
-    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer) { mDefaultAttackMotionTimer = defaultAttackMotionTimer; }
+    void SetDefaultAttackMotionTimer(float defaultAttackMotionTimer)
+    {
+        mDefaultAttackMotionTimer = defaultAttackMotionTimer;
+    }
     void SetDefaultStandByAttackTimer(float defaultStandByAttackTimer)
     {
         mDefaultStandByAttackTimer = defaultStandByAttackTimer;
     }
     void SetDetectionRange(float detectionRange) { mDetectionRange = detectionRange; }
-    void SetAttackPreparationRange(float attackPreparationRange)
-    {
-        mAttackPreparationRange = attackPreparationRange;
-    }
+    void SetAttackPreparationRange(float attackPreparationRange) { mAttackPreparationRange = attackPreparationRange; }
     void SetKnockBackSpeed(float knockBackSpeed) { mKnockBackSpeed = knockBackSpeed; }
     void SetAttackSpeed(float attackSpeed) { mAttackSpeed = attackSpeed; }
 
@@ -91,40 +79,35 @@ public:
 
     void SetKnockBackFrom(const glm::vec3& knockBackFrom) { mKnockBackFrom = knockBackFrom; }
 
+    // 行動対象への非所有参照。nullptrは対象なしを表し、この関数自身では探索しない。
     void SetNearestPlayer(Player* player) { mNearestPlayer = player; }
 
     void SetIsJustBeforeAttack(bool isJustBeforeAttack) { mIsJustBeforeAttack = isJustBeforeAttack; }
     void ClearIsHit() { mIsHit = false; }
     void ClearIsCountered() { mIsCountered = false; }
 
+    // 攻撃開始時に処理済みPlayerの履歴を解除する。履歴にはPlayerへの非所有参照を保持する。
     void ClearHitPlayers() { mHitPlayers.clear(); }
     bool HasHitAnyPlayer() const { return !mHitPlayers.empty(); }
     bool HasHitPlayer(Player* player) const { return mHitPlayers.contains(player); }
     void AddHitPlayer(Player* player) { mHitPlayers.insert(player); }
 
     bool GetIsBoss() const { return mIsBoss; }
-    bool IsNormalHitKnockBackEnabled() const
-    {
-        return mIsNormalHitKnockBackEnabled;
-    }
+    bool IsNormalHitKnockBackEnabled() const { return mIsNormalHitKnockBackEnabled; }
     bool GetCanCountered() const { return mCanCountered; }
     bool GetIsStrongAttacked() const { return mIsStrongAttacked; }
     bool GetIsJustBeforeAttack() const { return mIsJustBeforeAttack; }
 
     float GetCurrentGuard() const { return mGuardGauge.GetCurrentGuard(); }
     float GetMaxGuard() const { return mGuardGauge.GetMaxGuard(); }
-    float GetGuardValuePerSegment() const
-    {
-        return mGuardGauge.GetGuardValuePerSegment();
-    }
-    int GetGuardSegmentCount() const
-    {
-        return mGuardGauge.GetSegmentCount();
-    }
+    float GetGuardValuePerSegment() const { return mGuardGauge.GetGuardValuePerSegment(); }
+    int GetGuardSegmentCount() const { return mGuardGauge.GetSegmentCount(); }
 
     float GetHp() const { return mHealth.GetHp(); }
     float GetMaxHp() const { return mHealth.GetMaxHp(); }
     float GetAttack() const { return mAttack; }
+
+    // 攻撃速度と既定モーション時間の前半分から算出するワールド距離。独立した設定値ではない。
     float GetAttackRange() const { return mAttackSpeed * (mDefaultAttackMotionTimer / 2.0f); }
     float GetStandByAttackTimer() const { return mStandByAttackTimer; }
     float GetDetectionRange() const { return mDetectionRange; }

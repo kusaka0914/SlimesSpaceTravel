@@ -1,5 +1,6 @@
-#include "CollectableComponent.h"
-#include "Game.h"
+#include "component/CollectableComponent.h"
+
+#include "app/Game.h"
 #include "actor/Player.h"
 
 CollectableComponent::CollectableComponent(Actor* owner, int updateOrder)
@@ -11,8 +12,7 @@ CollectableComponent::CollectableComponent(Actor* owner, int updateOrder)
 void CollectableComponent::Update(float deltaTime)
 {
     if (mIsObtained || !mOwner || !mOwner->GetIsActive() ||
-        (mOwner->GetGame() &&
-         mOwner->GetGame()->GetIsDebugEditorShowing())) {
+        (mOwner->GetGame() && mOwner->GetGame()->GetIsDebugEditorShowing())) {
         return;
     }
 
@@ -24,8 +24,7 @@ void CollectableComponent::Update(float deltaTime)
 
 Player* CollectableComponent::FindCollectablePlayerInPickUpRadius() const
 {
-    Player* nearestPlayer =
-        mOwner->GetGame()->FindNearestPlayer(mOwner);
+    Player* nearestPlayer = mOwner->GetGame()->FindNearestPlayer(mOwner);
 
     if (!nearestPlayer) {
         return nullptr;

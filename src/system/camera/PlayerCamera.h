@@ -37,46 +37,43 @@ struct PlayerCameraState {
     float backwardFacingLookAheadDistance = 0.0f;
 };
 
+// Playerごとの追従・背面合わせ・移動補助の状態を管理する。Playerインデックスは0始まり。
 class PlayerCamera {
 public:
     explicit PlayerCamera(CameraCollisionResolver& collisionResolver);
 
-    void Update(const std::vector<Player*>& players,
-                const std::vector<float>& yawDeltas,
-                const PlayerCameraSettings& settings, float deltaTime,
-                bool allowsMovementCameraAssist);
+    // Player順のyawDeltas（ラジアン）と秒単位のdeltaTimeで追従状態を更新する。
+    void Update(const std::vector<Player*>& players, const std::vector<float>& yawDeltas,
+                const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist);
     void Reset();
+
+    // 指定Playerの姿勢へ追従状態を初期化する。nullptr・負のインデックスでは何もしない。
     void SnapToPlayer(Player* player, int playerIndex);
-    void TransitionToPlayer(
-        int fromPlayerIndex,
-        Player* player,
-        int toPlayerIndex);
+    void TransitionToPlayer(int fromPlayerIndex, Player* player, int toPlayerIndex);
     void SnapBehindPlayer(Player* player, int playerIndex);
     void AlignBehindPlayer(Player* player, int playerIndex);
     void BlendBehindTarget(Player* player, int playerIndex, const glm::vec3& targetPosition, float blend);
 
-    glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
-                      float targetHeight, bool isFixed = false);
+    // 追従状態と衝突補正からビューを生成し、カメラ位置を更新する。playerIndexは0以上、cameraPitchはラジアン。
+    glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch, float targetHeight,
+                      bool isFixed = false);
+
+    // 0始まりのインデックスで保持位置を返す。範囲外ならゼロベクトル。
     glm::vec3 GetCameraPos(int playerIndex) const;
 
 private:
     void ResizeState(std::size_t count);
-    void UpdateState(Player* player, int playerIndex,
-                     const PlayerCameraSettings& settings, float deltaTime,
+    void UpdateState(Player* player, int playerIndex, const PlayerCameraSettings& settings, float deltaTime,
                      bool allowsMovementCameraAssist);
-    void UpdateAutoFollowRequest(Player* player, PlayerCameraState& state,
-                                 const PlayerCameraSettings& settings,
+    void UpdateAutoFollowRequest(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                                  float deltaTime, bool allowsMovementCameraAssist);
     void UpdateCameraForward(Player* player, PlayerCameraState& state, float attackTargetSmoothingSpeed,
                              float autoFollowRotationDurationSeconds, float deltaTime);
-    void UpdateBackwardFacingFraming(Player* player, PlayerCameraState& state,
-                                     const PlayerCameraSettings& settings,
+    void UpdateBackwardFacingFraming(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                                      float deltaTime, bool allowsMovementCameraAssist);
-    void UpdateSurfaceTraversalAutoAlign(Player* player, PlayerCameraState& state,
-                                         const PlayerCameraSettings& settings,
+    void UpdateSurfaceTraversalAutoAlign(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                                          bool allowsMovementCameraAssist);
 
-private:
     CameraCollisionResolver& mCollisionResolver;
     std::vector<PlayerCameraState> mStates;
 };

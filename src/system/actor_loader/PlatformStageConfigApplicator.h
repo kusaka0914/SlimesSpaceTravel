@@ -4,6 +4,5 @@
 
 class Platform;
 
-void ApplyPlatformStageConfig(
-    Platform& platform,
-    const PlatformStageConfig& config);
+// 設定された振る舞いのComponentをPlatformへ追加・設定する。設定のないComponentは削除しない。
+void ApplyPlatformStageConfig(Platform& platform, const PlatformStageConfig& config);

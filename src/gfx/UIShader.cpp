@@ -1,7 +1,9 @@
-#include "UIShader.h"
+#include "gfx/UIShader.h"
+
 #include <GL/glew.h>
 
-UIShader::UIShader() : Shader()
+UIShader::UIShader()
+    : Shader()
 {
     Initialize();
 }
@@ -10,13 +12,12 @@ UIShader::~UIShader() {}
 
 void UIShader::Initialize()
 {
-    mShaderProgram = CreateShaderProgram("../shaders/vertex.glsl", "../shaders/UIfragment.glsl");
-    mLocModel = glGetUniformLocation(mShaderProgram, "model");
-    mLocView = glGetUniformLocation(mShaderProgram, "view");
-    mLocProj = glGetUniformLocation(mShaderProgram, "projection");
+    mShaderProgram = CreateShaderProgram("../shaders/common.vert", "../shaders/ui.frag");
+    mLocModel = glGetUniformLocation(mShaderProgram, "modelMatrix");
+    mLocView = glGetUniformLocation(mShaderProgram, "viewMatrix");
+    mLocProj = glGetUniformLocation(mShaderProgram, "projectionMatrix");
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
-    mLocConvertSrgbToLinear =
-        glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
+    mLocConvertSrgbToLinear = glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
 }

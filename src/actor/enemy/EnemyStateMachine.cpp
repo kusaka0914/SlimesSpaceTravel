@@ -1,12 +1,12 @@
 #include "actor/enemy/EnemyStateMachine.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Enemy.h"
-#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "actor/Star.h"
+#include "actor/enemy/EnemyCollisionGeometry.h"
 #include "actor/enemy/EnemyCombat.h"
 #include "actor/enemy/EnemyConfig.h"
 #include "actor/enemy/EnemyMovement.h"
@@ -15,7 +15,7 @@
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/ParticleSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +23,6 @@
 #include <glm/gtc/constants.hpp>
 
 namespace {
-
 constexpr float directionEpsilon = 1e-6f;
 
 bool TryNormalize(const glm::vec3& value, glm::vec3& normalizedValue)
@@ -52,59 +51,37 @@ glm::vec3 ProjectOntoTangentPlane(const glm::vec3& direction, const glm::vec3& u
     return direction - upDirection * glm::dot(direction, upDirection);
 }
 
-glm::vec3 CalculateCinematicSurfacePosition(
-    const Planet& planet,
-    float theta,
-    float phi,
-    float height)
+glm::vec3 CalculateCinematicSurfacePosition(const Planet& planet, float theta, float phi, float height)
 {
-    const glm::vec3 direction = glm::normalize(glm::vec3(
-        std::cos(phi) * std::cos(theta),
-        std::sin(phi),
-        std::cos(phi) * std::sin(theta)));
+    const glm::vec3 direction =
+        glm::normalize(glm::vec3(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta)));
 
     if (planet.GetPlanetShape() != Planet::PlanetShape::Ellipse) {
         return planet.CalculateSurfacePos(theta, phi, height);
     }
 
-
-
-    // 扁平な惑星で球の半径をそのまま使うと、長軸側の衝突形状に演出用Actorが埋まるため最大半径を使う。
-    const float largestRadius = std::max({
-        std::abs(planet.GetScale().x),
-        std::abs(planet.GetScale().y),
-        std::abs(planet.GetScale().z),
-        0.001f});
+    // 長軸側でも惑星内部からの投影にならないよう、最大半径より十分外側に基準点を置く。
+    const float largestRadius =
+        std::max({std::abs(planet.GetScale().x), std::abs(planet.GetScale().y), std::abs(planet.GetScale().z), 0.001f});
     const Planet::EllipseSurfaceProjection surface =
-        planet.CalculateEllipseSurfaceProjection(
-            planet.GetPos() + direction * (largestRadius * 4.0f));
+        planet.CalculateEllipseSurfaceProjection(planet.GetPos() + direction * (largestRadius * 4.0f));
     return surface.position + surface.outwardNormal * height;
 }
 
-glm::vec3 CalculateCinematicSurfaceUp(
-    const Planet& planet,
-    float theta,
-    float phi)
+glm::vec3 CalculateCinematicSurfaceUp(const Planet& planet, float theta, float phi)
 {
-    const glm::vec3 direction = glm::normalize(glm::vec3(
-        std::cos(phi) * std::cos(theta),
-        std::sin(phi),
-        std::cos(phi) * std::sin(theta)));
+    const glm::vec3 direction =
+        glm::normalize(glm::vec3(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta)));
     if (planet.GetPlanetShape() != Planet::PlanetShape::Ellipse) {
         return direction;
     }
 
-    const float largestRadius = std::max({
-        std::abs(planet.GetScale().x),
-        std::abs(planet.GetScale().y),
-        std::abs(planet.GetScale().z),
-        0.001f});
-    return planet.CalculateEllipseSurfaceProjection(
-        planet.GetPos() + direction * (largestRadius * 4.0f)).outwardNormal;
+    const float largestRadius =
+        std::max({std::abs(planet.GetScale().x), std::abs(planet.GetScale().y), std::abs(planet.GetScale().z), 0.001f});
+    return planet.CalculateEllipseSurfaceProjection(planet.GetPos() + direction * (largestRadius * 4.0f)).outwardNormal;
 }
 
-glm::vec3 GetDyingKnockBackDirection(const Enemy& enemy, const EnemyStatus& status,
-                                      const glm::vec3& upDirection)
+glm::vec3 GetDyingKnockBackDirection(const Enemy& enemy, const EnemyStatus& status, const glm::vec3& upDirection)
 {
     glm::vec3 knockBackDirection;
     const glm::vec3 projectedKnockBack = ProjectOntoTangentPlane(status.GetKnockBackFrom(), upDirection);
@@ -113,8 +90,7 @@ glm::vec3 GetDyingKnockBackDirection(const Enemy& enemy, const EnemyStatus& stat
         return knockBackDirection;
     }
 
-    const glm::vec3 projectedFacingDirection =
-        ProjectOntoTangentPlane(-enemy.GetFacingForwardVec(), upDirection);
+    const glm::vec3 projectedFacingDirection = ProjectOntoTangentPlane(-enemy.GetFacingForwardVec(), upDirection);
 
     if (TryNormalize(projectedFacingDirection, knockBackDirection)) {
         return knockBackDirection;
@@ -129,8 +105,7 @@ void InitializeDyingMovement(Enemy& enemy, EnemyStatus& status)
     const glm::vec3 knockBackDirection = GetDyingKnockBackDirection(enemy, status, upDirection);
 
     constexpr float dyingLaunchSpeed = 5.0f;
-    const glm::vec3 dyingVelocity =
-        knockBackDirection * status.GetKnockBackSpeed() + upDirection * dyingLaunchSpeed;
+    const glm::vec3 dyingVelocity = knockBackDirection * status.GetKnockBackSpeed() + upDirection * dyingLaunchSpeed;
 
     status.SetKnockBackFrom(knockBackDirection);
     enemy.SetVelocity(dyingVelocity);
@@ -153,12 +128,9 @@ void StageBossDefeatActors(Enemy& boss)
     constexpr float cinematicSurfaceClearance = 0.08f;
     constexpr float bossTheta = 0.0f;
     constexpr float bossPhi = 0.0f;
-    boss.SetSphericalPlacement(
-        bossTheta, bossPhi, cinematicSurfaceClearance);
-    boss.SetPos(CalculateCinematicSurfacePosition(
-        *planet, bossTheta, bossPhi, cinematicSurfaceClearance));
-    const glm::vec3 bossUp =
-        CalculateCinematicSurfaceUp(*planet, bossTheta, bossPhi);
+    boss.SetSphericalPlacement(bossTheta, bossPhi, cinematicSurfaceClearance);
+    boss.SetPos(CalculateCinematicSurfacePosition(*planet, bossTheta, bossPhi, cinematicSurfaceClearance));
+    const glm::vec3 bossUp = CalculateCinematicSurfaceUp(*planet, bossTheta, bossPhi);
     boss.SetUpVec(bossUp);
 
     Player* player = boss.GetGame()->GetMainPlayer();
@@ -183,15 +155,12 @@ void StageBossDefeatActors(Enemy& boss)
         }
     }
 
-    player->SetSphericalPlacement(
-        playerTheta, playerPhi, cinematicSurfaceClearance);
-    player->SetPos(CalculateCinematicSurfacePosition(
-        *planet, playerTheta, playerPhi, cinematicSurfaceClearance));
+    player->SetSphericalPlacement(playerTheta, playerPhi, cinematicSurfaceClearance);
+    player->SetPos(CalculateCinematicSurfacePosition(*planet, playerTheta, playerPhi, cinematicSurfaceClearance));
     player->SetVelocity(glm::vec3(0.0f));
     player->SetOnGround(false);
     player->SetShouldJudgeLanding(true);
-    player->SetUpVec(
-        CalculateCinematicSurfaceUp(*planet, playerTheta, playerPhi));
+    player->SetUpVec(CalculateCinematicSurfaceUp(*planet, playerTheta, playerPhi));
 
     MathUtils* mathUtils = boss.GetGame()->GetMathUtils();
 
@@ -202,13 +171,9 @@ void StageBossDefeatActors(Enemy& boss)
         player->SetFacingForwardVec(facingBoss);
 
         if (mathUtils) {
-            player->SetFacingYaw(
-                mathUtils->GetYawFromDirection(player->GetUpVec(), facingBoss) + glm::pi<float>());
+            player->SetFacingYaw(mathUtils->GetYawFromDirection(player->GetUpVec(), facingBoss) + glm::pi<float>());
         }
     }
-
-
-
 
     if (boss.GetGame()->GetIsPlayer2Joined()) {
         const std::vector<Player*>& players = boss.GetGame()->GetPlayers();
@@ -219,9 +184,7 @@ void StageBossDefeatActors(Enemy& boss)
 
             if (Stage* currentStage = boss.GetGame()->GetCurrentStage()) {
                 const std::vector<Planet*>& planets = currentStage->GetPlanets();
-                for (int planetIndex = 0;
-                     planetIndex < static_cast<int>(planets.size());
-                     ++planetIndex) {
+                for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
                     if (planets[planetIndex] == planet) {
                         player2->SetCurrentPlanetNum(planetIndex);
                         break;
@@ -230,30 +193,22 @@ void StageBossDefeatActors(Enemy& boss)
             }
 
             constexpr float player2Phi = 0.28f;
-            player2->SetSphericalPlacement(
-                playerTheta, player2Phi, cinematicSurfaceClearance);
-            player2->SetPos(CalculateCinematicSurfacePosition(
-                *planet,
-                playerTheta,
-                player2Phi,
-                cinematicSurfaceClearance));
+            player2->SetSphericalPlacement(playerTheta, player2Phi, cinematicSurfaceClearance);
+            player2->SetPos(
+                CalculateCinematicSurfacePosition(*planet, playerTheta, player2Phi, cinematicSurfaceClearance));
             player2->SetVelocity(glm::vec3(0.0f));
             player2->SetOnGround(false);
             player2->SetShouldJudgeLanding(true);
-            player2->SetUpVec(CalculateCinematicSurfaceUp(
-                *planet, playerTheta, player2Phi));
+            player2->SetUpVec(CalculateCinematicSurfaceUp(*planet, playerTheta, player2Phi));
 
             glm::vec3 player2FacingBoss = boss.GetPos() - player2->GetPos();
-            player2FacingBoss -= player2->GetUpVec() *
-                glm::dot(player2FacingBoss, player2->GetUpVec());
+            player2FacingBoss -= player2->GetUpVec() * glm::dot(player2FacingBoss, player2->GetUpVec());
             if (glm::length(player2FacingBoss) > directionEpsilon) {
                 player2FacingBoss = glm::normalize(player2FacingBoss);
                 player2->SetFacingForwardVec(player2FacingBoss);
                 if (mathUtils) {
-                    player2->SetFacingYaw(
-                        mathUtils->GetYawFromDirection(
-                            player2->GetUpVec(), player2FacingBoss) +
-                        glm::pi<float>());
+                    player2->SetFacingYaw(mathUtils->GetYawFromDirection(player2->GetUpVec(), player2FacingBoss) +
+                                          glm::pi<float>());
                 }
             }
         }
@@ -266,33 +221,23 @@ void StageBossDefeatActors(Enemy& boss)
         boss.SetFacingForwardForEnemy(facingPlayer);
 
         if (mathUtils) {
-            boss.SetFacingYaw(
-                mathUtils->GetYawFromDirection(boss.GetUpVec(), facingPlayer) + glm::pi<float>());
+            boss.SetFacingYaw(mathUtils->GetYawFromDirection(boss.GetUpVec(), facingPlayer) + glm::pi<float>());
         }
     }
 
     Star* star = planet->GetStar();
     if (star) {
         constexpr float starHeightAboveBoss = 1.2f;
-        star->SetSphericalPlacement(
-            bossTheta, bossPhi, boss.GetHeight() + starHeightAboveBoss);
+        star->SetSphericalPlacement(bossTheta, bossPhi, boss.GetHeight() + starHeightAboveBoss);
         star->SetPos(boss.GetPos() + boss.GetUpVec() * starHeightAboveBoss);
         star->SetUpVec(boss.GetUpVec());
 
         glm::vec3 starFacingBoss = boss.GetForwardVec();
-        starFacingBoss -=
-            star->GetUpVec() *
-            glm::dot(starFacingBoss, star->GetUpVec());
-        if (mathUtils &&
-            glm::length(starFacingBoss) > directionEpsilon) {
+        starFacingBoss -= star->GetUpVec() * glm::dot(starFacingBoss, star->GetUpVec());
+        if (mathUtils && glm::length(starFacingBoss) > directionEpsilon) {
             starFacingBoss = glm::normalize(starFacingBoss);
 
-
-            star->SetFacingYaw(
-                mathUtils->GetYawFromDirection(
-                    star->GetUpVec(),
-                    starFacingBoss) +
-                glm::pi<float>());
+            star->SetFacingYaw(mathUtils->GetYawFromDirection(star->GetUpVec(), starFacingBoss) + glm::pi<float>());
         }
     }
 }
@@ -308,17 +253,10 @@ void EmitEnemyDefeatEffect(Enemy& enemy, const EnemyStatus& status)
 
     EnemyCollisionGeometry::ModelBounds enemyBounds;
     const glm::vec3 effectPosition =
-        EnemyCollisionGeometry::TryCreateModelBounds(
-            enemy,
-            enemyBounds)
+        EnemyCollisionGeometry::TryCreateModelBounds(enemy, enemyBounds)
             ? enemyBounds.center +
-                  upDirection *
-                      EnemyCollisionGeometry::CalculateSupportDistance(
-                          enemyBounds,
-                          upDirection) *
-                      0.5f
-            : enemy.GetPos() +
-                  upDirection * enemy.GetRadius() * 0.5f;
+                  upDirection * EnemyCollisionGeometry::CalculateSupportDistance(enemyBounds, upDirection) * 0.5f
+            : enemy.GetPos() + upDirection * enemy.GetRadius() * 0.5f;
 
     ParticleSpawnContext context;
     context.position = effectPosition;
@@ -337,19 +275,14 @@ void DefeatRemainingNormalEnemies(const Enemy& defeatedBoss)
     }
 
     for (Enemy* enemy : planet->GetEnemies()) {
-        if (!enemy ||
-            enemy == &defeatedBoss ||
-            enemy->GetIsBoss() ||
-            !enemy->GetIsActive() ||
-            enemy->GetIsDead()) {
+        if (!enemy || enemy == &defeatedBoss || enemy->GetIsBoss() || !enemy->GetIsActive() || enemy->GetIsDead()) {
             continue;
         }
 
         enemy->DefeatImmediately();
     }
 }
-
-}
+} // namespace
 
 EnemyStateMachine::EnemyStateMachine()
     : mLifeState(LifeState::Alive),
@@ -358,43 +291,22 @@ EnemyStateMachine::EnemyStateMachine()
 {
 }
 
-void EnemyStateMachine::ConfigureBossManeuver(
-    const EnemyBossManeuverConfig& config)
+void EnemyStateMachine::ConfigureBossManeuver(const EnemyBossManeuverConfig& config)
 {
-    mPreAttackApproachProbabilityPercent = std::clamp(
-        config.preAttackApproachProbabilityPercent,
-        0.0f,
-        100.0f);
-    mPreAttackApproachSpeed = std::max(
-        0.0f,
-        config.preAttackApproachSpeed);
-    mPreAttackApproachStopDistance = std::max(
-        0.0f,
-        config.preAttackApproachStopDistance);
-    mPostAttackRetreatProbabilityPercent = std::clamp(
-        config.postAttackRetreatProbabilityPercent,
-        0.0f,
-        100.0f);
-    mPostAttackRetreatDelaySeconds = std::max(
-        0.0f,
-        config.postAttackRetreatDelaySeconds);
-    mPostAttackRetreatSpeed = std::max(
-        0.0f,
-        config.postAttackRetreatSpeed);
-    mPostAttackRetreatDistance = std::max(
-        0.0f,
-        config.postAttackRetreatDistance);
-    mPostRetreatRecoverySeconds = std::max(
-        0.0f,
-        config.postRetreatRecoverySeconds);
-    mPostRetreatFollowupApproachProbabilityPercent = std::clamp(
-        config.postRetreatFollowupApproachProbabilityPercent,
-        0.0f,
-        100.0f);
+    mPreAttackApproachProbabilityPercent = std::clamp(config.preAttackApproachProbabilityPercent, 0.0f, 100.0f);
+    mPreAttackApproachSpeed = std::max(0.0f, config.preAttackApproachSpeed);
+    mPreAttackApproachStopDistance = std::max(0.0f, config.preAttackApproachStopDistance);
+    mPostAttackRetreatProbabilityPercent = std::clamp(config.postAttackRetreatProbabilityPercent, 0.0f, 100.0f);
+    mPostAttackRetreatDelaySeconds = std::max(0.0f, config.postAttackRetreatDelaySeconds);
+    mPostAttackRetreatSpeed = std::max(0.0f, config.postAttackRetreatSpeed);
+    mPostAttackRetreatDistance = std::max(0.0f, config.postAttackRetreatDistance);
+    mPostRetreatRecoverySeconds = std::max(0.0f, config.postRetreatRecoverySeconds);
+    mPostRetreatFollowupApproachProbabilityPercent =
+        std::clamp(config.postRetreatFollowupApproachProbabilityPercent, 0.0f, 100.0f);
 }
 
 void EnemyStateMachine::UpdateAlive(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                     EnemyBehaviorController& behaviorController, float deltaTime)
+                                    EnemyBehaviorController& behaviorController, float deltaTime)
 {
     if (mActionState == ActionState::Launched) {
         movement.UpdateInAir(enemy, status, *this, deltaTime);
@@ -459,12 +371,9 @@ void EnemyStateMachine::UpdateIdle(Enemy& enemy, EnemyStatus& status, EnemyComba
 }
 
 void EnemyStateMachine::UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                        float deltaTime)
+                                       float deltaTime)
 {
-    if (!combat.IsPlayerInRange(
-            enemy,
-            status.GetNearestPlayer(),
-            status.GetDetectionRange())) {
+    if (!combat.IsPlayerInRange(enemy, status.GetNearestPlayer(), status.GetDetectionRange())) {
         StartIdle(enemy);
         return;
     }
@@ -476,16 +385,13 @@ void EnemyStateMachine::UpdateTracking(Enemy& enemy, EnemyStatus& status, EnemyM
 
 void EnemyStateMachine::TryStartPreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyCombat& combat)
 {
-    if (combat.IsPlayerInRange(
-            enemy,
-            status.GetNearestPlayer(),
-            status.GetAttackPreparationRange())) {
+    if (combat.IsPlayerInRange(enemy, status.GetNearestPlayer(), status.GetAttackPreparationRange())) {
         StartPreparingAttack(enemy, status);
     }
 }
 
 void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
-                                               float deltaTime)
+                                              float deltaTime)
 {
     if (!status.GetNearestPlayer()) {
         StartIdle(enemy);
@@ -497,15 +403,10 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
     }
 
     constexpr float attackPreviewStartSeconds = 1.0f;
-    const bool willReachAttackPreviewTiming =
-        status.GetStandByAttackTimer() - deltaTime <=
-        attackPreviewStartSeconds;
-    if (!mHasEvaluatedPreAttackApproach &&
-        willReachAttackPreviewTiming) {
+    const bool willReachAttackPreviewTiming = status.GetStandByAttackTimer() - deltaTime <= attackPreviewStartSeconds;
+    if (!mHasEvaluatedPreAttackApproach && willReachAttackPreviewTiming) {
         mHasEvaluatedPreAttackApproach = true;
-        if (status.GetIsBoss() &&
-            ShouldTriggerProbability(
-                mPreAttackApproachProbabilityPercent)) {
+        if (status.GetIsBoss() && ShouldTriggerProbability(mPreAttackApproachProbabilityPercent)) {
             mShouldPreservePreparationTimer = true;
             mActionState = ActionState::PreAttackApproach;
             return;
@@ -524,11 +425,8 @@ void EnemyStateMachine::UpdatePreparingAttack(Enemy& enemy, EnemyStatus& status,
     }
 }
 
-void EnemyStateMachine::UpdatePreAttackApproach(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    float deltaTime)
+void EnemyStateMachine::UpdatePreAttackApproach(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                                float deltaTime)
 {
     if (!status.GetNearestPlayer()) {
         StartIdle(enemy);
@@ -536,34 +434,24 @@ void EnemyStateMachine::UpdatePreAttackApproach(
     }
 
     movement.FaceNearestPlayerImmediately(enemy, status);
-    const bool hasFinishedApproach =
-        movement.MoveTowardPlayerQuickly(
-            enemy,
-            status,
-            mPreAttackApproachSpeed,
-            mPreAttackApproachStopDistance,
-            deltaTime);
+    const bool hasFinishedApproach = movement.MoveTowardPlayerQuickly(enemy, status, mPreAttackApproachSpeed,
+                                                                      mPreAttackApproachStopDistance, deltaTime);
     if (!hasFinishedApproach) {
         return;
     }
 
     constexpr float attackPreviewStartSeconds = 1.0f;
-    status.SetStandByAttackTimer(
-        std::min(
-            status.GetStandByAttackTimer(),
-            attackPreviewStartSeconds));
+    status.SetStandByAttackTimer(std::min(status.GetStandByAttackTimer(), attackPreviewStartSeconds));
     mActionState = ActionState::PreparingAttack;
 }
 
 void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement, EnemyCombat& combat,
-                                         float deltaTime)
+                                        float deltaTime)
 {
     if (!status.GetNearestPlayer()) {
         StartIdle(enemy);
         return;
     }
-
-
 
     status.DecreaseCanCounteredTimer(deltaTime);
     if (status.GetCanCounteredTimer() <= 0.0f) {
@@ -571,18 +459,13 @@ void EnemyStateMachine::UpdateAttacking(Enemy& enemy, EnemyStatus& status, Enemy
     }
 
     // 通常攻撃は予兆位置で固定する。白い攻撃表示と同じ時間だけ、固定の近接範囲で命中を判定する。
-    combat.TryApplyAttack(
-        enemy,
-        status,
-        *this,
-        deltaTime);
+    combat.TryApplyAttack(enemy, status, *this, deltaTime);
     if (mActionState != ActionState::Attacking) {
         return;
     }
 
     status.DecreaseAttackMotionTimer(deltaTime);
-    const float forwardMovementEndTimer =
-        status.GetDefaultAttackMotionTimer() * 0.5f;
+    const float forwardMovementEndTimer = status.GetDefaultAttackMotionTimer() * 0.5f;
     if (status.GetAttackMotionTimer() <= forwardMovementEndTimer) {
         StartIdle(enemy);
     }
@@ -610,40 +493,27 @@ void EnemyStateMachine::UpdatePostAttackRetreatDelay(float deltaTime)
     }
 }
 
-void EnemyStateMachine::UpdatePostAttackRetreat(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    float deltaTime)
+void EnemyStateMachine::UpdatePostAttackRetreat(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                                float deltaTime)
 {
     if (!status.GetNearestPlayer()) {
-        mPostRetreatRecoveryRemainingSeconds =
-            mPostRetreatRecoverySeconds;
+        mPostRetreatRecoveryRemainingSeconds = mPostRetreatRecoverySeconds;
         mActionState = ActionState::PostRetreatRecovery;
         return;
     }
 
     movement.FaceNearestPlayerImmediately(enemy, status);
-    const float movedDistance = movement.MoveAwayFromPlayerQuickly(
-        enemy,
-        status,
-        mPostAttackRetreatSpeed,
-        deltaTime);
+    const float movedDistance = movement.MoveAwayFromPlayerQuickly(enemy, status, mPostAttackRetreatSpeed, deltaTime);
     mPostAttackRetreatRemainingDistance -= movedDistance;
 
     constexpr float minimumMovementDistance = 0.0001f;
-    if (mPostAttackRetreatRemainingDistance <= 0.0f ||
-        movedDistance <= minimumMovementDistance) {
-        mPostRetreatRecoveryRemainingSeconds =
-            mPostRetreatRecoverySeconds;
+    if (mPostAttackRetreatRemainingDistance <= 0.0f || movedDistance <= minimumMovementDistance) {
+        mPostRetreatRecoveryRemainingSeconds = mPostRetreatRecoverySeconds;
         mActionState = ActionState::PostRetreatRecovery;
     }
 }
 
-void EnemyStateMachine::UpdatePostRetreatRecovery(
-    Enemy& enemy,
-    EnemyStatus& status,
-    float deltaTime)
+void EnemyStateMachine::UpdatePostRetreatRecovery(Enemy& enemy, EnemyStatus& status, float deltaTime)
 {
     mPostRetreatRecoveryRemainingSeconds -= deltaTime;
     if (mPostRetreatRecoveryRemainingSeconds > 0.0f) {
@@ -651,15 +521,11 @@ void EnemyStateMachine::UpdatePostRetreatRecovery(
     }
 
     const bool shouldStartFollowupApproach =
-        status.GetNearestPlayer() &&
-        ShouldTriggerProbability(
-            mPostRetreatFollowupApproachProbabilityPercent);
+        status.GetNearestPlayer() && ShouldTriggerProbability(mPostRetreatFollowupApproachProbabilityPercent);
     if (!shouldStartFollowupApproach) {
         StartTracking(enemy);
         return;
     }
-
-
 
     // この復帰経路は通常の準備時間を使わず、選択した攻撃の1秒間の範囲予告だけを行う。
     constexpr float attackPreviewDurationSeconds = 1.0f;
@@ -706,27 +572,17 @@ void EnemyStateMachine::StartAttacking(Enemy& enemy, EnemyStatus& status)
     status.ClearHitPlayers();
 }
 
-bool EnemyStateMachine::TryStartPostAttackRetreat(
-    Enemy& enemy,
-    const EnemyStatus& status)
+bool EnemyStateMachine::TryStartPostAttackRetreat(Enemy& enemy, const EnemyStatus& status)
 {
-    if (!status.GetIsBoss() ||
-        !enemy.IsOnGround() ||
-        !status.GetNearestPlayer() ||
-        mActionState != ActionState::Idle ||
-        mPostAttackRetreatDistance <= 0.0f ||
-        !ShouldTriggerProbability(
-            mPostAttackRetreatProbabilityPercent)) {
+    if (!status.GetIsBoss() || !enemy.IsOnGround() || !status.GetNearestPlayer() || mActionState != ActionState::Idle ||
+        mPostAttackRetreatDistance <= 0.0f || !ShouldTriggerProbability(mPostAttackRetreatProbabilityPercent)) {
         return false;
     }
 
-    mPostAttackRetreatRemainingDistance =
-        mPostAttackRetreatDistance;
-    mPostAttackRetreatDelayRemainingSeconds =
-        mPostAttackRetreatDelaySeconds;
-    mActionState = mPostAttackRetreatDelayRemainingSeconds > 0.0f
-        ? ActionState::PostAttackRetreatDelay
-        : ActionState::PostAttackRetreat;
+    mPostAttackRetreatRemainingDistance = mPostAttackRetreatDistance;
+    mPostAttackRetreatDelayRemainingSeconds = mPostAttackRetreatDelaySeconds;
+    mActionState = mPostAttackRetreatDelayRemainingSeconds > 0.0f ? ActionState::PostAttackRetreatDelay
+                                                                  : ActionState::PostAttackRetreat;
     return true;
 }
 
@@ -740,8 +596,7 @@ void EnemyStateMachine::StartLaunched(Enemy& enemy)
     mPostRetreatRecoveryRemainingSeconds = 0.0f;
 }
 
-bool EnemyStateMachine::ShouldTriggerProbability(
-    float probabilityPercent)
+bool EnemyStateMachine::ShouldTriggerProbability(float probabilityPercent)
 {
     if (probabilityPercent <= 0.0f) {
         return false;
@@ -750,9 +605,7 @@ bool EnemyStateMachine::ShouldTriggerProbability(
         return true;
     }
 
-    std::uniform_real_distribution<float> distribution(
-        0.0f,
-        100.0f);
+    std::uniform_real_distribution<float> distribution(0.0f, 100.0f);
     return distribution(mManeuverRandomEngine) < probabilityPercent;
 }
 
@@ -778,8 +631,7 @@ void EnemyStateMachine::StartKnockedBack(Enemy& enemy, EnemyStatus& status, floa
 void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
 {
     mLifeState = LifeState::Dying;
-    enemy.SetShouldDropJewelOnDeath(
-        !enemy.IsBossEncounter());
+    enemy.SetShouldDropJewelOnDeath(!enemy.IsBossEncounter());
     constexpr float normalEnemyDyingDuration = 1.0f;
     constexpr float bossDyingDuration = 3.0f;
     float dyingDuration = normalEnemyDyingDuration;
@@ -793,8 +645,6 @@ void EnemyStateMachine::StartDying(Enemy& enemy, EnemyStatus& status)
         enemy.SetVelocity(glm::vec3(0.0f));
         DefeatRemainingNormalEnemies(enemy);
         StageBossDefeatActors(enemy);
-
-
 
         // ボス撃破演出の共通カメラは、両プレイヤーが地面に立っている前提で構図を作る。
         enemy.GetGame()->ForcePlayersGroundedForCinematic();
@@ -833,9 +683,6 @@ void EnemyStateMachine::FinishDying(Enemy& enemy, const EnemyStatus& status)
     if (!enemy.IsBossEncounter() || !enemy.GetCurrentPlanet()) {
         return;
     }
-
-
-
 }
 
 void EnemyStateMachine::FinishLaunched(Enemy& enemy, EnemyStatus& status)
@@ -855,11 +702,9 @@ bool EnemyStateMachine::IsJustBeforeAttack(const EnemyStatus& status) const
     return status.GetStandByAttackTimer() <= justBeforeAttackTime;
 }
 
-bool EnemyStateMachine::IsAttackImpactActive(
-    const EnemyStatus& status) const
+bool EnemyStateMachine::IsAttackImpactActive(const EnemyStatus& status) const
 {
-    return mActionState == ActionState::Attacking &&
-           status.GetCanCounteredTimer() > 0.0f;
+    return mActionState == ActionState::Attacking && status.GetCanCounteredTimer() > 0.0f;
 }
 
 bool EnemyStateMachine::IsProgressing(const EnemyStatus& status) const

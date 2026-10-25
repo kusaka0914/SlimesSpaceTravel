@@ -4,9 +4,7 @@
 
 PostProcessShader::PostProcessShader()
 {
-    mShaderProgram = CreateShaderProgram(
-        "../shaders/postProcessVertex.glsl",
-        "../shaders/postProcessFragment.glsl");
+    mShaderProgram = CreateShaderProgram("../shaders/postProcess.vert", "../shaders/postProcess.frag");
     mLocPass = glGetUniformLocation(mShaderProgram, "renderPass");
     mLocSceneTexture = glGetUniformLocation(mShaderProgram, "sceneTexture");
     mLocBloomTexture = glGetUniformLocation(mShaderProgram, "bloomTexture");

@@ -1,8 +1,11 @@
-#include "UILoadSystem.h"
+#include "system/UILoadSystem.h"
+
 #include "system/text/JapaneseRubyGenerator.h"
+#include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
 #include <algorithm>
 #include <cmath>
-#include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <set>
 
@@ -40,7 +43,7 @@ bool UILoadSystem::ReloadUIInfo(const std::string& path)
 
 void UILoadSystem::LoadUIInfo(const std::string& path)
 {
-    const YAML::Node root = YAML::LoadFile(path);
+    const YAML::Node root = YamlFile::Load(path);
 
     for (auto screen : root) {
         const std::string screenName = screen.first.as<std::string>();
@@ -69,8 +72,7 @@ void UILoadSystem::LoadTextureInfo(const std::string& screenName, YAML::Node& no
     info.height = node["scale"][1] ? node["scale"][1].as<float>() : 0.0f;
     info.widthRatio = node["scaleRatio"][0] ? node["scaleRatio"][0].as<float>() : 0.0f;
     info.heightRatio = node["scaleRatio"][1] ? node["scaleRatio"][1].as<float>() : 0.0f;
-    info.rotationDegrees =
-        node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
+    info.rotationDegrees = node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
 
     std::string textureId = screenName + "." + node["id"].as<std::string>();
     mTextureInfo[textureId] = info;
@@ -85,16 +87,10 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
     info.yRatio = node["posRatio"][1] ? node["posRatio"][1].as<float>() : 0.0f;
     info.scale = node["scale"][0] ? node["scale"][0].as<float>() : 0.0f;
     info.scaleRatio = node["scaleRatio"][0] ? node["scaleRatio"][0].as<float>() : 0.0f;
-    info.rubyScaleRatio =
-        node["rubyScaleRatio"] ? node["rubyScaleRatio"].as<float>() : info.rubyScaleRatio;
-    info.rubyGapRatio =
-        node["rubyGapRatio"] ? node["rubyGapRatio"].as<float>() : info.rubyGapRatio;
-    info.centerBased =
-        node["centerBased"]
-            ? node["centerBased"].as<bool>()
-            : std::abs(info.xRatio - 0.5f) < 0.0001f;
-    info.rotationDegrees =
-        node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
+    info.rubyScaleRatio = node["rubyScaleRatio"] ? node["rubyScaleRatio"].as<float>() : info.rubyScaleRatio;
+    info.rubyGapRatio = node["rubyGapRatio"] ? node["rubyGapRatio"].as<float>() : info.rubyGapRatio;
+    info.centerBased = node["centerBased"] ? node["centerBased"].as<bool>() : std::abs(info.xRatio - 0.5f) < 0.0001f;
+    info.rotationDegrees = node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
     if (node["text"]) {
         for (auto text : node["text"]) {
             info.texts.emplace_back(text.as<std::string>());
@@ -110,21 +106,16 @@ void UILoadSystem::LoadTextInfo(const std::string& screenName, YAML::Node& node)
     mTextInfo[textId] = info;
 }
 
-bool UILoadSystem::SaveUIInfo(const std::string& path)
+YAML::Node UILoadSystem::BuildUIInfo(const std::string& path) const
 {
-    YAML::Node root;
-
-    try {
-        root = YAML::LoadFile(path);
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load UI yaml: " << path << std::endl;
-        std::cerr << e.what() << std::endl;
-        return false;
+    YAML::Node root = YamlFile::Load(path);
+    if (!root.IsMap()) {
+        throw YAML::RepresentationException(root.Mark(), "UI definition must be a map");
     }
 
-    for (auto screenIt = root.begin(); screenIt != root.end(); ++screenIt) {
-        const std::string screenName = screenIt->first.as<std::string>();
-        YAML::Node elements = screenIt->second;
+    for (auto screenIterator = root.begin(); screenIterator != root.end(); ++screenIterator) {
+        const std::string screenName = screenIterator->first.as<std::string>();
+        YAML::Node elements = screenIterator->second;
 
         for (std::size_t i = 0; i < elements.size(); ++i) {
             YAML::Node node = elements[i];
@@ -138,12 +129,12 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
             const std::string mapId = screenName + "." + id;
 
             if (type == "texture") {
-                auto it = mTextureInfo.find(mapId);
-                if (it == mTextureInfo.end()) {
+                auto infoIterator = mTextureInfo.find(mapId);
+                if (infoIterator == mTextureInfo.end()) {
                     continue;
                 }
 
-                const TextureInfo& info = it->second;
+                const TextureInfo& info = infoIterator->second;
 
                 node["posRatio"][0] = info.xRatio;
                 node["posRatio"][1] = info.yRatio;
@@ -151,12 +142,12 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
                 node["scaleRatio"][1] = info.heightRatio;
                 node["rotationDegrees"] = info.rotationDegrees;
             } else if (type == "text") {
-                auto it = mTextInfo.find(mapId);
-                if (it == mTextInfo.end()) {
+                auto infoIterator = mTextInfo.find(mapId);
+                if (infoIterator == mTextInfo.end()) {
                     continue;
                 }
 
-                const TextInfo& info = it->second;
+                const TextInfo& info = infoIterator->second;
 
                 node["posRatio"][0] = info.xRatio;
                 node["posRatio"][1] = info.yRatio;
@@ -181,36 +172,41 @@ bool UILoadSystem::SaveUIInfo(const std::string& path)
         }
     }
 
-    std::ofstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open UI yaml for writing: " << path << std::endl;
-        return false;
-    }
-
-    file << root;
-    return true;
+    return root;
 }
 
-bool UILoadSystem::UpdateTextInfoContent(
-    const std::string& mapId,
-    std::size_t textIndex,
-    const std::string& text)
+std::string UILoadSystem::SerializeUIInfo(const std::string& path) const
 {
-    const auto textInfoIt = mTextInfo.find(mapId);
-    if (textInfoIt == mTextInfo.end() ||
-        textIndex >= textInfoIt->second.texts.size()) {
+    return YAML::Dump(BuildUIInfo(path));
+}
+
+bool UILoadSystem::SaveUIInfo(const std::string& path)
+{
+    try {
+        std::string error;
+        if (AtomicFile::WriteText(path, SerializeUIInfo(path), error)) {
+            return true;
+        }
+        std::cerr << "Failed to save UI yaml: " << error << '\n';
+    } catch (const YAML::Exception& error) {
+        std::cerr << "Failed to build UI yaml: " << error.what() << '\n';
+    }
+    return false;
+}
+
+bool UILoadSystem::UpdateTextInfoContent(const std::string& mapId, std::size_t textIndex, const std::string& text)
+{
+    const auto textInfoIterator = mTextInfo.find(mapId);
+    if (textInfoIterator == mTextInfo.end() || textIndex >= textInfoIterator->second.texts.size()) {
         return false;
     }
 
-    TextInfo& textInfo = textInfoIt->second;
+    TextInfo& textInfo = textInfoIterator->second;
     textInfo.texts[textIndex] = text;
     textInfo.rubySegments.resize(textInfo.texts.size());
 
     std::string errorMessage;
-    JapaneseRubyGenerator::Generate(
-        text,
-        textInfo.rubySegments[textIndex],
-        errorMessage);
+    JapaneseRubyGenerator::Generate(text, textInfo.rubySegments[textIndex], errorMessage);
     return true;
 }
 
@@ -228,10 +224,8 @@ std::string UILoadSystem::FindTextInfoKey(const TextInfo* textInfo) const
     return std::string();
 }
 
-std::size_t UILoadSystem::AddCustomElement(
-    CustomElementType type,
-    const std::string& screen,
-    const std::string& requestedId)
+std::size_t UILoadSystem::AddCustomElement(CustomElementType type, const std::string& screen,
+                                           const std::string& requestedId)
 {
     CustomElement element;
     element.type = type;
@@ -259,19 +253,13 @@ std::optional<std::size_t> UILoadSystem::DuplicateCustomElement(std::size_t inde
     }
 
     CustomElement duplicatedElement = mCustomElements[index];
-    duplicatedElement.id =
-        MakeUniqueCustomElementId(duplicatedElement.screen, duplicatedElement.id + "_copy");
+    duplicatedElement.id = MakeUniqueCustomElementId(duplicatedElement.screen, duplicatedElement.id + "_copy");
     duplicatedElement.displayName =
-        (duplicatedElement.displayName.empty()
-             ? mCustomElements[index].id
-             : duplicatedElement.displayName) +
-        " コピー";
+        (duplicatedElement.displayName.empty() ? mCustomElements[index].id : duplicatedElement.displayName) + " コピー";
 
-    constexpr float DuplicateOffsetRatio = 0.02f;
-    duplicatedElement.xRatio =
-        std::clamp(duplicatedElement.xRatio + DuplicateOffsetRatio, -0.5f, 1.5f);
-    duplicatedElement.yRatio =
-        std::clamp(duplicatedElement.yRatio + DuplicateOffsetRatio, -0.25f, 1.0f);
+    constexpr float duplicateOffsetRatio = 0.02f;
+    duplicatedElement.xRatio = std::clamp(duplicatedElement.xRatio + duplicateOffsetRatio, -0.5f, 1.5f);
+    duplicatedElement.yRatio = std::clamp(duplicatedElement.yRatio + duplicateOffsetRatio, -0.25f, 1.0f);
 
     mCustomElements.emplace_back(std::move(duplicatedElement));
     return mCustomElements.size() - 1;
@@ -291,167 +279,145 @@ bool UILoadSystem::RemoveCustomElement(std::size_t index)
 
 bool UILoadSystem::LoadCustomUI(const std::string& path)
 {
-    YAML::Node root;
-
-    try {
-        root = YAML::LoadFile(path);
-    } catch (const YAML::BadFile&) {
-        mCustomElements.clear();
-        mCustomScreenDisplayNames.clear();
+    decltype(mCustomElements) loadedElements;
+    decltype(mCustomScreenDisplayNames) loadedScreenNames;
+    const auto commit = [&]() {
+        mCustomElements.swap(loadedElements);
+        mCustomScreenDisplayNames.swap(loadedScreenNames);
+        ClearCustomVisibilityOverrides();
         return true;
-    } catch (const YAML::Exception& e) {
-        std::cerr << "Failed to load custom UI yaml: " << path << std::endl;
-        std::cerr << e.what() << std::endl;
+    };
+    try {
+        const YAML::Node root = YamlFile::Load(path);
+        if (!root.IsMap()) {
+            return false;
+        }
+        const YAML::Node screens = root["screens"];
+        if (screens && screens.IsMap()) {
+            for (const auto& screenEntry : screens) {
+                const std::string screenId = screenEntry.first.as<std::string>();
+                const YAML::Node screenNode = screenEntry.second;
+
+                std::string displayName = screenId;
+                if (screenNode.IsScalar()) {
+                    displayName = screenNode.as<std::string>();
+                } else if (screenNode["name"]) {
+                    displayName = screenNode["name"].as<std::string>();
+                }
+                loadedScreenNames[screenId] = displayName.empty() ? screenId : displayName;
+            }
+        }
+
+        const YAML::Node elements = root["elements"];
+        if (!elements) {
+            return commit();
+        }
+        if (!elements.IsSequence()) {
+            return false;
+        }
+
+        const bool usesScreenWidthBasis =
+            root["coordinateBasis"] && root["coordinateBasis"].as<std::string>() == "screenWidth";
+        constexpr float legacyHeightToWidthRatio = 450.0f / 800.0f;
+
+        for (const YAML::Node& node : elements) {
+            if (!node["id"]) {
+                continue;
+            }
+
+            CustomElement element;
+            element.screen = node["screen"] ? node["screen"].as<std::string>() : "custom";
+            element.id = node["id"].as<std::string>();
+            element.displayName = node["name"] ? node["name"].as<std::string>() : element.id;
+            loadedScreenNames.try_emplace(element.screen, element.screen);
+            element.type =
+                CustomElementTypeFromString(node["type"] ? node["type"].as<std::string>() : std::string("text"));
+            element.visibleByDefault = node["visibleByDefault"] ? node["visibleByDefault"].as<bool>() : false;
+            element.centerBased = node["centerBased"] ? node["centerBased"].as<bool>() : false;
+            element.flipVertical = node["flipVertical"] ? node["flipVertical"].as<bool>() : true;
+            element.zOrder = node["zOrder"] ? node["zOrder"].as<int>() : 0;
+            element.rotationDegrees = node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
+
+            if (node["posRatio"] && node["posRatio"].IsSequence() && node["posRatio"].size() >= 2) {
+                element.xRatio = node["posRatio"][0].as<float>();
+                element.yRatio = node["posRatio"][1].as<float>();
+            }
+
+            if (node["sizeRatio"] && node["sizeRatio"].IsSequence() && node["sizeRatio"].size() >= 2) {
+                element.widthRatio = node["sizeRatio"][0].as<float>();
+                element.heightRatio = node["sizeRatio"][1].as<float>();
+            }
+
+            // 旧定義のY・高さは画面高基準なので、既定の縦横比で画面幅基準へ変換する。
+            if (!usesScreenWidthBasis) {
+                element.yRatio *= legacyHeightToWidthRatio;
+                element.heightRatio *= legacyHeightToWidthRatio;
+            }
+
+            element.textScaleRatio =
+                node["textScaleRatio"] ? node["textScaleRatio"].as<float>() : element.textScaleRatio;
+            element.text = node["text"] ? node["text"].as<std::string>() : element.text;
+            element.texturePath = node["texture"] ? node["texture"].as<std::string>() : "";
+            element.usesInputDeviceVariants =
+                node["usesInputDeviceVariants"] ? node["usesInputDeviceVariants"].as<bool>() : false;
+            element.keyboardText = node["keyboardText"] ? node["keyboardText"].as<std::string>() : "";
+            element.gameControllerText = node["gameControllerText"] ? node["gameControllerText"].as<std::string>() : "";
+            element.keyboardModifierText =
+                node["keyboardModifierText"] ? node["keyboardModifierText"].as<std::string>() : "";
+            element.gameControllerModifierText =
+                node["gameControllerModifierText"] ? node["gameControllerModifierText"].as<std::string>() : "";
+            element.keyboardTexturePath = node["keyboardTexture"] ? node["keyboardTexture"].as<std::string>() : "";
+            element.gameControllerTexturePath =
+                node["gameControllerTexture"] ? node["gameControllerTexture"].as<std::string>() : "";
+            element.keyboardFlipVertical =
+                node["keyboardFlipVertical"] ? node["keyboardFlipVertical"].as<bool>() : element.flipVertical;
+            element.gameControllerFlipVertical = node["gameControllerFlipVertical"]
+                                                     ? node["gameControllerFlipVertical"].as<bool>()
+                                                     : element.flipVertical;
+            element.shadowEnabled = node["shadowEnabled"] ? node["shadowEnabled"].as<bool>() : element.shadowEnabled;
+            element.shadowOffsetXRatio =
+                node["shadowOffsetXRatio"] ? node["shadowOffsetXRatio"].as<float>() : element.shadowOffsetXRatio;
+            element.shadowOffsetYRatio =
+                node["shadowOffsetYRatio"] ? node["shadowOffsetYRatio"].as<float>() : element.shadowOffsetYRatio;
+            element.outlineEnabled =
+                node["outlineEnabled"] ? node["outlineEnabled"].as<bool>() : element.outlineEnabled;
+            element.outlineWidthRatio =
+                node["outlineWidthRatio"] ? node["outlineWidthRatio"].as<float>() : element.outlineWidthRatio;
+
+            if (node["color"] && node["color"].IsSequence() && node["color"].size() >= 4) {
+                for (std::size_t i = 0; i < element.color.size(); ++i) {
+                    element.color[i] = node["color"][i].as<float>();
+                }
+            }
+            if (node["shadowColor"] && node["shadowColor"].IsSequence() && node["shadowColor"].size() >= 4) {
+                for (std::size_t i = 0; i < element.shadowColor.size(); ++i) {
+                    element.shadowColor[i] = node["shadowColor"][i].as<float>();
+                }
+            }
+            if (node["outlineColor"] && node["outlineColor"].IsSequence() && node["outlineColor"].size() >= 4) {
+                for (std::size_t i = 0; i < element.outlineColor.size(); ++i) {
+                    element.outlineColor[i] = node["outlineColor"][i].as<float>();
+                }
+            }
+
+            loadedElements.emplace_back(std::move(element));
+        }
+
+        return commit();
+    } catch (const YAML::BadFile& exception) {
+        std::error_code error;
+        if (!std::filesystem::exists(path, error) && !error) {
+            return commit();
+        }
+        std::cerr << "Failed to open custom UI yaml: " << exception.what() << '\n';
+        return false;
+    } catch (const YAML::Exception& exception) {
+        std::cerr << "Failed to load custom UI yaml: " << exception.what() << '\n';
         return false;
     }
-
-    mCustomElements.clear();
-    mCustomScreenDisplayNames.clear();
-    mCustomElementVisibilityOverrides.clear();
-    mCustomScreenVisibilityOverrides.clear();
-
-    const YAML::Node screens = root["screens"];
-    if (screens && screens.IsMap()) {
-        for (const auto& screenEntry : screens) {
-            const std::string screenId =
-                screenEntry.first.as<std::string>();
-            const YAML::Node screenNode = screenEntry.second;
-
-            std::string displayName = screenId;
-            if (screenNode.IsScalar()) {
-                displayName = screenNode.as<std::string>();
-            } else if (screenNode["name"]) {
-                displayName = screenNode["name"].as<std::string>();
-            }
-            mCustomScreenDisplayNames[screenId] =
-                displayName.empty() ? screenId : displayName;
-        }
-    }
-
-    const YAML::Node elements = root["elements"];
-    if (!elements || !elements.IsSequence()) {
-        return true;
-    }
-
-    const bool usesScreenWidthBasis =
-        root["coordinateBasis"] && root["coordinateBasis"].as<std::string>() == "screenWidth";
-    constexpr float LegacyHeightToWidthRatio = 450.0f / 800.0f;
-
-    for (const YAML::Node& node : elements) {
-        if (!node["id"]) {
-            continue;
-        }
-
-        CustomElement element;
-        element.screen = node["screen"] ? node["screen"].as<std::string>() : "custom";
-        element.id = node["id"].as<std::string>();
-        element.displayName =
-            node["name"] ? node["name"].as<std::string>() : element.id;
-        mCustomScreenDisplayNames.try_emplace(
-            element.screen,
-            element.screen);
-        element.type =
-            CustomElementTypeFromString(node["type"] ? node["type"].as<std::string>() : std::string("text"));
-        element.visibleByDefault = node["visibleByDefault"] ? node["visibleByDefault"].as<bool>() : false;
-        element.centerBased = node["centerBased"] ? node["centerBased"].as<bool>() : false;
-        element.flipVertical = node["flipVertical"] ? node["flipVertical"].as<bool>() : true;
-        element.zOrder = node["zOrder"] ? node["zOrder"].as<int>() : 0;
-        element.rotationDegrees =
-            node["rotationDegrees"] ? node["rotationDegrees"].as<float>() : 0.0f;
-
-        if (node["posRatio"] && node["posRatio"].IsSequence() && node["posRatio"].size() >= 2) {
-            element.xRatio = node["posRatio"][0].as<float>();
-            element.yRatio = node["posRatio"][1].as<float>();
-        }
-
-        if (node["sizeRatio"] && node["sizeRatio"].IsSequence() && node["sizeRatio"].size() >= 2) {
-            element.widthRatio = node["sizeRatio"][0].as<float>();
-            element.heightRatio = node["sizeRatio"][1].as<float>();
-        }
-
-        if (!usesScreenWidthBasis) {
-            element.yRatio *= LegacyHeightToWidthRatio;
-            element.heightRatio *= LegacyHeightToWidthRatio;
-        }
-
-        element.textScaleRatio =
-            node["textScaleRatio"] ? node["textScaleRatio"].as<float>() : element.textScaleRatio;
-        element.text = node["text"] ? node["text"].as<std::string>() : element.text;
-        element.texturePath = node["texture"] ? node["texture"].as<std::string>() : "";
-        element.usesInputDeviceVariants =
-            node["usesInputDeviceVariants"]
-                ? node["usesInputDeviceVariants"].as<bool>()
-                : false;
-        element.keyboardText =
-            node["keyboardText"] ? node["keyboardText"].as<std::string>() : "";
-        element.gameControllerText =
-            node["gameControllerText"]
-                ? node["gameControllerText"].as<std::string>()
-                : "";
-        element.keyboardModifierText =
-            node["keyboardModifierText"]
-                ? node["keyboardModifierText"].as<std::string>()
-                : "";
-        element.gameControllerModifierText =
-            node["gameControllerModifierText"]
-                ? node["gameControllerModifierText"].as<std::string>()
-                : "";
-        element.keyboardTexturePath =
-            node["keyboardTexture"]
-                ? node["keyboardTexture"].as<std::string>()
-                : "";
-        element.gameControllerTexturePath =
-            node["gameControllerTexture"]
-                ? node["gameControllerTexture"].as<std::string>()
-                : "";
-        element.keyboardFlipVertical =
-            node["keyboardFlipVertical"]
-                ? node["keyboardFlipVertical"].as<bool>()
-                : element.flipVertical;
-        element.gameControllerFlipVertical =
-            node["gameControllerFlipVertical"]
-                ? node["gameControllerFlipVertical"].as<bool>()
-                : element.flipVertical;
-        element.shadowEnabled =
-            node["shadowEnabled"] ? node["shadowEnabled"].as<bool>() : element.shadowEnabled;
-        element.shadowOffsetXRatio =
-            node["shadowOffsetXRatio"]
-                ? node["shadowOffsetXRatio"].as<float>()
-                : element.shadowOffsetXRatio;
-        element.shadowOffsetYRatio =
-            node["shadowOffsetYRatio"]
-                ? node["shadowOffsetYRatio"].as<float>()
-                : element.shadowOffsetYRatio;
-        element.outlineEnabled =
-            node["outlineEnabled"] ? node["outlineEnabled"].as<bool>() : element.outlineEnabled;
-        element.outlineWidthRatio =
-            node["outlineWidthRatio"]
-                ? node["outlineWidthRatio"].as<float>()
-                : element.outlineWidthRatio;
-
-        if (node["color"] && node["color"].IsSequence() && node["color"].size() >= 4) {
-            for (std::size_t i = 0; i < element.color.size(); ++i) {
-                element.color[i] = node["color"][i].as<float>();
-            }
-        }
-        if (node["shadowColor"] && node["shadowColor"].IsSequence() && node["shadowColor"].size() >= 4) {
-            for (std::size_t i = 0; i < element.shadowColor.size(); ++i) {
-                element.shadowColor[i] = node["shadowColor"][i].as<float>();
-            }
-        }
-        if (node["outlineColor"] && node["outlineColor"].IsSequence() && node["outlineColor"].size() >= 4) {
-            for (std::size_t i = 0; i < element.outlineColor.size(); ++i) {
-                element.outlineColor[i] = node["outlineColor"][i].as<float>();
-            }
-        }
-
-        mCustomElements.emplace_back(std::move(element));
-    }
-
-    return true;
 }
 
-bool UILoadSystem::SaveCustomUI(const std::string& path) const
+YAML::Node UILoadSystem::BuildCustomUI() const
 {
     YAML::Node root;
     YAML::Node screens(YAML::NodeType::Map);
@@ -462,18 +428,14 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
         usedScreens.insert(element.screen);
     }
     for (const std::string& screen : usedScreens) {
-        screens[screen]["name"] =
-            ResolveCustomScreenDisplayName(screen);
+        screens[screen]["name"] = ResolveCustomScreenDisplayName(screen);
     }
 
     for (const CustomElement& element : mCustomElements) {
         YAML::Node node;
         node["screen"] = element.screen;
         node["id"] = element.id;
-        node["name"] =
-            element.displayName.empty()
-                ? element.id
-                : element.displayName;
+        node["name"] = element.displayName.empty() ? element.id : element.displayName;
         node["type"] = CustomElementTypeToString(element.type);
         node["visibleByDefault"] = element.visibleByDefault;
         node["centerBased"] = element.centerBased;
@@ -495,8 +457,7 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
         node["keyboardTexture"] = element.keyboardTexturePath;
         node["gameControllerTexture"] = element.gameControllerTexturePath;
         node["keyboardFlipVertical"] = element.keyboardFlipVertical;
-        node["gameControllerFlipVertical"] =
-            element.gameControllerFlipVertical;
+        node["gameControllerFlipVertical"] = element.gameControllerFlipVertical;
         node["shadowEnabled"] = element.shadowEnabled;
         node["shadowOffsetXRatio"] = element.shadowOffsetXRatio;
         node["shadowOffsetYRatio"] = element.shadowOffsetYRatio;
@@ -520,44 +481,58 @@ bool UILoadSystem::SaveCustomUI(const std::string& path) const
     root["screens"] = screens;
     root["elements"] = elements;
 
-    std::ofstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open custom UI yaml for writing: " << path << std::endl;
-        return false;
-    }
-
-    file << root;
-    return true;
+    return root;
 }
 
-std::string UILoadSystem::ResolveCustomScreenDisplayName(
-    const std::string& screen) const
+bool UILoadSystem::SaveCustomUI(const std::string& path) const
+{
+    try {
+        std::string error;
+        if (AtomicFile::WriteText(path, YAML::Dump(BuildCustomUI()), error)) {
+            return true;
+        }
+        std::cerr << "Failed to save custom UI yaml: " << error << '\n';
+    } catch (const YAML::Exception& error) {
+        std::cerr << "Failed to build custom UI yaml: " << error.what() << '\n';
+    }
+    return false;
+}
+
+bool UILoadSystem::SaveEditorUI(std::string& outError, const std::string& uiPath, const std::string& customPath) const
+{
+    outError.clear();
+    try {
+        // 両方のシリアライズを先に完了し、片方の定義不正で保存が部分的に進むのを防ぐ。
+        const std::string uiText = SerializeUIInfo(uiPath);
+        const std::string customText = YAML::Dump(BuildCustomUI());
+        const std::array files = {AtomicFile::TextWrite{uiPath, uiText}, AtomicFile::TextWrite{customPath, customText}};
+        return AtomicFile::WriteTextFiles(files, outError) == AtomicFile::WriteResult::Written;
+    } catch (const YAML::Exception& error) {
+        outError = std::string("Failed to build UI definitions: ") + error.what();
+        return false;
+    }
+}
+
+std::string UILoadSystem::ResolveCustomScreenDisplayName(const std::string& screen) const
 {
     const auto found = mCustomScreenDisplayNames.find(screen);
-    if (found == mCustomScreenDisplayNames.end() ||
-        found->second.empty()) {
+    if (found == mCustomScreenDisplayNames.end() || found->second.empty()) {
         return screen;
     }
 
     return found->second;
 }
 
-void UILoadSystem::SetCustomScreenDisplayName(
-    const std::string& screen,
-    const std::string& displayName)
+void UILoadSystem::SetCustomScreenDisplayName(const std::string& screen, const std::string& displayName)
 {
     if (screen.empty()) {
         return;
     }
 
-    mCustomScreenDisplayNames[screen] =
-        displayName.empty() ? screen : displayName;
+    mCustomScreenDisplayNames[screen] = displayName.empty() ? screen : displayName;
 }
 
-void UILoadSystem::SetCustomElementVisible(
-    const std::string& screen,
-    const std::string& id,
-    bool visible)
+void UILoadSystem::SetCustomElementVisible(const std::string& screen, const std::string& id, bool visible)
 {
     mCustomElementVisibilityOverrides[MakeCustomElementKey(screen, id)] = visible;
 }
@@ -575,15 +550,15 @@ void UILoadSystem::ClearCustomVisibilityOverrides()
 
 bool UILoadSystem::IsCustomElementVisible(const CustomElement& element) const
 {
-    const auto elementIt =
+    const auto elementIterator =
         mCustomElementVisibilityOverrides.find(MakeCustomElementKey(element.screen, element.id));
-    if (elementIt != mCustomElementVisibilityOverrides.end()) {
-        return elementIt->second;
+    if (elementIterator != mCustomElementVisibilityOverrides.end()) {
+        return elementIterator->second;
     }
 
-    const auto screenIt = mCustomScreenVisibilityOverrides.find(element.screen);
-    if (screenIt != mCustomScreenVisibilityOverrides.end()) {
-        return screenIt->second;
+    const auto screenIterator = mCustomScreenVisibilityOverrides.find(element.screen);
+    if (screenIterator != mCustomScreenVisibilityOverrides.end()) {
+        return screenIterator->second;
     }
 
     return element.visibleByDefault;
@@ -613,18 +588,15 @@ UILoadSystem::CustomElementType UILoadSystem::CustomElementTypeFromString(const 
     return CustomElementType::Text;
 }
 
-std::string UILoadSystem::MakeUniqueCustomElementId(
-    const std::string& screen,
-    const std::string& requestedId) const
+std::string UILoadSystem::MakeUniqueCustomElementId(const std::string& screen, const std::string& requestedId) const
 {
     const std::string baseId = requestedId.empty() ? "element" : requestedId;
     std::string candidate = baseId;
     int suffix = 2;
 
     const auto exists = [this, &screen](const std::string& id) {
-        return std::any_of(mCustomElements.begin(), mCustomElements.end(), [&](const CustomElement& element) {
-            return element.screen == screen && element.id == id;
-        });
+        return std::any_of(mCustomElements.begin(), mCustomElements.end(),
+                           [&](const CustomElement& element) { return element.screen == screen && element.id == id; });
     };
 
     while (exists(candidate)) {

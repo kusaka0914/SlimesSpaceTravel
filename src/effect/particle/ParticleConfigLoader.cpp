@@ -1,39 +1,20 @@
 #include "effect/particle/ParticleConfigLoader.h"
 
-#include <yaml-cpp/yaml.h>
+#include "utils/StringUtils.h"
+
+#include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
+#include "utils/YamlRead.h"
 
 #include <algorithm>
-#include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 namespace {
-std::string ToLower(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
-        return static_cast<char>(std::tolower(character));
-    });
-    return value;
-}
-
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
-}
-
-int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
-{
-    return node[key] ? node[key].as<int>() : defaultValue;
-}
-
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
-}
 
 ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& defaultValue)
 {
@@ -41,6 +22,7 @@ ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& d
         return defaultValue;
     }
 
+    // 固定値とmin/maxの範囲指定を同じ設定項目で扱う。
     if (node.IsScalar()) {
         const float value = node.as<float>();
         return {value, value};
@@ -54,6 +36,7 @@ ParticleFloatRange ReadRange(const YAML::Node& node, const ParticleFloatRange& d
         result.max = node["max"].as<float>();
     }
 
+    // 上下限を逆に記述した設定も、範囲として読み込む。
     if (result.min > result.max) {
         std::swap(result.min, result.max);
     }
@@ -88,22 +71,22 @@ glm::vec4 ReadVec4(const YAML::Node& node, const glm::vec4& defaultValue)
     };
 }
 
+// 列挙値の表記は大文字・小文字を区別せず、未知の値には各モードの既定値を使う。
 ParticleBlendMode ParseBlendMode(const std::string& value)
 {
-    return ToLower(value) == "alpha" ? ParticleBlendMode::Alpha : ParticleBlendMode::Additive;
+    return StringUtils::ToLower(value) == "alpha" ? ParticleBlendMode::Alpha : ParticleBlendMode::Additive;
 }
 
 ParticleRenderMode ParseRenderMode(const std::string& value)
 {
-    const std::string lowerValue = ToLower(value);
-    return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned"
-               ? ParticleRenderMode::VelocityAligned
-               : ParticleRenderMode::Billboard;
+    const std::string lowerValue = StringUtils::ToLower(value);
+    return lowerValue == "velocityaligned" || lowerValue == "velocity_aligned" ? ParticleRenderMode::VelocityAligned
+                                                                               : ParticleRenderMode::Billboard;
 }
 
 ParticleDirectionMode ParseDirectionMode(const std::string& value)
 {
-    const std::string lowerValue = ToLower(value);
+    const std::string lowerValue = StringUtils::ToLower(value);
     if (lowerValue == "fixed") {
         return ParticleDirectionMode::Fixed;
     }
@@ -145,12 +128,13 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
 {
     ParticleEmitterDefinition definition;
 
-    definition.texturePath = ReadString(emitterNode, "texture", definition.texturePath);
-    definition.blendMode = ParseBlendMode(ReadString(emitterNode, "blendMode", "additive"));
-    definition.renderMode = ParseRenderMode(ReadString(emitterNode, "renderMode", "billboard"));
-    definition.directionMode = ParseDirectionMode(ReadString(emitterNode, "directionMode", "sphere"));
+    definition.texturePath = YamlRead::ReadOr<std::string>(emitterNode, "texture", definition.texturePath);
+    definition.blendMode = ParseBlendMode(YamlRead::ReadOr<std::string>(emitterNode, "blendMode", "additive"));
+    definition.renderMode = ParseRenderMode(YamlRead::ReadOr<std::string>(emitterNode, "renderMode", "billboard"));
+    definition.directionMode =
+        ParseDirectionMode(YamlRead::ReadOr<std::string>(emitterNode, "directionMode", "sphere"));
 
-    definition.count = std::max(0, ReadInt(emitterNode, "count", definition.count));
+    definition.count = std::max(0, YamlRead::ReadOr<int>(emitterNode, "count", definition.count));
     definition.lifetime = ReadRange(emitterNode["lifetime"], definition.lifetime);
     definition.speed = ReadRange(emitterNode["speed"], definition.speed);
     definition.rotationDegrees = ReadRange(emitterNode["rotationDegrees"], definition.rotationDegrees);
@@ -160,14 +144,15 @@ ParticleEmitterDefinition ReadEmitterDefinition(const YAML::Node& emitterNode)
     const YAML::Node sizeNode = emitterNode["size"];
     if (sizeNode) {
         definition.startSize = ReadRange(sizeNode["start"], definition.startSize);
-        definition.endSizeMultiplier = ReadFloat(sizeNode, "endMultiplier", definition.endSizeMultiplier);
+        definition.endSizeMultiplier = YamlRead::ReadOr<float>(sizeNode, "endMultiplier", definition.endSizeMultiplier);
     }
 
-    definition.spreadAngleDegrees = ReadFloat(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
-    definition.gravity = ReadFloat(emitterNode, "gravity", definition.gravity);
-    definition.drag = std::max(0.0f, ReadFloat(emitterNode, "drag", definition.drag));
+    definition.spreadAngleDegrees =
+        YamlRead::ReadOr<float>(emitterNode, "spreadAngleDegrees", definition.spreadAngleDegrees);
+    definition.gravity = YamlRead::ReadOr<float>(emitterNode, "gravity", definition.gravity);
+    definition.drag = std::max(0.0f, YamlRead::ReadOr<float>(emitterNode, "drag", definition.drag));
     definition.velocityStretch =
-        std::max(0.0f, ReadFloat(emitterNode, "velocityStretch", definition.velocityStretch));
+        std::max(0.0f, YamlRead::ReadOr<float>(emitterNode, "velocityStretch", definition.velocityStretch));
 
     definition.positionOffset = ReadVec3(emitterNode["positionOffset"], definition.positionOffset);
     definition.startColor = ReadVec4(emitterNode["colorStart"], definition.startColor);
@@ -238,14 +223,13 @@ void EmitEmitterDefinition(YAML::Emitter& emitter, const ParticleEmitterDefiniti
 
     emitter << YAML::EndMap;
 }
-}
+} // namespace
 
-bool ParticleConfigLoader::Load(
-    const std::string& filePath,
-    std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions)
+bool ParticleConfigLoader::Load(const std::string& filePath,
+                                std::unordered_map<std::string, ParticleEffectDefinition>& outDefinitions)
 {
     try {
-        const YAML::Node root = YAML::LoadFile(filePath);
+        const YAML::Node root = YamlFile::Load(filePath);
         const YAML::Node effectsNode = root["particleEffects"];
 
         if (!effectsNode || !effectsNode.IsMap()) {
@@ -260,16 +244,19 @@ bool ParticleConfigLoader::Load(
             const YAML::Node effectNode = effectEntry.second;
             const YAML::Node emittersNode = effectNode["emitters"];
 
+            // エミッター列がない定義だけを除外し、残りのエフェクトは読み込みを続ける。
             if (!emittersNode || !emittersNode.IsSequence()) {
                 std::cerr << "Particle effect '" << effectId << "' has no emitter sequence.\n";
                 continue;
             }
 
             ParticleEffectDefinition effectDefinition;
-            effectDefinition.displayName =
-                ReadString(effectNode, "name", effectId);
+            effectDefinition.displayName = YamlRead::ReadOr<std::string>(effectNode, "name", effectId);
+
             for (const YAML::Node& emitterNode : emittersNode) {
                 ParticleEmitterDefinition emitterDefinition = ReadEmitterDefinition(emitterNode);
+
+                // 描画用テクスチャが未指定、または粒子を生成しないエミッターは登録しない。
                 if (emitterDefinition.texturePath.empty() || emitterDefinition.count <= 0) {
                     continue;
                 }
@@ -281,6 +268,7 @@ bool ParticleConfigLoader::Load(
             }
         }
 
+        // 変換途中の例外で呼び出し元の定義を失わないよう、全件の読み込み後に置き換える。
         outDefinitions = std::move(loadedDefinitions);
         return true;
     } catch (const YAML::Exception& exception) {
@@ -289,9 +277,8 @@ bool ParticleConfigLoader::Load(
     }
 }
 
-bool ParticleConfigLoader::Save(
-    const std::string& filePath,
-    const std::unordered_map<std::string, ParticleEffectDefinition>& definitions)
+bool ParticleConfigLoader::Save(const std::string& filePath,
+                                const std::unordered_map<std::string, ParticleEffectDefinition>& definitions)
 {
     try {
         const std::filesystem::path outputPath(filePath);
@@ -307,6 +294,7 @@ bool ParticleConfigLoader::Save(
             effectIds.push_back(effectId);
         }
 
+        // unordered_mapの走査順に依存しない出力にし、保存ごとの差分を抑える。
         std::sort(effectIds.begin(), effectIds.end());
 
         YAML::Emitter emitter;
@@ -318,9 +306,7 @@ bool ParticleConfigLoader::Save(
 
             emitter << YAML::Key << effectId << YAML::Value << YAML::BeginMap;
             emitter << YAML::Key << "name" << YAML::Value
-                    << (effectDefinition.displayName.empty()
-                            ? effectId
-                            : effectDefinition.displayName);
+                    << (effectDefinition.displayName.empty() ? effectId : effectDefinition.displayName);
             emitter << YAML::Key << "emitters" << YAML::Value << YAML::BeginSeq;
 
             for (const ParticleEmitterDefinition& emitterDefinition : effectDefinition.emitters) {
@@ -339,14 +325,12 @@ bool ParticleConfigLoader::Save(
             return false;
         }
 
-        std::ofstream output(filePath);
-        if (!output) {
-            std::cerr << "Failed to open particle config for writing: " << filePath << '\n';
+        std::string error;
+        if (!AtomicFile::WriteText(outputPath, std::string(emitter.c_str()) + '\n', error)) {
+            std::cerr << "Failed to save particle config '" << filePath << "': " << error << '\n';
             return false;
         }
-
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save particle config '" << filePath << "': " << exception.what() << '\n';
         return false;

@@ -1,14 +1,14 @@
 #include "system/physics/StageCollisionBuilder.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/FallRespawnPoint.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/StageObject.h"
 #include "system/MeshLoadSystem.h"
-#include "utils/MathUtils.h"
+#include "actor/MathUtils.h"
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -66,18 +66,13 @@ void StageCollisionBuilder::CreateStaticMeshBody(
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
     const CollisionMeshGeometry* collisionGeometry =
-        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
-            actorModelPath);
-    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
-        collisionGeometry->indices.size() < 3) {
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 || collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(
-        actorScale,
-        collisionGeometry->positions,
-        collisionGeometry->indices);
+    auto triangleMesh = CreateTriangleMesh(actorScale, collisionGeometry->positions, collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;
@@ -115,18 +110,13 @@ void StageCollisionBuilder::CreateKinematicMeshBody(
 
     const std::string actorModelPath = "../assets/models/" + actor->GetModelPath();
     const CollisionMeshGeometry* collisionGeometry =
-        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(
-            actorModelPath);
-    if (!collisionGeometry || collisionGeometry->positions.size() < 9 ||
-        collisionGeometry->indices.size() < 3) {
+        mGame->GetMeshLoadSystem()->ResolveCollisionMeshGeometry(actorModelPath);
+    if (!collisionGeometry || collisionGeometry->positions.size() < 9 || collisionGeometry->indices.size() < 3) {
         return;
     }
 
     const glm::vec3& actorScale = actor->GetScale();
-    auto triangleMesh = CreateTriangleMesh(
-        actorScale,
-        collisionGeometry->positions,
-        collisionGeometry->indices);
+    auto triangleMesh = CreateTriangleMesh(actorScale, collisionGeometry->positions, collisionGeometry->indices);
 
     if (!triangleMesh) {
         return;
@@ -153,8 +143,8 @@ void StageCollisionBuilder::CreateKinematicMeshBody(
                         static_cast<short>(-1));
 }
 
-void StageCollisionBuilder::SyncKinematicBodies(
-    btDiscreteDynamicsWorld* world, const std::vector<std::unique_ptr<btRigidBody>>& rigidBodies) const
+void StageCollisionBuilder::SyncKinematicBodies(btDiscreteDynamicsWorld* world,
+                                                const std::vector<std::unique_ptr<btRigidBody>>& rigidBodies) const
 {
     if (!world) {
         return;
@@ -172,19 +162,13 @@ void StageCollisionBuilder::SyncKinematicBodies(
         }
 
         Platform* platform = dynamic_cast<Platform*>(actor);
-        StageObject* stageObject =
-            dynamic_cast<StageObject*>(actor);
+        StageObject* stageObject = dynamic_cast<StageObject*>(actor);
         if (!platform && !stageObject) {
             continue;
         }
 
-        const bool collisionEnabled =
-            platform
-                ? platform->GetCollisionEnabled()
-                : stageObject->GetCollisionEnabled();
-        const bool shouldBeInWorld =
-            actor->GetIsActive() &&
-            collisionEnabled;
+        const bool collisionEnabled = platform ? platform->GetCollisionEnabled() : stageObject->GetCollisionEnabled();
+        const bool shouldBeInWorld = actor->GetIsActive() && collisionEnabled;
         const bool isInWorld = rigidBody->isInWorld();
 
         if (!shouldBeInWorld) {
@@ -195,14 +179,11 @@ void StageCollisionBuilder::SyncKinematicBodies(
         }
 
         if (!isInWorld) {
-            world->addRigidBody(
-                rigidBody.get(),
-                static_cast<short>(btBroadphaseProxy::DefaultFilter),
-                static_cast<short>(-1));
+            world->addRigidBody(rigidBody.get(), static_cast<short>(btBroadphaseProxy::DefaultFilter),
+                                static_cast<short>(-1));
         }
 
-        if (!platform ||
-            !platform->UsesKinematicPhysics()) {
+        if (!platform || !platform->UsesKinematicPhysics()) {
             continue;
         }
 
@@ -227,8 +208,7 @@ btTransform StageCollisionBuilder::CreateActorTransform(Game* game, Actor* actor
     const glm::vec3& actorPos = actor->GetPos();
     actorTransform.setOrigin(btVector3(actorPos.x, actorPos.y, actorPos.z));
 
-    if (dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor) ||
-        dynamic_cast<FallRespawnPoint*>(actor)) {
+    if (dynamic_cast<Platform*>(actor) || dynamic_cast<StageObject*>(actor) || dynamic_cast<FallRespawnPoint*>(actor)) {
         if (!game || !game->GetMathUtils()) {
             return actorTransform;
         }
@@ -246,26 +226,30 @@ btTransform StageCollisionBuilder::CreateActorTransform(Game* game, Actor* actor
     return actorTransform;
 }
 
-std::unique_ptr<btTriangleMesh> StageCollisionBuilder::CreateTriangleMesh(const glm::vec3& actorScale,
-                                                                          const std::vector<float>& pos,
-                                                                          const std::vector<unsigned int>& idx) const
+std::unique_ptr<btTriangleMesh>
+StageCollisionBuilder::CreateTriangleMesh(const glm::vec3& actorScale, const std::vector<float>& positions,
+                                          const std::vector<unsigned int>& indices) const
 {
     auto triangleMesh = std::make_unique<btTriangleMesh>();
-    for (size_t i = 0; i + 2 < idx.size(); i += 3) {
-        const unsigned int idx0 = idx[i];
-        const unsigned int idx1 = idx[i + 1];
-        const unsigned int idx2 = idx[i + 2];
+    for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+        const unsigned int firstVertexIndex = indices[i];
+        const unsigned int secondVertexIndex = indices[i + 1];
+        const unsigned int thirdVertexIndex = indices[i + 2];
 
-        if (idx0 * 3 + 2 >= pos.size() || idx1 * 3 + 2 >= pos.size() || idx2 * 3 + 2 >= pos.size()) {
+        if (firstVertexIndex * 3 + 2 >= positions.size() || secondVertexIndex * 3 + 2 >= positions.size() ||
+            thirdVertexIndex * 3 + 2 >= positions.size()) {
             return nullptr;
         }
 
-        const btVector3 v0(actorScale.x * pos[idx0 * 3], actorScale.y * pos[idx0 * 3 + 1],
-                           actorScale.z * pos[idx0 * 3 + 2]);
-        const btVector3 v1(actorScale.x * pos[idx1 * 3], actorScale.y * pos[idx1 * 3 + 1],
-                           actorScale.z * pos[idx1 * 3 + 2]);
-        const btVector3 v2(actorScale.x * pos[idx2 * 3], actorScale.y * pos[idx2 * 3 + 1],
-                           actorScale.z * pos[idx2 * 3 + 2]);
+        const btVector3 v0(actorScale.x * positions[firstVertexIndex * 3],
+                           actorScale.y * positions[firstVertexIndex * 3 + 1],
+                           actorScale.z * positions[firstVertexIndex * 3 + 2]);
+        const btVector3 v1(actorScale.x * positions[secondVertexIndex * 3],
+                           actorScale.y * positions[secondVertexIndex * 3 + 1],
+                           actorScale.z * positions[secondVertexIndex * 3 + 2]);
+        const btVector3 v2(actorScale.x * positions[thirdVertexIndex * 3],
+                           actorScale.y * positions[thirdVertexIndex * 3 + 1],
+                           actorScale.z * positions[thirdVertexIndex * 3 + 2]);
 
         triangleMesh->addTriangle(v0, v1, v2);
     }

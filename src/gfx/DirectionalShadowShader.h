@@ -2,6 +2,7 @@
 
 #include "gfx/Shader.h"
 
+// 深度描画用GLSLプログラムを生成し、通常・スキニング・インスタンス描画のuniform位置を保持する。
 class DirectionalShadowShader final : public Shader {
 public:
     DirectionalShadowShader();

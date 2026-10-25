@@ -11,6 +11,7 @@
 #include <utility>
 
 namespace {
+
 constexpr float directionEpsilonSquared = 0.000001f;
 
 float DegreesToRadians(float degrees)
@@ -28,30 +29,11 @@ glm::vec3 SafeNormalize(const glm::vec3& value, const glm::vec3& fallback)
 
 glm::vec3 CreatePerpendicular(const glm::vec3& axis)
 {
-    const glm::vec3 reference = std::abs(axis.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f)
-                                                         : glm::vec3(1.0f, 0.0f, 0.0f);
+    const glm::vec3 reference = std::abs(axis.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
     return SafeNormalize(glm::cross(axis, reference), glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
-ParticleEmitterDefinition CreateDefaultEmitter()
-{
-    ParticleEmitterDefinition emitter;
-    emitter.texturePath = "spark_dot.png";
-    emitter.blendMode = ParticleBlendMode::Additive;
-    emitter.renderMode = ParticleRenderMode::Billboard;
-    emitter.directionMode = ParticleDirectionMode::Sphere;
-    emitter.count = 8;
-    emitter.lifetime = {0.25f, 0.50f};
-    emitter.speed = {0.5f, 2.0f};
-    emitter.startSize = {0.15f, 0.30f};
-    emitter.endSizeMultiplier = 0.1f;
-    emitter.rotationDegrees = {0.0f, 360.0f};
-    emitter.angularVelocityDegrees = {-90.0f, 90.0f};
-    emitter.startColor = glm::vec4(1.0f);
-    emitter.endColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
-    return emitter;
-}
-}
+} // namespace
 
 ParticleSystem::ParticleSystem(std::size_t maxParticleCount)
     : mRandomEngine(std::random_device{}()),
@@ -105,9 +87,7 @@ bool ParticleSystem::Emit(const std::string& effectId, const ParticleSpawnContex
     return true;
 }
 
-void ParticleSystem::EmitEmitter(
-    const ParticleEmitterDefinition& definition,
-    const ParticleSpawnContext& context)
+void ParticleSystem::EmitEmitter(const ParticleEmitterDefinition& definition, const ParticleSpawnContext& context)
 {
     EmitFromDefinition(definition, context);
 }
@@ -116,13 +96,11 @@ bool ParticleSystem::CreateEffect(const std::string& effectId)
 {
     ParticleEffectDefinition definition;
     definition.displayName = effectId;
-    definition.emitters.push_back(CreateDefaultEmitter());
+    definition.emitters.push_back(CreateDefaultParticleEmitter());
     return CreateEffect(effectId, definition);
 }
 
-bool ParticleSystem::CreateEffect(
-    const std::string& effectId,
-    const ParticleEffectDefinition& definition)
+bool ParticleSystem::CreateEffect(const std::string& effectId, const ParticleEffectDefinition& definition)
 {
     if (effectId.empty() || mDefinitions.find(effectId) != mDefinitions.end()) {
         return false;
@@ -189,11 +167,9 @@ void ParticleSystem::Update(float deltaTime)
         particle.rotationRadians += particle.angularVelocityRadians * deltaTime;
     }
 
-    mParticles.erase(
-        std::remove_if(mParticles.begin(), mParticles.end(), [](const Particle& particle) {
-            return particle.age >= particle.lifetime;
-        }),
-        mParticles.end());
+    mParticles.erase(std::remove_if(mParticles.begin(), mParticles.end(),
+                                    [](const Particle& particle) { return particle.age >= particle.lifetime; }),
+                     mParticles.end());
 }
 
 void ParticleSystem::Clear()
@@ -201,9 +177,8 @@ void ParticleSystem::Clear()
     mParticles.clear();
 }
 
-void ParticleSystem::EmitFromDefinition(
-    const ParticleEmitterDefinition& definition,
-    const ParticleSpawnContext& context)
+void ParticleSystem::EmitFromDefinition(const ParticleEmitterDefinition& definition,
+                                        const ParticleSpawnContext& context)
 {
     if (mParticles.size() >= mMaxParticleCount) {
         return;
@@ -249,9 +224,8 @@ float ParticleSystem::RandomFloat(const ParticleFloatRange& range)
     return distribution(mRandomEngine);
 }
 
-glm::vec3 ParticleSystem::CreateSpawnDirection(
-    const ParticleEmitterDefinition& definition,
-    const ParticleSpawnContext& context)
+glm::vec3 ParticleSystem::CreateSpawnDirection(const ParticleEmitterDefinition& definition,
+                                               const ParticleSpawnContext& context)
 {
     const glm::vec3 normal = SafeNormalize(context.normal, glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 direction = SafeNormalize(context.direction, normal);
@@ -273,6 +247,7 @@ glm::vec3 ParticleSystem::RandomUnitVector()
 {
     std::uniform_real_distribution<float> unitDistribution(0.0f, 1.0f);
 
+    // 極方向への偏りを避けるため、高さと方位角をそれぞれ一様に選ぶ。
     const float z = unitDistribution(mRandomEngine) * 2.0f - 1.0f;
     const float angle = unitDistribution(mRandomEngine) * glm::two_pi<float>();
     const float radius = std::sqrt(std::max(0.0f, 1.0f - z * z));
@@ -299,6 +274,8 @@ glm::vec3 ParticleSystem::RandomConeDirection(const glm::vec3& axis, float sprea
     const float clampedSpread = glm::clamp(spreadAngleRadians, 0.0f, glm::pi<float>());
 
     std::uniform_real_distribution<float> unitDistribution(0.0f, 1.0f);
+
+    // 円錐内の立体角で一様になるよう、角度ではなくcos(theta)を一様に選ぶ。
     const float minimumCosine = std::cos(clampedSpread);
     const float cosineTheta = minimumCosine + (1.0f - minimumCosine) * unitDistribution(mRandomEngine);
     const float sineTheta = std::sqrt(std::max(0.0f, 1.0f - cosineTheta * cosineTheta));
@@ -307,8 +284,7 @@ glm::vec3 ParticleSystem::RandomConeDirection(const glm::vec3& axis, float sprea
     const glm::vec3 tangent = CreatePerpendicular(normalizedAxis);
     const glm::vec3 bitangent = glm::normalize(glm::cross(normalizedAxis, tangent));
 
-    return SafeNormalize(
-        normalizedAxis * cosineTheta + tangent * (std::cos(azimuth) * sineTheta) +
-            bitangent * (std::sin(azimuth) * sineTheta),
-        normalizedAxis);
+    return SafeNormalize(normalizedAxis * cosineTheta + tangent * (std::cos(azimuth) * sineTheta) +
+                             bitangent * (std::sin(azimuth) * sineTheta),
+                         normalizedAxis);
 }

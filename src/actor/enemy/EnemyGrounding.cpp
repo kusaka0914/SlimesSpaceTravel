@@ -33,27 +33,17 @@ glm::vec3 EnemyGrounding::ClampMoveToGround(const Enemy& enemy, const glm::vec3&
     float lastSafeRatio = 0.0f;
 
     for (int i = 1; i <= checkCount; ++i) {
-        const float checkRatio =
-            static_cast<float>(i) /
-            static_cast<float>(checkCount);
-        const glm::vec3 checkPos =
-            glm::mix(currentPos, desiredPos, checkRatio);
+        const float checkRatio = static_cast<float>(i) / static_cast<float>(checkCount);
+        const glm::vec3 checkPos = glm::mix(currentPos, desiredPos, checkRatio);
 
         if (!HasGroundBelow(enemy, checkPos)) {
-
-
-
-
+            // 足場が途切れた区間を二分探索し、粗い探索間隔の分だけ端から離れて止まるのを避ける。
             float safeRatio = lastSafeRatio;
             float unsupportedRatio = checkRatio;
             constexpr int edgeSearchIterations = 10;
-            for (int iteration = 0;
-                 iteration < edgeSearchIterations;
-                 ++iteration) {
-                const float middleRatio =
-                    (safeRatio + unsupportedRatio) * 0.5f;
-                const glm::vec3 middlePos =
-                    glm::mix(currentPos, desiredPos, middleRatio);
+            for (int iteration = 0; iteration < edgeSearchIterations; ++iteration) {
+                const float middleRatio = (safeRatio + unsupportedRatio) * 0.5f;
+                const glm::vec3 middlePos = glm::mix(currentPos, desiredPos, middleRatio);
 
                 if (HasGroundBelow(enemy, middlePos)) {
                     safeRatio = middleRatio;
@@ -80,9 +70,7 @@ bool EnemyGrounding::HasGroundBelow(const Enemy& enemy, const glm::vec3& checkPo
 
     glm::vec3 groundSearchUp = enemy.GetUpVec();
     const Planet* currentPlanet = enemy.GetCurrentPlanet();
-    if (currentPlanet &&
-        currentPlanet->GetPlanetShape() ==
-            Planet::PlanetShape::Sphere) {
+    if (currentPlanet && currentPlanet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
         groundSearchUp = checkPos - currentPlanet->GetPos();
     }
 

@@ -51,14 +51,12 @@ void EnemyFanAttackAction::Enter(EnemyBehaviorContext& context)
     }
 }
 
-EnemyBehaviorActionResult EnemyFanAttackAction::Update(
-    EnemyBehaviorContext& context, float deltaTime)
+EnemyBehaviorActionResult EnemyFanAttackAction::Update(EnemyBehaviorContext& context, float deltaTime)
 {
     const EnemyStateMachine::ActionState state = context.stateMachine.GetActionState();
 
     if (state == EnemyStateMachine::ActionState::PreparingAttack) {
-        context.stateMachine.UpdatePreparingAttack(
-            context.enemy, context.status, context.movement, deltaTime);
+        context.stateMachine.UpdatePreparingAttack(context.enemy, context.status, context.movement, deltaTime);
 
         if (context.stateMachine.GetActionState() == EnemyStateMachine::ActionState::Attacking) {
             context.status.SetAttackMotionTimer(mAttackDuration);
@@ -77,17 +75,12 @@ EnemyBehaviorActionResult EnemyFanAttackAction::Update(
     }
 
     if (!mHasAppliedDamage) {
-        context.combat.TryApplyFanAttack(
-            context.enemy,
-            context.status,
-            context.stateMachine,
-            mRange,
-            mAngleRadians,
-            deltaTime);
+        context.combat.TryApplyFanAttack(context.enemy, context.status, context.stateMachine, mRange, mAngleRadians,
+                                         deltaTime);
         mHasAppliedDamage = true;
 
-        if (context.stateMachine.GetActionState() !=
-            EnemyStateMachine::ActionState::Attacking) {
+        // ジャスト回避でガードが破壊されるとLaunchedへ移るため、被弾処理後に状態を確認する。
+        if (context.stateMachine.GetActionState() != EnemyStateMachine::ActionState::Attacking) {
             return EnemyBehaviorActionResult::Finished;
         }
     }

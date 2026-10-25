@@ -2,6 +2,7 @@
 
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 
+// Tracking状態の追跡をEnemyStateMachineへ委譲する。追跡以外の状態へ移ると終了する。
 class EnemyChaseAction final : public EnemyBehaviorAction {
 public:
     explicit EnemyChaseAction(const EnemyBehaviorActionConfig& config)

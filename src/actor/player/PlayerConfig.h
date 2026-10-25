@@ -4,6 +4,7 @@
 
 #include <string>
 
+// プレイヤー設定の既定値。時間は秒、距離はワールド単位、攻撃範囲の角度はラジアン。
 struct PlayerConfig {
     float hp = 100.0f;
     float scale = 0.25f;

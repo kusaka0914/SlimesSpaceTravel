@@ -4,34 +4,27 @@
 
 #include <string>
 
+// モデルの範囲への進入を検出してチュートリアルを開始する、通常プレイでは不可視のNPC。
+// NPCの会話データを利用するが、通常NPCの向き合わせ・会話カメラ・接地更新は行わない。
 class TutorialTrigger final : public NPC {
 public:
     explicit TutorialTrigger(Game* game);
 
+    // 起動成功後は再起動しない。分裂が必要な場合、範囲内で分裂した直後は退出・再進入を要求する。
     void UpdateActor(float deltaTime) override;
 
     float GetRenderOpacity() const override;
     bool ShouldUseTalkCamera() const override { return false; }
     bool ShouldFacePlayerDuringTalk() const override { return false; }
 
-    void SetTutorialId(const std::string& tutorialId)
-    {
-        mTutorialId = tutorialId;
-    }
-    const std::string& GetTutorialId() const
-    {
-        return mTutorialId;
-    }
-    void SetRequiredCompletedTutorialId(const std::string& tutorialId)
-    {
-        mRequiredCompletedTutorialId = tutorialId;
-    }
-    const std::string& GetRequiredCompletedTutorialId() const
-    {
-        return mRequiredCompletedTutorialId;
-    }
+    // IDありなら定義済みチュートリアルを、空ならNPCに保存された会話を開始する。
+    void SetTutorialId(const std::string& tutorialId) { mTutorialId = tutorialId; }
+    const std::string& GetTutorialId() const { return mTutorialId; }
+    void SetRequiredCompletedTutorialId(const std::string& tutorialId) { mRequiredCompletedTutorialId = tutorialId; }
+    const std::string& GetRequiredCompletedTutorialId() const { return mRequiredCompletedTutorialId; }
 
 protected:
+    // モデルのローカル境界を更新する。取得できない場合は単位立方体を使う。
     void OnLoadedModelChanged() override;
 
 private:

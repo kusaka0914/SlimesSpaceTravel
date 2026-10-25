@@ -1,7 +1,7 @@
 #include "actor/player/PlayerBoatRide.h"
 
-#include "Game.h"
-#include "Stage.h"
+#include "app/Game.h"
+#include "world/Stage.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -18,21 +18,14 @@ constexpr float boatTouchRadius = 0.9f;
 constexpr float disembarkClearance = 0.2f;
 constexpr float reboardCooldownDurationSeconds = 0.5f;
 constexpr float minimumDirectionLength = 0.0001f;
-}
+} // namespace
 
-void PlayerBoatRide::Update(
-    Player& player,
-    PlayerInput& input,
-    PlayerMovement& movement,
-    PlayerRespawn& respawn,
-    float deltaTime)
+void PlayerBoatRide::Update(Player& player, PlayerInput& input, PlayerMovement& movement, PlayerRespawn& respawn,
+                            float deltaTime)
 {
-    mReboardCooldownSeconds = std::max(
-        0.0f,
-        mReboardCooldownSeconds - std::max(0.0f, deltaTime));
+    mReboardCooldownSeconds = std::max(0.0f, mReboardCooldownSeconds - std::max(0.0f, deltaTime));
 
-    const bool didRequestDisembark =
-        input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    const bool didRequestDisembark = input.GetDodgePressed() && !input.GetDodgePressedPrev();
     if (didRequestDisembark && CancelWaitingBoatRide(player)) {
         input.SuppressDodgeUntilReleased();
         return;
@@ -43,10 +36,6 @@ void PlayerBoatRide::Update(
     if (!currentStage) {
         return;
     }
-
-
-
-
 
     // ボートは編集時にプレイヤーと別の開始惑星へ割り当てられるため、現在惑星だけでなくステージ内の全ボートを調べる。
     for (Planet* planet : currentStage->GetPlanets()) {
@@ -59,7 +48,6 @@ void PlayerBoatRide::Update(
                 continue;
             }
 
-
             // 移動中の近くのボートが、搭乗していないプレイヤーを引き寄せないようにする。
             if (boat->GetIsMoving()) {
                 if (boat->HasBoardedPlayer(&player)) {
@@ -69,8 +57,7 @@ void PlayerBoatRide::Update(
                 continue;
             }
 
-            if (mReboardCooldownSeconds <= 0.0f &&
-                IsTouchingBoat(player, boat)) {
+            if (mReboardCooldownSeconds <= 0.0f && IsTouchingBoat(player, boat)) {
                 StartRidingBoat(player, boat);
                 return;
             }
@@ -104,9 +91,7 @@ bool PlayerBoatRide::CancelWaitingBoatRide(Player& player)
         directionAwayFromBoat = glm::vec3(1.0f, 0.0f, 0.0f);
     }
 
-    player.SetPos(
-        boat->GetPos() + glm::normalize(directionAwayFromBoat) *
-            (boatTouchRadius + disembarkClearance));
+    player.SetPos(boat->GetPos() + glm::normalize(directionAwayFromBoat) * (boatTouchRadius + disembarkClearance));
     player.SetVelocity(glm::vec3(0.0f));
     player.SetOnGround(false);
     player.SetShouldJudgeLanding(true);
@@ -137,8 +122,7 @@ Boat* PlayerBoatRide::FindWaitingBoat(const Player& player) const
         }
 
         for (Boat* boat : planet->GetBoats()) {
-            if (boat && boat->GetIsActive() && !boat->GetIsMoving() &&
-                boat->HasBoardedPlayer(&player)) {
+            if (boat && boat->GetIsActive() && !boat->GetIsMoving() && boat->HasBoardedPlayer(&player)) {
                 return boat;
             }
         }
@@ -156,21 +140,15 @@ void PlayerBoatRide::StartRidingBoat(Player& player, Boat* boat) const
     Game* game = player.GetGame();
     boat->BoardPlayer(&player);
 
-
     // 分裂体はロケット内で待機し、両方が搭乗してから発進する。搭乗時には合体しない。
     player.SetIsActive(false);
-
-
-
-
 
     // 1人分裂中は搭乗した側を非選択にし、残った側へ自動で操作を渡す。
     if (game && game->GetIsPlayerSplit() && !game->GetIsPlayer2Joined()) {
         game->RequestSoloSplitControlSwitchAfterBoarding();
     }
 
-    const bool waitsForBothPlayers =
-        game && (game->GetIsPlayerSplit() || game->GetIsPlayer2Joined());
+    const bool waitsForBothPlayers = game && (game->GetIsPlayerSplit() || game->GetIsPlayer2Joined());
     if (waitsForBothPlayers) {
         for (Player* passenger : game->GetPlayers()) {
             if (!boat->HasBoardedPlayer(passenger)) {
@@ -191,14 +169,10 @@ void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, Pla
     Planet* destinationPlanet = boat->GetDestPlanet();
     player.SetCurrentPlanet(destinationPlanet);
 
-    Stage* currentStage = player.GetGame()
-        ? player.GetGame()->GetCurrentStage()
-        : nullptr;
+    Stage* currentStage = player.GetGame() ? player.GetGame()->GetCurrentStage() : nullptr;
     if (currentStage) {
         const std::vector<Planet*>& planets = currentStage->GetPlanets();
-        for (int planetIndex = 0;
-             planetIndex < static_cast<int>(planets.size());
-             ++planetIndex) {
+        for (int planetIndex = 0; planetIndex < static_cast<int>(planets.size()); ++planetIndex) {
             if (planets[planetIndex] == destinationPlanet) {
                 movement.SetCurrentPlanetNum(planetIndex);
                 break;
@@ -216,8 +190,6 @@ void PlayerBoatRide::OnBoatArrived(Player& player, PlayerMovement& movement, Pla
 
     player.RefreshFallbackUpVec();
 
-
-
-    // リスタートには接線方向だけを保存する。上方向は到着先惑星から再計算し、出発元の姿勢を持ち込まない。
+    // 到着時の向きを保存し、復元時にその時点の接平面へ投影する。出発元の上方向は引き継がない。
     respawn.CaptureRestartFacingDirection(player);
 }

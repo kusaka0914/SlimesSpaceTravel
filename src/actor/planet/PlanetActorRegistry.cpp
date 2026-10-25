@@ -7,16 +7,11 @@ void PlanetActorRegistry::RemoveAllPlatforms()
     mPlatforms.clear();
 }
 
-void PlanetActorRegistry::RemovePlatformsByStageSequence(
-    const std::string& sequenceName)
+void PlanetActorRegistry::RemovePlatformsByStageSequence(const std::string& sequenceName)
 {
-    mPlatforms.erase(
-        std::remove_if(
-            mPlatforms.begin(),
-            mPlatforms.end(),
-            [&sequenceName](Platform* platform) {
-                return platform &&
-                       platform->GetStageSequenceName() == sequenceName;
-            }),
-        mPlatforms.end());
+    mPlatforms.erase(std::remove_if(mPlatforms.begin(), mPlatforms.end(),
+                                    [&sequenceName](Platform* platform) {
+                                        return platform && platform->GetStageSequenceName() == sequenceName;
+                                    }),
+                     mPlatforms.end());
 }
