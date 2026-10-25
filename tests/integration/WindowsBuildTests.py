@@ -35,8 +35,21 @@ def main():
             result = subprocess.run([str(command), "/d", "/c", "build_windows.bat", "--check-cmake"],
                                     cwd=root, env=environment, stdin=subprocess.DEVNULL,
                                     capture_output=True, text=True, errors="replace", timeout=20)
-            if result.returncode != expected_code or expected_text not in result.stdout + result.stderr:
-                raise AssertionError(f"CMake discovery returned {result.returncode}: {result.stdout}{result.stderr}")
+            actual_output = result.stdout + result.stderr
+
+            has_expected_exit_code = result.returncode == expected_code
+            has_expected_output = (
+                os.path.normcase(expected_text)
+                in os.path.normcase(actual_output)
+            )
+
+            if not has_expected_exit_code or not has_expected_output:
+                raise AssertionError(
+                    f"Expected exit code: {expected_code}\n"
+                    f"Actual exit code: {result.returncode}\n"
+                    f"Expected text: {expected_text!r}\n"
+                    f"Actual output: {actual_output!r}"
+                )
 
         check(0, str(tool))
         on_path = temporary / "path tools"
