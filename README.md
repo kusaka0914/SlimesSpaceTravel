@@ -152,7 +152,7 @@ Bullet PhysicsのRay Testを利用し、キャラクターの中央・前後左�
 
 #### まず見るコード
 
-[UGCEditorInteractionController.cpp](src/gfx/debug/ugc/UGCEditorInteractionController.cpp)
+[UGCEditorInteractionController.cpp](src/editor/ugc/UGCEditorInteractionController.cpp)
 
 `UGCEditorInteractionController::UpdateSelectionDrag`
 
@@ -181,8 +181,8 @@ Bullet PhysicsのRay Testを利用し、キャラクターの中央・前後左�
 
 #### 関連コード
 
-- [UGCPreviewController.cpp](src/gfx/debug/ugc/UGCPreviewController.cpp)
-- [GameFrameRenderer.cpp](src/gfx/GameFrameRenderer.cpp)
+- [UGCPreviewController.cpp](src/gameplay/ugc/UGCPreviewController.cpp)
+- [GameFrameRenderer.cpp](src/app/GameFrameRenderer.cpp)
   - `DrawUGCPreviewFrame`
 
 編集内容は別のFramebufferへ描画し、2D編集画面と3Dプレビューを切り替えながら確認できるようにしました。
@@ -193,7 +193,7 @@ Bullet PhysicsのRay Testを利用し、キャラクターの中央・前後左�
 
 #### まず見るコード
 
-[EditorBuildRestartService.cpp](src/system/EditorBuildRestartService.cpp)
+[EditorBuildRestartService.cpp](src/editor/session/EditorBuildRestartService.cpp)
 
 #### 課題
 
@@ -228,7 +228,7 @@ Windowsでは `CreateProcessW`、POSIX環境では `fork` / `execl` を利用し
 
 #### 関連コード
 
-- [DebugEditorSessionController.cpp](src/system/DebugEditorSessionController.cpp)
+- [DebugEditorSessionController.cpp](src/editor/session/DebugEditorSessionController.cpp)
 - `tools/editor_restart_helper/`
 
 ---
@@ -301,7 +301,7 @@ Windows版では `Windows::Globalization::JapanesePhoneticAnalyzer` を利用し
 
 #### 主なコード
 
-- [TutorialDebugPanel.cpp](src/gfx/debug/panels/TutorialDebugPanel.cpp)
+- [TutorialDebugPanel.cpp](src/editor/tools/tutorial/TutorialDebugPanel.cpp)
 - [TutorialLibrary.cpp](src/system/tutorial/TutorialLibrary.cpp)
 
 ゲームに慣れていない人へ操作方法を分かりやすく伝えるため、チュートリアルの内容や表示方法を繰り返し調整できるエディターを実装しました。
@@ -317,7 +317,7 @@ Windows版では `Windows::Globalization::JapanesePhoneticAnalyzer` を利用し
 
 #### 主なコード
 
-- [UICanvasEditorController.cpp](src/gfx/debug/ui/UICanvasEditorController.cpp)
+- [UICanvasEditorController.cpp](src/editor/ui/UICanvasEditorController.cpp)
 - [UILoadSystem.cpp](src/system/UILoadSystem.cpp)
 
 プレイヤーに必要な情報を分かりやすく伝えるため、ゲーム画面上でUIの配置や大きさを直接調整できるエディターを実装しました。
@@ -333,8 +333,8 @@ UIを選択して移動・回転・拡大縮小できるほか、複製・削除
 
 #### 主なコード
 
-- [StageGizmoController.cpp](src/gfx/debug/stage/StageGizmoController.cpp)
-- [StageActorYamlWriter.cpp](src/gfx/debug/stage/StageActorYamlWriter.cpp)
+- [StageGizmoController.cpp](src/editor/stage/selection/StageGizmoController.cpp)
+- [StageActorYamlWriter.cpp](src/editor/stage/persistence/StageActorYamlWriter.cpp)
 
 ステージの導線や敵・足場の配置を繰り返し調整できるよう、ゲーム内の3D空間でオブジェクトを直接編集する開発用エディターを実装しました。
 
@@ -468,6 +468,8 @@ Unity / Unreal Engineなどの汎用ゲームエンジンは使用していま�
 
 ```text
 src/
+├─ app/               起動・Game全体の調停・フレーム処理
+├─ world/             GameWorld・Stage管理
 ├─ actor/
 │  ├─ player/         Playerの入力・移動・重力・戦闘・状態
 │  ├─ enemy/          Enemyの移動・戦闘・状態・AI
@@ -476,11 +478,18 @@ src/
 ├─ animation/         Skeletal Animation
 ├─ component/         Actor間で再利用する機能
 ├─ effect/            Particleなどの演出
+├─ gameplay/
+│  └─ ugc/            ステージ作成機能のプレビュー・状態管理
+│
+├─ editor/
+│  ├─ core/           Debug Editorの画面・共通制御
+│  ├─ stage/          開発用3D Stage Editor
+│  ├─ ugc/            プレイヤー向けStage Editorの編集操作
+│  ├─ ui/             UI Editor
+│  ├─ session/        Editor状態の保存・復元・Build & Restart
+│  └─ tools/          Tutorial・Sequenceなどの編集ツール
 │
 ├─ gfx/
-│  ├─ debug/
-│  │  ├─ stage/       開発用3D Stage Editor
-│  │  └─ ugc/         プレイヤー向けStage Editor
 │  ├─ render3d/       3D描画
 │  └─ ui/             HUD・Menu・Tutorial
 │
@@ -491,8 +500,10 @@ src/
 │  ├─ physics/        Bullet Physics・移動衝突判定
 │  └─ scene/          Scene・会話・Tutorial
 │
+├─ state/             ゲーム進行・UI状態
 ├─ text/              日本語・Ruby表示用データ
-└─ Game.cpp           各System / Controllerを保持する全体の調停役
+├─ utils/             ファイル・文字列などの共通処理
+└─ thirdParty/        外部ライブラリ
 ```
 
 ---
