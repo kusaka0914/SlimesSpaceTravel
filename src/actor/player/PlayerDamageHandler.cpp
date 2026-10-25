@@ -1,7 +1,6 @@
 #include "actor/player/PlayerDamageHandler.h"
 
-#include "Game.h"
-
+#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -27,41 +26,27 @@ bool ShouldStartRandomDamageTiredLock()
     return tiredRoll(randomEngine);
 }
 
-void ApplyDamageAndKnockBack(
-    Player& player,
-    PlayerInput& input,
-    PlayerMovement& movement,
-    PlayerStateMachine& stateMachine,
-    PlayerCombat& combat,
-    PlayerStatus& status,
-    const glm::vec3& damageSourcePosition,
-    float damage)
+void ApplyDamageAndKnockBack(Player& player, PlayerInput& input, PlayerMovement& movement,
+                             PlayerStateMachine& stateMachine, PlayerCombat& combat, PlayerStatus& status,
+                             const glm::vec3& damageSourcePosition, float damage)
 {
     if (status.IsInvincible()) {
         return;
     }
 
     Game* game = player.GetGame();
-    const bool wasBlockedBySplitGuard =
-        game && game->TryConsumePlayerSplitGuard(player);
+    const bool wasBlockedBySplitGuard = game && game->TryConsumePlayerSplitGuard(player);
 
-    const bool wasChargedAttackInterrupted =
-        combat.GetCanSpecialAttack();
+    const bool wasChargedAttackInterrupted = combat.GetCanSpecialAttack();
     const bool shouldStartTiredLock =
-        !wasBlockedBySplitGuard &&
-        (wasChargedAttackInterrupted ||
-         ShouldStartRandomDamageTiredLock());
+        !wasBlockedBySplitGuard && (wasChargedAttackInterrupted || ShouldStartRandomDamageTiredLock());
     if (shouldStartTiredLock) {
-        combat.StartTiredLock(
-            status,
-            movement,
-            chargedAttackFailureLockDurationSeconds);
+        combat.StartTiredLock(status, movement, chargedAttackFailureLockDurationSeconds);
     }
 
-    const float appliedDamage =
-        player.GetOnGround()
-            ? damage
-            : damage * airborneDamageMultiplier;
+    const float appliedDamage = player.GetOnGround() ? damage : damage * airborneDamageMultiplier;
+
+    // 分裂ガードでHP減少を防いでも、連続被弾を防ぐ無敵とノックバックは適用する。
     if (wasBlockedBySplitGuard) {
         status.StartDamageCooldown();
         status.StartDamageInvincibility();
@@ -82,25 +67,21 @@ void ApplyDamageAndKnockBack(
     input.ClearAttackBuffer();
     input.SyncAttackButtonPrev();
 }
-}
+} // namespace
 
 void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMovement& movement,
-                                PlayerStateMachine& stateMachine, PlayerCombat& combat,
-                                PlayerJewelGauge& jewelGauge, PlayerStatus& status, Enemy* enemy, float deltaTime)
+                                PlayerStateMachine& stateMachine, PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
+                                PlayerStatus& status, Enemy* enemy, float deltaTime)
 {
     if (!enemy) {
         return;
     }
 
-    const bool canPerformJustDodgeCounter =
-        stateMachine.IsDodging() &&
-        enemy->GetCanCountered();
+    const bool canPerformJustDodgeCounter = stateMachine.IsDodging() && enemy->GetCanCountered();
     if (canPerformJustDodgeCounter) {
         player.GetGame()->OnPlayerCounter(movement.GetPlayerNum());
 
-        enemy->ApplyGuardDamage(
-            enemy->GetGuardValuePerSegment(),
-            deltaTime);
+        enemy->ApplyGuardDamage(enemy->GetGuardValuePerSegment(), deltaTime);
         enemy->FlipCanCountered();
 
         player.GetGame()->GetAudioSystem()->PlaySE("just_dodge_se");
@@ -108,34 +89,12 @@ void PlayerDamageHandler::Apply(Player& player, PlayerInput& input, PlayerMoveme
         return;
     }
 
-    ApplyDamageAndKnockBack(
-        player,
-        input,
-        movement,
-        stateMachine,
-        combat,
-        status,
-        enemy->GetPos(),
-        enemy->GetAttack());
+    ApplyDamageAndKnockBack(player, input, movement, stateMachine, combat, status, enemy->GetPos(), enemy->GetAttack());
 }
 
-void PlayerDamageHandler::ApplyFromActor(
-    Player& player,
-    PlayerInput& input,
-    PlayerMovement& movement,
-    PlayerStateMachine& stateMachine,
-    PlayerCombat& combat,
-    PlayerStatus& status,
-    const glm::vec3& damageSourcePosition,
-    float damage)
+void PlayerDamageHandler::ApplyFromActor(Player& player, PlayerInput& input, PlayerMovement& movement,
+                                         PlayerStateMachine& stateMachine, PlayerCombat& combat, PlayerStatus& status,
+                                         const glm::vec3& damageSourcePosition, float damage)
 {
-    ApplyDamageAndKnockBack(
-        player,
-        input,
-        movement,
-        stateMachine,
-        combat,
-        status,
-        damageSourcePosition,
-        damage);
+    ApplyDamageAndKnockBack(player, input, movement, stateMachine, combat, status, damageSourcePosition, damage);
 }

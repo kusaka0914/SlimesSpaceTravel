@@ -31,13 +31,20 @@ struct EndingRollConfig {
     float totalDuration = 30.0f;
 };
 
+// スタッフロールの文章・画像・表示時間をYAMLへ読み書きする。
 class EndingRollConfigIO {
 public:
     static constexpr const char* DefaultPath = "../assets/data/sequences/ending_roll.yaml";
 
+    // 成功時だけ出力を置き換える。ファイルを開けなければ既定値でtrue、解析失敗時は出力を維持してfalse。
     static bool Load(EndingRollConfig& outConfig, const std::string& path = DefaultPath);
+
+    // 親ディレクトリを作成して保存する。書込・置換に失敗した場合は既存ファイルを保ってfalse。
     static bool Save(const EndingRollConfig& config, const std::string& path = DefaultPath);
 };
 
+// 経過秒数から繰返し画像の表示区間を判定する。repeatIntervalは正の値であること。
 bool IsEndingRollImageVisible(const EndingRollImageEvent& event, float elapsedSeconds);
+
+// フェードを含む不透明度を0〜1で返す。表示区間外は0。repeatIntervalは正の値であること。
 float CalculateEndingRollImageOpacity(const EndingRollImageEvent& event, float elapsedSeconds);

@@ -1,7 +1,9 @@
-#include "Crystal.h"
-#include "Game.h"
+#include "actor/Crystal.h"
+
+#include "app/Game.h"
 #include "component/DestructibleComponent.h"
 #include "system/AudioSystem.h"
+
 #include <iostream>
 #include <yaml-cpp/yaml.h>
 
@@ -11,9 +13,7 @@ Crystal::Crystal(Game* game)
     AddDestructibleComponent();
 }
 
-void Crystal::ApplyConfig(
-    const YAML::Node& crystalRoot,
-    const std::string& type)
+void Crystal::ApplyConfig(const YAML::Node& crystalRoot, const std::string& type)
 {
     if (!crystalRoot["crystals"] || !crystalRoot["crystals"].IsSequence()) {
         return;

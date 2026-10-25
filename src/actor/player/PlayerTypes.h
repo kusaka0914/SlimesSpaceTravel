@@ -29,6 +29,7 @@ enum class PlayerAttackInputKind {
     Wide,
 };
 
+// 攻撃レイの始点と終点（ワールド座標）。
 struct PlayerRaySegment {
     glm::vec3 from;
     glm::vec3 to;

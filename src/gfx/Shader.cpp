@@ -1,4 +1,5 @@
-#include "Shader.h"
+#include "gfx/Shader.h"
+
 #include <GL/glew.h>
 #include <fstream>
 #include <iostream>
@@ -20,56 +21,62 @@ Shader::~Shader()
     glDeleteProgram(mShaderProgram);
 }
 
-std::string Shader::GetShaderSrcFromFile(const std::string& path) const
+std::string Shader::ReadShaderSource(const std::string& path) const
 {
     const std::ifstream file(path);
 
     if (!file.is_open()) {
-
         return "";
     }
 
-    std::stringstream buf;
-    buf << file.rdbuf();
-    return buf.str();
+    std::stringstream sourceStream;
+    sourceStream << file.rdbuf();
+    return sourceStream.str();
 }
 
 unsigned int Shader::CompileShader(unsigned int type, const std::string& source) const
 {
-    const unsigned int id = glCreateShader(type);
-    const char* src = source.c_str();
+    const unsigned int shaderId = glCreateShader(type);
+    const char* sourceData = source.c_str();
 
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
+    glShaderSource(shaderId, 1, &sourceData, nullptr);
+    glCompileShader(shaderId);
 
     int success;
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shaderId, GL_COMPILE_STATUS, &success);
 
     if (!success) {
         char log[2048];
-        glGetShaderInfoLog(id, sizeof(log), nullptr, log);
+        glGetShaderInfoLog(shaderId, sizeof(log), nullptr, log);
 
         std::cerr << (type == GL_VERTEX_SHADER ? "Vertex" : "Fragment") << " shader compile error:\n" << log << '\n';
 
-        glDeleteShader(id);
+        glDeleteShader(shaderId);
         return 0;
     }
-    return id;
+    return shaderId;
 }
 
 unsigned int Shader::CreateShaderProgram(const std::string& vertexPath, const std::string& fragmentPath) const
 {
-    const std::string vertexSrc = GetShaderSrcFromFile(vertexPath);
-    const std::string fragmentSrc = GetShaderSrcFromFile(fragmentPath);
+    const std::string vertexSource = ReadShaderSource(vertexPath);
+    const std::string fragmentSource = ReadShaderSource(fragmentPath);
 
-    if (vertexSrc.empty() || fragmentSrc.empty()) {
+    if (vertexSource.empty() || fragmentSource.empty()) {
         return 0;
     };
 
-    const unsigned int vertexId = CompileShader(GL_VERTEX_SHADER, vertexSrc);
-    const unsigned int fragmentId = CompileShader(GL_FRAGMENT_SHADER, fragmentSrc);
+    const unsigned int vertexId = CompileShader(GL_VERTEX_SHADER, vertexSource);
+    const unsigned int fragmentId = CompileShader(GL_FRAGMENT_SHADER, fragmentSource);
 
     if (!vertexId || !fragmentId) {
+        // 片方だけコンパイルに成功した場合も、リンクせずに残ったオブジェクトを解放する。
+        if (vertexId != 0) {
+            glDeleteShader(vertexId);
+        }
+        if (fragmentId != 0) {
+            glDeleteShader(fragmentId);
+        }
         return 0;
     }
 

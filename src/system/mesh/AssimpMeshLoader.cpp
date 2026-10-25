@@ -25,12 +25,14 @@
 #include <vector>
 
 namespace {
-constexpr std::size_t InvalidBoneIndex = std::numeric_limits<std::size_t>::max();
+
+constexpr std::size_t invalidBoneIndex = std::numeric_limits<std::size_t>::max();
 
 glm::mat4 ConvertMatrix(const aiMatrix4x4& matrix)
 {
-    return glm::mat4(matrix.a1, matrix.b1, matrix.c1, matrix.d1, matrix.a2, matrix.b2, matrix.c2, matrix.d2,
-                     matrix.a3, matrix.b3, matrix.c3, matrix.d3, matrix.a4, matrix.b4, matrix.c4, matrix.d4);
+    // Assimpの行列要素をGLMの列順コンストラクターへ並べ替える。
+    return glm::mat4(matrix.a1, matrix.b1, matrix.c1, matrix.d1, matrix.a2, matrix.b2, matrix.c2, matrix.d2, matrix.a3,
+                     matrix.b3, matrix.c3, matrix.d3, matrix.a4, matrix.b4, matrix.c4, matrix.d4);
 }
 
 glm::vec3 ConvertVector(const aiVector3D& vector)
@@ -73,9 +75,8 @@ SkeletonNode LoadSkeletonNode(const aiNode* sourceNode)
 AnimationClip LoadAnimationClip(const aiAnimation& sourceAnimation, unsigned int animationIndex)
 {
     AnimationClip animationClip;
-    animationClip.name = sourceAnimation.mName.length > 0
-                             ? sourceAnimation.mName.C_Str()
-                             : "Animation_" + std::to_string(animationIndex);
+    animationClip.name = sourceAnimation.mName.length > 0 ? sourceAnimation.mName.C_Str()
+                                                          : "Animation_" + std::to_string(animationIndex);
     animationClip.durationTicks = sourceAnimation.mDuration;
     animationClip.ticksPerSecond = sourceAnimation.mTicksPerSecond > 0.0 ? sourceAnimation.mTicksPerSecond : 25.0;
 
@@ -128,14 +129,14 @@ void LoadAnimationClips(const aiScene& scene, SkeletalAnimationData& animationDa
 std::size_t FindOrAddBone(const aiBone& sourceBone, SkeletalAnimationData& animationData, bool& didExceedBoneLimit)
 {
     const std::string boneName = sourceBone.mName.C_Str();
-    const auto existingBoneIt = animationData.boneIndexByName.find(boneName);
-    if (existingBoneIt != animationData.boneIndexByName.end()) {
-        return existingBoneIt->second;
+    const auto existingBoneIterator = animationData.boneIndexByName.find(boneName);
+    if (existingBoneIterator != animationData.boneIndexByName.end()) {
+        return existingBoneIterator->second;
     }
 
     if (animationData.bones.size() >= SkeletalAnimationConstants::MaxShaderBoneCount) {
         didExceedBoneLimit = true;
-        return InvalidBoneIndex;
+        return invalidBoneIndex;
     }
 
     const std::size_t boneIndex = animationData.bones.size();
@@ -158,12 +159,13 @@ void AddBoneInfluence(MeshVertex& vertex, int boneIndex, float boneWeight)
         }
     }
 
-    const auto smallestWeightIt = std::min_element(vertex.boneWeights.begin(), vertex.boneWeights.end());
-    if (smallestWeightIt == vertex.boneWeights.end() || boneWeight <= *smallestWeightIt) {
+    // 頂点あたりの格納上限を超えた場合は、影響の大きい骨だけを残す。
+    const auto smallestWeightIterator = std::min_element(vertex.boneWeights.begin(), vertex.boneWeights.end());
+    if (smallestWeightIterator == vertex.boneWeights.end() || boneWeight <= *smallestWeightIterator) {
         return;
     }
 
-    const std::size_t influenceIndex = static_cast<std::size_t>(smallestWeightIt - vertex.boneWeights.begin());
+    const std::size_t influenceIndex = static_cast<std::size_t>(smallestWeightIterator - vertex.boneWeights.begin());
     vertex.boneIndices[influenceIndex] = boneIndex;
     vertex.boneWeights[influenceIndex] = boneWeight;
 }
@@ -190,7 +192,7 @@ void LoadBoneInfluences(const aiMesh& sourceMesh, std::vector<MeshVertex>& verti
         }
 
         const std::size_t boneIndex = FindOrAddBone(*sourceBone, animationData, didExceedBoneLimit);
-        if (boneIndex == InvalidBoneIndex) {
+        if (boneIndex == invalidBoneIndex) {
             continue;
         }
 
@@ -227,8 +229,9 @@ unsigned int LoadDiffuseTexture(const aiScene& scene, const aiMesh& sourceMesh, 
     }
 
     const std::string relativeTexturePath = texturePath.C_Str();
-    if (relativeTexturePath.empty() || relativeTexturePath.front() == '*') {
 
+    // 埋め込みテクスチャ（*番号）はファイルパスとして読み込めないため対象外にする。
+    if (relativeTexturePath.empty() || relativeTexturePath.front() == '*') {
         return 0;
     }
 
@@ -236,9 +239,7 @@ unsigned int LoadDiffuseTexture(const aiScene& scene, const aiMesh& sourceMesh, 
     const std::size_t lastSlash = basePath.find_last_of("/\\");
     const std::string directory = lastSlash != std::string::npos ? basePath.substr(0, lastSlash + 1) : "";
     const std::string fullTexturePath = directory + relativeTexturePath;
-    return textureLoader->LoadTexture(
-        fullTexturePath.c_str(),
-        TextureColorSpace::SRGB);
+    return textureLoader->LoadTexture(fullTexturePath.c_str(), TextureColorSpace::SRGB);
 }
 
 LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const char* modelPath,
@@ -289,8 +290,8 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
                  GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, loadedMesh.EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)), indices.data(),
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)),
+                 indices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshVertex),
                           reinterpret_cast<void*>(offsetof(MeshVertex, position)));
@@ -325,18 +326,13 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
         const aiMaterial* material = scene.mMaterials[sourceMesh.mMaterialIndex];
         aiColor4D baseColor;
 
-
-        if (material &&
-            material->Get(AI_MATKEY_BASE_COLOR, baseColor) ==
-                aiReturn_SUCCESS) {
+        if (material && material->Get(AI_MATKEY_BASE_COLOR, baseColor) == aiReturn_SUCCESS) {
             loadedMesh.diffuseColor[0] = baseColor.r;
             loadedMesh.diffuseColor[1] = baseColor.g;
             loadedMesh.diffuseColor[2] = baseColor.b;
         } else {
             aiColor3D diffuseColor;
-            if (material &&
-                material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) ==
-                    aiReturn_SUCCESS) {
+            if (material && material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == aiReturn_SUCCESS) {
                 loadedMesh.diffuseColor[0] = diffuseColor.r;
                 loadedMesh.diffuseColor[1] = diffuseColor.g;
                 loadedMesh.diffuseColor[2] = diffuseColor.b;
@@ -346,7 +342,7 @@ LoadedMesh CreateGpuMesh(const aiScene& scene, const aiMesh& sourceMesh, const c
 
     return loadedMesh;
 }
-}
+} // namespace
 
 AssimpMeshLoader::AssimpMeshLoader(const TextureLoader* textureLoader)
     : mTextureLoader(textureLoader)
@@ -361,7 +357,8 @@ LoadedModel AssimpMeshLoader::LoadModelFromFile(const char* path) const
     }
 
     Assimp::Importer importer;
-    constexpr unsigned int importFlags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_LimitBoneWeights;
+    constexpr unsigned int importFlags =
+        aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_LimitBoneWeights;
     const aiScene* scene = importer.ReadFile(path, importFlags);
 
     if (!scene || !scene->mRootNode) {
@@ -380,15 +377,9 @@ LoadedModel AssimpMeshLoader::LoadModelFromFile(const char* path) const
             continue;
         }
 
-        for (unsigned int vertexIndex = 0;
-             vertexIndex < sourceMesh->mNumVertices;
-             ++vertexIndex) {
-            const aiVector3D& sourcePosition =
-                sourceMesh->mVertices[vertexIndex];
-            const glm::vec3 position(
-                sourcePosition.x,
-                sourcePosition.y,
-                sourcePosition.z);
+        for (unsigned int vertexIndex = 0; vertexIndex < sourceMesh->mNumVertices; ++vertexIndex) {
+            const aiVector3D& sourcePosition = sourceMesh->mVertices[vertexIndex];
+            const glm::vec3 position(sourcePosition.x, sourcePosition.y, sourcePosition.z);
             if (!loadedModel.hasBounds) {
                 loadedModel.boundsMinimum = position;
                 loadedModel.boundsMaximum = position;
@@ -396,12 +387,8 @@ LoadedModel AssimpMeshLoader::LoadModelFromFile(const char* path) const
                 continue;
             }
 
-            loadedModel.boundsMinimum = glm::min(
-                loadedModel.boundsMinimum,
-                position);
-            loadedModel.boundsMaximum = glm::max(
-                loadedModel.boundsMaximum,
-                position);
+            loadedModel.boundsMinimum = glm::min(loadedModel.boundsMinimum, position);
+            loadedModel.boundsMaximum = glm::max(loadedModel.boundsMaximum, position);
         }
 
         loadedModel.meshes.emplace_back(CreateGpuMesh(*scene, *sourceMesh, path, mTextureLoader,

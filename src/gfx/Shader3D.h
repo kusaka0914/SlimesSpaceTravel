@@ -1,13 +1,12 @@
 #pragma once
 
-#include "Shader.h"
+#include "gfx/Shader.h"
 
+// Actorの材質・ライティング・影・スキニングを描画するGLSLプログラムとuniform位置を保持する。
 class Shader3D : public Shader {
 public:
     Shader3D();
     ~Shader3D();
-
-    void Initialize();
 
     int GetLocSunDirection() const { return mLocSunDirection; }
     int GetLocSunColor() const { return mLocSunColor; }
@@ -15,7 +14,7 @@ public:
     int GetLocEnvironmentColor() const { return mLocEnvironmentColor; }
     int GetLocDayEnvironmentIntensity() const { return mLocDayEnvironmentIntensity; }
     int GetLocNightEnvironmentIntensity() const { return mLocNightEnvironmentIntensity; }
-    int GetLocViewPos() const { return mLocViewPos; }
+    int GetLocCameraWorldPosition() const { return mLocCameraWorldPosition; }
     int GetLocToonLevels() const { return mLocToonLevels; }
     int GetLocToonStrength() const { return mLocToonStrength; }
     int GetLocRimColor() const { return mLocRimColor; }
@@ -24,10 +23,7 @@ public:
     int GetLocRimPower() const { return mLocRimPower; }
     int GetLocMaterialMinimumReflectance() const { return mLocMaterialMinimumReflectance; }
     int GetLocMaterialRimBoost() const { return mLocMaterialRimBoost; }
-    int GetLocMaterialDarkSurfaceLightBoost() const
-    {
-        return mLocMaterialDarkSurfaceLightBoost;
-    }
+    int GetLocMaterialDarkSurfaceLightBoost() const { return mLocMaterialDarkSurfaceLightBoost; }
     int GetLocIsUnlit() const { return mLocIsUnlit; }
     int GetLocUseSkinning() const { return mLocUseSkinning; }
     int GetLocUseInstancing() const { return mLocUseInstancing; }
@@ -35,10 +31,7 @@ public:
     int GetLocTextureTiling() const { return mLocTextureTiling; }
     int GetLocUseBackTexture() const { return mLocUseBackTexture; }
     int GetLocBackTexture() const { return mLocBackTexture; }
-    int GetLocTextureSideBlendWidth() const
-    {
-        return mLocTextureSideBlendWidth;
-    }
+    int GetLocTextureSideBlendWidth() const { return mLocTextureSideBlendWidth; }
     int GetLocColorMultiplier() const { return mLocColorMultiplier; }
     int GetLocColorSaturation() const { return mLocColorSaturation; }
     int GetLocApplyOutputGamma() const { return mLocApplyOutputGamma; }
@@ -46,18 +39,20 @@ public:
     int GetLocEmissiveIntensity() const { return mLocEmissiveIntensity; }
     int GetLocLightSpaceMatrix() const { return mLocLightSpaceMatrix; }
     int GetLocShadowMap() const { return mLocShadowMap; }
-    int GetLocShadowsEnabled() const { return mLocShadowsEnabled; }
+    int GetLocUseShadows() const { return mLocUseShadows; }
     int GetLocShadowMinimumBias() const { return mLocShadowMinimumBias; }
     int GetLocShadowMaximumBias() const { return mLocShadowMaximumBias; }
 
 private:
+    void Initialize();
+
     int mLocSunDirection;
     int mLocSunColor;
     int mLocSunIntensity;
     int mLocEnvironmentColor;
     int mLocDayEnvironmentIntensity;
     int mLocNightEnvironmentIntensity;
-    int mLocViewPos;
+    int mLocCameraWorldPosition;
     int mLocToonStrength;
     int mLocToonLevels;
     int mLocRimColor;
@@ -82,7 +77,7 @@ private:
     int mLocEmissiveIntensity;
     int mLocLightSpaceMatrix;
     int mLocShadowMap;
-    int mLocShadowsEnabled;
+    int mLocUseShadows;
     int mLocShadowMinimumBias;
     int mLocShadowMaximumBias;
 };

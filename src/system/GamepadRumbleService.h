@@ -4,21 +4,26 @@
 
 #include <vector>
 
+// 接続中のSDLコントローラーを保持し、Player番号に応じた振動を送る。
 class GamepadRumbleService {
 public:
+    GamepadRumbleService() = default;
     ~GamepadRumbleService();
+    GamepadRumbleService(const GamepadRumbleService&) = delete;
+    GamepadRumbleService& operator=(const GamepadRumbleService&) = delete;
 
     void Initialize();
     void Shutdown();
+
+    // 接続状態・Instance ID・機器順が変わったらハンドルを開き直し、SDLの列挙順にPlayer番号を割り当てる。
     void UpdateConnection();
 
-    void VibrateForPlayer(
-        int playerNum,
-        int lowFrequency,
-        int highFrequency,
-        int durationMilliseconds);
+    // 1始まりのPlayer番号へ振動を送る。未接続なら何もしない。強度には0〜65535を指定する。
+    void VibrateForPlayer(int playerNum, int lowFrequency, int highFrequency, int durationMilliseconds);
 
     SDL_GameController* GetController() const { return GetControllerForPlayer(1); }
+
+    // 1始まりの番号に対応する借用ハンドルを返す。未接続ならnullptr。再接続・終了で無効になる。
     SDL_GameController* GetControllerForPlayer(int playerNum) const;
     bool IsConnected() const { return !mControllers.empty(); }
     bool HasControllerForPlayer(int playerNum) const;

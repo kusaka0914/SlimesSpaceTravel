@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/Actor.h"
+
 #include <glm/glm.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -8,8 +9,11 @@ class Game;
 class CollectableComponent;
 class Player;
 
+// クリア用スターの発光・回収演出と進行通知を管理する。
+// CollectableComponentはActorが所有し、取得者のPlayerは非所有参照。
 class Star : public Actor {
 public:
+    // 時間は秒、距離はワールド単位。自転速度のみ度/秒で設定する。
     struct CollectionAnimationSettings {
         float orbitDuration = 1.2f;
         float orbitStartRadius = 1.35f;
@@ -21,20 +25,19 @@ public:
 
     Star(Game* game);
     void Initialize() override;
+
+    // 通常の回収では、取得成立時にGame::OnStarObtained、演出完了時にGame::OnStarCollectionAnimationFinishedを通知する。
     void UpdateActor(float deltaTime) override;
     glm::quat GetRenderModelRotationOffset() const override;
 
+    // 設定ルートのstars配列からモデル・大きさ・回収演出設定を適用する。
     void ApplyConfig(const YAML::Node& configRoot);
 
     CollectableComponent* GetCollectableComponent() const { return mCollectableComponent; }
-    const CollectionAnimationSettings& GetCollectionAnimationSettings() const
-    {
-        return mCollectionSettings;
-    }
-    void SetCollectionAnimationSettings(const CollectionAnimationSettings& settings)
-    {
-        mCollectionSettings = settings;
-    }
+    const CollectionAnimationSettings& GetCollectionAnimationSettings() const { return mCollectionSettings; }
+    void SetCollectionAnimationSettings(const CollectionAnimationSettings& settings) { mCollectionSettings = settings; }
+
+    // 待機中かつplayerが非nullの場合に開始し、終了時は元の配置・有効状態へ戻す。進行通知は行わない。
     bool StartCollectionPreview(Player* player);
 
 private:

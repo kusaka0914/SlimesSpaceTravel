@@ -1,16 +1,15 @@
 #include "gfx/particle/ParticleRenderer.h"
 
-#include "Game.h"
+#include "gfx/TextureUploadState.h"
 #include "gfx/particle/ParticleShader.h"
-#include "system/ParticleSystem.h"
-#include "thirdParty/stb_image.h"
+#include "system/mesh/ImageLoader.h"
 
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
@@ -69,8 +68,8 @@ void RestoreOpenGLState(const OpenGLState& state)
     }
 
     glDepthMask(state.depthWriteEnabled);
-    glBlendFuncSeparate(state.blendSourceRgb, state.blendDestinationRgb,
-                        state.blendSourceAlpha, state.blendDestinationAlpha);
+    glBlendFuncSeparate(state.blendSourceRgb, state.blendDestinationRgb, state.blendSourceAlpha,
+                        state.blendDestinationAlpha);
 
     glUseProgram(static_cast<GLuint>(state.currentProgram));
     glBindVertexArray(static_cast<GLuint>(state.currentVertexArray));
@@ -79,11 +78,10 @@ void RestoreOpenGLState(const OpenGLState& state)
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(state.boundTexture));
     glActiveTexture(state.activeTexture);
 }
-}
+} // namespace
 
-ParticleRenderer::ParticleRenderer(Game* game)
-    : mGame(game),
-      mShader(std::make_unique<ParticleShader>())
+ParticleRenderer::ParticleRenderer()
+    : mShader(std::make_unique<ParticleShader>())
 {
     InitializeBuffers();
 }
@@ -108,14 +106,14 @@ ParticleRenderer::~ParticleRenderer()
     }
 }
 
-void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) const
+void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection,
+                            std::span<const Particle> particles) const
 {
-    if (!mGame || !mShader || !mShader->GetShaderProgram() || mVertexArray == 0) {
+    if (!mShader || !mShader->GetShaderProgram() || mVertexArray == 0) {
         return;
     }
 
-    const ParticleSystem* particleSystem = mGame->GetParticleSystem();
-    if (!particleSystem || particleSystem->GetParticles().empty()) {
+    if (particles.empty()) {
         return;
     }
 
@@ -126,14 +124,15 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) 
 
     std::vector<RenderItem> additiveItems;
     std::vector<RenderItem> alphaItems;
-    additiveItems.reserve(particleSystem->GetParticleCount());
-    alphaItems.reserve(particleSystem->GetParticleCount());
+    additiveItems.reserve(particles.size());
+    alphaItems.reserve(particles.size());
 
-    for (const Particle& particle : particleSystem->GetParticles()) {
+    for (const Particle& particle : particles) {
         RenderItem renderItem;
         renderItem.particle = &particle;
         renderItem.instance = CreateInstanceData(particle, view);
-        renderItem.cameraDistanceSquared = glm::dot(particle.position - cameraPosition, particle.position - cameraPosition);
+        renderItem.cameraDistanceSquared =
+            glm::dot(particle.position - cameraPosition, particle.position - cameraPosition);
 
         if (particle.blendMode == ParticleBlendMode::Alpha) {
             alphaItems.push_back(renderItem);
@@ -156,6 +155,7 @@ void ParticleRenderer::Draw(const glm::mat4& view, const glm::mat4& projection) 
     glDepthMask(GL_FALSE);
     glBindVertexArray(mVertexArray);
 
+    // 深度には書き込まず、不透明物による遮蔽を保ったまま粒子同士を合成する。
     DrawAdditiveParticles(additiveItems);
     DrawAlphaParticles(std::move(alphaItems));
 
@@ -171,13 +171,14 @@ std::size_t ParticleRenderer::BatchKeyHash::operator()(const BatchKey& key) cons
 
 void ParticleRenderer::InitializeBuffers()
 {
-
+    // clang-format off
     constexpr float quadVertices[] = {
         -0.5f, -0.5f, 0.0f, 0.0f,
          0.5f, -0.5f, 1.0f, 0.0f,
         -0.5f,  0.5f, 0.0f, 1.0f,
          0.5f,  0.5f, 1.0f, 1.0f,
     };
+    // clang-format on
 
     glGenVertexArrays(1, &mVertexArray);
     glGenBuffers(1, &mQuadBuffer);
@@ -241,24 +242,19 @@ GLuint ParticleRenderer::LoadTexture(const std::string& texturePath) const
 {
     const std::string resolvedPath = ResolveTexturePath(texturePath);
 
-    int width = 0;
-    int height = 0;
-    int channelCount = 0;
-
-    stbi_set_flip_vertically_on_load(1);
-    unsigned char* imageData = stbi_load(resolvedPath.c_str(), &width, &height, &channelCount, STBI_rgb_alpha);
-    if (!imageData || width <= 0 || height <= 0) {
+    const auto image = ImageLoader::Load(resolvedPath.c_str(), ImageLoader::RowOrder::BottomToTop, 4);
+    if (!image.pixels) {
         std::cerr << "Failed to load particle texture: " << resolvedPath << '\n';
-        stbi_image_free(imageData);
         return 0;
     }
 
+    const TextureUploadState state;
     GLuint texture = 0;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 image.pixels.get());
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -266,17 +262,14 @@ GLuint ParticleRenderer::LoadTexture(const std::string& texturePath) const
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    stbi_image_free(imageData);
-    glBindTexture(GL_TEXTURE_2D, 0);
     return texture;
 }
 
 ParticleRenderer::InstanceData ParticleRenderer::CreateInstanceData(const Particle& particle,
                                                                     const glm::mat4& view) const
 {
-    const float normalizedAge = particle.lifetime > 0.0f
-                                    ? glm::clamp(particle.age / particle.lifetime, 0.0f, 1.0f)
-                                    : 1.0f;
+    const float normalizedAge =
+        particle.lifetime > 0.0f ? glm::clamp(particle.age / particle.lifetime, 0.0f, 1.0f) : 1.0f;
 
     InstanceData instance;
     instance.position = particle.position;
@@ -285,6 +278,7 @@ ParticleRenderer::InstanceData ParticleRenderer::CreateInstanceData(const Partic
     instance.rotationRadians = particle.rotationRadians;
     instance.stretch = 1.0f;
 
+    // 速度をビュー空間へ移し、カメラ平面内の向きに合わせる。奥行き方向だけの速度では回転を変えない。
     if (particle.renderMode == ParticleRenderMode::VelocityAligned &&
         glm::dot(particle.velocity, particle.velocity) > velocityEpsilonSquared) {
         const glm::vec3 viewVelocity = glm::vec3(view * glm::vec4(particle.velocity, 0.0f));
@@ -304,6 +298,7 @@ void ParticleRenderer::DrawAdditiveParticles(const std::vector<RenderItem>& item
         return;
     }
 
+    // 加算合成は順序に依存しないため、同じテクスチャの粒子をまとめて描ける。
     std::unordered_map<BatchKey, std::vector<InstanceData>, BatchKeyHash> batches;
     for (const RenderItem& item : items) {
         if (!item.particle) {
@@ -326,6 +321,7 @@ void ParticleRenderer::DrawAlphaParticles(std::vector<RenderItem> items) const
         return;
     }
 
+    // 半透明合成は奥からの順序を保つ必要があるため、同じテクスチャでも連続する粒子だけまとめる。
     std::sort(items.begin(), items.end(), [](const RenderItem& left, const RenderItem& right) {
         return left.cameraDistanceSquared > right.cameraDistanceSquared;
     });
@@ -376,9 +372,7 @@ void ParticleRenderer::DrawBatch(const BatchKey& key, const std::vector<Instance
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glBindBuffer(GL_ARRAY_BUFFER, mInstanceBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(instances.size() * sizeof(InstanceData)),
-                 instances.data(),
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(instances.size() * sizeof(InstanceData)), instances.data(),
                  GL_STREAM_DRAW);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, static_cast<GLsizei>(instances.size()));

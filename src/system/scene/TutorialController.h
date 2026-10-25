@@ -12,24 +12,25 @@ class Player;
 class Platform;
 class UIState;
 
+// チュートリアルの会話・操作目標を進め、再表示条件と完了記録を管理する。
 class TutorialController {
 public:
-    TutorialController(
-        Game* game,
-        GameProgressState* gameProgressState,
-        UIState* uiState);
+    TutorialController(Game* game, GameProgressState* gameProgressState, UIState* uiState);
 
     void Update(float deltaTime);
 
-    bool TryStart(
-        const std::string& tutorialId,
-        Player* tutorialPlayer = nullptr,
-        bool ignoreRepeatPolicy = false);
+    // 既に再生中・定義なし・再表示不可ならfalse。Player未指定時は操作対象、次に先頭Playerを選ぶ。
+    bool TryStart(const std::string& tutorialId, Player* tutorialPlayer = nullptr,
+                  bool shouldIgnoreRepeatPolicy = false);
     bool Preview(const std::string& tutorialId);
-    bool PreviewAtPage(
-        const std::string& tutorialId,
-        std::size_t pageIndex);
-    void Stop(bool returnToPlaying = true);
+
+    // 0始まりの指定ページからプレビューする。再表示制限を無視し、完了進行は記録しない。
+    bool PreviewAtPage(const std::string& tutorialId, std::size_t pageIndex);
+
+    // 再生とActor参照を解除する。shouldReturnToPlayingがtrueなら通常プレイへ戻る。
+    void Stop(bool shouldReturnToPlaying = true);
+
+    // 再生を止め、セッション内の表示・完了履歴をクリアする。保存進行は変更しない。
     void ResetForNewSession();
     bool ResumeAfterFocus();
     void TryAdvanceFromConfirm();
@@ -54,14 +55,8 @@ public:
     const TutorialDefinition* GetActiveDefinition() const;
     const TutorialPage* GetCurrentPage() const;
     Player* GetTutorialPlayer() const { return mTutorialPlayer; }
-    const std::string& GetActiveTutorialId() const
-    {
-        return mActiveTutorialId;
-    }
-    std::uint64_t GetTutorialSessionSequence() const
-    {
-        return mTutorialSessionSequence;
-    }
+    const std::string& GetActiveTutorialId() const { return mActiveTutorialId; }
+    std::uint64_t GetTutorialSessionSequence() const { return mTutorialSessionSequence; }
 
     TutorialLibrary& GetLibrary() { return mLibrary; }
     const TutorialLibrary& GetLibrary() const { return mLibrary; }
@@ -79,7 +74,6 @@ private:
     bool IsTutorialPlayerPressingPressureSwitch() const;
     TutorialAdvanceCondition GetCurrentAdvanceCondition() const;
 
-private:
     Game* mGame = nullptr;
     GameProgressState* mGameProgressState = nullptr;
     UIState* mUIState = nullptr;

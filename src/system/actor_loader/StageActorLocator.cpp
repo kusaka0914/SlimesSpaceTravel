@@ -1,6 +1,6 @@
 #include "system/actor_loader/StageActorLocator.h"
 
-#include "Stage.h"
+#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
@@ -14,17 +14,19 @@
 #include "actor/NPC.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
-#include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
 
-Actor* StageActorLocator::FindPlacedActor(
-    const Stage& stage,
-    const std::string& sequenceName,
-    int stageYamlIndex) const
+Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string& sequenceName, int stageYamlIndex) const
 {
     if (stageYamlIndex < 0) {
         return nullptr;
+    }
+
+    if (sequenceName == "planets") {
+        const auto& planets = stage.GetPlanets();
+        return stageYamlIndex < static_cast<int>(planets.size()) ? planets[stageYamlIndex] : nullptr;
     }
 
     const auto findByIndex = [stageYamlIndex](const auto& actors) -> Actor* {
@@ -42,9 +44,13 @@ Actor* StageActorLocator::FindPlacedActor(
         }
 
         for (Platform* platform : planet->GetPlatforms()) {
-            if (platform &&
-                platform->GetStageSequenceName() == sequenceName &&
-                platform->GetStageYamlIndex() == stageYamlIndex) {
+            if (!platform || platform->GetStageYamlIndex() != stageYamlIndex) {
+                continue;
+            }
+
+            // 種別名が未設定の足場は、エディターと同じく通常のplatformsとして解決する。
+            const std::string& platformSequenceName = platform->GetStageSequenceName();
+            if (platformSequenceName == sequenceName || (platformSequenceName.empty() && sequenceName == "platforms")) {
                 return platform;
             }
         }
@@ -92,10 +98,8 @@ Actor* StageActorLocator::FindPlacedActor(
     return nullptr;
 }
 
-Platform* StageActorLocator::FindPlacedPlatform(
-    const Stage& stage,
-    const std::string& platformId,
-    int preferredStageYamlIndex) const
+Platform* StageActorLocator::FindPlacedPlatform(const Stage& stage, const std::string& platformId,
+                                                int preferredStageYamlIndex) const
 {
     if (platformId.empty()) {
         return nullptr;

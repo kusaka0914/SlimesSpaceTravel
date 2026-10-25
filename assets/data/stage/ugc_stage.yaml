@@ -68,8 +68,7 @@ platforms:
       pressureSwitch:
         remainsOnAfterPressed: false
         inactiveOpacity: 0.25
-        targets:
-          - platform_8
+        targets: []
   - currentPlanetNum: 1
     theta: 1.7033478
     phi: 0
@@ -282,7 +281,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_17
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 2
@@ -392,7 +391,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_18
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -431,7 +430,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_4
+    platformId: platform_19
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -472,7 +471,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_20
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -513,7 +512,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_21
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3
@@ -554,7 +553,7 @@ platforms:
       - 0
       - 1
       - 0
-    platformId: platform_3
+    platformId: platform_22
     ugcGeneratedPlatform: true
     ugcGridSize: 1
     ugcGridLayer: 3

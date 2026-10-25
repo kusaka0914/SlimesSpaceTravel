@@ -1,48 +1,32 @@
 #pragma once
 
+#include "system/PlayerInputDeviceRouting.h"
+#include <SDL_gamecontroller.h>
 #include <array>
 
-class Game;
-class Player;
+struct GLFWwindow;
 
+// OS入力をフレーム単位で保持する。ウィンドウ・機器のハンドルは取得中だけ借用し、保持しない。
 class InputSystem {
 public:
-    explicit InputSystem(Game* game);
+    // controllersは1P・2Pの順。未接続はnullptrとし、再接続後は最新のハンドルを渡す。
+    // フレーム開始時に取得し、次回取得まで問い合わせ結果は変化しない。
+    void CaptureFrameInput(GLFWwindow& window, const std::array<SDL_GameController*, 2>& controllers);
 
-    void CaptureFrameInput();
-    void ProcessGameInput();
-    void SuppressOneShotInputUntilReleased();
-    bool IsMovementInputPressedForPlayer(const Player* player) const;
+    // 割当済みの機器に移動入力があるかを返す。Playerの参加状態・操作権は呼出元で解決する。
+    bool IsMovementInputPressed(PlayerInputDevice inputDevice) const;
     bool IsKeyPressed(int key) const;
     bool IsMouseButtonPressed(int button) const;
+
+    // 1始まりのコントローラー番号とSDL軸番号で取得する。範囲外は0。値はSDLの生の軸値。
     int GetControllerAxis(int playerNum, int axis) const;
+
+    // 1始まりのコントローラー番号とSDLボタン番号で取得する。範囲外はfalse。
     bool IsControllerButtonPressed(int playerNum, int button) const;
     bool IsAnyControllerButtonPressed(int button) const;
     bool HasControllerInput(int playerNum) const;
     double GetCursorX() const { return mSnapshot.cursorX; }
     double GetCursorY() const { return mSnapshot.cursorY; }
-
-private:
-    void SuppressUGCPlayShortcutUntilReleased();
-    void UpdateLastUsedInputDevice();
-    bool ProcessTgsEndShortcutInput();
-    void ProcessPauseToggleInput();
-    void ProcessPauseMenuInput();
-    void SuppressAllPlayerJumpInputUntilReleased();
-    void ProcessDebugReloadInput();
-    void ProcessPlayerJoinInput();
-    void ProcessPlayerSplitInput();
-    void ProcessPlayerSwitchInput();
-    void ProcessBattleStyleSelectionInput();
-    void ProcessTitleMenuInput();
-    void ProcessUGCModeInput();
-    void ProcessUGCClearResultInput();
-    void ProcessUGCEditorCursorInput();
-    void ProcessUGCEditorCommandInput();
-    bool ProcessSceneConfirmInput(bool allowsSceneAction);
-    void ProcessDebugEditorToggleInput();
-    void ProcessFreeCameraToggleInput();
-    void ProcessStartInput(bool allowsStartAction);
 
 private:
     struct InputSnapshot {
@@ -55,49 +39,5 @@ private:
         double cursorY = 0.0;
     };
 
-    Game* mGame = nullptr;
     InputSnapshot mSnapshot;
-
-    bool mReloadKeyPressedPrev = false;
-    bool mUIReloadKeyPressedPrev = false;
-    bool mPPressedPrev = false;
-    bool mLPressedPrev = false;
-    bool mQPressedPrev = false;
-    bool mTgsEndShortcutPressedPrev = false;
-    bool mTgsNoticeShortcutPressedPrev = false;
-    bool mPlayerSplitPressedPrev = false;
-    bool mPlayerSwitchPressedPrev = false;
-    bool mBattleStyleDirectionPressedPrev = false;
-    bool mTitleMenuDirectionPressedPrev = false;
-    bool mTitleMenuConfirmPressedPrev = false;
-    bool mUGCModePressedPrev = false;
-    bool mUGCWorkBrowserPressedPrev = false;
-    bool mUGCClearResultDirectionPressedPrev = false;
-    bool mUGCClearResultConfirmPressedPrev = false;
-    bool mStartPressedPrev = false;
-    bool mPauseMenuKeyPressedPrev = false;
-    bool mPauseMenuUpPressedPrev = false;
-    bool mPauseMenuDownPressedPrev = false;
-    bool mPauseMenuConfirmPressedPrev = false;
-    std::array<bool, 2> mControllerConfirmPressedPrev{};
-    bool mWasUGCEditorCursorActive = false;
-    bool mUGCEditorControllerClickPressedPrev = false;
-    bool mUGCEditorUndoPressedPrev = false;
-    bool mUGCEditorRedoPressedPrev = false;
-    bool mUGCEditorEraserPressedPrev = false;
-    bool mUGCEditorZoomInPressedPrev = false;
-    bool mUGCEditorZoomOutPressedPrev = false;
-    bool mUGCEditorLayerDownPressedPrev = false;
-    bool mUGCEditorLayerUpPressedPrev = false;
-    bool mUGCEditorPlayPressedPrev = false;
-    bool mUGCEditorSelectionPressedPrev = false;
-    bool mUGCEditorDpadLeftPressedPrev = false;
-    bool mUGCEditorDpadRightPressedPrev = false;
-    bool mUGCEditorDpadUpPressedPrev = false;
-    bool mUGCEditorDpadDownPressedPrev = false;
-    bool mKeyboardConfirmPressedPrev = false;
-    bool mShouldIgnoreNextSyntheticCursorMotion = false;
-    bool mHasPreviousCursorPosition = false;
-    double mPreviousCursorX = 0.0;
-    double mPreviousCursorY = 0.0;
 };

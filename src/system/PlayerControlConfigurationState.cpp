@@ -12,8 +12,7 @@ int PlayerControlConfigurationState::GetControlledPlayerIndex() const
     return mControlledPlayerIndex;
 }
 
-std::optional<ControlledPlayerChange>
-PlayerControlConfigurationState::SelectControlledPlayer(int playerIndex)
+std::optional<ControlledPlayerChange> PlayerControlConfigurationState::SelectControlledPlayer(int playerIndex)
 {
     if (playerIndex == mControlledPlayerIndex) {
         return std::nullopt;
@@ -32,8 +31,7 @@ void PlayerControlConfigurationState::BeginPlayerSplit()
     mIsPlayerSplit = true;
 }
 
-std::optional<ControlledPlayerChange>
-PlayerControlConfigurationState::EndPlayerSplit()
+std::optional<ControlledPlayerChange> PlayerControlConfigurationState::EndPlayerSplit()
 {
     mIsPlayerSplit = false;
     mPendingControlSwitchSeconds = -1.0f;
@@ -47,8 +45,7 @@ void PlayerControlConfigurationState::Reset()
     mPendingControlSwitchSeconds = -1.0f;
 }
 
-void PlayerControlConfigurationState::ScheduleControlSwitchAfterBoarding(
-    float delaySeconds)
+void PlayerControlConfigurationState::ScheduleControlSwitchAfterBoarding(float delaySeconds)
 {
     mPendingControlSwitchSeconds = std::max(0.0f, delaySeconds);
 }
@@ -59,10 +56,8 @@ void PlayerControlConfigurationState::CancelScheduledControlSwitch()
 }
 
 std::optional<ControlledPlayerChange>
-PlayerControlConfigurationState::UpdateScheduledControlSwitch(
-    float deltaSeconds,
-    bool isSecondPlayerJoined,
-    int activePlayerIndex)
+PlayerControlConfigurationState::UpdateScheduledControlSwitch(float deltaSeconds, bool isSecondPlayerJoined,
+                                                              int activePlayerIndex)
 {
     if (mPendingControlSwitchSeconds < 0.0f) {
         return std::nullopt;

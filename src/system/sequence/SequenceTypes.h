@@ -20,6 +20,7 @@ enum class SequenceEasing {
     EaseInOut,
 };
 
+// playersはPlayer配列、それ以外はステージYAMLの種別と0始まりの配置インデックスで識別する。
 struct SequenceActorRef {
     std::string group;
     int index = -1;
@@ -27,6 +28,7 @@ struct SequenceActorRef {
     bool IsValid() const { return !group.empty() && index >= 0; }
 };
 
+// 時刻・継続時間は秒単位、移動位置はワールド座標。移動以外のクリップは開始時刻のイベントとして扱う。
 struct SequenceClip {
     SequenceClipType type = SequenceClipType::ActorMove;
     float startTime = 0.0f;
@@ -52,8 +54,8 @@ struct GameplaySequence {
     {
         float duration = 0.0f;
         for (const SequenceClip& clip : clips) {
-            const float clipDuration =
-                clip.type == SequenceClipType::ActorMove ? clip.duration : 0.0f;
+            // 移動以外は開始時刻で発火するため、durationを演出全体の長さへ加算しない。
+            const float clipDuration = clip.type == SequenceClipType::ActorMove ? clip.duration : 0.0f;
             duration = std::max(duration, clip.startTime + clipDuration);
         }
         return duration;

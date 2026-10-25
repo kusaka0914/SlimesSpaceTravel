@@ -1,16 +1,19 @@
 #include "system/camera/CinematicSequenceLibrary.h"
 
+#include "utils/AtomicFile.h"
+#include "utils/YamlFile.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <glm/common.hpp>
+#include <iostream>
 #include <utility>
 
 namespace {
+
 glm::vec3 ReadVec3(const YAML::Node& node, const glm::vec3& fallback)
 {
     if (!node || !node.IsSequence() || node.size() != 3) {
@@ -68,9 +71,7 @@ CameraTransitionMode ParseTransitionMode(const YAML::Node& node)
         return CameraTransitionMode::Smooth;
     }
 
-    return NormalizeToken(node.as<std::string>()) == "cut"
-        ? CameraTransitionMode::Cut
-        : CameraTransitionMode::Smooth;
+    return NormalizeToken(node.as<std::string>()) == "cut" ? CameraTransitionMode::Cut : CameraTransitionMode::Smooth;
 }
 
 const char* ToString(CameraEasing easing)
@@ -91,19 +92,10 @@ const char* ToString(CameraEasing easing)
 
 const char* ToString(CameraTransitionMode transitionMode)
 {
-    return transitionMode == CameraTransitionMode::Cut
-        ? "cut"
-        : "smooth";
+    return transitionMode == CameraTransitionMode::Cut ? "cut" : "smooth";
 }
 
-void SortKeyframes(CinematicSequence& sequence)
-{
-    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
-                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
-                         return left.time < right.time;
-                     });
-}
-}
+} // namespace
 
 CinematicSequenceLibrary::CinematicSequenceLibrary(std::string filePath)
     : mFilePath(std::move(filePath))
@@ -112,14 +104,14 @@ CinematicSequenceLibrary::CinematicSequenceLibrary(std::string filePath)
 
 bool CinematicSequenceLibrary::Load()
 {
-    mSequences.clear();
+    decltype(mSequences) loadedSequences;
 
     try {
-        const YAML::Node root = YAML::LoadFile(mFilePath);
+        const YAML::Node root = YamlFile::Load(mFilePath);
         const YAML::Node cinematicsNode = root["cinematics"];
 
         if (!cinematicsNode || !cinematicsNode.IsMap()) {
-            return true;
+            return false;
         }
 
         for (const auto& entry : cinematicsNode) {
@@ -127,9 +119,7 @@ bool CinematicSequenceLibrary::Load()
             sequence.id = entry.first.as<std::string>();
 
             const YAML::Node sequenceNode = entry.second;
-            sequence.displayName = sequenceNode["name"]
-                                       ? sequenceNode["name"].as<std::string>()
-                                       : sequence.id;
+            sequence.displayName = sequenceNode["name"] ? sequenceNode["name"].as<std::string>() : sequence.id;
             sequence.loop = sequenceNode["loop"] ? sequenceNode["loop"].as<bool>() : false;
             sequence.endHoldDuration =
                 sequenceNode["endHoldDuration"] ? std::max(0.0f, sequenceNode["endHoldDuration"].as<float>()) : 0.5f;
@@ -140,33 +130,28 @@ bool CinematicSequenceLibrary::Load()
                     CinematicCameraKeyframe keyframe;
                     keyframe.time = keyframeNode["time"] ? std::max(0.0f, keyframeNode["time"].as<float>()) : 0.0f;
                     keyframe.holdDurationSeconds =
-                        keyframeNode["holdDuration"]
-                            ? std::max(
-                                  0.0f,
-                                  keyframeNode["holdDuration"].as<float>())
-                            : 0.0f;
+                        keyframeNode["holdDuration"] ? std::max(0.0f, keyframeNode["holdDuration"].as<float>()) : 0.0f;
                     keyframe.pose.position = ReadVec3(keyframeNode["position"], keyframe.pose.position);
                     keyframe.pose.target = ReadVec3(keyframeNode["target"], keyframe.pose.target);
                     keyframe.pose.up = ReadVec3(keyframeNode["up"], keyframe.pose.up);
                     keyframe.pose.fieldOfViewDegrees =
-                        keyframeNode["fieldOfView"]
-                            ? glm::clamp(keyframeNode["fieldOfView"].as<float>(), 10.0f, 120.0f)
-                            : 60.0f;
+                        keyframeNode["fieldOfView"] ? glm::clamp(keyframeNode["fieldOfView"].as<float>(), 10.0f, 120.0f)
+                                                    : 60.0f;
                     keyframe.easing = ParseEasing(keyframeNode["easing"]);
-                    keyframe.transitionMode =
-                        ParseTransitionMode(keyframeNode["transition"]);
+                    keyframe.transitionMode = ParseTransitionMode(keyframeNode["transition"]);
                     sequence.keyframes.push_back(keyframe);
                 }
             }
 
-            SortKeyframes(sequence);
-            mSequences[sequence.id] = std::move(sequence);
+            SortCinematicKeyframes(sequence);
+            loadedSequences[sequence.id] = std::move(sequence);
         }
     } catch (const std::exception& exception) {
         std::cerr << "Failed to load cinematic camera data: " << exception.what() << '\n';
         return false;
     }
 
+    mSequences.swap(loadedSequences);
     return true;
 }
 
@@ -188,9 +173,7 @@ bool CinematicSequenceLibrary::Save() const
 
             emitter << YAML::Key << sequence.id << YAML::Value << YAML::BeginMap;
             emitter << YAML::Key << "name" << YAML::Value
-                    << (sequence.displayName.empty()
-                            ? sequence.id
-                            : sequence.displayName);
+                    << (sequence.displayName.empty() ? sequence.id : sequence.displayName);
             emitter << YAML::Key << "loop" << YAML::Value << sequence.loop;
             emitter << YAML::Key << "endHoldDuration" << YAML::Value << sequence.endHoldDuration;
             emitter << YAML::Key << "keyframes" << YAML::Value << YAML::BeginSeq;
@@ -198,8 +181,7 @@ bool CinematicSequenceLibrary::Save() const
             for (const CinematicCameraKeyframe& keyframe : sequence.keyframes) {
                 emitter << YAML::BeginMap;
                 emitter << YAML::Key << "time" << YAML::Value << keyframe.time;
-                emitter << YAML::Key << "holdDuration" << YAML::Value
-                        << keyframe.holdDurationSeconds;
+                emitter << YAML::Key << "holdDuration" << YAML::Value << keyframe.holdDurationSeconds;
 
                 emitter << YAML::Key << "position" << YAML::Value;
                 WriteVec3(emitter, keyframe.pose.position);
@@ -212,8 +194,7 @@ bool CinematicSequenceLibrary::Save() const
 
                 emitter << YAML::Key << "fieldOfView" << YAML::Value << keyframe.pose.fieldOfViewDegrees;
                 emitter << YAML::Key << "easing" << YAML::Value << ToString(keyframe.easing);
-                emitter << YAML::Key << "transition" << YAML::Value
-                        << ToString(keyframe.transitionMode);
+                emitter << YAML::Key << "transition" << YAML::Value << ToString(keyframe.transitionMode);
                 emitter << YAML::EndMap;
             }
 
@@ -224,13 +205,15 @@ bool CinematicSequenceLibrary::Save() const
         emitter << YAML::EndMap;
         emitter << YAML::EndMap;
 
-        std::ofstream output(mFilePath);
-        if (!output) {
+        if (!emitter.good()) {
             return false;
         }
-
-        output << emitter.c_str() << '\n';
-        return static_cast<bool>(output);
+        std::string errorMessage;
+        if (!AtomicFile::WriteText(mFilePath, std::string(emitter.c_str()) + '\n', errorMessage)) {
+            std::cerr << "Failed to save sequence data: " << errorMessage << '\n';
+            return false;
+        }
+        return true;
     } catch (const std::exception& exception) {
         std::cerr << "Failed to save cinematic camera data: " << exception.what() << '\n';
         return false;
@@ -262,8 +245,7 @@ bool CinematicSequenceLibrary::Create(std::string sequenceId)
     return true;
 }
 
-CinematicSequence* CinematicSequenceLibrary::Duplicate(
-    std::string_view sequenceId)
+CinematicSequence* CinematicSequenceLibrary::Duplicate(std::string_view sequenceId)
 {
     const CinematicSequence* source = Find(sequenceId);
     if (!source) {
@@ -280,28 +262,21 @@ CinematicSequence* CinematicSequenceLibrary::Duplicate(
 
     CinematicSequence duplicated = *source;
     duplicated.id = duplicatedId;
-    duplicated.displayName =
-        (source->displayName.empty()
-             ? source->id
-             : source->displayName) +
-        " コピー";
+    duplicated.displayName = (source->displayName.empty() ? source->id : source->displayName) + " コピー";
 
-    const auto [sequenceIt, wasInserted] =
-        mSequences.emplace(duplicatedId, std::move(duplicated));
-    return wasInserted ? &sequenceIt->second : nullptr;
+    const auto [sequenceIterator, wasInserted] = mSequences.emplace(duplicatedId, std::move(duplicated));
+    return wasInserted ? &sequenceIterator->second : nullptr;
 }
 
-bool CinematicSequenceLibrary::Rename(
-    std::string_view currentSequenceId,
-    std::string newSequenceId)
+bool CinematicSequenceLibrary::Rename(std::string_view currentSequenceId, std::string newSequenceId)
 {
     if (newSequenceId.empty()) {
         return false;
     }
 
     const std::string currentId(currentSequenceId);
-    auto sequenceIt = mSequences.find(currentId);
-    if (sequenceIt == mSequences.end()) {
+    auto sequenceIterator = mSequences.find(currentId);
+    if (sequenceIterator == mSequences.end()) {
         return false;
     }
     if (currentId == newSequenceId) {
@@ -311,7 +286,7 @@ bool CinematicSequenceLibrary::Rename(
         return false;
     }
 
-    auto sequenceNode = mSequences.extract(sequenceIt);
+    auto sequenceNode = mSequences.extract(sequenceIterator);
     sequenceNode.key() = newSequenceId;
     sequenceNode.mapped().id = std::move(newSequenceId);
     mSequences.insert(std::move(sequenceNode));

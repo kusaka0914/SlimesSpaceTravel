@@ -1,6 +1,6 @@
 #include "actor/enemy/EnemyCombat.h"
 
-#include "Game.h"
+#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -16,9 +16,7 @@
 #include <glm/glm.hpp>
 
 namespace {
-std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
-    const Player& player,
-    const PhysicsSystem& physicsSystem)
+std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(const Player& player, const PhysicsSystem& physicsSystem)
 {
     const glm::vec3 up = glm::normalize(player.GetUpVec());
     glm::vec3 forward = player.GetFacingForwardVec();
@@ -30,109 +28,70 @@ std::array<glm::vec3, 9> GetPlayerSurfaceCollisionSamples(
     forward = glm::normalize(forward);
     const glm::vec3 left = glm::normalize(glm::cross(up, forward));
     const float scale = player.GetCollisionScaleMultiplier();
-    const float halfForward =
-        physicsSystem.GetPlayerCollisionDepth() * scale * 0.5f;
-    const float halfSide =
-        physicsSystem.GetPlayerCollisionWidth() * scale * 0.5f;
+    const float halfForward = physicsSystem.GetPlayerCollisionDepth() * scale * 0.5f;
+    const float halfSide = physicsSystem.GetPlayerCollisionWidth() * scale * 0.5f;
     const glm::vec3 position = player.GetPos();
 
-    return {
-        position,
-        position + forward * halfForward,
-        position - forward * halfForward,
-        position + left * halfSide,
-        position - left * halfSide,
-        position + forward * halfForward + left * halfSide,
-        position + forward * halfForward - left * halfSide,
-        position - forward * halfForward + left * halfSide,
-        position - forward * halfForward - left * halfSide};
+    // 球面上でPlayerの中心だけが攻撃範囲外でも、衝突形状の端が入る場合を拾う。
+    return {position,
+            position + forward * halfForward,
+            position - forward * halfForward,
+            position + left * halfSide,
+            position - left * halfSide,
+            position + forward * halfForward + left * halfSide,
+            position + forward * halfForward - left * halfSide,
+            position - forward * halfForward + left * halfSide,
+            position - forward * halfForward - left * halfSide};
 }
-}
+} // namespace
 
-EnemyGuardDamageResult EnemyCombat::ApplyGuardDamage(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    EnemyStateMachine& stateMachine,
-    float guardDamage,
-    float deltaTime)
+EnemyGuardDamageResult EnemyCombat::ApplyGuardDamage(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                                     EnemyStateMachine& stateMachine, float guardDamage,
+                                                     float deltaTime)
 {
     if (!stateMachine.IsAlive(enemy)) {
         return {};
     }
 
-    const EnemyGuardDamageResult damageResult =
-        status.ApplyGuardDamage(guardDamage);
-    LaunchWhenGuardBreaks(
-        enemy,
-        status,
-        movement,
-        stateMachine,
-        damageResult,
-        deltaTime);
+    const EnemyGuardDamageResult damageResult = status.ApplyGuardDamage(guardDamage);
+    LaunchWhenGuardBreaks(enemy, status, movement, stateMachine, damageResult, deltaTime);
     return damageResult;
 }
 
-EnemyGuardDamageResult
-EnemyCombat::ApplyGuardDamageEnsuringCurrentSegmentBreak(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    EnemyStateMachine& stateMachine,
-    float minimumGuardDamage,
-    float deltaTime)
+EnemyGuardDamageResult EnemyCombat::ApplyGuardDamageEnsuringCurrentSegmentBreak(Enemy& enemy, EnemyStatus& status,
+                                                                                EnemyMovement& movement,
+                                                                                EnemyStateMachine& stateMachine,
+                                                                                float minimumGuardDamage,
+                                                                                float deltaTime)
 {
     if (!stateMachine.IsAlive(enemy)) {
         return {};
     }
 
-    const EnemyGuardDamageResult damageResult =
-        status.ApplyGuardDamageEnsuringCurrentSegmentBreak(
-            minimumGuardDamage);
-    LaunchWhenGuardBreaks(
-        enemy,
-        status,
-        movement,
-        stateMachine,
-        damageResult,
-        deltaTime);
+    const EnemyGuardDamageResult damageResult = status.ApplyGuardDamageEnsuringCurrentSegmentBreak(minimumGuardDamage);
+    LaunchWhenGuardBreaks(enemy, status, movement, stateMachine, damageResult, deltaTime);
     return damageResult;
 }
 
-EnemyGuardDamageResult EnemyCombat::BreakGuard(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    EnemyStateMachine& stateMachine,
-    float deltaTime)
+EnemyGuardDamageResult EnemyCombat::BreakGuard(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                               EnemyStateMachine& stateMachine, float deltaTime)
 {
     if (!stateMachine.IsAlive(enemy)) {
         return {};
     }
 
     const EnemyGuardDamageResult damageResult = status.BreakGuard();
-    LaunchWhenGuardBreaks(
-        enemy,
-        status,
-        movement,
-        stateMachine,
-        damageResult,
-        deltaTime);
+    LaunchWhenGuardBreaks(enemy, status, movement, stateMachine, damageResult, deltaTime);
     return damageResult;
 }
 
-void EnemyCombat::LaunchWhenGuardBreaks(
-    Enemy& enemy,
-    EnemyStatus& status,
-    EnemyMovement& movement,
-    EnemyStateMachine& stateMachine,
-    const EnemyGuardDamageResult& damageResult,
-    float deltaTime)
+void EnemyCombat::LaunchWhenGuardBreaks(Enemy& enemy, EnemyStatus& status, EnemyMovement& movement,
+                                        EnemyStateMachine& stateMachine, const EnemyGuardDamageResult& damageResult,
+                                        float deltaTime)
 {
     const bool canStartLaunch =
-        enemy.IsOnGround() ||
-        stateMachine.GetActionState() ==
-            EnemyStateMachine::ActionState::KnockedBack;
+        enemy.IsOnGround() || stateMachine.GetActionState() == EnemyStateMachine::ActionState::KnockedBack;
+
     // 通常ノックバックの小さな浮きは地上コンボの途中状態なので、
     // ガードが尽きたら正式な打ち上げへ移行する。既に Launched の敵は浮き直さない。
     if (damageResult.wasFullyBroken && canStartLaunch) {
@@ -143,23 +102,17 @@ void EnemyCombat::LaunchWhenGuardBreaks(
     }
 }
 
-void EnemyCombat::TryApplyAttack(
-    Enemy& enemy,
-    EnemyStatus& status,
-    const EnemyStateMachine& stateMachine,
-    float deltaTime)
+void EnemyCombat::TryApplyAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine,
+                                 float deltaTime)
 {
     if (!stateMachine.IsAttackImpactActive(status)) {
         return;
     }
 
-    const EnemyAttackFrame& attackFrame =
-        stateMachine.GetActiveAttackFrame();
-    const EnemyMeleeAttackPreviewArea attackArea =
-        CalculateEnemyMeleeAttackPreviewArea(enemy, attackFrame);
+    const EnemyAttackFrame& attackFrame = stateMachine.GetActiveAttackFrame();
+    const EnemyMeleeAttackPreviewArea attackArea = CalculateEnemyMeleeAttackPreviewArea(enemy, attackFrame);
     EnemyAttackFrame meleeAttackFrame = attackFrame;
-    meleeAttackFrame.origin +=
-        meleeAttackFrame.forward * attackArea.forwardStartOffset;
+    meleeAttackFrame.origin += meleeAttackFrame.forward * attackArea.forwardStartOffset;
     const Planet* planet = enemy.GetCurrentPlanet();
     PhysicsSystem* physicsSystem = enemy.GetGame()->GetPhysicsSystem();
 
@@ -181,27 +134,17 @@ void EnemyCombat::TryApplyAttack(
         }
 
         bool isInsideAttack = false;
-        if (planet && planet->GetPlanetShape() ==
-                          Planet::PlanetShape::Sphere &&
-            physicsSystem) {
-            for (const glm::vec3& samplePosition :
-                 GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
-                if (IsPositionInsideSphereSurfaceMeleeAttack(
-                        *planet,
-                        meleeAttackFrame,
-                        samplePosition,
-                        attackArea.forwardLength,
-                        attackArea.halfWidth)) {
+        if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere && physicsSystem) {
+            for (const glm::vec3& samplePosition : GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
+                if (IsPositionInsideSphereSurfaceMeleeAttack(*planet, meleeAttackFrame, samplePosition,
+                                                             attackArea.forwardLength, attackArea.halfWidth)) {
                     isInsideAttack = true;
                     break;
                 }
             }
         } else {
-            isInsideAttack = IsPositionInsideMeleeAttack(
-                meleeAttackFrame,
-                player->GetPos(),
-                attackArea.forwardLength,
-                attackArea.halfWidth);
+            isInsideAttack = IsPositionInsideMeleeAttack(meleeAttackFrame, player->GetPos(), attackArea.forwardLength,
+                                                         attackArea.halfWidth);
         }
         if (!isInsideAttack) {
             continue;
@@ -212,24 +155,16 @@ void EnemyCombat::TryApplyAttack(
     }
 }
 
-void EnemyCombat::TryApplyFanAttack(
-    Enemy& enemy,
-    EnemyStatus& status,
-    const EnemyStateMachine& stateMachine,
-    float range,
-    float angleRadians,
-    float deltaTime)
+void EnemyCombat::TryApplyFanAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine,
+                                    float range, float angleRadians, float deltaTime)
 {
     if (!stateMachine.IsAttackImpactActive(status)) {
         return;
     }
 
-    const EnemyAttackFrame& attackFrame =
-        stateMachine.GetActiveAttackFrame();
+    const EnemyAttackFrame& attackFrame = stateMachine.GetActiveAttackFrame();
     EnemyAttackFrame fanAttackFrame = attackFrame;
-    fanAttackFrame.origin +=
-        fanAttackFrame.forward *
-        CalculateEnemyAttackFrontOffset(enemy, attackFrame);
+    fanAttackFrame.origin += fanAttackFrame.forward * CalculateEnemyAttackFrontOffset(enemy, attackFrame);
 
     for (Player* player : enemy.GetGame()->GetPlayers()) {
         if (!player || !player->IsAlive() || status.HasHitPlayer(player)) {
@@ -242,31 +177,19 @@ void EnemyCombat::TryApplyFanAttack(
 
         const Planet* planet = enemy.GetCurrentPlanet();
         bool isInsideAttack = false;
-        if (planet && planet->GetPlanetShape() ==
-                          Planet::PlanetShape::Sphere) {
-            PhysicsSystem* physicsSystem =
-                enemy.GetGame()->GetPhysicsSystem();
+        if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+            PhysicsSystem* physicsSystem = enemy.GetGame()->GetPhysicsSystem();
             if (physicsSystem) {
-                for (const glm::vec3& samplePosition :
-                     GetPlayerSurfaceCollisionSamples(
-                         *player, *physicsSystem)) {
-                    if (IsPositionInsideSphereSurfaceFanAttack(
-                            *planet,
-                            fanAttackFrame,
-                            samplePosition,
-                            range,
-                            angleRadians)) {
+                for (const glm::vec3& samplePosition : GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
+                    if (IsPositionInsideSphereSurfaceFanAttack(*planet, fanAttackFrame, samplePosition, range,
+                                                               angleRadians)) {
                         isInsideAttack = true;
                         break;
                     }
                 }
             }
         } else {
-            isInsideAttack = IsPositionInsideFanAttack(
-                fanAttackFrame,
-                player->GetPos(),
-                range,
-                angleRadians);
+            isInsideAttack = IsPositionInsideFanAttack(fanAttackFrame, player->GetPos(), range, angleRadians);
         }
         if (!isInsideAttack) {
             continue;
@@ -277,23 +200,17 @@ void EnemyCombat::TryApplyFanAttack(
     }
 }
 
-void EnemyCombat::TryApplyGroundRadialAttack(
-    Enemy& enemy,
-    EnemyStatus& status,
-    const EnemyStateMachine& stateMachine,
-    float range,
-    float deltaTime)
+void EnemyCombat::TryApplyGroundRadialAttack(Enemy& enemy, EnemyStatus& status, const EnemyStateMachine& stateMachine,
+                                             float range, float deltaTime)
 {
     if (!stateMachine.IsAttackImpactActive(status)) {
         return;
     }
 
-    const EnemyAttackFrame& attackFrame =
-        stateMachine.GetActiveAttackFrame();
+    const EnemyAttackFrame& attackFrame = stateMachine.GetActiveAttackFrame();
 
     for (Player* player : enemy.GetGame()->GetPlayers()) {
-        if (!player || !player->IsAlive() || !player->GetOnGround() ||
-            status.HasHitPlayer(player)) {
+        if (!player || !player->IsAlive() || !player->GetOnGround() || status.HasHitPlayer(player)) {
             continue;
         }
 
@@ -303,29 +220,18 @@ void EnemyCombat::TryApplyGroundRadialAttack(
 
         const Planet* planet = enemy.GetCurrentPlanet();
         bool isInsideAttack = false;
-        if (planet && planet->GetPlanetShape() ==
-                          Planet::PlanetShape::Sphere) {
-            PhysicsSystem* physicsSystem =
-                enemy.GetGame()->GetPhysicsSystem();
+        if (planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere) {
+            PhysicsSystem* physicsSystem = enemy.GetGame()->GetPhysicsSystem();
             if (physicsSystem) {
-                for (const glm::vec3& samplePosition :
-                     GetPlayerSurfaceCollisionSamples(
-                         *player, *physicsSystem)) {
-                    if (IsPositionInsideSphereSurfaceRadialAttack(
-                            *planet,
-                            attackFrame,
-                            samplePosition,
-                            range)) {
+                for (const glm::vec3& samplePosition : GetPlayerSurfaceCollisionSamples(*player, *physicsSystem)) {
+                    if (IsPositionInsideSphereSurfaceRadialAttack(*planet, attackFrame, samplePosition, range)) {
                         isInsideAttack = true;
                         break;
                     }
                 }
             }
         } else {
-            isInsideAttack = IsPositionInsideRadialAttack(
-                attackFrame,
-                player->GetPos(),
-                range);
+            isInsideAttack = IsPositionInsideRadialAttack(attackFrame, player->GetPos(), range);
         }
         if (!isInsideAttack) {
             continue;
@@ -346,18 +252,11 @@ bool EnemyCombat::IsPlayerInRange(const Enemy& enemy, Player* player, float rang
     return distToPlayer <= range;
 }
 
-bool EnemyCombat::CanHitPlayer(
-    const Enemy& enemy,
-    const Player* player) const
+bool EnemyCombat::CanHitPlayer(const Enemy& enemy, const Player* player) const
 {
     const Planet* planet = enemy.GetCurrentPlanet();
-    if (!player ||
-        !player->GetIsActive() ||
-        !planet ||
-        player->GetCurrentPlanet() != planet ||
-        !planet->ArePositionsOnSameSurfaceFace(
-            enemy.GetPos(),
-            player->GetPos())) {
+    if (!player || !player->GetIsActive() || !planet || player->GetCurrentPlanet() != planet ||
+        !planet->ArePositionsOnSameSurfaceFace(enemy.GetPos(), player->GetPos())) {
         return false;
     }
     return true;

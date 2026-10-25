@@ -1,16 +1,14 @@
 #include "animation/AnimationPlayer.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-
 namespace {
-template <class KeyType>
-std::size_t FindKeyInterval(const std::vector<KeyType>& keys, double currentTimeTicks)
+template <class KeyType> std::size_t FindKeyInterval(const std::vector<KeyType>& keys, double currentTimeTicks)
 {
     if (keys.size() < 2) {
         return 0;
@@ -29,6 +27,8 @@ template <class KeyType>
 float CalculateInterpolationFactor(const KeyType& currentKey, const KeyType& nextKey, double currentTimeTicks)
 {
     const double intervalTicks = nextKey.timeTicks - currentKey.timeTicks;
+
+    // 重複・逆順のキー時刻では除算せず、現在キーの値を使う。
     if (intervalTicks <= 0.0) {
         return 0.0f;
     }
@@ -36,7 +36,7 @@ float CalculateInterpolationFactor(const KeyType& currentKey, const KeyType& nex
     const double elapsedTicks = currentTimeTicks - currentKey.timeTicks;
     return glm::clamp(static_cast<float>(elapsedTicks / intervalTicks), 0.0f, 1.0f);
 }
-}
+} // namespace
 
 void AnimationPlayer::SetAnimationData(const SkeletalAnimationData* animationData)
 {
@@ -137,6 +137,8 @@ void AnimationPlayer::CalculateNodeTransform(const SkeletonNode& node, const glm
         const std::size_t boneIndex = boneIndexIt->second;
         if (boneIndex < mAnimationData->bones.size() && boneIndex < mFinalBoneTransforms.size()) {
             const BoneInfo& bone = mAnimationData->bones[boneIndex];
+
+            // バインド時の頂点を現在のボーン姿勢へ移し、モデル読込時のルート変換を取り除く。
             mFinalBoneTransforms[boneIndex] =
                 mAnimationData->inverseRootTransform * globalTransform * bone.inverseBindTransform;
         }
@@ -159,16 +161,17 @@ glm::mat4 AnimationPlayer::CalculateLocalTransform(const SkeletonNode& node) con
     }
 
     const BoneAnimationChannel& channel = channelIt->second;
+
+    // キーがない成分で元の姿勢を失わないよう、ノードのバインド値を補間の既定値に使う。
     const glm::vec3 position = InterpolatePosition(channel, node.bindPosition);
     const glm::quat rotation = InterpolateRotation(channel, node.bindRotation);
     const glm::vec3 scale = InterpolateScale(channel, node.bindScale);
 
-    return glm::translate(glm::mat4(1.0f), position) * glm::mat4_cast(rotation) *
-           glm::scale(glm::mat4(1.0f), scale);
+    return glm::translate(glm::mat4(1.0f), position) * glm::mat4_cast(rotation) * glm::scale(glm::mat4(1.0f), scale);
 }
 
 glm::vec3 AnimationPlayer::InterpolatePosition(const BoneAnimationChannel& channel,
-                                                const glm::vec3& fallbackPosition) const
+                                               const glm::vec3& fallbackPosition) const
 {
     if (channel.positionKeys.empty()) {
         return fallbackPosition;
@@ -187,7 +190,7 @@ glm::vec3 AnimationPlayer::InterpolatePosition(const BoneAnimationChannel& chann
 }
 
 glm::quat AnimationPlayer::InterpolateRotation(const BoneAnimationChannel& channel,
-                                                const glm::quat& fallbackRotation) const
+                                               const glm::quat& fallbackRotation) const
 {
     if (channel.rotationKeys.empty()) {
         return fallbackRotation;

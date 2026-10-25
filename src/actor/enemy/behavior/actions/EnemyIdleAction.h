@@ -2,6 +2,7 @@
 
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 
+// Idle状態の索敵をEnemyStateMachineへ委譲する。Trackingへ移るとこの行動を終了する。
 class EnemyIdleAction final : public EnemyBehaviorAction {
 public:
     explicit EnemyIdleAction(const EnemyBehaviorActionConfig& config)

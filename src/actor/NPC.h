@@ -1,354 +1,164 @@
 #pragma once
 
 #include "actor/CharacterActor.h"
-#include "text/RubyText.h"
-#include <yaml-cpp/yaml.h>
+#include "actor/NPCTalkData.h"
+
 #include <cstddef>
 #include <glm/glm.hpp>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 
 class Game;
 class Player;
 
-struct NPCTalkCameraFocusTarget {
-    std::string sequenceName;
-    int yamlIndex = -1;
-
-    bool IsValid() const { return !sequenceName.empty() && yamlIndex >= 0; }
-};
-
-enum class NPCProximityMessageMode {
-    Disabled = 0,
-    AfterTalk,
-    Always
-};
-
-enum class TalkPageAdvanceCondition {
-    Confirm = 0,
-    PlayerSwitch,
-    Jump
-};
-
-const char* GetTalkPageAdvanceConditionId(
-    TalkPageAdvanceCondition condition);
-TalkPageAdvanceCondition ParseTalkPageAdvanceConditionId(
-    const std::string& conditionId);
-
+// キャラクターの接地・向きと会話可能状態を更新し、進行状況に合う会話を選択する。
+// ページの保存・編集はNPCTalkData、会話画面の進行はSceneSystemが担当する。
 class NPC : public CharacterActor {
 public:
+    // 構築・設定・更新
     NPC(Game* game);
 
+    // 設定ルートのnpcs配列からtypeに一致するモデルとスケールを適用する。
     void ApplyConfig(const YAML::Node& configRoot, const std::string& type);
-
     void UpdateActor(float deltaTime) override;
 
-    void AddTalkTexts(const std::string& talkTexts)
-    {
-        mTalkTexts.emplace_back(talkTexts);
-        mTalkCameraFocusTargets.emplace_back(std::nullopt);
-        mTalkRubySegments.emplace_back();
-        mTalkStageClearConditions.emplace_back(-1);
-        mTalkProximityMessageTexts.emplace_back();
-        mTalkProximityMessageRubySegments.emplace_back();
-        mTalkAdvanceConditions.emplace_back(
-            TalkPageAdvanceCondition::Confirm);
-        mTalkStartsOpeningAfterPages.emplace_back(false);
-        mTalkStartsEndingAfterPages.emplace_back(false);
-    }
-    void SetTalkText(std::size_t index, const std::string& talkText)
-    {
-        if (index < mTalkTexts.size()) {
-            if (mTalkTexts[index] != talkText && index < mTalkRubySegments.size()) {
-                mTalkRubySegments[index].clear();
-            }
-            mTalkTexts[index] = talkText;
-        }
-    }
-    void RemoveTalkText(std::size_t index)
-    {
-        if (index < mTalkTexts.size()) {
-            mTalkTexts.erase(mTalkTexts.begin() + static_cast<std::ptrdiff_t>(index));
-            if (index < mTalkCameraFocusTargets.size()) {
-                mTalkCameraFocusTargets.erase(
-                    mTalkCameraFocusTargets.begin() + static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkRubySegments.size()) {
-                mTalkRubySegments.erase(
-                    mTalkRubySegments.begin() + static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkStageClearConditions.size()) {
-                mTalkStageClearConditions.erase(
-                    mTalkStageClearConditions.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkProximityMessageTexts.size()) {
-                mTalkProximityMessageTexts.erase(
-                    mTalkProximityMessageTexts.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkProximityMessageRubySegments.size()) {
-                mTalkProximityMessageRubySegments.erase(
-                    mTalkProximityMessageRubySegments.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkAdvanceConditions.size()) {
-                mTalkAdvanceConditions.erase(
-                    mTalkAdvanceConditions.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkStartsOpeningAfterPages.size()) {
-                mTalkStartsOpeningAfterPages.erase(
-                    mTalkStartsOpeningAfterPages.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-            if (index < mTalkStartsEndingAfterPages.size()) {
-                mTalkStartsEndingAfterPages.erase(
-                    mTalkStartsEndingAfterPages.begin() +
-                    static_cast<std::ptrdiff_t>(index));
-            }
-        }
-    }
+    // 保存順の会話ページと進行条件
+    // 範囲外への変更は無視する。本文変更時はルビを破棄する。
+    void AddTalkTexts(const std::string& talkTexts) { mTalkData.AddTalkTexts(talkTexts); }
+    void SetTalkText(std::size_t index, const std::string& talkText) { mTalkData.SetTalkText(index, talkText); }
+    void RemoveTalkText(std::size_t index) { mTalkData.RemoveTalkText(index); }
+
+    // stageNum < 0は通常会話。解決時にはクリア済み条件のうち最大のステージ番号を選ぶ。
     void SetTalkStageClearCondition(std::size_t index, int stageNum)
     {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkStageClearConditions.size() < mTalkTexts.size()) {
-            mTalkStageClearConditions.resize(mTalkTexts.size(), -1);
-        }
-        mTalkStageClearConditions[index] = stageNum >= 0 ? stageNum : -1;
+        mTalkData.SetTalkStageClearCondition(index, stageNum);
     }
+    const std::vector<std::string>& GetTalkTexts() const { return mTalkData.GetTalkTexts(); }
+    int GetTalkStageClearCondition(std::size_t index) const { return mTalkData.GetTalkStageClearCondition(index); }
+
+    // ページごとの進行操作・カメラ・演出
     void SetTalkCameraFocusTarget(std::size_t index, const std::string& sequenceName, int yamlIndex)
     {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkCameraFocusTargets.size() < mTalkTexts.size()) {
-            mTalkCameraFocusTargets.resize(mTalkTexts.size());
-        }
-        mTalkCameraFocusTargets[index] = NPCTalkCameraFocusTarget{sequenceName, yamlIndex};
+        mTalkData.SetTalkCameraFocusTarget(index, sequenceName, yamlIndex);
     }
-    void ClearTalkCameraFocusTarget(std::size_t index)
+    void ClearTalkCameraFocusTarget(std::size_t index) { mTalkData.ClearTalkCameraFocusTarget(index); }
+    void SetTalkAdvanceCondition(std::size_t index, TalkPageAdvanceCondition condition)
     {
-        if (index < mTalkCameraFocusTargets.size()) {
-            mTalkCameraFocusTargets[index] = std::nullopt;
-        }
-    }
-    void SetTalkAdvanceCondition(
-        std::size_t index,
-        TalkPageAdvanceCondition condition)
-    {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkAdvanceConditions.size() < mTalkTexts.size()) {
-            mTalkAdvanceConditions.resize(
-                mTalkTexts.size(),
-                TalkPageAdvanceCondition::Confirm);
-        }
-        mTalkAdvanceConditions[index] = condition;
+        mTalkData.SetTalkAdvanceCondition(index, condition);
     }
     void SetTalkStartsOpeningAfterPage(std::size_t index, bool enabled)
     {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkStartsOpeningAfterPages.size() < mTalkTexts.size()) {
-            mTalkStartsOpeningAfterPages.resize(mTalkTexts.size(), false);
-        }
-        mTalkStartsOpeningAfterPages[index] = enabled;
+        mTalkData.SetTalkStartsOpeningAfterPage(index, enabled);
     }
     void SetTalkStartsEndingAfterPage(std::size_t index, bool enabled)
     {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkStartsEndingAfterPages.size() < mTalkTexts.size()) {
-            mTalkStartsEndingAfterPages.resize(mTalkTexts.size(), false);
-        }
-        mTalkStartsEndingAfterPages[index] = enabled;
-    }
-    void SetTalkRubySegments(std::size_t index, std::vector<RubyTextSegment> segments)
-    {
-        if (index >= mTalkTexts.size()) {
-            return;
-        }
-        if (mTalkRubySegments.size() < mTalkTexts.size()) {
-            mTalkRubySegments.resize(mTalkTexts.size());
-        }
-        mTalkRubySegments[index] = std::move(segments);
-    }
-    void SetTalkRubyReading(std::size_t talkIndex, std::size_t segmentIndex,
-                            const std::string& reading)
-    {
-        if (talkIndex < mTalkRubySegments.size() &&
-            segmentIndex < mTalkRubySegments[talkIndex].size()) {
-            mTalkRubySegments[talkIndex][segmentIndex].reading = reading;
-        }
-    }
-    void ClearTalkRubySegments(std::size_t index)
-    {
-        if (index < mTalkRubySegments.size()) {
-            mTalkRubySegments[index].clear();
-        }
+        mTalkData.SetTalkStartsEndingAfterPage(index, enabled);
     }
 
-    void SetName(const std::string& name) { mName = name; }
-    void SetProximityMessageMode(NPCProximityMessageMode mode)
+    // 未設定・範囲外ではnullptr。取得した参照は会話ページの追加・削除後に取得し直すこと。
+    const NPCTalkCameraFocusTarget* GetTalkCameraFocusTarget(std::size_t index) const
     {
-        mProximityMessageMode = mode;
+        return mTalkData.GetTalkCameraFocusTarget(index);
     }
-    void SetTalkProximityMessageText(
-        std::size_t index,
-        const std::string& text);
-    void SetTalkProximityMessageRubySegments(
-        std::size_t index,
-        std::vector<RubyTextSegment> segments);
-    void SetTalkProximityMessageRubyReading(
-        std::size_t talkIndex,
-        std::size_t segmentIndex,
-        const std::string& reading);
+    TalkPageAdvanceCondition GetTalkAdvanceCondition(std::size_t index) const
+    {
+        return mTalkData.GetTalkAdvanceCondition(index);
+    }
+    bool GetTalkStartsOpeningAfterPage(std::size_t index) const
+    {
+        return mTalkData.GetTalkStartsOpeningAfterPage(index);
+    }
+    bool GetTalkStartsEndingAfterPage(std::size_t index) const { return mTalkData.GetTalkStartsEndingAfterPage(index); }
+
+    // 会話本文のルビ
+    void SetTalkRubySegments(std::size_t index, std::vector<RubyTextSegment> segments)
+    {
+        mTalkData.SetTalkRubySegments(index, std::move(segments));
+    }
+    void SetTalkRubyReading(std::size_t talkIndex, std::size_t segmentIndex, const std::string& reading)
+    {
+        mTalkData.SetTalkRubyReading(talkIndex, segmentIndex, reading);
+    }
+    void ClearTalkRubySegments(std::size_t index) { mTalkData.ClearTalkRubySegments(index); }
+    const std::vector<RubyTextSegment>& GetTalkRubySegments(std::size_t index) const
+    {
+        return mTalkData.GetTalkRubySegments(index);
+    }
+    bool HasValidTalkRuby(std::size_t index) const { return mTalkData.HasValidTalkRuby(index); }
+
+    // 現在の進行状況に対応する会話
+    // resolvedIndexは進行条件で絞り込み後、indexは保存順のページ番号。
+    std::vector<std::string> GetResolvedTalkTexts() const;
+    const NPCTalkCameraFocusTarget* GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const;
+    TalkPageAdvanceCondition GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const;
+    bool GetResolvedTalkStartsOpeningAfterPage(std::size_t resolvedIndex) const;
+    bool GetResolvedTalkStartsEndingAfterPage(std::size_t resolvedIndex) const;
+    std::optional<std::size_t> GetResolvedTalkSourceIndex(std::size_t resolvedIndex) const;
+    const std::vector<RubyTextSegment>& GetResolvedTalkRubySegments(std::size_t resolvedIndex) const;
+    int ResolveTalkStageClearCondition() const;
+
+    // 頭上メッセージ
+    void SetProximityMessageMode(NPCProximityMessageMode mode) { mProximityMessageMode = mode; }
+
+    // 頭上メッセージは1行に整形する。ルビは本文を設定した後に指定する。
+    void SetTalkProximityMessageText(std::size_t index, const std::string& text);
+    void SetTalkProximityMessageRubySegments(std::size_t index, std::vector<RubyTextSegment> segments);
+    void SetTalkProximityMessageRubyReading(std::size_t talkIndex, std::size_t segmentIndex,
+                                            const std::string& reading);
     void ClearTalkProximityMessageRubySegments(std::size_t index);
     void SetProximityMessageRange(float range);
     void SetProximityMessageHeight(float height);
     void SetProximityMessageScale(float scale);
     void MarkTalkCompletedThisVisit() { mHasTalkedThisVisit = true; }
-    void SetForcesTalkOnArrival(bool forcesTalkOnArrival)
+    NPCProximityMessageMode GetProximityMessageMode() const { return mProximityMessageMode; }
+    const std::string& GetTalkProximityMessageText(std::size_t index) const
     {
-        mForcesTalkOnArrival = forcesTalkOnArrival;
-    }
-
-    bool GetIsTalkable() const { return mIsTalkable; }
-    const std::string& GetName() const { return mName; }
-    const std::vector<std::string>& GetTalkTexts() const { return mTalkTexts; }
-    int GetTalkStageClearCondition(std::size_t index) const
-    {
-        return index < mTalkStageClearConditions.size()
-                   ? mTalkStageClearConditions[index]
-                   : -1;
-    }
-    std::vector<std::string> GetResolvedTalkTexts() const;
-    const NPCTalkCameraFocusTarget*
-    GetResolvedTalkCameraFocusTarget(std::size_t resolvedIndex) const;
-    TalkPageAdvanceCondition
-    GetResolvedTalkAdvanceCondition(std::size_t resolvedIndex) const;
-    bool GetResolvedTalkStartsOpeningAfterPage(
-        std::size_t resolvedIndex) const;
-    bool GetResolvedTalkStartsEndingAfterPage(
-        std::size_t resolvedIndex) const;
-    std::optional<std::size_t> GetResolvedTalkSourceIndex(
-        std::size_t resolvedIndex) const;
-    const std::vector<RubyTextSegment>&
-    GetResolvedTalkRubySegments(std::size_t resolvedIndex) const;
-    const NPCTalkCameraFocusTarget* GetTalkCameraFocusTarget(std::size_t index) const
-    {
-        if (index >= mTalkCameraFocusTargets.size() || !mTalkCameraFocusTargets[index]) {
-            return nullptr;
-        }
-        return &*mTalkCameraFocusTargets[index];
-    }
-    TalkPageAdvanceCondition
-    GetTalkAdvanceCondition(std::size_t index) const
-    {
-        return index < mTalkAdvanceConditions.size()
-                   ? mTalkAdvanceConditions[index]
-                   : TalkPageAdvanceCondition::Confirm;
-    }
-    bool GetTalkStartsOpeningAfterPage(std::size_t index) const
-    {
-        return index < mTalkStartsOpeningAfterPages.size() &&
-               mTalkStartsOpeningAfterPages[index];
-    }
-    bool GetTalkStartsEndingAfterPage(std::size_t index) const
-    {
-        return index < mTalkStartsEndingAfterPages.size() &&
-               mTalkStartsEndingAfterPages[index];
-    }
-    const std::vector<RubyTextSegment>& GetTalkRubySegments(std::size_t index) const
-    {
-        static const std::vector<RubyTextSegment> emptySegments;
-        return index < mTalkRubySegments.size()
-                   ? mTalkRubySegments[index]
-                   : emptySegments;
-    }
-    bool HasValidTalkRuby(std::size_t index) const
-    {
-        return index < mTalkTexts.size() &&
-               index < mTalkRubySegments.size() &&
-               !mTalkRubySegments[index].empty() &&
-               JoinRubyBaseText(mTalkRubySegments[index]) == mTalkTexts[index];
-    }
-    NPCProximityMessageMode GetProximityMessageMode() const
-    {
-        return mProximityMessageMode;
-    }
-    const std::string& GetTalkProximityMessageText(
-        std::size_t index) const
-    {
-        static const std::string emptyText;
-        return index < mTalkProximityMessageTexts.size()
-                   ? mTalkProximityMessageTexts[index]
-                   : emptyText;
+        return mTalkData.GetTalkProximityMessageText(index);
     }
     const std::string& GetResolvedProximityMessageText() const;
-    const std::vector<RubyTextSegment>&
-    GetResolvedProximityMessageRubySegments() const;
-    const std::vector<RubyTextSegment>&
-    GetTalkProximityMessageRubySegments(std::size_t index) const
+    const std::vector<RubyTextSegment>& GetResolvedProximityMessageRubySegments() const;
+    const std::vector<RubyTextSegment>& GetTalkProximityMessageRubySegments(std::size_t index) const
     {
-        static const std::vector<RubyTextSegment> emptySegments;
-        return index < mTalkProximityMessageRubySegments.size()
-                   ? mTalkProximityMessageRubySegments[index]
-                   : emptySegments;
+        return mTalkData.GetTalkProximityMessageRubySegments(index);
     }
     bool HasValidTalkProximityMessageRuby(std::size_t index) const
     {
-        return index < mTalkProximityMessageTexts.size() &&
-               index < mTalkProximityMessageRubySegments.size() &&
-               !mTalkProximityMessageRubySegments[index].empty() &&
-               JoinRubyBaseText(
-                   mTalkProximityMessageRubySegments[index]) ==
-                   mTalkProximityMessageTexts[index];
+        return mTalkData.HasValidTalkProximityMessageRuby(index);
     }
     float GetProximityMessageRange() const { return mProximityMessageRange; }
     float GetProximityMessageHeight() const { return mProximityMessageHeight; }
     float GetProximityMessageScale() const { return mProximityMessageScale; }
     bool GetHasTalkedThisVisit() const { return mHasTalkedThisVisit; }
-    bool GetForcesTalkOnArrival() const { return mForcesTalkOnArrival; }
-    int ResolveTalkStageClearCondition() const;
-    bool CanStartRegularTalk() const;
     bool ShouldShowProximityMessage() const;
+
+    // 会話可能状態と会話中の振る舞い
+    void SetName(const std::string& name) { mName = name; }
+    void SetForcesTalkOnArrival(bool forcesTalkOnArrival) { mForcesTalkOnArrival = forcesTalkOnArrival; }
+    bool GetIsTalkable() const { return mIsTalkable; }
+    const std::string& GetName() const { return mName; }
+    bool GetForcesTalkOnArrival() const { return mForcesTalkOnArrival; }
+
+    // Alwaysモードは通常会話を開始しない。AfterTalkモードでは初回会話の後に頭上表示へ切り替える。
+    bool CanStartRegularTalk() const;
     virtual bool ShouldUseTalkCamera() const { return true; }
     virtual bool ShouldFacePlayerDuringTalk() const { return true; }
 
 private:
     std::vector<std::size_t> ResolveTalkIndices() const;
-    std::optional<std::size_t>
-    ResolveProximityMessageTalkIndex() const;
+    std::optional<std::size_t> ResolveProximityMessageTalkIndex() const;
     void LookNearestPlayer(float deltaTime);
     void CheckTalkable();
 
-    Player* FindNearestPlayer() const;
     bool IsPlayerInTalkableRange(Player* player) const;
 
 private:
     bool mIsTalkable;
     std::string mName;
-    std::vector<std::string> mTalkTexts;
-    std::vector<std::optional<NPCTalkCameraFocusTarget>> mTalkCameraFocusTargets;
-    std::vector<TalkPageAdvanceCondition> mTalkAdvanceConditions;
-    std::vector<bool> mTalkStartsOpeningAfterPages;
-    std::vector<bool> mTalkStartsEndingAfterPages;
-    std::vector<std::vector<RubyTextSegment>> mTalkRubySegments;
-    std::vector<int> mTalkStageClearConditions;
-    NPCProximityMessageMode mProximityMessageMode =
-        NPCProximityMessageMode::Disabled;
-    std::vector<std::string> mTalkProximityMessageTexts;
-    std::vector<std::vector<RubyTextSegment>>
-        mTalkProximityMessageRubySegments;
+    NPCTalkData mTalkData;
+    NPCProximityMessageMode mProximityMessageMode = NPCProximityMessageMode::Disabled;
     float mProximityMessageRange = 3.0f;
     float mProximityMessageHeight = 1.8f;
     float mProximityMessageScale = 1.0f;

@@ -1,9 +1,7 @@
 #include "gfx/render3d/DebugLabelRenderer.h"
 
-#include "gfx/Renderer3D.h"
-#include "Game.h"
-#include "Stage.h"
-#include "gfx/VertexArray.h"
+#include <GL/glew.h>
+
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatParts.h"
@@ -12,13 +10,14 @@
 #include "actor/Key.h"
 #include "actor/NPC.h"
 #include "actor/Planet.h"
-#include "actor/Platform.h"
-#include "actor/Star.h"
 #include "actor/StageObject.h"
+#include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
+#include "gfx/Renderer3D.h"
 #include "gfx/Shader3D.h"
+#include "gfx/VertexArray.h"
+#include "world/Stage.h"
 
-#include <GL/glew.h>
 #include <SDL_ttf.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
@@ -29,17 +28,17 @@ DebugLabelRenderer::DebugLabelRenderer(const Renderer3D* renderer)
 {
 }
 
-void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
+void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat, const Stage* stage, bool isUGCMode) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetGame()->GetCurrentStage()) {
+    if (!mRenderer || !stage) {
         return;
     }
 
-    if (mRenderer->GetGame()->GetIsUGCMode()) {
+    if (isUGCMode) {
         return;
     }
 
-    const std::vector<Planet*>& planets = mRenderer->GetGame()->GetCurrentStage()->GetPlanets();
+    const std::vector<Planet*>& planets = stage->GetPlanets();
 
     for (Planet* planet : planets) {
         if (!planet) {
@@ -50,14 +49,8 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
             DrawDebugLabel(viewMat, npc, "NPC " + std::to_string(npc->GetStageYamlIndex()));
         }
 
-        for (TutorialTrigger* trigger :
-             planet->GetTutorialTriggers()) {
-            DrawDebugLabel(
-                viewMat,
-                trigger,
-                "Tutorial Trigger " +
-                    std::to_string(
-                        trigger->GetStageYamlIndex()));
+        for (TutorialTrigger* trigger : planet->GetTutorialTriggers()) {
+            DrawDebugLabel(viewMat, trigger, "Tutorial Trigger " + std::to_string(trigger->GetStageYamlIndex()));
         }
 
         for (Enemy* enemy : planet->GetEnemies()) {
@@ -77,10 +70,8 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
         }
 
         for (StageObject* stageObject : planet->GetStageObjects()) {
-            DrawDebugLabel(
-                viewMat,
-                stageObject,
-                stageObject->GetModelPath() + " " + std::to_string(stageObject->GetStageYamlIndex()));
+            DrawDebugLabel(viewMat, stageObject,
+                           stageObject->GetModelPath() + " " + std::to_string(stageObject->GetStageYamlIndex()));
         }
 
         if (planet->GetKey()) {
@@ -88,14 +79,15 @@ void DebugLabelRenderer::DrawDebugLabels(const glm::mat4& viewMat) const
         }
 
         if (planet->GetStar()) {
-            DrawDebugLabel(viewMat, planet->GetStar(), "スター " + std::to_string(planet->GetStar()->GetStageYamlIndex()));
+            DrawDebugLabel(viewMat, planet->GetStar(),
+                           "スター " + std::to_string(planet->GetStar()->GetStageYamlIndex()));
         }
     }
 }
 
 void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* actor, const std::string& label) const
 {
-    if (!mRenderer || !mRenderer->GetGame() || !mRenderer->GetShader3D() || !actor || !actor->GetIsActive()) {
+    if (!mRenderer || !mRenderer->GetShader3D() || !actor || !actor->GetIsActive()) {
         return;
     }
 
@@ -134,9 +126,7 @@ void DebugLabelRenderer::DrawDebugLabel(const glm::mat4& viewMat, const Actor* a
     const float height = baseHeight;
     const float width = baseHeight * aspect;
 
-    const glm::mat4 billboard =
-        mRenderer->CreateBillboard(
-            viewMat, actor, labelHeight, 0.0f, width, height);
+    const glm::mat4 billboard = mRenderer->CreateBillboard(viewMat, actor, labelHeight, 0.0f, width, height);
 
     glUniformMatrix4fv(shader->GetLocModel(), 1, GL_FALSE, glm::value_ptr(billboard));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

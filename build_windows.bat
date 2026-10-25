@@ -21,24 +21,8 @@ if %errorlevel%==0 (
     )
 )
 
-rem Try Visual Studio bundled CMake if cmake is not on PATH
-if not defined CMAKE_EXE (
-    set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-
-    if exist "%VSWHERE%" (
-        for /f "usebackq tokens=*" %%i in (
-            `"%VSWHERE%" -latest -products * -property installationPath`
-        ) do (
-            set "VS_PATH=%%i"
-        )
-    )
-
-    if defined VS_PATH (
-        if exist "%VS_PATH%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" (
-            set "CMAKE_EXE=%VS_PATH%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
-        )
-    )
-)
+rem Keep discovery in a subroutine so values are expanded after assignment.
+if not defined CMAKE_EXE call :find_visual_studio_cmake
 
 if not defined CMAKE_EXE (
     echo [ERROR] CMake was not found.
@@ -46,6 +30,7 @@ if not defined CMAKE_EXE (
     echo Please install Visual Studio 2022 with:
     echo   Desktop development with C++
     echo.
+    if /i "%~1"=="--check-cmake" exit /b 1
     pause
     exit /b 1
 )
@@ -53,6 +38,7 @@ if not defined CMAKE_EXE (
 echo [OK] CMake:
 echo      %CMAKE_EXE%
 echo.
+if /i "%~1"=="--check-cmake" exit /b 0
 
 rem --------------------------------------------------
 rem 2. Find / Install vcpkg
@@ -91,10 +77,18 @@ if not exist "%LOCALAPPDATA%\SlimesSpaceTravel" (
     mkdir "%LOCALAPPDATA%\SlimesSpaceTravel"
 )
 
-git clone https://github.com/microsoft/vcpkg.git "%VCPKG_ROOT%"
+git clone --no-checkout https://github.com/microsoft/vcpkg.git "%VCPKG_ROOT%"
 if errorlevel 1 (
     echo.
     echo [ERROR] Failed to download vcpkg.
+    pause
+    exit /b 1
+)
+
+rem Match the tool revision used by CI; builtin-baseline pins the dependency ports.
+git -C "%VCPKG_ROOT%" checkout --detach 664933b8d385dfc01f4e0cdff4c7c74e71f6a740
+if errorlevel 1 (
+    echo [ERROR] Failed to select the supported vcpkg revision.
     pause
     exit /b 1
 )
@@ -178,4 +172,19 @@ echo %BUILD_DIR%
 echo.
 pause
 
+exit /b 0
+
+:find_visual_studio_cmake
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+set "VS_PATH="
+if not exist "%VSWHERE%" exit /b 0
+for /f "usebackq tokens=*" %%i in (
+    `"%VSWHERE%" -latest -products * -property installationPath`
+) do (
+    set "VS_PATH=%%i"
+)
+if not defined VS_PATH exit /b 0
+if exist "%VS_PATH%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" (
+    set "CMAKE_EXE=%VS_PATH%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+)
 exit /b 0

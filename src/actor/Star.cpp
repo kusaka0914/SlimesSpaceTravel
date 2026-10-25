@@ -1,5 +1,6 @@
-#include "Star.h"
-#include "Game.h"
+#include "actor/Star.h"
+
+#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
 #include "component/CollectableComponent.h"
@@ -22,26 +23,19 @@ void Star::Initialize()
 {
     Actor::Initialize();
 
-
     mIsUpVecInitialized = true;
 }
 
 glm::quat Star::GetRenderModelRotationOffset() const
 {
-
-
-
-
+    // GLBモデルの向きだけを描画時に補正し、Actorの配置や衝突用の姿勢は変えない。
     const std::string& modelPath = GetModelPath();
     const std::size_t extensionStart = modelPath.find_last_of('.');
-    if (extensionStart == std::string::npos ||
-        modelPath.substr(extensionStart) != ".glb") {
+    if (extensionStart == std::string::npos || modelPath.substr(extensionStart) != ".glb") {
         return glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
     }
 
-    return glm::angleAxis(
-        glm::half_pi<float>(),
-        glm::vec3(0.0f, 1.0f, 0.0f));
+    return glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Star::ApplyConfig(const YAML::Node& starRoot)
@@ -59,11 +53,15 @@ void Star::ApplyConfig(const YAML::Node& starRoot)
 
         const YAML::Node collection = starNode["collectionAnimation"];
         if (collection) {
-            mCollectionSettings.orbitDuration = collection["orbitDuration"].as<float>(mCollectionSettings.orbitDuration);
-            mCollectionSettings.orbitStartRadius = collection["orbitStartRadius"].as<float>(mCollectionSettings.orbitStartRadius);
-            mCollectionSettings.orbitSpinDegreesPerSecond = collection["orbitSpinDegreesPerSecond"].as<float>(mCollectionSettings.orbitSpinDegreesPerSecond);
+            mCollectionSettings.orbitDuration =
+                collection["orbitDuration"].as<float>(mCollectionSettings.orbitDuration);
+            mCollectionSettings.orbitStartRadius =
+                collection["orbitStartRadius"].as<float>(mCollectionSettings.orbitStartRadius);
+            mCollectionSettings.orbitSpinDegreesPerSecond =
+                collection["orbitSpinDegreesPerSecond"].as<float>(mCollectionSettings.orbitSpinDegreesPerSecond);
             mCollectionSettings.finalHeight = collection["finalHeight"].as<float>(mCollectionSettings.finalHeight);
-            mCollectionSettings.waitAbovePlayerDuration = collection["waitAbovePlayerDuration"].as<float>(mCollectionSettings.waitAbovePlayerDuration);
+            mCollectionSettings.waitAbovePlayerDuration =
+                collection["waitAbovePlayerDuration"].as<float>(mCollectionSettings.waitAbovePlayerDuration);
             mCollectionSettings.fallDuration = collection["fallDuration"].as<float>(mCollectionSettings.fallDuration);
         }
     }
@@ -85,8 +83,7 @@ bool Star::StartCollectionPreview(Player* player)
     mCollectionState = CollectionState::Orbiting;
     mIsCollectionPreview = true;
     mCollectionBaseFacingYaw = GetFacingYaw();
-    mObtainingPlayer->StartStarCollectionCelebration(
-        CalculateCollectionAnimationDurationSeconds());
+    mObtainingPlayer->StartStarCollectionCelebration(CalculateCollectionAnimationDurationSeconds());
     return true;
 }
 
@@ -94,8 +91,6 @@ void Star::AddCollectableComponent()
 {
     std::unique_ptr<CollectableComponent> collectableComponent = std::make_unique<CollectableComponent>(this, 100);
     mCollectableComponent = collectableComponent.get();
-
-
 
     mCollectableComponent->SetCanPickupWhileAttacking(true);
     mCollectableComponent->SetPickupRadius(1.5f);
@@ -136,11 +131,9 @@ void Star::UpdateActor(float deltaTime)
             mSparklePhase += 2.17f;
 
             const float ringRadius = 0.55f + std::sin(mSparklePhase * 1.37f) * 0.2f;
-            const glm::vec3 ringOffset =
-                GetForwardVec() * std::cos(mSparklePhase) * ringRadius +
-                GetLeftVec() * std::sin(mSparklePhase) * ringRadius;
-            const glm::vec3 heightOffset =
-                GetUpVec() * std::sin(mSparklePhase * 1.71f) * 0.38f;
+            const glm::vec3 ringOffset = GetForwardVec() * std::cos(mSparklePhase) * ringRadius +
+                                         GetLeftVec() * std::sin(mSparklePhase) * ringRadius;
+            const glm::vec3 heightOffset = GetUpVec() * std::sin(mSparklePhase * 1.71f) * 0.38f;
 
             ParticleSpawnContext context;
             context.position = GetPos() + ringOffset + heightOffset;
@@ -166,36 +159,24 @@ void Star::OnObtained()
         return;
     }
 
-    mObtainingPlayer = mCollectableComponent
-        ? mCollectableComponent->GetObtainingPlayer()
-        : nullptr;
+    mObtainingPlayer = mCollectableComponent ? mCollectableComponent->GetObtainingPlayer() : nullptr;
     if (!mObtainingPlayer && mGame) {
         mObtainingPlayer = mGame->GetMainPlayer();
     }
 
-
-
-
-    const bool shouldUseMainGameCollectionPlacement =
-        mGame && !mGame->GetIsUGCMode();
+    // 本編では取得位置へプレイヤーを揃える。UGCでは配置変更を伴う演出を適用しない。
+    const bool shouldUseMainGameCollectionPlacement = mGame && !mGame->GetIsUGCMode();
     if (mObtainingPlayer && shouldUseMainGameCollectionPlacement) {
-        mObtainingPlayer->ForceGroundedForCinematicAt(
-            GetCurrentPlanet(),
-            GetPos(),
-            GetUpVec());
+        mObtainingPlayer->ForceGroundedForCinematicAt(GetCurrentPlanet(), GetPos(), GetUpVec());
     }
-
-
 
     mCollectionState = CollectionState::Orbiting;
     mCollectionTimer = 0.0f;
     mCollectionBaseFacingYaw = GetFacingYaw();
 
     if (mObtainingPlayer) {
-        mObtainingPlayer->StartStarCollectionCelebration(
-            CalculateCollectionAnimationDurationSeconds());
+        mObtainingPlayer->StartStarCollectionCelebration(CalculateCollectionAnimationDurationSeconds());
     }
-
 
     if (mGame) {
         mGame->OnStarObtained();
@@ -227,8 +208,7 @@ void Star::UpdateCollectionAnimation(float deltaTime)
 
     const float orbitDuration = std::max(0.01f, mCollectionSettings.orbitDuration);
     const float orbitStartRadius = std::max(0.0f, mCollectionSettings.orbitStartRadius);
-    const float orbitSpinRadiansPerSecond = glm::radians(
-        mCollectionSettings.orbitSpinDegreesPerSecond);
+    const float orbitSpinRadiansPerSecond = glm::radians(mCollectionSettings.orbitSpinDegreesPerSecond);
     const float finalHeight = std::max(0.0f, mCollectionSettings.finalHeight);
     const float waitAbovePlayerDuration = std::max(0.0f, mCollectionSettings.waitAbovePlayerDuration);
     const float fallDuration = std::max(0.01f, mCollectionSettings.fallDuration);
@@ -241,12 +221,9 @@ void Star::UpdateCollectionAnimation(float deltaTime)
         const float angle = glm::two_pi<float>() * progress;
         const float radius = orbitStartRadius * (1.0f - progress);
         const float height = finalHeight * progress;
-        SetPos(playerPos +
-               (forward * std::cos(angle) + left * std::sin(angle)) * radius +
-               up * height);
+        SetPos(playerPos + (forward * std::cos(angle) + left * std::sin(angle)) * radius + up * height);
         SetUpVec(up);
-        SetFacingYaw(
-            mCollectionBaseFacingYaw + orbitSpinRadiansPerSecond * mCollectionTimer);
+        SetFacingYaw(mCollectionBaseFacingYaw + orbitSpinRadiansPerSecond * mCollectionTimer);
 
         if (progress >= 1.0f) {
             mCollectionState = CollectionState::WaitingAbovePlayer;
@@ -281,6 +258,7 @@ void Star::FinishCollection()
         mObtainingPlayer->StopStarCollectionCelebration();
     }
 
+    // プレビューは進行通知を行わず、開始前の配置と有効状態へ復元する。
     if (mIsCollectionPreview) {
         SetPos(mPreviewOriginalPos);
         SetUpVec(mPreviewOriginalUp);

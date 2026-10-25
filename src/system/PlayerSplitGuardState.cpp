@@ -17,9 +17,7 @@ void PlayerSplitGuardState::Update(float deltaTimeSeconds)
 
     mRecoveryRemainingSeconds -= std::max(0.0f, deltaTimeSeconds);
     constexpr float timerCompletionEpsilonSeconds = 0.000001f;
-    while (mRecoveryRemainingSeconds <=
-               timerCompletionEpsilonSeconds &&
-           mGuardCount < MaximumGuardCount) {
+    while (mRecoveryRemainingSeconds <= timerCompletionEpsilonSeconds && mGuardCount < MaximumGuardCount) {
         ++mGuardCount;
         mRecoveryRemainingSeconds += RecoveryIntervalSeconds;
     }

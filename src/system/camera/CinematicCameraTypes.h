@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <glm/glm.hpp>
 
 #include <string>
@@ -17,6 +19,7 @@ enum class CameraTransitionMode {
     Cut,
 };
 
+// ワールド空間のカメラ姿勢と、度単位の画角。
 struct CameraPose {
     glm::vec3 position{0.0f};
     glm::vec3 target{0.0f, 0.0f, 1.0f};
@@ -24,6 +27,7 @@ struct CameraPose {
     float fieldOfViewDegrees = 60.0f;
 };
 
+// timeは開始からの秒数で、各キーのholdDurationSecondsを加える前の時刻。
 struct CinematicCameraKeyframe {
     float time = 0.0f;
     float holdDurationSeconds = 0.0f;
@@ -39,3 +43,12 @@ struct CinematicSequence {
     float endHoldDuration = 0.5f;
     std::vector<CinematicCameraKeyframe> keyframes;
 };
+
+// 時刻順に並べる。同時刻のキーは定義順を維持する。
+inline void SortCinematicKeyframes(CinematicSequence& sequence)
+{
+    std::stable_sort(sequence.keyframes.begin(), sequence.keyframes.end(),
+                     [](const CinematicCameraKeyframe& left, const CinematicCameraKeyframe& right) {
+                         return left.time < right.time;
+                     });
+}

@@ -13,8 +13,9 @@ void GpuDurationTimer::Begin()
 
     Initialize();
     for (int attempt = 0; attempt < QuerySlotCount; ++attempt) {
-        const int slotIndex =
-            (mNextQuerySlot + attempt) % QuerySlotCount;
+        const int slotIndex = (mNextQuerySlot + attempt) % QuerySlotCount;
+
+        // 結果未取得のクエリは再利用せず、全スロット使用中ならこの回の計測を見送る。
         if (mIsQueryPending[slotIndex]) {
             continue;
         }
@@ -48,20 +49,15 @@ std::optional<float> GpuDurationTimer::PollCompletedMilliseconds()
             continue;
         }
 
+        // 結果取得でCPUを待たせないよう、完了済みのクエリだけ読む。
         GLint isResultAvailable = GL_FALSE;
-        glGetQueryObjectiv(
-            mQueries[slotIndex],
-            GL_QUERY_RESULT_AVAILABLE,
-            &isResultAvailable);
+        glGetQueryObjectiv(mQueries[slotIndex], GL_QUERY_RESULT_AVAILABLE, &isResultAvailable);
         if (isResultAvailable != GL_TRUE) {
             continue;
         }
 
         GLuint64 elapsedNanoseconds = 0;
-        glGetQueryObjectui64v(
-            mQueries[slotIndex],
-            GL_QUERY_RESULT,
-            &elapsedNanoseconds);
+        glGetQueryObjectui64v(mQueries[slotIndex], GL_QUERY_RESULT, &elapsedNanoseconds);
         mIsQueryPending[slotIndex] = false;
         return static_cast<float>(elapsedNanoseconds) / 1000000.0f;
     }
@@ -80,9 +76,7 @@ void GpuDurationTimer::Shutdown()
         mActiveQuery = 0;
     }
 
-    glDeleteQueries(
-        static_cast<GLsizei>(mQueries.size()),
-        mQueries.data());
+    glDeleteQueries(static_cast<GLsizei>(mQueries.size()), mQueries.data());
     mQueries = {};
     mIsQueryPending = {};
     mNextQuerySlot = 0;
@@ -95,8 +89,6 @@ void GpuDurationTimer::Initialize()
         return;
     }
 
-    glGenQueries(
-        static_cast<GLsizei>(mQueries.size()),
-        mQueries.data());
+    glGenQueries(static_cast<GLsizei>(mQueries.size()), mQueries.data());
     mAreQueriesInitialized = true;
 }

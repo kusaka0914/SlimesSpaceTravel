@@ -1,9 +1,9 @@
 #include "system/StageFlowController.h"
 
-#include "Game.h"
 #include "system/ActorLoadSystem.h"
 #include "system/AudioSystem.h"
-#include "system/GameWorld.h"
+#include "world/GameWorld.h"
+#include "system/PauseMenuController.h"
 #include "system/PhysicsSystem.h"
 #include "system/SceneSystem.h"
 
@@ -12,22 +12,16 @@ StageFlowController::StageFlowController()
 {
 }
 
-bool StageFlowController::LoadData(Game& game)
+bool StageFlowController::ReloadCurrentStage(ActorLoadSystem& actorLoader, PhysicsSystem& physicsSystem,
+                                             AudioSystem& audioSystem, StagePhysicsReloadMode physicsReloadMode)
 {
-    return game.GetActorLoadSystem()->LoadData();
-}
-
-bool StageFlowController::ReloadCurrentStage(
-    Game& game,
-    StagePhysicsReloadMode physicsReloadMode)
-{
-    if (!LoadData(game)) {
+    if (!actorLoader.LoadData()) {
         return false;
     }
     if (physicsReloadMode == StagePhysicsReloadMode::Rebuild) {
-        game.GetPhysicsSystem()->Initialize();
+        physicsSystem.Initialize();
     }
-    game.GetAudioSystem()->TryChangeBGM();
+    audioSystem.TryChangeBGM();
     return true;
 }
 
@@ -40,13 +34,13 @@ void StageFlowController::ChangeStage(GameWorld& world, int stageNum)
     mCurrentStageYamlPath = "../assets/data/stage/stage" + std::to_string(stageNum) + ".yaml";
 }
 
-void StageFlowController::ReturnToBase(Game& game)
+void StageFlowController::ReturnToBase(PauseMenuController& pauseMenu, const GameWorld& world, SceneSystem& sceneSystem)
 {
-    game.ClosePauseMenu();
+    pauseMenu.Close();
 
-    if (game.IsInBase()) {
+    if (world.IsInBase()) {
         return;
     }
 
-    game.GetSceneSystem()->RequestStageChange(0);
+    sceneSystem.RequestStageChange(0);
 }

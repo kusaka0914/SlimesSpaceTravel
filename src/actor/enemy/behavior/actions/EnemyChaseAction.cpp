@@ -20,8 +20,6 @@ float EnemyChaseAction::Evaluate(const EnemyBehaviorContext& context) const
 
 EnemyBehaviorActionResult EnemyChaseAction::Update(EnemyBehaviorContext& context, float deltaTime)
 {
-    context.stateMachine.UpdateTracking(
-        context.enemy, context.status, context.movement, context.combat, deltaTime);
-    return CanContinue(context) ? EnemyBehaviorActionResult::Running
-                                : EnemyBehaviorActionResult::Finished;
+    context.stateMachine.UpdateTracking(context.enemy, context.status, context.movement, context.combat, deltaTime);
+    return CanContinue(context) ? EnemyBehaviorActionResult::Running : EnemyBehaviorActionResult::Finished;
 }

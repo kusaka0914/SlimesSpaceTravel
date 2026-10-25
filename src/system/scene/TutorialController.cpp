@@ -1,9 +1,9 @@
 #include "system/scene/TutorialController.h"
 
-#include "Game.h"
-#include "actor/Player.h"
+#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
+#include "actor/Player.h"
 #include "component/PlatformPressureSwitchComponent.h"
 #include "state/GameProgressState.h"
 #include "state/UIState.h"
@@ -11,10 +11,7 @@
 
 #include <glm/glm.hpp>
 
-TutorialController::TutorialController(
-    Game* game,
-    GameProgressState* gameProgressState,
-    UIState* uiState)
+TutorialController::TutorialController(Game* game, GameProgressState* gameProgressState, UIState* uiState)
     : mGame(game),
       mGameProgressState(gameProgressState),
       mUIState(uiState)
@@ -23,64 +20,46 @@ TutorialController::TutorialController(
 
 void TutorialController::Update(float)
 {
-    if (!HasActiveTutorial() || !mGameProgressState ||
-        !mIsActionObjectiveActive ||
-        mGameProgressState->GetSceneState() !=
-            GameProgressState::SceneState::Playing) {
+    if (!HasActiveTutorial() || !mGameProgressState || !mIsActionObjectiveActive ||
+        mGameProgressState->GetSceneState() != GameProgressState::SceneState::Playing) {
         return;
     }
 
     TryAdvanceFromCompletedAction();
 }
 
-bool TutorialController::TryStart(
-    const std::string& tutorialId,
-    Player* tutorialPlayer,
-    bool ignoreRepeatPolicy)
+bool TutorialController::TryStart(const std::string& tutorialId, Player* tutorialPlayer, bool shouldIgnoreRepeatPolicy)
 {
-    const TutorialDefinition* definition =
-        mLibrary.Find(tutorialId);
+    const TutorialDefinition* definition = mLibrary.Find(tutorialId);
     if (HasActiveTutorial() || !definition ||
-        definition->GetPagesForControlStyle(
-            mGame && mGame->IsAssistControlStyle()).empty() ||
-        !mGame || !mGameProgressState || !mUIState) {
+        definition->GetPagesForControlStyle(mGame && mGame->IsAssistControlStyle()).empty() || !mGame ||
+        !mGameProgressState || !mUIState) {
         return false;
     }
 
-    const bool wasAlreadyCompleted =
-        mGame->HasCompletedTutorial(tutorialId);
-    const bool wasAlreadyShownThisSession =
-        mShownOnceTutorialIds.contains(tutorialId);
-    if (!ignoreRepeatPolicy &&
-        (wasAlreadyCompleted || wasAlreadyShownThisSession) &&
-        definition->repeatPolicy ==
-            TutorialRepeatPolicy::OnceEver) {
+    const bool wasAlreadyCompleted = mGame->HasCompletedTutorial(tutorialId);
+    const bool wasAlreadyShownThisSession = mShownOnceTutorialIds.contains(tutorialId);
+    if (!shouldIgnoreRepeatPolicy && (wasAlreadyCompleted || wasAlreadyShownThisSession) &&
+        definition->repeatPolicy == TutorialRepeatPolicy::OnceEver) {
         return false;
     }
 
     ++mTutorialSessionSequence;
     mActiveTutorialId = tutorialId;
-    mTutorialPlayer =
-        tutorialPlayer
-            ? tutorialPlayer
-            : mGame->GetControlledPlayer();
+    mTutorialPlayer = tutorialPlayer ? tutorialPlayer : mGame->GetControlledPlayer();
     if (!mTutorialPlayer) {
         mTutorialPlayer = mGame->GetMainPlayer();
     }
 
-    if (!ignoreRepeatPolicy &&
-        definition->repeatPolicy ==
-            TutorialRepeatPolicy::OnceEver) {
+    if (!shouldIgnoreRepeatPolicy && definition->repeatPolicy == TutorialRepeatPolicy::OnceEver) {
         mShownOnceTutorialIds.insert(tutorialId);
     }
-    mShouldRecordActiveTutorialCompletion =
-        !ignoreRepeatPolicy;
+    mShouldRecordActiveTutorialCompletion = !shouldIgnoreRepeatPolicy;
     mIsActionObjectiveActive = false;
 
     mUIState->SetCurrentTalkWith(UIState::TalkWith::None);
     mUIState->SetTalkUIIndex(0);
-    mGameProgressState->SetCurrentSceneState(
-        GameProgressState::SceneState::Talking);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
     CaptureCurrentPageActionBaseline();
 
     if (mGame->GetAudioSystem()) {
@@ -89,29 +68,21 @@ bool TutorialController::TryStart(
     return true;
 }
 
-bool TutorialController::Preview(
-    const std::string& tutorialId)
+bool TutorialController::Preview(const std::string& tutorialId)
 {
     return PreviewAtPage(tutorialId, 0);
 }
 
-bool TutorialController::PreviewAtPage(
-    const std::string& tutorialId,
-    std::size_t pageIndex)
+bool TutorialController::PreviewAtPage(const std::string& tutorialId, std::size_t pageIndex)
 {
-    const TutorialDefinition* definition =
-        mLibrary.Find(tutorialId);
+    const TutorialDefinition* definition = mLibrary.Find(tutorialId);
     if (!definition ||
-        pageIndex >= definition->GetPagesForControlStyle(
-                         mGame && mGame->IsAssistControlStyle()).size()) {
+        pageIndex >= definition->GetPagesForControlStyle(mGame && mGame->IsAssistControlStyle()).size()) {
         return false;
     }
 
     Stop(false);
-    if (!TryStart(
-        tutorialId,
-        mGame ? mGame->GetControlledPlayer() : nullptr,
-        true)) {
+    if (!TryStart(tutorialId, mGame ? mGame->GetControlledPlayer() : nullptr, true)) {
         return false;
     }
 
@@ -120,7 +91,7 @@ bool TutorialController::PreviewAtPage(
     return true;
 }
 
-void TutorialController::Stop(bool returnToPlaying)
+void TutorialController::Stop(bool shouldReturnToPlaying)
 {
     if (!HasActiveTutorial()) {
         return;
@@ -134,7 +105,7 @@ void TutorialController::Stop(bool returnToPlaying)
     if (mUIState) {
         mUIState->FinishTutorial();
     }
-    if (returnToPlaying && mGame) {
+    if (shouldReturnToPlaying && mGame) {
         mGame->StartPlayingScene();
     }
 }
@@ -153,13 +124,10 @@ bool TutorialController::ResumeAfterFocus()
     }
 
     const GameProgressState::SceneState resumedState =
-        mIsActionObjectiveActive
-            ? GameProgressState::SceneState::Playing
-            : GameProgressState::SceneState::Talking;
+        mIsActionObjectiveActive ? GameProgressState::SceneState::Playing : GameProgressState::SceneState::Talking;
     mGameProgressState->SetCurrentSceneState(resumedState);
 
-    if (!mIsActionObjectiveActive &&
-        mGame && mGame->GetAudioSystem()) {
+    if (!mIsActionObjectiveActive && mGame && mGame->GetAudioSystem()) {
         mGame->GetAudioSystem()->PlaySE("message_se");
     }
     return true;
@@ -171,8 +139,7 @@ void TutorialController::TryAdvanceFromConfirm()
         return;
     }
 
-    if (GetCurrentAdvanceCondition() ==
-        TutorialAdvanceCondition::Confirm) {
+    if (GetCurrentAdvanceCondition() == TutorialAdvanceCondition::Confirm) {
         AdvancePage();
         return;
     }
@@ -182,10 +149,8 @@ void TutorialController::TryAdvanceFromConfirm()
 
 void TutorialController::TryStartBattleTutorial()
 {
-    const Player* mainPlayer =
-        mGame ? mGame->GetMainPlayer() : nullptr;
-    if (!mainPlayer ||
-        mainPlayer->GetCurrentPlanetNum() != 1) {
+    const Player* mainPlayer = mGame ? mGame->GetMainPlayer() : nullptr;
+    if (!mainPlayer || mainPlayer->GetCurrentPlanetNum() != 1) {
         return;
     }
 
@@ -194,10 +159,8 @@ void TutorialController::TryStartBattleTutorial()
 
 void TutorialController::TryStartJustDodgeTutorial()
 {
-    const Player* mainPlayer =
-        mGame ? mGame->GetMainPlayer() : nullptr;
-    if (!mainPlayer ||
-        mainPlayer->GetCurrentPlanetNum() != 2) {
+    const Player* mainPlayer = mGame ? mGame->GetMainPlayer() : nullptr;
+    if (!mainPlayer || mainPlayer->GetCurrentPlanetNum() != 2) {
         return;
     }
 
@@ -206,13 +169,11 @@ void TutorialController::TryStartJustDodgeTutorial()
 
 void TutorialController::OnEnemyLaunched()
 {
-    if (!mGameProgressState ||
-        mGameProgressState->GetIsFirstBreak()) {
+    if (!mGameProgressState || mGameProgressState->GetIsFirstBreak()) {
         return;
     }
 
     mGameProgressState->SetIsFirstBreak(true);
-
 
     if (mGame && mGame->IsAssistControlStyle()) {
         return;
@@ -222,21 +183,14 @@ void TutorialController::OnEnemyLaunched()
 
 void TutorialController::OnStrongAttacked()
 {
-    if (!mGameProgressState ||
-        !mGameProgressState->GetIsFirstBreak() ||
-        mGameProgressState->GetIsFirstStrongAttack()) {
+    if (!mGameProgressState || !mGameProgressState->GetIsFirstBreak() || mGameProgressState->GetIsFirstStrongAttack()) {
         return;
     }
 
     mGameProgressState->SetIsFirstStrongAttack(true);
 }
 
-void TutorialController::OnLanded()
-{
-
-
-
-}
+void TutorialController::OnLanded() {}
 
 void TutorialController::OnPlayerSwitchSucceeded()
 {
@@ -254,8 +208,7 @@ void TutorialController::OnPlayerSplitMergeSucceeded()
         return;
     }
 
-    if (GetCurrentAdvanceCondition() ==
-        TutorialAdvanceCondition::PlayerSplitMerge) {
+    if (GetCurrentAdvanceCondition() == TutorialAdvanceCondition::PlayerSplitMerge) {
         AdvanceAfterCompletedAction();
         return;
     }
@@ -269,47 +222,35 @@ bool TutorialController::HasActiveTutorial() const
 
 bool TutorialController::IsShowingConversation() const
 {
-    return HasActiveTutorial() && !mIsActionObjectiveActive &&
-           mGameProgressState &&
-           mGameProgressState->GetSceneState() ==
-               GameProgressState::SceneState::Talking;
+    return HasActiveTutorial() && !mIsActionObjectiveActive && mGameProgressState &&
+           mGameProgressState->GetSceneState() == GameProgressState::SceneState::Talking;
 }
 
 bool TutorialController::IsShowingActionObjective() const
 {
-    return HasActiveTutorial() && mIsActionObjectiveActive &&
-           mGameProgressState &&
-           mGameProgressState->GetSceneState() ==
-               GameProgressState::SceneState::Playing;
+    return HasActiveTutorial() && mIsActionObjectiveActive && mGameProgressState &&
+           mGameProgressState->GetSceneState() == GameProgressState::SceneState::Playing;
 }
 
-bool TutorialController::HasCompletedTutorial(
-    const std::string& tutorialId) const
+bool TutorialController::HasCompletedTutorial(const std::string& tutorialId) const
 {
     return !tutorialId.empty() &&
-           (mCompletedTutorialIds.contains(tutorialId) ||
-            (mGame && mGame->HasCompletedTutorial(tutorialId)));
+           (mCompletedTutorialIds.contains(tutorialId) || (mGame && mGame->HasCompletedTutorial(tutorialId)));
 }
 
 bool TutorialController::IsWaitingForPlayerAction() const
 {
-    return IsShowingActionObjective() &&
-           GetCurrentAdvanceCondition() !=
-               TutorialAdvanceCondition::Confirm;
+    return IsShowingActionObjective() && GetCurrentAdvanceCondition() != TutorialAdvanceCondition::Confirm;
 }
 
 bool TutorialController::IsWaitingForPlayerSwitch() const
 {
-    return IsWaitingForPlayerAction() &&
-           GetCurrentAdvanceCondition() ==
-               TutorialAdvanceCondition::PlayerSwitch;
+    return IsWaitingForPlayerAction() && GetCurrentAdvanceCondition() == TutorialAdvanceCondition::PlayerSwitch;
 }
 
 bool TutorialController::IsWaitingForPlayerJump() const
 {
-    return IsWaitingForPlayerAction() &&
-           GetCurrentAdvanceCondition() ==
-               TutorialAdvanceCondition::Jump;
+    return IsWaitingForPlayerAction() && GetCurrentAdvanceCondition() == TutorialAdvanceCondition::Jump;
 }
 
 bool TutorialController::IsWaitingForPlayerSplitMerge() const
@@ -318,39 +259,30 @@ bool TutorialController::IsWaitingForPlayerSplitMerge() const
         return false;
     }
 
-    const TutorialAdvanceCondition condition =
-        GetCurrentAdvanceCondition();
+    const TutorialAdvanceCondition condition = GetCurrentAdvanceCondition();
     return condition == TutorialAdvanceCondition::PlayerSplitMerge ||
-           condition == TutorialAdvanceCondition::PlayerSplit ||
-           condition == TutorialAdvanceCondition::PlayerMerge;
+           condition == TutorialAdvanceCondition::PlayerSplit || condition == TutorialAdvanceCondition::PlayerMerge;
 }
 
-const TutorialDefinition*
-TutorialController::GetActiveDefinition() const
+const TutorialDefinition* TutorialController::GetActiveDefinition() const
 {
-    return mActiveTutorialId.empty()
-               ? nullptr
-               : mLibrary.Find(mActiveTutorialId);
+    return mActiveTutorialId.empty() ? nullptr : mLibrary.Find(mActiveTutorialId);
 }
 
 const TutorialPage* TutorialController::GetCurrentPage() const
 {
-    const TutorialDefinition* definition =
-        GetActiveDefinition();
+    const TutorialDefinition* definition = GetActiveDefinition();
     if (!definition || !mUIState) {
         return nullptr;
     }
 
     const int pageIndex = mUIState->GetTalkUIIndex();
     const std::vector<TutorialPage>& pages =
-        definition->GetPagesForControlStyle(
-            mGame && mGame->IsAssistControlStyle());
-    if (pageIndex < 0 ||
-        pageIndex >= static_cast<int>(pages.size())) {
+        definition->GetPagesForControlStyle(mGame && mGame->IsAssistControlStyle());
+    if (pageIndex < 0 || pageIndex >= static_cast<int>(pages.size())) {
         return nullptr;
     }
-    return &pages[
-        static_cast<std::size_t>(pageIndex)];
+    return &pages[static_cast<std::size_t>(pageIndex)];
 }
 
 void TutorialController::AdvancePage()
@@ -360,31 +292,25 @@ void TutorialController::AdvancePage()
     }
 
     mUIState->IncTalkUIIndex();
-    const TutorialDefinition* definition =
-        GetActiveDefinition();
+    const TutorialDefinition* definition = GetActiveDefinition();
     if (!definition ||
-        mUIState->GetTalkUIIndex() >= static_cast<int>(
-            definition->GetPagesForControlStyle(
-                mGame && mGame->IsAssistControlStyle()).size())) {
+        mUIState->GetTalkUIIndex() >=
+            static_cast<int>(definition->GetPagesForControlStyle(mGame && mGame->IsAssistControlStyle()).size())) {
         FinishActiveTutorial();
         return;
     }
 
     mIsActionObjectiveActive = false;
     const TutorialPage* nextPage = GetCurrentPage();
-    const bool startsDirectlyAsObjective =
-        nextPage &&
-        nextPage->advanceCondition !=
-            TutorialAdvanceCondition::Confirm &&
-        !nextPage->HasConversationText(
-            mGame && mGame->IsGameControllerConnected());
+    const bool startsDirectlyAsObjective = nextPage &&
+                                           nextPage->advanceCondition != TutorialAdvanceCondition::Confirm &&
+                                           !nextPage->HasConversationText(mGame && mGame->IsGameControllerConnected());
     if (startsDirectlyAsObjective) {
         BeginActionObjective();
         return;
     }
 
-    mGameProgressState->SetCurrentSceneState(
-        GameProgressState::SceneState::Talking);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Talking);
     if (mGame && mGame->GetAudioSystem()) {
         mGame->GetAudioSystem()->PlaySE("message_se");
     }
@@ -413,27 +339,20 @@ void TutorialController::FinishActiveTutorial()
 
 void TutorialController::CaptureCurrentPageActionBaseline()
 {
-    mActionPlayerAtPageStart =
-        mGame ? mGame->GetControlledPlayer() : nullptr;
-    mJumpSequenceAtPageStart =
-        mActionPlayerAtPageStart
-            ? mActionPlayerAtPageStart->GetJumpSequence()
-            : 0;
+    mActionPlayerAtPageStart = mGame ? mGame->GetControlledPlayer() : nullptr;
+    mJumpSequenceAtPageStart = mActionPlayerAtPageStart ? mActionPlayerAtPageStart->GetJumpSequence() : 0;
     mHasJumpStartedOnCurrentPage = false;
 }
 
 void TutorialController::BeginActionObjective()
 {
-    if (!mGameProgressState ||
-        GetCurrentAdvanceCondition() ==
-            TutorialAdvanceCondition::Confirm) {
+    if (!mGameProgressState || GetCurrentAdvanceCondition() == TutorialAdvanceCondition::Confirm) {
         return;
     }
 
     CaptureCurrentPageActionBaseline();
     mIsActionObjectiveActive = true;
-    mGameProgressState->SetCurrentSceneState(
-        GameProgressState::SceneState::Playing);
+    mGameProgressState->SetCurrentSceneState(GameProgressState::SceneState::Playing);
     TryAdvanceFromCompletedAction();
 }
 
@@ -444,19 +363,15 @@ bool TutorialController::TryAdvanceFromCompletedAction()
         return false;
 
     case TutorialAdvanceCondition::Jump: {
-        Player* controlledPlayer =
-            mGame ? mGame->GetControlledPlayer() : nullptr;
-        if (!controlledPlayer ||
-            controlledPlayer != mActionPlayerAtPageStart) {
+        Player* controlledPlayer = mGame ? mGame->GetControlledPlayer() : nullptr;
+        if (!controlledPlayer || controlledPlayer != mActionPlayerAtPageStart) {
             return false;
         }
 
-        if (controlledPlayer->GetJumpSequence() >
-            mJumpSequenceAtPageStart) {
+        if (controlledPlayer->GetJumpSequence() > mJumpSequenceAtPageStart) {
             mHasJumpStartedOnCurrentPage = true;
         }
-        if (!mHasJumpStartedOnCurrentPage ||
-            !controlledPlayer->GetOnGround()) {
+        if (!mHasJumpStartedOnCurrentPage || !controlledPlayer->GetOnGround()) {
             return false;
         }
 
@@ -523,8 +438,7 @@ const Platform* TutorialController::FindObjectivePressureSwitch() const
         return nullptr;
     }
 
-    const Player* player =
-        mGame ? mGame->GetControlledPlayer() : nullptr;
+    const Player* player = mGame ? mGame->GetControlledPlayer() : nullptr;
     if (!player) {
         player = mTutorialPlayer;
     }
@@ -534,8 +448,7 @@ const Platform* TutorialController::FindObjectivePressureSwitch() const
     }
 
     for (const Platform* platform : planet->GetPlatforms()) {
-        if (platform &&
-            platform->GetPlatformId() == page->objectivePlatformId &&
+        if (platform && platform->GetPlatformId() == page->objectivePlatformId &&
             platform->GetPressureSwitchComponent()) {
             return platform;
         }
@@ -545,71 +458,54 @@ const Platform* TutorialController::FindObjectivePressureSwitch() const
 
 bool TutorialController::IsTutorialPlayerOnPressureSwitchSide() const
 {
-    const Player* player =
-        mGame ? mGame->GetControlledPlayer() : nullptr;
+    const Player* player = mGame ? mGame->GetControlledPlayer() : nullptr;
     if (!player) {
         player = mTutorialPlayer;
     }
-    const Platform* pressureSwitch =
-        FindObjectivePressureSwitch();
+    const Platform* pressureSwitch = FindObjectivePressureSwitch();
     const Planet* planet = player ? player->GetCurrentPlanet() : nullptr;
     if (!player || !pressureSwitch || !planet) {
         return false;
     }
 
-    const glm::vec3 playerFromPlanet =
-        player->GetPos() - planet->GetPos();
-    const glm::vec3 switchFromPlanet =
-        pressureSwitch->GetPos() - planet->GetPos();
+    const glm::vec3 playerFromPlanet = player->GetPos() - planet->GetPos();
+    const glm::vec3 switchFromPlanet = pressureSwitch->GetPos() - planet->GetPos();
     constexpr float minimumDirectionLengthSquared = 0.0001f;
-    if (glm::dot(playerFromPlanet, playerFromPlanet) <
-            minimumDirectionLengthSquared ||
-        glm::dot(switchFromPlanet, switchFromPlanet) <
-            minimumDirectionLengthSquared) {
+    if (glm::dot(playerFromPlanet, playerFromPlanet) < minimumDirectionLengthSquared ||
+        glm::dot(switchFromPlanet, switchFromPlanet) < minimumDirectionLengthSquared) {
         return false;
     }
 
-    const glm::vec3 playerDirection =
-        glm::normalize(playerFromPlanet);
-    const glm::vec3 switchDirection =
-        glm::normalize(switchFromPlanet);
+    const glm::vec3 playerDirection = glm::normalize(playerFromPlanet);
+    const glm::vec3 switchDirection = glm::normalize(switchFromPlanet);
     return glm::dot(playerDirection, switchDirection) >= 0.0f;
 }
 
 bool TutorialController::IsTutorialPlayerNearPressureSwitch() const
 {
-    const Player* player =
-        mGame ? mGame->GetControlledPlayer() : nullptr;
+    const Player* player = mGame ? mGame->GetControlledPlayer() : nullptr;
     if (!player) {
         player = mTutorialPlayer;
     }
-    const Platform* pressureSwitch =
-        FindObjectivePressureSwitch();
+    const Platform* pressureSwitch = FindObjectivePressureSwitch();
     if (!player || !pressureSwitch) {
         return false;
     }
 
     constexpr float discoveryDistanceWorldUnits = 3.0f;
-    const glm::vec3 offset =
-        pressureSwitch->GetPos() - player->GetPos();
-    return glm::dot(offset, offset) <=
-           discoveryDistanceWorldUnits *
-               discoveryDistanceWorldUnits;
+    const glm::vec3 offset = pressureSwitch->GetPos() - player->GetPos();
+    return glm::dot(offset, offset) <= discoveryDistanceWorldUnits * discoveryDistanceWorldUnits;
 }
 
 bool TutorialController::IsTutorialPlayerPressingPressureSwitch() const
 {
     const Platform* platform = FindObjectivePressureSwitch();
-    const PlatformPressureSwitchComponent* pressureSwitch =
-        platform ? platform->GetPressureSwitchComponent() : nullptr;
+    const PlatformPressureSwitchComponent* pressureSwitch = platform ? platform->GetPressureSwitchComponent() : nullptr;
     return pressureSwitch && pressureSwitch->GetIsPressed();
 }
 
-TutorialAdvanceCondition
-TutorialController::GetCurrentAdvanceCondition() const
+TutorialAdvanceCondition TutorialController::GetCurrentAdvanceCondition() const
 {
     const TutorialPage* page = GetCurrentPage();
-    return page
-               ? page->advanceCondition
-               : TutorialAdvanceCondition::Confirm;
+    return page ? page->advanceCondition : TutorialAdvanceCondition::Confirm;
 }

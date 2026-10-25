@@ -11,36 +11,43 @@
 #include <vector>
 
 class Actor;
-class Game;
 
 struct CollisionMeshGeometry {
     std::vector<float> positions;
     std::vector<unsigned int> indices;
 };
 
+// 描画モデルと衝突用メッシュを読み込み、パス別にキャッシュする。
 class MeshLoadSystem {
 public:
-    explicit MeshLoadSystem(Game* game);
+    MeshLoadSystem();
+    MeshLoadSystem(const MeshLoadSystem&) = delete;
+    MeshLoadSystem& operator=(const MeshLoadSystem&) = delete;
 
     void Initialize();
+
+    // 描画停止後、OpenGLコンテキストが有効な間に呼ぶ。返却済みモデル参照も無効になる。
+    // デストラクタではGPU資源を解放しないため、所有するGameが終了順を保証する。
+    void Shutdown();
+
+    // Actorのモデルパスを解決し、キャッシュ内のモデルを割り当てる。nullptrでは何もしない。
     void SetActorMesh(Actor* actor);
 
-    LoadedModel LoadModelFromFile(const char* path);
+    // キャッシュ内の衝突用メッシュを返す。空パス・読込失敗時はnullptr。失敗したパスは再読込しない。
+    const CollisionMeshGeometry* ResolveCollisionMeshGeometry(const std::string& modelFilePath);
 
-    const CollisionMeshGeometry* ResolveCollisionMeshGeometry(
-        const std::string& modelFilePath);
-
+    // キャッシュを検索する。未登録ならnullptrを返し、読込は行わない。
     const LoadedModel* FindLoadedModel(const std::string& modelPath) const;
+
+    // 未登録なら読み込んでキャッシュする。空パスではnullptr、読込失敗時も空のモデルが登録され得る。
     const LoadedModel* ResolveLoadedModel(const std::string& modelPath);
 
 private:
+    LoadedModel LoadModelFromFile(const char* path);
     void CreateLoadedModels();
     void RegisterModel(const std::string& modelPath);
 
     std::string ResolveModelFilePath(const std::string& modelPath) const;
-
-private:
-    Game* mGame;
 
     TextureLoader mTextureLoader;
     AssimpMeshLoader mAssimpMeshLoader;

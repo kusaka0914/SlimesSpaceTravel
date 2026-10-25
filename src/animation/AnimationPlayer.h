@@ -3,15 +3,24 @@
 #include "animation/SkeletalAnimationData.h"
 
 #include <glm/glm.hpp>
-
 #include <vector>
 
+// スケルトンのクリップ再生とキーフレーム補間を行い、描画用のボーン変換行列を計算する。
+// データとクリップは非所有参照。設定を解除・変更するまで参照先を有効に保つこと。
 class AnimationPlayer {
 public:
+    // データを切り替え、再生状態を初期化してバインドポーズを計算する。nullptrなら解除して行列配列を空にする。
     void SetAnimationData(const SkeletalAnimationData* animationData);
 
+    // 設定データと同じスケルトン用のクリップを指定する。データ未設定・nullptrなら何もしない。
+    // 同じクリップでshouldRestartがfalseなら、再生時刻と完了状態を保ち、ループ設定だけを変更する。
     void Play(const AnimationClip* animationClip, bool shouldLoop, bool shouldRestart = true);
+
+    // クリップ再生と完了状態を解除し、設定データのバインドポーズへ戻す。
     void ResetToBindPose();
+
+    // 秒数をクリップのtickへ変換して進める。単発再生は終端を保持して完了状態にし、ループ再生は先頭へ折り返す。
+    // 非正の秒数・データ未設定・クリップ未選択なら何もしない。
     void Update(float deltaTimeSeconds);
 
     bool HasSkinningData() const;
@@ -19,6 +28,8 @@ public:
     bool IsPlaying(const AnimationClip* animationClip) const { return mCurrentClip == animationClip; }
 
     const AnimationClip* GetCurrentClip() const { return mCurrentClip; }
+
+    // SkeletalAnimationData::bonesと同じ順序のスキニング行列。データ未設定なら空配列。
     const std::vector<glm::mat4>& GetFinalBoneTransforms() const { return mFinalBoneTransforms; }
 
 private:

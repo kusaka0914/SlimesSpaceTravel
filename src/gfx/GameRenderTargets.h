@@ -1,9 +1,20 @@
 #pragma once
 
+// エディターのゲーム画面・UGCプレビュー用のカラー／深度描画先を所有する。
+// GLコンテキストを破棄する前にShutdownを呼ぶこと。
 class GameRenderTargets {
 public:
+    GameRenderTargets() = default;
+    ~GameRenderTargets();
+    GameRenderTargets(const GameRenderTargets&) = delete;
+    GameRenderTargets& operator=(const GameRenderTargets&) = delete;
+
+    // 有効なピクセル寸法で描画先を確保する。同寸法なら再利用し、確保失敗時はその描画先を破棄する。
+    // 不正寸法はfalseで既存描画先を保持する。呼出前のGL bindingとunpack設定を復元する。
     bool EnsureEditorGameTarget(int width, int height);
     bool EnsureUGCPreviewTarget(int width, int height);
+
+    // 両方の描画先を解放し、ハンドルと寸法を0へ戻す。繰り返し呼び出せる。
     void Shutdown();
 
     unsigned int GetEditorGameFramebuffer() const;
@@ -14,18 +25,17 @@ public:
     int GetUGCPreviewHeight() const;
 
 private:
-    void DestroyEditorGameTarget();
-    void DestroyUGCPreviewTarget();
+    struct Target {
+        unsigned int framebuffer = 0;
+        unsigned int texture = 0;
+        unsigned int depthBuffer = 0;
+        int width = 0;
+        int height = 0;
+    };
 
-    unsigned int mEditorGameFramebuffer = 0;
-    unsigned int mEditorGameTexture = 0;
-    unsigned int mEditorGameDepthBuffer = 0;
-    int mEditorGameWidth = 0;
-    int mEditorGameHeight = 0;
+    static bool EnsureTarget(Target& target, int width, int height);
+    static void DestroyTarget(Target& target);
 
-    unsigned int mUGCPreviewFramebuffer = 0;
-    unsigned int mUGCPreviewTexture = 0;
-    unsigned int mUGCPreviewDepthBuffer = 0;
-    int mUGCPreviewWidth = 0;
-    int mUGCPreviewHeight = 0;
+    Target mEditorGame;
+    Target mUGCPreview;
 };

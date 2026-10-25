@@ -1,12 +1,13 @@
 #include "system/actor_loader/StageBoatCreator.h"
 
-#include "Game.h"
-#include "Stage.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
+#include "app/Game.h"
 #include "system/MeshLoadSystem.h"
 #include "system/actor_loader/ActorPlacementLoader.h"
+#include "utils/YamlFile.h"
+#include "world/Stage.h"
 
 #include <glm/glm.hpp>
 #include <memory>
@@ -14,9 +15,7 @@
 #include <utility>
 #include <yaml-cpp/yaml.h>
 
-StageBoatCreator::StageBoatCreator(
-    Game* game,
-    const ActorPlacementLoader& placementLoader)
+StageBoatCreator::StageBoatCreator(Game* game, const ActorPlacementLoader& placementLoader)
     : mGame(game),
       mPlacementLoader(placementLoader)
 {
@@ -68,23 +67,15 @@ Boat* StageBoatCreator::CreateFromStageNode(const YAML::Node& node, int stageYam
     boat->SetDestStage(destStage);
 
     const bool hasTravelSpeed = static_cast<bool>(node["travelSpeed"]);
-    const float travelSpeed =
-        hasTravelSpeed ? node["travelSpeed"].as<float>() : 10.0f;
-    const bool hasLegacyTravelDuration =
-        static_cast<bool>(node["travelDuration"]);
-    const float legacyTravelDuration =
-        hasLegacyTravelDuration
-            ? node["travelDuration"].as<float>()
-            : 3.0f;
+    const float travelSpeed = hasTravelSpeed ? node["travelSpeed"].as<float>() : 10.0f;
+    const bool hasLegacyTravelDuration = static_cast<bool>(node["travelDuration"]);
+    const float legacyTravelDuration = hasLegacyTravelDuration ? node["travelDuration"].as<float>() : 3.0f;
 
-    const float destMargin =
-        node["destMargin"] ? node["destMargin"].as<float>() : 4.0f;
+    const float destMargin = node["destMargin"] ? node["destMargin"].as<float>() : 4.0f;
     boat->SetDestMargin(destMargin);
 
     const std::string launchSequenceId =
-        node["launchSequenceId"]
-            ? node["launchSequenceId"].as<std::string>()
-            : std::string("launch_rocket_from_base");
+        node["launchSequenceId"] ? node["launchSequenceId"].as<std::string>() : std::string("launch_rocket_from_base");
     boat->SetLaunchSequenceId(launchSequenceId);
 
     const float facingYaw = node["facingYaw"] ? node["facingYaw"].as<float>() : 0.0f;
@@ -93,7 +84,7 @@ Boat* StageBoatCreator::CreateFromStageNode(const YAML::Node& node, int stageYam
     mPlacementLoader.ApplyPlacementFromStageNode(boat.get(), node, currentPlanet, stageYamlIndex, 1.0f);
     mPlacementLoader.ApplyRotationFromStageNode(boat.get(), node);
 
-    YAML::Node boatRoot = YAML::LoadFile("../assets/data/actor/boats.yaml");
+    YAML::Node boatRoot = YamlFile::Load("../assets/data/actor/boats.yaml");
     for (const YAML::Node& boatNode : boatRoot["boats"]) {
         const std::string modelPath = boatNode["modelPath"] ? boatNode["modelPath"].as<std::string>() : "";
         boat->SetModelPath(modelPath);
@@ -113,16 +104,13 @@ Boat* StageBoatCreator::CreateFromStageNode(const YAML::Node& node, int stageYam
         boat->SetTravelSpeed(travelSpeed);
     } else if (hasLegacyTravelDuration) {
         // 旧ステージデータは初回保存まで従来の所要時間を維持する。
-        boat->SetTravelSpeedFromLegacyDuration(
-            legacyTravelDuration);
+        boat->SetTravelSpeedFromLegacyDuration(legacyTravelDuration);
     }
 
-    Boat* boatPtr = boat.get();
-    mGame->GetMeshLoadSystem()->SetActorMesh(boatPtr);
+    Boat* createdBoat = boat.get();
+    mGame->GetMeshLoadSystem()->SetActorMesh(createdBoat);
     mGame->AddActor(std::move(boat));
-    currentPlanet->AddBoat(boatPtr);
+    currentPlanet->AddBoat(createdBoat);
 
-    return boatPtr;
+    return createdBoat;
 }
-
-

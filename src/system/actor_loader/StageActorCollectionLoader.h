@@ -7,14 +7,13 @@ class StageActorCreationService;
 class StageActorFactory;
 class StagePlayerLoader;
 
+// ステージYAMLを読み込み、依存順に各種Actorを生成・登録する。依存先は借用する。
 class StageActorCollectionLoader {
 public:
-    StageActorCollectionLoader(
-        Game* game,
-        StageActorFactory& actorFactory,
-        StageActorCreationService& creationService,
-        StagePlayerLoader& playerLoader);
+    StageActorCollectionLoader(Game* game, StageActorFactory& actorFactory, StageActorCreationService& creationService,
+                               StagePlayerLoader& playerLoader);
 
+    // 既定設定とステージYAMLを読み込み、Actorを生成する。読込失敗はfalse。生成中の例外は呼び出し側へ伝わる。
     bool LoadAll();
 
 private:
@@ -36,7 +35,6 @@ private:
     void LoadJewelItems(const YAML::Node& stageRoot);
     void LoadHazardActors(const YAML::Node& stageRoot);
 
-private:
     Game* mGame = nullptr;
     StageActorFactory& mActorFactory;
     StageActorCreationService& mCreationService;

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "slimes-space-travel",
   "version-string": "0.1.0",
   "dependencies": [
@@ -11,5 +11,6 @@
     "sdl2-mixer",
     "sdl2-ttf",
     "yaml-cpp"
-  ]
+  ],
+  "builtin-baseline": "664933b8d385dfc01f4e0cdff4c7c74e71f6a740"
 }

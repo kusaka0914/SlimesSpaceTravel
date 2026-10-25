@@ -1,7 +1,6 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "Game.h"
-
+#include "app/Game.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"
@@ -21,11 +20,8 @@ void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMoveme
                                 PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                 float deltaTime)
 {
-    SceneSystem* sceneSystem =
-        player.GetGame()->GetSceneSystem();
-    if (!sceneSystem ||
-        (!sceneSystem->IsPlaying() &&
-         !sceneSystem->IsWaitingForTutorialPlayerJump())) {
+    SceneSystem* sceneSystem = player.GetGame()->GetSceneSystem();
+    if (!sceneSystem || (!sceneSystem->IsPlaying() && !sceneSystem->IsWaitingForTutorialPlayerJump())) {
         return;
     }
 
@@ -66,11 +62,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
         UpdateStrongAttacking(player, input, movement, combat, status, deltaTime);
         break;
     case PlayerActionState::AirSlamAttacking:
-        UpdateAirSlamAttacking(
-            player,
-            movement,
-            combat,
-            deltaTime);
+        UpdateAirSlamAttacking(player, movement, combat, deltaTime);
         break;
     case PlayerActionState::KnockedBack:
         UpdateKnockedBack(player, movement, combat, status, deltaTime);
@@ -78,6 +70,8 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
     }
 
     UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+
+    // 各状態の押下開始判定が終わるまで、前フレームの入力を保持する。
     input.EndFrame();
 }
 
@@ -116,8 +110,7 @@ void PlayerStateMachine::UpdateCoyoteTime(const Player& player, float deltaTime)
 
 bool PlayerStateMachine::IsAttackingState() const
 {
-    return mActionState == PlayerActionState::Attacking ||
-           mActionState == PlayerActionState::StrongAttacking ||
+    return mActionState == PlayerActionState::Attacking || mActionState == PlayerActionState::StrongAttacking ||
            mActionState == PlayerActionState::AirSlamAttacking;
 }
 

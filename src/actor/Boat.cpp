@@ -1,5 +1,6 @@
-#include "Boat.h"
-#include "Game.h"
+#include "actor/Boat.h"
+
+#include "app/Game.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
@@ -10,10 +11,10 @@
 #include <cmath>
 
 namespace {
-constexpr const char* BaseLaunchSequenceId = "launch_rocket_from_base";
-constexpr float BaseLaunchDurationSeconds = 2.0f;
-constexpr float BaseLaunchDistance = 7.0f;
-}
+constexpr const char* baseLaunchSequenceId = "launch_rocket_from_base";
+constexpr float baseLaunchDurationSeconds = 2.0f;
+constexpr float baseLaunchDistance = 7.0f;
+} // namespace
 
 Boat::Boat(Game* game)
     : Actor(game),
@@ -28,7 +29,7 @@ Boat::Boat(Game* game)
       mDestMargin(4.0f),
       mStartPos(0.0f),
       mDestPos(0.0f),
-      mLaunchSequenceId(BaseLaunchSequenceId),
+      mLaunchSequenceId(baseLaunchSequenceId),
       mFocusComponent(nullptr),
       mArrivalPoint(nullptr)
 {
@@ -101,9 +102,9 @@ BoatArrivalPoint* Boat::ResolveArrivalPoint() const
         return nullptr;
     }
 
+    // 有効な到着点が複数ある場合は選択せず、CalculateDestPosの惑星表面への配置に任せる。
     BoatArrivalPoint* uniqueArrivalPoint = nullptr;
-    for (BoatArrivalPoint* arrivalPoint :
-         mDestPlanet->GetBoatArrivalPoints()) {
+    for (BoatArrivalPoint* arrivalPoint : mDestPlanet->GetBoatArrivalPoints()) {
         if (!arrivalPoint || !arrivalPoint->GetIsActive()) {
             continue;
         }
@@ -134,9 +135,7 @@ glm::vec3 Boat::CalculateDestPos() const
         toDestPlanet = glm::normalize(toDestPlanet);
     }
 
-    const glm::vec3 destPos =
-        destPlanetCenter -
-        toDestPlanet * (mDestPlanet->GetRadius() + mDestMargin);
+    const glm::vec3 destPos = destPlanetCenter - toDestPlanet * (mDestPlanet->GetRadius() + mDestMargin);
     return destPos;
 }
 
@@ -165,10 +164,7 @@ void Boat::StartFocus()
 bool Boat::ShouldRenderUnavailablePreview() const
 {
     constexpr float completedTravelProgress = 1.0f;
-    return !mIsActive &&
-           !mIsMoving &&
-           mProgress < completedTravelProgress &&
-           !mIsDebugDisabled &&
+    return !mIsActive && !mIsMoving && mProgress < completedTravelProgress && !mIsDebugDisabled &&
            IsProgressVisibleForCurrentMode();
 }
 
@@ -187,10 +183,7 @@ bool Boat::UnboardPlayer(Player* player)
         return false;
     }
 
-    const auto boardedPlayer = std::find(
-        mBoardedPlayers.begin(),
-        mBoardedPlayers.end(),
-        player);
+    const auto boardedPlayer = std::find(mBoardedPlayers.begin(), mBoardedPlayers.end(), player);
     if (boardedPlayer == mBoardedPlayers.end()) {
         return false;
     }
@@ -225,10 +218,8 @@ void Boat::UpdateMovement(float deltaTime)
         return;
     }
 
-    const float travelStep =
-        mTravelSpeed * std::max(0.0f, deltaTime);
-    mTravelledDistance =
-        std::min(mTravelDistance, mTravelledDistance + travelStep);
+    const float travelStep = mTravelSpeed * std::max(0.0f, deltaTime);
+    mTravelledDistance = std::min(mTravelDistance, mTravelledDistance + travelStep);
     mProgress = mTravelledDistance / mTravelDistance;
     mPos = glm::mix(mStartPos, mDestPos, mProgress);
 }
@@ -236,12 +227,7 @@ void Boat::UpdateMovement(float deltaTime)
 void Boat::UpdateBaseLaunch(float deltaTime)
 {
     mBaseLaunchElapsedSeconds += std::max(0.0f, deltaTime);
-    const float progress = std::clamp(
-        mBaseLaunchElapsedSeconds / BaseLaunchDurationSeconds,
-        0.0f,
-        1.0f);
-
-
+    const float progress = std::clamp(mBaseLaunchElapsedSeconds / baseLaunchDurationSeconds, 0.0f, 1.0f);
 
     const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
     mPos = glm::mix(mStartPos, mBaseLaunchEndPos, easedProgress);
@@ -275,10 +261,9 @@ void Boat::StartTravel()
         } else {
             launchDirection = glm::normalize(launchDirection);
         }
-        mBaseLaunchEndPos = mStartPos + launchDirection * BaseLaunchDistance;
+        mBaseLaunchEndPos = mStartPos + launchDirection * baseLaunchDistance;
         mBaseLaunchElapsedSeconds = 0.0f;
         mIsLaunchingFromBase = true;
-
 
         mIsMoving = true;
         mGame->OnBoatStageChangeRequested(mDestStage);

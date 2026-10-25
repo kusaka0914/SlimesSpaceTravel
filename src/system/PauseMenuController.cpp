@@ -1,6 +1,6 @@
 #include "system/PauseMenuController.h"
 
-#include "Game.h"
+#include "app/Game.h"
 
 void PauseMenuController::Toggle()
 {
@@ -20,10 +20,8 @@ void PauseMenuController::MoveSelection(const Game& game, int delta)
 {
     constexpr int menuItemCount = 6;
 
-
     for (int attempt = 0; attempt < menuItemCount; ++attempt) {
-        mSelectedIndex =
-            (mSelectedIndex + delta + menuItemCount) % menuItemCount;
+        mSelectedIndex = (mSelectedIndex + delta + menuItemCount) % menuItemCount;
         if (IsItemEnabled(game, mSelectedIndex)) {
             return;
         }

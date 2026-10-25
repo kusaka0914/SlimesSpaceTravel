@@ -2,6 +2,7 @@
 
 #include "actor/enemy/behavior/EnemyBehaviorAction.h"
 
+// PreparingAttackとAttackingの近接攻撃をEnemyStateMachineへ委譲し、それ以外の状態では終了する。
 class EnemyMeleeAttackAction final : public EnemyBehaviorAction {
 public:
     explicit EnemyMeleeAttackAction(const EnemyBehaviorActionConfig& config)

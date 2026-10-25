@@ -4,6 +4,7 @@
 
 void FramePerformanceTracker::BeginFrame()
 {
+    // GPU結果は後続フレームで届くため、未取得の間も最後の計測値を表示できるよう保持する。
     mMetrics.gameUpdateMilliseconds = 0.0f;
     mMetrics.firstViewportRenderMilliseconds = 0.0f;
     mMetrics.secondViewportRenderMilliseconds = 0.0f;
@@ -13,9 +14,7 @@ void FramePerformanceTracker::BeginFrame()
     mMetrics.renderedViewportCount = 0;
 }
 
-void FramePerformanceTracker::RecordViewportCpuDuration(
-    int viewportIndex,
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordViewportCpuDuration(int viewportIndex, float durationMilliseconds)
 {
     if (viewportIndex == 0) {
         mMetrics.firstViewportRenderMilliseconds = durationMilliseconds;
@@ -25,14 +24,10 @@ void FramePerformanceTracker::RecordViewportCpuDuration(
         return;
     }
 
-    mMetrics.renderedViewportCount = std::max(
-        mMetrics.renderedViewportCount,
-        viewportIndex + 1);
+    mMetrics.renderedViewportCount = std::max(mMetrics.renderedViewportCount, viewportIndex + 1);
 }
 
-void FramePerformanceTracker::RecordViewportGpuDuration(
-    int viewportIndex,
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordViewportGpuDuration(int viewportIndex, float durationMilliseconds)
 {
     if (viewportIndex == 0) {
         mMetrics.firstViewportGpuMilliseconds = durationMilliseconds;
@@ -43,46 +38,39 @@ void FramePerformanceTracker::RecordViewportGpuDuration(
     }
 }
 
-void FramePerformanceTracker::RecordTotalDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordTotalDuration(float durationMilliseconds)
 {
     mMetrics.totalMilliseconds = durationMilliseconds;
 }
 
-void FramePerformanceTracker::RecordGameUpdateDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordGameUpdateDuration(float durationMilliseconds)
 {
     mMetrics.gameUpdateMilliseconds = durationMilliseconds;
 }
 
-void FramePerformanceTracker::RecordGameUiCpuDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordGameUiCpuDuration(float durationMilliseconds)
 {
     mMetrics.gameUiCpuMilliseconds = durationMilliseconds;
 }
 
-void FramePerformanceTracker::RecordEditorUiCpuDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordEditorUiCpuDuration(float durationMilliseconds)
 {
     mMetrics.editorUiCpuMilliseconds = durationMilliseconds;
 }
 
-void FramePerformanceTracker::RecordGameUiGpuDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordGameUiGpuDuration(float durationMilliseconds)
 {
     mMetrics.gameUiGpuMilliseconds = durationMilliseconds;
     mMetrics.hasGameUiGpuMeasurement = true;
 }
 
-void FramePerformanceTracker::RecordEditorUiGpuDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordEditorUiGpuDuration(float durationMilliseconds)
 {
     mMetrics.editorUiGpuMilliseconds = durationMilliseconds;
     mMetrics.hasEditorUiGpuMeasurement = true;
 }
 
-void FramePerformanceTracker::RecordPresentationWaitDuration(
-    float durationMilliseconds)
+void FramePerformanceTracker::RecordPresentationWaitDuration(float durationMilliseconds)
 {
     mMetrics.presentationWaitMilliseconds = durationMilliseconds;
 }

@@ -1,6 +1,5 @@
 #include "system/sequence/BossDefeatSequence.h"
 
-#include "Game.h"
 #include "actor/Enemy.h"
 #include "actor/Star.h"
 #include "system/AudioSystem.h"
@@ -8,20 +7,18 @@
 #include <algorithm>
 
 namespace {
+
 constexpr float defeatSoundDelaySeconds = 0.5f;
 constexpr float starRevealTimeSeconds = 4.0f;
 constexpr float sequenceDurationSeconds = 7.0f;
-}
+} // namespace
 
-BossDefeatSequence::BossDefeatSequence(Game* game)
-    : mGame(game)
+BossDefeatSequence::BossDefeatSequence(AudioSystem* audio)
+    : mAudio(audio)
 {
 }
 
-void BossDefeatSequence::Start(
-    Enemy* defeatedBoss,
-    Star* rewardStar,
-    bool isPreview)
+void BossDefeatSequence::Start(Enemy* defeatedBoss, Star* rewardStar, bool isPreview)
 {
     if (!defeatedBoss) {
         return;
@@ -42,18 +39,15 @@ void BossDefeatSequence::Update(float deltaTime)
 
     mElapsedSeconds += std::max(0.0f, deltaTime);
 
-    AudioSystem* audioSystem = mGame ? mGame->GetAudioSystem() : nullptr;
-    if (!mIsPreview && !mHasPlayedDefeatSound &&
-        mElapsedSeconds >= defeatSoundDelaySeconds) {
+    AudioSystem* audioSystem = mAudio;
+    if (!mIsPreview && !mHasPlayedDefeatSound && mElapsedSeconds >= defeatSoundDelaySeconds) {
         if (audioSystem) {
             audioSystem->PlaySE("boss_defeated_se");
         }
         mHasPlayedDefeatSound = true;
     }
 
-    if (!mIsPreview && mRewardStar &&
-        mElapsedSeconds >= starRevealTimeSeconds &&
-        !mRewardStar->GetIsActive()) {
+    if (!mIsPreview && mRewardStar && mElapsedSeconds >= starRevealTimeSeconds && !mRewardStar->GetIsActive()) {
         mRewardStar->SetIsActive(true);
         if (audioSystem) {
             audioSystem->PlaySE("star_shown_se");

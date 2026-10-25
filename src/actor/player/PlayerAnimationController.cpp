@@ -8,20 +8,6 @@
 #include <utility>
 
 namespace {
-std::string NormalizeAnimationId(std::string_view animationId)
-{
-    std::string normalizedId;
-    normalizedId.reserve(animationId.size());
-
-    for (const unsigned char character : animationId) {
-        if (std::isspace(character) || character == '-' || character == '_') {
-            continue;
-        }
-        normalizedId.push_back(static_cast<char>(std::tolower(character)));
-    }
-
-    return normalizedId;
-}
 
 std::string NormalizeClipName(const std::string& animationName)
 {
@@ -42,13 +28,13 @@ std::string GetAnimationNameSuffix(const std::string& normalizedName)
     const std::size_t separatorPosition = normalizedName.find_last_of("|:/\\");
     return separatorPosition == std::string::npos ? normalizedName : normalizedName.substr(separatorPosition + 1);
 }
-}
+} // namespace
 
 void PlayerAnimationController::Configure(PlayerAnimationDefinitions animationDefinitions)
 {
     mAnimationDefinitions.clear();
     for (auto& [animationId, definition] : animationDefinitions) {
-        const std::string normalizedId = NormalizeAnimationId(animationId);
+        const std::string normalizedId = NormalizePlayerAnimationId(animationId);
         if (!normalizedId.empty()) {
             mAnimationDefinitions[normalizedId] = std::move(definition);
         }
@@ -74,7 +60,7 @@ void PlayerAnimationController::SetLoadedModel(const LoadedModel* loadedModel)
 
 bool PlayerAnimationController::RequestAnimation(std::string_view animationId, bool shouldRestart)
 {
-    const std::string normalizedId = NormalizeAnimationId(animationId);
+    const std::string normalizedId = NormalizePlayerAnimationId(animationId);
     const ResolvedAnimation* animation = FindResolvedAnimation(normalizedId);
     if (!animation || !animation->clip) {
         return false;
@@ -118,7 +104,7 @@ void PlayerAnimationController::Update(float deltaTimeSeconds)
 
 void PlayerAnimationController::ResetToAnimation(std::string_view animationId)
 {
-    mBaseAnimationId = NormalizeAnimationId(animationId);
+    mBaseAnimationId = NormalizePlayerAnimationId(animationId);
     mCurrentAnimationId.clear();
     mIsOneShotPlaying = false;
 
@@ -184,8 +170,7 @@ void PlayerAnimationController::PlayBaseAnimation()
 }
 
 void PlayerAnimationController::PlayResolvedAnimation(const std::string& animationId,
-                                                       const ResolvedAnimation& animation,
-                                                       bool shouldRestart)
+                                                      const ResolvedAnimation& animation, bool shouldRestart)
 {
     if (!animation.clip) {
         return;
@@ -204,7 +189,7 @@ void PlayerAnimationController::PlayResolvedAnimation(const std::string& animati
 const PlayerAnimationController::ResolvedAnimation*
 PlayerAnimationController::FindResolvedAnimation(std::string_view animationId) const
 {
-    const std::string normalizedId = NormalizeAnimationId(animationId);
+    const std::string normalizedId = NormalizePlayerAnimationId(animationId);
     const auto animationIt = mResolvedAnimations.find(normalizedId);
     return animationIt == mResolvedAnimations.end() ? nullptr : &animationIt->second;
 }
@@ -232,6 +217,7 @@ const AnimationClip* PlayerAnimationController::FindAnimationClip(const std::str
         }
     }
 
+    // 部分一致は候補が1つの場合だけ採用し、似た名前の別クリップを誤選択しない。
     const AnimationClip* partialMatch = nullptr;
     for (const AnimationClip& animationClip : animationClips) {
         const std::string normalizedClipName = NormalizeClipName(animationClip.name);

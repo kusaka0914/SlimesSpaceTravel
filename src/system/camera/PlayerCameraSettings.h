@@ -54,14 +54,19 @@ struct PlayerCameraSettings {
     float boatRideTargetHeight = 1.0f;
     float boatRideFieldOfViewDegrees = 55.0f;
 
+    // 画角・距離・時間などを有効範囲へ補正する。
     void Normalize();
 };
 
+// 追従カメラ設定を指定YAMLへ読み書きする。
 class PlayerCameraSettingsRepository {
 public:
     explicit PlayerCameraSettingsRepository(std::string filePath);
 
+    // 設定を読み込みNormalizeする。ファイルがなければ既定値でtrue。読込・変換失敗時は出力を維持してfalse。
     bool Load(PlayerCameraSettings& settings) const;
+
+    // 正規化した値を保存する。書き終えてから置き換え、失敗時は既存ファイルを保ってfalse。
     bool Save(const PlayerCameraSettings& settings) const;
 
 private:

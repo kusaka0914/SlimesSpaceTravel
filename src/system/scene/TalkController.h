@@ -9,6 +9,7 @@ class NPC;
 class Player;
 enum class TalkPageAdvanceCondition;
 
+// NPC会話の開始・再開・ページ進行を管理し、決定入力とPlayerの行動条件を処理する。
 class TalkController {
 public:
     TalkController(Game* game, GameProgressState* gameProgressState, UIState* uiState, NPC*& talkingNPC,
@@ -16,10 +17,17 @@ public:
 
     void Update(float deltaTime);
     void TryAdvanceTalkFromConfirm();
+
+    // NPCとPlayerを借用して会話を開始し、UI・シーン状態を切り替える。
     void StartTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer);
-    void ResumeTalkWithNPC(
-        NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex);
+
+    // 0始まりのページから会話を再開する。NPC・Playerは借用する。
+    void ResumeTalkWithNPC(NPC* talkingNPC, Player* talkingPlayer, int talkPageIndex);
+
+    // Stage再読込前に呼び、会話と行動待ちが保持するActor参照を解除する。
     void ClearActorReferencesForStageReload();
+
+    // 1始まりのPlayer番号で会話可能なNPCを探し、会話を開始できればtrueを返す。
     bool TryStartTalkWithNPC(int playerNum);
     bool CanStartTalkWithNPC(const Player* player) const;
 
@@ -34,7 +42,6 @@ private:
     bool TryAdvanceTalkFromCompletedAction();
     void AdvanceTalkPage();
 
-private:
     Game* mGame;
     GameProgressState* mGameProgressState;
     UIState* mUIState;

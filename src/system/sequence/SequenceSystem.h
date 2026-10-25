@@ -11,25 +11,30 @@
 class Actor;
 class Game;
 
+// ゲーム演出とカメラ演出の連続再生を実行し、プレビュー時のActor状態を退避・復元する。
 class SequenceSystem {
 public:
     explicit SequenceSystem(Game* game);
 
     void Update(float deltaTime);
 
-    bool Play(const std::string& sequenceId, bool preview = false);
-    bool PlayCinematicChain(
-        const std::vector<std::string>& cinematicSequenceIds);
+    // 現在の演出を停止し、指定IDを再生する。未登録ならfalse。isPreview時は対象Actorの位置・表示を退避する。
+    bool Play(const std::string& sequenceId, bool isPreview = false);
+
+    // 指定順にカメラ演出を再生する。空配列・未登録ID・開始失敗時はfalse。再生中はPlayer操作を制限する。
+    bool PlayCinematicChain(const std::vector<std::string>& cinematicSequenceIds);
+
+    // カメラ演出群の終了後、復帰フェード中点でゲーム演出を再生する。未登録ID・開始失敗時はfalse。
     bool PlayCinematicChainThenSequence(const std::vector<std::string>& cinematicSequenceIds,
                                         const std::string& gameplaySequenceId);
-    void Stop(bool restorePreviewState = true);
+
+    // 再生と操作制限を解除する。shouldRestorePreviewStateがtrueなら退避したActor位置・表示も戻す。
+    // 退避対象のActorを破棄する前に呼ぶこと。
+    void Stop(bool shouldRestorePreviewState = true);
 
     bool IsPlaying() const { return mIsPlaying || mIsCinematicChainPlaying; }
     bool IsPreviewing() const { return mIsPreview; }
-    bool IsCinematicChainPlaying() const
-    {
-        return mIsCinematicChainPlaying;
-    }
+    bool IsCinematicChainPlaying() const { return mIsCinematicChainPlaying; }
     bool HasPreviewSnapshot() const { return !mPreviewSnapshots.empty(); }
     bool LocksPlayerControl() const { return mLocksPlayerControl; }
 
@@ -42,8 +47,11 @@ public:
     const SequenceLibrary& GetLibrary() const { return mLibrary; }
 
     bool Save() const { return mLibrary.Save(); }
+
+    // 再生を停止し、プレビューを復元してから定義を再読込する。
     bool Reload();
 
+    // 種別と0始まりのインデックスから借用Actorを探す。参照が不正・該当なしならnullptr。
     Actor* ResolveActor(const SequenceActorRef& actorRef) const;
 
 private:
@@ -58,18 +66,15 @@ private:
     void ApplyMovementClips(const GameplaySequence& sequence, float time);
     void ApplyEventClips(const GameplaySequence& sequence, float previousTime, float time);
     void ApplyEventClip(const SequenceClip& clip);
-    bool StartCinematicChain(
-        const std::vector<std::string>& cinematicSequenceIds,
-        const std::string& gameplaySequenceId);
+    bool StartCinematicChain(const std::vector<std::string>& cinematicSequenceIds,
+                             const std::string& gameplaySequenceId);
     void UpdateCinematicChain();
     void RequestCinematicReturnFade();
-    void FinishCinematicChainAtFadeMidpoint(
-        std::size_t cinematicChainGeneration);
+    void FinishCinematicChainAtFadeMidpoint(std::size_t cinematicChainGeneration);
     void ClearCinematicChain();
 
-    static float ApplyEasing(float t, SequenceEasing easing);
+    static float ApplyEasing(float progress, SequenceEasing easing);
 
-private:
     Game* mGame = nullptr;
     SequenceLibrary mLibrary;
 

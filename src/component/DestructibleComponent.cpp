@@ -1,19 +1,22 @@
-#include "DestructibleComponent.h"
-#include "Game.h"
+#include "component/DestructibleComponent.h"
+
+#include "app/Game.h"
+#include "actor/Actor.h"
 #include "actor/Player.h"
 #include "system/AudioSystem.h"
+
+#include <cmath>
 
 DestructibleComponent::DestructibleComponent(Actor* owner, int updateOrder)
     : Component(owner, updateOrder),
       mIsDestroyed(false),
-      mIsHitCurrentAttack(false),
       mDestroyHp(0.0f)
 {
 }
 
 void DestructibleComponent::Update(float deltaTime)
 {
-    if (mIsDestroyed) {
+    if (mIsDestroyed || !mOwner || !mOwner->GetGame()) {
         return;
     }
 
@@ -22,20 +25,41 @@ void DestructibleComponent::Update(float deltaTime)
 
 void DestructibleComponent::TryApplyDamage()
 {
-    for (auto player : mOwner->GetGame()->GetPlayers()) {
-        if (!player->IsAttacking()) {
-            mIsHitCurrentAttack = false;
+    for (Player* player : mOwner->GetGame()->GetPlayers()) {
+        if (!player) {
             continue;
         }
 
-        bool canApplyDamage = IsPlayerInHitRange(player) && !mIsHitCurrentAttack;
-        if (!canApplyDamage) {
+        const bool isAttacking = player->IsAttacking();
+        const std::uint64_t attackSequence = player->GetResolvedAttackSequence();
+
+        // 初回の待機状態は過去の攻撃として閉じ、次の攻撃開始で再利用しない。
+        const auto [hitStateIt, wasInserted] =
+            mPlayerAttackHitStates.try_emplace(player, PlayerAttackHitState{attackSequence, !isAttacking});
+        PlayerAttackHitState& hitState = hitStateIt->second;
+        const bool didResolveAttack = !wasInserted && hitState.attackSequence != attackSequence;
+        if (didResolveAttack) {
+            hitState = {attackSequence, false};
+        }
+
+        // 予約中は前回の攻撃番号が残る。番号0も未解決なので、どちらも命中判定に使わない。
+        if (attackSequence == 0 || player->HasPendingAttackHit() || hitState.isConsumed) {
             continue;
         }
 
-        ApplyDamage(
-            player->CalculateOutgoingAttackDamage(
-                player->GetAttack()));
+        // 叩き落としは解決と同時にIdleへ戻るため、番号が進んだ更新では攻撃中フラグに依存しない。
+        if (!isAttacking && !didResolveAttack) {
+            hitState.isConsumed = true;
+            continue;
+        }
+
+        if (!IsPlayerInHitRange(player)) {
+            continue;
+        }
+
+        // 他Playerの待機や攻撃終了では、このPlayerの命中履歴を解除しない。
+        hitState.isConsumed = true;
+        ApplyDamage(player->CalculateOutgoingAttackDamage(player->GetAttack()));
     }
 }
 
@@ -56,7 +80,6 @@ bool DestructibleComponent::IsPlayerInHitRange(Player* player) const
 
 void DestructibleComponent::ApplyDamage(float attack)
 {
-    mIsHitCurrentAttack = true;
     mDestroyHp -= attack;
 
     if (mDestroyHp > 0.0f) {

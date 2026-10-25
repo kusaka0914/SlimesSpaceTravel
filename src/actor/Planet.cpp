@@ -1,9 +1,12 @@
-#include "Planet.h"
+#include "actor/Planet.h"
+
+#include "utils/StringUtils.h"
+
+#include "utils/YamlRead.h"
 
 #include "actor/Boat.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <filesystem>
 
@@ -49,44 +52,15 @@ glm::vec4 ReadVec4(const YAML::Node& node, const char* key, const glm::vec4& def
                      node[key][3] ? node[key][3].as<float>() : defaultValue.w);
 }
 
-std::string ReadString(const YAML::Node& node, const char* key, const std::string& defaultValue)
-{
-    return node[key] ? node[key].as<std::string>() : defaultValue;
-}
-
-int ReadInt(const YAML::Node& node, const char* key, int defaultValue)
-{
-    return node[key] ? node[key].as<int>() : defaultValue;
-}
-
-float ReadFloat(const YAML::Node& node, const char* key, float defaultValue)
-{
-    return node[key] ? node[key].as<float>() : defaultValue;
-}
-
-std::string ToLower(std::string text)
-{
-    std::transform(
-        text.begin(),
-        text.end(),
-        text.begin(),
-        [](unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-        });
-    return text;
-}
-
-Planet::VisualSettings ResolveDefaultVisualSettings(
-    const std::string& modelPath,
-    const std::string& texturePath)
+Planet::VisualSettings ResolveDefaultVisualSettings(const std::string& modelPath, const std::string& texturePath)
 {
     Planet::VisualSettings settings;
-    const std::string visualIdentity =
-        ToLower(modelPath + "|" + texturePath);
 
-    const bool isDecorationFreeTheme =
-        visualIdentity.find("blackplatform") != std::string::npos ||
-        visualIdentity.find("slimeplatform") != std::string::npos;
+    // 明示設定がない場合は、既存アセット名から見た目の既定値を選ぶ。
+    const std::string visualIdentity = StringUtils::ToLower(modelPath + "|" + texturePath);
+
+    const bool isDecorationFreeTheme = visualIdentity.find("blackplatform") != std::string::npos ||
+                                       visualIdentity.find("slimeplatform") != std::string::npos;
     if (isDecorationFreeTheme) {
         settings.biome = Planet::Biome::None;
         settings.atmosphereColor = glm::vec3(0.22f, 0.42f, 0.78f);
@@ -95,10 +69,9 @@ Planet::VisualSettings ResolveDefaultVisualSettings(
         return settings;
     }
 
-    const bool isRockyTheme =
-        visualIdentity.find("dry") != std::string::npos ||
-        visualIdentity.find("stone") != std::string::npos ||
-        visualIdentity.find("moon") != std::string::npos;
+    const bool isRockyTheme = visualIdentity.find("dry") != std::string::npos ||
+                              visualIdentity.find("stone") != std::string::npos ||
+                              visualIdentity.find("moon") != std::string::npos;
     if (isRockyTheme) {
         settings.biome = Planet::Biome::Rocky;
         settings.atmosphereColor = glm::vec3(0.34f, 0.46f, 0.68f);
@@ -114,21 +87,17 @@ Planet::VisualSettings ResolveDefaultVisualSettings(
     return settings;
 }
 
-Planet::Biome ParseBiome(
-    const YAML::Node& visualNode,
-    Planet::Biome defaultBiome)
+Planet::Biome ParseBiome(const YAML::Node& visualNode, Planet::Biome defaultBiome)
 {
     if (!visualNode || !visualNode["biome"]) {
         return defaultBiome;
     }
 
-    const std::string biomeName =
-        ToLower(visualNode["biome"].as<std::string>());
+    const std::string biomeName = StringUtils::ToLower(visualNode["biome"].as<std::string>());
     if (biomeName == "grass" || biomeName == "grassland") {
         return Planet::Biome::Grassland;
     }
-    if (biomeName == "rock" || biomeName == "rocky" ||
-        biomeName == "wasteland") {
+    if (biomeName == "rock" || biomeName == "rocky" || biomeName == "wasteland") {
         return Planet::Biome::Rocky;
     }
     if (biomeName == "none") {
@@ -148,7 +117,7 @@ int FindShortestScaleAxisIndex(const glm::vec3& absoluteScale)
     }
     return shortestAxisIndex;
 }
-}
+} // namespace
 
 void Planet::ApplyConfig(const YAML::Node& node)
 {
@@ -162,61 +131,36 @@ void Planet::ApplyConfig(const YAML::Node& node)
     const glm::vec4 color = ReadVec4(node, "color", glm::vec4(1.0f));
     SetColor(color);
 
-    const std::string modelPath = ReadString(node, "model", "planet.obj");
+    const std::string modelPath = YamlRead::ReadOr<std::string>(node, "model", "planet.obj");
     SetModelPath(modelPath);
 
-    const std::string textureOverride = ReadString(node, "textureOverride", "");
+    const std::string textureOverride = YamlRead::ReadOr<std::string>(node, "textureOverride", "");
     SetTextureOverridePath(textureOverride);
     mVisualSettings = ResolveDefaultVisualSettings(modelPath, textureOverride);
     const YAML::Node visualNode = node["visual"];
     if (visualNode && visualNode.IsMap()) {
-        mVisualSettings.biome =
-            ParseBiome(visualNode, mVisualSettings.biome);
-        mVisualSettings.atmosphereColor = ReadVec3(
-            visualNode,
-            "atmosphereColor",
-            mVisualSettings.atmosphereColor);
+        mVisualSettings.biome = ParseBiome(visualNode, mVisualSettings.biome);
+        mVisualSettings.atmosphereColor = ReadVec3(visualNode, "atmosphereColor", mVisualSettings.atmosphereColor);
         mVisualSettings.atmosphereStrength = glm::clamp(
-            ReadFloat(
-                visualNode,
-                "atmosphereStrength",
-                mVisualSettings.atmosphereStrength),
-            0.0f,
-            1.0f);
+            YamlRead::ReadOr<float>(visualNode, "atmosphereStrength", mVisualSettings.atmosphereStrength), 0.0f, 1.0f);
         mVisualSettings.decorationDensity = glm::clamp(
-            ReadFloat(
-                visualNode,
-                "decorationDensity",
-                mVisualSettings.decorationDensity),
-            0.0f,
-            2.0f);
+            YamlRead::ReadOr<float>(visualNode, "decorationDensity", mVisualSettings.decorationDensity), 0.0f, 2.0f);
     }
-    SetBackTextureOverridePath(
-        ReadString(node, "backTextureOverride", ""));
-    SetTextureSideBlendWidth(
-        node["textureSideBlendWidth"]
-            ? node["textureSideBlendWidth"].as<float>()
-            : 0.05f);
-    SetCanAttractNearbyPlayer(
-        node["canAttractNearbyPlayer"]
-            ? node["canAttractNearbyPlayer"].as<bool>()
-            : true);
+    SetBackTextureOverridePath(YamlRead::ReadOr<std::string>(node, "backTextureOverride", ""));
+    SetTextureSideBlendWidth(node["textureSideBlendWidth"] ? node["textureSideBlendWidth"].as<float>() : 0.05f);
+    SetCanAttractNearbyPlayer(node["canAttractNearbyPlayer"] ? node["canAttractNearbyPlayer"].as<bool>() : true);
     SetShouldReactToOverheadGravityRay(
-        node["reactsToOverheadGravityRay"]
-            ? node["reactsToOverheadGravityRay"].as<bool>()
-            : false);
+        node["reactsToOverheadGravityRay"] ? node["reactsToOverheadGravityRay"].as<bool>() : false);
 
-    const glm::vec2 automaticTextureTiling(
-        std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),
-        std::max(1.0f, std::abs(scale.y)));
-    const glm::vec2 textureTiling =
-        ReadVec2(node, "textureTiling", automaticTextureTiling);
+    const glm::vec2 automaticTextureTiling(std::max(1.0f, std::sqrt(std::abs(scale.x * scale.z))),
+                                           std::max(1.0f, std::abs(scale.y)));
+    const glm::vec2 textureTiling = ReadVec2(node, "textureTiling", automaticTextureTiling);
     SetTextureTiling(glm::max(textureTiling, glm::vec2(0.01f)));
 
-    const int stageNum = ReadInt(node, "stageNum", 0);
+    const int stageNum = YamlRead::ReadOr<int>(node, "stageNum", 0);
     SetStageNum(stageNum);
 
-    const std::string rocketSpawnCondition = ReadString(node, "rocketSpawnCondition", "");
+    const std::string rocketSpawnCondition = YamlRead::ReadOr<std::string>(node, "rocketSpawnCondition", "");
     SetRocketSpawnCondition(rocketSpawnCondition);
 }
 
@@ -240,122 +184,82 @@ Planet::PlanetShape Planet::GetPlanetShape() const
     constexpr float scaleComparisonEpsilon = 0.0001f;
 
     const glm::vec3 absoluteScale = glm::abs(GetScale());
-    const bool hasNoScale =
-        absoluteScale.x <= scaleComparisonEpsilon &&
-        absoluteScale.y <= scaleComparisonEpsilon &&
-        absoluteScale.z <= scaleComparisonEpsilon;
+    const bool hasNoScale = absoluteScale.x <= scaleComparisonEpsilon && absoluteScale.y <= scaleComparisonEpsilon &&
+                            absoluteScale.z <= scaleComparisonEpsilon;
     if (hasNoScale) {
         return PlanetShape::Normal;
     }
 
-    const bool hasUniformScale =
-        std::abs(absoluteScale.x - absoluteScale.y) <=
-            scaleComparisonEpsilon &&
-        std::abs(absoluteScale.y - absoluteScale.z) <=
-            scaleComparisonEpsilon;
-    return hasUniformScale
-        ? PlanetShape::Sphere
-        : PlanetShape::Ellipse;
+    const bool hasUniformScale = std::abs(absoluteScale.x - absoluteScale.y) <= scaleComparisonEpsilon &&
+                                 std::abs(absoluteScale.y - absoluteScale.z) <= scaleComparisonEpsilon;
+    return hasUniformScale ? PlanetShape::Sphere : PlanetShape::Ellipse;
 }
 
-glm::vec3 Planet::CalculateEllipseVerticalDirection(
-    const glm::vec3& worldPosition) const
+glm::vec3 Planet::CalculateEllipseVerticalDirection(const glm::vec3& worldPosition) const
 {
     const glm::vec3 absoluteScale = glm::abs(GetScale());
-    const int verticalAxisIndex =
-        FindShortestScaleAxisIndex(absoluteScale);
+    const int verticalAxisIndex = FindShortestScaleAxisIndex(absoluteScale);
 
     glm::vec3 verticalAxis(0.0f);
     verticalAxis[verticalAxisIndex] = 1.0f;
 
     constexpr float centerPlaneEpsilon = 0.000001f;
-    const float verticalOffset =
-        glm::dot(worldPosition - GetPos(), verticalAxis);
-    return verticalOffset < -centerPlaneEpsilon
-        ? -verticalAxis
-        : verticalAxis;
+    const float verticalOffset = glm::dot(worldPosition - GetPos(), verticalAxis);
+    return verticalOffset < -centerPlaneEpsilon ? -verticalAxis : verticalAxis;
 }
 
-Planet::EllipseSurfaceFace Planet::ResolveEllipseSurfaceFace(
-    const glm::vec3& worldPosition) const
+Planet::EllipseSurfaceFace Planet::ResolveEllipseSurfaceFace(const glm::vec3& worldPosition) const
 {
     constexpr float minimumAxisRadius = 0.001f;
     constexpr float sideRegionHalfWidthRatio = 0.2f;
 
     const glm::vec3 absoluteScale = glm::abs(GetScale());
-    const int verticalAxisIndex =
-        FindShortestScaleAxisIndex(absoluteScale);
-    const float verticalAxisRadius =
-        std::max(
-            absoluteScale[verticalAxisIndex],
-            minimumAxisRadius);
+    const int verticalAxisIndex = FindShortestScaleAxisIndex(absoluteScale);
+    const float verticalAxisRadius = std::max(absoluteScale[verticalAxisIndex], minimumAxisRadius);
     const float normalizedVerticalOffset =
-        (worldPosition[verticalAxisIndex] -
-         GetPos()[verticalAxisIndex]) /
-        verticalAxisRadius;
+        (worldPosition[verticalAxisIndex] - GetPos()[verticalAxisIndex]) / verticalAxisRadius;
 
-    if (normalizedVerticalOffset >
-        sideRegionHalfWidthRatio) {
+    if (normalizedVerticalOffset > sideRegionHalfWidthRatio) {
         return EllipseSurfaceFace::Front;
     }
-    if (normalizedVerticalOffset <
-        -sideRegionHalfWidthRatio) {
+    if (normalizedVerticalOffset < -sideRegionHalfWidthRatio) {
         return EllipseSurfaceFace::Back;
     }
     return EllipseSurfaceFace::Side;
 }
 
-Planet::EllipseSurfaceFace
-Planet::ResolveEllipseSurfaceHemisphere(
-    const glm::vec3& worldPosition) const
+Planet::EllipseSurfaceFace Planet::ResolveEllipseSurfaceHemisphere(const glm::vec3& worldPosition) const
 {
     const glm::vec3 absoluteScale = glm::abs(GetScale());
-    const int verticalAxisIndex =
-        FindShortestScaleAxisIndex(absoluteScale);
-    const float verticalOffset =
-        worldPosition[verticalAxisIndex] -
-        GetPos()[verticalAxisIndex];
-    return verticalOffset >= 0.0f
-        ? EllipseSurfaceFace::Front
-        : EllipseSurfaceFace::Back;
+    const int verticalAxisIndex = FindShortestScaleAxisIndex(absoluteScale);
+    const float verticalOffset = worldPosition[verticalAxisIndex] - GetPos()[verticalAxisIndex];
+    return verticalOffset >= 0.0f ? EllipseSurfaceFace::Front : EllipseSurfaceFace::Back;
 }
 
-bool Planet::ArePositionsOnSameSurfaceFace(
-    const glm::vec3& firstWorldPosition,
-    const glm::vec3& secondWorldPosition) const
+bool Planet::ArePositionsOnSameSurfaceFace(const glm::vec3& firstWorldPosition,
+                                           const glm::vec3& secondWorldPosition) const
 {
     if (GetPlanetShape() != PlanetShape::Ellipse) {
         return true;
     }
 
-
-
-
-
-    return ResolveEllipseSurfaceHemisphere(
-               firstWorldPosition) ==
-           ResolveEllipseSurfaceHemisphere(
-               secondWorldPosition);
+    // 両側が同じSideと判定されるのを避けるため、中央帯でも表裏の符号で比較する。
+    return ResolveEllipseSurfaceHemisphere(firstWorldPosition) == ResolveEllipseSurfaceHemisphere(secondWorldPosition);
 }
 
-Planet::EllipseSurfaceProjection
-Planet::CalculateEllipseSurfaceProjection(
-    const glm::vec3& worldPosition) const
+Planet::EllipseSurfaceProjection Planet::CalculateEllipseSurfaceProjection(const glm::vec3& worldPosition) const
 {
     constexpr float minimumRadius = 0.001f;
     constexpr float positionEpsilon = 0.000001f;
     constexpr int closestPointIterations = 48;
 
-    const glm::vec3 radii = glm::max(
-        glm::abs(GetScale()),
-        glm::vec3(minimumRadius));
+    const glm::vec3 radii = glm::max(glm::abs(GetScale()), glm::vec3(minimumRadius));
     const glm::vec3 localPosition = worldPosition - GetPos();
     const glm::vec3 squaredRadii = radii * radii;
 
-    const float scaledDistanceSquared =
-        localPosition.x * localPosition.x / squaredRadii.x +
-        localPosition.y * localPosition.y / squaredRadii.y +
-        localPosition.z * localPosition.z / squaredRadii.z;
+    const float scaledDistanceSquared = localPosition.x * localPosition.x / squaredRadii.x +
+                                        localPosition.y * localPosition.y / squaredRadii.y +
+                                        localPosition.z * localPosition.z / squaredRadii.z;
     const bool isOutside = scaledDistanceSquared >= 1.0f;
 
     glm::vec3 surfaceLocalPosition(0.0f);
@@ -367,42 +271,32 @@ Planet::CalculateEllipseSurfaceProjection(
         if (radii.z < radii[shortestAxisIndex]) {
             shortestAxisIndex = 2;
         }
-        surfaceLocalPosition[shortestAxisIndex] =
-            radii[shortestAxisIndex];
+        surfaceLocalPosition[shortestAxisIndex] = radii[shortestAxisIndex];
     } else if (!isOutside) {
-        const float radialScale =
-            1.0f / std::sqrt(
-                std::max(scaledDistanceSquared, positionEpsilon));
+        // 内部点は放射方向へ投影する。外部点の最近傍計算とは分けて扱う。
+        const float radialScale = 1.0f / std::sqrt(scaledDistanceSquared);
         surfaceLocalPosition = localPosition * radialScale;
     } else {
-        const auto calculateConstraint =
-            [&localPosition, &squaredRadii](double lambda) {
-                double constraint = 0.0;
-                for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
-                    const double radiusSquared =
-                        static_cast<double>(squaredRadii[axisIndex]);
-                    const double coordinate =
-                        static_cast<double>(localPosition[axisIndex]);
-                    const double denominator = lambda + radiusSquared;
-                    constraint +=
-                        radiusSquared * coordinate * coordinate /
-                        (denominator * denominator);
-                }
-                return constraint;
-            };
+        // 外部点は楕円体の制約式が1になる係数を二分探索し、最近傍の表面位置を求める。
+        const auto calculateConstraint = [&localPosition, &squaredRadii](double lambda) {
+            double constraint = 0.0;
+            for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+                const double radiusSquared = static_cast<double>(squaredRadii[axisIndex]);
+                const double coordinate = static_cast<double>(localPosition[axisIndex]);
+                const double denominator = lambda + radiusSquared;
+                constraint += radiusSquared * coordinate * coordinate / (denominator * denominator);
+            }
+            return constraint;
+        };
 
         double minimumLambda = 0.0;
-        double maximumLambda = static_cast<double>(
-            std::max({squaredRadii.x, squaredRadii.y, squaredRadii.z}));
+        double maximumLambda = static_cast<double>(std::max({squaredRadii.x, squaredRadii.y, squaredRadii.z}));
         while (calculateConstraint(maximumLambda) > 1.0) {
             maximumLambda *= 2.0;
         }
 
-        for (int iteration = 0;
-             iteration < closestPointIterations;
-             ++iteration) {
-            const double middleLambda =
-                (minimumLambda + maximumLambda) * 0.5;
+        for (int iteration = 0; iteration < closestPointIterations; ++iteration) {
+            const double middleLambda = (minimumLambda + maximumLambda) * 0.5;
             if (calculateConstraint(middleLambda) > 1.0) {
                 minimumLambda = middleLambda;
             } else {
@@ -412,18 +306,13 @@ Planet::CalculateEllipseSurfaceProjection(
 
         const double closestPointLambda = maximumLambda;
         for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
-            const double radiusSquared =
-                static_cast<double>(squaredRadii[axisIndex]);
-            surfaceLocalPosition[axisIndex] =
-                static_cast<float>(
-                    radiusSquared *
-                    static_cast<double>(localPosition[axisIndex]) /
-                    (closestPointLambda + radiusSquared));
+            const double radiusSquared = static_cast<double>(squaredRadii[axisIndex]);
+            surfaceLocalPosition[axisIndex] = static_cast<float>(
+                radiusSquared * static_cast<double>(localPosition[axisIndex]) / (closestPointLambda + radiusSquared));
         }
     }
 
-    glm::vec3 outwardNormal =
-        surfaceLocalPosition / squaredRadii;
+    glm::vec3 outwardNormal = surfaceLocalPosition / squaredRadii;
     if (glm::length(outwardNormal) <= positionEpsilon) {
         outwardNormal = glm::vec3(0.0f, 1.0f, 0.0f);
     } else {
@@ -433,8 +322,7 @@ Planet::CalculateEllipseSurfaceProjection(
     EllipseSurfaceProjection projection;
     projection.position = GetPos() + surfaceLocalPosition;
     projection.outwardNormal = outwardNormal;
-    projection.distance =
-        glm::length(worldPosition - projection.position);
+    projection.distance = glm::length(worldPosition - projection.position);
     projection.isOutside = isOutside;
     return projection;
 }
@@ -442,8 +330,7 @@ Planet::CalculateEllipseSurfaceProjection(
 bool Planet::HasAppearedRocket() const
 {
     for (const Boat* boat : mActorRegistry.GetBoats()) {
-        if (boat && boat->GetIsActive() &&
-            boat->HasAppeared()) {
+        if (boat && boat->GetIsActive() && boat->HasAppeared()) {
             return true;
         }
     }
@@ -452,8 +339,8 @@ bool Planet::HasAppearedRocket() const
 
 glm::vec3 Planet::CalculateSurfacePos(float theta, float phi, float height) const
 {
-    const glm::vec3 dir =
+    const glm::vec3 direction =
         glm::normalize(glm::vec3(std::cos(phi) * std::cos(theta), std::sin(phi), std::cos(phi) * std::sin(theta)));
 
-    return mPos + dir * (mRadius + height);
+    return mPos + direction * (mRadius + height);
 }
