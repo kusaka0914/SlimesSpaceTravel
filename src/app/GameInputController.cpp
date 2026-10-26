@@ -612,10 +612,6 @@ void GameInputController::UpdateLastUsedInputDevice()
     if (IsGameControllerInputActive(mInput)) {
         mGame.RecordInputDeviceUsage(InputDeviceType::GameController);
     }
-
-    const bool isKeyboardModifierHeld = mInput.IsKeyPressed(GLFW_KEY_N);
-    const bool isGameControllerModifierHeld = mInput.IsControllerButtonPressed(1, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    mGame.SetInputModifierHeld(isKeyboardModifierHeld || isGameControllerModifierHeld);
 }
 
 void GameInputController::ProcessPlayerSwitchInput()

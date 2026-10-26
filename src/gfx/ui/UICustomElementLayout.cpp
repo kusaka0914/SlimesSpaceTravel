@@ -28,14 +28,6 @@ void UIRenderer::RegisterCustomUITextures()
 const std::string& UIRenderer::ResolveCustomElementText(const UILoadSystem::CustomElement& element) const
 {
     const bool usesGameController = mGame->GetLastUsedInputDevice() == InputDeviceType::GameController;
-    if (mGame->IsInputModifierHeld()) {
-        const std::string& modifierText =
-            usesGameController ? element.gameControllerModifierText : element.keyboardModifierText;
-        if (!modifierText.empty()) {
-            return modifierText;
-        }
-    }
-
     if (!element.usesInputDeviceVariants) {
         return element.text;
     }

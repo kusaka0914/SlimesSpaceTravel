@@ -28,21 +28,31 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         return;
     }
 
-    // 同時入力時は、後続の通常行動より先に専用の攻撃開始条件を評価する。
-    if (TryStartAssistAirSlamAttack(player, input, movement, combat)) {
+    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
+        const bool wasInputMovementApplied = ApplyIdleGravity(player, input, movement, combat, deltaTime);
+        UpdateIdleMovement(player, input, movement, combat, status, wasInputMovementApplied, deltaTime);
+        UpdateSpecialAttackIfNeeded(player, input, movement, combat, jewelGauge, deltaTime);
+        TryStartDodging(player, input, movement, combat, status);
         return;
     }
 
-    if (TryStartAirSlamAttack(player, input, movement, combat, deltaTime)) {
-        return;
-    }
+    // 地上の連続攻撃中は移動・ジャンプを残し、別のコンボ開始だけを抑える。
+    if (!combat.IsContinuousAttacking() || !player.GetOnGround()) {
+        if (TryStartAssistAirSlamAttack(player, input, movement, combat)) {
+            return;
+        }
 
-    if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
-        return;
-    }
+        if (TryStartAirSlamAttack(player, input, movement, combat, deltaTime)) {
+            return;
+        }
 
-    if (TryStartAssistBrokenEnemyAirCombo(player, input, movement, combat, status, deltaTime)) {
-        return;
+        if (TryStartAssistStrongAttack(player, input, movement, combat, deltaTime)) {
+            return;
+        }
+
+        if (TryStartAssistBrokenEnemyAirCombo(player, input, movement, combat, status, deltaTime)) {
+            return;
+        }
     }
 
     const bool wasInputMovementApplied = ApplyIdleGravity(player, input, movement, combat, deltaTime);
@@ -57,19 +67,9 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
 
     UpdateIdleMovement(player, input, movement, combat, status, wasInputMovementApplied, deltaTime);
 
-    if (TryStartSpecialAttack(input, combat, jewelGauge)) {
-        return;
-    }
-
     if (TryReduceTired(input, movement, combat, status)) {
         return;
     }
-
-    if (TryStartContinuousAttack(player, input, combat, jewelGauge)) {
-        return;
-    }
-
-    UpdateSpecialAttackIfNeeded(player, input, movement, combat, jewelGauge, deltaTime);
 
     if (TryUpdateContinuousAttack(player, movement, combat, status, deltaTime)) {
         return;
@@ -183,8 +183,8 @@ bool PlayerStateMachine::TryStartAssistStrongAttack(Player& player, PlayerInput&
         return false;
     }
 
-    if (input.GetSpecialAttackPressed() || input.GetBufferedAttackInput() != PlayerAttackInputKind::Normal ||
-        combat.GetAttackCooldownRemaining() > 0.0f || combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
+    if (input.GetBufferedAttackInput() != PlayerAttackInputKind::Normal || combat.GetAttackCooldownRemaining() > 0.0f ||
+        combat.IsSpecialCharging() || combat.GetCanSpecialAttack()) {
         return false;
     }
 
@@ -213,7 +213,7 @@ bool PlayerStateMachine::TryStartAirSlamAttack(Player& player, PlayerInput& inpu
     (void)deltaTime;
 
     const bool hasNormalAttackRequest = input.GetBufferedAttackInput() == PlayerAttackInputKind::Normal;
-    const bool canStartAirSlam = !player.GetOnGround() && hasNormalAttackRequest && !input.GetSpecialAttackPressed() &&
+    const bool canStartAirSlam = !player.GetOnGround() && hasNormalAttackRequest &&
                                  combat.GetAttackCooldownRemaining() <= 0.0f && !combat.GetIsStrongAttacked();
 
     if (!canStartAirSlam) {
@@ -276,8 +276,8 @@ bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerCo
                                     PlayerJewelGauge& jewelGauge, PlayerStatus& status)
 {
     const bool isPreparingSpecialAttack = combat.IsSpecialCharging() || combat.GetCanSpecialAttack();
-    const bool canRecover = !isPreparingSpecialAttack && input.GetRecoverPressed() && !input.GetRecoverPressedPrev() &&
-                            jewelGauge.CanConsume(1) && status.GetHp() != status.GetMaxHp();
+    const bool canRecover = !isPreparingSpecialAttack && input.GetRecoverPressed() && jewelGauge.CanConsume(1) &&
+                            status.GetHp() != status.GetMaxHp();
     if (!canRecover) {
         return false;
     }
@@ -315,12 +315,16 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
 
 bool PlayerStateMachine::TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge)
 {
-    const bool canSpecialAttack = input.GetSpecialAttackPressed() && input.GetAttackPressed() &&
-                                  !input.GetAttackPressedPrev() && jewelGauge.CanConsume(2);
-    if (!canSpecialAttack) {
+    if (!input.HasChargeAttackRequest()) {
+        return false;
+    }
+    input.ConsumeChargeAttackRequest();
+    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack() || combat.IsContinuousAttacking() ||
+        !jewelGauge.CanConsume(2)) {
         return false;
     }
 
+    combat.CancelCurrentAttack();
     input.ClearAttackBuffer();
     combat.StartSpecialAttackCharging();
     return true;
@@ -340,13 +344,16 @@ bool PlayerStateMachine::TryReduceTired(PlayerInput& input, PlayerMovement& move
 bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
                                                   PlayerJewelGauge& jewelGauge)
 {
-    const bool canContinuousAttacking = player.GetOnGround() && input.GetSpecialAttackPressed() &&
-                                        input.GetWideAttackPressed() && !input.GetWideAttackPressedPrev() &&
-                                        jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost);
-    if (!canContinuousAttacking) {
+    if (!input.HasContinuousAttackRequest()) {
+        return false;
+    }
+    input.ConsumeContinuousAttackRequest();
+    if (!player.GetOnGround() || combat.IsSpecialCharging() || combat.GetCanSpecialAttack() ||
+        combat.IsContinuousAttacking() || !jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost)) {
         return false;
     }
 
+    combat.CancelCurrentAttack();
     input.ClearAttackBuffer();
     jewelGauge.Consume(PlayerJewelGauge::ContinuousAttackCost);
     combat.StartContinuousAttacking();

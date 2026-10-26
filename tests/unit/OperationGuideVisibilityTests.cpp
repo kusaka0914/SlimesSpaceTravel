@@ -20,6 +20,10 @@ void StageOnePlanetZeroShowsOnlyBasicOperationGuides()
                "split guide on stage 1 planet 0");
     ExpectFalse(ShouldShowOperationGuideElement("buttonB", displayState), "dodge guide on stage 1 planet 0");
     ExpectFalse(ShouldShowOperationGuideElement("buttonY", displayState), "attack guide on stage 1 planet 0");
+    ExpectFalse(ShouldShowOperationGuideElement("weakAttackHoldGuide", displayState),
+                "long Y is hidden before combat tutorial");
+    ExpectFalse(ShouldShowOperationGuideElement("strongAttackHoldGuide", displayState),
+                "long X is hidden before combat tutorial");
 }
 
 void StageOnePlanetThreeAddsDodgeGuide()
@@ -37,6 +41,10 @@ void StageOnePlanetOneAddsCombatGuides()
     const OperationGuideDisplayState displayState = AtLocation(1, 1);
 
     ExpectTrue(ShouldShowOperationGuideElement("buttonY", displayState), "weak attack guide on stage 1 planet 1");
+    ExpectTrue(ShouldShowOperationGuideElement("weakAttackHoldGuide", displayState),
+               "long Y is shown with combat guide");
+    ExpectTrue(ShouldShowOperationGuideElement("strongAttackHoldGuide", displayState),
+               "long X is shown with combat guide");
     ExpectTrue(ShouldShowOperationGuideElement("buttonX", displayState), "strong attack guide on stage 1 planet 1");
     ExpectTrue(ShouldShowOperationGuideElement("buttonB_copy_copy2_copy2", displayState),
                "special guide on stage 1 planet 1");

@@ -372,8 +372,6 @@ public:
     bool HasGameControllerForPlayer(int playerNum) const;
     InputDeviceType GetLastUsedInputDevice() const { return mLastUsedInputDevice; }
     void RecordInputDeviceUsage(InputDeviceType inputDevice) { mLastUsedInputDevice = inputDevice; }
-    bool IsInputModifierHeld() const { return mIsInputModifierHeld; }
-    void SetInputModifierHeld(bool isHeld) { mIsInputModifierHeld = isHeld; }
 
 private:
     void InitializeGameController();
@@ -451,5 +449,4 @@ private:
     PlayerControlStyle mPlayerControlStyle = PlayerControlStyle::Standard;
     std::unique_ptr<GameSessionController> mSessionController;
     InputDeviceType mLastUsedInputDevice = InputDeviceType::KeyboardMouse;
-    bool mIsInputModifierHeld = false;
 };

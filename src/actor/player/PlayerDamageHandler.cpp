@@ -64,8 +64,7 @@ void ApplyDamageAndKnockBack(Player& player, PlayerInput& input, PlayerMovement&
     }
 
     combat.CancelSpecialAttack();
-    input.ClearAttackBuffer();
-    input.SyncAttackButtonPrev();
+    input.SuppressCombatInputUntilReleased();
 }
 } // namespace
 

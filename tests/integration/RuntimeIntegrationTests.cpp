@@ -282,6 +282,17 @@ public:
         SDL_GameControllerUpdate();
     }
 
+    void SetCombatInput(bool weak, bool strong, bool recover)
+    {
+        SDL_Joystick* joystick = SDL_GameControllerGetJoystick(mController);
+        ExpectEqual(0, SDL_JoystickSetVirtualButton(joystick, SDL_CONTROLLER_BUTTON_Y, weak), "set weak button");
+        ExpectEqual(0, SDL_JoystickSetVirtualButton(joystick, SDL_CONTROLLER_BUTTON_X, strong), "set strong button");
+        ExpectEqual(0, SDL_JoystickSetVirtualButton(joystick, SDL_CONTROLLER_BUTTON_LEFTSHOULDER, recover),
+                    "set recovery button");
+        SDL_JoystickUpdate();
+        SDL_GameControllerUpdate();
+    }
+
     void SetCameraInput(Sint16 yaw, Sint16 pitch)
     {
         SDL_Joystick* joystick = SDL_GameControllerGetJoystick(mController);
@@ -295,6 +306,155 @@ private:
     SDL_JoystickID mInstanceId = -1;
     SDL_GameController* mController = nullptr;
 };
+
+struct CombatControlsFixture {
+    Player player;
+    PlayerInput input;
+    PlayerMovement movement;
+    PlayerGrounding grounding;
+    PlayerBoatRide boatRide;
+    PlayerCombat combat;
+    PlayerJewelGauge jewels;
+    PlayerStatus status;
+    PlayerRespawn respawn;
+    PlayerStateMachine state;
+    PlayerInputContext context{
+        .devices = {.isTwoPlayerMode = true, .hasControllerOne = true, .hasControllerTwo = true}};
+
+    CombatControlsFixture(Game& game, InputSystem& source, int playerNumber)
+        : player(&game),
+          input(source),
+          movement(*game.GetPhysicsSystem(), *game.GetMathUtils()),
+          grounding(*game.GetPhysicsSystem()),
+          combat(MakeTestCombatDependencies(game))
+    {
+        player.SetPlayerNum(playerNumber);
+        movement.SetPlayerNum(playerNumber);
+        player.Land({1000, 1000, 1000});
+        status.ConfigureHp(10);
+        status.SetHp(5);
+        combat.SetAttackHitDelay(0.1f);
+    }
+
+    void Step(float seconds)
+    {
+        input.ProcessActor(movement, context);
+        state.Update(player, input, movement, grounding, boatRide, combat, jewels, status, respawn, seconds);
+    }
+};
+
+void LongPressCombatControlsUseIndependentDevices(Game& game)
+{
+    const auto previousStyle = game.GetPlayerControlStyle();
+    struct RestoreStyle {
+        Game& game;
+        PlayerControlStyle style;
+        ~RestoreStyle() { game.SetPlayerControlStyle(style); }
+    } restore{game, previousStyle};
+    game.SetPlayerControlStyle(PlayerControlStyle::Standard);
+    VirtualController firstController;
+    VirtualController secondController;
+    InputSystem source;
+    const auto capture = [&]() {
+        source.CaptureFrameInput(*game.GetWindow(), {firstController.Get(), secondController.Get()});
+    };
+
+    {
+        CombatControlsFixture first(game, source, 1);
+        CombatControlsFixture second(game, source, 2);
+        firstController.SetCombatInput(true, false, false);
+        secondController.SetCombatInput(false, true, false);
+        capture();
+        first.Step(0.1f);
+        second.Step(0.1f);
+        ExpectTrue(first.combat.HasPendingAttackHit(), "Y starts an attack on the press frame");
+        ExpectTrue(second.state.GetActionState() == PlayerActionState::Idle, "X waits for release");
+        secondController.SetCombatInput(false, false, false);
+        capture();
+        first.Step(0.1f);
+        second.Step(0.1f);
+        ExpectTrue(second.state.GetActionState() == PlayerActionState::Attacking, "P2 X release starts strong attack");
+        for (int frame = 0; frame < 6; ++frame) {
+            first.Step(0.1f);
+        }
+        ExpectTrue(first.combat.IsContinuousAttacking(), "held Y transitions after resolving weak attack");
+        ExpectEqual(0, first.jewels.GetCount(), "continuous attack consumes exactly two jewels");
+        ExpectEqual(2, second.jewels.GetCount(), "P1 hold does not consume P2 jewels");
+        first.jewels.SetCount(6);
+        for (int frame = 0; frame < 30; ++frame) {
+            first.Step(0.1f);
+        }
+        ExpectEqual(6, first.jewels.GetCount(), "held Y cannot restart continuous attack");
+    }
+
+    for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
+        game.SetPlayerControlStyle(style);
+        CombatControlsFixture fixture(game, source, 1);
+        firstController.SetCombatInput(false, false, false);
+        capture();
+        fixture.Step(0.01f);
+        firstController.SetCombatInput(false, true, false);
+        capture();
+        fixture.Step(0.7f);
+        ExpectTrue(fixture.combat.IsSpecialCharging(), "long X starts charging in either style");
+        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "long X does not heal");
+        firstController.SetCombatInput(false, true, true);
+        capture();
+        for (int frame = 0; frame < 40; ++frame) {
+            fixture.Step(0.1f);
+        }
+        ExpectTrue(fixture.combat.GetCanSpecialAttack(), "original hold does not fire completed charge");
+        ExpectEqual(0, fixture.jewels.GetCount(), "charge retains original two-jewel cost");
+        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "L cannot heal during charge");
+        firstController.SetCombatInput(false, false, false);
+        capture();
+        fixture.Step(0.01f);
+        const auto before = fixture.combat.GetResolvedAttackSequence();
+        firstController.SetCombatInput(false, true, false);
+        capture();
+        fixture.Step(0.01f);
+        ExpectEqual(before + 1, fixture.combat.GetResolvedAttackSequence(), "repress fires charged attack once");
+        fixture.jewels.SetCount(2);
+        firstController.SetCombatInput(false, false, false);
+        capture();
+        fixture.Step(0.01f);
+        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "fire release does not trigger assist recovery");
+        ExpectEqual(2, fixture.jewels.GetCount(), "fire release consumes no further jewels");
+    }
+
+    game.SetPlayerControlStyle(PlayerControlStyle::Assist);
+    {
+        CombatControlsFixture fixture(game, source, 1);
+        firstController.SetCombatInput(false, true, false);
+        capture();
+        fixture.Step(0.2f);
+        firstController.SetCombatInput(false, false, false);
+        capture();
+        fixture.Step(0.01f);
+        ExpectNear(6.0f, fixture.status.GetHp(), 0.0f, "assist short X heals on release");
+        ExpectEqual(1, fixture.jewels.GetCount(), "assist recovery costs one jewel");
+        firstController.SetCombatInput(false, false, true);
+        capture();
+        fixture.Step(0.01f);
+        ExpectNear(7.0f, fixture.status.GetHp(), 0.0f, "L uses same recovery independently");
+    }
+
+    for (bool weak : {false, true}) {
+        CombatControlsFixture fixture(game, source, 1);
+        fixture.jewels.SetCount(1);
+        firstController.SetCombatInput(weak, !weak, false);
+        capture();
+        fixture.Step(0.7f);
+        ExpectFalse(fixture.combat.IsSpecialCharging() || fixture.combat.IsContinuousAttacking(),
+                    "insufficient jewels reject special attack");
+        ExpectEqual(1, fixture.jewels.GetCount(), "rejected special attack consumes no jewels");
+        firstController.SetCombatInput(false, false, false);
+        capture();
+        fixture.Step(0.01f);
+        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "rejected long press does not become recovery");
+    }
+    std::cout << "[PASS] Runtime.LongPressCombatControlsAndCosts\n";
+}
 
 void InputSnapshotUsesOnlyProvidedDevices(Game& game)
 {
@@ -634,7 +794,11 @@ int main(int argc, char** argv)
              UGCUsesTheSameTransaction(game, context, commands);
              UGCSceneUsesCurrentBorrowedPreviewState(game);
          }},
-        {"input", InputSnapshotUsesOnlyProvidedDevices},
+        {"input",
+         [](Game& game) {
+             InputSnapshotUsesOnlyProvidedDevices(game);
+             LongPressCombatControlsUseIndependentDevices(game);
+         }},
         {"combat", RunRuntimeCombatTests},
         {"lifetime",
          [](Game& game) {

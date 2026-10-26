@@ -42,6 +42,9 @@ public:
     void Initialize() override;
     void ProcessActor() override;
 
+    // メニュー・操作切替時に、押下中の攻撃を解放まで無効にする。
+    void SuppressCombatInputUntilReleased() { mInput.SuppressCombatInputUntilReleased(); }
+
     // deltaTimeは秒。衝突解消、接地、状態遷移、演出の順に更新する。
     void UpdateActor(float deltaTime) override;
 
@@ -282,7 +285,6 @@ public:
         mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec());
     }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInput.SetInputAvailableTimer(inputAvailableTimer); }
-    bool GetIsSpecialAttackPressed() const { return mInput.GetSpecialAttackPressed(); }
 
     // 手動カメラ操作による、このフレームのYaw回転量（ラジアン）。絶対角ではない。
     float GetCameraYaw() const { return mInput.GetCameraYaw(); }

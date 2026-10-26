@@ -224,13 +224,9 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
         combat.SetCanSpecialAttack(true);
     }
 
-    if (specialChargingTimer <= 0.0f && input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
+    if (specialChargingTimer <= 0.0f && input.HasChargedAttackFireRequest()) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
-
         player.RequestStrongAttackAnimation();
-    }
-
-    if (input.GetAttackPressed() && !input.GetAttackPressedPrev()) {
         combat.FinishSpecialAttackCharging();
     }
 }

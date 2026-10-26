@@ -479,6 +479,11 @@ void Game::ProcessInput()
     }
 
     if (mPauseMenuController->IsOpen()) {
+        for (Player* player : GetPlayers()) {
+            if (player) {
+                player->SuppressCombatInputUntilReleased();
+            }
+        }
         return;
     }
 

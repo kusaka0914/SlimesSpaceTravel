@@ -1,3 +1,4 @@
+#include "actor/Player.h"
 #include "app/Game.h"
 
 #include "system/GameProgressController.h"
@@ -9,6 +10,13 @@ void Game::TogglePlayerControlStyle()
 
 void Game::SetPlayerControlStyle(PlayerControlStyle controlStyle)
 {
+    if (mPlayerControlStyle != controlStyle) {
+        for (Player* player : GetPlayers()) {
+            if (player) {
+                player->SuppressCombatInputUntilReleased();
+            }
+        }
+    }
     mPlayerControlStyle = controlStyle;
     if (mProgressController) {
         mProgressController->SetSelectedPlayerControlStyle(controlStyle);

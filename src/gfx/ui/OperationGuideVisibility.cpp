@@ -19,7 +19,8 @@ bool IsSoloPlayerConfigurationGuide(std::string_view elementId)
 
 bool IsCombatGuide(std::string_view elementId)
 {
-    return IsStrongAttackGuide(elementId) || elementId == "buttonY" || elementId == "buttonTextY" ||
+    return elementId == "weakAttackHoldGuide" || elementId == "strongAttackHoldGuide" ||
+           IsStrongAttackGuide(elementId) || elementId == "buttonY" || elementId == "buttonTextY" ||
            elementId == "buttonB_copy_copy2_copy2" || elementId == "buttonTextB_copy2_copy2_copy2";
 }
 } // namespace

@@ -390,7 +390,6 @@ void Player::ProcessActor()
             !mGame->GetIsPlayer2Joined() && mGame->GetPlayers().size() >= 2 && controlledPlayer != this,
         .isEditorKeyboardCaptured = mGame->IsEditorKeyboardInputCaptured(),
         .isWaitingForTutorialJump = scene && scene->IsWaitingForTutorialPlayerJump(),
-        .isAssistControlStyle = mGame->IsAssistControlStyle(),
     };
     mInput.ProcessActor(mMovement, context);
 }
@@ -431,6 +430,7 @@ void Player::ResolvePreUpdateCollisions()
 
 void Player::UpdateWhileControlLocked(float deltaTime)
 {
+    mInput.SuppressCombatInputUntilReleased();
     mVelocity = glm::vec3(0.0f);
     ParticleSystem& particles = *mGame->GetParticleSystem();
     mParticleEffectController.UpdateSpecialCharging(*this, particles, false, deltaTime);
@@ -614,7 +614,7 @@ void Player::AddJewelFromItem()
 void Player::ApplyFallDamageAndRespawn(float damage)
 {
     mRespawn.ApplyFallDamageAndRespawn(*this, mStatus, damage);
-    mInput.ClearAttackBuffer();
+    mInput.SuppressCombatInputUntilReleased();
     mMovement.ClearStrongAttackDirectionOverride();
     mStateMachine.ClearAttackDirectionTarget();
 }
@@ -658,7 +658,7 @@ void Player::RespawnAtRestartPoint()
     RefreshFallbackUpVec();
     mRespawn.RestoreRestartFacingDirection(*this);
 
-    mInput.ClearAttackBuffer();
+    mInput.SuppressCombatInputUntilReleased();
     mMovement.ClearStrongAttackDirectionOverride();
     mMovement.ResetEllipseAirborneSurfaceTravel();
     mMovement.CancelJumpApexHover();

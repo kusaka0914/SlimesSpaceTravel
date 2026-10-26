@@ -101,6 +101,8 @@ if (BUILD_TESTING)
         target_compile_options(game_asset_check PRIVATE /utf-8)
     endif()
     add_executable(game_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerCombatInputTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerCombatInput.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/EditorReliabilityTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/stage/selection/StagePickPolicy.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/ui/UICanvasEditHistory.cpp

@@ -24,6 +24,7 @@ void RegisterUGCClearTransitionStateTests(TestRegistry& tests);
 void RegisterUGCPresetVisualsTests(TestRegistry& tests);
 void RegisterUGCEditorTutorialTests(TestRegistry& tests);
 void RegisterStageProgressSystemTests(TestRegistry& tests);
+void RegisterPlayerCombatInputTests(TestRegistry& tests);
 void RegisterPlayerConfigLoaderTests(TestRegistry& tests);
 void RegisterEnemyConfigLoaderTests(TestRegistry& tests);
 void RegisterEnemyGuardGaugeTests(TestRegistry& tests);
@@ -68,6 +69,7 @@ int main()
     RegisterUGCPresetVisualsTests(tests);
     RegisterUGCEditorTutorialTests(tests);
     RegisterStageProgressSystemTests(tests);
+    RegisterPlayerCombatInputTests(tests);
     RegisterPlayerConfigLoaderTests(tests);
     RegisterEnemyConfigLoaderTests(tests);
     RegisterEnemyGuardGaugeTests(tests);

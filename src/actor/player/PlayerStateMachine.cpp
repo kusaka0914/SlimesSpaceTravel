@@ -22,6 +22,7 @@ void PlayerStateMachine::Update(Player& player, PlayerInput& input, PlayerMoveme
 {
     SceneSystem* sceneSystem = player.GetGame()->GetSceneSystem();
     if (!sceneSystem || (!sceneSystem->IsPlaying() && !sceneSystem->IsWaitingForTutorialPlayerJump())) {
+        input.SuppressCombatInputUntilReleased();
         return;
     }
 
@@ -40,12 +41,30 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
                                      PlayerJewelGauge& jewelGauge, PlayerStatus& status, PlayerRespawn& respawn,
                                      float deltaTime)
 {
+    input.UpdateCombatInput(deltaTime, player.GetGame()->IsAssistControlStyle(),
+                            combat.IsSpecialCharging() || combat.GetCanSpecialAttack());
     movement.UpdateCameraRelativeMovementDirections(player, input);
     boatRide.Update(player, input, movement, respawn, deltaTime);
     UpdateCoyoteTime(player, deltaTime);
 
     if (jewelGauge.ShouldStartRecoverTimer()) {
         StartJewelTimer(jewelGauge);
+    }
+
+    // 弱攻撃の命中判定を終えてから長押しへ移行し、予約中の攻撃や移動ロックを持ち越さない。
+    const bool canTransitionFromAttack =
+        (mActionState == PlayerActionState::Idle || mActionState == PlayerActionState::Attacking) &&
+        !player.IsAttachedToPlatform() && !combat.HasPendingAttackHit();
+    if (canTransitionFromAttack && (TryStartSpecialAttack(input, combat, jewelGauge) ||
+                                    TryStartContinuousAttack(player, input, combat, jewelGauge))) {
+        mAttackDirectionTarget = nullptr;
+        movement.ClearStrongAttackDirectionOverride();
+        movement.CancelAirborneActionHover();
+        ChangeState(PlayerActionState::Idle);
+        // 長押しが成立したフレームの経過時間を、溜め・連続攻撃にも重ねて加算しない。
+        UpdateTimer(input, movement, grounding, combat, jewelGauge, status, deltaTime);
+        input.EndFrame();
+        return;
     }
 
     switch (mActionState) {
