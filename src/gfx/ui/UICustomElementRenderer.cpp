@@ -188,7 +188,8 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
     } else if (element.id == "strongAttackHoldGuide") {
         isEnabled = canStartChargeAttack || isSpecialCharging;
     } else if (element.id == "buttonA" || element.id == "buttonTextA") {
-        isEnabled = isIdle && !isSpecialCharging && player->GetOnGround();
+        isEnabled = player->GetOnGround() ? (isIdle && !isSpecialCharging)
+                                          : (!isGroundContinuousAttack && (isIdle || isWeakAttacking));
     } else if (element.id == "buttonB" || element.id == "buttonTextB") {
         // 回避の短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
         // 溜め中の回避は受け付けるため、通常表示を保つ。
@@ -287,6 +288,7 @@ void UIRenderer::DrawCustomUI()
     const bool isUGCEditing = mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
     static const std::string returnToEditorText = "作る画面に戻る";
+    static const std::string airDodgeAttackText = "空中回避攻撃";
     static const std::string disembarkBoatText = "降車";
     static const std::string assistAttackText = "自動コンボ";
     static const std::string assistRecoverText = "体力回復";
@@ -435,6 +437,9 @@ void UIRenderer::DrawCustomUI()
         }
 
         const auto resolvePlayerTextOverride = [&](const Player* player) -> const std::string* {
+            if (element->id == "buttonTextA" && player && !player->GetOnGround()) {
+                return &airDodgeAttackText;
+            }
             if (element->id == "buttonTextB" && player && player->IsWaitingForBoat()) {
                 return &disembarkBoatText;
             }

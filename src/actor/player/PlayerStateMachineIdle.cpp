@@ -265,6 +265,7 @@ bool PlayerStateMachine::TryStartJumping(Player& player, PlayerInput& input, Pla
     }
 
     mCoyoteTimeRemaining = 0.0f;
+    input.ConsumeAirDodgeInput();
     movement.StartJumpMovement(player, deltaTime);
     player.NotifyJumpStarted();
 
@@ -388,13 +389,16 @@ bool PlayerStateMachine::TryUpdateContinuousAttack(Player& player, PlayerMovemen
 bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
                                          PlayerCombat& combat, PlayerStatus& status)
 {
-    const bool canStartDodging =
-        movement.CanDodge() && combat.CanDodgeDuringAttack() && input.GetDodgePressed() && !input.GetDodgePressedPrev();
+    const bool hasDodgeRequest = (input.GetDodgePressed() && !input.GetDodgePressedPrev()) ||
+                                 (!player.GetOnGround() && input.HasBufferedAirDodgeInput());
+    const bool canStartDodging = movement.CanDodge() && combat.CanDodgeDuringAttack() && hasDodgeRequest;
 
     if (!canStartDodging) {
         return false;
     }
 
+    // AとBが同時に入力されても、回避要求はこの遷移でまとめて消費する。
+    input.ConsumeAirDodgeInput();
     mShouldSkipAirDodgePostHover = false;
     ChangeState(PlayerActionState::Dodging);
 

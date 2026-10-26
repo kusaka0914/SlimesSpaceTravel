@@ -20,7 +20,7 @@ class PlayerInput {
 public:
     explicit PlayerInput(InputSystem& inputSystem);
 
-    // デバイス入力・操作対象・チュートリアル制限を反映し、攻撃の押下開始を先行入力へ保存する。
+    // デバイス入力を取得し、操作対象・チュートリアル制限を反映する。攻撃の受付はUpdateCombatInputで行う。
     void ProcessActor(const PlayerMovement& movement, const PlayerInputContext& context);
     void ProcessGameController(const PlayerMovement& movement, const PlayerInputDeviceContext& devices);
     void ProcessKeyboard(const PlayerMovement& movement, const PlayerInputContext& context);
@@ -38,6 +38,12 @@ public:
     void SuppressCombatInputUntilReleased();
     void UpdateInputAvailableTimer(float deltaTime);
     void UpdateAttackBuffer(float deltaTime);
+
+    // 空中Aの押し直しを最大0.2秒保持する。回避中や操作不能時の入力は持ち越さない。
+    void CaptureAirDodgeInput(bool isAirborne, bool allowsBuffering);
+    void UpdateAirDodgeBuffer(float deltaTime);
+    bool HasBufferedAirDodgeInput() const { return mAirDodgeBufferRemaining > 0.0f; }
+    void ConsumeAirDodgeInput() { mAirDodgeBufferRemaining = 0.0f; }
 
     bool GetDodgePressed() const { return mDodgePressed; }
     bool GetDodgePressedPrev() const { return mDodgePressedPrev; }
@@ -59,14 +65,18 @@ public:
     void ClearAttackBuffer();
 
     // 押下履歴を押下中にし、ボタンを離すまで新しい押下として扱わない。
-    void SuppressJumpUntilReleased() { mJumpPressedPrev = true; }
+    void SuppressJumpUntilReleased()
+    {
+        mJumpPressedPrev = true;
+        mAirDodgeButtonSuppressed = true;
+        ConsumeAirDodgeInput();
+    }
     void SuppressDodgeUntilReleased() { mDodgePressedPrev = true; }
 
     void SetCameraYaw(float cameraYaw) { mCameraYaw = cameraYaw; }
 
     // 非負の間は通常の入力読取を停止する。時間は秒で、負値なら読取を許可する。
     void SetInputAvailableTimer(float inputAvailableTimer) { mInputAvailableTimer = inputAvailableTimer; }
-
 
 private:
     void ApplyTutorialInputRestriction(bool isWaitingForTutorialJump);
@@ -90,6 +100,9 @@ private:
     bool mWideAttackPressedPrev = false;
     bool mRecoveryButtonPressed = false;
     bool mRecoverPressed = false;
+
+    bool mAirDodgeButtonSuppressed = false;
+    float mAirDodgeBufferRemaining = 0.0f;
 
     float mCameraYaw = 0.0f;
     float mMoveForward = 0.0f;

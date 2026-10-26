@@ -401,6 +401,8 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
         mPlayerPitchOffsetsDegrees.resize(players.size(), 0.0f);
     }
 
+    const std::vector<float> previousPitchOffsets = mPlayerPitchOffsetsDegrees;
+
     const bool allowsManualPitch = mTalkCameraBlend <= 0.0f && !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
 
     if (allowsManualPitch) {
@@ -440,6 +442,12 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
                         mKeyboardPitchInput * pitchSpeed;
                 }
             }
+        }
+    }
+
+    for (std::size_t index = 0; index < players.size(); ++index) {
+        if (mPlayerPitchOffsetsDegrees[index] != previousPitchOffsets[index]) {
+            mPlayerCamera.NotifyManualInput(players[index], static_cast<int>(index), mPlayerCameraSettings);
         }
     }
 

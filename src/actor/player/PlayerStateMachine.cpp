@@ -1,6 +1,5 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerBoatRide.h"
 #include "actor/player/PlayerCombat.h"
@@ -10,6 +9,7 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerRespawn.h"
 #include "actor/player/PlayerStatus.h"
+#include "app/Game.h"
 #include "system/SceneSystem.h"
 
 #include <algorithm>
@@ -43,6 +43,10 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
 {
     input.UpdateCombatInput(deltaTime, player.GetGame()->IsAssistControlStyle(),
                             combat.IsSpecialCharging() || combat.GetCanSpecialAttack());
+    const bool allowsAirDodgeBuffering = mActionState == PlayerActionState::Idle ||
+                                         mActionState == PlayerActionState::Attacking ||
+                                         mActionState == PlayerActionState::StrongAttacking;
+    input.CaptureAirDodgeInput(!player.GetOnGround(), allowsAirDodgeBuffering);
     movement.UpdateCameraRelativeMovementDirections(player, input);
     boatRide.Update(player, input, movement, respawn, deltaTime);
     UpdateCoyoteTime(player, deltaTime);
@@ -111,6 +115,7 @@ void PlayerStateMachine::UpdateTimer(PlayerInput& input, PlayerMovement& movemen
     grounding.UpdateRayCastTimer(deltaTime);
     input.UpdateInputAvailableTimer(deltaTime);
     input.UpdateAttackBuffer(deltaTime);
+    input.UpdateAirDodgeBuffer(deltaTime);
 
     if (combat.GetComboKeepTimer() > 0.0f) {
         combat.UpdateComboKeepTimer(deltaTime);

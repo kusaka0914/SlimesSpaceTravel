@@ -6,6 +6,7 @@
 
 #include <GLFW/glfw3.h>
 #include <SDL.h>
+#include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
 
@@ -197,6 +198,8 @@ void PlayerInput::UpdateCombatInput(float deltaTime, bool isAssistStyle, bool is
 void PlayerInput::SuppressCombatInputUntilReleased()
 {
     mCombatInput.SuppressUntilReleased();
+    mAirDodgeButtonSuppressed = true;
+    ConsumeAirDodgeInput();
     mContinuousAttackRequested = false;
     mChargeAttackRequested = false;
     mChargedAttackFireRequested = false;
@@ -239,4 +242,27 @@ void PlayerInput::ClearAttackBuffer()
 {
     mBufferedAttackInput = PlayerAttackInputKind::None;
     mAttackBufferRemaining = 0.0f;
+}
+
+void PlayerInput::CaptureAirDodgeInput(bool isAirborne, bool allowsBuffering)
+{
+    if (mAirDodgeButtonSuppressed) {
+        if (!mJumpPressed) {
+            mAirDodgeButtonSuppressed = false;
+        }
+        ConsumeAirDodgeInput();
+        return;
+    }
+    if (!isAirborne || !allowsBuffering) {
+        ConsumeAirDodgeInput();
+        return;
+    }
+    if (mJumpPressed && !mJumpPressedPrev) {
+        mAirDodgeBufferRemaining = 0.2f;
+    }
+}
+
+void PlayerInput::UpdateAirDodgeBuffer(float deltaTime)
+{
+    mAirDodgeBufferRemaining = std::max(0.0f, mAirDodgeBufferRemaining - std::max(0.0f, deltaTime));
 }

@@ -39,7 +39,7 @@ void AutoFollowSettingsLoadFromYaml()
                        "  airSlamPitchDegrees: -76\n"
                        "  autoFollowDelaySeconds: 0.65\n"
                        "  autoFollowRotationDurationSeconds: 1.25\n"
-                       "  autoFollowMinimumLateralInput: 0.4\n"
+                       "  autoFollowMinimumMovementInput: 0.4\n"
                        "  autoFollowMaximumBackwardInput: 0.2\n"
                        "  autoFollowDelayAfterManualInputSeconds: 1.1\n"
                        "  backwardFacingLookAheadDistance: 2.75\n"
@@ -58,7 +58,7 @@ void AutoFollowSettingsLoadFromYaml()
     ExpectNear(-76.0f, settings.airSlamPitchDegrees, 0.0001f, "air slam pitch angle");
     ExpectNear(0.65f, settings.autoFollowDelaySeconds, 0.0001f, "auto-follow input delay");
     ExpectNear(1.25f, settings.autoFollowRotationDurationSeconds, 0.0001f, "auto-follow rotation duration");
-    ExpectNear(0.4f, settings.autoFollowMinimumLateralInput, 0.0001f, "auto-follow lateral input threshold");
+    ExpectNear(0.4f, settings.autoFollowMinimumMovementInput, 0.0001f, "auto-follow movement input threshold");
     ExpectNear(0.2f, settings.autoFollowMaximumBackwardInput, 0.0001f, "auto-follow backward input threshold");
     ExpectNear(1.1f, settings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "auto-follow delay after manual input");
     ExpectNear(2.75f, settings.backwardFacingLookAheadDistance, 0.0001f, "backward-facing look-ahead distance");
@@ -80,7 +80,7 @@ void AutoFollowSettingsNormalizeToSupportedRanges()
     settings.airSlamPitchDegrees = -120.0f;
     settings.autoFollowDelaySeconds = -1.0f;
     settings.autoFollowRotationDurationSeconds = 0.0f;
-    settings.autoFollowMinimumLateralInput = 2.0f;
+    settings.autoFollowMinimumMovementInput = 2.0f;
     settings.autoFollowMaximumBackwardInput = -0.5f;
     settings.autoFollowDelayAfterManualInputSeconds = 10.0f;
     settings.backwardFacingLookAheadDistance = -2.0f;
@@ -97,7 +97,7 @@ void AutoFollowSettingsNormalizeToSupportedRanges()
     ExpectNear(-89.0f, settings.airSlamPitchDegrees, 0.0001f, "normalized air slam pitch angle");
     ExpectNear(0.0f, settings.autoFollowDelaySeconds, 0.0001f, "normalized auto-follow input delay");
     ExpectNear(0.05f, settings.autoFollowRotationDurationSeconds, 0.0001f, "normalized auto-follow rotation duration");
-    ExpectNear(1.0f, settings.autoFollowMinimumLateralInput, 0.0001f, "normalized lateral input threshold");
+    ExpectNear(1.0f, settings.autoFollowMinimumMovementInput, 0.0001f, "normalized movement input threshold");
     ExpectNear(0.0f, settings.autoFollowMaximumBackwardInput, 0.0001f, "normalized backward input threshold");
     ExpectNear(5.0f, settings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "normalized manual input delay");
     ExpectNear(0.0f, settings.backwardFacingLookAheadDistance, 0.0001f,
@@ -125,7 +125,7 @@ void AutoFollowSettingsSurviveSaveAndReload()
     settingsToSave.airSlamPitchDegrees = -74.0f;
     settingsToSave.autoFollowDelaySeconds = 0.7f;
     settingsToSave.autoFollowRotationDurationSeconds = 1.4f;
-    settingsToSave.autoFollowMinimumLateralInput = 0.55f;
+    settingsToSave.autoFollowMinimumMovementInput = 0.55f;
     settingsToSave.autoFollowMaximumBackwardInput = 0.15f;
     settingsToSave.autoFollowDelayAfterManualInputSeconds = 0.9f;
     settingsToSave.backwardFacingLookAheadDistance = 3.0f;
@@ -145,7 +145,7 @@ void AutoFollowSettingsSurviveSaveAndReload()
     ExpectNear(0.7f, reloadedSettings.autoFollowDelaySeconds, 0.0001f, "saved auto-follow input delay");
     ExpectNear(1.4f, reloadedSettings.autoFollowRotationDurationSeconds, 0.0001f,
                "saved auto-follow rotation duration");
-    ExpectNear(0.55f, reloadedSettings.autoFollowMinimumLateralInput, 0.0001f, "saved lateral input threshold");
+    ExpectNear(0.55f, reloadedSettings.autoFollowMinimumMovementInput, 0.0001f, "saved movement input threshold");
     ExpectNear(0.15f, reloadedSettings.autoFollowMaximumBackwardInput, 0.0001f, "saved backward input threshold");
     ExpectNear(0.9f, reloadedSettings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "saved manual input delay");
     ExpectNear(3.0f, reloadedSettings.backwardFacingLookAheadDistance, 0.0001f,

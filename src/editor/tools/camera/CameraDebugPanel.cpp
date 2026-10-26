@@ -1,7 +1,7 @@
 #include "editor/tools/camera/CameraDebugPanel.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "imgui.h"
 #include "system/CameraSystem.h"
 
@@ -59,13 +59,14 @@ void CameraDebugPanel::DrawPlayerCameraSettings(CameraSystem* cameraSystem)
                                                 &playerCameraSettings.targetSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
         ImGui::SeparatorText("移動時の自動追従");
-        playerCameraChanged |= ImGui::DragFloat("追従開始までの横入力時間（秒）##AutoFollowCamera",
+        playerCameraChanged |= ImGui::DragFloat("追従開始までの移動入力時間（秒）##AutoFollowCamera",
                                                 &playerCameraSettings.autoFollowDelaySeconds, 0.05f, 0.0f, 5.0f);
         playerCameraChanged |=
             ImGui::DragFloat("背後まで回る時間（秒）##AutoFollowCamera",
                              &playerCameraSettings.autoFollowRotationDurationSeconds, 0.05f, 0.05f, 5.0f);
-        playerCameraChanged |= ImGui::DragFloat("追従を始める横入力##AutoFollowCamera",
-                                                &playerCameraSettings.autoFollowMinimumLateralInput, 0.01f, 0.0f, 1.0f);
+        playerCameraChanged |=
+            ImGui::DragFloat("追従を始める移動入力##AutoFollowCamera",
+                             &playerCameraSettings.autoFollowMinimumMovementInput, 0.01f, 0.0f, 1.0f);
         playerCameraChanged |=
             ImGui::DragFloat("許容する後ろ入力##AutoFollowCamera", &playerCameraSettings.autoFollowMaximumBackwardInput,
                              0.01f, 0.0f, 1.0f);

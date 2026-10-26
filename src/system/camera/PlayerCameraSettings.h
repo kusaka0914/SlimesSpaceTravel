@@ -22,7 +22,7 @@ struct PlayerCameraSettings {
     float airSlamReturnDelaySeconds = 1.0f;
     float autoFollowDelaySeconds = 0.5f;
     float autoFollowRotationDurationSeconds = 1.0f;
-    float autoFollowMinimumLateralInput = 0.35f;
+    float autoFollowMinimumMovementInput = 0.35f;
     float autoFollowMaximumBackwardInput = 0.35f;
     float autoFollowDelayAfterManualInputSeconds = 0.75f;
     float backwardFacingLookAheadDistance = 2.0f;

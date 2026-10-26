@@ -25,12 +25,12 @@ struct PlayerCameraState {
     bool isAutoFollowingBehindPlayer = false;
     bool isSurfaceTraversalAutoAligning = false;
     bool isBackwardFacingFramingActive = false;
-    bool hasTriggeredAutoFollowForCurrentLateralInput = false;
+    bool hasTriggeredAutoFollowForCurrentMovementInput = false;
     bool hasSurfaceTraversalStartUp = false;
     bool hasAutoAlignedForCurrentSurfaceTraversal = false;
     float autoFollowDelayRemainingSeconds = 0.0f;
-    float lateralInputHoldSeconds = 0.0f;
-    float trackedLateralInputSign = 0.0f;
+    float movementInputHoldSeconds = 0.0f;
+    glm::vec2 trackedMovementInput{0.0f};
     float autoFollowElapsedSeconds = 0.0f;
     float autoFollowStartOffsetRadians = 0.0f;
     float backwardMovementHoldSeconds = 0.0f;
@@ -46,6 +46,9 @@ public:
     void Update(const std::vector<Player*>& players, const std::vector<float>& yawDeltas,
                 const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist);
     void Reset();
+
+    // 手動操作を優先し、自動追従を一定時間停止する。nullptr・負のインデックスでは何もしない。
+    void NotifyManualInput(Player* player, int playerIndex, const PlayerCameraSettings& settings);
 
     // 指定Playerの姿勢へ追従状態を初期化する。nullptr・負のインデックスでは何もしない。
     void SnapToPlayer(Player* player, int playerIndex);

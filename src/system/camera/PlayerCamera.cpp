@@ -55,9 +55,9 @@ glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, cons
 
 void ResetAutoFollowInputTracking(PlayerCameraState& state)
 {
-    state.lateralInputHoldSeconds = 0.0f;
-    state.trackedLateralInputSign = 0.0f;
-    state.hasTriggeredAutoFollowForCurrentLateralInput = false;
+    state.movementInputHoldSeconds = 0.0f;
+    state.trackedMovementInput = glm::vec2(0.0f);
+    state.hasTriggeredAutoFollowForCurrentMovementInput = false;
 }
 
 void CancelAutomaticFollow(PlayerCameraState& state)
@@ -116,21 +116,30 @@ void PlayerCamera::Update(const std::vector<Player*>& players, const std::vector
         }
 
         const float yawDelta = playerIndex < yawDeltas.size() ? yawDeltas[playerIndex] : 0.0f;
-        PlayerCameraState& state = mStates[playerIndex];
         constexpr float manualYawEpsilon = 0.000001f;
         const float appliedManualYawMagnitude = std::max(std::abs(yawDelta), std::abs(player->GetCameraYaw()));
         if (appliedManualYawMagnitude > manualYawEpsilon) {
-            state.isAligningBehindPlayer = false;
-            if (state.isSurfaceTraversalAutoAligning) {
-                player->UnlockMovementDirectionForCameraAutoAlign();
-            }
-            CancelAutomaticFollow(state);
-            state.autoFollowDelayRemainingSeconds = settings.autoFollowDelayAfterManualInputSeconds;
+            NotifyManualInput(player, static_cast<int>(playerIndex), settings);
         }
 
         player->SetCameraYaw(yawDelta);
         UpdateState(player, static_cast<int>(playerIndex), settings, deltaTime, allowsMovementCameraAssist);
     }
+}
+
+void PlayerCamera::NotifyManualInput(Player* player, int playerIndex, const PlayerCameraSettings& settings)
+{
+    if (!player || playerIndex < 0) {
+        return;
+    }
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+    PlayerCameraState& state = mStates[static_cast<std::size_t>(playerIndex)];
+    state.isAligningBehindPlayer = false;
+    if (state.isSurfaceTraversalAutoAligning) {
+        player->UnlockMovementDirectionForCameraAutoAlign();
+    }
+    CancelAutomaticFollow(state);
+    state.autoFollowDelayRemainingSeconds = settings.autoFollowDelayAfterManualInputSeconds;
 }
 
 void PlayerCamera::Reset()
@@ -411,11 +420,14 @@ void PlayerCamera::UpdateAutoFollowRequest(Player* player, PlayerCameraState& st
                                            const PlayerCameraSettings& settings, float deltaTime,
                                            bool allowsMovementCameraAssist)
 {
-    const float lateralInput = player->GetMoveLeftInput();
-    const bool hasLateralInput = std::abs(lateralInput) >= settings.autoFollowMinimumLateralInput;
+    const glm::vec2 movementInput(player->GetMoveLeftInput(), player->GetMoveForwardInput());
+    const float movementMagnitude = glm::length(movementInput);
+    const bool hasMovementInput =
+        movementMagnitude > 0.0f && movementMagnitude >= settings.autoFollowMinimumMovementInput;
     const float backwardInput = std::max(0.0f, player->GetMoveForwardInput());
     const bool hasStrongBackwardInput = backwardInput > settings.autoFollowMaximumBackwardInput;
-    const bool isAutoFollowBlocked = !allowsMovementCameraAssist || state.autoFollowDelayRemainingSeconds > 0.0f ||
+    const bool isAutoFollowBlocked = !hasMovementInput || !allowsMovementCameraAssist ||
+                                     state.autoFollowDelayRemainingSeconds > 0.0f ||
                                      (hasStrongBackwardInput && !state.isSurfaceTraversalAutoAligning);
 
     if (isAutoFollowBlocked) {
@@ -430,28 +442,20 @@ void PlayerCamera::UpdateAutoFollowRequest(Player* player, PlayerCameraState& st
         return;
     }
 
-    if (!hasLateralInput) {
-        ResetAutoFollowInputTracking(state);
-        return;
-    }
-
-    float lateralInputSign = 1.0f;
-    if (lateralInput < 0.0f) {
-        lateralInputSign = -1.0f;
-    }
-
-    const bool didLateralDirectionChange = state.trackedLateralInputSign != lateralInputSign;
-    if (didLateralDirectionChange) {
+    const glm::vec2 movementDirection = movementInput / movementMagnitude;
+    // スティックの小さな揺れでは追従待ち時間をリセットしない。
+    constexpr float directionChangeCosine = 0.8660254f;
+    if (glm::dot(state.trackedMovementInput, movementDirection) < directionChangeCosine) {
         CancelAutomaticFollow(state);
-        state.trackedLateralInputSign = lateralInputSign;
+        state.trackedMovementInput = movementDirection;
     }
 
-    if (state.hasTriggeredAutoFollowForCurrentLateralInput) {
+    if (state.hasTriggeredAutoFollowForCurrentMovementInput) {
         return;
     }
 
-    state.lateralInputHoldSeconds += std::max(0.0f, deltaTime);
-    if (state.lateralInputHoldSeconds < settings.autoFollowDelaySeconds) {
+    state.movementInputHoldSeconds += std::max(0.0f, deltaTime);
+    if (state.movementInputHoldSeconds < settings.autoFollowDelaySeconds) {
         return;
     }
 
@@ -460,7 +464,7 @@ void PlayerCamera::UpdateAutoFollowRequest(Player* player, PlayerCameraState& st
     }
 
     state.isSurfaceTraversalAutoAligning = false;
-    state.hasTriggeredAutoFollowForCurrentLateralInput = true;
+    state.hasTriggeredAutoFollowForCurrentMovementInput = true;
 }
 
 void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state, float attackTargetSmoothingSpeed,
@@ -525,7 +529,8 @@ void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state,
         state.hasAttackTargetForward = true;
     }
 
-    const bool shouldAssistAttack = state.hasAttackTargetForward && player->IsAttacking();
+    const bool shouldAssistAttack =
+        state.hasAttackTargetForward && player->IsAttacking() && state.autoFollowDelayRemainingSeconds <= 0.0f;
     if (!player->IsAttacking() && !hasValidAttackTarget && state.hasAttackTargetForward) {
         state.hasAttackTargetForward = false;
     }

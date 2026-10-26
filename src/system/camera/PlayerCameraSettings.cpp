@@ -34,7 +34,7 @@ void PlayerCameraSettings::Normalize()
     airSlamReturnDelaySeconds = glm::clamp(airSlamReturnDelaySeconds, 0.0f, 10.0f);
     autoFollowDelaySeconds = glm::clamp(autoFollowDelaySeconds, 0.0f, 5.0f);
     autoFollowRotationDurationSeconds = glm::clamp(autoFollowRotationDurationSeconds, 0.05f, 5.0f);
-    autoFollowMinimumLateralInput = glm::clamp(autoFollowMinimumLateralInput, 0.0f, 1.0f);
+    autoFollowMinimumMovementInput = glm::clamp(autoFollowMinimumMovementInput, 0.0f, 1.0f);
     autoFollowMaximumBackwardInput = glm::clamp(autoFollowMaximumBackwardInput, 0.0f, 1.0f);
     autoFollowDelayAfterManualInputSeconds = glm::clamp(autoFollowDelayAfterManualInputSeconds, 0.0f, 5.0f);
     backwardFacingLookAheadDistance = glm::clamp(backwardFacingLookAheadDistance, 0.0f, 50.0f);
@@ -127,8 +127,10 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             YamlRead::ReadOr<float>(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
         loadedSettings.autoFollowRotationDurationSeconds = YamlRead::ReadOr<float>(
             cameraNode, "autoFollowRotationDurationSeconds", loadedSettings.autoFollowRotationDurationSeconds);
-        loadedSettings.autoFollowMinimumLateralInput = YamlRead::ReadOr<float>(
-            cameraNode, "autoFollowMinimumLateralInput", loadedSettings.autoFollowMinimumLateralInput);
+        loadedSettings.autoFollowMinimumMovementInput =
+            YamlRead::ReadOr<float>(cameraNode, "autoFollowMinimumMovementInput",
+                                    YamlRead::ReadOr<float>(cameraNode, "autoFollowMinimumLateralInput",
+                                                            loadedSettings.autoFollowMinimumMovementInput));
         loadedSettings.autoFollowMaximumBackwardInput = YamlRead::ReadOr<float>(
             cameraNode, "autoFollowMaximumBackwardInput", loadedSettings.autoFollowMaximumBackwardInput);
         loadedSettings.autoFollowDelayAfterManualInputSeconds =
@@ -248,8 +250,8 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "autoFollowDelaySeconds" << YAML::Value << normalizedSettings.autoFollowDelaySeconds;
         emitter << YAML::Key << "autoFollowRotationDurationSeconds" << YAML::Value
                 << normalizedSettings.autoFollowRotationDurationSeconds;
-        emitter << YAML::Key << "autoFollowMinimumLateralInput" << YAML::Value
-                << normalizedSettings.autoFollowMinimumLateralInput;
+        emitter << YAML::Key << "autoFollowMinimumMovementInput" << YAML::Value
+                << normalizedSettings.autoFollowMinimumMovementInput;
         emitter << YAML::Key << "autoFollowMaximumBackwardInput" << YAML::Value
                 << normalizedSettings.autoFollowMaximumBackwardInput;
         emitter << YAML::Key << "autoFollowDelayAfterManualInputSeconds" << YAML::Value

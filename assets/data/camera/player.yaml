@@ -18,7 +18,7 @@ playerCamera:
   airSlamReturnDelaySeconds: 1
   autoFollowDelaySeconds: 0.5
   autoFollowRotationDurationSeconds: 1
-  autoFollowMinimumLateralInput: 0.35
+  autoFollowMinimumMovementInput: 0.35
   autoFollowMaximumBackwardInput: 0.35
   autoFollowDelayAfterManualInputSeconds: 0.75
   backwardFacingLookAheadDistance: 2
