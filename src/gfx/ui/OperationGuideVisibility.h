@@ -8,7 +8,8 @@ struct OperationGuideDisplayState {
     int currentPlanetNumber = 0;
     bool isUGCPlaytestActive = false;
     bool isTwoPlayerMode = false;
+    bool isPauseMenuOpen = false;
 };
 
-// ステージ進行・UGCプレイテスト・2人プレイの条件で表示可否を返す。対象外のIDは表示を許可する。
+// operation画面の要素を判定する。ポーズ中は全解放し、通常ステージ2以降ではメニュー以外の常設案内を隠す。
 bool ShouldShowOperationGuideElement(std::string_view elementId, const OperationGuideDisplayState& displayState);

@@ -271,6 +271,7 @@ public:
 
     // ジュエルの消費・回復
     int GetJewelCount() const { return mJewelGauge.GetCount(); }
+    int GetMaxJewelCount() const { return mJewelGauge.GetMaxCount(); }
     void SetJewelCount(int count) { mJewelGauge.SetCount(count); }
     void AddJewelFromItem();
     float GetSpecialAttackCooldownRemaining() const { return mJewelGauge.GetRecoverTimer(); }

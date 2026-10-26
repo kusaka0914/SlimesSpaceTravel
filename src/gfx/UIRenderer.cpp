@@ -144,10 +144,14 @@ void UIRenderer::DrawGameContent()
 
     if (!isStartCinematicPlaying) {
         DrawCustomUI();
+        DrawContextualOperationGuide();
     }
 
     if (!isUGCPlaytestActive && !isStartCinematicPlaying && mGame->GetIsPauseMenuOpen()) {
         mPauseMenuRenderer->Draw();
+        if (!mGame->GetIsUGCMode()) {
+            DrawCustomUI(true);
+        }
     }
 
     if (mGame->IsTgsRemainingTimeNoticeVisible()) {

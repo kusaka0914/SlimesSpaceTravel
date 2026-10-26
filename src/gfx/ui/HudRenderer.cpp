@@ -3,9 +3,9 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "actor/Planet.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "gfx/UIRenderer.h"
 #include "system/SceneSystem.h"
 #include <string>
@@ -96,15 +96,8 @@ void HudRenderer::DrawPlayerStatusUIForPlayer(const Player* player, float screen
         return;
     }
 
-    const int hp = player->GetHp();
-    if (hp > 0) {
-        DrawHpUI(hp, screenTopY, uiScale);
-    }
-
-    const int jewelCount = player->GetJewelCount();
-    if (jewelCount > 0) {
-        DrawJewelUI(jewelCount, screenTopY, uiScale);
-    }
+    DrawHpUI(static_cast<int>(player->GetHp()), static_cast<int>(player->GetMaxHp()), screenTopY, uiScale);
+    DrawJewelUI(player->GetJewelCount(), player->GetMaxJewelCount(), screenTopY, uiScale);
 
     if (!mGame->GetIsPlayer2Joined()) {
         DrawSplitGuardUI(screenTopY, uiScale);
@@ -122,16 +115,15 @@ void HudRenderer::DrawPlayerPromptUI(const Player* player, float screenTopY, flo
     }
 }
 
-void HudRenderer::DrawHpUI(int hp, float screenTopY, float uiScale)
+void HudRenderer::DrawHpUI(int hp, int maximumHp, float screenTopY, float uiScale)
 {
-    const float hpGap = mRenderer->GetFbWidth() / 28.0f;
-    mRenderer->DrawLinedUpTexture("default", "hpTexture", "hp", hpGap, hp, screenTopY, uiScale);
+    mRenderer->DrawLinedUpTextureSlots("default", "hpTexture", "hp", hp, maximumHp, 0.3f, screenTopY, uiScale);
 }
 
-void HudRenderer::DrawJewelUI(int jewelCount, float screenTopY, float uiScale)
+void HudRenderer::DrawJewelUI(int jewelCount, int maximumJewelCount, float screenTopY, float uiScale)
 {
-    const float jewelGap = mRenderer->GetFbWidth() / 20.0f;
-    mRenderer->DrawLinedUpTexture("default", "jewelTexture", "jewel", jewelGap, jewelCount, screenTopY, uiScale);
+    mRenderer->DrawLinedUpTextureSlots("default", "jewelTexture", "jewel", jewelCount, maximumJewelCount, 0.3f,
+                                       screenTopY, uiScale);
 }
 
 void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
@@ -142,10 +134,9 @@ void HudRenderer::DrawSplitGuardUI(float screenTopY, float uiScale)
     }
 
     const int guardCount = mGame->GetPlayerSplitGuardCount();
-    const float guardGap = mRenderer->GetFbWidth() * 0.025f;
-    constexpr float depletedGuardOpacity = 0.2f;
-    mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardGap, guardCount, maximumGuardCount,
-                                       depletedGuardOpacity, screenTopY, uiScale);
+    constexpr float depletedGuardBrightness = 0.3f;
+    mRenderer->DrawLinedUpTextureSlots("default", "splitGuardTexture", "guard", guardCount, maximumGuardCount,
+                                       depletedGuardBrightness, screenTopY, uiScale);
 }
 
 void HudRenderer::UpdateTalkableUIVisibility(const std::vector<Player*>& players, bool allowsPrompt)

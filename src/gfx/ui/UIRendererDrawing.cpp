@@ -1,7 +1,7 @@
 #include "gfx/UIRenderer.h"
 
-#include "app/Game.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "gfx/UIShader.h"
 #include "gfx/VertexArray.h"
 #include "system/SceneSystem.h"
@@ -312,15 +312,14 @@ void UIRenderer::DrawSceneTexture(const std::string& sceneName, const std::strin
 }
 
 void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName,
-                                    const std::string& textureName, float gap, int count, float screenTopY,
-                                    float uiScale)
+                                    const std::string& textureName, int count, float screenTopY, float uiScale)
 {
-    DrawLinedUpTextureSlots(sceneName, UIName, textureName, gap, count, count, 1.0f, screenTopY, uiScale);
+    DrawLinedUpTextureSlots(sceneName, UIName, textureName, count, count, 1.0f, screenTopY, uiScale);
 }
 
 void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
-                                         const std::string& textureName, float gap, int activeSlotCount,
-                                         int totalSlotCount, float inactiveSlotOpacity, float screenTopY, float uiScale)
+                                         const std::string& textureName, int activeSlotCount, int totalSlotCount,
+                                         float inactiveSlotBrightness, float screenTopY, float uiScale)
 {
     const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
     if (!textureInfo || totalSlotCount <= 0) {
@@ -335,16 +334,22 @@ void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std
     const float textureWidth = mFbWidth * textureInfo->widthRatio * uiScale;
     const float textureHeight = mFbWidth * textureInfo->heightRatio * uiScale;
 
-    const float textureGap = gap * uiScale;
+    const float textureGap = mFbWidth * textureInfo->repeatSpacingRatio.value_or(textureInfo->widthRatio) * uiScale;
 
     const int visibleActiveSlotCount = std::clamp(activeSlotCount, 0, totalSlotCount);
-    const float visibleInactiveSlotOpacity = std::clamp(inactiveSlotOpacity, 0.0f, 1.0f);
+    const float inactiveBrightness = std::clamp(inactiveSlotBrightness, 0.0f, 1.0f);
+    const auto texture = mTextures.find(textureName);
+    if (texture == mTextures.end()) {
+        return;
+    }
 
     for (int slotIndex = 0; slotIndex < totalSlotCount; ++slotIndex) {
         const float currentX = textureX + textureGap * slotIndex;
-        const float opacity = slotIndex < visibleActiveSlotCount ? 1.0f : visibleInactiveSlotOpacity;
-        DrawTexture(currentX, textureY, textureWidth, textureHeight, textureName, false, textureInfo->rotationDegrees,
-                    opacity);
+        const bool isDepleted = slotIndex >= visibleActiveSlotCount;
+        const float brightness = isDepleted ? inactiveBrightness : 1.0f;
+        DrawTextureHandle(currentX, textureY, textureWidth, textureHeight, texture->second, false,
+                          textureInfo->rotationDegrees, 1.0f, glm::vec4(brightness, brightness, brightness, 1.0f),
+                          isDepleted);
         RecordRenderedUIElement(RenderedUIElementSource::CodeBoundTexture, sceneName, UIName,
                                 glm::vec2(currentX + textureWidth * 0.5f, textureY + textureHeight * 0.5f),
                                 glm::vec2(textureWidth, textureHeight), textureInfo->rotationDegrees);
@@ -387,7 +392,7 @@ void UIRenderer::DrawTexture(float x, float y, float width, float height, const 
 }
 
 void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, GLuint textureHandle, bool flipVertical,
-                                   float rotationDegrees, float opacity, glm::vec4 tint)
+                                   float rotationDegrees, float opacity, glm::vec4 tint, bool grayscale)
 {
     if (textureHandle == 0) {
         return;
@@ -407,6 +412,7 @@ void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, 
     glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
     glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
     glUniform1i(mUIShader->GetLocUseTexture(), 1);
+    glUniform1i(mUIShader->GetLocGrayscale(), grayscale ? 1 : 0);
     tint.a *= std::clamp(opacity, 0.0f, 1.0f);
     glUniform4fv(mUIShader->GetLocObjectColor(), 1, glm::value_ptr(tint));
 
@@ -418,6 +424,8 @@ void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, 
 
     mVertexArrays.at(flipVertical ? "quadFlipVertical" : "quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    // 文字など、同じシェーダーを使う後続のUIへグレー化を持ち越さない。
+    glUniform1i(mUIShader->GetLocGrayscale(), 0);
 }
 void UIRenderer::DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase, glm::vec4 color,
                           float rotationDegrees, const TextEffect* effect)

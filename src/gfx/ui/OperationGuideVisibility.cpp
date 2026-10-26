@@ -27,6 +27,12 @@ bool IsCombatGuide(std::string_view elementId)
 
 bool ShouldShowOperationGuideElement(std::string_view elementId, const OperationGuideDisplayState& displayState)
 {
+    if (!displayState.isUGCPlaytestActive && displayState.isPauseMenuOpen) {
+        return true;
+    }
+    if (!displayState.isUGCPlaytestActive && displayState.currentStageNumber >= 2) {
+        return elementId == "buttonA_copy" || elementId == "buttonTextB_copy";
+    }
     if (displayState.isTwoPlayerMode && IsSoloPlayerConfigurationGuide(elementId)) {
         return false;
     }

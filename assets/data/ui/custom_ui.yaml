@@ -1108,11 +1108,11 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.011600059
-      - 0.5577749
+      - 0.01547602
+      - 0.54517794
     sizeRatio:
       - 0.020000007
-      - 0.019999998
+      - 0.019999992
     textScaleRatio: 0.0007
     text: New Text
     texture: textures/Inputs/switch_button_minus.png
@@ -1155,12 +1155,12 @@ elements:
     zOrder: 0
     rotationDegrees: 0
     posRatio:
-      - 0.062887385
-      - 0.5663905
+      - 0.06676334
+      - 0.5537935
     sizeRatio:
       - 0.2
       - 0.05625
-    textScaleRatio: 0.00012999997
+    textScaleRatio: 0.00012999993
     text: メニュー表示
     texture: ""
     usesInputDeviceVariants: false

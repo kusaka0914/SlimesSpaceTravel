@@ -151,7 +151,8 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
                                                  std::optional<bool>& canTogglePlayerSplit) const
 {
     constexpr float disabledOpacity = 0.38f;
-    if (element.screen != "operation") {
+    if (element.screen != "operation" ||
+        (mGame->GetIsPauseMenuOpen() && !mGame->GetIsUGCMode() && !mGame->GetIsUGCPlaytestActive())) {
         return 1.0f;
     }
 
@@ -279,7 +280,7 @@ UIRenderer::CalculateCustomScreenLayout(const std::vector<const UILoadSystem::Cu
     return CustomScreenLayout{scale, verticalOffset};
 }
 
-void UIRenderer::DrawCustomUI()
+void UIRenderer::DrawCustomUI(bool operationOnly)
 {
     if (!mUILoadSystem) {
         return;
@@ -290,7 +291,7 @@ void UIRenderer::DrawCustomUI()
     static const std::string returnToEditorText = "作る画面に戻る";
     static const std::string airDodgeAttackText = "空中回避攻撃";
     static const std::string disembarkBoatText = "降車";
-    static const std::string assistAttackText = "自動コンボ";
+    static const std::string assistAttackText = "攻撃";
     static const std::string assistRecoverText = "体力回復";
     static const std::string assistChargingText = "溜め中";
     static const std::string assistFireChargedAttackText = "発射";
@@ -329,8 +330,9 @@ void UIRenderer::DrawCustomUI()
         hasPlayerWaitingForBoat = hasPlayerWaitingForBoat || player->IsWaitingForBoat();
     }
     const OperationGuideDisplayState operationGuideDisplayState{
-        mGame->GetCurrentStageNum(), operationPlayer ? operationPlayer->GetCurrentPlanetNum() : 0, isUGCPlaytestActive,
-        isTwoPlayer};
+        mGame->GetCurrentStageNum(), operationPlayer ? operationPlayer->GetCurrentPlanetNum() : 0,
+        isUGCPlaytestActive || mGame->GetIsUGCMode(), isTwoPlayer,
+        mGame->GetIsPauseMenuOpen() && !mGame->GetIsUGCMode()};
 
     std::optional<bool> canTogglePlayerSplit;
 
@@ -359,7 +361,7 @@ void UIRenderer::DrawCustomUI()
     }
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
-        if (!element) {
+        if (!element || (operationOnly && element->screen != "operation")) {
             continue;
         }
 
@@ -373,10 +375,16 @@ void UIRenderer::DrawCustomUI()
 
         bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
         if (element->screen == "operation") {
+            // ポーズ中は暗転背景の後に、通常と同じ操作UIだけを重ねる。
+            if (mGame->GetIsPauseMenuOpen() && !mGame->GetIsUGCMode() && !isUGCPlaytestActive && !operationOnly &&
+                !shouldPreviewAll) {
+                continue;
+            }
             const bool isBoatDisembarkGuide =
                 hasPlayerWaitingForBoat && (element->id == "buttonB" || element->id == "buttonTextB");
-            visibleInGame = isPlaying && (isBoatDisembarkGuide ||
-                                          ShouldShowOperationGuideElement(element->id, operationGuideDisplayState));
+            visibleInGame =
+                (isPlaying || operationGuideDisplayState.isPauseMenuOpen) &&
+                (isBoatDisembarkGuide || ShouldShowOperationGuideElement(element->id, operationGuideDisplayState));
         } else if (element->screen == "title") {
             visibleInGame = isTitle;
         } else if (element->screen == "opening") {

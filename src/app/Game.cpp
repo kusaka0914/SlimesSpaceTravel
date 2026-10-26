@@ -263,6 +263,9 @@ void Game::CreateStages(int stageCount)
 
 bool Game::ReloadCurrentStage(StagePhysicsReloadMode physicsReloadMode)
 {
+    if (mUIRenderer) {
+        mUIRenderer->ResetOperationGuides();
+    }
     const auto previousPlayerConfiguration = mPlayerConfigurationController->CaptureStageReloadState();
     if (mSequenceSystem) {
         mSequenceSystem->Stop(true);
@@ -650,8 +653,11 @@ void Game::UpdateGame()
     const float deltaTime = std::min(0.04f, elapsedSeconds);
     mLastTime = currentTime;
     mLastDeltaTime = deltaTime;
+    if (mUIRenderer) {
+        mUIRenderer->UpdateOperationGuides(elapsedSeconds);
+    }
 
-    // 体験時間には実経過時間を使い、物理・演出の更新には大きな時間差を制限したdeltaTimeを使う。
+    // 操作案内と体験時間には実経過時間を使い、物理・演出には時間差を制限したdeltaTimeを使う。
     mSessionController->Update(elapsedSeconds);
 
     ProcessPendingUGCClearCompletion();
@@ -960,7 +966,11 @@ bool Game::CanTogglePlayerSplit() const
 
 bool Game::SwitchControlledPlayer()
 {
-    return mPlayerConfigurationController && mPlayerConfigurationController->SwitchControlledPlayer();
+    const bool didSwitch = mPlayerConfigurationController && mPlayerConfigurationController->SwitchControlledPlayer();
+    if (mUIRenderer) {
+        mUIRenderer->NotifyPlayerSwitchRequested(didSwitch);
+    }
+    return didSwitch;
 }
 
 bool Game::CanSwitchControlledPlayer() const
@@ -1493,6 +1503,13 @@ void Game::OnPlayerApplyDamage(int playerNum)
     VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
     if (mCameraSystem) {
         mCameraSystem->StartPlayerDamagedShake(playerNum);
+    }
+}
+
+void Game::OnPlayerRecovered(int playerNum)
+{
+    if (mUIRenderer) {
+        mUIRenderer->NotifyPlayerRecovered(playerNum);
     }
 }
 

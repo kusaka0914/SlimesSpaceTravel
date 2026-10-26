@@ -27,6 +27,9 @@ public:
         float height = 0.0f;
         float heightRatio = 0.0f;
         float rotationDegrees = 0.0f;
+
+        // 連続描画時の左端同士の距離（画面幅に対する比率）。未指定なら画像幅を使う。
+        std::optional<float> repeatSpacingRatio;
     };
 
     struct TextInfo {

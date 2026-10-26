@@ -25,8 +25,8 @@ private:
     void DrawPlayerFatiguePromptUI();
     void DrawPlayerStatusUIForPlayer(const Player* player, float screenTopY, float uiScale);
     void DrawPlayerPromptUI(const Player* player, float screenTopY, float screenHeight);
-    void DrawHpUI(int hp, float screenTopY, float uiScale);
-    void DrawJewelUI(int jewelCount, float screenTopY, float uiScale);
+    void DrawHpUI(int hp, int maximumHp, float screenTopY, float uiScale);
+    void DrawJewelUI(int jewelCount, int maximumJewelCount, float screenTopY, float uiScale);
     void DrawSplitGuardUI(float screenTopY, float uiScale);
     void DrawRecommendReduceTiredUI(const Player* player, float screenTopY, float screenHeight);
     void DrawRemainPartsUI(int remainBoatPartsCount);

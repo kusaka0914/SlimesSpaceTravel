@@ -186,6 +186,10 @@ public:
     void OnPlayerDied();
     void OnBoatPartsObtained();
     void OnPlayerApplyDamage(int playerNum);
+
+    // 回復成功を操作案内へ通知し、回復の一時案内を終了する。
+    void OnPlayerRecovered(int playerNum);
+
     void OnPlayerAttackHit(int playerNum);
     void OnStrongAttacked(int playerNum);
     void OnAirSlamAttackHit(int playerNum);

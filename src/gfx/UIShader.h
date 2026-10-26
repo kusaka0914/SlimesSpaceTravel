@@ -8,10 +8,12 @@ public:
     UIShader();
     ~UIShader();
 
+    int GetLocGrayscale() const { return mLocGrayscale; }
     int GetLocConvertSrgbToLinear() const { return mLocConvertSrgbToLinear; }
 
 private:
     void Initialize();
 
     int mLocConvertSrgbToLinear = -1;
+    int mLocGrayscale = -1;
 };

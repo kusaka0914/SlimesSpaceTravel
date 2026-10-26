@@ -447,6 +447,15 @@ void UIDebugPanel::DrawExistingTextureInspector(UILoadSystem* uiLoadSystem)
     ImGui::SliderFloat("高さ", &textureInfo.heightRatio, 0.0f, 1.5f, "%.4f");
     ImGui::SliderFloat("回転角度", &textureInfo.rotationDegrees, -180.0f, 180.0f, "%.1f°");
 
+    if (textureInfo.repeatSpacingRatio) {
+        ImGui::SeparatorText("連続UI");
+        ImGui::DragFloat("並び間隔", &*textureInfo.repeatSpacingRatio, 0.0005f, 0.0f, 1.0f, "%.4f",
+                         ImGuiSliderFlags_AlwaysClamp);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("アイコンの左端から次の左端までの距離です。画面幅に対する比率で指定します。");
+        }
+    }
+
     ImGui::SeparatorText("表示方式");
     DrawCodeBoundElementProtection();
 }

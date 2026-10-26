@@ -285,6 +285,7 @@ bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerCo
 
     jewelGauge.Consume(1);
     status.Heal(1.0f);
+    player.GetGame()->OnPlayerRecovered(player.GetPlayerNum());
     player.GetGame()->GetAudioSystem()->PlaySE("recover_se");
     return true;
 }

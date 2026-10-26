@@ -1,12 +1,14 @@
 #pragma once
 
 #include "gfx/Renderer.h"
+#include "gfx/ui/ContextualOperationGuide.h"
 #include "gfx/ui/UITextRenderer.h"
 #include "system/UILoadSystem.h"
 #include "text/RubyText.h"
 
 #include <GL/glew.h>
 #include <SDL_ttf.h>
+#include <array>
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
@@ -62,6 +64,18 @@ public:
 
     // Editorなど、ゲームUIの後に描かれる画面にも遷移フェードを重ねる。
     void DrawTransitionOverlay();
+
+    // 毎フレーム1回、描画とは独立して一時操作案内の時間と表示条件を更新する。
+    void UpdateOperationGuides(float deltaTime);
+
+    // ステージ再読込時にも呼び、旧ステージの一時案内とHP比較履歴を破棄する。
+    void ResetOperationGuides();
+
+    // 回復成功時に案内を閉じる。ソロ分身では共有HPに対応して両Player分を閉じる。
+    void NotifyPlayerRecovered(int playerNumber);
+
+    // 未分裂での切り替え失敗時は、分裂可能な場合だけ案内を予約する。
+    void NotifyPlayerSwitchRequested(bool didSwitch);
 
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
@@ -120,12 +134,12 @@ public:
 
     void DrawSceneTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName);
     void DrawLinedUpTexture(const std::string& sceneName, const std::string& UIName, const std::string& textureName,
-                            float gap, int count, float screenTopY = 0.0f, float uiScale = 1.0f);
+                            int count, float screenTopY = 0.0f, float uiScale = 1.0f);
 
-    // gapは各スロットの開始位置の間隔。先頭activeSlotCount個を通常表示し、残りへinactiveSlotOpacityを適用する。
+    // 間隔はUI定義のrepeatSpacingRatioを使う。先頭activeSlotCount個を通常表示し、残りはグレー化してinactiveSlotBrightnessの明るさで描く。
     void DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
-                                 const std::string& textureName, float gap, int activeSlotCount, int totalSlotCount,
-                                 float inactiveSlotOpacity, float screenTopY = 0.0f, float uiScale = 1.0f);
+                                 const std::string& textureName, int activeSlotCount, int totalSlotCount,
+                                 float inactiveSlotBrightness, float screenTopY = 0.0f, float uiScale = 1.0f);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     // talkIndexの本文を会話枠へ描画する。ルビ指定はその本文に対応するものを渡す。範囲外なら本文を描画しない。
@@ -148,7 +162,7 @@ public:
     // 借用テクスチャを描画する。0なら何もしない。opacityとtintは0〜1で、ハンドルの所有権は移さない。
     void DrawTextureHandle(float x, float y, float width, float height, GLuint textureHandle, bool flipVertical = false,
                            float rotationDegrees = 0.0f, float opacity = 1.0f,
-                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f});
+                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f}, bool grayscale = false);
 
 private:
     struct CustomScreenLayout {
@@ -160,7 +174,13 @@ private:
     void Initialize();
     void RegisterUITextures();
     void RegisterCustomUITextures();
-    void DrawCustomUI();
+    void DrawCustomUI(bool operationOnly = false);
+    bool CanShowContextualOperationGuide() const;
+    ContextualOperationGuide::Availability GetOperationGuideAvailability() const;
+    void DrawContextualOperationGuide();
+    void DrawOperationGuidePrompt(const std::string& iconId, const std::string& textId, const std::string& description,
+                                  const Player* player, float centerX, float centerY, float scale, float opacity,
+                                  const std::string& alternateIconId = {});
     float CalculateOperationGuideOpacity(const UILoadSystem::CustomElement& element, const Player* player,
                                          std::optional<bool>& canTogglePlayerSplit) const;
     CustomScreenLayout
@@ -209,4 +229,8 @@ private:
     int mFbWidth;
     int mFbHeight;
     bool mCustomUIPreviewEnabled = false;
+    ContextualOperationGuide mContextualOperationGuide;
+    int mOperationGuideStageNumber = -1;
+    bool mOperationGuideWasTwoPlayer = false;
+    std::array<std::optional<float>, 2> mPreviousGuidePlayerHp{};
 };

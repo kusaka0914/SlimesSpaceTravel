@@ -255,18 +255,21 @@ ugcClearResult:
 default:
   - id: hpTexture
     type: texture
-    posRatio: [0.015635636, 0.01875]
-    scaleRatio: [0.029999992, 0.03]
+    posRatio: [0.4245502, 0.9350294]
+    scaleRatio: [0.025, 0.025]
+    repeatSpacingRatio: 0.0257
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.0115788905, 0.079299994]
-    scaleRatio: [0.04, 0.04]
+    posRatio: [0.5997569, 0.9258119]
+    scaleRatio: [0.035, 0.035]
+    repeatSpacingRatio: 0.032
     rotationDegrees: 0
   - id: splitGuardTexture
     type: texture
-    posRatio: [0.014649404, 0.16078468]
-    scaleRatio: [0.029999992, 0.03]
+    posRatio: [0.32278895, 0.93132746]
+    scaleRatio: [0.030000001, 0.030000003]
+    repeatSpacingRatio: 0.025
     rotationDegrees: 0
   - id: talkableTextForGameController
     type: text

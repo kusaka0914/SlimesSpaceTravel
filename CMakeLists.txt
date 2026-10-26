@@ -194,6 +194,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tutorial/TutorialLibrary.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/ContextualOperationGuide.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerSplitGuardState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tgs/TgsExperienceController.cpp
