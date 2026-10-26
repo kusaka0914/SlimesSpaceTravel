@@ -356,7 +356,8 @@ void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std
     }
 }
 
-void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees)
+void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees,
+                        float cornerRadius, float borderWidth, glm::vec4 borderColor)
 {
     glUseProgram(mUIShader->GetShaderProgram());
 
@@ -371,6 +372,12 @@ void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector
     glUniformMatrix4fv(mUIShader->GetLocView(), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(mUIShader->GetLocProj(), 1, GL_FALSE, glm::value_ptr(projMat));
     glUniform1i(mUIShader->GetLocUseTexture(), 0);
+    glUniform2f(mUIShader->GetLocPanelSize(), width, height);
+    glUniform1f(mUIShader->GetLocBorderWidth(),
+                std::clamp(borderWidth, 0.0f, std::max(0.0f, std::min(width, height) * 0.5f)));
+    glUniform4fv(mUIShader->GetLocBorderColor(), 1, glm::value_ptr(borderColor));
+    glUniform1f(mUIShader->GetLocCornerRadius(),
+                std::clamp(cornerRadius, 0.0f, std::max(0.0f, std::min(width, height) * 0.5f)));
     glUniform4fv(mUIShader->GetLocObjectColor(), 1, color.data());
 
     glEnable(GL_BLEND);
@@ -378,6 +385,8 @@ void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector
 
     mVertexArrays.at("quad")->SetActive();
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glUniform1f(mUIShader->GetLocCornerRadius(), 0.0f);
+    glUniform1f(mUIShader->GetLocBorderWidth(), 0.0f);
 }
 
 void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName,

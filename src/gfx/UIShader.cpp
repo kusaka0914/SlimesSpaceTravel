@@ -19,6 +19,10 @@ void UIShader::Initialize()
     mLocObjectColor = glGetUniformLocation(mShaderProgram, "objectColor");
     mLocUseTexture = glGetUniformLocation(mShaderProgram, "useTexture");
     mLocDiffuseTexture = glGetUniformLocation(mShaderProgram, "diffuseTexture");
+    mLocPanelSize = glGetUniformLocation(mShaderProgram, "panelSize");
+    mLocBorderWidth = glGetUniformLocation(mShaderProgram, "borderWidth");
+    mLocBorderColor = glGetUniformLocation(mShaderProgram, "borderColor");
+    mLocCornerRadius = glGetUniformLocation(mShaderProgram, "cornerRadius");
     mLocGrayscale = glGetUniformLocation(mShaderProgram, "grayscale");
     mLocConvertSrgbToLinear = glGetUniformLocation(mShaderProgram, "convertSrgbToLinear");
 }

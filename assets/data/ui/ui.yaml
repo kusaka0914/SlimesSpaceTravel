@@ -261,7 +261,7 @@ default:
     rotationDegrees: 0
   - id: jewelTexture
     type: texture
-    posRatio: [0.5997569, 0.9258119]
+    posRatio: [0.59975684, 0.92581195]
     scaleRatio: [0.035, 0.035]
     repeatSpacingRatio: 0.032
     rotationDegrees: 0

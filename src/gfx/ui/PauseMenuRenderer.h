@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gfx/ui/PauseOperationGuideRenderer.h"
+
 class Game;
 class UIRenderer;
 
@@ -13,4 +15,5 @@ public:
 private:
     Game* mGame;
     UIRenderer* mRenderer;
+    PauseOperationGuideRenderer mOperationGuideRenderer;
 };

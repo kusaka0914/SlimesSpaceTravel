@@ -280,7 +280,7 @@ UIRenderer::CalculateCustomScreenLayout(const std::vector<const UILoadSystem::Cu
     return CustomScreenLayout{scale, verticalOffset};
 }
 
-void UIRenderer::DrawCustomUI(bool operationOnly)
+void UIRenderer::DrawCustomUI()
 {
     if (!mUILoadSystem) {
         return;
@@ -361,7 +361,7 @@ void UIRenderer::DrawCustomUI(bool operationOnly)
     }
 
     for (const UILoadSystem::CustomElement* element : sortedElements) {
-        if (!element || (operationOnly && element->screen != "operation")) {
+        if (!element) {
             continue;
         }
 
@@ -375,9 +375,8 @@ void UIRenderer::DrawCustomUI(bool operationOnly)
 
         bool visibleInGame = mUILoadSystem->IsCustomElementVisible(*element);
         if (element->screen == "operation") {
-            // ポーズ中は暗転背景の後に、通常と同じ操作UIだけを重ねる。
-            if (mGame->GetIsPauseMenuOpen() && !mGame->GetIsUGCMode() && !isUGCPlaytestActive && !operationOnly &&
-                !shouldPreviewAll) {
+            // ポーズ中は専用の操作表を表示するため、常設ガイドを重ねない。
+            if (mGame->GetIsPauseMenuOpen() && !mGame->GetIsUGCMode() && !isUGCPlaytestActive && !shouldPreviewAll) {
                 continue;
             }
             const bool isBoatDisembarkGuide =

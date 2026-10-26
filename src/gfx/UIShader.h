@@ -8,6 +8,10 @@ public:
     UIShader();
     ~UIShader();
 
+    int GetLocPanelSize() const { return mLocPanelSize; }
+    int GetLocBorderWidth() const { return mLocBorderWidth; }
+    int GetLocBorderColor() const { return mLocBorderColor; }
+    int GetLocCornerRadius() const { return mLocCornerRadius; }
     int GetLocGrayscale() const { return mLocGrayscale; }
     int GetLocConvertSrgbToLinear() const { return mLocConvertSrgbToLinear; }
 
@@ -16,4 +20,8 @@ private:
 
     int mLocConvertSrgbToLinear = -1;
     int mLocGrayscale = -1;
+    int mLocPanelSize = -1;
+    int mLocCornerRadius = -1;
+    int mLocBorderWidth = -1;
+    int mLocBorderColor = -1;
 };

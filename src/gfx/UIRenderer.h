@@ -147,8 +147,9 @@ public:
                     const std::vector<RubyTextSegment>* rubySegments = nullptr);
     void DrawTalkUI(const UILoadSystem::TextInfo* textInfo);
 
-    // 左上位置と寸法で背景を描画する。colorは0〜1のRGBAを4要素で渡す。
-    void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees = 0.0f);
+    // 左上位置と寸法で背景を描く。色は0〜1のRGBA、角丸と枠線幅はピクセル単位。
+    void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees = 0.0f,
+                float cornerRadius = 0.0f, float borderWidth = 0.0f, glm::vec4 borderColor = {1.0f, 1.0f, 1.0f, 0.15f});
 
     // 文字を描画する。isCenterBaseで基準点を中心／左上に切り替える。colorは0〜255のRGBA。
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,
@@ -174,7 +175,7 @@ private:
     void Initialize();
     void RegisterUITextures();
     void RegisterCustomUITextures();
-    void DrawCustomUI(bool operationOnly = false);
+    void DrawCustomUI();
     bool CanShowContextualOperationGuide() const;
     ContextualOperationGuide::Availability GetOperationGuideAvailability() const;
     void DrawContextualOperationGuide();
