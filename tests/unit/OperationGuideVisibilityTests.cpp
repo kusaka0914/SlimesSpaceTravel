@@ -213,10 +213,97 @@ void UnavailableAndStaleHintsAreDiscarded()
     guide.Update(8.1f, true, available);
     ExpectFalse(guide.GetPrompt().has_value(), "stale queued hints are discarded");
 }
+void BlockedSplitHasPriorityAndRepeatedPressDoesNotExtendIt()
+{
+    using Kind = ContextualOperationGuide::Kind;
+    ContextualOperationGuide guide;
+    ContextualOperationGuide::Availability available;
+    available.canRecover[0] = true;
+    available.canExplainBlockedSplit = true;
+    guide.RequestRecovery(1);
+    guide.Update(0.0f, true, available);
+    guide.RequestSplitBlocked(1);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt() && guide.GetPrompt()->kind == Kind::SplitBlocked,
+               "failed action feedback preempts recovery");
+    guide.Update(0.2f, true, available);
+    ExpectNear(1.0f, guide.GetPrompt()->opacity, 0.001f, "feedback fades in");
+    guide.Update(2.6f, true, available);
+    const float opacity = guide.GetPrompt()->opacity;
+    guide.RequestSplitBlocked(1);
+    ExpectNear(opacity, guide.GetPrompt()->opacity, 0.001f, "repeat does not reset fade");
+    guide.Update(0.21f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "repeat did not extend three second lifetime");
+    guide.RequestSplitBlocked(1);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt().has_value(), "another failed attempt can show feedback again");
+    available.canExplainBlockedSplit = false;
+    guide.Update(0.0f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "successful split or player change removes stale feedback");
+}
+
+void InsufficientJewelsTracksRequiredCountWithoutRefreshing()
+{
+    using Kind = ContextualOperationGuide::Kind;
+    ContextualOperationGuide guide;
+    ContextualOperationGuide::Availability available;
+    available.activePlayers = {true, true};
+    available.canRecover[0] = true;
+    guide.RequestRecovery(1);
+    guide.Update(0.0f, true, available);
+    guide.RequestInsufficientJewels(2, 1);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt() && guide.GetPrompt()->kind == Kind::InsufficientJewels &&
+                   guide.GetPrompt()->playerNumber == 2,
+               "resource failure preempts optional hint for correct player");
+    guide.Update(0.2f, true, available);
+    guide.RequestInsufficientJewels(2, 2);
+    ExpectNear(1.0f, guide.GetPrompt()->opacity, 0.001f, "repeat does not restart fade");
+    available.jewelCounts[1] = 1;
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt().has_value(), "one jewel is still insufficient for a two jewel skill");
+    available.jewelCounts[1] = 2;
+    guide.Update(0.0f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "enough jewels clears obsolete failure message");
+    available.jewelCounts[1] = 0;
+    guide.RequestInsufficientJewels(2, 1);
+    guide.Update(0.0f, true, available);
+    guide.Update(2.8f, true, available);
+    guide.RequestInsufficientJewels(2, 1);
+    guide.Update(0.21f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "repeat does not extend the three second lifetime");
+}
+
+void MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat()
+{
+    using Kind = ContextualOperationGuide::Kind;
+    ContextualOperationGuide guide;
+    ContextualOperationGuide::Availability available;
+    available.canExplainMergeTooFar = true;
+    guide.RequestMergeTooFar(1);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt() && guide.GetPrompt()->kind == Kind::MergeTooFar, "distance failure is displayed");
+    guide.Update(2.8f, true, available);
+    guide.RequestMergeTooFar(1);
+    guide.Update(0.21f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "held or repeated merge does not prolong feedback");
+    guide.RequestMergeTooFar(1);
+    guide.Update(0.0f, true, available);
+    ExpectTrue(guide.GetPrompt().has_value(), "later merge failure has no cooldown");
+    available.canExplainMergeTooFar = false;
+    guide.Update(0.0f, true, available);
+    ExpectFalse(guide.GetPrompt().has_value(), "approaching the other slime clears the hint");
+}
+
 } // namespace
 
 void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
 {
+    tests.emplace_back("ContextualOperationGuide.InsufficientJewels",
+                       InsufficientJewelsTracksRequiredCountWithoutRefreshing);
+    tests.emplace_back("ContextualOperationGuide.MergeDistance", MergeDistanceFeedbackStopsWhenAvailableAndCanRepeat);
+    tests.emplace_back("ContextualOperationGuide.BlockedSplitPriorityAndNoRefresh",
+                       BlockedSplitHasPriorityAndRepeatedPressDoesNotExtendIt);
     tests.emplace_back("OperationGuideVisibility.PauseShowsAllGuides", PauseShowsAllGuidesRegardlessOfStageProgress);
     tests.emplace_back("ContextualOperationGuide.RecoveryPriorityAndCooldown",
                        ContextualRecoveryPreemptsAndExpiresWithCooldown);

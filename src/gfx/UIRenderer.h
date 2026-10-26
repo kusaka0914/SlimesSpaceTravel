@@ -50,6 +50,13 @@ public:
         float rotationDegrees = 0.0f;
     };
 
+    struct TextureSlotFlash {
+        int firstSlot = 0;
+        int endSlot = 0;
+        float strength = 0.0f;
+        glm::vec3 color{1.0f};
+    };
+
     using TextEffect = UITextRenderer::TextEffect;
 
     UIRenderer(Game* game);
@@ -67,6 +74,7 @@ public:
 
     // 毎フレーム1回、描画とは独立して一時操作案内の時間と表示条件を更新する。
     void UpdateOperationGuides(float deltaTime);
+    void UpdateConsumptionFeedback(float deltaTime);
 
     // ステージ再読込時にも呼び、旧ステージの一時案内とHP比較履歴を破棄する。
     void ResetOperationGuides();
@@ -76,6 +84,13 @@ public:
 
     // 未分裂での切り替え失敗時は、分裂可能な場合だけ案内を予約する。
     void NotifyPlayerSwitchRequested(bool didSwitch);
+
+    // 障害物により分裂が失敗したことを、操作対象Playerへの一時案内に反映する。
+    void NotifyPlayerSplitBlocked();
+    void NotifyPlayerMergeTooFar();
+
+    // 操作が必要個数の不足で失敗した場合に通知する。個数が満たされた案内は表示しない。
+    void NotifyInsufficientJewels(int playerNumber, int requiredJewels);
 
     // 指定ピクセル寸法に背景を描く。非正の寸法はウィンドウのフレームバッファ寸法を使う。
     void DrawSkyBox(int renderWidth = 0, int renderHeight = 0);
@@ -139,7 +154,8 @@ public:
     // 間隔はUI定義のrepeatSpacingRatioを使う。先頭activeSlotCount個を通常表示し、残りはグレー化してinactiveSlotBrightnessの明るさで描く。
     void DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
                                  const std::string& textureName, int activeSlotCount, int totalSlotCount,
-                                 float inactiveSlotBrightness, float screenTopY = 0.0f, float uiScale = 1.0f);
+                                 float inactiveSlotBrightness, float screenTopY = 0.0f, float uiScale = 1.0f,
+                                 const TextureSlotFlash* flash = nullptr);
     void DrawBGFromUIInfo(const std::string& sceneName, const std::string& UIName, std::vector<GLfloat> color);
 
     // talkIndexの本文を会話枠へ描画する。ルビ指定はその本文に対応するものを渡す。範囲外なら本文を描画しない。
@@ -150,6 +166,9 @@ public:
     // 左上位置と寸法で背景を描く。色は0〜1のRGBA、角丸と枠線幅はピクセル単位。
     void DrawBG(float x, float y, float width, float height, std::vector<GLfloat> color, float rotationDegrees = 0.0f,
                 float cornerRadius = 0.0f, float borderWidth = 0.0f, glm::vec4 borderColor = {1.0f, 1.0f, 1.0f, 0.15f});
+
+    // ビューポートの周辺だけに赤を重ねる。opacityは0〜1で、中央の視界は遮らない。
+    void DrawDamageVignette(float viewportTop, float viewportHeight, float opacity);
 
     // 文字を描画する。isCenterBaseで基準点を中心／左上に切り替える。colorは0〜255のRGBA。
     void DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase,
@@ -163,7 +182,8 @@ public:
     // 借用テクスチャを描画する。0なら何もしない。opacityとtintは0〜1で、ハンドルの所有権は移さない。
     void DrawTextureHandle(float x, float y, float width, float height, GLuint textureHandle, bool flipVertical = false,
                            float rotationDegrees = 0.0f, float opacity = 1.0f,
-                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f}, bool grayscale = false);
+                           glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f}, bool grayscale = false,
+                           float flashStrength = 0.0f, glm::vec3 flashColor = {1.0f, 1.0f, 1.0f});
 
 private:
     struct CustomScreenLayout {
@@ -176,7 +196,7 @@ private:
     void RegisterUITextures();
     void RegisterCustomUITextures();
     void DrawCustomUI();
-    bool CanShowContextualOperationGuide() const;
+    bool CanShowContextualOperationGuide(bool allowsStageOne = false) const;
     ContextualOperationGuide::Availability GetOperationGuideAvailability() const;
     void DrawContextualOperationGuide();
     void DrawOperationGuidePrompt(const std::string& iconId, const std::string& textId, const std::string& description,

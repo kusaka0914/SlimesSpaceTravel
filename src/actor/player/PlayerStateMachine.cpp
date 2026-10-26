@@ -59,7 +59,7 @@ void PlayerStateMachine::UpdateAlive(Player& player, PlayerInput& input, PlayerM
     const bool canTransitionFromAttack =
         (mActionState == PlayerActionState::Idle || mActionState == PlayerActionState::Attacking) &&
         !player.IsAttachedToPlatform() && !combat.HasPendingAttackHit();
-    if (canTransitionFromAttack && (TryStartSpecialAttack(input, combat, jewelGauge) ||
+    if (canTransitionFromAttack && (TryStartSpecialAttack(player, input, combat, jewelGauge) ||
                                     TryStartContinuousAttack(player, input, combat, jewelGauge))) {
         mAttackDirectionTarget = nullptr;
         movement.ClearStrongAttackDirectionOverride();

@@ -148,6 +148,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/CameraShakeEffectTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TutorialObjectiveTextTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/OperationGuideVisibilityTests.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/ResourceConsumptionFeedbackTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerJewelGaugeTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/PlayerSplitGuardStateTests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/TgsExperienceControllerTests.cpp
@@ -195,6 +196,7 @@ if (BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/text/JapaneseRubyGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/OperationGuideVisibility.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/ContextualOperationGuide.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/ui/ResourceConsumptionFeedback.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/actor/player/PlayerJewelGauge.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/PlayerSplitGuardState.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/system/tgs/TgsExperienceController.cpp

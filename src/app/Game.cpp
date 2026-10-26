@@ -669,14 +669,23 @@ void Game::UpdateGame()
             // 通常の追従更新は止めたままなので、衝撃がカメラ基準位置を乱さない。
             mCameraSystem->UpdateShakeEffects(deltaTime);
         }
+        if (mUIRenderer) {
+            mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+        }
         return;
     }
 
     if (mPauseMenuController->IsOpen()) {
+        if (mUIRenderer) {
+            mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+        }
         return;
     }
 
     UpdateWorldAndCamera(deltaTime);
+    if (mUIRenderer) {
+        mUIRenderer->UpdateConsumptionFeedback(elapsedSeconds);
+    }
 }
 
 void Game::UpdateWorldAndCamera(float deltaTime)
@@ -924,7 +933,18 @@ void Game::RemoveAllPlayer()
 
 bool Game::TogglePlayerSplit()
 {
-    return mPlayerConfigurationController && mPlayerConfigurationController->ToggleSplit();
+    if (!mPlayerConfigurationController) {
+        return false;
+    }
+    const auto result = mPlayerConfigurationController->ToggleSplit();
+    if (result == PlayerConfigurationController::SplitToggleResult::BlockedByObstacle && mUIRenderer) {
+        mUIRenderer->NotifyPlayerSplitBlocked();
+    }
+    if (result == PlayerConfigurationController::SplitToggleResult::MergeTooFar && mUIRenderer) {
+        mUIRenderer->NotifyPlayerMergeTooFar();
+    }
+    return result == PlayerConfigurationController::SplitToggleResult::Accepted ||
+           result == PlayerConfigurationController::SplitToggleResult::MergeTooFar;
 }
 
 void Game::SetPlayerSplitMergeButtonHeld(bool isHeld)
@@ -1503,6 +1523,13 @@ void Game::OnPlayerApplyDamage(int playerNum)
     VibrateControllerForPlayer(playerNum, 0, 10000, 1000);
     if (mCameraSystem) {
         mCameraSystem->StartPlayerDamagedShake(playerNum);
+    }
+}
+
+void Game::OnPlayerInsufficientJewels(int playerNum, int requiredJewels)
+{
+    if (mUIRenderer) {
+        mUIRenderer->NotifyInsufficientJewels(playerNum, requiredJewels);
     }
 }
 

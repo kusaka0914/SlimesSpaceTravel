@@ -86,6 +86,38 @@ void ContextualOperationGuide::RequestSplit(int playerNumber)
     Enqueue(Kind::Split, playerNumber, 3.0f);
 }
 
+void ContextualOperationGuide::RequestSplitBlocked(int playerNumber)
+{
+    if (playerNumber >= 1 && playerNumber <= 2) {
+        Enqueue(Kind::SplitBlocked, playerNumber, 3.0f);
+    }
+}
+
+void ContextualOperationGuide::RequestMergeTooFar(int playerNumber)
+{
+    if (playerNumber >= 1 && playerNumber <= 2) {
+        Enqueue(Kind::MergeTooFar, playerNumber, 3.0f);
+    }
+}
+
+void ContextualOperationGuide::RequestInsufficientJewels(int playerNumber, int requiredJewels)
+{
+    if (playerNumber < 1 || playerNumber > 2 || requiredJewels <= 0) {
+        return;
+    }
+    if (mCurrent && mCurrent->kind == Kind::InsufficientJewels && mCurrent->playerNumber == playerNumber) {
+        mCurrent->requiredJewels = std::max(mCurrent->requiredJewels, requiredJewels);
+        return;
+    }
+    for (Request& request : mPending) {
+        if (request.kind == Kind::InsufficientJewels && request.playerNumber == playerNumber) {
+            request.requiredJewels = std::max(request.requiredJewels, requiredJewels);
+            return;
+        }
+    }
+    Enqueue(Kind::InsufficientJewels, playerNumber, 3.0f, requiredJewels);
+}
+
 void ContextualOperationGuide::NotifyRecovered(int playerNumber)
 {
     if (playerNumber == 0) {
@@ -98,7 +130,7 @@ void ContextualOperationGuide::NotifyRecovered(int playerNumber)
     Dismiss(Kind::Recover, playerNumber);
 }
 
-void ContextualOperationGuide::Enqueue(Kind kind, int playerNumber, float duration)
+void ContextualOperationGuide::Enqueue(Kind kind, int playerNumber, float duration, int requiredJewels)
 {
     if (mCurrent && mCurrent->kind == kind && mCurrent->playerNumber == playerNumber) {
         return;
@@ -107,13 +139,21 @@ void ContextualOperationGuide::Enqueue(Kind kind, int playerNumber, float durati
         return request.kind == kind && request.playerNumber == playerNumber;
     });
     if (!alreadyPending) {
-        mPending.push_back({kind, playerNumber, mClock, duration});
+        mPending.push_back({kind, playerNumber, mClock, duration, requiredJewels});
     }
 }
 
 bool ContextualOperationGuide::IsAvailable(const Request& request, const Availability& availability) const
 {
     switch (request.kind) {
+    case Kind::SplitBlocked:
+        return availability.canExplainBlockedSplit;
+    case Kind::MergeTooFar:
+        return availability.canExplainMergeTooFar;
+    case Kind::InsufficientJewels:
+        return request.playerNumber >= 1 && request.playerNumber <= 2 &&
+               availability.activePlayers[request.playerNumber - 1] &&
+               availability.jewelCounts[request.playerNumber - 1] < request.requiredJewels;
     case Kind::Recover:
         return request.playerNumber >= 1 && request.playerNumber <= 2 &&
                availability.canRecover[request.playerNumber - 1];
@@ -139,7 +179,7 @@ std::optional<ContextualOperationGuide::Prompt> ContextualOperationGuide::GetPro
     if (!mCurrent) {
         return std::nullopt;
     }
-    return Prompt{mCurrent->kind, mCurrent->playerNumber, std::clamp(mOpacity, 0.0f, 1.0f)};
+    return Prompt{mCurrent->kind, mCurrent->playerNumber, std::clamp(mOpacity, 0.0f, 1.0f), mCurrent->requiredJewels};
 }
 
 void ContextualOperationGuide::ClearPrompts()

@@ -77,6 +77,13 @@ void UIRenderer::RegisterUITextures()
     RegisterTexture(basePath + "tgs/QR_540300.png", "tgsQrCode");
 }
 
+void UIRenderer::UpdateConsumptionFeedback(float deltaTime)
+{
+    if (mHudRenderer) {
+        mHudRenderer->UpdateConsumptionFeedback(deltaTime);
+    }
+}
+
 void UIRenderer::DrawGameContent()
 {
     glfwGetFramebufferSize(mGame->GetWindow(), &mFbWidth, &mFbHeight);
@@ -126,6 +133,9 @@ void UIRenderer::DrawGameContent()
     const bool isUGCEditing = mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
     const bool isUGCClearResultShowing = mGame->GetIsUGCClearResultShowing();
+    if (!isStartCinematicPlaying && !isUGCEditing && !mGame->GetIsGameUIHidden()) {
+        mHudRenderer->DrawDamageFeedback();
+    }
     const bool shouldDrawDefaultUI = !isStartCinematicPlaying && !isUGCEditing && !isUGCPlaytestActive &&
                                      (sceneSystem->IsPlaying() || sceneSystem->IsTutorialActive("jewel_usage"));
     mHudRenderer->UpdateTalkableUIVisibility(mGame->GetPlayers(), shouldDrawDefaultUI && sceneSystem->IsPlaying());

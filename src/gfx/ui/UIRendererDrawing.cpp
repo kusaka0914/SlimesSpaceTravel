@@ -319,7 +319,8 @@ void UIRenderer::DrawLinedUpTexture(const std::string& sceneName, const std::str
 
 void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std::string& UIName,
                                          const std::string& textureName, int activeSlotCount, int totalSlotCount,
-                                         float inactiveSlotBrightness, float screenTopY, float uiScale)
+                                         float inactiveSlotBrightness, float screenTopY, float uiScale,
+                                         const TextureSlotFlash* flash)
 {
     const auto textureInfo = mUILoadSystem->GetTextureInfo(sceneName, UIName);
     if (!textureInfo || totalSlotCount <= 0) {
@@ -346,10 +347,13 @@ void UIRenderer::DrawLinedUpTextureSlots(const std::string& sceneName, const std
     for (int slotIndex = 0; slotIndex < totalSlotCount; ++slotIndex) {
         const float currentX = textureX + textureGap * slotIndex;
         const bool isDepleted = slotIndex >= visibleActiveSlotCount;
-        const float brightness = isDepleted ? inactiveBrightness : 1.0f;
+        const float strength = flash && slotIndex >= flash->firstSlot && slotIndex < flash->endSlot && isDepleted
+                                   ? std::clamp(flash->strength, 0.0f, 1.0f)
+                                   : 0.0f;
+        const float brightness = isDepleted ? glm::mix(inactiveBrightness, 1.0f, strength) : 1.0f;
         DrawTextureHandle(currentX, textureY, textureWidth, textureHeight, texture->second, false,
                           textureInfo->rotationDegrees, 1.0f, glm::vec4(brightness, brightness, brightness, 1.0f),
-                          isDepleted);
+                          isDepleted, strength, flash ? flash->color : glm::vec3(1.0f));
         RecordRenderedUIElement(RenderedUIElementSource::CodeBoundTexture, sceneName, UIName,
                                 glm::vec2(currentX + textureWidth * 0.5f, textureY + textureHeight * 0.5f),
                                 glm::vec2(textureWidth, textureHeight), textureInfo->rotationDegrees);
@@ -389,6 +393,18 @@ void UIRenderer::DrawBG(float x, float y, float width, float height, std::vector
     glUniform1f(mUIShader->GetLocBorderWidth(), 0.0f);
 }
 
+void UIRenderer::DrawDamageVignette(float viewportTop, float viewportHeight, float opacity)
+{
+    if (opacity <= 0.0f || viewportHeight <= 0.0f) {
+        return;
+    }
+    glUseProgram(mUIShader->GetShaderProgram());
+    glUniform1i(mUIShader->GetLocDamageVignette(), 1);
+    DrawBG(0.0f, viewportTop, static_cast<float>(mFbWidth), viewportHeight,
+           {1.0f, 0.04f, 0.04f, std::clamp(opacity, 0.0f, 1.0f)});
+    glUniform1i(mUIShader->GetLocDamageVignette(), 0);
+}
+
 void UIRenderer::DrawTexture(float x, float y, float width, float height, const std::string& textureName,
                              bool flipVertical, float rotationDegrees, float opacity)
 {
@@ -401,7 +417,8 @@ void UIRenderer::DrawTexture(float x, float y, float width, float height, const 
 }
 
 void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, GLuint textureHandle, bool flipVertical,
-                                   float rotationDegrees, float opacity, glm::vec4 tint, bool grayscale)
+                                   float rotationDegrees, float opacity, glm::vec4 tint, bool grayscale,
+                                   float flashStrength, glm::vec3 flashColor)
 {
     if (textureHandle == 0) {
         return;
@@ -422,6 +439,8 @@ void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, 
     glUniform1i(mUIShader->GetLocDiffuseTexture(), 0);
     glUniform1i(mUIShader->GetLocUseTexture(), 1);
     glUniform1i(mUIShader->GetLocGrayscale(), grayscale ? 1 : 0);
+    glUniform1f(mUIShader->GetLocFlashStrength(), std::clamp(flashStrength, 0.0f, 1.0f));
+    glUniform3fv(mUIShader->GetLocFlashColor(), 1, glm::value_ptr(flashColor));
     tint.a *= std::clamp(opacity, 0.0f, 1.0f);
     glUniform4fv(mUIShader->GetLocObjectColor(), 1, glm::value_ptr(tint));
 
@@ -435,6 +454,7 @@ void UIRenderer::DrawTextureHandle(float x, float y, float width, float height, 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     // 文字など、同じシェーダーを使う後続のUIへグレー化を持ち越さない。
     glUniform1i(mUIShader->GetLocGrayscale(), 0);
+    glUniform1f(mUIShader->GetLocFlashStrength(), 0.0f);
 }
 void UIRenderer::DrawText(float x, float y, float scale, const std::string& message, bool isCenterBase, glm::vec4 color,
                           float rotationDegrees, const TextEffect* effect)

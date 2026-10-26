@@ -15,6 +15,9 @@ uniform vec2 panelSize;
 uniform float cornerRadius;
 uniform float borderWidth;
 uniform vec4 borderColor;
+uniform bool damageVignette;
+uniform float flashStrength;
+uniform vec3 flashColor;
 
 void main()
 {
@@ -40,6 +43,15 @@ void main()
             baseColor.a = combinedAlpha;
         }
         baseColor.a *= 1.0 - smoothstep(-0.5, 0.5, edgeDistance);
+    }
+
+    if (useTexture && flashStrength > 0.0) {
+        baseColor.rgb = mix(baseColor.rgb, flashColor, clamp(flashStrength, 0.0, 1.0) * 0.75);
+    }
+    if (!useTexture && damageVignette) {
+        vec2 distanceFromCenter = abs(textureCoordinate - 0.5) * 2.0;
+        float edgeAmount = smoothstep(0.55, 1.0, max(distanceFromCenter.x, distanceFromCenter.y));
+        baseColor.a *= edgeAmount;
     }
 
     // リニア空間の描画先へ合成する場合は、RGBをガンマ2.2で近似変換する。

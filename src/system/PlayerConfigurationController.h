@@ -47,8 +47,10 @@ public:
     void ReturnToSinglePlayer();
     bool CanStartTwoPlayerFromPauseMenu() const;
 
-    // 実行条件を満たす場合に分裂・合体を要求する。受理時はtrue。演出の完了を表す値ではない。
-    bool ToggleSplit();
+    enum class SplitToggleResult { Accepted, Unavailable, BlockedByObstacle, MergeTooFar };
+
+    // 分裂・合体を要求し、入力制限・障害物・合体距離を区別する。MergeTooFarでは既存の呼び寄せを開始する。
+    SplitToggleResult ToggleSplit();
     bool CanToggleSplit() const;
     void SetSplitMergeButtonHeld(bool isHeld);
 
@@ -118,12 +120,12 @@ public:
     void RestoreStageReloadState(const StageReloadState& state) { mRuntimeState = state; }
 
 private:
-    bool CanStartSplitMergeInput() const;
+    SplitToggleResult CheckSplitMergeInput() const;
     bool CanChangeSoloConfiguration() const;
     bool SplitPlayer();
-    bool BeginSoloSplitTransition();
-    bool TryResolveSplitDirection(Player& mainPlayer, glm::vec3& splitDirection) const;
-    bool IsSplitDirectionClear(Player& mainPlayer, const glm::vec3& splitDirection) const;
+    SplitToggleResult BeginSoloSplitTransition();
+    bool TryResolveSplitDirection(Player& mainPlayer, glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
+    bool IsSplitDirectionClear(Player& mainPlayer, const glm::vec3& splitDirection, bool& wasBlockedByObstacle) const;
     bool BeginSoloMergeTransition();
     void UpdatePendingSoloMergeRequest();
     void UpdateMergeRecall(float deltaTime);

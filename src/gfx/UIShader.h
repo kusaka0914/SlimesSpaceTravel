@@ -8,6 +8,9 @@ public:
     UIShader();
     ~UIShader();
 
+    int GetLocDamageVignette() const { return mLocDamageVignette; }
+    int GetLocFlashStrength() const { return mLocFlashStrength; }
+    int GetLocFlashColor() const { return mLocFlashColor; }
     int GetLocPanelSize() const { return mLocPanelSize; }
     int GetLocBorderWidth() const { return mLocBorderWidth; }
     int GetLocBorderColor() const { return mLocBorderColor; }
@@ -24,4 +27,7 @@ private:
     int mLocCornerRadius = -1;
     int mLocBorderWidth = -1;
     int mLocBorderColor = -1;
+    int mLocDamageVignette = -1;
+    int mLocFlashStrength = -1;
+    int mLocFlashColor = -1;
 };

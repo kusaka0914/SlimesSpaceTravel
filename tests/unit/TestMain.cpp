@@ -37,6 +37,7 @@ void RegisterPlayerCameraSettingsTests(TestRegistry& tests);
 void RegisterCameraShakeEffectTests(TestRegistry& tests);
 void RegisterTutorialObjectiveTextTests(TestRegistry& tests);
 void RegisterOperationGuideVisibilityTests(TestRegistry& tests);
+void RegisterResourceConsumptionFeedbackTests(TestRegistry& tests);
 void RegisterPlayerJewelGaugeTests(TestRegistry& tests);
 void RegisterPlayerSplitGuardStateTests(TestRegistry& tests);
 void RegisterTgsExperienceControllerTests(TestRegistry& tests);
@@ -82,6 +83,7 @@ int main()
     RegisterCameraShakeEffectTests(tests);
     RegisterTutorialObjectiveTextTests(tests);
     RegisterOperationGuideVisibilityTests(tests);
+    RegisterResourceConsumptionFeedbackTests(tests);
     RegisterPlayerJewelGaugeTests(tests);
     RegisterPlayerSplitGuardStateTests(tests);
     RegisterTgsExperienceControllerTests(tests);

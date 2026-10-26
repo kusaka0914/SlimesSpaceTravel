@@ -277,9 +277,11 @@ bool PlayerStateMachine::TryRecover(Player& player, PlayerInput& input, PlayerCo
                                     PlayerJewelGauge& jewelGauge, PlayerStatus& status)
 {
     const bool isPreparingSpecialAttack = combat.IsSpecialCharging() || combat.GetCanSpecialAttack();
-    const bool canRecover = !isPreparingSpecialAttack && input.GetRecoverPressed() && jewelGauge.CanConsume(1) &&
-                            status.GetHp() != status.GetMaxHp();
-    if (!canRecover) {
+    if (isPreparingSpecialAttack || !input.GetRecoverPressed() || status.GetHp() == status.GetMaxHp()) {
+        return false;
+    }
+    if (!jewelGauge.CanConsume(1)) {
+        player.GetGame()->OnPlayerInsufficientJewels(player.GetPlayerNum(), 1);
         return false;
     }
 
@@ -314,14 +316,18 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
     }
 }
 
-bool PlayerStateMachine::TryStartSpecialAttack(PlayerInput& input, PlayerCombat& combat, PlayerJewelGauge& jewelGauge)
+bool PlayerStateMachine::TryStartSpecialAttack(Player& player, PlayerInput& input, PlayerCombat& combat,
+                                               PlayerJewelGauge& jewelGauge)
 {
     if (!input.HasChargeAttackRequest()) {
         return false;
     }
     input.ConsumeChargeAttackRequest();
-    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack() || combat.IsContinuousAttacking() ||
-        !jewelGauge.CanConsume(2)) {
+    if (combat.IsSpecialCharging() || combat.GetCanSpecialAttack() || combat.IsContinuousAttacking()) {
+        return false;
+    }
+    if (!jewelGauge.CanConsume(2)) {
+        player.GetGame()->OnPlayerInsufficientJewels(player.GetPlayerNum(), 2);
         return false;
     }
 
@@ -350,7 +356,11 @@ bool PlayerStateMachine::TryStartContinuousAttack(Player& player, PlayerInput& i
     }
     input.ConsumeContinuousAttackRequest();
     if (!player.GetOnGround() || combat.IsSpecialCharging() || combat.GetCanSpecialAttack() ||
-        combat.IsContinuousAttacking() || !jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost)) {
+        combat.IsContinuousAttacking()) {
+        return false;
+    }
+    if (!jewelGauge.CanConsume(PlayerJewelGauge::ContinuousAttackCost)) {
+        player.GetGame()->OnPlayerInsufficientJewels(player.GetPlayerNum(), PlayerJewelGauge::ContinuousAttackCost);
         return false;
     }
 

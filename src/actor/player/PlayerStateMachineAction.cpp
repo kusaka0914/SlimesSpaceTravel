@@ -217,6 +217,7 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
         }
         if (!combat.ConsumeSpecialAttackJewel(jewelGauge)) {
             combat.CancelSpecialAttackAndRefund(jewelGauge);
+            player.GetGame()->OnPlayerInsufficientJewels(player.GetPlayerNum(), 2);
             return false;
         }
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), vibrationStrength, 0, 1000);
