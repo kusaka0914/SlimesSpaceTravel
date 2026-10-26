@@ -185,9 +185,11 @@ void PlayerInput::UpdateCombatInput(float deltaTime, bool isAssistStyle, bool is
     const auto requests = mCombatInput.Update(mWideAttackPressed, mAttackPressed, mRecoveryButtonPressed, isAssistStyle,
                                               isPreparingChargedAttack, deltaTime);
     mRecoverPressed = requests.recover;
-    mChargedAttackFireRequested = requests.fireChargedAttack;
-    mContinuousAttackRequested = mWideAttackPressed && (mContinuousAttackRequested || requests.continuousAttack);
-    mChargeAttackRequested = mAttackPressed && (mChargeAttackRequested || requests.chargeAttack);
+    mChargedAttackReleaseRequested = requests.releaseChargedAttack;
+    mContinuousAttackRequested =
+        !isPreparingChargedAttack && mWideAttackPressed && (mContinuousAttackRequested || requests.continuousAttack);
+    mChargeAttackRequested =
+        !isPreparingChargedAttack && mAttackPressed && (mChargeAttackRequested || requests.chargeAttack);
 
     if (requests.strongAttack || requests.weakAttack) {
         mBufferedAttackInput = requests.strongAttack ? PlayerAttackInputKind::Normal : PlayerAttackInputKind::Wide;
@@ -202,7 +204,7 @@ void PlayerInput::SuppressCombatInputUntilReleased()
     ConsumeAirDodgeInput();
     mContinuousAttackRequested = false;
     mChargeAttackRequested = false;
-    mChargedAttackFireRequested = false;
+    mChargedAttackReleaseRequested = false;
     mRecoverPressed = false;
     ClearAttackBuffer();
 }

@@ -189,12 +189,13 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
     } else if (element.id == "strongAttackHoldGuide") {
         isEnabled = canStartChargeAttack || isSpecialCharging;
     } else if (element.id == "buttonA" || element.id == "buttonTextA") {
-        isEnabled = player->GetOnGround() ? (isIdle && !isSpecialCharging)
-                                          : (!isGroundContinuousAttack && (isIdle || isWeakAttacking));
+        isEnabled = player->GetOnGround()
+                        ? (isIdle && !isSpecialCharging)
+                        : (!isSpecialCharging && !isGroundContinuousAttack && (isIdle || isWeakAttacking));
     } else if (element.id == "buttonB" || element.id == "buttonTextB") {
         // 回避の短いクールタイムでは点滅させず、連続攻撃中など入力が封じられる状態だけ示す。
-        // 溜め中の回避は受け付けるため、通常表示を保つ。
-        isEnabled = !isGroundContinuousAttack && (isIdle || isWeakAttacking);
+        // 溜め中は回避を受け付けない。
+        isEnabled = !isSpecialCharging && !isGroundContinuousAttack && (isIdle || isWeakAttacking);
     } else if (element.id == "buttonA_copy" || element.id == "buttonTextB_copy") {
         isEnabled = mGame->CanOpenPauseMenu();
     } else if (element.id == "buttonX" || element.id == "buttonTextX") {
@@ -203,7 +204,7 @@ float UIRenderer::CalculateOperationGuideOpacity(const UILoadSystem::CustomEleme
     } else if (element.id == "buttonY" || element.id == "buttonTextY") {
         isEnabled = canStartNormalAction || canStartContinuousAttack;
     } else if (element.id == "buttonB_copy" || element.id == "buttonTextB_copy2") {
-        isEnabled = !isSpecialCharging && isIdle;
+        isEnabled = isIdle;
     } else if (element.id == "buttonB_copy_copy" || element.id == "buttonTextB_copy2_copy" ||
                element.id == "buttonB_copy_copy_copy" || element.id == "buttonTextB_copy2_copy_copy") {
         const CameraSystem* cameraSystem = mGame->GetCameraSystem();
@@ -295,7 +296,7 @@ void UIRenderer::DrawCustomUI()
     static const std::string assistRecoverText = "体力回復";
     static const std::string assistChargingText = "溜め中";
     static const std::string assistFireChargedAttackText = "発射";
-    static const std::string chargedAttackReleaseGuide = "溜め完了後、一度離して押し直すと発射";
+    static const std::string chargedAttackReleaseGuide = "溜め完了後、離すと発動";
 
     const auto& elements = mUILoadSystem->GetCustomElements();
     std::vector<const UILoadSystem::CustomElement*> sortedElements;

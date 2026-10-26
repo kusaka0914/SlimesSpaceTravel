@@ -40,7 +40,7 @@ PlayerCombatInput::Requests PlayerCombatInput::Update(bool weakPressed, bool str
 
     if (updateButton(mStrong, strongPressed)) {
         if (isPreparingChargedAttack) {
-            requests.fireChargedAttack = strongPressed && !mStrong.wasPressed;
+            requests.releaseChargedAttack = !strongPressed && mStrong.wasPressed;
             // 発射・溜め中の押下を、後の解放時に強攻撃や回復として再利用しない。
             mStrong.longPressHandled = true;
         } else if (strongPressed && !mStrong.longPressHandled && mStrong.heldSeconds >= longPressSeconds) {

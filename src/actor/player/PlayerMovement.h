@@ -29,7 +29,8 @@ public:
     bool ConsumeCameraAutoAlignCancellationRequest();
 
     // 入力から移動し、衝突と段差を解決する。接着床に固定中は移動しない。
-    void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime);
+    // speedMultiplierは入力移動だけに掛ける。衝突判定・重力の時間は変えない。
+    void MoveFromInput(Player& player, const PlayerInput& input, float deltaTime, float speedMultiplier = 1.0f);
 
     // ワールド位置へ接平面上を移動し、実際に変位が生じたらtrue。空中・床への固定中はfalse。
     bool MoveTowardPosition(Player& player, const glm::vec3& targetPosition, float deltaTime);
@@ -44,7 +45,8 @@ public:
     // 上昇・下降で異なる重力と頂点の滞空を適用し、衝突を解決して位置・速度を更新する。
     void ApplyJumpGravity(Player& player, float deltaTime);
     void StopAirborneVerticalMovement(Player& player) const;
-    void ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime);
+    void ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime,
+                                          float speedMultiplier = 1.0f);
 
     // 上昇・滞空・落下の段階を進める。接地済み、または今回の落下で着地した場合にtrue。
     bool UpdateAirSlamMovement(Player& player, const PlayerCombat& combat, float deltaTime);

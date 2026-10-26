@@ -181,6 +181,7 @@ void PlayerCombat::StartAssistStrongAttacking(Player& player, float deltaTime)
 
 void PlayerCombat::FinishSpecialAttackCharging()
 {
+    mSpecialAttackJewelsConsumed = 0;
     mSpecialChargingTimer = -1.0f;
     mCanSpecialAttack = false;
 }
@@ -344,11 +345,27 @@ void PlayerCombat::StartGroundFinisherCooldown()
 
 void PlayerCombat::StartSpecialAttackCharging()
 {
+    mSpecialAttackJewelsConsumed = 0;
     mAttackKind = PlayerAttackKind::Charged;
     mAttackRange = mChargedAttackRange;
     mAttackAngle = mChargedAttackAngle;
     mAttack = mChargedAttackDamage;
     mSpecialChargingTimer = std::max(0.0f, mChargedAttackChargeDurationSeconds);
+}
+
+bool PlayerCombat::ConsumeSpecialAttackJewel(PlayerJewelGauge& jewelGauge)
+{
+    if (!IsSpecialCharging() || mSpecialAttackJewelsConsumed >= 2 || !jewelGauge.Consume(1)) {
+        return false;
+    }
+    ++mSpecialAttackJewelsConsumed;
+    return true;
+}
+
+void PlayerCombat::CancelSpecialAttackAndRefund(PlayerJewelGauge& jewelGauge)
+{
+    jewelGauge.AddFromItem(mSpecialAttackJewelsConsumed);
+    CancelSpecialAttack();
 }
 
 void PlayerCombat::StartContinuousAttacking()
@@ -392,6 +409,7 @@ void PlayerCombat::EndTiredLock(PlayerStatus& status, PlayerMovement& movement)
 
 void PlayerCombat::CancelSpecialAttack()
 {
+    mSpecialAttackJewelsConsumed = 0;
     mIsAssistStrongAttack = false;
     mCanSpecialAttack = false;
     mSpecialChargingTimer = -1.0f;
@@ -569,5 +587,5 @@ void PlayerCombat::UpdateComboKeepTimer(float deltaTime)
 
 bool PlayerCombat::CanAcceptMovementInput() const
 {
-    return CanMoveDuringAttack() && !IsSpecialCharging() && !GetCanSpecialAttack();
+    return CanMoveDuringAttack();
 }

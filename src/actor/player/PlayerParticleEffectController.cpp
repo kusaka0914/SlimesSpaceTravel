@@ -94,7 +94,8 @@ void PlayerParticleEffectController::EmitSpecialCharge(Player& player, ParticleS
     context.position = player.GetPos() + upDirection * 0.18f;
     context.normal = upDirection;
     context.direction = upDirection;
-    context.scale = 1.0f;
+    // 完了後は同じエフェクトを大きくし、ボタンを保持している間も発射可能と分かるようにする。
+    context.scale = player.GetCanSpecialAttack() ? 1.5f : 1.0f;
     particles.Emit(specialChargeEffectId, context);
 }
 

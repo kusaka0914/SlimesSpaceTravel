@@ -32,7 +32,8 @@ void PlayerStateMachine::UpdateIdle(Player& player, PlayerInput& input, PlayerMo
         const bool wasInputMovementApplied = ApplyIdleGravity(player, input, movement, combat, deltaTime);
         UpdateIdleMovement(player, input, movement, combat, status, wasInputMovementApplied, deltaTime);
         UpdateSpecialAttackIfNeeded(player, input, movement, combat, jewelGauge, deltaTime);
-        TryStartDodging(player, input, movement, combat, status);
+        input.ClearAttackBuffer();
+        input.ConsumeAirDodgeInput();
         return;
     }
 
@@ -241,11 +242,10 @@ bool PlayerStateMachine::ApplyIdleGravity(Player& player, PlayerInput& input, Pl
         return false;
     }
 
-    const bool canApplyInputMovement = !player.GetOnGround() &&
-                                       (mAllowsAirMovementAfterDodge || combat.CanMoveDuringAttack()) &&
-                                       !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack();
+    const bool canApplyInputMovement =
+        !player.GetOnGround() && (mAllowsAirMovementAfterDodge || combat.CanAcceptMovementInput());
     if (canApplyInputMovement) {
-        movement.ApplyJumpGravityAndInputMovement(player, input, deltaTime);
+        movement.ApplyJumpGravityAndInputMovement(player, input, deltaTime, combat.GetInputMovementSpeedMultiplier());
         return true;
     }
 
@@ -303,10 +303,9 @@ void PlayerStateMachine::UpdateIdleMovement(Player& player, PlayerInput& input, 
         movement.UpdateFacingDirectionFromInput(player, input);
     }
 
-    const bool canApplyInputMovement = (mAllowsAirMovementAfterDodge || combat.CanMoveDuringAttack()) &&
-                                       !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack();
+    const bool canApplyInputMovement = (mAllowsAirMovementAfterDodge || combat.CanAcceptMovementInput());
     if (canApplyInputMovement && !wasInputMovementApplied) {
-        movement.MoveFromInput(player, input, deltaTime);
+        movement.MoveFromInput(player, input, deltaTime, combat.GetInputMovementSpeedMultiplier());
     }
 
     const bool isFalling = glm::dot(player.GetVelocity(), player.GetUpVec()) < 0.0f;
@@ -392,7 +391,8 @@ bool PlayerStateMachine::TryStartDodging(Player& player, PlayerInput& input, Pla
 {
     const bool hasDodgeRequest = (input.GetDodgePressed() && !input.GetDodgePressedPrev()) ||
                                  (!player.GetOnGround() && input.HasBufferedAirDodgeInput());
-    const bool canStartDodging = movement.CanDodge() && combat.CanDodgeDuringAttack() && hasDodgeRequest;
+    const bool canStartDodging = movement.CanDodge() && combat.CanDodgeDuringAttack() && hasDodgeRequest &&
+                                 !combat.IsSpecialCharging() && !combat.GetCanSpecialAttack();
 
     if (!canStartDodging) {
         return false;

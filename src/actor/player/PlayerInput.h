@@ -32,7 +32,8 @@ public:
     void UpdateCombatInput(float deltaTime, bool isAssistStyle, bool isPreparingChargedAttack);
     bool HasContinuousAttackRequest() const { return mContinuousAttackRequested; }
     bool HasChargeAttackRequest() const { return mChargeAttackRequested; }
-    bool HasChargedAttackFireRequest() const { return mChargedAttackFireRequested; }
+    bool IsChargeAttackHeld() const { return mAttackPressed; }
+    bool HasChargedAttackReleaseRequest() const { return mChargedAttackReleaseRequested; }
     void ConsumeContinuousAttackRequest() { mContinuousAttackRequested = false; }
     void ConsumeChargeAttackRequest() { mChargeAttackRequested = false; }
     void SuppressCombatInputUntilReleased();
@@ -89,7 +90,7 @@ private:
     bool mHasReadInputDevice = false;
     bool mContinuousAttackRequested = false;
     bool mChargeAttackRequested = false;
-    bool mChargedAttackFireRequested = false;
+    bool mChargedAttackReleaseRequested = false;
 
     bool mDodgePressed = false;
     bool mDodgePressedPrev = false;

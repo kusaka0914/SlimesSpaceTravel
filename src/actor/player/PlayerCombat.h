@@ -67,6 +67,18 @@ public:
     void StartAfterAttackReaction(const Player& player, PlayerMovement& movement, PlayerStatus& status);
 
     void StartSpecialAttackCharging();
+
+    // 溜めの進行に応じて1個消費し、計2個まで返還対象として記録する。溜め中でない場合や不足時はfalse。
+    bool ConsumeSpecialAttackJewel(PlayerJewelGauge& jewelGauge);
+    int GetSpecialAttackJewelsConsumed() const { return mSpecialAttackJewelsConsumed; }
+
+    // ボタンの途中解放用。今回の溜めで消費した分だけ返還して中断する。
+    void CancelSpecialAttackAndRefund(PlayerJewelGauge& jewelGauge);
+
+    float GetInputMovementSpeedMultiplier() const
+    {
+        return IsSpecialCharging() || GetCanSpecialAttack() ? 0.75f : 1.0f;
+    }
     void StartContinuousAttacking();
     void EndContinuousAttacking();
 
@@ -75,7 +87,7 @@ public:
     void ReduceTiredLock(PlayerStatus& status, PlayerMovement& movement, float reduceTime);
     void EndTiredLock(PlayerStatus& status, PlayerMovement& movement);
 
-    // 特殊攻撃の溜め・発動可能状態と連続攻撃を解除する。通常攻撃の予約は解除しない。
+    // 特殊攻撃の溜め・発動可能状態と連続攻撃を解除する。ジュエルは返還せず、通常攻撃の予約も解除しない。
     void CancelSpecialAttack();
 
     // 遅延命中判定、攻撃モーション、移動・回避の硬直、空中攻撃中フラグを解除する。
@@ -337,6 +349,7 @@ private:
     float mContinuousAttackIntervalSeconds = 0.25f;
     float mContinuousAttackDurationSeconds = 6.0f;
     float mSpecialChargingTimer = -1.0f;
+    int mSpecialAttackJewelsConsumed = 0;
     float mContinuousAttackingTimer = -1.0f;
     float mContinuousAttackingCooldown = -1.0f;
 

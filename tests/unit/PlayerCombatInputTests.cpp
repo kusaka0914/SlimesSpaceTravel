@@ -52,18 +52,24 @@ void RecoveryHasDedicatedPressAndAssistShortRelease()
     ExpectFalse(request.strongAttack || request.chargeAttack, "assist X does not attack");
 }
 
-void ChargedFireRequiresReleaseAndRepress()
+void ChargedAttackReleasesOnceWithoutShortAction()
 {
-    PlayerCombatInput input;
-    input.Update(false, true, false, true, false, 0.7f);
-    ExpectFalse(input.Update(false, true, false, true, true, 5.0f).fireChargedAttack, "initial hold never fires");
-    auto request = input.Update(false, false, false, true, true, 0.1f);
-    ExpectFalse(request.recover || request.strongAttack, "charging release has no short action");
-    request = input.Update(false, true, true, true, true, 0.1f);
-    ExpectTrue(request.fireChargedAttack, "repress fires");
-    ExpectFalse(request.recover || request.chargeAttack, "charge input cannot heal or recharge");
-    request = input.Update(false, false, false, true, false, 0.1f);
-    ExpectFalse(request.recover || request.strongAttack, "fire release has no short action");
+    for (bool assist : {false, true}) {
+        PlayerCombatInput input;
+        input.Update(false, true, false, assist, false, 0.7f);
+        auto request = input.Update(true, true, true, assist, true, 5.0f);
+        ExpectFalse(request.releaseChargedAttack || request.weakAttack || request.recover || request.chargeAttack,
+                    "holding charge cannot release, attack or recover");
+        request = input.Update(false, false, false, assist, true, 0.1f);
+        ExpectTrue(request.releaseChargedAttack, "release is reported for charging or ready state");
+        ExpectFalse(request.recover || request.strongAttack || request.chargeAttack,
+                    "charge release has no short action");
+        request = input.Update(false, false, false, assist, false, 0.1f);
+        ExpectFalse(request.releaseChargedAttack || request.recover || request.strongAttack, "release fires once");
+        input.Update(false, true, false, assist, false, 0.1f);
+        request = input.Update(false, false, false, assist, false, 0.1f);
+        ExpectTrue(assist ? request.recover : request.strongAttack, "new short input works after charge release");
+    }
 }
 
 void SuppressionDropsPendingShortAndLongActions()
@@ -104,7 +110,7 @@ void RegisterPlayerCombatInputTests(TestRegistry& tests)
     tests.emplace_back("PlayerCombatInput.StrongShortRelease", StrongAttackWaitsForShortRelease);
     tests.emplace_back("PlayerCombatInput.StrongLongReleaseSuppressed", StrongLongPressSuppressesReleaseAction);
     tests.emplace_back("PlayerCombatInput.DedicatedAndAssistRecovery", RecoveryHasDedicatedPressAndAssistShortRelease);
-    tests.emplace_back("PlayerCombatInput.ChargedReleaseAndRepress", ChargedFireRequiresReleaseAndRepress);
+    tests.emplace_back("PlayerCombatInput.ChargedReleaseOnce", ChargedAttackReleasesOnceWithoutShortAction);
     tests.emplace_back("PlayerCombatInput.Suppression", SuppressionDropsPendingShortAndLongActions);
     tests.emplace_back("PlayerCombatInput.IndependentPlayers", PlayerHoldTimersAreIndependent);
     tests.emplace_back("PlayerCombatInput.NoModifierCombinations", OldModifierCombinationsRemainIndependentActions);

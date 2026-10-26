@@ -406,20 +406,47 @@ void LongPressCombatControlsUseIndependentDevices(Game& game)
         ExpectTrue(fixture.combat.GetCanSpecialAttack(), "original hold does not fire completed charge");
         ExpectEqual(0, fixture.jewels.GetCount(), "charge retains original two-jewel cost");
         ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "L cannot heal during charge");
-        firstController.SetCombatInput(false, false, false);
-        capture();
-        fixture.Step(0.01f);
         const auto before = fixture.combat.GetResolvedAttackSequence();
-        firstController.SetCombatInput(false, true, false);
-        capture();
-        fixture.Step(0.01f);
-        ExpectEqual(before + 1, fixture.combat.GetResolvedAttackSequence(), "repress fires charged attack once");
-        fixture.jewels.SetCount(2);
         firstController.SetCombatInput(false, false, false);
         capture();
         fixture.Step(0.01f);
-        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "fire release does not trigger assist recovery");
-        ExpectEqual(2, fixture.jewels.GetCount(), "fire release consumes no further jewels");
+        ExpectEqual(before + 1, fixture.combat.GetResolvedAttackSequence(), "release fires charged attack once");
+        fixture.jewels.SetCount(2);
+        fixture.Step(0.01f);
+        ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "charge release does not trigger assist recovery");
+        ExpectEqual(2, fixture.jewels.GetCount(), "release consumes no further jewels");
+        ExpectEqual(before + 1, fixture.combat.GetResolvedAttackSequence(), "no repeated fire while released");
+    }
+
+    for (const PlayerControlStyle style : {PlayerControlStyle::Standard, PlayerControlStyle::Assist}) {
+        game.SetPlayerControlStyle(style);
+        for (int heldFrames : {5, 15, 25}) {
+            CombatControlsFixture fixture(game, source, 1);
+            firstController.SetCombatInput(false, true, false);
+            capture();
+            fixture.Step(0.7f);
+            ExpectNear(0.75f, fixture.combat.GetInputMovementSpeedMultiplier(), 0.0f, "charge movement is 75 percent");
+            for (int frame = 0; frame < heldFrames; ++frame) {
+                fixture.Step(0.1f);
+            }
+            const auto before = fixture.combat.GetResolvedAttackSequence();
+            firstController.SetCombatInput(false, false, false);
+            capture();
+            fixture.Step(0.01f);
+            ExpectFalse(fixture.combat.IsSpecialCharging() || fixture.combat.GetCanSpecialAttack(),
+                        "early release cancels");
+            ExpectEqual(2, fixture.jewels.GetCount(), "early release refunds only consumed jewels");
+            ExpectEqual(before, fixture.combat.GetResolvedAttackSequence(), "early release does not fire");
+            ExpectNear(5.0f, fixture.status.GetHp(), 0.0f, "cancellation cannot trigger assist recovery");
+            ExpectNear(1.0f, fixture.combat.GetInputMovementSpeedMultiplier(), 0.0f, "cancel restores normal movement");
+        }
+        CombatControlsFixture interrupted(game, source, 1);
+        interrupted.combat.StartSpecialAttackCharging();
+        ExpectTrue(interrupted.combat.ConsumeSpecialAttackJewel(interrupted.jewels), "charge consumes a jewel");
+        interrupted.combat.CancelSpecialAttack();
+        ExpectEqual(1, interrupted.jewels.GetCount(), "damage interruption does not refund");
+        interrupted.combat.CancelSpecialAttackAndRefund(interrupted.jewels);
+        ExpectEqual(1, interrupted.jewels.GetCount(), "interrupted charge cannot be refunded later");
     }
 
     game.SetPlayerControlStyle(PlayerControlStyle::Assist);

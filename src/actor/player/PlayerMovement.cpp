@@ -1,5 +1,6 @@
 #include "actor/player/PlayerMovement.h"
 
+#include "actor/MathUtils.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
 #include "actor/Player.h"
@@ -8,7 +9,6 @@
 #include "actor/player/PlayerInput.h"
 #include "component/PlatformAdhesionComponent.h"
 #include "system/PhysicsSystem.h"
-#include "actor/MathUtils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -494,13 +494,14 @@ void PlayerMovement::UpdateDodgeCooldown(float deltaTime)
     mDodgeCooldownRemaining = std::max(0.0f, mDodgeCooldownRemaining - deltaTime);
 }
 
-void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, float deltaTime)
+void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, float deltaTime, float speedMultiplier)
 {
     if (player.IsAttachedToPlatform()) {
         return;
     }
 
-    const glm::vec3 movementDelta = CalculateInputMovementDelta(player, input, deltaTime);
+    const glm::vec3 movementDelta =
+        CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier);
 
     (void)ApplyWalkingMovement(player, movementDelta);
 }
@@ -798,9 +799,11 @@ void PlayerMovement::StopAirborneVerticalMovement(Player& player) const
     player.SetVelocity(velocity - physicsUpDirection * verticalSpeed);
 }
 
-void PlayerMovement::ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime)
+void PlayerMovement::ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime,
+                                                      float speedMultiplier)
 {
-    ApplyJumpGravityMovement(player, CalculateInputMovementDelta(player, input, deltaTime), deltaTime);
+    ApplyJumpGravityMovement(
+        player, CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier), deltaTime);
 }
 
 void PlayerMovement::ApplyJumpGravityMovement(Player& player, const glm::vec3& inputMovementDelta, float deltaTime)

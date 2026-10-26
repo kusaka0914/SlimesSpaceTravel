@@ -1,6 +1,5 @@
 #include "actor/player/PlayerStateMachine.h"
 
-#include "app/Game.h"
 #include "actor/Enemy.h"
 #include "actor/Player.h"
 #include "actor/player/PlayerCombat.h"
@@ -10,7 +9,10 @@
 #include "actor/player/PlayerMovement.h"
 #include "actor/player/PlayerStatus.h"
 #include "actor/player/PlayerTargetingAssist.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
+
+#include <algorithm>
 
 void PlayerStateMachine::UpdateDodging(Player& player, PlayerInput& input, PlayerMovement& movement,
                                        PlayerGrounding& grounding, PlayerCombat& combat, float deltaTime)
@@ -195,39 +197,47 @@ void PlayerStateMachine::UpdateSpecialAttackCharging(Player& player, PlayerInput
                                                      PlayerCombat& combat, PlayerJewelGauge& jewelGauge,
                                                      float deltaTime)
 {
-    const float specialChargingTimerPrev = combat.GetSpecialChargingTimer();
+    const bool hasReleaseRequest = input.HasChargedAttackReleaseRequest();
+    const bool wasReady = combat.GetCanSpecialAttack();
+    const float previousTimer = combat.GetSpecialChargingTimer();
+    // 完了前の解放と、メニューなどで入力が破棄された場合は、次の入力へ溜めを持ち越さない。
+    if ((!input.IsChargeAttackHeld() && !hasReleaseRequest) ||
+        (hasReleaseRequest && !wasReady && previousTimer > 0.0f)) {
+        combat.CancelSpecialAttackAndRefund(jewelGauge);
+        input.ClearAttackBuffer();
+        return;
+    }
+
     const float chargeDurationSeconds = combat.GetChargedAttackChargeDurationSeconds();
-    const float firstJewelConsumptionTimeSeconds = chargeDurationSeconds * (2.0f / 3.0f);
-    const float secondJewelConsumptionTimeSeconds = chargeDurationSeconds * (1.0f / 3.0f);
-
-    combat.ReduceSpecialChargingTimer(deltaTime);
-
-    const float specialChargingTimer = combat.GetSpecialChargingTimer();
-    if (specialChargingTimerPrev >= firstJewelConsumptionTimeSeconds &&
-        specialChargingTimer < firstJewelConsumptionTimeSeconds) {
-        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 10000, 0, 1000);
-        jewelGauge.Consume(1);
+    combat.ReduceSpecialChargingTimer(std::min(std::max(0.0f, deltaTime), std::max(0.0f, previousTimer)));
+    const float remainingSeconds = combat.GetSpecialChargingTimer();
+    const auto consumeChargeJewel = [&](int requiredCount, float threshold, int vibrationStrength) {
+        if (remainingSeconds > threshold || combat.GetSpecialAttackJewelsConsumed() >= requiredCount) {
+            return true;
+        }
+        if (!combat.ConsumeSpecialAttackJewel(jewelGauge)) {
+            combat.CancelSpecialAttackAndRefund(jewelGauge);
+            return false;
+        }
+        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), vibrationStrength, 0, 1000);
         player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
+        return true;
+    };
+    if (!consumeChargeJewel(1, chargeDurationSeconds * (2.0f / 3.0f), 10000) ||
+        !consumeChargeJewel(2, chargeDurationSeconds * (1.0f / 3.0f), 20000)) {
+        return;
     }
-    if (specialChargingTimerPrev >= secondJewelConsumptionTimeSeconds &&
-        specialChargingTimer < secondJewelConsumptionTimeSeconds) {
-        player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 20000, 0, 1000);
-        jewelGauge.Consume(1);
-        player.GetGame()->GetAudioSystem()->PlaySE("charging_se");
-    }
-    if (specialChargingTimerPrev >= 0.0f && specialChargingTimer < 0.0f) {
+
+    if (!wasReady && remainingSeconds <= 0.0f) {
+        combat.SetCanSpecialAttack(true);
         player.GetGame()->VibrateControllerForPlayer(movement.GetPlayerNum(), 30000, 0, 1000);
         player.GetGame()->GetAudioSystem()->PlaySE("charged_se");
     }
-
-    if (specialChargingTimer <= 0.0f) {
-        combat.SetCanSpecialAttack(true);
-    }
-
-    if (specialChargingTimer <= 0.0f && input.HasChargedAttackFireRequest()) {
+    if (combat.GetCanSpecialAttack() && hasReleaseRequest) {
         combat.SpecialAttack(player, movement, jewelGauge, deltaTime);
         player.RequestStrongAttackAnimation();
         combat.FinishSpecialAttackCharging();
+        input.ClearAttackBuffer();
     }
 }
 

@@ -10,12 +10,12 @@ public:
         bool strongAttack = false;
         bool continuousAttack = false;
         bool chargeAttack = false;
-        bool fireChargedAttack = false;
+        bool releaseChargedAttack = false;
         bool recover = false;
     };
 
     // 各要求はその更新で一度だけ返す。Yは押下時に弱攻撃、長押し成立時に連続攻撃を要求する。
-    // Xは短押しの解放時に発動し、溜め中の操作は短押し・長押しへ流さない。
+    // Xは短押し・溜め中とも解放を通知する。溜め中の解放は短押し操作へ流さない。
     Requests Update(bool weakPressed, bool strongPressed, bool recoverPressed, bool isAssistStyle,
                     bool isPreparingChargedAttack, float deltaTime);
 
