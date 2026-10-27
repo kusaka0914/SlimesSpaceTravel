@@ -1,7 +1,7 @@
 #include "actor/ActorGroundResolver.h"
 
-#include "app/Game.h"
 #include "actor/Planet.h"
+#include "app/Game.h"
 #include "system/PhysicsSystem.h"
 
 #include <btBulletDynamicsCommon.h>
@@ -84,7 +84,8 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
                                                       const glm::vec3& forwardVec, const glm::vec3& leftVec,
                                                       const NormalRejector& shouldRejectNormal,
                                                       const SurfaceDetectedCallback& onSurfaceDetected,
-                                                      const CastSucceededCallback& onCastSucceeded)
+                                                      const CastSucceededCallback& onCastSucceeded,
+                                                      float footprintScale)
 {
     if (game && game->GetPhysicsSystem()) {
         game->GetPhysicsSystem()->SyncKinematicBodies();
@@ -100,7 +101,7 @@ glm::vec3 ActorGroundResolver::CalculateAverageNormal(Game* game, const glm::vec
     glm::vec3 normalSum = mainHit.normal * mainWeight;
     float weightSum = mainWeight;
 
-    constexpr float footRadius = 0.25f;
+    const float footRadius = 0.25f * footprintScale;
     const std::vector<glm::vec3> offsets = {forwardVec * footRadius, -forwardVec * footRadius, leftVec * footRadius,
                                             -leftVec * footRadius};
 

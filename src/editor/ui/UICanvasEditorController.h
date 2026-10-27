@@ -24,6 +24,9 @@ public:
     // 選択の検証・入力・選択枠・ギズモを更新する。uiLoadSystemまたはuiRendererが未設定なら何もしない。
     void Update(UILoadSystem* uiLoadSystem, std::string& statusMessage);
 
+    // UI選択・ギズモ操作を3Dオブジェクト選択より優先するか調べる。
+    bool HandlesViewportClick(const UILoadSystem* uiLoadSystem) const;
+
     // indexはCustomElements内の添字。範囲は次回Updateで検証する。
     void SetSingleSelection(std::size_t index);
     void ToggleSelection(std::size_t index);

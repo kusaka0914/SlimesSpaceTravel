@@ -78,8 +78,10 @@ void CharacterActor::JudgeLanding()
 
     constexpr float bodyOffset = 0.3f;
 
-    const glm::vec3 frontOffset = mFacingForwardVec * bodyOffset;
-    const glm::vec3 backOffset = -mFacingForwardVec * bodyOffset;
+    // 分身時も、足元の探索範囲を衝突形状と同じ比率にする。
+    const float scaledBodyOffset = bodyOffset * GetCollisionScaleMultiplier();
+    const glm::vec3 frontOffset = mFacingForwardVec * scaledBodyOffset;
+    const glm::vec3 backOffset = -mFacingForwardVec * scaledBodyOffset;
 
     // 接地中は中央→後方→前方、空中は前方→中央の順で、最初に成立した着地を採用する。
     if (mOnGround) {
@@ -168,7 +170,7 @@ CharacterActor::LandingRayResolution CharacterActor::ResolveLandingByRay(const g
 
     const float hitDistanceFromRayStart = glm::length(hitPos - rayFromPos);
     constexpr float landingDistanceTolerance = 0.0001f;
-    if (hitDistanceFromRayStart > landingRayLength + landingDistanceTolerance) {
+    if (hitDistanceFromRayStart > landingRayLength * GetCollisionScaleMultiplier() + landingDistanceTolerance) {
         return LandingRayResolution::NoHit;
     }
 
@@ -198,8 +200,9 @@ CharacterActor::RayInfo CharacterActor::CreateRayInfo(const glm::vec3& rayOffset
     const glm::vec3 up = glm::normalize(mUpVec);
     const glm::vec3 rayCenter = mPos + rayOffset;
 
-    const glm::vec3 rayFromPos = rayCenter + up * landingRayStartOffset;
-    const glm::vec3 rayToPos = rayFromPos - up * excludedSurfaceDetectionRayLength;
+    const float collisionScale = GetCollisionScaleMultiplier();
+    const glm::vec3 rayFromPos = rayCenter + up * (landingRayStartOffset * collisionScale);
+    const glm::vec3 rayToPos = rayFromPos - up * (excludedSurfaceDetectionRayLength * collisionScale);
 
     const btVector3 rayFrom(rayFromPos.x, rayFromPos.y, rayFromPos.z);
     const btVector3 rayTo(rayToPos.x, rayToPos.y, rayToPos.z);

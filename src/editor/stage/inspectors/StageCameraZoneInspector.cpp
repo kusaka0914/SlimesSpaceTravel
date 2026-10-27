@@ -1,6 +1,7 @@
 #include "editor/stage/inspectors/StageCameraZoneInspector.h"
 
 #include "actor/CameraZone.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "app/Game.h"
 #include "editor/stage/StageActorQuery.h"
@@ -8,7 +9,7 @@
 #include "system/CameraSystem.h"
 
 namespace {
-bool DrawCameraView(CameraZoneViewSettings& settings, CameraZone& zone, Game& game, bool returnCamera)
+bool DrawCameraView(CameraZoneViewSettings& settings, CameraZoneSettings& zoneSettings, Game& game, bool returnCamera)
 {
     int mode = static_cast<int>(settings.mode);
     if (ImGui::Combo("モード", &mode, "Follow\0Fixed\0Target\0")) {
@@ -73,9 +74,9 @@ bool DrawCameraView(CameraZoneViewSettings& settings, CameraZone& zone, Game& ga
     auto* cameras = game.GetCameraSystem();
     auto* player = game.GetControlledPlayer();
     ImGui::BeginDisabled(!cameras || !player);
-    if (ImGui::Button(returnCamera                       ? "帰り用カメラを登録"
-                      : zone.GetSettings().bidirectional ? "行き用カメラを登録"
-                                                         : "現在のカメラを登録")) {
+    if (ImGui::Button(returnCamera                 ? "帰り用カメラを登録"
+                      : zoneSettings.bidirectional ? "行き用カメラを登録"
+                                                   : "現在のカメラを登録")) {
         if (settings.targetIndex >= 0) {
             const StageActorRef target{StageActorType::StageObject, settings.targetIndex, settings.targetSequence, ""};
             if (auto* actor = StageActorQuery::FindActorByRef(game.GetCurrentStage(), target)) {
@@ -83,26 +84,26 @@ bool DrawCameraView(CameraZoneViewSettings& settings, CameraZone& zone, Game& ga
             }
         }
         if (const auto pose = cameras->GetCurrentCameraPose()) {
-            zone.CaptureCamera(*pose, *player, returnCamera);
+            settings.CaptureCamera(*pose, player->GetPos(), player->GetUpVec());
             registered = true;
         }
     }
     ImGui::EndDisabled();
     return registered;
 }
-} // namespace
-
-bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
+bool DrawCameraSettings(CameraZoneSettings& settings, Game& game, bool platformCamera)
 {
     bool registered = false;
-    auto& settings = zone.GetSettings();
-    ImGui::SeparatorText("Camera Zone");
-    ImGui::Checkbox("有効", &settings.enabled);
     ImGui::InputInt("優先度", &settings.priority);
+    if (platformCamera) {
+        ImGui::TextDisabled("箱と重なる場合は優先度が高い方を適用し、同じ優先度なら足場を優先します。");
+    }
     ImGui::Checkbox("空中でも現在のゾーンを維持", &settings.holdWhileAirborne);
     ImGui::DragFloat("進入補間（秒）", &settings.enterSeconds, 0.05f, 0.0f, 10.0f);
     ImGui::DragFloat("退出補間（秒）", &settings.exitSeconds, 0.05f, 0.0f, 10.0f);
-    ImGui::DragFloat("退出判定の余裕", &settings.exitMargin, 0.05f, 0.0f, 10.0f);
+    if (!platformCamera) {
+        ImGui::DragFloat("退出判定の余裕", &settings.exitMargin, 0.05f, 0.0f, 10.0f);
+    }
     ImGui::Checkbox("ゾーン内の手動カメラ回転を許可", &settings.allowManualRotation);
     ImGui::BeginDisabled(!settings.allowManualRotation);
     ImGui::DragFloat("手動操作後の復帰待ち（秒）", &settings.manualReturnDelay, 0.05f, 0.0f, 10.0f);
@@ -121,20 +122,45 @@ bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
         ImGui::Checkbox("方向不明時は帰り用カメラ", &settings.defaultReturnCamera);
         if (ImGui::CollapsingHeader("行き用カメラ", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::PushID("outbound");
-            registered |= DrawCameraView(settings, zone, game, false);
+            registered |= DrawCameraView(settings, settings, game, false);
             ImGui::PopID();
         }
         if (ImGui::CollapsingHeader("帰り用カメラ", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::PushID("return");
-            registered |= DrawCameraView(settings.returnCamera, zone, game, true);
+            registered |= DrawCameraView(settings.returnCamera, settings, game, true);
             ImGui::PopID();
         }
     } else {
-        registered |= DrawCameraView(settings, zone, game, false);
+        registered |= DrawCameraView(settings, settings, game, false);
     }
     settings.Normalize();
     ImGui::TextWrapped("通常カメラ・フリーカメラの現在の構図を登録し、自動保存します。ほかの設定変更は「Camera "
                        "Zone設定を保存」で保存できます。");
+    const bool saveRequested = ImGui::Button("Camera Zone設定を保存");
+    return registered || saveRequested;
+}
+} // namespace
+
+bool DrawPlatformCameraInspector(Platform& platform, Game& game)
+{
+    auto& settings = platform.GetCameraSettings();
+    ImGui::SeparatorText("足場カメラ");
+    const bool changed = ImGui::Checkbox("この足場に乗ったらカメラを切り替える", &settings.enabled);
+    if (!settings.enabled) {
+        return changed;
+    }
+    ImGui::TextWrapped("側面への接触では切り替わりません。プレイヤーをこの足場に乗せてから構図を登録してください。行き"
+                       "方向はワールド座標です。");
+    const bool saveRequested = DrawCameraSettings(settings, game, true);
+    return changed || saveRequested;
+}
+
+bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
+{
+    auto& settings = zone.GetSettings();
+    ImGui::SeparatorText("Camera Zone");
+    ImGui::Checkbox("有効", &settings.enabled);
+    const bool saveRequested = DrawCameraSettings(settings, game, false);
     auto* cameras = game.GetCameraSystem();
     auto* player = game.GetControlledPlayer();
     if (cameras && cameras->GetCameraZonePreview() == zone.GetStageYamlIndex()) {
@@ -150,6 +176,5 @@ bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
         cameras->SetCameraZonePreview(-1);
     }
     ImGui::EndDisabled();
-    const bool saveRequested = ImGui::Button("Camera Zone設定を保存");
-    return registered || saveRequested;
+    return saveRequested;
 }

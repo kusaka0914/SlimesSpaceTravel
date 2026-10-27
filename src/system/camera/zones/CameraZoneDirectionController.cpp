@@ -76,3 +76,9 @@ void CameraZoneDirectionController::Update(const CameraZoneSettings& settings, c
         mPendingSeconds = 0.0f;
     }
 }
+
+void CameraZoneDirectionController::CancelPendingSwitch()
+{
+    mPendingDirection = 0;
+    mPendingSeconds = 0.0f;
+}

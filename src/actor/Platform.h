@@ -1,6 +1,7 @@
 #pragma once
 
 #include "actor/Actor.h"
+#include "system/camera/zones/CameraZoneSettings.h"
 
 #include <string>
 #include <unordered_map>
@@ -77,6 +78,10 @@ public:
     void RemoveLatchedGroupSwitchComponent();
     PlatformLatchedGroupSwitchComponent* GetLatchedGroupSwitchComponent() const { return mLatchedGroupSwitchComponent; }
 
+    // 足場上への接地で適用する構図。既存の足場は無効で、空中維持・双方向判定はCamera Zoneと共通。
+    CameraZoneSettings& GetCameraSettings() { return mCameraSettings; }
+    const CameraZoneSettings& GetCameraSettings() const { return mCameraSettings; }
+
     void StartFocus();
     FocusComponent* GetFocusComponent() const { return mFocusComponent; }
 
@@ -125,6 +130,7 @@ private:
     PlatformLatchedGroupSwitchComponent* mLatchedGroupSwitchComponent = nullptr;
     FocusComponent* mFocusComponent = nullptr;
 
+    CameraZoneSettings mCameraSettings;
     std::string mPlatformId;
     bool mIsUGCGenerated = false;
     int mUGCGridLayer = 0;

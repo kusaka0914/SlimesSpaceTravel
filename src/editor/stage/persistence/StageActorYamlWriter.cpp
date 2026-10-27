@@ -562,6 +562,10 @@ bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
     YAML::Node actorNode = config[sequenceName][yamlIndex];
     WriteModelAndHazardState(actorNode, actor);
     WritePlatformState(actorNode, sequenceName, actor);
+    if (auto* platform = dynamic_cast<Platform*>(actor);
+        platform && (platform->GetCameraSettings().enabled || actorNode["camera"])) {
+        platform->GetCameraSettings().Save(actorNode["camera"]);
+    }
     WriteBoatState(actorNode, actor);
     WriteNPCState(actorNode, actor);
     if (auto* zone = dynamic_cast<CameraZone*>(actor)) {

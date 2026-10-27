@@ -19,12 +19,13 @@ public:
     using CastSucceededCallback = std::function<void()>;
 
     // 中央と周囲4点から、中央と同じ物体の法線を重み付きで平均する。位置・方向はワールド空間。
+    // footprintScaleは体の衝突倍率。周囲4点の間隔に適用し、惑星探索用のレイ長は維持する。
     // 中央のレイが失敗、または有効な法線を得られなければゼロベクトルを返す。
     static glm::vec3 CalculateAverageNormal(Game* game, const glm::vec3& pos, const glm::vec3& upVec,
                                             const glm::vec3& forwardVec, const glm::vec3& leftVec,
                                             const NormalRejector& shouldRejectNormal,
                                             const SurfaceDetectedCallback& onSurfaceDetected,
-                                            const CastSucceededCallback& onCastSucceeded);
+                                            const CastSucceededCallback& onCastSucceeded, float footprintScale = 1.0f);
 
     // 通常形状・惑星なしはY上向き、球は中心からの方向、楕円体は最短軸の表裏を使う。
     static glm::vec3 CalculateFallbackUpVec(const Planet* currentPlanet, const glm::vec3& actorPos);

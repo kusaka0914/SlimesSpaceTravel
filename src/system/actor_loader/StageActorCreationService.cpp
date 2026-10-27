@@ -179,6 +179,7 @@ Platform* StageActorCreationService::CreatePlatform(const YAML::Node& node, int 
             if (node["ugcGeneratedPlatform"] && node["ugcGeneratedPlatform"].as<bool>(false)) {
                 platform->SetUGCGeneratedLayer(node["ugcGridLayer"] ? node["ugcGridLayer"].as<int>() : 0);
             }
+            platform->GetCameraSettings().Load(node["camera"]);
             ApplyPlatformStageConfig(*platform, ParsePlatformStageConfig(node));
         });
     if (platform) {
@@ -195,6 +196,7 @@ Platform* StageActorCreationService::CreateLegacyMovingPlatform(const YAML::Node
         [stageYamlIndex](Platform* platform, const YAML::Node& node) {
             platform->SetPlatformId(node["platformId"] ? node["platformId"].as<std::string>()
                                                        : "legacy_movingPlatforms_" + std::to_string(stageYamlIndex));
+            platform->GetCameraSettings().Load(node["camera"]);
             ApplyPlatformStageConfig(*platform, ParsePlatformStageConfig(node, true));
         });
     if (platform) {

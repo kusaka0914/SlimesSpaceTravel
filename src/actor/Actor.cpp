@@ -1,9 +1,9 @@
 #include "actor/Actor.h"
 
-#include "app/Game.h"
 #include "actor/ActorGroundResolver.h"
 #include "actor/Boat.h"
 #include "actor/Planet.h"
+#include "app/Game.h"
 #include "component/Component.h"
 #include "system/mesh/LoadedModel.h"
 
@@ -267,7 +267,7 @@ void Actor::UpdateUpVec()
     const glm::vec3 averageUpVec = ActorGroundResolver::CalculateAverageNormal(
         mGame, mPos, groundSearchUp, mForwardVec, mLeftVec,
         [this](const glm::vec3& hitNormal, const glm::vec3& up) { return CheckDotAngleSteep(hitNormal, up); },
-        [this]() { OnGroundSurfaceDetected(); }, [this]() { OnCastSucceeded(); });
+        [this]() { OnGroundSurfaceDetected(); }, [this]() { OnCastSucceeded(); }, GetCollisionScaleMultiplier());
 
     if (glm::length(averageUpVec) > 1e-6f) {
         mUpVec = averageUpVec;

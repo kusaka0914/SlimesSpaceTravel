@@ -11,6 +11,8 @@ public:
     void ObserveMovement(const glm::vec3& direction);
     void Update(const CameraZoneSettings& settings, const Player& player, const glm::vec3& zoneCenter, bool entering,
                 bool suspended, bool resetRequested, float deltaTime);
+    // 操作対象切替で途切れた逆方向入力の継続時間だけを破棄する。
+    void CancelPendingSwitch();
     bool IsReturnCamera() const { return mIsReturnCamera; }
 
 private:

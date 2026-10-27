@@ -198,3 +198,27 @@ void CameraZoneSettings::Save(YAML::Node node) const
     WriteVector(node, "travelDirection", value.travelDirection);
     value.returnCamera.Save(node["returnCamera"]);
 }
+
+void CameraZoneViewSettings::CaptureCamera(const CameraPose& pose, const glm::vec3& referencePosition,
+                                           const glm::vec3& upDirection)
+{
+    fixedPose = pose;
+    fieldOfViewDegrees = pose.fieldOfViewDegrees;
+    const auto up = upDirection;
+    referenceUp = glm::dot(up, up) > 0.000001f ? glm::normalize(up) : glm::vec3(0, 1, 0);
+    const glm::vec3 forward = pose.target - pose.position;
+    const glm::vec3 direction = glm::dot(forward, forward) > 0.000001f ? glm::normalize(forward) : glm::vec3(0, 0, -1);
+    glm::vec3 center = referencePosition;
+    if (mode == Mode::Target) {
+        center = glm::mix(center, fallbackTarget, targetWeight);
+    }
+    const float depth = std::max(0.1f, glm::dot(center - pose.position, direction));
+    const glm::vec3 target = pose.position + direction * depth;
+    lookOffset = target - center;
+    const glm::vec3 offset = pose.position - target;
+    distance = glm::length(offset);
+    const float vertical = glm::dot(offset, referenceUp);
+    backDirection = offset - referenceUp * vertical;
+    pitchDegrees = glm::degrees(std::asin(std::clamp(vertical / std::max(0.01f, distance), -1.0f, 1.0f)));
+    Normalize();
+}

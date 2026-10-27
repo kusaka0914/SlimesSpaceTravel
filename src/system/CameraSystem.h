@@ -127,6 +127,9 @@ public:
     bool HasActiveRevealFocus() const;
     bool AllowsPlayerInput() const;
 
+    // 分裂した側へ元の行き・帰りを引き継ぐ。接地判定の確定前でも呼べる。
+    void InheritSplitPlayerCameraDirection(int fromPlayerIndex, int toPlayerIndex);
+
     // 0始まりの操作対象切替に合わせてカメラを即座に合わせる。
     void SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex);
 

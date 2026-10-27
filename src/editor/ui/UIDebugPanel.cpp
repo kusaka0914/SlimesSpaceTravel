@@ -49,6 +49,11 @@ UIDebugPanel::UIDebugPanel(DebugEditorContext& context)
 {
 }
 
+bool UIDebugPanel::HandlesViewportClick() const
+{
+    return mContext.uiRenderer && mCanvasEditor.HandlesViewportClick(mContext.uiRenderer->GetUILoadSystem());
+}
+
 void UIDebugPanel::Draw()
 {
     if (!mContext.game || !mContext.uiRenderer) {

@@ -25,6 +25,9 @@ struct CameraZoneViewSettings {
     glm::vec3 fallbackTarget{0};
     CameraPose fixedPose{};
 
+    // 現在の構図を基準位置・地面法線に対する相対設定へ変換する。Fixedはワールド姿勢を保持する。
+    void CaptureCamera(const CameraPose& pose, const glm::vec3& referencePosition, const glm::vec3& up);
+
     void Normalize();
     void Load(const YAML::Node& node);
     void Save(YAML::Node node) const;

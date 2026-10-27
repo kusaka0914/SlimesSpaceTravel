@@ -3,8 +3,8 @@
 // GLFWがOpenGLヘッダを読み込む前にGLEWを読み込む。
 #include <GL/glew.h>
 
-#include "app/Game.h"
 #include "ImGuizmo.h"
+#include "app/Game.h"
 #include "editor/ui/UICanvasElementGeometry.h"
 
 #include <algorithm>
@@ -94,12 +94,26 @@ void UICanvasSelectionController::ValidateSelection(const UILoadSystem* uiLoadSy
     }
 }
 
+bool UICanvasSelectionController::HasElementAtMouse(const UILoadSystem* uiLoadSystem) const
+{
+    if (!uiLoadSystem || !mContext.uiRenderer) {
+        return false;
+    }
+    return !PickElementsAt(uiLoadSystem, mGeometry.ImGuiToFramebuffer(ImGui::GetMousePos())).empty();
+}
+
 void UICanvasSelectionController::UpdateCanvasSelection(const UILoadSystem* uiLoadSystem, bool isUsingGizmo)
 {
     if (!mContext.game || !mContext.game->GetWindow()) {
         return;
     }
 
+    // タブ切替中に解放されたマウス入力を持ち越さず、古い矩形選択を再開しない。
+    if (mIsBoxMouseDown && !ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
+        !ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+        mIsBoxMouseDown = false;
+        mIsBoxSelecting = false;
+    }
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantCaptureMouse || isUsingGizmo || ImGuizmo::IsOver() || ImGuizmo::IsUsing()) {
         return;

@@ -27,6 +27,7 @@ Platform::Platform(Game* game)
     : Actor(game)
 {
     mIsUpVecInitialized = true;
+    mCameraSettings.enabled = false;
 }
 
 void Platform::UpdateActor(float deltaTime)

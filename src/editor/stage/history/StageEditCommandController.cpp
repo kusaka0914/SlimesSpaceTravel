@@ -435,10 +435,6 @@ void UpdateRevealTargetReferencesAfterActorDeletion(
 void UpdateCameraZoneReferencesAfterActorDeletion(
     YAML::Node& stageYaml, const std::unordered_map<std::string, std::vector<int>>& deletedIndicesBySequence)
 {
-    const YAML::Node zones = stageYaml["cameraZones"];
-    if (!zones || !zones.IsSequence()) {
-        return;
-    }
     const auto updateCamera = [&](YAML::Node camera) {
         if (!camera || !camera.IsMap()) {
             return;
@@ -453,11 +449,17 @@ void UpdateCameraZoneReferencesAfterActorDeletion(
         camera["targetIndex"] =
             IsDeletedActorIndex(found->second, index) ? -1 : CalculateActorIndexAfterDeletion(found->second, index);
     };
-    for (const auto& zone : zones) {
-        YAML::Node camera = zone["camera"];
-        updateCamera(camera);
-        if (camera && camera.IsMap()) {
-            updateCamera(camera["returnCamera"]);
+    for (const char* sequence : {"cameraZones", "platforms", "movingPlatforms"}) {
+        const YAML::Node actors = stageYaml[sequence];
+        if (!actors || !actors.IsSequence()) {
+            continue;
+        }
+        for (const auto& actor : actors) {
+            YAML::Node camera = actor["camera"];
+            updateCamera(camera);
+            if (camera && camera.IsMap()) {
+                updateCamera(camera["returnCamera"]);
+            }
         }
     }
 }

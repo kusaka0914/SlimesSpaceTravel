@@ -193,6 +193,16 @@ bool StageActorInspector::DrawActorTypeSettings(Actor* actor, const std::string&
             return true;
         }
 
+        ImGui::PushID(platform);
+        const bool saveCamera = DrawPlatformCameraInspector(*platform, *mContext.game);
+        ImGui::PopID();
+        if (saveCamera) {
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
+        }
+        if (!mStageActorYamlWriter.GetSaveError().empty()) {
+            ImGui::TextWrapped("%s", mStageActorYamlWriter.GetSaveError().c_str());
+        }
+
         ImGui::SeparatorText("足場モデル設定");
         mStageActorAssetEditor.DrawActorModelPicker(actor, sequenceName, listIndex);
     }

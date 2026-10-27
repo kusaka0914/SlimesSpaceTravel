@@ -349,7 +349,10 @@ void CameraSystem::UpdateCamera(float deltaTime)
     if (!mScene.IsPlaying() || controls.isFreeCameraMode || controls.isUGCMode || mCinematicCamera.IsActive() ||
         mBossDefeatSequence.IsActive() || mTalkCameraBlend > 0.0f || mTalkPageFocusBlend > 0.0f || mIsTargetFocus ||
         mIsShowingRevealFocus || ResolveBoatRideCameraTarget()) {
-        mCameraZones.Reset(mWorld.GetPlayers());
+        // スイッチの注目演出はFocusingへ遷移する。非操作側を含め、復帰後の行き・帰りを保持する。
+        const bool preservesDirection =
+            (mScene.IsPlaying() || mScene.IsFocusing()) && !controls.isFreeCameraMode && !controls.isUGCMode;
+        mCameraZones.Reset(mWorld.GetPlayers(), preservesDirection);
     }
 
     if (mCinematicCamera.IsActive()) {
@@ -629,6 +632,11 @@ void CameraSystem::UpdateTalkCameraAim()
     }
 }
 
+void CameraSystem::InheritSplitPlayerCameraDirection(int fromPlayerIndex, int toPlayerIndex)
+{
+    mCameraZones.InheritSplitDirection(fromPlayerIndex, toPlayerIndex, mWorld.GetPlayers());
+}
+
 void CameraSystem::SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex)
 {
     if (toPlayerIndex < 0) {
@@ -640,7 +648,7 @@ void CameraSystem::SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex
         return;
     }
 
-    mCameraZones.TransitionToPlayer(fromPlayerIndex, toPlayerIndex, players);
+    mCameraZones.TransitionToPlayer(fromPlayerIndex, toPlayerIndex, players, true);
     mPlayerCamera.SnapToPlayer(players[static_cast<std::size_t>(toPlayerIndex)], toPlayerIndex);
 
     CopyPlayerPitchOffset(fromPlayerIndex, toPlayerIndex);

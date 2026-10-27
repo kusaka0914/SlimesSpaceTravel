@@ -357,6 +357,7 @@ bool PlayerConfigurationController::SplitPlayer()
     if (!PlayerSplitService::ActivateSplit(players)) {
         return false;
     }
+    mCameraSystem.InheritSplitPlayerCameraDirection(0, 1);
 
     mRuntimeState.mControlState.BeginPlayerSplit();
     SynchronizeSoloSplitResources(*players[0]);
@@ -380,6 +381,7 @@ PlayerConfigurationController::SplitToggleResult PlayerConfigurationController::
     if (!PlayerSplitService::ActivateSplit(players)) {
         return SplitToggleResult::Unavailable;
     }
+    mCameraSystem.InheritSplitPlayerCameraDirection(0, 1);
 
     Player& mainPlayer = *players[0];
     Player& splitPlayer = *players[1];
@@ -587,6 +589,8 @@ void PlayerConfigurationController::CompleteSoloSplitTransition()
 
     players[1]->SetShouldJudgeLanding(true);
     mRuntimeState.mSplitMergeTransition = {};
+    // 分裂演出中に変わった構図も含め、切り替える直前のカメラ方向を引き継ぐ。
+    mCameraSystem.InheritSplitPlayerCameraDirection(0, 1);
     SelectControlledPlayer(1, ControlledPlayerCameraTransition::Smooth);
     mSceneSystem.OnPlayerSplitMergeSucceeded();
 }
@@ -660,7 +664,7 @@ bool PlayerConfigurationController::SwitchControlledPlayer()
     }
 
     if (nextIndex != previousIndex) {
-        SelectControlledPlayer(nextIndex);
+        SelectControlledPlayer(nextIndex, ControlledPlayerCameraTransition::Snap);
         mSceneSystem.OnPlayerSwitchSucceeded();
         return true;
     }
@@ -676,7 +680,7 @@ bool PlayerConfigurationController::SwitchControlledPlayer()
         }
 
         mRuntimeState.mControlState.CancelScheduledControlSwitch();
-        SelectControlledPlayer(candidateIndex);
+        SelectControlledPlayer(candidateIndex, ControlledPlayerCameraTransition::Snap);
         mSceneSystem.OnPlayerSwitchSucceeded();
         return true;
     }

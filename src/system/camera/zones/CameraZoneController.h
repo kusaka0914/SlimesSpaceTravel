@@ -14,7 +14,7 @@ class CameraZone;
 class Player;
 class Stage;
 
-// Playerごとのゾーン選択・補間・手動操作の猶予を管理する。ActorはYAML添字で再解決し、保持しない。
+// Playerごとの箱・足場カメラの選択と補間を管理する。ActorはYAML列名と添字で再解決し、保持しない。
 class CameraZoneController {
 public:
     using FindActor = std::function<Actor*(const std::string&, int)>;
@@ -29,19 +29,34 @@ public:
     void RequestReset(int playerIndex);
     bool HasActiveZone(int playerIndex) const;
 
-    // 操作対象切替時は旧ゾーンを解除し、表示中の姿勢から新しい対象へ補間する。
-    void TransitionToPlayer(int fromIndex, int toIndex, const std::vector<Player*>& players);
+    // 操作対象切替時は表示姿勢を引き継ぐ。同じ領域へ戻る場合は、そのPlayerの行き・帰りを復元する。
+    // snap指定時は切替先の構図を即座に適用し、進入補間も行わない。
+    void TransitionToPlayer(int fromIndex, int toIndex, const std::vector<Player*>& players, bool snap = false);
+    // 分裂成功時に旧履歴を消し、分裂元の方向を最初の同一領域での判定へ引き継ぐ。
+    void InheritSplitDirection(int fromIndex, int toIndex, const std::vector<Player*>& players);
+
     // 現在のPlayer一覧を渡し、ゾーンが保持した移動方向ロックも解除する。
-    void Reset(const std::vector<Player*>& players);
+    // 演出等による一時停止ではpreserveDirectionを指定し、領域と行き・帰りを維持する。
+    void Reset(const std::vector<Player*>& players, bool preserveDirection = false);
     std::optional<CameraPose> GetPose(int playerIndex) const;
 
 private:
+    struct SplitDirection {
+        int zone = -1;
+        std::string sequence;
+        CameraZoneDirectionController direction;
+    };
     struct State {
         int selectedZone = -1;
+        std::string selectedSequence;
         int transitionZone = -1;
+        std::string transitionSequence;
         bool transitionReturnCamera = false;
         CameraZoneDirectionController direction;
+        std::optional<SplitDirection> splitDirection;
         std::optional<CameraPose> handoffPose;
+        bool resumeDirection = false;
+        bool snapOnNextApply = false;
         std::uint64_t frame = 0;
         bool initialized = false;
         bool manualInput = false;
@@ -58,5 +73,6 @@ private:
         CameraPose from{};
         CameraPose output{};
     };
+    static void ResetState(State& state, bool preserveDirection);
     std::vector<State> mStates;
 };
