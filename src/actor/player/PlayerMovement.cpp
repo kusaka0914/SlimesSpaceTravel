@@ -14,6 +14,7 @@
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace {
 bool TryNormalizeDirection(const glm::vec3& direction, glm::vec3& normalizedDirection)
@@ -384,7 +385,7 @@ bool PlayerMovement::CanDodge() const
 
 void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input)
 {
-    mInputMovementDirection = glm::vec3(0.0f);
+    ResetFrameMovement();
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
     const glm::vec2 movementInput(input.GetMoveLeft(), input.GetMoveForward());
     const float movementInputMagnitude = glm::length(movementInput);
@@ -415,11 +416,15 @@ void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, cons
         }
     }
 
-    const glm::vec3 projectedForwardDirection = ProjectOntoPlane(mForwardVec, upDirection);
+    const auto cameraBack = mNormalCameraPosition && !mIsCameraAutoAlignMovementDirectionLocked
+                                ? *mNormalCameraPosition - player.GetPos()
+                                : mForwardVec;
+    const glm::vec3 projectedForwardDirection = ProjectOntoPlane(cameraBack, upDirection);
 
     glm::vec3 baseForwardDirection;
 
-    if (!TryNormalizeDirection(projectedForwardDirection, baseForwardDirection)) {
+    if (!TryNormalizeDirection(projectedForwardDirection, baseForwardDirection) &&
+        !TryNormalizeDirection(ProjectOntoPlane(mForwardVec, upDirection), baseForwardDirection)) {
         baseForwardDirection = CreatePerpendicularDirection(upDirection);
     }
 
@@ -452,6 +457,8 @@ void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, cons
 
 void PlayerMovement::SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection)
 {
+    // Zoneや演出から渡された方向には、通常カメラ用の接線補正を重ねない。
+    mNormalCameraPosition.reset();
     glm::vec3 normalizedUpDirection;
     if (!TryNormalizeDirection(upDirection, normalizedUpDirection)) {
         return;
@@ -555,13 +562,13 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
         return;
     }
 
-    const glm::vec3 movementDelta =
-        CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier);
+    const auto movement = CalculateInputMovementDelta(player, input, deltaTime, speedMultiplier);
 
     const glm::vec3 before = player.GetPos();
-    (void)ApplyWalkingMovement(player, movementDelta);
+    (void)ApplyWalkingMovement(player, movement.displacement);
+    RecordCameraLateralCorrection(movement, player.GetPos() - before);
     const glm::vec3 applied = ProjectOntoPlane(player.GetPos() - before, GetNormalizedUpDirection(player));
-    if (glm::dot(movementDelta, movementDelta) > 0.000001f && glm::dot(applied, applied) > 0.000001f) {
+    if (glm::dot(movement.displacement, movement.displacement) > 0.000001f && glm::dot(applied, applied) > 0.000001f) {
         mInputMovementDirection = glm::normalize(applied);
     }
 }
@@ -614,8 +621,10 @@ bool PlayerMovement::ApplyWalkingMovement(Player& player, const glm::vec3& movem
     return glm::dot(appliedMovement, appliedMovement) > 0.000001f;
 }
 
-glm::vec3 PlayerMovement::CalculateInputMovementDelta(const Player& player, const PlayerInput& input,
-                                                      float deltaTime) const
+PlayerMovement::InputMovementDelta PlayerMovement::CalculateInputMovementDelta(const Player& player,
+                                                                               const PlayerInput& input,
+                                                                               float deltaTime,
+                                                                               float speedMultiplier) const
 {
     glm::vec3 requestedMovementDirection;
     if (mIsCameraAutoAlignMovementDirectionLocked) {
@@ -629,7 +638,43 @@ glm::vec3 PlayerMovement::CalculateInputMovementDelta(const Player& player, cons
     constexpr float fallbackAirControlMultiplier = 0.3f;
     const float inputMovementMultiplier =
         player.WasPlanetGravityFallbackAppliedThisJump() ? fallbackAirControlMultiplier : 1.0f;
-    return requestedMovementDirection * mMoveSpeed * inputMovementMultiplier * deltaTime;
+    const float distance = mMoveSpeed * inputMovementMultiplier * std::max(0.0f, speedMultiplier) * deltaTime;
+    const auto movement = requestedMovementDirection * distance;
+    if (!mNormalCameraPosition || mIsCameraAutoAlignMovementDirectionLocked ||
+        std::abs(input.GetMoveLeft()) < 0.0001f) {
+        return {movement};
+    }
+
+    // 開始点の接線だけで一歩ずつ直進すると半径が増えるため、中間地点の接線で移動量を評価する。
+    // 位置や半径を強制補正せず、通常の速度・衝突解決を維持する。
+    const auto midpoint = player.GetPos() + movement * 0.5f;
+    auto midpointUp = GetNormalizedUpDirection(player);
+    if (const auto* planet = player.GetCurrentPlanet(); player.GetOnGround() && planet &&
+                                                        player.GetGroundActor() == planet &&
+                                                        planet->GetPlanetShape() != Planet::PlanetShape::Normal) {
+        const auto fromNormal = planet->CalculateEllipseSurfaceProjection(player.GetPos()).outwardNormal;
+        const auto toNormal = planet->CalculateEllipseSurfaceProjection(midpoint).outwardNormal;
+        midpointUp = glm::quat(fromNormal, toNormal) * midpointUp;
+    }
+    glm::vec3 midpointBack, midpointLeft;
+    if (!TryNormalizeDirection(ProjectOntoPlane(*mNormalCameraPosition - midpoint, midpointUp), midpointBack) ||
+        !TryNormalizeDirection(glm::cross(midpointUp, midpointBack), midpointLeft)) {
+        return {movement};
+    }
+    const auto lateral = midpointLeft * input.GetMoveLeft() * distance;
+    return {midpointBack * input.GetMoveForward() * distance + lateral, lateral,
+            lateral - mLeftVec * input.GetMoveLeft() * distance};
+}
+
+void PlayerMovement::RecordCameraLateralCorrection(const InputMovementDelta& movement, const glm::vec3& applied)
+{
+    const float requestedSquared = glm::dot(movement.lateralMovement, movement.lateralMovement);
+    if (requestedSquared <= 0.00000001f) {
+        return;
+    }
+    // 壁で進めなかった分の補正まで引くと、停止中にもカメラがずれるため、実際の横移動率を使う。
+    const float fraction = std::clamp(glm::dot(applied, movement.lateralMovement) / requestedSquared, 0.0f, 1.0f);
+    mCameraLateralCorrection += movement.lateralCorrection * fraction;
 }
 
 void PlayerMovement::ApplyDodgeMovement(Player& player, const PlayerCombat& combat, PlayerGrounding& grounding,
@@ -862,12 +907,12 @@ void PlayerMovement::StopAirborneVerticalMovement(Player& player) const
 void PlayerMovement::ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime,
                                                       float speedMultiplier)
 {
-    const glm::vec3 inputDelta =
-        CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier);
+    const auto movement = CalculateInputMovementDelta(player, input, deltaTime, speedMultiplier);
     const glm::vec3 before = player.GetPos();
-    ApplyJumpGravityMovement(player, inputDelta, deltaTime);
+    ApplyJumpGravityMovement(player, movement.displacement, deltaTime);
+    RecordCameraLateralCorrection(movement, player.GetPos() - before);
     const auto up = GetNormalizedUpDirection(player);
-    const auto intended = ProjectOntoPlane(inputDelta, up);
+    const auto intended = ProjectOntoPlane(movement.displacement, up);
     const auto applied = ProjectOntoPlane(player.GetPos() - before, up);
     // 重力や慣性ではなく、入力による移動が実際に進んだ場合だけ空中の方向判定へ渡す。
     if (glm::dot(intended, intended) > 0.000001f && glm::dot(applied, intended) > 0.000001f) {

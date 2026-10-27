@@ -67,6 +67,7 @@ private:
         bool hasOutput = false;
         bool ownsMovementLock = false;
         float manualDelay = 0.0f;
+        std::optional<float> transitionYaw;
         float elapsed = 0.0f;
         float duration = 0.7f;
         glm::vec3 previousPlayerPosition{0};

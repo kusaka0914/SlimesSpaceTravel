@@ -32,11 +32,15 @@ private:
     std::filesystem::path mFilePath;
 };
 
-void AutoFollowSettingsLoadFromYaml()
+void TrackingSettingsLoadFromYaml()
 {
     const TemporaryPlayerCameraSettingsFile settingsFile;
+    // 廃止した自動背面合わせのキーが残る既存ファイルも読み込める。
     settingsFile.Write("playerCamera:\n"
                        "  airSlamPitchDegrees: -76\n"
+                       "  positionSmoothingSpeed: 12\n"
+                       "  attackTargetSmoothingSpeed: 7.5\n"
+                       "  attackCameraManualOverrideSeconds: 1.25\n"
                        "  autoFollowDelaySeconds: 0.65\n"
                        "  autoFollowRotationDurationSeconds: 1.25\n"
                        "  autoFollowMinimumMovementInput: 0.4\n"
@@ -56,83 +60,64 @@ void AutoFollowSettingsLoadFromYaml()
 
     ExpectTrue(repository.Load(settings), "camera settings load succeeds");
     ExpectNear(-76.0f, settings.airSlamPitchDegrees, 0.0001f, "air slam pitch angle");
-    ExpectNear(0.65f, settings.autoFollowDelaySeconds, 0.0001f, "auto-follow input delay");
-    ExpectNear(1.25f, settings.autoFollowRotationDurationSeconds, 0.0001f, "auto-follow rotation duration");
-    ExpectNear(0.4f, settings.autoFollowMinimumMovementInput, 0.0001f, "auto-follow movement input threshold");
-    ExpectNear(0.2f, settings.autoFollowMaximumBackwardInput, 0.0001f, "auto-follow backward input threshold");
-    ExpectNear(1.1f, settings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "auto-follow delay after manual input");
+    ExpectNear(12.0f, settings.positionSmoothingSpeed, 0.0001f, "forward position smoothing");
+    ExpectNear(7.5f, settings.attackTargetSmoothingSpeed, 0.0001f, "attack camera rotation speed");
+    ExpectNear(1.25f, settings.attackCameraManualOverrideSeconds, 0.0001f, "attack camera respects manual override");
     ExpectNear(2.75f, settings.backwardFacingLookAheadDistance, 0.0001f, "backward-facing look-ahead distance");
     ExpectNear(0.6f, settings.backwardFacingFramingActivationDelaySeconds, 0.0001f,
                "backward-facing framing activation delay");
     ExpectNear(0.45f, settings.backwardFacingFramingMinimumBackwardInput, 0.0001f,
                "backward-facing framing input threshold");
-    ExpectNear(105.0f, settings.surfaceTraversalAutoAlignAngleDegrees, 0.0001f, "surface traversal auto-align angle");
-    ExpectNear(0.3f, settings.surfaceTraversalAutoAlignMinimumMovementInput, 0.0001f,
-               "surface traversal auto-align input threshold");
     ExpectNear(55.0f, settings.backwardFacingFramingStartAngleDegrees, 0.0001f, "backward-facing framing start angle");
     ExpectNear(70.0f, settings.backwardFacingFramingEndAngleDegrees, 0.0001f, "backward-facing framing end angle");
     ExpectNear(5.5f, settings.backwardFacingFramingSmoothingSpeed, 0.0001f, "backward-facing framing smoothing speed");
 }
 
-void AutoFollowSettingsNormalizeToSupportedRanges()
+void TrackingSettingsNormalizeToSupportedRanges()
 {
     PlayerCameraSettings settings;
     settings.airSlamPitchDegrees = -120.0f;
-    settings.autoFollowDelaySeconds = -1.0f;
-    settings.autoFollowRotationDurationSeconds = 0.0f;
-    settings.autoFollowMinimumMovementInput = 2.0f;
-    settings.autoFollowMaximumBackwardInput = -0.5f;
-    settings.autoFollowDelayAfterManualInputSeconds = 10.0f;
+    settings.positionSmoothingSpeed = -1.0f;
+    settings.attackTargetSmoothingSpeed = -1.0f;
+    settings.attackCameraManualOverrideSeconds = 10.0f;
     settings.backwardFacingLookAheadDistance = -2.0f;
     settings.backwardFacingFramingActivationDelaySeconds = 10.0f;
     settings.backwardFacingFramingMinimumBackwardInput = -1.0f;
-    settings.surfaceTraversalAutoAlignAngleDegrees = 250.0f;
-    settings.surfaceTraversalAutoAlignMinimumMovementInput = -0.5f;
     settings.backwardFacingFramingStartAngleDegrees = 100.0f;
     settings.backwardFacingFramingEndAngleDegrees = 50.0f;
     settings.backwardFacingFramingSmoothingSpeed = 75.0f;
 
     settings.Normalize();
+    ExpectNear(0.0f, settings.positionSmoothingSpeed, 0.0f, "position smoothing is nonnegative");
+    ExpectNear(0.0f, settings.attackTargetSmoothingSpeed, 0.0f, "attack camera speed can be disabled");
+    ExpectNear(5.0f, settings.attackCameraManualOverrideSeconds, 0.0f, "attack camera manual override is bounded");
 
     ExpectNear(-89.0f, settings.airSlamPitchDegrees, 0.0001f, "normalized air slam pitch angle");
-    ExpectNear(0.0f, settings.autoFollowDelaySeconds, 0.0001f, "normalized auto-follow input delay");
-    ExpectNear(0.05f, settings.autoFollowRotationDurationSeconds, 0.0001f, "normalized auto-follow rotation duration");
-    ExpectNear(1.0f, settings.autoFollowMinimumMovementInput, 0.0001f, "normalized movement input threshold");
-    ExpectNear(0.0f, settings.autoFollowMaximumBackwardInput, 0.0001f, "normalized backward input threshold");
-    ExpectNear(5.0f, settings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "normalized manual input delay");
     ExpectNear(0.0f, settings.backwardFacingLookAheadDistance, 0.0001f,
                "normalized backward-facing look-ahead distance");
     ExpectNear(5.0f, settings.backwardFacingFramingActivationDelaySeconds, 0.0001f,
                "normalized backward-facing framing activation delay");
     ExpectNear(0.0f, settings.backwardFacingFramingMinimumBackwardInput, 0.0001f,
                "normalized backward-facing framing input threshold");
-    ExpectNear(180.0f, settings.surfaceTraversalAutoAlignAngleDegrees, 0.0001f,
-               "normalized surface traversal auto-align angle");
-    ExpectNear(0.0f, settings.surfaceTraversalAutoAlignMinimumMovementInput, 0.0001f,
-               "normalized surface traversal auto-align input threshold");
     ExpectNear(100.0f, settings.backwardFacingFramingStartAngleDegrees, 0.0001f, "normalized framing start angle");
     ExpectNear(100.0f, settings.backwardFacingFramingEndAngleDegrees, 0.0001f,
                "framing end angle is not smaller than start angle");
     ExpectNear(50.0f, settings.backwardFacingFramingSmoothingSpeed, 0.0001f, "normalized framing smoothing speed");
 }
 
-void AutoFollowSettingsSurviveSaveAndReload()
+void TrackingSettingsSurviveSaveAndReload()
 {
     const TemporaryPlayerCameraSettingsFile settingsFile;
     const PlayerCameraSettingsRepository repository(settingsFile.GetPathText());
 
     PlayerCameraSettings settingsToSave;
     settingsToSave.airSlamPitchDegrees = -74.0f;
-    settingsToSave.autoFollowDelaySeconds = 0.7f;
-    settingsToSave.autoFollowRotationDurationSeconds = 1.4f;
-    settingsToSave.autoFollowMinimumMovementInput = 0.55f;
-    settingsToSave.autoFollowMaximumBackwardInput = 0.15f;
-    settingsToSave.autoFollowDelayAfterManualInputSeconds = 0.9f;
+    settingsToSave.positionSmoothingSpeed = 15.0f;
+    settingsToSave.attackTargetSmoothingSpeed = 6.5f;
+    settingsToSave.attackCameraManualOverrideSeconds = 0.9f;
     settingsToSave.backwardFacingLookAheadDistance = 3.0f;
     settingsToSave.backwardFacingFramingActivationDelaySeconds = 0.8f;
     settingsToSave.backwardFacingFramingMinimumBackwardInput = 0.5f;
-    settingsToSave.surfaceTraversalAutoAlignAngleDegrees = 110.0f;
-    settingsToSave.surfaceTraversalAutoAlignMinimumMovementInput = 0.4f;
     settingsToSave.backwardFacingFramingStartAngleDegrees = 50.0f;
     settingsToSave.backwardFacingFramingEndAngleDegrees = 68.0f;
     settingsToSave.backwardFacingFramingSmoothingSpeed = 6.0f;
@@ -141,23 +126,16 @@ void AutoFollowSettingsSurviveSaveAndReload()
 
     PlayerCameraSettings reloadedSettings;
     ExpectTrue(repository.Load(reloadedSettings), "saved camera settings reload succeeds");
+    ExpectNear(15.0f, reloadedSettings.positionSmoothingSpeed, 0.0001f, "saved position smoothing");
+    ExpectNear(6.5f, reloadedSettings.attackTargetSmoothingSpeed, 0.0001f, "saved attack camera rotation speed");
+    ExpectNear(0.9f, reloadedSettings.attackCameraManualOverrideSeconds, 0.0001f, "saved manual override");
     ExpectNear(-74.0f, reloadedSettings.airSlamPitchDegrees, 0.0001f, "saved air slam pitch angle");
-    ExpectNear(0.7f, reloadedSettings.autoFollowDelaySeconds, 0.0001f, "saved auto-follow input delay");
-    ExpectNear(1.4f, reloadedSettings.autoFollowRotationDurationSeconds, 0.0001f,
-               "saved auto-follow rotation duration");
-    ExpectNear(0.55f, reloadedSettings.autoFollowMinimumMovementInput, 0.0001f, "saved movement input threshold");
-    ExpectNear(0.15f, reloadedSettings.autoFollowMaximumBackwardInput, 0.0001f, "saved backward input threshold");
-    ExpectNear(0.9f, reloadedSettings.autoFollowDelayAfterManualInputSeconds, 0.0001f, "saved manual input delay");
     ExpectNear(3.0f, reloadedSettings.backwardFacingLookAheadDistance, 0.0001f,
                "saved backward-facing look-ahead distance");
     ExpectNear(0.8f, reloadedSettings.backwardFacingFramingActivationDelaySeconds, 0.0001f,
                "saved backward-facing framing activation delay");
     ExpectNear(0.5f, reloadedSettings.backwardFacingFramingMinimumBackwardInput, 0.0001f,
                "saved backward-facing framing input threshold");
-    ExpectNear(110.0f, reloadedSettings.surfaceTraversalAutoAlignAngleDegrees, 0.0001f,
-               "saved surface traversal auto-align angle");
-    ExpectNear(0.4f, reloadedSettings.surfaceTraversalAutoAlignMinimumMovementInput, 0.0001f,
-               "saved surface traversal auto-align input threshold");
     ExpectNear(50.0f, reloadedSettings.backwardFacingFramingStartAngleDegrees, 0.0001f, "saved framing start angle");
     ExpectNear(68.0f, reloadedSettings.backwardFacingFramingEndAngleDegrees, 0.0001f, "saved framing end angle");
     ExpectNear(6.0f, reloadedSettings.backwardFacingFramingSmoothingSpeed, 0.0001f, "saved framing smoothing speed");
@@ -167,9 +145,9 @@ void AutoFollowSettingsSurviveSaveAndReload()
 
 void RegisterPlayerCameraSettingsTests(TestRegistry& tests)
 {
-    tests.emplace_back("PlayerCameraSettings.AutoFollowSettingsLoadFromYaml", AutoFollowSettingsLoadFromYaml);
-    tests.emplace_back("PlayerCameraSettings.AutoFollowSettingsNormalizeToSupportedRanges",
-                       AutoFollowSettingsNormalizeToSupportedRanges);
-    tests.emplace_back("PlayerCameraSettings.AutoFollowSettingsSurviveSaveAndReload",
-                       AutoFollowSettingsSurviveSaveAndReload);
+    tests.emplace_back("PlayerCameraSettings.TrackingSettingsLoadFromYaml", TrackingSettingsLoadFromYaml);
+    tests.emplace_back("PlayerCameraSettings.TrackingSettingsNormalizeToSupportedRanges",
+                       TrackingSettingsNormalizeToSupportedRanges);
+    tests.emplace_back("PlayerCameraSettings.TrackingSettingsSurviveSaveAndReload",
+                       TrackingSettingsSurviveSaveAndReload);
 }

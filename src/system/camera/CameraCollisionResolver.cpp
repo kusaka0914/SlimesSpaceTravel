@@ -351,6 +351,46 @@ glm::vec3 CameraCollisionResolver::ResolveWithClearance(const glm::vec3& anchor,
     return origin + delta * safeFraction;
 }
 
+float CameraCollisionResolver::MeasureCameraPathObstruction(const std::vector<glm::vec3>& points, float clearanceRadius,
+                                                            const std::vector<Actor*>& ignoredActors) const
+{
+    auto* physics = mPhysicsProvider ? mPhysicsProvider() : nullptr;
+    auto* world = physics ? physics->GetBulletWorld() : nullptr;
+    if (!world || points.size() < 2) {
+        return 0.0f;
+    }
+    // 経路の全区間で同じ物理配置を調べ、区間ごとの全Actor同期を避ける。
+    physics->SyncKinematicBodies();
+    const float radius = std::max(0.05f, clearanceRadius);
+    const auto clear = [&](const glm::vec3& point) {
+        return IsCameraSpaceClear(world, point, radius, ignoredActors) &&
+               !IsInsideCameraObstacle(world, point, ignoredActors);
+    };
+    btSphereShape shape(radius);
+    btTransform from, to;
+    from.setIdentity();
+    to.setIdentity();
+    float obstruction = 0.0f;
+    bool previousClear = clear(points.front());
+    for (std::size_t index = 1; index < points.size(); ++index) {
+        const auto& start = points[index - 1];
+        const auto& end = points[index];
+        const bool endClear = clear(end);
+        from.setOrigin(btVector3(start.x, start.y, start.z));
+        to.setOrigin(btVector3(end.x, end.y, end.z));
+        const float length = glm::distance(start, end);
+        CameraSweepResultCallback callback(from.getOrigin(), to.getOrigin(), ignoredActors);
+        if (length > 0.00001f) {
+            world->convexSweepTest(&shape, from, to, callback);
+        }
+        if (!previousClear || !endClear || callback.hasHit()) {
+            obstruction += std::max(length, 0.0001f);
+        }
+        previousClear = endClear;
+    }
+    return obstruction;
+}
+
 bool CameraCollisionResolver::HasClearLineOfSight(const glm::vec3& cameraPos, const glm::vec3& targetPos,
                                                   const std::vector<Actor*>& ignoredActors) const
 {

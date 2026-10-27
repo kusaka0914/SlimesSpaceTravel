@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <optional>
 #include <vector>
 
 class Game;
@@ -69,9 +70,13 @@ public:
     {
         mMovement.SetCameraForwardDirection(forwardDirection, upDirection);
     }
+    // 描画の注視点補間に依存しない、通常カメラの位置基準移動を有効にする。
+    void SetNormalCameraPosition(std::optional<glm::vec3> position) { mMovement.SetNormalCameraPosition(position); }
+
     void UnlockMovementDirectionForCameraAutoAlign() { mMovement.UnlockMovementDirectionForCameraAutoAlign(); }
     bool IsCameraZoneDirectionHeld() const { return mMovement.IsCameraZoneDirectionHeld(); }
     const glm::vec3& GetInputMovementDirection() const { return mMovement.GetInputMovementDirection(); }
+    glm::vec3 ConsumeCameraLateralCorrection() { return mMovement.ConsumeCameraLateralCorrection(); }
     bool ConsumeCameraAutoAlignCancellationRequest() { return mMovement.ConsumeCameraAutoAlignCancellationRequest(); }
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
     void SetMaximumStepHeight(float maximumStepHeight) { mMovement.SetMaximumStepHeight(maximumStepHeight); }

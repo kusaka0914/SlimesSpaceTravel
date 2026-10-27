@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <optional>
 
 class Player;
 class PlayerCombat;
@@ -18,8 +19,18 @@ public:
 
     bool CanDodge() const;
 
+    // 入力移動とカメラ用の横移動補正のフレーム記録をクリアする。
+    void ResetFrameMovement()
+    {
+        mInputMovementDirection = glm::vec3(0);
+        mCameraLateralCorrection = glm::vec3(0);
+    }
+
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
+
+    // 通常カメラの位置から移動基準を更新する。nulloptなら従来の方向基準だけを使う。
+    void SetNormalCameraPosition(std::optional<glm::vec3> position) { mNormalCameraPosition = position; }
 
     // 移動方向を接平面上に固定する。有効な入力方向・上方向がなければ何もしない。
     // releaseOnNeutral=trueなら補間後も保持し、入力を離すか明確に方向変更したときに解除する。
@@ -32,6 +43,18 @@ public:
 
     // 通常の入力移動で実際に進んだワールド方向。停止・外力だけの移動ではゼロ。
     const glm::vec3& GetInputMovementDirection() const { return mInputMovementDirection; }
+
+    // 実際に進めた横移動に対応する接線補正。カメラの前後追従からこの分だけを除外する。
+    const glm::vec3& GetCameraLateralCorrection() const { return mCameraLateralCorrection; }
+
+    // カメラ追従で一度だけ使う補正を取り出す。次の消費までに再記録がなければ0を返す。
+    glm::vec3 ConsumeCameraLateralCorrection()
+    {
+        const auto correction = mCameraLateralCorrection;
+        mCameraLateralCorrection = glm::vec3(0);
+        return correction;
+    }
+
     void UnlockMovementDirectionForCameraAutoAlign();
 
     // 入力方向の明確な変更による自動回転の解除要求を返し、要求を消費する。
@@ -169,7 +192,16 @@ private:
     glm::vec3 CalculateEllipseDodgeMovementDelta(Player& player, const Planet& planet, float dodgeSpeed,
                                                  float deltaTime);
     float CalculateAirborneGravityAcceleration(float verticalSpeed) const;
-    glm::vec3 CalculateInputMovementDelta(const Player& player, const PlayerInput& input, float deltaTime) const;
+
+    struct InputMovementDelta {
+        glm::vec3 displacement{0};
+        glm::vec3 lateralMovement{0};
+        glm::vec3 lateralCorrection{0};
+    };
+
+    InputMovementDelta CalculateInputMovementDelta(const Player& player, const PlayerInput& input, float deltaTime,
+                                                   float speedMultiplier) const;
+    void RecordCameraLateralCorrection(const InputMovementDelta& movement, const glm::vec3& applied);
     bool ApplyWalkingMovement(Player& player, const glm::vec3& movementDelta);
     void ApplyJumpGravityMovement(Player& player, const glm::vec3& inputMovementDelta, float deltaTime);
     void RecordEllipseAirborneStartSurfaceNormal(const Player& player);
@@ -185,6 +217,8 @@ private:
     bool mIsCameraAutoAlignMovementDirectionLocked = false;
     bool mReleaseCameraDirectionOnNeutral = false;
     glm::vec3 mInputMovementDirection{0.0f};
+    glm::vec3 mCameraLateralCorrection{0.0f};
+    std::optional<glm::vec3> mNormalCameraPosition;
     bool mHasCameraAutoAlignCancellationRequest = false;
 
     int mCurrentPlanetNum = 0;

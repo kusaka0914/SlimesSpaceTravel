@@ -3988,3 +3988,301 @@ platforms:
         returnDelay: 1
         endpointWaitSeconds: 0
     platformId: legacy_platforms_10
+cameraZones:
+  - currentPlanetNum: 0
+    theta: 2.3687787
+    phi: 0.17499441
+    height: -14.697659
+    facingYaw: 0
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 6
+      - 7.3919215
+      - 6.0000005
+    pos:
+      - -12.84
+      - 5.03
+      - 9.07
+    upVec:
+      - 0.9969173
+      - 0.07845922
+      - 0
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 7.2037005
+      pitchDegrees: 32.603447
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -0.03908747
+        - 0.99844354
+        - 0.03978298
+      backDirection:
+        - 0.7775577
+        - 0.0053860596
+        - 0.62878865
+      lookOffset:
+        - -0.5709219
+        - 1.0589981
+        - -0.38571262
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      allowManualRotation: false
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 2.3687787
+    phi: 0.17499441
+    height: -14.697659
+    facingYaw: 0
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 10.528358
+      - 6.708502
+      - 6.0000005
+    pos:
+      - -13.94
+      - 11.06
+      - 0.82
+    upVec:
+      - 0.9969173
+      - 0.07845922
+      - 0
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 7.0035167
+      pitchDegrees: 34.191864
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -0.07845922
+        - 0.9969174
+        - 0
+      backDirection:
+        - -0.01931623
+        - -0.0015202225
+        - 0.99981225
+      lookOffset:
+        - -0.06705856
+        - 1.0241709
+        - -0.69711304
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      allowManualRotation: false
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+    textureTiling:
+      - 1
+      - 1
+  - currentPlanetNum: 0
+    theta: 2.3687787
+    phi: 0.17499441
+    height: -14.697659
+    facingYaw: 0
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0
+      - 0
+      - 0
+    scale:
+      - 6
+      - 7.3919215
+      - 6.0000005
+    pos:
+      - 0.5
+      - 5.26
+      - 5.79
+    upVec:
+      - 0.9969173
+      - 0.07845922
+      - 0
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 6.894544
+      pitchDegrees: -1.3026875
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -0.00011323594
+        - 0.99974453
+        - 0.02260672
+      backDirection:
+        - -0.004441017
+        - -0.022606999
+        - 0.99973464
+      lookOffset:
+        - -0.0003211517
+        - 1.4978862
+        - 0.06796694
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      allowManualRotation: false
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+    textureTiling:
+      - 1
+      - 1

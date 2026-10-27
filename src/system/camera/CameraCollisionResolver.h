@@ -25,6 +25,11 @@ public:
     glm::vec3 ResolveWithClearance(const glm::vec3& anchor, const glm::vec3& desiredCameraPos, const glm::vec3& up,
                                    float radius, const std::vector<Actor*>& ignoredActors) const;
 
+    // 球の経路をスイープし、接触区間長に基づくスコアを返す。0は全区間が空いている。
+    // 視線上の遮蔽は評価しない。物理ワールド未構築時・2点未満は0。
+    float MeasureCameraPathObstruction(const std::vector<glm::vec3>& points, float clearanceRadius,
+                                       const std::vector<Actor*>& ignoredActors) const;
+
     // 除外対象以外に遮蔽物がないか調べる。物理ワールド未構築時はtrue。
     bool HasClearLineOfSight(const glm::vec3& cameraPos, const glm::vec3& targetPos,
                              const std::vector<Actor*>& ignoredActors) const;

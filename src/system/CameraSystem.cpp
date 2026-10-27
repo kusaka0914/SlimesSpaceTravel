@@ -401,7 +401,10 @@ void CameraSystem::UpdateCamera(float deltaTime)
     SceneSystem& sceneSystem = mScene;
     const bool allowsMovementCameraAssist =
         sceneSystem.IsPlaying() && mTalkCameraBlend <= 0.0f && !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
+    std::vector<bool> dedicatedCameras(players.size(), false);
     for (std::size_t index = 0; index < yawDeltas.size(); ++index) {
+        dedicatedCameras[index] = mCameraZones.HasActiveZone(static_cast<int>(index)) ||
+                                  mCameraZones.GetPose(static_cast<int>(index)).has_value();
         if (!mCameraZones.AllowsManualRotation(static_cast<int>(index))) {
             yawDeltas[index] = 0.0f;
         }
@@ -409,7 +412,8 @@ void CameraSystem::UpdateCamera(float deltaTime)
             mCameraZones.NotifyManualInput(static_cast<int>(index));
         }
     }
-    mPlayerCamera.Update(players, yawDeltas, mPlayerCameraSettings, deltaTime, allowsMovementCameraAssist);
+    mPlayerCamera.Update(players, yawDeltas, mPlayerCameraSettings, deltaTime, allowsMovementCameraAssist,
+                         dedicatedCameras);
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
 }
@@ -513,7 +517,7 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
             continue;
         }
         if (mPlayerPitchOffsetsDegrees[index] != previousPitchOffsets[index]) {
-            mPlayerCamera.NotifyManualInput(players[index], static_cast<int>(index), mPlayerCameraSettings);
+            mPlayerCamera.NotifyManualInput(players[index], static_cast<int>(index));
             mCameraZones.NotifyManualInput(static_cast<int>(index));
         }
     }
@@ -834,7 +838,7 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
     const auto inverseView = glm::inverse(view);
     CameraPose normalPose;
     normalPose.position = glm::vec3(inverseView[3]);
-    normalPose.target = normalPose.position - glm::vec3(inverseView[2]) * distance;
+    normalPose.target = mPlayerCamera.GetLookTarget(playerIndex);
     normalPose.up = glm::vec3(inverseView[1]);
     normalPose.fieldOfViewDegrees = controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
                                                              : mPlayerCameraSettings.fieldOfViewDegrees;
@@ -846,7 +850,9 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
     if (!mCameraZones.GetPose(playerIndex)) {
         return ApplyPlayerShake(view, playerIndex);
     }
-    mPlayerCamera.AdoptZonePose(playerIndex, pose);
+    mPlayerCamera.AdoptZonePose(playerIndex, pose, *player);
+    // 同一フレームの再取得でゾーン側がキャッシュを返す場合も、最終姿勢を移動基準にする。
+    player->SetCameraForwardDirection(pose.position - pose.target, pose.up);
     const glm::vec3 forward = pose.target - pose.position;
     if (glm::dot(forward, forward) < 0.000001f) {
         return ApplyPlayerShake(view, playerIndex);

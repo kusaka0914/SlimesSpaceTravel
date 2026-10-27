@@ -396,6 +396,7 @@ void Player::ProcessActor()
 
 void Player::UpdateActor(float deltaTime)
 {
+    mMovement.ResetFrameMovement();
     UpdateNormalHitReaction(deltaTime);
     UpdateStarCollectionCelebration(deltaTime);
     ResolvePreUpdateCollisions();

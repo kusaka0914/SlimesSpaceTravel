@@ -3,6 +3,8 @@
 #include "RuntimeGameplayTests.h"
 #include "RuntimeReliabilityTests.h"
 #include "actor/Actor.h"
+#include "actor/CameraZone.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "app/Game.h"
 #include "editor/session/EditorBuildRestartService.h"
@@ -21,19 +23,24 @@
 #include "support/TestFileSupport.h"
 #include "system/CameraSystem.h"
 #include "system/InputSystem.h"
+#include "system/PhysicsSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/camera/CameraProjection.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "system/camera/zones/CameraZoneController.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
 #include "imgui.h"
 #include <GLFW/glfw3.h>
+#include <btBulletDynamicsCommon.h>
 #include <charconv>
 #include <cmath>
 #include <cstdlib>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <utility>
 
@@ -192,9 +199,7 @@ void CameraManualYawRemainsIndependent(Game& game)
     camera.SnapToPlayer(player, 0);
     camera.GetView(player, 0, 10.0f, 0.3f, 1.0f);
     const auto initial = camera.GetCameraPos(0);
-    // yawは先にPlayerの移動基準へ反映され、その後Cameraが追従する実フレームの順序を再現する。
-    player->SetCameraYaw(0.4f);
-    player->UpdateActor(0.0f);
+    // 手動yawはCameraが消費し、描画した視線をPlayerの移動基準へ返す。
     camera.Update({player}, {0.4f}, settings, 1.0f / 60.0f, true);
     camera.GetView(player, 0, 10.0f, 0.3f, 1.0f);
     const auto manual = camera.GetCameraPos(0);
@@ -679,6 +684,393 @@ void CamerasUseExplicitContextWithoutGame()
     std::cout << "[PASS] Runtime.CameraExplicitContextAndDegeneratePose\n";
 }
 
+void NormalCameraSeparatesPositionAndSight(Game& game)
+{
+    Player player(&game);
+    CameraCollisionResolver collision(nullptr);
+    PlayerCamera camera(collision);
+    PlayerCameraSettings settings;
+    settings.backwardFacingLookAheadDistance = 0.0f;
+    const glm::vec3 origin(0.0f);
+    constexpr float stepSeconds = 1.0f / 60.0f;
+    const auto reset = [&](const glm::vec3& position, const glm::vec3& up) {
+        player.SetPos(position);
+        player.SetUpVec(up);
+        player.SetOnGround(true);
+        player.SetCameraForwardDirection({0, 0, 1}, up);
+        camera.SnapToPlayer(&player, 0);
+        camera.GetView(&player, 0, settings.distance, glm::radians(settings.pitchDegrees), settings.targetHeight);
+    };
+    const auto step = [&](const glm::vec3& position, const glm::vec3& up) {
+        player.SetPos(position);
+        player.SetUpVec(up);
+        camera.Update({&player}, {0.0f}, settings, stepSeconds, true);
+        return camera.GetView(&player, 0, settings.distance, glm::radians(settings.pitchDegrees),
+                              settings.targetHeight);
+    };
+
+    for (float side : {-1.0f, 1.0f}) {
+        reset(origin, {0, 1, 0});
+        const auto initialPosition = camera.GetCameraPos(0);
+        const auto initialDirection = player.GetForwardVec();
+        for (int frame = 0; frame < 600; ++frame) {
+            const auto lateral = glm::normalize(glm::cross(player.GetUpVec(), player.GetForwardVec()));
+            step(player.GetPos() + lateral * (side * 0.03f), player.GetUpVec());
+            ExpectTrue(glm::distance(initialPosition, camera.GetCameraPos(0)) < 0.0001f,
+                       "sustained lateral motion keeps the camera position fixed");
+            const auto rawBack = camera.GetCameraPos(0) - player.GetPos();
+            const auto radial = glm::normalize(rawBack - player.GetUpVec() * glm::dot(rawBack, player.GetUpVec()));
+            ExpectTrue(glm::dot(radial, player.GetForwardVec()) > 0.99999f,
+                       "movement basis uses the current player position instead of the delayed look target");
+        }
+        ExpectTrue(glm::dot(initialDirection, player.GetForwardVec()) < 0.95f,
+                   "sight tracking changes the camera-relative movement basis without a back-align timer");
+        const auto stopped = player.GetPos();
+        for (int frame = 0; frame < 120; ++frame) {
+            step(stopped, player.GetUpVec());
+        }
+        ExpectTrue(glm::distance(initialPosition, camera.GetCameraPos(0)) < 0.0001f,
+                   "finishing sight interpolation does not translate the camera");
+    }
+
+    for (float forward : {-1.0f, 1.0f}) {
+        reset(origin, {0, 1, 0});
+        const auto before = camera.GetCameraPos(0);
+        step(player.GetPos() + glm::vec3(0.04f, 0, forward * 0.04f), player.GetUpVec());
+        const auto displacement = camera.GetCameraPos(0) - before;
+        ExpectTrue(forward * displacement.z > 0.0f, "forward and backward motion translate the camera");
+        ExpectNear(0.0f, displacement.x, 0.0001f, "diagonal displacement excludes lateral camera translation");
+    }
+
+    reset(origin, {0, 1, 0});
+    const auto beforeJump = camera.GetCameraPos(0);
+    for (int jump = 0; jump < 3; ++jump) {
+        player.SetOnGround(false);
+        for (int frame = 1; frame <= 60; ++frame) {
+            const float height = std::sin(glm::pi<float>() * frame / 60.0f) * 2.0f;
+            step(origin + glm::vec3(0, height, 0), {0, 1, 0});
+        }
+        player.SetOnGround(true);
+        for (int frame = 0; frame < 120; ++frame) {
+            step(origin, {0, 1, 0});
+        }
+        ExpectTrue(glm::distance(camera.GetCameraPos(0), beforeJump) < 0.001f,
+                   "repeated jumps do not accumulate camera height drift");
+    }
+
+    // 同じ大円を球面と楕円面で一周し、法線が上下反転する区間も通過する。
+    for (float verticalRadius : {40.0f, 25.0f}) {
+        reset(origin + glm::vec3(0, verticalRadius, 0), {0, 1, 0});
+        const auto initial = camera.GetCameraPos(0);
+        for (int frame = 1; frame <= 1260; ++frame) {
+            const float angle = glm::two_pi<float>() * frame / 1260.0f;
+            const glm::vec3 local(0, verticalRadius * std::cos(angle), -40.0f * std::sin(angle));
+            const auto up =
+                glm::normalize(glm::vec3(0, local.y / (verticalRadius * verticalRadius), local.z / 1600.0f));
+            const auto view = step(origin + local, up);
+            for (int column = 0; column < 4; ++column) {
+                for (int row = 0; row < 4; ++row) {
+                    ExpectTrue(std::isfinite(view[column][row]), "curved-surface view remains finite");
+                }
+            }
+            ExpectTrue(glm::distance(camera.GetCameraPos(0), player.GetPos()) < 30.0f,
+                       "longitudinal tracking follows the far side of the planet");
+        }
+        ExpectTrue(glm::distance(camera.GetCameraPos(0), initial) < 5.0f,
+                   "a full longitudinal circuit returns the camera near its starting position");
+    }
+
+    reset(origin, {0, 1, 0});
+    CameraPose zonePose;
+    zonePose.position = origin + glm::vec3(7, 5, 0);
+    zonePose.target = origin + glm::vec3(0, settings.targetHeight, 0);
+    zonePose.up = {0, 1, 0};
+    camera.AdoptZonePose(0, zonePose, player);
+    for (int frame = 0; frame < 120; ++frame) {
+        step(player.GetPos(), player.GetUpVec());
+    }
+    const auto restoredOffset = camera.GetCameraPos(0) - player.GetPos();
+    ExpectNear(settings.distance, glm::length(restoredOffset), 0.001f, "zone exit restores normal distance");
+    ExpectNear(glm::radians(settings.pitchDegrees),
+               std::atan2(-restoredOffset.y, glm::length(glm::vec2(restoredOffset.x, restoredOffset.z))), 0.001f,
+               "zone exit restores normal pitch");
+    ExpectTrue(glm::dot(player.GetForwardVec(), glm::vec3(1, 0, 0)) > 0.99f,
+               "normal framing restoration preserves zone azimuth instead of aligning behind the player");
+    player.SetFacingForwardVec({0, 0, 1});
+    camera.AlignBehindPlayer(&player, 0);
+    for (int frame = 0; frame < 120; ++frame) {
+        step(player.GetPos(), player.GetUpVec());
+    }
+    ExpectTrue(glm::dot(player.GetForwardVec(), -player.GetFacingForwardVec()) > 0.99f,
+               "an explicit reset still aligns behind the player");
+    std::cout << "[PASS] Runtime.NormalCameraPositionAndSightTracking\n";
+}
+
+void SphereCameraFollowsLateralMovement(Game& game)
+{
+    Planet sphere(&game);
+    sphere.SetScale(glm::vec3(40));
+    Planet ellipse(&game);
+    ellipse.SetScale({40, 25, 40});
+    Player player(&game);
+    player.Actor::SetCurrentPlanet(&sphere);
+    CameraCollisionResolver collision(nullptr);
+    PlayerCamera camera(collision);
+    PlayerCameraSettings settings;
+    settings.backwardFacingLookAheadDistance = 0.0f;
+    const auto render = [&]() {
+        camera.Update({&player}, {0.0f}, settings, 1.0f / 60.0f, true);
+        camera.GetView(&player, 0, settings.distance, glm::radians(settings.pitchDegrees), settings.targetHeight);
+    };
+    for (float side : {-1.0f, 1.0f}) {
+        player.Actor::SetCurrentPlanet(&sphere);
+        player.SetPos({0, 40, 0});
+        player.SetUpVec({0, 1, 0});
+        player.SetOnGround(true);
+        player.SetCameraForwardDirection({0, 0, 1}, player.GetUpVec());
+        camera.SnapToPlayer(&player, 0);
+        render();
+        const auto initial = camera.GetCameraPos(0);
+        for (int frame = 0; frame < 180; ++frame) {
+            player.SetPos(player.GetPos() + glm::vec3(side * 0.03f, 0, 0));
+            render();
+        }
+        ExpectTrue(side * (camera.GetCameraPos(0).x - initial.x) > 5.0f,
+                   "Sphere lateral movement translates the camera with the player");
+        ExpectTrue(glm::dot(player.GetForwardVec(), glm::vec3(0, 0, 1)) > 0.9999f,
+                   "Sphere lateral follow does not turn into a stationary-camera orbit");
+
+        const auto beforeExit = camera.GetCameraPos(0);
+        player.Actor::SetCurrentPlanet(&ellipse);
+        render();
+        ExpectTrue(glm::distance(beforeExit, camera.GetCameraPos(0)) < 0.0001f,
+                   "leaving Sphere preserves the current camera position");
+        for (int frame = 0; frame < 60; ++frame) {
+            const auto lateral = glm::normalize(glm::cross(player.GetUpVec(), player.GetForwardVec()));
+            player.SetPos(player.GetPos() + lateral * (side * 0.03f));
+            render();
+        }
+        const auto fixedPosition = camera.GetCameraPos(0);
+        ExpectTrue(glm::distance(beforeExit, fixedPosition) < 0.0001f,
+                   "Ellipse retains stationary lateral camera tracking");
+
+        player.Actor::SetCurrentPlanet(&sphere);
+        render();
+        ExpectTrue(glm::distance(fixedPosition, camera.GetCameraPos(0)) < 0.1f,
+                   "entering Sphere begins a smooth positional transition");
+        for (int frame = 0; frame < 120; ++frame) {
+            render();
+        }
+        ExpectNear(settings.distance, glm::distance(player.GetPos(), camera.GetCameraPos(0)), 0.001f,
+                   "Sphere transition restores the configured camera distance");
+    }
+    // 小さい球体では法線の変化が速く、描画用の姿勢補間を追従方向へ戻す誤差が顕著になる。
+    for (float radius : {4.0f, 40.0f}) {
+        sphere.SetScale(glm::vec3(radius));
+        player.Actor::SetCurrentPlanet(&sphere);
+        player.SetPos({0, radius, 0});
+        player.SetUpVec({0, 1, 0});
+        player.SetCameraForwardDirection({0, 0, 1}, player.GetUpVec());
+        camera.SnapToPlayer(&player, 0);
+        render();
+        const auto initial = camera.GetCameraPos(0);
+        for (int frame = 1; frame <= 600; ++frame) {
+            const float angle = frame * 0.0025f;
+            const glm::vec3 up(std::sin(angle), std::cos(angle), 0);
+            player.SetPos(up * radius);
+            player.SetUpVec(up);
+            render();
+            ExpectTrue(glm::dot(player.GetForwardVec(), glm::vec3(0, 0, 1)) > 0.9999f,
+                       "curved Sphere lateral follow does not accumulate yaw from smoothed up vectors");
+            const auto firstViewPosition = camera.GetCameraPos(0);
+            camera.GetView(&player, 0, settings.distance, glm::radians(settings.pitchDegrees), settings.targetHeight);
+            ExpectTrue(glm::distance(firstViewPosition, camera.GetCameraPos(0)) < 0.0001f,
+                       "repeated view reads do not change Sphere orbit direction");
+        }
+        ExpectTrue(glm::distance(initial, camera.GetCameraPos(0)) > radius,
+                   "the Sphere camera travels with the player around the surface");
+    }
+    std::cout << "[PASS] Runtime.SphereCameraLateralFollow\n";
+}
+
+void NormalCameraRestoresFramingAfterZoneExit(Game& game, bool sphereFollow)
+{
+    CameraZone zone(&game);
+    Planet planet(&game);
+    planet.SetScale(sphereFollow ? glm::vec3(40) : glm::vec3(40, 25, 40));
+    planet.AddStageObject(&zone);
+    auto* stage = game.GetCurrentStage();
+    ExpectTrue(stage != nullptr, "zone exit test has a stage");
+    ScopedTestStagePlanets planets(*stage, {&planet});
+    Player player(&game);
+    player.Actor::SetCurrentPlanet(&planet);
+    player.SetPos({0, 0, 0});
+    player.SetUpVec({0, 1, 0});
+    player.SetOnGround(true);
+    zone.SetStageSequenceName("cameraZones");
+    zone.SetStageYamlIndex(0);
+    zone.SetPos({0, 0, 0});
+    auto& zoneSettings = zone.GetSettings();
+    zoneSettings.mode = CameraZoneSettings::Mode::Fixed;
+    zoneSettings.fixedTracksPlayer = false;
+    zoneSettings.fixedPose = CameraPose{{20, 18, 0}, {0, 1.5f, 0}, {0, 1, 0}, 60};
+    zoneSettings.enterSeconds = 0;
+    zoneSettings.exitSeconds = 0.7f;
+    PlayerCameraSettings settings;
+    CameraCollisionResolver collision(nullptr);
+    PlayerCamera camera(collision);
+    CameraZoneController zones;
+    std::uint64_t frame = 0;
+    const auto render = [&]() {
+        camera.Update({&player}, {0.0f}, settings, 1.0f / 60.0f, true);
+        const auto view =
+            camera.GetView(&player, 0, settings.distance, glm::radians(settings.pitchDegrees), settings.targetHeight);
+        const auto inverse = glm::inverse(view);
+        CameraPose normal{camera.GetCameraPos(0), camera.GetLookTarget(0), glm::vec3(inverse[1]),
+                          settings.fieldOfViewDegrees};
+        const auto pose =
+            zones.Apply(player, 0, normal, stage, {}, collision, 16.0f / 9.0f, 1.0f / 60.0f, ++frame, true);
+        if (zones.GetPose(0)) {
+            camera.AdoptZonePose(0, pose, player);
+            player.SetCameraForwardDirection(pose.position - pose.target, pose.up);
+        }
+        return pose;
+    };
+    const auto inside = render();
+    ExpectTrue(zones.HasActiveZone(0), "the test begins inside the zone");
+    ExpectTrue(glm::distance(inside.position, zoneSettings.fixedPose.position) < 0.0001f,
+               "the zone overrides normal tracking for both planet shapes");
+    player.SetPos({8, 0, 0});
+    const auto firstExit = render();
+    ExpectFalse(zones.HasActiveZone(0), "leaving the box releases zone selection");
+    ExpectTrue(zones.GetPose(0).has_value(), "exit blends before releasing the output");
+    ExpectTrue(glm::distance(firstExit.position, inside.position) < 1.0f, "exit does not snap to normal distance");
+    CameraPose outside;
+    for (int index = 0; index < 120; ++index) {
+        outside = render();
+    }
+    ExpectFalse(zones.GetPose(0).has_value(), "the zone eventually releases its output");
+    const auto offset = outside.position - player.GetPos();
+    ExpectNear(settings.distance, glm::length(offset), 0.001f,
+               "exit reaches normal distance despite repeated pose adoption");
+    ExpectNear(glm::radians(settings.pitchDegrees), std::atan2(-offset.y, glm::length(glm::vec2(offset.x, offset.z))),
+               0.001f, "exit reaches normal pitch");
+    const auto settled = outside.position;
+    player.SetPos(player.GetPos() + glm::vec3(0, 0, 0.1f));
+    const float lateralTranslation = glm::distance(render().position, settled);
+    if (sphereFollow) {
+        ExpectTrue(lateralTranslation > 0.0001f, "Sphere resumes lateral position follow after zone exit");
+    } else {
+        ExpectTrue(lateralTranslation < 0.0001f, "Ellipse resumes fixed lateral tracking after zone exit");
+    }
+    std::cout << "[PASS] Runtime.NormalCameraRestoresZoneExitFraming sphere=" << sphereFollow << "\n";
+}
+
+void LateralWalkingKeepsNormalCameraRadius(Game& game)
+{
+    VirtualController controller;
+    InputSystem inputSystem;
+    PlayerInput input(inputSystem);
+    Player player(&game);
+    PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    movement.SetMoveSpeed(6.0f);
+    const PlayerInputContext context{
+        .devices = {.hasControllerOne = true},
+    };
+    const glm::vec3 origin(1000, 1000, 1000);
+    const auto cameraPosition = origin + glm::vec3(0, 6, 4);
+    const float radius = glm::distance(origin, cameraPosition);
+    for (int frameRate : {30, 60, 120}) {
+        for (Sint16 horizontal : {Sint16(-32000), Sint16(32000)}) {
+            for (float speedMultiplier : {1.0f, 0.75f}) {
+                controller.SetInput(horizontal, 0);
+                inputSystem.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+                input.ProcessActor(movement, context);
+                ExpectTrue(std::abs(input.GetMoveLeft()) > 0.9f, "lateral movement input is held");
+                ExpectNear(0.0f, input.GetMoveForward(), 0.0f, "the radius test has no forward input");
+                player.SetPos(origin);
+                player.SetUpVec({0, 1, 0});
+                player.SetOnGround(true);
+                movement.SetCameraForwardDirection({0, 0, 1}, {0, 1, 0});
+                movement.SetNormalCameraPosition(cameraPosition);
+                const float seconds = 1.0f / frameRate;
+                for (int frame = 0; frame < frameRate * 10; ++frame) {
+                    movement.UpdateCameraRelativeMovementDirections(player, input);
+                    const auto before = player.GetPos();
+                    const auto cameraBack = movement.GetForwardVec();
+                    movement.MoveFromInput(player, input, seconds, speedMultiplier);
+                    const auto follow = player.GetPos() - before - movement.GetCameraLateralCorrection();
+                    ExpectNear(0.0f, glm::dot(follow, cameraBack), 0.001f,
+                               "free lateral arc correction is excluded from forward camera tracking");
+                    ExpectNear(radius, glm::distance(player.GetPos(), cameraPosition), 0.05f,
+                               "ten seconds of lateral walking do not spiral away from the camera");
+                }
+                // Zoneからの方向指定では通常カメラ用の中間接線補正を解除する。
+                player.SetPos(origin);
+                movement.SetCameraForwardDirection({0, 0, 1}, {0, 1, 0});
+                movement.UpdateCameraRelativeMovementDirections(player, input);
+                movement.MoveFromInput(player, input, seconds, speedMultiplier);
+                ExpectNear(origin.z, player.GetPos().z, 0.0001f,
+                           "explicit camera direction keeps zone movement unchanged");
+            }
+        }
+    }
+    std::cout << "[PASS] Runtime.LateralWalkingPreservesNormalCameraRadius\n";
+}
+
+void LateralWallSlideRetainsForwardCameraMovement(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "wall-slide camera test has a physics world");
+    const glm::vec3 origin(1000, 1000, 1000);
+    btBoxShape shape(btVector3(0.05f, 10, 10));
+    struct Wall {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        Wall(btDiscreteDynamicsWorld& world, btCollisionShape& shape, const glm::vec3& origin)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            btTransform transform = btTransform::getIdentity();
+            const auto rotation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0, 1, 0));
+            transform.setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+            transform.setOrigin(btVector3(origin.x + 1.2f, origin.y, origin.z - 1.2f));
+            object.setWorldTransform(transform);
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        ~Wall() { world.removeCollisionObject(&object); }
+    } wall(*world, shape, origin);
+    VirtualController controller;
+    controller.SetInput(-32000, 0);
+    InputSystem source;
+    source.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+    PlayerInput input(source);
+    PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    input.ProcessActor(movement, PlayerInputContext{.devices = {.hasControllerOne = true}});
+    ExpectTrue(std::abs(input.GetMoveLeft()) > 0.9f && input.GetMoveForward() == 0,
+               "wall slide is driven by lateral input alone");
+    Player player(&game);
+    player.SetPos(origin);
+    player.SetUpVec({0, 1, 0});
+    player.SetOnGround(true);
+    movement.SetMoveSpeed(6.0f);
+    movement.SetCameraForwardDirection({0, 0, 1}, {0, 1, 0});
+    movement.SetNormalCameraPosition(origin + glm::vec3(0, 6, 4));
+    bool sawForwardSlide = false;
+    for (int frame = 0; frame < 60; ++frame) {
+        movement.UpdateCameraRelativeMovementDirections(player, input);
+        const auto before = player.GetPos();
+        const auto back = movement.GetForwardVec();
+        movement.MoveFromInput(player, input, 1.0f / 60.0f);
+        const auto follow = player.GetPos() - before - movement.ConsumeCameraLateralCorrection();
+        sawForwardSlide = sawForwardSlide || std::abs(glm::dot(follow, back)) > 0.005f;
+        ExpectTrue(glm::length(movement.ConsumeCameraLateralCorrection()) == 0,
+                   "camera correction is consumed once, including when subsequent world updates are paused");
+    }
+    ExpectTrue(sawForwardSlide, "forward wall-slide displacement remains available to camera tracking");
+    std::cout << "[PASS] Runtime.LateralWallSlideKeepsForwardCameraMovement\n";
+}
+
 void CameraControlsAreIndependentAndStopDuringEditorCapture(Game& game)
 {
     Player* first = game.GetMainPlayer();
@@ -811,6 +1203,12 @@ int main(int argc, char** argv)
              CustomUIKeepsOrderAndFitsViewport(game);
              CamerasUseExplicitContextWithoutGame();
              CameraControlsAreIndependentAndStopDuringEditorCapture(game);
+             NormalCameraSeparatesPositionAndSight(game);
+             SphereCameraFollowsLateralMovement(game);
+             NormalCameraRestoresFramingAfterZoneExit(game, false);
+             NormalCameraRestoresFramingAfterZoneExit(game, true);
+             LateralWalkingKeepsNormalCameraRadius(game);
+             LateralWallSlideRetainsForwardCameraMovement(game);
          }},
         {"ugc",
          [](Game& game) {

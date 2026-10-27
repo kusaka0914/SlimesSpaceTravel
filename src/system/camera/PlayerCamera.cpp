@@ -1,98 +1,66 @@
 #include "system/camera/PlayerCamera.h"
-#include "system/camera/CinematicCameraTypes.h"
 
 #include "actor/Enemy.h"
+#include "actor/Planet.h"
 #include "actor/Player.h"
 #include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/CinematicCameraTypes.h"
 #include "system/camera/PlayerCameraSettings.h"
 
 #include <algorithm>
 #include <cmath>
-#include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <optional>
 
 namespace {
-
 constexpr float directionEpsilonSquared = 0.000001f;
 
-bool TryGetTangentDirection(const glm::vec3& direction, const glm::vec3& up, glm::vec3& tangentDirection)
+bool UsesSphereFollow(const Player& player)
 {
-    const glm::vec3 projectedDirection = direction - up * glm::dot(direction, up);
-    const float lengthSquared = glm::dot(projectedDirection, projectedDirection);
-    if (lengthSquared <= directionEpsilonSquared) {
+    const auto* planet = player.GetCurrentPlanet();
+    return planet && planet->GetPlanetShape() == Planet::PlanetShape::Sphere;
+}
+
+glm::vec3 OrbitPosition(const glm::vec3& center, const glm::vec3& back, const glm::vec3& up, float distance,
+                        float pitch)
+{
+    return center + (back * std::cos(pitch) - up * std::sin(pitch)) * distance;
+}
+
+glm::vec3 NormalizeOr(const glm::vec3& value, const glm::vec3& fallback)
+{
+    return glm::dot(value, value) > directionEpsilonSquared ? glm::normalize(value) : fallback;
+}
+
+bool TryGetTangentDirection(const glm::vec3& direction, const glm::vec3& up, glm::vec3& tangent)
+{
+    const glm::vec3 projected = direction - up * glm::dot(direction, up);
+    if (glm::dot(projected, projected) <= directionEpsilonSquared) {
         return false;
     }
-
-    tangentDirection = projectedDirection / std::sqrt(lengthSquared);
+    tangent = glm::normalize(projected);
     return true;
 }
 
-glm::vec3 RotateBetween(const glm::vec3& start, const glm::vec3& target, const glm::vec3& up, float progress)
+glm::vec3 RotateBetween(const glm::vec3& from, const glm::vec3& to, const glm::vec3& up, float amount)
 {
-    const float dot = glm::clamp(glm::dot(start, target), -1.0f, 1.0f);
-    const float signedAngle = std::atan2(glm::dot(glm::cross(start, target), up), dot);
-    const float angle = signedAngle * glm::clamp(progress, 0.0f, 1.0f);
-
-    const glm::vec3 rotated = start * std::cos(angle) + glm::cross(up, start) * std::sin(angle);
-
-    glm::vec3 tangentDirection;
-    return TryGetTangentDirection(rotated, up, tangentDirection) ? tangentDirection : target;
+    const float angle = std::atan2(glm::dot(glm::cross(from, to), up), glm::clamp(glm::dot(from, to), -1.0f, 1.0f));
+    return glm::angleAxis(angle * amount, up) * from;
 }
 
-glm::vec3 RotateAroundUp(const glm::vec3& direction, const glm::vec3& up, float angleRadians)
+float SmoothingAmount(float speed, float deltaTime)
 {
-    const glm::vec3 rotated = direction * std::cos(angleRadians) + glm::cross(up, direction) * std::sin(angleRadians);
-
-    glm::vec3 tangentDirection;
-    return TryGetTangentDirection(rotated, up, tangentDirection) ? tangentDirection : direction;
+    return 1.0f - std::exp(-std::max(0.0f, speed) * std::max(0.0f, deltaTime));
 }
 
-glm::vec3 RotateTowards(const glm::vec3& current, const glm::vec3& desired, const glm::vec3& up, float smoothingSpeed,
-                        float deltaTime)
+glm::mat4 MakeView(const glm::vec3& position, const glm::vec3& target, glm::vec3 up)
 {
-    const float blend = 1.0f - std::exp(-std::max(0.0f, smoothingSpeed) * std::max(0.0f, deltaTime));
-    return RotateBetween(current, desired, up, blend);
-}
-
-void ResetAutoFollowInputTracking(PlayerCameraState& state)
-{
-    state.movementInputHoldSeconds = 0.0f;
-    state.trackedMovementInput = glm::vec2(0.0f);
-    state.hasTriggeredAutoFollowForCurrentMovementInput = false;
-}
-
-void CancelAutomaticFollow(PlayerCameraState& state)
-{
-    state.isAutoFollowingBehindPlayer = false;
-    state.isSurfaceTraversalAutoAligning = false;
-    state.autoFollowElapsedSeconds = 0.0f;
-    state.autoFollowStartOffsetRadians = 0.0f;
-    ResetAutoFollowInputTracking(state);
-}
-
-bool StartAutomaticFollowBehindPlayer(Player& player, PlayerCameraState& state)
-{
-    glm::vec3 startForward;
-    glm::vec3 targetForward;
-    if (!TryGetTangentDirection(state.cameraForwardVec, state.upVec, startForward) ||
-        !TryGetTangentDirection(-player.GetFacingForwardVec(), state.upVec, targetForward)) {
-        return false;
+    const auto direction = NormalizeOr(target - position, {0, 0, -1});
+    if (glm::dot(glm::cross(direction, up), glm::cross(direction, up)) <= directionEpsilonSquared) {
+        up = std::abs(direction.y) < 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
     }
-
-    const float targetToStartDot = glm::clamp(glm::dot(targetForward, startForward), -1.0f, 1.0f);
-    state.autoFollowStartForwardVec = startForward;
-    state.autoFollowTargetForwardVec = targetForward;
-    state.autoFollowStartOffsetRadians =
-        std::atan2(glm::dot(glm::cross(targetForward, startForward), state.upVec), targetToStartDot);
-    state.autoFollowElapsedSeconds = 0.0f;
-    state.isAutoFollowingBehindPlayer = true;
-    return true;
-}
-
-void ResetSurfaceTraversalTracking(PlayerCameraState& state)
-{
-    state.hasSurfaceTraversalStartUp = false;
-    state.hasAutoAlignedForCurrentSurfaceTraversal = false;
+    return glm::lookAt(position, position + direction, up);
 }
 } // namespace
 
@@ -102,67 +70,72 @@ PlayerCamera::PlayerCamera(CameraCollisionResolver& collisionResolver)
 }
 
 void PlayerCamera::Update(const std::vector<Player*>& players, const std::vector<float>& yawDeltas,
-                          const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist)
+                          const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist,
+                          const std::vector<bool>& dedicatedCameras)
 {
-    if (players.empty()) {
-        return;
-    }
-
     ResizeState(players.size());
-
-    for (std::size_t playerIndex = 0; playerIndex < players.size(); ++playerIndex) {
-        Player* player = players[playerIndex];
+    for (std::size_t index = 0; index < players.size(); ++index) {
+        auto* player = players[index];
         if (!player) {
             continue;
         }
-
-        const float yawDelta = playerIndex < yawDeltas.size() ? yawDeltas[playerIndex] : 0.0f;
-        constexpr float manualYawEpsilon = 0.000001f;
-        const float appliedManualYawMagnitude = std::max(std::abs(yawDelta), std::abs(player->GetCameraYaw()));
-        if (appliedManualYawMagnitude > manualYawEpsilon) {
-            NotifyManualInput(player, static_cast<int>(playerIndex), settings);
+        const float yaw = index < yawDeltas.size() ? yawDeltas[index] : 0.0f;
+        if (std::abs(yaw) > 0.000001f) {
+            NotifyManualInput(player, static_cast<int>(index));
+            mStates[index].manualYaw += yaw;
         }
-
-        player->SetCameraYaw(yawDelta);
-        UpdateState(player, static_cast<int>(playerIndex), settings, deltaTime, allowsMovementCameraAssist);
+        // 視線から移動基準を返すため、PlayerMovement側で同じyawを二重に適用しない。
+        player->SetCameraYaw(0.0f);
+        const bool dedicated = index < dedicatedCameras.size() && dedicatedCameras[index];
+        UpdateState(player, static_cast<int>(index), settings, deltaTime, allowsMovementCameraAssist, dedicated);
     }
 }
 
-void PlayerCamera::NotifyManualInput(Player* player, int playerIndex, const PlayerCameraSettings& settings)
+void PlayerCamera::NotifyManualInput(Player* player, int playerIndex)
 {
     if (!player || playerIndex < 0) {
         return;
     }
     ResizeState(static_cast<std::size_t>(playerIndex + 1));
-    PlayerCameraState& state = mStates[static_cast<std::size_t>(playerIndex)];
-    state.isAligningBehindPlayer = false;
-    if (state.isSurfaceTraversalAutoAligning) {
-        player->UnlockMovementDirectionForCameraAutoAlign();
-    }
-    CancelAutomaticFollow(state);
-    state.autoFollowDelayRemainingSeconds = settings.autoFollowDelayAfterManualInputSeconds;
+    mStates[playerIndex].isAligningBehindPlayer = false;
+    mStates[playerIndex].manualInputPending = true;
+    mStates[playerIndex].hasAttackTargetForward = false;
 }
 
-void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose)
+void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose, const Player& player)
 {
     if (playerIndex < 0 || static_cast<std::size_t>(playerIndex) >= mStates.size()) {
         return;
     }
     auto& state = mStates[playerIndex];
     state.isAligningBehindPlayer = false;
-    CancelAutomaticFollow(state);
-    ResetSurfaceTraversalTracking(state);
-    glm::vec3 direction;
-    if (TryGetTangentDirection(pose.position - pose.target, pose.up, direction)) {
-        state.cameraForwardVec = direction;
-        state.hasCameraForward = true;
-    }
-    // ゾーンの構図と通常カメラの下方向補正を重ねず、退出時にも補正を持ち越さない。
+    state.hasAttackTargetForward = false;
+    state.isTransitioningToPlayer = false;
+    state.lateralFollowBlend = 1.0f;
+    state.isSettlingJump = false;
+    state.orbitRequested = false;
+    state.manualYaw = 0.0f;
+    state.upVec = NormalizeOr(pose.up, {0, 1, 0});
+    state.previousPlayerUp = NormalizeOr(player.GetUpVec(), state.upVec);
+    state.previousPlayerPosition = player.GetPos();
+    state.hasPlayerPosition = true;
+    state.cameraPos = pose.position;
+    state.followPosition = pose.position;
+    state.desiredFollowPosition = pose.position;
+    state.hasFollowPosition = true;
+    state.needsNormalFraming = true;
+    // 表示中の注視点を保持する。通常構図への復帰先はGetViewで別に組み立てる。
+    state.targetPos = pose.target - state.upVec * state.targetHeight;
+    state.lookTarget = pose.target;
+    const auto zoneBack = UsesSphereFollow(player)
+                              ? glm::quat(state.upVec, state.previousPlayerUp) * (pose.position - pose.target)
+                              : pose.position - pose.target;
+    state.hasCameraForward = TryGetTangentDirection(
+        zoneBack, UsesSphereFollow(player) ? state.previousPlayerUp : state.upVec, state.cameraForwardVec);
+    state.isRecoveringFromCollision = false;
     state.isBackwardFacingFramingActive = false;
     state.backwardMovementHoldSeconds = 0.0f;
     state.backwardFacingLookAheadDistance = 0.0f;
-    state.cameraPos = pose.position;
-    state.hasResolvedCameraDistance = false;
 }
 
 void PlayerCamera::Reset()
@@ -175,35 +148,18 @@ void PlayerCamera::SnapToPlayer(Player* player, int playerIndex)
     if (!player || playerIndex < 0) {
         return;
     }
-
     ResizeState(static_cast<std::size_t>(playerIndex + 1));
-
-    PlayerCameraState& state = mStates[static_cast<std::size_t>(playerIndex)];
+    auto& state = mStates[playerIndex];
+    state = {};
+    state.followsLateralMovement = UsesSphereFollow(*player);
     state.targetPos = player->GetPos();
-
-    const glm::vec3 playerUpDirection = player->GetUpVec();
-    const float upLengthSquared = glm::dot(playerUpDirection, playerUpDirection);
-    state.upVec = upLengthSquared > directionEpsilonSquared ? playerUpDirection / std::sqrt(upLengthSquared)
-                                                            : glm::vec3(0.0f, 1.0f, 0.0f);
-
-    glm::vec3 cameraForwardDirection;
-    if (TryGetTangentDirection(player->GetForwardVec(), state.upVec, cameraForwardDirection)) {
-        state.cameraForwardVec = cameraForwardDirection;
-        state.hasCameraForward = true;
-    } else {
-        state.hasCameraForward = false;
-    }
-
-    state.hasResolvedCameraDistance = false;
-    state.hasAttackTargetForward = false;
-    state.isAligningBehindPlayer = false;
+    state.previousPlayerPosition = player->GetPos();
+    state.upVec = NormalizeOr(player->GetUpVec(), {0, 1, 0});
+    state.previousPlayerUp = state.upVec;
+    state.hasPlayerPosition = true;
+    state.hasCameraForward = TryGetTangentDirection(player->GetForwardVec(), state.upVec, state.cameraForwardVec);
+    player->SetCameraYaw(0.0f);
     player->UnlockMovementDirectionForCameraAutoAlign();
-    CancelAutomaticFollow(state);
-    state.isBackwardFacingFramingActive = false;
-    state.autoFollowDelayRemainingSeconds = 0.0f;
-    state.backwardMovementHoldSeconds = 0.0f;
-    ResetSurfaceTraversalTracking(state);
-    state.backwardFacingLookAheadDistance = 0.0f;
 }
 
 void PlayerCamera::TransitionToPlayer(int fromPlayerIndex, Player* player, int toPlayerIndex)
@@ -211,72 +167,47 @@ void PlayerCamera::TransitionToPlayer(int fromPlayerIndex, Player* player, int t
     if (!player || toPlayerIndex < 0) {
         return;
     }
-
-    if (fromPlayerIndex < 0 || fromPlayerIndex >= static_cast<int>(mStates.size()) ||
+    if (fromPlayerIndex < 0 || static_cast<std::size_t>(fromPlayerIndex) >= mStates.size() ||
         fromPlayerIndex == toPlayerIndex) {
         SnapToPlayer(player, toPlayerIndex);
         return;
     }
-
-    const PlayerCameraState previousState = mStates[static_cast<std::size_t>(fromPlayerIndex)];
+    const auto previous = mStates[fromPlayerIndex];
     ResizeState(static_cast<std::size_t>(toPlayerIndex + 1));
-
-    PlayerCameraState& state = mStates[static_cast<std::size_t>(toPlayerIndex)];
-    state = previousState;
+    auto& state = mStates[toPlayerIndex];
+    state = previous;
     state.hasAttackTargetForward = false;
+    state.manualInputPending = false;
+    const auto up = NormalizeOr(player->GetUpVec(), previous.previousPlayerUp);
+    const auto transport = glm::quat(previous.previousPlayerUp, up);
+    state.desiredFollowPosition =
+        player->GetPos() + transport * (previous.followPosition - previous.previousPlayerPosition);
+    state.previousPlayerPosition = player->GetPos();
+    state.previousPlayerUp = up;
+    state.followsLateralMovement = UsesSphereFollow(*player);
+    state.lateralFollowStart = previous.cameraPos;
+    state.lateralFollowBlend = state.hasFollowPosition && state.followsLateralMovement ? 0.0f : 1.0f;
+    state.isTransitioningToPlayer = state.hasFollowPosition;
     state.isAligningBehindPlayer = false;
+    state.manualYaw = 0.0f;
+    player->SetCameraForwardDirection(state.cameraForwardVec, state.upVec);
+    player->SetCameraYaw(0.0f);
     player->UnlockMovementDirectionForCameraAutoAlign();
-    CancelAutomaticFollow(state);
-    ResetSurfaceTraversalTracking(state);
-
-    if (state.hasCameraForward) {
-        player->SetCameraForwardDirection(state.cameraForwardVec, state.upVec);
-    }
 }
 
 void PlayerCamera::SnapBehindPlayer(Player* player, int playerIndex)
 {
+    SnapToPlayer(player, playerIndex);
     if (!player || playerIndex < 0) {
         return;
     }
-
-    ResizeState(static_cast<std::size_t>(playerIndex + 1));
-
-    PlayerCameraState& state = mStates[static_cast<std::size_t>(playerIndex)];
-    state.targetPos = player->GetPos();
-
-    const glm::vec3 playerUpDirection = player->GetUpVec();
-    const float upLengthSquared = glm::dot(playerUpDirection, playerUpDirection);
-    state.upVec = upLengthSquared > directionEpsilonSquared ? playerUpDirection / std::sqrt(upLengthSquared)
-                                                            : glm::vec3(0.0f, 1.0f, 0.0f);
-
-    glm::vec3 cameraForwardDirection;
-    if (!TryGetTangentDirection(-player->GetFacingForwardVec(), state.upVec, cameraForwardDirection)) {
-        state.hasCameraForward = false;
-        state.hasAttackTargetForward = false;
-        state.isAligningBehindPlayer = false;
-        player->UnlockMovementDirectionForCameraAutoAlign();
-        CancelAutomaticFollow(state);
-        state.isBackwardFacingFramingActive = false;
-        state.autoFollowDelayRemainingSeconds = 0.0f;
-        state.backwardMovementHoldSeconds = 0.0f;
-        ResetSurfaceTraversalTracking(state);
-        state.backwardFacingLookAheadDistance = 0.0f;
-        return;
+    auto& state = mStates[playerIndex];
+    state.manualInputPending = true;
+    state.hasCameraForward =
+        TryGetTangentDirection(-player->GetFacingForwardVec(), state.upVec, state.cameraForwardVec);
+    if (state.hasCameraForward) {
+        player->SetCameraForwardDirection(state.cameraForwardVec, state.upVec);
     }
-
-    state.cameraForwardVec = cameraForwardDirection;
-    state.hasCameraForward = true;
-    state.hasAttackTargetForward = false;
-    state.isAligningBehindPlayer = false;
-    player->UnlockMovementDirectionForCameraAutoAlign();
-    CancelAutomaticFollow(state);
-    state.isBackwardFacingFramingActive = false;
-    state.autoFollowDelayRemainingSeconds = 0.0f;
-    state.backwardMovementHoldSeconds = 0.0f;
-    ResetSurfaceTraversalTracking(state);
-    state.backwardFacingLookAheadDistance = 0.0f;
-    player->SetCameraForwardDirection(cameraForwardDirection, state.upVec);
 }
 
 void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
@@ -284,20 +215,13 @@ void PlayerCamera::AlignBehindPlayer(Player* player, int playerIndex)
     if (!player || playerIndex < 0) {
         return;
     }
-
-    ResizeState(playerIndex + 1);
-
-    PlayerCameraState& state = mStates[playerIndex];
-    glm::vec3 cameraForward;
-    if (!TryGetTangentDirection(-player->GetFacingForwardVec(), player->GetUpVec(), cameraForward)) {
-        return;
-    }
-
-    player->UnlockMovementDirectionForCameraAutoAlign();
-    CancelAutomaticFollow(state);
-    state.alignTargetForwardVec = cameraForward;
-    state.isAligningBehindPlayer = true;
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+    auto& state = mStates[playerIndex];
+    state.manualInputPending = true;
     state.hasAttackTargetForward = false;
+    state.isAligningBehindPlayer = TryGetTangentDirection(
+        -player->GetFacingForwardVec(), NormalizeOr(player->GetUpVec(), {0, 1, 0}), state.alignTargetForwardVec);
+    player->UnlockMovementDirectionForCameraAutoAlign();
 }
 
 void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm::vec3& targetPosition, float blend)
@@ -305,357 +229,311 @@ void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm:
     if (!player || playerIndex < 0) {
         return;
     }
-
-    ResizeState(playerIndex + 1);
-
-    PlayerCameraState& state = mStates[playerIndex];
-
-    glm::vec3 up = state.upVec;
-    const float upLengthSquared = glm::dot(up, up);
-    if (upLengthSquared <= directionEpsilonSquared) {
-        return;
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+    auto& state = mStates[playerIndex];
+    const auto directionUp = UsesSphereFollow(*player) ? NormalizeOr(player->GetUpVec(), state.upVec) : state.upVec;
+    glm::vec3 from, to;
+    if (TryGetTangentDirection(state.cameraForwardVec, directionUp, from) &&
+        TryGetTangentDirection(player->GetPos() - targetPosition, directionUp, to)) {
+        state.cameraForwardVec = RotateBetween(from, to, directionUp, std::clamp(blend, 0.0f, 1.0f));
+        state.hasCameraForward = true;
+        state.orbitRequested = true;
     }
-    up /= std::sqrt(upLengthSquared);
-
-    glm::vec3 currentForward;
-    if (!TryGetTangentDirection(state.cameraForwardVec, up, currentForward) &&
-        !TryGetTangentDirection(player->GetForwardVec(), up, currentForward)) {
-        return;
-    }
-
-    glm::vec3 targetForward;
-    if (!TryGetTangentDirection(player->GetPos() - targetPosition, up, targetForward)) {
-        return;
-    }
-
-    const float clampedBlend = glm::clamp(blend, 0.0f, 1.0f);
-    const float dotValue = glm::clamp(glm::dot(currentForward, targetForward), -1.0f, 1.0f);
-    const float signedAngle = std::atan2(glm::dot(glm::cross(currentForward, targetForward), up), dotValue);
-    const float angle = signedAngle * clampedBlend;
-    const glm::vec3 rotated = currentForward * std::cos(angle) + glm::cross(up, currentForward) * std::sin(angle);
-
-    if (!TryGetTangentDirection(rotated, up, state.cameraForwardVec)) {
-        state.cameraForwardVec = targetForward;
-    }
-    state.hasCameraForward = true;
 }
 
+void PlayerCamera::UpdateFollowPosition(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
+                                        float deltaTime)
+{
+    const auto up = NormalizeOr(player->GetUpVec(), state.previousPlayerUp);
+    const auto delta = player->GetPos() - state.previousPlayerPosition;
+    if (state.followsLateralMovement) {
+        // 球面では方向だけを地面法線へ運び、位置はGetViewでプレイヤー全方向に追従させる。
+        state.cameraForwardVec = glm::quat(state.previousPlayerUp, up) * state.cameraForwardVec;
+        player->ConsumeCameraLateralCorrection();
+        constexpr float profileTransitionSeconds = 0.7f;
+        state.lateralFollowBlend =
+            std::min(1.0f, state.lateralFollowBlend + std::max(0.0f, deltaTime) / profileTransitionSeconds);
+        state.previousPlayerPosition = player->GetPos();
+        state.previousPlayerUp = up;
+        return;
+    }
+    glm::vec3 back;
+    if (!TryGetTangentDirection(state.cameraForwardVec, state.previousPlayerUp, back)) {
+        back = NormalizeOr(glm::cross(state.previousPlayerUp, glm::vec3(1, 0, 0)), {0, 0, 1});
+    }
+    // 横入力でも壁滑りで前後に進むため、入力ではなく実移動を追う。円弧用の接線補正だけを除く。
+    const auto lateralCorrection = player->ConsumeCameraLateralCorrection();
+    const auto followDelta = glm::dot(delta, delta) > 0.00000001f ? delta - lateralCorrection : delta;
+    const float forwardDistance = glm::dot(followDelta, back);
+    const bool hasForwardMovement = std::abs(forwardDistance) > 0.00001f;
+    const bool isAirborne = !player->GetOnGround();
+    state.isSettlingJump = state.isSettlingJump || isAirborne;
+    if (state.hasFollowPosition && (hasForwardMovement || isAirborne)) {
+        glm::vec3 translation(0.0f);
+        if (hasForwardMovement) {
+            translation += back * forwardDistance;
+            // 法線変化のうち前後方向だけを使い、左右移動で基準位置が惑星を周回しないようにする。
+            const float curveAngle = std::atan2(glm::dot(up, back), glm::dot(up, state.previousPlayerUp));
+            const auto axis = NormalizeOr(glm::cross(state.previousPlayerUp, back), {1, 0, 0});
+            const auto rotation = glm::angleAxis(curveAngle, axis);
+            state.desiredFollowPosition =
+                state.previousPlayerPosition + rotation * (state.desiredFollowPosition - state.previousPlayerPosition);
+        }
+        // 空中ではジャンプ・落下の高さを追う。接地中の法線追従は実際に前後へ進んだ場合に限定する。
+        if (isAirborne || hasForwardMovement) {
+            translation += state.previousPlayerUp * glm::dot(delta, state.previousPlayerUp);
+        }
+        state.desiredFollowPosition += translation;
+    } else if (!state.isTransitioningToPlayer) {
+        // 地上の左右追跡では位置の残り補間を止める。着地後だけは高さの遅れを解消し、ジャンプごとの漂流を防ぐ。
+        const auto jumpCorrection =
+            state.isSettlingJump ? up * glm::dot(state.desiredFollowPosition - state.followPosition, up) : glm::vec3(0);
+        state.desiredFollowPosition = state.followPosition + jumpCorrection;
+    }
+    if (state.hasFollowPosition) {
+        state.followPosition = glm::mix(state.followPosition, state.desiredFollowPosition,
+                                        SmoothingAmount(settings.positionSmoothingSpeed, deltaTime));
+        if (glm::distance(state.followPosition, state.desiredFollowPosition) < 0.001f) {
+            state.followPosition = state.desiredFollowPosition;
+            state.isTransitioningToPlayer = false;
+            state.isSettlingJump = false;
+        }
+    }
+    state.previousPlayerPosition = player->GetPos();
+    state.previousPlayerUp = up;
+}
+
+void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCameraSettings& settings, float deltaTime,
+                               bool allowsMovementCameraAssist, bool dedicatedCamera)
+{
+    auto& state = mStates[playerIndex];
+    const bool manualInput = state.manualInputPending;
+    state.manualInputPending = false;
+    state.attackCameraManualDelay = manualInput
+                                        ? settings.attackCameraManualOverrideSeconds
+                                        : std::max(0.0f, state.attackCameraManualDelay - std::max(0.0f, deltaTime));
+    const bool sphereFollow = UsesSphereFollow(*player);
+    if (state.followsLateralMovement != sphereFollow) {
+        state.followsLateralMovement = sphereFollow;
+        state.desiredFollowPosition = state.followPosition;
+        if (sphereFollow && state.hasFollowPosition) {
+            // 固定位置から追従方式へ戻る際、残った横方向の距離を一度に詰めない。
+            state.lateralFollowStart = state.followPosition;
+            state.lateralFollowBlend = 0.0f;
+            state.isTransitioningToPlayer = true;
+        }
+    }
+    if (!state.hasPlayerPosition) {
+        state.upVec = NormalizeOr(player->GetUpVec(), {0, 1, 0});
+        state.targetPos = player->GetPos();
+        state.previousPlayerPosition = player->GetPos();
+        state.previousPlayerUp = state.upVec;
+        state.hasPlayerPosition = true;
+    }
+    // テレポート・復帰では、以前の位置との差分を通常移動として加算しない。
+    if (glm::distance(state.previousPlayerPosition, player->GetPos()) > 12.0f) {
+        state.hasFollowPosition = false;
+        state.targetPos = player->GetPos();
+        state.previousPlayerPosition = player->GetPos();
+        state.isRecoveringFromCollision = false;
+    }
+    UpdateFollowPosition(player, state, settings, deltaTime);
+    const auto up = NormalizeOr(player->GetUpVec(), {0, 1, 0});
+    state.upVec = glm::slerp(glm::quat(1, 0, 0, 0), glm::quat(state.upVec, up),
+                             SmoothingAmount(settings.upSmoothingSpeed, deltaTime)) *
+                  state.upVec;
+    state.upVec = NormalizeOr(state.upVec, up);
+    state.targetPos =
+        glm::mix(state.targetPos, player->GetPos(), SmoothingAmount(settings.targetSmoothingSpeed, deltaTime));
+    state.collisionRecoveryBlend = SmoothingAmount(6.0f, deltaTime);
+    if (player->ConsumeCameraAutoAlignCancellationRequest()) {
+        player->UnlockMovementDirectionForCameraAutoAlign();
+    }
+    const bool explicitAlignment = state.isAligningBehindPlayer;
+    UpdateCameraForward(player, state, deltaTime);
+    UpdateAttackCameraAssist(player, state, settings, deltaTime,
+                             allowsMovementCameraAssist && !dedicatedCamera && !manualInput && !explicitAlignment &&
+                                 !state.isTransitioningToPlayer);
+    UpdateBackwardFacingFraming(player, state, settings, deltaTime,
+                                allowsMovementCameraAssist && player->GetOnGround());
+}
+
+void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state, float deltaTime)
+{
+    if (!state.isAligningBehindPlayer) {
+        return;
+    }
+    const auto directionUp = state.followsLateralMovement ? NormalizeOr(player->GetUpVec(), state.upVec) : state.upVec;
+    glm::vec3 from, to;
+    if (!TryGetTangentDirection(state.cameraForwardVec, directionUp, from) ||
+        !TryGetTangentDirection(state.alignTargetForwardVec, directionUp, to)) {
+        state.isAligningBehindPlayer = false;
+        return;
+    }
+    state.cameraForwardVec = RotateBetween(from, to, directionUp, SmoothingAmount(8.0f, deltaTime));
+    state.hasCameraForward = true;
+    state.orbitRequested = true;
+    if (glm::dot(state.cameraForwardVec, to) >= 0.9995f) {
+        state.cameraForwardVec = to;
+        state.isAligningBehindPlayer = false;
+    }
+    player->SetCameraForwardDirection(state.cameraForwardVec, directionUp);
+}
+
+void PlayerCamera::UpdateAttackCameraAssist(Player* player, PlayerCameraState& state,
+                                            const PlayerCameraSettings& settings, float deltaTime, bool allowsAssist)
+{
+    if (!allowsAssist || !player->IsAttacking() || state.attackCameraManualDelay > 0.0f ||
+        settings.attackTargetSmoothingSpeed <= 0.0f) {
+        state.hasAttackTargetForward = false;
+        return;
+    }
+    // らくらくスタイルの攻撃で選ばれた対象を使い、カメラ側では対象を探し直さない。
+    const auto directionUp = state.followsLateralMovement ? NormalizeOr(player->GetUpVec(), state.upVec) : state.upVec;
+    const auto* target = player->GetAttackDirectionTarget();
+    if (target) {
+        if (!target->GetIsActive() || !target->IsAlive() || target->GetIsDead() ||
+            target->GetCurrentPlanet() != player->GetCurrentPlanet()) {
+            state.hasAttackTargetForward = false;
+            return;
+        }
+        state.hasAttackTargetForward =
+            TryGetTangentDirection(player->GetPos() - target->GetPos(), directionUp, state.attackTargetForwardVec);
+    }
+    // 攻撃判定後に対象参照が解除されても、攻撃終了までは直前の補助方向を維持する。
+    glm::vec3 from, to;
+    if (!state.hasAttackTargetForward ||
+        !TryGetTangentDirection(state.hasCameraForward ? state.cameraForwardVec : player->GetForwardVec(), directionUp,
+                                from) ||
+        !TryGetTangentDirection(state.attackTargetForwardVec, directionUp, to) || glm::dot(from, to) > 0.99999f) {
+        return;
+    }
+    state.cameraForwardVec =
+        RotateBetween(from, to, directionUp, SmoothingAmount(settings.attackTargetSmoothingSpeed, deltaTime));
+    state.hasCameraForward = true;
+    state.orbitRequested = true;
+}
+
+// GetViewは通常追従の基準位置を衝突補正で書き換えず、描画位置と入力基準だけを更新する。
 glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
                                 float targetHeight, bool isFixed, float clearanceRadius)
 {
-    if (!player) {
+    if (!player || playerIndex < 0) {
         return glm::mat4(1.0f);
     }
-
-    ResizeState(playerIndex + 1);
-
-    PlayerCameraState& state = mStates[playerIndex];
-
-    glm::vec3 horizontalCameraDirection;
-    glm::vec3 cameraDirection;
-    glm::vec3 lookAtOffset;
-
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+    auto& state = mStates[playerIndex];
+    const bool sphereFollow = UsesSphereFollow(*player);
+    if (!state.hasFollowPosition) {
+        state.followsLateralMovement = sphereFollow;
+    }
+    const bool restoringNormalFraming = state.needsNormalFraming;
+    const auto up =
+        NormalizeOr(!state.hasPlayerPosition || restoringNormalFraming ? player->GetUpVec() : state.upVec, {0, 1, 0});
+    if (restoringNormalFraming) {
+        // 退出補間中の表示姿勢を復帰先へ再利用すると、ゾーンの距離・ピッチが残り続ける。
+        // 現在の方位だけを引き継ぎ、復帰先は通常設定から毎回独立して求める。
+        state.targetPos = player->GetPos();
+        state.upVec = up;
+        state.needsNormalFraming = false;
+    }
+    const auto movementUp = NormalizeOr(player->GetUpVec(), up);
+    const auto followDirection = state.hasCameraForward ? state.cameraForwardVec : player->GetForwardVec();
+    const auto viewDirection = sphereFollow ? glm::quat(movementUp, up) * followDirection : followDirection;
+    glm::vec3 back;
+    if (!TryGetTangentDirection(viewDirection, up, back)) {
+        back = NormalizeOr(glm::cross(up, glm::vec3(1, 0, 0)), {0, 0, 1});
+    }
+    const bool framingChanged =
+        std::abs(state.distance - cameraDistance) > 0.0001f || std::abs(state.pitch - cameraPitch) > 0.0001f;
+    if (std::abs(state.manualYaw) > 0.000001f) {
+        back = glm::angleAxis(-state.manualYaw, up) * back;
+        state.orbitRequested = true;
+        state.manualYaw = 0.0f;
+    }
+    if (!state.hasFollowPosition || restoringNormalFraming || framingChanged || state.orbitRequested) {
+        state.lateralFollowBlend = 1.0f;
+        if (!state.hasPlayerPosition) {
+            state.upVec = up;
+            state.targetPos = player->GetPos();
+            state.previousPlayerPosition = player->GetPos();
+            state.previousPlayerUp = up;
+            state.hasPlayerPosition = true;
+        }
+        state.followPosition = OrbitPosition(state.targetPos, back, up, cameraDistance, cameraPitch);
+        state.desiredFollowPosition = state.followPosition;
+        state.hasFollowPosition = true;
+        state.isRecoveringFromCollision = false;
+        state.orbitRequested = false;
+    }
+    if (sphereFollow) {
+        const auto destination = OrbitPosition(state.targetPos, back, up, cameraDistance, cameraPitch);
+        const float blend =
+            state.lateralFollowBlend * state.lateralFollowBlend * (3.0f - 2.0f * state.lateralFollowBlend);
+        state.followPosition = glm::mix(state.lateralFollowStart, destination, blend);
+        state.desiredFollowPosition = state.followPosition;
+        if (state.lateralFollowBlend >= 1.0f) {
+            state.isTransitioningToPlayer = false;
+        }
+    }
+    state.distance = cameraDistance;
+    state.pitch = cameraPitch;
+    state.targetHeight = targetHeight;
+    const float maximumLookAhead = cameraDistance * std::abs(std::cos(cameraPitch)) * 0.8f;
+    const auto lookTarget =
+        state.targetPos + up * targetHeight + back * std::min(state.backwardFacingLookAheadDistance, maximumLookAhead);
+    glm::vec3 desired = state.followPosition;
     if (isFixed) {
-        const glm::vec3 facingForwardVec = player->GetFacingForwardVec();
-
-        horizontalCameraDirection = glm::normalize(-facingForwardVec);
-        cameraDirection = glm::normalize(std::cos(-0.2f) * horizontalCameraDirection + std::sin(-0.2f) * state.upVec);
-
-        lookAtOffset = glm::normalize(state.upVec) * 1.0f;
+        const auto facing = NormalizeOr(player->GetFacingForwardVec(), -back);
+        desired = state.targetPos + (facing * std::cos(-0.2f) - up * std::sin(-0.2f)) * cameraDistance;
+    }
+    const auto anchor = player->GetPos() + NormalizeOr(player->GetUpVec(), up) * 0.5f;
+    const auto resolved = mCollisionResolver.ResolveWithClearance(anchor, desired, up, clearanceRadius, {player});
+    if (glm::distance(resolved, desired) > 0.001f) {
+        state.cameraPos = resolved;
+        state.isRecoveringFromCollision = true;
+    } else if (state.isRecoveringFromCollision) {
+        const auto candidate = glm::mix(state.cameraPos, desired, state.collisionRecoveryBlend);
+        state.cameraPos = mCollisionResolver.ResolveWithClearance(anchor, candidate, up, clearanceRadius, {player});
+        if (glm::distance(state.cameraPos, desired) < 0.001f) {
+            state.cameraPos = desired;
+            state.isRecoveringFromCollision = false;
+        }
     } else {
-        const glm::vec3 forwardVec = state.hasCameraForward ? state.cameraForwardVec : player->GetForwardVec();
-
-        horizontalCameraDirection = glm::normalize(-forwardVec);
-        cameraDirection =
-            glm::normalize(std::cos(cameraPitch) * horizontalCameraDirection + std::sin(cameraPitch) * state.upVec);
-
-        constexpr float maximumLookAheadFractionOfHorizontalCameraDistance = 0.8f;
-        const float horizontalCameraDistance =
-            cameraDistance * std::abs(glm::dot(cameraDirection, horizontalCameraDirection));
-        const float maximumLookAheadDistance =
-            horizontalCameraDistance * maximumLookAheadFractionOfHorizontalCameraDistance;
-        const float lookAheadDistance = std::min(state.backwardFacingLookAheadDistance, maximumLookAheadDistance);
-        lookAtOffset = glm::normalize(state.upVec) * targetHeight + glm::normalize(forwardVec) * lookAheadDistance;
+        state.cameraPos = desired;
     }
-
-    const glm::vec3 lookAtPos = state.targetPos + lookAtOffset;
-    const glm::vec3 desiredCameraPos = state.targetPos - cameraDirection * cameraDistance;
-
-    const glm::vec3 anchor = player->GetPos() + glm::normalize(player->GetUpVec()) * 0.5f;
-    const auto resolvedPosition =
-        mCollisionResolver.ResolveWithClearance(anchor, desiredCameraPos, state.upVec, clearanceRadius, {player});
-    const float resolvedDistance = glm::distance(anchor, resolvedPosition);
-    float distance = resolvedDistance;
-    // 遮蔽物への接近は即時補正し、遮蔽物がなくなった後に元の距離へ戻るときだけ補間する。
-    if (state.hasResolvedCameraDistance && resolvedDistance > state.resolvedCameraDistance) {
-        distance = glm::mix(state.resolvedCameraDistance, resolvedDistance, state.collisionRecoveryBlend);
+    // Sphereの追従方向へ描画用の法線補間・衝突補正を戻すと、横移動だけでも回転が蓄積する。
+    // その他の方式では、注視点の遅れが移動半径を広げないよう実位置同士から求める。
+    const auto movementBack = sphereFollow ? glm::quat(up, movementUp) * back : state.cameraPos - player->GetPos();
+    if (!isFixed && TryGetTangentDirection(movementBack, movementUp, state.cameraForwardVec)) {
+        state.hasCameraForward = true;
+        player->SetCameraForwardDirection(state.cameraForwardVec, movementUp);
+        // Sphereでは従来のカメラ方向基準を使い、横移動の円状補正は重ねない。
+        player->SetNormalCameraPosition(sphereFollow ? std::nullopt : std::optional<glm::vec3>(state.cameraPos));
+    } else {
+        player->SetNormalCameraPosition(std::nullopt);
     }
-    state.cameraPos = resolvedPosition;
-    if (distance < resolvedDistance && resolvedDistance > 0.00001f) {
-        const auto candidate = anchor + (resolvedPosition - anchor) * (distance / resolvedDistance);
-        state.cameraPos =
-            mCollisionResolver.ResolveWithClearance(anchor, candidate, state.upVec, clearanceRadius, {player});
-    }
-    state.resolvedCameraDistance = glm::distance(anchor, state.cameraPos);
-    state.hasResolvedCameraDistance = true;
-    const glm::vec3 safeTarget =
-        glm::distance(state.cameraPos, lookAtPos) > 0.001f ? lookAtPos : state.cameraPos - cameraDirection;
-    glm::vec3 viewUp = state.upVec;
-    const glm::vec3 viewDirection = glm::normalize(safeTarget - state.cameraPos);
-    if (glm::dot(glm::cross(viewDirection, viewUp), glm::cross(viewDirection, viewUp)) < 0.000001f) {
-        viewUp = std::abs(viewDirection.y) < 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-    }
-    return glm::lookAt(state.cameraPos, safeTarget, viewUp);
+    state.lookTarget = isFixed ? state.targetPos + up : lookTarget;
+    return MakeView(state.cameraPos, state.lookTarget, up);
 }
 
 glm::vec3 PlayerCamera::GetCameraPos(int playerIndex) const
 {
-    if (playerIndex < 0 || playerIndex >= static_cast<int>(mStates.size())) {
-        return glm::vec3(0.0f);
-    }
+    return playerIndex >= 0 && static_cast<std::size_t>(playerIndex) < mStates.size() ? mStates[playerIndex].cameraPos
+                                                                                      : glm::vec3(0);
+}
 
-    return mStates[playerIndex].cameraPos;
+glm::vec3 PlayerCamera::GetLookTarget(int playerIndex) const
+{
+    return playerIndex >= 0 && static_cast<std::size_t>(playerIndex) < mStates.size() ? mStates[playerIndex].lookTarget
+                                                                                      : glm::vec3(0);
 }
 
 void PlayerCamera::ResizeState(std::size_t count)
 {
-    if (mStates.size() >= count) {
-        return;
+    if (mStates.size() < count) {
+        mStates.resize(count);
     }
-
-    mStates.resize(count);
-}
-
-void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCameraSettings& settings, float deltaTime,
-                               bool allowsMovementCameraAssist)
-{
-    if (!player) {
-        return;
-    }
-
-    ResizeState(playerIndex + 1);
-
-    PlayerCameraState& state = mStates[playerIndex];
-
-    if (player->ConsumeCameraAutoAlignCancellationRequest()) {
-        player->UnlockMovementDirectionForCameraAutoAlign();
-        CancelAutomaticFollow(state);
-        ResetSurfaceTraversalTracking(state);
-    }
-
-    constexpr float collisionRecoverySpeed = 6.0f;
-    state.collisionRecoveryBlend = 1.0f - std::exp(-collisionRecoverySpeed * std::max(0.0f, deltaTime));
-    const float upSmooth = 1.0f - std::exp(-settings.upSmoothingSpeed * deltaTime);
-    const float targetSmooth = 1.0f - std::exp(-settings.targetSmoothingSpeed * deltaTime);
-
-    state.upVec = glm::normalize(glm::mix(state.upVec, player->GetUpVec(), upSmooth));
-    state.targetPos = glm::mix(state.targetPos, player->GetPos(), targetSmooth);
-
-    state.autoFollowDelayRemainingSeconds =
-        std::max(0.0f, state.autoFollowDelayRemainingSeconds - std::max(0.0f, deltaTime));
-
-    const bool allowsGroundedMovementCameraAssist =
-        allowsMovementCameraAssist && player->GetOnGround() && !player->IsCameraZoneDirectionHeld();
-    UpdateAutoFollowRequest(player, state, settings, deltaTime, allowsGroundedMovementCameraAssist);
-
-    UpdateCameraForward(player, state, settings.attackTargetSmoothingSpeed, settings.autoFollowRotationDurationSeconds,
-                        deltaTime);
-    // 進行方向の保持は自動回転だけを抑え、通常カメラの注視点補正は継続する。
-    UpdateBackwardFacingFraming(player, state, settings, deltaTime,
-                                allowsMovementCameraAssist && player->GetOnGround());
-    UpdateSurfaceTraversalAutoAlign(player, state, settings, allowsGroundedMovementCameraAssist);
-}
-
-void PlayerCamera::UpdateAutoFollowRequest(Player* player, PlayerCameraState& state,
-                                           const PlayerCameraSettings& settings, float deltaTime,
-                                           bool allowsMovementCameraAssist)
-{
-    const glm::vec2 movementInput(player->GetMoveLeftInput(), player->GetMoveForwardInput());
-    const float movementMagnitude = glm::length(movementInput);
-    const bool hasMovementInput =
-        movementMagnitude > 0.0f && movementMagnitude >= settings.autoFollowMinimumMovementInput;
-    const float backwardInput = std::max(0.0f, player->GetMoveForwardInput());
-    const bool hasStrongBackwardInput = backwardInput > settings.autoFollowMaximumBackwardInput;
-    const bool isAutoFollowBlocked = !hasMovementInput || !allowsMovementCameraAssist ||
-                                     state.autoFollowDelayRemainingSeconds > 0.0f ||
-                                     (hasStrongBackwardInput && !state.isSurfaceTraversalAutoAligning);
-
-    if (isAutoFollowBlocked) {
-        if (state.isSurfaceTraversalAutoAligning) {
-            player->UnlockMovementDirectionForCameraAutoAlign();
-        }
-        CancelAutomaticFollow(state);
-        return;
-    }
-
-    if (state.isSurfaceTraversalAutoAligning) {
-        return;
-    }
-
-    const glm::vec2 movementDirection = movementInput / movementMagnitude;
-    // スティックの小さな揺れでは追従待ち時間をリセットしない。
-    constexpr float directionChangeCosine = 0.8660254f;
-    if (glm::dot(state.trackedMovementInput, movementDirection) < directionChangeCosine) {
-        CancelAutomaticFollow(state);
-        state.trackedMovementInput = movementDirection;
-    }
-
-    if (state.hasTriggeredAutoFollowForCurrentMovementInput) {
-        return;
-    }
-
-    state.movementInputHoldSeconds += std::max(0.0f, deltaTime);
-    if (state.movementInputHoldSeconds < settings.autoFollowDelaySeconds) {
-        return;
-    }
-
-    if (!StartAutomaticFollowBehindPlayer(*player, state)) {
-        return;
-    }
-
-    state.isSurfaceTraversalAutoAligning = false;
-    state.hasTriggeredAutoFollowForCurrentMovementInput = true;
-}
-
-void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state, float attackTargetSmoothingSpeed,
-                                       float autoFollowRotationDurationSeconds, float deltaTime)
-{
-    glm::vec3 up = state.upVec;
-    const float upLengthSquared = glm::dot(up, up);
-    if (upLengthSquared <= directionEpsilonSquared) {
-        up = glm::vec3(0.0f, 1.0f, 0.0f);
-    } else {
-        up /= std::sqrt(upLengthSquared);
-    }
-
-    glm::vec3 normalForward;
-    if (!TryGetTangentDirection(player->GetForwardVec(), up, normalForward)) {
-        if (!TryGetTangentDirection(player->GetFacingForwardVec(), up, normalForward)) {
-            return;
-        }
-    }
-
-    if (!state.hasCameraForward) {
-        state.cameraForwardVec = normalForward;
-        state.hasCameraForward = true;
-    }
-
-    if (state.isAligningBehindPlayer) {
-        glm::vec3 currentForward;
-        glm::vec3 alignTargetForward;
-        if (!TryGetTangentDirection(state.cameraForwardVec, up, currentForward) ||
-            !TryGetTangentDirection(state.alignTargetForwardVec, up, alignTargetForward)) {
-            state.isAligningBehindPlayer = false;
-            state.cameraForwardVec = normalForward;
-            return;
-        }
-
-        state.cameraForwardVec = currentForward;
-        state.alignTargetForwardVec = alignTargetForward;
-
-        constexpr float alignSmoothingSpeed = 8.0f;
-        state.cameraForwardVec =
-            RotateTowards(state.cameraForwardVec, state.alignTargetForwardVec, up, alignSmoothingSpeed, deltaTime);
-        player->SetCameraForwardDirection(state.cameraForwardVec, up);
-
-        constexpr float alignmentCompleteDot = 0.9995f;
-        if (glm::dot(state.cameraForwardVec, state.alignTargetForwardVec) >= alignmentCompleteDot) {
-            state.cameraForwardVec = state.alignTargetForwardVec;
-            player->SetCameraForwardDirection(state.cameraForwardVec, up);
-            state.isAligningBehindPlayer = false;
-        }
-        return;
-    }
-
-    Enemy* attackTarget = player->GetAttackDirectionTarget();
-    const bool hasValidAttackTarget = attackTarget && attackTarget->GetIsActive() && attackTarget->IsAlive() &&
-                                      !attackTarget->GetIsDead() &&
-                                      attackTarget->GetCurrentPlanet() == player->GetCurrentPlanet();
-
-    glm::vec3 targetForward;
-
-    if (hasValidAttackTarget && TryGetTangentDirection(player->GetPos() - attackTarget->GetPos(), up, targetForward)) {
-        state.attackTargetForwardVec = targetForward;
-        state.hasAttackTargetForward = true;
-    }
-
-    const bool shouldAssistAttack =
-        state.hasAttackTargetForward && player->IsAttacking() && state.autoFollowDelayRemainingSeconds <= 0.0f;
-    if (!player->IsAttacking() && !hasValidAttackTarget && state.hasAttackTargetForward) {
-        state.hasAttackTargetForward = false;
-    }
-
-    if (shouldAssistAttack) {
-        if (state.isSurfaceTraversalAutoAligning) {
-            player->UnlockMovementDirectionForCameraAutoAlign();
-        }
-        state.isAutoFollowingBehindPlayer = false;
-        state.isSurfaceTraversalAutoAligning = false;
-        state.autoFollowElapsedSeconds = 0.0f;
-        state.cameraForwardVec = RotateTowards(state.cameraForwardVec, state.attackTargetForwardVec, up,
-                                               attackTargetSmoothingSpeed, deltaTime);
-        player->SetCameraForwardDirection(state.cameraForwardVec, up);
-        return;
-    }
-
-    if (state.isAutoFollowingBehindPlayer) {
-        state.autoFollowElapsedSeconds += std::max(0.0f, deltaTime);
-        const float rotationProgress =
-            glm::clamp(state.autoFollowElapsedSeconds / std::max(0.05f, autoFollowRotationDurationSeconds), 0.0f, 1.0f);
-        const float easedRotationProgress = rotationProgress * rotationProgress * (3.0f - 2.0f * rotationProgress);
-
-        if (!state.isSurfaceTraversalAutoAligning) {
-            glm::vec3 autoFollowStartForward;
-            glm::vec3 autoFollowTargetForward;
-            if (!TryGetTangentDirection(state.autoFollowStartForwardVec, up, autoFollowStartForward) ||
-                !TryGetTangentDirection(state.autoFollowTargetForwardVec, up, autoFollowTargetForward)) {
-                CancelAutomaticFollow(state);
-                state.cameraForwardVec = normalForward;
-                return;
-            }
-
-            state.cameraForwardVec =
-                RotateBetween(autoFollowStartForward, autoFollowTargetForward, up, easedRotationProgress);
-            player->SetCameraForwardDirection(state.cameraForwardVec, up);
-
-            if (rotationProgress >= 1.0f) {
-                state.cameraForwardVec = autoFollowTargetForward;
-                player->SetCameraForwardDirection(state.cameraForwardVec, up);
-                state.isAutoFollowingBehindPlayer = false;
-                state.autoFollowElapsedSeconds = 0.0f;
-                state.autoFollowStartOffsetRadians = 0.0f;
-            }
-            return;
-        }
-
-        glm::vec3 currentBehindPlayerForward;
-        if (!TryGetTangentDirection(-player->GetFacingForwardVec(), up, currentBehindPlayerForward)) {
-            player->UnlockMovementDirectionForCameraAutoAlign();
-            state.isAutoFollowingBehindPlayer = false;
-            state.isSurfaceTraversalAutoAligning = false;
-            state.autoFollowElapsedSeconds = 0.0f;
-            state.autoFollowStartOffsetRadians = 0.0f;
-            state.cameraForwardVec = normalForward;
-            return;
-        }
-
-        const float remainingOffsetRadians = state.autoFollowStartOffsetRadians * (1.0f - easedRotationProgress);
-        state.cameraForwardVec = RotateAroundUp(currentBehindPlayerForward, up, remainingOffsetRadians);
-        player->SetCameraForwardDirection(state.cameraForwardVec, up);
-
-        if (rotationProgress >= 1.0f) {
-            state.cameraForwardVec = currentBehindPlayerForward;
-            player->SetCameraForwardDirection(state.cameraForwardVec, up);
-            player->UnlockMovementDirectionForCameraAutoAlign();
-            state.isAutoFollowingBehindPlayer = false;
-            state.isSurfaceTraversalAutoAligning = false;
-            state.autoFollowElapsedSeconds = 0.0f;
-            state.autoFollowStartOffsetRadians = 0.0f;
-        }
-        return;
-    }
-
-    state.cameraForwardVec = normalForward;
 }
 
 void PlayerCamera::UpdateBackwardFacingFraming(Player* player, PlayerCameraState& state,
@@ -704,49 +582,4 @@ void PlayerCamera::UpdateBackwardFacingFraming(Player* player, PlayerCameraState
     const float lookAheadBlend = 1.0f - std::exp(-settings.backwardFacingFramingSmoothingSpeed * safeDeltaTime);
     state.backwardFacingLookAheadDistance =
         glm::mix(state.backwardFacingLookAheadDistance, targetLookAheadDistance, lookAheadBlend);
-}
-
-void PlayerCamera::UpdateSurfaceTraversalAutoAlign(Player* player, PlayerCameraState& state,
-                                                   const PlayerCameraSettings& settings,
-                                                   bool allowsMovementCameraAssist)
-{
-    const float movementInputMagnitude =
-        glm::length(glm::vec2(player->GetMoveLeftInput(), player->GetMoveForwardInput()));
-    const bool isMovementInputActive = movementInputMagnitude >= settings.surfaceTraversalAutoAlignMinimumMovementInput;
-    const bool isAutoAlignBlocked = !allowsMovementCameraAssist || state.autoFollowDelayRemainingSeconds > 0.0f;
-    if (isAutoAlignBlocked || !isMovementInputActive) {
-        ResetSurfaceTraversalTracking(state);
-        return;
-    }
-
-    const glm::vec3 playerUp = player->GetUpVec();
-    const float playerUpLengthSquared = glm::dot(playerUp, playerUp);
-    if (playerUpLengthSquared <= directionEpsilonSquared) {
-        ResetSurfaceTraversalTracking(state);
-        return;
-    }
-
-    const glm::vec3 currentSurfaceNormal = playerUp / std::sqrt(playerUpLengthSquared);
-    if (!state.hasSurfaceTraversalStartUp) {
-        state.surfaceTraversalStartUpVec = currentSurfaceNormal;
-        state.hasSurfaceTraversalStartUp = true;
-        return;
-    }
-
-    if (state.hasAutoAlignedForCurrentSurfaceTraversal) {
-        return;
-    }
-
-    const float surfaceNormalDot =
-        glm::clamp(glm::dot(state.surfaceTraversalStartUpVec, currentSurfaceNormal), -1.0f, 1.0f);
-    const float autoAlignMaximumDot = std::cos(glm::radians(settings.surfaceTraversalAutoAlignAngleDegrees));
-    if (surfaceNormalDot > autoAlignMaximumDot || !StartAutomaticFollowBehindPlayer(*player, state)) {
-        return;
-    }
-
-    state.isSurfaceTraversalAutoAligning = true;
-    state.hasAutoAlignedForCurrentSurfaceTraversal = true;
-    state.isBackwardFacingFramingActive = false;
-    state.backwardMovementHoldSeconds = 0.0f;
-    player->LockMovementDirectionForCameraAutoAlign();
 }

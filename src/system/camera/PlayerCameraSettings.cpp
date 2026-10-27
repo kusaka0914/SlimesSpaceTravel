@@ -27,22 +27,16 @@ void PlayerCameraSettings::Normalize()
     pitchDegrees = glm::clamp(pitchDegrees, minPitchDegrees, maxPitchDegrees);
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
+    positionSmoothingSpeed = glm::clamp(positionSmoothingSpeed, 0.0f, 50.0f);
     attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
+    attackCameraManualOverrideSeconds = glm::clamp(attackCameraManualOverrideSeconds, 0.0f, 5.0f);
     airSlamDistanceMultiplier = glm::clamp(airSlamDistanceMultiplier, 1.0f, 3.0f);
     airSlamPitchDegrees = glm::clamp(airSlamPitchDegrees, -89.0f, 0.0f);
     airSlamDistanceSmoothingSpeed = glm::clamp(airSlamDistanceSmoothingSpeed, 0.0f, 50.0f);
     airSlamReturnDelaySeconds = glm::clamp(airSlamReturnDelaySeconds, 0.0f, 10.0f);
-    autoFollowDelaySeconds = glm::clamp(autoFollowDelaySeconds, 0.0f, 5.0f);
-    autoFollowRotationDurationSeconds = glm::clamp(autoFollowRotationDurationSeconds, 0.05f, 5.0f);
-    autoFollowMinimumMovementInput = glm::clamp(autoFollowMinimumMovementInput, 0.0f, 1.0f);
-    autoFollowMaximumBackwardInput = glm::clamp(autoFollowMaximumBackwardInput, 0.0f, 1.0f);
-    autoFollowDelayAfterManualInputSeconds = glm::clamp(autoFollowDelayAfterManualInputSeconds, 0.0f, 5.0f);
     backwardFacingLookAheadDistance = glm::clamp(backwardFacingLookAheadDistance, 0.0f, 50.0f);
     backwardFacingFramingActivationDelaySeconds = glm::clamp(backwardFacingFramingActivationDelaySeconds, 0.0f, 5.0f);
     backwardFacingFramingMinimumBackwardInput = glm::clamp(backwardFacingFramingMinimumBackwardInput, 0.0f, 1.0f);
-    surfaceTraversalAutoAlignAngleDegrees = glm::clamp(surfaceTraversalAutoAlignAngleDegrees, 0.0f, 180.0f);
-    surfaceTraversalAutoAlignMinimumMovementInput =
-        glm::clamp(surfaceTraversalAutoAlignMinimumMovementInput, 0.0f, 1.0f);
     backwardFacingFramingStartAngleDegrees = glm::clamp(backwardFacingFramingStartAngleDegrees, 0.0f, 180.0f);
     backwardFacingFramingEndAngleDegrees =
         glm::clamp(backwardFacingFramingEndAngleDegrees, backwardFacingFramingStartAngleDegrees, 180.0f);
@@ -113,8 +107,12 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             YamlRead::ReadOr<float>(cameraNode, "upSmoothingSpeed", loadedSettings.upSmoothingSpeed);
         loadedSettings.targetSmoothingSpeed =
             YamlRead::ReadOr<float>(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
+        loadedSettings.positionSmoothingSpeed =
+            YamlRead::ReadOr<float>(cameraNode, "positionSmoothingSpeed", loadedSettings.positionSmoothingSpeed);
         loadedSettings.attackTargetSmoothingSpeed = YamlRead::ReadOr<float>(cameraNode, "attackTargetSmoothingSpeed",
                                                                             loadedSettings.attackTargetSmoothingSpeed);
+        loadedSettings.attackCameraManualOverrideSeconds = YamlRead::ReadOr<float>(
+            cameraNode, "attackCameraManualOverrideSeconds", loadedSettings.attackCameraManualOverrideSeconds);
         loadedSettings.airSlamDistanceMultiplier =
             YamlRead::ReadOr<float>(cameraNode, "airSlamDistanceMultiplier", loadedSettings.airSlamDistanceMultiplier);
         loadedSettings.airSlamPitchDegrees =
@@ -123,19 +121,6 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             cameraNode, "airSlamDistanceSmoothingSpeed", loadedSettings.airSlamDistanceSmoothingSpeed);
         loadedSettings.airSlamReturnDelaySeconds =
             YamlRead::ReadOr<float>(cameraNode, "airSlamReturnDelaySeconds", loadedSettings.airSlamReturnDelaySeconds);
-        loadedSettings.autoFollowDelaySeconds =
-            YamlRead::ReadOr<float>(cameraNode, "autoFollowDelaySeconds", loadedSettings.autoFollowDelaySeconds);
-        loadedSettings.autoFollowRotationDurationSeconds = YamlRead::ReadOr<float>(
-            cameraNode, "autoFollowRotationDurationSeconds", loadedSettings.autoFollowRotationDurationSeconds);
-        loadedSettings.autoFollowMinimumMovementInput =
-            YamlRead::ReadOr<float>(cameraNode, "autoFollowMinimumMovementInput",
-                                    YamlRead::ReadOr<float>(cameraNode, "autoFollowMinimumLateralInput",
-                                                            loadedSettings.autoFollowMinimumMovementInput));
-        loadedSettings.autoFollowMaximumBackwardInput = YamlRead::ReadOr<float>(
-            cameraNode, "autoFollowMaximumBackwardInput", loadedSettings.autoFollowMaximumBackwardInput);
-        loadedSettings.autoFollowDelayAfterManualInputSeconds =
-            YamlRead::ReadOr<float>(cameraNode, "autoFollowDelayAfterManualInputSeconds",
-                                    loadedSettings.autoFollowDelayAfterManualInputSeconds);
         loadedSettings.backwardFacingLookAheadDistance = YamlRead::ReadOr<float>(
             cameraNode, "backwardFacingLookAheadDistance", loadedSettings.backwardFacingLookAheadDistance);
         loadedSettings.backwardFacingFramingActivationDelaySeconds =
@@ -144,11 +129,6 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
         loadedSettings.backwardFacingFramingMinimumBackwardInput =
             YamlRead::ReadOr<float>(cameraNode, "backwardFacingFramingMinimumBackwardInput",
                                     loadedSettings.backwardFacingFramingMinimumBackwardInput);
-        loadedSettings.surfaceTraversalAutoAlignAngleDegrees = YamlRead::ReadOr<float>(
-            cameraNode, "surfaceTraversalAutoAlignAngleDegrees", loadedSettings.surfaceTraversalAutoAlignAngleDegrees);
-        loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput =
-            YamlRead::ReadOr<float>(cameraNode, "surfaceTraversalAutoAlignMinimumMovementInput",
-                                    loadedSettings.surfaceTraversalAutoAlignMinimumMovementInput);
         loadedSettings.backwardFacingFramingStartAngleDegrees =
             YamlRead::ReadOr<float>(cameraNode, "backwardFacingFramingStartAngleDegrees",
                                     loadedSettings.backwardFacingFramingStartAngleDegrees);
@@ -238,8 +218,11 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "maxPitchDegrees" << YAML::Value << normalizedSettings.maxPitchDegrees;
         emitter << YAML::Key << "upSmoothingSpeed" << YAML::Value << normalizedSettings.upSmoothingSpeed;
         emitter << YAML::Key << "targetSmoothingSpeed" << YAML::Value << normalizedSettings.targetSmoothingSpeed;
+        emitter << YAML::Key << "positionSmoothingSpeed" << YAML::Value << normalizedSettings.positionSmoothingSpeed;
         emitter << YAML::Key << "attackTargetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.attackTargetSmoothingSpeed;
+        emitter << YAML::Key << "attackCameraManualOverrideSeconds" << YAML::Value
+                << normalizedSettings.attackCameraManualOverrideSeconds;
         emitter << YAML::Key << "airSlamDistanceMultiplier" << YAML::Value
                 << normalizedSettings.airSlamDistanceMultiplier;
         emitter << YAML::Key << "airSlamPitchDegrees" << YAML::Value << normalizedSettings.airSlamPitchDegrees;
@@ -247,25 +230,12 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
                 << normalizedSettings.airSlamDistanceSmoothingSpeed;
         emitter << YAML::Key << "airSlamReturnDelaySeconds" << YAML::Value
                 << normalizedSettings.airSlamReturnDelaySeconds;
-        emitter << YAML::Key << "autoFollowDelaySeconds" << YAML::Value << normalizedSettings.autoFollowDelaySeconds;
-        emitter << YAML::Key << "autoFollowRotationDurationSeconds" << YAML::Value
-                << normalizedSettings.autoFollowRotationDurationSeconds;
-        emitter << YAML::Key << "autoFollowMinimumMovementInput" << YAML::Value
-                << normalizedSettings.autoFollowMinimumMovementInput;
-        emitter << YAML::Key << "autoFollowMaximumBackwardInput" << YAML::Value
-                << normalizedSettings.autoFollowMaximumBackwardInput;
-        emitter << YAML::Key << "autoFollowDelayAfterManualInputSeconds" << YAML::Value
-                << normalizedSettings.autoFollowDelayAfterManualInputSeconds;
         emitter << YAML::Key << "backwardFacingLookAheadDistance" << YAML::Value
                 << normalizedSettings.backwardFacingLookAheadDistance;
         emitter << YAML::Key << "backwardFacingFramingActivationDelaySeconds" << YAML::Value
                 << normalizedSettings.backwardFacingFramingActivationDelaySeconds;
         emitter << YAML::Key << "backwardFacingFramingMinimumBackwardInput" << YAML::Value
                 << normalizedSettings.backwardFacingFramingMinimumBackwardInput;
-        emitter << YAML::Key << "surfaceTraversalAutoAlignAngleDegrees" << YAML::Value
-                << normalizedSettings.surfaceTraversalAutoAlignAngleDegrees;
-        emitter << YAML::Key << "surfaceTraversalAutoAlignMinimumMovementInput" << YAML::Value
-                << normalizedSettings.surfaceTraversalAutoAlignMinimumMovementInput;
         emitter << YAML::Key << "backwardFacingFramingStartAngleDegrees" << YAML::Value
                 << normalizedSettings.backwardFacingFramingStartAngleDegrees;
         emitter << YAML::Key << "backwardFacingFramingEndAngleDegrees" << YAML::Value

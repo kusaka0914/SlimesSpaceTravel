@@ -1,5 +1,7 @@
 #include "system/camera/zones/CameraZoneController.h"
 
+#include "system/camera/zones/CameraOrbitTransition.h"
+
 #include "actor/CameraZone.h"
 #include "actor/Planet.h"
 #include "actor/Platform.h"
@@ -33,33 +35,6 @@ struct CameraRegion {
 glm::vec3 SafeDirection(glm::vec3 value, glm::vec3 fallback)
 {
     return glm::dot(value, value) > 0.000001f ? glm::normalize(value) : fallback;
-}
-CameraPose BlendPose(const CameraPose& from, const CameraPose& to, float amount)
-{
-    CameraPose result;
-    result.target = glm::mix(from.target, to.target, amount);
-    const auto upRotation = glm::quat(SafeDirection(from.up, {0, 1, 0}), SafeDirection(to.up, {0, 1, 0}));
-    result.up = glm::slerp(glm::quat(1, 0, 0, 0), upRotation, amount) * SafeDirection(from.up, {0, 1, 0});
-    // 反転時に頭上を横切らないよう、接平面内の回転と高さを別々に補間する。
-    const auto fromOffset = from.position - from.target;
-    const auto toOffset = to.position - to.target;
-    const auto up = SafeDirection(result.up, {0, 1, 0});
-    const auto fromTangent = fromOffset - up * glm::dot(fromOffset, up);
-    const auto toTangent = toOffset - up * glm::dot(toOffset, up);
-    const auto perpendicular =
-        SafeDirection(glm::cross(up, std::abs(up.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 0, 1)), {0, 0, 1});
-    const auto fromDirection = SafeDirection(fromTangent, perpendicular);
-    const auto toDirection = SafeDirection(toTangent, fromDirection);
-    const float alignment = std::clamp(glm::dot(fromDirection, toDirection), -1.0f, 1.0f);
-    // ほぼ180度のときは回転側を固定し、対象の微動で補間経路が反転するのを防ぐ。
-    const float yaw = alignment < -0.999f ? std::acos(alignment)
-                                          : std::atan2(glm::dot(glm::cross(fromDirection, toDirection), up), alignment);
-    const auto direction = glm::angleAxis(yaw * amount, up) * fromDirection;
-    const float horizontalDistance = glm::mix(glm::length(fromTangent), glm::length(toTangent), amount);
-    const float height = glm::mix(glm::dot(fromOffset, up), glm::dot(toOffset, up), amount);
-    result.position = result.target + direction * horizontalDistance + up * height;
-    result.fieldOfViewDegrees = glm::mix(from.fieldOfViewDegrees, to.fieldOfViewDegrees, amount);
-    return result;
 }
 float GetFramingRadius(const Actor& actor)
 {
@@ -292,7 +267,7 @@ CameraPose CameraZoneController::Apply(Player& player, int playerIndex, const Ca
         }
         state.manualBlendElapsed += elapsed;
         const float progress = std::min(1.0f, state.manualBlendElapsed / manualHandoffSeconds);
-        state.output = BlendPose(state.from, normalPose, progress);
+        state.output = CameraOrbitTransition::Blend(state.from, normalPose, progress);
         state.output.position = collision.ResolveWithClearance(
             player.GetPos() + player.GetUpVec() * 0.5f, state.output.position, player.GetUpVec(),
             CalculateCameraClearanceRadius(state.output.fieldOfViewDegrees, aspectRatio), {&player});
@@ -304,9 +279,11 @@ CameraPose CameraZoneController::Apply(Player& player, int playerIndex, const Ca
     state.isManualMode = false;
     const int desiredZone = selected ? selected->GetStageYamlIndex() : -1;
     const bool useReturnCamera = selected && selected->GetSettings().bidirectional && state.direction.IsReturnCamera();
-    if (state.transitionZone != desiredZone || state.transitionSequence != desiredSequence ||
-        state.transitionReturnCamera != useReturnCamera) {
+    const bool changedTransition = state.transitionZone != desiredZone || state.transitionSequence != desiredSequence ||
+                                   state.transitionReturnCamera != useReturnCamera;
+    if (changedTransition) {
         state.from = state.output;
+        state.transitionYaw.reset();
         state.elapsed = 0.0f;
         state.duration = selected ? (state.transitionZone == desiredZone && state.transitionSequence == desiredSequence
                                          ? selected->GetSettings().directionBlendSeconds
@@ -332,6 +309,9 @@ CameraPose CameraZoneController::Apply(Player& player, int playerIndex, const Ca
         }
         desired = CalculatePose(settings, player, target, aspectRatio);
     }
+    if (changedTransition && state.duration > 0.0f && !state.snapOnNextApply) {
+        state.transitionYaw = CameraOrbitTransition::SelectYaw(state.from, desired, collision, aspectRatio, {&player});
+    }
     if (state.snapOnNextApply) {
         state.duration = 0.0f;
         state.hasOutput = false;
@@ -345,12 +325,12 @@ CameraPose CameraZoneController::Apply(Player& player, int playerIndex, const Ca
     const float progress = state.duration <= 0.0f ? 1.0f : std::min(1.0f, state.elapsed / state.duration);
     const float eased = progress * progress * (3.0f - 2.0f * progress);
     if (progress < 1.0f) {
-        state.output = BlendPose(state.from, desired, eased);
+        state.output = CameraOrbitTransition::Blend(state.from, desired, eased, state.transitionYaw);
     } else if (selected && state.hasOutput) {
         // ゾーン内の追従も補間し、着地による法線・注視対象・距離の変化を直接描画へ出さない。
         constexpr float followSmoothingSpeed = 8.0f;
         const float blend = 1.0f - std::exp(-followSmoothingSpeed * elapsed);
-        state.output = BlendPose(state.output, desired, blend);
+        state.output = CameraOrbitTransition::Blend(state.output, desired, blend);
     } else {
         state.output = desired;
     }
@@ -360,8 +340,13 @@ CameraPose CameraZoneController::Apply(Player& player, int playerIndex, const Ca
             player.GetPos() + player.GetUpVec() * 0.5f, state.output.position, player.GetUpVec(),
             CalculateCameraClearanceRadius(state.output.fieldOfViewDegrees, aspectRatio), {&player});
     }
-    // 補間完了後も同じ入力が続く間は保持する。解除はPlayerMovementの入力判定が行う。
+    // ゾーン内では補間後も入力方向を保持する。通常追従へ復帰した後は保持を解除する。
     state.hasOutput = selected || progress < 1.0f;
+    if (!state.hasOutput && state.ownsMovementLock) {
+        // 通常追従へ戻った後までワールド方向を固定すると、横入力でカメラから離れ続けてしまう。
+        player.UnlockMovementDirectionForCameraAutoAlign();
+        state.ownsMovementLock = false;
+    }
     if (state.hasOutput) {
         const auto direction = SafeDirection(state.output.position - state.output.target, player.GetForwardVec());
         player.SetCameraForwardDirection(direction, state.output.up);

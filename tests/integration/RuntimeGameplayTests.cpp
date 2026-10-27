@@ -15,6 +15,8 @@
 #include "support/RuntimeStageSupport.h"
 #include "support/TestSupport.h"
 #include "system/PhysicsSystem.h"
+#include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/zones/CameraOrbitTransition.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
 #include "system/physics/EllipsoidCollisionShapeGeometry.h"
@@ -22,6 +24,8 @@
 #include "world/Stage.h"
 
 #include <btBulletDynamicsCommon.h>
+#include <cmath>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <stdexcept>
@@ -227,6 +231,81 @@ void LeaningSidesPreserveAirborneVerticalMovement(Game& game)
     ExpectTrue(result.didHitStage && result.resolvedPosition.y < 0.46f, "real ceilings still block ascent");
     ExpectFalse(result.hasUnresolvedStageOverlap, "ceiling collision remains separated");
     std::cout << "[PASS] Runtime.LeaningSidesPreserveAirborneVerticalMovement\n";
+}
+
+void CameraOrbitChoosesTheClearSide(Game& game)
+{
+    auto* physics = game.GetPhysicsSystem();
+    auto* world = physics ? physics->GetBulletWorld() : nullptr;
+    ExpectTrue(world != nullptr, "camera route test has a physics world");
+    CameraCollisionResolver collision([&]() { return physics; });
+    const glm::vec3 origin(10000, 10000, 10000);
+    btBoxShape wallShape(btVector3(0.025f, 2, 1.5f));
+    struct ScopedWall {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedWall(btDiscreteDynamicsWorld& world, btCollisionShape& shape)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            object.setWorldTransform(btTransform::getIdentity());
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        void Move(const glm::vec3& position)
+        {
+            btTransform transform = btTransform::getIdentity();
+            transform.setOrigin(btVector3(position.x, position.y, position.z));
+            object.setWorldTransform(transform);
+            world.updateSingleAabb(&object);
+        }
+        ~ScopedWall() { world.removeCollisionObject(&object); }
+    } wall(*world, wallShape);
+    wall.Move(origin);
+    const std::vector<glm::vec3> crossing{origin + glm::vec3(-1, 0, 0), origin + glm::vec3(1, 0, 0)};
+    ExpectTrue(collision.HasCameraClearance(crossing.front(), 0.1f, {}) &&
+                   collision.HasCameraClearance(crossing.back(), 0.1f, {}),
+               "thin-wall endpoints are both clear");
+    ExpectTrue(collision.MeasureCameraPathObstruction(crossing, 0.1f, {}) > 0,
+               "sphere sweeps detect a thin wall between sample points");
+    Actor ignored(nullptr);
+    wall.object.setUserPointer(&ignored);
+    ExpectNear(0.0f, collision.MeasureCameraPathObstruction(crossing, 0.1f, {&ignored}), 0,
+               "route scoring honors ignored actors");
+    wall.object.setUserPointer(nullptr);
+
+    CameraPose from{origin + glm::vec3(0, 3, 6), origin + glm::vec3(0, 3, 0), {0, 1, 0}, 60};
+    CameraPose to = from;
+    to.position = origin + glm::vec3(0, 3, -6);
+    wall.Move(origin + glm::vec3(6, 3, 0));
+    const float left = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+    ExpectTrue(left < 0.0f, "blocked positive half-turn selects the negative route");
+    const auto middle = CameraOrbitTransition::Blend(from, to, 0.5f, left);
+    ExpectTrue(middle.position.x < origin.x - 5.0f, "chosen route passes the clear side");
+    // 到達構図が180度の境界を跨いでも、保存した経路の側を維持する。
+    to.position.x += 0.01f;
+    const auto nudged = CameraOrbitTransition::Blend(from, to, 0.5f, left);
+    ExpectTrue(glm::distance(middle.position, nudged.position) < 0.1f,
+               "target jitter does not reverse the selected rotation");
+    to.position.x = origin.x;
+    wall.Move(origin + glm::vec3(-6, 3, 0));
+    const float right = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+    ExpectTrue(right > 0.0f, "a wall on the other side selects the positive route");
+    {
+        ScopedWall other(*world, wallShape);
+        other.Move(origin + glm::vec3(6, 3, 0));
+        const float blocked = CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {});
+        ExpectTrue(std::isfinite(blocked), "two blocked routes still produce a deterministic finite path");
+        ExpectVectorNear(to.position, CameraOrbitTransition::Blend(from, to, 1.0f, blocked).position, 0,
+                         "either route preserves the exact destination");
+    }
+    wall.Move(origin + glm::vec3(0, 50, 0));
+    to.position = origin + glm::vec3(6, 3, 0);
+    ExpectNear(glm::half_pi<float>(), CameraOrbitTransition::SelectYaw(from, to, collision, 16.0f / 9.0f, {}), 0.001f,
+               "two clear routes prefer the short quarter-turn");
+    CameraCollisionResolver noPhysics(nullptr);
+    ExpectNear(glm::half_pi<float>(), CameraOrbitTransition::SelectYaw(from, to, noPhysics, 16.0f / 9.0f, {}), 0.001f,
+               "missing physics preserves the shortest path");
+    std::cout << "[PASS] Runtime.CameraOrbitSelectsClearRotationSide\n";
 }
 
 void LandingRequiresSupportingSurface(Game& game)
@@ -484,6 +563,7 @@ void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
 
 void RunRuntimeGameplayTests(Game& game)
 {
+    CameraOrbitChoosesTheClearSide(game);
     EllipsoidProjectionPreservesGeometryAndHemisphere();
     SweepsStopAtThinWallsAndResolveOverlap();
     LeaningSidesPreserveAirborneVerticalMovement(game);
