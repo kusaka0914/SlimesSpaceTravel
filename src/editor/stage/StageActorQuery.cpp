@@ -68,7 +68,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
             {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
             {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
             {StageActorType::StageObject, "stageObjects", "汎用モデル"},
-            {StageActorType::CameraZone, "cameraZones", "Camera Zone"},
+            {StageActorType::CameraZone, "cameraZones", "カメラゾーン"},
             {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
             {StageActorType::JewelItem, "jewelItems", "ジュエルアイテム"},
             {StageActorType::HazardActor, "hazardActors", "危険アクター"},
@@ -195,7 +195,7 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
         for (StageObject* stageObject : planet->GetStageObjects()) {
             if (auto* zone = dynamic_cast<CameraZone*>(stageObject)) {
                 AddInstance(instances, zone, StageActorType::CameraZone, zone->GetStageYamlIndex(), "cameraZones",
-                            MakeIndexedLabel("Camera Zone", zone->GetStageYamlIndex()));
+                            MakeIndexedLabel("カメラゾーン", zone->GetStageYamlIndex()));
                 continue;
             }
             const int yamlIndex = stageObject ? stageObject->GetStageYamlIndex() : -1;

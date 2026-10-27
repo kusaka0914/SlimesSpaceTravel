@@ -78,7 +78,7 @@ public:
     void RemoveLatchedGroupSwitchComponent();
     PlatformLatchedGroupSwitchComponent* GetLatchedGroupSwitchComponent() const { return mLatchedGroupSwitchComponent; }
 
-    // 足場上への接地で適用する構図。既存の足場は無効で、空中維持・双方向判定はCamera Zoneと共通。
+    // 足場上への接地で適用する構図。既存の足場は無効で、空中維持・双方向判定はカメラゾーンと共通。
     CameraZoneSettings& GetCameraSettings() { return mCameraSettings; }
     const CameraZoneSettings& GetCameraSettings() const { return mCameraSettings; }
 

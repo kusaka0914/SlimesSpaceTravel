@@ -249,7 +249,7 @@ bool StageActorCreateService::CommitCreation(YAML::Node config, const StageEditO
 
 bool StageActorCreateService::AddCameraZone(int currentPlanetNum, const StageActorPlacement* placement)
 {
-    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "camera zone")) {
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "カメラゾーン")) {
         return false;
     }
     YAML::Node config;

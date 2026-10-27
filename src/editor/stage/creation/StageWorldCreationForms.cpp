@@ -41,10 +41,10 @@ StagePlatformCreationForm::StagePlatformCreationForm(DebugEditorContext& context
 
 void StageObjectCreationForm::Draw()
 {
-    if (ImGui::TreeNode("Camera Zone追加")) {
+    if (ImGui::TreeNode("カメラゾーン追加")) {
         StageCreationFormWidgets::DrawPlanetCombo(mContext, "追加先の惑星##cameraZone", mSelectedPlanetIndex);
-        if (ImGui::Button("Camera Zoneを配置") && mSelectedPlanetIndex >= 0) {
-            mPlacementController.BeginPlacement("Camera Zone", mSelectedPlanetIndex,
+        if (ImGui::Button("カメラゾーンを配置") && mSelectedPlanetIndex >= 0) {
+            mPlacementController.BeginPlacement("カメラゾーン", mSelectedPlanetIndex,
                                                 [this](int planetIndex, const StageActorPlacement& placement) {
                                                     return mCreateService.AddCameraZone(planetIndex, &placement);
                                                 });

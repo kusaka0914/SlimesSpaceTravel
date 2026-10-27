@@ -188,6 +188,10 @@ void StageEditorPanel::DrawWorkspaceWindows()
     ImGui::SetNextWindowSize(ImVec2(hierarchyWidth, workspaceHeight), ImGuiCond_Always);
     ImGui::Begin("オブジェクト一覧###StageHierarchy", nullptr, panelFlags);
     mPlacementPanel.DrawObjectList();
+    // 一覧内のクリックは行が見えているため、再展開・スクロールせずInspectorだけ切り替える。
+    if (mSelectionController.ConsumeRequestOpenPlacement()) {
+        mSelectedMenu = 3;
+    }
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(workPosition.x + workSize.x - inspectorWidth, workspaceTop), ImGuiCond_Always);

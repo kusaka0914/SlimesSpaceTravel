@@ -12,7 +12,7 @@ namespace {
 bool DrawCameraView(CameraZoneViewSettings& settings, CameraZoneSettings& zoneSettings, Game& game, bool returnCamera)
 {
     int mode = static_cast<int>(settings.mode);
-    if (ImGui::Combo("モード", &mode, "Follow\0Fixed\0Target\0")) {
+    if (ImGui::Combo("モード", &mode, "追従\0固定\0対象注視\0")) {
         settings.mode = static_cast<CameraZoneSettings::Mode>(mode);
     }
     ImGui::DragFloat("FOV（度）", &settings.fieldOfViewDegrees, 0.5f, 15.0f, 110.0f);
@@ -134,9 +134,9 @@ bool DrawCameraSettings(CameraZoneSettings& settings, Game& game, bool platformC
         registered |= DrawCameraView(settings, settings, game, false);
     }
     settings.Normalize();
-    ImGui::TextWrapped("通常カメラ・フリーカメラの現在の構図を登録し、自動保存します。ほかの設定変更は「Camera "
-                       "Zone設定を保存」で保存できます。");
-    const bool saveRequested = ImGui::Button("Camera Zone設定を保存");
+    ImGui::TextWrapped("通常カメラ・フリーカメラの現在の構図を登録し、自動保存します。ほかの設定変更は「カメラゾーン設"
+                       "定を保存」で保存できます。");
+    const bool saveRequested = ImGui::Button("カメラゾーン設定を保存");
     return registered || saveRequested;
 }
 } // namespace
@@ -158,7 +158,7 @@ bool DrawPlatformCameraInspector(Platform& platform, Game& game)
 bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
 {
     auto& settings = zone.GetSettings();
-    ImGui::SeparatorText("Camera Zone");
+    ImGui::SeparatorText("カメラゾーン");
     ImGui::Checkbox("有効", &settings.enabled);
     const bool saveRequested = DrawCameraSettings(settings, game, false);
     auto* cameras = game.GetCameraSystem();
@@ -167,7 +167,7 @@ bool DrawCameraZoneInspector(CameraZone& zone, Game& game)
         ImGui::TextDisabled("このゾーンを強制プレビュー中（領域外でも適用）");
     }
     ImGui::BeginDisabled(!cameras || !player);
-    if (ImGui::Button("Game Viewでプレビュー")) {
+    if (ImGui::Button("ゲーム画面でプレビュー")) {
         cameras->SetCameraZonePreview(zone.GetStageYamlIndex());
         game.SetFreeCameraMode(false);
     }
