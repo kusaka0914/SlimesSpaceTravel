@@ -16,6 +16,7 @@
 #include "support/TestSupport.h"
 #include "system/PhysicsSystem.h"
 #include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/EllipseCameraTransition.h"
 #include "system/camera/zones/CameraOrbitTransition.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
@@ -29,6 +30,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 namespace {
 
@@ -231,6 +233,187 @@ void LeaningSidesPreserveAirborneVerticalMovement(Game& game)
     ExpectTrue(result.didHitStage && result.resolvedPosition.y < 0.46f, "real ceilings still block ascent");
     ExpectFalse(result.hasUnresolvedStageOverlap, "ceiling collision remains separated");
     std::cout << "[PASS] Runtime.LeaningSidesPreserveAirborneVerticalMovement\n";
+}
+
+void EllipseCameraTurnsOnHemisphereCrossing()
+{
+    Planet planet(nullptr);
+    planet.SetPos({11, -7, 3});
+    CameraCollisionResolver collision(nullptr);
+    const auto hidden = [&](const glm::vec3& camera, const glm::vec3& target) {
+        for (int sample = 1; sample < 200; ++sample) {
+            const auto point = glm::mix(camera, target, sample / 200.0f);
+            const auto scaled = (point - planet.GetPos()) / glm::abs(planet.GetScale());
+            if (glm::dot(scaled, scaled) < 0.998f) {
+                return true;
+            }
+        }
+        return false;
+    };
+    // 最短軸をX・Y・Zへ入れ替え、表裏の両方向で同じ幾何条件を通過する。
+    for (int shortAxis = 0; shortAxis < 3; ++shortAxis) {
+        for (float face : {-1.0f, 1.0f}) {
+            const auto orient = [&](glm::vec3 value) {
+                std::swap(value[1], value[shortAxis]);
+                return value * face;
+            };
+            planet.SetScale(glm::abs(orient({6, 2, 6})));
+            for (float side : {-1.0f, 1.0f}) {
+                EllipseCameraTransition transition;
+                EllipseCameraTransitionInput input;
+                input.planet = &planet;
+                input.cameraPosition = planet.GetPos() + orient({0, 10, 8});
+                input.cameraBack = orient({0, 0, 1});
+                input.movementSpeed = 6.0f;
+                std::optional<EllipseCameraTransitionPose> position;
+                const auto initialHemisphere =
+                    planet.ResolveEllipseSurfaceHemisphere(planet.GetPos() + orient({0, 2.4f, 0}));
+                for (int sample = 0; sample < 200 && !position; ++sample) {
+                    const float angle = sample * 0.01f;
+                    const auto up = glm::normalize(orient({side * std::sin(angle) / 6.0f, std::cos(angle) / 2.0f, 0}));
+                    input.playerPosition = planet.GetPos() +
+                                           orient({side * 6.0f * std::sin(angle), 2.0f * std::cos(angle), 0}) +
+                                           up * 0.4f;
+                    input.up = up;
+                    input.playerUp = up;
+                    input.framingCenter = input.playerPosition;
+                    input.movementDirection =
+                        glm::normalize(orient({side * 6.0f * std::cos(angle), -2.0f * std::sin(angle), 0}));
+                    position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+                    if (planet.ResolveEllipseSurfaceHemisphere(input.playerPosition) == initialHemisphere) {
+                        ExpectFalse(position.has_value(),
+                                    "visibility and approaching the edge do not trigger a turn on the same hemisphere");
+                    }
+                }
+                ExpectTrue(position.has_value(), "crossing the hemisphere boundary starts an ellipsoid transition");
+                ExpectTrue(planet.ResolveEllipseSurfaceHemisphere(input.playerPosition) != initialHemisphere,
+                           "the turn starts after crossing to the opposite hemisphere");
+                ExpectVectorNear(input.cameraPosition, position->position, 0.0001f,
+                                 "the first transition frame preserves the camera position");
+                const auto original = input.cameraPosition;
+                input.movementDirection = glm::vec3(0);
+                for (int frame = 0; frame < 120 && transition.IsActive(); ++frame) {
+                    position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+                    ExpectTrue(position.has_value(), "stopping movement does not abruptly cancel an active transition");
+                    const auto surface = planet.CalculateEllipseSurfaceProjection(position->position);
+                    ExpectTrue(surface.isOutside, "the orbit remains outside the ellipsoid");
+                    ExpectTrue(surface.distance >= input.clearanceRadius - 0.001f,
+                               "the orbit preserves camera clearance");
+                }
+                ExpectFalse(transition.IsActive(), "the transition completes within its time limit");
+                const auto offset = position->position - position->center;
+                ExpectNear(input.distance, glm::length(offset), 0.0001f,
+                           "stopping during an orbit restores normal distance rather than the predicted position");
+                ExpectNear(-std::sin(input.pitch) * input.distance, glm::dot(offset, input.up), 0.0001f,
+                           "stopping during an orbit restores normal pitch");
+                ExpectTrue(glm::distance(original, position->position) > 1.0f,
+                           "visibility recovery changes the camera position");
+                ExpectFalse(hidden(position->position, input.playerPosition + input.up * 0.5f),
+                            "the destination sees the player");
+                ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                            "a stationary player does not restart the transition");
+
+                transition.Reset();
+                input.movementDirection = orient({1, 0, 0});
+                input.allowsStart = false;
+                ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                            "a suspended camera cannot start an orbit");
+            }
+        }
+    }
+    planet.SetScale({6, 2, 6});
+    {
+        EllipseCameraTransition transition;
+        EllipseCameraTransitionInput input;
+        input.planet = &planet;
+        input.movementDirection = {0, -1, 0};
+        input.movementSpeed = 6.0f;
+        input.playerPosition = planet.GetPos() + glm::vec3(6.4f, 0.1f, 0);
+        ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                    "initial hemisphere observation does not turn the camera");
+        for (int frame = 0; frame < 20; ++frame) {
+            input.playerPosition.y = planet.GetPos().y + (frame % 2 == 0 ? -0.005f : 0.005f);
+            ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                        "minor boundary jitter does not repeatedly switch hemispheres");
+        }
+        transition.Reset();
+        input.playerPosition = planet.GetPos() + glm::vec3(0, -2.4f, 0);
+        input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+        ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                    "occlusion alone no longer triggers a turn");
+    }
+    planet.SetScale(glm::vec3(4));
+    EllipseCameraTransition transition;
+    EllipseCameraTransitionInput input;
+    input.planet = &planet;
+    input.playerPosition = planet.GetPos() + glm::vec3(0, -4.4f, 0);
+    input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+    input.movementDirection = {1, 0, 0};
+    input.movementSpeed = 6.0f;
+    ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                "Sphere does not use ellipsoid visibility recovery");
+    planet.SetScale({6, 0, 6});
+    ExpectFalse(transition.Update(input, collision, {}, 0.1f).has_value(),
+                "a degenerate flat shape does not divide by a zero radius");
+    std::cout << "[PASS] Runtime.EllipseCameraHemisphereCrossing\n";
+}
+
+void EllipseCameraDestinationUsesCurrentFraming()
+{
+    Planet planet(nullptr);
+    planet.SetPos({11, -7, 3});
+    planet.SetScale({6, 2, 6});
+    CameraCollisionResolver collision(nullptr);
+    EllipseCameraTransition transition;
+    EllipseCameraTransitionInput input;
+    input.planet = &planet;
+    input.playerPosition = planet.GetPos() + glm::vec3(0, 2.4f, 0);
+    input.framingCenter = input.playerPosition;
+    input.up = {0, -1, 0};
+    input.playerUp = input.up;
+    input.cameraBack = {0, 0, 1};
+    input.cameraPosition = planet.GetPos() + glm::vec3(0, 10, 8);
+    input.movementDirection = {1, 0, 0};
+    input.movementSpeed = 6.0f;
+    ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                "the initial front hemisphere is observed without a transition");
+    input.playerPosition = planet.GetPos() + glm::vec3(0, -2.4f, 0);
+    input.framingCenter = input.playerPosition;
+    auto position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+    ExpectTrue(position.has_value() && transition.IsActive(), "hemisphere crossing starts framing recovery");
+    for (int frame = 1; frame <= 120 && transition.IsActive(); ++frame) {
+        const float angle = frame * 0.003f;
+        input.playerUp = glm::normalize(glm::vec3(std::sin(angle) / 6.0f, -std::cos(angle) / 2.0f, 0));
+        input.up = glm::angleAxis(0.2f, glm::vec3(0, 0, 1)) * input.playerUp;
+        input.playerPosition =
+            planet.GetPos() + glm::vec3(6 * std::sin(angle), -2 * std::cos(angle), 0) + input.playerUp * 0.4f;
+        // 注視点補間の遅れと、回り込み中のパラメータ変更を再現する。
+        input.framingCenter = input.playerPosition + glm::vec3(-0.15f, 0, 0);
+        input.distance = 7.0f;
+        input.pitch = glm::radians(-45.046f);
+        position = transition.Update(input, collision, {}, 1.0f / 60.0f);
+        ExpectTrue(position.has_value(), "moving player keeps the recovery active until completion");
+    }
+    ExpectFalse(transition.IsActive(), "moving-player recovery completes");
+    const auto offset = position->position - position->center;
+    ExpectNear(input.distance, glm::length(offset), 0.0001f, "completion uses the current normal distance");
+    ExpectNear(-std::sin(input.pitch) * input.distance, glm::dot(offset, position->up), 0.0001f,
+               "completion uses the current normal pitch and up vector");
+    const auto expected =
+        input.playerPosition +
+        (input.cameraBack * std::cos(input.pitch) - input.playerUp * std::sin(input.pitch)) * input.distance;
+    ExpectVectorNear(input.playerPosition, position->center, 0.0001f, "completion removes the remaining target lag");
+    ExpectVectorNear(input.playerUp, position->up, 0.0001f, "completion removes the remaining up-vector lag");
+    ExpectVectorNear(expected, position->position, 0.0001f,
+                     "arrival matches the initial normal framing instead of retaining smoothing lag");
+    const auto settled = *position;
+    input.movementDirection = glm::vec3(0);
+    input.up = settled.up;
+    input.framingCenter = settled.center;
+    ExpectFalse(transition.Update(input, collision, {}, 1.0f / 60.0f).has_value(),
+                "a settled transition no longer overrides normal tracking");
+    ExpectFalse(transition.GetPose().has_value(), "the previous transition pose is released after handoff");
+    std::cout << "[PASS] Runtime.EllipseCameraCurrentNormalFraming\n";
 }
 
 void CameraOrbitChoosesTheClearSide(Game& game)
@@ -563,6 +746,8 @@ void WorldInvalidatesBorrowedRegistriesBeforeDestroyingActors(Game& game)
 
 void RunRuntimeGameplayTests(Game& game)
 {
+    EllipseCameraTurnsOnHemisphereCrossing();
+    EllipseCameraDestinationUsesCurrentFraming();
     CameraOrbitChoosesTheClearSide(game);
     EllipsoidProjectionPreservesGeometryAndHemisphere();
     SweepsStopAtThinWallsAndResolveOverlap();

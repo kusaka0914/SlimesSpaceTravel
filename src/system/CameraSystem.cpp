@@ -250,6 +250,7 @@ void CameraSystem::ResetForStageChange()
     mPlayerPitchOffsetsDegrees.clear();
     mAirSlamCameraStates.clear();
     mPlayerShakeEffects.clear();
+    mPlayerCamera.CancelEllipseTransitions(mWorld.GetPlayers());
     mPlayerCamera.Reset();
     mCameraZones.Reset(mWorld.GetPlayers());
     mCameraZonePreviewIndex = -1;
@@ -346,9 +347,12 @@ void CameraSystem::UpdateCamera(float deltaTime)
         SetCameraZonePreview(-1);
     }
 
-    if (!mScene.IsPlaying() || controls.isFreeCameraMode || controls.isUGCMode || mCinematicCamera.IsActive() ||
-        mBossDefeatSequence.IsActive() || mTalkCameraBlend > 0.0f || mTalkPageFocusBlend > 0.0f || mIsTargetFocus ||
-        mIsShowingRevealFocus || ResolveBoatRideCameraTarget()) {
+    const bool usesDedicatedCamera = !mScene.IsPlaying() || controls.isFreeCameraMode || controls.isUGCMode ||
+                                     mCinematicCamera.IsActive() || mBossDefeatSequence.IsActive() ||
+                                     mTalkCameraBlend > 0.0f || mTalkPageFocusBlend > 0.0f || mIsTargetFocus ||
+                                     mIsShowingRevealFocus || ResolveBoatRideCameraTarget();
+    if (usesDedicatedCamera) {
+        mPlayerCamera.CancelEllipseTransitions(mWorld.GetPlayers());
         // スイッチの注目演出はFocusingへ遷移する。非操作側を含め、復帰後の行き・帰りを保持する。
         const bool preservesDirection =
             (mScene.IsPlaying() || mScene.IsFocusing()) && !controls.isFreeCameraMode && !controls.isUGCMode;
@@ -403,7 +407,7 @@ void CameraSystem::UpdateCamera(float deltaTime)
         sceneSystem.IsPlaying() && mTalkCameraBlend <= 0.0f && !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
     std::vector<bool> dedicatedCameras(players.size(), false);
     for (std::size_t index = 0; index < yawDeltas.size(); ++index) {
-        dedicatedCameras[index] = mCameraZones.HasActiveZone(static_cast<int>(index)) ||
+        dedicatedCameras[index] = usesDedicatedCamera || mCameraZones.HasActiveZone(static_cast<int>(index)) ||
                                   mCameraZones.GetPose(static_cast<int>(index)).has_value();
         if (!mCameraZones.AllowsManualRotation(static_cast<int>(index))) {
             yawDeltas[index] = 0.0f;

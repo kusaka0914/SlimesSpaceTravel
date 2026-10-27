@@ -100,6 +100,11 @@ void PlayerCamera::NotifyManualInput(Player* player, int playerIndex)
     mStates[playerIndex].isAligningBehindPlayer = false;
     mStates[playerIndex].manualInputPending = true;
     mStates[playerIndex].hasAttackTargetForward = false;
+    if (mStates[playerIndex].ownsEllipseMovementLock) {
+        player->UnlockMovementDirectionForCameraAutoAlign();
+    }
+    mStates[playerIndex].ownsEllipseMovementLock = false;
+    mStates[playerIndex].ellipseTransition.Reset();
 }
 
 void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose, const Player& player)
@@ -108,6 +113,9 @@ void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose, const 
         return;
     }
     auto& state = mStates[playerIndex];
+    // Zone側が既に取得した方向保持は解除せず、通常カメラの回り込みだけを破棄する。
+    state.ellipseTransition.Reset();
+    state.ownsEllipseMovementLock = false;
     state.isAligningBehindPlayer = false;
     state.hasAttackTargetForward = false;
     state.isTransitioningToPlayer = false;
@@ -143,6 +151,18 @@ void PlayerCamera::Reset()
     mStates.clear();
 }
 
+void PlayerCamera::CancelEllipseTransitions(const std::vector<Player*>& players)
+{
+    for (std::size_t index = 0; index < mStates.size(); ++index) {
+        auto& state = mStates[index];
+        if (state.ownsEllipseMovementLock && index < players.size() && players[index]) {
+            players[index]->UnlockMovementDirectionForCameraAutoAlign();
+        }
+        state.ownsEllipseMovementLock = false;
+        state.ellipseTransition.Reset();
+    }
+}
+
 void PlayerCamera::SnapToPlayer(Player* player, int playerIndex)
 {
     if (!player || playerIndex < 0) {
@@ -176,6 +196,8 @@ void PlayerCamera::TransitionToPlayer(int fromPlayerIndex, Player* player, int t
     ResizeState(static_cast<std::size_t>(toPlayerIndex + 1));
     auto& state = mStates[toPlayerIndex];
     state = previous;
+    state.ellipseTransition.Reset();
+    state.ownsEllipseMovementLock = false;
     state.hasAttackTargetForward = false;
     state.manualInputPending = false;
     const auto up = NormalizeOr(player->GetUpVec(), previous.previousPlayerUp);
@@ -246,6 +268,12 @@ void PlayerCamera::UpdateFollowPosition(Player* player, PlayerCameraState& state
 {
     const auto up = NormalizeOr(player->GetUpVec(), state.previousPlayerUp);
     const auto delta = player->GetPos() - state.previousPlayerPosition;
+    if (state.ellipseTransition.IsActive()) {
+        player->ConsumeCameraLateralCorrection();
+        state.previousPlayerPosition = player->GetPos();
+        state.previousPlayerUp = up;
+        return;
+    }
     if (state.followsLateralMovement) {
         // 球面では方向だけを地面法線へ運び、位置はGetViewでプレイヤー全方向に追従させる。
         state.cameraForwardVec = glm::quat(state.previousPlayerUp, up) * state.cameraForwardVec;
@@ -307,6 +335,9 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
                                bool allowsMovementCameraAssist, bool dedicatedCamera)
 {
     auto& state = mStates[playerIndex];
+    if (state.ownsEllipseMovementLock && !player->IsCameraZoneDirectionHeld()) {
+        state.ownsEllipseMovementLock = false;
+    }
     const bool manualInput = state.manualInputPending;
     state.manualInputPending = false;
     state.attackCameraManualDelay = manualInput
@@ -336,7 +367,18 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
         state.targetPos = player->GetPos();
         state.previousPlayerPosition = player->GetPos();
         state.isRecoveringFromCollision = false;
+        state.ellipseTransition.Reset();
+        if (state.ownsEllipseMovementLock) {
+            player->UnlockMovementDirectionForCameraAutoAlign();
+            state.ownsEllipseMovementLock = false;
+        }
     }
+    const float movementSpeed = deltaTime > 0.000001f
+                                    ? std::clamp(glm::dot(player->GetPos() - state.previousPlayerPosition,
+                                                          player->GetInputMovementDirection()) /
+                                                     deltaTime,
+                                                 0.0f, std::max(0.0f, player->GetMoveSpeed()))
+                                    : 0.0f;
     UpdateFollowPosition(player, state, settings, deltaTime);
     const auto up = NormalizeOr(player->GetUpVec(), {0, 1, 0});
     state.upVec = glm::slerp(glm::quat(1, 0, 0, 0), glm::quat(state.upVec, up),
@@ -353,9 +395,57 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
     UpdateCameraForward(player, state, deltaTime);
     UpdateAttackCameraAssist(player, state, settings, deltaTime,
                              allowsMovementCameraAssist && !dedicatedCamera && !manualInput && !explicitAlignment &&
-                                 !state.isTransitioningToPlayer);
+                                 !state.isTransitioningToPlayer && !state.ellipseTransition.IsActive());
     UpdateBackwardFacingFraming(player, state, settings, deltaTime,
                                 allowsMovementCameraAssist && player->GetOnGround());
+    UpdateEllipseTransition(*player, state, settings, deltaTime, movementSpeed,
+                            allowsMovementCameraAssist && !manualInput && !explicitAlignment, dedicatedCamera);
+}
+
+void PlayerCamera::UpdateEllipseTransition(Player& player, PlayerCameraState& state,
+                                           const PlayerCameraSettings& settings, float deltaTime, float movementSpeed,
+                                           bool allowsAssist, bool dedicatedCamera)
+{
+    const auto* planet = player.GetCurrentPlanet();
+    if (!allowsAssist || dedicatedCamera || !planet || planet->GetPlanetShape() != Planet::PlanetShape::Ellipse ||
+        !state.hasFollowPosition || state.needsNormalFraming || state.isTransitioningToPlayer ||
+        state.isAligningBehindPlayer || state.orbitRequested || state.attackCameraManualDelay > 0.0f) {
+        state.ellipseTransition.Reset();
+        if (state.ownsEllipseMovementLock && !dedicatedCamera) {
+            player.UnlockMovementDirectionForCameraAutoAlign();
+        }
+        state.ownsEllipseMovementLock = false;
+        return;
+    }
+    EllipseCameraTransitionInput input;
+    input.planet = planet;
+    input.playerPosition = player.GetPos();
+    input.framingCenter = state.targetPos;
+    input.movementDirection = player.GetInputMovementDirection();
+    input.up = state.upVec;
+    input.playerUp = player.GetUpVec();
+    input.cameraPosition = state.cameraPos;
+    input.cameraBack = state.cameraForwardVec;
+    input.movementSpeed = movementSpeed;
+    input.distance = state.distance > 0.0f ? state.distance : settings.distance;
+    input.pitch = state.distance > 0.0f ? state.pitch : glm::radians(settings.pitchDegrees);
+    input.clearanceRadius = state.clearanceRadius;
+    input.allowsStart = player.GetOnGround() && !player.IsAttacking();
+    const bool wasActive = state.ellipseTransition.IsActive();
+    if (const auto pose = state.ellipseTransition.Update(input, mCollisionResolver, {&player}, deltaTime)) {
+        if (!wasActive && state.ellipseTransition.IsActive()) {
+            player.LockMovementDirectionForCameraAutoAlign(true);
+            state.ownsEllipseMovementLock = player.IsCameraZoneDirectionHeld();
+        }
+        // 位置・注視中心・上方向を同じ姿勢から引き継ぎ、完了後の補間で構図がずれるのを防ぐ。
+        state.followPosition = pose->position;
+        state.desiredFollowPosition = pose->position;
+        state.targetPos = pose->center;
+        state.upVec = pose->up;
+        state.cameraForwardVec = pose->back;
+        state.hasCameraForward = true;
+        state.isSettlingJump = false;
+    }
 }
 
 void PlayerCamera::UpdateCameraForward(Player* player, PlayerCameraState& state, float deltaTime)
@@ -424,6 +514,7 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
     ResizeState(static_cast<std::size_t>(playerIndex + 1));
     auto& state = mStates[playerIndex];
     const bool sphereFollow = UsesSphereFollow(*player);
+    state.clearanceRadius = clearanceRadius;
     if (!state.hasFollowPosition) {
         state.followsLateralMovement = sphereFollow;
     }
@@ -438,7 +529,10 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
         state.needsNormalFraming = false;
     }
     const auto movementUp = NormalizeOr(player->GetUpVec(), up);
-    const auto followDirection = state.hasCameraForward ? state.cameraForwardVec : player->GetForwardVec();
+    const auto& ellipsePose = state.ellipseTransition.GetPose();
+    const auto followDirection = ellipsePose              ? ellipsePose->back
+                                 : state.hasCameraForward ? state.cameraForwardVec
+                                                          : player->GetForwardVec();
     const auto viewDirection = sphereFollow ? glm::quat(movementUp, up) * followDirection : followDirection;
     glm::vec3 back;
     if (!TryGetTangentDirection(viewDirection, up, back)) {
@@ -446,6 +540,14 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
     }
     const bool framingChanged =
         std::abs(state.distance - cameraDistance) > 0.0001f || std::abs(state.pitch - cameraPitch) > 0.0001f;
+    if (framingChanged && state.ellipseTransition.IsActive()) {
+        // 最新の画角設定を直ちに反映した後、古い回り込み経路で位置を上書きしない。
+        state.ellipseTransition.Reset();
+        if (state.ownsEllipseMovementLock) {
+            player->UnlockMovementDirectionForCameraAutoAlign();
+            state.ownsEllipseMovementLock = false;
+        }
+    }
     if (std::abs(state.manualYaw) > 0.000001f) {
         back = glm::angleAxis(-state.manualYaw, up) * back;
         state.orbitRequested = true;

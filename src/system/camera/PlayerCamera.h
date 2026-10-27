@@ -1,5 +1,7 @@
 #pragma once
 
+#include "system/camera/EllipseCameraTransition.h"
+
 #include <cstddef>
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
@@ -11,6 +13,8 @@ struct PlayerCameraSettings;
 struct CameraPose;
 
 struct PlayerCameraState {
+    EllipseCameraTransition ellipseTransition;
+
     // followPositionは衝突補正前の基準位置、cameraPosは実際に描画する位置。
     glm::vec3 followPosition{0.0f};
     glm::vec3 desiredFollowPosition{0.0f};
@@ -31,6 +35,8 @@ struct PlayerCameraState {
     float manualYaw = 0.0f;
     float attackCameraManualDelay = 0.0f;
     float lateralFollowBlend = 1.0f;
+    float clearanceRadius = 0.3f;
+    bool ownsEllipseMovementLock = false;
     bool followsLateralMovement = false;
     bool needsNormalFraming = false;
     bool hasFollowPosition = false;
@@ -54,16 +60,20 @@ public:
     explicit PlayerCamera(CameraCollisionResolver& collisionResolver);
 
     // Player順のyawDeltas（ラジアン）と秒単位のdeltaTimeで追従状態を更新する。
-    // dedicatedCamerasがtrueのPlayerには、敵方向へのカメラ補助を重ねない。
+    // dedicatedCamerasがtrueのPlayerには、攻撃時補助・楕円惑星の回り込みを重ねない。
     void Update(const std::vector<Player*>& players, const std::vector<float>& yawDeltas,
                 const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist,
                 const std::vector<bool>& dedicatedCameras = {});
     void Reset();
 
+    // 専用演出への移行時に回り込みを中止し、この処理が取得した移動方向保持だけを解除する。
+    void CancelEllipseTransitions(const std::vector<Player*>& players);
+
     // ゾーンの表示姿勢を引き継ぐ。次の通常ビューは、その向きで通常の距離・ピッチへ戻す復帰先になる。
     void AdoptZonePose(int playerIndex, const CameraPose& pose, const Player& player);
 
-    // 手動操作を優先し、背面合わせを解除して攻撃時補助を一時停止する。nullptr・負の添字では何もしない。
+    // 手動操作を優先して回り込み・背面合わせを解除し、攻撃時補助を一時停止する。
+    // nullptr・負の添字では何もしない。
     void NotifyManualInput(Player* player, int playerIndex);
 
     // 指定Playerの姿勢へ追従状態を初期化する。nullptr・負のインデックスでは何もしない。
@@ -88,6 +98,8 @@ private:
     void UpdateFollowPosition(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                               float deltaTime);
     void UpdateCameraForward(Player* player, PlayerCameraState& state, float deltaTime);
+    void UpdateEllipseTransition(Player& player, PlayerCameraState& state, const PlayerCameraSettings& settings,
+                                 float deltaTime, float movementSpeed, bool allowsAssist, bool dedicatedCamera);
     void UpdateAttackCameraAssist(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                                   float deltaTime, bool allowsAssist);
     void UpdateBackwardFacingFraming(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
