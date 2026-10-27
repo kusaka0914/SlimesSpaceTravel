@@ -55,6 +55,8 @@ bool StageActorRuntimeCreationService::CreateActor(const StageActorRef& actorRef
         return creationService.CreateBoat(actorNode, stageYamlIndex) != nullptr;
     case StageActorType::BoatArrivalPoint:
         return creationService.CreateBoatArrivalPoint(actorNode, stageYamlIndex) != nullptr;
+    case StageActorType::CameraZone:
+        return creationService.CreateCameraZone(actorNode, stageYamlIndex) != nullptr;
     case StageActorType::FallRespawnPoint:
         return creationService.CreateFallRespawnPoint(actorNode, stageYamlIndex) != nullptr;
     case StageActorType::Key:

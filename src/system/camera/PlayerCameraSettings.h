@@ -25,8 +25,8 @@ struct PlayerCameraSettings {
     float autoFollowMinimumMovementInput = 0.35f;
     float autoFollowMaximumBackwardInput = 0.35f;
     float autoFollowDelayAfterManualInputSeconds = 0.75f;
-    float backwardFacingLookAheadDistance = 2.0f;
-    float backwardFacingFramingActivationDelaySeconds = 0.5f;
+    float backwardFacingLookAheadDistance = 1.75f;
+    float backwardFacingFramingActivationDelaySeconds = 0.35f;
     float backwardFacingFramingMinimumBackwardInput = 0.35f;
     float surfaceTraversalAutoAlignAngleDegrees = 100.0f;
     float surfaceTraversalAutoAlignMinimumMovementInput = 0.35f;

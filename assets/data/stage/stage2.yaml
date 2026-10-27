@@ -2725,7 +2725,7 @@ platforms:
   - currentPlanetNum: 0
     pos:
       - -4.775951
-      - -0.80999994
+      - -0.8100456
       - -8.937073
     theta: -2.424334
     phi: -1.090234
@@ -2757,7 +2757,7 @@ platforms:
       movement:
         startLocalPos:
           - -4.775951
-          - -0.80999994
+          - -0.8100456
           - -8.937073
         endLocalPos:
           - -6.0790253
@@ -2765,7 +2765,7 @@ platforms:
           - -11.317211
         moveOffset:
           - -1.3030744
-          - 0
+          - 4.5657158e-05
           - -2.3801384
         moveDuration: 3
         moveOnPlayer: false
@@ -3739,3 +3739,32 @@ platforms:
 movingPlatforms: []
 fallRespawnPoints: []
 hazardActors: []
+cameraZones:
+  - currentPlanetNum: 0
+    theta: 1.0404472
+    phi: -1.5261582
+    height: -4.004923
+    facingYaw: 0.4294009
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0.0008267431
+      - -0.42940074
+      - -0.008099443
+    scale:
+      - 76.233505
+      - 5.9999995
+      - 11.261467
+    pos:
+      - -13.89
+      - -2.62
+      - -30.35
+    upVec:
+      - -0.00775517
+      - -0.9999697
+      - 0.0007516876
+    rotationQuat:
+      - 0.0038686602
+      - 0.21305455
+      - -0.00045893242
+      - 0.97703254

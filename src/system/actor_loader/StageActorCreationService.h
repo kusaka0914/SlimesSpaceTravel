@@ -8,6 +8,7 @@ class BoatParts;
 class Crystal;
 class Enemy;
 class FallRespawnPoint;
+class CameraZone;
 class HazardActor;
 class JewelItem;
 class Key;
@@ -46,6 +47,7 @@ public:
     Key* CreateKey(const YAML::Node& node, int stageYamlIndex);
     BoatArrivalPoint* CreateBoatArrivalPoint(const YAML::Node& node, int stageYamlIndex);
     FallRespawnPoint* CreateFallRespawnPoint(const YAML::Node& node, int stageYamlIndex);
+    CameraZone* CreateCameraZone(const YAML::Node& node, int stageYamlIndex);
     StageObject* CreateStageObject(const YAML::Node& node, int stageYamlIndex);
     TutorialTrigger* CreateTutorialTrigger(const YAML::Node& node, int stageYamlIndex);
     JewelItem* CreateJewelItem(const YAML::Node& node, int stageYamlIndex);

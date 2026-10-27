@@ -1,4 +1,5 @@
 #include "system/camera/PlayerCamera.h"
+#include "system/camera/CinematicCameraTypes.h"
 
 #include "actor/Enemy.h"
 #include "actor/Player.h"
@@ -142,6 +143,28 @@ void PlayerCamera::NotifyManualInput(Player* player, int playerIndex, const Play
     state.autoFollowDelayRemainingSeconds = settings.autoFollowDelayAfterManualInputSeconds;
 }
 
+void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose)
+{
+    if (playerIndex < 0 || static_cast<std::size_t>(playerIndex) >= mStates.size()) {
+        return;
+    }
+    auto& state = mStates[playerIndex];
+    state.isAligningBehindPlayer = false;
+    CancelAutomaticFollow(state);
+    ResetSurfaceTraversalTracking(state);
+    glm::vec3 direction;
+    if (TryGetTangentDirection(pose.position - pose.target, pose.up, direction)) {
+        state.cameraForwardVec = direction;
+        state.hasCameraForward = true;
+    }
+    // ゾーンの構図と通常カメラの下方向補正を重ねず、退出時にも補正を持ち越さない。
+    state.isBackwardFacingFramingActive = false;
+    state.backwardMovementHoldSeconds = 0.0f;
+    state.backwardFacingLookAheadDistance = 0.0f;
+    state.cameraPos = pose.position;
+    state.hasResolvedCameraDistance = false;
+}
+
 void PlayerCamera::Reset()
 {
     mStates.clear();
@@ -171,6 +194,7 @@ void PlayerCamera::SnapToPlayer(Player* player, int playerIndex)
         state.hasCameraForward = false;
     }
 
+    state.hasResolvedCameraDistance = false;
     state.hasAttackTargetForward = false;
     state.isAligningBehindPlayer = false;
     player->UnlockMovementDirectionForCameraAutoAlign();
@@ -317,7 +341,7 @@ void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm:
 }
 
 glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch,
-                                float targetHeight, bool isFixed)
+                                float targetHeight, bool isFixed, float clearanceRadius)
 {
     if (!player) {
         return glm::mat4(1.0f);
@@ -354,13 +378,34 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
         lookAtOffset = glm::normalize(state.upVec) * targetHeight + glm::normalize(forwardVec) * lookAheadDistance;
     }
 
-    const glm::vec3 collisionTargetPos = state.targetPos + glm::normalize(state.upVec) * targetHeight;
     const glm::vec3 lookAtPos = state.targetPos + lookAtOffset;
     const glm::vec3 desiredCameraPos = state.targetPos - cameraDirection * cameraDistance;
 
-    state.cameraPos = mCollisionResolver.Resolve(collisionTargetPos, desiredCameraPos);
-
-    return glm::lookAt(state.cameraPos, lookAtPos, state.upVec);
+    const glm::vec3 anchor = player->GetPos() + glm::normalize(player->GetUpVec()) * 0.5f;
+    const auto resolvedPosition =
+        mCollisionResolver.ResolveWithClearance(anchor, desiredCameraPos, state.upVec, clearanceRadius, {player});
+    const float resolvedDistance = glm::distance(anchor, resolvedPosition);
+    float distance = resolvedDistance;
+    // 遮蔽物への接近は即時補正し、遮蔽物がなくなった後に元の距離へ戻るときだけ補間する。
+    if (state.hasResolvedCameraDistance && resolvedDistance > state.resolvedCameraDistance) {
+        distance = glm::mix(state.resolvedCameraDistance, resolvedDistance, state.collisionRecoveryBlend);
+    }
+    state.cameraPos = resolvedPosition;
+    if (distance < resolvedDistance && resolvedDistance > 0.00001f) {
+        const auto candidate = anchor + (resolvedPosition - anchor) * (distance / resolvedDistance);
+        state.cameraPos =
+            mCollisionResolver.ResolveWithClearance(anchor, candidate, state.upVec, clearanceRadius, {player});
+    }
+    state.resolvedCameraDistance = glm::distance(anchor, state.cameraPos);
+    state.hasResolvedCameraDistance = true;
+    const glm::vec3 safeTarget =
+        glm::distance(state.cameraPos, lookAtPos) > 0.001f ? lookAtPos : state.cameraPos - cameraDirection;
+    glm::vec3 viewUp = state.upVec;
+    const glm::vec3 viewDirection = glm::normalize(safeTarget - state.cameraPos);
+    if (glm::dot(glm::cross(viewDirection, viewUp), glm::cross(viewDirection, viewUp)) < 0.000001f) {
+        viewUp = std::abs(viewDirection.y) < 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+    }
+    return glm::lookAt(state.cameraPos, safeTarget, viewUp);
 }
 
 glm::vec3 PlayerCamera::GetCameraPos(int playerIndex) const
@@ -398,6 +443,8 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
         ResetSurfaceTraversalTracking(state);
     }
 
+    constexpr float collisionRecoverySpeed = 6.0f;
+    state.collisionRecoveryBlend = 1.0f - std::exp(-collisionRecoverySpeed * std::max(0.0f, deltaTime));
     const float upSmooth = 1.0f - std::exp(-settings.upSmoothingSpeed * deltaTime);
     const float targetSmooth = 1.0f - std::exp(-settings.targetSmoothingSpeed * deltaTime);
 
@@ -407,12 +454,15 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
     state.autoFollowDelayRemainingSeconds =
         std::max(0.0f, state.autoFollowDelayRemainingSeconds - std::max(0.0f, deltaTime));
 
-    const bool allowsGroundedMovementCameraAssist = allowsMovementCameraAssist && player->GetOnGround();
+    const bool allowsGroundedMovementCameraAssist =
+        allowsMovementCameraAssist && player->GetOnGround() && !player->IsCameraZoneDirectionHeld();
     UpdateAutoFollowRequest(player, state, settings, deltaTime, allowsGroundedMovementCameraAssist);
 
     UpdateCameraForward(player, state, settings.attackTargetSmoothingSpeed, settings.autoFollowRotationDurationSeconds,
                         deltaTime);
-    UpdateBackwardFacingFraming(player, state, settings, deltaTime, allowsGroundedMovementCameraAssist);
+    // 進行方向の保持は自動回転だけを抑え、通常カメラの注視点補正は継続する。
+    UpdateBackwardFacingFraming(player, state, settings, deltaTime,
+                                allowsMovementCameraAssist && player->GetOnGround());
     UpdateSurfaceTraversalAutoAlign(player, state, settings, allowsGroundedMovementCameraAssist);
 }
 
@@ -631,7 +681,7 @@ void PlayerCamera::UpdateBackwardFacingFraming(Player* player, PlayerCameraState
         const bool isFacingTowardCamera = facingTowardCameraDot >= framingStartDot;
 
         if (state.isBackwardFacingFramingActive) {
-            if (facingTowardCameraDot < framingEndDot) {
+            if (!isMovingBackward || facingTowardCameraDot < framingEndDot) {
                 state.isBackwardFacingFramingActive = false;
                 state.backwardMovementHoldSeconds = 0.0f;
             }

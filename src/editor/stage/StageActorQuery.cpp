@@ -1,10 +1,10 @@
 #include "editor/stage/StageActorQuery.h"
 
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
+#include "actor/CameraZone.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
@@ -19,6 +19,7 @@
 #include "actor/TutorialTrigger.h"
 #include "editor/stage/PlatformTypeRegistry.h"
 #include "system/actor_loader/StageActorLocator.h"
+#include "world/Stage.h"
 
 #include <string>
 #include <vector>
@@ -67,6 +68,7 @@ const std::vector<StageActorTypeInfo>& StageActorQuery::GetTypeInfos()
             {StageActorType::BoatArrivalPoint, "boatArrivalPoints", "ボート到着点"},
             {StageActorType::FallRespawnPoint, "fallRespawnPoints", "落下判定"},
             {StageActorType::StageObject, "stageObjects", "汎用モデル"},
+            {StageActorType::CameraZone, "cameraZones", "Camera Zone"},
             {StageActorType::TutorialTrigger, "tutorialTriggers", "チュートリアルトリガー"},
             {StageActorType::JewelItem, "jewelItems", "ジュエルアイテム"},
             {StageActorType::HazardActor, "hazardActors", "危険アクター"},
@@ -191,6 +193,11 @@ std::vector<StageActorInstance> StageActorQuery::CollectAllActorInstances(Stage*
         }
 
         for (StageObject* stageObject : planet->GetStageObjects()) {
+            if (auto* zone = dynamic_cast<CameraZone*>(stageObject)) {
+                AddInstance(instances, zone, StageActorType::CameraZone, zone->GetStageYamlIndex(), "cameraZones",
+                            MakeIndexedLabel("Camera Zone", zone->GetStageYamlIndex()));
+                continue;
+            }
             const int yamlIndex = stageObject ? stageObject->GetStageYamlIndex() : -1;
             const std::string modelName = stageObject ? stageObject->GetModelPath() : std::string("汎用モデル");
             AddInstance(instances, stageObject, StageActorType::StageObject, yamlIndex, "stageObjects",

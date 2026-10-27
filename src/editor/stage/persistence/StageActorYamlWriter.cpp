@@ -3,6 +3,7 @@
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
+#include "actor/CameraZone.h"
 #include "actor/Enemy.h"
 #include "actor/HazardActor.h"
 #include "actor/JewelItem.h"
@@ -563,6 +564,9 @@ bool StageActorYamlWriter::WriteActorState(YAML::Node& config, const std::string
     WritePlatformState(actorNode, sequenceName, actor);
     WriteBoatState(actorNode, actor);
     WriteNPCState(actorNode, actor);
+    if (auto* zone = dynamic_cast<CameraZone*>(actor)) {
+        zone->GetSettings().Save(actorNode["camera"]);
+    }
     WriteTextureState(actorNode, *actor);
     return true;
 }

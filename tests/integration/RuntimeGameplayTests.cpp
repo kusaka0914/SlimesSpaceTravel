@@ -17,10 +17,12 @@
 #include "system/PhysicsSystem.h"
 #include "system/mesh/LoadedModel.h"
 #include "system/physics/ActorCollisionResolver.h"
+#include "system/physics/EllipsoidCollisionShapeGeometry.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
 #include <btBulletDynamicsCommon.h>
+#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <stdexcept>
 
@@ -154,6 +156,125 @@ void SweepsStopAtThinWallsAndResolveOverlap()
         resolver.CheckCollision(nullptr, nullptr, &actor, {20, 0, 0}, {10, 0, 0}, 0, ActorCollisionFilter::AllActors);
     ExpectVectorNear({10, 0, 0}, unavailable.resolvedPosition, 0, "missing world preserves desired position");
     std::cout << "[PASS] Runtime.ThinWallSweepAndOverlap\n";
+}
+
+void LeaningSidesPreserveAirborneVerticalMovement(Game& game)
+{
+    for (float tiltDegrees : {-10.0f, -3.0f, 3.0f, 10.0f}) {
+        for (bool onPlanetSide : {false, true}) {
+            CollisionWorld collision;
+            btConvexHullShape shape;
+            shape.setMargin(0.0f);
+            // players.yamlと同じ扁平な衝突形状で、側面接触時の法線を確認する。
+            EllipsoidCollisionShapeGeometry::AddSurfacePoints(shape, {0.97f, 0.26f, 0.77f});
+            Player player(&game);
+            const glm::quat surfaceRotation =
+                glm::angleAxis(onPlanetSide ? glm::radians(90.0f) : 0.0f, glm::vec3(0, 0, 1));
+            const glm::quat wallRotation =
+                surfaceRotation * glm::angleAxis(glm::radians(tiltDegrees), glm::vec3(0, 0, 1));
+            btTransform transform = btTransform::getIdentity();
+            transform.setRotation(btQuaternion(wallRotation.x, wallRotation.y, wallRotation.z, wallRotation.w));
+            collision.wall.setWorldTransform(transform);
+            collision.world.updateSingleAabb(&collision.wall);
+            player.SetUpVec(surfaceRotation * glm::vec3(0, 1, 0));
+            player.SetOrientation(surfaceRotation);
+            player.SetOnGround(false);
+            const glm::vec3 start = surfaceRotation * glm::vec3(-0.55f, 0, 0);
+            player.SetPos(start);
+            const glm::vec3 movement = surfaceRotation * glm::vec3(0.4f, 0.1f, 0);
+            const ActorCollisionResolver resolver;
+            for (int frame = 0; frame < 10; ++frame) {
+                const auto result =
+                    resolver.CheckCollision(&collision.world, &shape, &player, movement, player.GetPos() + movement,
+                                            0.0f, ActorCollisionFilter::AllActors);
+                ExpectFalse(result.hasUnresolvedStageOverlap, "ascending slide stays outside the leaning side");
+                player.SetPos(result.resolvedPosition);
+            }
+            ExpectTrue(glm::dot(player.GetPos() - start, player.GetUpVec()) > 0.9f,
+                       "holding forward against a leaning side preserves jump ascent on each planet face");
+            player.SetPos(start);
+            player.SetOnGround(false);
+            player.SetVelocity(-player.GetUpVec());
+            const auto fallingMovement = surfaceRotation * glm::vec3(0.4f, -0.1f, 0);
+            for (int frame = 0; frame < 10; ++frame) {
+                const auto result =
+                    resolver.CheckCollision(&collision.world, &shape, &player, fallingMovement,
+                                            player.GetPos() + fallingMovement, 0.0f, ActorCollisionFilter::AllActors);
+                ExpectFalse(result.hasUnresolvedStageOverlap, "falling slide stays outside the leaning side");
+                player.SetPos(result.resolvedPosition);
+            }
+            ExpectTrue(glm::dot(player.GetPos() - start, player.GetUpVec()) < -0.9f,
+                       "holding forward against a leaning side does not slow falling");
+        }
+    }
+    btBoxShape ceiling(btVector3(3, 0.05f, 3));
+    CollisionWorld collision;
+    collision.world.removeCollisionObject(&collision.wall);
+    collision.wall.setCollisionShape(&ceiling);
+    btTransform transform = btTransform::getIdentity();
+    transform.setOrigin(btVector3(0, 1, 0));
+    collision.wall.setWorldTransform(transform);
+    collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+    Player player(&game);
+    player.SetPos({0, 0, 0});
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetOnGround(false);
+    btSphereShape shape(0.5f);
+    const ActorCollisionResolver resolver;
+    const auto result = resolver.CheckCollision(&collision.world, &shape, &player, {0.3f, 1, 0}, {0.3f, 1, 0}, 0.0f,
+                                                ActorCollisionFilter::AllActors);
+    ExpectTrue(result.didHitStage && result.resolvedPosition.y < 0.46f, "real ceilings still block ascent");
+    ExpectFalse(result.hasUnresolvedStageOverlap, "ceiling collision remains separated");
+    std::cout << "[PASS] Runtime.LeaningSidesPreserveAirborneVerticalMovement\n";
+}
+
+void LandingRequiresSupportingSurface(Game& game)
+{
+    auto* world = game.GetPhysicsSystem()->GetBulletWorld();
+    ExpectTrue(world != nullptr, "landing test has a physics world");
+    btBoxShape wall(btVector3(0.1f, 20, 3));
+    btBoxShape floor(btVector3(3, 0.25f, 3));
+    struct ScopedSurface {
+        btDiscreteDynamicsWorld& world;
+        btCollisionObject object;
+        ScopedSurface(btDiscreteDynamicsWorld& world, btCollisionShape& shape, const glm::vec3& position)
+            : world(world)
+        {
+            object.setCollisionShape(&shape);
+            btTransform transform = btTransform::getIdentity();
+            transform.setOrigin(btVector3(position.x, position.y, position.z));
+            object.setWorldTransform(transform);
+            world.addCollisionObject(&object, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
+        ~ScopedSurface() { world.removeCollisionObject(&object); }
+    };
+    const glm::vec3 origin(10000, 10000, 10000);
+    ScopedSurface surface(*world, wall, origin);
+    Player player(&game);
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetFacingForwardVec({1, 0, 0});
+    for (float height : {0.0f, 1.0f, 3.0f}) {
+        player.SetPos(origin + glm::vec3(-0.6f, height, 0));
+        player.SetOnGround(false);
+        player.SetVelocity({0, -1, 0});
+        ExpectFalse(player.TryLandOnSupportingSurface(), "wall beside falling player is not a supporting floor");
+        ExpectFalse(player.GetOnGround(), "wall contact does not briefly restore grounded state");
+        ExpectVectorNear({0, -1, 0}, player.GetVelocity(), 0.0001f, "unsupported wall contact keeps falling velocity");
+    }
+    surface.object.setCollisionShape(&floor);
+    btTransform transform = btTransform::getIdentity();
+    const auto floorCenter = origin - glm::vec3(0, 0.25f, 0);
+    transform.setOrigin(btVector3(floorCenter.x, floorCenter.y, floorCenter.z));
+    surface.object.setWorldTransform(transform);
+    world->updateSingleAabb(&surface.object);
+    player.SetPos(origin + glm::vec3(0, 0.04f, 0));
+    player.SetOnGround(false);
+    player.SetVelocity({0, -1, 0});
+    ExpectTrue(player.TryLandOnSupportingSurface(), "real floor beneath feet still permits landing");
+    ExpectTrue(player.GetOnGround(), "confirmed supporting surface restores grounded state");
+    std::cout << "[PASS] Runtime.LandingRequiresSupportingSurface\n";
 }
 
 void CollisionFiltersSkipEmptyRegistryEntries(Game& game)
@@ -365,6 +486,8 @@ void RunRuntimeGameplayTests(Game& game)
 {
     EllipsoidProjectionPreservesGeometryAndHemisphere();
     SweepsStopAtThinWallsAndResolveOverlap();
+    LeaningSidesPreserveAirborneVerticalMovement(game);
+    LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);
     GravitySwitchHasHysteresisAndClearsOnLanding(game);
     NearCenterInternalPointStillProjectsOntoSurface();

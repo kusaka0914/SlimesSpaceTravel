@@ -290,7 +290,7 @@ void UIRenderer::DrawCustomUI()
     const bool isUGCEditing = mGame->GetIsUGCMode() && mGame->GetIsDebugEditorShowing();
     const bool isUGCPlaytestActive = mGame->GetIsUGCPlaytestActive();
     static const std::string returnToEditorText = "作る画面に戻る";
-    static const std::string airDodgeAttackText = "空中回避攻撃";
+    static const std::string airDodgeAttackText = "空中回避";
     static const std::string disembarkBoatText = "降車";
     static const std::string assistAttackText = "攻撃";
     static const std::string assistRecoverText = "体力回復";

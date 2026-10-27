@@ -3,6 +3,7 @@
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
+#include "actor/CameraZone.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
@@ -257,4 +258,16 @@ StageObject* StageActorCreationService::CreateStageObject(const YAML::Node& node
             const bool collisionEnabled = node["collision"] ? node["collision"].as<bool>() : true;
             stageObject->SetCollisionEnabled(collisionEnabled);
         });
+}
+
+CameraZone* StageActorCreationService::CreateCameraZone(const YAML::Node& node, int stageYamlIndex)
+{
+    auto* zone = mActorFactory.CreatePlacedActorFromStageNode<CameraZone>(
+        node, stageYamlIndex, 2.0f, glm::vec3(6.0f), "cameraZone.obj",
+        [](Planet* planet, CameraZone* actor) { planet->AddStageObject(actor); },
+        [](CameraZone* actor, const YAML::Node& config) { actor->GetSettings().Load(config["camera"]); });
+    if (zone) {
+        zone->SetStageSequenceName("cameraZones");
+    }
+    return zone;
 }

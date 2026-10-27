@@ -3,6 +3,7 @@
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
+#include "actor/CameraZone.h"
 #include "actor/Enemy.h"
 #include "actor/HazardActor.h"
 #include "actor/JewelItem.h"
@@ -15,10 +16,12 @@
 #include "app/Game.h"
 #include "component/PlatformMovementComponent.h"
 #include "editor/stage/StageActorQuery.h"
+#include "editor/stage/inspectors/StageCameraZoneInspector.h"
 #include "editor/stage/inspectors/StagePlayerEditor.h"
 #include "editor/stage/persistence/StageActorYamlWriter.h"
 #include "editor/stage/selection/StageSelectionController.h"
 #include "imgui.h"
+#include "system/CameraSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/StageActorPlanetBindingService.h"
 #include "world/Stage.h"
@@ -51,6 +54,14 @@ void StageActorInspector::Draw()
     ImGui::SeparatorText("選択中のオブジェクト");
 
     const int selectedCount = mSelectionController.GetSelectedActorCount();
+    if (auto* cameras = mContext.game ? mContext.game->GetCameraSystem() : nullptr) {
+        auto* selectedZone =
+            selectedCount == 1 ? dynamic_cast<CameraZone*>(mSelectionController.GetSingleSelectedActor()) : nullptr;
+        if (cameras->GetCameraZonePreview() >= 0 &&
+            (!selectedZone || selectedZone->GetStageYamlIndex() != cameras->GetCameraZonePreview())) {
+            cameras->SetCameraZonePreview(-1);
+        }
+    }
     if (selectedCount <= 0) {
         ImGui::TextDisabled("編集するオブジェクトを選択してください。");
         return;
@@ -163,6 +174,20 @@ void StageActorInspector::DrawActorPlacementEditor(Actor* actor, const std::stri
 bool StageActorInspector::DrawActorTypeSettings(Actor* actor, const std::string& sequenceName, std::size_t listIndex,
                                                 int yamlIndex)
 {
+    if (auto* zone = dynamic_cast<CameraZone*>(actor)) {
+        // 選択を切り替えたとき、入力中のImGui状態を別ゾーンへ引き継がない。
+        ImGui::PushID(zone);
+        const bool saveRequested = DrawCameraZoneInspector(*zone, *mContext.game);
+        ImGui::PopID();
+        if (saveRequested) {
+            mStageActorYamlWriter.SaveAllActorStates(mRecordSavedEdit);
+        }
+        if (!mStageActorYamlWriter.GetSaveError().empty()) {
+            ImGui::TextWrapped("%s", mStageActorYamlWriter.GetSaveError().c_str());
+        }
+        return false;
+    }
+
     if (Platform* platform = dynamic_cast<Platform*>(actor)) {
         if (mStagePlatformEditor.DrawPlatformTypeEditor(platform, sequenceName, listIndex)) {
             return true;

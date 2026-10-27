@@ -20,6 +20,11 @@ public:
     glm::vec3 Resolve(const glm::vec3& targetPos, const glm::vec3& desiredCameraPos,
                       const std::vector<Actor*>& ignoredActors) const;
 
+    // 希望位置の球状余白と形状内部への侵入を確認し、接触時だけPlayer近傍のanchorから補正する。
+    // カメラが空いていれば、視線上の足場を理由に距離を縮めない。
+    glm::vec3 ResolveWithClearance(const glm::vec3& anchor, const glm::vec3& desiredCameraPos, const glm::vec3& up,
+                                   float radius, const std::vector<Actor*>& ignoredActors) const;
+
     // 除外対象以外に遮蔽物がないか調べる。物理ワールド未構築時はtrue。
     bool HasClearLineOfSight(const glm::vec3& cameraPos, const glm::vec3& targetPos,
                              const std::vector<Actor*>& ignoredActors) const;

@@ -70,6 +70,8 @@ public:
         mMovement.SetCameraForwardDirection(forwardDirection, upDirection);
     }
     void UnlockMovementDirectionForCameraAutoAlign() { mMovement.UnlockMovementDirectionForCameraAutoAlign(); }
+    bool IsCameraZoneDirectionHeld() const { return mMovement.IsCameraZoneDirectionHeld(); }
+    const glm::vec3& GetInputMovementDirection() const { return mMovement.GetInputMovementDirection(); }
     bool ConsumeCameraAutoAlignCancellationRequest() { return mMovement.ConsumeCameraAutoAlignCancellationRequest(); }
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
     void SetMaximumStepHeight(float maximumStepHeight) { mMovement.SetMaximumStepHeight(maximumStepHeight); }
@@ -281,9 +283,10 @@ public:
     void SetControlLocked(bool locked) { mControlLocked = locked; }
     void SuppressJumpUntilReleased() { mInput.SuppressJumpUntilReleased(); }
     void SetCameraYaw(float cameraYaw) { mInput.SetCameraYaw(cameraYaw); }
-    void LockMovementDirectionForCameraAutoAlign()
+    // releaseOnNeutralを指定した保持は、カメラ補間後も入力を離すか方向変更するまで継続する。
+    void LockMovementDirectionForCameraAutoAlign(bool releaseOnNeutral = false)
     {
-        mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec());
+        mMovement.LockMovementDirectionForCameraAutoAlign(mInput, GetUpVec(), releaseOnNeutral);
     }
     void SetInputAvailableTimer(float inputAvailableTimer) { mInput.SetInputAvailableTimer(inputAvailableTimer); }
 

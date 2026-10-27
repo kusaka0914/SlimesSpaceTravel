@@ -21,11 +21,20 @@ public:
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
     void SetCameraForwardDirection(const glm::vec3& forwardDirection, const glm::vec3& upDirection);
 
-    // カメラ自動回転中の移動方向を接平面上に固定する。有効な入力方向・上方向がなければ何もしない。
-    void LockMovementDirectionForCameraAutoAlign(const PlayerInput& input, const glm::vec3& upDirection);
+    // 移動方向を接平面上に固定する。有効な入力方向・上方向がなければ何もしない。
+    // releaseOnNeutral=trueなら補間後も保持し、入力を離すか明確に方向変更したときに解除する。
+    void LockMovementDirectionForCameraAutoAlign(const PlayerInput& input, const glm::vec3& upDirection,
+                                                 bool releaseOnNeutral = false);
+    bool IsCameraZoneDirectionHeld() const
+    {
+        return mIsCameraAutoAlignMovementDirectionLocked && mReleaseCameraDirectionOnNeutral;
+    }
+
+    // 通常の入力移動で実際に進んだワールド方向。停止・外力だけの移動ではゼロ。
+    const glm::vec3& GetInputMovementDirection() const { return mInputMovementDirection; }
     void UnlockMovementDirectionForCameraAutoAlign();
 
-    // 入力方向の大きな変更による自動回転の解除要求を返し、要求を消費する。
+    // 入力方向の明確な変更による自動回転の解除要求を返し、要求を消費する。
     bool ConsumeCameraAutoAlignCancellationRequest();
 
     // 入力から移動し、衝突と段差を解決する。接着床に固定中は移動しない。
@@ -174,6 +183,8 @@ private:
     bool mHasEllipseAirborneStartSurfaceNormal = false;
     bool mCanStartJumpApexHover = false;
     bool mIsCameraAutoAlignMovementDirectionLocked = false;
+    bool mReleaseCameraDirectionOnNeutral = false;
+    glm::vec3 mInputMovementDirection{0.0f};
     bool mHasCameraAutoAlignCancellationRequest = false;
 
     int mCurrentPlanetNum = 0;

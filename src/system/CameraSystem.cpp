@@ -1,4 +1,5 @@
 #include "system/CameraSystem.h"
+#include "system/camera/CameraProjection.h"
 
 #include "actor/Boat.h"
 #include "actor/Enemy.h"
@@ -128,7 +129,10 @@ void CameraSystem::ProcessInput()
         const std::vector<Player*>& players = mWorld.GetPlayers();
         if (playerIndex >= 0 && playerIndex < static_cast<int>(players.size()) &&
             players[static_cast<std::size_t>(playerIndex)]) {
-            mPlayerCamera.AlignBehindPlayer(players[static_cast<std::size_t>(playerIndex)], playerIndex);
+            if (!mCameraZones.HasActiveZone(playerIndex)) {
+                mCameraZones.RequestReset(playerIndex);
+                mPlayerCamera.AlignBehindPlayer(players[static_cast<std::size_t>(playerIndex)], playerIndex);
+            }
         }
     }
 
@@ -137,7 +141,10 @@ void CameraSystem::ProcessInput()
         playerTwoUsesController) {
         const std::vector<Player*>& players = mWorld.GetPlayers();
         if (players.size() >= 2 && players[1]) {
-            mPlayerCamera.AlignBehindPlayer(players[1], 1);
+            if (!mCameraZones.HasActiveZone(1)) {
+                mCameraZones.RequestReset(1);
+                mPlayerCamera.AlignBehindPlayer(players[1], 1);
+            }
         }
     }
     mWasSecondControllerAlignCameraPressed = secondControllerAlignCameraPressed;
@@ -244,6 +251,8 @@ void CameraSystem::ResetForStageChange()
     mAirSlamCameraStates.clear();
     mPlayerShakeEffects.clear();
     mPlayerCamera.Reset();
+    mCameraZones.Reset(mWorld.GetPlayers());
+    mCameraZonePreviewIndex = -1;
     mTalkCameraBlend = 0.0f;
     mTalkCameraPlayer = nullptr;
     mHasTalkCameraTarget = false;
@@ -269,6 +278,30 @@ void CameraSystem::SnapBehindControlledPlayer()
     mPlayerCamera.SnapBehindPlayer(controlledPlayer, GetPrimaryPlayerIndex());
 }
 
+std::optional<CameraPose> CameraSystem::GetCurrentCameraPose()
+{
+    const auto controls = mReadControlState();
+    if (controls.isFreeCameraMode) {
+        return GetDebugCameraPose();
+    }
+    const auto views = GetViews();
+    if (views.empty()) {
+        return std::nullopt;
+    }
+    const int playerIndex = controls.controlledPlayerIndex;
+    const std::size_t viewIndex = controls.isPlayer2Joined && views.size() > 1 && playerIndex >= 0 &&
+                                          static_cast<std::size_t>(playerIndex) < views.size()
+                                      ? static_cast<std::size_t>(playerIndex)
+                                      : 0;
+    const glm::mat4 inverseView = glm::inverse(views[viewIndex]);
+    CameraPose pose;
+    pose.position = glm::vec3(inverseView[3]);
+    pose.target = pose.position - glm::vec3(inverseView[2]);
+    pose.up = glm::vec3(inverseView[1]);
+    pose.fieldOfViewDegrees = GetPlayerFieldOfViewDegrees(playerIndex);
+    return pose;
+}
+
 float CameraSystem::GetFieldOfViewDegrees() const
 {
     const CameraControlState controls = mReadControlState();
@@ -288,6 +321,13 @@ float CameraSystem::GetFieldOfViewDegrees() const
         return mPlayerCameraSettings.boatRideFieldOfViewDegrees;
     }
 
+    if (mScene.IsPlaying() && !controls.isUGCMode && !mIsTargetFocus && !mIsShowingRevealFocus &&
+        mTalkCameraBlend <= 0.0f && mTalkPageFocusBlend <= 0.0f) {
+        if (const auto pose = mCameraZones.GetPose(GetPrimaryPlayerIndex())) {
+            return pose->fieldOfViewDegrees;
+        }
+    }
+
     const float normalFieldOfView = controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
                                                              : mPlayerCameraSettings.fieldOfViewDegrees;
 
@@ -296,10 +336,21 @@ float CameraSystem::GetFieldOfViewDegrees() const
 
 void CameraSystem::UpdateCamera(float deltaTime)
 {
+    ++mCameraFrameNumber;
+    mCameraDeltaTime = std::max(0.0f, deltaTime);
     const CameraControlState controls = mReadControlState();
     UpdateTalkCameraTransition(deltaTime);
     mBossDefeatSequence.Update(deltaTime);
     UpdateAirSlamCameraStates(deltaTime);
+    if ((!controls.isDebugEditorShowing || controls.isFreeCameraMode) && mCameraZonePreviewIndex >= 0) {
+        SetCameraZonePreview(-1);
+    }
+
+    if (!mScene.IsPlaying() || controls.isFreeCameraMode || controls.isUGCMode || mCinematicCamera.IsActive() ||
+        mBossDefeatSequence.IsActive() || mTalkCameraBlend > 0.0f || mTalkPageFocusBlend > 0.0f || mIsTargetFocus ||
+        mIsShowingRevealFocus || ResolveBoatRideCameraTarget()) {
+        mCameraZones.Reset(mWorld.GetPlayers());
+    }
 
     if (mCinematicCamera.IsActive()) {
         mCinematicCamera.Update(deltaTime);
@@ -347,6 +398,14 @@ void CameraSystem::UpdateCamera(float deltaTime)
     SceneSystem& sceneSystem = mScene;
     const bool allowsMovementCameraAssist =
         sceneSystem.IsPlaying() && mTalkCameraBlend <= 0.0f && !mBossDefeatSequence.IsActive() && !mIsTargetFocus;
+    for (std::size_t index = 0; index < yawDeltas.size(); ++index) {
+        if (!mCameraZones.AllowsManualRotation(static_cast<int>(index))) {
+            yawDeltas[index] = 0.0f;
+        }
+        if (std::abs(yawDeltas[index]) > 0.000001f) {
+            mCameraZones.NotifyManualInput(static_cast<int>(index));
+        }
+    }
     mPlayerCamera.Update(players, yawDeltas, mPlayerCameraSettings, deltaTime, allowsMovementCameraAssist);
     UpdateTalkCameraAim();
     UpdateTalkPageFocus(deltaTime);
@@ -446,8 +505,13 @@ void CameraSystem::UpdatePlayerPitchOffsets(float deltaTime)
     }
 
     for (std::size_t index = 0; index < players.size(); ++index) {
+        if (!mCameraZones.AllowsManualRotation(static_cast<int>(index))) {
+            mPlayerPitchOffsetsDegrees[index] = previousPitchOffsets[index];
+            continue;
+        }
         if (mPlayerPitchOffsetsDegrees[index] != previousPitchOffsets[index]) {
             mPlayerCamera.NotifyManualInput(players[index], static_cast<int>(index), mPlayerCameraSettings);
+            mCameraZones.NotifyManualInput(static_cast<int>(index));
         }
     }
 
@@ -576,6 +640,7 @@ void CameraSystem::SnapToControlledPlayer(int fromPlayerIndex, int toPlayerIndex
         return;
     }
 
+    mCameraZones.TransitionToPlayer(fromPlayerIndex, toPlayerIndex, players);
     mPlayerCamera.SnapToPlayer(players[static_cast<std::size_t>(toPlayerIndex)], toPlayerIndex);
 
     CopyPlayerPitchOffset(fromPlayerIndex, toPlayerIndex);
@@ -592,6 +657,7 @@ void CameraSystem::TransitionToControlledPlayer(int fromPlayerIndex, int toPlaye
         return;
     }
 
+    mCameraZones.TransitionToPlayer(fromPlayerIndex, toPlayerIndex, players);
     mPlayerCamera.TransitionToPlayer(fromPlayerIndex, players[static_cast<std::size_t>(toPlayerIndex)], toPlayerIndex);
 
     CopyPlayerPitchOffset(fromPlayerIndex, toPlayerIndex);
@@ -748,9 +814,40 @@ glm::mat4 CameraSystem::GetPlayerCameraView(Player* player, int playerIndex)
         controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenTargetHeight : mPlayerCameraSettings.targetHeight;
     const float targetHeight = glm::mix(normalTargetHeight, mPlayerCameraSettings.talkTargetHeight, talkBlend);
 
-    const glm::mat4 view =
-        mPlayerCamera.GetView(player, playerIndex, distance, glm::radians(pitchDegrees), targetHeight);
-    return ApplyPlayerShake(view, playerIndex);
+    const float aspect = mViewportAspectRatio * (controls.isPlayer2Joined ? 2.0f : 1.0f);
+    const float normalFov = controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
+                                                     : mPlayerCameraSettings.fieldOfViewDegrees;
+    const float clearanceRadius = CalculateCameraClearanceRadius(normalFov, aspect);
+    const glm::mat4 view = mPlayerCamera.GetView(player, playerIndex, distance, glm::radians(pitchDegrees),
+                                                 targetHeight, false, clearanceRadius);
+    if (!player) {
+        return ApplyPlayerShake(view, playerIndex);
+    }
+    const auto inverseView = glm::inverse(view);
+    CameraPose normalPose;
+    normalPose.position = glm::vec3(inverseView[3]);
+    normalPose.target = normalPose.position - glm::vec3(inverseView[2]) * distance;
+    normalPose.up = glm::vec3(inverseView[1]);
+    normalPose.fieldOfViewDegrees = controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
+                                                             : mPlayerCameraSettings.fieldOfViewDegrees;
+    const bool allowsZones = mScene.IsPlaying() && mTalkCameraBlend <= 0.0f && mTalkPageFocusBlend <= 0.0f &&
+                             !controls.isFreeCameraMode && !controls.isUGCMode && AllowsPlayerInput();
+    const auto pose = mCameraZones.Apply(*player, playerIndex, normalPose, mWorld.GetCurrentStage(), mFindPlacedActor,
+                                         mCollisionResolver, aspect, mCameraDeltaTime, mCameraFrameNumber, allowsZones,
+                                         controls.isDebugEditorShowing ? mCameraZonePreviewIndex : -1);
+    if (!mCameraZones.GetPose(playerIndex)) {
+        return ApplyPlayerShake(view, playerIndex);
+    }
+    mPlayerCamera.AdoptZonePose(playerIndex, pose);
+    const glm::vec3 forward = pose.target - pose.position;
+    if (glm::dot(forward, forward) < 0.000001f) {
+        return ApplyPlayerShake(view, playerIndex);
+    }
+    glm::vec3 up = pose.up;
+    if (glm::length(glm::cross(forward, up)) < 0.0001f) {
+        up = std::abs(glm::normalize(forward).y) < 0.9f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+    }
+    return ApplyPlayerShake(glm::lookAt(pose.position, pose.target, up), playerIndex);
 }
 
 glm::mat4 CameraSystem::ApplyPlayerShake(const glm::mat4& view, int playerIndex) const
@@ -1003,12 +1100,36 @@ glm::vec3 CameraSystem::GetCameraPos() const
         return mFocusCamera.GetCameraPos();
     }
 
-    return mPlayerCamera.GetCameraPos(GetPrimaryPlayerIndex());
+    return GetPlayerCameraPos(GetPrimaryPlayerIndex());
 }
 
 glm::vec3 CameraSystem::GetPlayerCameraPos(int playerIndex) const
 {
+    if (const auto pose = mCameraZones.GetPose(playerIndex)) {
+        return pose->position;
+    }
     return mPlayerCamera.GetCameraPos(playerIndex);
+}
+
+float CameraSystem::GetPlayerFieldOfViewDegrees(int playerIndex) const
+{
+    const auto controls = mReadControlState();
+    if (mScene.IsPlaying() && !controls.isFreeCameraMode && !mCinematicCamera.IsActive() &&
+        !mBossDefeatSequence.IsActive() && !mIsTargetFocus && !mIsShowingRevealFocus && mTalkCameraBlend <= 0.0f &&
+        mTalkPageFocusBlend <= 0.0f && !ResolveBoatRideCameraTarget()) {
+        if (const auto pose = mCameraZones.GetPose(playerIndex)) {
+            return pose->fieldOfViewDegrees;
+        }
+        return controls.isPlayer2Joined ? mPlayerCameraSettings.splitScreenFieldOfViewDegrees
+                                        : mPlayerCameraSettings.fieldOfViewDegrees;
+    }
+    return GetFieldOfViewDegrees();
+}
+
+void CameraSystem::SetCameraZonePreview(int yamlIndex)
+{
+    mCameraZonePreviewIndex = yamlIndex;
+    mCameraZones.Reset(mWorld.GetPlayers());
 }
 
 int CameraSystem::GetPrimaryPlayerIndex() const

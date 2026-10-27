@@ -8,6 +8,7 @@
 class CameraCollisionResolver;
 class Player;
 struct PlayerCameraSettings;
+struct CameraPose;
 
 struct PlayerCameraState {
     glm::vec3 cameraPos{0.0f};
@@ -19,6 +20,9 @@ struct PlayerCameraState {
     glm::vec3 autoFollowStartForwardVec{0.0f, 0.0f, 1.0f};
     glm::vec3 autoFollowTargetForwardVec{0.0f, 0.0f, 1.0f};
     glm::vec3 surfaceTraversalStartUpVec{0.0f, 1.0f, 0.0f};
+    float collisionRecoveryBlend = 1.0f;
+    float resolvedCameraDistance = 0.0f;
+    bool hasResolvedCameraDistance = false;
     bool hasCameraForward = false;
     bool hasAttackTargetForward = false;
     bool isAligningBehindPlayer = false;
@@ -47,6 +51,9 @@ public:
                 const PlayerCameraSettings& settings, float deltaTime, bool allowsMovementCameraAssist);
     void Reset();
 
+    // ゾーン姿勢を引き継ぎ、手動操作・通常追従への復帰時も同じ向きから操作できるようにする。
+    void AdoptZonePose(int playerIndex, const CameraPose& pose);
+
     // 手動操作を優先し、自動追従を一定時間停止する。nullptr・負のインデックスでは何もしない。
     void NotifyManualInput(Player* player, int playerIndex, const PlayerCameraSettings& settings);
 
@@ -59,7 +66,7 @@ public:
 
     // 追従状態と衝突補正からビューを生成し、カメラ位置を更新する。playerIndexは0以上、cameraPitchはラジアン。
     glm::mat4 GetView(Player* player, int playerIndex, float cameraDistance, float cameraPitch, float targetHeight,
-                      bool isFixed = false);
+                      bool isFixed = false, float clearanceRadius = 0.3f);
 
     // 0始まりのインデックスで保持位置を返す。範囲外ならゼロベクトル。
     glm::vec3 GetCameraPos(int playerIndex) const;

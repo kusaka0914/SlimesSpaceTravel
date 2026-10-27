@@ -8,11 +8,13 @@
 #include "system/camera/FocusCamera.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
+#include "system/camera/zones/CameraZoneController.h"
 #include "system/sequence/BossDefeatSequence.h"
 
 #include <glm/glm.hpp>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -105,10 +107,19 @@ public:
     CinematicSequenceLibrary& GetCinematicLibrary() { return mCinematicLibrary; }
     const CinematicSequenceLibrary& GetCinematicLibrary() const { return mCinematicLibrary; }
 
+    // 操作対象の現在のビューと画角を取得する。ビュー未生成時はnullopt。フリーカメラにも対応する。
+    std::optional<CameraPose> GetCurrentCameraPose();
+
     CameraPose GetDebugCameraPose() const { return mDebugCamera.GetPose(mReadControlState().isUGCMode); }
     void SetDebugCameraPose(const CameraPose& pose) { mDebugCamera.SetPose(pose, mReadControlState().isUGCMode); }
 
     float GetFieldOfViewDegrees() const;
+    float GetPlayerFieldOfViewDegrees(int playerIndex) const;
+    // 実際の描画先の幅/高さ。上下分割する前の画面全体の比率を渡す。
+    void SetViewportAspectRatio(float aspect) { mViewportAspectRatio = aspect > 0.0f ? aspect : 1.0f; }
+    // Editor専用。-1でプレビューを解除し、現在位置からゾーンを再評価する。
+    void SetCameraZonePreview(int yamlIndex);
+    int GetCameraZonePreview() const { return mCameraZonePreviewIndex; }
 
     void SetIsTargetFocus(bool isTargetFocus) { mIsTargetFocus = isTargetFocus; }
 
@@ -201,6 +212,11 @@ private:
     CameraCollisionResolver mCollisionResolver;
     DebugCamera mDebugCamera;
     FocusCamera mFocusCamera;
+    CameraZoneController mCameraZones;
+    std::uint64_t mCameraFrameNumber = 0;
+    float mCameraDeltaTime = 0.0f;
+    float mViewportAspectRatio = 1.0f;
+    int mCameraZonePreviewIndex = -1;
     PlayerCamera mPlayerCamera;
     PlayerCameraSettings mPlayerCameraSettings;
     PlayerCameraSettingsRepository mPlayerCameraSettingsRepository;

@@ -1,7 +1,7 @@
 playerCamera:
-  distance: 6
+  distance: 7
   pitchDegrees: -52.546
-  targetHeight: 2.45
+  targetHeight: 1.5
   splitScreenTargetHeight: 1.5
   fieldOfView: 55
   splitScreenFieldOfView: 55
@@ -21,8 +21,8 @@ playerCamera:
   autoFollowMinimumMovementInput: 0.35
   autoFollowMaximumBackwardInput: 0.35
   autoFollowDelayAfterManualInputSeconds: 0.75
-  backwardFacingLookAheadDistance: 2
-  backwardFacingFramingActivationDelaySeconds: 0.5
+  backwardFacingLookAheadDistance: 1.75
+  backwardFacingFramingActivationDelaySeconds: 0.35
   backwardFacingFramingMinimumBackwardInput: 0.35
   surfaceTraversalAutoAlignAngleDegrees: 100
   surfaceTraversalAutoAlignMinimumMovementInput: 0.35

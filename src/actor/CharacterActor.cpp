@@ -1,7 +1,7 @@
 #include "actor/CharacterActor.h"
 
-#include "app/Game.h"
 #include "actor/Platform.h"
+#include "app/Game.h"
 #include "system/PhysicsSystem.h"
 
 namespace {
@@ -64,6 +64,12 @@ void CharacterActor::DetachFromPlatform()
     mAttachedPlatform = nullptr;
     mOnGround = false;
     mShouldJudgeLanding = true;
+}
+
+bool CharacterActor::TryLandOnSupportingSurface()
+{
+    JudgeLanding();
+    return mOnGround;
 }
 
 void CharacterActor::JudgeLanding()

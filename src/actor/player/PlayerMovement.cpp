@@ -210,17 +210,57 @@ bool TryStepUpFromGround(PhysicsSystem& physicsSystem, Player& player, const glm
     return true;
 }
 
+AppliedPlayerMovement MoveAirborneAxesWithCollision(PhysicsSystem& physicsSystem, Player& player,
+                                                    const glm::vec3& upDirection, const glm::vec3& requestedMovement,
+                                                    float maximumSubstepDistance)
+{
+    const glm::vec3 start = player.GetPos();
+    const int count = std::max(1, static_cast<int>(std::ceil(glm::length(requestedMovement) / maximumSubstepDistance)));
+    const glm::vec3 step = requestedMovement / static_cast<float>(count);
+    const float verticalDistance = glm::dot(step, upDirection);
+    const glm::vec3 vertical = upDirection * verticalDistance;
+    const glm::vec3 horizontal = step - vertical;
+    AppliedPlayerMovement result;
+    for (int index = 0; index < count; ++index) {
+        // 上昇・落下を先に解決し、壁へ押す横入力によって縦移動を削らない。
+        const auto verticalResult = MoveWithCollision(physicsSystem, player, vertical);
+        if (verticalResult.didHitStage) {
+            const float normalUpDot = glm::dot(verticalResult.blockingNormal, upDirection);
+            const float recordedUpDot = glm::dot(result.blockingNormal, upDirection);
+            const bool isMoreBlockingNormal =
+                verticalDistance > 0.0f ? normalUpDot < recordedUpDot : normalUpDot > recordedUpDot;
+            if (!result.didHitStage || isMoreBlockingNormal) {
+                result.blockingNormal = verticalResult.blockingNormal;
+            }
+            result.didHitStage = true;
+        }
+        if (player.IsAttachedToPlatform()) {
+            break;
+        }
+        (void)MoveWithCollision(physicsSystem, player, horizontal);
+        if (player.IsAttachedToPlatform()) {
+            break;
+        }
+    }
+    result.movementDelta = player.GetPos() - start;
+    return result;
+}
+
 void MoveAirborneWithCollision(PhysicsSystem& physicsSystem, Player& player, const glm::vec3& upDirection,
                                const glm::vec3& requestedMovement)
 {
     constexpr float maximumAirborneCollisionSubstepDistance = 0.05f;
+    const float requestedUpwardDistance = glm::dot(requestedMovement, upDirection);
     const AppliedPlayerMovement appliedMovement =
-        MoveWithCollisionSubsteps(physicsSystem, player, requestedMovement, maximumAirborneCollisionSubstepDistance);
+        player.GetActionState() == Player::ActionState::Idle
+            ? MoveAirborneAxesWithCollision(physicsSystem, player, upDirection, requestedMovement,
+                                            maximumAirborneCollisionSubstepDistance)
+            : MoveWithCollisionSubsteps(physicsSystem, player, requestedMovement,
+                                        maximumAirborneCollisionSubstepDistance);
     if (player.IsAttachedToPlatform()) {
         return;
     }
 
-    const float requestedUpwardDistance = glm::dot(requestedMovement, upDirection);
     const float appliedUpwardDistance = glm::dot(appliedMovement.movementDelta, upDirection);
     constexpr float verticalMovementEpsilon = 0.0001f;
 
@@ -235,8 +275,9 @@ void MoveAirborneWithCollision(PhysicsSystem& physicsSystem, Player& player, con
         const bool wasDownwardMovementBlocked =
             appliedUpwardDistance - verticalMovementEpsilon > requestedUpwardDistance;
         if (didHitFloor && wasDownwardMovementBlocked) {
-            player.Land(player.GetPos());
+            // 凸形状の縁との接触法線だけで着地させず、実際の支持面を足元レイで確認する。
             player.SetShouldJudgeLanding(true);
+            (void)player.TryLandOnSupportingSurface();
         }
         return;
     }
@@ -303,14 +344,10 @@ bool MoveAirSlamDownwardUntilFloorCollision(PhysicsSystem& physicsSystem, Player
             continue;
         }
 
-        const float collisionBottomOffsetFromPlayerOrigin =
-            physicsSystem.GetPlayerCollisionCenterHeight() - physicsSystem.GetPlayerCollisionHeight() * 0.5f;
-        const float upwardLandingCorrection = std::max(0.0f, collisionBottomOffsetFromPlayerOrigin);
-        const glm::vec3 landingPosition = player.GetPos() + upDirection * upwardLandingCorrection;
-
-        player.Land(landingPosition);
         player.SetShouldJudgeLanding(true);
-        return true;
+        if (player.TryLandOnSupportingSurface()) {
+            return true;
+        }
     }
 
     return false;
@@ -347,17 +384,21 @@ bool PlayerMovement::CanDodge() const
 
 void PlayerMovement::UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input)
 {
+    mInputMovementDirection = glm::vec3(0.0f);
     const glm::vec3 upDirection = GetNormalizedUpDirection(player);
     const glm::vec2 movementInput(input.GetMoveLeft(), input.GetMoveForward());
     const float movementInputMagnitude = glm::length(movementInput);
     constexpr float movementInputReleaseThreshold = 0.01f;
     if (mIsCameraAutoAlignMovementDirectionLocked) {
         if (movementInputMagnitude <= movementInputReleaseThreshold) {
-            // 表裏遷移中の一瞬のニュートラル入力では移動方向を解除しない。
-            // カメラ回転完了、または明確な入力方向変更まで固定を保つ。
+            // 通常の表裏補正は一瞬のニュートラルを許容し、ゾーン用の保持は離した時点で解除する。
+            if (mReleaseCameraDirectionOnNeutral) {
+                mIsCameraAutoAlignMovementDirectionLocked = false;
+            }
         } else {
             const glm::vec2 currentInputDirection = movementInput / movementInputMagnitude;
-            constexpr float movementDirectionUnlockAngleDegrees = 90.0f;
+            // W→W+Aの45度変更も受け付ける。スティックの微小な揺れでは保持を解除しない。
+            constexpr float movementDirectionUnlockAngleDegrees = 30.0f;
             const float movementDirectionUnlockDot = std::cos(glm::radians(movementDirectionUnlockAngleDegrees));
             const bool didMovementInputDirectionChange =
                 glm::dot(mCameraAutoAlignStartInputDirection, currentInputDirection) <= movementDirectionUnlockDot;
@@ -431,14 +472,27 @@ void PlayerMovement::SetCameraForwardDirection(const glm::vec3& forwardDirection
     mLeftVec = normalizedLeftDirection;
 }
 
-void PlayerMovement::LockMovementDirectionForCameraAutoAlign(const PlayerInput& input, const glm::vec3& upDirection)
+void PlayerMovement::LockMovementDirectionForCameraAutoAlign(const PlayerInput& input, const glm::vec3& upDirection,
+                                                             bool releaseOnNeutral)
 {
+    if (mIsCameraAutoAlignMovementDirectionLocked && releaseOnNeutral) {
+        mReleaseCameraDirectionOnNeutral = true;
+        return;
+    }
     glm::vec3 normalizedUpDirection;
     if (!TryNormalizeDirection(upDirection, normalizedUpDirection)) {
         return;
     }
 
-    const glm::vec3 requestedMovementDirection = mForwardVec * input.GetMoveForward() + mLeftVec * input.GetMoveLeft();
+    const glm::vec2 movementInput(input.GetMoveLeft(), input.GetMoveForward());
+    if (glm::dot(movementInput, movementInput) <= 0.0001f) {
+        return;
+    }
+
+    const glm::vec3 requestedMovementDirection =
+        releaseOnNeutral && glm::dot(mInputMovementDirection, mInputMovementDirection) > 0.000001f
+            ? mInputMovementDirection
+            : mForwardVec * input.GetMoveForward() + mLeftVec * input.GetMoveLeft();
     glm::vec3 movementDirection;
     if (!TryNormalizeDirection(ProjectOntoPlane(requestedMovementDirection, normalizedUpDirection),
                                movementDirection)) {
@@ -446,8 +500,9 @@ void PlayerMovement::LockMovementDirectionForCameraAutoAlign(const PlayerInput& 
     }
 
     mCameraAutoAlignMovementDirection = movementDirection;
-    mCameraAutoAlignStartInputDirection = glm::normalize(glm::vec2(input.GetMoveLeft(), input.GetMoveForward()));
+    mCameraAutoAlignStartInputDirection = glm::normalize(movementInput);
     mIsCameraAutoAlignMovementDirectionLocked = true;
+    mReleaseCameraDirectionOnNeutral = releaseOnNeutral;
 }
 
 bool PlayerMovement::ConsumeCameraAutoAlignCancellationRequest()
@@ -503,7 +558,12 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
     const glm::vec3 movementDelta =
         CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier);
 
+    const glm::vec3 before = player.GetPos();
     (void)ApplyWalkingMovement(player, movementDelta);
+    const glm::vec3 applied = ProjectOntoPlane(player.GetPos() - before, GetNormalizedUpDirection(player));
+    if (glm::dot(movementDelta, movementDelta) > 0.000001f && glm::dot(applied, applied) > 0.000001f) {
+        mInputMovementDirection = glm::normalize(applied);
+    }
 }
 
 bool PlayerMovement::MoveTowardPosition(Player& player, const glm::vec3& targetPosition, float deltaTime)
@@ -802,8 +862,17 @@ void PlayerMovement::StopAirborneVerticalMovement(Player& player) const
 void PlayerMovement::ApplyJumpGravityAndInputMovement(Player& player, const PlayerInput& input, float deltaTime,
                                                       float speedMultiplier)
 {
-    ApplyJumpGravityMovement(
-        player, CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier), deltaTime);
+    const glm::vec3 inputDelta =
+        CalculateInputMovementDelta(player, input, deltaTime) * std::max(0.0f, speedMultiplier);
+    const glm::vec3 before = player.GetPos();
+    ApplyJumpGravityMovement(player, inputDelta, deltaTime);
+    const auto up = GetNormalizedUpDirection(player);
+    const auto intended = ProjectOntoPlane(inputDelta, up);
+    const auto applied = ProjectOntoPlane(player.GetPos() - before, up);
+    // 重力や慣性ではなく、入力による移動が実際に進んだ場合だけ空中の方向判定へ渡す。
+    if (glm::dot(intended, intended) > 0.000001f && glm::dot(applied, intended) > 0.000001f) {
+        mInputMovementDirection = glm::normalize(intended);
+    }
 }
 
 void PlayerMovement::ApplyJumpGravityMovement(Player& player, const glm::vec3& inputMovementDelta, float deltaTime)

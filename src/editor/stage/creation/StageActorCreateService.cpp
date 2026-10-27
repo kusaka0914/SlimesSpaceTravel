@@ -246,3 +246,24 @@ bool StageActorCreateService::CommitCreation(YAML::Node config, const StageEditO
     }
     return true;
 }
+
+bool StageActorCreateService::AddCameraZone(int currentPlanetNum, const StageActorPlacement* placement)
+{
+    if (!CanCreateActor() || !IsValidPlanetIndex(currentPlanetNum, "camera zone")) {
+        return false;
+    }
+    YAML::Node config;
+    if (!StageYamlRepository::LoadCurrentStage(mContext, config)) {
+        return false;
+    }
+    EnsureSequence(config, "cameraZones");
+    const int index = static_cast<int>(config["cameraZones"].size());
+    YAML::Node node = mNodeFactory.CreateStageObject(currentPlanetNum, "cameraZone.obj", false);
+    for (int axis = 0; axis < 3; ++axis) {
+        node["scale"][axis] = 6.0f;
+    }
+    ApplyPlacementToNode(node, currentPlanetNum, placement);
+    config["cameraZones"].push_back(node);
+    return CommitCreation(
+        config, [&]() { return mRuntimeCreationService.CreateActor(StageActorType::CameraZone, node, index); });
+}

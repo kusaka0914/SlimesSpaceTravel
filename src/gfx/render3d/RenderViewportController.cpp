@@ -1,5 +1,6 @@
 #include "gfx/render3d/RenderViewportController.h"
 
+#include "actor/Player.h"
 #include "gfx/Renderer3D.h"
 #include "gfx/performance/FramePerformanceTracker.h"
 #include "gfx/render3d/SceneRenderState.h"
@@ -25,6 +26,7 @@ void RenderViewportController::DrawGameScreen(float fbWidth, float fbHeight, con
         return;
     }
 
+    mCameras.SetViewportAspectRatio(fbWidth / fbHeight);
     PollGpuTimerQueries();
 
     if (!scene.isPlayer2Joined) {
@@ -46,10 +48,10 @@ void RenderViewportController::DrawGameScreenForSinglePerson(float fbWidth, floa
     }
 
     const float aspect = fbWidth / fbHeight;
-    const float fieldOfViewDegrees = cameraSystem.GetFieldOfViewDegrees();
-    const glm::mat4 projMat = CalculateCameraProjection(scene.projection, aspect, fieldOfViewDegrees);
-
     std::vector<glm::mat4> views = cameraSystem.GetViews();
+    const float fieldOfViewDegrees = cameraSystem.GetPlayerFieldOfViewDegrees(
+        scene.controlledPlayer ? scene.controlledPlayer->GetPlayerNum() - 1 : 0);
+    const glm::mat4 projMat = CalculateCameraProjection(scene.projection, aspect, fieldOfViewDegrees);
     if (views.empty()) {
         return;
     }
@@ -81,8 +83,10 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
 
     const float halfHeight = fbHeight * 0.5f;
     const float aspect = fbWidth / halfHeight;
-    const float fieldOfViewDegrees = mCameras.GetFieldOfViewDegrees();
-    const glm::mat4 projMat = glm::perspective(glm::radians(fieldOfViewDegrees), aspect, 0.1f, 100.0f);
+    const glm::mat4 firstProjection =
+        glm::perspective(glm::radians(mCameras.GetPlayerFieldOfViewDegrees(0)), aspect, 0.1f, 100.0f);
+    const glm::mat4 secondProjection =
+        glm::perspective(glm::radians(mCameras.GetPlayerFieldOfViewDegrees(1)), aspect, 0.1f, 100.0f);
 
     const glm::vec3 firstPlayerCameraPosition = mCameras.GetPlayerCameraPos(0);
     const glm::vec3 secondPlayerCameraPosition = mCameras.GetPlayerCameraPos(1);
@@ -94,7 +98,7 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
 
     const auto firstViewportRenderStartTime = std::chrono::steady_clock::now();
     const GLuint firstViewportGpuTimerQuery = BeginGpuTimerQuery(0);
-    mRenderer->DrawScene(views[0], projMat, firstPlayerCameraPosition,
+    mRenderer->DrawScene(views[0], firstProjection, firstPlayerCameraPosition,
                          UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer, 0, player1);
     EndGpuTimerQuery(firstViewportGpuTimerQuery);
     mPerformance.RecordViewportCpuDuration(
@@ -104,7 +108,7 @@ void RenderViewportController::DrawGameScreenForMultiPerson(float fbWidth, float
     glViewport(0, 0, static_cast<GLsizei>(fbWidth), static_cast<GLsizei>(halfHeight));
     const auto secondViewportRenderStartTime = std::chrono::steady_clock::now();
     const GLuint secondViewportGpuTimerQuery = BeginGpuTimerQuery(1);
-    mRenderer->DrawScene(views[1], projMat, secondPlayerCameraPosition,
+    mRenderer->DrawScene(views[1], secondProjection, secondPlayerCameraPosition,
                          UGCSceneLayerRenderMode::AutomaticallyHighlightEditingLayer, 0, player2);
     EndGpuTimerQuery(secondViewportGpuTimerQuery);
     mPerformance.RecordViewportCpuDuration(

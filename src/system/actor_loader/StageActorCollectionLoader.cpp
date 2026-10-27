@@ -3,6 +3,7 @@
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
+#include "actor/CameraZone.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
@@ -37,7 +38,7 @@ bool HasValidStageCollections(const YAML::Node& stageRoot)
         return false;
     }
 
-    constexpr std::array<const char*, 17> collectionNames = {
+    constexpr std::array<const char*, 18> collectionNames = {
         "planets",
         "players",
         "NPCs",
@@ -52,6 +53,7 @@ bool HasValidStageCollections(const YAML::Node& stageRoot)
         "boatArrivalPoints",
         "fallRespawnPoints",
         "stageObjects",
+        "cameraZones",
         "tutorialTriggers",
         "jewelItems",
         "hazardActors",
@@ -115,6 +117,9 @@ bool StageActorCollectionLoader::LoadAll()
     LoadPlatforms(stageRoot);
     LoadLegacyMovingPlatforms(stageRoot);
     LoadStageObjects(stageRoot);
+    mActorFactory.LoadActorSequence<CameraZone>(
+        stageRoot, "cameraZones", {},
+        [this](const YAML::Node& node, int index) { return mCreationService.CreateCameraZone(node, index); });
     LoadFallRespawnPoints(stageRoot);
     LoadPlayers(stageRoot);
 

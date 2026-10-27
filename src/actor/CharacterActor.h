@@ -29,6 +29,10 @@ public:
     // 接地フラグだけを解除する。速度や位置は変更しない。
     void NotLand();
 
+    // 下降移動で衝突した後、足元レイと歩行可能角度で支持面を確認して着地を試みる。
+    // 壁への接触だけでは着地しない。成功時は床の参照・位置・速度も通常の着地処理で更新する。
+    bool TryLandOnSupportingSurface();
+
     // ワールド空間の方向を正規化して傾斜を判定する。長さ0の入力は歩行不可。
     static bool IsWalkableGroundNormal(const glm::vec3& hitNormal, const glm::vec3& upDirection);
 

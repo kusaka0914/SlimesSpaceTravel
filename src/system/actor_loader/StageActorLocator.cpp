@@ -1,10 +1,10 @@
 #include "system/actor_loader/StageActorLocator.h"
 
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Boat.h"
 #include "actor/BoatArrivalPoint.h"
 #include "actor/BoatParts.h"
+#include "actor/CameraZone.h"
 #include "actor/Crystal.h"
 #include "actor/Enemy.h"
 #include "actor/FallRespawnPoint.h"
@@ -17,6 +17,7 @@
 #include "actor/StageObject.h"
 #include "actor/Star.h"
 #include "actor/TutorialTrigger.h"
+#include "world/Stage.h"
 
 Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string& sequenceName, int stageYamlIndex) const
 {
@@ -76,8 +77,15 @@ Actor* StageActorLocator::FindPlacedActor(const Stage& stage, const std::string&
             matchingActor = findByIndex(planet->GetBoatArrivalPoints());
         } else if (sequenceName == "fallRespawnPoints") {
             matchingActor = findByIndex(planet->GetFallRespawnPoints());
-        } else if (sequenceName == "stageObjects") {
-            matchingActor = findByIndex(planet->GetStageObjects());
+        } else if (sequenceName == "stageObjects" || sequenceName == "cameraZones") {
+            for (auto* actor : planet->GetStageObjects()) {
+                const bool isZone = dynamic_cast<CameraZone*>(actor) != nullptr;
+                if (actor && actor->GetStageYamlIndex() == stageYamlIndex &&
+                    isZone == (sequenceName == "cameraZones")) {
+                    matchingActor = actor;
+                    break;
+                }
+            }
         } else if (sequenceName == "keys") {
             Key* key = planet->GetKey();
             if (key && key->GetStageYamlIndex() == stageYamlIndex) {
