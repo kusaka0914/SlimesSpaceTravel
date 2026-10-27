@@ -51,28 +51,36 @@ void StageOnePlanetOneAddsCombatGuides()
                "special guide on stage 1 planet 1");
 }
 
-void OtherLocationsShowAllOperationGuides()
+void OnlyStageOneShowsPermanentOperationGuides()
 {
     const OperationGuideDisplayState otherTutorialPlanet = AtLocation(1, 2);
     ExpectTrue(ShouldShowOperationGuideElement("buttonY", otherTutorialPlanet),
                "combat guide on another stage 1 planet");
 
-    const OperationGuideDisplayState base = AtLocation(0, 0);
-    ExpectTrue(ShouldShowOperationGuideElement("buttonY", base), "combat guide in base");
-
-    const OperationGuideDisplayState laterStage = AtLocation(2, 0);
-    ExpectFalse(ShouldShowOperationGuideElement("buttonY", laterStage), "combat guide hidden in stage 2 or later");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonA_copy", laterStage),
-               "menu icon remains visible in stage 2 or later");
-    ExpectTrue(ShouldShowOperationGuideElement("buttonTextB_copy", laterStage),
-               "menu label remains visible in stage 2 or later");
+    for (int stage : {0, 2, 3}) {
+        for (bool twoPlayers : {false, true}) {
+            auto state = AtLocation(stage, 0);
+            state.isTwoPlayerMode = twoPlayers;
+            for (const char* id : {"buttonA", "buttonB", "buttonX", "buttonY", "weakAttackHoldGuide",
+                                   "strongAttackHoldGuide", "buttonB_copy_copy2", "buttonB_copy_copy2_copy"}) {
+                ExpectFalse(ShouldShowOperationGuideElement(id, state),
+                            "permanent controls are hidden outside stage 1, including the base");
+            }
+            ExpectTrue(ShouldShowOperationGuideElement("buttonA_copy", state),
+                       "menu icon remains visible outside stage 1");
+            ExpectTrue(ShouldShowOperationGuideElement("buttonTextB_copy", state),
+                       "menu label remains visible outside stage 1");
+        }
+    }
 }
 
 void UGCPlaytestsShowAllUnlockedActions()
 {
-    OperationGuideDisplayState ugcPlaytest = AtLocation(1, 0);
-    ugcPlaytest.isUGCPlaytestActive = true;
-    ExpectTrue(ShouldShowOperationGuideElement("buttonY", ugcPlaytest), "combat guide in UGC playtest");
+    for (int stage : {0, 1, 2}) {
+        OperationGuideDisplayState ugcPlaytest = AtLocation(stage, 0);
+        ugcPlaytest.isUGCPlaytestActive = true;
+        ExpectTrue(ShouldShowOperationGuideElement("buttonY", ugcPlaytest), "combat guide in UGC playtest");
+    }
 }
 
 void TwoPlayerModeHidesSoloConfigurationGuides()
@@ -93,7 +101,7 @@ void TwoPlayerModeHidesSoloConfigurationGuides()
 
 void PauseShowsAllGuidesRegardlessOfStageProgress()
 {
-    for (int stage : {1, 2, 3}) {
+    for (int stage : {0, 1, 2, 3}) {
         auto state = AtLocation(stage, 0);
         state.isPauseMenuOpen = true;
         state.isTwoPlayerMode = true;
@@ -315,7 +323,8 @@ void RegisterOperationGuideVisibilityTests(TestRegistry& tests)
                        StageOnePlanetZeroShowsOnlyBasicOperationGuides);
     tests.emplace_back("OperationGuideVisibility.StageOnePlanetThreeAddsDodge", StageOnePlanetThreeAddsDodgeGuide);
     tests.emplace_back("OperationGuideVisibility.StageOnePlanetOneAddsCombat", StageOnePlanetOneAddsCombatGuides);
-    tests.emplace_back("OperationGuideVisibility.OtherLocationsShowAll", OtherLocationsShowAllOperationGuides);
+    tests.emplace_back("OperationGuideVisibility.OnlyStageOneShowsPermanentGuides",
+                       OnlyStageOneShowsPermanentOperationGuides);
     tests.emplace_back("OperationGuideVisibility.UGCShowsAll", UGCPlaytestsShowAllUnlockedActions);
     tests.emplace_back("OperationGuideVisibility.TwoPlayerModeHidesSoloConfigurationGuides",
                        TwoPlayerModeHidesSoloConfigurationGuides);

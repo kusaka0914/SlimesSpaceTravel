@@ -34,6 +34,7 @@ public:
     void SetActorMesh(Actor* actor);
 
     // キャッシュ内の衝突用メッシュを返す。空パス・読込失敗時はnullptr。失敗したパスは再読込しない。
+    // 同じ場所の「拡張子を.collision.objへ置換したファイル」を優先し、なければ・読めなければ元モデルを使う。
     const CollisionMeshGeometry* ResolveCollisionMeshGeometry(const std::string& modelFilePath);
 
     // キャッシュを検索する。未登録ならnullptrを返し、読込は行わない。

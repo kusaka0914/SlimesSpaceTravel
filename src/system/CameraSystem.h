@@ -99,6 +99,13 @@ public:
     void ResetForStageChange();
     void SnapBehindControlledPlayer();
 
+    // 演出による移動後、指定Playerの現在位置・上方向から通常の追従状態を作り直す。
+    // Worldに登録されていないPlayerは無視する。距離・ピッチなどの設定は維持する。
+    void SnapBehindPlayer(Player& player);
+
+    // 演出から位置を直接変更したPlayerを、通常の距離・ピッチで全方向へ追従する。方位は保持する。
+    void NotifyScriptedPlayerMovement(Player& player);
+
     bool GetTalkCameraPreviewEnabled() const { return mIsTalkCameraPreviewEnabled; }
     void SetTalkCameraPreviewEnabled(bool enabled) { mIsTalkCameraPreviewEnabled = enabled; }
     bool GetBoatRideCameraPreviewEnabled() const { return mIsBoatRideCameraPreviewEnabled; }

@@ -102,8 +102,20 @@ const CollisionMeshGeometry* MeshLoadSystem::ResolveCollisionMeshGeometry(const 
     }
 
     CollisionMeshGeometry geometry;
-    if (!mCollisionDataLoader.LoadMeshPositionsAndIndices(normalizedPath.c_str(), geometry.positions,
-                                                          geometry.indices)) {
+    auto collisionPath = std::filesystem::path(normalizedPath);
+    collisionPath.replace_extension(".collision.obj");
+    std::error_code error;
+    // 装飾の張り出しなどを物理形状から省けるよう、同名の衝突専用モデルがあれば優先する。
+    const std::string geometryPath =
+        std::filesystem::is_regular_file(collisionPath, error) ? collisionPath.generic_string() : normalizedPath;
+    bool loaded =
+        mCollisionDataLoader.LoadMeshPositionsAndIndices(geometryPath.c_str(), geometry.positions, geometry.indices);
+    if (!loaded && geometryPath != normalizedPath) {
+        // 衝突専用ファイルが壊れていても、元モデルの衝突を消さない。
+        loaded = mCollisionDataLoader.LoadMeshPositionsAndIndices(normalizedPath.c_str(), geometry.positions,
+                                                                  geometry.indices);
+    }
+    if (!loaded) {
         mFailedCollisionMeshPaths.insert(normalizedPath);
         return nullptr;
     }

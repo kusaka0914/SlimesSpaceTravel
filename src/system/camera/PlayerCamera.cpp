@@ -2,8 +2,10 @@
 
 #include "actor/Enemy.h"
 #include "actor/Planet.h"
+#include "actor/Platform.h"
 #include "actor/Player.h"
 #include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/CameraLateralOrbit.h"
 #include "system/camera/CinematicCameraTypes.h"
 #include "system/camera/PlayerCameraSettings.h"
 
@@ -146,6 +148,15 @@ void PlayerCamera::AdoptZonePose(int playerIndex, const CameraPose& pose, const 
     state.backwardFacingLookAheadDistance = 0.0f;
 }
 
+void PlayerCamera::RequestNormalFraming(int playerIndex)
+{
+    if (playerIndex < 0) {
+        return;
+    }
+    ResizeState(static_cast<std::size_t>(playerIndex + 1));
+    mStates[playerIndex].needsNormalFraming = true;
+}
+
 void PlayerCamera::Reset()
 {
     mStates.clear();
@@ -264,8 +275,9 @@ void PlayerCamera::BlendBehindTarget(Player* player, int playerIndex, const glm:
 }
 
 void PlayerCamera::UpdateFollowPosition(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
-                                        float deltaTime)
+                                        float deltaTime, bool allowsLateralOrbit)
 {
+    const auto inputMovement = player->ConsumeCameraInputMovementDelta();
     const auto up = NormalizeOr(player->GetUpVec(), state.previousPlayerUp);
     const auto delta = player->GetPos() - state.previousPlayerPosition;
     if (state.ellipseTransition.IsActive()) {
@@ -327,6 +339,17 @@ void PlayerCamera::UpdateFollowPosition(Player* player, PlayerCameraState& state
             state.isSettlingJump = false;
         }
     }
+    if (allowsLateralOrbit && state.hasFollowPosition && player->GetOnGround() &&
+        !dynamic_cast<Platform*>(player->GetGroundActor()) && !player->IsCameraZoneDirectionHeld() &&
+        std::abs(player->GetMoveLeftInput()) > 0.01f) {
+        // 地上の実入力変位だけを使い、足場・空中・方向保持中には周回を重ねない。
+        if (const auto rotation = CameraLateralOrbit::CalculateRotation(state.followPosition, player->GetPos(), up,
+                                                                        inputMovement, settings.lateralOrbitStrength)) {
+            state.followPosition = player->GetPos() + *rotation * (state.followPosition - player->GetPos());
+            state.desiredFollowPosition =
+                player->GetPos() + *rotation * (state.desiredFollowPosition - player->GetPos());
+        }
+    }
     state.previousPlayerPosition = player->GetPos();
     state.previousPlayerUp = up;
 }
@@ -379,7 +402,11 @@ void PlayerCamera::UpdateState(Player* player, int playerIndex, const PlayerCame
                                                      deltaTime,
                                                  0.0f, std::max(0.0f, player->GetMoveSpeed()))
                                     : 0.0f;
-    UpdateFollowPosition(player, state, settings, deltaTime);
+    const bool allowsLateralOrbit =
+        allowsMovementCameraAssist && !dedicatedCamera && !manualInput && state.attackCameraManualDelay <= 0.0f &&
+        !state.isAligningBehindPlayer && !state.isTransitioningToPlayer && !state.needsNormalFraming &&
+        !state.ellipseTransition.IsActive() && !player->IsAttacking() && !player->IsSpecialCharging();
+    UpdateFollowPosition(player, state, settings, deltaTime, allowsLateralOrbit);
     const auto up = NormalizeOr(player->GetUpVec(), {0, 1, 0});
     state.upVec = glm::slerp(glm::quat(1, 0, 0, 0), glm::quat(state.upVec, up),
                              SmoothingAmount(settings.upSmoothingSpeed, deltaTime)) *
@@ -522,8 +549,7 @@ glm::mat4 PlayerCamera::GetView(Player* player, int playerIndex, float cameraDis
     const auto up =
         NormalizeOr(!state.hasPlayerPosition || restoringNormalFraming ? player->GetUpVec() : state.upVec, {0, 1, 0});
     if (restoringNormalFraming) {
-        // 退出補間中の表示姿勢を復帰先へ再利用すると、ゾーンの距離・ピッチが残り続ける。
-        // 現在の方位だけを引き継ぎ、復帰先は通常設定から毎回独立して求める。
+        // ゾーン退出や演出による直接移動では、保持した位置を使わず通常設定から構図を組み直す。
         state.targetPos = player->GetPos();
         state.upVec = up;
         state.needsNormalFraming = false;

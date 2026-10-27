@@ -1494,8 +1494,10 @@ platforms:
         targets:
           - platform_1
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 0
     theta: 1.0494097
@@ -1659,7 +1661,8 @@ platforms:
         targets:
           - sequence: boats
             index: 0
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.28730252
     phi: 0.12781243
@@ -1695,8 +1698,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet1
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925
@@ -1900,8 +1905,10 @@ platforms:
         targets:
           - platform_11
         remainsOnAfterPressed: false
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
     textureOverride: textures/Crystal_MAT_BaseColor.png
   - currentPlanetNum: 3
     theta: 2.0887835
@@ -2065,7 +2072,8 @@ platforms:
         targets:
           - sequence: boats
             index: 1
-        hideTargets: []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.40818188
     phi: 0.1889368
@@ -2101,8 +2109,10 @@ platforms:
     components:
       latchedGroupSwitch:
         groupId: stage1_planet2
-        targets: []
-        hideTargets: []
+        targets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2210,8 +2220,10 @@ platforms:
           - platform_23
           - platform_24
           - platform_25
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 0
     theta: -0.5523795
     phi: 0.08754171
@@ -2468,8 +2480,10 @@ platforms:
         targets:
           - platform_30
           - platform_31
-        enemyTargets: []
-        hideTargets: []
+        enemyTargets:
+          []
+        hideTargets:
+          []
   - currentPlanetNum: 3
     theta: 0.2036585
     phi: -1.1926925

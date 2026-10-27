@@ -54,7 +54,8 @@ struct PlayerCameraState {
     float backwardFacingLookAheadDistance = 0.0f;
 };
 
-// Sphereは全方向へ位置追従し、その他は前後位置・左右視線を追う。Playerインデックスは0始まり。
+// Sphereは全方向へ位置追従し、その他は前後位置・左右視線の追跡に設定量の周回を加える。
+// Playerインデックスは0始まり。
 class PlayerCamera {
 public:
     explicit PlayerCamera(CameraCollisionResolver& collisionResolver);
@@ -71,6 +72,10 @@ public:
 
     // ゾーンの表示姿勢を引き継ぐ。次の通常ビューは、その向きで通常の距離・ピッチへ戻す復帰先になる。
     void AdoptZonePose(int playerIndex, const CameraPose& pose, const Player& player);
+
+    // 演出でPlayerを直接移動した場合、次のビューで現在位置・上方向と通常設定から追従位置を再計算する。
+    // 方位は保持する。負のインデックスでは何もしない。
+    void RequestNormalFraming(int playerIndex);
 
     // 手動操作を優先して回り込み・背面合わせを解除し、攻撃時補助を一時停止する。
     // nullptr・負の添字では何もしない。
@@ -96,7 +101,7 @@ private:
     void UpdateState(Player* player, int playerIndex, const PlayerCameraSettings& settings, float deltaTime,
                      bool allowsMovementCameraAssist, bool dedicatedCamera);
     void UpdateFollowPosition(Player* player, PlayerCameraState& state, const PlayerCameraSettings& settings,
-                              float deltaTime);
+                              float deltaTime, bool allowsLateralOrbit);
     void UpdateCameraForward(Player* player, PlayerCameraState& state, float deltaTime);
     void UpdateEllipseTransition(Player& player, PlayerCameraState& state, const PlayerCameraSettings& settings,
                                  float deltaTime, float movementSpeed, bool allowsAssist, bool dedicatedCamera);

@@ -3129,38 +3129,6 @@ stageObjects:
       - 1.5707964
       - 0.07679449
     scale:
-      - 24.795946
-      - 30.791155
-      - 0.96222866
-    pos:
-      - -0.78
-      - 2.44
-      - -20.03
-    upVec:
-      - 0.0017402023
-      - 0.99705124
-      - 0.07671903
-    textureTiling:
-      - 24.795942
-      - 27.04
-    hiddenIfStageCleared: 4
-    rotationQuat:
-      - -0.7065616
-      - -0.02652765
-      - 0.706609
-      - 0.02776089
-  - currentPlanetNum: 0
-    theta: 0
-    phi: 0
-    height: 1
-    facingYaw: 1.5707964
-    modelPath: platform.obj
-    collision: true
-    rotation:
-      - -0.0017453292
-      - 1.5707964
-      - 0.07679449
-    scale:
       - 24.795944
       - 31.827467
       - 0.9622287
@@ -3430,6 +3398,7 @@ stageObjects:
       - -0.02652765
       - 0.706609
       - 0.02776089
+  - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: -0, modelPath: platform.obj, collision: true, rotation: [0, 0, 0], scale: [4, 0.36, 4], pos: [-0.03, 3.07, 5.07], upVec: [0, 1, 0], textureTiling: [5.9114194, 5.979225], textureOverride: textures/selectFieldTex.png, rotationQuat: [1, 0, 0, 0]}
 platforms:
   - {currentPlanetNum: 0, theta: 0, phi: 0, height: 1, facingYaw: 3.1094904, rotation: [2.3663094, -0, 1.579169], scale: [1.5504003, 1.5503999, 1.5504], modelPath: VillageAssets/House_4.fbx, moveOnPlayer: false, moveDuration: 3, returnDelay: 1, moveOffset: [4, 0, 0], pos: [12.460081, -2.4, 13.959988], rotationQuat: [-0.25558326, -0.6475038, -0.6615641, -0.2788352], upVec: [0.7141993, 0.005979538, 0.69991696], startLocalPos: [12.46, -2.4007075, 13.45], endLocalPos: [16.46, -2.4007075, 13.45], textureTiling: [1.5504003, 1.5504], components: {movement: {startLocalPos: [12.460081, -2.4, 13.959988], endLocalPos: [12.46, -9.459971, 13.96], moveOffset: [-8.106232e-05, -7.0599713, 1.2397766e-05], moveDuration: 3, moveOnPlayer: true, returnDelay: 1, endpointWaitSeconds: 0}}, platformId: legacy_platforms_0}
   - currentPlanetNum: 0
@@ -4199,13 +4168,13 @@ cameraZones:
       - 0
       - 0
     scale:
-      - 6
-      - 7.3919215
+      - 7.953934
+      - 7.962922
       - 6.0000005
     pos:
-      - 0.5
-      - 5.26
-      - 5.79
+      - -0.2
+      - 5.21
+      - 5.06
     upVec:
       - 0.9969173
       - 0.07845922
@@ -4286,3 +4255,107 @@ cameraZones:
     textureTiling:
       - 1
       - 1
+  - currentPlanetNum: 0
+    theta: 2.3687787
+    phi: 0.17499441
+    height: -14.697659
+    facingYaw: -0
+    modelPath: cameraZone.obj
+    collision: false
+    rotation:
+      - 0
+      - -0
+      - -1.5662999
+    scale:
+      - 4.3731337
+      - 4.0415444
+      - 2.0062213
+    pos:
+      - 12.83
+      - 9.74
+      - 7.36
+    upVec:
+      - 0.9999899
+      - 0.0044963956
+      - 0
+    camera:
+      mode: Follow
+      fixedTracksPlayer: true
+      distance: 7.176101
+      pitchDegrees: 32.915813
+      fieldOfViewDegrees: 55
+      targetWeight: 0.35
+      minimumDistance: 5
+      maximumDistance: 40
+      framingMargin: 1.2
+      targetSequence: ""
+      targetIndex: -1
+      referenceUp:
+        - -8.742266e-08
+        - 0.9999985
+        - -0.0017453751
+      backDirection:
+        - -0.0026299357
+        - 0.0017453689
+        - 0.9999951
+      lookOffset:
+        - 0.0017957687
+        - 1.0557146
+        - -0.6860018
+      fallbackTarget:
+        - 0
+        - 0
+        - 0
+      priority: 0
+      enabled: true
+      holdWhileAirborne: true
+      enterSeconds: 0.7
+      exitSeconds: 0.7
+      exitMargin: 0.4
+      allowManualRotation: false
+      manualReturnDelay: 1
+      bidirectional: false
+      directionSwitchDelay: 0.4
+      directionBlendSeconds: 0.7
+      allowAirborneDirectionSwitch: false
+      defaultReturnCamera: false
+      travelDirection:
+        - 0
+        - 0
+        - -1
+      returnCamera:
+        mode: Follow
+        fixedTracksPlayer: true
+        distance: 8
+        pitchDegrees: 20
+        fieldOfViewDegrees: 60
+        targetWeight: 0.35
+        minimumDistance: 5
+        maximumDistance: 40
+        framingMargin: 1.2
+        targetSequence: ""
+        targetIndex: -1
+        referenceUp:
+          - 0
+          - 1
+          - 0
+        backDirection:
+          - 0
+          - 0
+          - 1
+        lookOffset:
+          - 0
+          - 1.5
+          - 0
+        fallbackTarget:
+          - 0
+          - 0
+          - 0
+    textureTiling:
+      - 4.3731337
+      - 2.0062208
+    rotationQuat:
+      - 0.70869476
+      - 0
+      - -0
+      - -0.70551527

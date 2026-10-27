@@ -28,6 +28,7 @@ void PlayerCameraSettings::Normalize()
     upSmoothingSpeed = glm::clamp(upSmoothingSpeed, 0.0f, 50.0f);
     targetSmoothingSpeed = glm::clamp(targetSmoothingSpeed, 0.0f, 50.0f);
     positionSmoothingSpeed = glm::clamp(positionSmoothingSpeed, 0.0f, 50.0f);
+    lateralOrbitStrength = glm::clamp(lateralOrbitStrength, 0.0f, 1.0f);
     attackTargetSmoothingSpeed = glm::clamp(attackTargetSmoothingSpeed, 0.0f, 50.0f);
     attackCameraManualOverrideSeconds = glm::clamp(attackCameraManualOverrideSeconds, 0.0f, 5.0f);
     airSlamDistanceMultiplier = glm::clamp(airSlamDistanceMultiplier, 1.0f, 3.0f);
@@ -109,6 +110,8 @@ bool PlayerCameraSettingsRepository::Load(PlayerCameraSettings& settings) const
             YamlRead::ReadOr<float>(cameraNode, "targetSmoothingSpeed", loadedSettings.targetSmoothingSpeed);
         loadedSettings.positionSmoothingSpeed =
             YamlRead::ReadOr<float>(cameraNode, "positionSmoothingSpeed", loadedSettings.positionSmoothingSpeed);
+        loadedSettings.lateralOrbitStrength =
+            YamlRead::ReadOr<float>(cameraNode, "lateralOrbitStrength", loadedSettings.lateralOrbitStrength);
         loadedSettings.attackTargetSmoothingSpeed = YamlRead::ReadOr<float>(cameraNode, "attackTargetSmoothingSpeed",
                                                                             loadedSettings.attackTargetSmoothingSpeed);
         loadedSettings.attackCameraManualOverrideSeconds = YamlRead::ReadOr<float>(
@@ -219,6 +222,7 @@ bool PlayerCameraSettingsRepository::Save(const PlayerCameraSettings& settings) 
         emitter << YAML::Key << "upSmoothingSpeed" << YAML::Value << normalizedSettings.upSmoothingSpeed;
         emitter << YAML::Key << "targetSmoothingSpeed" << YAML::Value << normalizedSettings.targetSmoothingSpeed;
         emitter << YAML::Key << "positionSmoothingSpeed" << YAML::Value << normalizedSettings.positionSmoothingSpeed;
+        emitter << YAML::Key << "lateralOrbitStrength" << YAML::Value << normalizedSettings.lateralOrbitStrength;
         emitter << YAML::Key << "attackTargetSmoothingSpeed" << YAML::Value
                 << normalizedSettings.attackTargetSmoothingSpeed;
         emitter << YAML::Key << "attackCameraManualOverrideSeconds" << YAML::Value

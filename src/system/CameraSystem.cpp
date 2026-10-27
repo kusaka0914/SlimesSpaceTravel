@@ -279,6 +279,26 @@ void CameraSystem::SnapBehindControlledPlayer()
     mPlayerCamera.SnapBehindPlayer(controlledPlayer, GetPrimaryPlayerIndex());
 }
 
+void CameraSystem::SnapBehindPlayer(Player& player)
+{
+    const auto& players = mWorld.GetPlayers();
+    const auto found = std::find(players.begin(), players.end(), &player);
+    if (found == players.end()) {
+        return;
+    }
+    mPlayerCamera.SnapBehindPlayer(&player, static_cast<int>(found - players.begin()));
+}
+
+void CameraSystem::NotifyScriptedPlayerMovement(Player& player)
+{
+    const auto& players = mWorld.GetPlayers();
+    const auto found = std::find(players.begin(), players.end(), &player);
+    if (found == players.end()) {
+        return;
+    }
+    mPlayerCamera.RequestNormalFraming(static_cast<int>(found - players.begin()));
+}
+
 std::optional<CameraPose> CameraSystem::GetCurrentCameraPose()
 {
     const auto controls = mReadControlState();

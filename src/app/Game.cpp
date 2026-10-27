@@ -1282,6 +1282,14 @@ void Game::OnBoatArrived(Boat* boat)
     if (mPlayerConfigurationController) {
         mPlayerConfigurationController->MergeSoloSplitAfterBoatArrival();
     }
+    if (mCameraSystem) {
+        // 到着先のPlanet・位置が確定してから、飛行中に保持した通常カメラの基準を更新する。
+        for (Player* player : GetPlayers()) {
+            if (player && player->GetIsActive()) {
+                mCameraSystem->SnapBehindPlayer(*player);
+            }
+        }
+    }
     mAudioSystem->TryChangeBGM();
 }
 

@@ -11,5 +11,6 @@ struct OperationGuideDisplayState {
     bool isPauseMenuOpen = false;
 };
 
-// operation画面の要素を判定する。ポーズ中は全解放し、通常ステージ2以降ではメニュー以外の常設案内を隠す。
+// operation画面の要素を判定する。通常プレイの常設案内はステージ1だけ表示し、メニューは常時表示する。
+// ポーズ中は全解放する。UGC試遊には通常ステージの表示制限を適用しない。
 bool ShouldShowOperationGuideElement(std::string_view elementId, const OperationGuideDisplayState& displayState);

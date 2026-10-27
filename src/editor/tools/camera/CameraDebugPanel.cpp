@@ -61,6 +61,15 @@ void CameraDebugPanel::DrawPlayerCameraSettings(CameraSystem* cameraSystem)
         playerCameraChanged |= ImGui::DragFloat("前後位置の追従速度##PlayerCamera",
                                                 &playerCameraSettings.positionSmoothingSpeed, 0.1f, 0.0f, 50.0f);
 
+        float lateralOrbitPercent = playerCameraSettings.lateralOrbitStrength * 100.0f;
+        if (ImGui::SliderFloat("左右移動の旋回補助##PlayerCamera", &lateralOrbitPercent, 0.0f, 100.0f, "%.0f%%")) {
+            playerCameraSettings.lateralOrbitStrength = lateralOrbitPercent / 100.0f;
+            playerCameraChanged = true;
+        }
+        ImGui::TextWrapped("0%%で補助なし。50%%で旋回量を約50%%追加。値を上げるほど小回りが利きます。");
+        ImGui::TextWrapped("変更は即時反映されます。次回も使う場合は「プレイヤーカメラ設定を保存」を押してください。");
+        ImGui::TextDisabled("Sphere・空中・足場上・専用カメラでは無効です。");
+
         ImGui::SeparatorText("下向き時の構図調整");
         playerCameraChanged |=
             ImGui::DragFloat("進行方向への注視点距離##BackwardFacingFraming",

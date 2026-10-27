@@ -26,10 +26,12 @@
 #include "system/PhysicsSystem.h"
 #include "system/UserDataPaths.h"
 #include "system/camera/CameraCollisionResolver.h"
+#include "system/camera/CameraLateralOrbit.h"
 #include "system/camera/CameraProjection.h"
 #include "system/camera/PlayerCamera.h"
 #include "system/camera/PlayerCameraSettings.h"
 #include "system/camera/zones/CameraZoneController.h"
+#include "system/sequence/SequenceSystem.h"
 #include "world/GameWorld.h"
 #include "world/Stage.h"
 
@@ -1018,6 +1020,87 @@ void LateralWalkingKeepsNormalCameraRadius(Game& game)
     std::cout << "[PASS] Runtime.LateralWalkingPreservesNormalCameraRadius\n";
 }
 
+void LateralOrbitAssistPreservesDistanceAndTightensTurns(Game& game)
+{
+    VirtualController controller;
+    InputSystem inputSystem;
+    PlayerInput input(inputSystem);
+    Player player(&game);
+    PlayerMovement movement(*game.GetPhysicsSystem(), *game.GetMathUtils());
+    movement.SetMoveSpeed(6.0f);
+    const PlayerInputContext context{.devices = {.hasControllerOne = true}};
+    const glm::vec3 origin(1000, 1000, 1000);
+    const glm::vec3 up(0, 1, 0);
+    const auto initialCamera = origin + glm::vec3(0, 6, 4);
+    const float radius = glm::distance(origin, initialCamera);
+    for (int frameRate : {30, 60, 120}) {
+        for (Sint16 horizontal : {Sint16(-32000), Sint16(32000)}) {
+            float unassistedYaw = 0.0f;
+            for (float strength : {0.0f, 0.25f, 0.5f}) {
+                controller.SetInput(horizontal, 0);
+                inputSystem.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+                input.ProcessActor(movement, context);
+                player.SetPos(origin);
+                player.SetUpVec(up);
+                player.SetOnGround(true);
+                movement.SetCameraForwardDirection({0, 0, 1}, up);
+                auto camera = initialCamera;
+                movement.SetNormalCameraPosition(camera);
+                const float seconds = 1.0f / frameRate;
+                float totalYaw = 0.0f;
+                for (int frame = 0; frame < frameRate * 2; ++frame) {
+                    movement.UpdateCameraRelativeMovementDirections(player, input);
+                    const auto beforeDirection = movement.GetForwardVec();
+                    movement.MoveFromInput(player, input, seconds);
+                    const auto inputDelta = movement.ConsumeCameraInputMovementDelta();
+                    ExpectNear(0.0f, glm::length(movement.ConsumeCameraInputMovementDelta()), 0.0f,
+                               "camera input displacement is consumed only once");
+                    if (const auto rotation =
+                            CameraLateralOrbit::CalculateRotation(camera, player.GetPos(), up, inputDelta, strength)) {
+                        camera = player.GetPos() + *rotation * (camera - player.GetPos());
+                    }
+                    if (frame == 0 && strength > 0.0f) {
+                        ExpectTrue(horizontal * (camera.x - initialCamera.x) < 0.0f,
+                                   "the camera orbits opposite to the player's lateral displacement");
+                    }
+                    movement.SetCameraForwardDirection(camera - player.GetPos(), up);
+                    movement.SetNormalCameraPosition(camera);
+                    const auto afterDirection = movement.GetForwardVec();
+                    totalYaw += std::atan2(glm::dot(glm::cross(beforeDirection, afterDirection), up),
+                                           glm::dot(beforeDirection, afterDirection));
+                    ExpectNear(radius, glm::distance(player.GetPos(), camera), 0.05f,
+                               "orbit assistance preserves player-camera distance");
+                    ExpectNear(6.0f, camera.y - player.GetPos().y, 0.0001f, "orbit assistance preserves camera height");
+                    if (strength == 0.0f) {
+                        ExpectTrue(glm::distance(initialCamera, camera) < 0.0001f,
+                                   "zero orbit strength preserves the fixed camera position");
+                    }
+                }
+                if (strength == 0.0f) {
+                    unassistedYaw = std::abs(totalYaw);
+                } else {
+                    ExpectTrue(std::abs(totalYaw) > unassistedYaw * (1.0f + strength * 0.9f),
+                               "higher orbit strength turns farther over the same walking distance");
+                }
+                controller.SetInput(0, 0);
+                inputSystem.CaptureFrameInput(*game.GetWindow(), {controller.Get(), nullptr});
+                input.ProcessActor(movement, context);
+                movement.UpdateCameraRelativeMovementDirections(player, input);
+                movement.MoveFromInput(player, input, seconds);
+                ExpectFalse(CameraLateralOrbit::CalculateRotation(camera, player.GetPos(), up,
+                                                                  movement.ConsumeCameraInputMovementDelta(), strength)
+                                .has_value(),
+                            "releasing lateral input stops additional orbit immediately");
+            }
+        }
+    }
+    ExpectFalse(CameraLateralOrbit::CalculateRotation({0, 6, 4}, {0, 0, 0}, up, {0, 0, 0.1f}, 0.5f).has_value(),
+                "forward-only movement does not add lateral orbit");
+    ExpectFalse(CameraLateralOrbit::CalculateRotation({0, 6, 0}, {0, 0, 0}, up, {0.1f, 0, 0}, 0.5f).has_value(),
+                "an overhead camera does not produce unstable lateral orbit");
+    std::cout << "[PASS] Runtime.LateralOrbitAssistPreservesDistance\n";
+}
+
 void LateralWallSlideRetainsForwardCameraMovement(Game& game)
 {
     auto* world = game.GetPhysicsSystem()->GetBulletWorld();
@@ -1069,6 +1152,93 @@ void LateralWallSlideRetainsForwardCameraMovement(Game& game)
     }
     ExpectTrue(sawForwardSlide, "forward wall-slide displacement remains available to camera tracking");
     std::cout << "[PASS] Runtime.LateralWallSlideKeepsForwardCameraMovement\n";
+}
+
+void ScriptedPlayerMovementRestoresNormalCamera(Game& game)
+{
+    Player* player = game.GetMainPlayer();
+    CameraSystem* camera = game.GetCameraSystem();
+    ExpectTrue(player && camera, "scripted movement has a player and camera");
+    Planet ellipse(&game);
+    ellipse.SetScale({40, 10, 40});
+    struct RestorePlayer {
+        Player& player;
+        CameraSystem& camera;
+        Planet* planet;
+        glm::vec3 position;
+        glm::vec3 up;
+        glm::vec3 facing;
+        bool onGround;
+        PlayerCameraSettings settings;
+        ~RestorePlayer()
+        {
+            player.Actor::SetCurrentPlanet(planet);
+            player.SetPos(position);
+            player.SetUpVec(up);
+            player.SetFacingForwardVec(facing);
+            player.SetOnGround(onGround);
+            camera.SetPlayerCameraSettings(settings);
+            camera.SnapBehindPlayer(player);
+        }
+    } restore{*player,
+              *camera,
+              player->GetCurrentPlanet(),
+              player->GetPos(),
+              player->GetUpVec(),
+              player->GetFacingForwardVec(),
+              player->GetOnGround(),
+              camera->GetPlayerCameraSettings()};
+
+    auto settings = restore.settings;
+    settings.backwardFacingLookAheadDistance = 0.0f;
+    camera->SetPlayerCameraSettings(settings);
+    const glm::vec3 origin(1000, 1000, 1000);
+    player->Actor::SetCurrentPlanet(&ellipse);
+    player->SetPos(origin);
+    player->SetUpVec({0, 1, 0});
+    player->SetFacingForwardVec({0, 0, -1});
+    player->SetOnGround(true);
+    camera->SnapBehindPlayer(*player);
+    camera->GetViews();
+
+    SequenceSystem sequences(&game);
+    constexpr const char* sequenceId = "runtime_player_arrival";
+    ExpectTrue(sequences.GetLibrary().Create(sequenceId), "create in-memory arrival sequence");
+    SequenceClip movement;
+    movement.actor = {"players", 0};
+    movement.fromPosition = origin;
+    movement.toPosition = origin + glm::vec3(6, -6, 0);
+    movement.duration = 1.0f;
+    sequences.GetLibrary().FindMutable(sequenceId)->clips.push_back(movement);
+    ExpectTrue(sequences.Play(sequenceId), "start scripted player arrival");
+    const auto expectedPosition = [&]() {
+        return player->GetPos() + (-player->GetFacingForwardVec() * std::cos(glm::radians(settings.pitchDegrees)) -
+                                   player->GetUpVec() * std::sin(glm::radians(settings.pitchDegrees))) *
+                                      settings.distance;
+    };
+    // 到着後だけでなく、降下中にも左右・高さの演出変位を追い、ロケットの真下へ視点を残さない。
+    for (int step = 0; step < 2; ++step) {
+        sequences.Update(0.25f);
+        camera->Update(1.0f / 60.0f);
+        ExpectFalse(camera->GetViews().empty(), "camera remains available during descent");
+        ExpectTrue(glm::distance(camera->GetPlayerCameraPos(0), expectedPosition()) < 0.001f,
+                   "scripted descent preserves normal distance and pitch before the sequence ends");
+    }
+    sequences.Update(0.5f);
+    ExpectFalse(sequences.IsPlaying(), "arrival sequence finishes");
+    ExpectTrue(glm::distance(player->GetPos(), movement.toPosition) < 0.0001f, "arrival reaches its destination");
+    ExpectFalse(camera->GetViews().empty(), "normal camera resumes after arrival");
+
+    const auto expected = expectedPosition();
+    ExpectTrue(glm::distance(camera->GetPlayerCameraPos(0), expected) < 0.001f,
+               "arrival discards the scripted offset and restores configured distance and pitch");
+    camera->Update(1.0f / 60.0f);
+    camera->GetViews();
+    ExpectTrue(glm::distance(camera->GetPlayerCameraPos(0), expected) < 0.001f,
+               "arrival framing remains stable on the following frame");
+    ExpectNear(settings.distance, camera->GetPlayerCameraSettings().distance, 0.0f,
+               "arrival preserves camera settings");
+    std::cout << "[PASS] Runtime.ScriptedPlayerMovementRestoresNormalCamera\n";
 }
 
 void CameraControlsAreIndependentAndStopDuringEditorCapture(Game& game)
@@ -1209,6 +1379,8 @@ int main(int argc, char** argv)
              NormalCameraRestoresFramingAfterZoneExit(game, true);
              LateralWalkingKeepsNormalCameraRadius(game);
              LateralWallSlideRetainsForwardCameraMovement(game);
+             LateralOrbitAssistPreservesDistanceAndTightensTurns(game);
+             ScriptedPlayerMovementRestoresNormalCamera(game);
          }},
         {"ugc",
          [](Game& game) {

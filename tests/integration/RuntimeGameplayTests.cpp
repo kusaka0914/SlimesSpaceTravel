@@ -14,6 +14,7 @@
 #include "component/Component.h"
 #include "support/RuntimeStageSupport.h"
 #include "support/TestSupport.h"
+#include "system/MeshLoadSystem.h"
 #include "system/PhysicsSystem.h"
 #include "system/camera/CameraCollisionResolver.h"
 #include "system/camera/EllipseCameraTransition.h"
@@ -233,6 +234,77 @@ void LeaningSidesPreserveAirborneVerticalMovement(Game& game)
     ExpectTrue(result.didHitStage && result.resolvedPosition.y < 0.46f, "real ceilings still block ascent");
     ExpectFalse(result.hasUnresolvedStageOverlap, "ceiling collision remains separated");
     std::cout << "[PASS] Runtime.LeaningSidesPreserveAirborneVerticalMovement\n";
+}
+
+void StairCollisionProxiesRemoveNosingHeadContacts(Game& game)
+{
+    MeshLoadSystem* meshes = game.GetMeshLoadSystem();
+    ExpectTrue(meshes != nullptr, "stair collision test has a mesh loader");
+    Player player(&game);
+    player.SetUpVec({0, 1, 0});
+    player.SetOrientation(glm::quat(1, 0, 0, 0));
+    player.SetOnGround(false);
+    btSphereShape playerShape(0.15f);
+    const ActorCollisionResolver resolver;
+    const auto ascendBesideFirstRiser = [&](const CollisionMeshGeometry& geometry) {
+        btTriangleMesh mesh;
+        constexpr float scale = 0.050857753f;
+        const auto vertex = [&](unsigned int index) {
+            return btVector3(geometry.positions[index * 3] * scale, geometry.positions[index * 3 + 1] * scale,
+                             geometry.positions[index * 3 + 2] * scale);
+        };
+        for (std::size_t index = 0; index + 2 < geometry.indices.size(); index += 3) {
+            mesh.addTriangle(vertex(geometry.indices[index]), vertex(geometry.indices[index + 1]),
+                             vertex(geometry.indices[index + 2]));
+        }
+        btBvhTriangleMeshShape shape(&mesh, true);
+        CollisionWorld collision;
+        collision.world.removeCollisionObject(&collision.wall);
+        collision.wall.setCollisionShape(&shape);
+        collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter,
+                                           btBroadphaseProxy::AllFilter);
+        player.SetPos({-2.75f, 0.2f, -25.0f * scale});
+        const glm::vec3 ascent(0, 0.6f, 0);
+        return resolver.CheckCollision(&collision.world, &playerShape, &player, ascent, player.GetPos() + ascent, 0.0f,
+                                       ActorCollisionFilter::AllActors);
+    };
+
+    for (const char* model : {"stairs-stone-corner", "stairs-wide-stone-handrail"}) {
+        const std::string path = std::string("../assets/models/FantasyAssets/") + model + ".fbx";
+        CollisionMeshGeometry visual;
+        ExpectTrue(
+            MeshCollisionDataLoader{}.LoadMeshPositionsAndIndices(path.c_str(), visual.positions, visual.indices),
+            "read the original stair geometry");
+        const auto* proxy = meshes->ResolveCollisionMeshGeometry(path);
+        ExpectTrue(proxy && !proxy->indices.empty(), "resolve the separate stair collision proxy");
+        ExpectTrue(ascendBesideFirstRiser(visual).didHitStage, "the original decorative lip blocks ascent");
+        const auto corrected = ascendBesideFirstRiser(*proxy);
+        ExpectFalse(corrected.didHitStage, "the simplified riser has no overhanging ceiling");
+        ExpectNear(0.8f, corrected.resolvedPosition.y, 0.0001f, "ascent beside the riser preserves jump height");
+
+        btTriangleMesh mesh;
+        const auto vertex = [&](unsigned int index) {
+            return btVector3(proxy->positions[index * 3], proxy->positions[index * 3 + 1],
+                             proxy->positions[index * 3 + 2]);
+        };
+        for (std::size_t index = 0; index + 2 < proxy->indices.size(); index += 3) {
+            mesh.addTriangle(vertex(proxy->indices[index]), vertex(proxy->indices[index + 1]),
+                             vertex(proxy->indices[index + 2]));
+        }
+        btBvhTriangleMeshShape shape(&mesh, true);
+        CollisionWorld collision;
+        collision.world.removeCollisionObject(&collision.wall);
+        collision.wall.setCollisionShape(&shape);
+        collision.world.addCollisionObject(&collision.wall, btBroadphaseProxy::DefaultFilter,
+                                           btBroadphaseProxy::AllFilter);
+        btCollisionWorld::ClosestRayResultCallback hit(btVector3(-45, 20, -25), btVector3(-45, 0, -25));
+        collision.world.rayTest(hit.m_rayFromWorld, hit.m_rayToWorld, hit);
+        ExpectTrue(hit.hasHit(), "first tread still supports a landing ray");
+        ExpectNear(12.5f, hit.m_hitPointWorld.y(), 0.0001f, "the first tread keeps its original height");
+    }
+    ExpectTrue(meshes->ResolveCollisionMeshGeometry("../assets/models/platform.obj") != nullptr,
+               "models without a collision proxy keep using their original mesh");
+    std::cout << "[PASS] Runtime.StairCollisionProxiesRemoveNosingHeadContacts\n";
 }
 
 void EllipseCameraTurnsOnHemisphereCrossing()
@@ -752,6 +824,7 @@ void RunRuntimeGameplayTests(Game& game)
     EllipsoidProjectionPreservesGeometryAndHemisphere();
     SweepsStopAtThinWallsAndResolveOverlap();
     LeaningSidesPreserveAirborneVerticalMovement(game);
+    StairCollisionProxiesRemoveNosingHeadContacts(game);
     LandingRequiresSupportingSurface(game);
     MovementActionsResetOnlyTheirOwnState(game);
     GravitySwitchHasHysteresisAndClearsOnLanding(game);

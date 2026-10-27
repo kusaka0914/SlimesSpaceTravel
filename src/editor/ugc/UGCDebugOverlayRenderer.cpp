@@ -4,7 +4,6 @@
 #include <GL/glew.h>
 
 #include "app/Game.h"
-#include "gfx/UIRenderer.h"
 #include "editor/assets/EditorModelThumbnailRenderer.h"
 #include "editor/stage/panels/StageAddActorPanel.h"
 #include "editor/ugc/UGCEditorInteractionController.h"
@@ -13,6 +12,7 @@
 #include "editor/ugc/UGCPreviewRenderer.h"
 #include "editor/ugc/UGCSceneOverlayRenderer.h"
 #include "editor/ugc/UGCWorkPanel.h"
+#include "gfx/UIRenderer.h"
 #include "imgui.h"
 
 #include <algorithm>
@@ -127,9 +127,10 @@ void UGCDebugOverlayRenderer::Draw()
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.18f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.32f));
+        // UI画像の行順に合わせる。FBOで描いたモデルサムネイルのUVとは区別する。
         const bool wasClicked = texture != 0
                                     ? ImGui::ImageButton("##ugcDebugActionIcon", static_cast<ImTextureID>(texture),
-                                                         size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f))
+                                                         size, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f))
                                     : ImGui::Button(tooltip, size);
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);

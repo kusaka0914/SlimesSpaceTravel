@@ -16,6 +16,10 @@ struct PlayerCameraSettings {
     float upSmoothingSpeed = 8.0f;
     float targetSmoothingSpeed = 10.0f;
     float positionSmoothingSpeed = 10.0f;
+
+    // 自然な左右旋回に加える周回量。0で位置固定、0.25で旋回量を約25%追加する。
+    float lateralOrbitStrength = 0.5f;
+
     float attackTargetSmoothingSpeed = 6.0f;
     float attackCameraManualOverrideSeconds = 0.75f;
     float airSlamDistanceMultiplier = 1.35f;

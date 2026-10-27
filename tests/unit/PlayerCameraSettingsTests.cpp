@@ -39,6 +39,7 @@ void TrackingSettingsLoadFromYaml()
     settingsFile.Write("playerCamera:\n"
                        "  airSlamPitchDegrees: -76\n"
                        "  positionSmoothingSpeed: 12\n"
+                       "  lateralOrbitStrength: 0.5\n"
                        "  attackTargetSmoothingSpeed: 7.5\n"
                        "  attackCameraManualOverrideSeconds: 1.25\n"
                        "  autoFollowDelaySeconds: 0.65\n"
@@ -61,6 +62,7 @@ void TrackingSettingsLoadFromYaml()
     ExpectTrue(repository.Load(settings), "camera settings load succeeds");
     ExpectNear(-76.0f, settings.airSlamPitchDegrees, 0.0001f, "air slam pitch angle");
     ExpectNear(12.0f, settings.positionSmoothingSpeed, 0.0001f, "forward position smoothing");
+    ExpectNear(0.5f, settings.lateralOrbitStrength, 0.0001f, "lateral camera orbit strength");
     ExpectNear(7.5f, settings.attackTargetSmoothingSpeed, 0.0001f, "attack camera rotation speed");
     ExpectNear(1.25f, settings.attackCameraManualOverrideSeconds, 0.0001f, "attack camera respects manual override");
     ExpectNear(2.75f, settings.backwardFacingLookAheadDistance, 0.0001f, "backward-facing look-ahead distance");
@@ -78,6 +80,7 @@ void TrackingSettingsNormalizeToSupportedRanges()
     PlayerCameraSettings settings;
     settings.airSlamPitchDegrees = -120.0f;
     settings.positionSmoothingSpeed = -1.0f;
+    settings.lateralOrbitStrength = -0.25f;
     settings.attackTargetSmoothingSpeed = -1.0f;
     settings.attackCameraManualOverrideSeconds = 10.0f;
     settings.backwardFacingLookAheadDistance = -2.0f;
@@ -89,6 +92,10 @@ void TrackingSettingsNormalizeToSupportedRanges()
 
     settings.Normalize();
     ExpectNear(0.0f, settings.positionSmoothingSpeed, 0.0f, "position smoothing is nonnegative");
+    ExpectNear(0.0f, settings.lateralOrbitStrength, 0.0f, "lateral orbit can be disabled");
+    settings.lateralOrbitStrength = 1.5f;
+    settings.Normalize();
+    ExpectNear(1.0f, settings.lateralOrbitStrength, 0.0f, "lateral orbit strength is bounded");
     ExpectNear(0.0f, settings.attackTargetSmoothingSpeed, 0.0f, "attack camera speed can be disabled");
     ExpectNear(5.0f, settings.attackCameraManualOverrideSeconds, 0.0f, "attack camera manual override is bounded");
 
@@ -113,6 +120,7 @@ void TrackingSettingsSurviveSaveAndReload()
     PlayerCameraSettings settingsToSave;
     settingsToSave.airSlamPitchDegrees = -74.0f;
     settingsToSave.positionSmoothingSpeed = 15.0f;
+    settingsToSave.lateralOrbitStrength = 0.35f;
     settingsToSave.attackTargetSmoothingSpeed = 6.5f;
     settingsToSave.attackCameraManualOverrideSeconds = 0.9f;
     settingsToSave.backwardFacingLookAheadDistance = 3.0f;
@@ -127,6 +135,7 @@ void TrackingSettingsSurviveSaveAndReload()
     PlayerCameraSettings reloadedSettings;
     ExpectTrue(repository.Load(reloadedSettings), "saved camera settings reload succeeds");
     ExpectNear(15.0f, reloadedSettings.positionSmoothingSpeed, 0.0001f, "saved position smoothing");
+    ExpectNear(0.35f, reloadedSettings.lateralOrbitStrength, 0.0001f, "saved lateral orbit strength");
     ExpectNear(6.5f, reloadedSettings.attackTargetSmoothingSpeed, 0.0001f, "saved attack camera rotation speed");
     ExpectNear(0.9f, reloadedSettings.attackCameraManualOverrideSeconds, 0.0001f, "saved manual override");
     ExpectNear(-74.0f, reloadedSettings.airSlamPitchDegrees, 0.0001f, "saved air slam pitch angle");

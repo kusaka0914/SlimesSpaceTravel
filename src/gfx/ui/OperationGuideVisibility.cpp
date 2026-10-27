@@ -30,7 +30,7 @@ bool ShouldShowOperationGuideElement(std::string_view elementId, const Operation
     if (!displayState.isUGCPlaytestActive && displayState.isPauseMenuOpen) {
         return true;
     }
-    if (!displayState.isUGCPlaytestActive && displayState.currentStageNumber >= 2) {
+    if (!displayState.isUGCPlaytestActive && displayState.currentStageNumber != 1) {
         return elementId == "buttonA_copy" || elementId == "buttonTextB_copy";
     }
     if (displayState.isTwoPlayerMode && IsSoloPlayerConfigurationGuide(elementId)) {

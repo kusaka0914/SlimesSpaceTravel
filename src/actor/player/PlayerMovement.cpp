@@ -570,6 +570,9 @@ void PlayerMovement::MoveFromInput(Player& player, const PlayerInput& input, flo
     const glm::vec3 applied = ProjectOntoPlane(player.GetPos() - before, GetNormalizedUpDirection(player));
     if (glm::dot(movement.displacement, movement.displacement) > 0.000001f && glm::dot(applied, applied) > 0.000001f) {
         mInputMovementDirection = glm::normalize(applied);
+        if (player.GetOnGround()) {
+            mCameraInputMovementDelta += applied;
+        }
     }
 }
 

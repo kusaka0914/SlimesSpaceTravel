@@ -1,13 +1,13 @@
 #include "system/sequence/SequenceSystem.h"
 
-#include "app/Game.h"
-#include "world/Stage.h"
 #include "actor/Actor.h"
 #include "actor/Player.h"
+#include "app/Game.h"
 #include "system/AudioSystem.h"
 #include "system/CameraSystem.h"
 #include "system/SceneSystem.h"
 #include "system/actor_loader/StageActorLocator.h"
+#include "world/Stage.h"
 
 #include <algorithm>
 #include <cmath>
@@ -57,6 +57,17 @@ void SequenceSystem::Update(float deltaTime)
         mElapsedTime = duration;
         mIsPlaying = false;
         mLocksPlayerControl = false;
+
+        if (!mIsPreview && mGame && mGame->GetCameraSystem()) {
+            // 演出中の変位には通常の左右追従制限が合わないため、移動先から通常構図へ戻す。
+            for (const SequenceClip& clip : mActiveSequence->clips) {
+                if (clip.type == SequenceClipType::ActorMove && clip.actor.group == "players") {
+                    if (auto* player = dynamic_cast<Player*>(ResolveActor(clip.actor))) {
+                        mGame->GetCameraSystem()->SnapBehindPlayer(*player);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -222,6 +233,9 @@ void SequenceSystem::RestorePreviewState()
         }
         actor->SetPos(snapshot.position);
         actor->SetIsActive(snapshot.active);
+        if (auto* player = dynamic_cast<Player*>(actor); player && mGame && mGame->GetCameraSystem()) {
+            mGame->GetCameraSystem()->NotifyScriptedPlayerMovement(*player);
+        }
     }
     mPreviewSnapshots.clear();
 }
@@ -245,6 +259,10 @@ void SequenceSystem::ApplyMovementClips(const GameplaySequence& sequence, float 
         const float linearProgress = std::clamp((time - clip.startTime) / duration, 0.0f, 1.0f);
         const float easedProgress = ApplyEasing(linearProgress, clip.easing);
         actor->SetPos(glm::mix(clip.fromPosition, clip.toPosition, easedProgress));
+        if (auto* player = dynamic_cast<Player*>(actor); player && mGame->GetCameraSystem()) {
+            // 通常入力の左右位置固定を演出移動へ適用すると、降下中のPlayerとカメラが離れてしまう。
+            mGame->GetCameraSystem()->NotifyScriptedPlayerMovement(*player);
+        }
     }
 }
 

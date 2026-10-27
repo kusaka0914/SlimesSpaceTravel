@@ -24,6 +24,7 @@ public:
     {
         mInputMovementDirection = glm::vec3(0);
         mCameraLateralCorrection = glm::vec3(0);
+        mCameraInputMovementDelta = glm::vec3(0);
     }
 
     void UpdateCameraRelativeMovementDirections(Player& player, const PlayerInput& input);
@@ -53,6 +54,14 @@ public:
         const auto correction = mCameraLateralCorrection;
         mCameraLateralCorrection = glm::vec3(0);
         return correction;
+    }
+
+    // 地上の入力移動の実変位を一度だけ取り出す。停止・外力だけでは0で、カメラの旋回補助に使う。
+    glm::vec3 ConsumeCameraInputMovementDelta()
+    {
+        const auto delta = mCameraInputMovementDelta;
+        mCameraInputMovementDelta = glm::vec3(0);
+        return delta;
     }
 
     void UnlockMovementDirectionForCameraAutoAlign();
@@ -218,6 +227,7 @@ private:
     bool mReleaseCameraDirectionOnNeutral = false;
     glm::vec3 mInputMovementDirection{0.0f};
     glm::vec3 mCameraLateralCorrection{0.0f};
+    glm::vec3 mCameraInputMovementDelta{0.0f};
     std::optional<glm::vec3> mNormalCameraPosition;
     bool mHasCameraAutoAlignCancellationRequest = false;
 

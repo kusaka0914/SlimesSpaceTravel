@@ -8,10 +8,11 @@ playerCamera:
   yawSensitivity: 1.5707963
   pitchSensitivityDegrees: 90
   minPitchDegrees: -80
-  maxPitchDegrees: 0
+  maxPitchDegrees: -10
   upSmoothingSpeed: 4.2
   targetSmoothingSpeed: 3
   positionSmoothingSpeed: 10
+  lateralOrbitStrength: 1
   attackTargetSmoothingSpeed: 6
   attackCameraManualOverrideSeconds: 0.75
   airSlamDistanceMultiplier: 1.35

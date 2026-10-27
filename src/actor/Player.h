@@ -77,6 +77,7 @@ public:
     bool IsCameraZoneDirectionHeld() const { return mMovement.IsCameraZoneDirectionHeld(); }
     const glm::vec3& GetInputMovementDirection() const { return mMovement.GetInputMovementDirection(); }
     glm::vec3 ConsumeCameraLateralCorrection() { return mMovement.ConsumeCameraLateralCorrection(); }
+    glm::vec3 ConsumeCameraInputMovementDelta() { return mMovement.ConsumeCameraInputMovementDelta(); }
     bool ConsumeCameraAutoAlignCancellationRequest() { return mMovement.ConsumeCameraAutoAlignCancellationRequest(); }
     void SetMoveSpeed(float moveSpeed) { mMovement.SetMoveSpeed(moveSpeed); }
     void SetMaximumStepHeight(float maximumStepHeight) { mMovement.SetMaximumStepHeight(maximumStepHeight); }

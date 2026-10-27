@@ -91,7 +91,7 @@ void AssetBrowserPanel::DrawAssetPreview(const EditorAssetInfo& asset)
         }
 
         if (ImGui::ImageButton("##assetThumbnail", static_cast<ImTextureID>(textureHandle), ImVec2(64.0f, 64.0f),
-                               ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f))) {
+                               ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f))) {
             mSelectedAssetPath = asset.relativePath;
         }
         DrawAssetDragSource(asset);
